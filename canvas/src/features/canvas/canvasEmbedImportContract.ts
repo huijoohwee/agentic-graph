@@ -7,11 +7,11 @@ import {
 } from '@/features/canvas/liveCanvasHeroSourceSelection'
 export { CANONICAL_STARTUP_CANVAS_EMBED_URL } from '@/features/canvas/canvasEmbedPresets'
 
-export const AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE = 'agenticgraph.canvas-embed.select'
-export const AGENTICGRAPH_CANVAS_EMBED_MESSAGE_VERSION = 1
+export const AGENTIC_OS_CANVAS_EMBED_SELECT_MESSAGE = 'agentic-graph.canvas-embed.select'
+export const AGENTIC_OS_CANVAS_EMBED_MESSAGE_VERSION = 1
 export type AgenticGraphCanvasEmbedSelectMessage = {
-  type: typeof AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE
-  version: typeof AGENTICGRAPH_CANVAS_EMBED_MESSAGE_VERSION
+  type: typeof AGENTIC_OS_CANVAS_EMBED_SELECT_MESSAGE
+  version: typeof AGENTIC_OS_CANVAS_EMBED_MESSAGE_VERSION
   sourcePath?: string
   embedUrl?: string
   iframe?: string
@@ -34,8 +34,8 @@ export function readCanvasEmbedIframeSrc(markup: string): string | null {
 function readMessageRecord(value: unknown): AgenticGraphCanvasEmbedSelectMessage | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const record = value as Partial<AgenticGraphCanvasEmbedSelectMessage>
-  if (record.type !== AGENTICGRAPH_CANVAS_EMBED_SELECT_MESSAGE) return null
-  if (record.version !== AGENTICGRAPH_CANVAS_EMBED_MESSAGE_VERSION) return null
+  if (record.type !== AGENTIC_OS_CANVAS_EMBED_SELECT_MESSAGE) return null
+  if (record.version !== AGENTIC_OS_CANVAS_EMBED_MESSAGE_VERSION) return null
   return record as AgenticGraphCanvasEmbedSelectMessage
 }
 
@@ -46,7 +46,7 @@ function inferSourcePath(url: URL, sourcePath: unknown): string {
   if (documentPath) return `/${documentPath.replace(/^\/+/, '')}`
   const publishedIdentity = resolvePublishedDocIdentity({
     shareUrl: url.toString(),
-    appBasePath: '/agenticgraph',
+    appBasePath: '/agentic-graph',
   })
   if (publishedIdentity?.canonicalPath) return publishedIdentity.canonicalPath
   return url.pathname || '/shared-canvas'

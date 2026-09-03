@@ -28,7 +28,7 @@ test('authorization runtime retains the ownership digest from the in-process run
   let requestedOptions = null
   const runtime = await readAuthorizationRuntime({
     agenticCanvasOsRoot: '/workspace/agentic-canvas-os',
-    repositoryRoot: '/workspace/agenticgraph',
+    repositoryRoot: '/workspace/agentic-graph',
     loadRuntimeModule: async moduleUrl => {
       requestedModuleUrl = moduleUrl
       return {
@@ -43,7 +43,7 @@ test('authorization runtime retains the ownership digest from the in-process run
   assert.equal(runtime, expectedRuntime)
   assert.match(requestedModuleUrl, /agentic-canvas-os\/scripts\/local-runtime-lib\.mjs$/)
   assert.deepEqual(requestedOptions, {
-    repository: '/workspace/agenticgraph',
+    repository: '/workspace/agentic-graph',
     agenticCanvasOsRoot: '/workspace/agentic-canvas-os',
   })
 })
@@ -93,7 +93,7 @@ test('terminal evidence round-trips exact candidate, target, actor, transport, a
 test('terminal evidence parser accepts the uncompressed v2 transport', () => {
   const encoded = Buffer.from(JSON.stringify(evidence), 'utf8').toString('base64url')
   const parsed = parseTerminalAuthorizationComment(
-    `agenticgraph-production-terminal-authorization/v2 ${encoded}`,
+    `agentic-graph-production-terminal-authorization/v2 ${encoded}`,
   )
   assert.deepEqual(parsed, evidence)
 })
@@ -184,7 +184,7 @@ test('canonical release owner state requires clean exact main at the reviewed re
     })[key]
   }
   const state = readCanonicalReleaseOwnerState({
-    repositoryRoot: '/workspace/agenticgraph',
+    repositoryRoot: '/workspace/agentic-graph',
     execGit,
   })
   assert.deepEqual(state, {
@@ -197,7 +197,7 @@ test('canonical release owner state requires clean exact main at the reviewed re
     validateCanonicalReleaseOwnerState({
       state,
       expectedRevision: run.head_sha,
-      label: 'AgenticGraph',
+      label: 'agentic-graph',
     }),
     state,
   )
@@ -205,7 +205,7 @@ test('canonical release owner state requires clean exact main at the reviewed re
     () => validateCanonicalReleaseOwnerState({
       state: { ...state, branch: 'agent/device/scope' },
       expectedRevision: run.head_sha,
-      label: 'AgenticGraph',
+      label: 'agentic-graph',
     }),
     /canonical main drifted/,
   )
@@ -232,9 +232,9 @@ test('authorization prompt interaction captures the printed exact reply and requ
   const interaction = prepareAuthorizationPromptInteraction({
     prompt: { authorizationReply: `authorize ${candidateDigest}` },
     promptText,
-    repositoryRoot: '/workspace/agenticgraph',
+    repositoryRoot: '/workspace/agentic-graph',
     expectedRevision: run.head_sha,
-    label: 'AgenticGraph',
+    label: 'agentic-graph',
     readCanonicalState: () => ({
       branch: 'main',
       head: run.head_sha,
@@ -247,7 +247,7 @@ test('authorization prompt interaction captures the printed exact reply and requ
     finalizeAuthorizationPromptInteraction({
       interaction,
       answer: `authorize ${candidateDigest}`,
-      repositoryRoot: '/workspace/agenticgraph',
+      repositoryRoot: '/workspace/agentic-graph',
       readCanonicalState: () => ({
         branch: 'main',
         head: run.head_sha,
@@ -269,7 +269,7 @@ test('authorization prompt interaction fails closed on branch flip, local drift,
   const interaction = {
     before,
     expectedRevision: run.head_sha,
-    label: 'AgenticGraph',
+    label: 'agentic-graph',
     printedReply: `authorize ${candidateDigest}`,
   }
   assert.throws(
@@ -277,7 +277,7 @@ test('authorization prompt interaction fails closed on branch flip, local drift,
       before,
       after: { ...before, branch: 'agent/huis-macbook-pro-3.local/release-receipt' },
       expectedRevision: run.head_sha,
-      label: 'AgenticGraph',
+      label: 'agentic-graph',
     }),
     /canonical main drifted/,
   )
@@ -285,7 +285,7 @@ test('authorization prompt interaction fails closed on branch flip, local drift,
     () => finalizeAuthorizationPromptInteraction({
       interaction,
       answer: `authorize ${candidateDigest}`,
-      repositoryRoot: '/workspace/agenticgraph',
+      repositoryRoot: '/workspace/agentic-graph',
       readCanonicalState: () => ({ ...before, head: 'f'.repeat(40), originMain: 'f'.repeat(40) }),
     }),
     /canonical main drifted/,
@@ -294,7 +294,7 @@ test('authorization prompt interaction fails closed on branch flip, local drift,
     () => finalizeAuthorizationPromptInteraction({
       interaction,
       answer: `authorize ${'f'.repeat(64)}`,
-      repositoryRoot: '/workspace/agenticgraph',
+      repositoryRoot: '/workspace/agentic-graph',
       readCanonicalState: () => before,
     }),
     /did not match the printed exact reply/,

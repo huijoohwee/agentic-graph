@@ -1,5 +1,5 @@
 ---
-schema: "agenticgraph-sme-canvas-evidence/v1"
+schema: "agentic-graph-sme-canvas-evidence/v1"
 kgSchema: "kgc-computing-flow/v1"
 kgCanvasSurfaceMode: "2d"
 kgCanvasRenderMode: "2d"
@@ -39,7 +39,7 @@ flow:
       position: {"x":560,"y":220}
       handles: {"target":["profiles"],"source":["exposes"]}
       properties: {"flow:portTypes":{"in":{"profiles":"sme-evidence"},"out":{"exposes":"sme-evidence"}}}
-      data: {"kind":"sme_profile","profile":{"schema":"agenticgraph-sme-profile/v1","profile_id":"synthetic-pre-seed","industry":"professional services","size":2,"growth_stage":"pre_seed","assets":"undeclared","digital_footprint":"undeclared","suppliers":"undeclared","declared_coverage":"undeclared"}}
+      data: {"kind":"sme_profile","profile":{"schema":"agentic-graph-sme-profile/v1","profile_id":"synthetic-pre-seed","industry":"professional services","size":2,"growth_stage":"pre_seed","assets":"undeclared","digital_footprint":"undeclared","suppliers":"undeclared","declared_coverage":"undeclared"}}
     - id: "kg_0c2b369e"
       type: "risk-exposure"
       label: "cyber: digital_footprint_insufficient_input"
@@ -231,7 +231,7 @@ flow:
       position: {"x":1960,"y":540}
       handles: {"target":["proves"]}
       properties: {"flow:portTypes":{"in":{"proves":"sme-evidence"},"out":{}}}
-      data: {"kind":"canvas_evidence","schema":"agenticgraph-sme-canvas-evidence/v1","run_id":"kg_71b27e52","source_path":"sme-agent/runs/kg_71b27e52/canvas-evidence.md"}
+      data: {"kind":"canvas_evidence","schema":"agentic-graph-sme-canvas-evidence/v1","run_id":"kg_71b27e52","source_path":"sme-agent/runs/kg_71b27e52/canvas-evidence.md"}
   edges:
     - id: "kg_6e19d2f2"
       source: "kg_bc1823ce"

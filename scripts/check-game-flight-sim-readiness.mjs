@@ -16,10 +16,10 @@ import {
 } from './lib/source-readiness-assertions.mjs'
 const repositoryRoot = process.cwd()
 const flightFeatureRoot = 'canvas/src/features/game-flight-sim'
-const flightPrdPath = 'docs/documents/agenticgraph-game-flight-sim-prd-tad.md'
-const flightSeedPath = 'docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md'
-const physicsSeedPath = 'docs/workspace-seeds/agenticgraph-physics-playground-demo.md'
-const kiroSpecRoot = '.kiro/specs/agenticgraph-game-flight-sim'
+const flightPrdPath = 'docs/documents/agentic-graph-game-flight-sim-prd-tad.md'
+const flightSeedPath = 'docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md'
+const physicsSeedPath = 'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'
+const kiroSpecRoot = '.kiro/specs/agentic-graph-game-flight-sim'
 const requiredPaths = [
   `${kiroSpecRoot}/.config.kiro`,
   `${kiroSpecRoot}/requirements.md`,
@@ -61,7 +61,7 @@ const requiredPaths = [
   'canvas/src/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration.tsx',
   'canvas/src/features/agent-ready/flightSimAgentReadyContract.mjs',
   'canvas/src/features/agent-ready/flightSimWebMcpTools.ts',
-  'canvas/src/features/agent-ready/agenticgraphAgentReadyToolContract.mjs',
+  'canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs',
   'canvas/src/features/agent-ready/webMcpRuntime.ts',
   'canvas/src/features/canvas/FlightSimRunReadyDemoRuntime.tsx',
   'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
@@ -273,7 +273,7 @@ const prdSource = await readText(flightPrdPath)
 const prd = parseFrontmatter(prdSource, flightPrdPath)
 if (
   prd.authority_role !== 'derived implementation/proof projection'
-  || prd.normative_kiro_authority !== '.kiro/specs/agenticgraph-game-flight-sim/'
+  || prd.normative_kiro_authority !== '.kiro/specs/agentic-graph-game-flight-sim/'
 ) {
   throw new Error('Flight Sim PRD/TAD must remain a derived projection of tracked Kiro authority')
 }
@@ -494,7 +494,7 @@ const contractModule = await import(pathToFileURL(
   path.join(repositoryRoot, `${flightFeatureRoot}/flightSimMcpContract.mjs`),
 ).href)
 if (
-  contractModule.FLIGHT_SIM_MCP_SCHEMA !== 'agenticgraph-flight-sim-mcp/v1'
+  contractModule.FLIGHT_SIM_MCP_SCHEMA !== 'agentic-graph-flight-sim-mcp/v1'
   || JSON.stringify(contractModule.FLIGHT_SIM_WEB_MCP_TOOL_IDS) !== JSON.stringify({
     inspect: 'inspect_local_flight_sim',
     control: 'control_local_flight_sim',
@@ -516,15 +516,15 @@ const agentReadyModule = await import(pathToFileURL(
   path.join(repositoryRoot, 'canvas/src/features/agent-ready/flightSimAgentReadyContract.mjs'),
 ).href)
 const agentReadyContracts = agentReadyModule.buildFlightSimAgentReadyToolContracts({
-  buildWebName: name => `agenticgraph.${name}`,
+  buildWebName: name => `agentic-graph.${name}`,
   readOnlyAnnotations: Object.freeze({ readOnlyHint: true }),
   mutationAnnotations: Object.freeze({ readOnlyHint: false }),
 })
 if (
   agentReadyContracts.length !== 2
   || JSON.stringify(agentReadyContracts.map(contract => contract.webName)) !== JSON.stringify([
-    'agenticgraph.inspect_local_flight_sim',
-    'agenticgraph.control_local_flight_sim',
+    'agentic-graph.inspect_local_flight_sim',
+    'agentic-graph.control_local_flight_sim',
   ])
 ) {
   throw new Error('Flight Sim must expose exactly two browser-local Agent Ready tools')
@@ -546,7 +546,7 @@ if (/\bpersistPendingFlightSimDecisions\b/.test(flightMcpRuntimeSource)) {
 
 const serverSourcePaths = [
   ...(await listFiles('mcp')),
-  ...(await listFiles('cloudflare/workers/agenticgraph-mcp')),
+  ...(await listFiles('cloudflare/workers/agentic-graph-mcp')),
 ].filter(relativePath => (
   /\.(?:js|mjs|cjs|ts|tsx|json)$/.test(relativePath)
   && !relativePath.includes('/__tests__/')

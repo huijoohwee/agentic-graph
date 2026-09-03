@@ -20,10 +20,10 @@ const TOOL_OPERATION = Object.freeze({
 });
 
 const RESULT_SCHEMA = Object.freeze({
-  parser_generate: "agenticgraph-knowledge-graph-parser-generate/v1",
-  ingest: "agenticgraph-knowledge-graph-ingest/v1",
-  query: "agenticgraph-knowledge-graph-query/v1",
-  explain_edge: "agenticgraph-knowledge-graph-explain-edge/v1",
+  parser_generate: "agentic-graph-knowledge-graph-parser-generate/v1",
+  ingest: "agentic-graph-knowledge-graph-ingest/v1",
+  query: "agentic-graph-knowledge-graph-query/v1",
+  explain_edge: "agentic-graph-knowledge-graph-explain-edge/v1",
 });
 
 const runtimeCache = new Map();
@@ -65,13 +65,13 @@ function validateArguments(operation, args) {
 function runtimeKey(rootDir, env) {
   return JSON.stringify([
     rootDir,
-    env.AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS || "",
-    env.AGENTICGRAPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT || "",
-    env.AGENTICGRAPH_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS || "",
-    env.AGENTICGRAPH_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES || "",
-    env.AGENTICGRAPH_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS || "",
-    env.AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK || "",
-    env.AGENTICGRAPH_PYTHON || "",
+    env.AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS || "",
+    env.AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT || "",
+    env.AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS || "",
+    env.AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES || "",
+    env.AGENTIC_OS_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS || "",
+    env.AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK || "",
+    env.AGENTIC_OS_PYTHON || "",
   ]);
 }
 
@@ -79,34 +79,34 @@ function getRuntime({ rootDir, env }) {
   const absoluteRoot = path.resolve(rootDir);
   const key = runtimeKey(absoluteRoot, env);
   if (runtimeCache.has(key)) return runtimeCache.get(key);
-  const configuredAllowedRoots = String(env.AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS || "")
+  const configuredAllowedRoots = String(env.AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS || "")
     .split(path.delimiter)
     .map((value) => value.trim())
     .filter(Boolean)
     .map((value) => path.resolve(absoluteRoot, value));
   const outputRoot = path.resolve(
     absoluteRoot,
-    env.AGENTICGRAPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT || "data/outputs/knowledge-graph",
+    env.AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT || "data/outputs/knowledge-graph",
   );
   const pdfConverter = createLocalKnowledgeGraphPdfConverter({
     rootDir: absoluteRoot,
-    timeoutMs: env.AGENTICGRAPH_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS,
-    maxOutputBytes: env.AGENTICGRAPH_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES,
+    timeoutMs: env.AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS,
+    maxOutputBytes: env.AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES,
   });
-  const repositoryHosts = String(env.AGENTICGRAPH_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS || "")
+  const repositoryHosts = String(env.AGENTIC_OS_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS || "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
   const runtime = createKnowledgeGraphRuntime({
-    agenticgraphRoot: absoluteRoot,
+    agenticGraphRoot: absoluteRoot,
     allowedRoots: configuredAllowedRoots,
     repositoryHosts,
     allowPrivateRepositoryNetwork:
-      env.AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK === "1",
+      env.AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK === "1",
     outputRoot,
     pdfConverter,
-    pdfConverterVersion: "agenticgraph-native-pdf-v3",
-    pythonBin: env.AGENTICGRAPH_PYTHON || "python3",
+    pdfConverterVersion: "agentic-graph-native-pdf-v3",
+    pythonBin: env.AGENTIC_OS_PYTHON || "python3",
   });
   runtimeCache.set(key, runtime);
   return runtime;

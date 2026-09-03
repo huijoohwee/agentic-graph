@@ -78,7 +78,7 @@ export function buildEditManifest({ plannedShots, renderAssets, assetDurationsMs
   }
 
   return {
-    schema: "agenticgraph.video_remix.edit_manifest/v1",
+    schema: "agentic-graph.video_remix.edit_manifest/v1",
     gateId: EDIT_GATE_ID,
     stageId: EDIT_STAGE_ID,
     entries,

@@ -2,7 +2,7 @@ import path from 'node:path'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from '../../viteWorkspaceSeedsReadRoot'
 
 export function testWorkspaceInitializationSeedsReadRootUsesActiveWorktree(): void {
-  const repoRoot = path.resolve('/workspace/.worktrees/agenticgraph/canonical')
+  const repoRoot = path.resolve('/workspace/.worktrees/agentic-graph/canonical')
   const resolved = resolveWorkspaceInitializationWorkspaceSeedsReadRoot({
     command: 'serve',
     repoRoot,
@@ -17,7 +17,7 @@ export function testWorkspaceInitializationSeedsReadRootHonorsExplicitFixture():
   const explicitRoot = path.resolve('/workspace/fixtures/workspace-seeds')
   const resolved = resolveWorkspaceInitializationWorkspaceSeedsReadRoot({
     command: 'serve',
-    repoRoot: path.resolve('/workspace/.worktrees/agenticgraph/canonical'),
+    repoRoot: path.resolve('/workspace/.worktrees/agentic-graph/canonical'),
     explicitAbsRoot: explicitRoot,
   })
 
@@ -29,7 +29,7 @@ export function testWorkspaceInitializationSeedsReadRootHonorsExplicitFixture():
 export function testWorkspaceInitializationSeedsReadRootStaysOutOfBuilds(): void {
   const resolved = resolveWorkspaceInitializationWorkspaceSeedsReadRoot({
     command: 'build',
-    repoRoot: path.resolve('/workspace/.worktrees/agenticgraph/canonical'),
+    repoRoot: path.resolve('/workspace/.worktrees/agentic-graph/canonical'),
     explicitAbsRoot: path.resolve('/workspace/fixtures/workspace-seeds'),
   })
 

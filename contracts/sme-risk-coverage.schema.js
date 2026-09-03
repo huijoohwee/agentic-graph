@@ -1,7 +1,7 @@
 import { validateCostLog } from "./cost-log.schema.js";
 import { SME_RISK_DOMAINS, validateSmeProfile } from "./sme-profile.schema.js";
 
-export const SME_RISK_RUN_SCHEMA_ID = "agenticgraph-sme-risk-run/v1";
+export const SME_RISK_RUN_SCHEMA_ID = "agentic-graph-sme-risk-run/v1";
 export const SME_SEVERITIES = Object.freeze(["critical", "high", "medium", "low"]);
 export const SME_MATCH_OUTCOMES = Object.freeze(["covered", "partially_covered", "uncovered"]);
 export const SME_LIKELIHOODS = Object.freeze(["low", "medium", "high"]);

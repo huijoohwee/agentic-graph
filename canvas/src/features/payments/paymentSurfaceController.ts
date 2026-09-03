@@ -8,7 +8,7 @@ import type { PaymentSettlementAsset } from 'grph-shared/payments/paymentRailSso
 import {
   getAgenticGraphStorageDb,
   type AgenticGraphStorageDb,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 import {
   createPaymentApiTransport,
   type PaymentBuyerProduct,

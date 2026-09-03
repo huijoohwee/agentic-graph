@@ -1,14 +1,14 @@
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
-import { createStorageWorkerFetch, readStorageWorker } from '@/__tests__/helpers/fakeAgenticGraphStorageWorkerFetch'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
+import { createStorageWorkerFetch, readStorageWorker } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
 import {
   __resetAgenticGraphStorageDbForTests,
   getAgenticGraphStorageDb,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 import {
   buildAgenticGraphStorageBlobPath,
   buildAgenticGraphStorageDocPath,
-  AGENTICGRAPH_STORAGE_API_VERSION,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+  AGENTIC_OS_STORAGE_API_VERSION,
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   publishGeneratedWorkspaceEntriesToAgenticGraphStorage,
   publishWorkspaceEntryShareUrl,
@@ -16,8 +16,8 @@ import {
 
 export async function testGeneratedChatLogWorkspaceEntryQueuesCanonicalStoragePath() {
   await __resetAgenticGraphStorageDbForTests()
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
   try {
     const workspaceId = 'kgws:test-chat-log-generated-queue'
     const workspacePath = '/chat-log/20260605T134222Z/kgc_20260605T134222Z.md'
@@ -43,16 +43,16 @@ export async function testGeneratedChatLogWorkspaceEntryQueuesCanonicalStoragePa
       throw new Error(`expected chat artifact canonical path to stay under chat-log, got ${JSON.stringify(result.canonicalPaths)}`)
     }
   } finally {
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
     await __resetAgenticGraphStorageDbForTests()
   }
 }
 
 export async function testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWhenRuntimeSyncEnabled() {
   await __resetAgenticGraphStorageDbForTests()
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
   try {
     const env = createFakeAgenticGraphStorageWorkerEnv()
     const fetchImpl = createStorageWorkerFetch(env)
@@ -88,8 +88,8 @@ export async function testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWh
       throw new Error(`expected generated chat artifact public content to match source text, got ${text}`)
     }
   } finally {
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
     await __resetAgenticGraphStorageDbForTests()
   }
 }
@@ -104,7 +104,7 @@ export async function testStorageWorkerR2BlobRouteStoresAndServesBinaryObject() 
       method: 'POST',
       headers: {
         'content-type': 'image/png',
-        'x-agenticgraph-content-hash': 'sha256:test-r2-blob',
+        'x-agentic-graph-content-hash': 'sha256:test-r2-blob',
       },
       body: Uint8Array.from([137, 80, 78, 71]),
     }),
@@ -121,7 +121,7 @@ export async function testStorageWorkerR2BlobRouteStoresAndServesBinaryObject() 
   if (!upload.objectKey || upload.canonicalPath !== canonicalPath || upload.contentHash !== 'sha256:test-r2-blob') {
     throw new Error(`expected upload response to expose canonical R2 coordinates, got ${JSON.stringify(upload)}`)
   }
-  if (!env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.has(upload.objectKey)) {
+  if (!env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.has(upload.objectKey)) {
     throw new Error(`expected fake R2 bucket to contain uploaded object ${upload.objectKey}`)
   }
   const readResponse = await readStorageWorker().fetch(
@@ -151,7 +151,7 @@ export async function testSourceFileShareUrlPublishesOverExistingCanonicalPathDo
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
         workspaceId,
         deviceId: 'dev_seed',
         mutations: [{

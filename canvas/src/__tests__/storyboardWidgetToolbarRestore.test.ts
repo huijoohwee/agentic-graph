@@ -183,7 +183,7 @@ export function testStoryboardWidgetToolbarRestoresTinyFloatingActionsWithRun() 
     structural: false,
   } as Parameters<typeof resolveProbeTreeCardMaterializationRequestText>[0]
   const probeTreeInvocationText = resolveProbeTreeCardMaterializationRequestText(probeTreeCard)
-  for (const expected of ['agenticgraph.probe.generate', 'Selected card id: care_source', 'response.structuredContent.cards']) {
+  for (const expected of ['agentic-graph.probe.generate', 'Selected card id: care_source', 'response.structuredContent.cards']) {
     if (!probeTreeInvocationText.includes(expected)) throw new Error(`expected Probe-Tree toolbar invocation to include ${expected}`)
   }
   for (const forbidden of ['emitChatInputAppend', 'emitFloatingPanelOpen']) {

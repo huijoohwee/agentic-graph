@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 
-const D1_RECONCILIATION_EVIDENCE_SCHEMA = 'agenticgraph-d1-reconciliation-evidence/v1'
-const D1_STATE_SNAPSHOT_SCHEMA = 'agenticgraph-d1-state-snapshot/v1'
+const D1_RECONCILIATION_EVIDENCE_SCHEMA = 'agentic-graph-d1-reconciliation-evidence/v1'
+const D1_STATE_SNAPSHOT_SCHEMA = 'agentic-graph-d1-state-snapshot/v1'
 const D1_OPERATION_LIMIT = 10_000
 
 export const toSqlString = (value) => `'${String(value || '').replace(/'/g, "''")}'`

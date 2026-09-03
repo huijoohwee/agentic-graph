@@ -35,7 +35,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
   }
 }
 
-const SMOKE_MEDIA_CANONICAL_PATH = '/agenticgraph/demo/media-preview-metadata-ready.mp4'
+const SMOKE_MEDIA_CANONICAL_PATH = '/agentic-graph/demo/media-preview-metadata-ready.mp4'
 const SMOKE_MEDIA_PATH = import.meta.env.BASE_URL === '/'
   ? '/demo/media-preview-metadata-ready.mp4'
   : SMOKE_MEDIA_CANONICAL_PATH

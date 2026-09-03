@@ -1,5 +1,5 @@
 // Focused unit tests for the Commerce_Harness post-approval SESSION-CREATE
-// failure path (agenticgraph-acos-mcp-connector spec, task 3.16 / R9.4 / Design
+// failure path (agentic-graph-acos-mcp-connector spec, task 3.16 / R9.4 / Design
 // Property 17).
 //
 // R9.4: IF creation of the Stripe checkout session OR settlement of the payout

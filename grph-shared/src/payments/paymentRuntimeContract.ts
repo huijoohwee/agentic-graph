@@ -290,7 +290,7 @@ export const buildProviderIdempotencyKey = (
   clientIntentKey: string,
   operation = 'create',
 ): string => {
-  const key = `agenticgraph:${rail}:${operation}:${normalizeString(clientIntentKey).toLowerCase()}`
+  const key = `agentic-graph:${rail}:${operation}:${normalizeString(clientIntentKey).toLowerCase()}`
   if (key.length > 255 || EMAIL_PATTERN.test(key)) {
     throw new Error('Provider idempotency key violates the payment data-minimization contract.')
   }

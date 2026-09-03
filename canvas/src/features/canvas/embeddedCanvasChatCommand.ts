@@ -18,12 +18,12 @@ type EmbeddedCanvasChatCommandReceiver = {
   submit: (text: string) => boolean
 }
 
-const EMBEDDED_CANVAS_CHAT_COMMAND_BRIDGE_KEY = '__agenticgraphEmbeddedCanvasChatCommandBridge'
+const EMBEDDED_CANVAS_CHAT_COMMAND_BRIDGE_KEY = '__agenticGraphEmbeddedCanvasChatCommandBridge'
 
 declare global {
   interface Window {
-    __agenticgraphEmbeddedCanvasChatCommandBridge?: EmbeddedCanvasChatCommandBridge
-    __agenticgraphEmbeddedCanvasChatCommandReceiver?: EmbeddedCanvasChatCommandReceiver
+    __agenticGraphEmbeddedCanvasChatCommandBridge?: EmbeddedCanvasChatCommandBridge
+    __agenticGraphEmbeddedCanvasChatCommandReceiver?: EmbeddedCanvasChatCommandReceiver
   }
 }
 
@@ -33,7 +33,7 @@ export function deliverEmbeddedCanvasChatSubmit(
   targetOrigin: string,
 ): boolean {
   try {
-    if (target.__agenticgraphEmbeddedCanvasChatCommandReceiver?.submit(message.payload.text)) return true
+    if (target.__agenticGraphEmbeddedCanvasChatCommandReceiver?.submit(message.payload.text)) return true
   } catch {
     void 0
   }

@@ -3,7 +3,7 @@
 ## `neutral-world-mesh`
 
 - Local file: `canvas/public/fixtures/geospatial/neutral-mesh.json`
-- Origin: AgenticGraph repository-authored neutral mesh fixture
+- Origin: agentic-graph repository-authored neutral mesh fixture
 - Source revision: `7132c7096539fb1079e00bffc0f2cd024d423d9d`
 - SHA-256: `ad90e36f1835a97d9559132d28993ea4b3825f2d621217a4fe54054b8fb076eb`
 - Licence: `CC0-1.0`

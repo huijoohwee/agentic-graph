@@ -1,5 +1,5 @@
 // Unit tests for the Demo_Pack templating-from-Run_Manifest layer
-// (agenticgraph-acos-mcp-connector spec, task 10.1 — R3.1 / Property 22).
+// (agentic-graph-acos-mcp-connector spec, task 10.1 — R3.1 / Property 22).
 //
 // Verifies the task-10.1 deliverables:
 //   * the seven Demo_Pack sections map EXPLICITLY to the seven judging
@@ -222,14 +222,14 @@ test("endpoint hints and injected reachability are forwarded to the assembler (n
   const { payload } = runVideoRemix(COMPLETE_LIVE_ARGS);
   const demoPack = buildDemoPackFromManifest(payload, {
     frontendUrl: "https://my-frontend.example",
-    workerUrl: "https://airvio.co/agenticgraph/mcp",
-    workerHealthUrl: "https://airvio.co/agenticgraph/mcp/health",
+    workerUrl: "https://airvio.co/agentic-graph/mcp",
+    workerHealthUrl: "https://airvio.co/agentic-graph/mcp/health",
     // Deterministic injected probe: every url returns 503 (no socket opened).
     reachability: () => ({ status: 503 }),
   });
 
   assert.ok(demoPack.urls.some((u) => u.kind === FRONTEND_URL_KIND && u.url === "https://my-frontend.example"));
-  assert.ok(demoPack.urls.some((u) => u.kind === "worker" && u.url === "https://airvio.co/agenticgraph/mcp"));
+  assert.ok(demoPack.urls.some((u) => u.kind === "worker" && u.url === "https://airvio.co/agentic-graph/mcp"));
   // A confirmed non-200 marks the demo_presentation section unverified + records the failing url.
   assert.ok(demoPack.failingUrls.length >= 1);
   const demoSection = demoPack.sections.find((s) => s.id === "demo_presentation");

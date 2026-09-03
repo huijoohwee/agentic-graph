@@ -1,6 +1,6 @@
 export {
   HTML_VIDEO_ENGINE_IDS,
-  AGENTICGRAPH_HTML_VIDEO_ENGINE,
+  AGENTIC_OS_HTML_VIDEO_ENGINE,
   type HtmlVideoEngineId,
   type RenderEngine,
   type RenderResult,

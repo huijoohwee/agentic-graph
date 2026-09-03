@@ -402,7 +402,7 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     if (typeof window === 'undefined') return
     const handleTimelineFrame = (event: Event) => {
       const payload = (event as CustomEvent<RichMediaTimelineTransportFrame>).detail
-      if (!payload || payload.type !== 'agenticgraph:timeline-transport-frame') return
+      if (!payload || payload.type !== 'agentic-graph:timeline-transport-frame') return
       if (payload.playing) {
         const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
           ? performance.now()

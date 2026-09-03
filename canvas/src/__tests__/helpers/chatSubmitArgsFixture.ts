@@ -1,6 +1,6 @@
 import type { FloatingPanelChatSubmitArgs } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitTypes'
-import type { AgenticGraphStorageChatRelayDecision } from '@/lib/storage/agenticgraphStorageChatClient'
-import type { AgenticGraphStorageChatProviderId } from '@/lib/storage/agenticgraphStorageSyncContract'
+import type { AgenticGraphStorageChatRelayDecision } from '@/lib/storage/agentic-graph-storage-chat-client'
+import type { AgenticGraphStorageChatProviderId } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 export const buildSubmitArgsFixture = (
   overrides: Partial<FloatingPanelChatSubmitArgs> = {},
@@ -74,19 +74,19 @@ export const withStorageChatRelayEnv = (args: {
   workspaceId?: string
   sessionToken?: string
 } = {}): (() => void) => {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
-  const previousSessionToken = process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = args.baseUrl || 'https://storage.example.test'
-  process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = args.workspaceId || 'kgws:test-chat'
-  process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = args.sessionToken || 'session-token'
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
+  const previousSessionToken = process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = args.baseUrl || 'https://storage.example.test'
+  process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = args.workspaceId || 'kgws:test-chat'
+  process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN = args.sessionToken || 'session-token'
   return () => {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
-    if (typeof previousSessionToken === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN = previousSessionToken
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_CHAT_SESSION_TOKEN
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
+    if (typeof previousSessionToken === 'string') process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN = previousSessionToken
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN
   }
 }
 

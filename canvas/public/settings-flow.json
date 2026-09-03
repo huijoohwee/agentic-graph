@@ -190,7 +190,7 @@
     ],
     "classes": [],
     "functions": [],
-    "responsibility": "Local browser API runtime URL for AgenticGraph MCP bridge calls",
+    "responsibility": "Local browser API runtime URL for agentic-graph MCP bridge calls",
     "imports": [
       "localStorage"
     ],

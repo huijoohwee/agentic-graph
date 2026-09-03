@@ -1,9 +1,9 @@
 export function assertExternalMcpBridgeIdsAreRuntimeExecutable(text: string): void {
   ;[
-    'agenticgraph.tool.catalog',
-    'agenticgraph.tool.search',
-    'agenticgraph.tool.describe',
-    'agenticgraph.tool.call',
+    'agentic-graph.tool.catalog',
+    'agentic-graph.tool.search',
+    'agentic-graph.tool.describe',
+    'agentic-graph.tool.call',
     'Runtime-executable',
   ].forEach(token => {
     if (!text.includes(token)) {

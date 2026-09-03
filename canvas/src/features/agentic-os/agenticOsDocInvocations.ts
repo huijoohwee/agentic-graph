@@ -34,34 +34,34 @@ export type AgenticOsDictionaryInvocation = {
 
 export const AGENTIC_OS_CANVAS_INTERACTION_PANEL_KEYWORD = 'canvas interaction panel' as const
 export const AGENTIC_OS_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs'
-export const AGENTICGRAPH_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/agentic-graph/blob/main/docs/documents'
-export const AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION = {
-  id: 'agenticgraph-probe-tree',
-  fileName: 'agenticgraph-probe-tree-prd-tad.md',
-  label: 'AgenticGraph Probe-Tree',
+export const AGENTIC_GRAPH_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/agentic-graph/blob/main/docs/documents'
+export const AGENTIC_GRAPH_PROBE_TREE_DOC_INVOCATION = {
+  id: 'agentic-graph-probe-tree',
+  fileName: 'agentic-graph-probe-tree-prd-tad.md',
+  label: 'agentic-graph Probe-Tree',
   summary: 'Bounded local probe branching that produces user-selectable next-step cards and preserves Markdown graph state as the SSOT.',
-  slashCommand: '/agenticgraph.probe-tree',
-  hashToken: '#agenticgraph.probe-tree',
-  atToken: '@agenticgraph.probe-tree',
-  sourcePath: `${AGENTICGRAPH_DOCS_GITHUB_ROOT_URL}/agenticgraph-probe-tree-prd-tad.md`,
+  slashCommand: '/agentic-graph.probe-tree',
+  hashToken: '#agentic-graph.probe-tree',
+  atToken: '@agentic-graph.probe-tree',
+  sourcePath: `${AGENTIC_GRAPH_DOCS_GITHUB_ROOT_URL}/agentic-graph-probe-tree-prd-tad.md`,
   keywords: ['probe tree', 'branching', 'clarification', 'candidate options', 'markdown graph'],
 } as const satisfies AgenticOsDocInvocation
 
-export const AGENTICGRAPH_GEOSPATIAL_MODE_DOC_INVOCATION = {
-  id: 'agenticgraph-geospatial-mode',
-  fileName: 'agenticgraph-geospatial-mode-document.md',
-  label: 'AgenticGraph Geospatial Mode',
+export const AGENTIC_GRAPH_GEOSPATIAL_MODE_DOC_INVOCATION = {
+  id: 'agentic-graph-geospatial-mode',
+  fileName: 'agentic-graph-geospatial-mode-document.md',
+  label: 'agentic-graph Geospatial Mode',
   summary: 'Control the local geospatial overlay, enhanced layers, geo-node framing, and tagged layer visibility.',
   slashCommand: '/geo',
   hashToken: '#geospatial',
   atToken: '@geospatial',
-  sourcePath: `${AGENTICGRAPH_DOCS_GITHUB_ROOT_URL}/agenticgraph-geospatial-mode-document.md`,
+  sourcePath: `${AGENTIC_GRAPH_DOCS_GITHUB_ROOT_URL}/agentic-graph-geospatial-mode-document.md`,
   keywords: ['geospatial', 'maplibre', 'extrusion', '3d asset', 'layer visibility', 'geo node'],
 } as const satisfies AgenticOsDocInvocation
 
 export const AGENTIC_OS_DOC_INVOCATIONS: readonly AgenticOsDocInvocation[] = [
-  AGENTICGRAPH_PROBE_TREE_DOC_INVOCATION,
-  AGENTICGRAPH_GEOSPATIAL_MODE_DOC_INVOCATION,
+  AGENTIC_GRAPH_PROBE_TREE_DOC_INVOCATION,
+  AGENTIC_GRAPH_GEOSPATIAL_MODE_DOC_INVOCATION,
 ]
 
 export const AGENTIC_OS_DOC_INVOCATION_ACTION_ID_PREFIX = 'agentic-os-doc:'

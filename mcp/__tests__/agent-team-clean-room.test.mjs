@@ -22,7 +22,7 @@ async function sourceFiles(entry) {
   if (!stat.isDirectory()) return [];
   const output = [];
   for (const child of await fs.readdir(entry, { withFileTypes: true })) {
-    if (["node_modules", ".git", ".agenticgraph-workspace", "dist", "build", ".cache", "__pycache__"].includes(child.name)) continue;
+    if (["node_modules", ".git", ".agentic-graph-workspace", "dist", "build", ".cache", "__pycache__"].includes(child.name)) continue;
     output.push(...await sourceFiles(path.join(entry, child.name)));
   }
   return output;

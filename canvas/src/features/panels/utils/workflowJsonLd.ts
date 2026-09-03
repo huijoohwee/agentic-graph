@@ -18,7 +18,7 @@ type JsonObject = { [key: string]: JSONValue }
 
 type WritablePartial<T> = { -readonly [K in keyof T]?: T[K] }
 
-export const AGENTIC_RAG_RACI_CATALOG_ID = 'docs/agenticgraph-raci-document.md'
+export const AGENTIC_RAG_RACI_CATALOG_ID = 'docs/agentic-graph-raci-document.md'
 export const AGENTIC_RAG_EXPORT_PIPELINE_PHASE = 'Phase 2: PRODUCE – 2.1 Export to JSON/JSON-LD'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

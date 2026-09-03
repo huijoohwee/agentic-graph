@@ -133,7 +133,7 @@ export function parseJsonLd(jsonld: unknown): GraphData {
   const edgeNodesAgenticGraph: Array<Record<string, unknown>> = [];
   const edgeNodesAgentic: Array<Record<string, unknown>> = [];
   const isNodeType = (typeList: string[]): boolean =>
-    typeList.includes(AGENTIC_RAG_NODE_TYPE_IRI) || typeList.includes('Node') || typeList.includes('agenticgraph:Node');
+    typeList.includes(AGENTIC_RAG_NODE_TYPE_IRI) || typeList.includes('Node') || typeList.includes('agentic-graph:Node');
   const isEdgeType = (typeList: string[]): boolean =>
     typeList.includes(AGENTIC_RAG_EDGE_TYPE_IRI) || typeList.includes('Edge');
   const normalizeEdgeLabel = (raw: unknown): string => {
@@ -155,7 +155,7 @@ export function parseJsonLd(jsonld: unknown): GraphData {
     } else if (typeof typeRaw !== 'undefined' && typeRaw !== null) {
       typeList.push(String(typeRaw));
     }
-    if (typeList.includes('agenticgraph:Edge')) {
+    if (typeList.includes('agentic-graph:Edge')) {
       edgeNodesAgenticGraph.push(item);
       continue;
     }

@@ -1,6 +1,6 @@
-// Run_Manifest rendering view-model for the agenticgraph Cloudflare Pages frontend.
+// Run_Manifest rendering view-model for the agentic-graph Cloudflare Pages frontend.
 //
-// Spec: agenticgraph-acos-mcp-connector, task 7.10 (R1.9, R13.4; design Correctness
+// Spec: agentic-graph-acos-mcp-connector, task 7.10 (R1.9, R13.4; design Correctness
 // Property 32; design Frontend `renderManifest`).
 //
 // R13.4: "WHEN the Frontend receives an updated Run_Manifest, THE Frontend SHALL

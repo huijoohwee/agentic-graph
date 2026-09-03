@@ -53,8 +53,8 @@ const createBinaryFile = (name: string, bytes: Uint8Array, type = 'application/o
 
 function readStrybldrLocalImportInput(): { name: string; text: string } {
   const inputPath = String(
-    process.env.AGENTICGRAPH_STRYTREE_DEMO_INPUT ||
-    process.env.AGENTICGRAPH_STRYBLDR_DEMO_INPUT ||
+    process.env.AGENTIC_OS_STRYTREE_DEMO_INPUT ||
+    process.env.AGENTIC_OS_STRYBLDR_DEMO_INPUT ||
     '',
   ).trim()
   if (inputPath) {

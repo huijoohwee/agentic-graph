@@ -5,13 +5,13 @@ import path from 'node:path'
 import Ajv2020 from 'ajv/dist/2020.js'
 import { repoRoot } from './collaboration-contract.mjs'
 
-export const COLLABORATION_RUNTIME_REPORT_SCHEMA = 'agenticgraph.collaboration-runtime-report/v1'
+export const COLLABORATION_RUNTIME_REPORT_SCHEMA = 'agentic-graph.collaboration-runtime-report/v1'
 export const COLLABORATION_RUNTIME_REPORT_SCHEMA_PATH = path.resolve(
   repoRoot,
   'schemas',
   'collaboration-runtime-report.v1.schema.json',
 )
-export const COLLABORATION_RUNTIME_VALIDATION_SCHEMA = 'agenticgraph.collaboration-runtime-validation/v1'
+export const COLLABORATION_RUNTIME_VALIDATION_SCHEMA = 'agentic-graph.collaboration-runtime-validation/v1'
 export const COLLABORATION_RUNTIME_VALIDATION_SCHEMA_PATH = path.resolve(
   repoRoot,
   'schemas',
@@ -48,7 +48,7 @@ export const resolveCollaborationRuntimeSourceRevision = ({
   environment = process.env,
   cwd = repoRoot,
 } = {}) => {
-  const configuredRevision = environment.AGENTICGRAPH_SOURCE_REVISION
+  const configuredRevision = environment.AGENTIC_OS_SOURCE_REVISION
   if (configuredRevision !== undefined && configuredRevision !== '') {
     return validateCollaborationRuntimeSourceRevision(String(configuredRevision))
   }

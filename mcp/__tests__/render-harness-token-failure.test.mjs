@@ -1,5 +1,5 @@
 // Unit tests for the Render_Harness token-FAILURE path
-// (agenticgraph-acos-mcp-connector spec, task 3.10 / R8.2 / Design Property 1 —
+// (agentic-graph-acos-mcp-connector spec, task 3.10 / R8.2 / Design Property 1 —
 // the render spend-boundary fail-closed side).
 //
 // R8.2: IF the render Approval_Token is missing, expired, or fails validation,

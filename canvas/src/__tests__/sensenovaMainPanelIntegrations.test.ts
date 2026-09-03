@@ -17,8 +17,8 @@ import { isIntegrationsOwnedSetting } from '@/features/panels/views/useSettingsV
 import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
 
 const repoRoot = resolve(process.cwd(), '..')
-const prdTadPath = resolve(repoRoot, 'docs/documents/agenticgraph-mcp/agenticgraph-sensenova-api-prd-tad.md')
-const demoPath = resolve(repoRoot, '../huijoohwee/docs/agenticgraph-strybldr-demo.md')
+const prdTadPath = resolve(repoRoot, 'docs/documents/agentic-graph-mcp/agentic-graph-sensenova-api-prd-tad.md')
+const demoPath = resolve(repoRoot, '../huijoohwee/docs/agentic-graph-strybldr-demo.md')
 
 const assert = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message)
@@ -97,7 +97,7 @@ if (existsSync(demoPath)) {
     `VideoDB API + MCP Recreate ${demoVideoId} Lane`,
     'SenseNova API Text, Image, Video generation feeds VideoDB upload, index, search, stream, and local publish packet workflow',
     'local_animatic_status: "Toolbar Run all and Strybldr Generate Video create a generated, playable, zero-paid-call local animatic from approved cards when live credentials are unavailable"',
-    'provider: "agenticgraph-local-animatic"',
+    'provider: "agentic-graph-local-animatic"',
     'model: "strybldr-local-animatic-v1"',
     'sensenova-api-readiness-card',
     'sensenova-api-contract',

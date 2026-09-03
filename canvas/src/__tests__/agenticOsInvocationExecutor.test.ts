@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../../../mcp/agentic-canvas-os-docs-contract.mjs'
 import { installSourceCatalogFetchMock } from './knowledgeGraphSkillsCommandsLaunch.test'
-import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { executeAgenticOsInvocation } from '@/features/agentic-os/agenticOsInvocationExecutor'
 import { FloatingPanelSkillsCommandsView } from '@/features/toolbar/FloatingPanelSkillsCommandsView'
@@ -17,7 +17,7 @@ import {
 import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import type { AgenticOsCommandInvocationResolution } from '@/features/agentic-os/agenticOsMcpInvocationResolver'
 import type { WebMcpTool, WebMcpToolInput } from '@/features/agent-ready/webMcpRuntimeTypes'
-import { AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agenticgraphStorageSyncContract'
+import { AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForTasks } from '@/tests/lib/reactRootHarness'
 
@@ -27,7 +27,7 @@ const ROUTING_DIGEST = 'c'.repeat(64)
 const COMMAND = '/ingest-url'
 const TOOL = IMPORT_URL_AGENT_READY_MCP_TOOL_NAME
 const IMPORT_URL_INPUT_SCHEMA = buildAgenticGraphAgentReadyToolContracts({
-  defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  defaultWorkspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   includeBrowserOnlyTools: true,
 }).find(contract => contract.webName === IMPORT_URL_AGENT_READY_MCP_TOOL_NAME)?.inputSchema
 
@@ -50,7 +50,7 @@ const buildResolution = ({
   sourceRevision,
   catalogDigest: CATALOG_DIGEST,
   invocation: Object.freeze({
-    schema: 'agenticgraph-knowledge-graph-invocation/v1',
+    schema: 'agentic-graph-knowledge-graph-invocation/v1',
     tool: COMMAND,
     action: COMMAND,
     semantics: Object.freeze([...semantics]),
@@ -128,7 +128,7 @@ const withSourceResolution = async <T>(
 export async function testAgenticGraphWebMcpRegistryIsFrozenAndContractOrdered() {
   const registry = getAgenticGraphWebMcpToolRegistry()
   const expectedOrder = buildAgenticGraphAgentReadyToolContracts({
-    defaultWorkspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+    defaultWorkspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
     includeBrowserOnlyTools: true,
   }).map(contract => contract.webName)
   assert.ok(Object.isFrozen(registry))
@@ -160,7 +160,7 @@ export async function testAgenticGraphWebMcpRegistryIsFrozenAndContractOrdered()
   let originalCalls = 0
   let replacementCalls = 0
   const mutableSource: WebMcpTool = {
-    name: 'agenticgraph.registry.immutable',
+    name: 'agentic-graph.registry.immutable',
     description: 'Immutable execution probe.',
     inputSchema: { type: 'object' },
     execute: async () => {
@@ -169,13 +169,13 @@ export async function testAgenticGraphWebMcpRegistryIsFrozenAndContractOrdered()
     },
   }
   const immutableRegistry = createWebMcpToolRegistry([mutableSource])
-  mutableSource.name = 'agenticgraph.registry.replaced'
+  mutableSource.name = 'agentic-graph.registry.replaced'
   mutableSource.execute = async () => {
     replacementCalls += 1
     return 'replacement'
   }
-  assert.equal(await immutableRegistry.execute('agenticgraph.registry.immutable'), 'original')
-  assert.equal(immutableRegistry.get('agenticgraph.registry.replaced'), null)
+  assert.equal(await immutableRegistry.execute('agentic-graph.registry.immutable'), 'original')
+  assert.equal(immutableRegistry.get('agentic-graph.registry.replaced'), null)
   assert.equal(originalCalls, 1)
   assert.equal(replacementCalls, 0)
 }
@@ -312,8 +312,8 @@ export async function testSkillsCommandsPanelFencesStaleExecutionAndRedactsRecei
       window: dom.window as unknown as Window,
       tasks: 1,
     })
-    const textarea = container.querySelector('[data-agenticgraph-invocation-input="json"]') as HTMLTextAreaElement | null
-    const executeButton = container.querySelector('[data-agenticgraph-invocation-execute="selected"]') as HTMLButtonElement | null
+    const textarea = container.querySelector('[data-agentic-graph-invocation-input="json"]') as HTMLTextAreaElement | null
+    const executeButton = container.querySelector('[data-agentic-graph-invocation-execute="selected"]') as HTMLButtonElement | null
     const valueSetter = Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value')?.set
     assert.ok(textarea)
     assert.ok(executeButton)
@@ -349,13 +349,13 @@ export async function testSkillsCommandsPanelFencesStaleExecutionAndRedactsRecei
     assert.doesNotMatch(container.textContent || '', /old-secret/)
     assert.equal(textarea.value, '{}')
 
-    const currentExecuteButton = container.querySelector('[data-agenticgraph-invocation-execute="selected"]') as HTMLButtonElement | null
+    const currentExecuteButton = container.querySelector('[data-agentic-graph-invocation-execute="selected"]') as HTMLButtonElement | null
     assert.ok(currentExecuteButton)
     await act(async () => {
       currentExecuteButton.click()
       await waitForTasks(1)
     })
-    const confirmButton = container.querySelector('[data-agenticgraph-invocation-confirm="destructive"]') as HTMLButtonElement | null
+    const confirmButton = container.querySelector('[data-agentic-graph-invocation-confirm="destructive"]') as HTMLButtonElement | null
     assert.ok(confirmButton)
     assert.match(container.textContent || '', /Import URL.*Imports remote content/s)
     await act(async () => {
@@ -363,7 +363,7 @@ export async function testSkillsCommandsPanelFencesStaleExecutionAndRedactsRecei
       await waitForTasks(1)
     })
     assert.deepEqual(confirmationChallenges, [undefined, undefined, destructiveChallenge])
-    const receipt = container.querySelector('[data-agenticgraph-invocation-receipt="sanitized"]')?.textContent || ''
+    const receipt = container.querySelector('[data-agentic-graph-invocation-receipt="sanitized"]')?.textContent || ''
     assert.match(receipt, /visible-receipt/)
     assert.match(receipt, /\[redacted\]/)
     assert.doesNotMatch(receipt, /new-secret/)
@@ -447,7 +447,7 @@ export async function testAgenticOsInvocationRejectsAmbiguousToolOwnership() {
       },
     })
     const outcome = await executeAgenticOsInvocation({
-      resolution: buildResolution({ declaredTools: [TOOL, 'agenticgraph.runtime.other'] }),
+      resolution: buildResolution({ declaredTools: [TOOL, 'agentic-graph.runtime.other'] }),
       registry,
     })
     assert.equal(outcome.status, 'blocked')
@@ -496,8 +496,8 @@ export async function testAgenticOsInvocationUsesCaseSensitiveRegistryIdentity()
     })
     const outcome = await executeAgenticOsInvocation({
       resolution: buildResolution({
-        tool: 'agenticgraph.Import.url',
-        declaredTools: ['agenticgraph.Import.url'],
+        tool: 'agentic-graph.Import.url',
+        declaredTools: ['agentic-graph.Import.url'],
       }),
       registry,
     })

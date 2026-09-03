@@ -1,10 +1,10 @@
 import { readEnvString } from '@/lib/config.env'
 import {
-  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_API_VERSION,
   buildAgenticGraphCollaborationSavePath,
   type AgenticGraphCollaborationSaveRequest,
   type AgenticGraphCollaborationSaveResponse,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   applySourceTextToCollaborationYDoc,
   applyYjsUpdateBase64,
@@ -23,11 +23,11 @@ import {
   enqueueAgenticGraphCollaborationUpdate,
   listAgenticGraphCollaborationUpdates,
   markAgenticGraphCollaborationUpdateAttempt,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 import type { IndexedCollaborationUpdateRecord } from '@/lib/storage/indexedDbCollectionStore'
 import {
   requireAgenticGraphCollaborationSaveSessionToken,
-} from '@/lib/storage/agenticgraphStorageChatClient'
+} from '@/lib/storage/agentic-graph-storage-chat-client'
 
 type PocketBaseRecord = Record<string, unknown> & { id?: string }
 
@@ -117,11 +117,11 @@ const COLLECTIONS = {
   awareness: 'collab_awareness',
 } as const
 
-const LOCAL_ORIGIN = 'agenticgraph:pocketbase-yjs:local'
-const REMOTE_ORIGIN = 'agenticgraph:pocketbase-yjs:remote'
-const SNAPSHOT_ORIGIN = 'agenticgraph:pocketbase-yjs:snapshot'
+const LOCAL_ORIGIN = 'agentic-graph:pocketbase-yjs:local'
+const REMOTE_ORIGIN = 'agentic-graph:pocketbase-yjs:remote'
+const SNAPSHOT_ORIGIN = 'agentic-graph:pocketbase-yjs:snapshot'
 const AWARENESS_HEARTBEAT_MS = 30_000
-export const AGENTICGRAPH_COLLABORATION_AWARENESS_STALE_MS = 2 * 60_000
+export const AGENTIC_OS_COLLABORATION_AWARENESS_STALE_MS = 2 * 60_000
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
@@ -132,15 +132,15 @@ const readEnvBoolean = (name: string, fallback: boolean): boolean => {
 }
 
 export const readAgenticGraphCollaborationConfig = (): AgenticGraphCollaborationConfig => {
-  const pocketBaseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_COLLAB_POCKETBASE_URL', ''))
-  const storageBaseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
-  const explicitSaveBridgeUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_COLLAB_SAVE_BRIDGE_URL', ''))
+  const pocketBaseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_COLLAB_POCKETBASE_URL', ''))
+  const storageBaseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', ''))
+  const explicitSaveBridgeUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_COLLAB_SAVE_BRIDGE_URL', ''))
   const saveBridgeUrl = explicitSaveBridgeUrl || buildAbsoluteSaveBridgeUrl({
     storageBaseUrl,
     explicitUrl: '',
   })
   return {
-    enabled: readEnvBoolean('VITE_AGENTICGRAPH_COLLAB_ENABLED', !!pocketBaseUrl),
+    enabled: readEnvBoolean('VITE_AGENTIC_OS_COLLAB_ENABLED', !!pocketBaseUrl),
     pocketBaseUrl,
     saveBridgeUrl,
   }
@@ -165,7 +165,7 @@ const readRecordNumber = (record: PocketBaseRecord | null | undefined, key: stri
 const nowMs = (): number => Date.now()
 
 const isFreshAwarenessPeer = (lastSeenAtMs: number, currentMs: number): boolean =>
-  lastSeenAtMs > 0 && currentMs - lastSeenAtMs <= AGENTICGRAPH_COLLABORATION_AWARENESS_STALE_MS
+  lastSeenAtMs > 0 && currentMs - lastSeenAtMs <= AGENTIC_OS_COLLABORATION_AWARENESS_STALE_MS
 
 const loadPocketBaseClient = async (url: string): Promise<PocketBaseLike> => {
   const mod = await import('pocketbase')
@@ -478,7 +478,7 @@ export const createPocketBaseYjsSourceFileRoom = async (
         updatedAtMs: nowMs(),
       })
       const request: AgenticGraphCollaborationSaveRequest = {
-        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
         operation: 'upsert',
         workspaceId,
         documentKey,

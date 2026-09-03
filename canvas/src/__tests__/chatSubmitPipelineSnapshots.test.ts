@@ -251,7 +251,7 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesRetr
       throw new Error(`Expected coordinator helper to mark connectivity ok after retry recovery, got ${JSON.stringify({ connectivity, connectivityDetail })}`)
     }
     if (!followedPaths.includes('/workspace/chat/20260522T193000Z/kgc_20260522T193000Z.md')) {
-      throw new Error(`Expected retry recovery finalize flow to follow the canonical AgenticGraph workspace path, got ${JSON.stringify(followedPaths)}`)
+      throw new Error(`Expected retry recovery finalize flow to follow the canonical agentic-graph workspace path, got ${JSON.stringify(followedPaths)}`)
     }
     if (
       !String(graphState.markdownDocumentName || '').endsWith('kgc_20260522T193000Z.md') ||

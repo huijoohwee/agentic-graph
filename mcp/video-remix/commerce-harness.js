@@ -1,9 +1,9 @@
 // Commerce_Harness for the video-remix Director runtime
-// (agenticgraph-acos-mcp-connector spec, task 3.14 / R9.1-R9.4 / Property 17,
+// (agentic-graph-acos-mcp-connector spec, task 3.14 / R9.1-R9.4 / Property 17,
 // Property 1 — the publish + gated-checkout side).
 //
 // Responsibility (single): implement the two Commerce_Harness stage operations
-// `agenticgraph.video_remix.publish` and `agenticgraph.video_remix.checkout`. Publish
+// `agentic-graph.video_remix.publish` and `agentic-graph.video_remix.checkout`. Publish
 // turns rendered asset references into resolvable published URLs; checkout
 // creates a gated Stripe checkout session and settles the payout. The harness
 // wires the checkout/payout contract onto the reused payment-worker assets
@@ -131,7 +131,7 @@ export function validateCheckoutInput(args = {}) {
 }
 
 /**
- * Run the publish stage operation (`agenticgraph.video_remix.publish`).
+ * Run the publish stage operation (`agentic-graph.video_remix.publish`).
  * Contract: `{ assets[] } -> { publishedUrls[] }`. Deterministic and
  * network-free locally; an injected publish client (9.2) may publish for real.
  *
@@ -222,7 +222,7 @@ function buildOperationFailure(reason, operation, extra = {}) {
 }
 
 /**
- * Run the checkout stage operation (`agenticgraph.video_remix.checkout`).
+ * Run the checkout stage operation (`agentic-graph.video_remix.checkout`).
  * Contract: `{ assetUrl, priceId, paymentGateToken } -> { sessionId }`.
  *
  * Money moves IFF the `payment-action` Approval_Gate is approved

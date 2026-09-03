@@ -184,13 +184,13 @@ def run_flight_runtime_verifications(
         runtime_identity = page.evaluate(
             """
             async () => {
-              const identity = await window.__kgFlightSimBrowserProof.importModule('agenticgraphRuntimeIdentity')
+              const identity = await window.__kgFlightSimBrowserProof.importModule('agentic-graph-runtime-identity')
               return identity.getAgenticGraphRuntimeIdentity()
             }
             """
         )
         if (
-            runtime_identity.get("agenticgraphRevision") != expected_head
+            runtime_identity.get("agenticGraphRevision") != expected_head
             or runtime_identity.get("branch") != expected_branch
         ):
             raise AssertionError(

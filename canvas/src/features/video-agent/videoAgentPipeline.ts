@@ -21,7 +21,7 @@ import {
 import { buildVideoAgentSourcePlaybackUrl } from './videoAgentSourcePlayback'
 
 export type { VideoAgentFrameBoundingBox, VideoAgentFrameDetection } from './videoAgentFrameBoxes'
-export const VIDEO_AGENT_SCHEMA_VERSION = 'agenticgraph-video-agent/v1' as const
+export const VIDEO_AGENT_SCHEMA_VERSION = 'agentic-graph-video-agent/v1' as const
 export const VIDEO_AGENT_CAPABILITIES = Object.freeze({
   ingest: 'ingest',
   parse: 'parse',
@@ -46,7 +46,7 @@ export const VIDEO_AGENT_RICH_MEDIA_PANEL_ROUTES = [
 
 export const VIDEO_AGENT_REFERENCE_BOUNDARY = Object.freeze({
   kind: 'inspiration-only',
-  implementation: 'native-agenticgraph',
+  implementation: 'native-agentic-graph',
   copyPolicy: 'no-external-code-copy',
   dependencyPolicy: 'no-external-video-agent-runtime',
   runtimeDependency: false,
@@ -389,7 +389,7 @@ const buildVideoAgentHtml = (args: {
     })
     .join('')
 
-  return `<main data-composition-id="agenticgraph-video-agent-runtime" data-kg-rich-media-panel-size="viewport" data-start="0" data-duration="${escapeHtml((args.durationMs / 1000).toFixed(3))}" aria-label="AgenticGraph video agent render"><header class="hero"><section><p class="eyebrow">AgenticGraph video agent</p><h1>Reason through video, then stream the result</h1><p class="lede">${escapeHtml(args.intent)}</p></section><p class="chip">${escapeHtml(args.sourceUrl)}</p></header><section class="stage" aria-label="Video agent orchestration"><article class="source" data-start="0.000" data-duration="2.000" data-track-index="0"><header class="bar"><span class="dot" aria-hidden="true"></span><span class="url">${escapeHtml(args.sourceUrl)}</span><span class="badge">ingested</span></header><section class="video-card"><h2>Annotate, count, then stream</h2><p>The pipeline records source metadata, annotation targets, reasoning stages, timeline decisions, dataset operations, zone counts, transcript windows, and stream-ready artifact routes as typed data. Source playback and frame analysis are isolated into route-owned Rich Media panels.</p><ol class="tasks">${capabilityItems}</ol><ol class="frame-strip" aria-label="Granular frame-by-frame dataset strip">${frameStripItems}</ol></section></article><article class="reasoning" data-start="1.200" data-duration="4.800" data-track-index="1"><header><p class="eyebrow">Agent plan</p><h2>Native orchestration without external runtime dependency</h2></header><ol class="agents">${stageItems}</ol><section class="dataset-ops" aria-label="Visual dataset operations"><h3>Dataset operations</h3><ol>${datasetOperationItems}</ol></section><section class="zone-counts" aria-label="Real-time zone counts"><h3>Frame zone counts</h3><ol>${zoneFrameItems}</ol></section></article></section><section class="trace" aria-label="Video agent reasoning trace">${traceItems}</section><section class="rich-panels" aria-label="Rich Media panel routes">${richMediaPanelItems}</section><footer class="timeline" aria-label="Video agent timeline"><section class="rail" aria-label="Instant stream progress"></section><ol class="ticks">${tickItems}</ol><section class="stream" aria-label="Stream output contract"><strong>Instant stream</strong><p>Rich Media Panels receive stream output, source playback, frame analysis, transcript alignment, and annotation dataset payloads through separate route-owned surfaces.</p></section></footer></main>`
+  return `<main data-composition-id="agentic-graph-video-agent-runtime" data-kg-rich-media-panel-size="viewport" data-start="0" data-duration="${escapeHtml((args.durationMs / 1000).toFixed(3))}" aria-label="agentic-graph video agent render"><header class="hero"><section><p class="eyebrow">agentic-graph video agent</p><h1>Reason through video, then stream the result</h1><p class="lede">${escapeHtml(args.intent)}</p></section><p class="chip">${escapeHtml(args.sourceUrl)}</p></header><section class="stage" aria-label="Video agent orchestration"><article class="source" data-start="0.000" data-duration="2.000" data-track-index="0"><header class="bar"><span class="dot" aria-hidden="true"></span><span class="url">${escapeHtml(args.sourceUrl)}</span><span class="badge">ingested</span></header><section class="video-card"><h2>Annotate, count, then stream</h2><p>The pipeline records source metadata, annotation targets, reasoning stages, timeline decisions, dataset operations, zone counts, transcript windows, and stream-ready artifact routes as typed data. Source playback and frame analysis are isolated into route-owned Rich Media panels.</p><ol class="tasks">${capabilityItems}</ol><ol class="frame-strip" aria-label="Granular frame-by-frame dataset strip">${frameStripItems}</ol></section></article><article class="reasoning" data-start="1.200" data-duration="4.800" data-track-index="1"><header><p class="eyebrow">Agent plan</p><h2>Native orchestration without external runtime dependency</h2></header><ol class="agents">${stageItems}</ol><section class="dataset-ops" aria-label="Visual dataset operations"><h3>Dataset operations</h3><ol>${datasetOperationItems}</ol></section><section class="zone-counts" aria-label="Real-time zone counts"><h3>Frame zone counts</h3><ol>${zoneFrameItems}</ol></section></article></section><section class="trace" aria-label="Video agent reasoning trace">${traceItems}</section><section class="rich-panels" aria-label="Rich Media panel routes">${richMediaPanelItems}</section><footer class="timeline" aria-label="Video agent timeline"><section class="rail" aria-label="Instant stream progress"></section><ol class="ticks">${tickItems}</ol><section class="stream" aria-label="Stream output contract"><strong>Instant stream</strong><p>Rich Media Panels receive stream output, source playback, frame analysis, transcript alignment, and annotation dataset payloads through separate route-owned surfaces.</p></section></footer></main>`
 }
 
 export function buildVideoAgentPipeline(input: VideoAgentPipelineInput): VideoAgentPipelineResult {
@@ -455,7 +455,7 @@ export function buildVideoAgentPipeline(input: VideoAgentPipelineInput): VideoAg
   })
   const richMediaPanels = VIDEO_AGENT_RICH_MEDIA_PANEL_ROUTES.map(route => ({
     route,
-    timelineSync: 'agenticgraph:render-frame',
+    timelineSync: 'agentic-graph:render-frame',
     role: route.endsWith(':stream')
       ? 'stream-output'
       : route.endsWith(':source-playback')
@@ -496,9 +496,9 @@ export function buildVideoAgentPipeline(input: VideoAgentPipelineInput): VideoAg
     frameByFrameSamples,
     richMediaPanels,
     visualAnnotationE2E: {
-      schemaVersion: 'agenticgraph-video-agent-visual-annotation-e2e/v1',
+      schemaVersion: 'agentic-graph-video-agent-visual-annotation-e2e/v1',
       source: 'frameBoundingBoxes',
-      implementation: 'native-agenticgraph',
+      implementation: 'native-agentic-graph',
       runtimeDependency: false,
       steps: [
         { id: 'load', owner: 'loadVisualAnnotationDataset', output: 'visualDataset' },

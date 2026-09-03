@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 import {
   evolveProbeTree,
   generateProbeOptions,
@@ -14,7 +14,7 @@ import {
 import { buildProbeModelPrompt } from "../probe-tree-model-adapter.js";
 
 async function tempRoot() {
-  return fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-probe-tree-"));
+  return fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-probe-tree-"));
 }
 
 test("probe.generate recalls scoped exemplars and does not mutate the markdown graph store", async () => {
@@ -24,12 +24,12 @@ test("probe.generate recalls scoped exemplars and does not mutate the markdown g
   await fs.writeFile(path.join(storeDir, "sentinel.txt"), "before", "utf8");
   await fs.mkdir(path.join(rootDir, "data/memory-layer"), { recursive: true });
   await fs.writeFile(path.join(rootDir, "data/memory-layer/local-memory-store.json"), JSON.stringify({
-    version: "agenticgraph-memory-store/v0.1",
+    version: "agentic-graph-memory-store/v0.1",
     updated_at: "2026-07-07T00:00:00.000Z",
     memories: [{
       id: "mem-1",
       memory: "Probe exemplar for onboarding: What information is still missing?",
-      scope: { app_id: "agenticgraph-probe-tree" },
+      scope: { app_id: "agentic-graph-probe-tree" },
       categories: ["probe-tree"],
       metadata: { recommended_question: "What information is still missing?" },
       created_at: "2026-07-07T00:00:00.000Z",
@@ -63,12 +63,12 @@ test("probe.generate honors explicit zero recall against a seeded memory store",
   const rootDir = await tempRoot();
   await fs.mkdir(path.join(rootDir, "data/memory-layer"), { recursive: true });
   await fs.writeFile(path.join(rootDir, "data/memory-layer/local-memory-store.json"), JSON.stringify({
-    version: "agenticgraph-memory-store/v0.1",
+    version: "agentic-graph-memory-store/v0.1",
     updated_at: "2026-07-07T00:00:00.000Z",
     memories: [{
       id: "mem-1",
       memory: "Probe exemplar for procurement: Which legal approver signs off the exception?",
-      scope: { app_id: "agenticgraph-probe-tree" },
+      scope: { app_id: "agentic-graph-probe-tree" },
       categories: ["probe-tree"],
       metadata: { recommended_question: "Which legal approver signs off the exception?" },
       created_at: "2026-07-07T00:00:00.000Z",
@@ -93,7 +93,7 @@ test("probe.generate honors explicit zero recall against a seeded memory store",
 
 test("probe.generate refuses generic wrappers when no model is configured", async () => {
   const rootDir = await tempRoot();
-  const contextText = "/agenticgraph.probe-tree invest in China, India, SE Asia?";
+  const contextText = "/agentic-graph.probe-tree invest in China, India, SE Asia?";
   const result = await generateProbeOptions({
     thread_root_id: "investment-comparison",
     current_node_id: "root",
@@ -112,7 +112,7 @@ test("probe.generate refuses generic wrappers when no model is configured", asyn
 
 test("probe.generate does not echo literal authored alternatives without a model", async () => {
   const rootDir = await tempRoot();
-  const contextText = "/agenticgraph.probe-tree recommend invest in India, China, or SE Asia";
+  const contextText = "/agentic-graph.probe-tree recommend invest in India, China, or SE Asia";
   const result = await generateProbeOptions({
     thread_root_id: "investment-comparison",
     current_node_id: "root",
@@ -157,12 +157,12 @@ test("probe.generate enforces token budget before local model invocation", async
   const rootDir = await tempRoot();
   await fs.mkdir(path.join(rootDir, "data/memory-layer"), { recursive: true });
   await fs.writeFile(path.join(rootDir, "data/memory-layer/local-memory-store.json"), JSON.stringify({
-    version: "agenticgraph-memory-store/v0.1",
+    version: "agentic-graph-memory-store/v0.1",
     updated_at: "2026-07-07T00:00:00.000Z",
     memories: [{
       id: "mem-1",
       memory: "Probe exemplar ".repeat(200),
-      scope: { app_id: "agenticgraph-probe-tree" },
+      scope: { app_id: "agentic-graph-probe-tree" },
       categories: ["probe-tree"],
       metadata: { recommended_question: "What information is still missing?" },
       created_at: "2026-07-07T00:00:00.000Z",
@@ -179,7 +179,7 @@ test("probe.generate enforces token budget before local model invocation", async
     token_budget: 10,
   }, {
     rootDir,
-    env: { AGENTICGRAPH_PROBE_TREE_MODEL: "qwen-local" },
+    env: { AGENTIC_OS_PROBE_TREE_MODEL: "qwen-local" },
     fetchImpl: async () => {
       called = true;
       throw new Error("unexpected model call");
@@ -245,8 +245,8 @@ test("probe.generate uses host-owned Ollama adapter when configured and keeps co
   }, {
     rootDir,
     env: {
-      AGENTICGRAPH_PROBE_TREE_MODEL: "qwen-local",
-      AGENTICGRAPH_PROBE_TREE_MODEL_URL: "http://127.0.0.1:11434",
+      AGENTIC_OS_PROBE_TREE_MODEL: "qwen-local",
+      AGENTIC_OS_PROBE_TREE_MODEL_URL: "http://127.0.0.1:11434",
     },
     fetchImpl,
   });
@@ -363,8 +363,8 @@ test("probe-tree clean-room smoke completes generate-select-evolve with observab
   }, {
     rootDir,
     env: {
-      AGENTICGRAPH_PROBE_TREE_MODEL: "qwen-local",
-      AGENTICGRAPH_PROBE_TREE_MODEL_URL: "http://127.0.0.1:11434",
+      AGENTIC_OS_PROBE_TREE_MODEL: "qwen-local",
+      AGENTIC_OS_PROBE_TREE_MODEL_URL: "http://127.0.0.1:11434",
     },
     fetchImpl: async () => ({
       ok: true,
@@ -449,12 +449,12 @@ test("local MCP descriptors expose the probe-tree tools with mutation annotation
   const tools = buildAgenticGraphLocalMcpToolDefinitions();
   const byName = new Map(tools.map((tool) => [tool.name, tool]));
 
-  assert.equal(byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.probeGenerate).annotations.readOnlyHint, true);
-  assert.equal(byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.probeSelect).annotations.idempotentHint, false);
-  assert.equal(byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.probeEvolve).annotations.idempotentHint, false);
-  assert.equal(byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.probeGenerate).inputSchema.properties.k.minimum, 2);
-  assert.ok(byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.probeGenerate).outputSchema.required.includes("response"));
-  assert.ok(byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.probeSelect).outputSchema.required.includes("cost_log"));
-  assert.ok(byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.probeEvolve).outputSchema.required.includes("cost_log"));
-  assert.equal(byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.probeEvolve).inputSchema.required[0], "thread_root_id");
+  assert.equal(byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.probeGenerate).annotations.readOnlyHint, true);
+  assert.equal(byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.probeSelect).annotations.idempotentHint, false);
+  assert.equal(byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.probeEvolve).annotations.idempotentHint, false);
+  assert.equal(byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.probeGenerate).inputSchema.properties.k.minimum, 2);
+  assert.ok(byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.probeGenerate).outputSchema.required.includes("response"));
+  assert.ok(byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.probeSelect).outputSchema.required.includes("cost_log"));
+  assert.ok(byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.probeEvolve).outputSchema.required.includes("cost_log"));
+  assert.equal(byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.probeEvolve).inputSchema.required[0], "thread_root_id");
 });

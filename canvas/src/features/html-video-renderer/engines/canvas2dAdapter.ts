@@ -53,7 +53,7 @@ ${buildFrameStyle(spec, timeMs)}
 <main aria-label="HTML video frame raster host" data-kg-html-video-frame-host="1" data-kg-render-time-ms="${timeMs}" data-kg-render-time-s="${timeMs / 1000}">
 ${spec.html}
 </main>
-<script type="application/json" id="agenticgraph-html-video-data">${escapeJsonForScript(spec.data ?? {})}</script>
+<script type="application/json" id="agentic-graph-html-video-data">${escapeJsonForScript(spec.data ?? {})}</script>
 </body>
 </html>`
 

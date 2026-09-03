@@ -75,7 +75,7 @@ const normalizeFsPath = (value: string): string => String(value || '').replace(/
 const AG_GITHUB_ROOT = normalizeFsPath(path.resolve(process.cwd(), '..', '..'))
 const AG_HUIJOOHWEE_DOCS_ROOT = `${AG_GITHUB_ROOT}/huijoohwee/docs`
 const AG_HUIJOOHWEE_CHAT_LOG_ROOT = `${AG_GITHUB_ROOT}/huijoohwee/chat-log`
-const AG_AGENTICGRAPH_DOCS_ROOT = `${AG_GITHUB_ROOT}/agenticgraph/docs`
+const AG_AGENTIC_OS_DOCS_ROOT = `${AG_GITHUB_ROOT}/agentic-graph/docs`
 const AG_HUIJOOHWEE_DOCS_FS_PREFIX = `/@fs${AG_HUIJOOHWEE_DOCS_ROOT}`
 const MIRROR_REPAIR_FIXTURE_BASENAME = 'mirror-active-validation.md'
 const MIRROR_REPAIR_FIXTURE_PATH = `/docs/${MIRROR_REPAIR_FIXTURE_BASENAME}`
@@ -143,7 +143,7 @@ export async function testWorkspaceEnsureSeedKeepsUserDeletedDefaultSeedEntryRem
           path: GEOSPATIAL_WORKSPACE_SEED_PATH,
           parentPath: '/',
           kind: 'file',
-          name: 'agenticgraph-maps-grabmap-multim-demo.md',
+          name: 'agentic-graph-maps-grabmap-multim-demo.md',
           text: [
             '---',
             'kgCanvasSurfaceMode: "geospatial"',
@@ -231,9 +231,9 @@ export function testWorkspaceStartupActivePathForcesValidationSeedWhenCustomTarg
       WORKSPACE_README_SEED_PATH,
       TEST_VALIDATION_WORKSPACE_SEED_PATH,
       GEOSPATIAL_WORKSPACE_SEED_PATH,
-      '/notes/agenticgraph-pitchdeck.md',
+      '/notes/agentic-graph-pitchdeck.md',
     ],
-    activePath: '/notes/agenticgraph-pitchdeck.md' as never,
+    activePath: '/notes/agentic-graph-pitchdeck.md' as never,
     preferDefaultStarter: true,
     forceValidationSeedIfPresent: true,
   })
@@ -306,24 +306,24 @@ export function testWorkspaceExplorerSortKeepsFoldersFirstForCustomWorkspaceEntr
 export function testCanvasEnvBridgeReadsImportMetaStyleRecordFirst() {
   const next = readEnvStringFromRecord(
     {
-      VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH: 'huijoohwee.github.io/template/agenticgraph-video-script-template.md',
+      VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH: 'huijoohwee.github.io/template/agentic-graph-video-script-template.md',
     },
     'VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH',
   )
-  if (next !== 'huijoohwee.github.io/template/agenticgraph-video-script-template.md') {
+  if (next !== 'huijoohwee.github.io/template/agentic-graph-video-script-template.md') {
     throw new Error(`expected import-meta style env record to win, got ${String(next)}`)
   }
 }
 
 export function testCanvasEnvBridgeFallsBackToProcessEnvOutsideBrowser() {
   const prev = process.env.VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH
-  process.env.VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH = 'huijoohwee.github.io/template/agenticgraph-video-script-template.md'
+  process.env.VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH = 'huijoohwee.github.io/template/agentic-graph-video-script-template.md'
   try {
     const next = readEnvString(
       'VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH',
       'docs/default-validation.md',
     )
-    if (next !== 'huijoohwee.github.io/template/agenticgraph-video-script-template.md') {
+    if (next !== 'huijoohwee.github.io/template/agentic-graph-video-script-template.md') {
       throw new Error(`expected process env fallback to resolve custom validation target, got ${String(next)}`)
     }
   } finally {
@@ -333,16 +333,16 @@ export function testCanvasEnvBridgeFallsBackToProcessEnvOutsideBrowser() {
 }
 
 export function testCanvasEnvBridgeReadsAgenticGraphStorageBaseUrlFromProcessEnv() {
-  const prev = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'http://127.0.0.1:8787'
+  const prev = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'http://127.0.0.1:8787'
   try {
-    const next = readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '')
+    const next = readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', '')
     if (next !== 'http://127.0.0.1:8787') {
       throw new Error(`expected storage base url to be readable through canvas env bridge, got ${String(next)}`)
     }
   } finally {
-    if (typeof prev === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = prev
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof prev === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = prev
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   }
 }
 
@@ -354,13 +354,13 @@ export async function testWorkspaceBootstrapMaterializesActiveWorkspaceEntryInto
       initialEntries: [
         { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
         {
-          path: '/huijoohwee.github.io/template/agenticgraph-video-script-template.md',
+          path: '/huijoohwee.github.io/template/agentic-graph-video-script-template.md',
           parentPath: '/huijoohwee.github.io/template',
           kind: 'file',
-          name: 'agenticgraph-video-script-template.md',
+          name: 'agentic-graph-video-script-template.md',
           text: [
             '---',
-            'title: "AgenticGraph · Video Script Template"',
+            'title: "agentic-graph · Video Script Template"',
             'kgCanvasRenderMode: "2d"',
             'kgCanvas2dRenderer: "storyboard"',
             'kgDocumentSemanticMode: "document"',
@@ -389,7 +389,7 @@ export async function testWorkspaceBootstrapMaterializesActiveWorkspaceEntryInto
       ],
     })
     await materializeActiveWorkspaceEntryIntoSourceFiles({
-      activePathOverride: '/huijoohwee.github.io/template/agenticgraph-video-script-template.md' as never,
+      activePathOverride: '/huijoohwee.github.io/template/agentic-graph-video-script-template.md' as never,
       fs,
       applyToGraph: true,
     })
@@ -397,7 +397,7 @@ export async function testWorkspaceBootstrapMaterializesActiveWorkspaceEntryInto
 
     const state = useGraphStore.getState()
     const sourceFile = state.sourceFiles.find(
-      file => file.source?.path === 'workspace:/huijoohwee.github.io/template/agenticgraph-video-script-template.md',
+      file => file.source?.path === 'workspace:/huijoohwee.github.io/template/agentic-graph-video-script-template.md',
     )
     if (!sourceFile) {
       throw new Error('expected bootstrap materialization to mirror the active workspace file into Source Files')
@@ -885,20 +885,20 @@ export async function testWorkspaceSeedProviderPrefersConfiguredAbsoluteDocsRoot
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     calls.push(url)
-    if (url.includes(`${AG_HUIJOOHWEE_DOCS_FS_PREFIX}/agenticgraph-video-demo.md`)) {
+    if (url.includes(`${AG_HUIJOOHWEE_DOCS_FS_PREFIX}/agentic-graph-video-demo.md`)) {
       return new Response('# absolute docs seed', { status: 200 })
     }
     return new Response('', { status: 404 })
   }) as typeof fetch
   try {
     const text = await readWorkspaceInitializationSeedText({
-      basename: 'agenticgraph-video-demo.md',
-      relPathCandidates: ['docs/agenticgraph-video-demo.md'],
+      basename: 'agentic-graph-video-demo.md',
+      relPathCandidates: ['docs/agentic-graph-video-demo.md'],
     })
     if (text !== '# absolute docs seed') {
       throw new Error(`expected absolute docs seed provider path to win, got ${String(text || '')}`)
     }
-    if (!calls.some(url => url.includes(`${AG_HUIJOOHWEE_DOCS_FS_PREFIX}/agenticgraph-video-demo.md`))) {
+    if (!calls.some(url => url.includes(`${AG_HUIJOOHWEE_DOCS_FS_PREFIX}/agentic-graph-video-demo.md`))) {
       throw new Error('expected workspace seed provider to probe configured absolute docs root through Vite /@fs')
     }
   } finally {
@@ -914,39 +914,39 @@ export async function testWorkspaceSeedProviderPrefersConfiguredAbsoluteDocsRoot
 
 export async function testWorkspaceSeedProviderUsesDeclaredReadRootWithoutDocsFallback() {
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousReadRoot = process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT
-  const seedReadRoot = `${AG_GITHUB_ROOT}/active-agenticgraph/docs/workspace-seeds`
+  const previousReadRoot = process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT
+  const seedReadRoot = `${AG_GITHUB_ROOT}/active-agentic-graph/docs/workspace-seeds`
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
-  process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT = seedReadRoot
+  process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT = seedReadRoot
   const previousFetch = globalThis.fetch
   const calls: string[] = []
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     calls.push(url)
-    if (url.includes(`/@fs${seedReadRoot}/agenticgraph-video-demo.md`)) {
+    if (url.includes(`/@fs${seedReadRoot}/agentic-graph-video-demo.md`)) {
       return new Response('# active repository seed', { status: 200 })
     }
     return new Response('', { status: 404 })
   }) as typeof fetch
   try {
     const text = await readWorkspaceInitializationSeedText({
-      basename: 'agenticgraph-video-demo.md',
-      relPathCandidates: ['docs/workspace-seeds/agenticgraph-video-demo.md', 'docs/agenticgraph-video-demo.md'],
+      basename: 'agentic-graph-video-demo.md',
+      relPathCandidates: ['docs/workspace-seeds/agentic-graph-video-demo.md', 'docs/agentic-graph-video-demo.md'],
     })
     if (text !== '# active repository seed') {
       throw new Error(`expected the declared active-repository seed to resolve, got ${String(text || '')}`)
     }
-    if (!calls.some(url => url.includes(`/@fs${seedReadRoot}/agenticgraph-video-demo.md`))) {
+    if (!calls.some(url => url.includes(`/@fs${seedReadRoot}/agentic-graph-video-demo.md`))) {
       throw new Error('expected workspace seed provider to probe only the declared read root')
     }
     if (calls.some(url => url.includes(AG_HUIJOOHWEE_DOCS_ROOT))) {
-      throw new Error(`expected collaborative docs never to redirect AgenticGraph seed reads, got ${JSON.stringify(calls)}`)
+      throw new Error(`expected collaborative docs never to redirect agentic-graph seed reads, got ${JSON.stringify(calls)}`)
     }
   } finally {
     if (typeof previousAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousReadRoot === 'string') process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT = previousReadRoot
-    else delete process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT
+    if (typeof previousReadRoot === 'string') process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT = previousReadRoot
+    else delete process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT
     if (previousFetch) {
       ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
     } else {
@@ -980,7 +980,7 @@ export async function testWorkspaceSeedProviderBrowserUpsertWritesViaKgFsProxy()
   }) as typeof fetch
   try {
     const ok = await upsertWorkspaceInitializationSeedText({
-      basename: 'agenticgraph-video-demo.md',
+      basename: 'agentic-graph-video-demo.md',
       text: '# mirrored seed',
     })
     if (!ok) {
@@ -990,7 +990,7 @@ export async function testWorkspaceSeedProviderBrowserUpsertWritesViaKgFsProxy()
     if (!writeCall) {
       throw new Error('expected workspace seed provider to call /__kg_fs_write in browser mode')
     }
-    if (!writeCall.body.includes(`${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md`)) {
+    if (!writeCall.body.includes(`${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md`)) {
       throw new Error('expected workspace seed provider write payload to target configured docs absolute path')
     }
   } finally {
@@ -1224,7 +1224,7 @@ export async function testWorkspaceSeedProviderReadsDocsMirrorFromSelectedLocalF
     getFile: async () => new File([text], name, { lastModified }),
   })
   const workspaceSeedsDir = makeDirectoryEntry('workspace-seeds', {
-    'agenticgraph-video-demo.md': makeFileEntry('agenticgraph-video-demo.md', '# seed from selected folder handle', 1710000000000),
+    'agentic-graph-video-demo.md': makeFileEntry('agentic-graph-video-demo.md', '# seed from selected folder handle', 1710000000000),
     'ignore.txt': makeFileEntry('ignore.txt', 'ignore me', 1710000000000),
   })
   const docsDir = makeDirectoryEntry('docs', {
@@ -1238,7 +1238,7 @@ export async function testWorkspaceSeedProviderReadsDocsMirrorFromSelectedLocalF
     store.setLocalMarkdownFolderHandle(rootDir as unknown as FileSystemDirectoryHandle, { accessMode: 'fs-access', name: 'root' })
     store.setLocalMarkdownSelectedFolderPath('docs/workspace-seeds')
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries()
-    const target = mirrored.find(entry => entry.relPath === 'agenticgraph-video-demo.md') || null
+    const target = mirrored.find(entry => entry.relPath === 'agentic-graph-video-demo.md') || null
     if (!target || !String(target.text || '').includes('seed from selected folder handle')) {
       throw new Error(`expected docs mirror to read markdown from selected local folder handle, got ${JSON.stringify(mirrored)}`)
     }
@@ -1253,7 +1253,7 @@ export async function testWorkspaceSeedProviderReadsDocsMirrorFromSelectedLocalF
 }
 
 export async function testWorkspaceSeedProviderPrefersSelectedLocalFolderHandleOverStorageExportInFullBootstrap() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousFetch = globalThis.fetch
   const { restore } = initJsdomHarness()
@@ -1295,7 +1295,7 @@ export async function testWorkspaceSeedProviderPrefersSelectedLocalFolderHandleO
   const docsDir = makeDirectoryEntry('docs', {
     'workspace-readme.md': makeFileEntry('workspace-readme.md', '# local handle workspace readme', 1710000008000),
   })
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
@@ -1325,8 +1325,8 @@ export async function testWorkspaceSeedProviderPrefersSelectedLocalFolderHandleO
         {
           id: 'sf:video',
           workspaceId: 'kgws:test',
-          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md`,
-          title: 'agenticgraph-video-demo.md',
+          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md`,
+          title: 'agentic-graph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -1365,8 +1365,8 @@ export async function testWorkspaceSeedProviderPrefersSelectedLocalFolderHandleO
     store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
     restore()
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   }
@@ -1442,11 +1442,11 @@ export async function testWorkspaceSeedProviderReadsDocsMirrorFromSourceFilesSta
     store.setSourceFiles([
       {
         id: 'sf-remote-video',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '# remote source files state',
         enabled: true,
         status: 'idle',
-        source: { kind: 'local', path: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md` },
+        source: { kind: 'local', path: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md` },
       },
       {
         id: 'sf-outside-root',
@@ -1454,11 +1454,11 @@ export async function testWorkspaceSeedProviderReadsDocsMirrorFromSourceFilesSta
         text: '# outside root should be ignored',
         enabled: true,
         status: 'idle',
-        source: { kind: 'local', path: `${AG_AGENTICGRAPH_DOCS_ROOT}/outside.md` },
+        source: { kind: 'local', path: `${AG_AGENTIC_OS_DOCS_ROOT}/outside.md` },
       },
     ])
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries()
-    const target = mirrored.find(entry => entry.relPath === 'agenticgraph-video-demo.md') || null
+    const target = mirrored.find(entry => entry.relPath === 'agentic-graph-video-demo.md') || null
     if (!target || !String(target.text || '').includes('remote source files state')) {
       throw new Error(`expected docs mirror to resolve from sourceFiles state, got ${JSON.stringify(mirrored)}`)
     }
@@ -1476,8 +1476,8 @@ export async function testWorkspaceSeedProviderReadsDocsMirrorFromSourceFilesSta
 
 
 export async function testWorkspaceSeedProviderCollapsesRedundantDocsPrefixFromSourceFilesState() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const { restore } = initJsdomHarness()
   const store = useGraphStore.getState()
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
@@ -1485,23 +1485,23 @@ export async function testWorkspaceSeedProviderCollapsesRedundantDocsPrefixFromS
   const previousCacheId = store.localMarkdownFolderCacheId
   const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
   try {
-    delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     store.setLocalMarkdownFolderHandle(null)
     store.setLocalMarkdownFolderCacheId(null, null)
     store.setLocalMarkdownSelectedFolderPath(null)
     store.setSourceFiles([
       {
         id: 'sf-docs-double',
-        name: 'docs/docs/agenticgraph-video-demo.md',
+        name: 'docs/docs/agentic-graph-video-demo.md',
         text: '# dedupe docs prefix',
         enabled: true,
         status: 'idle',
-        source: { kind: 'local', path: 'docs/docs/agenticgraph-video-demo.md' },
+        source: { kind: 'local', path: 'docs/docs/agentic-graph-video-demo.md' },
       },
     ])
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries()
-    if (mirrored.length !== 1 || mirrored[0]?.relPath !== 'agenticgraph-video-demo.md') {
+    if (mirrored.length !== 1 || mirrored[0]?.relPath !== 'agentic-graph-video-demo.md') {
       throw new Error(`expected redundant docs/docs prefix to collapse to single mirror relPath, got ${JSON.stringify(mirrored)}`)
     }
   } finally {
@@ -1509,10 +1509,10 @@ export async function testWorkspaceSeedProviderCollapsesRedundantDocsPrefixFromS
     store.setLocalMarkdownFolderHandle(previousHandle as FileSystemDirectoryHandle | null)
     store.setLocalMarkdownFolderCacheId(previousCacheId, null)
     store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restore()
   }
 }
@@ -1531,15 +1531,15 @@ export async function testWorkspaceSeedProviderResolvesRelativeDocsPathForAbsolu
     store.setSourceFiles([
       {
         id: 'sf-relative-docs',
-        name: 'docs/agenticgraph-video-demo.md',
+        name: 'docs/agentic-graph-video-demo.md',
         text: '# relative docs path should map',
         enabled: true,
         status: 'idle',
-        source: { kind: 'local', path: 'docs/agenticgraph-video-demo.md' },
+        source: { kind: 'local', path: 'docs/agentic-graph-video-demo.md' },
       },
     ])
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries()
-    const target = mirrored.find(entry => entry.relPath === 'agenticgraph-video-demo.md') || null
+    const target = mirrored.find(entry => entry.relPath === 'agentic-graph-video-demo.md') || null
     if (!target || !String(target.text || '').includes('relative docs path should map')) {
       throw new Error(`expected relative docs path to map with absolute selected folder, got ${JSON.stringify(mirrored)}`)
     }
@@ -1562,19 +1562,19 @@ export async function testWorkspaceSeedProviderTreatsSelectedFilePathAsSelectedF
   try {
     store.setLocalMarkdownFolderHandle(null)
     store.setLocalMarkdownFolderCacheId(null, null)
-    store.setLocalMarkdownSelectedFolderPath(`${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-maps-places.md`)
+    store.setLocalMarkdownSelectedFolderPath(`${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-maps-places.md`)
     store.setSourceFiles([
       {
         id: 'sf-selected-file-path',
-        name: 'docs/agenticgraph-video-demo.md',
+        name: 'docs/agentic-graph-video-demo.md',
         text: '# selected file path should still include sibling docs',
         enabled: true,
         status: 'idle',
-        source: { kind: 'local', path: 'docs/agenticgraph-video-demo.md' },
+        source: { kind: 'local', path: 'docs/agentic-graph-video-demo.md' },
       },
     ])
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries()
-    const target = mirrored.find(entry => entry.relPath === 'agenticgraph-video-demo.md') || null
+    const target = mirrored.find(entry => entry.relPath === 'agentic-graph-video-demo.md') || null
     if (!target || !String(target.text || '').includes('selected file path should still include sibling docs')) {
       throw new Error(`expected selected markdown file path to normalize to selected folder for docs mirror filtering, got ${JSON.stringify(mirrored)}`)
     }
@@ -1589,7 +1589,7 @@ export async function testWorkspaceSeedProviderTreatsSelectedFilePathAsSelectedF
 
 
 export async function testWorkspaceSeedProviderPrefersAgenticGraphStorageExportWhenConfigured() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousFetch = globalThis.fetch
   const { restore } = initJsdomHarness()
@@ -1598,7 +1598,7 @@ export async function testWorkspaceSeedProviderPrefersAgenticGraphStorageExportW
   const previousCacheId = store.localMarkdownFolderCacheId
   const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
@@ -1612,13 +1612,13 @@ export async function testWorkspaceSeedProviderPrefersAgenticGraphStorageExportW
         {
           id: 'sf:video',
           workspaceId: 'kgws:test',
-          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md`,
-          title: 'agenticgraph-video-demo.md',
+          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md`,
+          title: 'agentic-graph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
           sourceKind: 'markdown',
-          contentMd: '# from agenticgraph storage export',
+          contentMd: '# from agentic-graph storage export',
           contentHash: 'x',
           parserVersion: 'source-files',
           revision: 1,
@@ -1639,9 +1639,9 @@ export async function testWorkspaceSeedProviderPrefersAgenticGraphStorageExportW
     store.setLocalMarkdownSelectedFolderPath('docs')
     store.setSourceFiles([])
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries()
-    const target = mirrored.find(entry => entry.relPath === 'agenticgraph-video-demo.md') || null
-    if (!target || !String(target.text || '').includes('from agenticgraph storage export')) {
-      throw new Error(`expected docs mirror to prefer agenticgraph storage export when configured, got ${JSON.stringify(mirrored)}`)
+    const target = mirrored.find(entry => entry.relPath === 'agentic-graph-video-demo.md') || null
+    if (!target || !String(target.text || '').includes('from agentic-graph storage export')) {
+      throw new Error(`expected docs mirror to prefer agentic-graph storage export when configured, got ${JSON.stringify(mirrored)}`)
     }
   } finally {
     store.setSourceFiles(previousSourceFiles)
@@ -1650,15 +1650,15 @@ export async function testWorkspaceSeedProviderPrefersAgenticGraphStorageExportW
     store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
     restore()
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   }
 }
 
 export async function testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLargerStorageExportDataset() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousFetch = globalThis.fetch
   const { restore } = initJsdomHarness()
@@ -1667,14 +1667,14 @@ export async function testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLarg
   const previousCacheId = store.localMarkdownFolderCacheId
   const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     if (url.includes('/api/storage/doc/')) {
       if (
-        url.includes(encodeURIComponent('huijoohwee/docs/agenticgraph-video-demo.md'))
-        || url.includes(encodeURIComponent('docs/agenticgraph-video-demo.md'))
+        url.includes(encodeURIComponent('huijoohwee/docs/agentic-graph-video-demo.md'))
+        || url.includes(encodeURIComponent('docs/agentic-graph-video-demo.md'))
       ) {
         return new Response('# from source-files doc view', { status: 200 })
       }
@@ -1706,8 +1706,8 @@ export async function testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLarg
         {
           id: 'sf:grabmaps',
           workspaceId: 'kgws:test',
-          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-maps-grabmap-multim-demo.md`,
-          title: 'agenticgraph-maps-grabmap-multim-demo.md',
+          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-maps-grabmap-multim-demo.md`,
+          title: 'agentic-graph-maps-grabmap-multim-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -1722,8 +1722,8 @@ export async function testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLarg
         {
           id: 'sf:video',
           workspaceId: 'kgws:test',
-          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md`,
-          title: 'agenticgraph-video-demo.md',
+          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md`,
+          title: 'agentic-graph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -1750,15 +1750,15 @@ export async function testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLarg
     store.setSourceFiles([
       {
         id: 'sf-video',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '',
         enabled: true,
         status: 'idle',
-        source: { kind: 'local', path: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md` },
+        source: { kind: 'local', path: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md` },
       },
     ])
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries()
-    if (mirrored.length !== 1 || mirrored[0]?.relPath !== 'agenticgraph-video-demo.md') {
+    if (mirrored.length !== 1 || mirrored[0]?.relPath !== 'agentic-graph-video-demo.md') {
       throw new Error(`expected source-files doc view to stay authoritative for selected workspace files, got ${JSON.stringify(mirrored)}`)
     }
     if (String(mirrored[0]?.text || '').trim() !== '# from source-files doc view') {
@@ -1771,15 +1771,15 @@ export async function testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLarg
     store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
     restore()
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   }
 }
 
 export async function testWorkspaceSeedProviderPrefersCompleteStorageExportDatasetForSync() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousFetch = globalThis.fetch
   const { restore } = initJsdomHarness()
@@ -1788,14 +1788,14 @@ export async function testWorkspaceSeedProviderPrefersCompleteStorageExportDatas
   const previousCacheId = store.localMarkdownFolderCacheId
   const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     if (url.includes('/api/storage/doc/')) {
       if (
-        url.includes(encodeURIComponent('huijoohwee/docs/agenticgraph-video-demo.md'))
-        || url.includes(encodeURIComponent('docs/agenticgraph-video-demo.md'))
+        url.includes(encodeURIComponent('huijoohwee/docs/agentic-graph-video-demo.md'))
+        || url.includes(encodeURIComponent('docs/agentic-graph-video-demo.md'))
       ) {
         return new Response('# from source-files doc view', { status: 200 })
       }
@@ -1827,8 +1827,8 @@ export async function testWorkspaceSeedProviderPrefersCompleteStorageExportDatas
         {
           id: 'sf:grabmaps',
           workspaceId: 'kgws:test',
-          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-maps-grabmap-multim-demo.md`,
-          title: 'agenticgraph-maps-grabmap-multim-demo.md',
+          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-maps-grabmap-multim-demo.md`,
+          title: 'agentic-graph-maps-grabmap-multim-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -1843,8 +1843,8 @@ export async function testWorkspaceSeedProviderPrefersCompleteStorageExportDatas
         {
           id: 'sf:video',
           workspaceId: 'kgws:test',
-          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md`,
-          title: 'agenticgraph-video-demo.md',
+          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md`,
+          title: 'agentic-graph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -1871,11 +1871,11 @@ export async function testWorkspaceSeedProviderPrefersCompleteStorageExportDatas
     store.setSourceFiles([
       {
         id: 'sf-video',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '',
         enabled: true,
         status: 'idle',
-        source: { kind: 'local', path: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md` },
+        source: { kind: 'local', path: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md` },
       },
     ])
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
@@ -1883,10 +1883,10 @@ export async function testWorkspaceSeedProviderPrefersCompleteStorageExportDatas
       throw new Error(`expected sync mirror to prefer fuller storage export dataset, got ${JSON.stringify(mirrored)}`)
     }
     const relPaths = mirrored.map(entry => entry.relPath)
-    if (!relPaths.includes('agenticgraph-video-demo.md') || !relPaths.includes('workspace-readme.md')) {
+    if (!relPaths.includes('agentic-graph-video-demo.md') || !relPaths.includes('workspace-readme.md')) {
       throw new Error(`expected sync mirror to keep exported docs set, got ${JSON.stringify(mirrored)}`)
     }
-    const video = mirrored.find(entry => entry.relPath === 'agenticgraph-video-demo.md') || null
+    const video = mirrored.find(entry => entry.relPath === 'agentic-graph-video-demo.md') || null
     if (String(video?.text || '').trim() !== '# export video') {
       throw new Error(`expected sync mirror to use export text for complete dataset mode, got ${JSON.stringify(mirrored)}`)
     }
@@ -1897,15 +1897,15 @@ export async function testWorkspaceSeedProviderPrefersCompleteStorageExportDatas
     store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
     restore()
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   }
 }
 
 export async function testWorkspaceSeedProviderStorageExportRebuildsMarkdownFromChunksWhenContentMdBlank() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousFetch = globalThis.fetch
   const { restore } = initJsdomHarness()
@@ -1914,7 +1914,7 @@ export async function testWorkspaceSeedProviderStorageExportRebuildsMarkdownFrom
   const previousCacheId = store.localMarkdownFolderCacheId
   const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
@@ -1928,8 +1928,8 @@ export async function testWorkspaceSeedProviderStorageExportRebuildsMarkdownFrom
         {
           id: 'docs:video_demo',
           workspaceId: 'kgws:test',
-          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agenticgraph-video-demo.md`,
-          title: 'agenticgraph-video-demo.md',
+          canonicalPath: `${AG_HUIJOOHWEE_DOCS_ROOT}/agentic-graph-video-demo.md`,
+          title: 'agentic-graph-video-demo.md',
           docType: 'markdown',
           lang: null,
           graphId: null,
@@ -1980,7 +1980,7 @@ export async function testWorkspaceSeedProviderStorageExportRebuildsMarkdownFrom
     store.setLocalMarkdownSelectedFolderPath('docs')
     store.setSourceFiles([])
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries()
-    const target = mirrored.find(entry => entry.relPath === 'agenticgraph-video-demo.md') || null
+    const target = mirrored.find(entry => entry.relPath === 'agentic-graph-video-demo.md') || null
     if (!target || String(target.text || '').trim() !== '# from chunk 1\n\nfrom chunk 2') {
       throw new Error(`expected docs mirror to reconstruct markdown from export chunks when contentMd is blank, got ${JSON.stringify(mirrored)}`)
     }
@@ -1991,15 +1991,15 @@ export async function testWorkspaceSeedProviderStorageExportRebuildsMarkdownFrom
     store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
     restore()
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   }
 }
 
 export async function testWorkspaceSeedProviderUsesSameOriginStoragePathOnLocalhostDev() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousFetch = globalThis.fetch
   const { restore } = initJsdomHarness()
@@ -2008,7 +2008,7 @@ export async function testWorkspaceSeedProviderUsesSameOriginStoragePathOnLocalh
   const previousCacheId = store.localMarkdownFolderCacheId
   const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_HUIJOOHWEE_DOCS_ROOT
   const capturedRequestUrls: string[] = []
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
@@ -2042,8 +2042,8 @@ export async function testWorkspaceSeedProviderUsesSameOriginStoragePathOnLocalh
     store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
     restore()
     ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   }
@@ -2058,7 +2058,7 @@ export async function testRuntimeSourceFilesReflectWorkspaceSeedFileContentChang
   let docsText = '# seed v1\n\nruntime reflection baseline'
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
-    if (url.includes(`${AG_HUIJOOHWEE_DOCS_FS_PREFIX}/agenticgraph-video-demo.md`)) {
+    if (url.includes(`${AG_HUIJOOHWEE_DOCS_FS_PREFIX}/agentic-graph-video-demo.md`)) {
       return new Response(docsText, { status: 200 })
     }
     return new Response('', { status: 404 })
@@ -2086,10 +2086,10 @@ export async function testRuntimeSourceFilesReflectWorkspaceSeedFileContentChang
     await fs.ensureSeed()
     const entries = await fs.listEntries()
     const validationEntryPath = String(
-      entries.find(entry => entry.kind === 'file' && String(entry.name || '') === 'agenticgraph-video-demo.md')?.path || '',
+      entries.find(entry => entry.kind === 'file' && String(entry.name || '') === 'agentic-graph-video-demo.md')?.path || '',
     ).trim()
     if (!validationEntryPath) {
-      throw new Error('expected runtime test workspace seed bootstrap to include agenticgraph-video-demo.md entry')
+      throw new Error('expected runtime test workspace seed bootstrap to include agentic-graph-video-demo.md entry')
     }
     useMarkdownExplorerStore.getState().setActivePath(validationEntryPath as never)
     const seededText = await fs.readFileText(validationEntryPath as never)
@@ -2116,7 +2116,7 @@ export async function testRuntimeSourceFilesReflectWorkspaceSeedFileContentChang
       const file = useGraphStore.getState().sourceFiles.find(entry => {
         const sourcePath = String(entry.source?.path || '')
         const name = String(entry.name || '')
-        return sourcePath.startsWith('workspace:') && (name === 'agenticgraph-video-demo.md' || sourcePath.includes('agenticgraph-video-demo.md'))
+        return sourcePath.startsWith('workspace:') && (name === 'agentic-graph-video-demo.md' || sourcePath.includes('agentic-graph-video-demo.md'))
       })
       return Boolean(file && String(file.text || '').includes('seed v2'))
     })
@@ -2272,7 +2272,7 @@ export async function testHydrateWorkspaceEntriesInlineTextHydratesEmptyInlineFi
   const fs: WorkspaceFs = {
     ensureSeed: async () => false,
     listEntries: async () => [],
-    readFileText: async (path: string) => (String(path || '').trim() === '/docs/agenticgraph-video-demo.md' ? '# hydrated from fs' : null),
+    readFileText: async (path: string) => (String(path || '').trim() === '/docs/agentic-graph-video-demo.md' ? '# hydrated from fs' : null),
     writeFileText: async () => void 0,
     createFile: async () => '/docs/tmp.md',
     createFolder: async () => '/docs',
@@ -2280,10 +2280,10 @@ export async function testHydrateWorkspaceEntriesInlineTextHydratesEmptyInlineFi
   }
   const entries = [
     {
-      path: '/docs/agenticgraph-video-demo.md',
+      path: '/docs/agentic-graph-video-demo.md',
       parentPath: '/docs',
       kind: 'file',
-      name: 'agenticgraph-video-demo.md',
+      name: 'agentic-graph-video-demo.md',
       text: '',
       updatedAtMs: 1,
     },
@@ -2750,17 +2750,17 @@ export async function testReadWorkspaceActiveEntrySnapshotKeepsOrdinaryFrontmatt
 }
 
 export async function testHydrateWorkspaceEntriesInlineTextFallsBackToAgenticGraphStorageDocWhenFsTextIsBlank() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const previousFetch = globalThis.fetch
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
-  process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = 'kgws:test-fallback'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = 'kgws:test-fallback'
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     if (!url.includes('/api/storage/doc/')) return new Response('', { status: 404 })
     const hasCanonicalDocsPath =
-      url.includes(encodeURIComponent('huijoohwee/docs/agenticgraph-video-demo.md'))
-      || url.includes(encodeURIComponent('docs/agenticgraph-video-demo.md'))
+      url.includes(encodeURIComponent('huijoohwee/docs/agentic-graph-video-demo.md'))
+      || url.includes(encodeURIComponent('docs/agentic-graph-video-demo.md'))
     if (!hasCanonicalDocsPath) return new Response('', { status: 404 })
     return new Response('# hydrated from storage fallback', { status: 200 })
   }) as typeof fetch
@@ -2776,24 +2776,24 @@ export async function testHydrateWorkspaceEntriesInlineTextFallsBackToAgenticGra
     }
     const entries = [
       {
-        path: '/docs/agenticgraph-video-demo.md',
+        path: '/docs/agentic-graph-video-demo.md',
         parentPath: '/docs',
         kind: 'file',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '',
         updatedAtMs: 1,
       },
     ] as unknown as import('@/features/workspace-fs/types').WorkspaceEntry[]
     const hydrated = await hydrateWorkspaceEntriesInlineText({ fs, workspaceEntries: entries })
-    if (hydrated === entries) throw new Error('expected blank docs workspace entry text to fallback-hydrate from agenticgraph storage doc endpoint')
+    if (hydrated === entries) throw new Error('expected blank docs workspace entry text to fallback-hydrate from agentic-graph storage doc endpoint')
     if (String(hydrated[0]?.text || '').trim() !== '# hydrated from storage fallback') {
-      throw new Error(`expected docs entry fallback hydration from agenticgraph storage doc endpoint, got ${String(hydrated[0]?.text || '')}`)
+      throw new Error(`expected docs entry fallback hydration from agentic-graph storage doc endpoint, got ${String(hydrated[0]?.text || '')}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     if (previousFetch) {
       ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
     } else {
@@ -2814,19 +2814,19 @@ export function testWorkspaceSelectionCacheDoesNotTrustBlankForInitializationDoc
 }
 
 export async function testHydrateWorkspaceEntriesInlineTextStorageFallbackCanonicalizesDuplicatedDocsPrefixPath() {
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const previousFetch = globalThis.fetch
-  process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://airvio.co'
-  process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = 'kgws:test-fallback-canonical'
+  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = 'kgws:test-fallback-canonical'
   const capturedUrls: string[] = []
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     capturedUrls.push(url)
     if (!url.includes('/api/storage/doc/')) return new Response('', { status: 404 })
     const hasCanonicalDocsPath =
-      url.includes(encodeURIComponent('huijoohwee/docs/agenticgraph-video-demo.md'))
-      || url.includes(encodeURIComponent('docs/agenticgraph-video-demo.md'))
+      url.includes(encodeURIComponent('huijoohwee/docs/agentic-graph-video-demo.md'))
+      || url.includes(encodeURIComponent('docs/agentic-graph-video-demo.md'))
     if (!hasCanonicalDocsPath) return new Response('', { status: 404 })
     return new Response('# hydrated from canonicalized docs path', { status: 200 })
   }) as typeof fetch
@@ -2842,10 +2842,10 @@ export async function testHydrateWorkspaceEntriesInlineTextStorageFallbackCanoni
     }
     const entries = [
       {
-        path: '/docs/huijoohwee/docs/agenticgraph-video-demo.md',
+        path: '/docs/huijoohwee/docs/agentic-graph-video-demo.md',
         parentPath: '/docs/huijoohwee/docs',
         kind: 'file',
-        name: 'agenticgraph-video-demo.md',
+        name: 'agentic-graph-video-demo.md',
         text: '',
         updatedAtMs: 1,
       },
@@ -2855,14 +2855,14 @@ export async function testHydrateWorkspaceEntriesInlineTextStorageFallbackCanoni
     if (String(hydrated[0]?.text || '').trim() !== '# hydrated from canonicalized docs path') {
       throw new Error(`expected duplicated docs-prefix path to resolve to canonical storage doc fallback, got ${String(hydrated[0]?.text || '')}`)
     }
-    if (capturedUrls.some(url => url.includes(encodeURIComponent('docs/huijoohwee/docs/agenticgraph-video-demo.md')))) {
+    if (capturedUrls.some(url => url.includes(encodeURIComponent('docs/huijoohwee/docs/agentic-graph-video-demo.md')))) {
       throw new Error(`expected duplicated docs-prefix canonical path not to be requested during storage fallback, got ${JSON.stringify(capturedUrls)}`)
     }
   } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     if (previousFetch) {
       ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
     } else {

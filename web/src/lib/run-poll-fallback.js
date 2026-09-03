@@ -1,6 +1,6 @@
-// 503 polling-fallback driver for the agenticgraph Cloudflare Pages frontend.
+// 503 polling-fallback driver for the agentic-graph Cloudflare Pages frontend.
 //
-// Spec: agenticgraph-acos-mcp-connector, task 7.11 (R13.5; design Frontend "503
+// Spec: agentic-graph-acos-mcp-connector, task 7.11 (R13.5; design Frontend "503
 // fallback"; Error Handling › "Agent_Api saturation (R12.4) → Frontend falls
 // back to polling GET /runs/{id} every 5s up to 12 attempts (R13.5)").
 //

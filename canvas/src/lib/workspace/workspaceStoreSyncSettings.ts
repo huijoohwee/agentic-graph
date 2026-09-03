@@ -151,7 +151,7 @@ const readWorkspaceDocsMirrorRootPathFallback = (): string => {
 }
 
 export const readWorkspaceDocsMirrorRootPathSetting = (): string => {
-  if (parseEnvBoolean('VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL', false)) return readWorkspaceDocsMirrorRootPathFallback()
+  if (parseEnvBoolean('VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL', false)) return readWorkspaceDocsMirrorRootPathFallback()
   const storage = getLocalStorage()
   if (!storage) return readWorkspaceDocsMirrorRootPathFallback()
   try {
@@ -176,7 +176,7 @@ export const writeWorkspaceDocsMirrorRootPathSetting = (next: string): void => {
 }
 
 const readAgenticGraphStorageBaseUrlSetting = (): string =>
-  String(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '') || '').trim()
+  String(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', '') || '').trim()
 
 const normalizeWorkspaceLikeRootPath = (value: string, fallback: string): string => {
   const raw = String(value || '').trim().replace(/\\/g, '/').replace(/\/+$/, '')

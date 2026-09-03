@@ -42,7 +42,7 @@ type AgenticOsRemoteGrammarClientOptions = {
   fetchImpl?: typeof fetch
 }
 
-const DEFAULT_AGENTICGRAPH_AGENT_READY_BASE_URL = 'https://airvio.co/agenticgraph'
+const DEFAULT_AGENTIC_OS_AGENT_READY_BASE_URL = 'https://airvio.co/agentic-graph'
 const normalizeString = (value: unknown): string => String(value || '').trim()
 const isLocalhostHost = (value: unknown): boolean => {
   const normalized = normalizeString(value).toLowerCase()
@@ -59,22 +59,22 @@ const isBareLocalhostOrigin = (value: unknown): boolean => {
   }
 }
 const readAgenticGraphAgentReadyBaseUrl = (): string => {
-  const configuredBaseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_AGENT_READY_BASE_URL', ''))
+  const configuredBaseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_AGENT_READY_BASE_URL', ''))
   if (configuredBaseUrl) return configuredBaseUrl.replace(/\/+$/, '')
   if (typeof window !== 'undefined') {
     const currentOrigin = normalizeString(window.location?.origin)
     if (currentOrigin && (isWorkspaceRepoLocalRunReadyBootstrap() || !isBareLocalhostOrigin(currentOrigin))) {
-      return new URL('/agenticgraph/', currentOrigin.endsWith('/') ? currentOrigin : `${currentOrigin}/`)
+      return new URL('/agentic-graph/', currentOrigin.endsWith('/') ? currentOrigin : `${currentOrigin}/`)
         .toString()
         .replace(/\/+$/, '')
     }
   }
-  return DEFAULT_AGENTICGRAPH_AGENT_READY_BASE_URL
+  return DEFAULT_AGENTIC_OS_AGENT_READY_BASE_URL
 }
 const resolveControlPlaneEndpoint = (endpoint?: string): string => {
   const explicitEndpoint = normalizeString(endpoint)
   if (explicitEndpoint) return explicitEndpoint
-  return `${readAgenticGraphAgentReadyBaseUrl()}${AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH.replace(/^\/agenticgraph/, '')}`
+  return `${readAgenticGraphAgentReadyBaseUrl()}${AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH.replace(/^\/agentic-graph/, '')}`
 }
 
 export function createAgenticOsRemoteGrammarClient(options: AgenticOsRemoteGrammarClientOptions = {}) {
@@ -112,7 +112,7 @@ export function createAgenticOsRemoteGrammarClient(options: AgenticOsRemoteGramm
           params: {
             protocolVersion: '2024-11-05',
             capabilities: {},
-            clientInfo: { name: 'agenticgraph-canvas', version: '0.1.0' },
+            clientInfo: { name: 'agentic-graph-canvas', version: '0.1.0' },
           },
         }, { signal })
         if (initialized.rpc.error) {

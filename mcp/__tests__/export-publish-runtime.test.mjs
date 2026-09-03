@@ -229,7 +229,7 @@ test("two provider failures return a bounded typed tool error and no doc_id ledg
 });
 
 test("source hash drift rejects the receipt and compensates a newly-created external artifact", async () => {
-  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-source-guard-"));
+  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-source-guard-"));
   const artifactPath = path.join(repoRoot, "docs", "deck.md");
   let cleanupCalls = 0;
   const ledgerWrites = [];
@@ -273,7 +273,7 @@ test("source hash drift rejects the receipt and compensates a newly-created exte
 });
 
 test("concurrent first publishes across distinct ledgers serialize lookup through append", async () => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-identity-race-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-identity-race-"));
   let activePublishes = 0;
   let maximumActivePublishes = 0;
   let createdArtifacts = 0;
@@ -333,7 +333,7 @@ test("concurrent first publishes across distinct ledgers serialize lookup throug
 });
 
 test("the same identity in distinct repository namespaces does not collide", async () => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-identity-namespace-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-identity-namespace-"));
   const lockRoot = path.join(directory, "locks");
   const identityKey = createExportIdentity({
     artifact_id: artifact.artifact_id,
@@ -359,7 +359,7 @@ test("the same identity in distinct repository namespaces does not collide", asy
 });
 
 test("a live identity owner forces a bounded fail-closed timeout", async () => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-identity-timeout-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-identity-timeout-"));
   const publicationNamespace = path.join(directory, "repository");
   const lockRoot = path.join(directory, "locks");
   const identity = createExportIdentity({
@@ -399,7 +399,7 @@ test("a live identity owner forces a bounded fail-closed timeout", async () => {
 });
 
 test("a demonstrably dead cross-process owner is recovered after the stale bound", async () => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-export-identity-stale-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-export-identity-stale-"));
   const publicationNamespace = path.join(directory, "repository");
   const lockRoot = path.join(directory, "locks");
   const identityKey = createExportIdentity({

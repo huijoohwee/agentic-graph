@@ -1,6 +1,6 @@
 import { buildSemanticKey } from "../../contracts/semantic-key.js";
 
-export const SME_CANVAS_EVIDENCE_SCHEMA = "agenticgraph-sme-canvas-evidence/v1";
+export const SME_CANVAS_EVIDENCE_SCHEMA = "agentic-graph-sme-canvas-evidence/v1";
 export const SME_CANVAS_DOCUMENT_SCHEMA = "kgc-computing-flow/v1";
 export const SME_CANVAS_EVIDENCE_FILE = "canvas-evidence.md";
 

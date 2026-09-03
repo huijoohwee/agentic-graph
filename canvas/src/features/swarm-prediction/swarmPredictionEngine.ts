@@ -6,7 +6,7 @@ import {
   buildSwarmPredictionOutputMarkdown,
 } from '@/features/swarm-prediction/swarmPredictionRender'
 
-export const SWARM_PREDICTION_SCHEMA_VERSION = 'agenticgraph-swarm-prediction/v1' as const
+export const SWARM_PREDICTION_SCHEMA_VERSION = 'agentic-graph-swarm-prediction/v1' as const
 export const SWARM_PREDICTION_COPY_POLICY = 'conceptual-inspiration-only-no-code-copy' as const
 
 export type SwarmPredictionSeedSignal = {
@@ -185,7 +185,7 @@ export function buildSwarmPredictionSemanticKey(scope: string, payload: unknown)
 }
 
 const createDeterministicRandom = (seed: unknown): (() => number) => {
-  let state = hashSignatureParts32(['agenticgraph-swarm-prediction', stableStringify(seed)]) >>> 0
+  let state = hashSignatureParts32(['agentic-graph-swarm-prediction', stableStringify(seed)]) >>> 0
   if (state === 0) state = 0x6d2b79f5
   return () => {
     state = Math.imul(state ^ (state >>> 15), 0x2c1b3c6d) >>> 0

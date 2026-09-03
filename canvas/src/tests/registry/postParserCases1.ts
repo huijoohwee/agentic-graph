@@ -1,8 +1,8 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
-  ["policy.pagesHeaders.agenticgraphReportOnlyCsp.omitsIgnoredUpgradeDirective","@/__tests__/agenticgraphPagesHeadersRegression.test","testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective"],
-  ["policy.pagesHeaders.agenticgraphAppShellHtml.addsNoTransformForCloudflareJsd","@/__tests__/agenticgraphPagesHeadersRegression.test","testAgenticGraphAppShellHtmlAddsNoTransformForCloudflareJsd"],
-  ["policy.publishSync.agenticgraphIndexHtml.keepsCanonicalEntryScriptUrl","@/__tests__/pagesSyncPublishHtmlRegression.test","testPagesSyncPublishHtmlKeepsCanonicalEntryScriptUrl"],
+  ["policy.pagesHeaders.agenticGraphReportOnlyCsp.omitsIgnoredUpgradeDirective","@/__tests__/agentic-graph-pages-headers-regression.test","testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective"],
+  ["policy.pagesHeaders.agenticGraphAppShellHtml.addsNoTransformForCloudflareJsd","@/__tests__/agentic-graph-pages-headers-regression.test","testAgenticGraphAppShellHtmlAddsNoTransformForCloudflareJsd"],
+  ["policy.publishSync.agenticGraphIndexHtml.keepsCanonicalEntryScriptUrl","@/__tests__/pagesSyncPublishHtmlRegression.test","testPagesSyncPublishHtmlKeepsCanonicalEntryScriptUrl"],
   ["policy.storage.rootPackage.declaresDrizzleForAgenticGraphStorageWorker","@/__tests__/storageArchitectureRegression.test","testRootPackageDeclaresDrizzleForAgenticGraphStorageWorker"],
   ["policy.storage.deployScripts.seedDocsMirrorIntoD1","@/__tests__/storageArchitectureRegression.test","testCloudflareDeployScriptsSeedDocsMirrorIntoD1"],
   ["policy.storage.doc.declaresTieredSourceAuthorityContract","@/__tests__/storageArchitectureRegression.test","testStorageSyncDocumentDeclaresTieredSourceAuthorityContract"],
@@ -600,7 +600,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["mainPanel.settingsApply.webMcpReadiness.createWorkspaceFileFailureKeepsCommittedSurface","@/__tests__/settingsCreateWorkspaceFileFailureReadiness.test.tsx","testSettingsCreateFileFailureKeepsCommittedFloatingChatSurfaceUnchanged"],
   ["mainPanel.settingsApply.webMcpReadiness.createWorkspaceFileFailureSkipsDelayedOpen","@/__tests__/settingsCreateWorkspaceFileFailureDelayedOpenReadiness.test.tsx","testSettingsCreateFileFailureSkipsDelayedOpenAndKeepsCommittedSurfaceTruthful"],
   ["mainPanel.settingsApply.webMcpReadiness.cloudImportEmptyInputKeepsCommittedSurfaceUntilApply","@/__tests__/settingsCloudImportEmptyInputReadiness.test.tsx","testSettingsCloudImportEmptyInputKeepsCommittedSurfaceUntilApplyCommitsEmptyDrafts"],
-  ["mainPanel.settingsApply.webMcpReadiness.commitsAgenticGraphStorageTargetIntoFloatingChatSurface","@/__tests__/settingsApplyAgenticGraphStorageReadiness.test.tsx","testSettingsApplyCommitsAgenticGraphStorageTargetAndWorkspacePathIntoFloatingChatPipelineInspection"],
+  ["mainPanel.settingsApply.webMcpReadiness.commitsAgenticGraphStorageTargetIntoFloatingChatSurface","@/__tests__/settings-apply-agentic-graph-storage-readiness.test.tsx","testSettingsApplyCommitsAgenticGraphStorageTargetAndWorkspacePathIntoFloatingChatPipelineInspection"],
   ["mainPanel.settingsApply.webMcpReadiness.activeWorkspaceMissingMarkdownKeepsCommittedSurface","@/__tests__/settingsApplyActiveWorkspaceNegativeReadiness.test.tsx","testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChatSurfaceWhenNoActiveMarkdownFileExists"],
   ["mainPanel.settingsApply.webMcpReadiness.activeWorkspaceNonMarkdownKeepsCommittedSurface","@/__tests__/settingsApplyActiveWorkspaceNonMarkdownReadiness.test.tsx","testSettingsActiveWorkspaceApplyKeepsCommittedFloatingChatSurfaceWhenActiveSelectionIsNotMarkdown"],
   ["mainPanel.settingsApply.webMcpReadiness.activeWorkspaceDelayedOpenKeepsCommittedSurface","@/__tests__/settingsApplyActiveWorkspaceDelayedOpenReadiness.test.tsx","testSettingsApplyActiveWorkspaceDelayedOpenKeepsCommittedSurfaceTruthfulUntilApply"],

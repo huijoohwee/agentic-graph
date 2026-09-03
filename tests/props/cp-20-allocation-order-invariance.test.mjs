@@ -12,7 +12,7 @@ const weightsArbitrary = fc.uniqueArray(
   { minLength: 1, maxLength: 12, selector: value => value.id },
 );
 
-test(tag("agenticgraph-native-marketplace-layer", 20, "Allocation Order Metamorphic"), () => {
+test(tag("agentic-graph-native-marketplace-layer", 20, "Allocation Order Metamorphic"), () => {
   fc.assert(fc.property(
     fc.integer({ min: 1, max: 1_000_000 }),
     weightsArbitrary,

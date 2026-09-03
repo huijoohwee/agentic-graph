@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   buildAgenticGraphAgentReadyToolContracts,
-  AGENTICGRAPH_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+  AGENTIC_OS_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import { buildCanvasViewWebMcpToolBuilders } from '@/features/agent-ready/canvasViewWebMcpTools'
 import {
   CANVAS_VIEW_BINDING_TOKEN,
@@ -23,7 +23,7 @@ export async function testCanvasViewRowsUseSourceBackedWebMcpInvocation(): Promi
     defaultWorkspaceId: 'kgws:test',
     includeBrowserOnlyTools: true,
   })
-  const toolId = AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalCanvasView
+  const toolId = AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalCanvasView
   const contract = contracts.find(candidate => candidate.name === toolId)
   if (!contract || contract.webName !== CANVAS_VIEW_MCP_TOOL_NAME) {
     throw new Error('expected the shared agent-ready contract to expose the Canvas View WebMCP owner')

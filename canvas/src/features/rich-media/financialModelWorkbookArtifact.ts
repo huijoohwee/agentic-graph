@@ -67,8 +67,8 @@ const buildWorkbookManifest = (args: {
   sourceWorkspacePath: string
 }): string => [
   '---',
-  'kind: agenticgraph_financial_model_workbook',
-  'schema: agenticgraph-financial-model-workbook/v1',
+  'kind: agentic_graph_financial_model_workbook',
+  'schema: agentic-graph-financial-model-workbook/v1',
   `source_workspace_path: ${quoteManifestValue(args.sourceWorkspacePath)}`,
   `workbook_path: ${args.artifact.path ? quoteManifestValue(args.artifact.path) : 'null'}`,
   `storage_url: ${args.artifact.storageUrl ? quoteManifestValue(args.artifact.storageUrl) : 'null'}`,

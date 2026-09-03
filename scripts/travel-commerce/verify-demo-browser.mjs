@@ -155,7 +155,7 @@ try {
   assert.deepEqual(requestFailures, [], `request failures observed: ${JSON.stringify(requestFailures)}`)
 
   const evidence = {
-    schema: 'agenticgraph-travel-commerce-browser-evidence/v1',
+    schema: 'agentic-graph-travel-commerce-browser-evidence/v1',
     status: 'passed',
     mode: 'deterministic-local-service-doubles',
     url: demoUrl,
@@ -198,14 +198,14 @@ try {
 
 async function readPersistedObservationCount(page) {
   return page.evaluate(() => {
-    const value = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
+    const value = JSON.parse(localStorage.getItem('agentic-graph:travel-commerce:demo-ui:v1') || '{}')
     return Array.isArray(value.observations) ? value.observations.length : 0
   })
 }
 
 async function readPersistedBrowserEvidence(page) {
   return page.evaluate(() => {
-    const value = JSON.parse(localStorage.getItem('agenticgraph:travel-commerce:demo-ui:v1') || '{}')
+    const value = JSON.parse(localStorage.getItem('agentic-graph:travel-commerce:demo-ui:v1') || '{}')
     return value.browserEvidence ?? {}
   })
 }

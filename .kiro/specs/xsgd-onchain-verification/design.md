@@ -8,23 +8,23 @@ status: "design-draft"
 created: "2026-08-13"
 updated: "2026-08-13"
 author: "airvio / joohwee"
-domain: "agenticgraph"
+domain: "agentic-graph"
 lang: "en-US"
 frontmatter_contract: "required"
 requirements_source: ".kiro/specs/xsgd-onchain-verification/requirements.md"
-upstream_spec: ".kiro/specs/agenticgraph-payments/requirements.md"
+upstream_spec: ".kiro/specs/agentic-graph-payments/requirements.md"
 upstream_owned_requirements: ["R1", "R2", "R5", "R7", "R12", "R13", "R14", "R15", "R16", "R17"]
 guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
 deployment_topology: "Dev authoring only; Prod mirror and Cloudflare deployment require separate explicit authority"
 constraints: ["browser-first", "local-first", "offline-first", "mobile-first", "foss-first", "tco-zero", "token-economical", "harness-first", "zero-egress-default", "read-only-chain-access", "provider-agnostic-adapter-boundary"]
 tags: ["payments", "xsgd", "avalanche", "c-chain", "data-api", "straitsx", "reconciliation", "offline-first"]
 related:
-  - "cloudflare/workers/agenticgraph-payment"
+  - "cloudflare/workers/agentic-graph-payment"
   - "grph-shared/src/payments/agenticPurchaseRuntimeContract.ts"
   - "grph-shared/src/payments/paymentRecordDocument.ts"
-  - "canvas/src/lib/storage/agenticgraphStorageDb.ts"
-  - "scripts/check-agenticgraph-payments-readiness.mjs"
-  - "docs/documents/agenticgraph-payments-prd-tad.md"
+  - "canvas/src/lib/storage/agentic-graph-storage-db.ts"
+  - "scripts/check-agentic-graph-payments-readiness.mjs"
+  - "docs/documents/agentic-graph-payments-prd-tad.md"
 ---
 
 # Design Document
@@ -32,7 +32,7 @@ related:
 ## Overview
 
 The accepted upstream Funding gate believes provider credit; it cannot observe the chain. This design adds one typed
-read-only chain-evidence boundary inside the existing `agenticgraph-payment` Worker, one hosted adapter over it, one
+read-only chain-evidence boundary inside the existing `agentic-graph-payment` Worker, one hosted adapter over it, one
 confirmation policy, one reconciliation rule, and one read-only funding-state projection that upstream Discovery,
 Issuance, and Execution gates consume as a precondition. Nothing signs, broadcasts, approves, or spends, and no new
 Worker, store, proxy tier, or chain write path appears: the boundary reuses the existing `DB` binding and migrations,
@@ -42,11 +42,11 @@ browser-local storage, record document, readiness command, and cost ledger.
 
 | Reused owner | Found at | How this design uses it |
 |---|---|---|
-| Payment_Trust_Boundary Worker | `cloudflare/workers/agenticgraph-payment/index.ts`: route predicate plus handler pairs (`isPaymentRuntimeRoute` / `handlePaymentRuntimeRoute`), `readDb(env)` from `../shared/d1`, env typed `Record<string, unknown> & { DB }` | One new module set behind the existing runtime route handler; no new route family or env access pattern |
+| Payment_Trust_Boundary Worker | `cloudflare/workers/agentic-graph-payment/index.ts`: route predicate plus handler pairs (`isPaymentRuntimeRoute` / `handlePaymentRuntimeRoute`), `readDb(env)` from `../shared/d1`, env typed `Record<string, unknown> & { DB }` | One new module set behind the existing runtime route handler; no new route family or env access pattern |
 | D1 binding, migrations, cost ledger | `wrangler.toml` binding `DB`, `migrations_dir = ../../d1/migrations`, latest `0010_agenticgraph_agentic_purchase_lifecycle.sql`; `payment_cost_entries` (0009) with `appendCostEntry` / `listCostEntries` in `paymentRuntimePersistence.ts` | One new migration `0011_xsgd_chain_evidence.sql`; the cost ledger is extended, not forked, by a chain-scoped table with the same field vocabulary |
 | Chain tuple and record document | `AGENTIC_PURCHASE_AVALANCHE_NETWORK` in `agenticPurchaseRuntimeContract.ts` already holds `{ asset: 'xsgd', network: 'avalanche-c-chain', chainId: 43_114 }`; `paymentRecordDocument.ts` is JSONL with canonical sort, exact-key entry validation, byte-identical re-serialization | Chain id read from the existing constant, never re-declared; chain reference added as one always-present nested key inside the exact-key set |
-| Readiness gate | `payment:runtime:readiness` -> `scripts/check-agenticgraph-payments-readiness.mjs` -> `scripts/lib/agenticgraph-payments-readiness.mjs` `gates` map, digest-bound local VCC in `scripts/lib/agenticgraph-payments-local-vcc.mjs`, manifest `scripts/agenticgraph-payments-readiness-properties.json` | Two new statuses inside the existing `gates` map and manifest; no new command |
-| Browser-local storage and funding surface | `canvas/src/lib/storage/agenticgraphStorageDb.ts`, IndexedDB database `kg:agenticgraph-storage` with collections including `paymentIntentQueue` and `paymentReceiptDocuments`; `AgenticPurchaseLifecycleView.tsx` inside `PaywallOverlay.tsx` | One new collection `paymentChainEvidence`, origin and profile scoping from IndexedDB itself; projection rows render inside the existing funding phase item, no second surface |
+| Readiness gate | `payment:runtime:readiness` -> `scripts/check-agentic-graph-payments-readiness.mjs` -> `scripts/lib/agentic-graph-payments-readiness.mjs` `gates` map, digest-bound local VCC in `scripts/lib/agentic-graph-payments-local-vcc.mjs`, manifest `scripts/agentic-graph-payments-readiness-properties.json` | Two new statuses inside the existing `gates` map and manifest; no new command |
+| Browser-local storage and funding surface | `canvas/src/lib/storage/agentic-graph-storage-db.ts`, IndexedDB database `kg:agentic-graph-storage` with collections including `paymentIntentQueue` and `paymentReceiptDocuments`; `AgenticPurchaseLifecycleView.tsx` inside `PaywallOverlay.tsx` | One new collection `paymentChainEvidence`, origin and profile scoping from IndexedDB itself; projection rows render inside the existing funding phase item, no second surface |
 | Test tooling and semantic keys | `node --test`, `fast-check@3.23.2`, `numRuns: 100` in `grph-shared/__tests__/payment-record-document.test.mjs`, worker suites via `node --import tsx --test`; `buildAgenticCommerceSemanticKey` in `agenticCommerceSemanticKey.ts` | Same runner, library, and iteration floor; the semantic-key helper builds cache and observation keys |
 
 Two absences are stated rather than designed around. **No funding verification source module exists**: nothing owns
@@ -60,11 +60,11 @@ extended nor forked here; this boundary discovers the transfer itself and accept
 
 | Concern | Owner |
 |---|---|
-| Paywall surface, lifecycle identifier, phase projection, cancellation | agenticgraph-payments R13 |
-| Trust boundary, secret custody, rail selection, buyer product authority, data minimization | agenticgraph-payments R1, R2, R12 |
-| Provider event authentication and replay-safe settlement; record document, parser, printer, round trip | agenticgraph-payments R5, R7 |
-| Funding tuple validation, signer authority, funding reservation, provider credit gate | agenticgraph-payments R14 |
-| Discovery, disposable-card issuance and Approval_Gate, execution | agenticgraph-payments R15, R16, R17 |
+| Paywall surface, lifecycle identifier, phase projection, cancellation | agentic-graph-payments R13 |
+| Trust boundary, secret custody, rail selection, buyer product authority, data minimization | agentic-graph-payments R1, R2, R12 |
+| Provider event authentication and replay-safe settlement; record document, parser, printer, round trip | agentic-graph-payments R5, R7 |
+| Funding tuple validation, signer authority, funding reservation, provider credit gate | agentic-graph-payments R14 |
+| Discovery, disposable-card issuance and Approval_Gate, execution | agentic-graph-payments R15, R16, R17 |
 | Chain_Evidence_Adapter boundary and its hosted read adapter | This design, R1 |
 | XSGD balance and transfer verification on chain `43114` | This design, R2 |
 | Confirmation policy and monotonic confirmed state | This design, R3 |
@@ -80,7 +80,7 @@ flowchart TB
   subgraph Client["Payment_Client (browser, no credential)"]
     PW["PaywallOverlay -> AgenticPurchaseLifecycleView<br/>Funding phase rows"]
     EC["chainEvidenceCache.ts<br/>collection paymentChainEvidence"]
-    DB0[("kg:agenticgraph-storage IndexedDB<br/>origin + profile scoped")]
+    DB0[("kg:agentic-graph-storage IndexedDB<br/>origin + profile scoped")]
     PW --> EC --> DB0
   end
   subgraph Shared["grph-shared/src/payments (typed contracts, no egress)"]
@@ -88,7 +88,7 @@ flowchart TB
     CEC["chainEvidenceContract.ts (records, unions, projection)"]
     REC["paymentRecordDocument.ts (existing)"]
   end
-  subgraph Worker["agenticgraph-payment Worker = Payment_Trust_Boundary"]
+  subgraph Worker["agentic-graph-payment Worker = Payment_Trust_Boundary"]
     RT["paymentRuntimeRoutes.ts (existing)"]
     VR["chainEvidenceVerificationRun.ts<br/>orchestrator, attempt budget"]
     AD["chainEvidenceAdapter.ts (interface)"] --> DA["dataApiChainEvidenceAdapter.ts"]
@@ -390,7 +390,7 @@ existing `agenticPurchaseSafetyPersistence` reservation pattern.
 
 ### Browser-local Evidence_Cache
 
-One new collection `paymentChainEvidence` in the existing `kg:agenticgraph-storage` database. Origin and profile scoping
+One new collection `paymentChainEvidence` in the existing `kg:agentic-graph-storage` database. Origin and profile scoping
 is inherited from IndexedDB, the existing mechanism for `paymentIntentQueue`: no origin field is stored, and an entry
 written under one origin or profile is structurally unreadable from another.
 
@@ -424,7 +424,7 @@ chain_evidence: null | {
 Exactly those six fields; no watched address, provider customer identifier, or read key. `toDocumentEntry` emits the
 key in fixed position, `fromDocumentEntry` adds it to `expectedKeys` and validates the nested key set with the same
 exactness, and the canonical sort is unchanged, so `serialize(parse(document))` stays byte-identical (P4) under the
-agenticgraph-payments R7 contract that this design cites rather than redefines.
+agentic-graph-payments R7 contract that this design cites rather than redefines.
 
 ## Error Handling
 
@@ -497,10 +497,10 @@ aria-hidden selectable structure (R7.6), planted key bindings (R8.4), and blocke
 
 Same tooling as the existing payment suites: `node --test`, `fast-check@3.23.2`, `{ numRuns: 100 }`. Shared contract
 tests live in `grph-shared/__tests__/*.test.mjs`; Worker tests in
-`cloudflare/workers/agenticgraph-payment/__tests__/*.test.ts` under `node --import tsx --test`; rendering tests in the
+`cloudflare/workers/agentic-graph-payment/__tests__/*.test.ts` under `node --import tsx --test`; rendering tests in the
 canvas unit runner. Each property test carries the tag comment `Feature: xsgd-onchain-verification, Property {n}:
-{statement}`. Both new suites join the existing `AGENTICGRAPH_PAYMENTS_LOCAL_VCC_SUITES` allowlist and
-`scripts/agenticgraph-payments-readiness-properties.json`, so the digest-bound attestation covers them; no new command.
+{statement}`. Both new suites join the existing `AGENTIC_OS_PAYMENTS_LOCAL_VCC_SUITES` allowlist and
+`scripts/agentic-graph-payments-readiness-properties.json`, so the digest-bound attestation covers them; no new command.
 
 Fixtures are checked-in JSON matching published response shapes, with synthetic addresses and hashes and a placeholder
 contract; the adapter takes `fetchImpl` and `now`, so tests inject a fixture transport and a deterministic clock and
@@ -517,7 +517,7 @@ disabled-policy and offline paths; a canary set (read key, watched address, prov
 embedded in fixture error bodies and stack traces, and one assertion sweeps logs, projections, cost entries, returned
 failures, readiness output, and client bundle output for every canary. Commands:
 `npm run payment:runtime:readiness`; `npm run payment:local:vcc`; `npm run test --workspace=grph-shared`;
-`node --import tsx --test cloudflare/workers/agenticgraph-payment/__tests__/chain-evidence-*.test.ts`;
+`node --import tsx --test cloudflare/workers/agentic-graph-payment/__tests__/chain-evidence-*.test.ts`;
 `npm -C canvas run test:ci:unit -- payments.chainEvidence`; `npm run payment:d1:migrate:local`.
 
 ## Design Decisions and Rationale
@@ -569,7 +569,7 @@ into one of six named classes that keeps gates closed, for one extra read per ru
 | R5 Bounded attempts | `AttemptBudget`, verification run, adapter retry path | cost entries table | P5, rate-limit cool-down property, pagination fixtures |
 | R6 Offline cache and receipt | `chainEvidenceCache.ts`, `paymentRecordDocument.ts` | `paymentChainEvidence` collection, `chain_evidence` document key | P4, P6, cache eviction property, quota edge case |
 | R7 Funding projection | `fundingVerificationProjection.ts`, `AgenticPurchaseLifecycleView.tsx` | projection type, freshness inputs | P2, P10, freshness threshold property, 375 px accessibility example |
-| R8 Readiness reporting; R9 cost, minimization, zero model calls | `scripts/lib/agenticgraph-payments-readiness.mjs` gates extension, local VCC allowlist, `Cost_Observer` chain entries, verification run | source-evidence digest binding, cost entries table with `model_call_count = 0` | readiness-derivation, digest-drift, exit-code, cost-ledger, canary-absence, and zero-model-call properties; planted-key example; mirror smoke check |
+| R8 Readiness reporting; R9 cost, minimization, zero model calls | `scripts/lib/agentic-graph-payments-readiness.mjs` gates extension, local VCC allowlist, `Cost_Observer` chain entries, verification run | source-evidence digest binding, cost entries table with `model_call_count = 0` | readiness-derivation, digest-drift, exit-code, cost-ledger, canary-absence, and zero-model-call properties; planted-key example; mirror smoke check |
 | P1, P3, P5 | verification run, confirmation policy, `AttemptBudget`, persistence | both `UNIQUE (lifecycle_id, semantic_key)` constraints, guarded upsert with no delete path, cost entries | worker replay, monotonicity, and bounded-attempts properties |
 | P2, P10, P4 | projection builder and type, record serializer and parser | projection type, `chain_evidence` exact key | shared determinism, field-set, reachability, and round-trip properties |
 | P6, P7, P8, P9 | policy resolution, evidence cache, transfer matcher, reconciler | `paymentChainEvidence` collection, observations and disagreements tables | worker and canvas zero-egress, range-split, token-identity, and confluence properties |

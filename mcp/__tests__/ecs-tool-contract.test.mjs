@@ -10,7 +10,7 @@ import {
   ECS_TOOL_NAMES,
 } from "../ecs-tool-contract.js";
 import {
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES,
   buildAgenticGraphLocalMcpToolDefinitions,
 } from "../local-tool-contract.js";
 
@@ -19,9 +19,9 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 test("the local MCP catalog exposes exactly the three bounded Agentic ECS descriptors", () => {
   const ecsTools = buildAgenticGraphLocalMcpToolDefinitions().filter((tool) => ECS_TOOL_NAMES.includes(tool.name));
   assert.deepEqual(ecsTools.map((tool) => tool.name), [
-    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
-    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
-    AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+    AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+    AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+    AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
   ]);
   assert.equal(new Set(ecsTools.map((tool) => tool.name)).size, 3);
 
@@ -41,9 +41,9 @@ test("ECS descriptors accept only the exact scope, binding, and caller-owned inp
       .filter((tool) => ECS_TOOL_NAMES.includes(tool.name))
       .map((tool) => [tool.name, tool]),
   );
-  const start = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart);
-  const tick = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick);
-  const persist = byName.get(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist);
+  const start = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart);
+  const tick = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick);
+  const persist = byName.get(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist);
 
   assert.deepEqual(start.inputSchema.required, ["kgcPath"]);
   assert.deepEqual(Object.keys(start.inputSchema.properties).sort(), ["binding", "kgcPath", "scope"]);

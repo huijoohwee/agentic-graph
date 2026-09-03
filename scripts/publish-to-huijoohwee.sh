@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Publishes AgenticGraph Canvas to Cloudflare Pages content folder:
-#   agenticgraph/canvas/dist -> huijoohwee/content/agenticgraph
+# Publishes agentic-graph Canvas to Cloudflare Pages content folder:
+#   agentic-graph/canvas/dist -> huijoohwee/content/agentic-graph
 #
-# Usage (from /GitHub/agenticgraph):
+# Usage (from /GitHub/agentic-graph):
 #   ./scripts/publish-to-huijoohwee.sh
 #
 # Notes:
-# - Builds with BASE path /agenticgraph/ (for airvio.co/agenticgraph).
+# - Builds with BASE path /agentic-graph/ (for airvio.co/agentic-graph).
 # - Skips docs generation (python deps) to keep the publish step lean.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CANVAS_DIR="${ROOT_DIR}/canvas"
 
-export VITE_BASE_PATH="${VITE_BASE_PATH:-/agenticgraph/}"
+export VITE_BASE_PATH="${VITE_BASE_PATH:-/agentic-graph/}"
 export AG_SKIP_DOCS_UPDATE="${AG_SKIP_DOCS_UPDATE:-1}"
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
 
-echo "[agenticgraph] installing deps (canvas)..."
+echo "[agentic-graph] installing deps (canvas)..."
 npm --prefix "${CANVAS_DIR}" install --no-audit --no-fund
 
-echo "[agenticgraph] rebuilding native deps (esbuild)..."
+echo "[agentic-graph] rebuilding native deps (esbuild)..."
 npm --prefix "${CANVAS_DIR}" rebuild esbuild || true
 
-echo "[agenticgraph] building (canvas) with base=${VITE_BASE_PATH}..."
+echo "[agentic-graph] building (canvas) with base=${VITE_BASE_PATH}..."
 npm --prefix "${CANVAS_DIR}" run build
 
-echo "[agenticgraph] syncing dist -> huijoohwee/content/agenticgraph..."
-node "${ROOT_DIR}/scripts/sync-pages-agenticgraph.mjs"
+echo "[agentic-graph] syncing dist -> huijoohwee/content/agentic-graph..."
+node "${ROOT_DIR}/scripts/sync-pages-agentic-graph.mjs"
 
-echo "[agenticgraph] done. Now commit+push in the huijoohwee repo:"
-echo "  cd ../huijoohwee && git add content/agenticgraph _redirects _headers && git commit -m \"Publish agenticgraph\" && git push"
+echo "[agentic-graph] done. Now commit+push in the huijoohwee repo:"
+echo "  cd ../huijoohwee && git add content/agentic-graph _redirects _headers && git commit -m \"Publish agentic-graph\" && git push"
 

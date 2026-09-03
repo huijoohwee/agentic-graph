@@ -11,7 +11,7 @@ import type { UiIconScale } from '@/lib/ui'
 import type { GraphEdge, GraphNode } from '@/lib/graph/types'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import type { FlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
-import { runAgenticGraphMotion } from '@/lib/motion/agenticgraphMotion'
+import { runAgenticGraphMotion } from '@/lib/motion/agentic-graph-motion'
 
 import {
   resolveStoryboardWidgetSurfacePointerPolicy,

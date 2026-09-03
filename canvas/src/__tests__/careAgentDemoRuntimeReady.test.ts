@@ -18,7 +18,7 @@ import {
 type PlainRecord = Record<string, unknown>
 
 const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
-const CARE_AGENT_DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agenticgraph-care-agent-demo.md')
+const CARE_AGENT_DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agentic-graph-care-agent-demo.md')
 const CARE_AGENT_DOCS_ROOT = path.dirname(CARE_AGENT_DOC_PATH)
 const RUNTIME_READY_TEST_ID = 'docs.careAgentDemo.runtimeReady'
 const RUN_READY_MODE_TEST_ID = 'docs.careAgentDemo.runReadyMode'
@@ -131,16 +131,16 @@ export function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
   }
   const probeTools = asRecord(probeTreeRuntime.tools, 'probe_tree_runtime.tools')
   const expectedProbeTools = {
-    generate: 'agenticgraph.probe.generate',
-    select: 'agenticgraph.probe.select',
-    evolve: 'agenticgraph.probe.evolve',
+    generate: 'agentic-graph.probe.generate',
+    select: 'agentic-graph.probe.select',
+    evolve: 'agentic-graph.probe.evolve',
   }
   for (const [key, value] of Object.entries(expectedProbeTools)) {
     if (probeTools[key] !== value) throw new Error(`expected probe_tree_runtime.tools.${key}=${value}`)
   }
   const probeAdapter = asRecord(probeTreeRuntime.local_model_adapter, 'probe_tree_runtime.local_model_adapter')
   for (const key of ['model_env', 'url_env', 'allow_remote_env', 'timeout_env']) {
-    if (!String(probeAdapter[key] || '').startsWith('AGENTICGRAPH_PROBE_TREE_MODEL')) {
+    if (!String(probeAdapter[key] || '').startsWith('AGENTIC_OS_PROBE_TREE_MODEL')) {
       throw new Error(`expected probe_tree_runtime.local_model_adapter.${key} to use host-owned env config`)
     }
   }
@@ -256,7 +256,7 @@ export function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
     /data:image/i,
     /BEGIN PRIVATE KEY/i,
     /VIDEODB_API_KEY|SENSENOVA_API_KEY/i,
-    /airvio\.co\/agenticgraph\/r2/i,
+    /airvio\.co\/agentic-graph\/r2/i,
     /deployed_api_claim:\s*true/i,
     /publish_scope:\s*"(?:prod|cloudflare|public)"/i,
     /live_result_url:\s*"https?:\/\//i,

@@ -80,8 +80,8 @@ test('offline native XR sources suppress automatic remote grammar hydration', as
       resetAgenticOsRemoteGrammarCatalogForTests()
       useGraphStore.setState({
         markdownDocumentName: id === 'flight-sim'
-          ? 'agenticgraph-game-flight-sim-demo.md'
-          : 'agenticgraph-physics-playground-demo.md',
+          ? 'agentic-graph-game-flight-sim-demo.md'
+          : 'agentic-graph-physics-playground-demo.md',
         markdownDocumentText: offlineRunReadySource(id),
       })
       const { dom, restore } = initJsdomHarness()
@@ -114,12 +114,12 @@ test('offline native XR sources suppress automatic remote grammar hydration', as
 
 test('ordinary repo-local workspace sources retain automatic remote grammar hydration', async () => {
   const originalFetch = globalThis.fetch
-  const originalRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const originalRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const originalDocumentName = useGraphStore.getState().markdownDocumentName
   const originalDocumentText = useGraphStore.getState().markdownDocumentText
   const methods: string[] = []
   const requestUrls: string[] = []
-  process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '1'
+  process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
   completeSourceFilesBootstrap()
   useGraphStore.setState({
     markdownDocumentName: 'ordinary-workspace.md',
@@ -168,11 +168,11 @@ test('ordinary repo-local workspace sources retain automatic remote grammar hydr
       tasks: 8,
     })
     assert.deepEqual(methods, ['initialize', 'tools/call', 'tools/call', 'tools/call'])
-    assert.ok(requestUrls.every(url => url === 'http://localhost/agenticgraph/control-plane/mcp'))
+    assert.ok(requestUrls.every(url => url === 'http://localhost/agentic-os/control-plane/mcp'))
   } finally {
     globalThis.fetch = originalFetch
-    if (originalRepoLocal === undefined) delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    else process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = originalRepoLocal
+    if (originalRepoLocal === undefined) delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    else process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = originalRepoLocal
     useGraphStore.setState({
       markdownDocumentName: originalDocumentName,
       markdownDocumentText: originalDocumentText,
@@ -186,14 +186,14 @@ test('ordinary repo-local workspace sources retain automatic remote grammar hydr
 
 test('runtime identity proof explicitly hydrates grammar for an offline native XR source', async () => {
   const originalFetch = globalThis.fetch
-  const originalRepoLocal = process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
+  const originalRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const originalDocumentName = useGraphStore.getState().markdownDocumentName
   const originalDocumentText = useGraphStore.getState().markdownDocumentText
   const methods: string[] = []
-  process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = '1'
+  process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
   completeSourceFilesBootstrap()
   useGraphStore.setState({
-    markdownDocumentName: 'agenticgraph-physics-playground-demo.md',
+    markdownDocumentName: 'agentic-graph-physics-playground-demo.md',
     markdownDocumentText: offlineRunReadySource('xr-physics'),
   })
   resetAgenticOsRemoteGrammarCatalogForTests()
@@ -254,8 +254,8 @@ test('runtime identity proof explicitly hydrates grammar for an offline native X
     assert.equal(getAgenticOsRemoteGrammarCatalogSnapshot().hydration.status, 'fresh')
   } finally {
     globalThis.fetch = originalFetch
-    if (originalRepoLocal === undefined) delete process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL
-    else process.env.VITE_AGENTICGRAPH_RUN_READY_REPO_LOCAL = originalRepoLocal
+    if (originalRepoLocal === undefined) delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    else process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = originalRepoLocal
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
     useGraphStore.setState({
       markdownDocumentName: originalDocumentName,

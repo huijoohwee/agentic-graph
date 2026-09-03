@@ -138,13 +138,13 @@ test("repository cache entry names hash untrusted labels within one bounded path
 });
 
 test("host private-network capability is distinct from its repository provider allowlist", async (t) => {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-repository-host-policy-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-repository-host-policy-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const baseEnv = {
     PATH: String(process.env.PATH || ""),
     HOME: String(process.env.HOME || ""),
-    AGENTICGRAPH_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS: "127.0.0.1",
-    AGENTICGRAPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT: "blocked-output",
+    AGENTIC_OS_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS: "127.0.0.1",
+    AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT: "blocked-output",
   };
   const args = {
     repositoryUrl: "https://127.0.0.1/group/project",
@@ -166,8 +166,8 @@ test("host private-network capability is distinct from its repository provider a
       rootDir,
       env: {
         ...baseEnv,
-        AGENTICGRAPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT: "opted-in-output",
-        AGENTICGRAPH_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK: "1",
+        AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT: "opted-in-output",
+        AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK: "1",
       },
     },
   );

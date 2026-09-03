@@ -11,7 +11,7 @@ export const SEALION_API_DOC_AREA = 'AI Singapore SEA-LION API'
 export const SEALION_API_DOCS_URL = 'https://docs.sea-lion.ai/guides/inferencing/api.md'
 export const SEALION_MCP_SERVER_URL = 'https://api.sea-lion.ai/mcp/sealion'
 export const SEALION_EMBEDDINGS_ENDPOINT_URL = `${CHAT_SEALION_BASE}/v1/embeddings`
-export const SEALION_API_KEY_ENV = 'AGENTICGRAPH_CHAT_PROXY_SEALION_API_KEY'
+export const SEALION_API_KEY_ENV = 'AGENTIC_OS_CHAT_PROXY_SEALION_API_KEY'
 
 export { getSealionApiRowAnchorId } from './chatApiDocAnchors'
 

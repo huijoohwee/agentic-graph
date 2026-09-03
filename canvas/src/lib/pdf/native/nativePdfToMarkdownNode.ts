@@ -131,13 +131,13 @@ export async function convertPdfBytesToMarkdown(args: {
   maxFormXObjectCount?: number
 }): Promise<NativePdfConversionResult> {
   {
-    const raw = String(process.env.AGENTICGRAPH_PDF_MAX_BYTES || '').trim()
+    const raw = String(process.env.AGENTIC_OS_PDF_MAX_BYTES || '').trim()
     const n = raw ? Number(raw) : NaN
     const maxBytes = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
     if (maxBytes > 0 && args.pdfBytes.length > maxBytes) throw new Error('PDF is too large')
   }
 
-  const debugTiming = String(process.env.AGENTICGRAPH_PDF_DEBUG_TIMING || '').trim() === '1'
+  const debugTiming = String(process.env.AGENTIC_OS_PDF_DEBUG_TIMING || '').trim() === '1'
   const t0 = Date.now()
   const objects = parseIndirectObjects(args.pdfBytes)
   if (debugTiming) process.stderr.write(`[pdf] parseIndirectObjects: ${Date.now() - t0}ms\n`)
@@ -240,7 +240,7 @@ export async function convertPdfBytesToMarkdown(args: {
         if (typeof args.contentStreamMaxDecodeBytes === 'number' && args.contentStreamMaxDecodeBytes > 0) {
           return Math.floor(args.contentStreamMaxDecodeBytes)
         }
-        const raw = String(process.env.AGENTICGRAPH_PDF_CONTENT_STREAM_MAX_DECODE_BYTES || '').trim()
+        const raw = String(process.env.AGENTIC_OS_PDF_CONTENT_STREAM_MAX_DECODE_BYTES || '').trim()
         const n = raw ? Number(raw) : NaN
         if (Number.isFinite(n) && n > 0) return Math.floor(n)
         return 8 * 1024 * 1024
@@ -249,7 +249,7 @@ export async function convertPdfBytesToMarkdown(args: {
         if (typeof args.pageContentMaxBytes === 'number' && args.pageContentMaxBytes > 0) {
           return Math.floor(args.pageContentMaxBytes)
         }
-        const raw = String(process.env.AGENTICGRAPH_PDF_PAGE_CONTENT_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTIC_OS_PDF_PAGE_CONTENT_MAX_BYTES || '').trim()
         const n = raw ? Number(raw) : NaN
         if (Number.isFinite(n) && n > 0) return Math.floor(n)
         return 8 * 1024 * 1024

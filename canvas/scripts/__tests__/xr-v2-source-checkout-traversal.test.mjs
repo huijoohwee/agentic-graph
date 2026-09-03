@@ -16,11 +16,11 @@ function git(repositoryRoot, args) {
 }
 
 function createSyntheticPullRequestMerge(t) {
-  const repositoryRoot = mkdtempSync(resolve(tmpdir(), 'agenticgraph-xr-v2-traversal-'))
+  const repositoryRoot = mkdtempSync(resolve(tmpdir(), 'agentic-graph-xr-v2-traversal-'))
   t.after(() => rmSync(repositoryRoot, { force: true, recursive: true }))
   git(repositoryRoot, ['init', '--initial-branch=main'])
-  git(repositoryRoot, ['config', 'user.email', 'xr-v2-test@agenticgraph.invalid'])
-  git(repositoryRoot, ['config', 'user.name', 'AgenticGraph XR v2 test'])
+  git(repositoryRoot, ['config', 'user.email', 'xr-v2-test@agentic-graph.invalid'])
+  git(repositoryRoot, ['config', 'user.name', 'agentic-graph XR v2 test'])
   writeFileSync(resolve(repositoryRoot, 'base.txt'), 'base\n')
   git(repositoryRoot, ['add', 'base.txt'])
   git(repositoryRoot, ['commit', '-m', 'base'])

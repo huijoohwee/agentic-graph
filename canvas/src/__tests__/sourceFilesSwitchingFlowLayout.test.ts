@@ -301,9 +301,9 @@ function buildAppliedMarkdownDocument(name: string, text: string): CanvasApplied
 }
 
 export function testSourceFilesSwitchingRefreshesCanvasAppliedDocumentIdentityWithoutEditChurn() {
-  const first = buildAppliedMarkdownDocument('docs/agenticgraph-video-demo.md', 'video document')
-  const editedFirst = buildAppliedMarkdownDocument('docs/agenticgraph-video-demo.md', 'video document edited in editor')
-  const switched = buildAppliedMarkdownDocument('docs/agenticgraph-design-demo.md', 'design document')
+  const first = buildAppliedMarkdownDocument('docs/agentic-graph-video-demo.md', 'video document')
+  const editedFirst = buildAppliedMarkdownDocument('docs/agentic-graph-video-demo.md', 'video document edited in editor')
+  const switched = buildAppliedMarkdownDocument('docs/agentic-graph-design-demo.md', 'design document')
 
   if (shouldRefreshCanvasAppliedMarkdownDocument({ latest: first, next: editedFirst, applyViewPreset: false })) {
     throw new Error('expected same-document editor text sync to preserve the last canvas-applied markdown document')
@@ -328,16 +328,16 @@ export function testSourceFilesSwitchingRefreshesCanvasAppliedDocumentIdentityWi
 
 export function testSourceFilesFileSelectionPromotesActiveCanvasPath() {
   const next = resolveActivePathFromWorkspaceFileSelection({
-    selectionPath: '/docs/agenticgraph-design-demo.md',
-    activePath: '/docs/agenticgraph-video-demo.md',
+    selectionPath: '/docs/agentic-graph-design-demo.md',
+    activePath: '/docs/agentic-graph-video-demo.md',
     selectionEntryKind: 'file',
   })
-  if (next !== '/docs/agenticgraph-design-demo.md') {
+  if (next !== '/docs/agentic-graph-design-demo.md') {
     throw new Error(`expected file selection to promote active Canvas path, got ${String(next)}`)
   }
   const folderSelection = resolveActivePathFromWorkspaceFileSelection({
     selectionPath: '/docs',
-    activePath: '/docs/agenticgraph-video-demo.md',
+    activePath: '/docs/agentic-graph-video-demo.md',
     selectionEntryKind: 'folder',
   })
   if (folderSelection !== null) {
@@ -469,23 +469,23 @@ export async function testNewMarkdownDocumentInitializesAtNaturalZoom() {
 
 export function testSourceFilesStableHydratedSelectionStillAppliesStaleCanvasDocument() {
   const shouldApply = shouldApplyStableWorkspaceSelectionToCanvas({
-    activePath: '/docs/agenticgraph-design-demo.md',
+    activePath: '/docs/agentic-graph-design-demo.md',
     activeEntryKind: 'file',
-    activeDocumentKey: 'docs/agenticgraph-design-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-design-demo.md',
     nextText: '---\nkgCanvas2dRenderer: "design"\n---\n# Design',
-    markdownDocumentName: 'docs/agenticgraph-design-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-design-demo.md',
     markdownDocumentText: '---\nkgCanvas2dRenderer: "design"\n---\n# Design',
-    graphDataSource: 'markdown:docs/agenticgraph-video-demo.md',
+    graphDataSource: 'markdown:docs/agentic-graph-video-demo.md',
   })
   if (!shouldApply) {
     throw new Error('expected already-hydrated selected file text to still apply when Canvas has a stale active markdown document')
   }
   const emptySourceShouldApply = shouldApplyStableWorkspaceSelectionToCanvas({
-    activePath: '/docs/agenticgraph-design-demo.md',
+    activePath: '/docs/agentic-graph-design-demo.md',
     activeEntryKind: 'file',
-    activeDocumentKey: 'docs/agenticgraph-design-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-design-demo.md',
     nextText: '---\nkgCanvas2dRenderer: "design"\n---\n# Design',
-    markdownDocumentName: 'docs/agenticgraph-design-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-design-demo.md',
     markdownDocumentText: '---\nkgCanvas2dRenderer: "design"\n---\n# Design',
     graphDataSource: '',
   })
@@ -493,32 +493,32 @@ export function testSourceFilesStableHydratedSelectionStillAppliesStaleCanvasDoc
     throw new Error('expected already-hydrated selected file text to apply when Canvas graph source is unowned or missing')
   }
   const userDraftShouldApplyCachedText = shouldApplyStableWorkspaceSelectionToCanvas({
-    activePath: '/docs/agenticgraph-design-demo.md',
+    activePath: '/docs/agentic-graph-design-demo.md',
     activeEntryKind: 'file',
-    activeDocumentKey: 'docs/agenticgraph-design-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-design-demo.md',
     nextText: '---\nkgCanvas2dRenderer: "design"\n---\n# Cached text',
     userEditedActiveText: true,
-    markdownDocumentName: 'docs/agenticgraph-design-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-design-demo.md',
     markdownDocumentText: '---\nkgCanvas2dRenderer: "design"\n---\n# Cached text',
-    graphDataSource: 'markdown:docs/agenticgraph-video-demo.md',
+    graphDataSource: 'markdown:docs/agentic-graph-video-demo.md',
   })
   if (userDraftShouldApplyCachedText) {
     throw new Error('expected stable Source Files hydration to preserve an unsaved user draft even when Canvas metadata is stale')
   }
   if (!isWorkspaceGraphSourceStaleForDocument({
-    activeDocumentKey: 'docs/agenticgraph-design-demo.md',
-    graphDataSource: 'source-file:docs/agenticgraph-video-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-design-demo.md',
+    graphDataSource: 'source-file:docs/agentic-graph-video-demo.md',
   })) {
     throw new Error('expected non-markdown graph source ownership to be stale for the selected Source Files document')
   }
   const sameDocument = shouldApplyStableWorkspaceSelectionToCanvas({
-    activePath: '/docs/agenticgraph-design-demo.md',
+    activePath: '/docs/agentic-graph-design-demo.md',
     activeEntryKind: 'file',
-    activeDocumentKey: 'docs/agenticgraph-design-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-design-demo.md',
     nextText: '# Design',
-    markdownDocumentName: 'docs/agenticgraph-design-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-design-demo.md',
     markdownDocumentText: '# Design',
-    graphDataSource: 'markdown:docs/agenticgraph-design-demo.md',
+    graphDataSource: 'markdown:docs/agentic-graph-design-demo.md',
   })
   if (sameDocument) {
     throw new Error('expected stable selected file apply guard to avoid duplicate same-document Canvas apply churn')
@@ -542,11 +542,11 @@ export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
   }
 
   const settled = isWorkspaceDocumentSwitchApplySettled({
-    activeDocumentKey: 'docs/agenticgraph-storyboard-widget-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-storyboard-widget-demo.md',
     text: '# Storyboard Widget',
-    markdownDocumentName: 'docs/agenticgraph-storyboard-widget-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-storyboard-widget-demo.md',
     markdownDocumentText: '# Storyboard Widget',
-    graphDataSource: 'markdown:docs/agenticgraph-storyboard-widget-demo.md',
+    graphDataSource: 'markdown:docs/agentic-graph-storyboard-widget-demo.md',
     canvas2dRenderer: 'storyboard',
   })
   if (!settled) {
@@ -566,9 +566,9 @@ export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
   }
 
   const staleGraph = isWorkspaceDocumentSwitchApplySettled({
-    activeDocumentKey: 'docs/agenticgraph-storyboard-widget-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-storyboard-widget-demo.md',
     text: '# Storyboard Widget',
-    markdownDocumentName: 'docs/agenticgraph-storyboard-widget-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-storyboard-widget-demo.md',
     markdownDocumentText: '# Storyboard Widget',
     graphDataSource: 'markdown:docs/another-file.md',
     canvas2dRenderer: 'storyboard',
@@ -578,11 +578,11 @@ export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
   }
 
   const staleText = isWorkspaceDocumentSwitchApplySettled({
-    activeDocumentKey: 'docs/agenticgraph-storyboard-widget-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-storyboard-widget-demo.md',
     text: '# Storyboard Widget',
-    markdownDocumentName: 'docs/agenticgraph-storyboard-widget-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-storyboard-widget-demo.md',
     markdownDocumentText: '# Older text',
-    graphDataSource: 'markdown:docs/agenticgraph-storyboard-widget-demo.md',
+    graphDataSource: 'markdown:docs/agentic-graph-storyboard-widget-demo.md',
     canvas2dRenderer: 'storyboard',
   })
   if (staleText) {
@@ -591,11 +591,11 @@ export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
 
   const staleRendererText = '---\nkgCanvas2dRenderer: "storyboard"\n---\n# Storyboard'
   const staleRenderer = isWorkspaceDocumentSwitchApplySettled({
-    activeDocumentKey: 'docs/agenticgraph-storyboard-widget-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-storyboard-widget-demo.md',
     text: staleRendererText,
-    markdownDocumentName: 'docs/agenticgraph-storyboard-widget-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-storyboard-widget-demo.md',
     markdownDocumentText: staleRendererText,
-    graphDataSource: 'markdown:docs/agenticgraph-storyboard-widget-demo.md',
+    graphDataSource: 'markdown:docs/agentic-graph-storyboard-widget-demo.md',
     canvas2dRenderer: 'design',
   })
   if (!staleRenderer) {
@@ -605,13 +605,13 @@ export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
     throw new Error('expected selected-file frontmatter renderer helper to continue detecting preset differences for initial/import apply paths')
   }
   const staleRendererShouldApply = shouldApplyStableWorkspaceSelectionToCanvas({
-    activePath: '/docs/agenticgraph-storyboard-widget-demo.md',
+    activePath: '/docs/agentic-graph-storyboard-widget-demo.md',
     activeEntryKind: 'file',
-    activeDocumentKey: 'docs/agenticgraph-storyboard-widget-demo.md',
+    activeDocumentKey: 'docs/agentic-graph-storyboard-widget-demo.md',
     nextText: staleRendererText,
-    markdownDocumentName: 'docs/agenticgraph-storyboard-widget-demo.md',
+    markdownDocumentName: 'docs/agentic-graph-storyboard-widget-demo.md',
     markdownDocumentText: staleRendererText,
-    graphDataSource: 'markdown:docs/agenticgraph-storyboard-widget-demo.md',
+    graphDataSource: 'markdown:docs/agentic-graph-storyboard-widget-demo.md',
     canvas2dRenderer: 'design',
   })
   if (staleRendererShouldApply) {

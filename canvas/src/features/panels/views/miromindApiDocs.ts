@@ -89,7 +89,7 @@ const MIROMIND_API_DOC_ROWS: ReadonlyArray<MiroMindDocRow> = [
     key: 'messages',
     typeLabel: 'array',
     value: '[]',
-    responsibility: 'States that MiroMind reuses the canonical AgenticGraph chat request message assembly.',
+    responsibility: 'States that MiroMind reuses the canonical agentic-graph chat request message assembly.',
     notes: 'No provider-specific prompt schema fork is allowed.',
     searchHints: ['messages', 'prompt contract', 'context pack'],
     tooltipDefaultValue: '[]',

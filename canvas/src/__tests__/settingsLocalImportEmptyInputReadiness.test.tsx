@@ -58,7 +58,7 @@ function SettingsLocalImportEmptyInputHarness(props: {
     importLocalFilesForChatHistory,
     importLocalFilesForAgenticGraph,
     chatHistoryPathStatus,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
@@ -70,19 +70,19 @@ function SettingsLocalImportEmptyInputHarness(props: {
 
   return (
     <section>
-      <section data-draft-agenticgraph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
+      <section data-draft-agentic-graph-storage-mode={String(values.chatAgenticGraphStorageMode || '')} />
       <section data-draft-history-storage-mode={String(values.chatHistoryStorageMode || '')} />
-      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
+      <section data-draft-agentic-graph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
-      <section data-draft-agenticgraph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
+      <section data-draft-agentic-graph-workspace-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
+      <section data-agentic-graph-status={String(agenticGraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
         onClick={() => importLocalFilesForAgenticGraph(null)}
       >
-        Import AgenticGraph Empty Local Input
+        Import agentic-graph Empty Local Input
       </button>
       <button
         type="button"
@@ -122,7 +122,7 @@ export async function testSettingsLocalImportEmptyInputKeepsCommittedFloatingCha
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatAgenticGraph')
     store.setChatAgenticGraphStorageMode('cloud')
-    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-before-empty-local-import.md')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agentic-graph-before-empty-local-import.md')
     store.setChatAgenticGraphWorkspacePath(null)
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-before-empty-local-import.md')
@@ -155,14 +155,14 @@ export async function testSettingsLocalImportEmptyInputKeepsCommittedFloatingCha
       initialChatInspection.available !== true ||
       initialChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       initialChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-empty-local-import.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-empty-local-import.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-empty-local-import.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline local-import empty-input state to reflect committed cloud values, got ${JSON.stringify(initialChatInspection)}`)
     }
 
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Import AgenticGraph Empty Local Input').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Import agentic-graph Empty Local Input').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
@@ -170,19 +170,19 @@ export async function testSettingsLocalImportEmptyInputKeepsCommittedFloatingCha
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
-    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agenticgraph-storage-mode]')?.getAttribute('data-draft-agenticgraph-storage-mode')
+    const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agentic-graph-storage-mode]')?.getAttribute('data-draft-agentic-graph-storage-mode')
     const draftHistoryStorageMode = settingsContainer.querySelector('[data-draft-history-storage-mode]')?.getAttribute('data-draft-history-storage-mode')
-    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agentic-graph-cloud-url]')?.getAttribute('data-draft-agentic-graph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
-    const draftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agenticgraph-workspace-path]')?.getAttribute('data-draft-agenticgraph-workspace-path')
+    const draftAgenticGraphWorkspacePath = settingsContainer.querySelector('[data-draft-agentic-graph-workspace-path]')?.getAttribute('data-draft-agentic-graph-workspace-path')
     const draftHistoryWorkspacePath = settingsContainer.querySelector('[data-draft-history-workspace-path]')?.getAttribute('data-draft-history-workspace-path')
-    const agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    const agenticGraphStatus = settingsContainer.querySelector('[data-agentic-graph-status]')?.getAttribute('data-agentic-graph-status')
     const historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
 
     if (
       draftAgenticGraphStorageMode !== 'cloud' ||
       draftHistoryStorageMode !== 'cloud' ||
-      draftAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-empty-local-import.md' ||
+      draftAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-empty-local-import.md' ||
       draftHistoryCloudUrl !== 'https://cloud.example/history-before-empty-local-import.md' ||
       draftAgenticGraphWorkspacePath !== '' ||
       draftHistoryWorkspacePath !== ''
@@ -196,8 +196,8 @@ export async function testSettingsLocalImportEmptyInputKeepsCommittedFloatingCha
         draftHistoryWorkspacePath,
       })}`)
     }
-    if (agenticgraphStatus !== '' || historyStatus !== '') {
-      throw new Error(`expected empty local-import guard to leave status unchanged, got ${JSON.stringify({ agenticgraphStatus, historyStatus })}`)
+    if (agenticGraphStatus !== '' || historyStatus !== '') {
+      throw new Error(`expected empty local-import guard to leave status unchanged, got ${JSON.stringify({ agenticGraphStatus, historyStatus })}`)
     }
     if (bridgeCalls.length !== 0) {
       throw new Error(`expected empty local-import guard to skip workspace bridge import, got ${bridgeCalls.length} calls`)
@@ -211,7 +211,7 @@ export async function testSettingsLocalImportEmptyInputKeepsCommittedFloatingCha
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       preApplyChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-empty-local-import.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-empty-local-import.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-empty-local-import.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline empty local-import state to remain on committed cloud values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)
@@ -240,7 +240,7 @@ export async function testSettingsLocalImportEmptyInputKeepsCommittedFloatingCha
       appliedChatInspection.available !== true ||
       appliedChatInspection.workspacePaths.chatAgenticGraphWorkspacePath !== null ||
       appliedChatInspection.workspacePaths.chatHistoryWorkspacePath !== null ||
-      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-before-empty-local-import.md' ||
+      appliedChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-before-empty-local-import.md' ||
       appliedChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-before-empty-local-import.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline empty local-import state to remain unchanged after Settings apply, got ${JSON.stringify(appliedChatInspection)}`)

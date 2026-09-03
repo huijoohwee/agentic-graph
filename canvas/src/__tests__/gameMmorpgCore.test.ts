@@ -4,7 +4,7 @@ import { describe, test } from 'node:test'
 import '@/features/game-mmorpg/gameMmorpgCoreDispose.contract.test'
 import Dexie from 'dexie'
 import { IDBKeyRange, indexedDB } from 'fake-indexeddb'
-import { createAgenticGraphStorageEnginePersistence } from '@/lib/storage/agenticgraphStorageEnginePersistence'
+import { createAgenticGraphStorageEnginePersistence } from '@/lib/storage/agentic-graph-storage-engine-persistence'
 import {
   GAME_MMORPG_MODE_IDENTITY,
   createGameMmorpgContinuityStore,
@@ -168,7 +168,7 @@ describe('Game MMORPG browser persistence contract', () => {
       'gameMmorpgCore.ts', 'gameMmorpgToolSurface.ts',
     ].map(fileName => readFile(new URL(`../features/game-mmorpg/${fileName}`, import.meta.url), 'utf8')))
     assert.match(sources[0], /grph-shared\/src\/game-os\/index\.js/u)
-    assert.match(sources[0], /lib\/storage\/agenticgraphStorageEnginePersistence/u)
+    assert.match(sources[0], /lib\/storage\/agenticGraphStorageEnginePersistence/u)
     for (const source of sources) {
       assert.doesNotMatch(source, /\bfetch\s*\(|XMLHttpRequest|WebSocket|https?:\/\//u)
       assert.doesNotMatch(source, /three|WebGL|renderer|createObjectStore|indexedDB\.open|new GameOsModeRegistry|modelTransport|authoringAssist|externalGameRuntime/iu)

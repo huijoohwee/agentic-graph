@@ -8,7 +8,7 @@ import {
 } from "./contract.mjs";
 import { ensureKnowledgeGraphStorageRoot } from "./store.mjs";
 
-const LOCK_SCHEMA = "agenticgraph-knowledge-graph-ingest-lock/v1";
+const LOCK_SCHEMA = "agentic-graph-knowledge-graph-ingest-lock/v1";
 const INVALID_OWNER_GRACE_MS = 5_000;
 const OWNER_FILE = /^owner\.([a-f0-9-]{36})\.json$/;
 const RETRY_MS = 25;

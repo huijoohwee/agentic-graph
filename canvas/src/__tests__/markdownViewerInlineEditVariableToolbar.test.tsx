@@ -130,7 +130,7 @@ export async function testMarkdownViewerInlineEditSlashToolbarOpensAfterInlineMe
     const root = reactDomClient.createRoot(container)
     const mod = await import('@/features/markdown/ui/MarkdownBlockContainer')
     const MarkdownBlockContainer = mod.MarkdownBlockContainer
-    const mediaMarkdown = '![strybldr-starter-source.png](https://airvio.co/agenticgraph/media/strybldr-starter-source.png)'
+    const mediaMarkdown = '![strybldr-starter-source.png](https://airvio.co/agentic-graph/media/strybldr-starter-source.png)'
     root.render(
       <MarkdownBlockContainer
         as="p"
@@ -350,7 +350,7 @@ export async function testMarkdownViewerInlineEditSemanticToolbarOpensAfterInlin
     const root = reactDomClient.createRoot(container)
     const mod = await import('@/features/markdown/ui/MarkdownBlockContainer')
     const MarkdownBlockContainer = mod.MarkdownBlockContainer
-    const mediaMarkdown = '![strybldr-starter-source.png](https://airvio.co/agenticgraph/media/strybldr-starter-source.png)'
+    const mediaMarkdown = '![strybldr-starter-source.png](https://airvio.co/agentic-graph/media/strybldr-starter-source.png)'
     root.render(
       <MarkdownBlockContainer
         as="p"

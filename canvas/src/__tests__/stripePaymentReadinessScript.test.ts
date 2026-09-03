@@ -120,7 +120,7 @@ export function testStripePaymentReadinessScriptRejectsSubscriptionWithoutPriceI
 STRIPE_CHECKOUT_MODE = "subscription"
 STRIPE_CHECKOUT_CURRENCY = "usd"
 STRIPE_CHECKOUT_UNIT_AMOUNT = "2500"
-STRIPE_CHECKOUT_PRODUCT_NAME = "AgenticGraph"
+STRIPE_CHECKOUT_PRODUCT_NAME = "agentic-graph"
 `,
     d1Tables: REQUIRED_D1_TABLES,
     d1Columns: REQUIRED_D1_COLUMNS,
@@ -368,7 +368,7 @@ export function testStripePaymentReadinessScriptAcceptsVisibleInlineCheckoutPric
 [vars]
 STRIPE_CHECKOUT_CURRENCY = "usd"
 STRIPE_CHECKOUT_UNIT_AMOUNT = "2500"
-STRIPE_CHECKOUT_PRODUCT_NAME = "AgenticGraph"
+STRIPE_CHECKOUT_PRODUCT_NAME = "agentic-graph"
 `,
     d1Tables: REQUIRED_D1_TABLES,
     d1Columns: REQUIRED_D1_COLUMNS,
@@ -389,7 +389,7 @@ export function testStripePaymentReadinessScriptRejectsConflictingVisibleCheckou
 STRIPE_CHECKOUT_PRICE_ID = "price_configured"
 STRIPE_CHECKOUT_CURRENCY = "usd"
 STRIPE_CHECKOUT_UNIT_AMOUNT = "2500"
-STRIPE_CHECKOUT_PRODUCT_NAME = "AgenticGraph"
+STRIPE_CHECKOUT_PRODUCT_NAME = "agentic-graph"
 `,
     d1Tables: REQUIRED_D1_TABLES,
     d1Columns: REQUIRED_D1_COLUMNS,
@@ -439,7 +439,7 @@ STRIPE_CHECKOUT_PRICE_ID = "price_configured"
   if (d1Schema.status !== 'fail' || !String(d1Schema.details || '').includes('stripe_webhook_events.processing_status')) {
     throw new Error(`expected missing processing_status column to be named, got ${JSON.stringify(d1Schema)}`)
   }
-  if (!String(d1Schema.details || '').includes('wrangler d1 migrations apply agenticgraph-storage-test --remote')) {
+  if (!String(d1Schema.details || '').includes('wrangler d1 migrations apply agentic-graph-storage-test --remote')) {
     throw new Error(`expected missing processing_status column to include remote migration command, got ${JSON.stringify(d1Schema)}`)
   }
 }

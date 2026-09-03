@@ -1,9 +1,9 @@
 import { readEnvString } from '@/lib/config.env'
 import {
   buildAgenticGraphStorageExportPath,
-  AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+  AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   type AgenticGraphStorageExportResponse,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   buildAgenticGraphStorageRequestUrl,
   readCachedWorkspaceDocsMirrorEntries,
@@ -33,7 +33,7 @@ const isPublishedAgenticDocPath = (value: string): boolean => {
 }
 
 const readStorageBaseUrl = (): string => (
-  String(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', '') || '').trim()
+  String(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', '') || '').trim()
 )
 
 const readUtf8ByteLength = (value: string): number => new TextEncoder().encode(value).byteLength
@@ -53,7 +53,7 @@ const readPublishedAgenticDocsMirrorUncached = async (
   baseUrl: string,
 ): Promise<WorkspaceDocsMirrorEntry[]> => {
   if (typeof fetch !== 'function') return []
-  const exportPath = buildAgenticGraphStorageExportPath(AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID)
+  const exportPath = buildAgenticGraphStorageExportPath(AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID)
   const requestUrl = buildAgenticGraphStorageRequestUrl({ path: exportPath, baseUrl })
   if (!requestUrl) return []
   try {
@@ -62,7 +62,7 @@ const readPublishedAgenticDocsMirrorUncached = async (
     const payload = (await response.json()) as Partial<AgenticGraphStorageExportResponse>
     if (
       payload.ok !== true
-      || payload.workspaceId !== AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID
+      || payload.workspaceId !== AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID
       || !Array.isArray(payload.documents)
     ) return []
 
@@ -125,7 +125,7 @@ export const readPublishedAgenticDocsMirrorEntries = async (): Promise<Workspace
   const baseUrl = readStorageBaseUrl()
   if (!baseUrl) return []
   return readCachedWorkspaceDocsMirrorEntries({
-    cacheKey: `published-agentic-docs|${baseUrl}|${AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID}`,
+    cacheKey: `published-agentic-docs|${baseUrl}|${AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID}`,
     load: () => readPublishedAgenticDocsMirrorUncached(baseUrl),
   })
 }
@@ -139,7 +139,7 @@ export const readPublishedAgenticDocSource = async (
   const storedText = baseUrl && isPublishedAgenticDocPath(canonicalPath)
     ? await readFirstAgenticGraphStorageDocText({
         baseUrl,
-        workspaceId: AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID,
+        workspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
         canonicalPathCandidates: [canonicalPath],
       })
     : ''

@@ -1,5 +1,5 @@
-import paymentWorkerModule from '../../../cloudflare/workers/agenticgraph-payment/index.ts'
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import paymentWorkerModule from '../../../cloudflare/workers/agentic-graph-payment/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import { AGENTIC_COMMERCE_ROUTE_PATHS } from 'grph-shared/payments/agenticCommerceSsot'
 import {
   AGENTIC_COMMERCE_SOLANA_PAY_KEY,
@@ -85,7 +85,7 @@ export async function testAgenticCommerceSolanaPayCheckoutReturnsTransferUrlAndR
   const repeated = await createSolanaPaySession(env)
   if (repeated.session.id !== session.id || repeated.session.solana_pay.reference !== solanaPay.reference) throw new Error(`expected idempotent Solana Pay reference reuse, got ${JSON.stringify({ created, repeated })}`)
   const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-  if (!traceTypes.includes('agenticgraph.commerce.solana_pay_request')) throw new Error(`expected Solana Pay request trace event, got ${JSON.stringify(traceTypes)}`)
+  if (!traceTypes.includes('agentic-graph.commerce.solana_pay_request')) throw new Error(`expected Solana Pay request trace event, got ${JSON.stringify(traceTypes)}`)
 }
 
 export async function testAgenticCommerceSolanaPaySettleRouteValidatesRpcAndWritesProof() {
@@ -115,7 +115,7 @@ export async function testAgenticCommerceSolanaPaySettleRouteValidatesRpcAndWrit
     if (body.session?.status !== 'complete' || body.session.payment_rail !== AGENTIC_COMMERCE_SOLANA_PAY_KEY) throw new Error(`expected completed Solana Pay session, got ${JSON.stringify(body)}`)
     if (body.proof?.payment_rail !== AGENTIC_COMMERCE_SOLANA_PAY_KEY || body.proof.canvas_node?.tx_hash !== SOLANA_PAY_TEST_SIGNATURE) throw new Error(`expected Solana Pay proof node with signature, got ${JSON.stringify(body.proof)}`)
     const traceTypes = Array.from(env.DB.agenticCommerceTraceEvents.values()).map(row => row.event_type)
-    if (!traceTypes.includes('agenticgraph.commerce.solana_pay_confirm') || !traceTypes.includes('agenticgraph.commerce.settle')) throw new Error(`expected Solana Pay confirm and settle trace events, got ${JSON.stringify(traceTypes)}`)
+    if (!traceTypes.includes('agentic-graph.commerce.solana_pay_confirm') || !traceTypes.includes('agentic-graph.commerce.settle')) throw new Error(`expected Solana Pay confirm and settle trace events, got ${JSON.stringify(traceTypes)}`)
   } finally {
     globalThis.fetch = originalFetch
   }

@@ -33,7 +33,7 @@ const findFooterButton = (container: Element, label: string): HTMLButtonElement 
 export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessReceiptWithoutMcpReplay() {
   const { restore } = initWindowHarness({ storage: new MemoryStorage() })
   const assistantMessageId = 'assistant-durable-headless'
-  const requestText = '/agenticgraph.probe-tree Compare the retained options.'
+  const requestText = '/agentic-graph.probe-tree Compare the retained options.'
   let mcpCalls = 0
   try {
     const prepared = await prepareHeadlessResponseRun({
@@ -98,8 +98,8 @@ export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessR
       || mcpCalls !== 1
       || hydrated?.runId !== 'trace-durable-headless'
       || hydrated.headlessPreparationSeed?.runId !== assistantMessageId
-      || restoredPreparation?.invocation.tokens.join(' ') !== '/agenticgraph.probe-tree'
-      || restoredPreparation?.invocation.mcpResponse?.invocations[0]?.token !== '/agenticgraph.probe-tree'
+      || restoredPreparation?.invocation.tokens.join(' ') !== '/agentic-graph.probe-tree'
+      || restoredPreparation?.invocation.mcpResponse?.invocations[0]?.token !== '/agentic-graph.probe-tree'
       || resumedResult?.status !== 'ok'
       || resumedResult?.invocation.mcpInvoked !== true
       || resumedResult?.invocation.tool !== AGENTIC_OS_DOCS_MCP_TOOL_NAME
@@ -323,7 +323,7 @@ export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSes
   let abortObserved = false
   let mirroredWorkspacePath = ''
   let rejectPending: ((error: Error) => void) | null = null
-  process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = '/tmp/agenticgraph-floating-panel-chat-log'
+  process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = '/tmp/agentic-graph-floating-panel-chat-log'
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     if (String(input).includes('/__kg_fs_write')) {
       const body = String(init?.body || '')

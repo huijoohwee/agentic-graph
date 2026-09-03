@@ -9,9 +9,9 @@ export const testResolveRouterBasenameFromBaseUrl = () => {
     { input: undefined, expected: undefined },
     { input: '', expected: undefined },
     { input: '/', expected: undefined },
-    { input: '/agenticgraph/', expected: '/agenticgraph' },
-    { input: '/agenticgraph', expected: '/agenticgraph' },
-    { input: 'agenticgraph/', expected: '/agenticgraph' },
+    { input: '/agentic-graph/', expected: '/agentic-graph' },
+    { input: '/agentic-graph', expected: '/agentic-graph' },
+    { input: 'agentic-graph/', expected: '/agentic-graph' },
   ]
 
   for (const c of cases) {
@@ -21,35 +21,35 @@ export const testResolveRouterBasenameFromBaseUrl = () => {
     }
   }
 
-  const rootAlias = resolveRouterBasename('/agenticgraph/', {
+  const rootAlias = resolveRouterBasename('/agentic-graph/', {
     pathname: '/',
-    rootAliasBasePath: '/agenticgraph/',
+    rootAliasBasePath: '/agentic-graph/',
   })
   if (rootAlias !== undefined) {
     throw new Error(`Expected root alias basename to be undefined, got ${JSON.stringify(rootAlias)}`)
   }
-  if (!isRouterRootAliasRuntime('/', { pathname: '/', rootAliasBasePath: '/agenticgraph/' })) {
+  if (!isRouterRootAliasRuntime('/', { pathname: '/', rootAliasBasePath: '/agentic-graph/' })) {
     throw new Error('Expected the explicit root alias marker to own the Vite Dev root runtime')
   }
 
-  const canonicalPath = resolveRouterBasename('/agenticgraph/', {
-    pathname: '/agenticgraph/',
-    rootAliasBasePath: '/agenticgraph/',
+  const canonicalPath = resolveRouterBasename('/agentic-graph/', {
+    pathname: '/agentic-graph/',
+    rootAliasBasePath: '/agentic-graph/',
   })
-  if (canonicalPath !== '/agenticgraph') {
-    throw new Error(`Expected canonical path basename to stay /agenticgraph, got ${JSON.stringify(canonicalPath)}`)
+  if (canonicalPath !== '/agentic-graph') {
+    throw new Error(`Expected canonical path basename to stay /agentic-graph, got ${JSON.stringify(canonicalPath)}`)
   }
 
-  const mismatchedAlias = resolveRouterBasename('/agenticgraph/', {
+  const mismatchedAlias = resolveRouterBasename('/agentic-graph/', {
     pathname: '/',
     rootAliasBasePath: '/other/',
   })
-  if (mismatchedAlias !== '/agenticgraph') {
-    throw new Error(`Expected mismatched root alias basename to stay /agenticgraph, got ${JSON.stringify(mismatchedAlias)}`)
+  if (mismatchedAlias !== '/agentic-graph') {
+    throw new Error(`Expected mismatched root alias basename to stay /agentic-graph, got ${JSON.stringify(mismatchedAlias)}`)
   }
 
-  const enterHref = resolveLiveCanvasHeroEnterHref('/agenticgraph/')
-  if (enterHref !== '/agenticgraph/') {
-    throw new Error(`Expected live canvas hero enter CTA to target /agenticgraph/, got ${JSON.stringify(enterHref)}`)
+  const enterHref = resolveLiveCanvasHeroEnterHref('/agentic-graph/')
+  if (enterHref !== '/agentic-graph/') {
+    throw new Error(`Expected live canvas hero enter CTA to target /agentic-graph/, got ${JSON.stringify(enterHref)}`)
   }
 }

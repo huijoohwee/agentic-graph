@@ -6,9 +6,9 @@ import { deleteWorkspaceDocsMirrorEntry } from '@/features/workspace-fs/workspac
 
 export async function testWorkspaceSeedProviderEnforcesCanonicalWorkspaceSeedsMutations() {
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousReadRoot = process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT
+  const previousReadRoot = process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = '/tmp/collaborative-docs'
-  process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT = '/tmp/runtime-seed-read-projection'
+  process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT = '/tmp/runtime-seed-read-projection'
   const calls: Array<{ url: string; body: string }> = []
   const previousFetch = globalThis.fetch
   const previousWindow = globalThis.window
@@ -62,7 +62,7 @@ export async function testWorkspaceSeedProviderEnforcesCanonicalWorkspaceSeedsMu
     else delete (globalThis as unknown as { fetch?: typeof fetch }).fetch
     if (previousWindow) (globalThis as unknown as { window: Window }).window = previousWindow
     else delete (globalThis as unknown as { window?: Window }).window
-    if (typeof previousReadRoot === 'string') process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT = previousReadRoot
-    else delete process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT
+    if (typeof previousReadRoot === 'string') process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT = previousReadRoot
+    else delete process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT
   }
 }

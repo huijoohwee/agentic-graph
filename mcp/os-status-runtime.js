@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { COST_LOG_UNKNOWN } from "../contracts/cost-log.schema.js";
 import { APPROVAL_GATE_ID_VALUES, APPROVAL_TOKEN_TTL_MS } from "../contracts/approval.schema.js";
-import { buildAgenticGraphVdeoxplnRegistry } from "../canvas/src/features/agent-ready/agenticgraphVdeoxplnContract.mjs";
+import { buildAgenticGraphVdeoxplnRegistry } from "../canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs";
 import {
   AGENTIC_PURCHASE_LOCAL_DETERMINISTIC_CHECKS,
   buildAgenticPurchaseReadiness,
@@ -233,22 +233,22 @@ export async function listProcessRegistry({ rootDir = process.cwd() } = {}) {
 
 function owningHarnessForTool(toolId, fallback = "unknown") {
   if (toolId === OS_STATUS_TOOL_NAME) return "agentic_os";
-  if (toolId.startsWith("agenticgraph.git.") || toolId.startsWith("agenticgraph.file.")) return "storage_sync";
-  if (toolId.startsWith("agenticgraph.showrunner.")) return "showrunner";
-  if (toolId.startsWith("agenticgraph.sandbox.policy.")) return "agent_sandbox_policy";
-  if (toolId.startsWith("agenticgraph.video_remix.")) return "video_remix";
-  if (toolId.startsWith("agenticgraph.superagent.")) return "superagent";
-  if (toolId.startsWith("agenticgraph.memory.")) return "memory_layer";
-  if (toolId.startsWith("agenticgraph.probe.")) return "probe_tree";
-  if (toolId.startsWith("agenticgraph.agentic_canvas_os.docs.")) return "agentic_canvas_os_docs";
-  if (toolId.startsWith("agenticgraph.repository.")) return "repository_pack";
-  if (toolId.startsWith("agenticgraph.agent_team.")) return "agent_team";
-  if (toolId.startsWith("agenticgraph.payment.")) return "payments";
-  if (toolId.startsWith("agenticgraph.skill.")) return "skill_evolution";
-  if (toolId.startsWith("agenticgraph.html_video.")) return "html_video_renderer";
-  if (toolId.startsWith("agenticgraph.annotate.")) return "visual_annotation_engine";
-  if (toolId.startsWith("agenticgraph.vdeoxpln.")) return "vdeoxpln";
-  if (toolId.startsWith("agenticgraph.")) return "local_mcp";
+  if (toolId.startsWith("agentic-graph.git.") || toolId.startsWith("agentic-graph.file.")) return "storage_sync";
+  if (toolId.startsWith("agentic-graph.showrunner.")) return "showrunner";
+  if (toolId.startsWith("agentic-graph.sandbox.policy.")) return "agent_sandbox_policy";
+  if (toolId.startsWith("agentic-graph.video_remix.")) return "video_remix";
+  if (toolId.startsWith("agentic-graph.superagent.")) return "superagent";
+  if (toolId.startsWith("agentic-graph.memory.")) return "memory_layer";
+  if (toolId.startsWith("agentic-graph.probe.")) return "probe_tree";
+  if (toolId.startsWith("agentic-graph.agentic_canvas_os.docs.")) return "agentic_canvas_os_docs";
+  if (toolId.startsWith("agentic-graph.repository.")) return "repository_pack";
+  if (toolId.startsWith("agentic-graph.agent_team.")) return "agent_team";
+  if (toolId.startsWith("agentic-graph.payment.")) return "payments";
+  if (toolId.startsWith("agentic-graph.skill.")) return "skill_evolution";
+  if (toolId.startsWith("agentic-graph.html_video.")) return "html_video_renderer";
+  if (toolId.startsWith("agentic-graph.annotate.")) return "visual_annotation_engine";
+  if (toolId.startsWith("agentic-graph.vdeoxpln.")) return "vdeoxpln";
+  if (toolId.startsWith("agentic-graph.")) return "local_mcp";
   return fallback;
 }
 
@@ -301,11 +301,11 @@ function addLocalMcpCapabilities(catalog, localMcpArgs) {
 
 async function fetchCloudflareMcpTools(cloudflareMcpUrl) {
   const url = text(cloudflareMcpUrl);
-  if (!url) throw new Error("AGENTICGRAPH_MCP_AGENT_URL is not configured.");
+  if (!url) throw new Error("AGENTIC_OS_MCP_AGENT_URL is not configured.");
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: "agenticgraph-os-status-tools-list", method: "tools/list" }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: "agentic-graph-os-status-tools-list", method: "tools/list" }),
   });
   if (!response.ok) throw new Error(`Cloudflare McpAgent returned HTTP ${response.status}.`);
   const payload = await response.json();
@@ -331,7 +331,7 @@ async function addCloudflareMcpCapabilities(catalog, { cloudflareMcpUrl, unreach
 }
 
 export async function listCapabilityRegistry({
-  cloudflareMcpUrl = process.env.AGENTICGRAPH_MCP_AGENT_URL,
+  cloudflareMcpUrl = process.env.AGENTIC_OS_MCP_AGENT_URL,
   localMcpArgs = {},
 } = {}) {
   const catalog = new Map();

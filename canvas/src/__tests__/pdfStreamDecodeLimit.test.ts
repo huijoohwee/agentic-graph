@@ -3,8 +3,8 @@ import { readStream } from '@/lib/pdf/native/pdfObjects'
 import type { ParsedIndirectObject } from '@/lib/pdf/native/pdfObjects'
 
 export async function testPdfReadStreamRespectsMaxDecodeBytes() {
-  const prev = process.env.AGENTICGRAPH_PDF_STREAM_MAX_DECODE_BYTES
-  process.env.AGENTICGRAPH_PDF_STREAM_MAX_DECODE_BYTES = '1024'
+  const prev = process.env.AGENTIC_OS_PDF_STREAM_MAX_DECODE_BYTES
+  process.env.AGENTIC_OS_PDF_STREAM_MAX_DECODE_BYTES = '1024'
   try {
     const decoded = Buffer.alloc(256 * 1024, 0x61)
     const compressed = zlib.deflateSync(decoded)
@@ -57,7 +57,7 @@ export async function testPdfReadStreamRespectsMaxDecodeBytes() {
     if (chained.bytes) throw new Error('partially supported filter chain must fail closed')
     if (chained.decodeComplete) throw new Error('partially supported filter chain must not claim complete decoding')
   } finally {
-    if (prev == null) delete process.env.AGENTICGRAPH_PDF_STREAM_MAX_DECODE_BYTES
-    else process.env.AGENTICGRAPH_PDF_STREAM_MAX_DECODE_BYTES = prev
+    if (prev == null) delete process.env.AGENTIC_OS_PDF_STREAM_MAX_DECODE_BYTES
+    else process.env.AGENTIC_OS_PDF_STREAM_MAX_DECODE_BYTES = prev
   }
 }

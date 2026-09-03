@@ -1,11 +1,11 @@
 // Injectable Stripe / payout / publish seams for the video-remix
-// Commerce_Harness (agenticgraph-acos-mcp-connector spec, task 3.14 / R9.1, R9.2,
+// Commerce_Harness (agentic-graph-acos-mcp-connector spec, task 3.14 / R9.1, R9.2,
 // R9.3, R9.4 / Property 17). These are the SEAMS that integration task 9.2
 // swaps for the live wiring into the reused payment-worker assets:
-//   * `cloudflare/workers/agenticgraph-payment/payments.ts`
+//   * `cloudflare/workers/agentic-graph-payment/payments.ts`
 //     (`createStripeHostedCheckoutSessionForWorker` -> Stripe
 //     `https://api.stripe.com/v1/checkout/sessions`),
-//   * `cloudflare/workers/agenticgraph-payment/agenticCommerce*.ts`
+//   * `cloudflare/workers/agentic-graph-payment/agenticCommerce*.ts`
 //     (the ACP checkout-session + settlement flow), and
 //   * `grph-shared/src/payments/stripeMcpSsot.ts` /
 //     `grph-shared/src/payments/stripePaymentSsot.ts` (Stripe MCP + checkout
@@ -185,7 +185,7 @@ export function createDeterministicPayoutClient() {
  * (task 9.2) would publish through the configured CDN / public-bucket mapping.
  */
 export function createDeterministicPublishClient(options = {}) {
-  const base = cleanString(options.publicBaseUrl, "https://media.agenticgraph.dev");
+  const base = cleanString(options.publicBaseUrl, "https://media.agentic-graph.dev");
   return {
     isDeterministicMock: true,
     publish({ asset, runId } = {}) {

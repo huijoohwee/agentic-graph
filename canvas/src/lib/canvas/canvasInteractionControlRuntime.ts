@@ -17,7 +17,7 @@ export type CanvasInteractionControlOptionId =
   | 'runMode:manual'
 
 export type CanvasInteractionControlResult = Readonly<{
-  schema: 'agenticgraph-canvas-interaction-control/v1'
+  schema: 'agentic-graph-canvas-interaction-control/v1'
   status: 'applied'
   optionId: CanvasInteractionControlOptionId
   invocation: string
@@ -53,7 +53,7 @@ export function executeCanvasInteractionControl(input: Record<string, unknown>):
   if (!activeHandler) throw new Error('The browser-local Canvas Interaction owner is unavailable.')
   activeHandler(parsed.optionId as CanvasInteractionControlOptionId)
   return Object.freeze({
-    schema: 'agenticgraph-canvas-interaction-control/v1',
+    schema: 'agentic-graph-canvas-interaction-control/v1',
     status: 'applied',
     optionId: parsed.optionId as CanvasInteractionControlOptionId,
     invocation: parsed.invocation,

@@ -42,7 +42,7 @@ const normalizeDocumentPath = (value: unknown): string => String(value || '')
   .replace(/^\/+|\/+$/g, '')
 
 const isPublishedDocumentRoutePath = (value: string): boolean => {
-  const scopedPath = String(value || '').trim().replace(/^\/agenticgraph(?=\/|$)/, '')
+  const scopedPath = String(value || '').trim().replace(/^\/agentic-graph(?=\/|$)/, '')
   return /^\/(?:share|doc|doc-default)(?:\/|$)/.test(scopedPath)
 }
 
@@ -73,7 +73,7 @@ function resolvePublishedDocumentClaims(url: URL): EmbedDocumentIdentityResoluti
     const routeUrl = new URL(url.pathname, url.origin)
     addClaim(toPublishedEmbedIdentity(resolvePublishedDocIdentity({
       shareUrl: routeUrl.toString(),
-      appBasePath: '/agenticgraph',
+      appBasePath: '/agentic-graph',
     })))
   }
   for (const shareToken of url.searchParams.getAll('kgShare')) {
@@ -91,7 +91,7 @@ function resolvePublishedDocumentClaims(url: URL): EmbedDocumentIdentityResoluti
       if (workspaceIds.length === 1) claimUrl.searchParams.set('kgWorkspaceId', workspaceIds[0])
       addClaim(toPublishedEmbedIdentity(resolvePublishedDocIdentity({
         shareUrl: claimUrl.toString(),
-        appBasePath: '/agenticgraph',
+        appBasePath: '/agentic-graph',
       })))
     }
   }
@@ -104,7 +104,7 @@ function resolvePublishedDocumentClaims(url: URL): EmbedDocumentIdentityResoluti
     claimUrl.searchParams.set('kgPath', kgPath)
     const identity = toPublishedEmbedIdentity(resolvePublishedDocIdentity({
       shareUrl: claimUrl.toString(),
-      appBasePath: '/agenticgraph',
+      appBasePath: '/agentic-graph',
     }))
     if (pathClaimsPublishedDocument || identity) addClaim(identity)
   }

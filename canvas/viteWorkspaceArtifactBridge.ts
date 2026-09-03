@@ -41,7 +41,7 @@ export const createKgFsPathPolicy = (repoRoot: string): KgFsPathPolicy => {
     ? path.resolve(repoRoot).slice(0, worktreeMarkerIndex)
     : path.resolve(repoRoot, '..')
   const allowedRoots = [path.resolve(repoRoot), workspaceMirrorRoot]
-  const canonicalWorkspaceSeedsRoot = path.resolve(workspaceMirrorRoot, 'agenticgraph', 'docs', 'workspace-seeds')
+  const canonicalWorkspaceSeedsRoot = path.resolve(workspaceMirrorRoot, 'agentic-graph', 'docs', 'workspace-seeds')
   const isAllowed = (candidate: string): boolean => {
     const resolved = path.resolve(candidate)
     return allowedRoots.some(root => resolved === root || resolved.startsWith(root + path.sep))
@@ -212,7 +212,7 @@ const createArtifactHandler = (policy: KgFsPathPolicy): import('vite').Connect.N
 export const createWorkspaceArtifactBridgePlugin = (repoRoot: string): Plugin => {
   const policy = createKgFsPathPolicy(repoRoot)
   return {
-    name: 'agenticgraph-workspace-artifact-bridge',
+    name: 'agentic-graph-workspace-artifact-bridge',
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use(AG_FS_ARTIFACT_PATH, createArtifactHandler(policy))

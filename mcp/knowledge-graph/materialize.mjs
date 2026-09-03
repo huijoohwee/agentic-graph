@@ -66,7 +66,7 @@ export async function materializeKnowledgeGraphRepository(snapshot, repositoryId
   }
   checkKnowledgeGraphBudget({ ...budget, stage: "snapshot-materialization" });
   return {
-    context: "agenticgraph-knowledge-graph",
+    context: "agentic-graph-knowledge-graph",
     type: "Graph",
     nodes,
     edges,

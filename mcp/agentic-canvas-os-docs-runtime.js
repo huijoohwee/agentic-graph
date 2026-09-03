@@ -50,10 +50,10 @@ const normalizeGitHubRepositoryIdentity = (remoteUrl) => {
 };
 
 export const resolveAgenticCanvasOsDocsRevision = async ({ absoluteDocsRoot, env = process.env }) => {
-  const configuredRevision = normalizeText(env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_REVISION);
+  const configuredRevision = normalizeText(env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_REVISION);
   if (configuredRevision) {
     if (!SOURCE_REVISION_PATTERN.test(configuredRevision)) {
-      throw new Error("AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_REVISION must be an exact 40-character SHA");
+      throw new Error("AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_REVISION must be an exact 40-character SHA");
     }
   }
 
@@ -125,7 +125,7 @@ export const resolveAgenticCanvasOsDocsRevision = async ({ absoluteDocsRoot, env
   }
 
   if (configuredRevision && configuredRevision !== revision) {
-    throw new Error(`AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_REVISION ${configuredRevision} does not match docs checkout HEAD ${revision}`);
+    throw new Error(`AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_REVISION ${configuredRevision} does not match docs checkout HEAD ${revision}`);
   }
   return revision;
 };
@@ -135,10 +135,10 @@ export const resolveAgenticCanvasOsLiveProofRevision = async ({
   sourceRevision,
   env = process.env,
 }) => {
-  const configuredRevision = normalizeText(env.AGENTICGRAPH_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION);
+  const configuredRevision = normalizeText(env.AGENTIC_OS_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION);
   if (configuredRevision) {
     if (!SOURCE_REVISION_PATTERN.test(configuredRevision)) {
-      throw new Error("AGENTICGRAPH_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION must be an exact 40-character SHA");
+      throw new Error("AGENTIC_OS_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION must be an exact 40-character SHA");
     }
     return configuredRevision;
   }
@@ -158,7 +158,7 @@ export const resolveAgenticCanvasOsLiveProofRevision = async ({
   if (SOURCE_REVISION_PATTERN.test(localRevision)) return localRevision;
   const revision = await resolveAgentLiveProviderProofRevisionFromGitHub({
     sourceRevision,
-    token: env.AGENTICGRAPH_GITHUB_TOKEN,
+    token: env.AGENTIC_OS_GITHUB_TOKEN,
   });
   if (!SOURCE_REVISION_PATTERN.test(revision)) {
     throw new Error("Agentic Canvas OS live proof did not resolve to an exact introduction SHA from local or remote history");
@@ -170,11 +170,11 @@ export const resolveAgenticCanvasOsDocsRoot = ({
   rootDir = process.cwd(),
   env = process.env,
 } = {}) => {
-  const explicitRoot = normalizeText(env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT);
+  const explicitRoot = normalizeText(env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT);
   if (explicitRoot) {
     const resolved = path.resolve(explicitRoot);
     if (!existsSync(path.join(resolved, "FACTS.md"))) {
-      throw new Error(`AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT is not a readable Agentic Canvas OS docs root: ${resolved}`);
+      throw new Error(`AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT is not a readable Agentic Canvas OS docs root: ${resolved}`);
     }
     return resolved;
   }

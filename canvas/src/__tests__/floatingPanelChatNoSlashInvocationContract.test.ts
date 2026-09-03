@@ -71,7 +71,7 @@ const REPEATED_PARTIAL_RESPONSE_YAML = [
 ].join('\n')
 
 const readStoryboardTemplateContract = (): string =>
-  readFileSync(resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'template', 'agenticgraph-2d-renderer-storyboard-template.md'), 'utf8')
+  readFileSync(resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'template', 'agentic-graph-2d-renderer-storyboard-template.md'), 'utf8')
 
 export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate() {
   const template = readStoryboardTemplateContract()
@@ -130,7 +130,7 @@ export async function testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocat
   }
   for (const forbidden of [
     'chatResponseBaseContract slash variant:',
-    'AgenticGraph vdeoxpln execution contract:',
+    'agentic-graph vdeoxpln execution contract:',
     'Agentic OS invocation contract:',
     'Storyboard template Agentic OS directive context:',
     'For chatAgenticGraph output',
@@ -204,7 +204,7 @@ export async function testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract(
     'kgc-pipeline/v1',
     'kgc-computing-flow/v1',
     'Computing Flow Definition',
-    'AgenticGraph vdeoxpln execution contract:',
+    'agentic-graph vdeoxpln execution contract:',
     'Runtime invocation routing contract:',
     'Agentic OS invocation contract:',
     'Storyboard template Agentic OS directive context:',

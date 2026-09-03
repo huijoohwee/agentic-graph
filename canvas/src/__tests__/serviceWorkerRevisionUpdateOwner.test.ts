@@ -253,9 +253,9 @@ test('canonical service worker registration bypasses caches for rapid release co
   })
 
   assert.deepEqual(serviceWorkerTarget.registerCalls, [{
-    scriptUrl: `/agenticgraph/sw.js?revision=${sourceRevision}`,
+    scriptUrl: `/agentic-graph/sw.js?revision=${sourceRevision}`,
     options: {
-      scope: '/agenticgraph/',
+      scope: '/agentic-graph/',
       type: 'classic',
       updateViaCache: 'none',
     },

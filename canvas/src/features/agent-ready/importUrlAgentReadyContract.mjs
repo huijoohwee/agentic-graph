@@ -2,7 +2,7 @@ export const IMPORT_URL_AGENT_READY_TOOL_IDS = Object.freeze({
   controlLocalImportUrl: 'control_local_import_url',
 })
 
-export const IMPORT_URL_AGENT_READY_MCP_TOOL_NAME = 'agenticgraph.control_local_import_url'
+export const IMPORT_URL_AGENT_READY_MCP_TOOL_NAME = 'agentic-graph.control_local_import_url'
 
 const IMPORT_URL_MUTATION_TOOL_ANNOTATIONS = Object.freeze({
   readOnlyHint: false,

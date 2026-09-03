@@ -1,5 +1,5 @@
 // Unit tests for the Storyboard_Harness source referential integrity
-// (agenticgraph-acos-mcp-connector spec, task 3.8 / R6.3 / R6.6 / Property 10 —
+// (agentic-graph-acos-mcp-connector spec, task 3.8 / R6.3 / R6.6 / Property 10 —
 // the storyboard-claim side).
 //
 // Task 3.8 — source referential integrity (R6.3 / R6.6 / Property 10). Every

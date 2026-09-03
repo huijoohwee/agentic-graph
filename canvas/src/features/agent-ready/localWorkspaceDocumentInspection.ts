@@ -21,7 +21,7 @@ export const inspectLocalWorkspaceDocument = (
       sourceKind: 'browser-local-workspace',
       documentName: '',
       documentSourceUrl: documentSourceUrl || null,
-      message: 'No active markdown document is loaded in the local AgenticGraph workspace.',
+      message: 'No active markdown document is loaded in the local agentic-graph workspace.',
     }
   }
 

@@ -1,5 +1,5 @@
 // Tests for client-side submission validation + the thin submit guard
-// (agenticgraph-acos-mcp-connector spec, task 7.1 / R1.2 / design Frontend
+// (agentic-graph-acos-mcp-connector spec, task 7.1 / R1.2 / design Frontend
 // `submitRun` / Correctness Property 5).
 //
 // Covers every field at its boundaries:

@@ -20,8 +20,8 @@ const budgetOnly = args.has('--budget-only')
 const layoutOnly = args.has('--layout-only')
 
 const disallowedRepoEntries = [
-  { rel: '.trae', reason: 'editor workspace notes belong outside tracked agenticgraph source' },
-  { rel: 'canvas/.trae', reason: 'editor workspace notes belong outside tracked agenticgraph source' },
+  { rel: '.trae', reason: 'editor workspace notes belong outside tracked agentic-graph source' },
+  { rel: 'canvas/.trae', reason: 'editor workspace notes belong outside tracked agentic-graph source' },
   { rel: 'configs', reason: 'config roots are consolidated under data/config' },
   { rel: 'llm-chat-config', reason: 'config roots are consolidated under data/config/llm-chat' },
   { rel: 'orchestrator-config', reason: 'config roots are consolidated under data/config/orchestrator' },
@@ -36,11 +36,11 @@ const disallowedRepoEntries = [
   { rel: 'canvas/tmp_probe_initial_workspace_open.ts', reason: 'local smoke scratch output is not tracked source' },
   { rel: 'organize_todo.py', reason: 'repo scripts live under scripts/' },
   { rel: '{target}', reason: 'accidental shell scratch output is not tracked source' },
-  { rel: 'data/agenticgraph-workflow-preview', reason: 'workflow previews are generated under ignored data/outputs' },
-  { rel: 'data/agenticgraph-schema-document_202601300527', reason: 'dated parser scratch output is stale generated source' },
-  { rel: 'docs/documents/api-reference', reason: 'API references live under docs/documents/agenticgraph-api-reference' },
-  { rel: 'docs/documents/deprecated', reason: 'deprecated documents are not active agenticgraph source' },
-  { rel: 'docs/documents/agenticgraph-api-reference/_archive', reason: 'archived API reference snapshots are stale source copies' },
+  { rel: 'data/agentic-graph-workflow-preview', reason: 'workflow previews are generated under ignored data/outputs' },
+  { rel: 'data/agentic-graph-schema-document_202601300527', reason: 'dated parser scratch output is stale generated source' },
+  { rel: 'docs/documents/api-reference', reason: 'API references live under docs/documents/agentic-graph-api-reference' },
+  { rel: 'docs/documents/deprecated', reason: 'deprecated documents are not active agentic-graph source' },
+  { rel: 'docs/documents/agentic-graph-api-reference/_archive', reason: 'archived API reference snapshots are stale source copies' },
   { rel: 'docs/reports/prd-codebase-gap-report_202601052150.md', reason: 'dated gap reports are stale generated reports' },
   { rel: 'docs/reports/prd-codebase-gap-report_202601052215.md', reason: 'dated gap reports are stale generated reports' },
   { rel: 'test-report', reason: 'dated test reports are stale generated reports' },
@@ -62,12 +62,12 @@ const ignoredDirNames = new Set([
 ])
 
 const ignoredRelativeRoots = [
-  '.agenticgraph-workspace',
+  '.agentic-graph-workspace',
   'canvas/data/outputs',
   'canvas/dist',
-  'data/agenticgraph-workflow-preview',
+  'data/agentic-graph-workflow-preview',
   'data/outputs',
-  'docs/documents/agenticgraph-api-reference',
+  'docs/documents/agentic-graph-api-reference',
 ]
 
 const ignoredRelativePaths = new Set([
@@ -160,14 +160,43 @@ const measureText = text => ({
   lineCount: text.length === 0 ? 0 : text.split('\n').length,
 })
 
-const readHeadBudget = rel => {
-  const result = spawnSync('git', ['show', `HEAD:${rel}`], {
+const isCommitSha = value => /^[0-9a-f]{40}$/.test(value)
+
+const resolveChangedComparison = () => {
+  const githubBaseRef = String(process.env.GITHUB_BASE_REF || '').trim()
+  if (githubBaseRef) {
+    const mergeBase = runGit(['merge-base', `origin/${githubBaseRef}`, 'HEAD'])
+    if (mergeBase.ok && isCommitSha(mergeBase.stdout)) {
+      return Object.freeze({ baselineRef: mergeBase.stdout, committedHead: true })
+    }
+  }
+  return Object.freeze({ baselineRef: 'HEAD', committedHead: false })
+}
+
+const changedComparison = resolveChangedComparison()
+
+const readBudgetAtRef = (ref, rel) => {
+  const result = spawnSync('git', ['show', `${ref}:${rel}`], {
     cwd: repoRoot,
     encoding: 'utf8',
     maxBuffer: 50 * 1024 * 1024,
   })
   if (result.status !== 0) return null
   return measureText(String(result.stdout || ''))
+}
+
+const readRenamedBaselinePaths = () => {
+  const diffArgs = changedComparison.committedHead
+    ? ['diff', '--name-status', '--find-renames=50%', changedComparison.baselineRef, 'HEAD']
+    : ['diff', '--name-status', '--find-renames=50%', 'HEAD']
+  const result = runGit(diffArgs)
+  const renamed = new Map()
+  if (!result.ok) return renamed
+  for (const line of result.stdout.split('\n')) {
+    const [status, from, to] = line.split('\t')
+    if (/^R\d+$/.test(status) && from && to) renamed.set(to, from)
+  }
+  return renamed
 }
 
 const addOutputLines = (out, text) => {
@@ -179,9 +208,8 @@ const addOutputLines = (out, text) => {
 
 const readChangedRelativePaths = () => {
   const out = new Set()
-  const githubBaseRef = String(process.env.GITHUB_BASE_REF || '').trim()
-  if (githubBaseRef) {
-    const baseDiff = runGit(['diff', '--name-only', '--diff-filter=ACMR', `origin/${githubBaseRef}...HEAD`])
+  if (changedComparison.committedHead) {
+    const baseDiff = runGit(['diff', '--name-only', '--diff-filter=ACMR', changedComparison.baselineRef, 'HEAD'])
     if (baseDiff.ok) addOutputLines(out, baseDiff.stdout)
   }
 
@@ -261,9 +289,12 @@ const findBudgetViolations = async (files, options = {}) => {
     const { lineCount } = measureText(text)
     const reasons = []
     const rel = toPosixRel(filePath)
-    const headBudget = options.regressionOnly ? readHeadBudget(rel) : null
-    const baselineLines = headBudget?.lineCount ?? 0
-    const baselineBytes = headBudget?.byteCount ?? 0
+    const baselineRel = options.renamedBaselinePaths?.get(rel) ?? rel
+    const baselineBudget = options.regressionOnly
+      ? readBudgetAtRef(options.baselineRef ?? 'HEAD', baselineRel)
+      : null
+    const baselineLines = baselineBudget?.lineCount ?? 0
+    const baselineBytes = baselineBudget?.byteCount ?? 0
     const lineOverLimit = lineCount > lineLimit
     const byteOverLimit = stat.size > byteLimit
     const baselineWasOverLimit = baselineLines > lineLimit || baselineBytes > byteLimit
@@ -354,7 +385,7 @@ const findChunkViolations = async () => {
 
 const reportBudgetViolations = violations => {
   if (violations.length === 0) return
-  console.error(`[agenticgraph] source budget violations (${lineLimit} lines/file, 500 KiB/file):`)
+  console.error(`[agentic-graph] source budget violations (${lineLimit} lines/file, 500 KiB/file):`)
   for (const entry of violations.slice(0, reportLimit)) {
     console.error(`  - ${entry.rel}: ${entry.reasons.join(', ')}`)
   }
@@ -365,7 +396,7 @@ const reportBudgetViolations = violations => {
 
 const reportSemanticViolations = violations => {
   if (violations.length === 0) return
-  console.error('[agenticgraph] graph semantic-key cache keys must use canvas/src/lib/graph/semanticKey.ts:')
+  console.error('[agentic-graph] graph semantic-key cache keys must use canvas/src/lib/graph/semanticKey.ts:')
   for (const entry of violations.slice(0, reportLimit)) console.error(`  - ${entry}`)
   if (violations.length > reportLimit) {
     console.error(`  - ... ${violations.length - reportLimit} more`)
@@ -374,7 +405,7 @@ const reportSemanticViolations = violations => {
 
 const reportChunkViolations = violations => {
   if (violations.length === 0) return
-  console.error('[agenticgraph] built chunk violations:')
+  console.error('[agentic-graph] built chunk violations:')
   for (const entry of violations.slice(0, reportLimit)) {
     console.error(`  - ${entry.rel}: ${entry.sizeKiB} KiB > ${entry.limitKiB} KiB (${entry.reason})`)
   }
@@ -385,7 +416,7 @@ const reportChunkViolations = violations => {
 
 const reportLayoutViolations = violations => {
   if (violations.length === 0) return
-  console.error('[agenticgraph] stale repo layout entries are present:')
+  console.error('[agentic-graph] stale repo layout entries are present:')
   for (const entry of violations.slice(0, reportLimit)) {
     console.error(`  - ${entry.rel} (${entry.kind}): ${entry.reason}`)
   }
@@ -401,7 +432,7 @@ const main = async () => {
     const chunkViolations = await findChunkViolations()
     reportChunkViolations(chunkViolations)
     if (chunkViolations.length > 0) process.exit(1)
-    console.log('[agenticgraph] built chunk compliance checks passed')
+    console.log('[agentic-graph] built chunk compliance checks passed')
     return
   }
 
@@ -411,13 +442,17 @@ const main = async () => {
 
   if (layoutOnly) {
     if (failed) process.exit(1)
-    console.log('[agenticgraph] repo layout hygiene checks passed')
+    console.log('[agentic-graph] repo layout hygiene checks passed')
     return
   }
 
   if (!semanticOnly) {
     const files = checkAll ? await listTextFiles(repoRoot) : await listChangedTextFiles()
-    const budgetViolations = await findBudgetViolations(files, { regressionOnly: !checkAll })
+    const budgetViolations = await findBudgetViolations(files, {
+      regressionOnly: !checkAll,
+      baselineRef: changedComparison.baselineRef,
+      renamedBaselinePaths: checkAll ? new Map() : readRenamedBaselinePaths(),
+    })
     reportBudgetViolations(budgetViolations)
     failed = failed || budgetViolations.length > 0
   }
@@ -429,7 +464,7 @@ const main = async () => {
   }
 
   if (failed) process.exit(1)
-  console.log(`[agenticgraph] hygiene compliance checks passed (${checkAll ? 'all files' : 'changed files'})`)
+  console.log(`[agentic-graph] hygiene compliance checks passed (${checkAll ? 'all files' : 'changed files'})`)
 }
 
 await main()

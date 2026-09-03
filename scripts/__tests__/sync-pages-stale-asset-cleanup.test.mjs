@@ -10,7 +10,7 @@ import {
 } from "../xr-v2/production-publish-contract.mjs";
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
-const syncScriptPath = path.resolve(repoRoot, "scripts", "sync-pages-agenticgraph.mjs");
+const syncScriptPath = path.resolve(repoRoot, "scripts", "sync-pages-agentic-graph.mjs");
 const syncScript = fs.readFileSync(syncScriptPath, "utf8");
 const routingSource = fs.readFileSync(
   path.resolve(repoRoot, "scripts", "production-pages-routing.mjs"),
@@ -31,12 +31,12 @@ test("publish sync removes stale generated assets from both mirror trees", () =>
   assert.match(
     syncScript,
     /if \(await existsDir\(targetDir\)\) \{\s+const targetFiles = await listAllFiles\(targetDir\)\s+for \(const rel of targetFiles\) \{\s+if \(isPreservedRelativePath\(rel\)\) continue\s+if \(sourceSet\.has\(rel\)\) continue\s+filesToRemove\.push\(rel\)\s+\}\s+\}/m,
-    "expected generated mirror cleanup to remove stale assets from content/agenticgraph",
+    "expected generated mirror cleanup to remove stale assets from content/agentic-graph",
   );
   assert.match(
     syncScript,
     /if \(await existsDir\(publicRouteDir\)\) \{\s+const publicFiles = await listAllFiles\(publicRouteDir\)\s+for \(const rel of publicFiles\) \{\s+if \(!isPublicManagedRelativePath\(rel\)\) continue\s+if \(sourceSet\.has\(rel\)\) continue\s+publicFilesToRemove\.push\(rel\)\s+\}\s+\}/m,
-    "expected generated mirror cleanup to remove stale assets from /agenticgraph public routes",
+    "expected generated mirror cleanup to remove stale assets from /agentic-graph public routes",
   );
 });
 
@@ -47,7 +47,7 @@ test("publish sync includes the published agent-ready dependency closure", () =>
   assert.match(syncScript, /'webMcpLifecycle\.mjs'/);
   assert.match(syncScript, /'webMcpLifecycleBrowserSource\.mjs'/);
   assert.match(syncScript, /\.\.\.agentReadyBrowserRuntimeFilenames\.map\(filename => \[agentReadyFeatureSource\(filename\), agentReadyFeatureTarget\(filename\)\]\)/);
-  assert.match(syncScript, /'agenticgraphAgentReadyOutputSchemas\.mjs'/);
+  assert.match(syncScript, /'agentic-graph-agent-ready-output-schemas\.mjs'/);
   assert.match(syncScript, /'mcpAppsContractText\.mjs'/);
   assert.match(syncScript, /'mcpAppsOnboarding\.mjs'/);
   assert.match(syncScript, /'motionControlAgentReadyContract\.mjs'/);
@@ -56,8 +56,8 @@ test("publish sync includes the published agent-ready dependency closure", () =>
   assert.match(syncScript, /storageEngineMcpContractSource/);
   assert.match(syncScript, /\[storageEngineMcpContractSource, storageEngineMcpContractTarget\]/);
   assert.match(syncScript, /'probeTreeUserInputRelevance\.mjs'/);
-  assert.match(syncScript, /'agenticgraphVdeoxplnRegistryData\.mjs'/);
-  assert.match(syncScript, /'agenticgraphApplicationCompositionVdeoxpln\.mjs'/);
+  assert.match(syncScript, /'agentic-graph-vdeoxpln-registry-data\.mjs'/);
+  assert.match(syncScript, /'agentic-graph-application-composition-vdeoxpln\.mjs'/);
   assert.match(syncScript, /cameraMcpContract\.mjs/);
   assert.match(syncScript, /richMediaTextMarkdownContractSource/);
   assert.match(syncScript, /\[richMediaTextMarkdownContractSource, richMediaTextMarkdownContractTarget\]/);
@@ -67,49 +67,49 @@ test("publish sync includes the published agent-ready dependency closure", () =>
 });
 
 test("publish sync includes the Group Panel tool contract dependency", () => {
-  assert.match(syncScript, /groupPanelContractSource = path\.resolve\(agenticgraphRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract\.mjs'\)/);
+  assert.match(syncScript, /groupPanelContractSource = path\.resolve\(agenticGraphRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract\.mjs'\)/);
   assert.match(syncScript, /groupPanelContractTarget = path\.resolve\(mirrorRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract\.mjs'\)/);
   assert.match(syncScript, /\[groupPanelContractSource, groupPanelContractTarget\]/);
 });
 
 test("publish sync includes the cross-root semantic-key dependency", () => {
-  assert.match(syncScript, /semanticKeyContractSource = path\.resolve\(agenticgraphRoot, 'contracts', 'semantic-key\.js'\)/);
+  assert.match(syncScript, /semanticKeyContractSource = path\.resolve\(agenticGraphRoot, 'contracts', 'semantic-key\.js'\)/);
   assert.match(syncScript, /semanticKeyContractTarget = path\.resolve\(mirrorRoot, 'contracts', 'semantic-key\.js'\)/);
   assert.match(syncScript, /\[semanticKeyContractSource, semanticKeyContractTarget\]/);
 });
 
 test("publish sync includes the XR scene tool contract dependency", () => {
-  assert.match(syncScript, /xrSceneMcpContractSource = path\.resolve\(agenticgraphRoot, 'canvas', 'src', 'features', 'three', 'xrSceneMcpContract\.mjs'\)/);
+  assert.match(syncScript, /xrSceneMcpContractSource = path\.resolve\(agenticGraphRoot, 'canvas', 'src', 'features', 'three', 'xrSceneMcpContract\.mjs'\)/);
   assert.match(syncScript, /xrSceneMcpContractTarget = path\.resolve\(mirrorRoot, 'canvas', 'src', 'features', 'three', 'xrSceneMcpContract\.mjs'\)/);
   assert.match(syncScript, /\[xrSceneMcpContractSource, xrSceneMcpContractTarget\]/);
 });
 
 test("publish sync includes the XR animation tool contract dependency", () => {
-  assert.match(syncScript, /xrAnimationMcpContractSource = path\.resolve\(agenticgraphRoot, 'canvas', 'src', 'features', 'three', 'xrAnimationMcpContract\.mjs'\)/);
+  assert.match(syncScript, /xrAnimationMcpContractSource = path\.resolve\(agenticGraphRoot, 'canvas', 'src', 'features', 'three', 'xrAnimationMcpContract\.mjs'\)/);
   assert.match(syncScript, /xrAnimationMcpContractTarget = path\.resolve\(mirrorRoot, 'canvas', 'src', 'features', 'three', 'xrAnimationMcpContract\.mjs'\)/);
   assert.match(syncScript, /\[xrAnimationMcpContractSource, xrAnimationMcpContractTarget\]/);
 });
 
 test("publish sync includes the motion-control tool contract dependency", () => {
-  assert.match(syncScript, /motionControlMcpContractSource = path\.resolve\(agenticgraphRoot, 'canvas', 'src', 'features', 'three', 'motionControlMcpContract\.mjs'\)/);
+  assert.match(syncScript, /motionControlMcpContractSource = path\.resolve\(agenticGraphRoot, 'canvas', 'src', 'features', 'three', 'motionControlMcpContract\.mjs'\)/);
   assert.match(syncScript, /motionControlMcpContractTarget = path\.resolve\(mirrorRoot, 'canvas', 'src', 'features', 'three', 'motionControlMcpContract\.mjs'\)/);
   assert.match(syncScript, /\[motionControlMcpContractSource, motionControlMcpContractTarget\]/);
 });
 
 test("publish sync includes the Flight Sim tool contract dependency", () => {
-  assert.match(syncScript, /flightSimMcpContractSource = path\.resolve\(agenticgraphRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract\.mjs'\)/);
+  assert.match(syncScript, /flightSimMcpContractSource = path\.resolve\(agenticGraphRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract\.mjs'\)/);
   assert.match(syncScript, /flightSimMcpContractTarget = path\.resolve\(mirrorRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract\.mjs'\)/);
   assert.match(syncScript, /\[flightSimMcpContractSource, flightSimMcpContractTarget\]/);
 });
 
 test("publish sync keeps the live canvas hero markdown route in the root-managed file set", () => {
-  assert.match(syncScript, /'agenticgraph-live-canvas-hero\.md'/);
+  assert.match(syncScript, /'agentic-graph-live-canvas-hero\.md'/);
 });
 
 test("publish sync replaces the implicit Pages SPA fallback with one managed 404 boundary", () => {
   assert.match(
     syncScript,
-    /const publishRootManagedSourceFiles = \[\{\s+rel: '404\.html',\s+src: path\.resolve\(agenticgraphRoot, 'cloudflare', 'pages', '404\.html'\),\s+\}\]/m,
+    /const publishRootManagedSourceFiles = \[\{\s+rel: '404\.html',\s+src: path\.resolve\(agenticGraphRoot, 'cloudflare', 'pages', '404\.html'\),\s+\}\]/m,
   );
   assert.match(syncScript, /publishRootManagedFilesToCopy/);
   assert.match(
@@ -122,8 +122,8 @@ test("publish sync replaces the implicit Pages SPA fallback with one managed 404
     "expected publish sync to remove the superseded static root shell",
   );
   for (const staleRedirect of [
-    "/ /content/agenticgraph/index.html 200",
-    "/index.html /content/agenticgraph/index.html 200",
+    "/ /content/agentic-graph/index.html 200",
+    "/index.html /content/agentic-graph/index.html 200",
     "/hackamap /hackamap/ 301",
     "/hackamap/ /content/hackamap/index.html 200",
     "/hackamap/* /content/hackamap/:splat 200",
@@ -137,8 +137,8 @@ test("publish sync replaces the implicit Pages SPA fallback with one managed 404
 
 test("publish sync prevents HTTP caching of every mutable service-worker script", () => {
   for (const route of [
-    "/content/agenticgraph/sw.js",
-    "/agenticgraph/sw.js",
+    "/content/agentic-graph/sw.js",
+    "/agentic-graph/sw.js",
   ]) {
     assert.match(
       syncScript,
@@ -147,10 +147,10 @@ test("publish sync prevents HTTP caching of every mutable service-worker script"
     );
   }
   for (const route of [
-    "/content/agenticgraph/agenticgraph-chat-stream-sw.js",
-    "/agenticgraph/agenticgraph-chat-stream-sw.js",
-    "/content/agenticgraph/agenticgraph-service-worker-revision.js",
-    "/agenticgraph/agenticgraph-service-worker-revision.js",
+    "/content/agentic-graph/agentic-graph-chat-stream-sw.js",
+    "/agentic-graph/agentic-graph-chat-stream-sw.js",
+    "/content/agentic-graph/agentic-graph-service-worker-revision.js",
+    "/agentic-graph/agentic-graph-service-worker-revision.js",
   ]) {
     assert.match(syncScript, new RegExp(`'${route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}'`));
   }
@@ -164,7 +164,7 @@ test("publish sync prevents HTTP caching of every mutable service-worker script"
 test("runtime readiness digest includes every generated service-worker executable", () => {
   assert.match(
     syncScript,
-    /const importedServiceWorkerRootFiles = new Set\(\['agenticgraph-chat-stream-sw\.js', 'agenticgraph-service-worker-revision\.js'\]\)/,
+    /const importedServiceWorkerRootFiles = new Set\(\['agentic-graph-chat-stream-sw\.js', 'agentic-graph-service-worker-revision\.js'\]\)/,
   );
   assert.match(
     syncScript,
@@ -197,13 +197,13 @@ test("XR v2 publish sync is exact, readiness-bound, and omits the mirrored ignor
   assert.doesNotMatch(syncScript, /content\/knowgrph\/xr-v2\/\.gitignore/);
 });
 
-test("XR v2 root and canonical routes precede the AgenticGraph SPA fallback", () => {
-  const rootRoute = "/xr-v2/* /content/agenticgraph/xr-v2/:splat 200";
-  const canonicalRoute = "/agenticgraph/xr-v2/* /content/agenticgraph/xr-v2/:splat 200";
-  const fallback = "/agenticgraph/* /content/agenticgraph/index.html 200";
+test("XR v2 root and canonical routes precede the agentic-graph SPA fallback", () => {
+  const rootRoute = "/xr-v2/* /content/agentic-graph/xr-v2/:splat 200";
+  const canonicalRoute = "/agentic-graph/xr-v2/* /content/agentic-graph/xr-v2/:splat 200";
+  const fallback = "/agentic-graph/* /content/agentic-graph/index.html 200";
   const redirects = buildAgenticGraphRedirects({
     existing: [
-      "/agenticgraph/imports/* /content/agenticgraph/imports/:splat 200",
+      "/agentic-graph/imports/* /content/agentic-graph/imports/:splat 200",
       fallback,
       "",
     ].join("\n"),

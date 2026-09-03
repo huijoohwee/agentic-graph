@@ -34,7 +34,7 @@ export function testLarkKnowledgeSourceHandoffParsesOpaqueReadIntent() {
     sourceId: 'product-handbook',
     token: 'opaque-worker-handoff',
   })
-  const location = new URL(suffix, 'https://airvio.co/agenticgraph')
+  const location = new URL(suffix, 'https://airvio.co/agentic-graph')
   if (location.searchParams.has(FRAGMENT_PARAM_KNOWLEDGE_SOURCE_HANDOFF)) {
     throw new Error(`expected no capability in the HTTP query, got ${location.search}`)
   }

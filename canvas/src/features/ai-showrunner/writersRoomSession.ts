@@ -55,7 +55,7 @@ export class WritersRoomSession {
       `${showrunnerRunRootPath(this.brief.run_id)}/revision-history.md`,
       [
         '---',
-        'schema: "agenticgraph-showrunner-revision-history/v1"',
+        'schema: "agentic-graph-showrunner-revision-history/v1"',
         `run_id: ${JSON.stringify(this.brief.run_id)}`,
         '---',
         '',

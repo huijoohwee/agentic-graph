@@ -15,7 +15,7 @@ import {
 } from './settingsView.constants'
 import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceTableSsot'
 
-type WorkspaceKind = 'chatHistory' | 'agenticgraph'
+type WorkspaceKind = 'chatHistory' | 'agentic-graph'
 
 type UseSettingsWorkspaceActionsArgs = {
   patchChatValues: (patch: Record<string, string>) => void
@@ -40,7 +40,7 @@ export function useSettingsWorkspaceActions({
   importLocalFolderFallbackImpl = importLocalFolderFallback,
   importUrlFallbackImpl = importUrlFallback,
 }: UseSettingsWorkspaceActionsArgs) {
-  const [agenticgraphPathStatus, setAgenticGraphPathStatus] = React.useState<string | null>(null)
+  const [agenticGraphPathStatus, setAgenticGraphPathStatus] = React.useState<string | null>(null)
   const [isUpdatingAgenticGraphPath, setIsUpdatingAgenticGraphPath] = React.useState(false)
   const [chatHistoryPathStatus, setChatHistoryPathStatus] = React.useState<string | null>(null)
   const [isUpdatingChatHistoryPath, setIsUpdatingChatHistoryPath] = React.useState(false)
@@ -48,9 +48,9 @@ export function useSettingsWorkspaceActions({
   const kgcLocalFolderImportInputRef = React.useRef<HTMLInputElement | null>(null)
   const localImportInputRef = React.useRef<HTMLInputElement | null>(null)
   const localFolderImportInputRef = React.useRef<HTMLInputElement | null>(null)
-  const activeWorkspaceSyncTimeoutsRef = React.useRef<{ chatHistory: number | null, agenticgraph: number | null }>({
+  const activeWorkspaceSyncTimeoutsRef = React.useRef<{ chatHistory: number | null, 'agentic-graph': number | null }>({
     chatHistory: null,
-    agenticgraph: null,
+    'agentic-graph': null,
   })
   const bridge = getMarkdownWorkspaceActionBridge()
   const bridgeImportLocalFiles = bridge.importLocalFiles
@@ -63,8 +63,8 @@ export function useSettingsWorkspaceActions({
       if (timeouts.chatHistory !== null) {
         window.clearTimeout(timeouts.chatHistory)
       }
-      if (timeouts.agenticgraph !== null) {
-        window.clearTimeout(timeouts.agenticgraph)
+      if (timeouts['agentic-graph'] !== null) {
+        window.clearTimeout(timeouts['agentic-graph'])
       }
     }
   }, [])
@@ -283,20 +283,20 @@ export function useSettingsWorkspaceActions({
   return {
     chatHistoryPathStatus,
     createAndSelectChatHistoryFile: React.useCallback(async () => createWorkspaceBackedFile('chatHistory'), [createWorkspaceBackedFile]),
-    createAndSelectAgenticGraphFile: React.useCallback(async () => createWorkspaceBackedFile('agenticgraph'), [createWorkspaceBackedFile]),
+    createAndSelectAgenticGraphFile: React.useCallback(async () => createWorkspaceBackedFile('agentic-graph'), [createWorkspaceBackedFile]),
     applyActiveWorkspaceFileAsChatHistory: React.useCallback(() => applyActiveWorkspaceFile('chatHistory'), [applyActiveWorkspaceFile]),
-    applyActiveWorkspaceFileAsAgenticGraph: React.useCallback(() => applyActiveWorkspaceFile('agenticgraph'), [applyActiveWorkspaceFile]),
+    applyActiveWorkspaceFileAsAgenticGraph: React.useCallback(() => applyActiveWorkspaceFile('agentic-graph'), [applyActiveWorkspaceFile]),
     importCloudUrlForChatHistory: React.useCallback(() => importCloudUrl('chatHistory'), [importCloudUrl]),
-    importCloudUrlForAgenticGraph: React.useCallback(() => importCloudUrl('agenticgraph'), [importCloudUrl]),
+    importCloudUrlForAgenticGraph: React.useCallback(() => importCloudUrl('agentic-graph'), [importCloudUrl]),
     importLocalFilesForChatHistory: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('chatHistory', files, 'files'), [importLocalSelection]),
-    importLocalFilesForAgenticGraph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('agenticgraph', files, 'files'), [importLocalSelection]),
+    importLocalFilesForAgenticGraph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('agentic-graph', files, 'files'), [importLocalSelection]),
     importLocalFolderForChatHistory: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('chatHistory', files, 'folder'), [importLocalSelection]),
-    importLocalFolderForAgenticGraph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('agenticgraph', files, 'folder'), [importLocalSelection]),
+    importLocalFolderForAgenticGraph: React.useCallback((files: WorkspaceFileSelection) => importLocalSelection('agentic-graph', files, 'folder'), [importLocalSelection]),
     isUpdatingChatHistoryPath,
     isUpdatingAgenticGraphPath,
     kgcLocalImportInputRef,
     kgcLocalFolderImportInputRef,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
     localImportInputRef,
     localFolderImportInputRef,
     setChatHistoryPathStatus,

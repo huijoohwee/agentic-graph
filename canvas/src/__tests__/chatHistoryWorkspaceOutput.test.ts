@@ -1,15 +1,15 @@
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import storageWorker from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import storageWorker from '../../../cloudflare/workers/agentic-graph-storage/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { writeKgcCompanionOutputBlob, writeKgcCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
 import { writeRichMediaWidgetRunOutputArtifact, writeTextWidgetRunOutputArtifact } from '@/features/chat/richMediaRun'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
-import { buildAgenticGraphStorageDocPath } from '@/lib/storage/agenticgraphStorageSyncContract'
-import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agenticgraphStorageDb'
+import { buildAgenticGraphStorageDocPath } from '@/lib/storage/agentic-graph-storage-sync-contract'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
 import { readStoredUploadedMediaPanelItems } from '@/lib/storage/uploadedMediaPanelItems'
 
 const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise<Response> } => {
@@ -128,17 +128,17 @@ export async function testWriteKgcCompanionOutputBlobUploadsR2AndPublishesManife
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-generated-binary-manifest'
   try {
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
-    process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://example.com'
-    process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = workspaceId
+    process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : String(input || '')
       if (url === '/__kg_fs_write') {
@@ -162,13 +162,13 @@ export async function testWriteKgcCompanionOutputBlobUploadsR2AndPublishesManife
     if (writtenPath !== '/chat-log/20260420T105432Z/kgc-output_20260420T105432Z.png') {
       throw new Error(`expected binary helper to preserve canonical output path, got ${String(writtenPath || '')}`)
     }
-    if (env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size !== 1) {
-      throw new Error(`expected generated binary output to upload one R2 object, got ${env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size}`)
+    if (env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size !== 1) {
+      throw new Error(`expected generated binary output to upload one R2 object, got ${env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size}`)
     }
     const manifestPath = '/chat-log/20260420T105432Z/kgc-output_20260420T105432Z.png.manifest.md'
     const fs = await getWorkspaceFs()
     const manifest = await fs.readFileText(manifestPath)
-    if (!manifest || !manifest.includes('kind: agenticgraph_binary_artifact') || !manifest.includes('r2_object_key:')) {
+    if (!manifest || !manifest.includes('kind: agentic_graph_binary_artifact') || !manifest.includes('r2_object_key:')) {
       throw new Error(`expected generated binary output to write an R2 manifest, got ${String(manifest || '')}`)
     }
     const docResponse = await readStorageWorker().fetch(
@@ -186,12 +186,12 @@ export async function testWriteKgcCompanionOutputBlobUploadsR2AndPublishesManife
     await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restoreDom()
     restoreWindow()
   }
@@ -249,17 +249,17 @@ export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhen
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-text-widget-replay'
   try {
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
-    process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://example.com'
-    process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = workspaceId
+    process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     const fs = createMemoryWorkspaceFs()
     await fs.ensureSeed()
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -298,12 +298,12 @@ export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhen
     await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restoreDom()
     restoreWindow()
   }
@@ -396,17 +396,17 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
-  const previousRuntimeSync = process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-  const previousBaseUrl = process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-  const previousWorkspaceId = process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+  const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+  const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-rich-media-binary-manifest'
   try {
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
-    process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = 'https://example.com'
-    process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = workspaceId
+    process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     const fs = createMemoryWorkspaceFs()
     await fs.ensureSeed()
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -455,8 +455,8 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
     if (registeredMedia.length !== 1 || registeredMedia[0]?.kind !== 'image' || registeredMedia[0]?.name !== 'current-image-widget.png') {
       throw new Error(`expected generated rich-media output to register in the shared Media @ inventory, got ${JSON.stringify(registeredMedia)}`)
     }
-    if (env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size !== 1) {
-      throw new Error(`expected rich-media output to upload one R2 object, got ${env.AGENTICGRAPH_STORAGE_BLOB_BUCKET.objects.size}`)
+    if (env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size !== 1) {
+      throw new Error(`expected rich-media output to upload one R2 object, got ${env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size}`)
     }
     const manifestText = await fs.readFileText('/workspace/current-image-widget-image-output.md')
     if (!manifestText || !manifestText.includes('| storageUrl | /api/storage/media/') || !manifestText.includes('| storagePublicPath | /api/storage/media/') || !manifestText.includes('| r2ObjectKey |')) {
@@ -477,12 +477,12 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
     await __resetAgenticGraphStorageDbForTests()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch
-    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_RUNTIME_SYNC_ENABLED
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_BASE_URL
-    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID = previousWorkspaceId
-    else delete process.env.VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID
+    if (typeof previousRuntimeSync === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousRuntimeSync
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    if (typeof previousWorkspaceId === 'string') process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = previousWorkspaceId
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restoreDom()
     restoreWindow()
   }

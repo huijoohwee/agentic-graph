@@ -1,5 +1,5 @@
-const canonicalBaseUrl = 'https://airvio.co/agenticgraph'
-const baseUrl = (process.env.AGENTICGRAPH_AGENT_READY_BASE_URL || canonicalBaseUrl).replace(/\/+$/, '')
+const canonicalBaseUrl = 'https://airvio.co/agentic-graph'
+const baseUrl = (process.env.AGENTIC_OS_AGENT_READY_BASE_URL || canonicalBaseUrl).replace(/\/+$/, '')
 const originUrl = new URL(baseUrl).origin
 const expectedAgentAuth = {
   skill: `${originUrl}/auth.md`,
@@ -35,7 +35,7 @@ const checks = [
     assert: async (response, body) =>
       response.ok
       && response.headers.get('content-type')?.includes('text/markdown')
-      && body.includes('# AgenticGraph auth.md')
+      && body.includes('# agentic-graph auth.md')
       && body.includes('/.well-known/oauth-protected-resource')
       && body.includes('/.well-known/oauth-authorization-server')
       && body.includes('agent_auth')
@@ -52,7 +52,7 @@ const checks = [
     assert: async (response, body) =>
       response.ok
       && response.headers.get('content-type')?.includes('text/markdown')
-      && body.includes('# AgenticGraph auth.md')
+      && body.includes('# agentic-graph auth.md')
       && body.includes('agent_auth')
       && body.includes(expectedAgentAuth.register_uri)
       && body.includes(expectedAgentAuth.claim_uri)
@@ -71,7 +71,7 @@ const checks = [
         && Array.isArray(payload.authorization_servers)
         && payload.authorization_servers.includes(originUrl)
         && Array.isArray(payload.scopes_supported)
-        && payload.scopes_supported.includes('agenticgraph:read')
+        && payload.scopes_supported.includes('agentic-graph:read')
         && Array.isArray(payload.bearer_methods_supported)
         && payload.bearer_methods_supported.includes('header')
     },

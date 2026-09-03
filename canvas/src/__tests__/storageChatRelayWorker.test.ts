@@ -1,12 +1,12 @@
-import storageWorker from '../../../cloudflare/workers/agenticgraph-storage/index.ts'
-import { createFakeAgenticGraphStorageWorkerEnv, FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fakeAgenticGraphStorageD1'
+import storageWorker from '../../../cloudflare/workers/agentic-graph-storage/index.ts'
+import { createFakeAgenticGraphStorageWorkerEnv, FakeAgenticGraphStorageD1Database } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import {
-  AGENTICGRAPH_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_API_VERSION,
   buildAgenticGraphStorageChatAuditPath,
   buildAgenticGraphStorageChatPoliciesPath,
   buildAgenticGraphStorageChatRelayPath,
   buildAgenticGraphStorageChatSessionPath,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise<Response> } => {
   const candidate = storageWorker as unknown as {
@@ -145,9 +145,9 @@ export async function testStorageChatPoliciesRouteReturnsWorkspaceProviderPolici
 
 export async function testStorageChatRelayRouteDelegatesAndWritesAudit() {
   const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & {
-    AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL?: string
+    AGENTIC_OS_STORAGE_CHAT_PROXY_BASE_URL?: string
   }
-  env.AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
+  env.AGENTIC_OS_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
   const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId } = await seedAuthenticatedWorkspace(db, { role: 'editor' })
   db.workspaceProviderPolicies.set('policy:agnes', {
@@ -191,7 +191,7 @@ export async function testStorageChatRelayRouteDelegatesAndWritesAudit() {
         'x-client-request-id': 'req:test-relay',
       },
       body: JSON.stringify({
-        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
         workspaceId,
         providerId: 'agnes-ai',
         authMode: 'serverManaged',
@@ -219,9 +219,9 @@ export async function testStorageChatRelayRouteDelegatesAndWritesAudit() {
 
 export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
   const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & {
-    AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL?: string
+    AGENTIC_OS_STORAGE_CHAT_PROXY_BASE_URL?: string
   }
-  env.AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
+  env.AGENTIC_OS_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
   const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId } = await seedAuthenticatedWorkspace(db, { role: 'editor' })
   db.workspaceProviderPolicies.set('policy:openai', {
@@ -275,7 +275,7 @@ export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
         'x-client-request-id': 'req:test-responses-relay',
       },
       body: JSON.stringify({
-        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
         workspaceId,
         providerId: 'openai',
         authMode: 'serverManaged',
@@ -331,9 +331,9 @@ export async function testStorageChatRelayRouteForwardsOpenAiResponsesInput() {
 
 export async function testStorageChatRelayRouteDerivesShortAiGatewayCacheTtlWithoutWorkspaceCacheKey() {
   const env = createFakeAgenticGraphStorageWorkerEnv() as ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv> & {
-    AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL?: string
+    AGENTIC_OS_STORAGE_CHAT_PROXY_BASE_URL?: string
   }
-  env.AGENTICGRAPH_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
+  env.AGENTIC_OS_STORAGE_CHAT_PROXY_BASE_URL = 'https://airvio.co'
   const db = env.DB as FakeAgenticGraphStorageD1Database
   const { token, workspaceId } = await seedAuthenticatedWorkspace(db, { role: 'editor' })
   db.workspaceProviderPolicies.set('policy:openai', {
@@ -374,7 +374,7 @@ export async function testStorageChatRelayRouteDerivesShortAiGatewayCacheTtlWith
         'x-client-request-id': 'req:test-short-cache-relay',
       },
       body: JSON.stringify({
-        apiVersion: AGENTICGRAPH_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
         workspaceId,
         providerId: 'openai',
         authMode: 'serverManaged',

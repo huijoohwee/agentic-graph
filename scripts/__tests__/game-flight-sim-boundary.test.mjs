@@ -21,11 +21,11 @@ test('accepts tracked content outside the Flight-owned boundary', () => {
 
 test('accepts canonical policy only while the generic clean-room markers remain', () => {
   assert.doesNotThrow(() => assertFlightSimBoundary([{
-    relativePath: 'docs/documents/agenticgraph-game-flight-sim-prd-tad.md',
+    relativePath: 'docs/documents/agentic-graph-game-flight-sim-prd-tad.md',
     source: completePolicy,
   }]))
   assert.equal(findFlightSimBoundaryViolations([{
-    relativePath: 'docs/documents/agenticgraph-game-flight-sim-prd-tad.md',
+    relativePath: 'docs/documents/agentic-graph-game-flight-sim-prd-tad.md',
     source: 'conceptual principles only',
   }]).length, 1)
 })
@@ -67,7 +67,7 @@ test('rejects external repository locators from split Flight camera and environm
 
 test('rejects external repository locators from canonical policy', () => {
   assert.throws(() => assertFlightSimBoundary([{
-    relativePath: '.kiro/specs/agenticgraph-game-flight-sim/requirements.md',
+    relativePath: '.kiro/specs/agentic-graph-game-flight-sim/requirements.md',
     source: `${completePolicy} https://external.example/flight-runtime`,
   }]), /external repository locator/)
 })

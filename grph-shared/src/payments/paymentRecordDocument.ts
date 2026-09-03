@@ -4,7 +4,7 @@ import {
   type PaymentRailId,
 } from './paymentRailSsot.js'
 
-export const AGENTICGRAPH_PAYMENT_TERMINAL_STATES = Object.freeze([
+export const AGENTIC_OS_PAYMENT_TERMINAL_STATES = Object.freeze([
   'paid',
   'refunded',
   'no_payment_required',
@@ -14,9 +14,9 @@ export const AGENTICGRAPH_PAYMENT_TERMINAL_STATES = Object.freeze([
   'reconciliation_unresolved',
 ] as const)
 
-export type AgenticGraphPaymentTerminalState = typeof AGENTICGRAPH_PAYMENT_TERMINAL_STATES[number]
+export type AgenticGraphPaymentTerminalState = typeof AGENTIC_OS_PAYMENT_TERMINAL_STATES[number]
 
-export const AGENTICGRAPH_CHAIN_EVIDENCE_STATES = Object.freeze([
+export const AGENTIC_OS_CHAIN_EVIDENCE_STATES = Object.freeze([
   'chain_unobserved',
   'chain_pending',
   'chain_confirmed',
@@ -24,7 +24,7 @@ export const AGENTICGRAPH_CHAIN_EVIDENCE_STATES = Object.freeze([
   'chain_verification_unresolved',
 ] as const)
 
-export type AgenticGraphChainEvidenceState = typeof AGENTICGRAPH_CHAIN_EVIDENCE_STATES[number]
+export type AgenticGraphChainEvidenceState = typeof AGENTIC_OS_CHAIN_EVIDENCE_STATES[number]
 
 export type AgenticGraphPaymentRecordChainEvidence = Readonly<{
   chainId: number
@@ -134,7 +134,7 @@ const isChainEvidence = (value: unknown): value is AgenticGraphPaymentRecordChai
     && isNonNegativeSafeInteger(evidence.transferBlockNumber)
     && isNonNegativeSafeInteger(evidence.observationBlockHeight)
     && typeof evidence.evidenceState === 'string'
-    && AGENTICGRAPH_CHAIN_EVIDENCE_STATES.includes(evidence.evidenceState as AgenticGraphChainEvidenceState)
+    && AGENTIC_OS_CHAIN_EVIDENCE_STATES.includes(evidence.evidenceState as AgenticGraphChainEvidenceState)
 }
 
 const fromDocumentChainEvidence = (value: unknown): AgenticGraphPaymentRecordChainEvidence | null | undefined => {
@@ -188,7 +188,7 @@ export function validateAgenticGraphTerminalPaymentRecord(
   ) {
     return 'straitsx records must use sgd with fiat or xsgd settlement.'
   }
-  if (!AGENTICGRAPH_PAYMENT_TERMINAL_STATES.includes(record.terminalState)) {
+  if (!AGENTIC_OS_PAYMENT_TERMINAL_STATES.includes(record.terminalState)) {
     return 'terminalState is not supported.'
   }
   if (record.providerObjectId !== null && !isSafeIdentifier(record.providerObjectId)) {

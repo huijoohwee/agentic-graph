@@ -1,5 +1,5 @@
 // Focused tests for the Commerce_Harness webhook-mismatch reconciliation
-// (agenticgraph-acos-mcp-connector spec, task 3.17 / R5.6 / Design Property 18).
+// (agentic-graph-acos-mcp-connector spec, task 3.17 / R5.6 / Design Property 18).
 //
 // Property 18: For any Stripe checkout webhook that does NOT match a verified
 //   session, the Commerce_Harness withholds the payout, leaves the payout

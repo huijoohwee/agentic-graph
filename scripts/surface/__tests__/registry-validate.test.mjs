@@ -44,7 +44,7 @@ function createEntry(overrides = {}) {
 
 function createRegistry(entries = [createEntry()]) {
   return {
-    schema: 'agenticgraph-surface-registry/v1',
+    schema: 'agentic-graph-surface-registry/v1',
     version: '1.0.0',
     publicOrigin: 'https://airvio.co',
     policy: {
@@ -128,7 +128,7 @@ test('seeded distribution policy contains only generated output and no source ex
 
   assert.deepEqual(registry.distributionAllowlist, [
     'grph-shared/dist/**',
-    'agenticgraph/assets/**',
+    'agentic-graph/assets/**',
   ])
   assert.equal(
     registry.entries.some(entry => (

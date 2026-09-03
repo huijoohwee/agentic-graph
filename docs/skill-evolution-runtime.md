@@ -3,10 +3,10 @@ title: "Skill Evolution Runtime"
 doc_type: "Runtime Contract"
 status: "runtime-ready-dev"
 lang: "en-US"
-schema: "agenticgraph-skill-evolution-runtime-doc/v1"
-authority: "AgenticGraph local stdio MCP execution for the Agentic Canvas OS Skill Evolution contract"
+schema: "agentic-graph-skill-evolution-runtime-doc/v1"
+authority: "agentic-graph local stdio MCP execution for the Agentic Canvas OS Skill Evolution contract"
 invocation: "/skill.evolve #skill-evolution @skill-catalog @skill-policy @runtime-proof @operator"
-mcp_tool: "agenticgraph.skill.evolve"
+mcp_tool: "agentic-graph.skill.evolve"
 deployment_scope: "Dev local stdio; no Prod or Cloudflare deployment authority"
 external_dependency: "forbidden"
 ---
@@ -15,9 +15,9 @@ external_dependency: "forbidden"
 
 ## Outcome
 
-AgenticGraph provides a bounded, resumable training harness for skill text. It uses epochs, deterministic batches, explicit mini-batches, a decaying textual learning-rate schedule, and held-out validation gates. The orchestrator exposes no gradient or weight-update operation and never applies a skill, commits, merges, releases, or deploys; its immutable safety flags attest only orchestrator behavior inside the documented trusted-adapter boundary.
+agentic-graph provides a bounded, resumable training harness for skill text. It uses epochs, deterministic batches, explicit mini-batches, a decaying textual learning-rate schedule, and held-out validation gates. The orchestrator exposes no gradient or weight-update operation and never applies a skill, commits, merges, releases, or deploys; its immutable safety flags attest only orchestrator behavior inside the documented trusted-adapter boundary.
 
-Agentic Canvas OS owns the canonical `/`, `#`, and `@` invocation and request/result contract. This local runtime owns the single MCP tool `agenticgraph.skill.evolve` and its execution state.
+Agentic Canvas OS owns the canonical `/`, `#`, and `@` invocation and request/result contract. This local runtime owns the single MCP tool `agentic-graph.skill.evolve` and its execution state.
 
 The design takes only high-level inspiration from the frozen-model skill-optimization problem described by [Microsoft SkillOpt](https://github.com/microsoft/SkillOpt/blob/61735e3922efc2b90c6d6cab561e62e98452ca90/README.md). No SkillOpt code, prompt, prose, schema, API, defaults, tests, fixture, package, service, generated artifact, or repository layout is copied or required. There is no import, install, subprocess, network call, compatibility layer, or runtime fallback to SkillOpt.
 
@@ -29,7 +29,7 @@ The only accepted tuple is:
 /skill.evolve #skill-evolution @skill-catalog @skill-policy @runtime-proof @operator
 ```
 
-The local MCP descriptor and every request use `agenticgraph.skill.evolve`. There is no `/skill.train`, alternate semantic tag, second binding registry, or second dispatcher. Dictionary tokens are invocation metadata; the MCP request remains the executable boundary.
+The local MCP descriptor and every request use `agentic-graph.skill.evolve`. There is no `/skill.train`, alternate semantic tag, second binding registry, or second dispatcher. Dictionary tokens are invocation metadata; the MCP request remains the executable boundary.
 
 ## Operations
 
@@ -41,7 +41,7 @@ The local MCP descriptor and every request use `agenticgraph.skill.evolve`. Ther
 | `status` | None | None | Current bounded snapshot. |
 | `cancel` | Exactly one claimed successor revision | None | Canceled snapshot with retained aggregate evidence. |
 
-Every mutating transition is revision-fenced and idempotency-keyed; `status` remains read-only and adapter-free. The canonical stdio server uses an atomic file store whose hashed records, linked replay sidecars, fixed-size replay-membership summary, claims, and in-flight intents survive process restarts. Fresh absent replay keys take a constant-time membership path; positive matches traverse the bounded sidecar chain. Transition-sized claims, exact predecessor revisions, TTL cleanup, atomic rename, and directory sync fail closed under competing processes on one local filesystem and OS PID namespace. The mutex uses hard-linked inode ownership, never TTL-steals from a live same-host PID, and checks ownership before each commit; dead same-host owners require two stale observations. Malformed, foreign-host, or abandoned recovery locks fail closed. This is not a distributed or network-filesystem mutex. `AGENTICGRAPH_SKILL_EVOLUTION_STATE_DIR` may select an outside-repository state directory; otherwise the server derives an outside-repository user-state path namespaced by repository and `AGENTICGRAPH_SKILL_EVOLUTION_NAMESPACE`. Library callers may explicitly inject the bounded in-memory store for ephemeral tests.
+Every mutating transition is revision-fenced and idempotency-keyed; `status` remains read-only and adapter-free. The canonical stdio server uses an atomic file store whose hashed records, linked replay sidecars, fixed-size replay-membership summary, claims, and in-flight intents survive process restarts. Fresh absent replay keys take a constant-time membership path; positive matches traverse the bounded sidecar chain. Transition-sized claims, exact predecessor revisions, TTL cleanup, atomic rename, and directory sync fail closed under competing processes on one local filesystem and OS PID namespace. The mutex uses hard-linked inode ownership, never TTL-steals from a live same-host PID, and checks ownership before each commit; dead same-host owners require two stale observations. Malformed, foreign-host, or abandoned recovery locks fail closed. This is not a distributed or network-filesystem mutex. `AGENTIC_OS_SKILL_EVOLUTION_STATE_DIR` may select an outside-repository state directory; otherwise the server derives an outside-repository user-state path namespaced by repository and `AGENTIC_OS_SKILL_EVOLUTION_NAMESPACE`. Library callers may explicitly inject the bounded in-memory store for ephemeral tests.
 
 ## Adapter Isolation
 
@@ -55,7 +55,7 @@ The canonical host loads one repository-contained, SHA-256-pinned, self-containe
 
 Each process receives a sanitized environment and bounded JSON IPC, loads only its exact method surface, redacts child errors, and is terminated after its result, cancellation, or deadline without affecting sibling calls. The source file is evaluated directly; only the explicit static `node:crypto` import is linked, while relative, bare, dynamic, `node:module`, filesystem, and VM imports fail closed. The child receives read grants only for the runtime worker and the configured adapter file, so builtin-mediated loading of another repository file also fails. The configured digest therefore binds the evaluated adapter entry bytes instead of an unpinned repository closure. Node's permission boundary also denies adapter filesystem writes and ungranted process capabilities. It does not deny network access or provide hostile-code containment, so the configured inference-only module remains trusted host code. The candidate process receives training evidence but no validation references, rollout evidence, scores, or gate results. Validation references are passed only to held-out execution; the evaluator receives bounded rollout evidence rather than candidate-generation context.
 
-The canonical stdio server advertises and dispatches the tool with no built-in provider or model adapter. `plan` remains model-free, capability-free, and lazy—it does not initialize durable state; `start` fails closed as `adapter_unavailable` until the host supplies all roles. The stdio entry point accepts only host-owned `AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_MODULE` plus its exact lowercase `AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_SHA256`; neither value is an MCP argument. The loader realpath-confines the module to the AgenticGraph repository, permits only JavaScript modules, verifies its bytes before every call and after evaluation, rejects the forbidden external dependency marker, and requires the exact role surface. Embedding hosts may instead construct `createSkillEvolutionRuntime({ adapter, authorize, store })` directly.
+The canonical stdio server advertises and dispatches the tool with no built-in provider or model adapter. `plan` remains model-free, capability-free, and lazy—it does not initialize durable state; `start` fails closed as `adapter_unavailable` until the host supplies all roles. The stdio entry point accepts only host-owned `AGENTIC_OS_SKILL_EVOLUTION_ADAPTER_MODULE` plus its exact lowercase `AGENTIC_OS_SKILL_EVOLUTION_ADAPTER_SHA256`; neither value is an MCP argument. The loader realpath-confines the module to the agentic-graph repository, permits only JavaScript modules, verifies its bytes before every call and after evaluation, rejects the forbidden external dependency marker, and requires the exact role surface. Embedding hosts may instead construct `createSkillEvolutionRuntime({ adapter, authorize, store })` directly.
 
 ## Training State
 

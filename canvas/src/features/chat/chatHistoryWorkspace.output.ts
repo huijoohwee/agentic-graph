@@ -170,7 +170,7 @@ const buildStoredBinaryManifestMarkdown = (args: {
     : ''
   return [
     '---',
-    'kind: agenticgraph_binary_artifact',
+    'kind: agentic_graph_binary_artifact',
     `workspace_path: ${quoteManifestScalar(args.workspacePath)}`,
     `storage_workspace_id: ${quoteManifestScalar(args.storage.workspaceId)}`,
     `canonical_path: ${quoteManifestScalar(args.storage.canonicalPath)}`,

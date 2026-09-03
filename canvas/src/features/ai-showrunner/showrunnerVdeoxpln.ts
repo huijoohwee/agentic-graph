@@ -1,11 +1,11 @@
 import { SHOWRUNNER_MCP_TOOL_NAMES } from './showrunnerMcpTools'
 import { SHOWRUNNER_WIDGET_ENTRY } from './showrunnerFlowNode'
 
-export const AGENTICGRAPH_AI_SHOWRUNNER_VDEOXPLN_ID = 'agenticgraph-ai-showrunner' as const
+export const AGENTIC_OS_AI_SHOWRUNNER_VDEOXPLN_ID = 'agentic-graph-ai-showrunner' as const
 
-export const AGENTICGRAPH_AI_SHOWRUNNER_VDEOXPLN_ENTRY = Object.freeze({
-  id: AGENTICGRAPH_AI_SHOWRUNNER_VDEOXPLN_ID,
-  title: 'AgenticGraph AI Showrunner',
+export const AGENTIC_OS_AI_SHOWRUNNER_VDEOXPLN_ENTRY = Object.freeze({
+  id: AGENTIC_OS_AI_SHOWRUNNER_VDEOXPLN_ID,
+  title: 'agentic-graph AI Showrunner',
   purpose: 'Run provider-neutral multi-agent creative pipelines for podcasts, narrative games, and writers rooms through existing Source Files, memory, MCP, KGC, and Storyboard Widget owners.',
   scope: 'local-stdio-and-browser-local',
   mutation: 'local-approval-gated',

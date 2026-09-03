@@ -25,7 +25,7 @@ export type SettingsRowStatusState = {
   isCheckingHealth: boolean
   isUpdatingChatHistoryPath: boolean
   isUpdatingAgenticGraphPath: boolean
-  agenticgraphPathStatus: string | null
+  agenticGraphPathStatus: string | null
   normalizedChatProvider: string
 }
 

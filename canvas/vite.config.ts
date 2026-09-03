@@ -52,9 +52,9 @@ const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(rep
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
 let workspaceInitializationDocsAbsRootForDev = ''
 let workspaceInitializationWorkspaceSeedsReadAbsRootForDev = ''
-const liveCanvasHeroDocPath = path.resolve(repoRoot, 'docs', 'documents', 'agenticgraph-live-canvas-hero.md')
-const mainPanelSectionDescriptionsDocPath = path.resolve(repoRoot, 'docs', 'documents', 'agenticgraph-mainpanel-section-descriptions.md')
-const LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH = '/agenticgraph-live-canvas-hero.md'
+const liveCanvasHeroDocPath = path.resolve(repoRoot, 'docs', 'documents', 'agentic-graph-live-canvas-hero.md')
+const mainPanelSectionDescriptionsDocPath = path.resolve(repoRoot, 'docs', 'documents', 'agentic-graph-mainpanel-section-descriptions.md')
+const LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH = '/agentic-graph-live-canvas-hero.md'
 const nodeRequire = createRequire(import.meta.url)
 const resolvedReact = nodeRequire.resolve('react')
 const resolvedReactJsxRuntime = nodeRequire.resolve('react/jsx-runtime')
@@ -68,9 +68,9 @@ const resolvedZustandCompatEntry = path.resolve(__dirname, 'src/lib/vendor/zusta
 const resolvedGympgrphSrc = path.resolve(__dirname, '../gympgrph/src/index.ts')
 const resolvedGympgrphMapPreviewSrc = path.resolve(__dirname, '../gympgrph/src/mapPreview.ts')
 const resolvedGympgrphTestkitSrc = path.resolve(__dirname, '../gympgrph/src/testkit.ts')
-const MARKDOWN_PIPELINE_INPUT_REL_PATH = String(process.env.VITE_MARKDOWN_PIPELINE_INPUT_REL_PATH || '').trim() || 'docs/agenticgraph-pipeline-document.md'
-const CODEBASE_INDEX_PIPELINE_OUTPUT_DIR = String(process.env.VITE_MARKDOWN_PIPELINE_OUTPUT_DIR || '').trim() || 'data/outputs/agenticgraph-workflow-preview'
-const CODEBASE_INDEX_PIPELINE_COMMAND = `python -m agenticgraph_parser markdown --input ${MARKDOWN_PIPELINE_INPUT_REL_PATH} --output-dir ${CODEBASE_INDEX_PIPELINE_OUTPUT_DIR}`
+const MARKDOWN_PIPELINE_INPUT_REL_PATH = String(process.env.VITE_MARKDOWN_PIPELINE_INPUT_REL_PATH || '').trim() || 'docs/agentic-graph-pipeline-document.md'
+const CODEBASE_INDEX_PIPELINE_OUTPUT_DIR = String(process.env.VITE_MARKDOWN_PIPELINE_OUTPUT_DIR || '').trim() || 'data/outputs/agentic-graph-workflow-preview'
+const CODEBASE_INDEX_PIPELINE_COMMAND = `python -m agentic_graph_parser markdown --input ${MARKDOWN_PIPELINE_INPUT_REL_PATH} --output-dir ${CODEBASE_INDEX_PIPELINE_OUTPUT_DIR}`
 const CHAT_PROXY_PREFIX = '/__chat_proxy'
 const CHAT_BINARY_DOWNLOAD_PROXY_PREFIX = '/__chat_asset_proxy'
 const CHAT_LOG_APPEND_PATH = '/__chat_log_append'
@@ -127,7 +127,7 @@ const isGoogleCloudChatUpstreamHost = (value: unknown): boolean => CHAT_PROXY_GO
 const isGeminiChatUpstreamHost = (value: unknown): boolean => CHAT_PROXY_GEMINI_HOSTS.has(normalizeHost(value))
 const isBytePlusChatUpstreamHost = (value: unknown): boolean => CHAT_PROXY_BYTEPLUS_HOSTS.has(normalizeHost(value))
 const parseAllowedChatProxyHosts = (): Set<string> => {
-  const envValue = String(process.env.AGENTICGRAPH_CHAT_PROXY_ALLOWED_HOSTS || '').trim()
+  const envValue = String(process.env.AGENTIC_OS_CHAT_PROXY_ALLOWED_HOSTS || '').trim()
   if (!envValue) return new Set([...CHAT_PROXY_LOCAL_HOSTS, CHAT_PROXY_OPENAI_HOST, CHAT_PROXY_MIROMIND_HOST, CHAT_PROXY_AGNES_HOST, CHAT_PROXY_SEALION_HOST, ...CHAT_PROXY_QWEN_HOSTS, ...CHAT_PROXY_GOOGLE_CLOUD_HOSTS, ...CHAT_PROXY_GEMINI_HOSTS, ...CHAT_PROXY_BYTEPLUS_HOSTS, ...CHAT_PROXY_AI_GATEWAY_HOSTS])
   const out = new Set<string>()
   envValue
@@ -197,12 +197,12 @@ const toChatLogFileName = (timestampMs: number): string => {
 const getGrabMapsBearerToken = (kind: 'api' | 'mcp'): string => {
   const candidates = kind === 'mcp'
     ? [
-      process.env.AGENTICGRAPH_GRABMAPS_MCP_TOKEN,
+      process.env.AGENTIC_OS_GRABMAPS_MCP_TOKEN,
       process.env.GRABMAPS_MCP_TOKEN,
       process.env.GRABMAPS_TOKEN,
     ]
     : [
-      process.env.AGENTICGRAPH_GRABMAPS_API_TOKEN,
+      process.env.AGENTIC_OS_GRABMAPS_API_TOKEN,
       process.env.GRABMAPS_API_TOKEN,
       process.env.GRABMAPS_TOKEN,
     ]
@@ -214,7 +214,7 @@ const getGrabMapsBearerToken = (kind: 'api' | 'mcp'): string => {
 }
 
 const stripEntitiesBadSourcemapsPlugin = {
-  name: 'agenticgraph-strip-entities-bad-sourcemaps',
+  name: 'agentic-graph-strip-entities-bad-sourcemaps',
   enforce: 'pre' as const,
   transform(code: string, id: string) {
     if (!id) return null
@@ -225,19 +225,19 @@ const stripEntitiesBadSourcemapsPlugin = {
   },
 }
 
-const stripMermaidArchitectureDetectorPlugin = { name: 'agenticgraph-strip-mermaid-architecture-detector', enforce: 'pre' as const, transform(code: string, id: string) {
+const stripMermaidArchitectureDetectorPlugin = { name: 'agentic-graph-strip-mermaid-architecture-detector', enforce: 'pre' as const, transform(code: string, id: string) {
   if (!String(id || '').replace(/\\/g, '/').endsWith('/mermaid/dist/mermaid.core.mjs')) return null
   const withoutRegistration = code.replace(/,\s*architectureDetector_default(?=\s*\))/g, '')
   const next = withoutRegistration.replace(
     /const\s+\{\s*diagram:\s*\w+\s*\}\s*=\s*await\s+import\("\.\/chunks\/mermaid\.core\/architectureDiagram-[^"]+\.mjs"\);/g,
-    'throw new Error("Mermaid architecture diagrams are disabled in agenticgraph runtime");',
+    'throw new Error("Mermaid architecture diagrams are disabled in agentic-graph runtime");',
   )
   if (withoutRegistration === code || next === withoutRegistration) {
     throw new Error('Mermaid architecture detector contract changed; refusing to ship the disabled renderer')
   }
   return next
 } }
-const stripMermaidCoseBilkentLayoutPlugin = { name: 'agenticgraph-strip-mermaid-cose-bilkent-layout', enforce: 'pre' as const, transform(code: string, id: string) {
+const stripMermaidCoseBilkentLayoutPlugin = { name: 'agentic-graph-strip-mermaid-cose-bilkent-layout', enforce: 'pre' as const, transform(code: string, id: string) {
   const moduleId = String(id || '').replace(/\\/g, '/')
   if (!moduleId.includes('/mermaid/dist/chunks/mermaid.core/') || !code.includes('cose-bilkent')) return null
   const next = code
@@ -363,7 +363,7 @@ const inlineHtmlStylesheetAssetsPlugin = (): Plugin => {
   let inlinedCssFileNames = new Set<string>()
 
   return {
-    name: 'agenticgraph-inline-html-stylesheet-assets',
+    name: 'agentic-graph-inline-html-stylesheet-assets',
     apply: 'build',
     enforce: 'post',
     generateBundle(_options, bundle) {
@@ -447,7 +447,7 @@ const probePythonCandidate = (candidate: string): Promise<boolean> => {
         resolve(false)
         return
       }
-      const child = spawn(candidate, ['-c', 'import agenticgraph_parser'], {
+      const child = spawn(candidate, ['-c', 'import agentic_graph_parser'], {
         cwd: repoRoot,
         env: withRepoPythonPath(process.env),
       })
@@ -483,7 +483,7 @@ let pythonBinPromise: Promise<string> | null = null
 async function getPythonBin(): Promise<string> {
   if (pythonBinPromise) return pythonBinPromise
   pythonBinPromise = (async () => {
-    const fromEnv = String(process.env.AGENTICGRAPH_PYTHON_BIN || '').trim()
+    const fromEnv = String(process.env.AGENTIC_OS_PYTHON_BIN || '').trim()
     if (fromEnv) return fromEnv
     const candidates = [
       'python3',
@@ -647,7 +647,7 @@ function createStripeCheckoutDevHandler(): import('vite').Connect.NextHandleFunc
 }
 
 const stripeCheckoutDevPlugin = {
-  name: 'agenticgraph-stripe-checkout-dev',
+  name: 'agentic-graph-stripe-checkout-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use(STRIPE_PAYMENT_ROUTE_PATHS.checkoutSession, createStripeCheckoutDevHandler())
   },
@@ -657,7 +657,7 @@ const stripeCheckoutDevPlugin = {
 }
 
 const markdownPipelineDevPlugin = {
-  name: 'agenticgraph-markdown-pipeline-dev',
+  name: 'agentic-graph-markdown-pipeline-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use('/__run_markdown_pipeline', async (req, res, next) => {
       if (req.method !== 'POST') {
@@ -712,13 +712,13 @@ const markdownPipelineDevPlugin = {
 
 function resolveHackamapFlowchartFixturePath(): string | null {
   const fromEnv =
-    String(process.env.AGENTICGRAPH_FLOWCHART_FIXTURE_PATH || '').trim() ||
-    String(process.env.VITE_AGENTICGRAPH_FLOWCHART_FIXTURE_PATH || '').trim()
+    String(process.env.AGENTIC_OS_FLOWCHART_FIXTURE_PATH || '').trim() ||
+    String(process.env.VITE_AGENTIC_OS_FLOWCHART_FIXTURE_PATH || '').trim()
 
   const candidates = [
     fromEnv,
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'hackamap', 'agenticgraph-hackamap-flowchart-fixture.json'),
-    path.resolve(repoRoot, '..', 'hackamap', 'site', 'agenticgraph-hackamap-flowchart-fixture.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'hackamap', 'agentic-graph-hackamap-flowchart-fixture.json'),
+    path.resolve(repoRoot, '..', 'hackamap', 'site', 'agentic-graph-hackamap-flowchart-fixture.json'),
   ].filter(Boolean)
 
   for (const p of candidates) {
@@ -733,13 +733,13 @@ function resolveHackamapFlowchartFixturePath(): string | null {
 
 function resolveHackamapGraphPath(): string | null {
   const fromEnv =
-    String(process.env.AGENTICGRAPH_HACKAMAP_GRAPH_PATH || '').trim() ||
-    String(process.env.VITE_AGENTICGRAPH_HACKAMAP_GRAPH_PATH || '').trim()
+    String(process.env.AGENTIC_OS_HACKAMAP_GRAPH_PATH || '').trim() ||
+    String(process.env.VITE_AGENTIC_OS_HACKAMAP_GRAPH_PATH || '').trim()
   const candidates = [
     fromEnv,
-    path.resolve(repoRoot, '..', 'hackamap', 'content', 'agenticgraph-hackamap.json'),
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'agenticgraph-hackamap.json'),
-    path.resolve(repoRoot, '..', 'hackamap', 'site', 'agenticgraph-hackamap.json'),
+    path.resolve(repoRoot, '..', 'hackamap', 'content', 'agentic-graph-hackamap.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agentic-graph', 'imports', 'hackamap', 'agentic-graph-hackamap.json'),
+    path.resolve(repoRoot, '..', 'hackamap', 'site', 'agentic-graph-hackamap.json'),
   ].filter(Boolean)
   for (const p of candidates) {
     try {
@@ -753,11 +753,11 @@ function resolveHackamapGraphPath(): string | null {
 
 function resolveHackamapApiGraphPath(): string | null {
   const fromEnv =
-    String(process.env.AGENTICGRAPH_HACKAMAP_API_GRAPH_PATH || '').trim() ||
-    String(process.env.VITE_AGENTICGRAPH_HACKAMAP_API_GRAPH_PATH || '').trim()
+    String(process.env.AGENTIC_OS_HACKAMAP_API_GRAPH_PATH || '').trim() ||
+    String(process.env.VITE_AGENTIC_OS_HACKAMAP_API_GRAPH_PATH || '').trim()
   const candidates = [
     fromEnv,
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'hackamap_api_graph.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agentic-graph', 'imports', 'hackamap', 'hackamap_api_graph.json'),
     path.resolve(repoRoot, '..', 'hackamap', 'site', '_generated', 'api-graph', 'hackamap_api_graph.json'),
   ].filter(Boolean)
   for (const p of candidates) {
@@ -773,7 +773,7 @@ function resolveHackamapApiGraphPath(): string | null {
 function resolveHackamapPipelinePath(): string | null {
   const candidates = [
     path.resolve(repoRoot, '..', 'hackamap', 'site', 'hackamap-pipeline.json'),
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'hackamap_pipeline.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agentic-graph', 'imports', 'hackamap', 'hackamap_pipeline.json'),
   ]
   for (const p of candidates) {
     try {
@@ -788,7 +788,7 @@ function resolveHackamapPipelinePath(): string | null {
 function resolveHackamapQueryPresetsPath(): string | null {
   const candidates = [
     path.resolve(repoRoot, '..', 'hackamap', 'site', 'hackamap-query-presets.json'),
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'hackamap_query_presets.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agentic-graph', 'imports', 'hackamap', 'hackamap_query_presets.json'),
   ]
   for (const p of candidates) {
     try {
@@ -803,7 +803,7 @@ function resolveHackamapQueryPresetsPath(): string | null {
 function resolveHackamapQueryRunsManifestPath(): string | null {
   const candidates = [
     path.resolve(repoRoot, '..', 'hackamap', 'site', '_generated', 'query-outputs', 'query-runs.manifest.json'),
-    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agenticgraph', 'imports', 'hackamap', 'query-outputs', 'query-runs.manifest.json'),
+    path.resolve(repoRoot, '..', 'huijoohwee', 'content', 'agentic-graph', 'imports', 'hackamap', 'query-outputs', 'query-runs.manifest.json'),
   ]
   for (const p of candidates) {
     try {
@@ -1084,7 +1084,7 @@ async function readHackamapGraphAsBipartiteApiPayload(runId: string = ''): Promi
     edges,
     meta: {
       ...(meta?.content_signature ? { content_signature: String(meta.content_signature) } : {}),
-      source: 'agenticgraph-hackamap.json:fallback',
+      source: 'agentic-graph-hackamap.json:fallback',
       total_problems: nodes.filter(n => n.type === 'problem').length,
       total_solutions: nodes.filter(n => n.type === 'solution').length,
     },
@@ -1094,7 +1094,7 @@ async function readHackamapGraphAsBipartiteApiPayload(runId: string = ''): Promi
 }
 
 const apiGraphDevPlugin = {
-  name: 'agenticgraph-api-graph-dev',
+  name: 'agentic-graph-api-graph-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use('/api/graph', async (req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -1152,7 +1152,7 @@ const apiGraphDevPlugin = {
 }
 
 const flowchartFixtureDevPlugin = {
-  name: 'agenticgraph-flowchart-fixture-dev',
+  name: 'agentic-graph-flowchart-fixture-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use('/__flowchart_fixture', async (req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -1389,7 +1389,7 @@ function createCodebaseAssetHandler(): import('vite').Connect.NextHandleFunction
 }
 
 const codebaseFileDevPlugin = {
-  name: 'agenticgraph-codebase-file-dev',
+  name: 'agentic-graph-codebase-file-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use(createLocalFileRangeHandler({ workspaceRoot }))
     server.middlewares.use(createCodebaseFileHandler())
@@ -1428,7 +1428,7 @@ function createLazyWebsiteImportHandler(
 }
 
 const remoteFetchProxyDevPlugin = {
-  name: 'agenticgraph-remote-fetch-proxy-dev',
+  name: 'agentic-graph-remote-fetch-proxy-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!(req.url?.startsWith('/__fetch_remote') || req.url?.startsWith(CHAT_BINARY_DOWNLOAD_PROXY_PREFIX))) {
@@ -1450,7 +1450,7 @@ const remoteFetchProxyDevPlugin = {
 }
 
 const grabMapsProxyDevPlugin = {
-  name: 'agenticgraph-grabmaps-proxy-dev',
+  name: 'agentic-graph-grabmaps-proxy-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!req.url?.startsWith(GRABMAPS_PROXY_PREFIX)) {
@@ -1472,7 +1472,7 @@ const grabMapsProxyDevPlugin = {
 }
 
 const chatProxyDevPlugin = {
-  name: 'agenticgraph-chat-proxy-dev',
+  name: 'agentic-graph-chat-proxy-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!req.url?.startsWith(CHAT_PROXY_PREFIX)) {
@@ -1494,7 +1494,7 @@ const chatProxyDevPlugin = {
 }
 
 const chatLogDevPlugin = {
-  name: 'agenticgraph-chat-log-dev',
+  name: 'agentic-graph-chat-log-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!req.url?.startsWith(CHAT_LOG_APPEND_PATH)) {
@@ -1516,7 +1516,7 @@ const chatLogDevPlugin = {
 }
 
 const kgFsWriteDevPlugin = {
-  name: 'agenticgraph-kg-fs-write-dev',
+  name: 'agentic-graph-kg-fs-write-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!req.url?.startsWith(AG_FS_WRITE_PATH)) {
@@ -1538,7 +1538,7 @@ const kgFsWriteDevPlugin = {
 }
 
 const kgFsListDevPlugin = {
-  name: 'agenticgraph-kg-fs-list-dev',
+  name: 'agentic-graph-kg-fs-list-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (!req.url?.startsWith(AG_FS_LIST_PATH)) {
@@ -1560,7 +1560,7 @@ const kgFsListDevPlugin = {
 }
 
 const webpageProxyDevPlugin = {
-  name: 'agenticgraph-webpage-proxy-dev',
+  name: 'agentic-graph-webpage-proxy-dev',
   configureServer(server: import('vite').ViteDevServer) {
     const metaHandler = createWebpageMetaHandler()
     server.middlewares.use('/__webpage_proxy', createWebpageProxyHandler())
@@ -1578,7 +1578,7 @@ const webpageProxyDevPlugin = {
 }
 
 const localGeoDatasetDevPlugin = {
-  name: 'agenticgraph-local-geo-dataset-dev',
+  name: 'agentic-graph-local-geo-dataset-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use((req, res, next) => {
       if (req.url?.startsWith('/__geo_upload') || req.url?.startsWith('/__geo_local/')) {
@@ -1600,7 +1600,7 @@ const localGeoDatasetDevPlugin = {
 }
 
 const pdfConvertDevPlugin = {
-  name: 'agenticgraph-pdf-convert-dev',
+  name: 'agentic-graph-pdf-convert-dev',
   configureServer(server: import('vite').ViteDevServer) {
     const convertHandler = createPdfConvertHandler()
     const assetsHandler = createPdfAssetsHandler()
@@ -1616,7 +1616,7 @@ const pdfConvertDevPlugin = {
 }
 
 const pdfWorkspaceDevPlugin = {
-  name: 'agenticgraph-pdf-workspace-dev',
+  name: 'agentic-graph-pdf-workspace-dev',
   configureServer(server: import('vite').ViteDevServer) {
     const handler = createPdfWorkspaceHandler({ repoRoot })
     server.middlewares.use(handler)
@@ -1628,7 +1628,7 @@ const pdfWorkspaceDevPlugin = {
 }
 
 const websiteImportDevPlugin = {
-  name: 'agenticgraph-website-import-dev',
+  name: 'agentic-graph-website-import-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use(createLazyWebsiteImportHandler(server))
   },
@@ -1640,7 +1640,7 @@ const websiteImportDevPlugin = {
 type LocalGeoDatasetEntry = { name: string; text: string; createdAtMs: number }
 const localGeoDatasetStore = new Map<string, LocalGeoDatasetEntry>()
 const LOCAL_GEO_DATASET_MAX_BYTES = (() => {
-  const raw = String(process.env.AGENTICGRAPH_LOCAL_GEO_DATASET_MAX_BYTES || '').trim()
+  const raw = String(process.env.AGENTIC_OS_LOCAL_GEO_DATASET_MAX_BYTES || '').trim()
   const parsed = raw ? Number(raw) : NaN
   if (!Number.isFinite(parsed)) return 25 * 1024 * 1024
   return Math.max(64 * 1024, Math.min(50 * 1024 * 1024, Math.floor(parsed)))
@@ -2006,7 +2006,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const threadCreateRes = await fetch(threadCreateUrl.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ metadata: { source: 'agenticgraph-chat-proxy' } }),
+      body: JSON.stringify({ metadata: { source: 'agentic-graph-chat-proxy' } }),
       signal: controller.signal,
     })
     if (!threadCreateRes.ok) {
@@ -2112,9 +2112,9 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const aiGatewayRoute = sanitizeAiGatewayRoute(req.headers['x-kg-ai-gateway-route'])
     const aiGatewayMetadata = sanitizeAiGatewayMetadataHeader(req.headers['x-kg-ai-gateway-metadata'])
     const aiGatewayCacheTtl = sanitizeAiGatewayCacheTtl(req.headers['x-kg-ai-gateway-cache-ttl'])
-    const aiGatewayBaseRaw = String(process.env.AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_BASE_URL || '').trim()
-    const aiGatewayGatewayId = String(process.env.AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID || '').trim()
-    const gatewayMode = String(process.env.AGENTICGRAPH_CHAT_GATEWAY_MODE || '').trim().toLowerCase()
+    const aiGatewayBaseRaw = String(process.env.AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_BASE_URL || '').trim()
+    const aiGatewayGatewayId = String(process.env.AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID || '').trim()
+    const gatewayMode = String(process.env.AGENTIC_OS_CHAT_GATEWAY_MODE || '').trim().toLowerCase()
     const localGatewayOnly = gatewayMode === 'local-only' || (gatewayMode.endsWith('-only') && gatewayMode !== 'openai-only')
     const localProviderSelected = providerHeader === 'lmstudio-local'
     const bytePlusProviderSelected = providerHeader === 'byteplus-modelark'
@@ -2133,11 +2133,11 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const requestedUpstreamRaw = readSingleHeader(req.headers['x-kg-chat-upstream'])
     const aiGatewayRequested = providerHeader === 'openai' && !!aiGatewayBaseRaw && !!aiGatewayRoute
     const upstreamBaseRaw = (() => {
-      const legacyLocalUpstreamKey = ['AGENTICGRAPH_CHAT_PROXY_', 'DEER', 'FLOW', '_UPSTREAM'].join('')
+      const legacyLocalUpstreamKey = ['AGENTIC_OS_CHAT_PROXY_', 'DEER', 'FLOW', '_UPSTREAM'].join('')
       const legacyLocalUpstream = String((process.env as Record<string, string | undefined>)[legacyLocalUpstreamKey] || '').trim()
-      const localGatewayBase = String(process.env.AGENTICGRAPH_CHAT_PROXY_LOCAL_UPSTREAM || '').trim()
+      const localGatewayBase = String(process.env.AGENTIC_OS_CHAT_PROXY_LOCAL_UPSTREAM || '').trim()
       if (localGatewayOnly || localProviderSelected) {
-        return localGatewayBase || legacyLocalUpstream || String(process.env.AGENTICGRAPH_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
+        return localGatewayBase || legacyLocalUpstream || String(process.env.AGENTIC_OS_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
       }
       if (aiGatewayRequested) return aiGatewayBaseRaw
       if (bytePlusProviderSelected) return requestedUpstreamRaw || `https://${CHAT_PROXY_BYTEPLUS_AP_SOUTHEAST_HOST}`
@@ -2149,7 +2149,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       if (geminiProviderSelected) return requestedUpstreamRaw || `https://${CHAT_PROXY_GEMINI_HOST}`
       if (providerHeader === 'openai') return 'https://api.openai.com'
       if (requestedUpstreamRaw) return requestedUpstreamRaw
-      return String(process.env.AGENTICGRAPH_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
+      return String(process.env.AGENTIC_OS_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
     })()
     const allowedHosts = parseAllowedChatProxyHosts()
     const upstreamBase = (() => {
@@ -2192,15 +2192,15 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const requiresGeminiKey = !localGatewayOnly && geminiUpstreamSelected
     const requiresBytePlusKey = !localGatewayOnly && bytePlusUpstreamSelected
     const requiresAiGatewayKey = !localGatewayOnly && aiGatewayUpstreamSelected
-    const envOpenAiApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_OPENAI_API_KEY || process.env.OPENAI_API_KEY || '').trim()
-    const envAiGatewayApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN || process.env.AI_GATEWAY_TOKEN || process.env.CLOUDFLARE_API_TOKEN || '').trim()
-    const envMiroMindApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_MIROMIND_API_KEY || process.env.MIROMIND_API_KEY || '').trim()
-    const envAgnesApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_AGNES_API_KEY || process.env.AGNES_API_KEY || '').trim()
-    const envSealionApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_SEALION_API_KEY || '').trim()
-    const envQwenApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || '').trim()
-    const envGoogleCloudApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_GOOGLE_CLOUD_ACCESS_TOKEN || process.env.GOOGLE_CLOUD_ACCESS_TOKEN || process.env.VERTEX_AI_ACCESS_TOKEN || process.env.GOOGLE_OAUTH_ACCESS_TOKEN || '').trim()
-    const envGeminiApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_GEMINI_API_KEY || '').trim()
-    const envBytePlusApiKey = String(process.env.AGENTICGRAPH_CHAT_PROXY_BYTEPLUS_API_KEY || '').trim()
+    const envOpenAiApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_OPENAI_API_KEY || process.env.OPENAI_API_KEY || '').trim()
+    const envAiGatewayApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_TOKEN || process.env.AI_GATEWAY_TOKEN || process.env.CLOUDFLARE_API_TOKEN || '').trim()
+    const envMiroMindApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_MIROMIND_API_KEY || process.env.MIROMIND_API_KEY || '').trim()
+    const envAgnesApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_AGNES_API_KEY || process.env.AGNES_API_KEY || '').trim()
+    const envSealionApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_SEALION_API_KEY || '').trim()
+    const envQwenApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || '').trim()
+    const envGoogleCloudApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_GOOGLE_CLOUD_ACCESS_TOKEN || process.env.GOOGLE_CLOUD_ACCESS_TOKEN || process.env.VERTEX_AI_ACCESS_TOKEN || process.env.GOOGLE_OAUTH_ACCESS_TOKEN || '').trim()
+    const envGeminiApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_GEMINI_API_KEY || '').trim()
+    const envBytePlusApiKey = String(process.env.AGENTIC_OS_CHAT_PROXY_BYTEPLUS_API_KEY || '').trim()
     const headerProviderApiKey = readSingleHeader(req.headers['x-kg-chat-api-key'])
     const aiGatewayApiKey = (headerProviderApiKey || envAiGatewayApiKey).slice(0, 512)
     const openAiApiKey = (headerProviderApiKey || envOpenAiApiKey).slice(0, 512)
@@ -2233,7 +2233,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       return
     }
     if (requiresAiGatewayKey && !providerApiKey) {
-      writeJson(res, 401, { ok: false, error: 'Missing Cloudflare AI Gateway token for chat proxy upstream. Export AGENTICGRAPH_CHAT_PROXY_AI_GATEWAY_TOKEN or AI_GATEWAY_TOKEN and restart the dev server.' })
+      writeJson(res, 401, { ok: false, error: 'Missing Cloudflare AI Gateway token for chat proxy upstream. Export AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_TOKEN or AI_GATEWAY_TOKEN and restart the dev server.' })
       return
     }
     if (requiresMiroMindKey && !providerApiKey) {
@@ -2245,7 +2245,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       return
     }
     if (requiresSealionKey && !providerApiKey) {
-      writeJson(res, 401, { ok: false, error: 'Missing SEA-LION API key for chat proxy upstream. Set Settings -> Chat auth to BYOK, or export AGENTICGRAPH_CHAT_PROXY_SEALION_API_KEY and restart the dev server.' })
+      writeJson(res, 401, { ok: false, error: 'Missing SEA-LION API key for chat proxy upstream. Set Settings -> Chat auth to BYOK, or export AGENTIC_OS_CHAT_PROXY_SEALION_API_KEY and restart the dev server.' })
       return
     }
     if (requiresQwenKey && !providerApiKey) {
@@ -2257,7 +2257,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       return
     }
     if (requiresGeminiKey && !providerApiKey) {
-      writeJson(res, 401, { ok: false, error: 'Missing Google Gemini API key for chat proxy upstream. Set Settings -> Chat auth to BYOK, or export AGENTICGRAPH_CHAT_PROXY_GEMINI_API_KEY and restart the dev server.' })
+      writeJson(res, 401, { ok: false, error: 'Missing Google Gemini API key for chat proxy upstream. Set Settings -> Chat auth to BYOK, or export AGENTIC_OS_CHAT_PROXY_GEMINI_API_KEY and restart the dev server.' })
       return
     }
     if (requiresBytePlusKey && !providerApiKey) {
@@ -2333,7 +2333,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       })
       const ctrl = new AbortController()
       controller = ctrl
-      timeoutId = setTimeout(() => ctrl.abort(), Math.max(15_000, Math.min(600_000, Math.floor(Number(process.env.AGENTICGRAPH_CHAT_PROXY_TIMEOUT_MS) || 210_000))))
+      timeoutId = setTimeout(() => ctrl.abort(), Math.max(15_000, Math.min(600_000, Math.floor(Number(process.env.AGENTIC_OS_CHAT_PROXY_TIMEOUT_MS) || 210_000))))
       if (localProviderSelected && method === 'GET' && upstreamPath === '/v1/models') {
         let localGatewayModelsRes: Response | null = null
         try {
@@ -2596,19 +2596,19 @@ function createRemoteFetchHandler(): import('vite').Connect.NextHandleFunction {
     let clientAborted = false
     try {
       const timeoutMs = (() => {
-        const raw = String(process.env.AGENTICGRAPH_REMOTE_FETCH_TIMEOUT_MS || '').trim()
+        const raw = String(process.env.AGENTIC_OS_REMOTE_FETCH_TIMEOUT_MS || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 60_000
         return Math.max(1_000, Math.min(120_000, Math.floor(parsed)))
       })()
       const maxBytes = (() => {
-        const raw = String(process.env.AGENTICGRAPH_REMOTE_FETCH_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTIC_OS_REMOTE_FETCH_MAX_BYTES || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 20 * 1024 * 1024
         return Math.max(64 * 1024, Math.min(50 * 1024 * 1024, Math.floor(parsed)))
       })()
       const maxBinaryBytes = (() => {
-        const raw = String(process.env.AGENTICGRAPH_REMOTE_FETCH_MAX_BYTES_BINARY || '').trim()
+        const raw = String(process.env.AGENTIC_OS_REMOTE_FETCH_MAX_BYTES_BINARY || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 250 * 1024 * 1024
         return Math.max(512 * 1024, Math.min(1024 * 1024 * 1024, Math.floor(parsed)))
@@ -4905,13 +4905,13 @@ function createWebpageProxyHandler(): import('vite').Connect.NextHandleFunction 
     let clientAborted = false
     try {
       const timeoutMs = (() => {
-        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_PROXY_TIMEOUT_MS || '').trim()
+        const raw = String(process.env.AGENTIC_OS_WEBPAGE_PROXY_TIMEOUT_MS || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 60_000
         return Math.max(1_000, Math.min(120_000, Math.floor(parsed)))
       })()
       const maxBytes = (() => {
-        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_PROXY_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTIC_OS_WEBPAGE_PROXY_MAX_BYTES || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 10 * 1024 * 1024
         return Math.max(64 * 1024, Math.min(50 * 1024 * 1024, Math.floor(parsed)))
@@ -5467,13 +5467,13 @@ function createWebpageAssetProxyHandler(): import('vite').Connect.NextHandleFunc
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     try {
       const timeoutMs = (() => {
-        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_ASSET_PROXY_TIMEOUT_MS || '').trim()
+        const raw = String(process.env.AGENTIC_OS_WEBPAGE_ASSET_PROXY_TIMEOUT_MS || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 30_000
         return Math.max(1_000, Math.min(120_000, Math.floor(parsed)))
       })()
       const maxBytes = (() => {
-        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_ASSET_PROXY_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTIC_OS_WEBPAGE_ASSET_PROXY_MAX_BYTES || '').trim()
         const parsed = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsed)) return 25 * 1024 * 1024
         return Math.max(64 * 1024, Math.min(100 * 1024 * 1024, Math.floor(parsed)))
@@ -5712,13 +5712,13 @@ function createWebpageAssetPathProxyHandler(): import('vite').Connect.NextHandle
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     try {
       const timeoutMs = (() => {
-        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_ASSET_PROXY_TIMEOUT_MS || '').trim()
+        const raw = String(process.env.AGENTIC_OS_WEBPAGE_ASSET_PROXY_TIMEOUT_MS || '').trim()
         const parsedN = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsedN)) return 30_000
         return Math.max(1_000, Math.min(120_000, Math.floor(parsedN)))
       })()
       const maxBytes = (() => {
-        const raw = String(process.env.AGENTICGRAPH_WEBPAGE_ASSET_PROXY_MAX_BYTES || '').trim()
+        const raw = String(process.env.AGENTIC_OS_WEBPAGE_ASSET_PROXY_MAX_BYTES || '').trim()
         const parsedN = raw ? Number(raw) : NaN
         if (!Number.isFinite(parsedN)) return 25 * 1024 * 1024
         return Math.max(64 * 1024, Math.min(100 * 1024 * 1024, Math.floor(parsedN)))
@@ -5900,7 +5900,7 @@ async function runAgenticGraphParserConvertYoutubeToPayload(opts: {
       if (!Number.isFinite(raw)) return fallback
       return Math.min(max, Math.max(min, Math.floor(raw)))
     })()
-    const args = ['-m', 'agenticgraph_parser', 'youtube', '--emit', 'json', '--url', opts.url]
+    const args = ['-m', 'agentic_graph_parser', 'youtube', '--emit', 'json', '--url', opts.url]
     if (opts.lang && opts.lang.trim()) {
       args.push('--lang', opts.lang.trim())
     }
@@ -6556,7 +6556,7 @@ async function fetchVideoDownloadResponse(url: string, signal: AbortSignal): Pro
     redirect: 'follow',
     signal,
     headers: {
-      'user-agent': 'Mozilla/5.0 AgenticGraph native video downloader',
+      'user-agent': 'Mozilla/5.0 agentic-graph native video downloader',
       accept: 'video/*,audio/*,text/html;q=0.8,*/*;q=0.2',
     },
   })
@@ -6748,9 +6748,9 @@ function createVideoDownloadHandler(): import('vite').Connect.NextHandleFunction
   }
 }
 
-const youtubeConvertDevPlugin = { name: 'agenticgraph-youtube-convert-dev', configureServer(server: import('vite').ViteDevServer) { server.middlewares.use('/__youtube_transcript', createYoutubeConvertHandler()) }, configurePreviewServer(server: import('vite').PreviewServer) { server.middlewares.use('/__youtube_transcript', createYoutubeConvertHandler()) } }
+const youtubeConvertDevPlugin = { name: 'agentic-graph-youtube-convert-dev', configureServer(server: import('vite').ViteDevServer) { server.middlewares.use('/__youtube_transcript', createYoutubeConvertHandler()) }, configurePreviewServer(server: import('vite').PreviewServer) { server.middlewares.use('/__youtube_transcript', createYoutubeConvertHandler()) } }
 const videoDownloadDevPlugin = {
-  name: 'agenticgraph-video-download-dev',
+  name: 'agentic-graph-video-download-dev',
   configureServer(server: import('vite').ViteDevServer) {
     server.middlewares.use(VIDEO_DOWNLOAD_LOCAL_ROUTE_PATH, createVideoDownloadHandler())
     server.middlewares.use(VIDEO_DOWNLOAD_FILE_ROUTE_PATH, createVideoDownloadFileHandler())
@@ -6760,9 +6760,9 @@ const videoDownloadDevPlugin = {
     server.middlewares.use(VIDEO_DOWNLOAD_FILE_ROUTE_PATH, createVideoDownloadFileHandler())
   },
 }
-const remoteVideoFrameDevPlugin = { name: 'agenticgraph-remote-video-frame-dev', configureServer(server: import('vite').ViteDevServer) { const handler = createRemoteVideoFrameHandler({ repoRoot, workspaceRoot, getPythonBin, withRepoPythonPath }); server.middlewares.use('/__video_frame', handler); server.middlewares.use(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, createRemoteVideoFramePublicAssetHandler({ workspaceRoot })) }, configurePreviewServer(server: import('vite').PreviewServer) { const handler = createRemoteVideoFrameHandler({ repoRoot, workspaceRoot, getPythonBin, withRepoPythonPath }); server.middlewares.use('/__video_frame', handler); server.middlewares.use(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, createRemoteVideoFramePublicAssetHandler({ workspaceRoot })) } }
+const remoteVideoFrameDevPlugin = { name: 'agentic-graph-remote-video-frame-dev', configureServer(server: import('vite').ViteDevServer) { const handler = createRemoteVideoFrameHandler({ repoRoot, workspaceRoot, getPythonBin, withRepoPythonPath }); server.middlewares.use('/__video_frame', handler); server.middlewares.use(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, createRemoteVideoFramePublicAssetHandler({ workspaceRoot })) }, configurePreviewServer(server: import('vite').PreviewServer) { const handler = createRemoteVideoFrameHandler({ repoRoot, workspaceRoot, getPythonBin, withRepoPythonPath }); server.middlewares.use('/__video_frame', handler); server.middlewares.use(REMOTE_VIDEO_FRAME_PUBLIC_PREFIX, createRemoteVideoFramePublicAssetHandler({ workspaceRoot })) } }
 const workspaceReadmePublicSourceDevPlugin: Plugin = {
-  name: 'agenticgraph-workspace-readme-public-source-dev',
+  name: 'agentic-graph-workspace-readme-public-source-dev',
   configureServer(server) {
     server.middlewares.use('/docs/workspace-readme.md', createWorkspaceReadmePublicSourceHandler())
   },
@@ -6772,7 +6772,7 @@ const workspaceReadmePublicSourceDevPlugin: Plugin = {
 }
 
 const liveCanvasHeroMarkdownPublicSourcePlugin: Plugin = {
-  name: 'agenticgraph-live-canvas-hero-markdown-public-source',
+  name: 'agentic-graph-live-canvas-hero-markdown-public-source',
   apply: 'serve',
   configureServer(server) {
     server.middlewares.use(LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH, createLiveCanvasHeroMarkdownPublicSourceHandler())
@@ -6783,7 +6783,7 @@ const liveCanvasHeroMarkdownPublicSourcePlugin: Plugin = {
 }
 
 const liveCanvasHeroMarkdownBuildAssetPlugin: Plugin = {
-  name: 'agenticgraph-live-canvas-hero-markdown-build-asset',
+  name: 'agentic-graph-live-canvas-hero-markdown-build-asset',
   apply: 'build',
   async closeBundle() {
     const source = readLiveCanvasHeroMarkdownSource()
@@ -6795,10 +6795,10 @@ const liveCanvasHeroMarkdownBuildAssetPlugin: Plugin = {
 }
 
 const apexRootAliasDevPlugin: Plugin = {
-  name: 'agenticgraph-apex-root-alias-dev',
+  name: 'agentic-graph-apex-root-alias-dev',
   transformIndexHtml(html) {
     if (String(process.env.VITE_APEX_ROOT_ALIAS || '').trim() !== '1') return html
-    return html.replace('</head>', '<meta name="x-agenticgraph-root-alias" content="/agenticgraph/" /></head>')
+    return html.replace('</head>', '<meta name="x-agentic-graph-root-alias" content="/agentic-graph/" /></head>')
   },
 }
 
@@ -6843,7 +6843,7 @@ function createLiveCanvasHeroMarkdownPublicSourceHandler(): import('vite').Conne
       response.end(text)
     } catch {
       response.statusCode = 404
-      response.end('agenticgraph-live-canvas-hero.md is unavailable')
+      response.end('agentic-graph-live-canvas-hero.md is unavailable')
     }
   }
 }
@@ -6886,7 +6886,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
     resolveWorkspaceInitializationWorkspaceSeedsReadRoot({
       command,
       repoRoot,
-      explicitAbsRoot: process.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT,
+      explicitAbsRoot: process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT,
     })
   if (command === 'build') return ''
   const configuredDocsRoot = String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()
@@ -6911,7 +6911,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
 }
 
 export default defineConfig(({ command, mode }) => {
-  const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const agenticgraphStorageDevProxyTarget = resolveAgenticGraphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
+  const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const agenticGraphStorageDevProxyTarget = resolveAgenticGraphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
     command === 'serve' ? '../grph-shared/src' : '../grph-shared/dist',
@@ -6921,16 +6921,16 @@ export default defineConfig(({ command, mode }) => {
   cacheDir: resolveViteCacheDir(command),
   base: command === 'build'
     ? (() => {
-        const raw = String(process.env.VITE_BASE_PATH || '/agenticgraph/').trim() || '/agenticgraph/'
+        const raw = String(process.env.VITE_BASE_PATH || '/agentic-graph/').trim() || '/agentic-graph/'
         const withLeading = raw.startsWith('/') ? raw : `/${raw}`
         return withLeading.endsWith('/') ? withLeading : `${withLeading}/`
       })()
     : '/',
-  define: { __AGENTICGRAPH_SOURCE_REVISION__: JSON.stringify(runtimeIdentity.sourceRevision), __AGENTICGRAPH_RUNTIME_DEVICE__: JSON.stringify(runtimeIdentity.device), __AGENTICGRAPH_SOURCE_BRANCH__: JSON.stringify(runtimeIdentity.branch),
+  define: { __AGENTIC_OS_SOURCE_REVISION__: JSON.stringify(runtimeIdentity.sourceRevision), __AGENTIC_OS_RUNTIME_DEVICE__: JSON.stringify(runtimeIdentity.device), __AGENTIC_OS_SOURCE_BRANCH__: JSON.stringify(runtimeIdentity.branch),
     'import.meta.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT': JSON.stringify(workspaceInitializationDocsAbsRoot),
-    'import.meta.env.VITE_AGENTICGRAPH_WORKSPACE_SEEDS_READ_ABS_ROOT': JSON.stringify(workspaceInitializationWorkspaceSeedsReadAbsRootForDev),
-    __AGENTICGRAPH_LIVE_CANVAS_HERO_MARKDOWN__: JSON.stringify(readLiveCanvasHeroMarkdownSource()),
-    __AGENTICGRAPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
+    'import.meta.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT': JSON.stringify(workspaceInitializationWorkspaceSeedsReadAbsRootForDev),
+    __AGENTIC_OS_LIVE_CANVAS_HERO_MARKDOWN__: JSON.stringify(readLiveCanvasHeroMarkdownSource()),
+    __AGENTIC_OS_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
   },
   esbuild: {
     sourcemap: false,
@@ -6961,7 +6961,7 @@ export default defineConfig(({ command, mode }) => {
       sourcemap: false,
       plugins: [
         {
-          name: 'agenticgraph-optimize-strip-entities-sourcemaps',
+          name: 'agentic-graph-optimize-strip-entities-sourcemaps',
           setup(build) {
             build.onLoad({ filter: /[\\/]entities[\\/]lib[\\/]esm[\\/].*\.js$/ }, async (args) => {
               const raw = await fs.readFile(args.path, 'utf8')
@@ -7037,7 +7037,7 @@ export default defineConfig(({ command, mode }) => {
                   return 'settings-mcp-core'
                 }
                 const settingsMcpDocModuleMatch = moduleId.match(
-                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|agenticgraphToolServerDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
+                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|agenticGraphToolServerDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
                 )
                 if (settingsMcpDocModuleMatch) {
                   return `settings-${settingsMcpDocModuleMatch[1]}`
@@ -7085,9 +7085,9 @@ export default defineConfig(({ command, mode }) => {
     },
     proxy: {
       '/api/storage': {
-        target: agenticgraphStorageDevProxyTarget,
+        target: agenticGraphStorageDevProxyTarget,
         changeOrigin: true,
-        secure: agenticgraphStorageDevProxyTarget.startsWith('https://'),
+        secure: agenticGraphStorageDevProxyTarget.startsWith('https://'),
       },
     },
     fs: {
@@ -7112,13 +7112,13 @@ export default defineConfig(({ command, mode }) => {
         id:
           command === 'build'
             ? (() => {
-                const raw = String(process.env.VITE_BASE_PATH || '/agenticgraph/').trim() || '/agenticgraph/'
+                const raw = String(process.env.VITE_BASE_PATH || '/agentic-graph/').trim() || '/agentic-graph/'
                 const withLeading = raw.startsWith('/') ? raw : `/${raw}`
                 return withLeading.endsWith('/') ? withLeading : `${withLeading}/`
               })()
             : '/',
-        name: 'agenticgraph',
-        short_name: 'agenticgraph',
+        name: 'agentic-graph',
+        short_name: 'agentic-graph',
         description: 'Local-first knowledge graph canvas.',
         lang: 'en',
         dir: 'ltr',
@@ -7172,7 +7172,7 @@ export default defineConfig(({ command, mode }) => {
       workbox: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: null,
-        importScripts: [`agenticgraph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agenticgraph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
+        importScripts: [`agentic-graph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agentic-graph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
         globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
         globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'],
         runtimeCaching: [

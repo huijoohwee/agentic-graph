@@ -11,7 +11,7 @@ import ToastHost from '@/components/ui/ToastHost'
 import HistoryView from '@/features/panels/views/HistoryView'
 import { CHAT_INPUT_APPEND_EVENT, FLOATING_PANEL_OPEN_EVENT } from '@/features/canvas/utils'
 import { buildChatPromotionRetryInsertAction } from '@/features/chat/floatingPanelChat/floatingPanelChatPromotionRetryUiAction'
-import { buildAgenticGraphStorageConflictReviewLogActionId } from '@/lib/storage/agenticgraphStorageConflictActions'
+import { buildAgenticGraphStorageConflictReviewLogActionId } from '@/lib/storage/agentic-graph-storage-conflict-actions'
 
 const tick = async () => {
   await new Promise<void>(resolve => setTimeout(resolve, 0))

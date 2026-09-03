@@ -20,8 +20,8 @@ import type {
   KgDocumentChunkRecord,
   KgGraphSnapshotRecord,
   AgenticGraphStoragePullResponse,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
-import { AGENTICGRAPH_STORAGE_ROUTE_PATHS } from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
+import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   looksLikeHttpUrl,
   normalizeMarkdownWorkspaceDocsSourcePathFromCanonicalPath,
@@ -65,7 +65,7 @@ function throwIfInboundStorageApplyAborted(signal?: AbortSignal): void {
   if (!signal?.aborted) return
   throw signal.reason instanceof Error
     ? signal.reason
-    : new Error('Inbound AgenticGraph storage apply was cancelled')
+    : new Error('Inbound agentic-graph storage apply was cancelled')
 }
 
 export async function runSourceFilesInboundStorageApplyDescendant(
@@ -140,14 +140,14 @@ const readStorageDocFallbackText = async (args: {
   signal?: AbortSignal
 }): Promise<string> => {
   if (typeof fetch !== 'function') return ''
-  const baseUrl = normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_BASE_URL', ''))
+  const baseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', ''))
   const workspaceId = normalizeString(args.workspaceId)
   if (!baseUrl || !workspaceId) return ''
   for (let i = 0; i < args.canonicalPathCandidates.length; i += 1) {
     throwIfInboundStorageApplyAborted(args.signal)
     const canonicalPath = normalizeStorageCanonicalPathCandidate(args.canonicalPathCandidates[i] || '')
     if (!canonicalPath) continue
-    const docPath = `${AGENTICGRAPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
+    const docPath = `${AGENTIC_OS_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
     const requestUrl = buildAgenticGraphStorageRequestUrl({ path: docPath, baseUrl })
     if (!requestUrl) continue
     try {

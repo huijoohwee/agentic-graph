@@ -19,13 +19,13 @@ function listFilesRecursively(dir: string, opts?: { ignoreDirNames?: Set<string>
 }
 
 const SRC_DIR = resolve(process.cwd(), 'src')
-const AGENTICGRAPH_ROOT = resolve(process.cwd(), '..')
+const AGENTIC_OS_ROOT = resolve(process.cwd(), '..')
 const WORKSPACE_SEEDS_RELATIVE_ROOT = 'docs/workspace-seeds'
 const WORKSPACE_SEEDS_ABSOLUTE_ROOTS = Array.from(new Set(
   execFileSync(
     'git',
     ['worktree', 'list', '--porcelain', '-z'],
-    { cwd: AGENTICGRAPH_ROOT, encoding: 'utf8' },
+    { cwd: AGENTIC_OS_ROOT, encoding: 'utf8' },
   )
     .split('\0')
     .filter(field => field.startsWith('worktree '))
@@ -81,7 +81,7 @@ export function testHostGympgrphIntegrationUsesDeclaredPackageEntrypointsOnly() 
   }
   if (violations.length) {
     const msg = violations.map(v => `${v.file} matches ${v.pattern}`).join('\n')
-    throw new Error(`AgenticGraph must import gympgrph via declared package entrypoints only:\n${msg}`)
+    throw new Error(`agentic-graph must import gympgrph via declared package entrypoints only:\n${msg}`)
   }
 }
 
@@ -150,10 +150,10 @@ export function testForbidEditorJsDependencies() {
   const ignoreDirNames = new Set(['node_modules', 'dist', 'build', 'coverage', '.git'])
   const repoSrcDirs = [
     SRC_DIR,
-    resolve(AGENTICGRAPH_ROOT, 'gympgrph', 'src'),
+    resolve(AGENTIC_OS_ROOT, 'gympgrph', 'src'),
   ]
   const pkgJsonPaths = [
-    resolve(AGENTICGRAPH_ROOT, 'gympgrph', 'package.json'),
+    resolve(AGENTIC_OS_ROOT, 'gympgrph', 'package.json'),
   ]
 
   const files = repoSrcDirs
@@ -218,11 +218,11 @@ export function testForbidReactFlowAndLiteGraphDependencies() {
   const ignoreDirNames = new Set(['node_modules', 'dist', 'build', 'coverage', '.git'])
   const repoSrcDirs = [
     SRC_DIR,
-    resolve(AGENTICGRAPH_ROOT, 'gympgrph', 'src'),
+    resolve(AGENTIC_OS_ROOT, 'gympgrph', 'src'),
   ]
   const pkgJsonPaths = [
-    resolve(AGENTICGRAPH_ROOT, 'canvas', 'package.json'),
-    resolve(AGENTICGRAPH_ROOT, 'gympgrph', 'package.json'),
+    resolve(AGENTIC_OS_ROOT, 'canvas', 'package.json'),
+    resolve(AGENTIC_OS_ROOT, 'gympgrph', 'package.json'),
   ]
 
   const files = repoSrcDirs
@@ -291,8 +291,8 @@ export function testForbidHardcodedSandboxAbsolutePaths() {
   const ignoreDirNames = new Set(['node_modules', 'dist', 'build', 'coverage', '.git', '.trae'])
   const repoSrcDirs = [
     SRC_DIR,
-    resolve(AGENTICGRAPH_ROOT, 'gympgrph', 'src'),
-    resolve(AGENTICGRAPH_ROOT, 'grph-shared', 'src'),
+    resolve(AGENTIC_OS_ROOT, 'gympgrph', 'src'),
+    resolve(AGENTIC_OS_ROOT, 'grph-shared', 'src'),
   ]
   const files = repoSrcDirs
     .flatMap(dir => {
@@ -456,12 +456,12 @@ export function testForbidHardcodedRuntimeValidationInputInRepo() {
   const files = execFileSync(
     'git',
     ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
-    { cwd: AGENTICGRAPH_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+    { cwd: AGENTIC_OS_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
   ).split('\0').filter(Boolean)
 
   const violations: Array<{ file: string; needle: string }> = []
   for (const relativePath of files) {
-    const file = resolve(AGENTICGRAPH_ROOT, relativePath)
+    const file = resolve(AGENTIC_OS_ROOT, relativePath)
     if (!existsSync(file)) continue
     const st = statSync(file)
     if (!st.isFile()) continue

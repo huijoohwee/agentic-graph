@@ -3,7 +3,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { hashExternalToolValue, stableExternalToolJson } from "./external-tool-profile-registry.js";
 
 export const EXTERNAL_FILE_WRITE_GATE_ID = "external-file-write";
-export const EXTERNAL_MCP_APPROVAL_SECRET_ENV = "AGENTICGRAPH_EXTERNAL_MCP_APPROVAL_SECRET";
+export const EXTERNAL_MCP_APPROVAL_SECRET_ENV = "AGENTIC_OS_EXTERNAL_MCP_APPROVAL_SECRET";
 export const EXTERNAL_MCP_APPROVAL_TTL_MS = 15 * 60 * 1000;
 
 export class ExternalToolApprovalError extends Error {

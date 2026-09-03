@@ -1,6 +1,6 @@
 // =============================================================================
 // Run_Manifest SSOT schema — unit + property tests
-// agenticgraph-acos-mcp-connector spec · Task 8.1 · Requirements R2.1, R5.4
+// agentic-graph-acos-mcp-connector spec · Task 8.1 · Requirements R2.1, R5.4
 // Pure validator: ZERO network calls, deterministic.
 // =============================================================================
 

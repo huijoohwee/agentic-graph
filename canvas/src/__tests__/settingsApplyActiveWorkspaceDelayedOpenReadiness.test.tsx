@@ -23,7 +23,7 @@ type RegisteredSettingsActions = {
   reset: () => void
 }
 
-const NEXT_AGENTICGRAPH_PATH = '/workspace/chat/kgc_20260523163000.md'
+const NEXT_AGENTIC_OS_PATH = '/workspace/chat/kgc_20260523163000.md'
 const NEXT_HISTORY_PATH = '/workspace/chat/history_delayed_open_apply.md'
 const DELAYED_OPEN_DELAY_MS = 200
 
@@ -82,12 +82,12 @@ function SettingsActiveWorkspaceDelayedOpenHarness(props: {
     <section>
       <section data-draft-storage-target={String(values.chatStorageTarget || '')} />
       <section data-draft-chat-history-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-draft-chat-agenticgraph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
+      <section data-draft-chat-agentic-graph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <button
         type="button"
         onClick={() => patchChatValues({ chatStorageTarget: 'chatAgenticGraph' })}
       >
-        Use AgenticGraph
+        Use agentic-graph
       </button>
       <button
         type="button"
@@ -99,7 +99,7 @@ function SettingsActiveWorkspaceDelayedOpenHarness(props: {
         type="button"
         onClick={() => applyActiveWorkspaceFileAsAgenticGraph()}
       >
-        Use Active AgenticGraph File
+        Use Active agentic-graph File
       </button>
       <button
         type="button"
@@ -168,13 +168,13 @@ export async function testSettingsApplyActiveWorkspaceDelayedOpenKeepsCommittedS
       throw new Error(`expected initial FloatingPanel Chat pipeline active-workspace delayed-open state to reflect seeded store values, got ${JSON.stringify(initialChatInspection)}`)
     }
 
-    useMarkdownExplorerStore.getState().setActivePath(NEXT_AGENTICGRAPH_PATH)
+    useMarkdownExplorerStore.getState().setActivePath(NEXT_AGENTIC_OS_PATH)
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use AgenticGraph').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use agentic-graph').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Active AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use Active agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 4)
     })
 
@@ -189,11 +189,11 @@ export async function testSettingsApplyActiveWorkspaceDelayedOpenKeepsCommittedS
     })
 
     const draftStorageTarget = settingsContainer.querySelector('[data-draft-storage-target]')?.getAttribute('data-draft-storage-target')
-    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agenticgraph-path]')?.getAttribute('data-draft-chat-agenticgraph-path')
+    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agentic-graph-path]')?.getAttribute('data-draft-chat-agentic-graph-path')
     const draftChatHistoryPath = settingsContainer.querySelector('[data-draft-chat-history-path]')?.getAttribute('data-draft-chat-history-path')
     if (
       draftStorageTarget !== 'chatHistory' ||
-      draftChatAgenticGraphPath !== NEXT_AGENTICGRAPH_PATH ||
+      draftChatAgenticGraphPath !== NEXT_AGENTIC_OS_PATH ||
       draftChatHistoryPath !== NEXT_HISTORY_PATH
     ) {
       throw new Error(`expected delayed-open active workspace actions to patch draft values immediately, got ${JSON.stringify({
@@ -227,7 +227,7 @@ export async function testSettingsApplyActiveWorkspaceDelayedOpenKeepsCommittedS
     const settledOpenCalls = [...openCalls]
     if (
       settledOpenCalls.length !== 2 ||
-      settledOpenCalls[0] !== NEXT_AGENTICGRAPH_PATH ||
+      settledOpenCalls[0] !== NEXT_AGENTIC_OS_PATH ||
       settledOpenCalls[1] !== NEXT_HISTORY_PATH
     ) {
       throw new Error(`expected delayed-open callback to eventually run for both active workspace paths, got ${JSON.stringify(settledOpenCalls)}`)
@@ -252,14 +252,14 @@ export async function testSettingsApplyActiveWorkspaceDelayedOpenKeepsCommittedS
     if (
       appliedInspection.available !== true ||
       appliedInspection.chatStorageTarget !== 'chatHistory' ||
-      appliedInspection.workspacePaths.chatAgenticGraphWorkspacePath !== NEXT_AGENTICGRAPH_PATH ||
+      appliedInspection.workspacePaths.chatAgenticGraphWorkspacePath !== NEXT_AGENTIC_OS_PATH ||
       appliedInspection.workspacePaths.chatHistoryWorkspacePath !== NEXT_HISTORY_PATH
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline active-workspace delayed-open state to update after apply, got ${JSON.stringify(appliedInspection)}`)
     }
     if (
       useGraphStore.getState().chatStorageTarget !== 'chatHistory' ||
-      useGraphStore.getState().chatAgenticGraphWorkspacePath !== NEXT_AGENTICGRAPH_PATH ||
+      useGraphStore.getState().chatAgenticGraphWorkspacePath !== NEXT_AGENTIC_OS_PATH ||
       useGraphStore.getState().chatHistoryWorkspacePath !== NEXT_HISTORY_PATH
     ) {
       throw new Error(`expected canonical store active-workspace delayed-open state to commit after apply, got ${JSON.stringify({

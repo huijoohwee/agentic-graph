@@ -45,7 +45,7 @@ export function resolveXrV2TemporalDepthSequence(
   const bundle = resource.frameBundle
   const sessionId = resource.asset.session_id
   const metadata = resource.asset.metadata
-  const depthMetadataRef = `indexeddb://agenticgraph-xr-v2/frame-bundle/${sessionId}`
+  const depthMetadataRef = `indexeddb://agentic-graph-xr-v2/frame-bundle/${sessionId}`
   const synthesisCompatible = (metadata.synthesis_mode === 'live' && !metadata.fallback_triggered)
     || (metadata.synthesis_mode === 'post-process' && metadata.fallback_triggered)
   if (resource.asset.metadata.xr_capability_tier !== 'pseudo-ar-depth-parallax'

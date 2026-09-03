@@ -50,7 +50,7 @@ const laneCollaboration = index => ({ actorId: `github-user:${index + 1}`, devic
   sessionId: `session:${index + 1}`, worktreeId: `worktree:${index + 1}`, branchId: `refs/heads/lane-${index + 1}`,
   scopeId: `scope:${index + 1}`, leaseEpoch: index + 1, fenceRevision: `${index + 1}`.repeat(64).slice(0, 64) })
 const rollbackIdentity = {
-  schema: 'agenticgraph-production-rollback-identity/v1', pages: { deploymentId: 'previous-deployment', deploymentOrigin: 'https://previous.pages.dev', deploymentCommitRevision: '8'.repeat(40), sourceRevision: '9'.repeat(40) },
+  schema: 'agentic-graph-production-rollback-identity/v1', pages: { deploymentId: 'previous-deployment', deploymentOrigin: 'https://previous.pages.dev', deploymentCommitRevision: '8'.repeat(40), sourceRevision: '9'.repeat(40) },
   mirror: { repository: 'huijoohwee/huijoohwee', revision: mirrorRevision },
   d1: { stateContractDigest: '6'.repeat(64), readbackDigest: '7'.repeat(64), counts: { documentCount: 3, chunkCount: 4, graphCount: 0 } },
 }
@@ -70,7 +70,7 @@ const buildReleaseEvidence = (overrides = {}) => {
     disposition: 'retained',
   }))
   const evidence = {
-    schema: 'agenticgraph-production-release-evidence/v1',
+    schema: 'agentic-graph-production-release-evidence/v1',
     repository: 'huijoohwee/agentic-graph',
     sourceRevision,
     protectedTipDigest: digest({ sourceRevision, sourceTree }),
@@ -93,7 +93,7 @@ const buildReleaseEvidence = (overrides = {}) => {
 }
 const buildCleanReleaseEvidence = (overrides = {}) => {
   const evidence = {
-    schema: 'agenticgraph-production-release-evidence/v1',
+    schema: 'agentic-graph-production-release-evidence/v1',
     repository: 'huijoohwee/agentic-graph',
     sourceRevision,
     protectedTipDigest: digest({ sourceRevision, sourceTree }),
@@ -149,10 +149,10 @@ const buildMaterializerFixture = () => {
   const inventoryBytes = Buffer.from(JSON.stringify({ schema: 'agentic-release-frontier-inventory/v1', lanes: preserved.map((lane, index) => ({
     worktreePath: lane.path, headSha: lanes[index + 1].head, clean: true, disposition: 'keep',
   })) }))
-  const laneWriteSets = preserved.map((lane, index) => ({ schema: 'agenticgraph-preserved-lane-write-set/v1', path: lane.path,
+  const laneWriteSets = preserved.map((lane, index) => ({ schema: 'agentic-graph-preserved-lane-write-set/v1', path: lane.path,
     sourceRevision, mergeBaseRevision: '6'.repeat(40), laneHeadRevision: lanes[index + 1].head,
     paths: [index === 0 ? manifest.paths[0] : `lane-${index + 1}.txt`] }))
-  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity,
+  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agentic-graph-production-rollback-recapture/v1', rollbackIdentity,
     capturedAt: '2026-07-28T23:59:30.000Z' }))
   return { journalBytes, inventoryBytes, manifestBytes, rollbackBytes, laneState, laneWriteSets, sourceRevision, sourceTree,
     capturedAt: '2026-07-29T00:00:00.000Z', observedAt: '2026-07-29T00:00:30.000Z', successorContained: true }
@@ -161,7 +161,7 @@ const buildCandidate = (overrides = {}) => createLifecycleCandidate({
   contract, localReview, readiness, sourceRevision, sourceTree, agenticCanvasOsRevision: docsRevision,
   agenticCanvasOsTree: docsTree, guidelineRevision, mirrorRevision, collaboration,
   integratedAt: '2026-07-29T00:00:40.000Z', issuedAt: '2026-07-29T00:01:00.000Z',
-  targetId: 'airvio.co/agenticgraph', releaseEvidence: buildReleaseEvidence(), ...overrides,
+  targetId: 'airvio.co/agentic-graph', releaseEvidence: buildReleaseEvidence(), ...overrides,
 })
 const baseApproval = { state: 'approved', environments: [{ name: 'production' }], user: { login: 'operator', id: 7, type: 'User' } }
 const approvalsFor = (candidate, runId) => {
@@ -300,8 +300,8 @@ test('clean release evidence accepts an exact zero-lane frontier only through th
   assert.throws(() => buildCandidate({ releaseEvidence: dirtyEntry }), /zero preservation entries/)
 })
 test('clean frontier materializer binds exact canonical main and rollback recapture', () => {
-  const repository = '/repo/agenticgraph'
-  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity,
+  const repository = '/repo/agentic-graph'
+  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agentic-graph-production-rollback-recapture/v1', rollbackIdentity,
     capturedAt: '2026-07-28T23:59:30.000Z' }))
   const git = (cwd, args) => {
     assert.equal(cwd, repository)
@@ -322,7 +322,7 @@ test('clean frontier materializer binds exact canonical main and rollback recapt
   assert.equal(evidence.rollbackTargetDigest, digest(rollbackIdentity))
 })
 test('current frontier materializer preserves one attributed review lane', async () => {
-  const repository = '/repo/agenticgraph', controllerRoot = '/repo/agentic-canvas-os'
+  const repository = '/repo/agentic-graph', controllerRoot = '/repo/agentic-canvas-os'
   const lane = {
     path: '/repo/worktrees/review-lane', head: '1'.repeat(40), treeSha: '2'.repeat(40), dirty: false,
     invalid: false, leaseAmbiguous: false, stateDigest: digest('review-lane'),
@@ -335,7 +335,7 @@ test('current frontier materializer preserves one attributed review lane', async
   const laneState = { canonicalBaseSha: sourceRevision, canonicalSourceDisposition: 'exact', lanes,
     registryDigest: digest('registry') }
   laneState.laneStateDigest = digest(lanes.map(({ path: lanePath, stateDigest }) => ({ path: lanePath, stateDigest })))
-  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity,
+  const rollbackBytes = Buffer.from(JSON.stringify({ schema: 'agentic-graph-production-rollback-recapture/v1', rollbackIdentity,
     capturedAt: '2026-07-28T23:59:30.000Z' }))
   const git = (cwd, args) => {
     const key = args.join(' ')
@@ -348,7 +348,7 @@ test('current frontier materializer preserves one attributed review lane', async
   }
   const evidence = await materializeCurrentFrontierReleaseEvidence({ repository, controllerRoot, rollbackBytes,
     sourceRevision, sourceTree, collectLaneState: () => structuredClone(laneState), git,
-    writeSetCapture: () => ({ schema: 'agenticgraph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
+    writeSetCapture: () => ({ schema: 'agentic-graph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
       mergeBaseRevision: sourceRevision, laneHeadRevision: lane.head, paths: ['canvas/src/review.ts'] }),
     clock: () => '2026-07-29T00:00:00.000Z' })
   assert.equal(evidence.captureAdapterId, CURRENT_FRONTIER_CAPTURE_ADAPTER)
@@ -358,7 +358,7 @@ test('current frontier materializer preserves one attributed review lane', async
   assert.equal(evidence.observations[0].disposition, 'retained')
   await assert.rejects(materializeCurrentFrontierReleaseEvidence({ repository, controllerRoot, rollbackBytes,
     sourceRevision, sourceTree, collectLaneState: () => ({ ...structuredClone(laneState), laneStateDigest: digest('forged') }), git,
-    writeSetCapture: () => ({ schema: 'agenticgraph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
+    writeSetCapture: () => ({ schema: 'agentic-graph-preserved-lane-write-set/v1', path: lane.path, sourceRevision,
       mergeBaseRevision: sourceRevision, laneHeadRevision: lane.head, paths: ['canvas/src/review.ts'] }),
     clock: () => '2026-07-29T00:00:00.000Z' }), /exact clean protected main and stable registered lanes/)
 })
@@ -446,14 +446,14 @@ test('strict terminal constructors form and validate one production-complete v2 
     JSON.stringify({
       type: 'pages-deploy',
       version: 1,
-      pages_project: 'agenticgraph',
+      pages_project: 'agentic-graph',
       deployment_id: candidateDeploymentId,
       url: 'https://candidate.pages.dev',
     }),
     JSON.stringify({
       type: 'pages-deploy-detailed',
       version: 1,
-      pages_project: 'agenticgraph',
+      pages_project: 'agentic-graph',
       deployment_id: candidateDeploymentId,
       url: 'https://candidate.pages.dev',
       alias: null,
@@ -463,7 +463,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     }),
   ].join('\n'))
   const deploymentCapture = {
-    schema: 'agenticgraph-pages-deployment-capture/v1', status: 'deployed',
+    schema: 'agentic-graph-pages-deployment-capture/v1', status: 'deployed',
     adapterId: 'cloudflare-pages/api-canonical-observation-v1',
     deploymentId: candidateDeploymentId, deploymentOrigin: 'https://candidate.pages.dev', sourceRevision,
     deployedAt: '2026-07-29T00:03:00.000Z', capturedAt: '2026-07-29T00:03:10.000Z',
@@ -476,7 +476,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     wranglerOutput,
     deploymentCapture,
     rollbackRecapture: {
-      schema: 'agenticgraph-production-rollback-recapture/v1',
+      schema: 'agentic-graph-production-rollback-recapture/v1',
       rollbackIdentity,
       capturedAt: '2026-07-29T00:02:30.000Z',
     },
@@ -486,7 +486,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   const fallback = createLifecycleDeployment({
     contract, candidate: chain.candidate, consumedAuthorization: authorized.consumedAuthorization,
     releaseEvidence: chain.releaseEvidence, wranglerOutput: Buffer.from('{"type":"pages-deploy"}\ntruncated'),
-    deploymentCapture, rollbackRecapture: { schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity, capturedAt: '2026-07-29T00:02:30.000Z' },
+    deploymentCapture, rollbackRecapture: { schema: 'agentic-graph-production-rollback-recapture/v1', rollbackIdentity, capturedAt: '2026-07-29T00:02:30.000Z' },
   })
   assert.equal(fallback.deploymentAdapterId, 'cloudflare-pages/api-canonical-observation-v1')
   assert.throws(() => createLifecycleDeployment({
@@ -497,7 +497,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     wranglerOutput,
     deploymentCapture,
     rollbackRecapture: {
-      schema: 'agenticgraph-production-rollback-recapture/v1',
+      schema: 'agentic-graph-production-rollback-recapture/v1',
       rollbackIdentity: {
         ...rollbackIdentity,
         pages: { ...rollbackIdentity.pages, deploymentId: 'drifted' },
@@ -509,7 +509,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     contract,
     deployment,
     stateEvidence: {
-      schema: 'agenticgraph-d1-reconciliation-evidence/v1',
+      schema: 'agentic-graph-d1-reconciliation-evidence/v1',
       workspaceId: 'workspace:default',
       stateContractDigest: '6'.repeat(64),
       operationsDigest: '4'.repeat(64),
@@ -535,7 +535,7 @@ test('strict terminal constructors form and validate one production-complete v2 
     browserFidelity: Buffer.from('{"status":"passed"}'),
     clientCacheConvergence: Buffer.from('{"status":"passed"}'),
     markerParity: Buffer.from(JSON.stringify({
-      schema: 'agenticgraph-production-transport-evidence/v1',
+      schema: 'agentic-graph-production-transport-evidence/v1',
       status: 'passed',
       sourceRevision,
       markerBytesParity: true,
@@ -569,14 +569,14 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.equal(carrier.receipts.length, 12)
   assert.equal(validateProductionCompleteCarrier({ contract, schemas, Ajv2020, carrier }), carrier)
   const observation = (pagesCapturedAt, stateCapturedAt, mirrorObservedAt) => ({
-    pages: { schema: 'agenticgraph-production-pages-current-observation/v1', adapterId: 'cloudflare-pages/api-canonical-observation-v1',
+    pages: { schema: 'agentic-graph-production-pages-current-observation/v1', adapterId: 'cloudflare-pages/api-canonical-observation-v1',
       identity: { deploymentId: deployment.immutableDeploymentId, deploymentOrigin: deployment.immutableDeploymentOrigin,
         deploymentCommitRevision: sourceRevision, sourceRevision, deployedAt: deployment.deployedAt }, capturedAt: pagesCapturedAt },
     state: {
-      schema: 'agenticgraph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
+      schema: 'agentic-graph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
       readbackAdapterId: state.readbackAdapterId, readbackKind: state.readbackKind,
       stateContractDigest: state.stateContractDigest, readbackDigest: state.readbackDigest, observedCounts: state.observedCounts, capturedAt: stateCapturedAt },
-    mirror: { schema: 'agenticgraph-production-observed-mirror-identity/v1', repository: 'huijoohwee/huijoohwee',
+    mirror: { schema: 'agentic-graph-production-observed-mirror-identity/v1', repository: 'huijoohwee/huijoohwee',
       revision: publishedMirrorRevision, sourceRevision, observedAt: mirrorObservedAt },
   })
   const firstObservation = observation('2026-07-29T00:06:30.000Z', '2026-07-29T00:07:00.000Z', '2026-07-29T00:08:00.000Z')
@@ -584,7 +584,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   const assembledAt = '2026-07-29T00:10:30.000Z'
   const successfulInput = { contract, schemas, Ajv2020, carrier, firstObservation, secondObservation, assembledAt }
   const recapture = createSuccessfulReleaseRollbackRecapture(successfulInput)
-  assert.equal(recapture.schema, 'agenticgraph-production-rollback-recapture/v1')
+  assert.equal(recapture.schema, 'agentic-graph-production-rollback-recapture/v1')
   assert.equal(recapture.capturedAt, assembledAt)
   assert.equal(recapture.rollbackIdentity.pages.sourceRevision, sourceRevision)
   assert.equal(recapture.rollbackIdentity.mirror.revision, publishedMirrorRevision)
@@ -592,7 +592,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.notEqual(digest(recapture.rollbackIdentity), chain.candidate.rollbackTargetDigest)
   const descendantObservation = (...times) => { const value = observation(...times); value.mirror.revision = descendantMirrorRevision; return value }
   const descendantProofCore = {
-    schema: 'agenticgraph-canonical-descendant-mirror-proof/v1', repository: 'huijoohwee/huijoohwee',
+    schema: 'agentic-graph-canonical-descendant-mirror-proof/v1', repository: 'huijoohwee/huijoohwee',
     baseRevision: publishedMirrorRevision, descendantRevision: descendantMirrorRevision, remoteRevision: descendantMirrorRevision,
     changedPaths: ['content/gamexr/index.html', 'content/gamexr/release-manifest.json'],
     protectedPullRequest: { number: 54, url: 'https://github.com/huijoohwee/huijoohwee/pull/54', state: 'MERGED', baseRefName: 'main', headRefName: 'agent/device/gamexr-mirror', headRefOid: '5'.repeat(40), mergeRevision: descendantMirrorRevision, mergedAt: '2026-07-29T00:10:40.000Z' },
@@ -605,17 +605,17 @@ test('strict terminal constructors form and validate one production-complete v2 
   const descendantRecapture = createSuccessfulReleaseRollbackRecapture(descendantInput)
   assert.deepEqual([descendantRecapture.rollbackIdentity.mirror.revision, descendantRecapture.rollbackIdentity.pages.sourceRevision, descendantRecapture.rollbackIdentity.d1], [descendantMirrorRevision, sourceRevision, recapture.rollbackIdentity.d1])
   const broadenedProof = structuredClone(mirrorDescendantProof)
-  broadenedProof.changedPaths = ['content/agenticgraph/index.html', 'content/gamexr/release-manifest.json']
+  broadenedProof.changedPaths = ['content/agentic-graph/index.html', 'content/gamexr/release-manifest.json']
   const { proofDigest: _proofDigest, ...broadenedProofCore } = broadenedProof
   broadenedProof.proofDigest = digest(broadenedProofCore)
   assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...descendantInput, mirrorDescendantProof: broadenedProof }), /outside GameXR/)
   assert.throws(() => createSuccessfulReleaseRollbackRecapture({ ...successfulInput, previousRollbackRecapture: recapture, mirrorDescendantProof }), /not applicable to an exact publication mirror/)
   const knownRollbackIdentity = {
-    schema: 'agenticgraph-production-rollback-identity/v1', pages: { deploymentId: 'a78d18a8-9160-41e4-b628-0a8e38f84ab6', deploymentOrigin: 'https://a78d18a8.joohwee.pages.dev', deploymentCommitRevision: '1f7b529d42b0f0cff2c7cd749842fdfe51755bed', sourceRevision: '1f7b529d42b0f0cff2c7cd749842fdfe51755bed' },
+    schema: 'agentic-graph-production-rollback-identity/v1', pages: { deploymentId: 'a78d18a8-9160-41e4-b628-0a8e38f84ab6', deploymentOrigin: 'https://a78d18a8.joohwee.pages.dev', deploymentCommitRevision: '1f7b529d42b0f0cff2c7cd749842fdfe51755bed', sourceRevision: '1f7b529d42b0f0cff2c7cd749842fdfe51755bed' },
     mirror: { repository: 'huijoohwee/huijoohwee', revision: '1e184aed1f638c07ed7fdaa67e610c23e5eb09b6' },
     d1: { stateContractDigest: '57244c00b3f4616697e4d432a4c74f5920796074b9156fe182f8ad1a3eabbae0', readbackDigest: '550ed8d214c241ebfcdc99285d9c9cf17cc1072c56d49f5338247573420a98b2', counts: { documentCount: 149, chunkCount: 18, graphCount: 0 } },
   }
-  assert.equal(digest(knownRollbackIdentity), '2e714eca595277273f6516729946d95b9dba63321325b83aa005b6bfc61dd87a')
+  assert.equal(digest(knownRollbackIdentity), 'a82947e3675c76451eeb036a3aeb7448349021573dede033b95f715848c2441c')
   const reorderedCounts = structuredClone(secondObservation)
   reorderedCounts.state.observedCounts = { graphCount: 0, chunkCount: 4, documentCount: 3 }
   const reorderedRecapture = createSuccessfulReleaseRollbackRecapture({
@@ -647,7 +647,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   assert.throws(() => createSuccessfulReleaseRollbackRecapture({
     ...successfulInput, firstObservation: invalidPagesObservation,
   }), /canonical UUID/)
-  const cliRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-successful-recapture-'))
+  const cliRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-graph-successful-recapture-'))
   try {
     const write = (fileName, value) => {
       const filePath = path.join(cliRoot, fileName)
@@ -736,7 +736,7 @@ test('strict terminal constructors form and validate one production-complete v2 
   }
   const markerDigest = 'd'.repeat(64)
   const restoredTransports = {
-    schema: 'agenticgraph-production-transport-evidence/v1', status: 'passed',
+    schema: 'agentic-graph-production-transport-evidence/v1', status: 'passed',
     sourceRevision: rollbackIdentity.pages.sourceRevision,
     immutableManifestDigest: readiness.immutableManifest.digest,
     markerBytesParity: true, markerBytesDigest: markerDigest,
@@ -751,33 +751,33 @@ test('strict terminal constructors form and validate one production-complete v2 
         catalogRevision: docsRevision, immutableManifestDigest: readiness.immutableManifest.digest,
         artifactDigest: readiness.artifact.digest, bodyDigest: markerDigest,
       }])),
-      routes: { apex: { status: 200, routeOwner: 'root-agent-ready-pages' }, app: { status: 200, routeOwner: 'agenticgraph-agent-ready-pages' } },
+      routes: { apex: { status: 200, routeOwner: 'root-agent-ready-pages' }, app: { status: 200, routeOwner: 'agentic-graph-agent-ready-pages' } },
     })),
     verifiedAt: '2026-07-29T00:07:00.000Z',
   }
   const rollbackEvidence = {
     releaseEvidence: chain.releaseEvidence,
     restoredPages: {
-      schema: 'agenticgraph-production-restored-pages-evidence/v1', status: 'restored',
+      schema: 'agentic-graph-production-restored-pages-evidence/v1', status: 'restored',
       adapterId: 'cloudflare-pages/api-canonical-observation-v1',
       canonicalDeployment: { ...rollbackIdentity.pages, deployedAt: '2026-07-28T00:00:00.000Z' },
       capturedAt: '2026-07-29T00:06:30.000Z',
     },
     restoredState: {
-      schema: 'agenticgraph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
+      schema: 'agentic-graph-d1-state-snapshot/v1', workspaceId: 'workspace:default',
       readbackAdapterId: 'cloudflare-wrangler-d1-direct-readback/v1', readbackKind: 'direct-authoritative',
       stateContractDigest: rollbackIdentity.d1.stateContractDigest, readbackDigest: rollbackIdentity.d1.readbackDigest,
       observedCounts: rollbackIdentity.d1.counts, capturedAt: '2026-07-29T00:06:40.000Z',
     },
     restoredTransports,
-    observedMirror: { schema: 'agenticgraph-production-observed-mirror-identity/v1', ...rollbackIdentity.mirror, sourceRevision: rollbackIdentity.pages.sourceRevision, observedAt: '2026-07-29T00:06:50.000Z' },
+    observedMirror: { schema: 'agentic-graph-production-observed-mirror-identity/v1', ...rollbackIdentity.mirror, sourceRevision: rollbackIdentity.pages.sourceRevision, observedAt: '2026-07-29T00:06:50.000Z' },
     rolledBackAt: '2026-07-29T00:08:00.000Z',
   }
   assert.throws(() => createLifecycleRollback({ contract, deployment, ...rollbackEvidence,
     restoredState: { ...rollbackEvidence.restoredState, readbackDigest: 'a'.repeat(64) },
-    failureObservation: { schema: 'agenticgraph-production-release-failure-observation/v1', failedStage: 'deployment', messageDigest: 'b'.repeat(64), observedAt: '2026-07-29T00:06:00.000Z' } }), /state contract, readback, or counts drifted/)
+    failureObservation: { schema: 'agentic-graph-production-release-failure-observation/v1', failedStage: 'deployment', messageDigest: 'b'.repeat(64), observedAt: '2026-07-29T00:06:00.000Z' } }), /state contract, readback, or counts drifted/)
   for (const [failedStage, prefixLength] of [['deployment', 9], ['state-reconciliation', 9], ['live-verification', 10], ['publication', 11], ['receipt-persistence', 11]]) {
-    const rollback = createLifecycleRollback({ contract, deployment, ...rollbackEvidence, failureObservation: { schema: 'agenticgraph-production-release-failure-observation/v1', failedStage, messageDigest: 'b'.repeat(64), observedAt: '2026-07-29T00:06:00.000Z' } })
+    const rollback = createLifecycleRollback({ contract, deployment, ...rollbackEvidence, failureObservation: { schema: 'agentic-graph-production-release-failure-observation/v1', failedStage, messageDigest: 'b'.repeat(64), observedAt: '2026-07-29T00:06:00.000Z' } })
     const rolledBack = createRolledBackCarrier({ contract, schemas, Ajv2020, receipts: [...receipts.slice(0, prefixLength), rollback] })
     assert.equal(rolledBack.completion, 'rolled-back')
     assert.equal(rolledBack.receipts.length, prefixLength + 1)
@@ -794,7 +794,7 @@ test('current mirror observation is read-only and does not require GitHub output
   assert.equal(normalizeCloudflarePagesDeploymentId(cloudflareDeploymentId), cloudflareDeploymentId)
   assert.throws(() => normalizeCloudflarePagesDeploymentId('unsafe\noutput=true'), /canonical UUID/)
   assert.throws(() => normalizeCloudflarePagesDeploymentId(`\n${cloudflareDeploymentId}`), /canonical UUID/)
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-current-mirror-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-graph-current-mirror-'))
   const remote = path.join(root, 'remote.git'), checkout = path.join(root, 'checkout')
   const git = (args, cwd = checkout) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
   try {
@@ -907,12 +907,12 @@ test('source, dependency, policy, target, artifact, and manifest drift fail clos
 })
 
 test('canonical descendant mirror proof is remote-exact, GameXR-complete, and protected-squash-bound', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-mirror-descendant-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-graph-mirror-descendant-'))
   const git = arguments_ => execFileSync('git', arguments_, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
   const write = (relativePath, bytes) => { const filePath = path.join(root, relativePath); fs.mkdirSync(path.dirname(filePath), { recursive: true }); fs.writeFileSync(filePath, bytes) }
   try {
-    git(['init', '--initial-branch=main']); git(['config', 'user.name', 'AgenticGraph Test']); git(['config', 'user.email', 'agenticgraph-test@example.invalid'])
-    write('content/agenticgraph/index.html', 'stable agenticgraph publication\n'); git(['add', '--all']); git(['commit', '-m', 'test: seed rollback mirror'])
+    git(['init', '--initial-branch=main']); git(['config', 'user.name', 'agentic-graph Test']); git(['config', 'user.email', 'agentic-graph-test@example.invalid'])
+    write('content/agentic-graph/index.html', 'stable agentic-graph publication\n'); git(['add', '--all']); git(['commit', '-m', 'test: seed rollback mirror'])
     const baseRevision = git(['rev-parse', 'HEAD'])
     git(['checkout', '-b', 'agent/test/gamexr-mirror'])
     const artifactBytes = Buffer.from('<!doctype html><title>GameXR</title>\n')
@@ -936,7 +936,7 @@ test('canonical descendant mirror proof is remote-exact, GameXR-complete, and pr
     assert.deepEqual([proof.baseRevision, proof.descendantRevision, proof.remoteRevision, proof.changedPaths, proof.protectedPullRequest.number, proof.gamexrArtifact.sourceRevision, proof.gamexrArtifact.artifactDigest], [baseRevision, descendantRevision, descendantRevision, ['content/gamexr/index.html', 'content/gamexr/release-manifest.json'], 54, gamexrSourceRevision, gamexrArtifactDigest])
     const { proofDigest, ...proofCore } = proof
     assert.equal(proofDigest, digest(proofCore))
-    write('content/agenticgraph/index.html', 'dirty agenticgraph publication\n')
+    write('content/agentic-graph/index.html', 'dirty agentic-graph publication\n')
     await assert.rejects(() => createCanonicalDescendantMirrorRollbackProof(proofInput), /must be clean/)
   } finally { fs.rmSync(root, { recursive: true, force: true }) }
 })

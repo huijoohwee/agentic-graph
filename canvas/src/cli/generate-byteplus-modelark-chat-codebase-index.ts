@@ -16,7 +16,7 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '../../..')
 
 const OUTPUT_PATH = resolveApiReferenceCodebaseIndexOutputPath(
   REPO_ROOT,
-  'agenticgraph-byteplus-modelark-chat-api-reference-codebase-index.md',
+  'agentic-graph-byteplus-modelark-chat-api-reference-codebase-index.md',
 )
 
 const CONFIG_KEYS = new Set(['provider', 'auth_mode', 'endpoint_url', 'api_key'])

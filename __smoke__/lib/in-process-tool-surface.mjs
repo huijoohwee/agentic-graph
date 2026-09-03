@@ -1,12 +1,12 @@
-// In-process MCP Streamable HTTP tool-surface seam — agenticgraph-acos-mcp-connector
+// In-process MCP Streamable HTTP tool-surface seam — agentic-graph-acos-mcp-connector
 // spec, task 9.3 (R14.1; design Mcp_Agent "Tool surface (R14.1, R14.4)" +
 // "expose ... tools to remote clients over MCP Streamable HTTP transport").
 //
 // PURPOSE: prove the MCP tool surface is REACHABLE and ENUMERABLE through the
 // Streamable HTTP transport WITHOUT any live network/socket. The deployed
-// Worker entry (`cloudflare/workers/agenticgraph-mcp/index.ts`) speaks MCP
+// Worker entry (`cloudflare/workers/agentic-graph-mcp/index.ts`) speaks MCP
 // Streamable HTTP: a client POSTs JSON-RPC envelopes (`tools/list`,
-// `tools/call`) to `airvio.co/agenticgraph/mcp`. This seam hands those SAME
+// `tools/call`) to `airvio.co/agentic-graph/mcp`. This seam hands those SAME
 // JSON-RPC envelopes DIRECTLY to the Worker's real code paths in-process:
 //
 //   tools/list -> buildAgenticGraphMcpToolDefinitions()      (the canonical surface
@@ -20,15 +20,15 @@
 // later be pointed at a real `fetch` against the live endpoint with no caller
 // changes.
 
-import { dispatchAgenticGraphMcpToolCall } from "../../cloudflare/workers/agenticgraph-mcp/run-manifest/dispatch.mjs";
-import { RunManifestStore } from "../../cloudflare/workers/agenticgraph-mcp/run-manifest/persistence.mjs";
+import { dispatchAgenticGraphMcpToolCall } from "../../cloudflare/workers/agentic-graph-mcp/run-manifest/dispatch.mjs";
+import { RunManifestStore } from "../../cloudflare/workers/agentic-graph-mcp/run-manifest/persistence.mjs";
 import {
   buildAgenticGraphMcpToolDefinitions,
-  AGENTICGRAPH_MCP_CONTRACT_VERSION,
-} from "../../cloudflare/workers/agenticgraph-mcp/tool-registry.mjs";
+  AGENTIC_OS_MCP_CONTRACT_VERSION,
+} from "../../cloudflare/workers/agentic-graph-mcp/tool-registry.mjs";
 
 /** The MCP Streamable HTTP endpoint the deployed Worker serves (R14.1). */
-export const MCP_STREAMABLE_HTTP_URL = "https://airvio.co/agenticgraph/mcp";
+export const MCP_STREAMABLE_HTTP_URL = "https://airvio.co/agentic-graph/mcp";
 
 /**
  * Build an in-memory `RUN_MANIFEST_STORE` Durable Object namespace from the
@@ -104,7 +104,7 @@ export function createInProcessStreamableHttpTransport(opts = {}) {
         jsonrpc: "2.0",
         id,
         result: {
-          contractVersion: AGENTICGRAPH_MCP_CONTRACT_VERSION,
+          contractVersion: AGENTIC_OS_MCP_CONTRACT_VERSION,
           tools: buildAgenticGraphMcpToolDefinitions(),
         },
       };

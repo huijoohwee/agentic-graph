@@ -4,7 +4,7 @@ import type {
   AgenticGraphKnowledgeSourceBaseSnapshot,
   AgenticGraphKnowledgeSourceDocumentSnapshot,
   AgenticGraphKnowledgeSourceSnapshotEnvelope,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 export type KnowledgeSourceDocument = {
   name: string

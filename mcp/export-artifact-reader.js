@@ -132,7 +132,7 @@ function isInsideRoot(rootPath, candidatePath) {
 export async function readExportArtifact(artifactIdInput, options = {}) {
   const artifactId = normalizedArtifactId(artifactIdInput);
   const maxBytes = boundedMaxBytes(options.maxBytes);
-  const configuredRoot = options.repoRoot ?? process.env.AGENTICGRAPH_ROOT ?? moduleRepoRoot;
+  const configuredRoot = options.repoRoot ?? process.env.AGENTIC_OS_ROOT ?? moduleRepoRoot;
   let rootPath;
   let artifactPath;
   try {

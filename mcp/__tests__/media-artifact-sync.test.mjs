@@ -1,6 +1,6 @@
 // =============================================================================
 // Media artifact sync — unit tests
-// agenticgraph-widget-canvas-media spec · Task 9
+// agentic-graph-widget-canvas-media spec · Task 9
 // Requirements: R5.1, R5.2, R5.5, R5.6, R5.7, R5.9, R5.10
 //
 // Uses the same in-memory D1 mock as media-persist.test.mjs.

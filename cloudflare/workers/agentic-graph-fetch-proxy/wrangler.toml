@@ -1,0 +1,11 @@
+name = "agentic-fetch-proxy"
+main = "index.ts"
+compatibility_date = "2026-05-07"
+
+[observability]
+enabled = true
+
+[[routes]]
+pattern = "airvio.co/__fetch_remote*"
+zone_name = "airvio.co"
+

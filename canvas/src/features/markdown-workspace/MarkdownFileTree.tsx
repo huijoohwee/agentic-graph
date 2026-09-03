@@ -126,7 +126,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const relative = String(entry.path || '').replace(/^\/+/, '')
     if (!relative) return null
     const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    const base = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '/agenticgraph'
+    const base = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '/agentic-graph'
     const params = new URLSearchParams()
     params.set('kgDoc', relative)
     return `${origin}${base}/?${params.toString()}`
@@ -231,7 +231,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             {isFolder ? <Folder className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} /> : <FileText className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>
             {isWorkspaceSeedsAuthorityRoot ? (
-              <span title="Canonical source: GitHub/agenticgraph/docs/workspace-seeds" aria-label="AgenticGraph workspace-seed authority">
+              <span title="Canonical source: GitHub/agentic-graph/docs/workspace-seeds" aria-label="agentic-graph workspace-seed authority">
                 <ShieldCheck className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} aria-hidden="true" />
               </span>
             ) : null}

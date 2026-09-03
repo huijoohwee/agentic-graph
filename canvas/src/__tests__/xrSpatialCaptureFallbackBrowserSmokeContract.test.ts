@@ -7,9 +7,9 @@ export function testXrSpatialCaptureFallbackBrowserSmokeContract() {
   const sourceSmokeRunner = readFileSync(new URL('../../../scripts/run-xr-spatial-capture-fallback-source-smoke.mjs', import.meta.url), 'utf8')
   const runnerSource = readFileSync(new URL('../../scripts/run_xr_spatial_capture_fallback_browser_smoke.mjs', import.meta.url), 'utf8')
   const verifierSource = readFileSync(new URL('../../scripts/verify_xr_spatial_capture_fallback_browser_smoke.mjs', import.meta.url), 'utf8')
-  const testingDocumentation = readFileSync(new URL('../../../docs/documents/agenticgraph-testing-document.md', import.meta.url), 'utf8')
-  const readinessDocumentation = readFileSync(new URL('../../../docs/documents/agenticgraph-xr-spatial-capture-fallback-readiness.md', import.meta.url), 'utf8')
-  const runtimeApiDocumentation = readFileSync(new URL('../../../docs/documents/agenticgraph-xr-invocation-runtime-api.md', import.meta.url), 'utf8')
+  const testingDocumentation = readFileSync(new URL('../../../docs/documents/agentic-graph-testing-document.md', import.meta.url), 'utf8')
+  const readinessDocumentation = readFileSync(new URL('../../../docs/documents/agentic-graph-xr-spatial-capture-fallback-readiness.md', import.meta.url), 'utf8')
+  const runtimeApiDocumentation = readFileSync(new URL('../../../docs/documents/agentic-graph-xr-invocation-runtime-api.md', import.meta.url), 'utf8')
 
   for (const snippet of [
     "pathname === '/__smoke__/xr-spatial-capture-fallback'",
@@ -49,7 +49,7 @@ export function testXrSpatialCaptureFallbackBrowserSmokeContract() {
   }
   for (const snippet of [
     "logLabel: 'xr-spatial-capture-fallback-browser-smoke'",
-    "devServerPath: '/agenticgraph/'",
+    "devServerPath: '/agentic-graph/'",
     "baseUrlEnvName: 'AG_XR_SPATIAL_CAPTURE_SMOKE_BASE_URL'",
     "verifierArgs: ['./scripts/verify_xr_spatial_capture_fallback_browser_smoke.mjs']",
   ]) {

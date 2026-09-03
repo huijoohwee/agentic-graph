@@ -65,7 +65,7 @@ export function hydrateCanonicalXrMotionReferenceRuntime(): boolean {
   const graphData = documentReady ? state.graphData : null
   const sceneKey = documentReady
     ? xrMotionReferenceSceneKey(state.markdownDocumentName || 'Untitled', graphData)
-    : '__agenticgraph:no-document__'
+    : '__agentic-graph:no-document__'
   const persistedValue = resolveXrMotionReferencePersistedValue(
     graphData?.metadata,
   )

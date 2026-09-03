@@ -197,7 +197,7 @@ export const readCanonicalAgenticGraphWorkspaceSeedsMirrorEntries = async (): Pr
   const entries = await readCanonicalWorkspaceSeedBundleEntries()
   return entries.map(entry => ({
     ...entry,
-    authority: 'agenticgraph-workspace-seeds-bundled',
+    authority: 'agentic-graph-workspace-seeds-bundled',
   }))
 }
 

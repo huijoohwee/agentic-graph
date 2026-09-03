@@ -15,7 +15,7 @@ import {
 import {
   createAgenticGraphStorageEnginePersistence,
   type AgenticGraphStorageEnginePersistence,
-} from '../../lib/storage/agenticgraphStorageEnginePersistence'
+} from '../../lib/storage/agentic-graph-storage-engine-persistence'
 
 export const GAME_MMORPG_MODE_IDENTITY = GAME_OS_PERSISTENT_STRATEGY_MODE_IDENTITY
 export const GAME_MMORPG_DEFAULT_LEASE_TTL_MS = GAME_OS_DEFAULT_LEASE_TTL_MS

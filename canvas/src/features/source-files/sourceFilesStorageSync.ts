@@ -10,25 +10,25 @@ import {
   type KgDocumentLocalRecord,
   type AgenticGraphStorageDb,
   type AgenticGraphStorageMutationUnit,
-} from '@/lib/storage/agenticgraphStorageDb'
-import { toAgenticGraphRemoteDocumentRecord } from '@/lib/storage/agenticgraphStorageRecordMapping'
-import { createAgenticGraphStorageOutboxRecord } from '@/lib/storage/agenticgraphStorageOutboxRecord'
+} from '@/lib/storage/agentic-graph-storage-db'
+import { toAgenticGraphRemoteDocumentRecord } from '@/lib/storage/agentic-graph-storage-record-mapping'
+import { createAgenticGraphStorageOutboxRecord } from '@/lib/storage/agentic-graph-storage-outbox-record'
 import {
   hashAgenticGraphStorageContent,
   type KgGraphSnapshotRecord,
-} from '@/lib/storage/agenticgraphStorageSyncContract'
-import { AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agenticgraphStorageSyncContract'
+} from '@/lib/storage/agentic-graph-storage-sync-contract'
+import { AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import type { SourceFilesWorkspaceState } from '@/features/source-files/sourceFilesWorkspaceState'
 import { isWorkspaceBackedSourceFile } from '@/features/source-files/sourceFilesSignatures'
 import type { GraphData } from '@/lib/graph/types'
 
-const AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX = 'sf:'
-const AGENTICGRAPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX = 'sf-graph:'
+const AGENTIC_OS_SOURCE_FILE_DOCUMENT_ID_PREFIX = 'sf:'
+const AGENTIC_OS_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX = 'sf-graph:'
 const sourceFileGraphDataHashCache = new WeakMap<object, string>()
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 const readAgenticGraphStorageWorkspaceIdOverride = (): string =>
-  normalizeString(readEnvString('VITE_AGENTICGRAPH_STORAGE_WORKSPACE_ID', ''))
+  normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
 
 const normalizeSourceFileCanonicalPath = (file: SourceFile): string => {
   const sourcePath = normalizeString(file.source?.path)
@@ -39,18 +39,18 @@ const normalizeSourceFileCanonicalPath = (file: SourceFile): string => {
 }
 
 const buildSourceFileDocumentId = (fileId: string): string =>
-  `${AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX}${normalizeString(fileId)}`
+  `${AGENTIC_OS_SOURCE_FILE_DOCUMENT_ID_PREFIX}${normalizeString(fileId)}`
 
 export const buildSourceFileGraphSnapshotId = (fileId: string): string =>
-  `${AGENTICGRAPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX}${normalizeString(fileId)}`
+  `${AGENTIC_OS_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX}${normalizeString(fileId)}`
 
 export const isAgenticGraphSourceFileDocumentId = (value: unknown): boolean =>
-  normalizeString(value).startsWith(AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX)
+  normalizeString(value).startsWith(AGENTIC_OS_SOURCE_FILE_DOCUMENT_ID_PREFIX)
 
 export const readAgenticGraphSourceFileIdFromDocumentId = (value: unknown): string => {
   const documentId = normalizeString(value)
   return isAgenticGraphSourceFileDocumentId(documentId)
-    ? documentId.slice(AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX.length)
+    ? documentId.slice(AGENTIC_OS_SOURCE_FILE_DOCUMENT_ID_PREFIX.length)
     : ''
 }
 
@@ -93,7 +93,7 @@ export const buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState = (
 ): string => {
   const workspaceIdOverride = readAgenticGraphStorageWorkspaceIdOverride()
   if (workspaceIdOverride) return workspaceIdOverride
-  return AGENTICGRAPH_STORAGE_DEFAULT_WORKSPACE_ID
+  return AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID
 }
 
 const buildDocumentLocalRecordForSourceFile = (
@@ -188,7 +188,7 @@ export const syncSourceFilesToAgenticGraphStorage = async (args: {
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i]!
     const id = normalizeString(row.get('id'))
-    if (!id.startsWith(AGENTICGRAPH_SOURCE_FILE_DOCUMENT_ID_PREFIX)) continue
+    if (!id.startsWith(AGENTIC_OS_SOURCE_FILE_DOCUMENT_ID_PREFIX)) continue
     existingById.set(id, row.toJSON() as KgDocumentLocalRecord)
   }
   const graphSnapshotRows = await collections.graphSnapshots.find({ selector: { workspaceId } }).exec()
@@ -199,7 +199,7 @@ export const syncSourceFilesToAgenticGraphStorage = async (args: {
   for (let i = 0; i < graphSnapshotRows.length; i += 1) {
     const row = graphSnapshotRows[i]!
     const id = normalizeString(row.get('id'))
-    if (!id.startsWith(AGENTICGRAPH_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX)) continue
+    if (!id.startsWith(AGENTIC_OS_SOURCE_FILE_GRAPH_SNAPSHOT_ID_PREFIX)) continue
     existingGraphSnapshotById.set(id, {
       row,
       record: row.toJSON() as KgGraphSnapshotRecord,

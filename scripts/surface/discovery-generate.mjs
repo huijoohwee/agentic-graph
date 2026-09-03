@@ -112,13 +112,13 @@ const publicRecord = record => ({
 
 const buildRobots = ({ entries, gatedPaths, sitemapUrl, contentSignal }) => {
   const lines = [
-    '# Generated from agenticgraph-surface-registry/v1. Do not edit.',
+    '# Generated from agentic-graph-surface-registry/v1. Do not edit.',
     'User-agent: *',
   ]
 
   for (const entry of entries) {
     const pathname = new URL(entry.canonicalUrl).pathname
-    lines.push(`# AgenticGraph-Entry: ${JSON.stringify(publicRecord(entry))}`)
+    lines.push(`# agentic-graph-Entry: ${JSON.stringify(publicRecord(entry))}`)
     lines.push(`Allow: ${pathname}`)
   }
   for (const gatedPath of gatedPaths) lines.push(`Disallow: ${gatedPath}`)
@@ -276,12 +276,12 @@ const buildOpenApi = ({ entries, registry, origin, generationErrors }) => {
     servers: [{ url: new URL(origin).origin }],
     paths,
     components: { schemas },
-    'x-agenticgraph-entries': entries.map(publicRecord),
+    'x-agentic-graph-entries': entries.map(publicRecord),
   })
 }
 
 const buildApiCatalog = ({ entries, invocationCatalog, origin }) => jsonBytes({
-  schema: 'agenticgraph-api-catalog/v1',
+  schema: 'agentic-graph-api-catalog/v1',
   serviceDescription: resolvePublicUrl('/openapi.json', origin),
   entries: entries.map(publicRecord),
   invocationCatalog,
@@ -299,7 +299,7 @@ const buildAgentCard = ({ entries, origin, authorizationMetadata }) => {
       trustBoundary: 'public-read-only',
     }))
   return jsonBytes({
-    schema: 'agenticgraph-agent-card/v1',
+    schema: 'agentic-graph-agent-card/v1',
     agentIdentifier: new URL(origin).hostname,
     inboundProtocol: 'MCP',
     authorizationMetadata,
@@ -328,8 +328,8 @@ const buildMcpManifest = ({ entries, invocationCatalog, authorizationMetadata })
       executionRoute: entry.ingressRoute,
     }))
   return jsonBytes({
-    schema: 'agenticgraph-mcp-manifest/v1',
-    serverInfo: { name: 'agenticgraph', version: '1.0.0' },
+    schema: 'agentic-graph-mcp-manifest/v1',
+    serverInfo: { name: 'agentic-graph', version: '1.0.0' },
     transport: publicReadEndpoint
       ? { type: 'streamable-http', url: publicReadEndpoint.canonicalUrl, stateless: true }
       : null,

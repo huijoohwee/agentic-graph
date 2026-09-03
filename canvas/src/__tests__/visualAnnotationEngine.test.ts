@@ -381,11 +381,11 @@ export async function testVisualAnnotationRegistriesAndMcpContract() {
   const { buildAgenticGraphLocalMcpToolDefinitions } = await import('../../../mcp/local-tool-contract.js')
   const tools = buildAgenticGraphLocalMcpToolDefinitions()
   const names = new Set(tools.map((tool: { name: string }) => tool.name))
-  if (!names.has('agenticgraph.annotate.image') || !names.has('agenticgraph.annotate.video_frame')) {
+  if (!names.has('agentic-graph.annotate.image') || !names.has('agentic-graph.annotate.video_frame')) {
     throw new Error('expected local MCP contract to include annotation tools')
   }
 
-  const { validateAgenticGraphVdeoxplnRegistry } = await import('@/features/agent-ready/agenticgraphVdeoxplnContract.mjs')
+  const { validateAgenticGraphVdeoxplnRegistry } = await import('@/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs')
   const validation = validateAgenticGraphVdeoxplnRegistry()
   if (!validation.ok) throw new Error(`expected vdeoxpln registry to validate: ${validation.errors.join('; ')}`)
 }

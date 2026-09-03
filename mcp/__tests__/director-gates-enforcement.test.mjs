@@ -1,5 +1,5 @@
 // Tests for Director-layer Approval_Gate enforcement wiring
-// (agenticgraph-acos-mcp-connector spec, task 4.5 / R4.2, R4.3, R9.3 /
+// (agentic-graph-acos-mcp-connector spec, task 4.5 / R4.2, R4.3, R9.3 /
 // Correctness Property 1 + Property 17).
 //
 // Covers the orchestration-layer coherence the Director owns ON TOP of the
@@ -45,7 +45,7 @@ const SHOTS = Object.freeze([
   { shotId: "shot-b", prompt: "close detail" },
 ]);
 
-const CHECKOUT_INPUT = Object.freeze({ assetUrl: "r2://agenticgraph-media/run-x/shot-a.mp4" });
+const CHECKOUT_INPUT = Object.freeze({ assetUrl: "r2://agentic-graph-media/run-x/shot-a.mp4" });
 
 // --- gate-id agreement ------------------------------------------------------
 

@@ -2,7 +2,7 @@ import {
   resolveRegionalPoiProfile,
 } from '@/features/geospatial/regionalPoiProfileCatalog'
 
-export const CITY_SIM_SCHEMA_ID = 'agenticgraph-city-poi-zoning/v1' as const
+export const CITY_SIM_SCHEMA_ID = 'agentic-graph-city-poi-zoning/v1' as const
 export const CITY_SIM_FIXED_STEP_MS = 1_000
 export const CITY_SIM_DOCUMENT_PATH = '/game-city-sim/city-poi-zoning.md' as const
 

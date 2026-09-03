@@ -35,7 +35,7 @@ function resolveWorkspaceRoot(cwd: string): string {
   const maxDepth = 6
   for (let i = 0; i <= maxDepth; i += 1) {
     const candidate = path.resolve(cwd, Array.from({ length: i }).map(() => '..').join(path.sep) || '.')
-    const hasAgenticGraph = fsSync.existsSync(path.join(candidate, 'agenticgraph'))
+    const hasAgenticGraph = fsSync.existsSync(path.join(candidate, 'agentic-graph'))
     const hasSandbox = fsSync.existsSync(path.join(candidate, 'sandbox'))
     if (hasAgenticGraph && hasSandbox) return candidate
   }

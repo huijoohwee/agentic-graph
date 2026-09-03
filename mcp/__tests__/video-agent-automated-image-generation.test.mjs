@@ -111,7 +111,7 @@ test("Director persists and dispatches the generated image prompt for VLM review
   const client = adaptBytePlusVideoProviderToRenderClient({
     async dispatch(args) {
       providerArgs = args;
-      return { ok: true, durableR2Url: "r2://asset", objectKey: "asset", bucket: "agenticgraph-media" };
+      return { ok: true, durableR2Url: "r2://asset", objectKey: "asset", bucket: "agentic-graph-media" };
     },
   });
   await client.dispatch({ runId: "image-prompt-run", shot });

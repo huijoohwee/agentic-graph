@@ -173,7 +173,7 @@ const runFrameExtraction = async (req: VideoFrameRequest, opts: VideoFrameServer
     return await new Promise<VideoFrameResult>((resolve) => {
       const child = spawn(pythonBin, [
         '-m',
-        'agenticgraph_parser',
+        'agentic_graph_parser',
         'video-frame',
         '--emit',
         'json',

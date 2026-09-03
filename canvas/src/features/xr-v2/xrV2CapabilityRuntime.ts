@@ -13,7 +13,7 @@ import {
 } from './capabilityContract'
 
 export const XR_V2_BROWSER_CAPABILITY_OBSERVATION_SCHEMA =
-  'agenticgraph-xr-v2-browser-capability-observation/v1' as const
+  'agentic-graph-xr-v2-browser-capability-observation/v1' as const
 
 type BrowserXrSystem = Readonly<{
   isSessionSupported?: (mode: XrSessionMode) => Promise<boolean>

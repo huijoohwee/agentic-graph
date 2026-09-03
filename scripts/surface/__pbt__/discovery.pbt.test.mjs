@@ -72,7 +72,7 @@ const entryFor = (surfaceTier, index, overrides = {}) => {
 }
 
 const registryFor = entries => ({
-  schema: 'agenticgraph-surface-registry/v1',
+  schema: 'agentic-graph-surface-registry/v1',
   version: '1.0.0',
   publicOrigin: 'https://airvio.co',
   policy: { contentSignals: 'ai-train=no, search=yes, ai-input=yes' },

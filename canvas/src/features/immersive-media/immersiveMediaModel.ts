@@ -1,4 +1,4 @@
-export const IMMERSIVE_MEDIA_SCHEMA = 'agenticgraph-immersive-media/v1'
+export const IMMERSIVE_MEDIA_SCHEMA = 'agentic-graph-immersive-media/v1'
 
 export type ImmersiveMediaSourceKind = 'procedural' | 'image' | 'video'
 export type ImmersiveMediaMarkerKind = 'pin' | 'element' | 'video' | 'youtube' | 'chroma'

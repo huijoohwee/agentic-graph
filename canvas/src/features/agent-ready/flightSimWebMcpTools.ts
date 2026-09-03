@@ -3,7 +3,7 @@ import {
   inspectLocalFlightSim,
   type FlightSimControlExecutionFence,
 } from '@/features/game-flight-sim/flightSimMcpRuntime'
-import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from './agenticgraphAgentReadyToolContract.mjs'
+import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agentic-graph-agent-ready-tool-contract.mjs'
 
 type FlightSimWebMcpContract = Readonly<{
   webName: string
@@ -138,8 +138,8 @@ export function buildFlightSimWebMcpToolBuilders(
   findContract: (name: string) => FlightSimWebMcpContract,
   dependencies: FlightSimWebMcpDependencies = {},
 ): Record<string, () => FlightSimWebMcpTool> {
-  const inspectContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim)
-  const controlContract = findContract(AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim)
+  const inspectContract = findContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim)
+  const controlContract = findContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim)
   const inspect = dependencies.inspect || (() => inspectLocalFlightSim())
   const control = dependencies.control || ((
     input: Record<string, unknown>,
@@ -149,7 +149,7 @@ export function buildFlightSimWebMcpToolBuilders(
   const inspectFenceOwner = createFlightSimExecutionFenceOwner()
   const controlFenceOwner = createFlightSimExecutionFenceOwner()
   return {
-    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]: () => (
+    [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]: () => (
       buildTool(inspectContract, async () => executeWithinFlightSimDeadline(
         'inspect',
         async fence => {
@@ -172,7 +172,7 @@ export function buildFlightSimWebMcpToolBuilders(
         inspectFenceOwner,
       ))
     ),
-    [AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]: () => (
+    [AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim]: () => (
       buildTool(controlContract, async input => executeWithinFlightSimDeadline(
         'control',
         fence => control(input || {}, fence),

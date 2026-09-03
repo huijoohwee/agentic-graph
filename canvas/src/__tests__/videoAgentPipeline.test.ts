@@ -42,7 +42,7 @@ export function testVideoAgentPipelineBuildsE2EIngestionParsingRenderingPlan() {
   if (
     pipeline.referenceBoundary !== VIDEO_AGENT_REFERENCE_BOUNDARY
     || pipeline.referenceBoundary.kind !== 'inspiration-only'
-    || pipeline.referenceBoundary.implementation !== 'native-agenticgraph'
+    || pipeline.referenceBoundary.implementation !== 'native-agentic-graph'
     || pipeline.referenceBoundary.copyPolicy !== 'no-external-code-copy'
     || pipeline.referenceBoundary.dependencyPolicy !== 'no-external-video-agent-runtime'
     || pipeline.referenceBoundary.runtimeDependency !== false
@@ -122,7 +122,7 @@ export function testVideoAgentPipelineBuildsE2EIngestionParsingRenderingPlan() {
     'data-kg-video-agent-dataset-panel',
     'Load, split, merge, save',
     'Real-time zone counting',
-    'agenticgraph:render-frame',
+    'agentic-graph:render-frame',
   ]) {
     if (!datasetPanelSrcDoc.includes(token)) {
       throw new Error(`expected dataset Rich Media projection to expose ${token}`)
@@ -130,7 +130,7 @@ export function testVideoAgentPipelineBuildsE2EIngestionParsingRenderingPlan() {
   }
   const datasetPanelDom = new JSDOM(datasetPanelSrcDoc, { runScripts: 'dangerously', url: 'http://localhost' })
   const targetFrame = pipeline.datasetRuntime.zoneCounting.frames[2]
-  datasetPanelDom.window.dispatchEvent(new datasetPanelDom.window.CustomEvent('agenticgraph:render-frame', {
+  datasetPanelDom.window.dispatchEvent(new datasetPanelDom.window.CustomEvent('agentic-graph:render-frame', {
     detail: { timeMs: targetFrame?.timestampMs || 0 },
   }))
   const datasetPanelRoot = datasetPanelDom.window.document.querySelector('[data-kg-video-agent-dataset-panel]')
@@ -140,7 +140,7 @@ export function testVideoAgentPipelineBuildsE2EIngestionParsingRenderingPlan() {
   datasetPanelDom.window.close()
   const transcriptPanelSrcDoc = buildVideoAgentTranscriptPanelSrcDoc({
     sourceTranscript: {
-      schemaVersion: 'agenticgraph-video-agent-transcript/v1',
+      schemaVersion: 'agentic-graph-video-agent-transcript/v1',
       segments: [
         { index: 0, startMs: 0, endMs: 1200, durationMs: 1200, text: 'Opening transcript cue.' },
         { index: 1, startMs: 1200, endMs: 2600, durationMs: 1400, text: 'Timeline synced transcript cue.' },
@@ -152,14 +152,14 @@ export function testVideoAgentPipelineBuildsE2EIngestionParsingRenderingPlan() {
     'data-kg-video-agent-transcript-panel',
     'data-kg-video-agent-transcript-cue',
     'Timeline transcript',
-    'agenticgraph:render-frame',
+    'agentic-graph:render-frame',
   ]) {
     if (!transcriptPanelSrcDoc.includes(token)) {
       throw new Error(`expected transcript Rich Media projection to expose ${token}`)
     }
   }
   const transcriptPanelDom = new JSDOM(transcriptPanelSrcDoc, { runScripts: 'dangerously', url: 'http://localhost' })
-  transcriptPanelDom.window.dispatchEvent(new transcriptPanelDom.window.CustomEvent('agenticgraph:render-frame', {
+  transcriptPanelDom.window.dispatchEvent(new transcriptPanelDom.window.CustomEvent('agentic-graph:render-frame', {
     detail: { timeMs: 1400 },
   }))
   const transcriptPanelRoot = transcriptPanelDom.window.document.querySelector('[data-kg-video-agent-transcript-panel]')
@@ -352,14 +352,14 @@ export function testVideoAgentPipelineCompilesRenderableSemanticHtmlSpec() {
   for (const route of VIDEO_AGENT_RICH_MEDIA_PANEL_ROUTES) {
     if (!data.richMediaPanels.some(entry => (
       String((entry as { route?: unknown }).route || '') === route
-      && String((entry as { timelineSync?: unknown }).timelineSync || '') === 'agenticgraph:render-frame'
+      && String((entry as { timelineSync?: unknown }).timelineSync || '') === 'agentic-graph:render-frame'
     ))) {
       throw new Error(`expected Rich Media panel route ${route} to reuse the shared render-frame timeline clock`)
     }
   }
   const visualAnnotationE2ESteps = Array.isArray(data.visualAnnotationE2E?.steps) ? data.visualAnnotationE2E.steps : []
   if (
-    data.visualAnnotationE2E?.implementation !== 'native-agenticgraph'
+    data.visualAnnotationE2E?.implementation !== 'native-agentic-graph'
     || data.visualAnnotationE2E.runtimeDependency !== false
     || visualAnnotationE2ESteps.length === 0
     || !['load', 'annotate', 'split', 'merge', 'save', 'zone_count'].every(step => visualAnnotationE2ESteps.some(entry => String((entry as { id?: unknown }).id || '') === step))
@@ -447,7 +447,7 @@ export function testVideoAgentPipelineProjectsProviderFrameImagesIntoFrameAnalys
     runScripts: 'dangerously',
     url: 'http://localhost',
   })
-  projectedDom.window.dispatchEvent(new projectedDom.window.CustomEvent('agenticgraph:render-frame', {
+  projectedDom.window.dispatchEvent(new projectedDom.window.CustomEvent('agentic-graph:render-frame', {
     detail: { timeMs: laterFrame.timestampMs + 400 },
   }))
   const projectedImages = projectedDom.window.document.querySelectorAll('[data-kg-video-agent-frame-analysis] img')

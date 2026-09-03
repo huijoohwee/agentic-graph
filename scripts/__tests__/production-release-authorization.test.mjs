@@ -41,7 +41,7 @@ const localReview = {
 }
 
 const readiness = {
-  schema: 'agenticgraph-production-runtime-readiness/v2',
+  schema: 'agentic-os-production-runtime-readiness/v2',
   status: 'verified-build',
   source: { repository: 'huijoohwee/agentic-graph', revision: sourceRevision, tree: sourceTree },
   agenticCanvasOs: { repository: 'huijoohwee/agentic-canvas-os', revision: docsRevision },
@@ -49,7 +49,7 @@ const readiness = {
   artifact: { algorithm: 'sha256', digest: 'f'.repeat(64) },
   immutableManifest: { algorithm: 'sha256', digest: '1'.repeat(64) },
   mirror: { repository: 'huijoohwee/huijoohwee' },
-  surfaces: ['/', '/agenticgraph'],
+  surfaces: ['/', '/agentic-graph'],
 }
 
 const identity = {

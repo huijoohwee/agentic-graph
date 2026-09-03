@@ -1,4 +1,4 @@
-export const IMMERSIVE_MEDIA_MCP_SCHEMA = 'agenticgraph-immersive-media-mcp/v1'
+export const IMMERSIVE_MEDIA_MCP_SCHEMA = 'agentic-graph-immersive-media-mcp/v1'
 
 export const IMMERSIVE_MEDIA_WEB_MCP_TOOL_IDS = Object.freeze({
   inspect: 'inspect_local_immersive_media',

@@ -13,10 +13,10 @@ import { mintPersistentMemoryAuthorization } from "../persistent-memory-authoriz
 import { PERSISTENT_MEMORY_TOOL_NAMES } from "../persistent-memory-contract.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const docsEnvironment = process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT
+const docsEnvironment = process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT
   ? {
-      AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: path.resolve(
-        process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT,
+      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: path.resolve(
+        process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT,
       ),
     }
   : {};
@@ -24,7 +24,7 @@ let docsRoot = "";
 try {
   docsRoot = resolveAgenticCanvasOsDocsRoot({ rootDir: repoRoot, env: docsEnvironment });
 } catch (error) {
-  if (docsEnvironment.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT) throw error;
+  if (docsEnvironment.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT) throw error;
   docsRoot = "";
 }
 const docsAvailable = Boolean(docsRoot)
@@ -42,10 +42,10 @@ async function connectClient(stateDirectory) {
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      AGENTICGRAPH_ROOT: repoRoot,
-      AGENTICGRAPH_MEMORY_STATE_DIR: stateDirectory,
-      AGENTICGRAPH_MEMORY_APPROVAL_HMAC_KEY: hostSecret,
-      AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot,
+      AGENTIC_OS_ROOT: repoRoot,
+      AGENTIC_OS_MEMORY_STATE_DIR: stateDirectory,
+      AGENTIC_OS_MEMORY_APPROVAL_HMAC_KEY: hostSecret,
+      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot,
     },
     stderr: "pipe",
   });
@@ -65,7 +65,7 @@ const scope = Object.freeze({
 test("stdio MCP executes an exact ACOS tuple and recalls it after process restart", {
   skip: !docsAvailable,
 }, async (t) => {
-  const stateDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-persistent-memory-e2e-"));
+  const stateDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-persistent-memory-e2e-"));
   t.after(() => fs.rm(stateDirectory, { recursive: true, force: true }));
 
   const first = await connectClient(stateDirectory);
@@ -79,7 +79,7 @@ test("stdio MCP executes an exact ACOS tuple and recalls it after process restar
     }
 
     const docs = await first.client.callTool({
-      name: "agenticgraph.agentic_canvas_os.docs.invoke",
+      name: "agentic-graph.agentic_canvas_os.docs.invoke",
       arguments: { token: "/memory.write" },
     });
     assert.equal(docs.isError, false, first.stderr());

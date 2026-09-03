@@ -15,8 +15,8 @@ import {
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const agenticgraphRoot = path.resolve(__dirname, '..')
-const githubRoot = path.resolve(agenticgraphRoot, '..')
+const agenticGraphRoot = path.resolve(__dirname, '..')
+const githubRoot = path.resolve(agenticGraphRoot, '..')
 
 const KNOWN_ARGS = new Set([
   '--docs-root',
@@ -50,7 +50,7 @@ const ensureNoUnknownArgs = () => {
 
 const printHelp = () => {
   console.log(`
-Seed Source Files into Cloudflare D1 through the agenticgraph storage Worker.
+Seed Source Files into Cloudflare D1 through the agentic-graph storage Worker.
 
 Usage:
   node ./scripts/seed-storage-docs-to-cloudflare.mjs [options]
@@ -70,7 +70,7 @@ Options:
 const normalizeString = (value) => String(value || '').trim()
 
 const docsRoot = normalizeString(getArgValue('--docs-root'))
-  || normalizeString(process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT)
+  || normalizeString(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT)
   || path.resolve(githubRoot, 'agentic-canvas-os', 'docs')
 const baseUrl = normalizeString(getArgValue('--base-url')) || 'https://airvio.co'
 const isCanonicalProductionOrigin = new URL(baseUrl).origin === 'https://airvio.co'
@@ -302,14 +302,14 @@ const exportWorkspace = async (args) => {
 const formatElapsedMs = (startedAt) => `${Date.now() - startedAt}ms`
 
 const executeD1SqlFile = async (sqlText, label = 'unnamed-step') => {
-  const tempDir = path.resolve(agenticgraphRoot, '.tmp')
+  const tempDir = path.resolve(agenticGraphRoot, '.tmp')
   const fileName = `seed-storage-docs-${Date.now()}-${Math.random().toString(16).slice(2)}.sql`
   const tempFile = path.resolve(tempDir, fileName)
-  const tempFileArg = path.relative(agenticgraphRoot, tempFile) || fileName
+  const tempFileArg = path.relative(agenticGraphRoot, tempFile) || fileName
   await fs.mkdir(tempDir, { recursive: true })
   await fs.writeFile(tempFile, sqlText, 'utf8')
   const startedAt = Date.now()
-  console.log(`[agenticgraph] d1 execute start: ${label}`)
+  console.log(`[agentic-graph] d1 execute start: ${label}`)
   try {
     const result = spawnSync(
       'npx',
@@ -318,16 +318,16 @@ const executeD1SqlFile = async (sqlText, label = 'unnamed-step') => {
         'wrangler',
         'd1',
         'execute',
-        'agenticgraph-storage',
+        'agentic-storage',
         '--remote',
         '--config',
-        'cloudflare/workers/agenticgraph-storage/wrangler.toml',
+        'cloudflare/workers/agentic-graph-storage/wrangler.toml',
         '--file',
         tempFileArg,
         '--json',
       ],
       {
-        cwd: agenticgraphRoot,
+        cwd: agenticGraphRoot,
         env: process.env,
         encoding: 'utf8',
       },
@@ -337,7 +337,7 @@ const executeD1SqlFile = async (sqlText, label = 'unnamed-step') => {
       throw new Error(message || 'installed wrangler d1 execute failed')
     }
     parseD1ExecuteJsonRows(result.stdout, label)
-    console.log(`[agenticgraph] d1 execute done: ${label} (${formatElapsedMs(startedAt)})`)
+    console.log(`[agentic-graph] d1 execute done: ${label} (${formatElapsedMs(startedAt)})`)
   } finally {
     await fs.rm(tempFile, { force: true }).catch(() => void 0)
   }
@@ -345,7 +345,7 @@ const executeD1SqlFile = async (sqlText, label = 'unnamed-step') => {
 
 const executeD1JsonQuery = (sqlText, label = 'unnamed-query') => {
   const startedAt = Date.now()
-  console.log(`[agenticgraph] d1 query start: ${label}`)
+  console.log(`[agentic-graph] d1 query start: ${label}`)
   const result = spawnSync(
     'npx',
     [
@@ -353,16 +353,16 @@ const executeD1JsonQuery = (sqlText, label = 'unnamed-query') => {
       'wrangler',
       'd1',
       'execute',
-      'agenticgraph-storage',
+      'agentic-storage',
       '--remote',
       '--config',
-      'cloudflare/workers/agenticgraph-storage/wrangler.toml',
+      'cloudflare/workers/agentic-graph-storage/wrangler.toml',
       '--command',
       sqlText,
       '--json',
     ],
     {
-      cwd: agenticgraphRoot,
+      cwd: agenticGraphRoot,
       env: process.env,
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
@@ -373,7 +373,7 @@ const executeD1JsonQuery = (sqlText, label = 'unnamed-query') => {
     throw new Error(message || `installed wrangler d1 query failed: ${label}`)
   }
   const rows = parseD1ExecuteJsonRows(result.stdout, label)
-  console.log(`[agenticgraph] d1 query done: ${label} rows=${rows.length} (${formatElapsedMs(startedAt)})`)
+  console.log(`[agentic-graph] d1 query done: ${label} rows=${rows.length} (${formatElapsedMs(startedAt)})`)
   return rows
 }
 
@@ -452,13 +452,13 @@ const seedDocumentsDirectlyToD1 = async (args) => {
       chunkMutations: seed.chunkMutations,
       authoritativeUpdatedAtMs,
     })
-    console.log(`[agenticgraph] d1 document stage ${i + 1}/${args.documentSeeds.length}: ${record.canonicalPath} (chunks=${seed.chunkMutations.length})`)
+    console.log(`[agentic-graph] d1 document stage ${i + 1}/${args.documentSeeds.length}: ${record.canonicalPath} (chunks=${seed.chunkMutations.length})`)
     statements.push(...documentStatements)
   }
   const expectedCanonicalPaths = args.documentSeeds
     .map(seed => normalizeString(seed?.documentMutation?.record?.canonicalPath))
     .filter(Boolean)
-  console.log(`[agenticgraph] d1 authoritative reconciliation active-paths=${expectedCanonicalPaths.length}`)
+  console.log(`[agentic-graph] d1 authoritative reconciliation active-paths=${expectedCanonicalPaths.length}`)
   const reconciliationStatements = buildDirectD1ReconciliationStatements({
     workspaceId: args.workspaceId,
     canonicalPaths: expectedCanonicalPaths,
@@ -512,16 +512,16 @@ const run = async () => {
     mutations.push(seed.documentMutation, ...seed.chunkMutations)
   }
   const chunkedDocuments = documentSeeds.filter(seed => seed.chunkMutations.length > 0)
-  console.log(`[agenticgraph] docs-root=${docsRoot}`)
-  console.log(`[agenticgraph] workspace-id=${workspaceId}`)
-  console.log(`[agenticgraph] base-url=${baseUrl}`)
-  console.log(`[agenticgraph] source-files=${docsSourceFiles.length}`)
+  console.log(`[agentic-graph] docs-root=${docsRoot}`)
+  console.log(`[agentic-graph] workspace-id=${workspaceId}`)
+  console.log(`[agentic-graph] base-url=${baseUrl}`)
+  console.log(`[agentic-graph] source-files=${docsSourceFiles.length}`)
   if (chunkedDocuments.length > 0) {
-    console.log(`[agenticgraph] chunked-source-files=${chunkedDocuments.length}`)
+    console.log(`[agentic-graph] chunked-source-files=${chunkedDocuments.length}`)
   }
   if (dryRun) {
-    console.log('[agenticgraph] dry-run enabled; no remote push executed')
-    console.log('[agenticgraph] sample canonical paths:')
+    console.log('[agentic-graph] dry-run enabled; no remote push executed')
+    console.log('[agentic-graph] sample canonical paths:')
     for (const seed of documentSeeds.slice(0, 10)) {
       console.log(`  - ${seed.documentMutation.record.canonicalPath}`)
     }
@@ -529,12 +529,12 @@ const run = async () => {
   }
   const shouldUseDirectD1ControlPlane = isCanonicalProductionOrigin
   if (shouldUseDirectD1ControlPlane) {
-    console.warn('[agenticgraph] Canonical production reconciliation skips the public storage API and uses direct D1 reconciliation with direct readback.')
+    console.warn('[agentic-graph] Canonical production reconciliation skips the public storage API and uses direct D1 reconciliation with direct readback.')
     const statements = await seedDocumentsDirectlyToD1({ workspaceId, documentSeeds })
     const exportedStartedAt = Date.now()
-    console.log('[agenticgraph] export start: direct-d1-verification')
+    console.log('[agentic-graph] export start: direct-d1-verification')
     const exported = exportWorkspaceDirectlyFromD1({ workspaceId })
-    console.log(`[agenticgraph] export done: direct-d1-verification (${formatElapsedMs(exportedStartedAt)})`)
+    console.log(`[agentic-graph] export done: direct-d1-verification (${formatElapsedMs(exportedStartedAt)})`)
     const parity = assertD1DocumentParity({
       expectedDocumentSeeds: documentSeeds,
       exportedDocuments: exported.documents,
@@ -544,23 +544,23 @@ const run = async () => {
     const evidence = createD1ReconciliationEvidence({ workspaceId, documentSeeds, statements,
       exported, parity, snapshotParity, reconciledAt: new Date().toISOString() })
     await emitEvidence(evidence)
-    console.log(`[agenticgraph] export verification: documents=${parity.documentCount}; chunks=${parity.chunkCount}; snapshots=${snapshotParity.graphSnapshotCount}; path-hash-parity=passed; content-parity=passed`)
-    console.log('[agenticgraph] direct D1 seed complete')
+    console.log(`[agentic-graph] export verification: documents=${parity.documentCount}; chunks=${parity.chunkCount}; snapshots=${snapshotParity.graphSnapshotCount}; path-hash-parity=passed; content-parity=passed`)
+    console.log('[agentic-graph] direct D1 seed complete')
     return
   }
 
   let deleteMutations = []
   const beforeExportStartedAt = Date.now()
-  console.log('[agenticgraph] export start: before-seed')
+  console.log('[agentic-graph] export start: before-seed')
   const beforeExport = await exportWorkspace({ baseUrl, workspaceId })
-  console.log(`[agenticgraph] export done: before-seed (${formatElapsedMs(beforeExportStartedAt)})`)
+  console.log(`[agentic-graph] export done: before-seed (${formatElapsedMs(beforeExportStartedAt)})`)
   deleteMutations = buildReconciliationMutations({
     exported: beforeExport,
     mutations,
     workspaceId,
   })
   if (deleteMutations.length > 0) {
-    console.log(`[agenticgraph] stale-source-files=${deleteMutations.length}`)
+    console.log(`[agentic-graph] stale-source-files=${deleteMutations.length}`)
     mutations.push(...deleteMutations)
   }
   try {
@@ -574,17 +574,17 @@ const run = async () => {
     const applied = acknowledgements.filter(item => item && item.status === 'applied').length
     const conflict = acknowledgements.filter(item => item && item.status === 'conflict').length
     const rejected = acknowledgements.filter(item => item && item.status === 'rejected').length
-    console.log(`[agenticgraph] push complete: applied=${applied}, conflict=${conflict}, rejected=${rejected}`)
+    console.log(`[agentic-graph] push complete: applied=${applied}, conflict=${conflict}, rejected=${rejected}`)
     const exportedStartedAt = Date.now()
-    console.log('[agenticgraph] export start: api-push-verification')
+    console.log('[agentic-graph] export start: api-push-verification')
     const exported = await exportWorkspace({ baseUrl, workspaceId })
-    console.log(`[agenticgraph] export done: api-push-verification (${formatElapsedMs(exportedStartedAt)})`)
+    console.log(`[agentic-graph] export done: api-push-verification (${formatElapsedMs(exportedStartedAt)})`)
     const parity = assertD1DocumentParity({
       expectedDocumentSeeds: documentSeeds,
       exportedDocuments: exported.documents,
       exportedDocumentChunks: exported.documentChunks,
     })
-    console.log(`[agenticgraph] export verification: documents=${parity.documentCount}; chunks=${parity.chunkCount}; path-hash-parity=passed; content-parity=passed`)
+    console.log(`[agentic-graph] export verification: documents=${parity.documentCount}; chunks=${parity.chunkCount}; path-hash-parity=passed; content-parity=passed`)
     return
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -594,6 +594,6 @@ const run = async () => {
 
 run().catch((error) => {
   const message = error instanceof Error ? error.message : String(error)
-  console.error(`[agenticgraph] seed-storage-docs-to-cloudflare failed: ${message}`)
+  console.error(`[agentic-graph] seed-storage-docs-to-cloudflare failed: ${message}`)
   process.exitCode = 1
 })

@@ -1,9 +1,9 @@
 {
-  "name": "@agenticgraph/mcp",
+  "name": "@agentic-graph/mcp",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "MCP server exposing AgenticGraph pipeline commands as tools",
+  "description": "MCP server exposing agentic-graph pipeline commands as tools",
   "license": "MIT",
   "main": "server.js",
   "scripts": {

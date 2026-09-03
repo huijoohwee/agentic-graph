@@ -20,7 +20,7 @@ import { uiToolbarToggleActiveClassName } from '@/features/toolbar/ui/toolbarSty
 import { useP2PCollaborationStore } from '@/features/collaboration/p2pCollaborationStore'
 import { MainPanelTypeIcon, type MainPanelTypeIconKey } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { UI_RESPONSIVE_PANEL_FLEX_INPUT_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
-import { readAgenticGraphStorageCanvasRoomConfig } from '@/lib/storage/agenticgraphStorageCanvasRoomClient'
+import { readAgenticGraphStorageCanvasRoomConfig } from '@/lib/storage/agentic-graph-storage-canvas-room-client'
 
 type SectionId = 'session' | 'invite' | 'answer' | 'peer'
 

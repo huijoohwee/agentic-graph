@@ -13,7 +13,7 @@ export type AgenticGraphRuntimeIdentityGateStatus =
   | AgenticGraphRuntimeIdentityVerificationStatus
 
 export type AgenticGraphRuntimeIdentityGateSnapshot = {
-  schema: 'agenticgraph-runtime-identity-gate/v1'
+  schema: 'agentic-graph-runtime-identity-gate/v1'
   status: AgenticGraphRuntimeIdentityGateStatus
   transportStatus: AgenticGraphRuntimeIdentityAttestationTransportStatus
   requiredDeviceCount: number
@@ -25,7 +25,7 @@ export type AgenticGraphRuntimeIdentityGateSnapshot = {
 }
 
 const initialSnapshot: AgenticGraphRuntimeIdentityGateSnapshot = {
-  schema: 'agenticgraph-runtime-identity-gate/v1',
+  schema: 'agentic-graph-runtime-identity-gate/v1',
   status: 'unavailable',
   transportStatus: 'unavailable',
   requiredDeviceCount: 2,

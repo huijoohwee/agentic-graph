@@ -11,14 +11,14 @@ const GUIDELINES_ROOT = path.join(GITHUB_ROOT, 'huijoohwee.github.io', 'guidelin
 const YAML_GUIDELINES_PATH = path.join(GUIDELINES_ROOT, 'yaml-frontmatter-guidelines.md')
 const MARKDOWN_GUIDELINES_PATH = path.join(GUIDELINES_ROOT, 'markdown-syntax-guidelines.md')
 const E2E_VIDEO_DOC_PATHS = [
-  path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-video-demo.md'),
-  path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-ralphthon-video-demo.md'),
+  path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-video-demo.md'),
+  path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-ralphthon-video-demo.md'),
 ]
-const STORYBOARD_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-storyboard-demo.md')
-const STORYBOARD_PRODUCT_UI_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-storyboard-product-ui-demo.md')
-const STORYBOARD_NEUTRAL_CONTRACT_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-storyboard-neutral-schema-contract-demo.md')
-const STORYBOARD_WIDGET_COMPUTING_TEMPLATE_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-storyboard-widget-computing-flow-template.md')
-const MISSALPH_STORYBOARD_WIDGET_DEMO_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-missalph-demo.md')
+const STORYBOARD_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-demo.md')
+const STORYBOARD_PRODUCT_UI_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-product-ui-demo.md')
+const STORYBOARD_NEUTRAL_CONTRACT_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-neutral-schema-contract-demo.md')
+const STORYBOARD_WIDGET_COMPUTING_TEMPLATE_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-widget-computing-flow-template.md')
+const MISSALPH_STORYBOARD_WIDGET_DEMO_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-missalph-demo.md')
 const APPROVED_STORYBOARD_TYPED_WRAPPER_DOC_PATHS = [
   STORYBOARD_TYPED_WRAPPER_DOC_PATH,
   STORYBOARD_PRODUCT_UI_TYPED_WRAPPER_DOC_PATH,
@@ -31,8 +31,8 @@ const APPROVED_TYPED_WRAPPER_DOC_PATHS = [
 ]
 const E2E_TYPED_WRAPPER_DOC_SET = new Set(APPROVED_TYPED_WRAPPER_DOC_PATHS)
 const CANONICAL_PLAIN_YAML_DOC_CONTRACTS = [
-  { filePath: path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-animatic-demo.md'), renderer: 'gantt', requiresFlow: true },
-  { filePath: path.join(HUIJOOHWEE_DOCS_ROOT, 'agenticgraph-storyboard-demo-index.md'), renderer: 'd3', requiresFlow: false },
+  { filePath: path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-animatic-demo.md'), renderer: 'gantt', requiresFlow: true },
+  { filePath: path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-demo-index.md'), renderer: 'd3', requiresFlow: false },
 ] as const
 const REQUIRED_FLOW_TYPED_SETTING_KEYS = ['direction', 'edgeType', 'snapToGrid', 'computed'] as const
 const REQUIRED_STORYBOARD_WIDGET_TYPED_FIXTURE_PRESET: Record<string, string | boolean> = {
@@ -420,7 +420,7 @@ export function testPublishedStoryboardWidgetDocsKeepFrontmatterAsMachineSsot() 
   const contracts: PublishedStoryboardWidgetDocContract[] = [
     {
       filePath: resolveMarkdownDocBySemanticFragments([
-        'agenticgraph-mainpanel-superagent-integrations-demo/v1',
+        'agentic-graph-mainpanel-superagent-integrations-demo/v1',
         'kgra_superagent_harness',
         'swarm_prediction_world',
         'panel_text_research_brief',

@@ -290,7 +290,7 @@ export function ImmersiveMediaPanelProjection({
       data-kg-immersive-media-overlay={snapshot.overlay.enabled ? '1' : '0'}
       data-kg-immersive-media-polygon={snapshot.polygonPattern ? '1' : '0'}
       data-kg-immersive-media-selected-marker={snapshot.selectedMarkerId || ''}
-      data-kg-immersive-media-mcp="agenticgraph.control_local_immersive_media"
+      data-kg-immersive-media-mcp="agentic-graph.control_local_immersive_media"
     >
       <header className="flex items-start justify-between gap-2">
         <span className="min-w-0">

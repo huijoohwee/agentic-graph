@@ -29,7 +29,7 @@ export function resolveFlightSimEffectiveSaveStatus(
 
 const flightSimDecisionStore = createWorkspaceDecisionStore<FlightSimDecisionRecord>({
   savePath: FLIGHT_SIM_SAVE_PATH,
-  title: 'AgenticGraph Flight Sim Mission 1 Decisions',
+  title: 'agentic-graph Flight Sim Mission 1 Decisions',
   body: [
     '# Flight Sim Mission 1 Decisions',
     '',

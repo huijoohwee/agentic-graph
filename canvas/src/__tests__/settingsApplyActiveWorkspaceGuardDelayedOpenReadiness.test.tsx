@@ -66,7 +66,7 @@ function SettingsActiveWorkspaceGuardDelayedOpenHarness(props: {
     applyActiveWorkspaceFileAsChatHistory,
     applyActiveWorkspaceFileAsAgenticGraph,
     chatHistoryPathStatus,
-    agenticgraphPathStatus,
+    agenticGraphPathStatus,
   } = useSettingsWorkspaceActions({
     patchChatValues,
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
@@ -83,9 +83,9 @@ function SettingsActiveWorkspaceGuardDelayedOpenHarness(props: {
     <section>
       <section data-draft-storage-target={String(values.chatStorageTarget || '')} />
       <section data-draft-chat-history-path={String(values.chatHistoryWorkspacePath || '')} />
-      <section data-draft-chat-agenticgraph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
+      <section data-draft-chat-agentic-graph-path={String(values.chatAgenticGraphWorkspacePath || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
-      <section data-agenticgraph-status={String(agenticgraphPathStatus || '')} />
+      <section data-agentic-graph-status={String(agenticGraphPathStatus || '')} />
       <button
         type="button"
         onClick={() => applyActiveWorkspaceFileAsChatHistory()}
@@ -96,7 +96,7 @@ function SettingsActiveWorkspaceGuardDelayedOpenHarness(props: {
         type="button"
         onClick={() => applyActiveWorkspaceFileAsAgenticGraph()}
       >
-        Use Active AgenticGraph File
+        Use Active agentic-graph File
       </button>
     </section>
   )
@@ -164,14 +164,14 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Active AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use Active agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
     let historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
-    let agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
-    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticgraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
-      throw new Error(`expected missing-markdown guard to surface shared status, got ${JSON.stringify({ historyStatus, agenticgraphStatus })}`)
+    let agenticGraphStatus = settingsContainer.querySelector('[data-agentic-graph-status]')?.getAttribute('data-agentic-graph-status')
+    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticGraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
+      throw new Error(`expected missing-markdown guard to surface shared status, got ${JSON.stringify({ historyStatus, agenticGraphStatus })}`)
     }
     if (openCalls.length !== 0) {
       throw new Error(`expected delayed open callback to remain skipped for missing-markdown guard, got ${JSON.stringify(openCalls)}`)
@@ -183,15 +183,15 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
       await waitForFrames(dom.window as unknown as Window, 2)
     })
     await act(async () => {
-      findButtonByLabel(settingsContainer, 'Use Active AgenticGraph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      findButtonByLabel(settingsContainer, 'Use Active agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
     const draftStorageTarget = settingsContainer.querySelector('[data-draft-storage-target]')?.getAttribute('data-draft-storage-target')
     const draftChatHistoryPath = settingsContainer.querySelector('[data-draft-chat-history-path]')?.getAttribute('data-draft-chat-history-path')
-    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agenticgraph-path]')?.getAttribute('data-draft-chat-agenticgraph-path')
+    const draftChatAgenticGraphPath = settingsContainer.querySelector('[data-draft-chat-agentic-graph-path]')?.getAttribute('data-draft-chat-agentic-graph-path')
     historyStatus = settingsContainer.querySelector('[data-history-status]')?.getAttribute('data-history-status')
-    agenticgraphStatus = settingsContainer.querySelector('[data-agenticgraph-status]')?.getAttribute('data-agenticgraph-status')
+    agenticGraphStatus = settingsContainer.querySelector('[data-agentic-graph-status]')?.getAttribute('data-agentic-graph-status')
 
     if (
       draftStorageTarget !== 'chatHistory' ||
@@ -204,8 +204,8 @@ export async function testSettingsActiveWorkspaceGuardPathsSkipDelayedOpenAndKee
         draftChatAgenticGraphPath,
       })}`)
     }
-    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticgraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
-      throw new Error(`expected non-markdown guard to surface shared status, got ${JSON.stringify({ historyStatus, agenticgraphStatus })}`)
+    if (historyStatus !== NO_ACTIVE_MARKDOWN_STATUS || agenticGraphStatus !== NO_ACTIVE_MARKDOWN_STATUS) {
+      throw new Error(`expected non-markdown guard to surface shared status, got ${JSON.stringify({ historyStatus, agenticGraphStatus })}`)
     }
     if (openCalls.length !== 0) {
       throw new Error(`expected delayed open callback to remain skipped for non-markdown guard, got ${JSON.stringify(openCalls)}`)

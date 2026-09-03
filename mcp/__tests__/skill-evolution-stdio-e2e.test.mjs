@@ -10,7 +10,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 import {
   SKILL_EVOLUTION_INVOCATION,
   SKILL_EVOLUTION_REQUEST_SCHEMA,
@@ -52,7 +52,7 @@ test("canonical stdio MCP advertises and dispatches the source-fenced Skill Evol
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
     cwd: repoRoot,
-    env: { PATH: String(process.env.PATH || ""), HOME: String(process.env.HOME || ""), NODE_ENV: "test", AGENTICGRAPH_ROOT: repoRoot, AGENTICGRAPH_SKILL_EVOLUTION_STATE_DIR: stateDirectory },
+    env: { PATH: String(process.env.PATH || ""), HOME: String(process.env.HOME || ""), NODE_ENV: "test", AGENTIC_OS_ROOT: repoRoot, AGENTIC_OS_SKILL_EVOLUTION_STATE_DIR: stateDirectory },
     stderr: "pipe",
   });
   let stderr = "";
@@ -60,9 +60,9 @@ test("canonical stdio MCP advertises and dispatches the source-fenced Skill Evol
   try {
     await client.connect(transport, { timeout: 10000, maxTotalTimeout: 10000 });
     const listed = await client.listTools(undefined, { timeout: 10000, maxTotalTimeout: 10000 });
-    const descriptors = listed.tools.filter((tool) => tool.name === "agenticgraph.skill.evolve");
+    const descriptors = listed.tools.filter((tool) => tool.name === "agentic-graph.skill.evolve");
     assert.equal(descriptors.length, 1, stderr);
-    assert.equal(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve, "agenticgraph.skill.evolve");
+    assert.equal(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve, "agentic-graph.skill.evolve");
     assert.deepEqual(descriptors[0].annotations, { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false });
     const ajv = new Ajv2020({ strict: false });
     const validateInput = ajv.compile(descriptors[0].inputSchema);
@@ -70,14 +70,14 @@ test("canonical stdio MCP advertises and dispatches the source-fenced Skill Evol
     const request = planRequest();
     assert.equal(validateInput(request), true, ajv.errorsText(validateInput.errors));
 
-    const planned = await client.callTool({ name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve, arguments: request }, undefined, { timeout: 10000, maxTotalTimeout: 10000 });
+    const planned = await client.callTool({ name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve, arguments: request }, undefined, { timeout: 10000, maxTotalTimeout: 10000 });
     assert.notEqual(planned.isError, true);
     assert.equal(validateOutput(planned.structuredContent), true, ajv.errorsText(validateOutput.errors));
     assert.equal(planned.structuredContent.status, "planned");
     assert.deepEqual(await readdir(stateDirectory), [], "plan must not initialize durable state");
 
     const unavailable = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve,
       arguments: { ...request, operation: "start", idempotencyKey: "stdio-unconfigured-start" },
     }, undefined, { timeout: 10000, maxTotalTimeout: 10000 });
     assert.equal(unavailable.isError, true);
@@ -87,7 +87,7 @@ test("canonical stdio MCP advertises and dispatches the source-fenced Skill Evol
     assert.equal(unavailable.structuredContent.modelWeightsMutated, false);
 
     const missing = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve,
       arguments: { schema: SKILL_EVOLUTION_REQUEST_SCHEMA, operation: "status", invocation: invocation(), runId: "se_missing" },
     }, undefined, { timeout: 10000, maxTotalTimeout: 10000 });
     assert.equal(missing.isError, true);
@@ -113,10 +113,10 @@ test("SHA-pinned host adapter completes a durable review-only run through canoni
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      AGENTICGRAPH_ROOT: repoRoot,
-      AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_MODULE: path.relative(repoRoot, adapterPath),
-      AGENTICGRAPH_SKILL_EVOLUTION_ADAPTER_SHA256: adapterDigest,
-      AGENTICGRAPH_SKILL_EVOLUTION_STATE_DIR: stateDirectory,
+      AGENTIC_OS_ROOT: repoRoot,
+      AGENTIC_OS_SKILL_EVOLUTION_ADAPTER_MODULE: path.relative(repoRoot, adapterPath),
+      AGENTIC_OS_SKILL_EVOLUTION_ADAPTER_SHA256: adapterDigest,
+      AGENTIC_OS_SKILL_EVOLUTION_STATE_DIR: stateDirectory,
     },
     stderr: "pipe",
   });
@@ -125,12 +125,12 @@ test("SHA-pinned host adapter completes a durable review-only run through canoni
   let completedRunId;
   try {
     await client.connect(transport, { timeout: 10000, maxTotalTimeout: 10000 });
-    const descriptor = (await client.listTools()).tools.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve);
+    const descriptor = (await client.listTools()).tools.find((tool) => tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve);
     assert.ok(descriptor, stderr);
     const ajv = new Ajv2020({ strict: false });
     const validateOutput = ajv.compile(descriptor.outputSchema);
     const start = { ...planRequest(), operation: "start", idempotencyKey: "stdio-start" };
-    const started = (await client.callTool({ name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve, arguments: start })).structuredContent;
+    const started = (await client.callTool({ name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve, arguments: start })).structuredContent;
     assert.equal(started.status, "ready", JSON.stringify(started));
     assert.equal(started.revision, 1);
     assert.equal(validateOutput(started), true, ajv.errorsText(validateOutput.errors));
@@ -143,10 +143,10 @@ test("SHA-pinned host adapter completes a durable review-only run through canoni
       expectedRevision: revision,
       idempotencyKey,
     });
-    const candidate = (await client.callTool({ name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve, arguments: step(1, "stdio-step-1") })).structuredContent;
+    const candidate = (await client.callTool({ name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve, arguments: step(1, "stdio-step-1") })).structuredContent;
     assert.equal(candidate.status, "running");
     assert.equal(candidate.revision, 2);
-    const completed = (await client.callTool({ name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.skillEvolve, arguments: step(2, "stdio-step-2") })).structuredContent;
+    const completed = (await client.callTool({ name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.skillEvolve, arguments: step(2, "stdio-step-2") })).structuredContent;
     assert.equal(completed.status, "review_pending", JSON.stringify(completed));
     assert.equal(completed.revision, 3);
     assert.equal(completed.proposal.digest, completed.champion.digest);

@@ -410,12 +410,12 @@ export function inspectLocalAnimation() {
   return {
     schema: XR_ANIMATION_MCP_SCHEMA,
     webMcpTools: {
-      inspect: `agenticgraph.${XR_ANIMATION_WEB_MCP_TOOL_IDS.inspect}`,
-      control: `agenticgraph.${XR_ANIMATION_WEB_MCP_TOOL_IDS.control}`,
+      inspect: `agentic-graph.${XR_ANIMATION_WEB_MCP_TOOL_IDS.inspect}`,
+      control: `agentic-graph.${XR_ANIMATION_WEB_MCP_TOOL_IDS.control}`,
     },
     sceneReady: sceneReady(),
     catalog: {
-      source: 'native-agenticgraph-invocation-catalog',
+      source: 'native-agentic-graph-invocation-catalog',
       hydration: { status: 'native-ready', attempts: 0, error: '' },
       canonical: true,
     },

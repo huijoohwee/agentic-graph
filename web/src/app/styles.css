@@ -1,5 +1,5 @@
 /* Minimal, dependency-free styling for the agentic-canvas-os Vercel Frontend.
- * Spec: agenticgraph-acos-mcp-connector, task 11.3 (Vercel Frontend build target).
+ * Spec: agentic-graph-acos-mcp-connector, task 11.3 (Vercel Frontend build target).
  * Presentation only — all logic lives in the reused web/src/lib view builders. */
 
 :root {

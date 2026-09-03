@@ -6,7 +6,7 @@ import {
   inspectLocalMotionControl,
 } from '@/features/three/motionControlMcpRuntime'
 import { motionCaptureSessionRuntime } from '@/features/three/motionCaptureSessionRuntime'
-import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 const landmark = Object.freeze({ x: 0.1, y: 0.2, z: 0.3, visibility: 0.95, presence: 0.96 })
@@ -79,7 +79,7 @@ export async function testMotionCaptureInvocationAndWebMcpConvergeWithoutPayload
     }
 
     const inspection = inspectLocalMotionControl()
-    if (inspection.schema !== 'agenticgraph-motion-control-mcp/v2'
+    if (inspection.schema !== 'agentic-graph-motion-control-mcp/v2'
       || inspection.capturePlatform.evidence.researchReady
       || inspection.capturePlatform.evidence.tier !== 'single-view-control'
       || inspection.capturePlatform.sources.some(candidate => 'landmarks' in (candidate.latestObservation || {}))

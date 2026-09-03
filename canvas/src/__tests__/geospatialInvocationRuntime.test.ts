@@ -7,7 +7,7 @@ import type {
 } from 'grph-shared/geospatial/enhancedLayerContract'
 import { GEO_COMMAND_SCHEMA_ID } from 'grph-shared/geospatial/enhancedLayerContract'
 import {
-  AGENTICGRAPH_GEOSPATIAL_MODE_DOC_INVOCATION,
+  AGENTIC_GRAPH_GEOSPATIAL_MODE_DOC_INVOCATION,
   getAgenticOsDocInvocations,
 } from '@/features/agentic-os/agenticOsDocInvocations'
 import { buildChatInvocationCatalog } from '@/features/chat/chatInvocationRegistry'
@@ -115,14 +115,14 @@ const assertHandledRejection = (
 
 export function testGeospatialInvocationCatalogExposesCanonicalCommand() {
   const docs = getAgenticOsDocInvocations()
-  if (!docs.includes(AGENTICGRAPH_GEOSPATIAL_MODE_DOC_INVOCATION)) {
+  if (!docs.includes(AGENTIC_GRAPH_GEOSPATIAL_MODE_DOC_INVOCATION)) {
     throw new Error('expected the canonical geospatial document invocation in the shared document registry')
   }
   const catalogEntries = buildChatInvocationCatalog()
   const slashEntry = catalogEntries.find(entry => entry.token === '/geo')
   if (
     !slashEntry
-    || slashEntry.sourcePath !== AGENTICGRAPH_GEOSPATIAL_MODE_DOC_INVOCATION.sourcePath
+    || slashEntry.sourcePath !== AGENTIC_GRAPH_GEOSPATIAL_MODE_DOC_INVOCATION.sourcePath
     || slashEntry.kind !== 'doc'
   ) {
     throw new Error(`expected /geo discovery through the shared chat catalog, got ${JSON.stringify(slashEntry)}`)

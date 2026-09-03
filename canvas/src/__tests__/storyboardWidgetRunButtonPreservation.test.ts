@@ -27,7 +27,7 @@ import { resolve } from 'node:path'
 import { clearRichMediaOutputProperties } from '@/features/chat/richMediaRun'
 
 // ---------------------------------------------------------------------------
-// Template node definitions (from agenticgraph-storyboard-widget-computing-flow-template.md)
+// Template node definitions (from agentic-graph-storyboard-widget-computing-flow-template.md)
 // ---------------------------------------------------------------------------
 
 const SOURCE_INPUT_WIDGET_CARD_VALUE = {

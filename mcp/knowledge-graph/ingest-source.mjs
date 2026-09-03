@@ -18,7 +18,7 @@ export const pathIsInside = (candidatePath, rootPath) => {
 
 async function resolveAllowedRoots(deps, budget) {
   const roots = [
-    deps.agenticgraphRoot,
+    deps.agenticGraphRoot,
     ...(Array.isArray(deps.allowedRoots) ? deps.allowedRoots : []),
   ].filter(Boolean);
   const resolved = [];
@@ -57,7 +57,7 @@ async function assertLocalRootAllowed(rootPathRaw, deps, budget) {
 export async function resolveOutputRoot(deps, budget) {
   const configured = path.resolve(
     deps.outputRoot
-    || path.join(deps.agenticgraphRoot, "data", "outputs", "knowledge-graph"),
+    || path.join(deps.agenticGraphRoot, "data", "outputs", "knowledge-graph"),
   );
   let ancestor = configured;
   const tail = [];

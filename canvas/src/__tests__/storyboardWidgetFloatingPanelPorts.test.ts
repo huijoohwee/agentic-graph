@@ -456,7 +456,7 @@ export function testStoryboardWidgetFloatingPanelReusesSharedFloatingPanelAndKtv
     || !kvTableText.includes("nextSelectedRow.scrollIntoView({ block: 'nearest', inline: 'nearest' })")) {
     throw new Error('expected Storyboard Widget KV rows to resolve and reveal the selected diagram port row')
   }
-  for (const forbidden of ['agenticgraph-missalph-demo', '/Users/']) {
+  for (const forbidden of ['agentic-graph-missalph-demo', '/Users/']) {
     if (diagramBridgeText.includes(forbidden) || diagramSelectionHookText.includes(forbidden) || kvTableText.includes(forbidden) || timelineBottomText.includes(forbidden) || timelineFloatingText.includes(forbidden) || ganttBottomText.includes(forbidden) || ganttFloatingText.includes(forbidden) || gitGraphBottomText.includes(forbidden) || gitGraphFloatingText.includes(forbidden)) {
       throw new Error(`expected Mermaid to StoryboardWidget selection bridge to avoid hardcoded fixture token ${forbidden}`)
     }

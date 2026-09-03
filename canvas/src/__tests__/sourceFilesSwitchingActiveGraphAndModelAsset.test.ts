@@ -18,11 +18,11 @@ export function testSourceFilesActiveGraphRejectsUnownedCanvasGraphForSelectedFi
   } as never
   const active = resolveActiveMarkdownBaseGraph({
     baseGraphDataRaw: staleGraph,
-    markdownName: 'docs/agenticgraph-design-demo.md',
+    markdownName: 'docs/agentic-graph-design-demo.md',
     markdownText: '---\nkgCanvas2dRenderer: "storyboard"\n---\n# Design',
   })
   const meta = ((active?.metadata || null) as Record<string, unknown> | null) || {}
-  if (String(meta.source || '') !== 'markdown:docs/agenticgraph-design-demo.md' || meta.pending !== true) {
+  if (String(meta.source || '') !== 'markdown:docs/agentic-graph-design-demo.md' || meta.pending !== true) {
     throw new Error(`expected active graph derivation to replace unowned stale graph with selected-document pending graph, got ${JSON.stringify(meta)}`)
   }
   if ((active?.nodes || []).some(node => String(node.id || '') === 'stale')) {
@@ -32,7 +32,7 @@ export function testSourceFilesActiveGraphRejectsUnownedCanvasGraphForSelectedFi
 
 export function testSourceFilesActiveWorkspaceReapplyAllowsEditorWorkspaceCanvasPane() {
   const shouldApply = shouldProactivelyReapplyActiveWorkspaceMarkdownDocument({
-    activePath: '/docs/agenticgraph-design-demo.md',
+    activePath: '/docs/agentic-graph-design-demo.md',
     markdownDocumentName: 'docs/model-asset-source.md',
     markdownDocumentText: '---\nkgCanvasSurfaceMode: "xr"\n---\n# XR',
     markdownDocumentApplyViewPreset: true,

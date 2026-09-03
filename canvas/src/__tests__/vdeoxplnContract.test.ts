@@ -6,22 +6,22 @@ import {
   buildAgenticGraphVdeoxplnMarkdown,
   buildAgenticGraphVdeoxplnRegistry,
   buildAgenticGraphVdeoxplnRoutingPlan,
-  AGENTICGRAPH_VDEOXPLN_IDS,
+  AGENTIC_OS_VDEOXPLN_IDS,
   validateAgenticGraphVdeoxplnRegistry,
-} from '@/features/agent-ready/agenticgraphVdeoxplnContract.mjs'
+} from '@/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs'
 import {
   buildAgentReadyOpenApiPaths,
-} from '../../../cloudflare/pages/agenticgraph-agent-ready-discovery.mjs'
+} from '../../../cloudflare/pages/agentic-graph-agent-ready-discovery.mjs'
 import {
   buildAgentReadyStaticFiles,
   onRequest,
-} from '../../../cloudflare/pages/agenticgraph-agent-ready.mjs'
+} from '../../../cloudflare/pages/agentic-graph-agent-ready.mjs'
 import {
-  AGENTICGRAPH_VDEOXPLN_DOC_ENTRIES,
+  AGENTIC_OS_VDEOXPLN_DOC_ENTRIES,
 } from '@/features/panels/views/vdeoxplnMcpApiDocs'
 import {
   buildAgenticGraphLocalMcpToolDefinitions,
-  AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES,
+  AGENTIC_OS_LOCAL_MCP_TOOL_NAMES,
 } from '../../../mcp/local-tool-contract.js'
 
 const sha256Hex = async (text: string): Promise<string> => {
@@ -33,11 +33,11 @@ const sha256Hex = async (text: string): Promise<string> => {
 
 export async function testAgenticGraphVdeoxplnRegistryProjectsToAgentSkillsMainPanelAndMcp() {
   const repoRoot = path.resolve(process.cwd(), '..')
-  const contractText = fs.readFileSync(path.resolve(process.cwd(), 'src', 'features', 'agent-ready', 'agenticgraphVdeoxplnContract.mjs'), 'utf8')
+  const contractText = fs.readFileSync(path.resolve(process.cwd(), 'src', 'features', 'agent-ready', 'agentic-graph-vdeoxpln-contract.mjs'), 'utf8')
   if (contractText.includes('grph-shared') || !contractText.includes('from "../../../../contracts/semantic-key.js"')) {
     throw new Error('expected vdeoxpln semantic keys to retain the source-owned semantic-key contract')
   }
-  const syncScriptText = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'sync-pages-agenticgraph.mjs'), 'utf8')
+  const syncScriptText = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'sync-pages-agentic-graph.mjs'), 'utf8')
   if (!syncScriptText.includes("'dist/hash/signature.js'")) {
     throw new Error('expected Pages sync to publish the shared hash signature runtime')
   }
@@ -46,19 +46,19 @@ export async function testAgenticGraphVdeoxplnRegistryProjectsToAgentSkillsMainP
   if (!validation.ok) {
     throw new Error(`expected vdeoxpln registry to validate, got ${JSON.stringify(validation.errors)}`)
   }
-  const localMcp = registry.find(vdeoxpln => vdeoxpln.id === AGENTICGRAPH_VDEOXPLN_IDS.localMcp)
+  const localMcp = registry.find(vdeoxpln => vdeoxpln.id === AGENTIC_OS_VDEOXPLN_IDS.localMcp)
   for (const token of ['/implementation.run', '#managed-implementation-run', '@work-item', '@implementation-run']) {
     if (!localMcp?.triggers.includes(token)) throw new Error(`expected local MCP vdeoxpln triggers to include ${token}`)
   }
-  const applicationComposition = registry.find(vdeoxpln => vdeoxpln.id === AGENTICGRAPH_VDEOXPLN_IDS.applicationComposition)
+  const applicationComposition = registry.find(vdeoxpln => vdeoxpln.id === AGENTIC_OS_VDEOXPLN_IDS.applicationComposition)
   for (const token of ['/application.compose', '#application-composition', '@application-manifest', '@component-catalog', '@integration-profile', '@runtime-proof']) {
     if (!applicationComposition?.triggers.includes(token)) throw new Error(`expected application composition triggers to include ${token}`)
   }
-  for (const tool of [AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationPlan, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.applicationExecute]) {
+  for (const tool of [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationCatalog, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationPlan, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.applicationExecute]) {
     if (!applicationComposition?.tools.local.includes(tool)) throw new Error(`expected application composition to route ${tool}`)
   }
   const applicationPlan = buildAgenticGraphVdeoxplnRoutingPlan({ intentText: applicationComposition?.triggers.join(' '), requestedOutputs: ['immutable application-composition-plan/v1'] })
-  if (applicationPlan.selectedVdeoxplnId !== AGENTICGRAPH_VDEOXPLN_IDS.applicationComposition || applicationPlan.executionStages.some(stage => stage.id === 'floating-panel-chat' || stage.kind === 'ai-assisted')) {
+  if (applicationPlan.selectedVdeoxplnId !== AGENTIC_OS_VDEOXPLN_IDS.applicationComposition || applicationPlan.executionStages.some(stage => stage.id === 'floating-panel-chat' || stage.kind === 'ai-assisted')) {
     throw new Error(`expected application composition to use only its exact local MCP route, got ${JSON.stringify(applicationPlan.executionStages)}`)
   }
 
@@ -113,12 +113,12 @@ export async function testAgenticGraphVdeoxplnRegistryProjectsToAgentSkillsMainP
   }
 
   const openApiPaths = buildAgentReadyOpenApiPaths({
-    appBasePath: '/agenticgraph',
-    appA2aAgentCardPath: '/agenticgraph/.well-known/agent-card.json',
-    healthPath: '/agenticgraph/health',
+    appBasePath: '/agentic-graph',
+    appA2aAgentCardPath: '/agentic-graph/.well-known/agent-card.json',
+    healthPath: '/agentic-graph/health',
   })
   const docEntriesById = new Map(
-    AGENTICGRAPH_VDEOXPLN_DOC_ENTRIES.map(entry => [entry.meta.key.replace(/^vdeoxpln\./, ''), entry]),
+    AGENTIC_OS_VDEOXPLN_DOC_ENTRIES.map(entry => [entry.meta.key.replace(/^vdeoxpln\./, ''), entry]),
   )
 
   for (const definition of definitions) {
@@ -137,19 +137,19 @@ export async function testAgenticGraphVdeoxplnRegistryProjectsToAgentSkillsMainP
       throw new Error(`expected agent-skills index to include ${vdeoxpln.id}`)
     }
     if (
-      indexSkill.url !== `https://airvio.co/agenticgraph${definition.path}`
+      indexSkill.url !== `https://airvio.co/agentic-graph${definition.path}`
       || indexSkill.vdeoxpln?.id !== vdeoxpln.id
       || indexSkill.vdeoxpln?.semanticKey !== vdeoxpln.semanticKey
       || indexSkill.sha256 !== await sha256Hex(expectedMarkdown)
     ) {
       throw new Error(`expected agent-skills index entry to match ${vdeoxpln.id}, got ${JSON.stringify(indexSkill)}`)
     }
-    if (!openApiPaths[`/agenticgraph${definition.path}`]?.get) {
+    if (!openApiPaths[`/agentic-graph${definition.path}`]?.get) {
       throw new Error(`expected OpenAPI to expose ${definition.path}`)
     }
 
     const response = await onRequest({
-      request: new Request(`https://airvio.co/agenticgraph${definition.path}`, {
+      request: new Request(`https://airvio.co/agentic-graph${definition.path}`, {
         method: 'GET',
         headers: { accept: 'text/markdown' },
       }),
@@ -174,14 +174,14 @@ export async function testAgenticGraphVdeoxplnRegistryProjectsToAgentSkillsMainP
   }
 
   const localToolNames = buildAgenticGraphLocalMcpToolDefinitions().map(tool => tool.name)
-  if (!localToolNames.includes(AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)) {
-    throw new Error('expected local MCP to expose agenticgraph.vdeoxpln.list')
+  if (!localToolNames.includes(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)) {
+    throw new Error('expected local MCP to expose agentic-graph.vdeoxpln.list')
   }
 }
 
 export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalKgcClean() {
   const routeOnlyPlan = buildAgenticGraphVdeoxplnRoutingPlan({
-    routePath: '/agenticgraph/.well-known/agent-skills/agenticgraph-chat-to-canvas.md',
+    routePath: '/agentic-graph/.well-known/agent-skills/agentic-graph-chat-to-canvas.md',
     filePath: 'docs/demo.md',
   })
   if (routeOnlyPlan.status !== 'declined' || !String(routeOnlyPlan.reason || '').includes('ignored')) {
@@ -199,7 +199,7 @@ export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalKgcClean() {
     hasSelection: true,
     hasWorkspaceDocument: true,
   })
-  if (chatPlan.status !== 'selected' || chatPlan.selectedVdeoxplnId !== AGENTICGRAPH_VDEOXPLN_IDS.chatToCanvas) {
+  if (chatPlan.status !== 'selected' || chatPlan.selectedVdeoxplnId !== AGENTIC_OS_VDEOXPLN_IDS.chatToCanvas) {
     throw new Error(`expected chat-to-canvas routing plan, got ${JSON.stringify(chatPlan)}`)
   }
   if (!String(chatPlan.semanticRunKey || '').startsWith('kgvx_')) {
@@ -223,15 +223,15 @@ export function testAgenticGraphVdeoxplnRoutingKeepsCanonicalKgcClean() {
     throw new Error('expected FloatingPanel Chat request owner to inject the selected vdeoxpln contract prompt')
   }
   const finalizeOwner = fs.readFileSync(path.resolve(process.cwd(), 'src/features/chat/floatingPanelChat/useFinalizeAssistantSuccess.ts'), 'utf8')
-  if (finalizeOwner.includes('RunManifest') || finalizeOwner.includes('agenticgraphVdeoxplnChatArtifacts')) {
+  if (finalizeOwner.includes('RunManifest') || finalizeOwner.includes('agentic-graph-vdeoxpln-chat-artifacts')) {
     throw new Error('expected FloatingPanel Chat finalization to keep canonical KGC files free of auxiliary run manifests')
   }
-  const artifactOwnerPath = path.resolve(process.cwd(), 'src/features/chat/agenticgraphVdeoxplnChatArtifacts.ts')
+  const artifactOwnerPath = path.resolve(process.cwd(), 'src/features/chat/agentic-graph-vdeoxpln-chat-artifacts.ts')
   if (fs.existsSync(artifactOwnerPath)) {
     throw new Error('expected obsolete vdeoxpln chat artifact helper to be removed')
   }
-  const contractOwner = fs.readFileSync(path.resolve(process.cwd(), 'src/features/agent-ready/agenticgraphVdeoxplnContract.mjs'), 'utf8')
-  for (const stale of ['agenticgraphVdeoxplnChatArtifacts', 'buildAgenticGraphVdeoxplnRunManifestMarkdown', 'agenticgraph-vdeoxpln-run/v1']) {
+  const contractOwner = fs.readFileSync(path.resolve(process.cwd(), 'src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs'), 'utf8')
+  for (const stale of ['agentic-graph-vdeoxpln-chat-artifacts', 'buildAgenticGraphVdeoxplnRunManifestMarkdown', 'agentic-graph-vdeoxpln-run/v1']) {
     if (contractOwner.includes(stale)) throw new Error(`expected vdeoxpln contract to avoid stale canonical manifest owner ${stale}`)
   }
 }

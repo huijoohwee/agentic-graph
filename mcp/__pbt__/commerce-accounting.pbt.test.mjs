@@ -51,7 +51,7 @@ function spySeams() {
 }
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 17: For any checkout attempt, a Stripe checkout session is created and the payout is settled (with a settlement confirmation observable to the caller) iff the payment-action Approval_Gate state is approved; for every other gate state no session is created, no payout is settled, and the payout remains in its pre-checkout state.
+// Feature: agentic-graph-acos-mcp-connector, Property 17: For any checkout attempt, a Stripe checkout session is created and the payout is settled (with a settlement confirmation observable to the caller) iff the payment-action Approval_Gate state is approved; for every other gate state no session is created, no payout is settled, and the payout remains in its pre-checkout state.
 // -----------------------------------------------------------------------------
 test("Property 17: payment gate governs all money movement", () => {
   // The payment token state matrix: only a verified, gate-matched, unexpired,
@@ -92,7 +92,7 @@ test("Property 17: payment gate governs all money movement", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 18: For any Stripe checkout webhook that does not match a verified session, the Commerce_Harness withholds the payout, leaves the payout amount unchanged, and appends a reconciliation flag identifying the affected run.
+// Feature: agentic-graph-acos-mcp-connector, Property 18: For any Stripe checkout webhook that does not match a verified session, the Commerce_Harness withholds the payout, leaves the payout amount unchanged, and appends a reconciliation flag identifying the affected run.
 // -----------------------------------------------------------------------------
 test("Property 18: Stripe webhook mismatch withholds payout", () => {
   const nowSeconds = Math.floor(NOW_MS / 1000);
@@ -134,7 +134,7 @@ test("Property 18: Stripe webhook mismatch withholds payout", () => {
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 20: For any set of emitted Cost_Logs in a run, the Director aggregates them into Budget_Meters such that the aggregated estimated/actual costs equal the sums of the corresponding Cost_Log fields, and each model-bearing stage has exactly one Cost_Log entry carrying its stage id, estimated cost, and actual cost.
+// Feature: agentic-graph-acos-mcp-connector, Property 20: For any set of emitted Cost_Logs in a run, the Director aggregates them into Budget_Meters such that the aggregated estimated/actual costs equal the sums of the corresponding Cost_Log fields, and each model-bearing stage has exactly one Cost_Log entry carrying its stage id, estimated cost, and actual cost.
 // -----------------------------------------------------------------------------
 test("Property 20: Cost_Log aggregation correctness and one entry per model-bearing stage", () => {
   fc.assert(
@@ -167,7 +167,7 @@ test("Property 20: Cost_Log aggregation correctness and one entry per model-bear
 });
 
 // -----------------------------------------------------------------------------
-// Feature: agenticgraph-acos-mcp-connector, Property 21: For any run, either the sum of recorded Credit_Ledger events equals the total provider spend reported in Budget_Meters within +/-0.01 USD, or -- when the deviation exceeds +/-0.01 USD -- the Director flags a reconciliation discrepancy and preserves both the Credit_Ledger events and the Budget_Meters values without modification.
+// Feature: agentic-graph-acos-mcp-connector, Property 21: For any run, either the sum of recorded Credit_Ledger events equals the total provider spend reported in Budget_Meters within +/-0.01 USD, or -- when the deviation exceeds +/-0.01 USD -- the Director flags a reconciliation discrepancy and preserves both the Credit_Ledger events and the Budget_Meters values without modification.
 // -----------------------------------------------------------------------------
 test("Property 21: credit-ledger consistency or reconciliation flag", () => {
   // Meters provider-spend is derived from the ledger sum offset by a deviation

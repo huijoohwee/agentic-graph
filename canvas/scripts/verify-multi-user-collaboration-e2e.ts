@@ -2,8 +2,8 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { chromium, type Page } from 'playwright'
-import { buildAgenticGraphStorageCanvasRoomPath } from '../src/lib/storage/agenticgraphStorageSyncContract'
-import { AGENTICGRAPH_STORAGE_DEVICE_ID_KEY } from '../src/lib/storage/agenticgraphStorageDeviceIdentity'
+import { buildAgenticGraphStorageCanvasRoomPath } from '../src/lib/storage/agentic-graph-storage-sync-contract'
+import { AGENTIC_OS_STORAGE_DEVICE_ID_KEY } from '../src/lib/storage/agentic-graph-storage-device-identity'
 import {
   QUERY_PARAM_OPEN_EDITOR_WORKSPACE,
   QUERY_PARAM_RUNTIME_IDENTITY_PROOF,
@@ -14,7 +14,7 @@ const DEFAULT_OWNER_APP_URL = 'http://127.0.0.1:5175/'
 const DEFAULT_GUEST_APP_URL = 'http://127.0.0.1:5174/'
 const DEFAULT_WORKER_URL = 'http://127.0.0.1:8787'
 const DEFAULT_WORKSPACE_ID = 'kgws:test-room'
-const DEFAULT_DOC_PATH = '/docs/workspace-seeds/agenticgraph-physics-playground-demo.md'
+const DEFAULT_DOC_PATH = '/docs/workspace-seeds/agentic-graph-physics-playground-demo.md'
 const CLIENT_DEVICE_ID_PATTERN = /^dev:[A-Za-z0-9:-]{16,128}$/
 const OWNER_APP_URL = process.env.AG_COLLABORATION_E2E_OWNER_URL || DEFAULT_OWNER_APP_URL
 const GUEST_APP_URL = process.env.AG_COLLABORATION_E2E_GUEST_URL || DEFAULT_GUEST_APP_URL
@@ -32,7 +32,7 @@ const GUEST_DEVICE_ID = requireClientDeviceId(
 )
 const DOC_PATH = process.env.AG_COLLABORATION_E2E_DOC_PATH || DEFAULT_DOC_PATH
 const MARKER = process.env.AG_COLLABORATION_E2E_MARKER || `SMOKE_REMOTE_APPLY_MARKER_${new Date().toISOString().replace(/[-:.]/g, '').replace('T', 'T').replace('Z', 'Z')}`
-const SCREENSHOT_PREFIX = process.env.AG_COLLABORATION_E2E_SCREENSHOT_PREFIX || join(tmpdir(), 'agenticgraph-collaboration-e2e')
+const SCREENSHOT_PREFIX = process.env.AG_COLLABORATION_E2E_SCREENSHOT_PREFIX || join(tmpdir(), 'agentic-graph-collaboration-e2e')
 const OWNER_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.owner.png`
 const GUEST_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.guest.png`
 const RESULT_PATH = String(process.env.AG_COLLABORATION_E2E_RESULT_PATH || '').trim()
@@ -65,7 +65,7 @@ type RuntimeIdentityProof = {
   message: string
   differences: string[]
   device: string
-  agenticgraphRevision: string
+  agenticGraphRevision: string
   agenticCanvasOsRevision: string
   catalogRevision: string
   catalogHydrationStatus: string
@@ -235,7 +235,7 @@ async function readBrowserStoreSnapshot(page: Page): Promise<BrowserStoreSnapsho
 async function readRuntimeIdentityProof(page: Page): Promise<RuntimeIdentityProof> {
   return await page.evaluate(async () => {
     const gateModule = await import('/src/features/runtime-identity/runtimeIdentityAttestationStore.ts')
-    const identityModule = await import('/src/features/runtime-identity/agenticgraphRuntimeIdentity.ts')
+    const identityModule = await import('/src/features/runtime-identity/agentic-graph-runtime-identity.ts')
     const gate = gateModule.getAgenticGraphRuntimeIdentityGateSnapshot()
     const identity = identityModule.getAgenticGraphRuntimeIdentity()
     return {
@@ -247,7 +247,7 @@ async function readRuntimeIdentityProof(page: Page): Promise<RuntimeIdentityProo
       message: String(gate.message || ''),
       differences: Array.isArray(gate.differences) ? gate.differences.map(String) : [],
       device: String(identity.device || ''),
-      agenticgraphRevision: String(identity.agenticgraphRevision || ''),
+      agenticGraphRevision: String(identity.agenticGraphRevision || ''),
       agenticCanvasOsRevision: String(identity.agenticCanvasOsRevision || ''),
       catalogRevision: String(identity.catalogRevision || ''),
       catalogHydrationStatus: String(identity.catalogHydration?.status || ''),
@@ -257,7 +257,7 @@ async function readRuntimeIdentityProof(page: Page): Promise<RuntimeIdentityProo
 }
 
 function isPassingRuntimeIdentityProof(proof: RuntimeIdentityProof): boolean {
-  const revisionsAreExact = /^[0-9a-f]{40}$/.test(proof.agenticgraphRevision)
+  const revisionsAreExact = /^[0-9a-f]{40}$/.test(proof.agenticGraphRevision)
     && /^[0-9a-f]{40}$/.test(proof.agenticCanvasOsRevision)
     && proof.catalogRevision === proof.agenticCanvasOsRevision
   const hydrationIsFresh = proof.catalogHydrationStatus === 'fresh'
@@ -470,11 +470,11 @@ async function main(): Promise<void> {
   await Promise.all([
     ownerContext.addInitScript(
       ({ key, value }) => window.localStorage.setItem(key, value),
-      { key: AGENTICGRAPH_STORAGE_DEVICE_ID_KEY, value: OWNER_DEVICE_ID },
+      { key: AGENTIC_OS_STORAGE_DEVICE_ID_KEY, value: OWNER_DEVICE_ID },
     ),
     guestContext.addInitScript(
       ({ key, value }) => window.localStorage.setItem(key, value),
-      { key: AGENTICGRAPH_STORAGE_DEVICE_ID_KEY, value: GUEST_DEVICE_ID },
+      { key: AGENTIC_OS_STORAGE_DEVICE_ID_KEY, value: GUEST_DEVICE_ID },
     ),
   ])
   const ownerPage = await ownerContext.newPage()
@@ -531,7 +531,7 @@ async function main(): Promise<void> {
     if (ownerIdentityProof.verificationDigest !== guestIdentityProof.verificationDigest) {
       throw new Error('expected owner and guest runtime identity verification digests to match')
     }
-    for (const key of ['agenticgraphRevision', 'agenticCanvasOsRevision', 'catalogRevision'] as const) {
+    for (const key of ['agenticGraphRevision', 'agenticCanvasOsRevision', 'catalogRevision'] as const) {
       if (ownerIdentityProof[key] !== guestIdentityProof[key]) {
         throw new Error(`expected owner and guest ${key} to match`)
       }
@@ -597,7 +597,7 @@ async function main(): Promise<void> {
           requiredDeviceCount: ownerIdentityProof.requiredDeviceCount,
           verificationDigest: ownerIdentityProof.verificationDigest,
           devices: [ownerIdentityProof.device, guestIdentityProof.device],
-          agenticgraphRevision: ownerIdentityProof.agenticgraphRevision,
+          agenticGraphRevision: ownerIdentityProof.agenticGraphRevision,
           agenticCanvasOsRevision: ownerIdentityProof.agenticCanvasOsRevision,
           catalogRevision: ownerIdentityProof.catalogRevision,
           catalogHydrationStatus: ownerIdentityProof.catalogHydrationStatus,

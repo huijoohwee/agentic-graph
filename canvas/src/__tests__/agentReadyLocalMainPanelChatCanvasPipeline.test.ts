@@ -3,15 +3,15 @@ import { createRoot } from 'react-dom/client'
 import MainPanel from '@/features/panels/MainPanel'
 import { inspectLocalMainPanelChatCanvasPipeline } from '@/features/agent-ready/localMainPanelChatCanvasPipelineInspection'
 import {
-  AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER,
-  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS,
-  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
-  AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS,
-  AGENTICGRAPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
-  AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
-  AGENTICGRAPH_SUPERAGENT_REVIEW_EDGE_ID,
-  AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS,
-  AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS,
+  AGENTIC_OS_SUPERAGENT_CANVAS_RENDERER,
+  AGENTIC_OS_SUPERAGENT_MAIN_PANEL_ENTRY_TABS,
+  AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS,
+  AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS,
+  AGENTIC_OS_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
+  AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID,
+  AGENTIC_OS_SUPERAGENT_REVIEW_EDGE_ID,
+  AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS,
+  AGENTIC_OS_SUPERAGENT_SUBAGENT_NODE_IDS,
 } from '@/features/agent-ready/mainPanelSuperAgentIntegrationContract'
 import {
   readLocalMainPanelSurfaceSnapshot,
@@ -154,7 +154,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedIntegratio
       chatPipelineSnapshot: READY_CHAT_PIPELINE,
       markdownDocumentName: 'workspace:/docs/agent-ready.md',
       markdownDocumentText: READY_MARKDOWN,
-      markdownDocumentSourceUrl: '/agenticgraph/share/agent-ready',
+      markdownDocumentSourceUrl: '/agentic-graph/share/agent-ready',
       graphData: READY_GRAPH,
       graphDataRevision: 1,
       canvasRenderMode: '2d',
@@ -290,9 +290,9 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedMcpEntryFo
       } as LocalEditorWorkspaceSurfaceSnapshot,
       chatPipelineSnapshot: {
         ...READY_CHAT_PIPELINE,
-        chatProviderSummary: AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS.join(' / '),
+        chatProviderSummary: AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS.join(' / '),
         markdownDocumentName: demoFixture.sourceFile,
-        selectedNodeId: AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
+        selectedNodeId: AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID,
         streamFollowPath: demoFixture.sourceFile,
         kgcValidation: {
           ...READY_CHAT_PIPELINE.kgcValidation!,
@@ -305,18 +305,18 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedMcpEntryFo
       },
       markdownDocumentName: demoFixture.sourceFile,
       markdownDocumentText: demoText,
-      markdownDocumentSourceUrl: AGENTICGRAPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
+      markdownDocumentSourceUrl: AGENTIC_OS_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
       graphData: parsed.graphData,
       graphDataRevision: 3,
       canvasRenderMode: '2d',
-      canvas2dRenderer: AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER,
+      canvas2dRenderer: AGENTIC_OS_SUPERAGENT_CANVAS_RENDERER,
       documentSemanticMode: 'document',
       frontmatterModeEnabled: true,
       multiDimTableModeEnabled: true,
       documentStructureBaselineLock: false,
       collapsedGroupIds: [],
-      selectedNodeId: AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
-      selectedEdgeId: AGENTICGRAPH_SUPERAGENT_REVIEW_EDGE_ID,
+      selectedNodeId: AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID,
+      selectedEdgeId: AGENTIC_OS_SUPERAGENT_REVIEW_EDGE_ID,
     }) as {
       pipelineReady?: unknown
       readiness?: {
@@ -361,7 +361,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesRenderedMcpEntryFo
       inspection.readiness.superAgentSubagentNodesReady !== true ||
       inspection.readiness.storyboardRendererReady !== true ||
       inspection.readiness.superAgentDemoReady !== true ||
-      inspection.canvasTopology?.canvas2dRenderer !== AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER ||
+      inspection.canvasTopology?.canvas2dRenderer !== AGENTIC_OS_SUPERAGENT_CANVAS_RENDERER ||
       Number(inspection.counts?.flowNodeCount || 0) <= 0 ||
       Number(inspection.counts.flowConnectionCount || 0) <= 0 ||
       Number(inspection.counts.canvasNodeCount || 0) < Number(inspection.counts.flowNodeCount || 0) ||
@@ -395,7 +395,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
   })
   if (!parsed?.graphData) throw new Error('expected research-agent demo parser result for MainPanel pipeline proof')
 
-  for (const activeTab of AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_ENTRY_TABS) {
+  for (const activeTab of AGENTIC_OS_SUPERAGENT_MAIN_PANEL_ENTRY_TABS) {
     const inspection = inspectLocalMainPanelChatCanvasPipeline({
       mainPanelSnapshot: buildMainPanelSnapshot(activeTab),
       commerceReadinessSnapshot: AGENTIC_COMMERCE_MAIN_PANEL_READINESS,
@@ -409,9 +409,9 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
       } as LocalEditorWorkspaceSurfaceSnapshot,
       chatPipelineSnapshot: {
         ...READY_CHAT_PIPELINE,
-        chatProviderSummary: AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS.join(' / '),
+        chatProviderSummary: AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_LABELS.join(' / '),
         markdownDocumentName: demoFixture.sourceFile,
-        selectedNodeId: AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
+        selectedNodeId: AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID,
         streamFollowPath: demoFixture.sourceFile,
         kgcValidation: {
           ...READY_CHAT_PIPELINE.kgcValidation!,
@@ -424,18 +424,18 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
       },
       markdownDocumentName: demoFixture.sourceFile,
       markdownDocumentText: demoText,
-      markdownDocumentSourceUrl: AGENTICGRAPH_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
+      markdownDocumentSourceUrl: AGENTIC_OS_SUPERAGENT_RESEARCH_DEMO_SHARE_URL,
       graphData: parsed.graphData,
       graphDataRevision: 2,
       canvasRenderMode: '2d',
-      canvas2dRenderer: AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER,
+      canvas2dRenderer: AGENTIC_OS_SUPERAGENT_CANVAS_RENDERER,
       documentSemanticMode: 'document',
       frontmatterModeEnabled: true,
       multiDimTableModeEnabled: true,
       documentStructureBaselineLock: false,
       collapsedGroupIds: [],
-      selectedNodeId: AGENTICGRAPH_SUPERAGENT_HARNESS_NODE_ID,
-      selectedEdgeId: AGENTICGRAPH_SUPERAGENT_REVIEW_EDGE_ID,
+      selectedNodeId: AGENTIC_OS_SUPERAGENT_HARNESS_NODE_ID,
+      selectedEdgeId: AGENTIC_OS_SUPERAGENT_REVIEW_EDGE_ID,
     }) as {
       pipelineReady?: unknown
       readiness?: {
@@ -480,7 +480,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
       inspection.readiness.superAgentSubagentNodesReady !== true ||
       inspection.readiness.storyboardRendererReady !== true ||
       inspection.readiness.superAgentDemoReady !== true ||
-      inspection.canvasTopology?.canvas2dRenderer !== AGENTICGRAPH_SUPERAGENT_CANVAS_RENDERER ||
+      inspection.canvasTopology?.canvas2dRenderer !== AGENTIC_OS_SUPERAGENT_CANVAS_RENDERER ||
       Number(inspection.counts?.flowNodeCount || 0) <= 0 ||
       Number(inspection.counts.flowConnectionCount || 0) <= 0 ||
       Number(inspection.counts.canvasNodeCount || 0) < Number(inspection.counts.flowNodeCount || 0) ||
@@ -496,7 +496,7 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
     }
     const requiredProviderIds = new Set(Array.isArray(inspection.superAgentPipeline?.requiredProviderIds) ? inspection.superAgentPipeline.requiredProviderIds.map(String) : [])
     const availableProviderIds = new Set(Array.isArray(inspection.superAgentPipeline?.availableProviderIds) ? inspection.superAgentPipeline.availableProviderIds.map(String) : [])
-    for (const providerId of AGENTICGRAPH_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
+    for (const providerId of AGENTIC_OS_SUPERAGENT_MAIN_PANEL_PROVIDER_IDS) {
       if (!requiredProviderIds.has(providerId) || !availableProviderIds.has(providerId)) {
         throw new Error(`expected provider ${providerId} in declared and available MainPanel coverage, got ${JSON.stringify(inspection.superAgentPipeline)}`)
       }
@@ -504,12 +504,12 @@ export async function testLocalMainPanelChatCanvasPipelineUsesResearchAgentDemoS
     const requiredRuntimeSurfaceNodeIds = new Set(Array.isArray(inspection.superAgentPipeline?.requiredRuntimeSurfaceNodeIds) ? inspection.superAgentPipeline.requiredRuntimeSurfaceNodeIds.map(String) : [])
     const requiredSubagentNodeIds = new Set(Array.isArray(inspection.superAgentPipeline?.requiredSubagentNodeIds) ? inspection.superAgentPipeline.requiredSubagentNodeIds.map(String) : [])
     const renderedNodeIds = new Set(Array.isArray(inspection.superAgentPipeline?.renderedNodeIds) ? inspection.superAgentPipeline.renderedNodeIds.map(String) : [])
-    for (const nodeId of Object.values(AGENTICGRAPH_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS)) {
+    for (const nodeId of Object.values(AGENTIC_OS_SUPERAGENT_RUNTIME_SURFACE_NODE_IDS)) {
       if (!requiredRuntimeSurfaceNodeIds.has(nodeId) || !renderedNodeIds.has(nodeId)) {
         throw new Error(`expected rendered SuperAgent runtime surface node ${nodeId}, got ${JSON.stringify(inspection.superAgentPipeline)}`)
       }
     }
-    for (const nodeId of Object.values(AGENTICGRAPH_SUPERAGENT_SUBAGENT_NODE_IDS)) {
+    for (const nodeId of Object.values(AGENTIC_OS_SUPERAGENT_SUBAGENT_NODE_IDS)) {
       if (!requiredSubagentNodeIds.has(nodeId) || !renderedNodeIds.has(nodeId)) {
         throw new Error(`expected rendered SuperAgent subagent node ${nodeId}, got ${JSON.stringify(inspection.superAgentPipeline)}`)
       }

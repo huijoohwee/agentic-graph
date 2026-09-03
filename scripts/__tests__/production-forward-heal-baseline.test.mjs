@@ -26,7 +26,7 @@ const counts = { documentCount: 147, chunkCount: 18, graphCount: 0 }
 const fixture = () => {
   const sourceRevision = sha('1')
   const predecessorRollbackIdentity = {
-    schema: 'agenticgraph-production-rollback-identity/v1',
+    schema: 'agentic-graph-production-rollback-identity/v1',
     pages: {
       deploymentId: 'previous-deployment',
       deploymentOrigin: 'https://previous.example.pages.dev',
@@ -37,7 +37,7 @@ const fixture = () => {
     d1: { stateContractDigest: hash('4'), readbackDigest: hash('5'), counts: { ...counts, documentCount: 146 } },
   }
   const releaseEvidence = {
-    schema: 'agenticgraph-production-release-evidence/v1',
+    schema: 'agentic-graph-production-release-evidence/v1',
     repository: 'example/runtime',
     sourceRevision,
     rollbackCapturedAt: '2026-08-28T00:00:00.000Z',
@@ -136,7 +136,7 @@ const fixture = () => {
   }
   const failureDetailBytes = Buffer.from(`${JSON.stringify({ failedStage: 'live-verification', outcomes }, null, 2)}\n`)
   const failureObservation = {
-    schema: 'agenticgraph-production-release-failure-observation/v1', failedStage: 'live-verification',
+    schema: 'agentic-graph-production-release-failure-observation/v1', failedStage: 'live-verification',
     messageDigest: digest(failureDetailBytes), observedAt: '2026-08-28T00:07:00.000Z',
   }
   const pages = {
@@ -144,13 +144,13 @@ const fixture = () => {
     deploymentCommitRevision: sourceRevision, sourceRevision, deployedAt: deployment.deployedAt,
   }
   const stateObservation = capturedAt => ({
-    schema: 'agenticgraph-d1-state-snapshot/v1', workspaceId: 'workspace:canonical',
+    schema: 'agentic-graph-d1-state-snapshot/v1', workspaceId: 'workspace:canonical',
     readbackAdapterId: state.readbackAdapterId, readbackKind: state.readbackKind,
     stateContractDigest: state.stateContractDigest, readbackDigest: state.readbackDigest,
     observedCounts: counts, capturedAt,
   })
   const mirror = observedAt => ({
-    schema: 'agenticgraph-production-observed-mirror-identity/v1',
+    schema: 'agentic-graph-production-observed-mirror-identity/v1',
     repository: predecessorRollbackIdentity.mirror.repository,
     revision: predecessorRollbackIdentity.mirror.revision,
     sourceRevision: predecessorRollbackIdentity.pages.sourceRevision, observedAt,
@@ -241,7 +241,7 @@ test('forward-heal baseline fails closed on authority, second-read, chronology, 
 
 test('forward-heal CLI writes evidence once and accepts byte-identical replay', t => {
   const input = fixture()
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agenticgraph-forward-heal-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-graph-forward-heal-'))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const receiptDir = path.join(root, 'receipts')
   const firstDir = path.join(root, 'first')

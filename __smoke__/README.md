@@ -1,4 +1,4 @@
-# Static-scan / smoke tests — agenticgraph ↔ agentic-canvas-os MCP connector (spec task 9.3)
+# Static-scan / smoke tests — agentic-graph ↔ agentic-canvas-os MCP connector (spec task 9.3)
 
 These are **static-scan + connectivity smoke tests** for the spend-isolation and
 tool-surface boundaries. They are pure logic + filesystem reads + in-process
@@ -37,6 +37,6 @@ node --test __smoke__/*.smoke.test.mjs
 ```
 
 In **spec task 11.4** the SAME transport seam is pointed at the live
-`airvio.co/agenticgraph/mcp` endpoint by swapping the in-process transport for a
+`airvio.co/agentic-graph/mcp` endpoint by swapping the in-process transport for a
 real `fetch` — no caller changes — and the bundle scan tightens once the Vercel
 Frontend bundle is built.

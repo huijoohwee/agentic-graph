@@ -76,7 +76,7 @@ export async function testPdfNativeConversionAvoidsSpacedLetterArtifactsOnSynthe
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'kg-pdf-native-'))
   const pdfPath = path.join(tmpDir, 'normal-text.pdf')
   const text = [
-    'AgenticGraph converts native PDF text into markdown without inserting artificial spaces between letters.',
+    'agentic-graph converts native PDF text into markdown without inserting artificial spaces between letters.',
     'The extraction path should preserve normal words, sentence structure, headings, and operational details.',
     'This synthetic document keeps the regression deterministic without relying on external fixture folders.',
   ].join(' ')

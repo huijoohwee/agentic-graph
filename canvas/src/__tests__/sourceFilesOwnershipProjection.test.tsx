@@ -54,10 +54,10 @@ export async function testSourceFilesTreeMarksAgenticGraphWorkspaceSeedAuthority
       />,
     )
     await tick()
-    const marker = container.querySelector('[aria-label="AgenticGraph workspace-seed authority"]')
-    if (!marker) throw new Error('expected the workspace-seeds folder to expose its AgenticGraph authority marker')
+    const marker = container.querySelector('[aria-label="agentic-graph workspace-seed authority"]')
+    if (!marker) throw new Error('expected the workspace-seeds folder to expose its agentic-graph authority marker')
     if (!isAgenticGraphWorkspaceSeedsPath('/docs/workspace-seeds/demo.md')) {
-      throw new Error('expected workspace-seed descendants to retain AgenticGraph ownership')
+      throw new Error('expected workspace-seed descendants to retain agentic-graph ownership')
     }
     if (!isAgenticGraphWorkspaceSeedsRootPath('/docs/workspace-seeds')
       || isAgenticGraphWorkspaceSeedsRootPath('/docs/workspace-seeds/demo.md')) {

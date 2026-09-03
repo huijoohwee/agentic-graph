@@ -16,7 +16,7 @@ const ROOT_NAMES = [
   'canvas/src',
   'canvas/scripts',
   'canvas/vite.config.ts',
-  'agenticgraph_parser',
+  'agentic_graph_parser',
   'grph-shared/src',
   'web/src',
   'web/scripts',

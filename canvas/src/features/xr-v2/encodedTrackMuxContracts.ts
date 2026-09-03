@@ -1,5 +1,5 @@
-export const XR_V2_ENCODED_TRACK_SET_SCHEMA = 'agenticgraph-xr-v2-encoded-track-set/v1' as const
-export const XR_V2_MUXED_CONTAINER_SCHEMA = 'agenticgraph-xr-v2-muxed-container/v1' as const
+export const XR_V2_ENCODED_TRACK_SET_SCHEMA = 'agentic-graph-xr-v2-encoded-track-set/v1' as const
+export const XR_V2_MUXED_CONTAINER_SCHEMA = 'agentic-graph-xr-v2-muxed-container/v1' as const
 
 export const XR_V2_MUX_LIMITS = Object.freeze({
   maxDurationUs: 10 * 60 * 1_000_000,

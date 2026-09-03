@@ -27,7 +27,7 @@ export const buildVideoAgentStreamPanelSrcDoc = (args: {
   `<p data-kg-video-agent-source-url="${escapeHtml(args.sourceUrl)}">Stream output stays separate from source playback and frame analysis while sharing the same timeline transport clock.</p>`,
   `<p><strong>${Math.max(0, args.frameCount)}</strong> frame samples, <strong>${Math.max(0, args.transcriptSegmentCount)}</strong> transcript windows.</p>`,
   '</section>',
-  '<script>(function(){var root=document.querySelector("[data-kg-video-agent-stream-panel]");window.addEventListener("agenticgraph:render-frame",function(event){var timeMs=Number(event&&event.detail&&event.detail.timeMs)||0;if(root)root.setAttribute("data-kg-video-agent-render-time-ms",String(timeMs));});}());</script>',
+  '<script>(function(){var root=document.querySelector("[data-kg-video-agent-stream-panel]");window.addEventListener("agentic-graph:render-frame",function(event){var timeMs=Number(event&&event.detail&&event.detail.timeMs)||0;if(root)root.setAttribute("data-kg-video-agent-render-time-ms",String(timeMs));});}());</script>',
   '</main>',
 ].join('')
 
@@ -41,6 +41,6 @@ export const buildVideoAgentSourcePlaybackPanelSrcDoc = (args: { sourcePlaybackU
   `<p data-kg-video-agent-source-url="${escapeHtml(args.sourceUrl)}">Fallback source link remains available if the upstream player blocks embedding.</p>`,
   '</footer>',
   '<style>main{box-sizing:border-box;display:grid;grid-template-rows:minmax(160px,1fr) auto;gap:8px;width:100%;min-height:100%;padding:10px;background:#07111f;color:#f8fafc;font-family:Inter,system-ui,sans-serif}section{min-height:0;border:1px solid #334155;border-radius:7px;overflow:hidden;background:#020617}iframe{display:block;width:100%;height:100%;border:0}footer{display:flex;align-items:center;gap:8px;min-width:0;border:1px solid #334155;border-radius:7px;background:#0f172a;padding:7px}footer a{color:#5eead4;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap}footer p{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#cbd5e1;font-size:11px;line-height:1.35}</style>',
-  '<script>(function(){var root=document.querySelector("[data-kg-video-agent-source-playback-panel]");window.addEventListener("agenticgraph:render-frame",function(event){var timeMs=Number(event&&event.detail&&event.detail.timeMs)||0;if(root)root.setAttribute("data-kg-video-agent-render-time-ms",String(timeMs));});}());</script>',
+  '<script>(function(){var root=document.querySelector("[data-kg-video-agent-source-playback-panel]");window.addEventListener("agentic-graph:render-frame",function(event){var timeMs=Number(event&&event.detail&&event.detail.timeMs)||0;if(root)root.setAttribute("data-kg-video-agent-render-time-ms",String(timeMs));});}());</script>',
   '</main>',
 ].join('')

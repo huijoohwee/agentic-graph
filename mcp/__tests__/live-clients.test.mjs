@@ -45,8 +45,8 @@ test("resolveStageClients: defaults to MOCK with an empty env (no live clients)"
   assert.equal(clients.exaClient, null);
 });
 
-test("resolveStageClients: AGENTICGRAPH_LIVE_CLIENTS=1 enables live (hosted-free Exa)", () => {
-  const clients = resolveStageClients({ AGENTICGRAPH_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse(EXA_REPLY) });
+test("resolveStageClients: AGENTIC_OS_LIVE_CLIENTS=1 enables live (hosted-free Exa)", () => {
+  const clients = resolveStageClients({ AGENTIC_OS_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse(EXA_REPLY) });
   assert.equal(clients.live, true);
   assert.equal(clients.mode, "live");
   assert.ok(clients.exaClient && clients.exaClient.isDeterministicMock === false);
@@ -66,12 +66,12 @@ test("resolveStageClients: presence of EXA_API_KEY alone enables live", () => {
 
 test("createLiveArgsResolver: injects live sourceCards for a Director run", async () => {
   const clients = resolveStageClients(
-    { AGENTICGRAPH_LIVE_CLIENTS: "1" },
+    { AGENTIC_OS_LIVE_CLIENTS: "1" },
     { fetchImpl: async () => jsonResponse(EXA_REPLY) },
   );
   const resolve = createLiveArgsResolver(clients);
 
-  const out = await resolve("agenticgraph.video_remix.run", {
+  const out = await resolve("agentic-graph.video_remix.run", {
     referenceUrl: "https://example.com/ref",
     brief: "Promo remix",
   });
@@ -82,10 +82,10 @@ test("createLiveArgsResolver: injects live sourceCards for a Director run", asyn
 });
 
 test("createLiveArgsResolver: is identity for non-Director tools", async () => {
-  const clients = resolveStageClients({ AGENTICGRAPH_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse(EXA_REPLY) });
+  const clients = resolveStageClients({ AGENTIC_OS_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse(EXA_REPLY) });
   const resolve = createLiveArgsResolver(clients);
   const args = { referenceUrl: "https://example.com/ref" };
-  const out = await resolve("agenticgraph.video_remix.research", args);
+  const out = await resolve("agentic-graph.video_remix.research", args);
   assert.equal(out, args);
 });
 
@@ -93,15 +93,15 @@ test("createLiveArgsResolver: is identity in MOCK mode (no live clients)", async
   const clients = resolveStageClients({}); // mock
   const resolve = createLiveArgsResolver(clients);
   const args = { referenceUrl: "https://example.com/ref", brief: "x" };
-  const out = await resolve("agenticgraph.video_remix.run", args);
+  const out = await resolve("agentic-graph.video_remix.run", args);
   assert.equal(out.sourceCards, undefined, "no injection in mock mode");
 });
 
 test("createLiveArgsResolver: never overrides caller-supplied sourceCards", async () => {
-  const clients = resolveStageClients({ AGENTICGRAPH_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse(EXA_REPLY) });
+  const clients = resolveStageClients({ AGENTIC_OS_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse(EXA_REPLY) });
   const resolve = createLiveArgsResolver(clients);
   const caller = [{ sourceId: "caller-1", url: "https://caller.example/x" }];
-  const out = await resolve("agenticgraph.video_remix.run", {
+  const out = await resolve("agentic-graph.video_remix.run", {
     referenceUrl: "https://example.com/ref",
     sourceCards: caller,
   });
@@ -110,11 +110,11 @@ test("createLiveArgsResolver: never overrides caller-supplied sourceCards", asyn
 
 test("createLiveArgsResolver: falls back to unchanged args when live research throws", async () => {
   const clients = resolveStageClients(
-    { AGENTICGRAPH_LIVE_CLIENTS: "1" },
+    { AGENTIC_OS_LIVE_CLIENTS: "1" },
     { fetchImpl: async () => { throw new Error("network down"); } },
   );
   const resolve = createLiveArgsResolver(clients);
-  const out = await resolve("agenticgraph.video_remix.run", {
+  const out = await resolve("agentic-graph.video_remix.run", {
     referenceUrl: "https://example.com/ref",
     brief: "x",
   });
@@ -125,7 +125,7 @@ test("createLiveArgsResolver: falls back to unchanged args when live research th
 // --- end-to-end: resolver output feeds the synchronous Director -------------
 
 test("live-resolved sourceCards flow into runVideoRemix as a sourced Evidence_Pack", async () => {
-  const clients = resolveStageClients({ AGENTICGRAPH_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse(EXA_REPLY) });
+  const clients = resolveStageClients({ AGENTIC_OS_LIVE_CLIENTS: "1" }, { fetchImpl: async () => jsonResponse(EXA_REPLY) });
   const resolve = createLiveArgsResolver(clients);
   const { runVideoRemix } = await import("../video-remix-runtime.js");
 
@@ -136,7 +136,7 @@ test("live-resolved sourceCards flow into runVideoRemix as a sourced Evidence_Pa
     budgetUsd: 25,
     approvals: ["paid-model-call"],
   };
-  const augmented = await resolve("agenticgraph.video_remix.run", baseArgs);
+  const augmented = await resolve("agentic-graph.video_remix.run", baseArgs);
   const result = runVideoRemix(augmented);
   const payload = result.payload ?? result;
 

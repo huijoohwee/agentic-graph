@@ -10,11 +10,11 @@ import {
 } from './xrV2SpatialAssetMetadata'
 
 export const XR_V2_FLAT_CAPTURE_ASSET_SCHEMA =
-  'agenticgraph-xr-flat-capture-asset/v2' as const
+  'agentic-graph-xr-flat-capture-asset/v2' as const
 export const XR_V2_POST_PROCESS_QUEUE_RECORD_SCHEMA =
-  'agenticgraph-xr-post-process-queue-record/v2' as const
+  'agentic-graph-xr-post-process-queue-record/v2' as const
 export const XR_V2_CAPTURE_FALLBACK_BUNDLE_SCHEMA =
-  'agenticgraph-xr-capture-fallback-bundle/v2' as const
+  'agentic-graph-xr-capture-fallback-bundle/v2' as const
 
 export const XR_V2_MAX_CAPTURE_RECORD_ID_LENGTH = 160
 export const XR_V2_MAX_CAPTURE_REFERENCE_LENGTH = 2_048

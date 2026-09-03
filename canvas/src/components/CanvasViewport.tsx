@@ -25,8 +25,8 @@ import { shouldRenderTimelineSurface } from '@/lib/timeline/timelineVisibility'
 import { resolvePreferredEnabledComposedSourceFile } from '@/features/source-files/composedSourceSelection'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import { isStrybldrStoryboardGraphData } from '@/features/strybldr/strybldrStoryboard'
-import { useAgenticGraphLiveCanvasHero } from '@/features/canvas/useAgenticGraphLiveCanvasHero'
-import { AGENTICGRAPH_XR_IFRAME_ALLOW } from '@/features/canvas/canvasEmbedIframeMarkup'
+import { useAgenticGraphLiveCanvasHero } from '@/features/canvas/use-agentic-graph-live-canvas-hero'
+import { AGENTIC_OS_XR_IFRAME_ALLOW } from '@/features/canvas/canvasEmbedIframeMarkup'
 import { shouldDocumentSwitchOwnCanvasViewport } from '@/features/canvas/liveCanvasHeroVisibility'
 import { deriveLiveCanvasHeroCommandRouteGraph } from '@/features/canvas/liveCanvasHeroProjection'
 import { useSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
@@ -395,7 +395,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
                   title={`Interactive canvas embed for ${liveCanvasHeroSource.sourcePath}`}
                   className="absolute inset-0 h-full w-full border-0 bg-transparent"
                   sandbox="allow-forms allow-popups allow-same-origin allow-scripts"
-                  allow={AGENTICGRAPH_XR_IFRAME_ALLOW}
+                  allow={AGENTIC_OS_XR_IFRAME_ALLOW}
                   allowFullScreen
                   referrerPolicy="strict-origin-when-cross-origin"
                   data-kg-live-canvas-hero-selected-embed="true"

@@ -2,7 +2,7 @@ import type { WidgetRegistryEntry, WidgetRegistryField, WidgetRegistryPort } fro
 import { createShowrunnerOrchestrator } from './showrunnerOrchestrator'
 
 export const FLOW_SHOWRUNNER_NODE_TYPE_ID = 'showrunner' as const
-export const FLOW_SHOWRUNNER_WIDGET_TYPE_ID = 'agenticgraph-showrunner' as const
+export const FLOW_SHOWRUNNER_WIDGET_TYPE_ID = 'agentic-graph-showrunner' as const
 export const FLOW_SHOWRUNNER_FORM_ID = 'showrunner-form' as const
 
 const SHOWRUNNER_FIELDS: WidgetRegistryField[] = [
@@ -26,7 +26,7 @@ const SHOWRUNNER_PORTS: WidgetRegistryPort[] = [
 ]
 
 export const SHOWRUNNER_WIDGET_ENTRY: WidgetRegistryEntry = {
-  id: 'agenticgraph-showrunner-v1',
+  id: 'agentic-graph-showrunner-v1',
   isEnabled: true,
   nodeTypeId: FLOW_SHOWRUNNER_NODE_TYPE_ID,
   widgetTypeId: FLOW_SHOWRUNNER_WIDGET_TYPE_ID,

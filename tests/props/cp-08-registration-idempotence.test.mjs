@@ -7,7 +7,7 @@ import { validDefinition } from "../support/fixtures.mjs";
 
 const validation = { status: "pass", passResultId: "pass-1", contentHash: "hash", schemaRevision: "schema-1" };
 
-test(tag("agenticgraph-agentic-commerce-platform", 8, "Registration Idempotence"), () => {
+test(tag("agentic-graph-agentic-commerce-platform", 8, "Registration Idempotence"), () => {
   fc.assert(
     fc.property(fc.string({ minLength: 1, maxLength: 16 }), (agentId) => {
       const once = createAgentRegistry();

@@ -21,7 +21,7 @@ export function createLocalAgentTeamHost({
     fetchImpl,
   });
   const readiness = Object.freeze({
-    schema: "agenticgraph.agent-team-local-host-readiness/v1",
+    schema: "agentic-graph.agent-team-local-host-readiness/v1",
     referenceVerifier: "ready",
     controlAuthorizer: "ready",
     reviewReceiptVerifier: "ready",

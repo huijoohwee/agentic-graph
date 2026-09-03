@@ -7,7 +7,7 @@ import {
   TEST_VALIDATION_WORKSPACE_SEED_PATH,
 } from '@/features/workspace-fs/workspaceFs'
 
-const DEFAULT_DOCS_SSOT_CACHE_DIR = path.join(os.tmpdir(), 'agenticgraph-docs-ssot-fixtures')
+const DEFAULT_DOCS_SSOT_CACHE_DIR = path.join(os.tmpdir(), 'agentic-graph-docs-ssot-fixtures')
 const DEFAULT_DOCS_SSOT_STORAGE_BASE_URL = 'https://airvio.co'
 const DEFAULT_DOCS_SSOT_WORKSPACE_ID = 'kgws:canonical-docs'
 const DEFAULT_DOCS_SSOT_CANONICAL_PREFIX = 'agentic-canvas-os/docs'

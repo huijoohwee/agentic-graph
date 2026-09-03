@@ -97,7 +97,7 @@ export const inspectLocalCanvasTopology = (args: LocalCanvasTopologyInspectionAr
       documentSemanticMode,
       selectedNodeId,
       selectedEdgeId,
-      message: 'No active canvas graph is loaded in the local AgenticGraph workspace.',
+      message: 'No active canvas graph is loaded in the local agentic-graph workspace.',
     }
   }
 

@@ -1,5 +1,5 @@
 // Focused unit tests for the Commerce_Harness SETTLEMENT-specific invariants
-// (agenticgraph-acos-mcp-connector spec, task 3.15 / R9.2, R9.3 / Design
+// (agentic-graph-acos-mcp-connector spec, task 3.15 / R9.2, R9.3 / Design
 // Property 17).
 //
 // These tests narrow in on the *settlement* half of the gated-checkout

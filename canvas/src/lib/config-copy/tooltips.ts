@@ -509,7 +509,7 @@ export const WORKFLOW_LINKS_TOOLTIP = buildRoleActionOutcomeTooltip({
 export const AGENTIC_REASONING_LABELS_TOOLTIP = buildRoleActionOutcomeTooltip({
   role: 'Agentic reasoning labels',
   actions: [
-    'mirror the Agentic GraphRAG pipeline from docs/agenticgraph-raci-document.md',
+    'mirror the Agentic GraphRAG pipeline from docs/agentic-graph-raci-document.md',
   ],
   outcome:
     'keep Workflow, Orchestrator, and Renderer steps aligned with the same end-to-end AgenticRAG graph pipeline.',
@@ -531,7 +531,7 @@ export const GRAPH_FIELDS_GRAPH_DATA_TABLE_MAPPING_TOOLTIP = buildRoleActionOutc
     'sync column visibility, frozen areas, and samples with schema presets',
   ],
   outcome:
-    'see docs/agenticgraph-schema-document.md for AgenticRAG JSON-LD table mapping examples.',
+    'see docs/agentic-graph-schema-document.md for AgenticRAG JSON-LD table mapping examples.',
 });
 
 export const GRAPH_DATA_TABLE_CURATION_TOOLTIP = buildRoleActionOutcomeTooltip({
@@ -720,28 +720,28 @@ import { readEnvString } from '../config.env';
 export const GRAPH_FIELDS_DESCRIPTION_TOOLTIP_TEXT =
   `Directive: Document · Subject: field meaning · Verb: describes · Object: how this field maps to AgenticRAG JSON-LD so agents, schema docs, and ${MARKDOWN_DATA_VIEW_COPY.titleDefault} share a consistent interpretation.`;
 
-export const AGENTIC_GRAPHRAG_PIPELINE_DESCRIPTION =
+export const AGENTIC_GRAPH_RAG_PIPELINE_DESCRIPTION =
   'Agentic GraphRAG pipeline \u2192 align Workflow, Orchestrator, Renderer, and codebase index traversals with a shared rag:GraphRAGWorkflow JSON-LD document \u2192 keep graphRAGPath metadata, context IRIs, and traversal rules consistent across UI and offline pipelines.';
 
 const MARKDOWN_PIPELINE_INPUT_REL_PATH = readEnvString(
   'VITE_MARKDOWN_PIPELINE_INPUT_REL_PATH',
-  'docs/agenticgraph-pipeline-document.md',
+  'docs/agentic-graph-pipeline-document.md',
 );
 
 export const CODEBASE_INDEX_PIPELINE_OUTPUT_DIR = readEnvString(
   'VITE_MARKDOWN_PIPELINE_OUTPUT_DIR',
-  'data/outputs/agenticgraph-workflow-preview',
+  'data/outputs/agentic-graph-workflow-preview',
 );
 
 const MARKDOWN_PIPELINE_BASENAME = readEnvString(
   'VITE_MARKDOWN_PIPELINE_BASENAME',
-  'agenticgraph-pipeline-document',
+  'agentic-graph-pipeline-document',
 );
 
 function buildMarkdownPipelineCommand(inputRelPath: string, outputDirRelPath: string): string {
   const input = inputRelPath.trim();
   const outputDir = outputDirRelPath.trim();
-  return `python -m agenticgraph_parser markdown --input ${input} --output-dir ${outputDir}`;
+  return `python -m agentic_graph_parser markdown --input ${input} --output-dir ${outputDir}`;
 }
 
 export const CODEBASE_INDEX_PIPELINE_COMMAND = buildMarkdownPipelineCommand(

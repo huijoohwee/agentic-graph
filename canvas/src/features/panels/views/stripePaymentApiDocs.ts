@@ -96,7 +96,7 @@ const STRIPE_DOC_ROWS: ReadonlyArray<StripeApiDocRow> = [
     typeLabel: 'header',
     value: 'Idempotency-Key: <server-owned request key>',
     responsibility: 'Server-owned idempotency key for retrying Stripe POST requests without duplicating side effects.',
-    notes: 'agenticgraph sends the ACP session id for agentic hosted Checkout retries; human Paywall Checkout does not expose caller-owned Stripe idempotency.',
+    notes: 'agentic-graph sends the ACP session id for agentic hosted Checkout retries; human Paywall Checkout does not expose caller-owned Stripe idempotency.',
     searchHints: ['idempotency', 'retry', 'duplicate charge', 'ACP session id'],
   },
   {

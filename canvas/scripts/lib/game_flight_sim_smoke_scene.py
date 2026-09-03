@@ -115,7 +115,7 @@ def read_and_pin_authored_physics_baseline(
             && state.canvas3dMode === 'xr'
             && workspacePreset.canvasSurfaceMode === 'xr'
             && String(state.markdownDocumentName || '')
-              .endsWith('agenticgraph-physics-playground-demo.md')
+              .endsWith('agentic-graph-physics-playground-demo.md')
             && nativeController.phase === 'running'
             && nativeFrame.phase === 'running'
             && nativeFrame.stepCount > 0
@@ -123,7 +123,7 @@ def read_and_pin_authored_physics_baseline(
             && nativeController.terrainId === 'singapore'
             && nativeController.followCamera === true
             && ['stopped', 'playing', 'paused'].includes(physicsRuntime.phase)
-            && physicsRuntime.world?.schema === 'agenticgraph-xr-physics-world/v1'
+            && physicsRuntime.world?.schema === 'agentic-graph-xr-physics-world/v1'
           if (ready) {
             window.__kgFlightSimCanvas = canvas
             window.__kgFlightSimBaselineSceneIdentity = {

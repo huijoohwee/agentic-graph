@@ -7,7 +7,7 @@ import { createKnowledgeGraphBridgeRequestHandler } from '../../viteKnowledgeGra
 import { SOURCE_PARSER_REGISTRY } from '../../../mcp/knowledge-graph/source-parser-registry.mjs'
 
 const runtimeResult = {
-  schema: 'agenticgraph-knowledge-graph-ingest/v1',
+  schema: 'agentic-graph-knowledge-graph-ingest/v1',
   ok: true,
   operation: 'ingest',
   graphId: 'kg:graph:0123456789abcdef0123456789abcdef',
@@ -19,7 +19,7 @@ const runtimeResult = {
     token: 'kg:projection:0123456789abcdef01234567',
     readOnly: true,
     graphData: {
-      context: 'agenticgraph-knowledge-graph-projection',
+      context: 'agentic-graph-knowledge-graph-projection',
       type: 'Graph',
       nodes: [{ id: 'node:a', label: 'A', type: 'Symbol', properties: {} }],
       edges: [],
@@ -31,7 +31,7 @@ const runtimeResult = {
 }
 
 export async function testKnowledgeGraphBrowserHostParserRegistryDigestBoundary() {
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agenticgraph-parser-digest-test-'))
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-parser-digest-test-'))
   let nextRuntimeResult: Record<string, unknown> = runtimeResult
   const handler = createKnowledgeGraphBridgeRequestHandler({
     repoRoot: temporaryRoot,
@@ -53,7 +53,7 @@ export async function testKnowledgeGraphBrowserHostParserRegistryDigestBoundary(
     })
     const address = server.address()
     if (!address || typeof address === 'string') throw new Error('test server did not bind')
-    const request = async () => fetch(`http://127.0.0.1:${address.port}/__agenticgraph_knowledge_graph/repositories`, {
+    const request = async () => fetch(`http://127.0.0.1:${address.port}/__agentic_graph_knowledge_graph/repositories`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repositoryUrl: 'https://code.example.test/group/repository' }),

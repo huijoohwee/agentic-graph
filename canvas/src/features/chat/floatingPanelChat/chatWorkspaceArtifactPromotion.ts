@@ -56,7 +56,7 @@ export const buildWorkspacePromotionRetryHint = (
     return '- Retry hint: verify the GitHub write route/config, or rerun with GitHub mirroring disabled for a local-only save.'
   }
   if (storageError.includes('storage_publish_failed')) {
-    return '- Retry hint: verify AgenticGraph storage sync availability, then rerun mirroring for the saved local artifact.'
+    return '- Retry hint: verify agentic-graph storage sync availability, then rerun mirroring for the saved local artifact.'
   }
   if (result.githubStatus === 'failed') {
     return '- Retry hint: resolve the GitHub mirroring failure, then rerun promotion for the saved local artifact.'
@@ -135,11 +135,11 @@ export const promoteGeneratedChatWorkspacePaths = async (
     result.githubStatus = githubResult.status === 'applied' ? 'applied' : 'skipped'
     if (githubResult.status === 'failed') {
       const error = githubResult.error || 'github_write_failed'
-      console.warn('[agenticgraph-github] generated chat artifact promotion failed before storage fallback', error)
+      console.warn('[agentic-graph-github] generated chat artifact promotion failed before storage fallback', error)
       return { ...result, githubStatus: 'failed', githubError: error, storageStatus: 'skipped' }
     }
   } catch (error) {
-    console.warn('[agenticgraph-github] generated chat artifact promotion skipped before storage fallback', error)
+    console.warn('[agentic-graph-github] generated chat artifact promotion skipped before storage fallback', error)
     result.githubStatus = 'skipped'
   }
   try {
@@ -156,8 +156,8 @@ export const promoteGeneratedChatWorkspacePaths = async (
   } catch (error) {
     console.warn(
       githubWriteApplied
-        ? '[agenticgraph-storage] generated chat artifact secondary storage promotion skipped after GitHub write'
-        : '[agenticgraph-storage] generated chat artifact promotion skipped',
+        ? '[agentic-graph-storage] generated chat artifact secondary storage promotion skipped after GitHub write'
+        : '[agentic-graph-storage] generated chat artifact promotion skipped',
       error,
     )
     result.storageStatus = 'failed'

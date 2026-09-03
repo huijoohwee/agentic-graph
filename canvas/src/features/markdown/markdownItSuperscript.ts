@@ -17,7 +17,7 @@ type MarkdownItInlineState = {
 }
 
 const CARET_CHAR_CODE = '^'.charCodeAt(0)
-const SUPERSCRIPT_RULE_NAME = 'agenticgraph_superscript'
+const SUPERSCRIPT_RULE_NAME = 'agentic_graph_superscript'
 
 function isEscapedMarker(src: string, index: number): boolean {
   let backslashCount = 0

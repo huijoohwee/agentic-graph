@@ -7,7 +7,7 @@ import {
 } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import type { HeadlessResponsePreparation } from '../headlessResponseCoordinator'
 
-export const CHAT_DURABLE_STREAM_WORKER_SCRIPT = 'agenticgraph-chat-stream-sw.js'
+export const CHAT_DURABLE_STREAM_WORKER_SCRIPT = 'agentic-graph-chat-stream-sw.js'
 export const CHAT_DURABLE_STREAM_START = 'AG_CHAT_STREAM_START'
 export const CHAT_DURABLE_STREAM_ATTACH = 'AG_CHAT_STREAM_ATTACH'
 export const CHAT_DURABLE_STREAM_ABORT = 'AG_CHAT_STREAM_ABORT'
@@ -20,7 +20,7 @@ export const CHAT_DURABLE_STREAM_ERROR = 'AG_CHAT_STREAM_ERROR'
 const durableChatStreamTransportSuspensions = new Set<symbol>()
 
 export const DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA =
-  'agenticgraph-durable-chat-headless-preparation/v1' as const
+  'agentic-graph-durable-chat-headless-preparation/v1' as const
 
 export type DurableChatHeadlessPreparationSeed = {
   schema: typeof DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA

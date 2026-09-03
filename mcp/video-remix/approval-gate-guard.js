@@ -1,5 +1,5 @@
 // Verification-immediately-precedes-paid-action guard for the video-remix
-// Hitl_Gate_Service (agenticgraph-acos-mcp-connector spec, task 4.2 / R4.2 / R4.7 /
+// Hitl_Gate_Service (agentic-graph-acos-mcp-connector spec, task 4.2 / R4.2 / R4.7 /
 // Correctness Property 1).
 //
 // Responsibility (single): enforce the *structural* invariant that an

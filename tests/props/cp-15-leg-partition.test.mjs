@@ -5,7 +5,7 @@ import { evaluateCommission } from "../../src/commission/commission-evaluator.mj
 import { projectVendorSplits } from "../../src/ledger/vendor-split-projector.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("agenticgraph-native-marketplace-layer", 15, "Leg Partition Invariant"), () => {
+test(tag("agentic-graph-native-marketplace-layer", 15, "Leg Partition Invariant"), () => {
   fc.assert(fc.property(
     fc.array(fc.integer({ min: 0, max: 7 }), { minLength: 1, maxLength: 30 }),
     (vendorIndexes) => {

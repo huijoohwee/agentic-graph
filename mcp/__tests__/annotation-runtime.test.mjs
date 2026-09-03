@@ -2,15 +2,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { handleAnnotateImageTool, handleAnnotateVideoFrameTool } from "../annotation-runtime.js";
-import { buildAgenticGraphLocalMcpToolDefinitions, AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { buildAgenticGraphLocalMcpToolDefinitions, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 test("local MCP descriptors expose annotation tools as local idempotent processes", () => {
   const definitions = buildAgenticGraphLocalMcpToolDefinitions();
-  const imageTool = definitions.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateImage);
-  const videoTool = definitions.find((tool) => tool.name === AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame);
+  const imageTool = definitions.find((tool) => tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.annotateImage);
+  const videoTool = definitions.find((tool) => tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.annotateVideoFrame);
 
-  assert.ok(imageTool, "agenticgraph.annotate.image descriptor must exist");
-  assert.ok(videoTool, "agenticgraph.annotate.video_frame descriptor must exist");
+  assert.ok(imageTool, "agentic-graph.annotate.image descriptor must exist");
+  assert.ok(videoTool, "agentic-graph.annotate.video_frame descriptor must exist");
   assert.equal(imageTool.annotations.idempotentHint, true);
   assert.equal(videoTool.annotations.idempotentHint, true);
   assert.equal(videoTool.inputSchema.required.includes("frame_timestamp_ms"), true);

@@ -1,4 +1,4 @@
-import researchWorkerModule from '../../../cloudflare/workers/agenticgraph-research/index.ts'
+import researchWorkerModule from '../../../cloudflare/workers/agentic-graph-research/index.ts'
 
 const worker = (
   typeof (researchWorkerModule as { fetch?: unknown }).fetch === 'function'

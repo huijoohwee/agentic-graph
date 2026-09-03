@@ -6,21 +6,21 @@ const readRepoFile = (repoRelativePath: string): string =>
   readFileSync(resolve(repoRoot, repoRelativePath), 'utf8')
 
 export function testResearchAgentPrdTadUsesImplementedDevSourceOwners(): void {
-  const oldPath = resolve(repoRoot, 'docs/documents/agenticgraph-research-agent-prd-tad-proposed.md')
+  const oldPath = resolve(repoRoot, 'docs/documents/agentic-graph-research-agent-prd-tad-proposed.md')
   if (existsSync(oldPath)) {
     throw new Error('Expected research-agent PRD/TAD to remove the proposed document path')
   }
 
-  const docs = readRepoFile('docs/documents/agenticgraph-research-agent-prd-tad.md')
+  const docs = readRepoFile('docs/documents/agentic-graph-research-agent-prd-tad.md')
 
   const requiredDocTokens = [
-    'doc_id: agenticgraph-research-agent-prd-tad',
+    'doc_id: agentic-graph-research-agent-prd-tad',
     'status: dev-source-implemented-no-deploy',
     'implemented dev-source research-thesis baseline',
     'canvas/src/features/research-agent/researchThesisContract.ts',
     'canvas/src/features/panels/views/ResearchCompilerView.tsx',
     'canvas/src/features/research-agent/researchCompilerPanelModel.ts',
-    'cloudflare/workers/agenticgraph-research/index.ts',
+    'cloudflare/workers/agentic-graph-research/index.ts',
     'cloudflare/d1/migrations/0005_research_thesis.sql',
     'injectable KV summary-cache adapter',
     'without hardcoded namespace ids',

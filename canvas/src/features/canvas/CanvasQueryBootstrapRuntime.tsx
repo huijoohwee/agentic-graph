@@ -72,7 +72,7 @@ type MainPanelOpenReadyWindow = Window & {
 }
 
 type LarkCanvasHandoffWindow = MainPanelOpenReadyWindow & {
-  agenticgraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand
+  agenticGraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand
 }
 
 const openMainPanelWhenReady = (tab: string): (() => void) | void => {
@@ -106,7 +106,7 @@ const importFeishuBaseSnapshotFromLarkHandoff = async (
   request: FeishuBaseSourceImportRequest,
 ): Promise<unknown> => {
   const activeWindow = window as LarkCanvasHandoffWindow
-  const installedCommand = activeWindow.agenticgraphFeishuBaseSourceImportCommand
+  const installedCommand = activeWindow.agenticGraphFeishuBaseSourceImportCommand
   if (installedCommand?.importSnapshot) {
     return await installedCommand.importSnapshot(request)
   }
@@ -118,7 +118,7 @@ const importKnowledgeSourceFromLarkHandoff = async (
   request: KnowledgeSourceImportRequest,
 ): Promise<unknown> => {
   const activeWindow = window as LarkCanvasHandoffWindow
-  const installedCommand = activeWindow.agenticgraphFeishuBaseSourceImportCommand
+  const installedCommand = activeWindow.agenticGraphFeishuBaseSourceImportCommand
   if (installedCommand?.importKnowledgeSource) {
     return await installedCommand.importKnowledgeSource(request)
   }

@@ -72,7 +72,7 @@ def build_browser_evidence(
     restored_screenshot_name: str,
 ) -> dict[str, Any]:
     return {
-        "schema": "agenticgraph-game-mode-xr-share-browser-smoke/v1",
+        "schema": "agentic-graph-game-mode-xr-share-browser-smoke/v1",
         "source": {
             "env": "AG_GAME_MODE_VALIDATION_SHARE_URL",
             "exactPublicMarkdownBytesImported": True,

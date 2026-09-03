@@ -413,7 +413,7 @@ export function testImageToThreeJsRecoversOnlyLegacyMispublishedInputs() {
     outputPath: 'chat-log/legacy/output.json',
     outputManifestPath: 'chat-log/legacy/manifest.json',
     outputStorageUrl: 'workspace:/media/legacy-output.json',
-    outputMimeType: 'application/vnd.agenticgraph.image-threejs+json',
+    outputMimeType: 'application/vnd.agentic-graph.image-threejs+json',
     outputModel: 'local-threejs',
     outputSourceUrl: sourceUrl,
     outputSavedName: 'output.json',

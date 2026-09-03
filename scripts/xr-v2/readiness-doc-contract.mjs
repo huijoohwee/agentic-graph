@@ -11,19 +11,19 @@ export const XR_V2_PINNED_DOCUMENT_SHA256 =
 
 const PINNED_DOCUMENT = Object.freeze({
   name: 'immutable pinned PRD/TAD/ADR',
-  parts: ['docs', 'documents', 'agenticgraph-ar-vr-xr-prd-tad-adr.md'],
+  parts: ['docs', 'documents', 'agentic-graph-ar-vr-xr-prd-tad-adr.md'],
 })
 
 const EVIDENCE_DOCUMENTS = Object.freeze([
   Object.freeze({
     name: 'runtime-readiness evidence contract',
-    parts: ['docs', 'documents', 'agenticgraph-xr-v2-runtime-readiness.md'],
+    parts: ['docs', 'documents', 'agentic-graph-xr-v2-runtime-readiness.md'],
     required: Object.freeze([
       'readiness_scope: "pinned-ac1-ac12-conformance"',
       'local_rung: "browser-local-runtime-ready"',
       'AC-1–AC-12 evidence ledger',
       'Pinned Runtime-Readiness Evidence',
-      'without `VITE_AGENTICGRAPH_RUN_READY_DEMO`',
+      'without `VITE_AGENTIC_OS_RUN_READY_DEMO`',
       'aggregate browser gate runs both scripts',
       'track-preserving mux',
       'connected live transport',
@@ -69,10 +69,10 @@ const EVIDENCE_DOCUMENTS = Object.freeze([
 
 const REQUIRED_SHARED_MARKERS = Object.freeze([
   XR_V2_PINNED_DOCUMENT_REVISION,
-  'agenticgraph-xr-v2-pinned-contract-conformance/v1',
-  'agenticgraph-xr-v2-readiness/v1',
-  'agenticgraph-xr-v2-dev-runtime-evidence/v1',
-  'agenticgraph-xr-v2-browser-smoke/v1',
+  'agentic-graph-xr-v2-pinned-contract-conformance/v1',
+  'agentic-graph-xr-v2-readiness/v1',
+  'agentic-graph-xr-v2-dev-runtime-evidence/v1',
+  'agentic-graph-xr-v2-browser-smoke/v1',
   'source-backed',
   'browser-backed',
   'browser-local mounted implementation',
@@ -166,6 +166,6 @@ export function verifyXrV2ReadinessDocumentation(repositoryRoot) {
     pinnedBytes: XR_V2_PINNED_DOCUMENT_BYTES,
     pinnedRevision: XR_V2_PINNED_DOCUMENT_REVISION,
     pinnedSha256: XR_V2_PINNED_DOCUMENT_SHA256,
-    schema: 'agenticgraph-xr-v2-pinned-contract-conformance/v1',
+    schema: 'agentic-graph-xr-v2-pinned-contract-conformance/v1',
   })
 }

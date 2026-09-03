@@ -42,12 +42,12 @@ const runConfig = (
   varsToml = DEFAULT_VISIBLE_PRICE_VARS,
   secretNames: string[] = [],
 ) => {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agenticgraph-stripe-config-'))
+  const tempDir = mkdtempSync(join(tmpdir(), 'agentic-graph-stripe-config-'))
   const configPath = join(tempDir, 'wrangler.toml')
   const binDir = join(tempDir, 'bin')
   const npxPath = join(binDir, 'npx')
   mkdirSync(binDir, { recursive: true })
-  writeFileSync(configPath, `name = "agenticgraph-payment-test"\n${varsToml.trim()}\n`, 'utf8')
+  writeFileSync(configPath, `name = "agentic-graph-payment-test"\n${varsToml.trim()}\n`, 'utf8')
   writeFileSync(npxPath, `#!/usr/bin/env node
 const args = process.argv.slice(2)
 if (args.includes('secret') && args.includes('list')) {
@@ -256,7 +256,7 @@ export function testStripePaymentConfigScriptWritesVisibleCheckoutPriceAuthority
 [vars]
 STRIPE_CHECKOUT_CURRENCY = "usd"
 STRIPE_CHECKOUT_UNIT_AMOUNT = "2500"
-STRIPE_CHECKOUT_PRODUCT_NAME = "AgenticGraph"
+STRIPE_CHECKOUT_PRODUCT_NAME = "agentic-graph"
 `)
   if (result.status !== 0 || summary.ok !== true) {
     throw new Error(`expected explicit visible checkout price write to pass, got ${JSON.stringify({ status: result.status, summary, stderr: result.stderr })}`)
@@ -345,7 +345,7 @@ export function testStripePaymentConfigScriptRejectsInlineCheckoutPriceAuthority
     STRIPE_WEBHOOK_SECRET: 'whsec_config_secret_value_12345',
     STRIPE_CHECKOUT_CURRENCY: 'usd',
     STRIPE_CHECKOUT_UNIT_AMOUNT: '2500',
-    STRIPE_CHECKOUT_PRODUCT_NAME: 'AgenticGraph',
+    STRIPE_CHECKOUT_PRODUCT_NAME: 'agentic-graph',
   })
   if (result.status === 0 || summary.ok !== false) {
     throw new Error(`expected inline checkout price env input to fail config, got ${JSON.stringify({ status: result.status, summary })}`)
@@ -373,7 +373,7 @@ export function testStripePaymentConfigScriptAcceptsVisibleInlineCheckoutPriceAu
 [vars]
 STRIPE_CHECKOUT_CURRENCY = "usd"
 STRIPE_CHECKOUT_UNIT_AMOUNT = "2500"
-STRIPE_CHECKOUT_PRODUCT_NAME = "AgenticGraph"
+STRIPE_CHECKOUT_PRODUCT_NAME = "agentic-graph"
 `)
   if (result.status !== 0 || summary.ok !== true) {
     throw new Error(`expected visible inline checkout price authority to pass config, got ${JSON.stringify({ status: result.status, summary, stderr: result.stderr })}`)
@@ -390,7 +390,7 @@ export function testStripePaymentConfigScriptRejectsSubscriptionInlineTuple() {
     STRIPE_CHECKOUT_MODE: 'subscription',
     STRIPE_CHECKOUT_CURRENCY: 'usd',
     STRIPE_CHECKOUT_UNIT_AMOUNT: '2500',
-    STRIPE_CHECKOUT_PRODUCT_NAME: 'AgenticGraph',
+    STRIPE_CHECKOUT_PRODUCT_NAME: 'agentic-graph',
   })
   if (result.status === 0 || summary.ok !== false) {
     throw new Error(`expected subscription inline tuple to fail config, got ${JSON.stringify({ status: result.status, summary })}`)

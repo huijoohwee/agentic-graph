@@ -5,7 +5,7 @@ import { createPayoutDispatchCoordinator } from "../../src/payout/payout-dispatc
 import { createSessionLogStore, payoutOrderingVerdict } from "../../src/registry/session-log.mjs";
 import { fc, propertyConfig, tag } from "../support/pbt.mjs";
 
-test(tag("agenticgraph-native-marketplace-layer", 23, "Payout Ordering Invariant"), async () => {
+test(tag("agentic-graph-native-marketplace-layer", 23, "Payout Ordering Invariant"), async () => {
   await fc.assert(fc.asyncProperty(
     fc.boolean(),
     fc.constantFrom("pending_review", "approved", "active", "suspended"),

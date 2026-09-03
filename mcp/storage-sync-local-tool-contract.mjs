@@ -1,8 +1,8 @@
 import {
-  AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
-  AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
-  AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES,
-} from '../canvas/src/lib/storage/agenticgraphStorageEngineMcpContract.mjs'
+  AGENTIC_OS_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+  AGENTIC_OS_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+  AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES,
+} from '../canvas/src/lib/storage/agentic-graph-storage-engine-mcp-contract.mjs'
 
 const LOCAL_STORAGE_CONTROL_ANNOTATIONS = Object.freeze({
   readOnlyHint: false,
@@ -26,7 +26,7 @@ const HANDOFF_OUTPUT_SCHEMA = Object.freeze({
     'message',
   ],
   properties: {
-    schema: { const: 'agenticgraph-storage-stdio-handoff/v1' },
+    schema: { const: 'agentic-graph-storage-stdio-handoff/v1' },
     ok: { const: false },
     status: { type: 'string', enum: ['blocked', 'rejected'] },
     errorCode: { type: 'string' },
@@ -50,15 +50,15 @@ const withDefaults = definition => ({
 
 export const buildStorageSyncLocalToolDefinitions = () => [
   withDefaults({
-    name: AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.gitRun,
+    name: AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.gitRun,
     title: 'Run Browser Git Operation',
-    description: 'Use this when a local MCP host needs to validate a AgenticGraph-owned browser Git clone, fetch, commit, or push request. Local stdio cannot access the active IndexedDB repository and returns a typed handoff without performing filesystem or network work.',
-    inputSchema: AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+    description: 'Use this when a local MCP host needs to validate a agentic-graph-owned browser Git clone, fetch, commit, or push request. Local stdio cannot access the active IndexedDB repository and returns a typed handoff without performing filesystem or network work.',
+    inputSchema: AGENTIC_OS_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
   }),
   withDefaults({
-    name: AGENTICGRAPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
+    name: AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
     title: 'Run Browser File Sync',
-    description: 'Use this when a local MCP host needs to validate a AgenticGraph-owned multi-provider pull or push request. Local stdio cannot access the active IndexedDB cache and returns a typed handoff without performing filesystem or network work.',
-    inputSchema: AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+    description: 'Use this when a local MCP host needs to validate a agentic-graph-owned multi-provider pull or push request. Local stdio cannot access the active IndexedDB cache and returns a typed handoff without performing filesystem or network work.',
+    inputSchema: AGENTIC_OS_FILE_SYNC_CONTROL_INPUT_SCHEMA,
   }),
 ]

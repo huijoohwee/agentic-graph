@@ -11,7 +11,7 @@ const LUMINA_LINKS_JSON_RE = /"links"\s*:/
 const LUMINA_PROMPT_JSON_RE = /"ba_extra"\s*:/
 const GENERATED_MEDIA_PATH_RE = /(?:^|["'\s])((?:input|output)\/[^"'\s]+\.(?:png|jpe?g|webp|gif|mp4|webm|mov|m4v|mp3|wav|ogg))/gi
 const GENERIC_NODE_TITLES = new Set(['image generation', 'video generation', 'script planning'])
-const MARKDOWN_SOURCE_FIDELITY_KIND = 'agenticgraph.markdown-source'
+const MARKDOWN_SOURCE_FIDELITY_KIND = 'agentic-graph.markdown-source'
 const MARKDOWN_SOURCE_FIDELITY_VERSION = 1
 const LUMINA_STORAGE_OBJECT_BASE_URL = 'https://lumi-api.console.byteplus.com/api/storage/objects/lumi'
 

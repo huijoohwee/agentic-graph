@@ -4,8 +4,8 @@ import type { Rejection } from '../bundle/bundle-types'
 import {
   evaluateTravelAgencyGuardrail as evaluateInheritedTravelAgencyGuardrail,
   type GuardrailDecision,
-} from '../../cloudflare/workers/agenticgraph-payment/travelAgency/guardrailGate'
-import type { TravelAgencyEnv } from '../../cloudflare/workers/agenticgraph-payment/travelAgency/runtimeConfig'
+} from '../../cloudflare/workers/agentic-graph-payment/travelAgency/guardrailGate'
+import type { TravelAgencyEnv } from '../../cloudflare/workers/agentic-graph-payment/travelAgency/runtimeConfig'
 
 type AuthoritativeBalance = Readonly<{
   principalId: string

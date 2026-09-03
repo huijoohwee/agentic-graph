@@ -42,7 +42,7 @@ const jsonScriptPayload = (value: unknown): string =>
     .replace(/&/g, '\\u0026')
 
 export function buildWorkspaceHtmlExportDocument(args: BuildWorkspaceHtmlExportDocumentArgs): string {
-  const title = String(args.title || '').trim() || 'AgenticGraph Workspace Export'
+  const title = String(args.title || '').trim() || 'agentic-graph Workspace Export'
   const editorHtml = String(args.editorHtml || '')
   const canvasHtml = String(args.canvasHtml || '')
   const meta = args.meta
@@ -53,7 +53,7 @@ export function buildWorkspaceHtmlExportDocument(args: BuildWorkspaceHtmlExportD
     '<head>',
     '  <meta charset="utf-8" />',
     '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
-    '  <meta name="agenticgraph-export-kind" content="workspace" />',
+    '  <meta name="agentic-graph-export-kind" content="workspace" />',
     `  <title>${escapeHtml(title)}</title>`,
     '  <style>',
     '    :root{color-scheme:light dark;--kg-bg:#f7f8fa;--kg-panel:#ffffff;--kg-border:#d7dde5;--kg-text:#172033;--kg-muted:#5d687a;--kg-accent:#2563eb}',

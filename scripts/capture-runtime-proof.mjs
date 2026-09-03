@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Hosted live-proof helper for the agenticgraph AWS Agent-API path.
+// Hosted live-proof helper for the agentic-graph AWS Agent-API path.
 //
 // This script performs the minimum operator-safe proof sequence against a
 // DEPLOYED Agent-API:
@@ -80,7 +80,7 @@ async function getJson(url, headers = {}) {
 }
 
 async function main() {
-  const agentApiUrl = optionalEnv("MCP_ENDPOINT", "https://airvio.co/agenticgraph/control-plane/mcp");
+  const agentApiUrl = optionalEnv("MCP_ENDPOINT", "https://airvio.co/agentic-os/control-plane/mcp");
   const referenceUrl = optionalEnv("REFERENCE_URL", "https://example.com/reference-video.mp4");
   const brief = optionalEnv(
     "BRIEF",
@@ -89,7 +89,7 @@ async function main() {
   const budgetUsdRaw = optionalEnv("BUDGET_USD", "10");
   const budgetUsd = Number(budgetUsdRaw);
   const frontendUrl = optionalEnv("FRONTEND_URL");
-  const mcpEndpoint = optionalEnv("MCP_ENDPOINT", "https://airvio.co/agenticgraph/control-plane/mcp");
+  const mcpEndpoint = optionalEnv("MCP_ENDPOINT", "https://airvio.co/agentic-os/control-plane/mcp");
   const outputPath = optionalEnv("PROOF_OUTPUT_PATH");
 
   if (!Number.isFinite(budgetUsd) || budgetUsd <= 0) {

@@ -17,19 +17,19 @@ const normalizeOriginUrl = (value) => {
 const baseUrlInput = readArgValue(
   args,
   '--base-url',
-  process.env.AGENTICGRAPH_AGENT_READY_BASE_URL || `${defaultOrigin}/agenticgraph`,
+  process.env.AGENTIC_OS_AGENT_READY_BASE_URL || `${defaultOrigin}/agentic-graph`,
 )
 const originUrl = normalizeOriginUrl(readArgValue(
   args,
   '--origin',
-  process.env.AGENTICGRAPH_AGENT_READY_ORIGIN_URL || baseUrlInput,
+  process.env.AGENTIC_OS_AGENT_READY_ORIGIN_URL || baseUrlInput,
 ))
 const json = args.includes('--json')
 
 const describeFailure = (response, body) => {
   const contentType = response.headers.get('content-type') || ''
-  const routeOwner = response.headers.get('x-agenticgraph-route-owner') || ''
-  const routeTag = response.headers.get('x-agenticgraph-route-tag') || ''
+  const routeOwner = response.headers.get('x-agentic-graph-route-owner') || ''
+  const routeTag = response.headers.get('x-agentic-graph-route-tag') || ''
   const ownerDetails = routeOwner || routeTag
     ? `; routeOwner=${routeOwner || 'missing'}; routeTag=${routeTag || 'missing'}`
     : ''
@@ -81,9 +81,9 @@ if (json) {
     }
   }
   if (failed > 0) {
-    console.error(`[agenticgraph] commerce readiness failed: ${failed}/${results.length}`)
+    console.error(`[agentic-graph] commerce readiness failed: ${failed}/${results.length}`)
   } else {
-    console.log(`[agenticgraph] commerce readiness passed: ${results.length}/${results.length}`)
+    console.log(`[agentic-graph] commerce readiness passed: ${results.length}/${results.length}`)
   }
 }
 

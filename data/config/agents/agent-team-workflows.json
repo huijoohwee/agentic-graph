@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "agenticgraph.agent-team-owner-registry/v1",
+  "schemaVersion": "agentic-graph.agent-team-owner-registry/v1",
   "registryVersion": "2026-07-26",
   "workflows": [
     {
@@ -27,7 +27,7 @@
       "policyRevision": "1.0.0",
       "mode": "on-request",
       "allowedDecisions": ["approve", "revise", "reject"],
-      "receiptOwner": "agenticgraph.local-agent-team-review-store"
+      "receiptOwner": "agentic-graph.local-agent-team-review-store"
     }
   ]
 }

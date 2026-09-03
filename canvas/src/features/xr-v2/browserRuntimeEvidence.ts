@@ -24,7 +24,7 @@ import type {
   XrV2ConnectedPreviewViewerSession,
 } from './xrV2ConnectedPreviewViewerRuntime'
 export type XrV2ConnectedPreviewBrowserObservation = Readonly<{
-  schema: 'agenticgraph-xr-v2-connected-preview-browser-observation/v1'
+  schema: 'agentic-graph-xr-v2-connected-preview-browser-observation/v1'
   transport: 'webrtc-data-channel'
   entityRef: string
   sourceDigest: string
@@ -65,7 +65,7 @@ export type XrV2EncodedTrackWebmFixture = Readonly<{
 }>
 
 export type XrV2EncodedTrackBrowserObservation = Readonly<{
-  schema: 'agenticgraph-xr-v2-encoded-track-browser-observation/v1'
+  schema: 'agentic-graph-xr-v2-encoded-track-browser-observation/v1'
   byteSize: number
   trackCount: number
   sourceCodecs: readonly string[]
@@ -467,7 +467,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
   let viewerEditRenderedAtMs: number | null = null
   const authorPeer = new RTCPeerConnection({ iceServers: [] })
   const viewerPeer = new RTCPeerConnection({ iceServers: [] })
-  const authorChannel = authorPeer.createDataChannel('agenticgraph-xr-v2-preview', {
+  const authorChannel = authorPeer.createDataChannel('agentic-graph-xr-v2-preview', {
     ordered: false, maxRetransmits: 0, priority: 'high',
   } as RTCDataChannelInit)
   let viewerChannel: RTCDataChannel | null = null
@@ -564,7 +564,7 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       throw new Error('Connected preview acknowledgement did not match the applied viewer revision.')
     }
     return Object.freeze({
-      schema: 'agenticgraph-xr-v2-connected-preview-browser-observation/v1',
+      schema: 'agentic-graph-xr-v2-connected-preview-browser-observation/v1',
       transport: 'webrtc-data-channel',
       entityRef: authoringEdit.entityRef,
       sourceDigest: authoringEdit.sourceDigest,

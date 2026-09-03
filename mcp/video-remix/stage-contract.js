@@ -1,4 +1,4 @@
-export const VIDEO_REMIX_STAGE_CONTRACT_VERSION = "agenticgraph.video_remix.stages/v1";
+export const VIDEO_REMIX_STAGE_CONTRACT_VERSION = "agentic-graph.video_remix.stages/v1";
 
 const stage = ({ id, gateId, spendBearing }) => Object.freeze({ id, gateId, spendBearing });
 

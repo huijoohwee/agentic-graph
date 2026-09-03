@@ -6,7 +6,7 @@ import fc from 'fast-check'
 import {
   appendAgenticGraphPaymentRecordDocument,
   buildAgenticGraphPublicPaymentStatus,
-  AGENTICGRAPH_PAYMENT_TERMINAL_STATES,
+  AGENTIC_OS_PAYMENT_TERMINAL_STATES,
   parseAgenticGraphPaymentRecordDocument,
   serializeAgenticGraphPaymentRecordDocument,
   validateAgenticGraphTerminalPaymentRecord,
@@ -195,7 +195,7 @@ test('payment record serialization properties hold across 100 generated record s
 })
 
 test('terminal state SSOT is immutable at runtime', () => {
-  assert.equal(Object.isFrozen(AGENTICGRAPH_PAYMENT_TERMINAL_STATES), true)
-  assert.throws(() => AGENTICGRAPH_PAYMENT_TERMINAL_STATES.push('forged_paid'), TypeError)
+  assert.equal(Object.isFrozen(AGENTIC_OS_PAYMENT_TERMINAL_STATES), true)
+  assert.throws(() => AGENTIC_OS_PAYMENT_TERMINAL_STATES.push('forged_paid'), TypeError)
   assert.equal(validateAgenticGraphTerminalPaymentRecord(baseRecord), null)
 })

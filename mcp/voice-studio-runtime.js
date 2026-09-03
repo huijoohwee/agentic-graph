@@ -167,7 +167,7 @@ const dryRunResult = input => {
   const base = basePayload(input, {
     ok: true,
     state: "validated",
-    adapterId: "agenticgraph-deterministic-dry-run",
+    adapterId: "agentic-graph-deterministic-dry-run",
   });
   if (input.operation !== "clone") {
     return { ...base, result: { kind: "plan", next: "live-adapter-required" } };
@@ -180,7 +180,7 @@ const dryRunResult = input => {
       sha256: sha256Text(base.proof.requestDigest),
       kind: "voice-profile",
       state: "validated",
-      mediaType: "application/vnd.agenticgraph.voice-profile+json",
+      mediaType: "application/vnd.agentic-graph.voice-profile+json",
       bytes: 0,
     }],
     provenance: { ...base.provenance, profileRevision },

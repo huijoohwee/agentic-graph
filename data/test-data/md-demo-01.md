@@ -18,7 +18,7 @@ Hover term: <abbr title="The 2D graph renderer built with D3 + SVG">D3 Canvas</a
 
 ## Storyboard Widget Quick Start (2 minutes)
 
-- Open this markdown file in AgenticGraph
+- Open this markdown file in agentic-graph
 - Switch to **Canvas → 2D → Storyboard Widget**
 - Select **NODE_KEYFRAME** or **NODE_VIDEO**, then open the node quick editor and tweak:
   - `model` (`generate_image` / `generate_video`)

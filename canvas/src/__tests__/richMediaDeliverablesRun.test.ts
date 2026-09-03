@@ -139,7 +139,7 @@ export function testRichMediaDeliverablesRunUsesConnectedSourceAndKeepsAuthoredI
         source: 'source-neutral',
         target: 'target-neutral',
         properties: {
-          schema: 'agenticgraph-text-selection-widget-link/v1',
+          schema: 'agentic-graph-text-selection-widget-link/v1',
           'selection:text': 'Selected evidence only.',
           'selection:startLine': 12,
           'selection:endLine': 14,

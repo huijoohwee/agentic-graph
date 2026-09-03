@@ -1,5 +1,5 @@
 // Offline, zero-dependency static build for the agentic-canvas-os Vercel
-// Frontend. Spec: agenticgraph-acos-mcp-connector, task 11.3 (Vercel Frontend build
+// Frontend. Spec: agentic-graph-acos-mcp-connector, task 11.3 (Vercel Frontend build
 // target; R1, R11.3, R13, R15.7).
 //
 // WHY ZERO-DEPENDENCY (lenses: min-viable-max-value, tco-zero, token-economics):
@@ -61,7 +61,7 @@ const AI_GATEWAY_ENV_NAMES = [
   "AI_GATEWAY_URL",
 ];
 
-/** Public build-time env var names for the optional agenticgraph canvas base URL. */
+/** Public build-time env var names for the optional agentic-graph canvas base URL. */
 const CANVAS_BASE_ENV_NAMES = [
   "NEXT_PUBLIC_CANVAS_BASE_URL",
   "VITE_CANVAS_BASE_URL",

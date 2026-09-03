@@ -5,7 +5,7 @@ import { flightSimPropertyParameters } from './helpers/flightSimPropertyHarness'
 import {
   buildFlightSimWebMcpToolBuilders,
 } from '@/features/agent-ready/flightSimWebMcpTools'
-import { AGENTICGRAPH_AGENT_READY_TOOL_IDS } from '@/features/agent-ready/agenticgraphAgentReadyToolContract.mjs'
+import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import {
   buildFlightSimInvocation,
   controlLocalFlightSim,
@@ -63,7 +63,7 @@ const invalidCameraValueArbitrary = identifierArbitrary.filter(
 )
 
 const findFlightSimContract = (name: string) => ({
-  webName: `agenticgraph.${name}`,
+  webName: `agentic-graph.${name}`,
   title: name,
   description: name,
   inputSchema: { type: 'object' },
@@ -88,8 +88,8 @@ const restoreCameraStoreFields = (
   useGraphStore.setState(fields as never)
 }
 
-// Feature: agenticgraph-game-flight-sim, Property 18 - Invocation grammar strictness
-test('Feature: agenticgraph-game-flight-sim, Property 18 - Invocation grammar strictness', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 18 - Invocation grammar strictness
+test('Feature: agentic-graph-game-flight-sim, Property 18 - Invocation grammar strictness', async () => {
   const violationArbitrary = fc.constantFrom(
     {
       input: { invocation: '@canvas #flight operation=open' },
@@ -138,8 +138,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 18 - Invocation grammar st
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once
-test('Feature: agenticgraph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once
+test('Feature: agentic-graph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.constantFrom<FlightSimOperation>(...SUPPORTED_OPERATIONS),
@@ -161,7 +161,7 @@ test('Feature: agenticgraph-game-flight-sim, Property 19 - Supported lifecycle o
             }
           },
         })
-        const controlTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
+        const controlTool = builders[AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
         const throttle = throttlePermille / 1_000
         const input = useNativeInvocation
           ? {
@@ -187,8 +187,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 19 - Supported lifecycle o
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change
-test('Feature: agenticgraph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change
+test('Feature: agentic-graph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change', async () => {
   await fc.assert(
     fc.asyncProperty(
       unsupportedOperationArbitrary,
@@ -210,8 +210,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 20 - Unsupported operation
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 21 - Inspect is read-only
-test('Feature: agenticgraph-game-flight-sim, Property 21 - Inspect is read-only', async () => {
+// Feature: agentic-graph-game-flight-sim, Property 21 - Inspect is read-only
+test('Feature: agentic-graph-game-flight-sim, Property 21 - Inspect is read-only', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.boolean(),
@@ -231,7 +231,7 @@ test('Feature: agenticgraph-game-flight-sim, Property 21 - Inspect is read-only'
             return inspection
           },
         })
-        const inspectTool = builders[AGENTICGRAPH_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
+        const inspectTool = builders[AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
         const result = await inspectTool.execute() as Record<string, unknown>
         assert.equal(inspectCalls, 1)
         if (active) {
@@ -248,8 +248,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 21 - Inspect is read-only'
   )
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft
-test('Feature: agenticgraph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft', () => {
+// Feature: agentic-graph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft
+test('Feature: agentic-graph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft', () => {
   const priorStore = saveCameraStoreFields()
   const priorCameraMode = readXrNativeControllerCamera().mode
   try {
@@ -294,8 +294,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 36 - Valid framing selecti
   }
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip
-test('Feature: agenticgraph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip', () => {
+// Feature: agentic-graph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip
+test('Feature: agentic-graph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip', () => {
   const priorStore = saveCameraStoreFields()
   const priorCameraMode = readXrNativeControllerCamera().mode
   const priorMotion = readXrMotionReferenceRuntime()
@@ -350,8 +350,8 @@ test('Feature: agenticgraph-game-flight-sim, Property 37 - Timeline camera-mark 
   }
 })
 
-// Feature: agenticgraph-game-flight-sim, Property 38 - Invalid camera value is rejected
-test('Feature: agenticgraph-game-flight-sim, Property 38 - Invalid camera value is rejected', () => {
+// Feature: agentic-graph-game-flight-sim, Property 38 - Invalid camera value is rejected
+test('Feature: agentic-graph-game-flight-sim, Property 38 - Invalid camera value is rejected', () => {
   const priorCameraMode = readXrNativeControllerCamera().mode
   try {
     fc.assert(

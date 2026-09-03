@@ -1,7 +1,7 @@
-export const AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME = "agenticgraph.agentic_sdlc.observe";
+export const AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME = "agentic-graph.agentic_sdlc.observe";
 export const AGENTIC_SDLC_OBSERVABILITY_INVOCATION =
   "/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof";
-export const AGENTIC_SDLC_OBSERVATION_SCHEMA = "agenticgraph-agentic-sdlc-observation/v1";
+export const AGENTIC_SDLC_OBSERVATION_SCHEMA = "agentic-graph-agentic-sdlc-observation/v1";
 export const AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA = "agentic-sdlc-canvas-projection/v1";
 
 export const AGENTIC_SDLC_OBSERVATION_VIEWS = Object.freeze([
@@ -132,7 +132,7 @@ const CONFORMANCE_SCHEMA = Object.freeze({
     "metrics",
   ],
   properties: {
-    schema: { const: "agenticgraph-agentic-sdlc-conformance-summary/v1" },
+    schema: { const: "agentic-graph-agentic-sdlc-conformance-summary/v1" },
     runId: NONEMPTY_TEXT,
     valid: { const: true },
     runtimeReady: { type: "boolean" },
@@ -563,7 +563,7 @@ export function buildAgenticSdlcObservabilityToolDefinitions({ toolNames, withDe
     name: toolNames.agenticSdlcObserve,
     title: "Agentic SDLC Observability",
     description:
-      "Use this read-only local tool to project one exact revision- and ledger-digest-fenced agentic-sdlc-run/v1 into deterministic paged AgenticGraph Canvas evidence without model calls, network calls, deployment, or a second graph store.",
+      "Use this read-only local tool to project one exact revision- and ledger-digest-fenced agentic-sdlc-run/v1 into deterministic paged agentic-graph Canvas evidence without model calls, network calls, deployment, or a second graph store.",
     inputSchema: AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA,
     outputSchema: AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA,
     annotations: READ_ONLY_LOCAL,

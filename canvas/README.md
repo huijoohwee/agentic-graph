@@ -1,12 +1,12 @@
 ---
-title: "AgenticGraph Canvas"
+title: "agentic-graph Canvas"
 doc_type: "Subsystem README"
 status: "active"
 lang: "en-US"
 frontmatter_contract: "required"
 ---
 
-# AgenticGraph Canvas
+# agentic-graph Canvas
 
 ## Authoring Contract
 
@@ -24,16 +24,16 @@ React + TypeScript + Vite app for interactive graph visualization.
   - `parseJsonLd` in `canvas/src/lib/graph/jsonld.ts:1-118` converts JSON-LD into `GraphData`.
   - Built-in parser specs (`csv`, `json`, `jsonld`, `n8n`) live in `canvas/src/features/parsers/default.ts`.
 - Workflow presets bind parser, dataset, and schema:
-  - See `canvas/src/features/panels/views/ParserView.tsx` and `docs/agenticgraph-workflow-document.md`.
-- Offline CLI utilities live under `agenticgraph_parser/` for markdown → JSON-LD and codebase indexing workflows.
+  - See `canvas/src/features/panels/views/ParserView.tsx` and `docs/agentic-graph-workflow-document.md`.
+- Offline CLI utilities live under `agentic_graph_parser/` for markdown → JSON-LD and codebase indexing workflows.
 
 This keeps canvas parsers structural and dataset-agnostic while allowing richer offline pipelines in Python.
 
 ## Python CLI
 
-Python scripts in `agenticgraph_parser/` support offline parsing and pipeline artifacts generation.
+Python scripts in `agentic_graph_parser/` support offline parsing and pipeline artifacts generation.
 
-- `python -m agenticgraph_parser jsonld-universal`
+- `python -m agentic_graph_parser jsonld-universal`
   - Universal JSON/JSON-LD handler that:
     - Loads JSON from disk.
     - Parses generic JSON-LD or `{nodes,edges}` graphs into `GraphData`.
@@ -41,14 +41,14 @@ Python scripts in `agenticgraph_parser/` support offline parsing and pipeline ar
   - Example (structural JSON-LD parsing, no external module):
 
     ```bash
-    python -m agenticgraph_parser jsonld-universal \
+    python -m agentic_graph_parser jsonld-universal \
       --input test-data/a0.jsonld
     ```
 
   - Example (delegate to a custom parser implementation):
 
     ```bash
-    python -m agenticgraph_parser jsonld-universal \
+    python -m agentic_graph_parser jsonld-universal \
       --input test-data/a0.jsonld \
       --parser-module myproject.parsers.jsonld_universal \
       --parser-func parse_jsonld \

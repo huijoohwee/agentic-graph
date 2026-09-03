@@ -16,7 +16,7 @@ test('runtime docs dependency resolves one checkout repository and immutable ref
   const contract = await readRuntimeReadinessContract()
   const dependency = resolveRuntimeDocsDependency(contract)
   assert.match(contract.docs_dependency.ref, /^[0-9a-f]{40}$/)
-  const checkedOutDocsRoot = String(process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
+  const checkedOutDocsRoot = String(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
   if (checkedOutDocsRoot) {
     const checkedOutDocsRevision = execFileSync(
       'git',

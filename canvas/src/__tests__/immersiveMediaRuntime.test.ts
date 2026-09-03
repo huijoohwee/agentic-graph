@@ -190,7 +190,7 @@ export async function testImmersiveMediaNativeInvocationIsStrict() {
 export async function testImmersiveMediaAgentReadyContractsExposeTwoTools() {
   resetImmersiveMediaRuntimeForTests()
   const contracts = buildImmersiveMediaAgentReadyToolContracts({
-    buildWebName: (name: string) => `agenticgraph.${name}`,
+    buildWebName: (name: string) => `agentic-graph.${name}`,
     readOnlyAnnotations: { readOnlyHint: true },
     mutationAnnotations: { readOnlyHint: false },
   })
@@ -201,8 +201,8 @@ export async function testImmersiveMediaAgentReadyContractsExposeTwoTools() {
       IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia,
     ],
   )
-  assert.equal(contracts[0]?.webName, 'agenticgraph.inspect_local_immersive_media')
-  assert.equal(contracts[1]?.webName, 'agenticgraph.control_local_immersive_media')
+  assert.equal(contracts[0]?.webName, 'agentic-graph.inspect_local_immersive_media')
+  assert.equal(contracts[1]?.webName, 'agentic-graph.control_local_immersive_media')
   const builders = buildImmersiveMediaWebMcpToolBuilders(name => {
     const contract = contracts.find(candidate => candidate.name === name)
     if (!contract) throw new Error(`missing test contract: ${name}`)
@@ -210,10 +210,10 @@ export async function testImmersiveMediaAgentReadyContractsExposeTwoTools() {
   })
   const inspectTool = builders[IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS.inspectLocalImmersiveMedia]?.()
   const controlTool = builders[IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia]?.()
-  assert.equal(inspectTool?.name, 'agenticgraph.inspect_local_immersive_media')
-  assert.equal(controlTool?.name, 'agenticgraph.control_local_immersive_media')
+  assert.equal(inspectTool?.name, 'agentic-graph.inspect_local_immersive_media')
+  assert.equal(controlTool?.name, 'agentic-graph.control_local_immersive_media')
   const inspection = await inspectTool?.execute()
-  assert.equal((inspection as ReturnType<typeof inspectLocalImmersiveMedia>).schema, 'agenticgraph-immersive-media-mcp/v1')
+  assert.equal((inspection as ReturnType<typeof inspectLocalImmersiveMedia>).schema, 'agentic-graph-immersive-media-mcp/v1')
 }
 
 export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {

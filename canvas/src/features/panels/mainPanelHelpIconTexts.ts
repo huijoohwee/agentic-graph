@@ -1,6 +1,6 @@
 import { parseMarkdownTableRows } from '@/features/panels/mainPanelMarkdownTable'
 
-export const MAIN_PANEL_HELP_ICONS_DOC_PATH = 'docs/documents/agenticgraph-mainpanel-help-icons.md'
+export const MAIN_PANEL_HELP_ICONS_DOC_PATH = 'docs/documents/agentic-graph-mainpanel-help-icons.md'
 
 export type MainPanelHelpIconText = Readonly<{
   key: string
@@ -33,7 +33,7 @@ export function buildMainPanelHelpIconTextMap(
 
 export async function loadMainPanelHelpIconTexts(): Promise<Record<string, MainPanelHelpIconText>> {
   try {
-    const markdownModule = await import('../../../../docs/documents/agenticgraph-mainpanel-help-icons.md?raw') as { default?: string }
+    const markdownModule = await import('../../../../docs/documents/agentic-graph-mainpanel-help-icons.md?raw') as { default?: string }
     return buildMainPanelHelpIconTextMap(parseMainPanelHelpIconTexts(markdownModule.default || ''))
   } catch {
     return {}

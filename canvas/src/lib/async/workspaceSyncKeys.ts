@@ -4,8 +4,8 @@ export const WORKSPACE_SYNC_SCOPE_PER_DOCUMENT_UI_RUNTIME_PERSISTENCE = 'per-doc
 export const WORKSPACE_SYNC_TASK_SOURCE_FILES_PERSIST = 'source-files:persist'
 export const WORKSPACE_SYNC_TASK_SOURCE_FILES_WORKSPACE = 'source-files:workspace'
 export const WORKSPACE_SYNC_SCOPE_SOURCE_FILES_RUNTIME_PERSISTENCE = 'source-files:runtime-persistence'
-export const WORKSPACE_SYNC_TASK_AGENTICGRAPH_STORAGE_QUEUE = 'source-files:agenticgraph-storage:queue'
-export const WORKSPACE_SYNC_SCOPE_AGENTICGRAPH_STORAGE_RUNTIME_PERSISTENCE = 'source-files:agenticgraph-storage:runtime-persistence'
+export const WORKSPACE_SYNC_TASK_AGENTIC_OS_STORAGE_QUEUE = 'source-files:agentic-graph-storage:queue'
+export const WORKSPACE_SYNC_SCOPE_AGENTIC_OS_STORAGE_RUNTIME_PERSISTENCE = 'source-files:agentic-graph-storage:runtime-persistence'
 
 export const WORKSPACE_SYNC_TASK_MARKDOWN_WORKSPACE_PREFS = 'markdown-workspace:prefs'
 export const WORKSPACE_SYNC_TASK_MARKDOWN_WORKSPACE_VIEWER_PREFS = 'markdown-workspace:viewer-prefs'

@@ -64,7 +64,7 @@ final class GameOsPersistentStrategyGoldenTests: XCTestCase {
     func testTypeScriptGoldenInitialStateAndDigestMatch() throws {
         XCTAssertEqual(
             Self.fixture.schema,
-            "agenticgraph.game-os-persistent-strategy-parity/v1"
+            "agentic-graph.game-os-persistent-strategy-parity/v1"
         )
         let state = try createGameOsPersistentStrategyWorld(
             worldId: Self.fixture.worldId,

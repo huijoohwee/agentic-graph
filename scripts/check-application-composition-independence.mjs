@@ -92,7 +92,7 @@ for (const relativePath of textDependencyFiles) {
     if (forbiddenLocator(line)) forbiddenLocators.push(`${relativePath}:${index + 1}`);
   }
 }
-for (const relativeModulesRoot of ["node_modules", "canvas/node_modules", "gympgrph/node_modules", "mcp/node_modules", "cloudflare/workers/agenticgraph-mcp/node_modules"]) {
+for (const relativeModulesRoot of ["node_modules", "canvas/node_modules", "gympgrph/node_modules", "mcp/node_modules", "cloudflare/workers/agentic-graph-mcp/node_modules"]) {
   const modulesRoot = resolve(root, relativeModulesRoot);
   if (!existsSync(modulesRoot)) continue;
   for (const entry of readdirSync(modulesRoot, { withFileTypes: true })) {

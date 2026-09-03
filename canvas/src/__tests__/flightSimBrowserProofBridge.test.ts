@@ -20,7 +20,7 @@ const EXPECTED_MODULE_KEYS = Object.freeze([
   'geospatialModeBridge',
   'graphStore',
   'gympgrphStore',
-  'agenticgraphRuntimeIdentity',
+  'agentic-graph-runtime-identity',
   'markdownExplorerStore',
   'motionControlSurfaceRuntime',
   'sourceFilesBootstrapReadiness',

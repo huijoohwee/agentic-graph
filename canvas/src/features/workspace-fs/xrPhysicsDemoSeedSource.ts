@@ -42,7 +42,7 @@ const readNodeSource = async (): Promise<string> => {
     const candidates = [
       path.resolve(cwd, XR_PHYSICS_DEMO_REPO_REL_PATH),
       path.resolve(cwd, '..', XR_PHYSICS_DEMO_REPO_REL_PATH),
-      path.resolve(cwd, 'agenticgraph', XR_PHYSICS_DEMO_REPO_REL_PATH),
+      path.resolve(cwd, 'agentic-graph', XR_PHYSICS_DEMO_REPO_REL_PATH),
     ]
     for (const candidate of new Set(candidates)) {
       try {
@@ -67,7 +67,7 @@ export function loadXrPhysicsDemoSeedSource(): Promise<string> {
   if (!sourcePromise) {
     sourcePromise = (async () => {
       try {
-        const module = await import('../../../../docs/workspace-seeds/agenticgraph-physics-playground-demo.md?raw') as {
+        const module = await import('../../../../docs/workspace-seeds/agentic-graph-physics-playground-demo.md?raw') as {
           default?: string
         }
         const bundled = normalizeSource(module.default)

@@ -107,7 +107,7 @@ test('terminal training produces one admitted scored debrief Decision', () => {
     phase: 'completed',
     tick: 240,
   }, training)
-  assert.equal(outcome.payload.schema, 'agenticgraph-flight-training-outcome/v1')
+  assert.equal(outcome.payload.schema, 'agentic-graph-flight-training-outcome/v1')
   assert.equal(outcome.payload.grade, 'B')
   assert.deepEqual(validateFlightSimDecisions([outcome]), [outcome])
 })

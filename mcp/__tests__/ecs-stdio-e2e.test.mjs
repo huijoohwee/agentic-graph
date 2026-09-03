@@ -9,7 +9,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 import { ECS_TOOL_NAMES } from "../ecs-tool-contract.js";
-import { AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -39,9 +39,9 @@ function fixtureMarkdown() {
 }
 
 test("official SDK drives the complete dev-only ECS session over the existing stdio server", async () => {
-  const rootDir = await fileSystem.mkdtemp(path.join(tmpdir(), "agenticgraph-ecs-stdio-"));
+  const rootDir = await fileSystem.mkdtemp(path.join(tmpdir(), "agentic-graph-ecs-stdio-"));
   await fileSystem.writeFile(path.join(rootDir, "world.md"), fixtureMarkdown(), "utf8");
-  const client = new Client({ name: "agenticgraph-ecs-e2e", version: "0.0.0" });
+  const client = new Client({ name: "agentic-graph-ecs-e2e", version: "0.0.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.join(repoRoot, "mcp", "server.js")],
@@ -50,7 +50,7 @@ test("official SDK drives the complete dev-only ECS session over the existing st
       PATH: String(process.env.PATH || ""),
       HOME: String(process.env.HOME || ""),
       NODE_ENV: "test",
-      AGENTICGRAPH_ROOT: rootDir,
+      AGENTIC_OS_ROOT: rootDir,
     },
     stderr: "pipe",
   });
@@ -65,7 +65,7 @@ test("official SDK drives the complete dev-only ECS session over the existing st
     assert.equal(ecsTools.length, 3);
 
     const startedResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsSessionStart,
       arguments: {
         kgcPath: "world.md",
         scope: "#agentic-ecs",
@@ -80,7 +80,7 @@ test("official SDK drives the complete dev-only ECS session over the existing st
     assert.equal(typeof started?.sessionId, "string");
 
     const tickResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       arguments: {
         sessionId: started.sessionId,
         input: { elapsedMs: 16 },
@@ -98,7 +98,7 @@ test("official SDK drives the complete dev-only ECS session over the existing st
     assert.equal(ticked?.cost_logs?.[0]?.model, "none");
 
     const authoredResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       arguments: {
         sessionId: started.sessionId,
         scope: "#agentic-ecs",
@@ -111,7 +111,7 @@ test("official SDK drives the complete dev-only ECS session over the existing st
     assert.equal(authoredResult.structuredContent?.execution_boundary, "dev-only");
 
     const persistResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsDecisionPersist,
       arguments: {
         sessionId: started.sessionId,
         scope: "#agentic-ecs",
@@ -129,7 +129,7 @@ test("official SDK drives the complete dev-only ECS session over the existing st
     });
 
     const closedResult = await client.callTool({
-      name: AGENTICGRAPH_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.ecsWorldTick,
       arguments: {
         sessionId: started.sessionId,
         scope: "#agentic-ecs",

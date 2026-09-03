@@ -1,6 +1,6 @@
 // =============================================================================
 // Credit_Ledger event — canonical schema + pure validator (SSOT)
-// agenticgraph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
+// agentic-graph-acos-mcp-connector spec · Section 8 (Data models / shared contracts)
 // Task 8.5 · Requirements R8.4, R8.5 · design.md › Data Models › CreditLedgerEvent
 // =============================================================================
 //

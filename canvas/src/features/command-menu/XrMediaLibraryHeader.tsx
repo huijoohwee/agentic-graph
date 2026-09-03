@@ -20,7 +20,7 @@ export function XrMediaLibrarySummary({
       <section className="min-w-0 flex-1">
         <h3 className="text-xs font-semibold">3D for XR</h3>
         <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Native grey-box kits and procedural subjects. No external assets or runtime dependency.</p>
-        <p className={cn('mt-0.5 truncate font-mono text-[9px]', UI_THEME_TOKENS.text.tertiary)} title="Browser WebMCP control tool">WebMCP · agenticgraph.control_local_xr_scene</p>
+        <p className={cn('mt-0.5 truncate font-mono text-[9px]', UI_THEME_TOKENS.text.tertiary)} title="Browser WebMCP control tool">WebMCP · agentic-graph.control_local_xr_scene</p>
         {!metadataReady ? (
           <p className={cn('mt-1 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
             {metadataLoading

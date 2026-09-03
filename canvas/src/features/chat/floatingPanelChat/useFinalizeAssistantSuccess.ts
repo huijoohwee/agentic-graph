@@ -308,23 +308,23 @@ export const useFinalizeAssistantSuccess = (args: {
       })
       : null
 
-    const agenticgraphRawPath = String(resolvedAgenticGraphPath || args.chatAgenticGraphWorkspacePath || '').trim()
-    const agenticgraphPath = agenticgraphRawPath ? normalizeWorkspacePath(agenticgraphRawPath) : ''
+    const agenticGraphRawPath = String(resolvedAgenticGraphPath || args.chatAgenticGraphWorkspacePath || '').trim()
+    const agenticGraphPath = agenticGraphRawPath ? normalizeWorkspacePath(agenticGraphRawPath) : ''
     let canvasApplied: boolean | null = null
     let canvasApplyError: string | null = null
     try {
-      if (args.chatStorageTarget === 'chatAgenticGraph' && agenticgraphPath) {
+      if (args.chatStorageTarget === 'chatAgenticGraph' && agenticGraphPath) {
         canvasApplied = false
         if (applyWorkspaceDocumentToCanvas) {
-          args.followWorkspaceMarkdownPath(agenticgraphPath, { forceReveal: true })
-          canvasApplied = await applyChatKgcWorkspaceDocumentToCanvas(agenticgraphPath)
+          args.followWorkspaceMarkdownPath(agenticGraphPath, { forceReveal: true })
+          canvasApplied = await applyChatKgcWorkspaceDocumentToCanvas(agenticGraphPath)
         }
         publishLocalChatPipelineFinalizeSnapshot({
           stage: canvasApplied ? 'applied' : 'skipped',
           traceId,
           modelId,
           finalStatus: status,
-          persistedAgenticGraphPath: agenticgraphPath,
+          persistedAgenticGraphPath: agenticGraphPath,
           applied: canvasApplied,
           message: canvasApplied
             ? 'Canonical KGC workspace document was persisted and applied to the active canvas graph.'
@@ -341,10 +341,10 @@ export const useFinalizeAssistantSuccess = (args: {
           traceId,
           modelId,
           finalStatus: status,
-          persistedAgenticGraphPath: agenticgraphPath || null,
+          persistedAgenticGraphPath: agenticGraphPath || null,
           applied: args.chatStorageTarget === 'chatAgenticGraph' ? false : null,
           message: args.chatStorageTarget === 'chatAgenticGraph'
-            ? 'Canonical KGC workspace document was persisted, but no normalized AgenticGraph workspace path was available for canvas apply.'
+            ? 'Canonical KGC workspace document was persisted, but no normalized agentic-graph workspace path was available for canvas apply.'
             : 'Assistant response was persisted to chat history only; canvas apply is reserved for chatAgenticGraph storage.',
           failureNote: null,
           retryHint: null,
@@ -359,7 +359,7 @@ export const useFinalizeAssistantSuccess = (args: {
         traceId,
         modelId,
         finalStatus: status,
-        persistedAgenticGraphPath: agenticgraphPath || null,
+        persistedAgenticGraphPath: agenticGraphPath || null,
         applied: false,
         message: canvasApplyError,
         failureNote: null,
@@ -379,15 +379,15 @@ export const useFinalizeAssistantSuccess = (args: {
     if (args.chatStorageTarget === 'chatAgenticGraph') {
       promotionResult = await promoteGeneratedChatWorkspacePaths(storagePromotionPaths)
     }
-    const agenticgraphLabel = agenticgraphPath ? (agenticgraphPath.split('/').filter(Boolean).slice(-1)[0] || 'kgc.md') : ''
+    const agenticGraphLabel = agenticGraphPath ? (agenticGraphPath.split('/').filter(Boolean).slice(-1)[0] || 'kgc.md') : ''
     const conciseSource =
       args.chatStorageTarget === 'chatAgenticGraph'
         ? (extracted.answer || 'Structured KGC response saved to workspace.')
         : rawAssistantText
-    const concise = toConciseBulletText(conciseSource, agenticgraphPath ? 49 : 50)
+    const concise = toConciseBulletText(conciseSource, agenticGraphPath ? 49 : 50)
     const lines = [`- ${concise}`]
-    if (args.chatStorageTarget === 'chatAgenticGraph' && agenticgraphPath) {
-      lines.push(buildWorkspaceSourceLinkLine(agenticgraphPath, canvasApplied ? 'APPLIED' : 'SAVED'))
+    if (args.chatStorageTarget === 'chatAgenticGraph' && agenticGraphPath) {
+      lines.push(buildWorkspaceSourceLinkLine(agenticGraphPath, canvasApplied ? 'APPLIED' : 'SAVED'))
     }
     const promotionFailureNote = buildWorkspacePromotionFailureNote(promotionResult)
     const promotionRetryHint = buildWorkspacePromotionRetryHint(promotionResult)
@@ -395,19 +395,19 @@ export const useFinalizeAssistantSuccess = (args: {
     const promotionRetryToast = buildWorkspacePromotionRetryToast(promotionResult)
     if (args.chatStorageTarget === 'chatAgenticGraph') {
       publishLocalChatPipelineFinalizeSnapshot({
-        stage: agenticgraphPath ? (canvasApplied ? 'applied' : 'skipped') : 'skipped',
+        stage: agenticGraphPath ? (canvasApplied ? 'applied' : 'skipped') : 'skipped',
         traceId,
         modelId,
         finalStatus: status,
-        persistedAgenticGraphPath: agenticgraphPath || null,
-        applied: agenticgraphPath ? canvasApplied : false,
-        message: agenticgraphPath
+        persistedAgenticGraphPath: agenticGraphPath || null,
+        applied: agenticGraphPath ? canvasApplied : false,
+        message: agenticGraphPath
           ? (
               canvasApplied
                 ? 'Canonical KGC workspace document was persisted and applied to the active canvas graph.'
                 : 'Canonical KGC workspace document was persisted, but graph apply was skipped by import/apply policy or returned false.'
             )
-          : 'Canonical KGC workspace document was persisted, but no normalized AgenticGraph workspace path was available for canvas apply.',
+          : 'Canonical KGC workspace document was persisted, but no normalized agentic-graph workspace path was available for canvas apply.',
         failureNote: promotionFailureNote,
         retryHint: promotionRetryHint,
         retryCommand: promotionRetryCommand,
@@ -422,8 +422,8 @@ export const useFinalizeAssistantSuccess = (args: {
       : lines.join('\n')
     const workspaceStatusByPath = new Map<string, WorkspaceArtifactStatus>()
     const workspacePromotionByPath = new Map<string, WorkspaceArtifactPromotion>()
-    if (agenticgraphPath) {
-      workspaceStatusByPath.set(agenticgraphPath, canvasApplied ? 'APPLIED' : 'SAVED')
+    if (agenticGraphPath) {
+      workspaceStatusByPath.set(agenticGraphPath, canvasApplied ? 'APPLIED' : 'SAVED')
     }
     const promotion = toWorkspaceArtifactPromotion(promotionResult)
     if (promotionResult?.paths?.length && promotion) {
@@ -440,12 +440,12 @@ export const useFinalizeAssistantSuccess = (args: {
         workspacePromotionByPath,
       ),
       [rawAssistantText, payload.finalAssistantOverride, assistantTextForKgc],
-      [agenticgraphPath],
+      [agenticGraphPath],
       workspacePromotionByPath,
     )))
     const runArtifactPath = args.chatStorageTarget === 'chatHistory'
       ? (resolvedHistoryPath ? normalizeWorkspacePath(resolvedHistoryPath) : '')
-      : agenticgraphPath
+      : agenticGraphPath
 
     args.setMessages(prev => {
       let found = false

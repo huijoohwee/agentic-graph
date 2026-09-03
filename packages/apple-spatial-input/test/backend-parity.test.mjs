@@ -19,7 +19,7 @@ const fixture = JSON.parse(readFileSync(new URL(
 )))
 
 test('TypeScript and Swift share exact backend defaults and flight golden values', () => {
-  assert.equal(fixture.schema, 'agenticgraph.apple-spatial-input-backend-parity/v1')
+  assert.equal(fixture.schema, 'agentic-graph.apple-spatial-input-backend-parity/v1')
   assert.deepEqual(DEFAULT_FLIGHT_SIM_MODEL_PROFILE, fixture.flight.defaultProfile)
   assert.deepEqual(DEFAULT_FLIGHT_SIM_CAMERA_PROFILE, fixture.camera.defaultProfile)
   assert.deepEqual(integrateFlightModel(

@@ -1,5 +1,5 @@
 {
-  "schema": "agenticgraph-surface-registry/v1",
+  "schema": "agentic-graph-surface-registry/v1",
   "version": "1.0.0",
   "publicOrigin": "https://airvio.co",
   "policy": {
@@ -17,7 +17,7 @@
   },
   "distributionAllowlist": [
     "grph-shared/dist/**",
-    "agenticgraph/assets/**"
+    "agentic-graph/assets/**"
   ],
   "catalogDigest": "b31a83b91337c3715bf74619fe4983dc99604c30804e95ea95f4f7fc9e66beeb",
   "invocationRegistry": {
@@ -26,8 +26,8 @@
       {
         "token": "search",
         "prefixRole": "mcp-tool-id",
-        "label": "Search AgenticGraph Source Files",
-        "intentSummary": "Search published AgenticGraph Source Files and return stable document identifiers for read-only retrieval.",
+        "label": "Search agentic-graph Source Files",
+        "intentSummary": "Search published agentic-graph Source Files and return stable document identifiers for read-only retrieval.",
         "executionRouteTier": "public-discoverable",
         "ingressRoute": "public-read-mcp",
         "targetExecutionRoute": "public-read-mcp",
@@ -37,8 +37,8 @@
       {
         "token": "fetch",
         "prefixRole": "mcp-tool-id",
-        "label": "Fetch AgenticGraph Source File",
-        "intentSummary": "Fetch a complete published AgenticGraph Source File by a stable search result identifier.",
+        "label": "Fetch agentic-graph Source File",
+        "intentSummary": "Fetch a complete published agentic-graph Source File by a stable search result identifier.",
         "executionRouteTier": "public-discoverable",
         "ingressRoute": "public-read-mcp",
         "targetExecutionRoute": "public-read-mcp",
@@ -49,7 +49,7 @@
         "token": "list_source_files",
         "prefixRole": "mcp-tool-id",
         "label": "List Source Files",
-        "intentSummary": "List the published AgenticGraph Source Files index as read-only metadata.",
+        "intentSummary": "List the published agentic-graph Source Files index as read-only metadata.",
         "executionRouteTier": "public-discoverable",
         "ingressRoute": "public-read-mcp",
         "targetExecutionRoute": "public-read-mcp",
@@ -165,30 +165,30 @@
       "notes": "Source maps are withheld because they expose implementation structure."
     },
     {
-      "artifactId": "asset.agenticgraph-bundles", "path": "agenticgraph/assets/**", "pathKind": "glob", "artifactClass": "bundled-build-output", "surfaceTier": "public-artifact",
+      "artifactId": "asset.agentic-graph-bundles", "path": "agentic-graph/assets/**", "pathKind": "glob", "artifactClass": "bundled-build-output", "surfaceTier": "public-artifact",
       "licenseId": "LicenseRef-airvio-no-reuse-1.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "no-reuse",
-      "canonicalUrl": null, "representingPage": "/agenticgraph/", "title": null, "summary": null, "readOnly": null,
+      "canonicalUrl": null, "representingPage": "/agentic-graph/", "title": null, "summary": null, "readOnly": null,
       "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
       "notes": "Browser bundles are served but omitted from discovery indexes and carry the approved no-reuse declaration."
     },
     {
       "artifactId": "asset.shared-dist", "path": "grph-shared/dist/**", "pathKind": "glob", "artifactClass": "dist-module", "surfaceTier": "public-artifact",
       "licenseId": "LicenseRef-airvio-no-reuse-1.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "no-reuse",
-      "canonicalUrl": null, "representingPage": "/agenticgraph/", "title": null, "summary": null, "readOnly": null,
+      "canonicalUrl": null, "representingPage": "/agentic-graph/", "title": null, "summary": null, "readOnly": null,
       "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
       "notes": "Only explicitly allowlisted shared distribution output may be served."
     },
     {
-      "artifactId": "product.agenticgraph", "path": "/agenticgraph/", "pathKind": "exact", "artifactClass": "published-document", "surfaceTier": "public-discoverable",
+      "artifactId": "product.agentic-graph", "path": "/agentic-graph/", "pathKind": "exact", "artifactClass": "published-document", "surfaceTier": "public-discoverable",
       "licenseId": "CC-BY-4.0", "publishPolicy": "operator-approved", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
-      "canonicalUrl": "https://airvio.co/agenticgraph/", "representingPage": null, "title": "AgenticGraph", "summary": "Agent-actionable chat-to-canvas knowledge graph workspace.", "readOnly": null,
+      "canonicalUrl": "https://airvio.co/agentic-graph/", "representingPage": null, "title": "agentic-graph", "summary": "Agent-actionable chat-to-canvas knowledge graph workspace.", "readOnly": null,
       "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
       "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Human-readable product page representing served browser bundles and shared distribution artifacts."
     },
     {
-      "artifactId": "route.agenticgraph-assets", "path": "/agenticgraph/*", "pathKind": "exact", "artifactClass": "bundled-build-output", "surfaceTier": "public-artifact",
+      "artifactId": "route.agentic-graph-assets", "path": "/agentic-graph/*", "pathKind": "exact", "artifactClass": "bundled-build-output", "surfaceTier": "public-artifact",
       "licenseId": "LicenseRef-airvio-no-reuse-1.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "no-reuse",
-      "canonicalUrl": null, "representingPage": "/agenticgraph/", "title": null, "summary": null, "readOnly": null,
+      "canonicalUrl": null, "representingPage": "/agentic-graph/", "title": null, "summary": null, "readOnly": null,
       "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
       "notes": "The literal edge include pattern is classified without making every concrete child path discoverable."
     },
@@ -209,14 +209,14 @@
     {
       "artifactId": "route.api-graph", "path": "/api/graph", "pathKind": "exact", "artifactClass": "service-description", "surfaceTier": "public-discoverable",
       "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
-      "canonicalUrl": "https://airvio.co/api/graph", "representingPage": "/agenticgraph/", "title": "AgenticGraph graph read API", "summary": "Read-only graph retrieval surface represented by the AgenticGraph product page.", "readOnly": true,
+      "canonicalUrl": "https://airvio.co/api/graph", "representingPage": "/agentic-graph/", "title": "agentic-graph graph read API", "summary": "Read-only graph retrieval surface represented by the agentic-graph product page.", "readOnly": true,
       "ingressRoute": "static-edge", "targetExecutionRoute": "public-read-mcp", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
       "service": { "method": "GET", "transport": "http", "trustBoundary": "public" }, "notes": "Advertises read capability only; mutations remain gated."
     },
     {
-      "artifactId": "endpoint.mcp-public-read", "path": "/agenticgraph/mcp", "pathKind": "exact", "artifactClass": "mcp-endpoint", "surfaceTier": "public-discoverable",
+      "artifactId": "endpoint.mcp-public-read", "path": "/agentic-graph/mcp", "pathKind": "exact", "artifactClass": "mcp-endpoint", "surfaceTier": "public-discoverable",
       "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
-      "canonicalUrl": "https://airvio.co/agenticgraph/mcp", "representingPage": "/agenticgraph/", "title": "AgenticGraph public read MCP", "summary": "Unauthenticated MCP transport exposing read-only tools without model invocation during discovery.", "readOnly": true,
+      "canonicalUrl": "https://airvio.co/agentic-graph/mcp", "representingPage": "/agentic-graph/", "title": "agentic-graph public read MCP", "summary": "Unauthenticated MCP transport exposing read-only tools without model invocation during discovery.", "readOnly": true,
       "ingressRoute": "public-read-mcp", "targetExecutionRoute": "public-read-mcp", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
       "service": { "method": "POST", "transport": "mcp", "trustBoundary": "public", "authorizationMetadataUrl": "https://airvio.co/auth.md" }, "notes": "MCP is the sole inbound agent protocol; only read-only tools may appear here."
     },
@@ -291,7 +291,7 @@
       "service": { "method": "POST", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Payment execution is gated, spend-bearing, and never publicly indexed."
     },
     {
-      "artifactId": "endpoint.mcp-control-plane", "path": "/agenticgraph/control-plane/mcp", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "artifactId": "endpoint.mcp-control-plane", "path": "/agentic-os/control-plane/mcp", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
       "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
       "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
       "ingressRoute": "control-plane-mcp", "targetExecutionRoute": "control-plane-mcp", "spendBearing": true, "rateLimit": null, "lastModified": null, "invocation": null,
@@ -300,14 +300,14 @@
     {
       "artifactId": "discovery.structured-data", "path": ".well-known/structured-data/**", "pathKind": "glob", "artifactClass": "machine-readable-metadata", "surfaceTier": "public-discoverable",
       "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
-      "canonicalUrl": "https://airvio.co/.well-known/structured-data/", "representingPage": null, "title": "AgenticGraph structured data", "summary": "Generated schema.org metadata for public AgenticGraph documents.", "readOnly": true,
+      "canonicalUrl": "https://airvio.co/.well-known/structured-data/", "representingPage": null, "title": "agentic-graph structured data", "summary": "Generated schema.org metadata for public agentic-graph documents.", "readOnly": true,
       "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
       "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "The registry classifies every generated per-document structured-data candidate."
     },
     {
       "artifactId": "discovery.auth", "path": "auth.md", "pathKind": "exact", "artifactClass": "published-document", "surfaceTier": "public-discoverable",
       "licenseId": "CC-BY-4.0", "publishPolicy": "operator-approved", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
-      "canonicalUrl": "https://airvio.co/auth.md", "representingPage": null, "title": "AgenticGraph authorization metadata", "summary": "Human-readable authorization and registration guidance for AgenticGraph agent clients.", "readOnly": true,
+      "canonicalUrl": "https://airvio.co/auth.md", "representingPage": null, "title": "agentic-graph authorization metadata", "summary": "Human-readable authorization and registration guidance for agentic-graph agent clients.", "readOnly": true,
       "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
       "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "The authorization metadata location is registry-owned and governed as a public discovery surface."
     },
@@ -349,14 +349,14 @@
     {
       "artifactId": "discovery.agent-card", "path": ".well-known/agent-card.json", "pathKind": "exact", "artifactClass": "capability-description", "surfaceTier": "public-discoverable",
       "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
-      "canonicalUrl": "https://airvio.co/.well-known/agent-card.json", "representingPage": null, "title": "AgenticGraph agent card", "summary": "Agent capability card declaring MCP as the sole inbound protocol boundary.", "readOnly": true,
+      "canonicalUrl": "https://airvio.co/.well-known/agent-card.json", "representingPage": null, "title": "agentic-graph agent card", "summary": "Agent capability card declaring MCP as the sole inbound protocol boundary.", "readOnly": true,
       "ingressRoute": "static-edge", "targetExecutionRoute": "public-read-mcp", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
       "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Advertises only public read capabilities and no direct model route."
     },
     {
       "artifactId": "discovery.mcp-manifest", "path": ".well-known/mcp.json", "pathKind": "exact", "artifactClass": "service-description", "surfaceTier": "public-discoverable",
       "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
-      "canonicalUrl": "https://airvio.co/.well-known/mcp.json", "representingPage": null, "title": "AgenticGraph MCP manifest", "summary": "Machine-readable declaration of the public read MCP transport and its trust boundary.", "readOnly": true,
+      "canonicalUrl": "https://airvio.co/.well-known/mcp.json", "representingPage": null, "title": "agentic-graph MCP manifest", "summary": "Machine-readable declaration of the public read MCP transport and its trust boundary.", "readOnly": true,
       "ingressRoute": "static-edge", "targetExecutionRoute": "public-read-mcp", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
       "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "The control plane is not enumerated in public discovery metadata."
     },

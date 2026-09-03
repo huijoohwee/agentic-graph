@@ -207,7 +207,7 @@ export async function settleCascade(
       headers: {
         'content-type': 'application/json',
         'idempotency-key': record.cascadeId,
-        'x-agenticgraph-component': 'Issuance_Service',
+        'x-agentic-graph-component': 'Issuance_Service',
       },
       body: JSON.stringify({
         operation: 'settleNet',

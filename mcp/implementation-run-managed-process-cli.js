@@ -14,7 +14,7 @@ const runId = value("--run");
 const operationId = value("--operation");
 const configPath = value("--config");
 const expectedDigest = value("--digest");
-const token = process.env.AGENTICGRAPH_PROCESS_TOKEN || "";
+const token = process.env.AGENTIC_OS_PROCESS_TOKEN || "";
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const store = new ImplementationRunStore({ rootDir });
 let child = null;
@@ -46,7 +46,7 @@ async function main() {
   const configText = await fs.readFile(configPath, "utf8");
   if (crypto.createHash("sha256").update(configText).digest("hex") !== expectedDigest) throw new Error("Managed process configuration digest mismatch.");
   const config = JSON.parse(configText);
-  if (config.schema !== "agenticgraph-managed-process/v1" || config.operationId !== operationId || !Array.isArray(config.argv)) throw new Error("Managed process configuration is invalid.");
+  if (config.schema !== "agentic-graph-managed-process/v1" || config.operationId !== operationId || !Array.isArray(config.argv)) throw new Error("Managed process configuration is invalid.");
   await assertExecutableProof(config.proof);
   const managerMarker = await processMarker(process.pid);
   if (!managerMarker) throw new Error("Managed process identity is unavailable.");
@@ -74,7 +74,7 @@ async function main() {
     return;
   }
   const childEnv = { ...process.env };
-  delete childEnv.AGENTICGRAPH_PROCESS_TOKEN;
+  delete childEnv.AGENTIC_OS_PROCESS_TOKEN;
   child = spawn(config.executable, config.argv, { cwd: config.cwd, env: childEnv, shell: false, detached: process.platform !== "win32", stdio: ["ignore", "inherit", "inherit"], windowsHide: true });
   const childExit = new Promise((resolve) => {
     if (child.exitCode !== null || child.signalCode !== null) resolve({ code: child.exitCode, signal: child.signalCode });

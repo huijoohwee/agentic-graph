@@ -72,8 +72,8 @@ export async function testDocsSsotFixtureReadsCloudflareD1BackedRouteInsteadOfLo
   }
   implementationRoots.forEach(collectFiles)
   const forbiddenPublishedFixtureNames = [
-    'agenticgraph-video-demo.md',
-    'agenticgraph-token-economics-model-demo.md',
+    'agentic-graph-video-demo.md',
+    'agentic-graph-token-economics-model-demo.md',
   ]
   const hardcodedMatches = implementationFiles.flatMap((filePath) => {
     const text = fs.readFileSync(filePath, 'utf8')

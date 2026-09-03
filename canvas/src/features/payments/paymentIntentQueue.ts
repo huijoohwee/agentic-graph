@@ -13,7 +13,7 @@ import {
   getAgenticGraphStorageDb,
   type KgPaymentIntentQueueRecord,
   type AgenticGraphStorageDb,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 
 export type PaymentIntentQueueErrorCode =
   | 'agent_offline_queue_unsupported'

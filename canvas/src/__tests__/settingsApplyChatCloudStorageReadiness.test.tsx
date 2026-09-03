@@ -54,14 +54,14 @@ function SettingsCloudApplyHarness(props: {
   return (
     <section>
       <section data-draft-storage-target={String(values.chatStorageTarget || '')} />
-      <section data-draft-agenticgraph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
+      <section data-draft-agentic-graph-cloud-url={String(values.chatAgenticGraphCloudUrl || '')} />
       <section data-draft-history-cloud-url={String(values.chatHistoryCloudUrl || '')} />
       <button
         type="button"
         onClick={() => patchChatValues({
           chatStorageTarget: 'chatHistory',
           chatAgenticGraphStorageMode: 'cloud',
-          chatAgenticGraphCloudUrl: 'https://cloud.example/agenticgraph-next.md',
+          chatAgenticGraphCloudUrl: 'https://cloud.example/agentic-graph-next.md',
           chatHistoryStorageMode: 'cloud',
           chatHistoryCloudUrl: 'https://cloud.example/history-next.md',
         })}
@@ -79,7 +79,7 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
   let settingsRoot: ReturnType<typeof createRoot> | null = null
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
-  const nextAgenticGraphCloudUrl = 'https://cloud.example/agenticgraph-next.md'
+  const nextAgenticGraphCloudUrl = 'https://cloud.example/agentic-graph-next.md'
   const nextHistoryCloudUrl = 'https://cloud.example/history-next.md'
 
   let cleanupAssertionError: Error | null = null
@@ -96,7 +96,7 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     store.setChatContextScope('workspace')
     store.setChatStorageTarget('chatAgenticGraph')
     store.setChatAgenticGraphStorageMode('cloud')
-    store.setChatAgenticGraphCloudUrl('https://cloud.example/agenticgraph-initial.md')
+    store.setChatAgenticGraphCloudUrl('https://cloud.example/agentic-graph-initial.md')
     store.setChatHistoryStorageMode('cloud')
     store.setChatHistoryCloudUrl('https://cloud.example/history-initial.md')
 
@@ -125,7 +125,7 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     if (
       initialChatInspection.available !== true ||
       initialChatInspection.chatStorageTarget !== 'chatAgenticGraph' ||
-      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
+      initialChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-initial.md' ||
       initialChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected initial FloatingPanel Chat pipeline cloud storage state to reflect the seeded store values, got ${JSON.stringify(initialChatInspection)}`)
@@ -137,7 +137,7 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     })
 
     const draftStorageTarget = settingsContainer.querySelector('[data-draft-storage-target]')?.getAttribute('data-draft-storage-target')
-    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agenticgraph-cloud-url]')?.getAttribute('data-draft-agenticgraph-cloud-url')
+    const draftAgenticGraphCloudUrl = settingsContainer.querySelector('[data-draft-agentic-graph-cloud-url]')?.getAttribute('data-draft-agentic-graph-cloud-url')
     const draftHistoryCloudUrl = settingsContainer.querySelector('[data-draft-history-cloud-url]')?.getAttribute('data-draft-history-cloud-url')
     if (
       draftStorageTarget !== 'chatHistory' ||
@@ -155,7 +155,7 @@ export async function testSettingsApplyCommitsChatCloudStorageIntoFloatingChatPi
     if (
       preApplyChatInspection.available !== true ||
       preApplyChatInspection.chatStorageTarget !== 'chatAgenticGraph' ||
-      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agenticgraph-initial.md' ||
+      preApplyChatInspection.cloudUrls.chatAgenticGraphCloudUrl !== 'https://cloud.example/agentic-graph-initial.md' ||
       preApplyChatInspection.cloudUrls.chatHistoryCloudUrl !== 'https://cloud.example/history-initial.md'
     ) {
       throw new Error(`expected FloatingPanel Chat pipeline cloud storage state to remain on committed values before Settings apply, got ${JSON.stringify(preApplyChatInspection)}`)

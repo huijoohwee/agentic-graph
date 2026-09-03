@@ -10,7 +10,7 @@ import {
 } from './motionControlRuntime'
 import { valuesAreFinite } from './motionControlRuntimeNumbers'
 
-export const MOTION_CONTROL_LITERT_READINESS_SCHEMA = 'agenticgraph-motion-control-litert-readiness/v1'
+export const MOTION_CONTROL_LITERT_READINESS_SCHEMA = 'agentic-graph-motion-control-litert-readiness/v1'
 
 export type MotionControlLiteRtReadinessEvidence = Readonly<{
   schema: typeof MOTION_CONTROL_LITERT_READINESS_SCHEMA

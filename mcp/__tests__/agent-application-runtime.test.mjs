@@ -195,7 +195,7 @@ test("catalog and deterministic plan expose bounded public evidence without priv
 test("catalog rejects every non-empty argument object", () => {
   const { runtime } = makeRuntimeHarness();
   assert.equal(runtime.catalog({ unexpected: true }).error.code, "invalid_catalog_input");
-  assert.equal(runtime.run("agenticgraph.application.catalog", { unexpected: true }).error.code, "invalid_catalog_input");
+  assert.equal(runtime.run("agentic-graph.application.catalog", { unexpected: true }).error.code, "invalid_catalog_input");
 });
 
 test("adapter registry rejects unsupported interface and resolves component revisions exactly", () => {

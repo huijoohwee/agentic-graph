@@ -59,7 +59,7 @@ export class NarrativeGameEngine {
   private buildChoiceGraphMarkdown(signal: ChoiceSignal, turnIndex: number): string {
     return [
       '---',
-      'schema: "agenticgraph-showrunner-choice-graph/v1"',
+      'schema: "agentic-graph-showrunner-choice-graph/v1"',
       `run_id: ${JSON.stringify(this.brief.run_id)}`,
       `turn_index: ${turnIndex}`,
       '---',

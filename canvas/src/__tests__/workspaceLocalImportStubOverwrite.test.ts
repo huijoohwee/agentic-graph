@@ -7,14 +7,14 @@ export async function testWorkspaceLocalImportOverwritesPendingStubInsteadOfRena
   const fs = createMemoryWorkspaceFs()
   await fs.ensureSeed()
 
-  const path = normalizeWorkspacePath('/agenticgraph-demo-video.md')
+  const path = normalizeWorkspacePath('/agentic-graph-demo-video.md')
   await fs.createFile({
     parentPath: '/',
-    name: 'agenticgraph-demo-video.md',
-    text: buildPendingLocalImportStub({ kind: 'text', originalName: 'agenticgraph-demo-video.md', source: 'file' }),
+    name: 'agentic-graph-demo-video.md',
+    text: buildPendingLocalImportStub({ kind: 'text', originalName: 'agentic-graph-demo-video.md', source: 'file' }),
   })
 
-  const file = new File(['hello-world'], 'agenticgraph-demo-video.md', { type: 'text/markdown' })
+  const file = new File(['hello-world'], 'agentic-graph-demo-video.md', { type: 'text/markdown' })
   const res = await importWorkspaceLocalFiles({ fs, files: [file], parentPath: '/' })
 
   if (!res.createdPaths.includes(path)) {

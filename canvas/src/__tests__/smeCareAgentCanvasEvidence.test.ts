@@ -23,7 +23,7 @@ const readFrontmatter = (markdown: string): PlainRecord => {
 export function testSmeCareAgentRuntimeEvidenceParsesAndRendersOnCanvas() {
   const markdown = readFileSync(DEMO_PATH, 'utf8')
   const meta = readFrontmatter(markdown)
-  if (meta.schema !== 'agenticgraph-sme-canvas-evidence/v1' || meta.kgSchema !== 'kgc-computing-flow/v1') {
+  if (meta.schema !== 'agentic-graph-sme-canvas-evidence/v1' || meta.kgSchema !== 'kgc-computing-flow/v1') {
     throw new Error(`unexpected SME Canvas schemas: ${JSON.stringify({ schema: meta.schema, kgSchema: meta.kgSchema })}`)
   }
   if (meta.kgCanvasSurfaceMode !== '2d' || meta.kgCanvas2dRenderer !== 'storyboard') {

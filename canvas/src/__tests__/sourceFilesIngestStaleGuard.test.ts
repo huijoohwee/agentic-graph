@@ -1405,29 +1405,29 @@ export function testSourceFilesStorageSyncDocumentHashDoesNotSelfDependOnParsedT
 export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply() {
   const bootstrapPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx')
   const text = readFileSync(bootstrapPath, 'utf8')
-  if (!text.includes('const agenticgraphInboundApplyOperations = React.useMemo(createAgenticGraphStorageOperationTracker, [])')) {
+  if (!text.includes('const agenticGraphInboundApplyOperations = React.useMemo(createAgenticGraphStorageOperationTracker, [])')) {
     throw new Error('expected source files bootstrap to track overlapping inbound storage-apply windows for queue echo suppression')
   }
-  if (!text.includes('const operation = agenticgraphInboundApplyOperations.begin()')) {
+  if (!text.includes('const operation = agenticGraphInboundApplyOperations.begin()')) {
     throw new Error('expected source files bootstrap storage pull apply path to claim an exact operation token before mutating sourceFiles')
   }
-  if (!text.includes('agenticgraphInboundApplyOperations.finish(operation)')) {
+  if (!text.includes('agenticGraphInboundApplyOperations.finish(operation)')) {
     throw new Error('expected source files bootstrap storage pull apply path to release only its exact operation token')
   }
-  if (!text.includes('const applySourceFilesPersistenceStorageRequest = React.useCallback((request: SourceFilesPersistenceEffectRequest) => {') || !text.includes('if (agenticgraphInboundApplyOperations.isActive()) return')) {
+  if (!text.includes('const applySourceFilesPersistenceStorageRequest = React.useCallback((request: SourceFilesPersistenceEffectRequest) => {') || !text.includes('if (agenticGraphInboundApplyOperations.isActive()) return')) {
     throw new Error('expected source files persistence side effects to skip queuing outbound storage sync during inbound pull apply windows through the dedicated storage helper')
   }
   if (!text.includes('type AgenticGraphStorageQueueRequest = {') || !text.includes('const pendingAgenticGraphStorageQueueRequestRef = React.useRef<AgenticGraphStorageQueueRequest | null>(null)')) {
-    throw new Error('expected source files storage queue scheduling to centralize latest debounced sync payloads behind a dedicated agenticgraph storage queue request')
+    throw new Error('expected source files storage queue scheduling to centralize latest debounced sync payloads behind a dedicated agentic-graph storage queue request')
   }
   if (!text.includes('const resolveAgenticGraphStorageQueueRequest = React.useCallback((args?: {')) {
     throw new Error('expected source files storage queue scheduling to centralize request resolution behind a dedicated helper')
   }
   if (!text.includes('type AgenticGraphStorageWorkspaceRequest = {') || !text.includes('const resolveAgenticGraphStorageWorkspaceRequest = React.useCallback((args: {')) {
-    throw new Error('expected source files agenticgraph storage workspace lifecycle to centralize workspace start payloads behind a dedicated request shape and resolver')
+    throw new Error('expected source files agentic-graph storage workspace lifecycle to centralize workspace start payloads behind a dedicated request shape and resolver')
   }
   if (!text.includes('type AgenticGraphStorageWorkspaceSelection = {') || !text.includes('const readAgenticGraphStorageWorkspaceSelection = React.useCallback((')) {
-    throw new Error('expected source files agenticgraph storage workspace lifecycle to centralize caller-owned workspace-state plus sourceFiles snapshot selection behind a dedicated helper')
+    throw new Error('expected source files agentic-graph storage workspace lifecycle to centralize caller-owned workspace-state plus sourceFiles snapshot selection behind a dedicated helper')
   }
   if (!text.includes('type SourceFilesPersistenceEffectRequest = {') || !text.includes('const resolveSourceFilesPersistenceEffectRequest = React.useCallback((')) {
     throw new Error('expected source files persistence subscription to centralize same-snapshot storage queue and compose effect derivation behind a dedicated request helper')
@@ -1436,19 +1436,19 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
     throw new Error('expected source files active-path sync to centralize caller-owned active path, sourceFiles snapshot, and workspace entries selection behind a dedicated helper')
   }
   if (!text.includes('initialQueueRequest: AgenticGraphStorageQueueRequest | null')) {
-    throw new Error('expected source files agenticgraph storage workspace lifecycle request to carry a prebuilt initial storage queue request for queue scheduling reuse')
+    throw new Error('expected source files agentic-graph storage workspace lifecycle request to carry a prebuilt initial storage queue request for queue scheduling reuse')
   }
   if (!text.includes('const applyAgenticGraphStorageWorkspaceRequest = React.useCallback((request: AgenticGraphStorageWorkspaceRequest) => {')) {
-    throw new Error('expected source files agenticgraph storage workspace lifecycle to centralize cleanup, runtime restart, and initial queue scheduling in a dedicated helper')
+    throw new Error('expected source files agentic-graph storage workspace lifecycle to centralize cleanup, runtime restart, and initial queue scheduling in a dedicated helper')
   }
   if (!text.includes('const stopAgenticGraphStorageWorkspaceRuntime = React.useCallback((args?: {')) {
-    throw new Error('expected source files agenticgraph storage workspace lifecycle teardown to centralize task cancel, runtime cleanup, and queue reset in a dedicated helper')
+    throw new Error('expected source files agentic-graph storage workspace lifecycle teardown to centralize task cancel, runtime cleanup, and queue reset in a dedicated helper')
   }
   if (!text.includes('const startAgenticGraphStorageWorkspaceRuntime = React.useCallback((request: AgenticGraphStorageWorkspaceRequest) => {')) {
-    throw new Error('expected source files agenticgraph storage workspace lifecycle start path to centralize storage sync loop startup and callback wiring in a dedicated helper')
+    throw new Error('expected source files agentic-graph storage workspace lifecycle start path to centralize storage sync loop startup and callback wiring in a dedicated helper')
   }
   if (!text.includes('const handleAgenticGraphStorageSyncCompleted = React.useCallback((result: {') || !text.includes('const createAgenticGraphStoragePulledChangesHandler = React.useCallback((')) {
-    throw new Error('expected source files agenticgraph storage callbacks to centralize completion and captured-ownership pulled-change handling')
+    throw new Error('expected source files agentic-graph storage callbacks to centralize completion and captured-ownership pulled-change handling')
   }
   if ((text.match(/onPulledChangesApplied: createAgenticGraphStoragePulledChangesHandler\(ownership\)/g) || []).length !== 2) {
     throw new Error('expected both loop startup and queue-sync follow-up to bind a pulled-change handler to captured workspace ownership')
@@ -1487,7 +1487,7 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
     throw new Error('expected source files storage queue scheduling to skip redundant debounce churn when the same storage signature is already applied or already pending')
   }
   if (!text.includes('const nextRequest = pendingAgenticGraphStorageQueueRequestRef.current') || !text.includes('runAgenticGraphStorageQueueRequest(nextRequest)') || !text.includes('scheduleWorkspaceSyncTask(') || !text.includes('drainAgenticGraphStorageQueueRequest,')) {
-    throw new Error('expected source files storage queue scheduling to centralize debounced draining behind a helper that runs the latest pending agenticgraph storage request instead of rereading sourceFiles from store state inside the delayed task')
+    throw new Error('expected source files storage queue scheduling to centralize debounced draining behind a helper that runs the latest pending agentic-graph storage request instead of rereading sourceFiles from store state inside the delayed task')
   }
   if (!text.includes('handleAgenticGraphStorageQueueRequestSuccess({') || !text.includes('handleAgenticGraphStorageQueueRequestFailure(request)')) {
     throw new Error('expected source files storage queue runner to delegate result-state mutations to the dedicated success and failure helpers')
@@ -1508,19 +1508,19 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
     throw new Error('expected inbound storage apply to reuse the dedicated queue-state transition helper after applying pulled changes')
   }
   if (!text.includes('const request = resolveAgenticGraphStorageWorkspaceRequest({') || !text.includes('applyAgenticGraphStorageWorkspaceRequest(request)')) {
-    throw new Error('expected source files workspace-state subscription effect to become a thin shell over dedicated agenticgraph storage workspace lifecycle helpers')
+    throw new Error('expected source files workspace-state subscription effect to become a thin shell over dedicated agentic-graph storage workspace lifecycle helpers')
   }
   if (!text.includes('const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args.sourceFilesSnapshot)')) {
-    throw new Error('expected agenticgraph storage workspace lifecycle request resolution to reuse a caller-owned or shared live sourceFiles snapshot instead of falling back to raw store reads')
+    throw new Error('expected agentic-graph storage workspace lifecycle request resolution to reuse a caller-owned or shared live sourceFiles snapshot instead of falling back to raw store reads')
   }
   if (!text.includes('const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot)')) {
-    throw new Error('expected agenticgraph storage queue request resolution to reuse a caller-owned or shared live sourceFiles snapshot instead of falling back to raw store reads')
+    throw new Error('expected agentic-graph storage queue request resolution to reuse a caller-owned or shared live sourceFiles snapshot instead of falling back to raw store reads')
   }
   if (!text.includes('const readAgenticGraphStorageWorkspaceId = React.useCallback((args?: {') || !text.includes('const workspaceId = readAgenticGraphStorageWorkspaceId({')) {
-    throw new Error('expected agenticgraph storage queue and workspace lifecycle request resolution to reuse one dedicated workspace ID selector instead of recomputing adjacent workspace ID branches inline')
+    throw new Error('expected agentic-graph storage queue and workspace lifecycle request resolution to reuse one dedicated workspace ID selector instead of recomputing adjacent workspace ID branches inline')
   }
   if (!text.includes('const readAgenticGraphStorageSyncSignature = React.useCallback((args: {') || !text.includes('storageSyncSignature: args?.storageSyncSignature,')) {
-    throw new Error('expected agenticgraph storage queue, lifecycle, and persistence paths to reuse one dedicated storage signature selector instead of rebuilding adjacent storage-signature branches inline')
+    throw new Error('expected agentic-graph storage queue, lifecycle, and persistence paths to reuse one dedicated storage signature selector instead of rebuilding adjacent storage-signature branches inline')
   }
   if (!text.includes('const readBootstrapMountSourceFilesSnapshot = React.useCallback((args: {')) {
     throw new Error('expected source files bootstrap mount to centralize startup sourceFiles snapshot selection behind a dedicated helper')
@@ -1533,18 +1533,18 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
     throw new Error('expected source files bootstrap mount to fail closed instead of publishing a passive active-path fallback')
   }
   if (!text.includes('scheduleAgenticGraphStorageQueueRequest(request.initialQueueRequest)')) {
-    throw new Error('expected agenticgraph storage workspace lifecycle apply path to reuse the prebuilt initial queue request instead of rebuilding queue request context downstream')
+    throw new Error('expected agentic-graph storage workspace lifecycle apply path to reuse the prebuilt initial queue request instead of rebuilding queue request context downstream')
   }
   if (!text.includes('stopAgenticGraphStorageWorkspaceRuntime({') || !text.includes('stopAgenticGraphStorageWorkspaceRuntime()')) {
-    throw new Error('expected agenticgraph storage workspace lifecycle start and cleanup paths to reuse the dedicated teardown helper instead of duplicating runtime reset branches inline')
+    throw new Error('expected agentic-graph storage workspace lifecycle start and cleanup paths to reuse the dedicated teardown helper instead of duplicating runtime reset branches inline')
   }
   if (!text.includes('startAgenticGraphStorageWorkspaceRuntime(request)')) {
-    throw new Error('expected agenticgraph storage workspace lifecycle apply path to delegate storage loop startup to the dedicated start helper')
+    throw new Error('expected agentic-graph storage workspace lifecycle apply path to delegate storage loop startup to the dedicated start helper')
   }
   if (!text.includes('onSyncCompleted: handleAgenticGraphStorageSyncCompleted') || !text.includes('onPulledChangesApplied: createAgenticGraphStoragePulledChangesHandler(ownership)')) {
-    throw new Error('expected agenticgraph storage workspace runtime startup to reuse centralized completion and captured-ownership callback helpers')
+    throw new Error('expected agentic-graph storage workspace runtime startup to reuse centralized completion and captured-ownership callback helpers')
   }
-  if (!text.includes('type SourceFilesComposeRequest = {') || !text.includes('const storageSyncSignature = readAgenticGraphStorageSyncSignature({') || !text.includes('const readSourceFilesCompositionSignature = React.useCallback((args: {') || !text.includes('const resolveSourceFilesComposeRequest = React.useCallback((args: {') || !text.includes('agenticgraphStorageQueueRequest: resolveAgenticGraphStorageQueueRequest({') || !text.includes('storageSyncSignature,') || !text.includes('composeRequest: resolveSourceFilesComposeRequest({')) {
+  if (!text.includes('type SourceFilesComposeRequest = {') || !text.includes('const storageSyncSignature = readAgenticGraphStorageSyncSignature({') || !text.includes('const readSourceFilesCompositionSignature = React.useCallback((args: {') || !text.includes('const resolveSourceFilesComposeRequest = React.useCallback((args: {') || !text.includes('agenticGraphStorageQueueRequest: resolveAgenticGraphStorageQueueRequest({') || !text.includes('storageSyncSignature,') || !text.includes('composeRequest: resolveSourceFilesComposeRequest({')) {
     throw new Error('expected source files persistence and bootstrap compose handling to reuse one shared compose request shape plus dedicated signature helpers instead of shaping compose payloads independently')
   }
   if (!text.includes('const snapshot = readCallerOwnedSourceFilesSnapshot(sourceFilesSnapshot)')) {
@@ -1554,7 +1554,7 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
     throw new Error('expected source files persistence side effects to delegate storage scheduling, compose suppression, and compose scheduling through dedicated helpers instead of keeping inline apply branches')
   }
   if (!text.includes('const startForWorkspaceSelection = (selection: AgenticGraphStorageWorkspaceSelection) => {') || !text.includes('s => readAgenticGraphStorageWorkspaceSelection(s)')) {
-    throw new Error('expected source files workspace-state subscription to thread one caller-owned workspace selection through the agenticgraph storage workspace resolver instead of rereading store state inline')
+    throw new Error('expected source files workspace-state subscription to thread one caller-owned workspace selection through the agentic-graph storage workspace resolver instead of rereading store state inline')
   }
   if (!text.includes('const latestSourceFilesSnapshotRef = React.useRef<ReturnType<typeof useGraphStore.getState>[\'sourceFiles\']>([])') || !text.includes('state => state.sourceFiles,')) {
     throw new Error('expected source files runtime hot paths to keep one shared live caller-owned sourceFiles snapshot ref instead of rereading graph store state in adjacent subscriptions')
@@ -1596,7 +1596,7 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
     throw new Error('expected inbound storage apply to return the exact sourceFiles snapshot it materialized so callers can reuse it without rereading store state')
   }
   if (!text.includes('sourceFilesSnapshot: result.sourceFilesSnapshot,')) {
-    throw new Error('expected agenticgraph storage inbound apply handling to reuse the sourceFiles snapshot returned by inbound storage apply instead of rereading store state after mutation')
+    throw new Error('expected agentic-graph storage inbound apply handling to reuse the sourceFiles snapshot returned by inbound storage apply instead of rereading store state after mutation')
   }
 }
 

@@ -1,10 +1,10 @@
 import { DIGEST, SHA, canonical, digest, requireText } from './travel-mesh-release-plan.mjs'
 
-export const BOOTSTRAP_PLAN_SCHEMA = 'agenticgraph-travel-mesh-provider-bootstrap-plan/v1'
-export const BOOTSTRAP_PACKET_SCHEMA = 'agenticgraph-travel-mesh-provider-packet/v1'
-export const BOOTSTRAP_AUTHORIZATION_SCHEMA = 'agenticgraph-travel-mesh-provider-bootstrap-authorization/v1'
-export const BOOTSTRAP_JOURNAL_SCHEMA = 'agenticgraph-travel-mesh-provider-bootstrap-journal/v1'
-export const BOOTSTRAP_COMPLETION_SCHEMA = 'agenticgraph-travel-mesh-provider-bootstrap-completion/v1'
+export const BOOTSTRAP_PLAN_SCHEMA = 'agentic-graph-travel-mesh-provider-bootstrap-plan/v1'
+export const BOOTSTRAP_PACKET_SCHEMA = 'agentic-graph-travel-mesh-provider-packet/v1'
+export const BOOTSTRAP_AUTHORIZATION_SCHEMA = 'agentic-graph-travel-mesh-provider-bootstrap-authorization/v1'
+export const BOOTSTRAP_JOURNAL_SCHEMA = 'agentic-graph-travel-mesh-provider-bootstrap-journal/v1'
+export const BOOTSTRAP_COMPLETION_SCHEMA = 'agentic-graph-travel-mesh-provider-bootstrap-completion/v1'
 export const BOOTSTRAP_PLAN_CARRIER_MAX_BYTES = 4 * 1024 * 1024
 export const BOOTSTRAP_JOURNAL_CARRIER_MAX_BYTES = 48 * 1024
 export const BOOTSTRAP_JOURNAL_EFFECT_ORDER = Object.freeze([
@@ -239,7 +239,7 @@ export const normalizeBootstrapReceipt = (receipt, plan = null) => {
   const { receiptDigest, ...body } = receipt
   const evidence = { versions: body.versions, bindings: body.bindings, secretNames: body.secretNames, routes: body.routes,
     domains: body.domains, migrations: body.migrations, exposure: body.exposure, probes: body.probes }
-  if (body.schema !== 'agenticgraph-travel-mesh-bootstrap-receipt/v3' || body.status !== 'provisioned'
+  if (body.schema !== 'agentic-graph-travel-mesh-bootstrap-receipt/v3' || body.status !== 'provisioned'
     || !SHA.test(body.sourceSha) || !SHA.test(body.sourceTree) || ![body.planDigest, body.packetDigest,
       body.authorizationReceiptDigest, body.effectJournalDigest, body.finalEvidenceDigest, receiptDigest].every(value => DIGEST.test(value))
     || digest(body) !== receiptDigest || digest(evidence) !== body.finalEvidenceDigest || body.releaseEnabled !== true

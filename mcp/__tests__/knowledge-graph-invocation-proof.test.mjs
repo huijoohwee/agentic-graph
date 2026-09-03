@@ -49,8 +49,8 @@ async function createCanonicalDocsFixture(root) {
   execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
   execFileSync("git", ["add", "docs"], { cwd: repositoryRoot });
   execFileSync("git", [
-    "-c", "user.name=AgenticGraph Test",
-    "-c", "user.email=test@agenticgraph.local",
+    "-c", "user.name=agentic-graph Test",
+    "-c", "user.email=test@agentic-graph.local",
     "commit", "-qm", "source-backed catalog fixture",
   ], { cwd: repositoryRoot });
   const revision = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -67,10 +67,10 @@ async function createCanonicalDocsFixture(root) {
 }
 
 test("knowledge-graph host verifies one exact invocation against the authoritative docs catalog", async (t) => {
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agenticgraph-kg-invocation-"));
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-invocation-"));
   t.after(() => fs.rm(temporaryRoot, { recursive: true, force: true }));
   const { docsRoot, repositoryRoot } = await createCanonicalDocsFixture(temporaryRoot);
-  const env = { AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot };
+  const env = { AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot };
   const source = await runAgenticCanvasOsDocsInvokeTool({ token: ACTION }, {
     rootDir: repositoryRoot,
     env,

@@ -4,7 +4,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { CrossDeviceIdentitySettingsRowsContent } from '@/features/panels/views/CrossDeviceIdentitySettingsRows'
 import { CROSS_DEVICE_IDENTITY_SETTINGS_ROW_COUNT } from '@/features/panels/views/crossDeviceIdentitySettingsContract'
-import type { AgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agenticgraphRuntimeIdentity'
+import type { AgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agentic-graph-runtime-identity'
 import type { AgenticGraphRuntimeIdentityGateSnapshot } from '@/features/runtime-identity/runtimeIdentityAttestationStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
@@ -16,7 +16,7 @@ export async function testMainPanelSettingsOwnsGlobalCrossDeviceIdentityGate() {
   const settingsViewSource = readFileSync(resolve(process.cwd(), 'src/features/panels/views/SettingsView.tsx'), 'utf8')
   const skillsCommandsSource = readFileSync(resolve(process.cwd(), 'src/features/panels/views/SkillsCommandsView.tsx'), 'utf8')
   const appSource = readFileSync(resolve(process.cwd(), 'src/App.tsx'), 'utf8')
-  const identityRuntimeSource = readFileSync(resolve(process.cwd(), 'src/features/runtime-identity/AgenticGraphRuntimeIdentityRuntime.tsx'), 'utf8')
+  const identityRuntimeSource = readFileSync(resolve(process.cwd(), 'src/features/runtime-identity/agentic-graph-runtime-identity-runtime.tsx'), 'utf8')
   const settingsRowsSource = readFileSync(resolve(process.cwd(), 'src/features/panels/views/CrossDeviceIdentitySettingsRows.tsx'), 'utf8')
   if (
     !settingsViewSource.includes("area: CROSS_DEVICE_IDENTITY_SETTINGS_AREA")
@@ -41,10 +41,10 @@ export async function testMainPanelSettingsOwnsGlobalCrossDeviceIdentityGate() {
   }
 
   const identity: AgenticGraphRuntimeIdentity = {
-    schema: 'agenticgraph-runtime-identity/v1',
+    schema: 'agentic-graph-runtime-identity/v1',
     device: 'test-device',
     branch: 'main',
-    agenticgraphRevision: 'b'.repeat(40),
+    agenticGraphRevision: 'b'.repeat(40),
     agenticCanvasOsRevision: 'a'.repeat(40),
     catalogRevision: 'a'.repeat(40),
     catalogDigest: 'c'.repeat(64),
@@ -91,7 +91,7 @@ export async function testMainPanelSettingsOwnsGlobalCrossDeviceIdentityGate() {
     },
   }
   const gateSnapshot: AgenticGraphRuntimeIdentityGateSnapshot = {
-    schema: 'agenticgraph-runtime-identity-gate/v1',
+    schema: 'agentic-graph-runtime-identity-gate/v1',
     status: 'pass',
     transportStatus: 'connected',
     requiredDeviceCount: 2,

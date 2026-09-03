@@ -400,7 +400,7 @@ export async function testCommandMenuMediaPanelUploadedNameInvokesActiveCardFiel
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
   const committedValues: string[] = []
-  const storageKey = 'agenticgraph:floating-panel-media:uploaded-cloudflare-items:v1'
+  const storageKey = 'agentic-graph:floating-panel-media:uploaded-cloudflare-items:v1'
   const mediaUrl = 'https://airvio.co/api/storage/media/airvio/runs/upload-demo/image/airvio-demo.jpg'
   try {
     dom.window.localStorage.setItem(storageKey, JSON.stringify([{
@@ -426,7 +426,7 @@ export async function testCommandMenuMediaPanelUploadedNameInvokesActiveCardFiel
         provenance: { fileName: 'airvio-demo.jpg', sizeBytes: 1024 },
         response: {
           ok: true,
-          apiVersion: 'agenticgraph.storage.v1',
+          apiVersion: 'agentic-graph.storage.v1',
           workspaceId: 'airvio',
           artifactId: 'upload-demo:image:airvio-demo',
           objectKey: 'airvio/runs/upload-demo/image/airvio-demo.jpg',

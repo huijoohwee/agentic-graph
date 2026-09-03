@@ -6,7 +6,7 @@ import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
 
-export const FLIGHT_SIM_KIRO_ROOT = '.kiro/specs/agenticgraph-game-flight-sim'
+export const FLIGHT_SIM_KIRO_ROOT = '.kiro/specs/agentic-graph-game-flight-sim'
 export const FLIGHT_SIM_KIRO_INVENTORY = Object.freeze([
   '.config.kiro',
   'requirements.md',
@@ -14,14 +14,14 @@ export const FLIGHT_SIM_KIRO_INVENTORY = Object.freeze([
   'tasks.md',
 ])
 export const FLIGHT_SIM_KIRO_TRACKED_REFERENCES = Object.freeze([
-  'docs/documents/agenticgraph-agentic-entity-component-system-prd-tad.md',
-  'docs/documents/agenticgraph-game-flight-sim-prd-tad.md',
-  'docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md',
+  'docs/documents/agentic-graph-agentic-entity-component-system-prd-tad.md',
+  'docs/documents/agentic-graph-game-flight-sim-prd-tad.md',
+  'docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md',
 ])
 
 const REQUIRED_SOURCE_MARKERS = Object.freeze({
   'requirements.md': Object.freeze([
-    'repository-tracked Kiro package at `.kiro/specs/agenticgraph-game-flight-sim` is the normative requirements/design source of truth',
+    'repository-tracked Kiro package at `.kiro/specs/agentic-graph-game-flight-sim` is the normative requirements/design source of truth',
     'are derived implementation/proof projections',
     'byte-identical local projection only, never a second authority',
     'exact fixed timestep of `1 / 60` second (approximately 16.667 milliseconds, 60 ticks per second)',
@@ -35,12 +35,12 @@ const REQUIRED_SOURCE_MARKERS = Object.freeze({
     '### Requirement 24: Mission-based flight training and measurable outcomes',
   ]),
   'design.md': Object.freeze([
-    'repository-tracked design is part of the normative `.kiro/specs/agenticgraph-game-flight-sim` source of truth',
+    'repository-tracked design is part of the normative `.kiro/specs/agentic-graph-game-flight-sim` source of truth',
     'are derived implementation/proof projections',
     'workspace-root Kiro copy is a byte-identical local projection only',
-    '`docs/documents/agenticgraph-agentic-entity-component-system-prd-tad.md`',
-    '`docs/documents/agenticgraph-game-flight-sim-prd-tad.md`',
-    '`docs/workspace-seeds/agenticgraph-game-flight-sim-demo.md`',
+    '`docs/documents/agentic-graph-agentic-entity-component-system-prd-tad.md`',
+    '`docs/documents/agentic-graph-game-flight-sim-prd-tad.md`',
+    '`docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md`',
     'Exact fixed `1 / 60` second (approximately 16.667 ms, 60 Hz) timestep',
     '| 1 | `InputIntegrationSystem` |',
     '| 2 | `FlightModelSystem` |',
@@ -224,7 +224,7 @@ async function resolveWorkspaceProjectionRoot(repositoryRoot) {
     if (error?.code === 'ENOENT') return null
     throw error
   }
-  return path.join(externalKiroRoot, 'specs', 'agenticgraph-game-flight-sim')
+  return path.join(externalKiroRoot, 'specs', 'agentic-graph-game-flight-sim')
 }
 
 function assertProjectionParity(authority, projection) {

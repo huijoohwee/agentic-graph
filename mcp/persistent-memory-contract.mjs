@@ -1,12 +1,12 @@
-export const PERSISTENT_MEMORY_CONTRACT_VERSION = "agenticgraph-persistent-memory/v1";
+export const PERSISTENT_MEMORY_CONTRACT_VERSION = "agentic-graph-persistent-memory/v1";
 
 export const PERSISTENT_MEMORY_TOOL_NAMES = Object.freeze({
-  write: "agenticgraph.memory.write",
-  compact: "agenticgraph.memory.compact",
-  search: "agenticgraph.memory.search",
-  sessionSearch: "agenticgraph.session.search",
-  userProfile: "agenticgraph.user.profile",
-  invoke: "agenticgraph.memory.invoke",
+  write: "agentic-graph.memory.write",
+  compact: "agentic-graph.memory.compact",
+  search: "agentic-graph.memory.search",
+  sessionSearch: "agentic-graph.session.search",
+  userProfile: "agentic-graph.user.profile",
+  invoke: "agentic-graph.memory.invoke",
 });
 
 export const PERSISTENT_MEMORY_LIMITS = Object.freeze({

@@ -182,16 +182,16 @@ export const useResumeDurableChatStream = (args: {
             throw new Error(UI_COPY.chatResponseMissingContentError)
           }
         } else if (activeRun.chatStorageTarget === 'chatAgenticGraph') {
-          const agenticgraphAttempt = resolveChatAgenticGraphAttempt({
+          const agenticGraphAttempt = resolveChatAgenticGraphAttempt({
             assistantText: finalAssistantText,
             packedFrontmatter: activeRun.packedFrontmatter || null,
             attempt: 1,
             maxValidationAttempts: 1,
           })
-          if (agenticgraphAttempt.kind === 'final') {
-            finalStatus = agenticgraphAttempt.status
-            finalAssistantText = agenticgraphAttempt.finalAssistantText
-            finalValidatedKgc = agenticgraphAttempt.validatedKgc
+          if (agenticGraphAttempt.kind === 'final') {
+            finalStatus = agenticGraphAttempt.status
+            finalAssistantText = agenticGraphAttempt.finalAssistantText
+            finalValidatedKgc = agenticGraphAttempt.validatedKgc
           } else {
             finalStatus = 'error'
           }

@@ -56,7 +56,7 @@ export function StoryboardCardSourceReferenceChips(props: {
               data-kg-storyboard-card-source-target-fields={reference.targetFieldIds.join(',')}
               data-kg-storyboard-card-source-edge-ids={reference.edgeIds.join(',')}
               data-kg-storyboard-card-source-provenance-schema={
-                reference.selectionProvenance?.length ? 'agenticgraph-text-selection-widget-link/v1' : undefined
+                reference.selectionProvenance?.length ? 'agentic-graph-text-selection-widget-link/v1' : undefined
               }
               title={buildSourceReferenceTitle(reference)}
               onPointerDown={event => event.stopPropagation()}

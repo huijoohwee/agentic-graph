@@ -30,7 +30,7 @@ import {
 } from '../xrV2SpatialAssetMetadata'
 
 function uniqueDatabaseName(): string {
-  return `agenticgraph-xr-v2-catalog-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return `agentic-graph-xr-v2-catalog-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 function deleteDatabase(databaseName: string): Promise<void> {
@@ -67,10 +67,10 @@ function captureBundle(sessionId: string, frameCount = 1): XrV2StoredCaptureFram
     }),
   }))
   return Object.freeze({
-    schema: 'agenticgraph-xr-v2-capture-frame-bundle/v1',
+    schema: 'agentic-graph-xr-v2-capture-frame-bundle/v1',
     sessionId,
     snapshot: Object.freeze({
-      schema: 'agenticgraph-xr-capture-snapshot/v2',
+      schema: 'agentic-graph-xr-capture-snapshot/v2',
       contractVersion: '2.0.0',
       sessionId,
       phase: 'completed',
@@ -163,14 +163,14 @@ function resource(tier: 'pseudo-ar-depth-parallax' | 'flat-fallback'): XrV2Saved
   const metadata = createXrV2SpatialAssetMetadata({
     tier,
     synthesisMode: tier === 'flat-fallback' ? 'post-process' : 'live',
-    depthMetadataRef: `indexeddb://agenticgraph-xr-v2/frame-bundle/${tier}-session`,
+    depthMetadataRef: `indexeddb://agentic-graph-xr-v2/frame-bundle/${tier}-session`,
     fallbackTriggered: tier === 'flat-fallback',
   })
   return Object.freeze({
     asset: createXrV2PublishedSpatialAsset({
       assetId: `${tier}:asset`,
       sessionId: `${tier}-session`,
-      rawClipRef: `indexeddb://agenticgraph-xr-v2/raw-clip/${tier}-session`,
+      rawClipRef: `indexeddb://agentic-graph-xr-v2/raw-clip/${tier}-session`,
       metadata,
       createdAtMs: 1,
     }),

@@ -62,18 +62,18 @@ function githubPullRequestEnvironment(overrides = {}) {
     GITHUB_REF: 'refs/pull/683/merge',
     GITHUB_REPOSITORY: 'huijoohwee/agentic-graph',
     GITHUB_SHA: MERGE_REVISION,
-    AGENTICGRAPH_PR_BASE_REF: 'main',
-    AGENTICGRAPH_PR_HEAD_REF: TASK_BRANCH,
-    AGENTICGRAPH_PR_NUMBER: '683',
-    AGENTICGRAPH_REPOSITORY: 'huijoohwee/agentic-graph',
-    AGENTICGRAPH_SOURCE_REVISION: CANDIDATE_REVISION,
-    AGENTICGRAPH_TARGET_REF: `refs/heads/${TASK_BRANCH}`,
+    AGENTIC_OS_PR_BASE_REF: 'main',
+    AGENTIC_OS_PR_HEAD_REF: TASK_BRANCH,
+    AGENTIC_OS_PR_NUMBER: '683',
+    AGENTIC_OS_REPOSITORY: 'huijoohwee/agentic-graph',
+    AGENTIC_OS_SOURCE_REVISION: CANDIDATE_REVISION,
+    AGENTIC_OS_TARGET_REF: `refs/heads/${TASK_BRANCH}`,
     ...overrides,
   }
 }
 
 function createFixtureRoot(t) {
-  const fixtureRoot = mkdtempSync(resolve(tmpdir(), 'agenticgraph-xr-v2-source-'))
+  const fixtureRoot = mkdtempSync(resolve(tmpdir(), 'agentic-graph-xr-v2-source-'))
   t.after(() => rmSync(fixtureRoot, { force: true, recursive: true }))
   return fixtureRoot
 }
@@ -88,8 +88,8 @@ function copyFixtureFile(fixtureRoot, relativePath) {
 function createDocumentationFixture(t) {
   const fixtureRoot = createFixtureRoot(t)
   for (const relativePath of [
-    'docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md',
-    'docs/documents/agenticgraph-xr-v2-runtime-readiness.md',
+    'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md',
+    'docs/documents/agentic-graph-xr-v2-runtime-readiness.md',
     'docs/TESTING.md',
     'docs/runtime-api.md',
   ]) {
@@ -167,13 +167,13 @@ test('XR v2 workspace browser smoke selects the actual Explorer seed without an 
     resolve(REPOSITORY_ROOT, 'canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs'),
     'utf8',
   )
-  assert.doesNotMatch(runner, /VITE_AGENTICGRAPH_RUN_READY_DEMO/u)
+  assert.doesNotMatch(runner, /VITE_AGENTIC_OS_RUN_READY_DEMO/u)
   const selection = verifier.indexOf('await seedRow.click()')
   const mountedRuntime = verifier.indexOf("const runtime = page.locator('[data-kg-xr-v2-authoring-runtime=\"1\"]')")
   assert.match(verifier, /openEditorWorkspace=1/u)
   assert.match(verifier, /getByRole\('navigation', \{ name: 'Source files', exact: true \}\)/u)
   assert.match(verifier, /Folder workspace-seeds/u)
-  assert.match(verifier, /File agenticgraph-ar-vr-xr-runtime-readiness-demo\.md/u)
+  assert.match(verifier, /File agentic-graph-ar-vr-xr-runtime-readiness-demo\.md/u)
   assert.ok(selection >= 0)
   assert.ok(mountedRuntime > selection)
   for (const marker of [
@@ -219,7 +219,7 @@ test('XR v2 browser source rejects weakened explicit AC-11/AC-12 evidence flow',
     ['AC-12 mounted author revision', "getAttribute('data-kg-xr-v2-ac-12-authoring-edit-revision'), '1'", "getAttribute('data-kg-xr-v2-ac-12-authoring-edit-revision'), '0'"],
     ['AC-12 mounted author render', "Number(await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-12-author-rendered-at-ms')) > 0", "Number(await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-12-author-rendered-at-ms')) < 0"],
     ['cross-device second client', 'secondContext = await browser.newContext({ permissions: [] })', 'secondContext = context'],
-    ['second-client cold navigation timeout', "await secondPage.goto(`${baseUrl}/agenticgraph/?openEditorWorkspace=1`, {\n    waitUntil: 'domcontentloaded',\n    timeout: coldStartTimeoutMs,", "await secondPage.goto(`${baseUrl}/agenticgraph/?openEditorWorkspace=1`, {\n    waitUntil: 'domcontentloaded',\n    timeout: 30_000,"],
+    ['second-client cold navigation timeout', "await secondPage.goto(`${baseUrl}/agentic-graph/?openEditorWorkspace=1`, {\n    waitUntil: 'domcontentloaded',\n    timeout: coldStartTimeoutMs,", "await secondPage.goto(`${baseUrl}/agentic-graph/?openEditorWorkspace=1`, {\n    waitUntil: 'domcontentloaded',\n    timeout: 30_000,"],
     ['cross-device refresh click', 'await secondList.click()', 'await secondList.hover()'],
     ['cross-device reopen click', 'await secondRead.click()', 'await secondRead.hover()'],
     ['cross-device atomic catalog import', "getAttribute('data-kg-xr-v2-cross-device-phase') === 'ready' && Boolean(asset)", "getAttribute('data-kg-xr-v2-cross-device-phase') === 'ready' && !asset"],
@@ -245,7 +245,7 @@ test('XR v2 workspace seed rejects evidence and cross-device claim drift', async
     ['saved-asset persistence', 'saved_asset_persistence: device-local-indexeddb-with-explicit-existing-storage-publish', 'saved_asset_persistence: cloud'],
     ['cross-device status', 'cross_device_reopen_status: client-adapter-ready-external-promotion-blocked', 'cross_device_reopen_status: ready'],
     ['cross-device blocker', 'cross_device_reopen_blocker: shared-storage-auth-and-server-digest-not-enforced', 'cross_device_reopen_blocker: none'],
-    ['shared XR source authority', 'source_authority: /docs/workspace-seeds/agenticgraph-physics-playground-demo.md', 'source_authority: /docs/workspace-seeds/alternate-world.md'],
+    ['shared XR source authority', 'source_authority: /docs/workspace-seeds/agentic-graph-physics-playground-demo.md', 'source_authority: /docs/workspace-seeds/alternate-world.md'],
     ['shared XR world ownership', 'world_ownership: overlay-only', 'world_ownership: standalone'],
     ['shared XR renderer owner', 'renderer_owner: canvas/src/lib/three/ThreeGraph.impl.tsx', 'renderer_owner: canvas/src/features/xr-v2/SecondCanvas.tsx'],
     ['second XR Canvas prohibition', 'second_r3f_canvas_forbidden: true', 'second_r3f_canvas_forbidden: false'],
@@ -274,8 +274,8 @@ test('XR v2 workspace seed rejects evidence and cross-device claim drift', async
 })
 
 test('XR v2 canonical workspace seed is required by authored inventory authority', async () => {
-  const result = await verifyWorkspaceSeedAuthority({ agenticgraphRoot: REPOSITORY_ROOT })
-  assert.ok(result.agenticgraphInventory.includes(XR_V2_SEED_BASENAME))
+  const result = await verifyWorkspaceSeedAuthority({ agenticGraphRoot: REPOSITORY_ROOT })
+  assert.ok(result.agenticGraphInventory.includes(XR_V2_SEED_BASENAME))
 })
 
 test('XR v2 clean bootstrap selects the canonical workspace-seed path', () => {
@@ -373,13 +373,13 @@ test('XR v2 source checkout rejects partial or spoofed detached CI identity', ()
     ['GITHUB_HEAD_REF', 'main'],
     ['GITHUB_BASE_REF', 'release'],
     ['GITHUB_REF', 'refs/heads/main'],
-    ['GITHUB_REPOSITORY', 'fork/agenticgraph'],
-    ['AGENTICGRAPH_PR_BASE_REF', 'release'],
-    ['AGENTICGRAPH_PR_HEAD_REF', 'main'],
-    ['AGENTICGRAPH_PR_NUMBER', '0'],
-    ['AGENTICGRAPH_REPOSITORY', 'fork/agenticgraph'],
-    ['AGENTICGRAPH_SOURCE_REVISION', 'not-a-sha'],
-    ['AGENTICGRAPH_TARGET_REF', 'refs/heads/main'],
+    ['GITHUB_REPOSITORY', 'fork/agentic-graph'],
+    ['AGENTIC_OS_PR_BASE_REF', 'release'],
+    ['AGENTIC_OS_PR_HEAD_REF', 'main'],
+    ['AGENTIC_OS_PR_NUMBER', '0'],
+    ['AGENTIC_OS_REPOSITORY', 'fork/agentic-graph'],
+    ['AGENTIC_OS_SOURCE_REVISION', 'not-a-sha'],
+    ['AGENTIC_OS_TARGET_REF', 'refs/heads/main'],
   ]) {
     assert.throws(() => resolveXrV2SourceCheckoutContext({
       attachedBranch: '',
@@ -414,7 +414,7 @@ test('XR v2 readiness docs positively bind the pinned authority and all criteria
   assert.equal(result.pinnedBlob, XR_V2_PINNED_DOCUMENT_BLOB)
   assert.equal(result.pinnedBytes, XR_V2_PINNED_DOCUMENT_BYTES)
   assert.equal(result.pinnedSha256, XR_V2_PINNED_DOCUMENT_SHA256)
-  assert.equal(result.schema, 'agenticgraph-xr-v2-pinned-contract-conformance/v1')
+  assert.equal(result.schema, 'agentic-graph-xr-v2-pinned-contract-conformance/v1')
   assert.equal(result.documents.length, 4)
 })
 
@@ -424,14 +424,14 @@ test('XR v2 hosted gate produces the browser observation before upload', () => {
     'utf8',
   )
   const producer = workflow.indexOf('node canvas/scripts/run_xr_v2_browser_smoke.mjs')
-  const upload = workflow.indexOf('path: agenticgraph/data/outputs/xr-v2-browser-smoke.json')
+  const upload = workflow.indexOf('path: agentic-graph/data/outputs/xr-v2-browser-smoke.json')
   assert.ok(producer >= 0, 'hosted XR gate must run the observation producer')
   assert.ok(upload > producer, 'observation upload must follow its producer')
 })
 
 test('XR v2 readiness docs fail closed when pinned authority is tampered', t => {
   const fixtureRoot = createDocumentationFixture(t)
-  const target = resolve(fixtureRoot, 'docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md')
+  const target = resolve(fixtureRoot, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md')
   writeFileSync(target, `${readFileSync(target, 'utf8')}\n`)
   assert.throws(
     () => verifyXrV2ReadinessDocumentation(fixtureRoot),
@@ -441,7 +441,7 @@ test('XR v2 readiness docs fail closed when pinned authority is tampered', t => 
 
 test('XR v2 readiness docs fail closed when an acceptance criterion disappears', t => {
   const fixtureRoot = createDocumentationFixture(t)
-  const target = resolve(fixtureRoot, 'docs/documents/agenticgraph-ar-vr-xr-prd-tad-adr.md')
+  const target = resolve(fixtureRoot, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md')
   writeFileSync(target, readFileSync(target, 'utf8').replaceAll('AC-12', 'AC-XII'))
   assert.throws(
     () => verifyXrV2ReadinessDocumentation(fixtureRoot),
@@ -462,7 +462,7 @@ test('XR v2 readiness docs reject self-promoted runtime-ready status', t => {
 test('XR v2 runtime source positively binds the pinned conformance owner', () => {
   const result = verifyXrV2RuntimeSourceContract(REPOSITORY_ROOT)
   assert.equal(result.pinnedRevision, XR_V2_PINNED_DOCUMENT_REVISION)
-  assert.equal(result.schema, 'agenticgraph-xr-v2-pinned-contract-conformance/v1')
+  assert.equal(result.schema, 'agentic-graph-xr-v2-pinned-contract-conformance/v1')
   assert.ok(result.files.includes('canvas/src/features/xr-v2/pinnedContractConformance.ts'))
   assert.deepEqual(result.ac14Owners, [
     'canvas/src/features/xr-v2/behaviorDispatcher.ts',

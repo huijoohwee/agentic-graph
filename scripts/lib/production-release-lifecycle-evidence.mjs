@@ -9,21 +9,21 @@ import {
 } from '../verify-production-release-transports.mjs'
 import { assertSuccessfulReleaseMirrorIdentity } from '../production-mirror-artifact.mjs'
 
-export const RELEASE_EVIDENCE_SCHEMA = 'agenticgraph-production-release-evidence/v1'
-export const ROLLBACK_IDENTITY_SCHEMA = 'agenticgraph-production-rollback-identity/v1'
-export const ROLLBACK_RECAPTURE_SCHEMA = 'agenticgraph-production-rollback-recapture/v1'
-export const DEPLOYMENT_CAPTURE_SCHEMA = 'agenticgraph-pages-deployment-capture/v1'
-export const D1_RECONCILIATION_EVIDENCE_SCHEMA = 'agenticgraph-d1-reconciliation-evidence/v1'
+export const RELEASE_EVIDENCE_SCHEMA = 'agentic-graph-production-release-evidence/v1'
+export const ROLLBACK_IDENTITY_SCHEMA = 'agentic-graph-production-rollback-identity/v1'
+export const ROLLBACK_RECAPTURE_SCHEMA = 'agentic-graph-production-rollback-recapture/v1'
+export const DEPLOYMENT_CAPTURE_SCHEMA = 'agentic-graph-pages-deployment-capture/v1'
+export const D1_RECONCILIATION_EVIDENCE_SCHEMA = 'agentic-graph-d1-reconciliation-evidence/v1'
 export const LIFECYCLE_V2_SCHEMA = 'agentic-collaborative-release-lifecycle/v2'
-export const RELEASE_EVIDENCE_CAPTURE_ADAPTER = 'agenticgraph-dormant-release-frontier-materializer/v1'
-export const CLEAN_FRONTIER_CAPTURE_ADAPTER = 'agenticgraph-clean-release-frontier-materializer/v1'
-export const CURRENT_FRONTIER_CAPTURE_ADAPTER = 'agenticgraph-current-release-frontier-materializer/v1'
-export const PAGES_CURRENT_OBSERVATION_SCHEMA = 'agenticgraph-production-pages-current-observation/v1'
+export const RELEASE_EVIDENCE_CAPTURE_ADAPTER = 'agentic-graph-dormant-release-frontier-materializer/v1'
+export const CLEAN_FRONTIER_CAPTURE_ADAPTER = 'agentic-graph-clean-release-frontier-materializer/v1'
+export const CURRENT_FRONTIER_CAPTURE_ADAPTER = 'agentic-graph-current-release-frontier-materializer/v1'
+export const PAGES_CURRENT_OBSERVATION_SCHEMA = 'agentic-graph-production-pages-current-observation/v1'
 export const SUCCESSFUL_RELEASE_RECAPTURE_FRESHNESS_MS = 10 * 60 * 1000
-const D1_SNAPSHOT_SCHEMA = 'agenticgraph-d1-state-snapshot/v1'
-const FAILURE_OBSERVATION_SCHEMA = 'agenticgraph-production-release-failure-observation/v1'
-const RESTORED_PAGES_SCHEMA = 'agenticgraph-production-restored-pages-evidence/v1'
-const OBSERVED_MIRROR_SCHEMA = 'agenticgraph-production-observed-mirror-identity/v1'
+const D1_SNAPSHOT_SCHEMA = 'agentic-graph-d1-state-snapshot/v1'
+const FAILURE_OBSERVATION_SCHEMA = 'agentic-graph-production-release-failure-observation/v1'
+const RESTORED_PAGES_SCHEMA = 'agentic-graph-production-restored-pages-evidence/v1'
+const OBSERVED_MIRROR_SCHEMA = 'agentic-graph-production-observed-mirror-identity/v1'
 const PAGES_API_ADAPTER = 'cloudflare-pages/api-canonical-observation-v1'
 const ROLLBACK_STAGES = ['deployment', 'state-reconciliation', 'live-verification', 'publication', 'receipt-persistence']
 
@@ -192,7 +192,7 @@ const sameValues = (left, right) => canonicalJson([...left].sort()) === canonica
 const pathsOverlap = (left, right) => left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`)
 const normalizeLaneWriteSet = (value, lane, sourceRevision) => {
   requireExact(value, ['schema', 'path', 'sourceRevision', 'mergeBaseRevision', 'laneHeadRevision', 'paths'], 'lane write set')
-  if (value.schema !== 'agenticgraph-preserved-lane-write-set/v1' || value.path !== lane.path
+  if (value.schema !== 'agentic-graph-preserved-lane-write-set/v1' || value.path !== lane.path
       || value.sourceRevision !== sourceRevision || value.laneHeadRevision !== lane.head) throw new Error(`lane write set drifted: ${lane.path}`)
   requireSha(value.mergeBaseRevision, 'lane write-set merge base')
   if (!Array.isArray(value.paths)) throw new Error('lane write-set paths must be an array')
@@ -308,7 +308,7 @@ const captureWriteSet = (lane, sourceRevision, git) => {
   const mergeBaseRevision = git(lane.path, ['merge-base', sourceRevision, lane.head]).trim()
   const committed = nullList(git(lane.path, ['diff', '--name-only', '-z', mergeBaseRevision, lane.head]))
   const working = nullList(git(lane.path, ['ls-files', '--modified', '--deleted', '--others', '--exclude-standard', '-z']))
-  return { schema: 'agenticgraph-preserved-lane-write-set/v1', path: lane.path, sourceRevision, mergeBaseRevision,
+  return { schema: 'agentic-graph-preserved-lane-write-set/v1', path: lane.path, sourceRevision, mergeBaseRevision,
     laneHeadRevision: lane.head, paths: [...new Set([...committed, ...working])].sort((a, b) => a.localeCompare(b)) }
 }
 export const materializeReleaseEvidence = async ({
@@ -562,7 +562,7 @@ const normalizeRollbackState = (value, lastKnownGood) => {
     disposition,
     observedAt,
     dispositionDigest: digest({
-      schema: 'agenticgraph-production-rollback-state-disposition/v1',
+      schema: 'agentic-graph-production-rollback-state-disposition/v1',
       disposition,
       lastKnownGood: { stateContractDigest: lastKnownGood.stateContractDigest, readbackDigest: lastKnownGood.readbackDigest, counts: lastKnownGood.counts },
       observed: {

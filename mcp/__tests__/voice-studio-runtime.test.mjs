@@ -149,7 +149,7 @@ const adapterFor = (onCall = () => {}) => ({
           artifactId: "profile-owner:revision-2",
           sha256: repeatedSha("d"),
           kind: "voice-profile",
-          mediaType: "application/vnd.agenticgraph.voice-profile+json",
+          mediaType: "application/vnd.agentic-graph.voice-profile+json",
           bytes: 512,
         },
       };
@@ -583,7 +583,7 @@ test("request digest and explicit approval scope are bound into both verifiers",
   const result = await runtime.run(VOICE_STUDIO_TOOL_NAME, input);
   assert.equal(result.ok, true);
   assert.equal(approvalObserved.requestDigest, voiceStudioRequestDigest(input));
-  assert.equal(approvalObserved.scope, "agenticgraph.voice.studio:create:live");
+  assert.equal(approvalObserved.scope, "agentic-graph.voice.studio:create:live");
   assert.equal(rightsObserved.requestDigest, voiceStudioRequestDigest(input));
   assert.equal(rightsObserved.profileId, input.voiceProfile.profileId);
   assert.equal(rightsObserved.profileRevision, input.voiceProfile.profileRevision);

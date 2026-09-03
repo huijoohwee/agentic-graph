@@ -1,4 +1,4 @@
-const DEFAULT_SCOPE_PATH = '/agenticgraph/'
+const DEFAULT_SCOPE_PATH = '/agentic-graph/'
 const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/
 
 type EventListenerTarget = {

@@ -1,5 +1,5 @@
 // Unit tests for Budget_Meters update timing
-// (agenticgraph-acos-mcp-connector spec, task 2.11 - R2.5).
+// (agentic-graph-acos-mcp-connector spec, task 2.11 - R2.5).
 //
 // R2.5: WHILE Run_State is in-progress, THE Director SHALL update Budget_Meters
 //   within 2 seconds of each spend event to reflect cumulative estimated and

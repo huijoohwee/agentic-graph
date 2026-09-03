@@ -14,9 +14,9 @@ const gitCommonDir = execFileSync(
   { cwd: root, encoding: 'utf8' },
 ).trim()
 const siblingRoots = resolveWorkspaceSeedSiblingRootsFromGitCommonDir(gitCommonDir)
-const explicitAgenticDocsRoot = String(process.env.AGENTICGRAPH_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
+const explicitAgenticDocsRoot = String(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
 const checkedOutAgenticDocsRoot = siblingRoots.agenticDocsRoot
-const explicitPublishRoot = String(process.env.AGENTICGRAPH_PRODUCTION_MIRROR_ROOT || '').trim()
+const explicitPublishRoot = String(process.env.AGENTIC_OS_PRODUCTION_MIRROR_ROOT || '').trim()
 const checkedOutPublishRoot = siblingRoots.publishRoot
 
 const exists = async candidate => {
@@ -33,15 +33,15 @@ const publishRoot = explicitPublishRoot
   || (await exists(checkedOutPublishRoot) ? checkedOutPublishRoot : null)
 
 const result = await verifyWorkspaceSeedAuthority({
-  agenticgraphRoot: root,
+  agenticGraphRoot: root,
   agenticDocsRoot,
   publishRoot,
 })
 
 const formatInventory = inventory => inventory === null ? 'not-checked' : `[${inventory.join(',')}]`
 console.log(
-  `[agenticgraph] workspace-seed SSOT passed (${result.sourceBytes} bytes; `
-  + `authored=${formatInventory(result.agenticgraphInventory)}; `
+  `[agentic-graph] workspace-seed SSOT passed (${result.sourceBytes} bytes; `
+  + `authored=${formatInventory(result.agenticGraphInventory)}; `
   + `agenticProjection=${formatInventory(result.agenticInventory)}; `
   + `publishEntries=${formatInventory(result.publishInventory)})`,
 )

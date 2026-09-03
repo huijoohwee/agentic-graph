@@ -25,7 +25,7 @@ export const collectAgenticOsRuntimeInvocations = (userQuery: string): AgenticOs
 export const hasRecognizedChatRuntimeInvocation = (userQuery: string): boolean => {
   if (parseChatSkillSlashInvocation(userQuery)) return true
   if (parseChatInvocationDirectives(userQuery).length > 0) return true
-  if (/\bagenticgraph\.probe\.(?:generate|select)\b/i.test(userQuery)) return true
+  if (/\bagentic-graph\.probe\.(?:generate|select)\b/i.test(userQuery)) return true
   return collectAgenticOsRuntimeInvocations(userQuery).length > 0
 }
 

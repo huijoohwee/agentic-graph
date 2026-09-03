@@ -52,7 +52,7 @@ async function main() {
       return { evidence, cameraRequests }
     })
     const evidence = result.evidence
-    assert.equal(evidence.schema, 'agenticgraph-motion-control-litert-readiness/v1')
+    assert.equal(evidence.schema, 'agentic-graph-motion-control-litert-readiness/v1')
     assert.equal(evidence.modelId, 'google-blazepose-ghum-full-float16')
     assert.equal(evidence.requestedBackend, 'wasm')
     assert.equal(evidence.effectiveBackend, 'wasm')
@@ -73,7 +73,7 @@ async function main() {
     assert.ok(assetResponses.some(response => response.url.endsWith('.wasm') && response.status === 200))
     const fullEvidence = {
       ...evidence,
-      schema: 'agenticgraph-motion-control-litert-browser-smoke/v1',
+      schema: 'agentic-graph-motion-control-litert-browser-smoke/v1',
       sourceRevision: source.sourceRevision,
       sourceBranch: source.sourceBranch,
       sourceState: source.sourceState,

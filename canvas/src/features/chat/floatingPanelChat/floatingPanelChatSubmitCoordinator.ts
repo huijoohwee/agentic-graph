@@ -393,25 +393,25 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       finalAssistantText = assistantText
       if (args.submitArgs.chatStorageTarget !== 'chatAgenticGraph') break
 
-      const agenticgraphAttempt = resolveAgenticGraphAttempt({
+      const agenticGraphAttempt = resolveAgenticGraphAttempt({
         assistantText,
         packedFrontmatter: packedContext.frontmatter,
         attempt,
         maxValidationAttempts: maxValidationAttempts,
       })
       publishLocalChatPipelineKgcValidationSnapshot({
-        ...agenticgraphAttempt.validation,
-        correctionPromptPreview: agenticgraphAttempt.kind === 'retry'
-          ? agenticgraphAttempt.correctionPrompt.slice(0, 240)
-          : agenticgraphAttempt.validation.correctionPromptPreview,
+        ...agenticGraphAttempt.validation,
+        correctionPromptPreview: agenticGraphAttempt.kind === 'retry'
+          ? agenticGraphAttempt.correctionPrompt.slice(0, 240)
+          : agenticGraphAttempt.validation.correctionPromptPreview,
       })
-      if (agenticgraphAttempt.kind === 'retry') {
-        correctionPrompt = agenticgraphAttempt.correctionPrompt
+      if (agenticGraphAttempt.kind === 'retry') {
+        correctionPrompt = agenticGraphAttempt.correctionPrompt
         continue
       }
-      finalStatus = agenticgraphAttempt.status
-      finalAssistantText = agenticgraphAttempt.finalAssistantText
-      finalValidatedKgc = agenticgraphAttempt.validatedKgc
+      finalStatus = agenticGraphAttempt.status
+      finalAssistantText = agenticGraphAttempt.finalAssistantText
+      finalValidatedKgc = agenticGraphAttempt.validatedKgc
       break
     }
 

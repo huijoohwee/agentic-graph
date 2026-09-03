@@ -150,7 +150,7 @@ export async function testCanvasQueryBootstrapHandlesLarkImportHandoffWithoutGra
       throw new Error(`expected import handoff query to be consumed, got ${JSON.stringify(domWindow.location.search)}`)
     }
   }, domWindow => {
-    ;(domWindow as Window & { agenticgraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand }).agenticgraphFeishuBaseSourceImportCommand = {
+    ;(domWindow as Window & { agenticGraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand }).agenticGraphFeishuBaseSourceImportCommand = {
       importSnapshot: async (args: FeishuBaseSourceImportRequest) => {
         capturedRequest = args
         return {
@@ -195,7 +195,7 @@ export async function testCanvasQueryBootstrapRedeemsOpaqueLarkKnowledgeSourceHa
       throw new Error(`expected capability fragment to be consumed, got ${domWindow.location.hash}`)
     }
   }, domWindow => {
-    ;(domWindow as Window & { agenticgraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand }).agenticgraphFeishuBaseSourceImportCommand = {
+    ;(domWindow as Window & { agenticGraphFeishuBaseSourceImportCommand?: FeishuBaseSourceImportCommand }).agenticGraphFeishuBaseSourceImportCommand = {
       importSnapshot: async (): Promise<FeishuBaseSourceImportResult> => ({
         ok: false,
         error: 'unexpected snapshot import',
@@ -228,7 +228,7 @@ export function testCanvasQueryBootstrapDoesNotTreatWebpageAsMcpEndpoint() {
   if (!text.includes('importKnowledgeSourceFromLarkHandoff')) {
     throw new Error('expected CanvasQueryBootstrapRuntime to use the authenticated knowledge-source import seam')
   }
-  if (text.includes('https://open.larksuite.com/app/cli_a7ddaa5aeff89010/webpage') || text.includes('https://airvio.co/agenticgraph/mcp')) {
+  if (text.includes('https://open.larksuite.com/app/cli_a7ddaa5aeff89010/webpage') || text.includes('https://airvio.co/agentic-graph/mcp')) {
     throw new Error('expected CanvasQueryBootstrapRuntime not to hardcode webpage or MCP endpoint URLs')
   }
   if (text.includes('applyWorkspaceImportToCanvas') || text.includes('setActiveMarkdownDocument(')) {

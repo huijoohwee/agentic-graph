@@ -6,7 +6,7 @@ import {
   type GameOsJsonValue,
 } from './types.js'
 
-export const GAME_OS_INDEXED_DB_NAME = 'agenticgraph-game-os' as const
+export const GAME_OS_INDEXED_DB_NAME = 'agentic-graph-game-os' as const
 export const GAME_OS_INDEXED_DB_VERSION = 1
 export const GAME_OS_INDEXED_DB_STORE = 'world-envelopes' as const
 

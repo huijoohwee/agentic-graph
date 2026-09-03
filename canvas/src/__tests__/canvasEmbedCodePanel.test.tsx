@@ -19,7 +19,7 @@ export async function testCanvasEmbedCodePanelReusesSharedCodeBlockControls(): P
         sourceName: 'shared-canvas.md',
         title: 'Canvas iframe embed',
         language: 'html',
-        code: '<iframe src="https://airvio.co/agenticgraph/share/kg-public-token?kgPreview=1"></iframe>',
+        code: '<iframe src="https://airvio.co/agentic-graph/share/kg-public-token?kgPreview=1"></iframe>',
       })) throw new Error('expected canvas embed event to open the panel')
     })
     const panel = container.querySelector('[role="dialog"]')

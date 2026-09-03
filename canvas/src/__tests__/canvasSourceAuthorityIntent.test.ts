@@ -27,7 +27,7 @@ export function testCanvasSourceAuthorityRecognizesSharePathBeforeNormalization(
     search: '?kgPreview=1',
   })
   const basePrefixed = resolveCanvasSourceAuthorityIntent({
-    pathname: `/agenticgraph/share/${shareToken}`,
+    pathname: `/agentic-graph/share/${shareToken}`,
     search: '?kgPreview=1',
   })
   const runtimeKey = buildDocDeepLinkIntentKey(`?kgShare=${encodeURIComponent(shareToken)}&kgPreview=1`)
@@ -42,7 +42,7 @@ export function testCanvasSourceAuthorityRecognizesSharePathBeforeNormalization(
 export function testCanvasSourceAuthorityRejectsMalformedExplicitSources(): void {
   const malformedLocations = [
     { pathname: '/share/not-a-share-token', search: '' },
-    { pathname: '/agenticgraph/doc/workspace-only', search: '' },
+    { pathname: '/agentic-graph/doc/workspace-only', search: '' },
     { pathname: '/', search: '?kgShare=not-a-share-token' },
     { pathname: '/', search: '?kgWorkspaceId=workspace-without-path' },
     { pathname: '/', search: '?kgDoc=' },
@@ -58,7 +58,7 @@ export function testCanvasSourceAuthorityRejectsMalformedExplicitSources(): void
     }
   }
 
-  const ordinaryRoute = resolveCanvasSourceAuthorityIntent({ pathname: '/', search: '?kgPath=%2Fagenticgraph%2F' })
+  const ordinaryRoute = resolveCanvasSourceAuthorityIntent({ pathname: '/', search: '?kgPath=%2Fagentic-graph%2F' })
   if (ordinaryRoute.key || ordinaryRoute.error) {
     throw new Error('an ordinary Canvas route must not manufacture a document authority intent')
   }

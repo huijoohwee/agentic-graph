@@ -254,7 +254,7 @@ export function testMarkdownFrontmatterFlowDiagramsParserForbidsDemoHardcodes() 
     throw new Error(`expected flow_diagrams inline compute source to stay within the shared safety cap, got ${computeSource.length}`)
   }
   for (const forbidden of [
-    /agenticgraph-[\w-]*-demo/i,
+    /agentic-graph-[\w-]*-demo/i,
     /\/Users\//,
     /AG_TEST_/,
   ]) {

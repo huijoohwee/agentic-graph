@@ -102,7 +102,7 @@ export async function testJsonMarkdownApplyJsonUpdatesJsonSourceAndMarkdown() {
 export async function testJsonMarkdownSourceFidelityRoundTripsYamlFrontmatter() {
   const markdown = [
     '---',
-    'title: AgenticGraph Strybldr Demo',
+    'title: agentic-graph Strybldr Demo',
     'strybldr_storyboard:',
     '  version: 1',
     '  runId: strybldr-validation-recreate-runtime',
@@ -122,8 +122,8 @@ export async function testJsonMarkdownSourceFidelityRoundTripsYamlFrontmatter() 
     '',
   ].join('\n')
   const jsonText = serializeJsonMarkdownDraftToSourceText({
-    activeDocumentKey: '/docs/agenticgraph-strybldr-demo.md',
-    editorUri: 'file:///docs/agenticgraph-strybldr-demo.md',
+    activeDocumentKey: '/docs/agentic-graph-strybldr-demo.md',
+    editorUri: 'file:///docs/agentic-graph-strybldr-demo.md',
     markdownText: markdown,
   })
   const restored = readMarkdownSourceFidelityTextFromJsonText(jsonText)

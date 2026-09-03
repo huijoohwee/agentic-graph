@@ -28,7 +28,7 @@ type WorkspaceLaunchHandlerResult = Readonly<{
 }>
 
 export type WorkspaceLaunchControlResult = Readonly<{
-  schema: 'agenticgraph-workspace-launch-control/v1'
+  schema: 'agentic-graph-workspace-launch-control/v1'
   status: WorkspaceLaunchActionStatus
   optionId: WorkspaceLaunchOptionId
   invocation: string
@@ -58,7 +58,7 @@ export async function executeWorkspaceLaunchControl(input: Record<string, unknow
   if (!activeHandler) throw new Error('The browser-local Workspace Launch owner is unavailable.')
   const outcome = await activeHandler(parsed.optionId as WorkspaceLaunchOptionId)
   return Object.freeze({
-    schema: 'agenticgraph-workspace-launch-control/v1',
+    schema: 'agentic-graph-workspace-launch-control/v1',
     status: outcome.status,
     optionId: parsed.optionId as WorkspaceLaunchOptionId,
     invocation: parsed.invocation,

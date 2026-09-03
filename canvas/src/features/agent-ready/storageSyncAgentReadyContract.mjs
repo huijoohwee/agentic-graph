@@ -1,10 +1,10 @@
 import {
-  AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
-  AGENTICGRAPH_STORAGE_BROWSER_TOOL_IDS,
-  AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
-} from '../../lib/storage/agenticgraphStorageEngineMcpContract.mjs'
+  AGENTIC_OS_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+  AGENTIC_OS_STORAGE_BROWSER_TOOL_IDS,
+  AGENTIC_OS_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+} from '../../lib/storage/agentic-graph-storage-engine-mcp-contract.mjs'
 
-export const STORAGE_SYNC_AGENT_READY_TOOL_IDS = AGENTICGRAPH_STORAGE_BROWSER_TOOL_IDS
+export const STORAGE_SYNC_AGENT_READY_TOOL_IDS = AGENTIC_OS_STORAGE_BROWSER_TOOL_IDS
 
 const INSPECT_ANNOTATIONS = Object.freeze({
   readOnlyHint: true,
@@ -46,7 +46,7 @@ export function buildStorageSyncAgentReadyToolContracts({ buildWebName }) {
     webName: buildWebName(STORAGE_SYNC_AGENT_READY_TOOL_IDS.controlLocalGitRepository),
     title: 'Control Local Git Repository',
     description: 'Clone, fetch, commit, or push the active browser-local persisted Git repository through an opaque Dev Worker remote using structured fields or exact /git.run grammar.',
-    inputSchema: AGENTICGRAPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
+    inputSchema: AGENTIC_OS_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
     outputSchema: CONTROL_OUTPUT_SCHEMA,
     annotations: CONTROL_ANNOTATIONS,
   }, {
@@ -62,7 +62,7 @@ export function buildStorageSyncAgentReadyToolContracts({ buildWebName }) {
     webName: buildWebName(STORAGE_SYNC_AGENT_READY_TOOL_IDS.controlLocalFileSync),
     title: 'Control Local File Sync',
     description: 'Pull or push a bounded browser-local persisted file/directory prefix through an opaque Dev Worker provider using structured fields or exact /file.sync grammar.',
-    inputSchema: AGENTICGRAPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
+    inputSchema: AGENTIC_OS_FILE_SYNC_CONTROL_INPUT_SCHEMA,
     outputSchema: CONTROL_OUTPUT_SCHEMA,
     annotations: CONTROL_ANNOTATIONS,
   }]

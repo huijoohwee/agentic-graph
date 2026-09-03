@@ -26,12 +26,12 @@ export type PublishGeneratedWorkspacePathsToGitHubResult = {
 }
 
 export const readAgenticGraphGitHubWriteEnabled = (): boolean => {
-  const raw = normalizeString(readEnvString('VITE_AGENTICGRAPH_GITHUB_WRITE_ENABLED', '')).toLowerCase()
+  const raw = normalizeString(readEnvString('VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED', '')).toLowerCase()
   return TRUTHY_ENV.has(raw)
 }
 
 const readAppBasePath = (): string => {
-  let raw = '/agenticgraph/'
+  let raw = '/agentic-graph/'
   try {
     raw = normalizeString(import.meta.env.BASE_URL) || raw
   } catch {
@@ -39,11 +39,11 @@ const readAppBasePath = (): string => {
   }
   if (!raw.startsWith('/')) raw = `/${raw}`
   raw = raw.replace(/\/+$/, '')
-  return raw && raw !== '/' ? raw : '/agenticgraph'
+  return raw && raw !== '/' ? raw : '/agentic-graph'
 }
 
 export const resolveAgenticGraphGitHubWriteUrl = (baseUrl?: string | null): string => {
-  const explicitBase = normalizeString(baseUrl) || normalizeString(readEnvString('VITE_AGENTICGRAPH_GITHUB_WRITE_BASE_URL', ''))
+  const explicitBase = normalizeString(baseUrl) || normalizeString(readEnvString('VITE_AGENTIC_OS_GITHUB_WRITE_BASE_URL', ''))
   const routePath = `${readAppBasePath()}/api/workspace/github/write`
   if (explicitBase) return new URL(routePath, explicitBase.endsWith('/') ? explicitBase : `${explicitBase}/`).toString()
   if (typeof window !== 'undefined' && normalizeString(window.location?.origin)) {
@@ -95,7 +95,7 @@ export const publishGeneratedWorkspacePathsToGitHub = async (args: {
   }
 
   const sessionId = readSessionIdFromWorkspacePath(files[0]?.workspacePath || '')
-  const message = normalizeString(args.message) || (sessionId ? `AgenticGraph chat artifacts ${sessionId}` : 'AgenticGraph chat artifacts')
+  const message = normalizeString(args.message) || (sessionId ? `agentic-graph chat artifacts ${sessionId}` : 'agentic-graph chat artifacts')
   const response = await fetchImpl(resolveAgenticGraphGitHubWriteUrl(args.baseUrl), {
     method: 'POST',
     headers: {

@@ -9,7 +9,7 @@ import {
   getAgenticGraphStorageDb,
   type KgChainEvidenceRecord,
   type AgenticGraphStorageDb,
-} from '@/lib/storage/agenticgraphStorageDb'
+} from '@/lib/storage/agentic-graph-storage-db'
 
 const CACHE_SCOPE = 'chainEvidence'
 const EVIDENCE_STATES = new Set([

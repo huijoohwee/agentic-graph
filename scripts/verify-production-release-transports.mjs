@@ -13,14 +13,14 @@ import {
 
 export { createForwardHealBaselineEvidence } from './lib/production-forward-heal-evidence.mjs'
 
-const EVIDENCE_SCHEMA = 'agenticgraph-production-transport-evidence/v1'
+const EVIDENCE_SCHEMA = 'agentic-graph-production-transport-evidence/v1'
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const DIGEST_PATTERN = /^[0-9a-f]{64}$/
 const GITHUB_OUTPUT_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
 const PAGES_DEPLOYMENT_UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/
 const PAGES_API_ADAPTER = 'cloudflare-pages/api-canonical-observation-v1'
-const PAGES_ATTEMPT_SCHEMA = 'agenticgraph-pages-deployment-attempt/v1'
-const PAGES_CURRENT_OBSERVATION_SCHEMA = 'agenticgraph-production-pages-current-observation/v1'
+const PAGES_ATTEMPT_SCHEMA = 'agentic-graph-pages-deployment-attempt/v1'
+const PAGES_CURRENT_OBSERVATION_SCHEMA = 'agentic-graph-production-pages-current-observation/v1'
 
 export const digestBytes = value => createHash('sha256').update(value).digest('hex')
 const canonicalJson = value => Array.isArray(value)
@@ -113,14 +113,14 @@ const fetchObservation = async ({ origin, pathname, expectedOwner = '' }) => {
   const body = Buffer.from(await response.arrayBuffer())
   assert.equal(response.status, 200, `${url} must return HTTP 200`)
   assert.match(String(response.headers.get('content-type') || ''), /^text\/html\b/i, `${url} must return HTML`)
-  const routeOwner = String(response.headers.get('x-agenticgraph-route-owner') || '').trim()
+  const routeOwner = String(response.headers.get('x-agentic-graph-route-owner') || '').trim()
   if (expectedOwner) assert.equal(routeOwner, expectedOwner, `${url} route owner drifted`)
   return {
     url,
     status: response.status,
     contentType: String(response.headers.get('content-type') || ''),
     routeOwner,
-    routeTag: String(response.headers.get('x-agenticgraph-route-tag') || '').trim(),
+    routeTag: String(response.headers.get('x-agentic-graph-route-tag') || '').trim(),
     bodyDigest: digestBytes(body),
     byteLength: body.length,
   }
@@ -153,7 +153,7 @@ const fetchMarker = async ({ origin, pathname }) => {
 const readSmokeEvidence = async filePath => {
   const bytes = await fs.readFile(path.resolve(filePath))
   const text = bytes.toString('utf8')
-  const passed = text.match(/\[agenticgraph\] agent-ready smoke passed: (\d+)\/(\d+)/)
+  const passed = text.match(/\[agentic-graph\] agent-ready smoke passed: (\d+)\/(\d+)/)
   if (!passed || passed[1] !== passed[2] || /(?:^|\n)not ok /m.test(text)) {
     throw new Error(`agent-ready smoke evidence is incomplete: ${filePath}`)
   }
@@ -187,7 +187,7 @@ export const validateTransportEvidence = ({ evidence, sourceRevision, manifestDi
       `${transport.id} apex/app readiness marker bytes differ`,
     )
     assert.equal(transport.routes.apex.routeOwner, 'root-agent-ready-pages', `${transport.id} apex route owner drifted`)
-    assert.equal(transport.routes.app.routeOwner, 'agenticgraph-agent-ready-pages', `${transport.id} app route owner drifted`)
+    assert.equal(transport.routes.app.routeOwner, 'agentic-graph-agent-ready-pages', `${transport.id} app route owner drifted`)
     assert.equal(transport.routes.apex.status, 200, `${transport.id} apex route status drifted`)
     assert.equal(transport.routes.app.status, 200, `${transport.id} app route status drifted`)
   }
@@ -223,7 +223,7 @@ export const verifyProductionReleaseTransports = async ({
     const smoke = await readSmokeEvidence(target.smokePath)
     const [apexMarker, appMarker, apex, app] = await Promise.all([
       fetchMarker({ origin: target.origin, pathname: '/.well-known/runtime-readiness.json' }),
-      fetchMarker({ origin: target.origin, pathname: '/agenticgraph/.well-known/runtime-readiness.json' }),
+      fetchMarker({ origin: target.origin, pathname: '/agentic-graph/.well-known/runtime-readiness.json' }),
       fetchObservation({
         origin: target.origin,
         pathname: `/?kgTransportProof=${sourceRevision}`,
@@ -231,8 +231,8 @@ export const verifyProductionReleaseTransports = async ({
       }),
       fetchObservation({
         origin: target.origin,
-        pathname: `/agenticgraph/?kgTransportProof=${sourceRevision}`,
-        expectedOwner: 'agenticgraph-agent-ready-pages',
+        pathname: `/agentic-graph/?kgTransportProof=${sourceRevision}`,
+        expectedOwner: 'agentic-graph-agent-ready-pages',
       }),
     ])
     return {
@@ -398,7 +398,7 @@ const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, r
   if (mode === 'candidate') {
     assert.equal(observation.identity.deploymentCommitRevision, releaseEvidence.sourceRevision)
     const capture = {
-      schema: 'agenticgraph-pages-deployment-capture/v1', status: 'deployed', adapterId: PAGES_API_ADAPTER,
+      schema: 'agentic-graph-pages-deployment-capture/v1', status: 'deployed', adapterId: PAGES_API_ADAPTER,
       deploymentId: observation.identity.deploymentId, deploymentOrigin: observation.identity.deploymentOrigin,
       sourceRevision: observation.identity.sourceRevision, deployedAt: observation.identity.deployedAt,
       capturedAt: new Date().toISOString(),
@@ -411,7 +411,7 @@ const capturePages = async ({ mode, evidenceDir, output, previousDeploymentId, r
     assert.equal(observation.identity[field], expected[field], `restored Pages ${field} drifted`)
   }
   await writeJson(output, {
-    schema: 'agenticgraph-production-restored-pages-evidence/v1', status: 'restored', adapterId: PAGES_API_ADAPTER,
+    schema: 'agentic-graph-production-restored-pages-evidence/v1', status: 'restored', adapterId: PAGES_API_ADAPTER,
     canonicalDeployment: observation.identity, capturedAt: new Date().toISOString(),
   })
   await appendGitHubOutput(githubOutput, {
@@ -426,7 +426,7 @@ const recaptureRollback = async ({ pagesPath, statePath, releaseEvidencePath, mi
     readJson(pagesPath), readJson(statePath), readJson(releaseEvidencePath),
   ])
   const rollbackIdentity = {
-    schema: 'agenticgraph-production-rollback-identity/v1',
+    schema: 'agentic-graph-production-rollback-identity/v1',
     pages: {
       deploymentId: pages.deploymentId, deploymentOrigin: pages.deploymentOrigin,
       deploymentCommitRevision: pages.deploymentCommitRevision, sourceRevision: pages.sourceRevision,
@@ -439,7 +439,7 @@ const recaptureRollback = async ({ pagesPath, statePath, releaseEvidencePath, mi
   assert.equal(identityDigest, releaseEvidence.rollbackTargetDigest, 'rollback target digest drifted')
   const capturedAt = new Date().toISOString()
   assert.ok(Date.parse(capturedAt) >= Date.parse(releaseEvidence.rollbackCapturedAt), 'rollback recapture predates release evidence')
-  await writeJson(output, { schema: 'agenticgraph-production-rollback-recapture/v1', rollbackIdentity, capturedAt })
+  await writeJson(output, { schema: 'agentic-graph-production-rollback-recapture/v1', rollbackIdentity, capturedAt })
   await fs.writeFile(path.resolve(digestOutput), `${identityDigest}\n`)
 }
 
@@ -451,7 +451,7 @@ const recordFailure = async ({ stageFile, stepContext, detailOutput, output }) =
   const detail = { failedStage, outcomes }
   await writeJson(detailOutput, detail)
   await writeJson(output, {
-    schema: 'agenticgraph-production-release-failure-observation/v1', failedStage,
+    schema: 'agentic-graph-production-release-failure-observation/v1', failedStage,
     messageDigest: digestBytes(await fs.readFile(path.resolve(detailOutput))), observedAt: new Date().toISOString(),
   })
 }
@@ -484,7 +484,7 @@ export const observeMirror = async ({ repositoryRoot, repository, releaseEvidenc
     assert.ok(observedRepository, '--repository is required without --release-evidence')
     if (repository && expectedRepository) assert.equal(repository, expectedRepository, 'mirror repository drifted from release evidence')
     const evidence = {
-      schema: 'agenticgraph-production-observed-mirror-identity/v1',
+      schema: 'agentic-graph-production-observed-mirror-identity/v1',
       repository: observedRepository, revision, sourceRevision,
       observedAt: new Date().toISOString(),
     }
@@ -567,7 +567,7 @@ const main = async () => {
         const attempt = await readJson(required('attempt')).catch(() => null)
         const wranglerBytes = await fs.readFile(path.resolve(required('wrangler-output'))).catch(() => Buffer.alloc(0))
         await writeJson(required('reconciliation-output'), {
-          schema: 'agenticgraph-pages-mutation-reconciliation/v1', status: 'preserve-required', attempt,
+          schema: 'agentic-graph-pages-mutation-reconciliation/v1', status: 'preserve-required', attempt,
           mutationPossible: true, mutationProven: false,
           wranglerOutputDigest: digestBytes(wranglerBytes), reasonDigest: digestBytes(error.message),
           observedAt: new Date().toISOString(),

@@ -242,8 +242,8 @@ export function inspectLocalImmersiveMedia() {
   return {
     schema: IMMERSIVE_MEDIA_MCP_SCHEMA,
     webMcpTools: {
-      inspect: `agenticgraph.${IMMERSIVE_MEDIA_WEB_MCP_TOOL_IDS.inspect}`,
-      control: `agenticgraph.${IMMERSIVE_MEDIA_WEB_MCP_TOOL_IDS.control}`,
+      inspect: `agentic-graph.${IMMERSIVE_MEDIA_WEB_MCP_TOOL_IDS.inspect}`,
+      control: `agentic-graph.${IMMERSIVE_MEDIA_WEB_MCP_TOOL_IDS.control}`,
     },
     invocationGrammar: {
       open: buildImmersiveMediaInvocation('open'),

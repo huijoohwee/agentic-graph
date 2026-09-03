@@ -1,6 +1,6 @@
 // =============================================================================
 // Media artifact contract SSOT — unit tests
-// agenticgraph-widget-canvas-media spec · Task 1 · Requirements R3.3, R3.4, R3.5, R6.1
+// agentic-graph-widget-canvas-media spec · Task 1 · Requirements R3.3, R3.4, R3.5, R6.1
 // Pure helpers/validators: ZERO network calls, deterministic (sha256 via WebCrypto).
 // =============================================================================
 
@@ -8,10 +8,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  AGENTICGRAPH_CLOUDFLARE_ACCOUNT_ID,
-  AGENTICGRAPH_MEDIA_BUCKET,
-  AGENTICGRAPH_MEDIA_HOST,
-  AGENTICGRAPH_MEDIA_ROUTE_PREFIX,
+  AGENTIC_OS_CLOUDFLARE_ACCOUNT_ID,
+  AGENTIC_OS_MEDIA_BUCKET,
+  AGENTIC_OS_MEDIA_HOST,
+  AGENTIC_OS_MEDIA_ROUTE_PREFIX,
   RESPONSIVE_PROOF_CLASSES,
   MEDIA_LOGICAL_FRAME,
   FORBIDDEN_EPHEMERAL_FIELDS,
@@ -62,14 +62,14 @@ test("media-artifact contract is re-exported from the aggregate entry point", ()
   assert.equal(typeof contracts.mediaObjectKey, "function");
   assert.equal(typeof contracts.buildDurableR2Url, "function");
   assert.equal(typeof contracts.validateArtifactRecord, "function");
-  assert.equal(contracts.AGENTICGRAPH_MEDIA_BUCKET, AGENTICGRAPH_MEDIA_BUCKET);
+  assert.equal(contracts.AGENTIC_OS_MEDIA_BUCKET, AGENTIC_OS_MEDIA_BUCKET);
 });
 
 test("canonical Cloudflare storage constants are fixed", () => {
-  assert.equal(AGENTICGRAPH_CLOUDFLARE_ACCOUNT_ID, "170e89fdb8679ff2fcc2900e25ed04f4");
-  assert.equal(AGENTICGRAPH_MEDIA_BUCKET, "agenticgraph-media");
-  assert.equal(AGENTICGRAPH_MEDIA_HOST, "airvio.co");
-  assert.equal(AGENTICGRAPH_MEDIA_ROUTE_PREFIX, "/api/storage/media/");
+  assert.equal(AGENTIC_OS_CLOUDFLARE_ACCOUNT_ID, "170e89fdb8679ff2fcc2900e25ed04f4");
+  assert.equal(AGENTIC_OS_MEDIA_BUCKET, "agentic-graph-media");
+  assert.equal(AGENTIC_OS_MEDIA_HOST, "airvio.co");
+  assert.equal(AGENTIC_OS_MEDIA_ROUTE_PREFIX, "/api/storage/media/");
 });
 
 test("the five responsive proof classes and 16:9 logical frame are fixed (R1.1, R1.2)", () => {
@@ -128,7 +128,7 @@ test("sha256Hex computes the known digest of the empty input", async () => {
 });
 
 test("sha256Hex is deterministic and accepts ArrayBuffer + views", async () => {
-  const bytes = new TextEncoder().encode("agenticgraph");
+  const bytes = new TextEncoder().encode("agentic-graph");
   const a = await sha256Hex(bytes);
   const b = await sha256Hex(bytes.buffer);
   assert.equal(a, b);

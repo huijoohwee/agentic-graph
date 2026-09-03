@@ -1,6 +1,6 @@
 // =============================================================================
 // Cost_Log SSOT schema — unit + property tests
-// agenticgraph-acos-mcp-connector spec · Task 8.4 · Requirements R10.1, R10.2
+// agentic-graph-acos-mcp-connector spec · Task 8.4 · Requirements R10.1, R10.2
 //   · Correctness Property 19 (Cost_Log field-domain validity)
 // Pure validator: ZERO network calls, deterministic.
 // =============================================================================

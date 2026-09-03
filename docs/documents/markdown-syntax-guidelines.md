@@ -1,6 +1,6 @@
 ---
 title: Markdown Syntax Guidelines (SSOT)
-product: AgenticGraph Canvas
+product: agentic-graph Canvas
 status: canonical
 ---
 

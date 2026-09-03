@@ -1,4 +1,4 @@
-# Knowledge Graph (AgenticGraph) Code Wiki
+# Knowledge Graph (agentic-graph) Code Wiki
 
 Docs: see `docs/conflict-resolution.md` for the repo conflict-resolution and sync policy.
 
@@ -20,7 +20,7 @@ Docs: see `docs/conflict-resolution.md` for the repo conflict-resolution and syn
 | 模块目录 | 核心技术栈 | 职责描述 |
 | :--- | :--- | :--- |
 | `canvas/` | React, Vite, Three.js, D3, Zustand, RxDB | **前端可视化应用**。提供图谱的 2D 和 3D 渲染，包含富文本编辑（Monaco）、Markdown 预览、节点/边的实时交互操作，以及配置面板和侧边栏控制。 |
-| `agenticgraph_parser/` | Python, NetworkX, PyYAML, yt-dlp | **后端数据解析与提取引擎**。处理数据源的加载和转化工作。支持从代码库中建立知识图谱索引、GraphRAG 流水线处理，以及将多模态数据转换为统一的 `GraphData` 格式。 |
+| `agentic_graph_parser/` | Python, NetworkX, PyYAML, yt-dlp | **后端数据解析与提取引擎**。处理数据源的加载和转化工作。支持从代码库中建立知识图谱索引、GraphRAG 流水线处理，以及将多模态数据转换为统一的 `GraphData` 格式。 |
 | `grph-shared/` | TypeScript | **共享库**。提供图谱核心类型（如 `GraphNode`, `GraphEdge`, `GraphData`），以及在各前端模块之间共享的纯函数工具（哈希、缓存、数组处理、URL解析等）。 |
 | `gympgrph/` | TypeScript, MapLibre | **地理空间与地图集成库**。负责提供 2D/3D 地理信息及相关可视化能力，用于包含地理坐标的数据集（GeoJSON等）。 |
 | `data/config/` | YAML, JSON, JSON-LD | **配置输入库**。集中存储 GraphRAG、LLM chat、orchestrator 与 schema 配置，避免根目录重复配置源。 |
@@ -50,7 +50,7 @@ Docs: see `docs/conflict-resolution.md` for the repo conflict-resolution and syn
 - **`Toolbar`**: 顶部工具栏，处理数据导入（Import）、导出（Export）以及全局视图模式切换。
 
 ### 3.4 后端解析引擎 (Python Parser Backend)
-位于 `agenticgraph_parser/`：
+位于 `agentic_graph_parser/`：
 - **`graph_builder.py`**: 提供 `GraphBuilder` 类，负责接收清洗后的数据点，实例化对应的 `GraphNode` 和 `GraphEdge`，并将其封装为规范的图数据输出。
 - **`semantic_processor.py`**: 负责文本的语义分析与 Embedding 处理，为图谱 RAG（检索增强生成）流程提供向量化支持。
 - **`codebase_index_*.py`**: AST 代码库解析脚本系列，支持解析 Python 等项目的代码抽象语法树，将其映射为函数、类与文件级别的依赖网络知识图谱。
@@ -112,7 +112,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # 3. 运行 Smoke 测试以验证解析器功能
-python -m agenticgraph_parser smoke --timeout-seconds 20
+python -m agentic_graph_parser smoke --timeout-seconds 20
 ```
 
 ### 5.4 生产构建与预览

@@ -31,11 +31,11 @@ const SURFACE_PATHS = Object.freeze([
   'canvas/src/features/xr-v2/pinnedSourceAuthority.ts',
   'canvas/src/features/xr-v2/pinnedContractConformance.ts',
   'canvas/src/features/xr-v2/xrV2InvocationRegistry.ts',
-  'docs/documents/agenticgraph-xr-v2-runtime-readiness.md',
+  'docs/documents/agentic-graph-xr-v2-runtime-readiness.md',
   'docs/runtime-api.md',
   'docs/TESTING.md',
   'docs/workspace-seeds/README.md',
-  'docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
+  'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
   'scripts/video-editor/clean-room-source-contract.mjs',
   'scripts/xr-v2/readiness-doc-contract.mjs',
 ])
@@ -45,7 +45,7 @@ const removeFixtureTree = fixtureParent => {
 }
 
 function createCommittedFixture(t) {
-  const fixtureParent = mkdtempSync(resolve(tmpdir(), 'agenticgraph-xr-v2-pin-'))
+  const fixtureParent = mkdtempSync(resolve(tmpdir(), 'agentic-graph-xr-v2-pin-'))
   const root = resolve(fixtureParent, 'repository')
   t.after(() => removeFixtureTree(fixtureParent))
   execFileSync('git', ['clone', '--quiet', '--shared', '--no-checkout', REPOSITORY_ROOT, root])
@@ -73,7 +73,7 @@ test('pin derivation resolves the current committed authority exactly', () => {
 })
 
 test('pin derivation fetches the pinned authority from a shallow checkout', t => {
-  const fixtureParent = mkdtempSync(resolve(tmpdir(), 'agenticgraph-xr-v2-shallow-'))
+  const fixtureParent = mkdtempSync(resolve(tmpdir(), 'agentic-graph-xr-v2-shallow-'))
   t.after(() => removeFixtureTree(fixtureParent))
   const origin = resolve(fixtureParent, 'origin')
   const shallow = resolve(fixtureParent, 'shallow')
@@ -210,7 +210,7 @@ test('pin consistency rejects a stale second documented pin occurrence', t => {
   const root = createCommittedFixture(t)
   const demoPath = resolve(
     root,
-    'docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
+    'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
   )
   const source = readFileSync(demoPath, 'utf8')
   const secondRevisionClaim = `source identity is commit\n\`${XR_V2_PINNED_DOCUMENT_REVISION}\``
@@ -226,7 +226,7 @@ test('pin consistency rejects a stale second documented pin occurrence', t => {
   const report = checkPinConsistency(root)
   assert.equal(report.status, 'disagreed')
   assert.ok(report.disagreements.some(disagreement => (
-    disagreement.path === 'docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
+    disagreement.path === 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
     && disagreement.member === 'revision'
     && disagreement.expected === XR_V2_PINNED_DOCUMENT_REVISION
     && disagreement.observed === '0'.repeat(40)
@@ -237,7 +237,7 @@ test('pin consistency validates the full immutable source URL', t => {
   const root = createCommittedFixture(t)
   const demoPath = resolve(
     root,
-    'docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md',
+    'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
   )
   const source = readFileSync(demoPath, 'utf8')
   const staleUrl = `https://github.com/huijoohwee/agentic-graph/blob/${'0'.repeat(40)}/${XR_V2_PINNED_DOCUMENT_PATH}`
@@ -248,7 +248,7 @@ test('pin consistency validates the full immutable source URL', t => {
   const report = checkPinConsistency(root)
   assert.equal(report.status, 'disagreed')
   assert.ok(report.disagreements.some(disagreement => (
-    disagreement.path === 'docs/workspace-seeds/agenticgraph-ar-vr-xr-runtime-readiness-demo.md'
+    disagreement.path === 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
     && disagreement.member === 'immutableUrl'
     && disagreement.expected === expectedUrl
     && disagreement.observed === staleUrl
