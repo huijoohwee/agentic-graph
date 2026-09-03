@@ -24,8 +24,13 @@
   },
   "scripts": {
     "setup": "npm install",
-    "hooks:install": "node ./scripts/install-git-hooks.mjs",
-    "postinstall": "npm run hooks:install",
+    "agentic-os:setup": "agentic-os setup",
+    "agentic-os:doctor": "agentic-os doctor",
+    "lane": "agentic-os start",
+    "land": "agentic-os land",
+    "status": "agentic-os status",
+    "reap": "agentic-os reap",
+    "sync:canonical": "agentic-os canonical-sync",
     "dev:source:check": "node ./scripts/check-dev-source-consistency.mjs",
     "dev:latest": "node ./scripts/run-dev-latest.mjs && npm run dev",
     "device:complete": "node ../agentic-canvas-os/scripts/device-branch.mjs complete",
@@ -309,6 +314,7 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20260819.1",
+    "agentic-os": "github:huijoohwee/agentic-os#cee007ee4402e683eaa0fc424a08179c1e71c63d",
     "ajv": "8.20.0",
     "fake-indexeddb": "^6.2.5",
     "fast-check": "3.23.2",
