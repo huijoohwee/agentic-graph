@@ -145,8 +145,8 @@ schema for historical reads.
 
 Native `adlc-run/v1` conformance is unavailable: no installed canonical-run
 producer/evaluator owns it. ACOS retired its old evaluator in commit
-`1e50b10bdc743d66679490f83165f95c5ccb8a8e`; the current Graph pin
-`8e4d934123c01380059e1b1894c520c472fd4e23` does not contain it. A request returns
+`1e50b10bdc743d66679490f83165f95c5ccb8a8e`; the ACOS revision selected by
+`docs/runtime-readiness-contract.md` does not contain it. A request returns
 nonretryable `adlc_evaluator_unavailable` before artifact binding or projection
 when its exact evaluator is unavailable. The runner may supply an
 already-authoritative source ledger; it must not fabricate a replacement.
@@ -160,10 +160,9 @@ revisions, source mutation, and digest drift fail closed. New binding uses
 only ADLC fields; historical ledger fields are not accepted for new binding. The old tool
 and invocation are not discovery aliases.
 
-Direct local MCP exposes the native tuple below. The browser invocation
-catalog still follows the pinned ACOS dictionaries; catalog promotion awaits
-the protected upstream ADLC dictionary revision and a separate Graph pin
-update. Synthetic historical evaluator tests prove adapter behavior only.
+Direct local MCP and the pinned ACOS browser invocation catalog expose the
+native tuple below without retired discovery aliases. Synthetic historical
+evaluator tests prove adapter behavior only.
 
 A missing receipt returns `canonical_ledger_unavailable`; the observer never reconstructs
 VCCs, roles, grants, budgets, transitions, findings, Evidence References,
