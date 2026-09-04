@@ -97,22 +97,16 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
       '"service": "agentic-travel-ollama-overflow"', '"COMMERCE_PROVIDER_STORAGE_REVISION": "commerce-checkout-do-sqlite-v1"', '"DEPLOY_LANE": "Production_Lane"'] }),
   unit({ id: 'mcp', worker: 'agentic-mcp', workerEnv: 'TRAVEL_MCP_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/agentic-graph-mcp/wrangler.toml', environment: null,
-    dependencies: ['flight-discovery', 'experience-discovery', 'travel-commerce'],
     secrets: [['AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN', 'AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN']],
     overrides: [
       ['AGENTIC_OS_MCP_PUBLIC_BASE_URL', 'TRAVEL_PUBLIC_BASE_URL'],
       ['AGENTIC_OS_MCP_TOOL_LIST_NAME', 'AGENTIC_OS_MCP_TOOL_LIST_NAME'],
       ['AGENTIC_OS_MEDIA_BUCKET', 'AGENTIC_OS_MEDIA_BUCKET'],
     ],
-    serviceTargets: [
-      ['TRAVEL_DISCOVERY_HARNESS', 'TRAVEL_FLIGHT_DISCOVERY_SERVICE', 'agentic-travel-discovery'],
-      ['TRAVEL_EXPERIENCE_DISCOVERY_HARNESS', 'TRAVEL_EXPERIENCE_DISCOVERY_SERVICE', 'agentic-travel-experience-discovery-production'],
-      ['TRAVEL_GUARDRAIL', 'TRAVEL_COMMERCE_SERVICE', 'agentic-travel-commerce-production', 'TravelAgencyGuardrailService'],
-    ], bindingProofs: [
+    bindingProofs: [
       ['TRAVEL_AGENT_DEFINITION_CACHE', 'kv_namespace', 'TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID', 'namespace_id'],
       ['AGENTIC_OS_MEDIA_R2', 'r2_bucket', 'AGENTIC_OS_MEDIA_R2_BUCKET', 'bucket_name'],
-    ], protectZone: true, configMarkers: ['service = "agentic-travel-discovery"',
-      'service = "agentic-travel-experience-discovery-production"', 'COMMERCE_PROVIDER_STORAGE_REVISION = "commerce-discovery-mcp-v1"', 'TRAVEL_DISCOVERY_MODE = "live"'] }),
+    ], protectZone: true, configMarkers: ['COMMERCE_PROVIDER_STORAGE_REVISION = "commerce-discovery-mcp-v1"', 'TRAVEL_DISCOVERY_MODE = "live"'] }),
   unit({ id: 'operator-gateway', worker: 'agentic-travel-operator-gateway-production',
     workerEnv: 'TRAVEL_OPERATOR_GATEWAY_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/agentic-graph-travel-operator-gateway/wrangler.jsonc', environment: 'production',
@@ -123,16 +117,16 @@ export const TRAVEL_MESH_PLAN = Object.freeze([
       'airvio.co/agentic-os/control-plane/travel/reconciliation'] }),
   unit({ id: 'storage', worker: 'agentic-storage', workerEnv: 'TRAVEL_STORAGE_SERVICE', bootstrap: false,
     config: 'cloudflare/workers/agentic-graph-storage/wrangler.toml', environment: null,
-    dependencies: ['travel-commerce'], secrets: [
+    secrets: [
       ['AGENTIC_OS_TRAVEL_COMMERCE_API_TOKEN', 'TRAVEL_COMMERCE_API_TOKEN'],
       ['SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON', 'SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON'],
       ['AGENTIC_OS_STORAGE_SIGNING_SECRET', 'AGENTIC_OS_STORAGE_SIGNING_SECRET'],
-    ], serviceTargets: [['AGENTIC_OS_TRAVEL_COMMERCE', 'TRAVEL_COMMERCE_SERVICE', 'agentic-travel-commerce-production']],
+    ],
     bindingProofs: [
       ['DB', 'd1', 'TRAVEL_STORAGE_D1_DATABASE_ID', 'id'],
       ['AGENTIC_OS_STORAGE_BLOB_BUCKET', 'r2_bucket', 'TRAVEL_STORAGE_R2_BUCKET', 'bucket_name'],
-    ], protectZone: true, configMarkers: ['service = "agentic-travel-commerce-production"',
-      'binding = "DB"', 'migrations_dir = "../../d1/migrations"', 'workers_dev = false', 'preview_urls = false'] }),
+    ], protectZone: true, configMarkers: ['binding = "DB"',
+      'migrations_dir = "../../d1/migrations"', 'workers_dev = false', 'preview_urls = false'] }),
 ])
 export const TRAVEL_MESH_BOOTSTRAP_UNITS = TRAVEL_MESH_PLAN
 export const PROTECTED_VARIABLE_NAMES = Object.freeze([...new Set([
@@ -571,9 +565,9 @@ export const releaseConfigFile = (entry, configuration) => {
     source = replaceRequired(source, '[vars]', `[vars]\nAGENTIC_OS_MEDIA_BUCKET = "${configuration.variables.AGENTIC_OS_MEDIA_BUCKET}"`, 'MCP shared media bucket variable', false)
     source = replaceRequired(source, 'binding = "TRAVEL_AGENT_DEFINITION_CACHE"',
       `binding = "TRAVEL_AGENT_DEFINITION_CACHE"\nid = "${configuration.variables.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID}"`, 'MCP KV binding', false)
-    source = replaceRequired(source, '[[services]]\nbinding = "TRAVEL_DISCOVERY_HARNESS"',
+    source = replaceRequired(source, '[[routes]]',
       `[[r2_buckets]]\nbinding = "AGENTIC_OS_MEDIA_R2"\nbucket_name = "${configuration.variables.AGENTIC_OS_MEDIA_R2_BUCKET}"\n\n`
-      + '[[services]]\nbinding = "TRAVEL_DISCOVERY_HARNESS"', 'MCP shared media R2 bindings', false)
+      + '[[routes]]', 'MCP shared media R2 bindings', false)
   }
   if (entry.id === 'travel-commerce') {
     source = replaceRequired(source, '{ "binding": "BALANCE_CACHE" }',

@@ -19,9 +19,9 @@ AGENTIC_OS_STORAGE_LOCAL_RUNTIME = "false"
 # - SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON (immutable exact locator, bundle, and
 #   initialization-seed map; the Worker validates and fails closed)
 
-[[services]]
-binding = "AGENTIC_OS_TRAVEL_COMMERCE"
-service = "agentic-travel-commerce-production"
+# The optional travel-mutation dispatch stays unbound until its independently
+# deployed `agentic-travel-*` Worker exists. The outbox reports this binding as
+# unavailable and leaves core Canvas/storage operations unaffected.
 
 [[routes]]
 pattern = "airvio.co/api/storage/*"
@@ -45,5 +45,10 @@ name = "AGENTIC_OS_CANVAS_ROOM"
 class_name = "AgenticGraphCanvasSyncRoom"
 
 [[migrations]]
-tag = "v1_agenticgraph_canvas_sync_room"
-new_sqlite_classes = [ "AgenticGraphCanvasSyncRoom" ]
+tag = "v1_knowgrph_canvas_sync_room"
+new_sqlite_classes = [ "KnowgrphCanvasSyncRoom" ]
+
+# Preserve existing Canvas room state while renaming the legacy DO class.
+[[migrations]]
+tag = "v2_rename_knowgrph_canvas_sync_room"
+renamed_classes = [{ from = "KnowgrphCanvasSyncRoom", to = "AgenticGraphCanvasSyncRoom" }]

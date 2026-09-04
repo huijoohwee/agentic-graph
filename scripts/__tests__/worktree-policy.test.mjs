@@ -178,6 +178,7 @@ test('standalone preflight checks every canonical source without fetching or sta
 
 test('Git hooks and lifecycle commands are pinned to the Agentic OS authority runtime', () => {
   const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8'))
+  const integrationWorkflow = readFileSync(path.resolve(repoRoot, '.github/workflows/integration.yml'), 'utf8')
   const hookDigest = name => createHash('sha256')
     .update(readFileSync(path.resolve(repoRoot, `.githooks/${name}`)))
     .digest('hex')
@@ -193,6 +194,9 @@ test('Git hooks and lifecycle commands are pinned to the Agentic OS authority ru
   assert.equal(packageJson.scripts.postinstall, undefined)
   assert.equal(packageJson.scripts['hooks:install'], undefined)
   assert.equal(packageJson.scripts['agentic-os:setup'], 'agentic-os setup')
+  assert.match(integrationWorkflow, /GIT_CONFIG_KEY_0: url\.https:\/\/github\.com\/\.insteadOf/u)
+  assert.match(integrationWorkflow, /GIT_CONFIG_VALUE_0: ssh:\/\/git@github\.com\//u)
+  assert.match(integrationWorkflow, /GIT_TERMINAL_PROMPT: '0'/u)
   assert.equal(packageJson.scripts.land, 'agentic-os land')
   assert.equal(packageJson.scripts.status, 'agentic-os status')
   assert.equal(packageJson.scripts.reap, 'agentic-os reap')

@@ -57,19 +57,14 @@ binding = "AI"
 
 [[kv_namespaces]]
 binding = "TRAVEL_AGENT_DEFINITION_CACHE"
+# Created by the first accepted production publish attempt.  Pin the ID so
+# retries reuse the namespace instead of attempting a duplicate create.
+id = "5785814f38814f399d5681346737b3d0"
 
-[[services]]
-binding = "TRAVEL_DISCOVERY_HARNESS"
-service = "agentic-travel-discovery"
-
-[[services]]
-binding = "TRAVEL_EXPERIENCE_DISCOVERY_HARNESS"
-service = "agentic-travel-experience-discovery-production"
-
-[[services]]
-binding = "TRAVEL_GUARDRAIL"
-service = "agentic-travel-commerce-production"
-entrypoint = "TravelAgencyGuardrailService"
+# Travel providers are intentionally not bound in production until their
+# independently deployed `agentic-travel-*` Workers exist.  Travel routes
+# remain fail-closed (503 with the missing binding reported); MCP, agent-run,
+# tool discovery, and durable Run_Manifest APIs do not depend on them.
 
 [[routes]]
 pattern = "airvio.co/agentic-os/control-plane/mcp"
@@ -101,12 +96,18 @@ name = "RUN_MANIFEST_STORE"
 class_name = "RunManifestStore"
 
 [[migrations]]
-tag = "v1_agenticgraph_mcp_agent"
-new_sqlite_classes = [ "AgenticGraphMcpAgent" ]
+tag = "v1_knowgrph_mcp_agent"
+new_sqlite_classes = [ "KnowgrphMcpAgent" ]
 
 [[migrations]]
 tag = "v2_run_manifest_store"
 new_sqlite_classes = [ "RunManifestStore" ]
+
+# The deployed legacy Worker owns persisted MCP sessions under this class.
+# Preserve those objects while completing the public namespace migration.
+[[migrations]]
+tag = "v3_rename_knowgrph_mcp_agent"
+renamed_classes = [{ from = "KnowgrphMcpAgent", to = "AgenticGraphMcpAgent" }]
 
 # Isolated live staging. This is deliberately distinct from env.dev so a
 # deterministic demo deployment can never satisfy a live travel binding.
@@ -162,12 +163,16 @@ name = "RUN_MANIFEST_STORE"
 class_name = "RunManifestStore"
 
 [[env.staging.migrations]]
-tag = "v1_agenticgraph_mcp_agent"
-new_sqlite_classes = [ "AgenticGraphMcpAgent" ]
+tag = "v1_knowgrph_mcp_agent"
+new_sqlite_classes = [ "KnowgrphMcpAgent" ]
 
 [[env.staging.migrations]]
 tag = "v2_run_manifest_store"
 new_sqlite_classes = [ "RunManifestStore" ]
+
+[[env.staging.migrations]]
+tag = "v3_rename_knowgrph_mcp_agent"
+renamed_classes = [{ from = "KnowgrphMcpAgent", to = "AgenticGraphMcpAgent" }]
 
 # Isolated proof environment. It deliberately has no custom-domain routes and
 # cannot shadow the production control plane.
@@ -220,9 +225,13 @@ name = "RUN_MANIFEST_STORE"
 class_name = "RunManifestStore"
 
 [[env.dev.migrations]]
-tag = "v1_agenticgraph_mcp_agent"
-new_sqlite_classes = [ "AgenticGraphMcpAgent" ]
+tag = "v1_knowgrph_mcp_agent"
+new_sqlite_classes = [ "KnowgrphMcpAgent" ]
 
 [[env.dev.migrations]]
 tag = "v2_run_manifest_store"
 new_sqlite_classes = [ "RunManifestStore" ]
+
+[[env.dev.migrations]]
+tag = "v3_rename_knowgrph_mcp_agent"
+renamed_classes = [{ from = "KnowgrphMcpAgent", to = "AgenticGraphMcpAgent" }]
