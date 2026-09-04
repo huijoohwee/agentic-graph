@@ -4,7 +4,7 @@ import { isJsonValue } from '@/lib/graph/jsonValue'
 import type { GraphData, JSONValue } from '@/lib/graph/types'
 import { syncGraphFieldsWithGraphData, withGraphDataRevision } from '@/hooks/store/graphDataSliceUtils'
 import type { GetGraph, SetGraph } from './graphDataSliceAccess'
-import { isReadOnlyKnowledgeGraphProjection } from '@/features/knowledge-graph/knowledgeGraphProjectionPolicy'
+import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
 
 export function createGraphDataDocumentProjectionActions(set: SetGraph, get: GetGraph) {
   return {
@@ -87,7 +87,7 @@ export function createGraphDataDocumentProjectionActions(set: SetGraph, get: Get
       set({ graphRagWorkflowJsonText: nextText })
       const graphData = get().graphData
       if (!graphData) return
-      if (isReadOnlyKnowledgeGraphProjection(graphData)) return
+      if (isReadOnlyAgentGraphProjection(graphData)) return
 
       const nextMetadata = { ...(graphData.metadata || {}) } as Record<string, JSONValue>
       const trimmed = typeof nextText === 'string' ? nextText.trim() : ''

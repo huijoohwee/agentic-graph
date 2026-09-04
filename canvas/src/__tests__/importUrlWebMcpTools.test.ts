@@ -74,8 +74,8 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
     throw new Error(`expected typed Import URL output to validate, got ${JSON.stringify(validateOutput.errors)}`)
   }
 
-  const expectedKnowledgeGraphResult = {
-    kind: 'knowledge-graph' as const,
+  const expectedAgentGraphResult = {
+    kind: 'agent-graph' as const,
     source: 'https://github.com/example/repository',
     invocation: '/ingest-url @url:https://github.com/example/repository @reference-policy #canvas',
     renderer: null,
@@ -91,21 +91,21 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
     projectionCounts: { nodes: 8, edges: 7 },
     outputText: '# Knowledge graph imported',
   }
-  const knowledgeGraphTool = buildImportUrlWebMcpToolBuilders(
+  const agentGraphTool = buildImportUrlWebMcpToolBuilders(
     name => {
       const found = contracts.find(candidate => candidate.name === name)
       if (!found) throw new Error(`missing test contract ${name}`)
       return found
     },
-    async () => expectedKnowledgeGraphResult,
+    async () => expectedAgentGraphResult,
   )[toolId]()
-  const knowledgeGraphResult = await knowledgeGraphTool.execute({
+  const agentGraphResult = await agentGraphTool.execute({
     url: 'https://github.com/example/repository',
-  }) as typeof expectedKnowledgeGraphResult
-  if (knowledgeGraphResult !== expectedKnowledgeGraphResult || 'createdPaths' in knowledgeGraphResult) {
-    throw new Error(`expected a path-free discriminated knowledge graph result, got ${JSON.stringify(knowledgeGraphResult)}`)
+  }) as typeof expectedAgentGraphResult
+  if (agentGraphResult !== expectedAgentGraphResult || 'createdPaths' in agentGraphResult) {
+    throw new Error(`expected a path-free discriminated knowledge graph result, got ${JSON.stringify(agentGraphResult)}`)
   }
-  if (!validateOutput(knowledgeGraphResult)) {
+  if (!validateOutput(agentGraphResult)) {
     throw new Error(`expected knowledge graph Import URL output to validate, got ${JSON.stringify(validateOutput.errors)}`)
   }
 

@@ -1,14 +1,81 @@
 import { createHash } from 'node:crypto'
 import {
+  LEGACY_MIRROR_EXACT_FILE_INVENTORY,
+  LEGACY_MIRROR_EXACT_PATHS,
+  LEGACY_MIRROR_NAMED_FILE_INVENTORY,
   LEGACY_MIRROR_NAMED_FILE_PATHS,
   LEGACY_MIRROR_ROOT_INVENTORIES,
 } from './mirror-namespace-contract.mjs'
+import { XR_V2_LEGACY_MIRROR_SHA256_BY_PATH } from './xr-v2/production-publish-contract.mjs'
 
 const legacyNamedFilePattern = /(?:^|\/)(?:agenticgraph|knowgrph)-/
 
 const digestRelativePaths = relativePaths => createHash('sha256')
   .update(JSON.stringify([...relativePaths].sort((left, right) => left.localeCompare(right))))
   .digest('hex')
+
+const sha256 = value => createHash('sha256').update(value).digest('hex')
+
+export const digestRelativeFileContents = records => sha256(
+  [...records]
+    .sort((left, right) => left.relativePath.localeCompare(right.relativePath))
+    .map(record => `${record.relativePath}\0${record.sha256}\n`)
+    .join(''),
+)
+
+export const assertSealedLegacyContentInventory = async ({
+  relativePaths,
+  readRelativeFile,
+  inventory,
+  label,
+  readPrefix = '',
+}) => {
+  if (typeof readRelativeFile !== 'function') throw new Error(`${label} requires a file reader`)
+  const records = []
+  for (const relativePath of relativePaths) {
+    const contents = await readRelativeFile(readPrefix ? `${readPrefix}/${relativePath}` : relativePath)
+    if (contents === null || contents === undefined) throw new Error(`${label} is missing ${relativePath}`)
+    records.push({ relativePath, sha256: sha256(contents) })
+  }
+  const contentDigest = digestRelativeFileContents(records)
+  if (records.length !== inventory.count || contentDigest !== inventory.contentDigest) {
+    throw new Error(
+      `${label} content drifted: expected count=${inventory.count} digest=${inventory.contentDigest}, received count=${records.length} digest=${contentDigest}`,
+    )
+  }
+  return records
+}
+
+export const assertSealedLegacyFileDigestInventory = async ({
+  sha256ByPath,
+  readRelativeFile,
+  label,
+}) => {
+  if (typeof readRelativeFile !== 'function') throw new Error(`${label} requires a file reader`)
+  const entries = Object.entries(sha256ByPath)
+    .sort(([left], [right]) => left.localeCompare(right))
+  const records = []
+  const missingPaths = []
+  for (const [relativePath, expectedSha256] of entries) {
+    const contents = await readRelativeFile(relativePath)
+    if (contents === null || contents === undefined) {
+      missingPaths.push(relativePath)
+      continue
+    }
+    const actualSha256 = sha256(contents)
+    if (actualSha256 !== expectedSha256) {
+      throw new Error(
+        `${label} content drifted for ${relativePath}: expected sha256=${expectedSha256}, received sha256=${actualSha256}`,
+      )
+    }
+    records.push({ relativePath, sha256: actualSha256 })
+  }
+  if (records.length === 0) return []
+  if (missingPaths.length > 0) {
+    throw new Error(`${label} is incomplete; missing ${missingPaths.join(', ')}`)
+  }
+  return records
+}
 
 const assertSafeRelativePaths = (relativePaths, label) => {
   if (!Array.isArray(relativePaths) || relativePaths.some(relativePath => (
@@ -52,18 +119,67 @@ export const assertSealedLegacyNamedFileInventory = ({ relativePaths }) => {
   return legacyPaths
 }
 
-export const listSealedLegacyMirrorPaths = async ({ listRelativeFiles }) => {
+const existingExactPaths = async ({ relativePaths, readRelativeFile }) => {
+  const present = []
+  for (const relativePath of relativePaths) {
+    const contents = await readRelativeFile(relativePath)
+    if (contents !== null && contents !== undefined) present.push(relativePath)
+  }
+  return present
+}
+
+export const listSealedLegacyMirrorEntries = async ({ listRelativeFiles, readRelativeFile }) => {
   if (typeof listRelativeFiles !== 'function') throw new Error('Sealed legacy inventory requires a directory lister')
-  const paths = new Set()
+  if (typeof readRelativeFile !== 'function') throw new Error('Sealed legacy inventory requires a file reader')
+  const entries = new Map()
   for (const root of Object.keys(LEGACY_MIRROR_ROOT_INVENTORIES).sort((left, right) => left.localeCompare(right))) {
     const relativePaths = await listRelativeFiles(root)
-    for (const relativePath of assertSealedLegacyMirrorRootInventory({ root, relativePaths })) {
-      paths.add(`${root}/${relativePath}`)
+    const sealedPaths = assertSealedLegacyMirrorRootInventory({ root, relativePaths })
+    const records = sealedPaths.length > 0 ? await assertSealedLegacyContentInventory({
+      relativePaths: sealedPaths,
+      readRelativeFile,
+      inventory: LEGACY_MIRROR_ROOT_INVENTORIES[root],
+      label: `Legacy mirror root ${root}`,
+      readPrefix: root,
+    }) : []
+    for (const record of records) {
+      const relativePath = `${root}/${record.relativePath}`
+      entries.set(relativePath, { relativePath, sha256: record.sha256 })
     }
   }
   const namedFiles = await listRelativeFiles('.well-known/agent-skills')
-  for (const relativePath of assertSealedLegacyNamedFileInventory({ relativePaths: namedFiles })) {
-    paths.add(`.well-known/agent-skills/${relativePath}`)
+  const namedPaths = assertSealedLegacyNamedFileInventory({ relativePaths: namedFiles })
+  const namedRecords = namedPaths.length > 0 ? await assertSealedLegacyContentInventory({
+    relativePaths: namedPaths,
+    readRelativeFile,
+    inventory: LEGACY_MIRROR_NAMED_FILE_INVENTORY,
+    label: 'Legacy named-file inventory',
+    readPrefix: '.well-known/agent-skills',
+  }) : []
+  for (const record of namedRecords) {
+    const relativePath = `.well-known/agent-skills/${record.relativePath}`
+    entries.set(relativePath, { relativePath, sha256: record.sha256 })
   }
-  return [...paths].sort((left, right) => left.localeCompare(right))
+  const exactPaths = await existingExactPaths({
+    relativePaths: LEGACY_MIRROR_EXACT_PATHS,
+    readRelativeFile,
+  })
+  const exactRecords = exactPaths.length > 0 ? await assertSealedLegacyContentInventory({
+    relativePaths: exactPaths,
+    readRelativeFile,
+    inventory: LEGACY_MIRROR_EXACT_FILE_INVENTORY,
+    label: 'Legacy exact-file inventory',
+  }) : []
+  for (const record of exactRecords) entries.set(record.relativePath, record)
+  const xrRecords = await assertSealedLegacyFileDigestInventory({
+    sha256ByPath: XR_V2_LEGACY_MIRROR_SHA256_BY_PATH,
+    readRelativeFile,
+    label: 'Legacy XR v2 file inventory',
+  })
+  for (const record of xrRecords) entries.set(record.relativePath, record)
+  return [...entries.values()].sort((left, right) => left.relativePath.localeCompare(right.relativePath))
 }
+
+export const listSealedLegacyMirrorPaths = async options => (
+  await listSealedLegacyMirrorEntries(options)
+).map(entry => entry.relativePath)

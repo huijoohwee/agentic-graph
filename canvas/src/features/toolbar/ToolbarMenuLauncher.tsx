@@ -20,7 +20,7 @@ import {
 } from '@/lib/ui/floatingPanelGeometry'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 import { MotionControlXrLifecycleGuard } from '@/features/three/MotionControlXrLifecycleGuard'
-import { useKnowledgeGraphLaunchHostBridge } from '@/features/knowledge-graph/knowledgeGraphLaunchHostBridge'
+import { useAgentGraphLaunchHostBridge } from '@/features/agent-graph/agentGraphLaunchHostBridge'
 
 const ToolbarToolMenuLazy = React.lazy(() =>
   import('@/lib/toolbar/ToolbarToolMenu.impl').then(mod => ({ default: mod.ToolbarToolMenu })),
@@ -42,7 +42,7 @@ export function ToolbarMenuLauncher({
   onLaunchStatus,
   onCloseMainPanel,
 }: ToolbarMenuLauncherProps) {
-  useKnowledgeGraphLaunchHostBridge()
+  useAgentGraphLaunchHostBridge()
   const [launchOpen, setLaunchOpen] = useState(false)
 
   const floatingPanelRequestSeqRef = useRef(0)

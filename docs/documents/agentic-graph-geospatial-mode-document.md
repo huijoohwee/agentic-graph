@@ -233,7 +233,7 @@ source readiness does not claim deployment or physical-device proof.
 - **2D (MapLibre)** and **3D (MapLibre)** run through the restored MapLibre runtime path and support explicit style URL overrides.
 - **2D (SVG fallback)** remains a dedicated high-fidelity fallback surface with no MapLibre runtime dependency.
 - The overlay supports interaction gating (**Off / Hold Space / Always**). Default interaction mode is **Always** for immediate navigation, and users can switch in the Geo panel.
-- Geospatial Mode is a canvas rendering mode: when **ON**, the canvas suppresses knowledge-graph rendering (nodes/edges/layers/rich media) so the map overlay and geospatial datasets are the primary surface.
+- Geospatial Mode is a canvas rendering mode: when **ON**, the canvas suppresses agent-graph rendering (nodes/edges/layers/rich media) so the map overlay and geospatial datasets are the primary surface.
 - Floating Panel open/close does not toggle Geospatial Mode.
 - When a non-default MapLibre path is enabled, the extracted module still owns the required MapLibre CSS so host runtimes do not need to import it separately.
 - **Default Style**: A blank/default basemap style resolves to the MapLibre default style URL (`https://demotiles.maplibre.org/style.json`) for MapLibre modes.

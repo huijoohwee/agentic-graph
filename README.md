@@ -38,7 +38,7 @@ Infinite-canvas and agent tools split roughly into a few tiers today:
 
 | | agentic-graph | Miro Canvas (2026) | Excalidraw / tldraw | Obsidian Canvas | Storyflow-style thinking canvas | LangGraph (raw) | Hermes Agent (Nous Research) |
 |---|---|---|---|---|---|---|---|
-| **Primary category** | Runnable knowledge-graph canvas | Commercial collaboration whiteboard | Drawing/sketching surface | Personal-knowledge canvas plugin | Cloud "thinking surface" canvas | Agent orchestration library | Self-improving personal agent runtime |
+| **Primary category** | Runnable agent-graph canvas | Commercial collaboration whiteboard | Drawing/sketching surface | Personal-knowledge canvas plugin | Cloud "thinking surface" canvas | Agent orchestration library | Self-improving personal agent runtime |
 | **Canvas/graph surface** | ✅ native, typed widget graph | ✅ primary product (agent-generated widgets) | ✅ primary (shapes/strokes only) | ✅ JSON Canvas sidecar | ✅ AI reads board as structured cards | Partial (Studio debug/trace view, not authoring) | ❌ none (chat/messaging + dashboard) |
 | **Markdown/frontmatter is authored graph/program state** | ✅ | ❌ (import/export only) | ❌ (JSON canvas format) | Partial (notes yes; layout is a separate sidecar) | ❌ (cloud/proprietary) | ❌ (checkpointer) | ❌ (its own skills/memory store) |
 | **State is git-diffable** | ✅ | ❌ | ❌ | Partial (notes only) | ❌ | ❌ | ❌ |
@@ -120,7 +120,7 @@ The runtime direction:
 
 - command routes describe bounded actions, semantic tags scope intent/proof/cost, and bindings name the selected source or runtime surface;
 - exact route identities and typed arguments live only in their owning Invocation Registers;
-- the deterministic knowledge-graph lane resolves ACOS-owned `/`, `#`, and `@` tuples to explicit local stdio tool calls; dictionary lookup remains metadata-only.
+- the deterministic agent-graph lane resolves ACOS-owned `/`, `#`, and `@` tuples to explicit local stdio tool calls; dictionary lookup remains metadata-only.
 - MainPanel MCP shows readiness and non-secret setup metadata. It does not execute tools or store credentials in browser settings.
 - MainPanel readiness claims name the source owner and keep local and delivered ladder rungs
   separate; documentation, browser snapshots, and executable owners do not collapse into one label.
@@ -131,11 +131,11 @@ This README describes the Dev repo. `agentic-canvas-os/docs` remains the documen
 
 ### Deterministic local knowledge graph
 
-The current local stdio extension adds four direct tool identities: `agentic-graph.knowledge_graph.parser_generate`, `agentic-graph.knowledge_graph.ingest`, `agentic-graph.knowledge_graph.query`, and `agentic-graph.knowledge_graph.explain_edge`. A local MCP client invokes those names directly. The parser generator accepts either `profile: "default-source"` for the digest-pinned built-in local registry or bounded custom descriptors with optional finite declarative grammar data. ACOS-capable hosts use `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof`, `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof`, `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, or `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` before the explicit mapped tool call.
+The current local stdio extension adds four direct tool identities: `agentic-graph.agent_graph.parser_generate`, `agentic-graph.agent_graph.ingest`, `agentic-graph.agent_graph.query`, and `agentic-graph.agent_graph.explain_edge`. A local MCP client invokes those names directly. The parser generator accepts either `profile: "default-source"` for the digest-pinned built-in local registry or bounded custom descriptors with optional finite declarative grammar data. ACOS-capable hosts use `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof`, `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof`, `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, or `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` before the explicit mapped tool call.
 
 This path uses registered deterministic AST parsing for supported code and deterministic structural extraction for supported docs, SQL schemas, configs, and PDFs. Queries use lexical matching plus graph traversal, and every returned edge must be explainable from stored source evidence. Unsupported languages, file forms, PDF content, syntax, or relationships produce explicit diagnostics rather than guessed facts. Parsing, query, and edge explanation require no embeddings, vector store, model call, or network service; an explicit repository URL uses a separately bounded network acquisition phase before local parsing.
 
-The authoritative scope, provenance, diagnostics, and security requirements are in the [deterministic knowledge-graph runtime contract](docs/documents/agentic-graph-deterministic-knowledge-graph-runtime.md).
+The authoritative scope, provenance, diagnostics, and security requirements are in the [deterministic agent-graph runtime contract](docs/documents/agentic-graph-deterministic-agent-graph-runtime.md).
 
 ### 2D Renderer: Storyboard template
 
@@ -160,7 +160,7 @@ binding, and tool identities; this README does not duplicate them.
 
 | Surface | How an agent uses it |
 | --- | --- |
-| Local stdio MCP (`mcp/server.js`) | Starts from an external MCP client and exposes agentic-graph-owned local tools: deterministic knowledge-graph ingest/query/edge explanation, Source Files search/fetch, UI launch, pipelines, memory, probe tree, showrunner, OS status, SuperAgent, video remix, browser bridge, HTML video, annotation, exact agent/LLM application catalog-plan-execute composition, and vdeoxpln inspection. |
+| Local stdio MCP (`mcp/server.js`) | Starts from an external MCP client and exposes agentic-graph-owned local tools: deterministic agent-graph ingest/query/edge explanation, Source Files search/fetch, UI launch, pipelines, memory, probe tree, showrunner, OS status, SuperAgent, video remix, browser bridge, HTML video, annotation, exact agent/LLM application catalog-plan-execute composition, and vdeoxpln inspection. |
 | MainPanel MCP | Browser-local readiness and non-secret setup view for agentic-graph-owned and external MCP tool servers. |
 | FloatingPanel Chat | In-canvas assistant with workspace, selection, invocation grammar, AGENTIC_OS generation, and source-aware context. |
 | 2D Renderer: Storyboard | Projects frontmatter-owned source, ideation, invocation, runtime, review, and publish lanes into Cards, Widgets, Rich Media Panels, and timeline views. |

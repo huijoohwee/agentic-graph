@@ -6,7 +6,7 @@ import type { MarkdownWorkspaceSelectionArgs } from './useMarkdownWorkspaceSelec
 import type { MarkdownWorkspaceDerivedViewsArgs } from './useMarkdownWorkspaceDerivedViews'
 import type { MarkdownWorkspaceIndexingArgs } from './useMarkdownWorkspaceIndexing'
 import type { MarkdownWorkspaceSaveArgs } from './useMarkdownWorkspaceSave'
-import { materializeKnowledgeGraphWorkspaceArtifact } from '@/features/knowledge-graph/knowledgeGraphWorkspaceArtifact'
+import { materializeAgentGraphWorkspaceArtifact } from '@/features/agent-graph/agentGraphWorkspaceArtifact'
 
 export function buildMarkdownWorkspaceFileActionsArgs(args: {
   getFs: UseWorkspaceFileActionsArgs['getFs']
@@ -58,8 +58,8 @@ export function buildMarkdownWorkspaceActionBridge(args: {
     importWebsite: args.fileActions.handleImportWebsite,
     createNewFolder: () => void args.fileActions.createNewFolder({ parentPath: args.createParentPath }),
     save: args.saveEnabled ? () => void args.saveActiveFileNow() : undefined,
-    materializeKnowledgeGraphImport: async request => {
-      const artifact = await materializeKnowledgeGraphWorkspaceArtifact(request)
+    materializeAgentGraphImport: async request => {
+      const artifact = await materializeAgentGraphWorkspaceArtifact(request)
       await args.fileActions.focusAfterImport(artifact.path as WorkspacePath, { applyToGraph: false })
       return artifact
     },

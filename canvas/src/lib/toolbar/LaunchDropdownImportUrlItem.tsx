@@ -27,11 +27,11 @@ import {
 } from './ImportUrlRendererSelect'
 import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
 import {
-  canRecoverLaunchImportAsKnowledgeGraphRepository,
-  isLaunchKnowledgeGraphRepositoryUrl,
+  canRecoverLaunchImportAsAgentGraphRepository,
+  isLaunchAgentGraphRepositoryUrl,
   isLaunchImportRepositoryRateLimitFailure,
   runLaunchImportUrl,
-  type LaunchKnowledgeGraphImportProgressStage,
+  type LaunchAgentGraphImportProgressStage,
 } from './launchImportDispatch'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
@@ -50,8 +50,8 @@ const DEFAULT_VIDEO_DOWNLOAD_OPTIONS: VideoDownloadOptions = {
   subtitleLang: '',
 }
 
-const KNOWLEDGE_GRAPH_IMPORT_TOAST_ID = 'launch:import:knowledge-graph-url'
-const KNOWLEDGE_GRAPH_IMPORT_PROGRESS: Record<LaunchKnowledgeGraphImportProgressStage, string> = {
+const AGENT_GRAPH_IMPORT_TOAST_ID = 'launch:import:agent-graph-url'
+const AGENT_GRAPH_IMPORT_PROGRESS: Record<LaunchAgentGraphImportProgressStage, string> = {
   resolving: 'Resolving the source-backed knowledge graph command…',
   ingesting: 'Parsing the repository into a local knowledge graph…',
   projecting: 'Opening the knowledge graph in Graph view…',
@@ -70,7 +70,7 @@ export function LaunchDropdownImportUrlItem(props: {
   const { onClose, pushUiToast } = props
   const [urlDraft, setUrlDraft] = React.useState('')
   const [urlInputOpen, setUrlInputOpen] = React.useState(false)
-  const [knowledgeGraphRepositoryMode, setKnowledgeGraphRepositoryMode] = React.useState(false)
+  const [agentGraphRepositoryMode, setAgentGraphRepositoryMode] = React.useState(false)
   const [rateLimitRecoveryUrl, setRateLimitRecoveryUrl] = React.useState<string | null>(null)
   const [isImportingUrl, setIsImportingUrl] = React.useState(false)
   const [importUrlRenderer, setImportUrlRenderer] = React.useState<ImportUrlRendererSelection>('default')
@@ -130,7 +130,7 @@ export function LaunchDropdownImportUrlItem(props: {
       setDownloadOptions(DEFAULT_VIDEO_DOWNLOAD_OPTIONS)
       setIsDownloading(false)
       setValidationConfigOpen(false)
-      setKnowledgeGraphRepositoryMode(false)
+      setAgentGraphRepositoryMode(false)
       setRateLimitRecoveryUrl(null)
       setIsImportingUrl(false)
       endpointWarningShownRef.current = false
@@ -141,7 +141,7 @@ export function LaunchDropdownImportUrlItem(props: {
     setDownloadOptionsOpen(false)
     setDownloadOptions(DEFAULT_VIDEO_DOWNLOAD_OPTIONS)
     setIsDownloading(false)
-    setKnowledgeGraphRepositoryMode(false)
+    setAgentGraphRepositoryMode(false)
     setRateLimitRecoveryUrl(null)
     setIsImportingUrl(false)
     endpointWarningShownRef.current = false
@@ -178,18 +178,18 @@ export function LaunchDropdownImportUrlItem(props: {
   const selectedImportOpts = React.useCallback(() => parseImportUrlRendererSelection(importUrlRenderer) || undefined, [importUrlRenderer])
 
   const runImportUrl = React.useCallback(
-    async (nextUrlRaw: string, options?: { forceKnowledgeGraphRepository?: boolean }) => {
+    async (nextUrlRaw: string, options?: { forceAgentGraphRepository?: boolean }) => {
       const nextUrl = String(nextUrlRaw || '').trim()
       if (!nextUrl || isImportingUrl) return
-      const isKnowledgeGraphRepository = options?.forceKnowledgeGraphRepository === true
-        || knowledgeGraphRepositoryMode
-        || isLaunchKnowledgeGraphRepositoryUrl(nextUrl)
-      const sharedResolution = isKnowledgeGraphRepository
-        ? targetSkillsCommands(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
+      const isAgentGraphRepository = options?.forceAgentGraphRepository === true
+        || agentGraphRepositoryMode
+        || isLaunchAgentGraphRepositoryUrl(nextUrl)
+      const sharedResolution = isAgentGraphRepository
+        ? targetSkillsCommands(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest)
         : null
       setRateLimitRecoveryUrl(null)
       setIsImportingUrl(true)
-      if (isKnowledgeGraphRepository) onClose()
+      if (isAgentGraphRepository) onClose()
       const launchBridge = getMarkdownWorkspaceActionBridge()
       const opts = selectedImportOpts()
       if (opts?.canvas2dRenderer === 'design') activateDesignEditorSurface({ openFloatingPanel: true })
@@ -199,20 +199,20 @@ export function LaunchDropdownImportUrlItem(props: {
           opts,
           bridge: launchBridge,
           fallback: importUrlFallback,
-          forceKnowledgeGraphRepository: isKnowledgeGraphRepository,
+          forceAgentGraphRepository: isAgentGraphRepository,
           resolveMcpInvocation: sharedResolution
             ? async (mcpTool) => {
-              if (mcpTool !== AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest) {
+              if (mcpTool !== AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest) {
                 throw new Error('The shared Skills & Commands resolution is bound to another MCP tool.')
               }
               return sharedResolution
             }
             : undefined,
-          onKnowledgeGraphProgress: stage => {
+          onAgentGraphProgress: stage => {
             pushUiToast({
-              id: KNOWLEDGE_GRAPH_IMPORT_TOAST_ID,
+              id: AGENT_GRAPH_IMPORT_TOAST_ID,
               kind: 'neutral',
-              message: KNOWLEDGE_GRAPH_IMPORT_PROGRESS[stage],
+              message: AGENT_GRAPH_IMPORT_PROGRESS[stage],
               ttlMs: null,
               dismissible: false,
               busy: true,
@@ -220,28 +220,28 @@ export function LaunchDropdownImportUrlItem(props: {
             })
           },
         })
-        if (result && 'kind' in result && result.kind === 'knowledge-graph') {
+        if (result && 'kind' in result && result.kind === 'agent-graph') {
           pushUiToast({
-            id: KNOWLEDGE_GRAPH_IMPORT_TOAST_ID,
+            id: AGENT_GRAPH_IMPORT_TOAST_ID,
             kind: 'success',
             message: `Loaded knowledge graph in Graph view (${result.projection?.graphData.nodes.length || 0} nodes, ${result.projection?.graphData.edges.length || 0} edges)`,
             ttlMs: UI_TOAST_TTL_MS.actionFeedback,
           })
         }
         if (
-          !isKnowledgeGraphRepository
+          !isAgentGraphRepository
           && isLaunchImportRepositoryRateLimitFailure(result)
-          && canRecoverLaunchImportAsKnowledgeGraphRepository(nextUrl)
+          && canRecoverLaunchImportAsAgentGraphRepository(nextUrl)
         ) {
           setRateLimitRecoveryUrl(nextUrl)
           return
         }
-        if (!isKnowledgeGraphRepository) onClose()
+        if (!isAgentGraphRepository) onClose()
         setUrlInputOpen(false)
       } catch (error) {
-        if (!isKnowledgeGraphRepository) onClose()
+        if (!isAgentGraphRepository) onClose()
         pushUiToast({
-          id: KNOWLEDGE_GRAPH_IMPORT_TOAST_ID,
+          id: AGENT_GRAPH_IMPORT_TOAST_ID,
           kind: 'error',
           message: String((error as { message?: unknown })?.message || 'Knowledge graph URL import failed.'),
           ttlMs: UI_TOAST_TTL_MS.warningExtended,
@@ -251,7 +251,7 @@ export function LaunchDropdownImportUrlItem(props: {
         setIsImportingUrl(false)
       }
     },
-    [importUrlFallback, isImportingUrl, knowledgeGraphRepositoryMode, onClose, pushUiToast, selectedImportOpts, targetSkillsCommands],
+    [importUrlFallback, isImportingUrl, agentGraphRepositoryMode, onClose, pushUiToast, selectedImportOpts, targetSkillsCommands],
   )
 
   const runImportUrlDeerFlow = React.useCallback(
@@ -390,17 +390,17 @@ export function LaunchDropdownImportUrlItem(props: {
           <section className="mt-1 flex min-w-0 flex-wrap items-center gap-1 text-xs" aria-label="Codebase graph import mode">
             <button
               type="button"
-              className={cn('inline-flex min-h-7 items-center gap-1 rounded border px-2', knowledgeGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
+              className={cn('inline-flex min-h-7 items-center gap-1 rounded border px-2', agentGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
               title="Build a repository knowledge graph with local Git acquisition"
               aria-label="Codebase graph"
-              aria-pressed={knowledgeGraphRepositoryMode}
+              aria-pressed={agentGraphRepositoryMode}
               data-kg-launch-import-url-repository-mode="true"
               onClick={() => {
-                const next = !knowledgeGraphRepositoryMode
-                setKnowledgeGraphRepositoryMode(next)
+                const next = !agentGraphRepositoryMode
+                setAgentGraphRepositoryMode(next)
                 setRateLimitRecoveryUrl(null)
                 void targetSkillsCommands(next
-                  ? AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
+                  ? AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest
                   : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
               }}
             >
@@ -408,7 +408,7 @@ export function LaunchDropdownImportUrlItem(props: {
               <span>Codebase graph</span>
             </button>
             <span className={UI_THEME_TOKENS.text.secondary}>
-              {knowledgeGraphRepositoryMode
+              {agentGraphRepositoryMode
                 ? 'Uses deterministic local Git acquisition.'
                 : 'Use this mode for repository knowledge graphs.'}
             </span>
@@ -425,8 +425,8 @@ export function LaunchDropdownImportUrlItem(props: {
                 className={cn('justify-self-start rounded border px-2 py-1', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
                 data-kg-launch-import-url-retry-codebase-graph="true"
                 onClick={() => {
-                  setKnowledgeGraphRepositoryMode(true)
-                  void runImportUrl(rateLimitRecoveryUrl, { forceKnowledgeGraphRepository: true })
+                  setAgentGraphRepositoryMode(true)
+                  void runImportUrl(rateLimitRecoveryUrl, { forceAgentGraphRepository: true })
                 }}
               >
                 Retry as codebase graph

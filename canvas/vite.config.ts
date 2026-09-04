@@ -46,7 +46,7 @@ import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './vit
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createKnowledgeGraphBridgePlugin } from './viteKnowledgeGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
+import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
@@ -7237,7 +7237,7 @@ export default defineConfig(({ command, mode }) => {
             autoThemeTarget: '#root',
           }),
           stripeCheckoutDevPlugin,
-          createAgenticOsGrammarDevPlugin({ rootDir: repoRoot }), createProbeTreeMcpBridgePlugin({ repoRoot }), createExternalMcpBridgePlugin(), createKnowledgeGraphBridgePlugin({ repoRoot }),
+          createAgenticOsGrammarDevPlugin({ rootDir: repoRoot }), createProbeTreeMcpBridgePlugin({ repoRoot }), createExternalMcpBridgePlugin(), createAgentGraphBridgePlugin({ repoRoot }),
           markdownPipelineDevPlugin,
           apiGraphDevPlugin,
           flowchartFixtureDevPlugin,

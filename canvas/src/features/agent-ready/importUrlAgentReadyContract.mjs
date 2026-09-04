@@ -104,7 +104,7 @@ export const buildImportUrlAgentReadyToolContracts = ({ buildWebName }) => [{
         type: 'object',
         additionalProperties: false,
         properties: {
-          kind: { const: 'knowledge-graph' },
+          kind: { const: 'agent-graph' },
           source: { type: 'string', minLength: 1, pattern: '^https?://' },
           invocation: { type: 'string', minLength: 1, pattern: '^/ingest-url\\s+@url:' },
           renderer: {

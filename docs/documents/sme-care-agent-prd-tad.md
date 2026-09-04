@@ -18,7 +18,7 @@ parent_version: ""
 ## Scope & Neutrality Contract
 
 - **Universal**: this document specifies a capability — growth-stage risk-exposure mapping and coverage-gap coaching for a small/medium enterprise — independent of any specific insurer, broker, cloud vendor, or model provider.
-- **Neutral**: capabilities are named by function (Risk Exposure Graph store, Probe-Tree harness, Multilingual Adapter, Marketplace Matcher harness) rather than by brand. Where a concrete tool is named (e.g. a knowledge-graph canvas, a local model runtime, a regional multilingual model), it appears only as a **non-binding reference implementation** and may be swapped for any FOSS or licensed equivalent that satisfies the same interface.
+- **Neutral**: capabilities are named by function (Risk Exposure Graph store, Probe-Tree harness, Multilingual Adapter, Marketplace Matcher harness) rather than by brand. Where a concrete tool is named (e.g. an AgentGraph canvas, a local model runtime, a regional multilingual model), it appears only as a **non-binding reference implementation** and may be swapped for any FOSS or licensed equivalent that satisfies the same interface.
 - **Agnosticism**: every requirement below is derived from this document's own content and frontmatter — never from a file name, directory layout, or a downstream mirror. Concrete identifiers (thread IDs, node IDs) are illustrative placeholders for a reference build, not hardcoded contracts.
 - **Modular**: each `##` section below is self-contained and independently addressable; the PRD half (WHAT/WHY) and TAD half (HOW) can each be lifted into another document without rewriting internals, per `prd--tad-integration`.
 

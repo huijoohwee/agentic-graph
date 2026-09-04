@@ -16,6 +16,7 @@ import {
   removeEmptyLegacyMirrorDirectories,
 } from '../production-mirror-artifact-deletions.mjs'
 import { assertSealedLegacyNamedFileInventory } from '../legacy-mirror-inventory.mjs'
+import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS } from '../xr-v2/production-publish-contract.mjs'
 
 const isolatedGitEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')),
@@ -59,6 +60,7 @@ const createBaseMirror = async root => {
     writeFile(root, '_routes.json', '{}\n'),
     writeFile(root, '_headers', '/agentic-graph/*\n  X-Test: true\n'),
     writeFile(root, '_redirects', '/old /new 301\n'),
+    writeFile(root, 'content/knowgrph/xr-v2/unrelated.txt', 'preserve sibling\n'),
   ])
 }
 
@@ -85,6 +87,7 @@ test('reconciliation copies hidden readiness markers and removes tracked stale a
   await fs.mkdir(verifiedMirror, { recursive: true })
   await fs.mkdir(artifactRoot, { recursive: true })
   await createBaseMirror(verifiedMirror)
+  await fs.mkdir(path.resolve(verifiedMirror, 'functions', 'agenticgraph'), { recursive: true })
   initializeRepository(verifiedMirror)
   await fs.cp(verifiedMirror, deployMirror, { recursive: true })
 
@@ -115,6 +118,11 @@ test('reconciliation copies hidden readiness markers and removes tracked stale a
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'index.html')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'content/agentic-graph/assets/old/entry.js')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'agentic-graph/assets/old/entry.js')), { code: 'ENOENT' })
+  await assert.rejects(fs.stat(path.resolve(deployMirror, 'functions/agenticgraph')), { code: 'ENOENT' })
+  assert.equal(
+    await fs.readFile(path.resolve(deployMirror, 'content/knowgrph/xr-v2/unrelated.txt'), 'utf8'),
+    'preserve sibling\n',
+  )
   assert.deepEqual(await fs.readdir(path.resolve(deployMirror, 'content/agentic-graph/assets')), ['new'])
   assert.deepEqual(await fs.readdir(path.resolve(deployMirror, 'agentic-graph/assets')), ['new'])
   assert.equal(await fs.readFile(path.resolve(deployMirror, 'README.md'), 'utf8'), 'source-owned mirror README\n')
@@ -125,18 +133,18 @@ test('reconciliation copies hidden readiness markers and removes tracked stale a
   assert.equal(await fs.readFile(path.resolve(deployMirror, 'image/agentic-graph/video-frame/frame.png'), 'utf8'), 'canonical frame\n')
 })
 
-test('completed cutover retains directories without explicit cleanup authority', async t => {
+test('legacy directory cleanup removes only empty explicit roots', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-empty-legacy-root-'))
   t.after(() => fs.rm(root, { force: true, recursive: true }))
-  await fs.mkdir(path.resolve(root, 'retired-product', 'nested'), { recursive: true })
-  await fs.mkdir(path.resolve(root, 'image', 'retired-product'), { recursive: true })
-  await writeFile(root, 'content/retired-product/unrelated.txt', 'preserve\n')
+  await fs.mkdir(path.resolve(root, 'agenticgraph', 'nested'), { recursive: true })
+  await fs.mkdir(path.resolve(root, 'image', 'knowgrph'), { recursive: true })
+  await writeFile(root, 'content/knowgrph/unrelated.txt', 'preserve\n')
 
   await removeEmptyLegacyMirrorDirectories({ root })
 
-  assert.equal((await fs.stat(path.resolve(root, 'retired-product'))).isDirectory(), true)
-  assert.equal((await fs.stat(path.resolve(root, 'image/retired-product'))).isDirectory(), true)
-  assert.equal(await fs.readFile(path.resolve(root, 'content/retired-product/unrelated.txt'), 'utf8'), 'preserve\n')
+  await assert.rejects(fs.stat(path.resolve(root, 'agenticgraph')), { code: 'ENOENT' })
+  await assert.rejects(fs.stat(path.resolve(root, 'image/knowgrph')), { code: 'ENOENT' })
+  assert.equal(await fs.readFile(path.resolve(root, 'content/knowgrph/unrelated.txt'), 'utf8'), 'preserve\n')
 })
 
 test('manifest creation rejects deletions outside the production artifact boundary', async t => {
@@ -165,7 +173,21 @@ test('manifest creation rejects an unlisted legacy XR sibling deletion', async t
   )
 })
 
-test('manifest creation rejects a retired image deletion without sealed authority', async t => {
+test('manifest creation rejects a byte-modified sealed legacy XR deletion', async t => {
+  const mirrorRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-production-artifact-xr-content-'))
+  t.after(() => fs.rm(mirrorRoot, { force: true, recursive: true }))
+  const relativePath = XR_V2_LEGACY_MIRROR_RELATIVE_PATHS[0]
+  await writeFile(mirrorRoot, relativePath, 'operator-authored replacement bytes\n')
+  initializeRepository(mirrorRoot)
+  await fs.rm(path.resolve(mirrorRoot, relativePath))
+
+  await assert.rejects(
+    createProductionMirrorArtifactManifest({ mirrorRoot }),
+    /Legacy XR v2 file inventory content drifted/,
+  )
+})
+
+test('manifest creation rejects a partial legacy image inventory before it can be deleted', async t => {
   const mirrorRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-production-artifact-image-boundary-'))
   t.after(() => fs.rm(mirrorRoot, { force: true, recursive: true }))
   await writeFile(mirrorRoot, 'image/agenticgraph/unlisted.png', 'protected\n')
@@ -174,7 +196,7 @@ test('manifest creation rejects a retired image deletion without sealed authorit
 
   await assert.rejects(
     createProductionMirrorArtifactManifest({ mirrorRoot }),
-    /Production sync deleted unmanaged path: image\/agenticgraph\/unlisted\.png/,
+    /Legacy mirror root inventory drifted for image\/agenticgraph/,
   )
 })
 
@@ -182,7 +204,7 @@ test('artifact deletion helpers require complete sealed paths and tracked files'
   assert.throws(
     () => assertManagedDeletedPaths({
       deletedPaths: [],
-      sealedLegacyPaths: new Set(['image/retired-product/video-frame/frame.png']),
+      sealedLegacyPaths: new Set(['image/agenticgraph/video-frame/frame.png']),
       isManagedPath: () => true,
       label: 'Production artifact',
     }),

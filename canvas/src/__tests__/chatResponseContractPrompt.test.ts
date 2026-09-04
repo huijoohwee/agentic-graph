@@ -1986,8 +1986,8 @@ export function testAgenticOsDeterministicFallbackShapesLatestRecommendationQuer
   const requestText = 'RECOMMEND: Solo founder; zero budget, bootstrap, organic growth; **Knowledge Graph Canvas** product as MCP for external users, OpenClaw, skills marketplace; Pitch Deck+PRD+TAD, TCO; Use Case -> Problem -> Solution; User Flow+Work Flow+Data Flow; B2C monetization ideas; monetize user actions (subscriptions, pay-per-use, and commerce-like conversion); FOSS RxDB, MapLibre; expose integration with **Stripe payment** flow (payments/checkout)'
   const assistantText = [
     '---',
-    'title: "knowledge-graph-canvas · AI Pipeline — PRD + TAD"',
-    'graphId: "agentic-os-knowledge-graph-canvas-prd-tad"',
+    'title: "agent-graph-canvas · AI Pipeline — PRD + TAD"',
+    'graphId: "agentic-os-agent-graph-canvas-prd-tad"',
     '$schema: "agentic-os-pipeline/v1"',
     'pipeline:',
     'flow:',

@@ -50,13 +50,13 @@ export type WorkspaceBridgeImportResult = {
   websiteImportManifest?: WebsiteImportManifestV1
 }
 
-export type WorkspaceKnowledgeGraphCounts = {
+export type WorkspaceAgentGraphCounts = {
   sources: number
   nodes: number
   edges: number
 }
 
-export type WorkspaceKnowledgeGraphProjection = {
+export type WorkspaceAgentGraphProjection = {
   token: string
   readOnly: true
   graphData: GraphData
@@ -71,8 +71,8 @@ export type WorkspaceKnowledgeGraphProjection = {
  * built. It is deliberately not a snapshot: callers must treat it as a
  * read-only visual preview until the canonical import result arrives.
  */
-export type WorkspaceKnowledgeGraphImportProgress = {
-  schema: 'agentic-graph-knowledge-graph-import-progress/v1'
+export type WorkspaceAgentGraphImportProgress = {
+  schema: 'agentic-graph-agent-graph-import-progress/v1'
   kind: 'source-parsed'
   graphId: string
   parserRegistryDigest: string
@@ -83,29 +83,29 @@ export type WorkspaceKnowledgeGraphImportProgress = {
   graphData: GraphData
 }
 
-export type WorkspaceKnowledgeGraphImportResult = {
+export type WorkspaceAgentGraphImportResult = {
   handled: true
-  kind: 'knowledge-graph'
+  kind: 'agent-graph'
   graphId: string
   snapshotDigest: string
   parserRegistryDigest: string
   complete: boolean
-  counts: WorkspaceKnowledgeGraphCounts
-  projection: WorkspaceKnowledgeGraphProjection
+  counts: WorkspaceAgentGraphCounts
+  projection: WorkspaceAgentGraphProjection
 }
 
-export type WorkspaceKnowledgeGraphArtifactRequest = {
+export type WorkspaceAgentGraphArtifactRequest = {
   repositoryUrl: string
-  invocation: WorkspaceKnowledgeGraphInvocation
-  result: WorkspaceKnowledgeGraphImportResult
+  invocation: WorkspaceAgentGraphInvocation
+  result: WorkspaceAgentGraphImportResult
 }
 
-export type WorkspaceKnowledgeGraphArtifactResult = {
+export type WorkspaceAgentGraphArtifactResult = {
   path: string
 }
 
-export type WorkspaceKnowledgeGraphInvocation = {
-  schema: 'agentic-graph-knowledge-graph-invocation/v1'
+export type WorkspaceAgentGraphInvocation = {
+  schema: 'agentic-graph-agent-graph-invocation/v1'
   tool: string
   action: string
   semantics: readonly string[]
@@ -126,14 +126,14 @@ export type WorkspaceWebsiteImportSummary = {
 
 type WorkspaceBridgeImportReturn = void | WorkspaceBridgeImportResult | Promise<void | WorkspaceBridgeImportResult>
 
-export type WorkspaceKnowledgeGraphBridge = {
-  importFolder?: () => Promise<WorkspaceKnowledgeGraphImportResult>
+export type WorkspaceAgentGraphBridge = {
+  importFolder?: () => Promise<WorkspaceAgentGraphImportResult>
   importRepositoryUrl?: (
     url: string,
     opts?: WorkspaceImportUrlOpts,
-    invocation?: WorkspaceKnowledgeGraphInvocation,
-    onProgress?: (progress: WorkspaceKnowledgeGraphImportProgress) => void,
-  ) => Promise<WorkspaceKnowledgeGraphImportResult>
+    invocation?: WorkspaceAgentGraphInvocation,
+    onProgress?: (progress: WorkspaceAgentGraphImportProgress) => void,
+  ) => Promise<WorkspaceAgentGraphImportResult>
 }
 
 export type MarkdownWorkspaceActionBridge = {
@@ -145,10 +145,10 @@ export type MarkdownWorkspaceActionBridge = {
   downloadVideo?: (url: string, options: VideoDownloadOptions) => Promise<VideoDownloadResult>
   createNewFolder?: () => void
   save?: () => void
-  materializeKnowledgeGraphImport?: (
-    args: WorkspaceKnowledgeGraphArtifactRequest,
-  ) => Promise<WorkspaceKnowledgeGraphArtifactResult>
-  knowledgeGraph?: WorkspaceKnowledgeGraphBridge
+  materializeAgentGraphImport?: (
+    args: WorkspaceAgentGraphArtifactRequest,
+  ) => Promise<WorkspaceAgentGraphArtifactResult>
+  agentGraph?: WorkspaceAgentGraphBridge
 
   export?: {
     duplicateInWorkspace?: () => void
@@ -188,13 +188,13 @@ export function getMarkdownWorkspaceActionBridge(): MarkdownWorkspaceActionBridg
     if (bridge.downloadVideo) merged.downloadVideo = bridge.downloadVideo
     if (bridge.createNewFolder) merged.createNewFolder = bridge.createNewFolder
     if (bridge.save) merged.save = bridge.save
-    if (bridge.materializeKnowledgeGraphImport) {
-      merged.materializeKnowledgeGraphImport = bridge.materializeKnowledgeGraphImport
+    if (bridge.materializeAgentGraphImport) {
+      merged.materializeAgentGraphImport = bridge.materializeAgentGraphImport
     }
-    if (bridge.knowledgeGraph) {
-      merged.knowledgeGraph = {
-        ...(merged.knowledgeGraph || {}),
-        ...bridge.knowledgeGraph,
+    if (bridge.agentGraph) {
+      merged.agentGraph = {
+        ...(merged.agentGraph || {}),
+        ...bridge.agentGraph,
       }
     }
     if (bridge.export) {

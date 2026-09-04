@@ -9,6 +9,10 @@ const forbidden = [
   { label: 'collapsed product namespace', expression: /agenticgraph/ },
   { label: 'retired canvas protocol token', expression: /\bkgc\b/i },
   { label: 'retired canvas environment prefix', expression: /\b(?:KG|kg)_/ },
+  { label: 'retired compact graph namespace', expression: /knowledgegraph/i },
+  { label: 'retired hyphenated graph namespace', expression: /knowledge-graph/i },
+  { label: 'retired underscored graph namespace', expression: /knowledge_graph/i },
+  { label: 'retired dotted graph namespace', expression: /knowledge\.graph/i },
 ]
 
 const historicalMigrationTokensByPath = new Map([
@@ -35,8 +39,31 @@ const historicalMigrationTokensByPath = new Map([
     'KnowgrphCanvasSyncRoom',
   ]],
   ['scripts/legacy-mirror-inventory.mjs', ['agenticgraph', 'knowgrph']],
+  ['scripts/mirror-namespace-contract.mjs', ['agenticgraph', 'knowgrph']],
+  ['scripts/pages-mirror-headers.mjs', ['agenticgraph', 'knowgrph']],
+  ['scripts/pages-mirror-sync.mjs', ['agenticgraph', 'knowgrph']],
   ['scripts/pages-mirror-legacy-cleanup.mjs', ['agenticgraph', 'knowgrph']],
   ['scripts/__tests__/production-mirror-artifact.test.mjs', ['agenticgraph', 'knowgrph']],
+  ['scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs', ['agenticgraph', 'knowgrph']],
+  ['scripts/xr-v2/production-publish-contract.mjs', ['knowgrph']],
+  ['canvas/src/__tests__/agentGraphProjectionCompatibility.test.ts', ['knowledgeGraph', 'knowledge-graph']],
+  ['canvas/src/features/agent-graph/agentGraphProjectionPolicy.ts', ['knowledgeGraph', 'knowledge-graph']],
+  ['canvas/viteAgentGraphBridge.ts', ['KNOWLEDGE_GRAPH']],
+  ['mcp/__tests__/agent-graph-completeness-deadline.test.mjs', ['agentic-graph-knowledge-graph']],
+  ['mcp/__tests__/agent-graph-json-evidence-performance.test.mjs', ['knowledgeGraph']],
+  ['mcp/__tests__/agent-graph-query-pairing.test.mjs', ['knowledgeGraph']],
+  ['mcp/__tests__/agent-graph-runtime.test.mjs', ['agentic-graph-knowledge-graph']],
+  ['mcp/__tests__/agent-graph-storage-root.test.mjs', ['knowledge-graph']],
+  ['mcp/agent-graph-host.js', ['KNOWLEDGE_GRAPH']],
+  ['mcp/agent-graph/contract.mjs', ['agentic-graph-knowledge-graph', 'knowledgeGraph']],
+  ['mcp/agent-graph/ingest-lock.mjs', ['agentic-graph-knowledge-graph']],
+  ['mcp/agent-graph/materialize.mjs', ['knowledgeGraph']],
+  ['mcp/agent-graph/query-core.mjs', ['knowledgeGraph']],
+  ['mcp/agent-graph/query.mjs', ['knowledgeGraph']],
+  ['mcp/agent-graph/resolution-store-validation.mjs', ['agentic-graph-knowledge-graph']],
+  ['mcp/agent-graph/source-sharding.mjs', ['agentic-graph-knowledge-graph']],
+  ['mcp/agent-graph/storage-root.mjs', ['KNOWLEDGE_GRAPH', 'knowledge-graph']],
+  ['mcp/agent-graph/store.mjs', ['agentic-graph-knowledge-graph']],
 ])
 
 const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })

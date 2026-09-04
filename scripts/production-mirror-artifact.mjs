@@ -13,6 +13,7 @@ import {
   assertTrackedDeletedPaths,
   listSealedLegacyPathsAtRevision,
   removeEmptyLegacyMirrorDirectories,
+  removePlannedMirrorFiles,
 } from './production-mirror-artifact-deletions.mjs'
 import {
   assertSafeRoot,
@@ -95,6 +96,13 @@ const readGitTreeRelativeFiles = ({ root, revision, relativeRoot }) => {
     }
     return relativePath.slice(prefix.length)
   })
+}
+
+const readGitTreeFile = ({ root, revision, relativePath }) => {
+  const normalizedPath = normalizeRelativePath(relativePath)
+  const entry = readGitBuffer(root, ['ls-tree', '-z', revision, '--', normalizedPath])
+  if (entry.length === 0) return null
+  return readGitBuffer(root, ['show', `${revision}:${normalizedPath}`])
 }
 
 const canonicalJson = value => {
@@ -509,6 +517,7 @@ export const createProductionMirrorArtifactManifest = async ({ mirrorRoot }) => 
   const deletedPaths = readDeletedPaths(root)
   const sealedLegacyPaths = new Set(await listSealedLegacyPathsAtRevision({
     readGitTreeRelativeFiles,
+    readGitTreeFile,
     root,
     revision: mirrorRevision,
   }))
@@ -533,6 +542,7 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
   }
   const sealedLegacyPaths = new Set(await listSealedLegacyPathsAtRevision({
     readGitTreeRelativeFiles,
+    readGitTreeFile,
     root: targetRoot,
     revision: targetRevision,
   }))
@@ -550,6 +560,11 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
     trackedPaths,
     label: 'Production artifact',
   })
+  const deletionPlan = manifest.deletedPaths.map(relativePath => {
+    const contents = readGitTreeFile({ root: targetRoot, revision: targetRevision, relativePath })
+    if (!contents) throw new Error(`Production artifact deletion is missing from its base revision: ${relativePath}`)
+    return { relativePath, sha256: digestValue(contents) }
+  })
 
   const readinessPath = '.well-known/runtime-readiness.json'
   const contentReadinessPath = `content/agentic-graph/${readinessPath}`
@@ -560,9 +575,7 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
   if (!rootReadiness.equals(contentReadiness)) throw new Error('Production artifact readiness markers must be byte-identical')
 
   for (const relativePath of productionMirrorArtifactEntries) await fs.stat(resolveWithin(sourceRoot, relativePath))
-  for (const deletedPath of manifest.deletedPaths) {
-    await fs.rm(resolveWithin(targetRoot, deletedPath), { force: true })
-  }
+  await removePlannedMirrorFiles({ root: targetRoot, entries: deletionPlan, label: 'Production artifact deletion' })
   for (const relativePath of productionMirrorArtifactEntries) {
     const sourcePath = resolveWithin(sourceRoot, relativePath)
     const targetPath = resolveWithin(targetRoot, relativePath)

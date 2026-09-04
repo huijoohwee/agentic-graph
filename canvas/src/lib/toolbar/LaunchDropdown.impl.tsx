@@ -20,8 +20,8 @@ import { importLocalImagesWithWorkspaceBridgeRetry } from './launchImageImportBr
 import { LaunchDropdownImportUrlItem } from './LaunchDropdownImportUrlItem'
 import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
 import {
-  hasLaunchKnowledgeGraphFolderImporter,
-  runLaunchImportKnowledgeGraphFolder,
+  hasLaunchAgentGraphFolderImporter,
+  runLaunchImportAgentGraphFolder,
   runLaunchImportLocalFiles,
   runLaunchImportLocalFolderPreview,
 } from './launchImportDispatch'
@@ -212,14 +212,14 @@ export function LaunchDropdown({
 
   const importFolder = React.useCallback(async () => {
     const launchBridge = getMarkdownWorkspaceActionBridge()
-    if (!hasLaunchKnowledgeGraphFolderImporter(launchBridge)) {
+    if (!hasLaunchAgentGraphFolderImporter(launchBridge)) {
       if (!openFilePicker(folderInputRef.current)) throw new Error('The browser folder chooser is unavailable.')
       return { status: 'requested-user-input' as const, message: 'Choose a local folder in the browser picker.' }
     }
     onClose()
-    const result = await runLaunchImportKnowledgeGraphFolder({ bridge: launchBridge })
+    const result = await runLaunchImportAgentGraphFolder({ bridge: launchBridge })
     pushUiToast({
-      id: 'launch:import:knowledge-graph-folder',
+      id: 'launch:import:agent-graph-folder',
       kind: 'success',
       message: `Loaded knowledge graph projection (${result.projection.graphData.nodes.length} nodes, ${result.projection.graphData.edges.length} edges)`,
       ttlMs: UI_TOAST_TTL_MS.actionFeedback,
@@ -502,7 +502,7 @@ export function LaunchDropdown({
               type="button"
               className={menuItemClass}
               aria-label="Import folder"
-              onClick={() => { void importFolder().catch(error => pushUiToast({ id: 'launch:import:knowledge-graph-folder', kind: 'error', message: String((error as { message?: unknown })?.message || 'Knowledge graph folder import failed.'), ttlMs: UI_TOAST_TTL_MS.warningExtended, dismissible: true })) }}
+              onClick={() => { void importFolder().catch(error => pushUiToast({ id: 'launch:import:agent-graph-folder', kind: 'error', message: String((error as { message?: unknown })?.message || 'Knowledge graph folder import failed.'), ttlMs: UI_TOAST_TTL_MS.warningExtended, dismissible: true })) }}
             >
               <FolderOpen className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">Import folder</span>

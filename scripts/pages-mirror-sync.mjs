@@ -6,13 +6,16 @@ import { agentReadyHomepageLinkHeaderValue, buildAgentReadyStaticFiles } from '.
 import { buildPagesMirrorAgentReadyPlan } from './pages-mirror-agent-ready.mjs'
 import { createPagesMirrorFileOperations } from './pages-mirror-file-operations.mjs'
 import { buildAgentReadyHeaders } from './pages-mirror-headers.mjs'
+import { createPagesMirrorLegacyCleanup } from './pages-mirror-legacy-cleanup.mjs'
 import { buildAgenticGraphRedirects } from './production-pages-routing.mjs'
 import {
   buildProductionRuntimeReadiness,
   findRuntimeReadinessPathsNeedingUpdate,
   productionRuntimeReadinessHeaderLines,
 } from './production-runtime-readiness-build.mjs'
+import { LEGACY_MIRROR_DIRECTORY_ROOTS, LEGACY_MIRROR_EXACT_PATHS } from './mirror-namespace-contract.mjs'
 import {
+  XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
   XR_V2_MIRRORED_IGNORE_RELATIVE_PATH,
   XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS,
 } from './xr-v2/production-publish-contract.mjs'
@@ -68,6 +71,11 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     copyIfChanged, copyPlainFile, existsDir, fileNeedsUpdate, listAllFiles, listFiles, plainFileNeedsUpdate,
     productionRuntimeFunctionTargetBody, textFileNeedsUpdate, toPosixRel, writeTextFile,
   } = createPagesMirrorFileOperations({ isAllowedRelativePath })
+  const {
+    assertLegacyMirrorInventoryIsBounded, collectLegacyMirrorFilesToRemove, copyLegacyImageFile,
+    createLegacyImageMigrationPlan,
+    removeEmptyDirs, removeLegacyMirrorFiles, resolveMirrorRelativePath,
+  } = createPagesMirrorLegacyCleanup({ mirrorRoot })
   const plan = await buildPagesMirrorAgentReadyPlan({ agenticGraphRoot, mirrorRoot })
   const {
     agentReadyCommerceX402RouteBody, agentReadyCommerceX402RouteTarget, agentReadyDefaultDocRouteTarget,
@@ -86,7 +94,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     youtubeTranscriptFunctionTarget,
   } = plan
   const obsoleteGeneratedMirrorFiles = new Set([
-    'index.html',
+    'index.html', ...XR_V2_LEGACY_MIRROR_RELATIVE_PATHS, ...LEGACY_MIRROR_EXACT_PATHS,
     joinRelativePath('agentic-graph', '.well-known', 'runtime-readiness.json'),
     joinRelativePath('canvas', 'src', 'features', 'agent-ready', joinToken('agentic-graph', 'Skill', 'Pack', 'Contract.mjs')),
     joinRelativePath('canvas', 'src', 'features', 'chat', joinToken('agentic-graph', 'Skill', 'Pack', 'ChatArtifacts.ts')),
@@ -102,12 +110,16 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     { rel: '404.html', src: path.resolve(agenticGraphRoot, 'cloudflare', 'pages', '404.html') },
     { rel: 'README.md', src: path.resolve(agenticGraphRoot, 'README.md') },
   ]
+  await assertLegacyMirrorInventoryIsBounded()
+  const legacyImageMigration = await createLegacyImageMigrationPlan()
+  const legacyMirrorFilesToRemove = await collectLegacyMirrorFilesToRemove({ obsoleteGeneratedMirrorFiles })
   const runtimeReadiness = await buildProductionRuntimeReadiness({
     sourceRevision, agenticGraphRoot, mirrorRoot, contentRoot: targetDir,
     artifactEntries: [
       ...sourceFiles.filter(isBrowserRuntimeArtifactRelativePath)
         .map(relativePath => ({ relativePath, absolutePath: path.resolve(distDir, relativePath) })),
       ...rootManagedSourceFiles.map(entry => ({ relativePath: entry.rel, absolutePath: entry.src })),
+      ...legacyImageMigration.runtimeEntries,
     ],
   })
   const { relativePath: runtimeReadinessRelativePath, body: runtimeReadinessBody } = runtimeReadiness
@@ -207,7 +219,8 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   const hasDrift = [
     filesToCopy, rootManagedFilesToCopy, filesToRemove, publicFilesToCopy, publicRootManagedFilesToCopy,
     publicFilesToRemove, publishRootManagedFilesToCopy, plainCopyUpdates, productionRuntimeFunctionUpdates,
-    agentReadyRuntimeFilesToCopy, agentReadyRouteUpdates, agentReadyStaticFilesToWrite, runtimeReadinessPathsNeedingUpdate,
+    agentReadyRuntimeFilesToCopy, agentReadyRouteUpdates, agentReadyStaticFilesToWrite, legacyMirrorFilesToRemove,
+    legacyImageMigration.legacyImageFiles, runtimeReadinessPathsNeedingUpdate,
   ].some(entries => entries.length > 0) || redirectsNeedUpdate || headersNeedUpdate
 
   if (checkMode) {
@@ -229,6 +242,11 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     summaryList('agent-ready owned files needing sync', plainCopyUpdates, entry => entry.label)
     summaryList('agent-ready route Functions needing sync', agentReadyRouteUpdates, target => toPosixRel(mirrorRoot, target))
     summaryList('root agent-ready static files needing sync', agentReadyStaticFilesToWrite)
+    summaryList('bounded legacy mirror files needing removal', legacyMirrorFilesToRemove, entry => entry.relativePath)
+    if (legacyImageMigration.legacyImageFiles.length > 0) {
+      const copies = legacyImageMigration.entries.filter(entry => entry.needsCopy).length
+      summaryList(`legacy image payloads needing byte-preserving migration (copies=${copies})`, legacyImageMigration.entries, entry => `${entry.sourceRelativePath} -> ${entry.destinationRelativePath}`)
+    }
     if (headersNeedUpdate) console.error('  - `huijoohwee/_headers` generated agent-ready block is out of sync')
     summaryList('runtime-readiness files needing sync', runtimeReadinessPathsNeedingUpdate, target => toPosixRel(mirrorRoot, target))
     console.error('  fix: run `npm run pages:build-sync`')
@@ -271,8 +289,23 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   for (const [source, target] of agentReadyRuntimeFilesToCopy) await copyPlainFile(source, target)
   await writeTextFile(agentReadyCommerceX402RouteTarget, agentReadyCommerceX402RouteBody)
   for (const relativePath of agentReadyStaticFilesToWrite) await writeTextFile(path.resolve(mirrorRoot, relativePath), agentReadyArtifacts[relativePath].body)
+  let legacyImagePayloadsCopied = 0
+  for (const entry of legacyImageMigration.entries) {
+    if (!entry.needsCopy) continue
+    await copyLegacyImageFile(entry)
+    legacyImagePayloadsCopied += 1
+  }
+  await removeLegacyMirrorFiles(legacyMirrorFilesToRemove)
+  await removeLegacyMirrorFiles(legacyImageMigration.entries.map(entry => ({
+    relativePath: entry.sourceRelativePath,
+    sha256: entry.sourceSha256,
+  })))
+  for (const relativeRoot of [...LEGACY_MIRROR_DIRECTORY_ROOTS, 'content/knowgrph', 'docs_/agenticgraph', 'image/agenticgraph', 'image/knowgrph']) {
+    await removeEmptyDirs(resolveMirrorRelativePath(relativeRoot))
+  }
+  await assertLegacyMirrorInventoryIsBounded()
   if (headersNeedUpdate) await fs.writeFile(headersPath, nextHeaders, 'utf8')
   console.log(
-    `[agentic-graph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootManagedFilesToCopy.length}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, plainFilesUpdated=${plainCopyUpdates.length}, runtimeFunctionsUpdated=${productionRuntimeFunctionUpdates.length}, agentReadyRuntimeUpdated=${agentReadyRuntimeFilesToCopy.length}, agentReadyRoutesUpdated=${agentReadyRouteUpdates.length}, agentReadyStaticUpdated=${agentReadyStaticFilesToWrite.length})`,
+    `[agentic-graph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootManagedFilesToCopy.length}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, plainFilesUpdated=${plainCopyUpdates.length}, runtimeFunctionsUpdated=${productionRuntimeFunctionUpdates.length}, agentReadyRuntimeUpdated=${agentReadyRuntimeFilesToCopy.length}, agentReadyRoutesUpdated=${agentReadyRouteUpdates.length}, agentReadyStaticUpdated=${agentReadyStaticFilesToWrite.length}, legacyMirrorFilesRemoved=${legacyMirrorFilesToRemove.length}, legacyImagePayloadsCopied=${legacyImagePayloadsCopied}, legacyImagePayloadsRemoved=${legacyImageMigration.legacyImageFiles.length})`,
   )
 }

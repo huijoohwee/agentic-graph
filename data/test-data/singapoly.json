@@ -8,7 +8,7 @@
     "salaryOnGo": 200,
     "boardSize": 40
   },
-  "knowledgeGraph": {
+  "agentGraph": {
     "edges": [
       { "source": 1,  "target": 3,  "type": "district",   "weight": 3, "label": "East Heritage" },
       { "source": 6,  "target": 8,  "type": "district",   "weight": 3, "label": "Suburban West" },

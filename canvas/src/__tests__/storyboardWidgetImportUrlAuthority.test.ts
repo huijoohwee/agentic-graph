@@ -2,7 +2,7 @@ import { createStoryboardWidgetWorkflowNodeRunner } from '@/components/Storyboar
 import { runStoryboardWidgetNativeImportUrlInvocation } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowNativeImportUrlRun'
 import {
   registerMarkdownWorkspaceActionBridge,
-  type WorkspaceKnowledgeGraphImportResult,
+  type WorkspaceAgentGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import { NATIVE_IMPORT_URL_INVOCATION_TEMPLATE } from '@/features/chat/nativeImportUrlInvocation'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -98,10 +98,10 @@ export async function testStoryboardImportUrlPreservesImportedCanvasAuthority():
   }
 }
 
-export async function testStoryboardImportUrlRendersKnowledgeGraphSuccessWithoutFilePaths(): Promise<void> {
+export async function testStoryboardImportUrlRendersAgentGraphSuccessWithoutFilePaths(): Promise<void> {
   useGraphStore.getState().resetAll()
   const importCard: GraphNode = {
-    id: 'knowledge-graph-import-card',
+    id: 'agent-graph-import-card',
     type: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
     label: 'Import repository graph',
     properties: { prompt: NATIVE_IMPORT_URL_INVOCATION_TEMPLATE },
@@ -111,9 +111,9 @@ export async function testStoryboardImportUrlRendersKnowledgeGraphSuccessWithout
     graphDataRevision: 1,
     markdownDocumentName: '/card.md',
   })
-  const knowledgeGraphResult: WorkspaceKnowledgeGraphImportResult = {
+  const agentGraphResult: WorkspaceAgentGraphImportResult = {
     handled: true,
-    kind: 'knowledge-graph',
+    kind: 'agent-graph',
     graphId: 'kg:graph:0123456789abcdef0123456789abcdef',
     snapshotDigest: 'a'.repeat(64),
     parserRegistryDigest: 'f'.repeat(64),
@@ -126,7 +126,7 @@ export async function testStoryboardImportUrlRendersKnowledgeGraphSuccessWithout
       truncated: false,
       limit: 1_000,
       graphData: {
-        context: 'agentic-graph-knowledge-graph-projection',
+        context: 'agentic-graph-agent-graph-projection',
         type: 'Graph',
         nodes: [
           { id: 'node:a', label: 'A', type: 'Symbol', properties: {} },
@@ -156,10 +156,10 @@ export async function testStoryboardImportUrlRendersKnowledgeGraphSuccessWithout
   const failures: string[] = []
   const toasts: string[] = []
   const published: Array<{ outputText: string; outputPath?: string | null; loading?: boolean }> = []
-  const unregister = registerMarkdownWorkspaceActionBridge('storyboard-import-url-knowledge-graph-test', {
+  const unregister = registerMarkdownWorkspaceActionBridge('storyboard-import-url-agent-graph-test', {
     importUrl: async () => {
       bridgeCalls += 1
-      return knowledgeGraphResult
+      return agentGraphResult
     },
   })
   try {
@@ -191,7 +191,7 @@ export async function testStoryboardImportUrlRendersKnowledgeGraphSuccessWithout
       || authorityChanges !== 1
       || failures.length !== 0
       || !toasts.some(message => message.includes('2 nodes and 1 edges'))
-      || graph.metadata?.kind !== 'knowledge-graph'
+      || graph.metadata?.kind !== 'agent-graph'
       || graph.nodes.length !== 2
       || published.length !== 1
       || published[0]?.loading !== true

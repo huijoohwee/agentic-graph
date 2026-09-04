@@ -3,7 +3,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../../../mcp/agentic-canvas-os-docs-contract.mjs'
-import { installSourceCatalogFetchMock } from './knowledgeGraphSkillsCommandsLaunch.test'
+import { installSourceCatalogFetchMock } from './agentGraphSkillsCommandsLaunch.test'
 import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { executeAgenticOsInvocation } from '@/features/agentic-os/agenticOsInvocationExecutor'
@@ -50,7 +50,7 @@ const buildResolution = ({
   sourceRevision,
   catalogDigest: CATALOG_DIGEST,
   invocation: Object.freeze({
-    schema: 'agentic-graph-knowledge-graph-invocation/v1',
+    schema: 'agentic-graph-agent-graph-invocation/v1',
     tool: COMMAND,
     action: COMMAND,
     semantics: Object.freeze([...semantics]),

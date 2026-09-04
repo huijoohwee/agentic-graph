@@ -506,7 +506,7 @@ export function testPublishedStoryboardWidgetDocsKeepFrontmatterAsMachineSsot() 
       requiredSummaries: [
         ['source_input', 'Alpha discovery source'],
         ['compute_summary', 'Synthesises alpha signals'],
-        ['panel_alpha_map', 'knowledge-graph canvas'],
+        ['panel_alpha_map', 'agent-graph canvas'],
       ],
       requiredNodeTypedFields: [
         {
