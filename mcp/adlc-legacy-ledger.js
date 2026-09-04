@@ -8,7 +8,7 @@ import {
   snapshotPinnedEvaluatorDependencies,
 } from "./evaluator-dependency-snapshot.js";
 
-export const AGENTIC_SDLC_LEDGER_RECEIPT_SCHEMA =
+export const LEGACY_LEDGER_RECEIPT_SCHEMA =
   "agentic-sdlc-ledger-receipt/v1";
 
 const execFileAsync = promisify(execFile);
@@ -76,7 +76,7 @@ async function checkoutSnapshot(root, exec) {
   return Object.freeze({ revision: firstRevision, status });
 }
 
-export function validateAgenticSdlcLedgerReceipt(input) {
+export function validateLegacyLedgerReceipt(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw fail("CANONICAL_LEDGER_UNAVAILABLE", "The implementation run has no canonical Agentic SDLC ledger receipt.");
   }
@@ -90,7 +90,7 @@ export function validateAgenticSdlcLedgerReceipt(input) {
       "The canonical Agentic SDLC ledger receipt contains missing or unknown fields.",
     );
   }
-  if (input.schema !== AGENTIC_SDLC_LEDGER_RECEIPT_SCHEMA) {
+  if (input.schema !== LEGACY_LEDGER_RECEIPT_SCHEMA) {
     throw fail("LEDGER_RECEIPT_INVALID", "The canonical Agentic SDLC ledger receipt schema is unsupported.");
   }
   if (!ARTIFACT.test(String(input.artifact || ""))) {
@@ -122,7 +122,7 @@ export function validateAgenticSdlcLedgerReceipt(input) {
   });
 }
 
-export async function loadAgenticSdlcEvaluator({
+export async function loadLegacyLedgerEvaluator({
   agenticCanvasOsRoot,
   expectedRevision,
   exec = execFileAsync,
@@ -151,7 +151,11 @@ export async function loadAgenticSdlcEvaluator({
       );
     }
     const modulePath = path.join(root, "scripts", "agentic-sdlc", "index.mjs");
-    const moduleStat = await fs.lstat(modulePath);
+    const moduleStat = await fs.lstat(modulePath).catch((error) => {
+      if (error.code === "ENOENT") throw fail("ADLC_EVALUATOR_UNAVAILABLE",
+        "The exact historical evaluator is unavailable; restore its receipt-pinned checkout for read-only observation.");
+      throw error;
+    });
     const moduleReal = await fs.realpath(modulePath);
     if (!within(root, moduleReal) || !moduleStat.isFile() || moduleStat.isSymbolicLink()) {
       throw fail("ACOS_REVISION_MISMATCH", "The Agentic Canvas OS evaluator module is unsafe.");
@@ -201,7 +205,7 @@ export async function loadAgenticSdlcEvaluator({
     }
     return evaluator;
   } catch (error) {
-    if (error?.code === "ACOS_REVISION_MISMATCH") throw error;
+    if (["ACOS_REVISION_MISMATCH", "ADLC_EVALUATOR_UNAVAILABLE"].includes(error?.code)) throw error;
     throw fail(
       "ACOS_REVISION_MISMATCH",
       "The exact clean Agentic Canvas OS evaluator could not be loaded.",
@@ -209,49 +213,19 @@ export async function loadAgenticSdlcEvaluator({
   }
 }
 
-export function evaluateAgenticSdlcLedger(ledger, evaluator) {
-  try {
-    evaluator.assertCanonicalRunSchema(ledger);
-    const normalizedRun = evaluator.normalizeCanonicalRun(ledger);
-    const conformance = evaluator.validateExecutionRun(ledger);
-    if (
-      !normalizedRun
-      || normalizedRun.schema !== "agentic-sdlc-run/v1"
-      || !conformance
-      || conformance.runId !== normalizedRun.runId
-      || typeof conformance.runtimeReady !== "boolean"
-    ) {
-      throw new Error("Evaluator returned an incomplete canonical result.");
-    }
-    return Object.freeze({
-      normalizedRun,
-      conformance,
-      stableJson: evaluator.stableJson,
-    });
-  } catch (error) {
-    if (error?.code) throw error;
-    throw fail(
-      "LEDGER_SCHEMA_INVALID",
-      `The canonical Agentic SDLC ledger failed exact evaluator validation: ${error.message}`,
-    );
-  }
+export const LEGACY_RUN_SCHEMA = "agentic-sdlc-run/v1";
+export const LEGACY_LEDGER_EVENT = "agentic_sdlc.ledger_bound";
+export function legacyCanonicalRunId(ledger) {
+  const id = typeof ledger?.runId === "string" ? ledger.runId.trim() : "";
+  if (!id) throw fail("LEDGER_SCHEMA_INVALID", "Historical canonical run identity is missing.");
+  return id;
 }
-
-export function createAgenticSdlcLedgerReceipt({
-  artifact,
-  digest,
-  bytes,
-  canonicalRunId,
-  ledgerRevision,
-  acosRevision,
-}) {
-  return validateAgenticSdlcLedgerReceipt({
-    schema: AGENTIC_SDLC_LEDGER_RECEIPT_SCHEMA,
-    artifact,
-    digest,
-    bytes,
-    canonicalRunId,
-    ledgerRevision,
-    acosRevision,
-  });
+export function readLegacyLedgerBinding(result) {
+  if (!result || !Object.hasOwn(result, "agenticSdlcLedger")) return null;
+  if (Object.hasOwn(result, "adlcLedger")) throw fail("LEDGER_RECEIPT_INVALID", "Conflicting native and historical ledger receipts.");
+  return validateLegacyLedgerReceipt(result.agenticSdlcLedger);
+}
+export function assertNativeLedgerBinding(state) {
+  if (Object.hasOwn(state.spec, "agenticSdlcLedgerPath") || Object.hasOwn(state.result || {}, "agenticSdlcLedger"))
+    throw fail("LEDGER_RECEIPT_INVALID", "Historical ledger bindings are read-only; start a new native ADLC request.");
 }

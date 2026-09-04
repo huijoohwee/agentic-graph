@@ -34,7 +34,7 @@ runtime_readiness_command: "npm run payment:runtime:readiness"
 local_vcc_command: "npm run payment:local:vcc"
 local_vcc_attestation: "repository-owned execution bound to the inspected source-evidence digest"
 guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
-execution_guidelines: "huijoohwee.github.io/guidelines/agentic-sdlc-guidelines.md"
+execution_guidelines: "huijoohwee.github.io/guidelines/adlc-guidelines.md"
 topology_version: "3"
 deployment_authority: "Dev authoring only. Production mirror publication and Cloudflare deployment require a separate explicit operator instruction."
 source_checked_at: "2026-07-29"
@@ -113,7 +113,7 @@ parity, or public delivery.
 | Seller-side ACP checkout, Web3 settlement, Solana Pay, OpenBOX, proof and trace runtime | `docs/documents/agentic-graph-agentic-commerce-prd-tad.md` | Remains the agentic-graph-as-seller runtime owner and the authority for server-owned agentic-graph offers and prices. This document adds a distinct buyer-side, third-party-merchant purchase lifecycle; it does not route a StraitsX-issued card through ACP, relax seller price authority, or duplicate the commerce proof runtime. |
 | Stripe MCP readiness, connection mode, tool confirmation policy | `docs/documents/agentic-graph-mcp/agentic-graph-stripe-mcp-service.md` | Remains the MCP readiness owner. This document references that transport for federation only. |
 | `/`, `#`, `@`, and payment MCP invocation metadata | `agentic-canvas-os/docs/DICTIONARY-COMMAND.md`, `DICTIONARY-SEMANTIC.md`, `DICTIONARY-BINDING.md`, and `MCP-GATEWAY.md` | These files remain the invocation SSOT. This document consumes their exact payment routes and wire identities; it creates no parallel registry or alias. |
-| Execution roles, task decomposition, tool blast radius, and run-state authority | `huijoohwee.github.io/guidelines/agentic-sdlc-guidelines.md` | Companion execution authority; this PRD/TAD does not redefine its contracts. |
+| Execution roles, task decomposition, tool blast radius, and run-state authority | `huijoohwee.github.io/guidelines/adlc-guidelines.md` | Companion execution authority; this PRD/TAD does not redefine its contracts. |
 | Settings row rendering and generated schema | existing settings architecture owner | Reused. No second payment settings registry. |
 
 New surface area introduced by this document: an explicit rail-selection contract, the StraitsX rail adapter, a client-owned offline intent queue with reconnect reconciliation, a serialized payment record with a round-trip guarantee, and a stated agent-platform readiness posture for payment tools. Version 1.2 additionally specifies a bounded buyer-agent lifecycle that funds one KYC-verified provider account with XSGD, discovers one purchase candidate, issues one disposable virtual card, and executes one approved checkout through the existing Paywall owner.

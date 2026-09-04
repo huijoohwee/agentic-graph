@@ -9,7 +9,7 @@ import { redactEvidence, writeEvidenceArtifact } from "./implementation-run-evid
 import { assertExecutableProof, assertFileProof, executableProof, runManagedProcess } from "./implementation-run-managed-process.js";
 import { assertPinnedImplementationRunPolicy, digestVerifierProfiles, loadImplementationRunCoordinationConfig, loadImplementationRunHostConfig } from "./implementation-run-validation.js";
 import { AGENTIC_DEVICE_RESULT_SCHEMA, buildAgenticDeviceCommand, parseAgenticDeviceFailure, parseAgenticDeviceResult } from "./implementation-run-acos-adapter.js";
-import { agenticSdlcLedgerResultFields, agenticSdlcRunnerRequestFields, bindAgenticSdlcLedger } from "./implementation-run-agentic-sdlc-ledger.js";
+import { adlcLedgerResultFields, adlcRunnerRequestFields, bindAdlcLedger } from "./implementation-run-adlc-ledger.js";
 
 const ACOS_SCHEMA = AGENTIC_DEVICE_RESULT_SCHEMA;
 const MAX_INLINE_VERIFICATION_EVIDENCE_BYTES = 32768;
@@ -495,7 +495,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
         workItem: state.spec.workItem,
         workspacePath: state.coordination.worktreePath,
         allowedPaths: state.spec.allowedPaths,
-        ...agenticSdlcRunnerRequestFields(state.spec.agenticSdlcLedgerPath),
+        ...adlcRunnerRequestFields(state.spec.adlcLedgerPath),
       }, null, 2)}\n`, supervisorToken: token });
       await assertPinnedImplementationRunPolicy(state, runner, authority.verifiers);
       await assertExecutableMatches(state.plan.executableProofs.find((proof) => proof.role === "runner"));
@@ -550,7 +550,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
         if (!result.ok) return fail("failed", "verification_failed", `Verification failed for ${verifier.id}.`, state, { verification: evidence });
         await assertSafeChangedPaths(state, await changedPaths(state));
       }
-      state = await bindAgenticSdlcLedger({ state: await store.read(runId), store, runId, supervisorToken: token, updateOwned: ownedUpdate });
+      state = await bindAdlcLedger({ state: await store.read(runId), store, runId, supervisorToken: token, updateOwned: ownedUpdate });
       state = await store.read(runId);
       if (state.supervisor?.token !== token) return;
       if (!coordinationHealthy) return fail("blocked", "heartbeat_failed", "Coordination heartbeat failed before review handoff.", state);
@@ -565,7 +565,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
       if (!clean.ok || clean.stdout.trim() || !head.ok || head.stdout.trim() === state.coordination.lease.fenceSha) return fail("blocked", "review_commit_required", "Runner must leave a clean worktree with a committed change beyond the lease fence.", state);
       state = await ownedUpdate("coordination.review_requested", { headSha: head.stdout.trim() }, (current) => {
         current.coordinationIntent = { action: "review", requestedAt: now().toISOString() };
-        current.result = { runner: current.result?.runner || null, ...agenticSdlcLedgerResultFields(current.result), changedPaths: paths, verification: evidence, headSha: head.stdout.trim(), handoffPending: true, automaticMerge: false, deployment: false };
+        current.result = { runner: current.result?.runner || null, ...adlcLedgerResultFields(current.result), changedPaths: paths, verification: evidence, headSha: head.stdout.trim(), handoffPending: true, automaticMerge: false, deployment: false };
         return current;
       });
       handoffInProgress = true;
@@ -582,7 +582,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
           return current;
         });
       }
-      const failureCode = error.code === "LEASE_REACTIVATION_REQUIRED" ? "lease_reactivation_required" : error.code === "MANUAL_RECOVERY_REQUIRED" ? "manual_recovery_required" : error.code === "LEDGER_CONFORMANCE_FAILED" ? "agentic_sdlc_conformance_failed" : "supervisor_failed";
+      const failureCode = error.code === "LEASE_REACTIVATION_REQUIRED" ? "lease_reactivation_required" : error.code === "MANUAL_RECOVERY_REQUIRED" ? "manual_recovery_required" : error.code === "LEDGER_CONFORMANCE_FAILED" ? "adlc_conformance_failed" : error.code === "ADLC_EVALUATOR_UNAVAILABLE" ? "adlc_evaluator_unavailable" : "supervisor_failed";
       return fail("blocked", failureCode, error.message, state, error.acosResult || null);
     }
   }

@@ -6,15 +6,15 @@ import {
   agenticOsRoundTripEquivalent,
 } from "../../contracts/agentic-os-document.schema.js";
 import {
-  AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA,
-  AGENTIC_SDLC_OBSERVABILITY_INVOCATION,
-  AGENTIC_SDLC_OBSERVABILITY_VIEWS,
-  AgenticSdlcProjectionError,
-  projectAgenticSdlcCanvas,
-} from "../agentic-sdlc-observability-projection.js";
+  ADLC_CANVAS_PROJECTION_SCHEMA,
+  ADLC_OBSERVABILITY_INVOCATION,
+  ADLC_OBSERVABILITY_VIEWS,
+  AdlcProjectionError,
+  projectAdlcCanvas,
+} from "../adlc-observability-projection.js";
 import {
-  AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA,
-} from "../agentic-sdlc-observability-tool-contract.js";
+  ADLC_OBSERVATION_OUTPUT_SCHEMA,
+} from "../adlc-observability-tool-contract.js";
 const NODE_TYPES = [
   "run", "criterion", "vcc", "task", "transition", "dispatch", "return",
   "check", "evidence", "finding", "budget", "receipt", "gate", "checkpoint",
@@ -339,21 +339,21 @@ test("real normalized ACOS records emit all Canvas types and parser-compatible A
   assert.equal(input.normalizedRun.transitions, undefined);
   assert.ok(input.normalizedRun.tasks[0].dispatch);
   assert.ok(input.normalizedRun.evidenceReferences);
-  const projection = projectAgenticSdlcCanvas(input);
-  assert.equal(projection.schema, AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA);
+  const projection = projectAdlcCanvas(input);
+  assert.equal(projection.schema, ADLC_CANVAS_PROJECTION_SCHEMA);
   assert.equal(projection.ordering, "type_rank_then_id");
   assert.match(projection.projectionDigest, /^[0-9a-f]{64}$/);
   assert.match(projection.pageDigest, /^[0-9a-f]{64}$/);
   assert.equal(projection.graphData.type, "Graph");
-  assert.equal(projection.graphData.context, "agentic-sdlc-observability");
-  assert.equal(projection.graphData.metadata.invocation, AGENTIC_SDLC_OBSERVABILITY_INVOCATION);
+  assert.equal(projection.graphData.context, "adlc-observability");
+  assert.equal(projection.graphData.metadata.invocation, ADLC_OBSERVABILITY_INVOCATION);
   const capabilityTask = projection.graphData.nodes.find(
     (node) => node.type === "task" && node.properties.source.id === "1",
   );
   assert.equal(capabilityTask.properties.source.effectiveCapabilityGrants[0].capabilityClass, "filesystem-write");
   const validateProjection = new Ajv2020({ strict: false }).compile({
-    $defs: AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA.$defs,
-    ...AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA.properties.projection,
+    $defs: ADLC_OBSERVATION_OUTPUT_SCHEMA.$defs,
+    ...ADLC_OBSERVATION_OUTPUT_SCHEMA.properties.projection,
   });
   assert.equal(validateProjection(projection), true, JSON.stringify(validateProjection.errors));
   assert.deepEqual(
@@ -387,7 +387,7 @@ test("real normalized ACOS records emit all Canvas types and parser-compatible A
 test("projection is deterministic under source collection permutations and does not mutate input", () => {
   const firstInput = fixtureInput();
   const before = structuredClone(firstInput);
-  const first = projectAgenticSdlcCanvas(firstInput);
+  const first = projectAdlcCanvas(firstInput);
   assert.deepEqual(firstInput, before);
 
   const permuted = fixtureInput();
@@ -396,7 +396,7 @@ test("projection is deterministic under source collection permutations and does 
   ]) permuted.normalizedRun[key].reverse();
   for (const task of permuted.normalizedRun.tasks) task.transitions.reverse();
   permuted.normalizedRun.releaseLifecycle.receipts.reverse();
-  const second = projectAgenticSdlcCanvas(permuted);
+  const second = projectAdlcCanvas(permuted);
   assert.deepEqual(second, first);
 });
 
@@ -406,7 +406,7 @@ test("typed IDs keep punctuation-distinct source IDs collision-free", () => {
     { taskId: "task:a/b", text: "Slash", state: "verified", dependencyIds: [] },
     { taskId: "task:a:b", text: "Colon", state: "verified", dependencyIds: [] },
   ];
-  const projection = projectAgenticSdlcCanvas(input);
+  const projection = projectAdlcCanvas(input);
   const tasks = projection.graphData.nodes.filter(
     (node) => node.type === "task" && node.properties.stub !== true,
   );
@@ -415,9 +415,9 @@ test("typed IDs keep punctuation-distinct source IDs collision-free", () => {
 });
 
 test("views expose only their exact record kinds while preserving valid endpoints", () => {
-  assert.deepEqual(AGENTIC_SDLC_OBSERVABILITY_VIEWS, Object.keys(VIEW_TYPES));
-  for (const view of AGENTIC_SDLC_OBSERVABILITY_VIEWS) {
-    const projection = projectAgenticSdlcCanvas(fixtureInput({ view }));
+  assert.deepEqual(ADLC_OBSERVABILITY_VIEWS, Object.keys(VIEW_TYPES));
+  for (const view of ADLC_OBSERVABILITY_VIEWS) {
+    const projection = projectAdlcCanvas(fixtureInput({ view }));
     const allowed = new Set(VIEW_TYPES[view]);
     assert.ok(projection.graphData.nodes.every((node) => allowed.has(node.type)), view);
     const ids = new Set(projection.graphData.nodes.map((node) => node.id));
@@ -426,18 +426,18 @@ test("views expose only their exact record kinds while preserving valid endpoint
 });
 
 test("status keeps verification, delivery readiness, and deployment independent", () => {
-  const explicit = projectAgenticSdlcCanvas(fixtureInput()).graphData.metadata.status;
+  const explicit = projectAdlcCanvas(fixtureInput()).graphData.metadata.status;
   assert.deepEqual(explicit, { verified: true, deliveryReady: true, deployed: false });
 
   const input = fixtureInput({ conformance: {} });
   input.normalizedRun.productionLifecycle.readiness = { status: "verified-build" };
   delete input.implementationRun.state;
-  const honest = projectAgenticSdlcCanvas(input).graphData.metadata.status;
+  const honest = projectAdlcCanvas(input).graphData.metadata.status;
   assert.deepEqual(honest, { verified: false, deliveryReady: null, deployed: false });
 
   const runtimeInput = fixtureInput({ conformance: {} });
   runtimeInput.implementationRun.state = "delivery_ready";
-  const runtimeAligned = projectAgenticSdlcCanvas(runtimeInput).graphData.metadata.status;
+  const runtimeAligned = projectAdlcCanvas(runtimeInput).graphData.metadata.status;
   assert.deepEqual(runtimeAligned, { verified: false, deliveryReady: true, deployed: false });
 });
 
@@ -447,7 +447,7 @@ test("verified requires the independent evaluator result and joined evidence met
     { runtimeReady: true, metrics: { taskCount: 2, verifiedTaskCount: 1, evidenceReferenceCount: 2 } },
     { runtimeReady: true, metrics: { taskCount: 2, verifiedTaskCount: 2, evidenceReferenceCount: 0 } },
   ]) {
-    const status = projectAgenticSdlcCanvas(
+    const status = projectAdlcCanvas(
       fixtureInput({ conformance }),
     ).graphData.metadata.status;
     assert.equal(status.verified, false);
@@ -460,7 +460,7 @@ test("verified requires every task to join its evaluator transition to its own e
     missingTaskEvidence.normalizedRun.evidenceReferences.filter((item) => item.taskId === "1");
   missingTaskEvidence.conformance.metrics.evidenceReferenceCount = 1;
   assert.equal(
-    projectAgenticSdlcCanvas(missingTaskEvidence).graphData.metadata.status.verified,
+    projectAdlcCanvas(missingTaskEvidence).graphData.metadata.status.verified,
     false,
   );
 
@@ -468,7 +468,7 @@ test("verified requires every task to join its evaluator transition to its own e
   externalCheck.normalizedRun.evidenceReferences
     .find((item) => item.taskId === "2").checkRanInTask = false;
   assert.equal(
-    projectAgenticSdlcCanvas(externalCheck).graphData.metadata.status.verified,
+    projectAdlcCanvas(externalCheck).graphData.metadata.status.verified,
     false,
   );
 });
@@ -491,7 +491,7 @@ test("rejected ACOS-normalized records omit undefined object fields and remain o
   firstTask.dispatch.priorFindings = undefined;
   firstTask.return.constraintViolations = undefined;
   firstTask.return.failingFirstWitness = undefined;
-  const projection = projectAgenticSdlcCanvas(input);
+  const projection = projectAdlcCanvas(input);
   assert.equal(projection.graphData.metadata.status.verified, false);
   assert.ok(projection.graphData.nodes.some((node) =>
     node.type === "finding"
@@ -515,15 +515,15 @@ test("nested projection values fail closed at the public recursive JSON bounds",
     const input = fixtureInput();
     mutate(input);
     assert.throws(
-      () => projectAgenticSdlcCanvas(input),
-      (error) => error instanceof AgenticSdlcProjectionError
+      () => projectAdlcCanvas(input),
+      (error) => error instanceof AdlcProjectionError
         && error.code === "projection_too_large",
     );
   }
 });
 
 test("release receipts take precedence and preserve unknown receipt types and properties", () => {
-  const projection = projectAgenticSdlcCanvas(fixtureInput({ view: "receipts" }));
+  const projection = projectAdlcCanvas(fixtureInput({ view: "receipts" }));
   const receipts = projection.graphData.nodes.filter((node) => node.type === "receipt");
   assert.deepEqual(
     receipts.map((node) => node.properties.receiptType).sort(),
@@ -545,7 +545,7 @@ test("cursor pagination is complete, stable, digest-bound, and endpoint-safe", (
   const primaryIds = new Set();
   const pageDigests = new Set();
   do {
-    const page = projectAgenticSdlcCanvas(fixtureInput({ cursor, limit: 3 }));
+    const page = projectAdlcCanvas(fixtureInput({ cursor, limit: 3 }));
     projectionDigest ??= page.projectionDigest;
     total ??= page.page.total;
     assert.equal(page.projectionDigest, projectionDigest);
@@ -566,34 +566,34 @@ test("cursor pagination is complete, stable, digest-bound, and endpoint-safe", (
   assert.equal(primaryIds.size, total);
   assert.ok(pageDigests.size > 1);
 
-  const first = projectAgenticSdlcCanvas(fixtureInput({ limit: 3 }));
+  const first = projectAdlcCanvas(fixtureInput({ limit: 3 }));
   const changed = fixtureInput({ cursor: first.page.nextCursor, limit: 3 });
   changed.normalizedRun.tasks[0].text = "Changed after cursor issue";
   assert.throws(
-    () => projectAgenticSdlcCanvas(changed),
-    (error) => error instanceof AgenticSdlcProjectionError && error.code === "stale_cursor",
+    () => projectAdlcCanvas(changed),
+    (error) => error instanceof AdlcProjectionError && error.code === "stale_cursor",
   );
   assert.throws(
-    () => projectAgenticSdlcCanvas(fixtureInput({ cursor: "not+a+cursor", limit: 3 })),
-    (error) => error instanceof AgenticSdlcProjectionError && error.code === "invalid_cursor",
+    () => projectAdlcCanvas(fixtureInput({ cursor: "not+a+cursor", limit: 3 })),
+    (error) => error instanceof AdlcProjectionError && error.code === "invalid_cursor",
   );
 });
 
 test("invalid projection requests fail with stable typed errors", () => {
   assert.throws(
-    () => projectAgenticSdlcCanvas(fixtureInput({ view: "dashboard" })),
-    (error) => error instanceof AgenticSdlcProjectionError && error.code === "invalid_view",
+    () => projectAdlcCanvas(fixtureInput({ view: "dashboard" })),
+    (error) => error instanceof AdlcProjectionError && error.code === "invalid_view",
   );
   assert.throws(
-    () => projectAgenticSdlcCanvas(fixtureInput({
+    () => projectAdlcCanvas(fixtureInput({
       normalizedRun: { schema: "other/v1", runId: "x" },
     })),
-    (error) => error instanceof AgenticSdlcProjectionError
+    (error) => error instanceof AdlcProjectionError
       && error.code === "invalid_projection_input",
   );
   assert.throws(
-    () => projectAgenticSdlcCanvas(fixtureInput({ limit: 201 })),
-    (error) => error instanceof AgenticSdlcProjectionError
+    () => projectAdlcCanvas(fixtureInput({ limit: 201 })),
+    (error) => error instanceof AdlcProjectionError
       && error.code === "invalid_projection_input",
   );
 });

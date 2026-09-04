@@ -1,18 +1,18 @@
 import crypto from "node:crypto";
 
 import {
-  evaluateAgenticSdlcLedger,
-  loadAgenticSdlcEvaluator,
-  validateAgenticSdlcLedgerReceipt,
-} from "./agentic-sdlc-ledger-runtime.js";
-import { deepFreeze } from "./agentic-sdlc-observability-json.js";
-import { projectAgenticSdlcCanvas } from "./agentic-sdlc-observability-projection.js";
+  evaluateAdlcLedger,
+  loadAdlcEvaluator,
+  readAdlcLedgerBinding,
+} from "./adlc-ledger-runtime.js";
+import { deepFreeze } from "./adlc-observability-json.js";
+import { projectAdlcCanvas } from "./adlc-observability-projection.js";
 import { ImplementationRunStore, stableJson } from "./implementation-run-store.js";
 
-export const AGENTIC_SDLC_OBSERVE_TOOL_NAME =
-  "agentic-graph.agentic_sdlc.observe";
-export const AGENTIC_SDLC_OBSERVATION_SCHEMA =
-  "agentic-graph-agentic-sdlc-observation/v1";
+export const ADLC_OBSERVE_TOOL_NAME =
+  "agentic-graph.adlc.observe";
+export const ADLC_OBSERVATION_SCHEMA =
+  "agentic-graph-adlc-observation/v1";
 
 const REQUIRED_BINDINGS = Object.freeze([
   "@implementation-run",
@@ -52,12 +52,12 @@ const ZERO_ECONOMICS = Object.freeze({
 });
 
 const errorResult = (code, message) => Object.freeze({
-  schema: AGENTIC_SDLC_OBSERVATION_SCHEMA,
+  schema: ADLC_OBSERVATION_SCHEMA,
   ok: false,
   economics: ZERO_ECONOMICS,
   error: Object.freeze({
     code,
-    message: String(message || "The local Agentic SDLC observation failed.")
+    message: String(message || "The local ADLC observation failed.")
       .slice(0, 2_000),
     retryable: new Set([
       "run_not_found",
@@ -83,8 +83,8 @@ function normalizeRequest(input) {
     );
   }
   if (
-    input.invocation.action !== "/sdlc.observe"
-    || input.invocation.semantic !== "#agentic-sdlc-observability"
+    input.invocation.action !== "/adlc.observe"
+    || input.invocation.semantic !== "#adlc-observability"
   ) {
     throw Object.assign(
       new Error("Observation invocation must use the canonical / and # tokens."),
@@ -172,6 +172,7 @@ function publicError(error) {
     ARTIFACT_TOO_LARGE: "projection_too_large",
     LEDGER_SCHEMA_INVALID: "ledger_schema_invalid",
     LEDGER_CONFORMANCE_FAILED: "ledger_conformance_failed",
+    ADLC_EVALUATOR_UNAVAILABLE: "adlc_evaluator_unavailable",
     ACOS_REVISION_MISMATCH: "acos_revision_mismatch",
     STALE_CURSOR: "stale_cursor",
     PROJECTION_TOO_LARGE: "projection_too_large",
@@ -196,16 +197,17 @@ function publicError(error) {
   const safeMessages = {
     run_not_found: "The implementation run was not found.",
     revision_conflict: "The implementation run changed; read its current revision and retry.",
-    canonical_ledger_unavailable: "The implementation run has no immutable canonical Agentic SDLC ledger receipt.",
-    ledger_digest_mismatch: "The canonical Agentic SDLC ledger does not match its digest-bound receipt.",
-    ledger_schema_invalid: "The canonical Agentic SDLC ledger is invalid for the pinned evaluator.",
-    ledger_conformance_failed: "The pinned Agentic SDLC evaluator could not produce a conformance result.",
+    canonical_ledger_unavailable: "The implementation run has no immutable canonical ADLC ledger receipt.",
+    ledger_digest_mismatch: "The canonical ADLC ledger does not match its digest-bound receipt.",
+    ledger_schema_invalid: "The canonical ADLC ledger is invalid for the pinned evaluator.",
+    ledger_conformance_failed: "The pinned ADLC evaluator could not produce a conformance result.",
+    adlc_evaluator_unavailable: "No evaluator is available for this exact source schema and revision. Native ADLC conformance is unavailable; historical observation requires its original receipt-pinned evaluator checkout.",
     stale_cursor: "The observation cursor does not belong to the current projection.",
     unsupported_view: "The requested observation view is unsupported.",
-    projection_too_large: "The bounded Agentic SDLC projection is too large.",
+    projection_too_large: "The bounded ADLC projection is too large.",
     acos_revision_mismatch: "The Agentic Canvas OS evaluator does not match the ledger receipt.",
     invalid_request: "The observation request is invalid.",
-    internal_error: "The local Agentic SDLC observation failed.",
+    internal_error: "The local ADLC observation failed.",
   };
   return errorResult(mapped, safeMessages[mapped]);
 }
@@ -224,7 +226,7 @@ function conformanceSummary(conformance) {
     || Object.keys(findingCounts).length > 200
   ) {
     throw Object.assign(
-      new Error("Agentic SDLC conformance summary exceeds its public bound."),
+      new Error("ADLC conformance summary exceeds its public bound."),
       { code: "PROJECTION_TOO_LARGE" },
     );
   }
@@ -233,7 +235,7 @@ function conformanceSummary(conformance) {
   );
   const ratio = Number(conformance.metrics?.bridgeCoverageRatio);
   return Object.freeze({
-    schema: "agentic-graph-agentic-sdlc-conformance-summary/v1",
+    schema: "agentic-graph-adlc-conformance-summary/v1",
     runId: String(conformance.runId),
     valid: true,
     runtimeReady: Boolean(conformance.runtimeReady),
@@ -285,31 +287,34 @@ function conformanceSummary(conformance) {
   });
 }
 
-function assertReceiptFence(state, receipt, events) {
-  const event = events.find((item) =>
-    item?.type === "agentic_sdlc.ledger_bound"
-    && item.revision === receipt.ledgerRevision + 1);
+function assertReceiptFence(state, { receipt, canonicalSchema, eventType }, events) {
+  const candidates = events.filter(item => item?.revision === receipt.ledgerRevision + 1);
+  const event = candidates.length === 1 ? candidates[0] : null;
   const data = event?.data;
-  if (receipt.ledgerRevision >= state.revision
+  const keys = ["artifact", "digest", "bytes", "canonicalRunId", "ledgerRevision", "acosRevision", "runtimeReady"];
+  if (eventType === "adlc.ledger_bound") keys.push("canonicalSchema");
+  if (event?.type !== eventType || !exactKeys(data, new Set(keys)) || Object.keys(data).length !== keys.length
+    || receipt.ledgerRevision >= state.revision
     || data?.artifact !== receipt.artifact
     || data?.digest !== receipt.digest
     || data?.bytes !== receipt.bytes
     || data?.canonicalRunId !== receipt.canonicalRunId
     || data?.ledgerRevision !== receipt.ledgerRevision
     || data?.acosRevision !== receipt.acosRevision
+    || (eventType === "adlc.ledger_bound" && data?.canonicalSchema !== canonicalSchema)
     || typeof data?.runtimeReady !== "boolean") {
     throw Object.assign(
-      new Error("Canonical Agentic SDLC ledger receipt is not joined to its durable binding revision."),
+      new Error("Canonical ADLC ledger receipt is not joined to its durable binding revision."),
       { code: "LEDGER_RECEIPT_INVALID" },
     );
   }
 }
 
-export function createAgenticSdlcObservabilityRuntime({
+export function createAdlcObservabilityRuntime({
   rootDir,
   store = new ImplementationRunStore({ rootDir }),
-  evaluatorLoader = loadAgenticSdlcEvaluator,
-  projector = projectAgenticSdlcCanvas,
+  evaluatorLoader = loadAdlcEvaluator,
+  projector = projectAdlcCanvas,
   cacheEntries = MAX_CACHE_ENTRIES,
 } = {}) {
   const cache = new Map();
@@ -341,10 +346,9 @@ export function createAgenticSdlcObservabilityRuntime({
           { code: "REVISION_CONFLICT" },
         );
       }
-      const receipt = validateAgenticSdlcLedgerReceipt(
-        state.result?.agenticSdlcLedger,
-      );
-      assertReceiptFence(state, receipt, await store.events(state.runId));
+      const binding = readAdlcLedgerBinding(state);
+      const { receipt, canonicalSchema } = binding;
+      assertReceiptFence(state, binding, await store.events(state.runId));
       if (receipt.digest !== request.expectedLedgerDigest) {
         throw Object.assign(
           new Error("Requested ledger digest does not match the implementation-run receipt."),
@@ -370,19 +374,22 @@ export function createAgenticSdlcObservabilityRuntime({
         ledger = JSON.parse(artifact.content);
       } catch {
         throw Object.assign(
-          new Error("Canonical Agentic SDLC ledger is not valid JSON."),
+          new Error("Canonical ADLC ledger is not valid JSON."),
           { code: "LEDGER_SCHEMA_INVALID" },
         );
       }
+      if (ledger?.schema !== canonicalSchema) throw Object.assign(
+        new Error("Ledger source schema differs from its exact receipt."), { code: "LEDGER_SCHEMA_INVALID" });
       const evaluator = await evaluatorLoader({
+        canonicalSchema,
         agenticCanvasOsRoot: state.spec.agenticCanvasOsRoot,
         expectedRevision: receipt.acosRevision,
         state,
       });
-      const evaluated = evaluateAgenticSdlcLedger(ledger, evaluator);
+      const evaluated = evaluateAdlcLedger(ledger, evaluator);
       if (
         evaluated.normalizedRun.runId !== receipt.canonicalRunId
-        || evaluated.normalizedRun.schema !== "agentic-sdlc-run/v1"
+        || evaluated.normalizedRun.schema !== canonicalSchema
       ) {
         throw Object.assign(
           new Error("Canonical ledger identity differs from its immutable receipt."),
@@ -391,7 +398,7 @@ export function createAgenticSdlcObservabilityRuntime({
       }
       const finalState = await store.read(request.runId);
       if (finalState.revision !== request.expectedRevision
-        || stableJson(finalState.result?.agenticSdlcLedger) !== stableJson(receipt)) {
+        || stableJson(readAdlcLedgerBinding(finalState)) !== stableJson(binding)) {
         throw Object.assign(
           new Error("Implementation run changed while its canonical ledger was observed."),
           { code: "REVISION_CONFLICT" },
@@ -404,6 +411,7 @@ export function createAgenticSdlcObservabilityRuntime({
         implementationRunState: state.state,
         canonicalRunId: receipt.canonicalRunId,
         canonicalSchema: evaluated.normalizedRun.schema,
+        receiptSchema: receipt.schema,
         ledgerArtifact: receipt.artifact,
         ledgerRevision: receipt.ledgerRevision,
         ledgerDigest: receipt.digest,
@@ -414,7 +422,7 @@ export function createAgenticSdlcObservabilityRuntime({
         view: request.view,
         cursor: request.cursor,
         limit: request.limit,
-        projection: "agentic-sdlc-canvas-projection/v1",
+        projection: "adlc-canvas-projection/v1",
       })).digest("hex")}`;
       let projection = cacheGet(cacheKey);
       const cacheStatus = projection ? "hit" : "miss";
@@ -438,7 +446,7 @@ export function createAgenticSdlcObservabilityRuntime({
       const publicConformance = conformanceSummary(evaluated.conformance);
 
       const result = {
-        schema: AGENTIC_SDLC_OBSERVATION_SCHEMA,
+        schema: ADLC_OBSERVATION_SCHEMA,
         ok: true,
         source,
         status: {
@@ -470,17 +478,17 @@ export function createAgenticSdlcObservabilityRuntime({
   return Object.freeze({ observe, store });
 }
 
-export const isAgenticSdlcObserveToolName = (toolName) =>
-  toolName === AGENTIC_SDLC_OBSERVE_TOOL_NAME;
+export const isAdlcObserveToolName = (toolName) =>
+  toolName === ADLC_OBSERVE_TOOL_NAME;
 
-export async function runAgenticSdlcObservabilityTool(
+export async function runAdlcObservabilityTool(
   toolName,
   args,
   { runtime, ...options } = {},
 ) {
-  if (!isAgenticSdlcObserveToolName(toolName)) {
-    return errorResult("invalid_request", `Unknown Agentic SDLC observation tool: ${toolName}`);
+  if (!isAdlcObserveToolName(toolName)) {
+    return errorResult("invalid_request", `Unknown ADLC observation tool: ${toolName}`);
   }
-  const observer = runtime || createAgenticSdlcObservabilityRuntime(options);
+  const observer = runtime || createAdlcObservabilityRuntime(options);
   return observer.observe(args);
 }

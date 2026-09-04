@@ -4,15 +4,15 @@ import test from "node:test";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import {
-  AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA,
-  AGENTIC_SDLC_OBSERVABILITY_INVOCATION,
-  AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME,
-  AGENTIC_SDLC_OBSERVATION_FAILURE_CODES,
-  AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA,
-  AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA,
-  AGENTIC_SDLC_OBSERVATION_SCHEMA,
-  AGENTIC_SDLC_OBSERVATION_VIEWS,
-} from "../agentic-sdlc-observability-tool-contract.js";
+  ADLC_CANVAS_PROJECTION_SCHEMA,
+  ADLC_OBSERVABILITY_INVOCATION,
+  ADLC_OBSERVABILITY_TOOL_NAME,
+  ADLC_OBSERVATION_FAILURE_CODES,
+  ADLC_OBSERVATION_INPUT_SCHEMA,
+  ADLC_OBSERVATION_OUTPUT_SCHEMA,
+  ADLC_OBSERVATION_SCHEMA,
+  ADLC_OBSERVATION_VIEWS,
+} from "../adlc-observability-tool-contract.js";
 import {
   buildAgenticGraphLocalMcpToolDefinitions,
   AGENTIC_OS_LOCAL_MCP_TOOL_NAMES,
@@ -24,8 +24,8 @@ const gitSha = "b".repeat(40);
 
 const request = {
   invocation: {
-    action: "/sdlc.observe",
-    semantic: "#agentic-sdlc-observability",
+    action: "/adlc.observe",
+    semantic: "#adlc-observability",
     bindings: ["@implementation-run", "@canvas", "@runtime-proof"],
   },
   runId: "ir_0123456789abcdef01234567",
@@ -45,7 +45,7 @@ const economics = {
 };
 
 const success = {
-  schema: AGENTIC_SDLC_OBSERVATION_SCHEMA,
+  schema: ADLC_OBSERVATION_SCHEMA,
   ok: true,
   source: {
     implementationRunId: request.runId,
@@ -53,7 +53,8 @@ const success = {
     implementationRunState: "delivery_ready",
     canonicalRunId: "sdlc-run-1",
     canonicalSchema: "agentic-sdlc-run/v1",
-    ledgerArtifact: "agentic-sdlc-run.json",
+    receiptSchema: "adlc-ledger-receipt/v1",
+    ledgerArtifact: "adlc-run.json",
     ledgerRevision: 7,
     ledgerDigest: prefixedSha,
     acosRevision: gitSha,
@@ -68,7 +69,7 @@ const success = {
     deployBoundary: "closed",
   },
   conformance: {
-    schema: "agentic-graph-agentic-sdlc-conformance-summary/v1",
+    schema: "agentic-graph-adlc-conformance-summary/v1",
     runId: "sdlc-run-1",
     valid: true,
     runtimeReady: true,
@@ -94,7 +95,7 @@ const success = {
     },
   },
   projection: {
-    schema: AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA,
+    schema: ADLC_CANVAS_PROJECTION_SCHEMA,
     projectionDigest: sha,
     pageDigest: sha,
     view: "execution",
@@ -111,10 +112,10 @@ const success = {
     },
     graphData: {
       type: "Graph",
-      context: "agentic-sdlc-observability",
+      context: "adlc-observability",
       metadata: {
-        schema: AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA,
-        invocation: AGENTIC_SDLC_OBSERVABILITY_INVOCATION,
+        schema: ADLC_CANVAS_PROJECTION_SCHEMA,
+        invocation: ADLC_OBSERVABILITY_INVOCATION,
         runId: "sdlc-run-1",
         view: "execution",
         recordSetDigest: sha,
@@ -136,24 +137,24 @@ const success = {
         },
       ],
     },
-    agenticOsMarkdown: "---\nschema: agentic-sdlc-canvas-projection/v1\n---\n",
+    agenticOsMarkdown: "---\nschema: adlc-canvas-projection/v1\n---\n",
   },
   cache: { key: prefixedSha, status: "miss", policy: "content-addressed-lru" },
   economics,
 };
 
-test("local MCP publishes the exact read-only Agentic SDLC observation descriptor", () => {
+test("local MCP publishes the exact read-only ADLC observation descriptor", () => {
   const definitions = buildAgenticGraphLocalMcpToolDefinitions();
-  const descriptor = definitions.find((entry) => entry.name === AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME);
-  assert.equal(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve, AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME);
+  const descriptor = definitions.find((entry) => entry.name === ADLC_OBSERVABILITY_TOOL_NAME);
+  assert.equal(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.adlcObserve, ADLC_OBSERVABILITY_TOOL_NAME);
   assert.equal(
-    AGENTIC_SDLC_OBSERVABILITY_INVOCATION,
-    "/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof",
+    ADLC_OBSERVABILITY_INVOCATION,
+    "/adlc.observe #adlc-observability @implementation-run @canvas @runtime-proof",
   );
   assert.deepEqual(definitions.map((entry) => entry.name), Object.values(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES));
   assert.ok(descriptor);
-  assert.equal(descriptor.inputSchema, AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA);
-  assert.equal(descriptor.outputSchema, AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA);
+  assert.equal(descriptor.inputSchema, ADLC_OBSERVATION_INPUT_SCHEMA);
+  assert.equal(descriptor.outputSchema, ADLC_OBSERVATION_OUTPUT_SCHEMA);
   assert.deepEqual(descriptor.annotations, {
     readOnlyHint: true,
     destructiveHint: false,
@@ -164,8 +165,8 @@ test("local MCP publishes the exact read-only Agentic SDLC observation descripto
 });
 
 test("request schema fences invocation, revision, digest, views, cursor, and page bounds", () => {
-  const validate = new Ajv2020({ strict: false }).compile(AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA);
-  assert.deepEqual(AGENTIC_SDLC_OBSERVATION_VIEWS, [
+  const validate = new Ajv2020({ strict: false }).compile(ADLC_OBSERVATION_INPUT_SCHEMA);
+  assert.deepEqual(ADLC_OBSERVATION_VIEWS, [
     "overview", "plan", "execution", "evidence", "economics", "recovery", "receipts", "full",
   ]);
   assert.equal(validate(request), true, JSON.stringify(validate.errors));
@@ -193,13 +194,13 @@ test("request schema fences invocation, revision, digest, views, cursor, and pag
 });
 
 test("output schema accepts closed typed success and failure envelopes", () => {
-  const validate = new Ajv2020({ strict: false }).compile(AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA);
+  const validate = new Ajv2020({ strict: false }).compile(ADLC_OBSERVATION_OUTPUT_SCHEMA);
   assert.equal(validate(success), true, JSON.stringify(validate.errors));
   assert.equal(validate({ ...success, unexpected: true }), false);
   const { verified: _verified, ...statusWithoutVerified } = success.status;
   assert.equal(validate({ ...success, status: statusWithoutVerified }), false);
   assert.equal(validate({
-    schema: AGENTIC_SDLC_OBSERVATION_SCHEMA,
+    schema: ADLC_OBSERVATION_SCHEMA,
     ok: false,
     economics,
     error: {
@@ -209,18 +210,19 @@ test("output schema accepts closed typed success and failure envelopes", () => {
     },
   }), true, JSON.stringify(validate.errors));
   assert.equal(validate({
-    schema: AGENTIC_SDLC_OBSERVATION_SCHEMA,
+    schema: ADLC_OBSERVATION_SCHEMA,
     ok: false,
     economics,
     error: { code: "untyped_failure", message: "No.", retryable: false },
   }), false);
-  assert.deepEqual(AGENTIC_SDLC_OBSERVATION_FAILURE_CODES, [
+  assert.deepEqual(ADLC_OBSERVATION_FAILURE_CODES, [
     "run_not_found",
     "revision_conflict",
     "canonical_ledger_unavailable",
     "ledger_digest_mismatch",
     "ledger_schema_invalid",
     "ledger_conformance_failed",
+    "adlc_evaluator_unavailable",
     "stale_cursor",
     "unsupported_view",
     "projection_too_large",
@@ -231,7 +233,7 @@ test("output schema accepts closed typed success and failure envelopes", () => {
 });
 
 test("economics and action authority stay closed while deployment evidence remains observable", () => {
-  const validate = new Ajv2020({ strict: false }).compile(AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA);
+  const validate = new Ajv2020({ strict: false }).compile(ADLC_OBSERVATION_OUTPUT_SCHEMA);
   assert.equal(validate({
     ...success,
     economics: { ...economics, modelCalls: 1 },
