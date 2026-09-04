@@ -178,8 +178,7 @@ test('standalone preflight checks every canonical source without fetching or sta
 
 test('Git hooks and lifecycle commands are pinned to the Agentic OS authority runtime', () => {
   const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8'))
-  const packageLock = JSON.parse(readFileSync(path.resolve(repoRoot, 'package-lock.json'), 'utf8'))
-  const agenticOsArchive = 'https://github.com/huijoohwee/agentic-os/archive/cee007ee4402e683eaa0fc424a08179c1e71c63d.tar.gz'
+  const integrationWorkflow = readFileSync(path.resolve(repoRoot, '.github/workflows/integration.yml'), 'utf8')
   const hookDigest = name => createHash('sha256')
     .update(readFileSync(path.resolve(repoRoot, `.githooks/${name}`)))
     .digest('hex')
@@ -188,12 +187,16 @@ test('Git hooks and lifecycle commands are pinned to the Agentic OS authority ru
   assert.equal(packageJson.scripts['worktree:lifecycle:classify'], undefined)
   assert.equal(packageJson.scripts['worktree:lifecycle:cleanup'], undefined)
   assert.ok(packageJson.scripts['ci:integration'].startsWith('npm run worktree:check &&'))
-  assert.equal(packageJson.devDependencies['agentic-os'], agenticOsArchive)
-  assert.equal(packageLock.packages[''].devDependencies['agentic-os'], agenticOsArchive)
-  assert.equal(packageLock.packages['node_modules/agentic-os'].resolved, agenticOsArchive)
+  assert.equal(
+    packageJson.devDependencies['agentic-os'],
+    'github:huijoohwee/agentic-os#cee007ee4402e683eaa0fc424a08179c1e71c63d',
+  )
   assert.equal(packageJson.scripts.postinstall, undefined)
   assert.equal(packageJson.scripts['hooks:install'], undefined)
   assert.equal(packageJson.scripts['agentic-os:setup'], 'agentic-os setup')
+  assert.match(integrationWorkflow, /GIT_CONFIG_KEY_0: url\.https:\/\/github\.com\/\.insteadOf/u)
+  assert.match(integrationWorkflow, /GIT_CONFIG_VALUE_0: ssh:\/\/git@github\.com\//u)
+  assert.match(integrationWorkflow, /GIT_TERMINAL_PROMPT: '0'/u)
   assert.equal(packageJson.scripts.land, 'agentic-os land')
   assert.equal(packageJson.scripts.status, 'agentic-os status')
   assert.equal(packageJson.scripts.reap, 'agentic-os reap')
