@@ -121,12 +121,12 @@ test("implementation-run plan is non-mutating and validates exact catalog member
   assert.equal(traversal.error.code, "invalid_arguments");
   const withLedger = await runtime.plan({
     ...fx.spec,
-    agenticSdlcLedgerPath: "src/evidence/agentic-sdlc-run.json",
+    adlcLedgerPath: "src/evidence/adlc-run.json",
   });
   assert.equal(withLedger.ok, true, JSON.stringify(withLedger.diagnostics));
   const ledgerOutsideScope = await runtime.plan({
     ...fx.spec,
-    agenticSdlcLedgerPath: "evidence/agentic-sdlc-run.json",
+    adlcLedgerPath: "evidence/adlc-run.json",
   });
   assert.equal(ledgerOutsideScope.ok, false);
   assert.equal(ledgerOutsideScope.error.code, "invalid_arguments");

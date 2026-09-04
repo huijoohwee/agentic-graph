@@ -78,7 +78,7 @@ Every specification declares the exact ACOS vocabulary `/implementation.run`, `#
 | `agentic-graph.implementation_run.start` | Idempotently persists the plan and starts its detached durable supervisor. |
 | `agentic-graph.implementation_run.list` | Lists bounded work-item projections, current revisions, coordination, evidence summaries, and next actions. |
 | `agentic-graph.implementation_run.control` | Uses revision compare-and-swap for `pause`, `cancel`, `retry`, or `review`. |
-| `agentic-graph.agentic_sdlc.observe` | Read-only projection of one exact immutable `agentic-sdlc-run/v1` ledger into deterministic paged GraphData and source-backed AGENTIC_OS Markdown for the existing Canvas owner. |
+| `agentic-graph.adlc.observe` | Read-only projection of one exact source-schema-identified immutable ledger into deterministic paged GraphData and source-backed AGENTIC_OS Markdown for the existing Canvas owner. |
 
 Minimal plan/start arguments:
 
@@ -100,7 +100,7 @@ Minimal plan/start arguments:
   "semanticScope": "issue-142",
   "runnerId": "team_runner",
   "sandboxPolicyPath": "policy.json",
-  "agenticSdlcLedgerPath": "evidence/agentic-sdlc-run.json",
+  "adlcLedgerPath": "evidence/adlc-run.json",
   "allowedPaths": ["src", "tests", "evidence"],
   "verification": [{"profileId": "unit_tests"}],
   "idempotencyKey": "project-issue-142-v1",
@@ -115,8 +115,8 @@ Minimal plan/start arguments:
 
 Call `plan` first and inspect `ready`, diagnostics, the pinned target/ACOS revisions, run-owned ACOS semantic scope, 96-bit-suffixed worktree, policy proof, exact verifier profile digest, executable SHA-256 proofs, and containment declaration. Send the same specification to `start`. Reusing its idempotency key with identical content returns the existing run; different content fails closed. Specifications, registries, profile argv/environment sets, plans, durable state, events, process configuration, and child argv/environment all have explicit aggregate UTF-8 byte limits. State creation reserves half of the hard state-file limit for coordination and evidence growth.
 
-`agenticSdlcLedgerPath` is optional for backwards compatibility, but it is
-required for full Agentic SDLC observation. It must be a safe
+`adlcLedgerPath` is optional for backwards compatibility, but it is
+required to bind an already-authoritative source ledger. It must be a safe
 repository-relative path contained by `allowedPaths`. When configured, the
 runner request names that path explicitly. After the host-owned verification
 profiles pass, the supervisor loads the ledger through the exact clean ACOS
@@ -126,8 +126,9 @@ directory, and records:
 
 ```json
 {
-  "schema": "agentic-sdlc-ledger-receipt/v1",
-  "artifact": "agentic-sdlc-run.a0001.0123456789abcdef.json",
+  "schema": "adlc-ledger-receipt/v1",
+  "canonicalSchema": "agentic-sdlc-run/v1",
+  "artifact": "adlc-run.a0001.0123456789abcdef.json",
   "digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   "bytes": 12345,
   "canonicalRunId": "run-001",
@@ -136,20 +137,47 @@ directory, and records:
 }
 ```
 
-The receipt is stored only at `state.result.agenticSdlcLedger`. A missing
-receipt returns `canonical_ledger_unavailable`; the observer never reconstructs
+The native receipt is stored at `state.result.adlcLedger` and joined to an
+`adlc.ledger_bound` event. `canonicalSchema` identifies the actual source bytes;
+the ADLC envelope never relabels a historical ledger as a native run. The
+observer also reports `source.receiptSchema`, retaining the original receipt
+schema for historical reads.
+
+Native `adlc-run/v1` conformance is unavailable: no installed canonical-run
+producer/evaluator owns it. ACOS retired its old evaluator in commit
+`1e50b10bdc743d66679490f83165f95c5ccb8a8e`; the current Graph pin
+`8e4d934123c01380059e1b1894c520c472fd4e23` does not contain it. A request returns
+nonretryable `adlc_evaluator_unavailable` before artifact binding or projection
+when its exact evaluator is unavailable. The runner may supply an
+already-authoritative source ledger; it must not fabricate a replacement.
+
+The explicit legacy adapter reads original `agentic-sdlc-ledger-receipt/v1`
+receipts, `agenticSdlcLedger` fields, and `agentic_sdlc.ledger_bound` events
+without changing stored bytes. It requires the original clean evaluator
+checkout at the captured run's exact `acosRevision` and
+`supportedAcosRevision`. Dual fields, mixed schemas/events, duplicate binding
+revisions, source mutation, and digest drift fail closed. New binding uses
+only ADLC fields; historical ledger fields are not accepted for new binding. The old tool
+and invocation are not discovery aliases.
+
+Direct local MCP exposes the native tuple below. The browser invocation
+catalog still follows the pinned ACOS dictionaries; catalog promotion awaits
+the protected upstream ADLC dictionary revision and a separate Graph pin
+update. Synthetic historical evaluator tests prove adapter behavior only.
+
+A missing receipt returns `canonical_ledger_unavailable`; the observer never reconstructs
 VCCs, roles, grants, budgets, transitions, findings, Evidence References,
 consumption, or receipts from the operational run summary.
 
-## Agentic SDLC Canvas observation
+## ADLC Canvas observation
 
 The canonical invocation is:
 
 ```text
-/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof
+/adlc.observe #adlc-observability @implementation-run @canvas @runtime-proof
 ```
 
-Call `agentic-graph.agentic_sdlc.observe` with that exact token tuple, the
+Call `agentic-graph.adlc.observe` with that exact token tuple, the
 implementation-run ID, its current `expectedRevision`, the receipt's
 `expectedLedgerDigest`, and one view: `overview`, `plan`, `execution`,
 `evidence`, `economics`, `recovery`, `receipts`, or `full`. `limit` is bounded

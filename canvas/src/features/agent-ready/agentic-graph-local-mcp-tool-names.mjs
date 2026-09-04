@@ -55,7 +55,7 @@ export const AGENTIC_OS_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   implementationRunStart: "agentic-graph.implementation_run.start",
   implementationRunList: "agentic-graph.implementation_run.list",
   implementationRunControl: "agentic-graph.implementation_run.control",
-  agenticSdlcObserve: "agentic-graph.agentic_sdlc.observe",
+  adlcObserve: "agentic-graph.adlc.observe",
   agentTeamPlan: "agentic-graph.agent_team.plan",
   agentTeamStart: "agentic-graph.agent_team.start",
   agentTeamList: "agentic-graph.agent_team.list",

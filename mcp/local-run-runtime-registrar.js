@@ -9,10 +9,10 @@ import {
   runImplementationRunTool,
 } from "./implementation-run-runtime.js";
 import {
-  createAgenticSdlcObservabilityRuntime,
-  isAgenticSdlcObserveToolName,
-  runAgenticSdlcObservabilityTool,
-} from "./agentic-sdlc-observability-runtime.js";
+  createAdlcObservabilityRuntime,
+  isAdlcObserveToolName,
+  runAdlcObservabilityTool,
+} from "./adlc-observability-runtime.js";
 import { createLocalAgentTeamHost } from "./agent-team-local-host.js";
 
 export function createLocalRunRuntimeRegistrar({
@@ -20,7 +20,7 @@ export function createLocalRunRuntimeRegistrar({
   env,
   agentTeamOptions = {},
   implementationRunOptions = {},
-  agenticSdlcObservabilityOptions = {},
+  adlcObservabilityOptions = {},
 } = {}) {
   const agentTeamHost = createLocalAgentTeamHost({ rootDir, env });
   const implementationRun = createImplementationRunRuntime({
@@ -28,9 +28,9 @@ export function createLocalRunRuntimeRegistrar({
     env,
     ...implementationRunOptions,
   });
-  const agenticSdlcObservability = createAgenticSdlcObservabilityRuntime({
+  const adlcObservability = createAdlcObservabilityRuntime({
     rootDir,
-    ...agenticSdlcObservabilityOptions,
+    ...adlcObservabilityOptions,
   });
   const agentTeam = createAgentTeamRuntime({
     rootDir,
@@ -42,12 +42,12 @@ export function createLocalRunRuntimeRegistrar({
     canHandle(toolName) {
       return isImplementationRunToolName(toolName)
         || isAgentTeamToolName(toolName)
-        || isAgenticSdlcObserveToolName(toolName);
+        || isAdlcObserveToolName(toolName);
     },
     async run(toolName, args, { signal } = {}) {
-      if (isAgenticSdlcObserveToolName(toolName)) {
-        return runAgenticSdlcObservabilityTool(toolName, args, {
-          runtime: agenticSdlcObservability,
+      if (isAdlcObserveToolName(toolName)) {
+        return runAdlcObservabilityTool(toolName, args, {
+          runtime: adlcObservability,
         });
       }
       if (isImplementationRunToolName(toolName)) {
@@ -72,7 +72,7 @@ export function createLocalRunRuntimeRegistrar({
       implementationRun.stopMonitoring?.();
     },
     implementationRun,
-    agenticSdlcObservability,
+    adlcObservability,
     agentTeam,
     agentTeamHostReadiness: agentTeamHost.readiness,
   });

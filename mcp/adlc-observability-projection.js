@@ -1,25 +1,26 @@
 import {
-  AgenticSdlcProjectionError,
+  AdlcProjectionError,
   assertBoundedJson,
   canonicalValue,
   cloneJson,
   digestJson as digest,
   stableJson,
   typedId,
-} from "./agentic-sdlc-observability-json.js";
-import { deriveDeployedFromReceipts } from "./agentic-sdlc-observability-lifecycle.js";
+} from "./adlc-observability-json.js";
+import { deriveDeployedFromReceipts } from "./adlc-observability-lifecycle.js";
+import { LEGACY_RUN_SCHEMA } from "./adlc-legacy-ledger.js";
 
-export { AgenticSdlcProjectionError };
+export { AdlcProjectionError };
 
-export const AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA = "agentic-sdlc-canvas-projection/v1";
-export const AGENTIC_SDLC_AGENTIC_OS_SCHEMA = "agentic-os-computing-flow/v1";
-export const AGENTIC_SDLC_OBSERVABILITY_INVOCATION =
-  "/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof";
-export const AGENTIC_SDLC_OBSERVABILITY_VIEWS = Object.freeze([
+export const ADLC_CANVAS_PROJECTION_SCHEMA = "adlc-canvas-projection/v1";
+export const ADLC_AGENTIC_OS_SCHEMA = "agentic-os-computing-flow/v1";
+export const ADLC_OBSERVABILITY_INVOCATION =
+  "/adlc.observe #adlc-observability @implementation-run @canvas @runtime-proof";
+export const ADLC_OBSERVABILITY_VIEWS = Object.freeze([
   "overview", "plan", "execution", "evidence", "economics", "recovery", "receipts", "full",
 ]);
 
-const CURSOR_SCHEMA = "agentic-sdlc-cursor/v1";
+const CURSOR_SCHEMA = "adlc-cursor/v1";
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 200;
 const NODE_TYPES = Object.freeze([
@@ -42,7 +43,7 @@ const VIEW_TYPES = Object.freeze({
   receipts: new Set(["run", "receipt", "gate", "checkpoint"]),
   full: new Set(NODE_TYPES),
 });
-const fail = (code, message) => { throw new AgenticSdlcProjectionError(code, message); };
+const fail = (code, message) => { throw new AdlcProjectionError(code, message); };
 const text = (value) => typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
 const record = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
 const list = (value) => Array.isArray(value) ? value : [];
@@ -152,11 +153,11 @@ function buildRecordGraph(run, implementationRun, source, conformance) {
     });
   };
   const runId = typedId("run", run.runId);
-  addNode("run", runId, `Agentic SDLC run ${run.runId}`, "observed", {
+  addNode("run", runId, `ADLC run ${run.runId}`, "observed", {
     schema: run.schema, runId: run.runId,
   }, {
     implementationRun, sourceIdentity: source, conformance, lifecycleStatus: lifecycle,
-    invocation: AGENTIC_SDLC_OBSERVABILITY_INVOCATION,
+    invocation: ADLC_OBSERVABILITY_INVOCATION,
   });
   for (const vcc of orderedRecords(run.vccs)) {
     const key = text(vcc.conditionId ?? vcc.vccId ?? vcc.id);
@@ -487,22 +488,22 @@ function serializeAgenticOsMarkdown(graphData, metadata) {
     `      type: ${json(edge.type)}`, `      properties: ${json(edge.properties)}`,
   ]);
   return [
-    "---", `schema: ${json(AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA)}`,
-    `kgSchema: ${json(AGENTIC_SDLC_AGENTIC_OS_SCHEMA)}`, 'kgCanvasSurfaceMode: "2d"',
+    "---", `schema: ${json(ADLC_CANVAS_PROJECTION_SCHEMA)}`,
+    `kgSchema: ${json(ADLC_AGENTIC_OS_SCHEMA)}`, 'kgCanvasSurfaceMode: "2d"',
     'kgCanvasRenderMode: "2d"', 'kgCanvas2dRenderer: "storyboard"',
     'kgDocumentSemanticMode: "document"', "kgFrontmatterModeEnabled: true",
     "kgMultiDimTableModeEnabled: false", "kgDocumentStructureBaselineLock: false",
-    `agentic_sdlc_projection: ${json(metadata)}`, "flow:", "  direction: LR",
+    `adlc_projection: ${json(metadata)}`, "flow:", "  direction: LR",
     "  edgeType: smoothstep", "  snapToGrid: true", "  gridSize: 20",
     "  computed: false", "  nodes:", ...nodeLines, "  edges:", ...edgeLines,
-    "---", "", "# Agentic SDLC Observability", "",
+    "---", "", "# ADLC Observability", "",
     `Deterministic Canvas projection for run \`${metadata.runId}\`, view \`${metadata.view}\`.`, "",
     `Verification: ${String(metadata.status.verified)}; delivery-ready: ${String(metadata.status.deliveryReady)}; deployed: ${String(metadata.status.deployed)}.`,
     "",
   ].join("\n");
 }
 
-export function projectAgenticSdlcCanvas({
+export function projectAdlcCanvas({
   normalizedRun, implementationRun, source, conformance,
   view = "overview", cursor = null, limit = DEFAULT_LIMIT,
 } = {}) {
@@ -511,8 +512,8 @@ export function projectAgenticSdlcCanvas({
   const sourceIdentity = canonicalValue(source);
   const conformanceRecord = canonicalValue(conformance);
   if (!run || typeof run !== "object" || Array.isArray(run)
-    || run.schema !== "agentic-sdlc-run/v1" || !text(run.runId)) {
-    fail("invalid_projection_input", "normalizedRun must be a validated agentic-sdlc-run/v1.");
+    || run.schema !== LEGACY_RUN_SCHEMA || !text(run.runId)) {
+    fail("invalid_projection_input", "normalizedRun must retain its validated historical source schema.");
   }
   if (!implementationInput || typeof implementationInput !== "object"
     || Array.isArray(implementationInput)) {
@@ -535,8 +536,8 @@ export function projectAgenticSdlcCanvas({
   if (!conformanceRecord || typeof conformanceRecord !== "object" || Array.isArray(conformanceRecord)) {
     fail("invalid_projection_input", "conformance must be a JSON object.");
   }
-  if (!AGENTIC_SDLC_OBSERVABILITY_VIEWS.includes(view)) {
-    fail("invalid_view", `view must be one of ${AGENTIC_SDLC_OBSERVABILITY_VIEWS.join(", ")}.`);
+  if (!ADLC_OBSERVABILITY_VIEWS.includes(view)) {
+    fail("invalid_view", `view must be one of ${ADLC_OBSERVABILITY_VIEWS.join(", ")}.`);
   }
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
     fail("invalid_projection_input", `limit must be an integer from 1 to ${MAX_LIMIT}.`);
@@ -548,7 +549,7 @@ export function projectAgenticSdlcCanvas({
   const viewIds = new Set(viewNodes.map((node) => node.id));
   const viewEdges = records.edges.filter((edge) => viewIds.has(edge.source) && viewIds.has(edge.target));
   const recordSetDigest = digest({
-    invocation: AGENTIC_SDLC_OBSERVABILITY_INVOCATION,
+    invocation: ADLC_OBSERVABILITY_INVOCATION,
     implementationRun: implementation, source: sourceIdentity, conformance: conformanceRecord,
     lifecycleStatus: records.lifecycle, nodes: records.nodes, edges: records.edges,
   });
@@ -564,12 +565,12 @@ export function projectAgenticSdlcCanvas({
   const nextCursor = nextOffset < viewNodes.length
     ? encodeCursor(projectionDigest, view, nextOffset) : null;
   const metadata = {
-    schema: AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA,
-    invocation: AGENTIC_SDLC_OBSERVABILITY_INVOCATION, runId: run.runId,
+    schema: ADLC_CANVAS_PROJECTION_SCHEMA,
+    invocation: ADLC_OBSERVABILITY_INVOCATION, runId: run.runId,
     view, recordSetDigest, projectionDigest, status: records.lifecycle,
   };
   const graphData = {
-    type: "Graph", context: "agentic-sdlc-observability", metadata,
+    type: "Graph", context: "adlc-observability", metadata,
     nodes: pageGraph.nodes, edges: pageGraph.edges,
   };
   for (const item of [...graphData.nodes, ...graphData.edges]) {
@@ -584,7 +585,7 @@ export function projectAgenticSdlcCanvas({
     fail("projection_too_large", "Projection exceeds the closed MCP output bound.");
   }
   return {
-    schema: AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA,
+    schema: ADLC_CANVAS_PROJECTION_SCHEMA,
     projectionDigest, pageDigest, view, ordering: "type_rank_then_id",
     page: {
       cursor, nextCursor, offset, limit, count: pageGraph.primaryCount,

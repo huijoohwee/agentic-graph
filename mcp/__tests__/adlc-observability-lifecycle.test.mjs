@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { digestJson } from "../agentic-sdlc-observability-json.js";
-import { projectAgenticSdlcCanvas } from "../agentic-sdlc-observability-projection.js";
+import { digestJson } from "../adlc-observability-json.js";
+import { projectAdlcCanvas } from "../adlc-observability-projection.js";
 
 const receipt = (evidence) => ({ ...evidence, receiptDigest: digestJson(evidence) });
 
@@ -99,7 +99,7 @@ const input = (receipts) => ({
 
 test("deployed requires an exact candidate, interaction, human authorization, and live join", () => {
   const joined = deployedReceipts();
-  const projection = projectAgenticSdlcCanvas(input(Object.values(joined)));
+  const projection = projectAdlcCanvas(input(Object.values(joined)));
   assert.equal(projection.graphData.metadata.status.deployed, true);
   const receipts = projection.graphData.nodes.filter((node) => node.type === "receipt");
   const bySource = (schema, status) => receipts.find((node) =>
@@ -123,21 +123,21 @@ test("deployed requires an exact candidate, interaction, human authorization, an
     edge.type === "transitionsTo"
     && edge.source === authorizationNode.id && edge.target === liveNode.id));
   assert.equal(
-    projectAgenticSdlcCanvas(input([joined.candidate, joined.authorization, joined.live]))
+    projectAdlcCanvas(input([joined.candidate, joined.authorization, joined.live]))
       .graphData.metadata.status.deployed,
     false,
   );
   const drifted = deployedReceipts();
   drifted.live.targetDigest = "f".repeat(64);
   assert.equal(
-    projectAgenticSdlcCanvas(input(Object.values(drifted)))
+    projectAdlcCanvas(input(Object.values(drifted)))
       .graphData.metadata.status.deployed,
     false,
   );
   const detached = deployedReceipts();
   detached.authorization.interactionReceiptDigest = "0".repeat(64);
   assert.equal(
-    projectAgenticSdlcCanvas(input(Object.values(detached)))
+    projectAdlcCanvas(input(Object.values(detached)))
       .graphData.metadata.status.deployed,
     false,
   );
@@ -149,7 +149,7 @@ test("deployed requires an exact candidate, interaction, human authorization, an
     }),
   ]) {
     assert.equal(
-      projectAgenticSdlcCanvas(input(Object.values(unjoined)))
+      projectAdlcCanvas(input(Object.values(unjoined)))
         .graphData.metadata.status.deployed,
       false,
     );
@@ -185,7 +185,7 @@ test("unrelated record insertion does not churn source-backed Canvas node IDs", 
     recoveryEvents: [{ id: "recovery:1", taskId: "1", resumed: true }],
     releaseLifecycle: { receipts: Object.values(deployedReceipts()) },
   };
-  const observe = (run) => projectAgenticSdlcCanvas({
+  const observe = (run) => projectAdlcCanvas({
     ...input(run.releaseLifecycle.receipts), normalizedRun: run, view: "full",
   }).graphData.nodes;
   const original = observe(baseRun);

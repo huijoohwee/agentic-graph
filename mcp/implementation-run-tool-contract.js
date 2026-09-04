@@ -67,11 +67,11 @@ export const IMPLEMENTATION_RUN_SPEC_SCHEMA = Object.freeze({
     semanticScope: { type: "string", pattern: "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$", maxLength: 100 },
     runnerId: TOKEN,
     sandboxPolicyPath: { type: "string", minLength: 1, maxLength: 4096 },
-    agenticSdlcLedgerPath: {
+    adlcLedgerPath: {
       type: "string",
       minLength: 1,
       maxLength: 4096,
-      description: "Optional repository-relative path where the runner must leave one exact agentic-sdlc-run/v1 ledger for independent validation and immutable observation.",
+      description: "Optional repository-relative path for an exact source-schema-identified canonical ledger. Native ADLC conformance is unavailable; historical source validation requires its original pinned evaluator.",
     },
     allowedPaths: {
       type: "array",

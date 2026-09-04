@@ -1,15 +1,15 @@
 import { createHash } from "node:crypto";
 
-export class AgenticSdlcProjectionError extends Error {
+export class AdlcProjectionError extends Error {
   constructor(code, message) {
     super(message);
-    this.name = "AgenticSdlcProjectionError";
+    this.name = "AdlcProjectionError";
     this.code = code;
   }
 }
 
 const fail = (code, message) => {
-  throw new AgenticSdlcProjectionError(code, message);
+  throw new AdlcProjectionError(code, message);
 };
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
 

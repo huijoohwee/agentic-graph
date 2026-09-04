@@ -8,15 +8,15 @@ import test from "node:test";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import {
-  createAgenticSdlcLedgerReceipt,
-} from "../agentic-sdlc-ledger-runtime.js";
+  createAdlcLedgerReceipt,
+} from "../adlc-ledger-runtime.js";
 import {
-  AGENTIC_SDLC_OBSERVATION_SCHEMA,
-  createAgenticSdlcObservabilityRuntime,
-} from "../agentic-sdlc-observability-runtime.js";
+  ADLC_OBSERVATION_SCHEMA,
+  createAdlcObservabilityRuntime,
+} from "../adlc-observability-runtime.js";
 import {
-  AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA,
-} from "../agentic-sdlc-observability-tool-contract.js";
+  ADLC_OBSERVATION_OUTPUT_SCHEMA,
+} from "../adlc-observability-tool-contract.js";
 import { readStableBoundedFile } from "../bounded-file-reader.js";
 import { ImplementationRunStore } from "../implementation-run-store.js";
 
@@ -30,8 +30,8 @@ const LEDGER = Object.freeze({
 const LEDGER_TEXT = `${JSON.stringify(LEDGER, null, 2)}\n`;
 const LEDGER_DIGEST = `sha256:${crypto.createHash("sha256").update(LEDGER_TEXT).digest("hex")}`;
 const invocation = {
-  action: "/sdlc.observe",
-  semantic: "#agentic-sdlc-observability",
+  action: "/adlc.observe",
+  semantic: "#adlc-observability",
   bindings: ["@implementation-run", "@canvas", "@runtime-proof"],
 };
 
@@ -83,7 +83,7 @@ const evaluator = Object.freeze({
 });
 
 const projection = Object.freeze({
-  schema: "agentic-sdlc-canvas-projection/v1",
+  schema: "adlc-canvas-projection/v1",
   projectionDigest: PROJECTION_DIGEST,
   pageDigest: PAGE_DIGEST,
   view: "execution",
@@ -100,11 +100,11 @@ const projection = Object.freeze({
   },
   graphData: {
     type: "Graph",
-    context: "agentic-sdlc-observability",
+    context: "adlc-observability",
     metadata: {
-      schema: "agentic-sdlc-canvas-projection/v1",
+      schema: "adlc-canvas-projection/v1",
       invocation:
-        "/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof",
+        "/adlc.observe #adlc-observability @implementation-run @canvas @runtime-proof",
       runId: LEDGER.runId,
       view: "execution",
       recordSetDigest: PROJECTION_DIGEST,
@@ -120,7 +120,7 @@ const projection = Object.freeze({
     edges: [],
   },
   agenticOsMarkdown:
-    "---\nschema: agentic-sdlc-canvas-projection/v1\nkgCanvas2dRenderer: storyboard\n---\n",
+    "---\nschema: adlc-canvas-projection/v1\nkgCanvas2dRenderer: storyboard\n---\n",
 });
 
 async function runtimeFixture(t, { realProjector = false } = {}) {
@@ -129,7 +129,7 @@ async function runtimeFixture(t, { realProjector = false } = {}) {
   const store = new ImplementationRunStore({ rootDir });
   const created = await store.create({
     spec: {
-      idempotencyKey: "agentic-sdlc-observation-fixture",
+      idempotencyKey: "adlc-observation-fixture",
       agenticCanvasOsRoot: path.join(rootDir, "agentic-canvas-os"),
     },
     plan: {
@@ -139,11 +139,12 @@ async function runtimeFixture(t, { realProjector = false } = {}) {
   });
   await store.writeArtifact(
     created.state.runId,
-    "agentic-sdlc-run.a0001.fixture.json",
+    "adlc-run.a0001.fixture.json",
     LEDGER_TEXT,
   );
-  const receipt = createAgenticSdlcLedgerReceipt({
-    artifact: "agentic-sdlc-run.a0001.fixture.json",
+  const receipt = createAdlcLedgerReceipt({
+    canonicalSchema: "agentic-sdlc-run/v1",
+    artifact: "adlc-run.a0001.fixture.json",
     digest: LEDGER_DIGEST,
     bytes: Buffer.byteLength(LEDGER_TEXT),
     canonicalRunId: LEDGER.runId,
@@ -154,8 +155,9 @@ async function runtimeFixture(t, { realProjector = false } = {}) {
     created.state.runId,
     {
       expectedRevision: created.state.revision,
-      eventType: "agentic_sdlc.ledger_bound",
+      eventType: "adlc.ledger_bound",
       eventData: {
+        canonicalSchema: receipt.canonicalSchema,
         artifact: receipt.artifact,
         digest: receipt.digest,
         bytes: receipt.bytes,
@@ -167,7 +169,7 @@ async function runtimeFixture(t, { realProjector = false } = {}) {
     },
     (current) => {
       current.state = "delivery_ready";
-      current.result = { agenticSdlcLedger: receipt };
+      current.result = { adlcLedger: receipt };
       return current;
     },
   );
@@ -179,12 +181,12 @@ async function runtimeFixture(t, { realProjector = false } = {}) {
   };
   if (!realProjector) runtimeOptions.projector = async (request) => {
       projectionCalls += 1;
-      assert.equal(request.normalizedRun, normalizedRun);
-      assert.equal(request.conformance, conformance);
+      assert.deepEqual(request.normalizedRun, normalizedRun);
+      assert.deepEqual(request.conformance, conformance);
       assert.equal(request.view, "execution");
       return projection;
     };
-  const runtime = createAgenticSdlcObservabilityRuntime(runtimeOptions);
+  const runtime = createAdlcObservabilityRuntime(runtimeOptions);
   return {
     rootDir,
     store,
@@ -207,14 +209,14 @@ test("observer verifies the immutable ledger and keeps canonical, delivery, and 
   };
   const first = await fixture.runtime.observe(request);
   const validateOutput = new Ajv2020({ strict: false }).compile(
-    AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA,
+    ADLC_OBSERVATION_OUTPUT_SCHEMA,
   );
   assert.equal(
     validateOutput(first),
     true,
     new Ajv2020().errorsText(validateOutput.errors),
   );
-  assert.equal(first.schema, AGENTIC_SDLC_OBSERVATION_SCHEMA);
+  assert.equal(first.schema, ADLC_OBSERVATION_SCHEMA);
   assert.equal(first.ok, true, JSON.stringify(first));
   assert.deepEqual(first.status, {
     runtimeReady: true,
@@ -292,7 +294,7 @@ test("observer reports a typed unavailable state instead of fabricating a canoni
   const store = new ImplementationRunStore({ rootDir });
   const { state } = await store.create({
     spec: {
-      idempotencyKey: "agentic-sdlc-observation-missing-ledger",
+      idempotencyKey: "adlc-observation-missing-ledger",
       agenticCanvasOsRoot: path.join(rootDir, "agentic-canvas-os"),
     },
     plan: {
@@ -300,7 +302,7 @@ test("observer reports a typed unavailable state instead of fabricating a canoni
       supportedAcosRevision: ACOS_REVISION,
     },
   });
-  const runtime = createAgenticSdlcObservabilityRuntime({
+  const runtime = createAdlcObservabilityRuntime({
     rootDir,
     store,
     evaluatorLoader: async () => {
@@ -420,7 +422,7 @@ test("runtime validates real projection output and freezes cached values", async
   };
   const first = await fixture.runtime.observe(request);
   const validate = new Ajv2020({ strict: false }).compile(
-    AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA,
+    ADLC_OBSERVATION_OUTPUT_SCHEMA,
   );
   assert.equal(validate(first), true, JSON.stringify(validate.errors));
   assert.equal(first.status.verified, false);
@@ -442,9 +444,9 @@ test("observer rejects a receipt that is not joined to its durable binding revis
       eventType: "test.receipt_revision_drift",
     },
     (current) => {
-      current.result.agenticSdlcLedger = {
-        ...current.result.agenticSdlcLedger,
-        ledgerRevision: current.result.agenticSdlcLedger.ledgerRevision + 1,
+      current.result.adlcLedger = {
+        ...current.result.adlcLedger,
+        ledgerRevision: current.result.adlcLedger.ledgerRevision + 1,
       };
       return current;
     },
@@ -453,7 +455,7 @@ test("observer rejects a receipt that is not joined to its durable binding revis
     invocation,
     runId: drifted.runId,
     expectedRevision: drifted.revision,
-    expectedLedgerDigest: drifted.result.agenticSdlcLedger.digest,
+    expectedLedgerDigest: drifted.result.adlcLedger.digest,
     view: "overview",
   });
   assert.equal(result.ok, false);

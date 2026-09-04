@@ -10,18 +10,18 @@ import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 
 import {
-  evaluateAgenticSdlcLedger,
-  loadAgenticSdlcEvaluator,
-} from "../agentic-sdlc-ledger-runtime.js";
+  evaluateAdlcLedger,
+  loadAdlcEvaluator,
+} from "../adlc-ledger-runtime.js";
 import {
   snapshotStrictNpmPackageArchive,
 } from "../npm-package-integrity-proof.js";
 import { digestEvidence } from "../implementation-run-evidence.js";
 import {
-  agenticSdlcLedgerResultFields,
-  agenticSdlcRunnerRequestFields,
-  bindAgenticSdlcLedger,
-} from "../implementation-run-agentic-sdlc-ledger.js";
+  adlcLedgerResultFields,
+  adlcRunnerRequestFields,
+  bindAdlcLedger,
+} from "../implementation-run-adlc-ledger.js";
 
 const runId = "ir_0123456789abcdef01234567";
 const supervisorToken = "supervisor-token";
@@ -102,13 +102,13 @@ function tarArchive(entries, { terminated = true } = {}) {
 const createState = (
   worktreePath,
   acosRevision,
-  ledgerPath = "artifacts/agentic-sdlc-run.json",
+  ledgerPath = "artifacts/adlc-run.json",
 ) => ({
   runId,
   revision: 7,
   attempt: 1,
   spec: {
-    agenticSdlcLedgerPath: ledgerPath,
+    adlcLedgerPath: ledgerPath,
     allowedPaths: ["artifacts"],
     agenticCanvasOsRoot: path.join(worktreePath, "agentic-canvas-os"),
   },
@@ -242,44 +242,45 @@ test("ledger binder persists one immutable digest-bound receipt behind the super
   const worktreePath = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sdlc-ledger-"));
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.mkdir(path.join(worktreePath, "artifacts"));
-  await fs.writeFile(path.join(worktreePath, "artifacts", "agentic-sdlc-run.json"), content);
+  await fs.writeFile(path.join(worktreePath, "artifacts", "adlc-run.json"), content);
   const evaluator = await createExactEvaluator(worktreePath);
   const state = createState(worktreePath, evaluator.revision);
   const harness = createHarness(state);
 
-  const first = await bindAgenticSdlcLedger({
+  const first = await bindAdlcLedger({
     state,
     runId,
     supervisorToken,
     ...harness.options,
   });
-  const receipt = first.result.agenticSdlcLedger;
+  const receipt = first.result.adlcLedger;
   assert.deepEqual(receipt, {
-    schema: "agentic-sdlc-ledger-receipt/v1",
-    artifact: `agentic-sdlc-run.a0001.${digestEvidence(content).slice(7, 23)}.json`,
+    schema: "adlc-ledger-receipt/v1",
+    canonicalSchema: "agentic-sdlc-run/v1",
+    artifact: `adlc-run.a0001.${digestEvidence(content).slice(7, 23)}.json`,
     digest: digestEvidence(content),
     bytes: Buffer.byteLength(content),
     canonicalRunId: ledger.runId,
     ledgerRevision: 7,
     acosRevision: evaluator.revision,
   });
-  assert.equal(harness.events[0].eventType, "agentic_sdlc.ledger_bound");
+  assert.equal(harness.events[0].eventType, "adlc.ledger_bound");
   assert.equal(harness.events[0].eventData.runtimeReady, true);
-  assert.deepEqual(agenticSdlcLedgerResultFields(first.result), {
-    agenticSdlcLedger: receipt,
+  assert.deepEqual(adlcLedgerResultFields(first.result), {
+    adlcLedger: receipt,
   });
   assert.match(
-    agenticSdlcRunnerRequestFields(state.spec.agenticSdlcLedgerPath).directive,
-    /persist the exact canonical agentic-sdlc-run\/v1 ledger/,
+    adlcRunnerRequestFields(state.spec.adlcLedgerPath).directive,
+    /provide an already-authoritative canonical source ledger with its original schema/,
   );
 
-  const replay = await bindAgenticSdlcLedger({
+  const replay = await bindAdlcLedger({
     state: { ...state, revision: 7 },
     runId,
     supervisorToken,
     ...harness.options,
   });
-  assert.deepEqual(replay.result.agenticSdlcLedger, receipt);
+  assert.deepEqual(replay.result.adlcLedger, receipt);
   assert.equal(harness.artifacts.size, 1);
 });
 
@@ -290,7 +291,7 @@ test("ledger binder rejects out-of-scope paths before evaluation or durable muta
   const state = createState(worktreePath, "a".repeat(40), "outside.json");
   const harness = createHarness(state);
   await assert.rejects(
-    bindAgenticSdlcLedger({
+    bindAdlcLedger({
       state,
       runId,
       supervisorToken,
@@ -307,13 +308,13 @@ test("ledger binder rejects invalid UTF-8 before evaluation or immutable persist
   t.after(() => fs.rm(worktreePath, { recursive: true, force: true }));
   await fs.mkdir(path.join(worktreePath, "artifacts"));
   await fs.writeFile(
-    path.join(worktreePath, "artifacts", "agentic-sdlc-run.json"),
+    path.join(worktreePath, "artifacts", "adlc-run.json"),
     Buffer.from([0x7b, 0x22, 0x78, 0x22, 0x3a, 0x22, 0xff, 0x22, 0x7d]),
   );
   const state = createState(worktreePath, "a".repeat(40));
   const harness = createHarness(state);
   await assert.rejects(
-    bindAgenticSdlcLedger({
+    bindAdlcLedger({
       state,
       runId,
       supervisorToken,
@@ -331,14 +332,14 @@ test("non-runtime-ready conformance binds evidence then fails closed with its ex
   await fs.mkdir(path.join(worktreePath, "artifacts"));
   const rejectedContent = `${JSON.stringify({ ...ledger, runtimeReady: false })}\n`;
   await fs.writeFile(
-    path.join(worktreePath, "artifacts", "agentic-sdlc-run.json"),
+    path.join(worktreePath, "artifacts", "adlc-run.json"),
     rejectedContent,
   );
   const evaluator = await createExactEvaluator(worktreePath);
   const state = createState(worktreePath, evaluator.revision);
   const harness = createHarness(state);
   await assert.rejects(
-    bindAgenticSdlcLedger({
+    bindAdlcLedger({
       state,
       runId,
       supervisorToken,
@@ -349,7 +350,7 @@ test("non-runtime-ready conformance binds evidence then fails closed with its ex
   assert.equal(harness.events.length, 1);
   assert.equal(harness.events[0].eventData.runtimeReady, false);
   assert.equal(
-    harness.current.result.agenticSdlcLedger.digest,
+    harness.current.result.adlcLedger.digest,
     digestEvidence(rejectedContent),
   );
 });
@@ -361,16 +362,18 @@ test("exact evaluator loader proves pinned offline archives and exposes canonica
   const exec = async (_command, args) => ({
     stdout: args.includes("status") ? "" : `${FIXTURE_REVISION}\n`,
   });
-  const loaded = await loadAgenticSdlcEvaluator({
+  const loaded = await loadAdlcEvaluator({
+      canonicalSchema: "agentic-sdlc-run/v1",
     agenticCanvasOsRoot: root,
     expectedRevision: FIXTURE_REVISION,
     exec,
   });
-  const result = evaluateAgenticSdlcLedger(ledger, loaded);
+  const result = evaluateAdlcLedger(ledger, loaded);
   assert.equal(result.normalizedRun.runId, ledger.runId);
   assert.equal(result.conformance.runtimeReady, true);
   await assert.rejects(
-    loadAgenticSdlcEvaluator({
+    loadAdlcEvaluator({
+      canonicalSchema: "agentic-sdlc-run/v1",
       agenticCanvasOsRoot: root,
       expectedRevision: FIXTURE_REVISION,
       exec: async (_command, args) => ({
@@ -386,7 +389,8 @@ test("exact evaluator loader proves pinned offline archives and exposes canonica
   await fs.symlink(root, symlink);
   t.after(() => fs.unlink(symlink).catch(() => undefined));
   await assert.rejects(
-    loadAgenticSdlcEvaluator({
+    loadAdlcEvaluator({
+      canonicalSchema: "agentic-sdlc-run/v1",
       agenticCanvasOsRoot: symlink,
       expectedRevision: FIXTURE_REVISION,
       exec,
@@ -396,7 +400,8 @@ test("exact evaluator loader proves pinned offline archives and exposes canonica
 
   let revisionReads = 0;
   await assert.rejects(
-    loadAgenticSdlcEvaluator({
+    loadAdlcEvaluator({
+      canonicalSchema: "agentic-sdlc-run/v1",
       agenticCanvasOsRoot: root,
       expectedRevision: FIXTURE_REVISION,
       exec: async (_command, args) => {
@@ -431,7 +436,8 @@ test("evaluator Git inspection excludes ambient authority redirects and config",
   const seenEnvironments = [];
   try {
     Object.assign(process.env, ambient);
-    await loadAgenticSdlcEvaluator({
+    await loadAdlcEvaluator({
+      canonicalSchema: "agentic-sdlc-run/v1",
       agenticCanvasOsRoot: root,
       expectedRevision: revision,
       exec: async (command, args, options) => {
@@ -467,7 +473,8 @@ test("evaluator loader rejects dependency bytes changed while loading", async (t
   const { ajvEntryPath } = await writeExactEvaluatorFiles(root);
   let statusReads = 0;
   await assert.rejects(
-    loadAgenticSdlcEvaluator({
+    loadAdlcEvaluator({
+      canonicalSchema: "agentic-sdlc-run/v1",
       agenticCanvasOsRoot: root,
       expectedRevision: FIXTURE_REVISION,
       exec: async (_command, args) => {
@@ -499,7 +506,8 @@ test("evaluator loader rejects stable pre-existing ignored dependency tampering"
     "utf8",
   );
   await assert.rejects(
-    loadAgenticSdlcEvaluator({
+    loadAdlcEvaluator({
+      canonicalSchema: "agentic-sdlc-run/v1",
       agenticCanvasOsRoot: root,
       expectedRevision: FIXTURE_REVISION,
       exec: async (_command, args) => ({

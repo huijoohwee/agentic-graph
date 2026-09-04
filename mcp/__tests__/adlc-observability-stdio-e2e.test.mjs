@@ -12,7 +12,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { createAgenticSdlcLedgerReceipt } from "../agentic-sdlc-ledger-runtime.js";
+import { createAdlcLedgerReceipt } from "../adlc-ledger-runtime.js";
 import { ImplementationRunStore } from "../implementation-run-store.js";
 import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 
@@ -44,14 +44,14 @@ async function copyEvaluatorDependencies(evaluatorRoot) {
   }
 }
 
-test("local stdio MCP exposes the read-only Agentic SDLC observer and fails closed without a canonical ledger", async (t) => {
+test("local stdio MCP exposes the read-only ADLC observer and fails closed without a canonical ledger", async (t) => {
   const runtimeRoot = await fs.mkdtemp(
     path.join(os.tmpdir(), "agentic-graph-sdlc-observe-stdio-"),
   );
   t.after(() => fs.rm(runtimeRoot, { recursive: true, force: true }));
 
   const client = new Client({
-    name: "agentic-sdlc-observability-stdio-e2e",
+    name: "adlc-observability-stdio-e2e",
     version: "0.0.0",
   });
   const transport = new StdioClientTransport({
@@ -83,7 +83,7 @@ test("local stdio MCP exposes the read-only Agentic SDLC observer and fails clos
     });
     const descriptor = listed.tools.find(
       (entry) =>
-        entry.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
+        entry.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.adlcObserve,
     );
     assert.ok(descriptor, stderr);
     assert.deepEqual(descriptor.annotations, {
@@ -98,11 +98,11 @@ test("local stdio MCP exposes the read-only Agentic SDLC observer and fails clos
 
     const called = await client.callTool(
       {
-        name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
+        name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.adlcObserve,
         arguments: {
           invocation: {
-            action: "/sdlc.observe",
-            semantic: "#agentic-sdlc-observability",
+            action: "/adlc.observe",
+            semantic: "#adlc-observability",
             bindings: [
               "@implementation-run",
               "@canvas",
@@ -142,7 +142,7 @@ test("local stdio MCP exposes the read-only Agentic SDLC observer and fails clos
   }
 });
 
-test("local stdio MCP observes a receipt-bound ledger through the real store, evaluator loader, and projector", async (t) => {
+test("local stdio MCP observes a synthetic historical adapter fixture through the real store, loader, and projector", async (t) => {
   const runtimeRoot = await fs.mkdtemp(
     path.join(os.tmpdir(), "agentic-graph-sdlc-observe-stdio-success-"),
   );
@@ -247,9 +247,10 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
       supportedAcosRevision: acosRevision,
     },
   });
-  const artifact = "agentic-sdlc-run.a0001.stdio.json";
+  const artifact = "adlc-run.a0001.stdio.json";
   await store.writeArtifact(created.state.runId, artifact, ledgerText);
-  const receipt = createAgenticSdlcLedgerReceipt({
+  const receipt = createAdlcLedgerReceipt({
+    canonicalSchema: "agentic-sdlc-run/v1",
     artifact,
     digest: ledgerDigest,
     bytes: Buffer.byteLength(ledgerText),
@@ -261,8 +262,9 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
     created.state.runId,
     {
       expectedRevision: created.state.revision,
-      eventType: "agentic_sdlc.ledger_bound",
+      eventType: "adlc.ledger_bound",
       eventData: {
+        canonicalSchema: receipt.canonicalSchema,
         artifact: receipt.artifact,
         digest: receipt.digest,
         bytes: receipt.bytes,
@@ -274,13 +276,13 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
     },
     (current) => {
       current.state = "delivery_ready";
-      current.result = { agenticSdlcLedger: receipt };
+      current.result = { adlcLedger: receipt };
       return current;
     },
   );
 
   const client = new Client({
-    name: "agentic-sdlc-observability-stdio-success",
+    name: "adlc-observability-stdio-success",
     version: "0.0.0",
   });
   const transport = new StdioClientTransport({
@@ -299,11 +301,11 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
   try {
     await client.connect(transport, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const called = await client.callTool({
-      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve,
+      name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.adlcObserve,
       arguments: {
         invocation: {
-          action: "/sdlc.observe",
-          semantic: "#agentic-sdlc-observability",
+          action: "/adlc.observe",
+          semantic: "#adlc-observability",
           bindings: ["@implementation-run", "@canvas", "@runtime-proof"],
         },
         runId: state.runId,
@@ -314,7 +316,7 @@ test("local stdio MCP observes a receipt-bound ledger through the real store, ev
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
     const validate = new Ajv2020({ strict: false }).compile(
       (await client.listTools()).tools.find((tool) =>
-        tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agenticSdlcObserve).outputSchema,
+        tool.name === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.adlcObserve).outputSchema,
     );
     assert.equal(called.isError, false);
     assert.equal(validate(called.structuredContent), true, JSON.stringify(validate.errors));

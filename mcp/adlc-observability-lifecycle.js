@@ -1,4 +1,4 @@
-import { digestJson } from "./agentic-sdlc-observability-json.js";
+import { digestJson } from "./adlc-observability-json.js";
 
 const CANDIDATE_SCHEMA = "agentic-candidate-manifest/v1";
 const INTERACTION_SCHEMA = "agentic-authorization-interaction-receipt/v1";

@@ -4,13 +4,15 @@ import path from "node:path";
 import { TextDecoder } from "node:util";
 
 import { readStableBoundedFile } from "./bounded-file-reader.js";
+import { assertNativeLedgerBinding } from "./adlc-legacy-ledger.js";
 import {
-  createAgenticSdlcLedgerReceipt,
-  evaluateAgenticSdlcLedger,
-  loadAgenticSdlcEvaluator,
-} from "./agentic-sdlc-ledger-runtime.js";
+  createAdlcLedgerReceipt,
+  evaluateAdlcLedger,
+  loadAdlcEvaluator,
+  ADLC_SOURCE_SCHEMAS,
+} from "./adlc-ledger-runtime.js";
 
-const MAX_AGENTIC_SDLC_LEDGER_BYTES = 10 * 1024 * 1024;
+const MAX_ADLC_LEDGER_BYTES = 10 * 1024 * 1024;
 const SHA256_PREFIX_LENGTH = "sha256:".length;
 
 const ledgerFailure = (message, code = "LEDGER_SCHEMA_INVALID") =>
@@ -21,19 +23,19 @@ const withinAllowed = (candidate, allowedPaths) =>
     candidate === allowed || candidate.startsWith(`${allowed}/`));
 
 async function readLedger(state) {
-  const relativePath = state.spec.agenticSdlcLedgerPath;
+  const relativePath = state.spec.adlcLedgerPath;
   if (!withinAllowed(relativePath, state.spec.allowedPaths)) {
-    throw ledgerFailure("Agentic SDLC ledger path is outside the run's declared write scope.");
+    throw ledgerFailure("ADLC ledger path is outside the run's declared write scope.");
   }
   const workspaceStat = await fs.lstat(state.coordination.worktreePath);
   if (!workspaceStat.isDirectory() || workspaceStat.isSymbolicLink()) {
-    throw ledgerFailure("Agentic SDLC ledger worktree identity is unsafe.");
+    throw ledgerFailure("ADLC ledger worktree identity is unsafe.");
   }
   const workspaceReal = await fs.realpath(state.coordination.worktreePath);
   const absolutePath = path.resolve(workspaceReal, relativePath);
   const lexical = path.relative(workspaceReal, absolutePath).replaceAll("\\", "/");
   if (!lexical || lexical !== relativePath || lexical.startsWith("../")) {
-    throw ledgerFailure("Agentic SDLC ledger path has an unsafe worktree identity.");
+    throw ledgerFailure("ADLC ledger path has an unsafe worktree identity.");
   }
   let content;
   try {
@@ -41,11 +43,11 @@ async function readLedger(state) {
       filePath: absolutePath,
       containingDirectory: workspaceReal,
       minimumBytes: 2,
-      maximumBytes: MAX_AGENTIC_SDLC_LEDGER_BYTES,
+      maximumBytes: MAX_ADLC_LEDGER_BYTES,
     }));
   } catch {
     throw ledgerFailure(
-      "Agentic SDLC ledger must be a stable non-symlink bounded file inside the task worktree.",
+      "ADLC ledger must be a stable non-symlink bounded file inside the task worktree.",
     );
   }
   let decoded;
@@ -53,7 +55,7 @@ async function readLedger(state) {
     decoded = new TextDecoder("utf-8", { fatal: true }).decode(content);
     return { content, ledger: JSON.parse(decoded) };
   } catch {
-    throw ledgerFailure("Agentic SDLC ledger must contain valid UTF-8 JSON.");
+    throw ledgerFailure("ADLC ledger must contain valid UTF-8 JSON.");
   }
 }
 
@@ -67,7 +69,7 @@ async function persistImmutableLedger({
   const contentDigest =
     `sha256:${crypto.createHash("sha256").update(content).digest("hex")}`;
   const artifactName = [
-    "agentic-sdlc-run",
+    "adlc-run",
     `a${String(state.attempt).padStart(4, "0")}`,
     contentDigest.slice(SHA256_PREFIX_LENGTH, SHA256_PREFIX_LENGTH + 16),
     "json",
@@ -96,32 +98,35 @@ async function persistImmutableLedger({
   }
 }
 
-export const agenticSdlcRunnerRequestFields = (ledgerPath) => ({
-  agenticSdlcLedgerPath: ledgerPath || null,
+export const adlcRunnerRequestFields = (ledgerPath) => ({
+  adlcLedgerPath: ledgerPath || null,
   directive: ledgerPath
-    ? `Implement only the work item in this isolated worktree, persist the exact canonical agentic-sdlc-run/v1 ledger at ${ledgerPath}, commit review-ready changes, and do not push, merge, deploy, or mutate canonical main.`
+    ? `Implement only the work item in this isolated worktree, provide an already-authoritative canonical source ledger with its original schema at ${ledgerPath}, commit review-ready changes, and do not push, merge, deploy, or mutate canonical main. Native ADLC conformance is unavailable without an owning evaluator.`
     : "Implement only the work item in this isolated worktree, commit review-ready changes, and do not push, merge, deploy, or mutate canonical main.",
 });
 
-export const agenticSdlcLedgerResultFields = (result) =>
-  result?.agenticSdlcLedger
-    ? { agenticSdlcLedger: result.agenticSdlcLedger }
+export const adlcLedgerResultFields = (result) =>
+  result?.adlcLedger
+    ? { adlcLedger: result.adlcLedger }
     : {};
 
-export async function bindAgenticSdlcLedger({
+export async function bindAdlcLedger({
   state,
   store,
   runId,
   supervisorToken,
   updateOwned,
 }) {
-  if (!state.spec.agenticSdlcLedgerPath) return state;
+  assertNativeLedgerBinding(state);
+  if (!state.spec.adlcLedgerPath) return state;
   const { content, ledger } = await readLedger(state);
-  const evaluator = await loadAgenticSdlcEvaluator({
+  if (!ADLC_SOURCE_SCHEMAS.includes(ledger?.schema)) throw ledgerFailure("Unsupported canonical ledger source schema.");
+  const evaluator = await loadAdlcEvaluator({
+    canonicalSchema: ledger.schema,
     agenticCanvasOsRoot: state.spec.agenticCanvasOsRoot,
     expectedRevision: state.plan.acosRevision,
   });
-  const evaluated = evaluateAgenticSdlcLedger(ledger, evaluator);
+  const evaluated = evaluateAdlcLedger(ledger, evaluator);
   const artifact = await persistImmutableLedger({
     state,
     store,
@@ -129,7 +134,8 @@ export async function bindAgenticSdlcLedger({
     supervisorToken,
     content,
   });
-  const receipt = createAgenticSdlcLedgerReceipt({
+  const receipt = createAdlcLedgerReceipt({
+    canonicalSchema: evaluated.normalizedRun.schema,
     artifact: artifact.artifact,
     digest: artifact.digest,
     bytes: artifact.bytes,
@@ -138,8 +144,9 @@ export async function bindAgenticSdlcLedger({
     acosRevision: state.plan.acosRevision,
   });
   const bound = await updateOwned(
-    "agentic_sdlc.ledger_bound",
+    "adlc.ledger_bound",
     {
+      canonicalSchema: receipt.canonicalSchema,
       artifact: receipt.artifact,
       digest: receipt.digest,
       bytes: receipt.bytes,
@@ -151,14 +158,14 @@ export async function bindAgenticSdlcLedger({
     (current) => {
       current.result = {
         ...(current.result || {}),
-        agenticSdlcLedger: receipt,
+        adlcLedger: receipt,
       };
       return current;
     },
   );
   if (!evaluated.conformance.runtimeReady) {
     throw ledgerFailure(
-      "The independent Agentic SDLC evaluator did not mark the canonical ledger runtime-ready.",
+      "The independent ADLC evaluator did not mark the canonical ledger runtime-ready.",
       "LEDGER_CONFORMANCE_FAILED",
     );
   }

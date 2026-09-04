@@ -1,10 +1,12 @@
-export const AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME = "agentic-graph.agentic_sdlc.observe";
-export const AGENTIC_SDLC_OBSERVABILITY_INVOCATION =
-  "/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof";
-export const AGENTIC_SDLC_OBSERVATION_SCHEMA = "agentic-graph-agentic-sdlc-observation/v1";
-export const AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA = "agentic-sdlc-canvas-projection/v1";
+import { ADLC_LEDGER_RECEIPT_SCHEMA, ADLC_SOURCE_SCHEMAS } from "./adlc-ledger-runtime.js";
+import { LEGACY_LEDGER_RECEIPT_SCHEMA } from "./adlc-legacy-ledger.js";
+export const ADLC_OBSERVABILITY_TOOL_NAME = "agentic-graph.adlc.observe";
+export const ADLC_OBSERVABILITY_INVOCATION =
+  "/adlc.observe #adlc-observability @implementation-run @canvas @runtime-proof";
+export const ADLC_OBSERVATION_SCHEMA = "agentic-graph-adlc-observation/v1";
+export const ADLC_CANVAS_PROJECTION_SCHEMA = "adlc-canvas-projection/v1";
 
-export const AGENTIC_SDLC_OBSERVATION_VIEWS = Object.freeze([
+export const ADLC_OBSERVATION_VIEWS = Object.freeze([
   "overview",
   "plan",
   "execution",
@@ -15,13 +17,14 @@ export const AGENTIC_SDLC_OBSERVATION_VIEWS = Object.freeze([
   "full",
 ]);
 
-export const AGENTIC_SDLC_OBSERVATION_FAILURE_CODES = Object.freeze([
+export const ADLC_OBSERVATION_FAILURE_CODES = Object.freeze([
   "run_not_found",
   "revision_conflict",
   "canonical_ledger_unavailable",
   "ledger_digest_mismatch",
   "ledger_schema_invalid",
   "ledger_conformance_failed",
+  "adlc_evaluator_unavailable",
   "stale_cursor",
   "unsupported_view",
   "projection_too_large",
@@ -42,7 +45,7 @@ const CURSOR = Object.freeze({
   maxLength: 4096,
 });
 
-export const AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA = Object.freeze({
+export const ADLC_OBSERVATION_INPUT_SCHEMA = Object.freeze({
   type: "object",
   additionalProperties: false,
   required: [
@@ -58,8 +61,8 @@ export const AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA = Object.freeze({
       additionalProperties: false,
       required: ["action", "semantic", "bindings"],
       properties: {
-        action: { const: "/sdlc.observe" },
-        semantic: { const: "#agentic-sdlc-observability" },
+        action: { const: "/adlc.observe" },
+        semantic: { const: "#adlc-observability" },
         bindings: {
           type: "array",
           minItems: 3,
@@ -74,7 +77,7 @@ export const AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA = Object.freeze({
       },
     },
     runId: IMPLEMENTATION_RUN_ID,
-    view: { type: "string", enum: AGENTIC_SDLC_OBSERVATION_VIEWS },
+    view: { type: "string", enum: ADLC_OBSERVATION_VIEWS },
     expectedRevision: { type: "integer", minimum: 1 },
     expectedLedgerDigest: PREFIXED_SHA256,
     cursor: CURSOR,
@@ -132,7 +135,7 @@ const CONFORMANCE_SCHEMA = Object.freeze({
     "metrics",
   ],
   properties: {
-    schema: { const: "agentic-graph-agentic-sdlc-conformance-summary/v1" },
+    schema: { const: "agentic-graph-adlc-conformance-summary/v1" },
     runId: NONEMPTY_TEXT,
     valid: { const: true },
     runtimeReady: { type: "boolean" },
@@ -351,7 +354,7 @@ const GRAPH_DATA_SCHEMA = Object.freeze({
   required: ["type", "context", "metadata", "nodes", "edges"],
   properties: {
     type: { const: "Graph" },
-    context: { const: "agentic-sdlc-observability" },
+    context: { const: "adlc-observability" },
     metadata: {
       type: "object",
       additionalProperties: false,
@@ -365,10 +368,10 @@ const GRAPH_DATA_SCHEMA = Object.freeze({
         "status",
       ],
       properties: {
-        schema: { const: AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA },
-        invocation: { const: AGENTIC_SDLC_OBSERVABILITY_INVOCATION },
+        schema: { const: ADLC_CANVAS_PROJECTION_SCHEMA },
+        invocation: { const: ADLC_OBSERVABILITY_INVOCATION },
         runId: NONEMPTY_TEXT,
-        view: { type: "string", enum: AGENTIC_SDLC_OBSERVATION_VIEWS },
+        view: { type: "string", enum: ADLC_OBSERVATION_VIEWS },
         recordSetDigest: SHA256,
         projectionDigest: SHA256,
         status: PROJECTION_STATUS_SCHEMA,
@@ -393,10 +396,10 @@ const PROJECTION_SCHEMA = Object.freeze({
     "agenticOsMarkdown",
   ],
   properties: {
-    schema: { const: AGENTIC_SDLC_CANVAS_PROJECTION_SCHEMA },
+    schema: { const: ADLC_CANVAS_PROJECTION_SCHEMA },
     projectionDigest: SHA256,
     pageDigest: SHA256,
-    view: { type: "string", enum: AGENTIC_SDLC_OBSERVATION_VIEWS },
+    view: { type: "string", enum: ADLC_OBSERVATION_VIEWS },
     ordering: { const: "type_rank_then_id" },
     page: PAGE_SCHEMA,
     graphData: GRAPH_DATA_SCHEMA,
@@ -413,6 +416,7 @@ const SOURCE_SCHEMA = Object.freeze({
     "implementationRunState",
     "canonicalRunId",
     "canonicalSchema",
+    "receiptSchema",
     "ledgerArtifact",
     "ledgerRevision",
     "ledgerDigest",
@@ -438,7 +442,8 @@ const SOURCE_SCHEMA = Object.freeze({
       ],
     },
     canonicalRunId: NONEMPTY_TEXT,
-    canonicalSchema: { const: "agentic-sdlc-run/v1" },
+    canonicalSchema: { enum: ADLC_SOURCE_SCHEMAS },
+    receiptSchema: { enum: [ADLC_LEDGER_RECEIPT_SCHEMA, LEGACY_LEDGER_RECEIPT_SCHEMA] },
     ledgerArtifact: {
       type: "string",
       pattern: "^[a-z0-9][a-z0-9._-]{0,119}$",
@@ -486,13 +491,13 @@ const ERROR_SCHEMA = Object.freeze({
   additionalProperties: false,
   required: ["code", "message", "retryable"],
   properties: {
-    code: { type: "string", enum: AGENTIC_SDLC_OBSERVATION_FAILURE_CODES },
+    code: { type: "string", enum: ADLC_OBSERVATION_FAILURE_CODES },
     message: { type: "string", minLength: 1, maxLength: 2000 },
     retryable: { type: "boolean" },
   },
 });
 
-export const AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA = Object.freeze({
+export const ADLC_OBSERVATION_OUTPUT_SCHEMA = Object.freeze({
   $defs: {
     jsonValue: {
       oneOf: [
@@ -517,7 +522,7 @@ export const AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
   required: ["schema", "ok", "economics"],
   properties: {
-    schema: { const: AGENTIC_SDLC_OBSERVATION_SCHEMA },
+    schema: { const: ADLC_OBSERVATION_SCHEMA },
     ok: { type: "boolean" },
     source: SOURCE_SCHEMA,
     status: STATUS_SCHEMA,
@@ -555,17 +560,17 @@ const READ_ONLY_LOCAL = Object.freeze({
   idempotentHint: true,
 });
 
-export function buildAgenticSdlcObservabilityToolDefinitions({ toolNames, withDefaults }) {
-  if (toolNames.agenticSdlcObserve !== AGENTIC_SDLC_OBSERVABILITY_TOOL_NAME) {
-    throw new Error("Shared local MCP tool name drifted for Agentic SDLC observability.");
+export function buildAdlcObservabilityToolDefinitions({ toolNames, withDefaults }) {
+  if (toolNames.adlcObserve !== ADLC_OBSERVABILITY_TOOL_NAME) {
+    throw new Error("Shared local MCP tool name drifted for ADLC observability.");
   }
   const definition = {
-    name: toolNames.agenticSdlcObserve,
-    title: "Agentic SDLC Observability",
+    name: toolNames.adlcObserve,
+    title: "ADLC Observability",
     description:
-      "Use this read-only local tool to project one exact revision- and ledger-digest-fenced agentic-sdlc-run/v1 into deterministic paged agentic-graph Canvas evidence without model calls, network calls, deployment, or a second graph store.",
-    inputSchema: AGENTIC_SDLC_OBSERVATION_INPUT_SCHEMA,
-    outputSchema: AGENTIC_SDLC_OBSERVATION_OUTPUT_SCHEMA,
+      "Project an exact source-schema-, revision-, and digest-fenced ledger into deterministic paged Canvas evidence. Native ADLC conformance is unavailable; historical observation requires the original pinned evaluator. No model calls, network calls, or deployment.",
+    inputSchema: ADLC_OBSERVATION_INPUT_SCHEMA,
+    outputSchema: ADLC_OBSERVATION_OUTPUT_SCHEMA,
     annotations: READ_ONLY_LOCAL,
   };
   return [withDefaults(definition, READ_ONLY_LOCAL)];
