@@ -2,22 +2,12 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { resolve } from 'node:path'
-import {
-  FakeAgenticGraphStorageD1Database,
-} from '../../../../canvas/src/__tests__/helpers/fake-agentic-graph-storage-d1'
+import { FakeAgenticGraphStorageD1Database } from '../../../../canvas/src/__tests__/helpers/fake-agentic-graph-storage-d1'
 import { FakeAgenticGraphStorageR2Bucket } from '../../../../canvas/src/__tests__/helpers/fake-agentic-graph-storage-r2'
-import {
-  AGENTIC_OS_STORAGE_API_VERSION,
-  AGENTIC_OS_STORAGE_SYNC_LIMITS,
-  hashAgenticGraphStorageContent,
-  type AgenticGraphStorageWorkerEnv,
-} from '../contract'
+import { AGENTIC_OS_STORAGE_API_VERSION, AGENTIC_OS_STORAGE_SYNC_LIMITS, hashAgenticGraphStorageContent, type AgenticGraphStorageWorkerEnv } from '../contract'
 import { createAgenticGraphStorageWorker } from '../index'
 import { readBoundedPullChangeRows } from '../storageSyncReadRows'
-import {
-  AGENTIC_OS_CHAT_RELAY_MAX_REQUEST_BYTES,
-  AGENTIC_OS_CHAT_RELAY_MAX_RESPONSE_BYTES,
-} from '../chatRelayBodyBounds'
+import { AGENTIC_OS_CHAT_RELAY_MAX_REQUEST_BYTES, AGENTIC_OS_CHAT_RELAY_MAX_RESPONSE_BYTES } from '../chatRelayBodyBounds'
 import { AGENTIC_OS_STORAGE_DOCUMENT_READ_LIMITS } from '../storageDocumentReadBounds'
 
 const SESSION_TOKEN = 'production-storage-session-token'
@@ -73,10 +63,22 @@ const createProductionEnv = (
   AGENTIC_OS_STORAGE_SIGNING_SECRET: 'storage-security-signing-secret-32-characters',
 })
 
-const sessionHeaders = (extra: HeadersInit = {}): Headers => new Headers({
-  authorization: `Bearer ${SESSION_TOKEN}`,
-  ...Object.fromEntries(new Headers(extra).entries()),
-})
+const sessionHeaders = (extra: HeadersInit = {}): Headers => new Headers({ authorization: `Bearer ${SESSION_TOKEN}`, ...Object.fromEntries(new Headers(extra).entries()) })
+
+const fetchExportWithPageOutcome = async (outcome: Error | { results: Array<Record<string, unknown>> }): Promise<Response> => {
+  const db = new FakeAgenticGraphStorageD1Database()
+  await seedSessionAndMembership(db)
+  const prepare = db.prepare.bind(db)
+  db.prepare = ((sql: string) => {
+    if (!sql.toLowerCase().includes(' union all ')) return prepare(sql)
+    const statement = { bind() { return statement }, async all() {
+      if (outcome instanceof Error) throw outcome
+      return outcome } }
+    return statement
+  }) as typeof db.prepare
+  const url = `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}`
+  return createAgenticGraphStorageWorker().fetch(new Request(url, { headers: sessionHeaders() }), createProductionEnv(db))
+}
 
 test('production structured sync authenticates before parsing request data', async () => {
   const worker = createAgenticGraphStorageWorker()
@@ -412,25 +414,16 @@ test('production export paginates accumulated workspaces without truncation', as
       updated_at: `2026-08-20T00:00:${String(index % 60).padStart(2, '0')}.000Z`,
     })
   }
-  const response = await worker.fetch(new Request(
-    `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}`,
-    { headers: sessionHeaders() },
-  ), createProductionEnv(db))
+  const exportUrl = `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}`
+  const response = await worker.fetch(new Request(exportUrl, { headers: sessionHeaders() }), createProductionEnv(db))
   assert.equal(response.status, 200)
-  const first = await response.json() as {
-    pageComplete: boolean; nextPageCursor: string | null; documents: Array<{ id: string }>
-  }
+  const first = await response.json() as { pageComplete: boolean; nextPageCursor: string | null; documents: Array<{ id: string }> }
   assert.equal(first.pageComplete, false)
   assert.equal(first.documents.length, AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResultRows)
   assert.ok(first.nextPageCursor)
-  const secondResponse = await worker.fetch(new Request(
-    `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}?cursor=${encodeURIComponent(first.nextPageCursor!)}`,
-    { headers: sessionHeaders() },
-  ), createProductionEnv(db))
+  const secondResponse = await worker.fetch(new Request(`${exportUrl}?cursor=${encodeURIComponent(first.nextPageCursor!)}`, { headers: sessionHeaders() }), createProductionEnv(db))
   assert.equal(secondResponse.status, 200)
-  const second = await secondResponse.json() as {
-    pageComplete: boolean; nextPageCursor: string | null; documents: Array<{ id: string }>
-  }
+  const second = await secondResponse.json() as { pageComplete: boolean; nextPageCursor: string | null; documents: Array<{ id: string }> }
   assert.equal(second.pageComplete, true)
   assert.equal(second.nextPageCursor, null)
   assert.equal(second.documents.length, 1)
@@ -438,22 +431,29 @@ test('production export paginates accumulated workspaces without truncation', as
   assert.equal(new Set(ids).size, AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResultRows + 1)
 })
 
+test('production export distinguishes generic D1 failures from stored-row overflow', async () => {
+  const failed = await fetchExportWithPageOutcome(new Error('D1_ERROR: no such table: documents'))
+  assert.equal(failed.status, 500)
+  assert.equal((await failed.json() as { code: string }).code, 'server_error')
+  const oversized = await fetchExportWithPageOutcome({ results: [{
+    entity_rank: 1, updated_at: '2026-08-20T00:00:00.000Z', id: 'document:oversized', stored_bytes: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes,
+  }] })
+  assert.equal(oversized.status, 413)
+  assert.equal((await oversized.json() as { code: string }).code, 'bad_request')
+})
+
 test('storage result byte aggregate fails before any result row is materialized', async () => {
   let materialized = false
   const db = {
     prepare(sql: string) {
-      let values: unknown[] = []
       const statement = {
-        bind(...bound: unknown[]) { values = bound; return statement },
+        bind() { return statement },
         async all() {
-          void values
           const normalized = sql.toLowerCase().replace(/\s+/g, ' ')
-          if (normalized.includes('select count(*)') && normalized.includes('from documents')) {
-            return { results: [{ row_count: 1, stored_bytes: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes }] }
+          if (normalized.includes('select count(*)') && normalized.includes('from documents')) return {
+            results: [{ row_count: 1, stored_bytes: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes }],
           }
-          if (normalized.includes('select count(*)')) {
-            return { results: [{ row_count: 0, stored_bytes: 0 }] }
-          }
+          if (normalized.includes('select count(*)')) return { results: [{ row_count: 0, stored_bytes: 0 }] }
           if (normalized.includes('select *')) materialized = true
           return { results: [] }
         },
