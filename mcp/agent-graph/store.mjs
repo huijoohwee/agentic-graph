@@ -56,9 +56,7 @@ export const DEFAULT_MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
 const MAX_POINTER_BYTES = 64 * 1024;
 const MAX_MANIFEST_BYTES = 64 * 1024 * 1024;
 const MAX_OBJECT_BYTES = 128 * 1024 * 1024;
-export const agentGraphSourceShardByteLimit = (value) => (
-  sourcePartByteLimit(value)
-);
+export const agentGraphSourceShardByteLimit = value => sourcePartByteLimit(value);
 const checkStoreBudget = (options, stage) => checkAgentGraphBudget({
   abortSignal: options?.abortSignal,
   deadline: options?.deadline,

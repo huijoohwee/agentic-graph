@@ -10,7 +10,7 @@ import {
 } from './mirror-namespace-contract.mjs'
 import {
   assertManagedDeletedPaths,
-  assertTrackedDeletedPaths,
+  createProductionArtifactDeletionPlan,
   listSealedLegacyPathsAtRevision,
   removeEmptyLegacyMirrorDirectories,
   removePlannedMirrorFiles,
@@ -546,24 +546,12 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
     root: targetRoot,
     revision: targetRevision,
   }))
-  assertManagedDeletedPaths({
-    deletedPaths: manifest.deletedPaths,
-    sealedLegacyPaths,
-    isManagedPath,
-    label: 'Production artifact',
-  })
   const trackedPaths = new Set(parseNulTerminatedGitPaths(readGitBuffer(targetRoot, [
     'ls-tree', '-r', '--name-only', '-z', targetRevision, '--',
   ])))
-  assertTrackedDeletedPaths({
-    deletedPaths: manifest.deletedPaths,
-    trackedPaths,
-    label: 'Production artifact',
-  })
-  const deletionPlan = manifest.deletedPaths.map(relativePath => {
-    const contents = readGitTreeFile({ root: targetRoot, revision: targetRevision, relativePath })
-    if (!contents) throw new Error(`Production artifact deletion is missing from its base revision: ${relativePath}`)
-    return { relativePath, sha256: digestValue(contents) }
+  const deletionPlan = createProductionArtifactDeletionPlan({
+    deletedPaths: manifest.deletedPaths, sealedLegacyPaths, isManagedPath, trackedPaths, readGitTreeFile,
+    root: targetRoot, revision: targetRevision, label: 'Production artifact',
   })
 
   const readinessPath = '.well-known/runtime-readiness.json'

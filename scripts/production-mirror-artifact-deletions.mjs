@@ -27,6 +27,18 @@ export const assertTrackedDeletedPaths = ({ deletedPaths, trackedPaths, label })
   }
 }
 
+export const createProductionArtifactDeletionPlan = ({
+  deletedPaths, sealedLegacyPaths, isManagedPath, trackedPaths, readGitTreeFile, root, revision, label,
+}) => {
+  assertManagedDeletedPaths({ deletedPaths, sealedLegacyPaths, isManagedPath, label })
+  assertTrackedDeletedPaths({ deletedPaths, trackedPaths, label })
+  return deletedPaths.map(relativePath => {
+    const contents = readGitTreeFile({ root, revision, relativePath })
+    if (!contents) throw new Error(`${label} deletion is missing from its base revision: ${relativePath}`)
+    return { relativePath, sha256: createHash('sha256').update(contents).digest('hex') }
+  })
+}
+
 export const assertPlannedMirrorFile = async ({ root, entry: { relativePath, sha256 }, label }) => {
   const filePath = resolveWithin(root, relativePath)
   const stat = await fs.lstat(filePath).catch(error => {
