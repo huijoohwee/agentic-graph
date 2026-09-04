@@ -33,14 +33,15 @@ export const buildAgenticGraphCommerceDiscovery = (args = {}) => {
   const env = args.env || {};
   const sellerId = readAgenticCommerceSellerId(env, `${origin}/`);
   const web3Enabled = isAgenticCommerceWeb3Enabled(env);
-  const x402 = buildAgenticCommerceX402PaymentRequired({
+  const payTo = readAgenticCommerceX402PayToAddress(env);
+  const x402 = payTo ? buildAgenticCommerceX402PaymentRequired({
     baseUrl: origin,
-    payTo: readAgenticCommerceX402PayToAddress(env),
+    payTo,
     network: readAgenticCommerceX402Network(env),
     asset: readAgenticCommerceX402Asset(env),
     amount: readAgenticCommerceX402Amount(env),
     facilitatorUrl: readAgenticCommerceX402FacilitatorUrl(env),
-  });
+  }) : null;
   return {
     acpDiscovery: buildAgenticCommerceAcpDiscovery({ sellerId, baseUrl: origin, web3Enabled }),
     ucpProfile: buildAgenticCommerceUcpProfile({ sellerId, baseUrl: origin, web3Enabled }),
@@ -72,6 +73,16 @@ export const buildAgenticGraphX402PaymentRequiredResponse = (request, env = {}) 
     requestUrl: request?.url,
     env,
   }).x402PaymentRequired;
+  if (!paymentRequired) {
+    return new Response(jsonBody({ ok: false, code: "x402_payee_unconfigured" }), {
+      status: 503,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+        "access-control-allow-origin": "*",
+      },
+    });
+  }
   const headerValue = encodeBase64(JSON.stringify(paymentRequired));
   return new Response(jsonBody(paymentRequired), {
     status: 402,

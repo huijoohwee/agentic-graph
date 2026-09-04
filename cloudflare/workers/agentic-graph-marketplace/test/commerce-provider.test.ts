@@ -89,8 +89,41 @@ describe('commerce marketplace provider', () => {
     expect(prepare).not.toHaveBeenCalled()
   })
 
+  it('rejects inexact operational routes and identifiers before any D1 access', async () => {
+    const prepare = vi.fn(() => { throw new Error('D1 must not be reached') })
+    const operationEnv = { ...runtime, MARKETPLACE_DB: { prepare } as unknown as D1Database }
+    const cases = [
+      new Request('http://marketplace.internal/v1/vendors', {
+        headers: { accept: 'application/json', 'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT },
+      }),
+      new Request('https://marketplace.internal:8443/v1/vendors', {
+        headers: { accept: 'application/json', 'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT },
+      }),
+      new Request('https://marketplace.internal/v1/vendors?limit=1', {
+        headers: { accept: 'application/json', 'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT },
+      }),
+      new Request('https://marketplace.internal/v1/settlements/split%2Fescape', {
+        headers: { accept: 'application/json', 'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT },
+      }),
+      new Request(`https://marketplace.internal/v1/settlements/${'x'.repeat(129)}`, {
+        headers: { accept: 'application/json', 'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT },
+      }),
+      new Request('https://marketplace.internal/v1/vendors/agent-flight/transition', {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain', 'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT },
+        body: '{}',
+      }),
+    ]
+    for (const request of cases) {
+      const response = await handleMarketplaceProviderRequest(await evidenceBoundRequest(request), operationEnv)
+      expect(response, request.url).toBeNull()
+    }
+    expect(prepare).not.toHaveBeenCalled()
+  })
+
   it('lists D1-owned vendors and requires evidence on settlement reads', async () => {
-    const vendors = await SELF.fetch(await evidenceBoundRequest('https://marketplace.internal/v1/vendors'))
+    const vendorRequest = await evidenceBoundRequest('https://marketplace.internal/v1/vendors')
+    const vendors = await SELF.fetch(vendorRequest)
     expect(vendors.status).toBe(200)
     const vendorBody = await vendors.json() as { vendors: Record<string, unknown>[] }
     expect(vendorBody).toMatchObject({
@@ -106,8 +139,11 @@ describe('commerce marketplace provider', () => {
     expect(Object.keys(vendorBody).sort()).toEqual(['contract', 'ok', 'vendors'])
     expect(vendorBody.vendors.every((vendor) => Object.keys(vendor).sort().join(',')
       === 'actorId,mutationId,state,vendorId')).toBe(true)
+    await expectEvidenceEcho(vendors, vendorRequest)
 
-    const unbound = await SELF.fetch('https://marketplace.internal/v1/settlements/split-missing')
+    const unbound = await SELF.fetch(new Request('https://marketplace.internal/v1/settlements/split-missing', {
+      headers: { accept: 'application/json', 'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT },
+    }))
     expect(unbound.status).toBe(409)
     await expect(unbound.json()).resolves.toMatchObject({ code: 'operational_evidence_binding_invalid' })
 
@@ -144,6 +180,38 @@ describe('commerce marketplace provider', () => {
       'amountMinor', 'contract', 'currency', 'ok', 'splitId', 'state',
     ])
     await expectEvidenceEcho(settlement, request)
+  })
+
+  it('rejects malformed provider rows with bound operational evidence', async () => {
+    const vendorRequest = await evidenceBoundRequest('https://marketplace.internal/v1/vendors')
+    const vendorResponse = await handleMarketplaceProviderRequest(vendorRequest, {
+      ...runtime,
+      MARKETPLACE_DB: {
+        prepare: () => ({ all: async () => ({ results: [{
+          vendor_id: 'invalid/vendor', lifecycle_state: 'active', provenance_state: 'active',
+          actor_id: 'operator-test', mutation_id: 'mutation:test',
+        }] }) }),
+      } as unknown as D1Database,
+    })
+    expect(vendorResponse?.status).toBe(503)
+    await expect(vendorResponse?.json()).resolves.toMatchObject({ code: 'marketplace_vendor_provenance_invalid' })
+    await expectEvidenceEcho(vendorResponse!, vendorRequest)
+
+    for (const row of [
+      { split_id: 'split-test', payout_state: 'settled', net_payout_amount_minor: -1, settlement_currency: 'SGD' },
+      { split_id: 'split-test', payout_state: 'settled', net_payout_amount_minor: 1.5, settlement_currency: 'SGD' },
+      { split_id: 'split-test', payout_state: 'settled', net_payout_amount_minor: 1, settlement_currency: 'sgd' },
+      { split_id: 'split-test', payout_state: 'corrupt', net_payout_amount_minor: 1, settlement_currency: 'SGD' },
+    ]) {
+      const request = await evidenceBoundRequest('https://marketplace.internal/v1/settlements/split-test')
+      const response = await handleMarketplaceProviderRequest(request, {
+        ...runtime,
+        MARKETPLACE_DB: { prepare: () => ({ bind: () => ({ first: async () => row }) }) } as unknown as D1Database,
+      })
+      expect(response?.status).toBe(503)
+      await expect(response?.json()).resolves.toMatchObject({ code: 'marketplace_settlement_projection_invalid' })
+      await expectEvidenceEcho(response!, request)
+    }
   })
 
   it('commits one fenced transition and returns the immutable outcome on exact replay', async () => {

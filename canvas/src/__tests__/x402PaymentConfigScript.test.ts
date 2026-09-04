@@ -87,8 +87,8 @@ export function testX402PaymentConfigScriptRejectsMissingPayToAuthority() {
     throw new Error(`expected missing x402 payTo to fail, got ${JSON.stringify({ status: result.status, summary })}`)
   }
   const payTo = readCheck(summary, 'x402-pay-to-address-input')
-  if (payTo.status !== 'fail' || !String(payTo.details || '').includes('deterministic fallback')) {
-    throw new Error(`expected missing x402 payTo to fail on fallback authority, got ${JSON.stringify(payTo)}`)
+  if (payTo.status !== 'fail' || !String(payTo.details || '').includes('must be an EVM address')) {
+    throw new Error(`expected missing x402 payTo to fail closed, got ${JSON.stringify(payTo)}`)
   }
 }
 
@@ -140,8 +140,8 @@ export function testX402PaymentConfigScriptReaderIgnoresPlaceholderPayToAuthorit
   const readPayTo = readAgenticCommerceX402PayToAddress({
     X402_PAY_TO_ADDRESS: AGENTIC_COMMERCE_X402_PLACEHOLDER_PAY_TO_ADDRESS,
   })
-  if (readPayTo !== AGENTIC_COMMERCE_X402_FALLBACK_PAY_TO_ADDRESS) {
-    throw new Error(`expected shared x402 payTo reader to ignore placeholder and return fallback, got ${readPayTo}`)
+  if (readPayTo !== null) {
+    throw new Error(`expected shared x402 payTo reader to reject placeholder authority, got ${readPayTo}`)
   }
 }
 
