@@ -207,10 +207,8 @@ test('bootstrap plan seals complete stable inventory, packet digests, ten units,
   const plan = await planBootstrap({ adapter, environment, packet: bootstrapPacket(environment), sourceSha, sourceTree: 'c'.repeat(40), controllerDigest: 'd'.repeat(64), workflowDigest: 'e'.repeat(64), wranglerDigest: 'f'.repeat(64), issuedAt: '2026-08-30T00:00:00.000Z', expiresAt: '2026-08-30T00:30:00.000Z' })
   assert.equal(plan.desired.units.length, 10); assert.equal(plan.desired.units[0].worker, 'agentic-marketplace-production')
   assert.equal(plan.desired.units[0].d1DatabaseId, environment.TRAVEL_STORAGE_D1_DATABASE_ID); assert.equal(plan.desired.units.at(-1).d1DatabaseId, environment.TRAVEL_STORAGE_D1_DATABASE_ID)
-  const mcp = TRAVEL_MESH_PLAN.find(entry => entry.id === 'mcp')
-  assert.deepEqual(mcp.dependencies, []); assert.deepEqual(mcp.serviceTargets, [])
-  const storage = TRAVEL_MESH_PLAN.find(entry => entry.id === 'storage')
-  assert.deepEqual(storage.dependencies, []); assert.deepEqual(storage.serviceTargets, [])
+  const mcp = TRAVEL_MESH_PLAN.find(entry => entry.id === 'mcp'), storage = TRAVEL_MESH_PLAN.find(entry => entry.id === 'storage')
+  assert.deepEqual(mcp.dependencies, []); assert.deepEqual(mcp.serviceTargets, []); assert.deepEqual(storage.dependencies, []); assert.deepEqual(storage.serviceTargets, [])
   assert.deepEqual(plan.effectGraph, bootstrapEffectGraph(plan.desired))
   assert.equal(plan.exactAuthorization, `authorize travel-mesh-provider-bootstrap ${plan.planDigest}`)
   assert(!JSON.stringify(plan).includes(environment.TRAVEL_COMMERCE_API_TOKEN))
@@ -420,12 +418,8 @@ test('candidate proof checks annotations, exact secrets, services, variables, an
   assert.throws(() => verifyCandidateVersion(value, entry, sourceSha, candidateDigest, configuration, baseline,
     preservedSecretNameDigest), /unmanaged baseline binding OPERATOR_PROVIDER_REPOSITORY changed/)
   value.resources.bindings.find(binding => binding.name === 'OPERATOR_PROVIDER_REPOSITORY').text = 'owner/private-provider'
-  const commerceEntry = TRAVEL_MESH_PLAN.find(unit => unit.id === 'travel-commerce')
-  const commerceValue = candidateVersion(commerceEntry, uuid(501), configuration, {
-    'workers/tag': `agentic-graph-${sourceSha}`, 'workers/message': `agentic-graph candidate ${sourceSha} ${candidateDigest}`,
-  })
-  const commerceBaseline = candidateVersion(commerceEntry, uuid(2), configuration, { 'workers/tag': 'baseline', 'workers/message': 'baseline' })
-  const commerceSecretNameDigest = digest(commerceEntry.secrets.map(([name]) => name).sort())
+  const commerceEntry = TRAVEL_MESH_PLAN.find(unit => unit.id === 'travel-commerce'), commerceValue = candidateVersion(commerceEntry, uuid(501), configuration, { 'workers/tag': `agentic-graph-${sourceSha}`, 'workers/message': `agentic-graph candidate ${sourceSha} ${candidateDigest}` })
+  const commerceBaseline = candidateVersion(commerceEntry, uuid(2), configuration, { 'workers/tag': 'baseline', 'workers/message': 'baseline' }), commerceSecretNameDigest = digest(commerceEntry.secrets.map(([name]) => name).sort())
   commerceValue.resources.bindings.find(binding => binding.type === 'service').service = 'unconfigured'
   assert.throws(() => verifyCandidateVersion(commerceValue, commerceEntry, sourceSha, candidateDigest, configuration,
     commerceBaseline, commerceSecretNameDigest), /production sentinel/)
