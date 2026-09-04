@@ -772,20 +772,20 @@ export async function testAgenticCommerceAcpConfigExposesNeutralRoutes() {
 export async function testAgenticCommerceX402RouteReturnsPaymentRequired() {
   await withX402FacilitatorSupportedKinds(async () => {
     const env = createCommerceEnv()
+    for (const payTo of [undefined, '0x0000000000000000000000000000000000000000']) {
+      env.X402_PAY_TO_ADDRESS = payTo
+      const unavailable = await worker.fetch(new Request(`https://commerce.example${AGENTIC_COMMERCE_ROUTE_PATHS.x402PaymentRequired}`), env as never)
+      if (unavailable.status !== 503 || unavailable.headers.has('payment-required')) throw new Error(`expected unavailable operator payee to fail closed without payment requirements, got ${unavailable.status}`)
+    }
+    env.X402_PAY_TO_ADDRESS = '0x1111111111111111111111111111111111111111'
     for (const path of [AGENTIC_COMMERCE_ROUTE_PATHS.x402PaymentRequired, AGENTIC_COMMERCE_ROUTE_PATHS.x402ApiRoot]) {
-      const response = await worker.fetch(
-        new Request(`https://commerce.example${path}`),
-        env as never,
-      )
+      const response = await worker.fetch(new Request(`https://commerce.example${path}`), env as never)
       if (response.status !== 402) throw new Error(`expected ${path} to return HTTP 402, received ${response.status}`)
       const headerPayload = readPaymentRequiredHeader(response)
       if (headerPayload?.x402Version !== 2) throw new Error(`expected x402 v2 payment-required header, got ${JSON.stringify(headerPayload)}`)
-      if (!headerPayload.accepts?.some(entry => (
-        entry.scheme === 'exact'
-        && /^0x[0-9a-fA-F]{40}$/.test(String(entry.payTo || ''))
-        && entry.network === 'eip155:84532'
-        && String(entry.asset || '').startsWith('0x')
-      ))) {
+      if (!headerPayload.accepts?.some(entry => (entry.scheme === 'exact'
+        && entry.payTo === env.X402_PAY_TO_ADDRESS
+        && entry.network === 'eip155:84532' && String(entry.asset || '').startsWith('0x')))) {
         throw new Error(`expected middleware payment requirements with payTo/network/asset for ${path}, got ${JSON.stringify(headerPayload)}`)
       }
     }

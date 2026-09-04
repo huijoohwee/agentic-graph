@@ -24,8 +24,11 @@ import { isRecord, readJsonObject } from './http.ts'
 import { MARKETPLACE_VENDOR_STATES } from '../../commerce-marketplace-provider-response-contract.ts'
 
 const MAX_OPERATION_BODY_BYTES = 65_536
-const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/u
+const MAX_VENDOR_ROWS = 10_000
+const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u
+const CURRENCY_PATTERN = /^[A-Z]{3}$/u
 const STATES = new Set<string>(MARKETPLACE_VENDOR_STATES)
+const PAYOUT_STATES = new Set<string | null>([null, 'pending', 'blocked', 'dispatched', 'settled', 'failed'])
 const TRANSITIONS: Readonly<Record<string, readonly string[]>> = Object.freeze({
   pending_review: ['approved'],
   approved: ['active', 'suspended'],
@@ -102,6 +105,11 @@ type TransitionResult = Readonly<{
   body: Readonly<Record<string, unknown>>
 }>
 
+type MarketplaceOperationRoute =
+  | Readonly<{ kind: 'vendor-list' }>
+  | Readonly<{ kind: 'settlement-read'; splitId: string }>
+  | Readonly<{ kind: 'vendor-transition'; vendorId: string }>
+
 export async function marketplaceProviderConfigured(env: MarketplaceEnv): Promise<boolean> {
   return validCommerceProviderSecret(env.MARKETPLACE_PROVIDER_AUTH_SECRET)
     && await runtimeEvidencePin(env, MARKETPLACE_EVIDENCE_CHECKS) !== null
@@ -126,34 +134,34 @@ export async function handleMarketplaceProviderRequest(
   if (request.method === 'GET' && url.pathname === '/v1/runtime-evidence') {
     return runtimeEvidenceResponse(env, MARKETPLACE_PROVIDER_CONTRACT, MARKETPLACE_EVIDENCE_CHECKS)
   }
-  if (request.method === 'GET' && url.pathname === '/v1/vendors') {
-    return listVendors(request, env)
-  }
-  if (request.method === 'GET' && /^\/v1\/settlements\/[^/]+$/u.test(url.pathname)) {
-    return readSettlement(request, env, decodeURIComponent(url.pathname.split('/')[3] ?? ''))
-  }
-  if (request.method === 'POST' && /^\/v1\/vendors\/[^/]+\/transition$/u.test(url.pathname)) {
-    return transitionVendor(request, env, decodeURIComponent(url.pathname.split('/')[3] ?? ''), nowMs)
-  }
+  const operation = exactMarketplaceOperationRoute(request, url)
+  if (operation?.kind === 'vendor-list') return listVendors(request, env)
+  if (operation?.kind === 'settlement-read') return readSettlement(request, env, operation.splitId)
+  if (operation?.kind === 'vendor-transition') return transitionVendor(request, env, operation.vendorId, nowMs)
   return null
 }
 
 async function listVendors(request: Request, env: MarketplaceEnv): Promise<Response> {
   const authorized = await authenticatedProviderOperation(request, env)
   if (authorized instanceof Response) return authorized
+  const { binding } = authorized
   const rows = await env.MARKETPLACE_DB.prepare(
     `SELECT v.vendor_id, v.lifecycle_state, p.lifecycle_state AS provenance_state,
        p.actor_id, p.mutation_id
      FROM marketplace_vendor v LEFT JOIN marketplace_vendor_state_provenance p
        ON p.vendor_id = v.vendor_id
-     ORDER BY v.vendor_id`,
+     ORDER BY v.vendor_id LIMIT ${MAX_VENDOR_ROWS + 1}`,
   ).all<VendorRow>()
-  if (rows.results.some((row) => row.provenance_state !== row.lifecycle_state
-    || !IDENTIFIER_PATTERN.test(row.actor_id ?? '')
-    || !IDENTIFIER_PATTERN.test(row.mutation_id ?? ''))) {
-    return providerError('marketplace_vendor_provenance_invalid', 503)
+  if (rows.results.length > MAX_VENDOR_ROWS
+    || rows.results.some((row) => typeof row.vendor_id !== 'string'
+    || !IDENTIFIER_PATTERN.test(row.vendor_id)
+    || !STATES.has(row.lifecycle_state)
+    || row.provenance_state !== row.lifecycle_state
+    || typeof row.actor_id !== 'string' || !IDENTIFIER_PATTERN.test(row.actor_id)
+    || typeof row.mutation_id !== 'string' || !IDENTIFIER_PATTERN.test(row.mutation_id))) {
+    return boundProviderError('marketplace_vendor_provenance_invalid', 503, binding)
   }
-  return providerJson({
+  return boundProviderJson({
     ok: true,
     contract: MARKETPLACE_PROVIDER_CONTRACT,
     vendors: rows.results.map((row) => ({
@@ -162,7 +170,7 @@ async function listVendors(request: Request, env: MarketplaceEnv): Promise<Respo
       state: row.lifecycle_state,
       mutationId: row.mutation_id,
     })),
-  })
+  }, 200, binding)
 }
 
 async function readSettlement(request: Request, env: MarketplaceEnv, splitId: string): Promise<Response> {
@@ -182,6 +190,14 @@ async function readSettlement(request: Request, env: MarketplaceEnv, splitId: st
      ORDER BY p.updated_at DESC LIMIT 1`,
   ).bind(splitId).first<SettlementRow>()
   if (!row) return boundProviderError('settlement_not_found', 404, binding)
+  if (row.split_id !== splitId
+    || !PAYOUT_STATES.has(row.payout_state)
+    || !Number.isSafeInteger(row.net_payout_amount_minor)
+    || row.net_payout_amount_minor < 0
+    || typeof row.settlement_currency !== 'string'
+    || !CURRENCY_PATTERN.test(row.settlement_currency)) {
+    return boundProviderError('marketplace_settlement_projection_invalid', 503, binding)
+  }
   return boundProviderJson({
     ok: true,
     contract: MARKETPLACE_PROVIDER_CONTRACT,
@@ -190,6 +206,35 @@ async function readSettlement(request: Request, env: MarketplaceEnv, splitId: st
     amountMinor: row.net_payout_amount_minor,
     currency: row.settlement_currency,
   }, 200, binding)
+}
+
+function exactMarketplaceOperationRoute(request: Request, url: URL): MarketplaceOperationRoute | null {
+  if (url.protocol !== 'https:' || url.hostname !== 'marketplace.internal' || url.port !== ''
+    || url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== ''
+    || request.headers.get('x-commerce-contract') !== MARKETPLACE_PROVIDER_CONTRACT) return null
+  if (request.method === 'GET') {
+    if (request.body !== null || request.headers.get('accept') !== 'application/json'
+      || request.headers.has('content-type')) return null
+    if (url.pathname === '/v1/vendors') return Object.freeze({ kind: 'vendor-list' })
+    const settlement = url.pathname.match(/^\/v1\/settlements\/([^/]+)$/u)
+    const splitId = settlement ? decodeExactIdentifier(settlement[1]) : null
+    return splitId ? Object.freeze({ kind: 'settlement-read', splitId }) : null
+  }
+  if (request.method !== 'POST'
+    || request.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase() !== 'application/json'
+    || request.body === null) return null
+  const transition = url.pathname.match(/^\/v1\/vendors\/([^/]+)\/transition$/u)
+  const vendorId = transition ? decodeExactIdentifier(transition[1]) : null
+  return vendorId ? Object.freeze({ kind: 'vendor-transition', vendorId }) : null
+}
+
+function decodeExactIdentifier(segment: string): string | null {
+  try {
+    const decoded = decodeURIComponent(segment)
+    return IDENTIFIER_PATTERN.test(decoded) && encodeURIComponent(decoded) === segment ? decoded : null
+  } catch {
+    return null
+  }
 }
 
 async function transitionVendor(

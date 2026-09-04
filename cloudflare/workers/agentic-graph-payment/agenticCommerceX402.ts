@@ -43,7 +43,9 @@ const readX402Config = (request: Request, env: AgenticCommerceEnvLike) => {
   }
 }
 
-const createX402AppFetch = (config: ReturnType<typeof readX402Config>): X402AppFetch => {
+type X402Config = Omit<ReturnType<typeof readX402Config>, 'payTo'> & Readonly<{ payTo: string }>
+
+const createX402AppFetch = (config: X402Config): X402AppFetch => {
   const app = new Hono()
   const server = new x402ResourceServer(new HTTPFacilitatorClient({
     url: config.facilitatorUrl,
@@ -79,9 +81,16 @@ export const handleAgenticCommerceX402Route = async (
   corsHeaders: HeadersRecord,
 ): Promise<Response> => {
   const config = readX402Config(request, env)
+  if (!config.payTo) {
+    return withCorsHeaders(Response.json({
+      ok: false,
+      apiVersion: AGENTIC_COMMERCE_API_VERSION,
+      code: 'x402_payee_unconfigured',
+    }, { status: 503 }), corsHeaders)
+  }
   // The request origin and route participate in the x402 resource identity.
   // Build the immutable middleware graph per request instead of retaining an
   // unbounded module-level cache whose keys can be influenced by Host headers.
-  const appFetch = createX402AppFetch(config)
+  const appFetch = createX402AppFetch({ ...config, payTo: config.payTo })
   return withCorsHeaders(await appFetch(request), corsHeaders)
 }

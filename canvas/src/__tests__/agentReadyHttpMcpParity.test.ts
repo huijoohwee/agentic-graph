@@ -183,10 +183,10 @@ export async function testAgentReadyHttpMcpTransportMatchesSharedContractExactly
   if (!Object.values(mppOpenApi.paths || {}).some((pathItem: unknown) => Object.values(pathItem as Record<string, Record<string, unknown>> || {}).some((operation) => operation['x-payment-info']))) {
     throw new Error(`expected root MPP OpenAPI static artifact with x-payment-info, got ${JSON.stringify(mppOpenApi)}`)
   }
-  const paymentRequired = await buildAgenticGraphX402PaymentRequiredResponse(new Request('https://airvio.co/api/payments/commerce/x402'), {}).json() as { accepts?: unknown[] }
-  if (!Array.isArray(paymentRequired.accepts) || paymentRequired.accepts.length <= 0) {
-    throw new Error(`expected x402 payment-required response body, got ${JSON.stringify(paymentRequired)}`)
-  }
+  const unavailable = [{}, { X402_PAY_TO_ADDRESS: '0x0000000000000000000000000000000000000000' }].map((env) => buildAgenticGraphX402PaymentRequiredResponse(new Request('https://airvio.co/api/payments/commerce/x402'), env))
+  if (unavailable.some((response) => response.status !== 503 || response.headers.has('payment-required'))) throw new Error('expected unavailable x402 payee to fail closed')
+  const paymentRequired = await buildAgenticGraphX402PaymentRequiredResponse(new Request('https://airvio.co/api/payments/commerce/x402'), { X402_PAY_TO_ADDRESS: '0x1111111111111111111111111111111111111111' }).json() as { accepts?: unknown[] }
+  if (!Array.isArray(paymentRequired.accepts) || paymentRequired.accepts.length <= 0) throw new Error(`expected x402 payment-required response body, got ${JSON.stringify(paymentRequired)}`)
   if (
     !staticMcpAppHtml
     || !String(staticMcpAppHtml.contentType || '').includes(AGENTIC_OS_MCP_APPS_RESOURCE_MIME_TYPE)

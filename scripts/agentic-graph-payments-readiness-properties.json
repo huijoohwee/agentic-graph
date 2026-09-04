@@ -62,7 +62,7 @@
       "contains": "PAYMENT_BUYER_PRODUCT_ENV_KEYS"
     },
     {
-      "file": "cloudflare/d1/migrations/0009_agenticGraph_payment_runtime.sql",
+      "file": "cloudflare/d1/migrations/0009_agentic-graph_payment_runtime.sql",
       "contains": "payment_intents"
     },
     {
