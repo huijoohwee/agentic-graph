@@ -21,6 +21,8 @@ import {
 
 export class AgenticGraphStorageSyncResultLimitError extends Error {}
 
+const STORED_ROW_PAGE_LIMIT = 'one storage sync row exceeds the page byte limit'
+
 const jsonByteLength = (value: unknown): number =>
   new TextEncoder().encode(JSON.stringify(value)).byteLength
 
@@ -74,9 +76,10 @@ export const readAgenticGraphStoragePullPage = async (
       maxStoredResultBytes: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes - 65_536,
     })
   } catch (error) {
-    throw new AgenticGraphStorageSyncResultLimitError(
-      error instanceof Error ? error.message : 'storage sync page could not be read',
-    )
+    if (error instanceof Error && error.message === STORED_ROW_PAGE_LIMIT) {
+      throw new AgenticGraphStorageSyncResultLimitError(error.message)
+    }
+    throw error
   }
   const knownChunkHashBySemanticKey = new Map<string, string>()
   for (const chunk of knownChunks.slice(0, 1_000)) {
