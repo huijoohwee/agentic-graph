@@ -179,6 +179,26 @@ browser-local agent inspection reads the same readiness snapshot instead of rebu
 
 ## Traceability
 
+### Commerce request readiness
+
+CID `commerce.request-efficiency` binds the requirement, design, and behavior checks:
+operators need expired quote work to stop consuming service time without interrupting another caller.
+The reoptimization dispatcher checks its deadline before fan-out and passes cancellation through
+`OfferCache` to the discovery request. Shared refreshes retain one subscription per live caller;
+only the last cancellation aborts discovery and removes the refresh. Canceled results cannot start
+a cache write. An already-started Cache API write cannot be canceled: one publication gate per key
+excludes overlapping writes, lets fresh callers bypass optional storage, and removes a canceled write
+before reopening that key. Failed cleanup disables cache reuse for the instance. A local publication
+epoch rejects cache reads spanning a write or cleanup. These fences apply within one `OfferCache`
+instance; they do not claim distributed Cache API transactions. Cache IO is checked again before
+dispatch or publication; no caller queue waits behind a pending cache write.
+The guardrail reads the authoritative envelope ledger on every balance check, with no advisory KV
+read or write on that path; atomic offer reservation and failure invalidation retain their owners.
+`cascade-bounds.test.ts` and `core-recovery-regressions.test.ts` verify cancellation, shared callers,
+late-response exclusion, and zero-KV balance checks. These source checks do not prove deployed payments.
+Browser catalog hydration resolves the shared absolute MCP route against the selected origin;
+an explicit endpoint remains authoritative. This keeps local and hosted `/`, `@`, `#` calls on one route.
+
 | Source Contract | MainPanel Commerce Impact |
 |---|---|
 | `agentic-graph-agentic-commerce-prd-tad.md` | Defines ACP, checkout, Web3, OpenBOX, proof, and trace runtime behavior. |

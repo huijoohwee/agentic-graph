@@ -46,8 +46,8 @@ describe('check:hold-lifecycle evidence', () => {
           kind: 'rejected', reason: 'insufficient-envelope', details: { availableAtCheck: budget },
         })
         expect(await readCachedBalance(localEnv.BALANCE_CACHE, generatedSeed.principalId)).toMatchObject({
-          availableBalanceMinor: budget,
-          revision: authoritative.revision,
+          availableBalanceMinor: budget + 1_000,
+          revision: `divergent-${divergenceSequence}`,
         })
       },
     ))
