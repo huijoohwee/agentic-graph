@@ -186,10 +186,10 @@ test('Git hooks and lifecycle commands are pinned to the Agentic OS authority ru
   assert.equal(packageJson.scripts['worktree:lifecycle:check'], undefined)
   assert.equal(packageJson.scripts['worktree:lifecycle:classify'], undefined)
   assert.equal(packageJson.scripts['worktree:lifecycle:cleanup'], undefined)
-  assert.ok(packageJson.scripts['ci:integration'].startsWith('npm run worktree:check &&'))
+  assert.ok(packageJson.scripts['ci:integration'].startsWith('npm run worktree:check && npm --prefix node_modules/agentic-os run evals &&'))
   assert.equal(
     packageJson.devDependencies['agentic-os'],
-    'github:huijoohwee/agentic-os#8c2650cefac8ba37435832adfa2314846725f21a',
+    'github:huijoohwee/agentic-os#a452a9727dbbf7adf5ba6c27de45f45c850b39aa',
   )
   assert.equal(packageJson.scripts.postinstall, undefined)
   assert.equal(packageJson.scripts['hooks:install'], undefined)
