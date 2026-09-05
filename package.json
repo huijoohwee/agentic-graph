@@ -85,6 +85,12 @@
     "storage:worker:deploy": "npx --yes wrangler@latest deploy --config cloudflare/workers/agentic-graph-storage/wrangler.toml",
     "payment:worker:dev": "npx --yes wrangler@latest dev --config cloudflare/workers/agentic-graph-payment/wrangler.toml",
     "payment:worker:deploy": "npx --yes wrangler@latest deploy --config cloudflare/workers/agentic-graph-payment/wrangler.toml",
+    "payment:x402:xrpl:configure": "node ./scripts/configure-xrpl-x402-paid-resource.mjs",
+    "payment:x402:xrpl:typecheck": "tsc --project cloudflare/workers/agentic-graph-payment/tsconfig.xrpl-x402.json --pretty false",
+    "payment:x402:xrpl:test": "npm -C grph-shared run build && npm run payment:x402:xrpl:typecheck && node --test ./scripts/__tests__/xrpl-x402-paid-resource-*.test.mjs cloudflare/workers/agentic-graph-travel-discovery/__tests__/worker.test.mjs && node --import tsx --test --test-concurrency=1 cloudflare/workers/agentic-graph-payment/__tests__/*.test.ts && vitest run --config cloudflare/workers/agentic-graph-payment/vitest.net-settlement.config.mts && npm run travel-commerce:strytree-ledger:test",
+    "payment:x402:xrpl:source-check": "npm run payment:x402:xrpl:test && node ./scripts/check-xrpl-x402-pages-candidate.mjs && node ./scripts/check-xrpl-x402-paid-resource.mjs --source-template",
+    "payment:x402:xrpl:check": "npm run payment:x402:xrpl:test && node ./scripts/check-xrpl-x402-paid-resource.mjs",
+    "payment:x402:xrpl:smoke": "node ./scripts/smoke-xrpl-x402-paid-resource.mjs",
     "mcp:worker:dev": "npx --yes wrangler@latest dev --config cloudflare/workers/agentic-graph-mcp/wrangler.toml",
     "mcp:worker:deploy": "npx --yes wrangler@latest deploy --config cloudflare/workers/agentic-graph-mcp/wrangler.toml",
     "mcp:worker:test": "node --test cloudflare/workers/agentic-graph-mcp/__tests__/*.test.mjs",
@@ -309,18 +315,21 @@
     "hono": "^4.12.23",
     "js-yaml": "^4.1.1",
     "jsonwebtoken": "9.0.2",
+    "ripple-address-codec": "5.0.1",
     "yjs": "^13.6.31"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20260819.1",
+    "agentic-os": "github:huijoohwee/agentic-os#8c2650cefac8ba37435832adfa2314846725f21a",
     "ajv": "8.20.0",
     "fake-indexeddb": "^6.2.5",
     "fast-check": "3.23.2",
     "typescript": "5.9.3",
     "vitest": "4.1.0",
     "wrangler": "4.124.0",
-    "zod": "^4.4.3",
-    "agentic-os": "github:huijoohwee/agentic-os#8c2650cefac8ba37435832adfa2314846725f21a"
+    "x402-xrpl": "0.3.2",
+    "xrpl": "4.5.0",
+    "zod": "^4.4.3"
   }
 }

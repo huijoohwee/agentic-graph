@@ -181,6 +181,8 @@ test('published agent-ready dependency plan contains the browser and tool-contra
     'canvas/src/features/strybldr/cameraMcpContract.mjs',
     'canvas/src/lib/storage/agentic-graph-storage-engine-mcp-contract.mjs',
     'contracts/semantic-key.js',
+    'grph-shared/dist/payments/agenticCommercePaidResourceSsot.js',
+    'grph-shared/dist/payments/xrplClassicAddress.js',
   ]) {
     assert.ok(targets.has(relativePath), `missing published dependency ${relativePath}`)
   }

@@ -7,12 +7,21 @@ export default defineConfig({
     miniflare: {
       serviceBindings: {
         NET_SETTLEMENT_EXECUTOR: () => Response.json({ ok: false }, { status: 503 }),
+        TRAVEL_DISCOVERY_HARNESS: () => Response.json({ ok: false }, { status: 503 }),
       },
     },
   })],
   test: {
     globals: false,
     testTimeout: 15_000,
+    deps: {
+      optimizer: {
+        ssr: {
+          enabled: true,
+          include: ['ripple-address-codec'],
+        },
+      },
+    },
     include: ['./cloudflare/workers/agentic-graph-payment/__tests__/strytree-ledger.contract.vitest.ts'],
   },
 })

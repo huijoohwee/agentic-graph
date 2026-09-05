@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "esModuleInterop": true,
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "noImplicitAny": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2024",
+    "types": ["node", "@cloudflare/workers-types"]
+  },
+  "files": [
+    "../../../grph-shared/src/payments/agenticCommercePaidResourceSsot.ts",
+    "agenticCommercePaidResource.ts",
+    "agenticCommercePaidResourceAdmission.ts",
+    "agenticCommercePaidResourcePersistence.ts",
+    "agenticCommercePaidResourceRecord.ts",
+    "agenticCommercePaidResourceResponse.ts",
+    "agenticCommercePaidResourceSettlement.ts",
+    "agenticCommerceX402Xrpl.ts",
+    "__tests__/agentic-commerce-x402-xrpl-admission.test.ts",
+    "__tests__/agentic-commerce-x402-xrpl-adversarial.test.ts",
+    "__tests__/agentic-commerce-x402-xrpl-persistence.test.ts",
+    "__tests__/agentic-commerce-x402-xrpl-route.test.ts",
+    "__tests__/agenticCommerceXrplRouteTestSupport.ts"
+  ]
+}

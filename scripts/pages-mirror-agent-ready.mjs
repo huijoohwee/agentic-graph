@@ -153,7 +153,11 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
 
   const semanticKeyContractSource = source('contracts', 'semantic-key.js')
   const semanticKeyContractTarget = target('contracts', 'semantic-key.js')
-  const runtimeSharedEntries = ['dist/hash/signature.js', 'dist/payments/agenticCommerceSsot.js']
+  const runtimeSharedEntries = [
+    'dist/hash/signature.js',
+    'dist/payments/agenticCommerceSsot.js',
+    'dist/payments/agenticCommercePaidResourceSsot.js',
+  ]
   const namedFeatureCopies = [
     ['three', 'xrSceneMcpContract.mjs'], ['three', 'xrAnimationMcpContract.mjs'], ['three', 'motionControlMcpContract.mjs'],
     ['game-fps', 'gameModeMcpContract.mjs'], ['game-flight-sim', 'flightSimMcpContract.mjs'], ['game-city-sim', 'citySimMcpContract.mjs'],

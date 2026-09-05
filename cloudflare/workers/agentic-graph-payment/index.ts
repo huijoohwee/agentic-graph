@@ -1,5 +1,10 @@
 import { handleAgenticCommerceRoute, isAgenticCommerceRoute, isAgenticCommerceRouteDbBacked } from './agenticCommerce'
 import { handlePaymentRuntimeRoute, isPaymentRuntimeRoute } from './paymentRuntimeRoutes'
+import {
+  handleAgenticCommercePaidResourceRoute,
+  isAgenticCommercePaidResourceRoute,
+  type AgenticCommercePaidResourceWorkerEnv,
+} from './agenticCommercePaidResource'
 import { handleStripePaymentRoute, isStripePaymentRoute } from './payments'
 import { handleStrytreeRoute, isStrytreeRoute, processStrytreeQueueMessage } from './strytreeApi'
 import { StrytreeCreditLedgerActor, type StrytreeLedgerEnv } from './strytreeCreditLedger'
@@ -9,7 +14,7 @@ import { readDb, type D1DatabaseLike } from '../shared/d1'
 
 type HeadersRecord = Record<string, string>
 
-export type AgenticGraphPaymentWorkerEnv = NetSettlementWorkerEnv & StrytreeLedgerEnv & {
+export type AgenticGraphPaymentWorkerEnv = NetSettlementWorkerEnv & StrytreeLedgerEnv & AgenticCommercePaidResourceWorkerEnv & {
   DB: unknown
   STRYTREE_CREDIT_LEDGER?: unknown
   STRYTREE_GENERATION_QUEUE?: unknown
@@ -42,7 +47,8 @@ type QueueBatchLike = {
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,stripe-signature,xfers-signature,strytree-signature,idempotency-key,api-version,x-agentic-graph-component',
+  'access-control-allow-headers': 'content-type,authorization,stripe-signature,xfers-signature,strytree-signature,idempotency-key,payment-signature,api-version,x-agentic-graph-component',
+  'access-control-expose-headers': 'payment-required,payment-response',
   'access-control-max-age': '86400',
 }
 
@@ -68,6 +74,9 @@ const handlePaymentRequest = async (
   env: AgenticGraphPaymentWorkerEnv,
   db: D1DatabaseLike,
 ): Promise<Response> => {
+  if (isAgenticCommercePaidResourceRoute(new URL(request.url).pathname)) {
+    return handleAgenticCommercePaidResourceRoute(request, env, db, CORS_HEADERS)
+  }
   const travelAgencyResponse = await handleTravelAgencyRoute(request, env, CORS_HEADERS)
   if (travelAgencyResponse) return travelAgencyResponse
   const strytreeResponse = await handleStrytreeRoute(request, env, db, CORS_HEADERS)
@@ -96,6 +105,7 @@ export const createAgenticGraphPaymentWorker = () => ({
       && !isPaymentRuntimeRoute(url.pathname)
       && !isStripePaymentRoute(url.pathname)
       && !isTravelAgencyRoute(url.pathname)
+      && !isAgenticCommercePaidResourceRoute(url.pathname)
     ) {
       return paymentWorkerError(404, 'payment route not found')
     }
@@ -109,9 +119,8 @@ export const createAgenticGraphPaymentWorker = () => ({
     if (!db) return paymentWorkerError(500, 'missing Cloudflare D1 binding DB')
     try {
       return await handlePaymentRequest(request, env, db)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'unexpected payment worker error'
-      return paymentWorkerError(500, message)
+    } catch {
+      return paymentWorkerError(500, 'unexpected payment worker error')
     }
   },
 

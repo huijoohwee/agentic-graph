@@ -338,6 +338,11 @@
       "import": "./dist/payments/agenticCommerceSsot.js",
       "default": "./dist/payments/agenticCommerceSsot.js"
     },
+    "./payments/agenticCommercePaidResourceSsot": {
+      "types": "./dist/payments/agenticCommercePaidResourceSsot.d.ts",
+      "import": "./dist/payments/agenticCommercePaidResourceSsot.js",
+      "default": "./dist/payments/agenticCommercePaidResourceSsot.js"
+    },
     "./payments/agenticCommerceSolanaPaySsot": {
       "types": "./dist/payments/agenticCommerceSolanaPaySsot.d.ts",
       "import": "./dist/payments/agenticCommerceSolanaPaySsot.js",
@@ -513,6 +518,7 @@
   },
   "dependencies": {
     "fflate": "^0.8.3",
+    "ripple-address-codec": "5.0.1",
     "yjs": "^13.6.31"
   }
 }
