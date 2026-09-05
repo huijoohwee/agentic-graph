@@ -1,3 +1,4 @@
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parse as parseYaml } from 'yaml'
@@ -22,7 +23,7 @@ const readTemplateText = (): string => {
   const externalValidationInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   const templatePath = externalValidationInput && path.basename(externalValidationInput) === STORYBOARD_2D_RENDERER_TEMPLATE_NAME
     ? externalValidationInput
-    : path.resolve(process.cwd(), '../..', 'huijoohwee.github.io', 'template', STORYBOARD_2D_RENDERER_TEMPLATE_NAME)
+    : resolveSiblingFixturePath('huijoohwee.github.io', `template/${STORYBOARD_2D_RENDERER_TEMPLATE_NAME}`)
   return fs.readFileSync(templatePath, 'utf8')
 }
 

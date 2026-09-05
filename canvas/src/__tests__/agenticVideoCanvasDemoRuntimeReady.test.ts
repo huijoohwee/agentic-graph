@@ -1,3 +1,4 @@
+import { resolvePinnedAgenticDocsRoot } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -24,7 +25,6 @@ type PlainRecord = Record<string, unknown>
 const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
 const DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agentic-graph-agentic-video-canvas-demo.md')
 const SCRIPT_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'AI视频-港岛实景写实风-异城算计与女主绝境求生-终极统一执行总表.md')
-const PROMPT_CATALOG_PATH = path.join(GITHUB_ROOT, 'agentic-canvas-os', 'docs', 'PROMPT-PRESETS.md')
 const TEXT_PACKAGE_SHEETS = ['Character sheet', 'Scene sheet', 'Dialogue sheet', 'Visual asset sheet', 'Audio sheet', 'Timing sheet', 'Metadata sheet', 'Prompt sheet'] as const
 
 const isRecord = (value: unknown): value is PlainRecord => (
@@ -58,8 +58,8 @@ const nodeById = (nodes: PlainRecord[], id: string): PlainRecord => {
 
 const property = (node: PlainRecord, key: string): unknown => unwrap(node[key])
 
-export function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes() {
-  const catalogText = fs.readFileSync(PROMPT_CATALOG_PATH, 'utf8')
+export async function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes() {
+  const catalogText = fs.readFileSync(path.join(await resolvePinnedAgenticDocsRoot(), 'PROMPT-PRESETS.md'), 'utf8')
   const catalog = readFrontmatter(catalogText)
   const presets = Array.isArray(catalog.prompt_presets) ? catalog.prompt_presets.filter(isRecord) : []
   if (catalog.schema !== 'agentic-os-prompt-preset-catalog/v1') {
@@ -107,7 +107,7 @@ export function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes() {
   }
 }
 
-export function testAgenticVideoCanvasDemoIsExecutableAndReplayable() {
+export async function testAgenticVideoCanvasDemoIsExecutableAndReplayable() {
   const markdownText = fs.readFileSync(DOC_PATH, 'utf8')
   const meta = readFrontmatter(markdownText)
   if (!fs.existsSync(SCRIPT_PATH)) throw new Error('expected the bound video-generation demo script')
@@ -124,7 +124,7 @@ export function testAgenticVideoCanvasDemoIsExecutableAndReplayable() {
     throw new Error('expected the authored source binding to preserve the canonical workspace docs path')
   }
   if (inputs.prompt_preset_id !== 'video-agent') throw new Error('expected the Video Canvas to bind the centralized video-agent prompt preset')
-  const promptCatalog = readFrontmatter(fs.readFileSync(PROMPT_CATALOG_PATH, 'utf8'))
+  const promptCatalog = readFrontmatter(fs.readFileSync(path.join(await resolvePinnedAgenticDocsRoot(), 'PROMPT-PRESETS.md'), 'utf8'))
   const promptPresets = Array.isArray(promptCatalog.prompt_presets) ? promptCatalog.prompt_presets.filter(isRecord) : []
   const videoPromptPreset = promptPresets.find(preset => preset.id === 'video-agent')
   if (!videoPromptPreset || videoPromptPreset.slash_command !== '/video-prompt-preset' || videoPromptPreset.runtime_command !== '/video-agent') {

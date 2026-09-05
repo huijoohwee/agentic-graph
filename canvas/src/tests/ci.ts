@@ -423,6 +423,8 @@ if (!g.ResizeObserver) {
 }
 
 async function main() {
+  const { installReactRootLifecycle } = await import('@/tests/lib/reactRootLifecycle')
+  installReactRootLifecycle(appRequire('react-dom/client'), appRequire('react').act)
   const { completeSourceFilesBootstrap } = await import('@/features/source-files/sourceFilesBootstrapReadiness')
   completeSourceFilesBootstrap()
   const { runAllTests } = await import('@/tests/run')

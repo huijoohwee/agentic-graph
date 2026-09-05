@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 
 export function testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective() {
-  const headersPath = resolve(process.cwd(), '..', '..', 'huijoohwee', '_headers')
+  const headersPath = resolveSiblingFixturePath('huijoohwee', '_headers')
   const headersText = readFileSync(headersPath, 'utf8')
   const routeMarker = '/agentic-graph/*'
   const routeStart = headersText.indexOf(routeMarker)
@@ -20,7 +20,7 @@ export function testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective() {
 }
 
 export function testAgenticGraphAppShellHtmlAddsNoTransformForCloudflareJsd() {
-  const headersPath = resolve(process.cwd(), '..', '..', 'huijoohwee', '_headers')
+  const headersPath = resolveSiblingFixturePath('huijoohwee', '_headers')
   const headersText = readFileSync(headersPath, 'utf8')
   for (const route of ['/content/agentic-graph/index.html', '/agentic-graph', '/agentic-graph/', '/agentic-graph/index.html']) {
     const escapedRoute = route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

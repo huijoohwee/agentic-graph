@@ -1,5 +1,6 @@
 import { JSDOM } from 'jsdom'
 import { sanitizeNodeTestFlags } from '@/tests/lib/sanitizeNodeTestFlags'
+import { disposeReactRootsForDocument } from '@/tests/lib/reactRootLifecycle'
 
 export type JsdomHarnessEnv = {
   dom: JSDOM
@@ -398,7 +399,7 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     render: async () => ({ svg: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"></svg>' }),
   }
 
-  const restore = () => {
+  const restoreEnvironment = () => {
     for (const timeout of animationFrameTimeouts) clearTimeout(timeout)
     animationFrameTimeouts.clear()
     activeAnimationFrameTimeoutSets.delete(animationFrameTimeouts)
@@ -542,6 +543,16 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     }
 
     dom.window.close()
+  }
+
+  const restore = () => {
+    const errors: unknown[] = []
+    try { disposeReactRootsForDocument(dom.window.document) } catch (error) { errors.push(error) }
+    finally {
+      try { restoreEnvironment() } catch (error) { errors.push(error) }
+    }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length) throw new AggregateError(errors, errors.map(error => String((error as Error)?.message ?? error)).join('; '))
   }
 
   return { dom, restore }
