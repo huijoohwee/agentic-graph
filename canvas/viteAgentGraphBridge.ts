@@ -17,6 +17,7 @@ import {
   sanitizeAgentGraphImportResult,
 } from './viteAgentGraphIngestSanitizer'
 import { runAgentGraphTool } from '../mcp/agent-graph-host.js'
+import { assertNoRetiredAgentGraphEnvironment } from '../mcp/agent-graph/environment.mjs'
 import { selectAgentGraphOutputRoot } from '../mcp/agent-graph/storage-root.mjs'
 
 const INGEST_TOOL_NAME = 'agentic-graph.agent_graph.ingest'
@@ -305,11 +306,11 @@ function ingestArguments(
 export function createAgentGraphBridgeRequestHandler(options: BridgeOptions) {
   const repoRoot = path.resolve(options.repoRoot)
   const env = options.env || process.env
+  assertNoRetiredAgentGraphEnvironment(env)
   const now = options.now || Date.now
   const hostDataRoot = path.resolve(
     options.hostDataRoot
       || env.AGENTIC_OS_AGENT_GRAPH_HOST_ROOT
-      || env.AGENTIC_OS_KNOWLEDGE_GRAPH_HOST_ROOT
       || path.join(repoRoot, 'data', 'outputs', 'agent-graph-host'),
   )
   const uploadRoot = path.join(hostDataRoot, 'uploads')
@@ -317,17 +318,13 @@ export function createAgentGraphBridgeRequestHandler(options: BridgeOptions) {
   const outputRoot = selectAgentGraphOutputRoot({
     rootDir: repoRoot,
     configuredRoot: env.AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT,
-    legacyConfiguredRoot: env.AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT,
   })
   const runtimeEnv = {
     ...env,
     AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS: [
       corpusRoot,
-      ...String(
-        env.AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS
-          || env.AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS
-          || '',
-      ).split(path.delimiter).filter(Boolean),
+      ...String(env.AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS || '')
+        .split(path.delimiter).filter(Boolean),
     ].join(path.delimiter),
     AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT: outputRoot,
   }

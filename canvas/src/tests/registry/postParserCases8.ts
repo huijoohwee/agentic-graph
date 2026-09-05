@@ -240,6 +240,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["workspace.import.agentGraph.previewAggregateByteBudget","@/__tests__/agentGraphCanvasPreviewBudget.test","testAgentGraphCanvasPreviewFitsAggregateProgressWithinDecoratedByteBudget"],
   ["workspace.import.agentGraph.projectionFailureNoFallback","@/__tests__/agentGraphLaunchIntegration.test","testAgentGraphProjectionFailureNeverFallsBackAfterCanonicalResult"],
   ["workspace.import.agentGraph.viteHostDefaultRuntime","@/__tests__/agentGraphViteHostRuntime.test","testAgentGraphViteHostUsesStartupBoundDefaultRuntime"],
+  ["workspace.import.agentGraph.viteHostRetiredEnvRejected","@/__tests__/agentGraphViteHostRuntime.test","testAgentGraphViteHostRejectsRetiredEnvironmentKeys"],
   ["workspace.import.agentGraph.viteHostProgressStream","@/__tests__/agentGraphViteHostRuntime.test","testAgentGraphViteHostStreamsSanitizedSourceProgress"],
   ["workspace.import.agentGraph.viteHostFailureServerOnly","@/__tests__/agentGraphViteHostRuntime.test","testAgentGraphViteHostKeepsUnknownFailureDetailsServerOnly"],
   ["workspace.import.agentGraph.hostParserRegistryDigestBoundary","@/__tests__/agentGraphParserRegistryDigestBoundary.test","testAgentGraphBrowserHostParserRegistryDigestBoundary"],

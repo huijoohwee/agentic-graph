@@ -1,12 +1,32 @@
 ---
+schema: "agentic-graph-runtime-readiness/v1"
 title: "agentic-graph Runtime Readiness Contract"
 doc_type: "Runtime Contract"
 status: "active"
 contract_version: 1
+version: "1.0.0"
+date: "2026-09-05"
+lang: "en-US"
 frontmatter_contract: "required"
+owner: "agentic-graph runtime-readiness"
+local_rung: "runtime-ready"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
+agent_id: "codex:graph_frontmatter_and_docs"
+doc_path: "docs/runtime-readiness-contract.md"
+guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md@2.4.0"
+production_release_authorized: false
+evidence_references:
+  - check: "npm run ci:integration"
+    result: "passed: runtime-ready status, 2224 runtime tests, 43 storage-relay tests, and 23 repository-pack tests"
+    surface: "authoring"
+    observed_at: "2026-09-05"
 invocation:
   action: "/runtime-ready.check"
-  semantic: "#runtime-ready"
+  semantics: ["#harness", "#vcc", "#runtime-ready"]
+  bindings: ["@local-harness", "@runtime-proof", "@repository-root"]
   actor: "@local-harness"
 stage_contract:
   module: "mcp/video-remix/stage-contract.js"

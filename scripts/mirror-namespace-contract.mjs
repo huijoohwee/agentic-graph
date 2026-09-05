@@ -44,10 +44,9 @@ export const LEGACY_MIRROR_ROOT_INVENTORIES = Object.freeze({
   }),
 })
 
-export const LEGACY_MIRROR_EXACT_PATHS = Object.freeze([
+export const LEGACY_MIRROR_TRACKED_EXACT_PATHS = Object.freeze([
   'functions/agenticgraph-agent-ready-shared.mjs',
   '.well-known/mcp/apps/agenticgraph-agent-ready.html',
-  'image/knowgrph/.DS_Store',
   'canvas/src/features/agent-ready/agenticgraphAgentReadyOutputSchemas.mjs',
   'canvas/src/features/agent-ready/agenticgraphAgentReadyPromptContract.mjs',
   'canvas/src/features/agent-ready/agenticgraphAgentReadyResourceContract.mjs',
@@ -68,6 +67,15 @@ export const LEGACY_MIRROR_EXACT_PATHS = Object.freeze([
   'docs_/agenticgraph/agenticgraph.md',
   'docs_/agenticgraph-rich-media-canvas-readme.pdf',
   'docs_/airvio-agenticgraph.png',
+])
+
+export const LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS = Object.freeze([
+  'image/knowgrph/.DS_Store',
+])
+
+export const LEGACY_MIRROR_EXACT_PATHS = Object.freeze([
+  ...LEGACY_MIRROR_TRACKED_EXACT_PATHS,
+  ...LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS,
 ])
 
 export const LEGACY_MIRROR_NAMED_FILE_PATHS = Object.freeze([
@@ -91,6 +99,13 @@ export const LEGACY_MIRROR_NAMED_FILE_PATHS = Object.freeze([
 export const LEGACY_MIRROR_EXACT_FILE_INVENTORY = Object.freeze({
   count: 23,
   contentDigest: '74c8327b0f202e113f18de103691d639c24b994575e2021d340574ac22c62c2f',
+})
+
+// Git inventories exclude ignored live-only files while preserving the live
+// 23-file seal above for filesystem cleanup.
+export const LEGACY_MIRROR_TRACKED_EXACT_FILE_INVENTORY = Object.freeze({
+  count: 22,
+  contentDigest: '047c6fa93138261ec94020cdf032414442feaa128cdd42c3e7c25dea823945b8',
 })
 
 export const LEGACY_MIRROR_NAMED_FILE_INVENTORY = Object.freeze({

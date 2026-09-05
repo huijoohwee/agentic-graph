@@ -1,4 +1,10 @@
-import { checkAgentGraphBudget, compareStableStrings, AgentGraphError, sha256 } from "./contract.mjs";
+import {
+  checkAgentGraphBudget,
+  compareStableStrings,
+  AgentGraphError,
+  AGENT_GRAPH_SCHEMA_VERSION,
+  sha256,
+} from "./contract.mjs";
 import {
   readAgentGraphRepositoryIndex,
   readAgentGraphResolutionShards,
@@ -392,7 +398,12 @@ export async function explainAgentGraphSnapshotEdge(snapshot, edgeIdRaw, options
     return explainAgentGraphEdgeFromArtifact({
       nodes,
       edges: [edge],
-      metadata: { knowledgeGraph: { digest: snapshot.pointer.snapshotDigest } },
+      metadata: {
+        agentGraph: {
+          schemaVersion: AGENT_GRAPH_SCHEMA_VERSION,
+          snapshotDigest: snapshot.pointer.snapshotDigest,
+        },
+      },
     }, edgeId, { checkpoint });
   }
   throw new AgentGraphError("edge_not_found", `Knowledge graph edge was not found: ${edgeId}`);

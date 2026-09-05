@@ -200,7 +200,8 @@ async function ingestResolvedTransaction(
     })
     : null;
   checkAgentGraphBudget({ ...budget, stage: "previous-snapshot-read" });
-  const registryMatchesPrevious = previousSnapshot?.manifest?.parserRegistryDigest === parserRegistry.digest;
+  const registryMatchesPrevious = previousSnapshot?.schemaFamily === "canonical"
+    && previousSnapshot.manifest?.parserRegistryDigest === parserRegistry.digest;
   const previousEntries = new Map(
     (previousSnapshot && registryMatchesPrevious
       ? await listAgentGraphSourceEntries(previousSnapshot)

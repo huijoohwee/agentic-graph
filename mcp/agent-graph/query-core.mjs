@@ -1,7 +1,9 @@
 import {
+  agentGraphArtifactSnapshotDigest,
   checkAgentGraphBudget,
   compareStableStrings,
   AgentGraphError,
+  readAgentGraphArtifactMetadata,
 } from "./contract.mjs";
 
 const asRecord = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -343,7 +345,7 @@ function traverseNeighborhood(access, startNodeId, {
 function baseResult(artifact, mode) {
   return {
     mode,
-    snapshotDigest: artifact.metadata.knowledgeGraph.digest,
+    snapshotDigest: agentGraphArtifactSnapshotDigest(artifact),
     retrieval: { mode: "lexical-graph", vectorStore: false },
     cost: { modelCalls: 0, promptTokens: 0, completionTokens: 0, estimatedCostUsd: 0 },
   };
@@ -388,7 +390,7 @@ function summarize(access, artifact, checkpoint) {
     nodeTypes: countBy(access.nodes, (node) => String(node.type || "Entity")),
     edgeLabels: countBy(access.edges, (edge) => String(edge.label || "relatedTo")),
     sources: artifact.manifest?.sources?.length || 0,
-    parserCoverage: artifact.metadata.knowledgeGraph.parserCoverage || {},
+    parserCoverage: readAgentGraphArtifactMetadata(artifact)?.value.parserCoverage || {},
     diagnostics: artifact.diagnostics || [],
     mostConnected: connected,
     completeness: { complete: true, truncated: false, reason: "full_graph_summary" },
@@ -529,7 +531,7 @@ export function explainAgentGraphEdgeFromArtifact(artifact, edgeIdRaw, options =
   if (!edge) throw new AgentGraphError("edge_not_found", `Knowledge graph edge was not found: ${edgeId}`);
   const properties = asRecord(edge.properties);
   return {
-    snapshotDigest: artifact.metadata.knowledgeGraph.digest,
+    snapshotDigest: agentGraphArtifactSnapshotDigest(artifact),
     edge,
     source: access.nodeById.get(edge.source),
     target: access.nodeById.get(edge.target),

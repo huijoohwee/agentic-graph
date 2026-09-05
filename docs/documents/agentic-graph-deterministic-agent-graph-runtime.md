@@ -1,16 +1,52 @@
 ---
+schema: "agentic-graph-runtime-contract/v1"
 title: "agentic-graph Deterministic Agent-Graph Runtime"
 doc_type: "Runtime Contract"
 id: "agentic-graph-deterministic-agent-graph-runtime"
-version: "1.1.1"
+version: "1.2.0"
+date: "2026-09-05"
 status: "active"
 created: "2026-07-22"
-updated: "2026-07-31"
+updated: "2026-09-05"
 author: "airvio / joohwee"
 domain: "agentic-graph"
 lang: "en-US"
 frontmatter_contract: "required"
+owner: "agent-graph runtime"
+local_rung: "runtime-ready"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
+agent_id: "codex:graph_frontmatter_and_docs"
+doc_path: "docs/documents/agentic-graph-deterministic-agent-graph-runtime.md"
+guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md@2.4.0"
+production_release_authorized: false
+evidence_references:
+  - check: "npm run agent-graph:check"
+    result: "passed: 105 MCP tests and 2 Canvas projection tests"
+    surface: "authoring"
+    observed_at: "2026-09-05"
+  - check: "npm run ci:integration"
+    result: "passed: affected integration gate"
+    surface: "authoring"
+    observed_at: "2026-09-05"
 runtime_surface: "local-stdio-mcp"
+invocation:
+  action: "/agentic.graph.ingest"
+  semantics: ["#agentic-graph", "#mcp", "#runtime-ready"]
+  bindings: ["@working-directory", "@agentic-graph", "@operator", "@runtime-proof"]
+  actor: "@operator"
+runtime:
+  product_identity: "agentic-graph"
+  feature_identity: "agent-graph"
+  owner: "agentic-graph"
+  readiness: "runtime-ready"
+  delivery_scope: "local-stdio-mcp"
+  canonical_writers_only: true
+  legacy_reader_policy: "exact-pre-rename-schema-family-only"
+  network_default: "deny"
+  model_call_count: 0
 implementation_policy: "Independently authored in-repository contracts and runtime; no copied parser generator, graph runtime, remote parsing service, or external conformance oracle."
 constraints:
   - "deterministic"
@@ -79,6 +115,9 @@ local corpus or acquired immutable repository -> verified parser-registry v2 -> 
 - The MCP surface is an adapter over shared graph contracts, not a new graph owner.
 - The deterministic runtime does not require Neo4j, a vector database, an embedding index, or an external parsing service.
 - Optional FloatingPanel Chat answer synthesis remains a separate downstream harness concern and is not part of these four tools.
+- New pointers, manifests, indexes, shards, bundles, parts, and materialized metadata use only the canonical agent-graph schema family. Readers accept the exact pre-rename family as one complete family and reject mixed-family artifacts; the next ingest reparses it into canonical objects rather than reusing legacy writes.
+- The pre-rename ingest-lock identity remains unchanged so upgraded and predecessor processes serialize the same corpus. Host configuration accepts only `AGENTIC_OS_AGENT_GRAPH_*`; automatic discovery of an existing pre-rename output directory is retained solely to keep stored snapshots reachable.
+- A materialized artifact records the source snapshot as `snapshotDigest` and its own content digest as `digest`; neither field substitutes for the other.
 
 Repository URLs are input data, not routing identities. Acquisition is selected
 from the source-backed command and capability contract, while host admission is

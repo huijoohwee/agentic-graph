@@ -4,11 +4,12 @@ import {
 } from "./contract.mjs";
 import { assertExplainedEdges } from "./store-records.mjs";
 
-// These durable schema values are content-addressed and cannot be renamed in place.
-export const AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA = "agentic-graph-knowledge-graph-repository-index/v3";
+export const AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA = "agentic-graph-agent-graph-repository-index/v3";
+export const LEGACY_AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V3 = "agentic-graph-knowledge-graph-repository-index/v3";
 export const AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V2 = "agentic-graph-knowledge-graph-repository-index/v2";
 export const AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V1 = "agentic-graph-knowledge-graph-repository-index/v1";
-export const AGENT_GRAPH_RESOLUTION_SHARD_SCHEMA = "agentic-graph-knowledge-graph-resolution-shard/v1";
+export const AGENT_GRAPH_RESOLUTION_SHARD_SCHEMA = "agentic-graph-agent-graph-resolution-shard/v1";
+export const LEGACY_AGENT_GRAPH_RESOLUTION_SHARD_SCHEMA = "agentic-graph-knowledge-graph-resolution-shard/v1";
 export const MAX_RESOLUTION_SHARD_DIGESTS = 200_000;
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -30,6 +31,7 @@ export function resolutionShardDigestsForIndex(index, options = {}) {
   const hasPlural = hasOwn(index, "resolutionShardDigests");
   let digests;
   if (index?.schema === AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA
+    || index?.schema === LEGACY_AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V3
     || index?.schema === AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V2) {
     if (!hasPlural || hasSingular || !Array.isArray(index.resolutionShardDigests)) {
       throw invalid(code, repositoryId, "Repository index has an invalid v2 resolution shape");
@@ -84,6 +86,15 @@ export function expectedResolutionEdgeCount(index, repository = null, options = 
 }
 
 export function createResolutionShardValidation(index, repository = null) {
+  const canonical = index?.schema === AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA;
+  const legacy = [
+    LEGACY_AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V3,
+    AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V2,
+    AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V1,
+  ].includes(index?.schema);
+  if (!canonical && !legacy) {
+    throw invalid("resolution_shard_invalid", index?.repositoryId, "Repository index schema is invalid");
+  }
   return {
     digests: resolutionShardDigestsForIndex(index, { code: "resolution_shard_invalid" }),
     edgeCount: 0,
@@ -92,11 +103,12 @@ export function createResolutionShardValidation(index, repository = null) {
     }),
     lastEdgeId: "",
     repositoryId: index.repositoryId,
+    schema: canonical ? AGENT_GRAPH_RESOLUTION_SHARD_SCHEMA : LEGACY_AGENT_GRAPH_RESOLUTION_SHARD_SCHEMA,
   };
 }
 
 export function validateResolutionShard(shard, state, checkpoint = () => {}) {
-  if (shard?.schema !== AGENT_GRAPH_RESOLUTION_SHARD_SCHEMA
+  if (shard?.schema !== state.schema
     || shard.repositoryId !== state.repositoryId
     || !Array.isArray(shard.nodes)
     || shard.nodes.length !== 0

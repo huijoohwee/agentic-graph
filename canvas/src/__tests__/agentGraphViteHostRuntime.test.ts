@@ -1,9 +1,11 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 
 import { createAgentGraphBridgeRequestHandler } from '../../viteAgentGraphBridge'
+import { RETIRED_AGENT_GRAPH_ENVIRONMENT_KEYS } from '../../../mcp/agent-graph/environment.mjs'
 import { SOURCE_PARSER_REGISTRY } from '../../../mcp/agent-graph/source-parser-registry.mjs'
 
 async function listen(server: Server): Promise<number> {
@@ -20,6 +22,26 @@ async function close(server: Server): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     server.close(error => error ? reject(error) : resolve())
   })
+}
+
+export function testAgentGraphViteHostRejectsRetiredEnvironmentKeys() {
+  for (const key of RETIRED_AGENT_GRAPH_ENVIRONMENT_KEYS) {
+    assert.throws(
+      () => createAgentGraphBridgeRequestHandler({
+        repoRoot: path.resolve(process.cwd(), '..'),
+        env: {
+          AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT: 'canonical-output',
+          [key]: '',
+        },
+      }),
+      (error: unknown) => (
+        error instanceof Error
+        && (error as Error & { code?: string }).code === 'retired_environment'
+        && error.message.includes(key)
+      ),
+      key,
+    )
+  }
 }
 
 export async function testAgentGraphViteHostUsesStartupBoundDefaultRuntime() {

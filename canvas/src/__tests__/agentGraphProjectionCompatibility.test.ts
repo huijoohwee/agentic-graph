@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import {
+  hasSameReadOnlyAgentGraphProjectionIdentity,
+  isReadOnlyAgentGraphProjection,
+} from '@/features/agent-graph/agentGraphProjectionPolicy'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -42,4 +46,35 @@ test('a persisted pre-rename projection remains read-only after upgrade', () => 
     useGraphStore.getState().resetAll()
     restore()
   }
+})
+
+test('projection compatibility accepts only one exact metadata family', () => {
+  const canonicalProjection = {
+    ...legacyProjection,
+    metadata: {
+      kind: 'agent-graph',
+      agentGraphProjection: {
+        owner: 'agent-graph-runtime',
+        readOnly: true,
+        graphId: `kg:graph:${'1'.repeat(32)}`,
+        snapshotDigest: 'a'.repeat(64),
+        projectionToken: `kg:projection:${'2'.repeat(24)}`,
+      },
+    },
+  } as unknown as GraphData
+  assert.equal(isReadOnlyAgentGraphProjection(canonicalProjection), true)
+  assert.equal(hasSameReadOnlyAgentGraphProjectionIdentity(legacyProjection, canonicalProjection), false)
+  assert.equal(isReadOnlyAgentGraphProjection({
+    ...canonicalProjection,
+    metadata: {
+      ...canonicalProjection.metadata,
+      knowledgeGraphPreview: {
+        owner: 'knowledge-graph-runtime-preview',
+        readOnly: true,
+        graphId: `kg:graph:${'1'.repeat(32)}`,
+        parserRegistryDigest: 'b'.repeat(64),
+        complete: false,
+      },
+    },
+  }), false)
 })

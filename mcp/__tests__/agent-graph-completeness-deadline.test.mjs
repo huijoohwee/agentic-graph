@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -13,43 +12,14 @@ import {
   readAgentGraphSourceBundle,
   readAgentGraphSourceShard,
 } from "../agent-graph/store.mjs";
-
-async function fixture(t, options = {}) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-completeness-"));
-  t.after(() => fs.rm(base, { recursive: true, force: true }));
-  const corpusRoot = path.join(base, "corpus");
-  const outputRoot = path.join(base, "output");
-  await fs.mkdir(corpusRoot, { recursive: true });
-  const runtime = createAgentGraphRuntime({
-    agenticGraphRoot: base,
-    allowedRoots: [corpusRoot],
-    outputRoot,
-    ...options,
-  });
-  return { base, corpusRoot, outputRoot, runtime };
-}
-
-const pointerPath = (value, graphId) => path.join(
-  value.outputRoot,
-  "graphs",
-  `${graphId.slice("kg:graph:".length)}.json`,
-);
-
-async function storedObjects(graphPointer) {
-  const objectsRoot = path.join(agentGraphStoreRoot(graphPointer), "objects");
-  const prefixes = await fs.readdir(objectsRoot, { withFileTypes: true });
-  const values = [];
-  for (const prefix of prefixes.filter((entry) => entry.isDirectory())) {
-    const files = await fs.readdir(path.join(objectsRoot, prefix.name));
-    for (const file of files.filter((name) => name.endsWith(".json"))) {
-      values.push(JSON.parse(await fs.readFile(path.join(objectsRoot, prefix.name, file), "utf8")));
-    }
-  }
-  return values;
-}
+import {
+  createCompletenessFixture,
+  pointerPath,
+  storedObjects,
+} from "./agent-graph-completeness-test-support.mjs";
 
 test("aggregate resolution limits roll back streamed shards without publishing a failed snapshot", async (t) => {
-  const value = await fixture(t);
+  const value = await createCompletenessFixture(t);
   const original = "# Original\n";
   const changed = "# Changed\n";
   await fs.writeFile(path.join(value.corpusRoot, "a.md"), original);
@@ -70,8 +40,7 @@ test("aggregate resolution limits roll back streamed shards without publishing a
   assert.equal(limited.error.details.maxRecords, 1);
   assert.equal(await fs.readFile(graphPointer, "utf8"), before);
   const objects = await storedObjects(graphPointer);
-  assert.ok(!objects.some((object) => object.schema === "agentic-graph-knowledge-graph-source-shard/v1"
-    && object.sourcePath === "a.md"
+  assert.ok(!objects.some((object) => object.sourcePath === "a.md"
     && object.contentHash === sha256(changed)));
 
   const byteLimited = await value.runtime.ingest({
@@ -86,7 +55,7 @@ test("aggregate resolution limits roll back streamed shards without publishing a
 });
 
 test("skipped sources remain incomplete while verified inventory fallback stays queryable", async (t) => {
-  const value = await fixture(t);
+  const value = await createCompletenessFixture(t);
   await fs.writeFile(path.join(value.corpusRoot, "ok.md"), "# OK\n");
   await fs.writeFile(path.join(value.corpusRoot, "large.md"), `# Large\n${"x".repeat(64)}\n`);
   await fs.writeFile(path.join(value.corpusRoot, "unknown.zzz"), "opaque but admitted\n");
@@ -171,7 +140,7 @@ test("skipped sources remain incomplete while verified inventory fallback stays 
 test("the operation deadline spans PDF conversion and preserves the previous pointer", async (t) => {
   let clock = 0;
   let expireDuringConversion = false;
-  const value = await fixture(t, {
+  const value = await createCompletenessFixture(t, {
     now: () => clock,
     pdfConverterVersion: "deadline-fixture",
     pdfConverter: async () => {
@@ -205,7 +174,7 @@ test("the operation deadline spans PDF conversion and preserves the previous poi
 });
 
 test("parser record caps stop graph construction before an oversized fragment is stored", async (t) => {
-  const value = await fixture(t);
+  const value = await createCompletenessFixture(t);
   await fs.writeFile(
     path.join(value.corpusRoot, "many.md"),
     Array.from({ length: 20 }, (_, index) => `paragraph ${index}`).join("\n"),
@@ -264,7 +233,7 @@ test("parser record caps stop graph construction before an oversized fragment is
 });
 
 test("dense generated JavaScript retains its complete AST graph within separate operation and record bounds", async (t) => {
-  const value = await fixture(t, { maxParserOperations: 60_000 });
+  const value = await createCompletenessFixture(t, { maxParserOperations: 60_000 });
   const baselinePath = path.join(value.corpusRoot, "a.md");
   const bundleDirectory = path.join(value.corpusRoot, "z-dist");
   const bundlePath = path.join(bundleDirectory, "dense-runtime.bundle.js");
@@ -419,7 +388,7 @@ test("dense generated JavaScript retains its complete AST graph within separate 
 
 test("strict ingest persists an oversized source graph as bounded complete parts", async (t) => {
   const maxSourceShardBytes = 32_768;
-  const value = await fixture(t, {
+  const value = await createCompletenessFixture(t, {
     maxSourceShardBytes,
     maxSourcePartTargetBytes: 16_384,
   });
@@ -492,7 +461,7 @@ test("strict ingest persists an oversized source graph as bounded complete parts
 });
 
 test("a tighter source part ceiling reparses once and then reuses the bounded bundle", async (t) => {
-  const value = await fixture(t);
+  const value = await createCompletenessFixture(t);
   await fs.writeFile(
     path.join(value.corpusRoot, "large.md"),
     Array.from({ length: 200 }, (_, index) => `## Section ${index}\nparagraph ${index}`).join("\n"),
@@ -522,7 +491,7 @@ test("a tighter source part ceiling reparses once and then reuses the bounded bu
 
 test("non-strict ingest fails closed when an existing source object is oversized", async (t) => {
   const maxSourceShardBytes = 16_384;
-  const value = await fixture(t, { maxSourceShardBytes });
+  const value = await createCompletenessFixture(t, { maxSourceShardBytes });
   await fs.writeFile(path.join(value.corpusRoot, "small.md"), "# Small\n");
   const first = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
   assert.equal(first.ok, true, JSON.stringify(first));
@@ -559,7 +528,7 @@ test("non-strict ingest fails closed when an existing source object is oversized
 test("query and explain deadlines remain active after snapshot acquisition", async (t) => {
   let enforceDeadline = false;
   let clockCalls = 0;
-  const value = await fixture(t, {
+  const value = await createCompletenessFixture(t, {
     now: () => {
       if (!enforceDeadline) return 0;
       clockCalls += 1;

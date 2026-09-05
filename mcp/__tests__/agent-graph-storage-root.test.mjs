@@ -30,15 +30,14 @@ test("the canonical environment setting resolves ambiguity", () => {
   assert.equal(selectAgentGraphOutputRoot({
     rootDir,
     configuredRoot: "current",
-    legacyConfiguredRoot: "legacy",
     pathExists: () => true,
   }), path.resolve(rootDir, "current"));
 });
 
-test("the pre-rename environment setting remains a bounded fallback", () => {
+test("a removed pre-rename environment setting cannot select a storage root", () => {
   assert.equal(selectAgentGraphOutputRoot({
     rootDir,
     legacyConfiguredRoot: "retained",
     pathExists: () => false,
-  }), path.resolve(rootDir, "retained"));
+  }), currentRoot);
 });

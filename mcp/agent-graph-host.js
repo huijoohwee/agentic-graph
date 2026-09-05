@@ -10,6 +10,10 @@ import {
   createAgentGraphRuntime,
   AGENT_GRAPH_TOOL_NAMES,
 } from "./agent-graph/runtime.mjs";
+import {
+  findRetiredAgentGraphEnvironmentKeys,
+  retiredAgentGraphEnvironmentMessage,
+} from "./agent-graph/environment.mjs";
 import { selectAgentGraphOutputRoot } from "./agent-graph/storage-root.mjs";
 import { verifyAgentGraphInvocation } from "./agent-graph-invocation-proof.js";
 
@@ -33,12 +37,6 @@ const inputValidators = Object.freeze(Object.fromEntries(
   Object.entries(AGENT_GRAPH_INPUT_SCHEMAS).map(([operation, schema]) => [operation, ajv.compile(schema)]),
 ));
 const invocationValidator = ajv.compile(AGENT_GRAPH_INVOCATION_PROOF_SCHEMA);
-
-const renamedEnv = (env, currentName, legacyName) => (
-  String(env[currentName] || "").trim()
-    ? env[currentName]
-    : env[legacyName]
-);
 
 const failure = (operation, code, message) => ({
   schema: RESULT_SCHEMA[operation],
@@ -72,12 +70,12 @@ function validateArguments(operation, args) {
 function runtimeKey(rootDir, env) {
   return JSON.stringify([
     rootDir,
-    renamedEnv(env, "AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS", "AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS") || "",
-    renamedEnv(env, "AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT", "AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT") || "",
-    renamedEnv(env, "AGENTIC_OS_AGENT_GRAPH_PDF_TIMEOUT_MS", "AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS") || "",
-    renamedEnv(env, "AGENTIC_OS_AGENT_GRAPH_PDF_MAX_OUTPUT_BYTES", "AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES") || "",
-    renamedEnv(env, "AGENTIC_OS_AGENT_GRAPH_REPOSITORY_HOSTS", "AGENTIC_OS_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS") || "",
-    renamedEnv(env, "AGENTIC_OS_AGENT_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK", "AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK") || "",
+    env.AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS || "",
+    env.AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT || "",
+    env.AGENTIC_OS_AGENT_GRAPH_PDF_TIMEOUT_MS || "",
+    env.AGENTIC_OS_AGENT_GRAPH_PDF_MAX_OUTPUT_BYTES || "",
+    env.AGENTIC_OS_AGENT_GRAPH_REPOSITORY_HOSTS || "",
+    env.AGENTIC_OS_AGENT_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK || "",
     env.AGENTIC_OS_PYTHON || "",
   ]);
 }
@@ -86,11 +84,7 @@ function getRuntime({ rootDir, env }) {
   const absoluteRoot = path.resolve(rootDir);
   const key = runtimeKey(absoluteRoot, env);
   if (runtimeCache.has(key)) return runtimeCache.get(key);
-  const configuredAllowedRoots = String(renamedEnv(
-    env,
-    "AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS",
-    "AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS",
-  ) || "")
+  const configuredAllowedRoots = String(env.AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS || "")
     .split(path.delimiter)
     .map((value) => value.trim())
     .filter(Boolean)
@@ -98,18 +92,13 @@ function getRuntime({ rootDir, env }) {
   const outputRoot = selectAgentGraphOutputRoot({
     rootDir: absoluteRoot,
     configuredRoot: env.AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT,
-    legacyConfiguredRoot: env.AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT,
   });
   const pdfConverter = createLocalAgentGraphPdfConverter({
     rootDir: absoluteRoot,
-    timeoutMs: renamedEnv(env, "AGENTIC_OS_AGENT_GRAPH_PDF_TIMEOUT_MS", "AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS"),
-    maxOutputBytes: renamedEnv(env, "AGENTIC_OS_AGENT_GRAPH_PDF_MAX_OUTPUT_BYTES", "AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES"),
+    timeoutMs: env.AGENTIC_OS_AGENT_GRAPH_PDF_TIMEOUT_MS,
+    maxOutputBytes: env.AGENTIC_OS_AGENT_GRAPH_PDF_MAX_OUTPUT_BYTES,
   });
-  const repositoryHosts = String(renamedEnv(
-    env,
-    "AGENTIC_OS_AGENT_GRAPH_REPOSITORY_HOSTS",
-    "AGENTIC_OS_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS",
-  ) || "")
+  const repositoryHosts = String(env.AGENTIC_OS_AGENT_GRAPH_REPOSITORY_HOSTS || "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
@@ -117,12 +106,7 @@ function getRuntime({ rootDir, env }) {
     agenticGraphRoot: absoluteRoot,
     allowedRoots: configuredAllowedRoots,
     repositoryHosts,
-    allowPrivateRepositoryNetwork:
-      renamedEnv(
-        env,
-        "AGENTIC_OS_AGENT_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK",
-        "AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK",
-      ) === "1",
+    allowPrivateRepositoryNetwork: env.AGENTIC_OS_AGENT_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK === "1",
     outputRoot,
     pdfConverter,
     pdfConverterVersion: "agentic-graph-native-pdf-v3",
@@ -143,6 +127,10 @@ export async function runAgentGraphTool(toolName, args, {
 } = {}) {
   const operation = TOOL_OPERATION[toolName];
   if (!operation) return failure("query", "unknown_tool", `Unknown knowledge graph tool: ${String(toolName || "")}`);
+  const retiredEnvironmentKeys = findRetiredAgentGraphEnvironmentKeys(env);
+  if (retiredEnvironmentKeys.length > 0) {
+    return failure(operation, "retired_environment", retiredAgentGraphEnvironmentMessage(retiredEnvironmentKeys));
+  }
   const invocationError = validateInvocation(toolName, args?.invocation);
   if (invocationError) return failure(operation, "invalid_invocation", invocationError);
   const sourceInvocationError = await verifyAgentGraphInvocation(toolName, args?.invocation, {

@@ -5,9 +5,13 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  AGENT_GRAPH_SCHEMA_VERSION,
+  agentGraphArtifactSnapshotDigest,
+  computeAgentGraphArtifactDigest,
   makeEdge,
   makeNode,
   sha256,
+  validateAgentGraphArtifact,
 } from "../agent-graph/contract.mjs";
 import { queryAgentGraph } from "../agent-graph/query-core.mjs";
 import { queryAgentGraphSnapshot } from "../agent-graph/query.mjs";
@@ -131,12 +135,36 @@ function assertPairedCommonResult(result, expectedDigest) {
   assert.equal(result.completeness.edgesTruncated, true);
 }
 
+test("the exact historical artifact family reads its digest as the snapshot identity", () => {
+  const legacyKey = "knowledgeGraph";
+  const snapshotDigest = sha256("historical-materialized-snapshot");
+  const legacyMetadata = {
+    digest: snapshotDigest,
+    parserCoverage: { markdown: 1 },
+    vectorStore: false,
+    modelCalls: 0,
+  };
+  const artifact = { type: "Graph", nodes: [], edges: [], metadata: { [legacyKey]: legacyMetadata } };
+  assert.equal(agentGraphArtifactSnapshotDigest(artifact), snapshotDigest);
+  assert.equal(validateAgentGraphArtifact(artifact).ok, true);
+  assert.equal(queryAgentGraph(artifact, { mode: "summary" }).snapshotDigest, snapshotDigest);
+  assert.notEqual(computeAgentGraphArtifactDigest(artifact), snapshotDigest);
+
+  const hybrid = structuredClone(artifact);
+  hybrid.metadata[legacyKey].snapshotDigest = "a".repeat(64);
+  assert.throws(
+    () => agentGraphArtifactSnapshotDigest(hybrid),
+    (error) => error?.code === "artifact_metadata_invalid",
+  );
+  assert.ok(validateAgentGraphArtifact(hybrid).errors.includes("legacy snapshotDigest is invalid"));
+});
+
 test("common-token limits keep config-search nodes paired with supporting edges and citations", async (t) => {
   const fragment = pairingFragment();
   const materializedDigest = sha256("materialized-query-pairing");
   const materialized = queryAgentGraph({
     ...fragment,
-    metadata: { knowledgeGraph: { digest: materializedDigest } },
+    metadata: { agentGraph: { schemaVersion: AGENT_GRAPH_SCHEMA_VERSION, snapshotDigest: materializedDigest } },
   }, {
     mode: "search",
     query: "common",

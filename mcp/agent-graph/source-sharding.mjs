@@ -4,9 +4,10 @@ import {
 } from "./contract.mjs";
 import { boundedArtifactBytes } from "./store-records.mjs";
 
-// These durable schema values are content-addressed and cannot be renamed in place.
-export const AGENT_GRAPH_SOURCE_BUNDLE_SCHEMA = "agentic-graph-knowledge-graph-source-bundle/v1";
-export const AGENT_GRAPH_SOURCE_PART_SCHEMA = "agentic-graph-knowledge-graph-source-part/v1";
+export const AGENT_GRAPH_SOURCE_BUNDLE_SCHEMA = "agentic-graph-agent-graph-source-bundle/v1";
+export const AGENT_GRAPH_SOURCE_PART_SCHEMA = "agentic-graph-agent-graph-source-part/v1";
+export const LEGACY_AGENT_GRAPH_SOURCE_BUNDLE_SCHEMA = "agentic-graph-knowledge-graph-source-bundle/v1";
+export const LEGACY_AGENT_GRAPH_SOURCE_PART_SCHEMA = "agentic-graph-knowledge-graph-source-part/v1";
 
 export const MAX_SOURCE_PART_BYTES = 16 * 1024 * 1024;
 export const TARGET_SOURCE_PART_BYTES = 8 * 1024 * 1024;

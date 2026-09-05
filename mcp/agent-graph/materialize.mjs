@@ -1,8 +1,11 @@
 import {
   checkAgentGraphBudget,
+  computeAgentGraphArtifactDigestBounded,
   AgentGraphError,
+  AGENT_GRAPH_SCHEMA_VERSION,
 } from "./contract.mjs";
 import {
+  DEFAULT_MAX_ARTIFACT_BYTES,
   readAgentGraphRepositoryIndex,
   readAgentGraphResolutionShards,
   readAgentGraphSourceParts,
@@ -16,14 +19,16 @@ const boundedInteger = (value, fallback, maximum) => {
 export async function materializeAgentGraphRepository(snapshot, repositoryId, options = {}) {
   const { maxNodes = 250_000, maxEdges = 1_000_000 } = options;
   const budget = { ...snapshot.readBudget, ...options };
+  const forceCheckpoint = () => checkAgentGraphBudget({
+    ...budget,
+    stage: "snapshot-materialization",
+  });
   let operations = 0;
   const checkpoint = () => {
     operations += 1;
-    if (operations % 128 === 0) {
-      checkAgentGraphBudget({ ...budget, stage: "snapshot-materialization" });
-    }
+    if (operations % 128 === 0) forceCheckpoint();
   };
-  checkAgentGraphBudget({ ...budget, stage: "snapshot-materialization" });
+  forceCheckpoint();
   const repository = (snapshot.manifest.repositories || [])
     .find((entry) => entry.repositoryId === repositoryId);
   if (!repository) {
@@ -31,6 +36,11 @@ export async function materializeAgentGraphRepository(snapshot, repositoryId, op
   }
   const nodeLimit = boundedInteger(maxNodes, 250_000, 1_000_000);
   const edgeLimit = boundedInteger(maxEdges, 1_000_000, 4_000_000);
+  const artifactByteLimit = boundedInteger(
+    options.maxArtifactBytes,
+    DEFAULT_MAX_ARTIFACT_BYTES,
+    DEFAULT_MAX_ARTIFACT_BYTES,
+  );
   if (repository.graph.nodes > nodeLimit || repository.graph.edges > edgeLimit) {
     throw new AgentGraphError(
       "repository_projection_limit",
@@ -64,15 +74,16 @@ export async function materializeAgentGraphRepository(snapshot, repositoryId, op
       edges.push(edge);
     }
   }
-  checkAgentGraphBudget({ ...budget, stage: "snapshot-materialization" });
-  return {
+  forceCheckpoint();
+  const artifact = {
     context: "agentic-graph-agent-graph",
     type: "Graph",
     nodes,
     edges,
     metadata: {
-      knowledgeGraph: {
-        digest: snapshot.pointer.snapshotDigest,
+      agentGraph: {
+        schemaVersion: AGENT_GRAPH_SCHEMA_VERSION,
+        snapshotDigest: snapshot.pointer.snapshotDigest,
         parserCoverage: snapshot.manifest.parserCoverage,
         vectorStore: false,
         modelCalls: 0,
@@ -81,4 +92,10 @@ export async function materializeAgentGraphRepository(snapshot, repositoryId, op
     manifest: { sources: index.sources },
     diagnostics: snapshot.manifest.diagnostics,
   };
+  artifact.metadata.agentGraph.digest = computeAgentGraphArtifactDigestBounded(
+    artifact,
+    artifactByteLimit,
+    { checkpoint: forceCheckpoint },
+  ).digest;
+  return artifact;
 }

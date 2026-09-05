@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
-// Persisted artifact identity is immutable so pre-rename snapshots retain their digest.
-export const AGENT_GRAPH_SCHEMA_VERSION = "agentic-graph-knowledge-graph/v1";
+export const AGENT_GRAPH_SCHEMA_VERSION = "agentic-graph-agent-graph/v1";
+export const LEGACY_AGENT_GRAPH_SCHEMA_VERSION = "agentic-graph-knowledge-graph/v1";
 export const AGENT_GRAPH_CONTRACT_VERSION = "1.0.0";
 export const AGENT_GRAPH_CANONICAL_NODE_OUTPUT_REVISION = "canonical-node-output-v1";
 export const MAX_AGENT_GRAPH_LABEL_LENGTH = 16_384;
@@ -329,18 +329,44 @@ export function stableStringify(value, space = 2, options = {}) {
   return serialized;
 }
 
+const LEGACY_AGENT_GRAPH_METADATA_KEY = "knowledgeGraph";
+
+export function readAgentGraphArtifactMetadata(artifact) {
+  const metadata = artifact?.metadata;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
+  const hasCanonical = Object.hasOwn(metadata, "agentGraph");
+  const hasLegacy = Object.hasOwn(metadata, LEGACY_AGENT_GRAPH_METADATA_KEY);
+  if (hasCanonical === hasLegacy) return null;
+  const key = hasCanonical ? "agentGraph" : LEGACY_AGENT_GRAPH_METADATA_KEY;
+  const value = metadata[key];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  if (hasCanonical && value.schemaVersion !== AGENT_GRAPH_SCHEMA_VERSION) return null;
+  if (hasLegacy && (Object.hasOwn(value, "schemaVersion")
+    || Object.hasOwn(value, "snapshotDigest"))) return null;
+  return { key, value, legacy: hasLegacy };
+}
+
+export function agentGraphArtifactSnapshotDigest(artifact) {
+  const identity = readAgentGraphArtifactMetadata(artifact);
+  const snapshotDigest = identity?.legacy
+    ? identity.value.digest
+    : identity?.value?.snapshotDigest;
+  if (!/^[a-f0-9]{64}$/.test(String(snapshotDigest || ""))) {
+    throw new AgentGraphError("artifact_metadata_invalid", "Agent graph artifact snapshot digest is invalid.");
+  }
+  return snapshotDigest;
+}
+
 export function agentGraphArtifactWithoutDigest(artifact) {
   if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) return artifact;
-  const metadata = artifact.metadata;
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return artifact;
-  const knowledgeGraph = metadata.knowledgeGraph;
-  if (!knowledgeGraph || typeof knowledgeGraph !== "object" || Array.isArray(knowledgeGraph)) return artifact;
-  const { digest: _digest, ...knowledgeGraphWithoutDigest } = knowledgeGraph;
+  const identity = readAgentGraphArtifactMetadata(artifact);
+  if (!identity) return artifact;
+  const { digest: _digest, ...metadataWithoutDigest } = identity.value;
   return {
     ...artifact,
     metadata: {
-      ...metadata,
-      knowledgeGraph: knowledgeGraphWithoutDigest,
+      ...artifact.metadata,
+      [identity.key]: metadataWithoutDigest,
     },
   };
 }
@@ -393,13 +419,16 @@ function emitCanonicalJson(value, emit, arrayEntry = false) {
   emit(encoded);
 }
 
-export function computeAgentGraphArtifactDigestBounded(artifact, maxBytesRaw) {
+export function computeAgentGraphArtifactDigestBounded(artifact, maxBytesRaw, options = {}) {
   const maxBytes = Number(maxBytesRaw);
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) {
     throw new AgentGraphError("artifact_size_limit_invalid", "Knowledge graph artifact size limit must be a positive safe integer.");
   }
+  const checkpoint = typeof options === "function" ? options : options?.checkpoint;
+  checkpoint?.();
   const hasher = crypto.createHash("sha256");
   let byteLength = 0;
+  let emittedChunks = 0;
   const emit = (chunkRaw) => {
     const chunk = String(chunkRaw);
     byteLength += Buffer.byteLength(chunk, "utf8");
@@ -411,9 +440,12 @@ export function computeAgentGraphArtifactDigestBounded(artifact, maxBytesRaw) {
       });
     }
     hasher.update(chunk);
+    emittedChunks += 1;
+    if (emittedChunks % 256 === 0) checkpoint?.();
   };
   emitCanonicalJson(agentGraphArtifactWithoutDigest(artifact), emit);
   emit("\n");
+  checkpoint?.();
   return { digest: hasher.digest("hex"), byteLength };
 }
 
@@ -437,14 +469,28 @@ function findForbiddenEmbedding(value, trail = "$") {
 export function validateAgentGraphArtifact(artifact) {
   const errors = [];
   if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) errors.push("artifact must be an object");
-  if (artifact?.metadata?.knowledgeGraph?.schemaVersion !== AGENT_GRAPH_SCHEMA_VERSION) errors.push("schemaVersion is invalid");
-  if (artifact?.metadata?.knowledgeGraph?.vectorStore !== false) errors.push("vectorStore must be false");
-  if (artifact?.metadata?.knowledgeGraph?.modelCalls !== 0) errors.push("modelCalls must be zero");
+  const identity = readAgentGraphArtifactMetadata(artifact);
+  const graphMetadata = identity?.value;
+  const legacyMetadata = artifact?.metadata?.[LEGACY_AGENT_GRAPH_METADATA_KEY];
+  if (!identity) errors.push("agent graph metadata identity is invalid");
+  if (graphMetadata?.vectorStore !== false) errors.push("vectorStore must be false");
+  if (graphMetadata?.modelCalls !== 0) errors.push("modelCalls must be zero");
+  if (!identity?.legacy && !/^[a-f0-9]{64}$/.test(String(graphMetadata?.snapshotDigest || ""))) {
+    errors.push("snapshotDigest is invalid");
+  }
+  if (legacyMetadata && typeof legacyMetadata === "object"
+    && Object.hasOwn(legacyMetadata, "snapshotDigest")) {
+    errors.push("legacy snapshotDigest is invalid");
+  }
+  if (legacyMetadata && typeof legacyMetadata === "object"
+    && Object.hasOwn(legacyMetadata, "schemaVersion")) {
+    errors.push("legacy schemaVersion is invalid");
+  }
   if (!Array.isArray(artifact?.nodes) || !Array.isArray(artifact?.edges)) errors.push("nodes and edges must be arrays");
-  const storedDigest = artifact?.metadata?.knowledgeGraph?.digest;
+  const storedDigest = graphMetadata?.digest;
   if (typeof storedDigest !== "string" || !/^[a-f0-9]{64}$/.test(storedDigest)) {
     errors.push("digest is invalid");
-  } else {
+  } else if (!identity.legacy) {
     const computedDigest = computeAgentGraphArtifactDigest(artifact);
     if (storedDigest !== computedDigest) errors.push("digest does not match artifact content");
   }
