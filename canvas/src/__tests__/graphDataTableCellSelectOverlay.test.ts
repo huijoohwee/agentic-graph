@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import type { GraphFieldSettingsResolved } from '@/features/graph-fields/graphFields'
@@ -13,13 +13,14 @@ export async function testGraphDataTableCellSelectOverlayEditsMultiSelectPropert
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { dom, restore: restoreDom } = initJsdomHarness()
+  let root: ReturnType<typeof createRoot> | null = null
 
   try {
     const doc = dom.window.document
     const container = doc.createElement('section')
     container.id = 'root'
     doc.body.appendChild(container)
-    const root = createRoot(container as unknown as HTMLElement)
+    root = createRoot(container as unknown as HTMLElement)
 
     const node: GraphNode = {
       id: 'n1',
@@ -133,7 +134,10 @@ export async function testGraphDataTableCellSelectOverlayEditsMultiSelectPropert
       throw new Error('expected updateNode to receive status array including Todo and Doing')
     }
   } finally {
-    restoreDom()
-    restoreWindow()
+    try {
+      await act(async () => { root?.unmount() })
+    } finally {
+      try { restoreDom() } finally { restoreWindow() }
+    }
   }
 }

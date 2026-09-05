@@ -14,6 +14,7 @@ export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(
     'canvas/src/features/panels/views/CollaborationView.tsx',
     'canvas/src/features/collaboration/use-agentic-graph-storage-collaboration-runtime.ts',
     'canvas/src/lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx',
+    'canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceCollaborationRuntimeBridge.ts',
     'canvas/src/lib/storage/agentic-graph-storage-canvas-room-client.ts',
     'cloudflare/workers/agentic-graph-storage/canvasSyncRoom.ts',
     'cloudflare/workers/agentic-graph-storage/index.ts',

@@ -1,3 +1,4 @@
+import { resolvePinnedAgenticDocsRoot } from '@/tests/lib/repoTestData'
 import Ajv2020 from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -71,7 +72,7 @@ export async function testCanvasViewRowsUseSourceBackedWebMcpInvocation(): Promi
     unregister()
   }
 
-  const docsRoot = resolve(process.cwd(), '..', '..', 'agentic-canvas-os', 'docs')
+  const docsRoot = await resolvePinnedAgenticDocsRoot()
   const sourceContracts = [
     ['DICTIONARY-COMMAND.md', CANVAS_VIEW_COMMAND_TOKEN, CANVAS_VIEW_MCP_TOOL_NAME],
     ['DICTIONARY-SEMANTIC.md', CANVAS_VIEW_SEMANTIC_TOKEN, 'Semantic Canvas View Mode'],

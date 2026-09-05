@@ -107,6 +107,7 @@ export async function testRenderChatStreamArtifactsBuildsGenericQueryRelevantMet
     timestampMs: Date.UTC(2026, 4, 27, 13, 15, 14),
     defaultLocalRootPath: '/chat-log',
     traceId: 'trace-query-shape',
+    fetchUrlContent: async () => { throw new Error('metadata fixture does not import remote content') },
     providerSummary: 'Agnes AI API · Global',
     modelId: 'agnes-2.0-flash',
     requestText: 'Design a geospatial MCP assistant plan with User Flow, Data Flow, integrations, MapLibre, RxDB sync, and pricing options.',
@@ -226,7 +227,6 @@ export async function testRenderChatStreamArtifactsBuildsGenericQueryRelevantMet
     throw new Error(`expected ordinary stream rendering to avoid duplicate report markdown docs, got ${rendered.reportDocuments.length}`)
   }
 }
-
 export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
@@ -331,7 +331,6 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
         ].join('\n'),
       }),
     })
-
     const fs = await getWorkspaceFs()
     const entries = await fs.listEntries()
     const entryPaths = new Set(entries.map(entry => String(entry.path || '')))
@@ -360,7 +359,6 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
     if (entryPaths.has(`${expectedFolder}/chat-02-stream-report_20260523T174000Z.md`)) {
       throw new Error('expected generic /share/ URLs to stop generating extra stream report documents')
     }
-
     const logText = await fs.readFileText(expectedLog)
     const reportText = await fs.readFileText(expectedReport)
     const dereferencedShareText = await fs.readFileText(expectedDereferencedShare)
@@ -482,7 +480,6 @@ export async function testPersistChatStreamArtifactsWritesStoryboardMarkdownDocs
     restoreWindow()
   }
 }
-
 export async function testPersistChatStreamArtifactsDereferencesShareUrlFromRequestText() {
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const previousChatLogAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT
@@ -492,7 +489,6 @@ export async function testPersistChatStreamArtifactsDereferencesShareUrlFromRequ
     process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = `${tempRoot}/chat-log`
     resetWorkspaceFsForTests()
     resetChatStreamArtifactBundleForTests()
-
     await persistChatStreamArtifacts({
       workspacePath: '/chat-log/20260527T162848Z/agenticOs_20260527T162848Z.md',
       timestampMs: Date.UTC(2026, 4, 27, 16, 31, 59),
@@ -522,7 +518,6 @@ export async function testPersistChatStreamArtifactsDereferencesShareUrlFromRequ
         ].join('\n'),
       }),
     })
-
     const fs = await getWorkspaceFs()
     if (await fs.readFileText('/chat-log/20260527T162848Z/chat-stream-report_20260527T162848Z.md') !== null) {
       throw new Error('expected ordinary share-url streams to avoid duplicate stream report markdown')
@@ -545,7 +540,6 @@ export async function testPersistChatStreamArtifactsDereferencesShareUrlFromRequ
     await rm(tempRoot, { recursive: true, force: true })
   }
 }
-
 export async function testPersistChatStreamArtifactsWaitsForHostMirrorWrites() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
@@ -566,7 +560,6 @@ export async function testPersistChatStreamArtifactsWaitsForHostMirrorWrites() {
         headers: { 'content-type': 'application/json' },
       })
     }) as typeof fetch
-
     await persistChatStreamArtifacts({
       workspacePath: '/chat-log/20260523T174000Z/agenticOs_20260523T174000Z.md',
       timestampMs: Date.UTC(2026, 4, 23, 17, 40, 0),
@@ -588,7 +581,6 @@ export async function testPersistChatStreamArtifactsWaitsForHostMirrorWrites() {
         text: ['---', `kgWebpageUrl: "${url}"`, 'kgWebpageView: "markdown"', '---', '', '# Imported Share', ''].join('\n'),
       }),
     })
-
     if (pendingMirrorWrites === 0) {
       throw new Error('expected at least one host mirror write')
     }

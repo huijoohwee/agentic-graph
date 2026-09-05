@@ -1,3 +1,4 @@
+import { resolvePinnedAgenticDocsRoot } from '@/tests/lib/repoTestData'
 import Ajv2020 from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -94,7 +95,7 @@ export async function testLaunchRowsUseSourceBackedWebMcpInvocation(): Promise<v
     if (!source.includes(required)) throw new Error(`expected Launch rows to expose the shared invocation owner: ${required}`)
   }
 
-  const docsRoot = resolve(process.cwd(), '..', '..', 'agentic-canvas-os', 'docs')
+  const docsRoot = await resolvePinnedAgenticDocsRoot()
   const sourceContracts = [
     ['DICTIONARY-COMMAND.md', WORKSPACE_LAUNCH_COMMAND_TOKEN, WORKSPACE_LAUNCH_MCP_TOOL_NAME],
     ['DICTIONARY-SEMANTIC.md', WORKSPACE_LAUNCH_SEMANTIC_TOKEN, 'visible and hit-testable'],

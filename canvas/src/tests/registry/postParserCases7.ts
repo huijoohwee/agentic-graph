@@ -1,6 +1,12 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["testIsolation.reactRoots.realFactories","@/__tests__/reactRootLifecycle.test","testReactRootFactoriesRetainRealRenderAndHydration"],
+  ["testIsolation.reactRoots.failedFixture","@/__tests__/reactRootLifecycle.test","testReactRootFailedFixtureDisposesBeforeHarnessClose"],
+  ["testIsolation.reactRoots.rawWindowClose","@/__tests__/reactRootLifecycle.test","testReactRootRawClosePreservesOtherDocumentAndGlobals"],
+  ["testIsolation.reactRoots.runnerReset","@/__tests__/reactRootLifecycle.test","testReactRootRunnerCleansBeforeStoreResetAndRetainsFailure"],
+  ["testIsolation.reactRoots.cleanupError","@/__tests__/reactRootLifecycle.test","testReactRootCleanupFailurePreservesBodyErrorAndOtherRoots"],
+  ["testIsolation.reactRoots.rejectCreationDuringCleanup","@/__tests__/reactRootLifecycle.test","testReactRootCleanupRejectsRootCreationWithoutRetry"],
   ["workspace.docsRootFallback.rejectsViteAppShell","@/__tests__/workspaceDocsRootFallbackPayload.test","testWorkspaceDocsRootFallbackRejectsViteAppShell"],
   ["workspace.docsRootFallback.acceptsMarkdown","@/__tests__/workspaceDocsRootFallbackPayload.test","testWorkspaceDocsRootFallbackAcceptsMarkdown"],
   ["workspace.docsRootFallback.rejectsBlankText","@/__tests__/workspaceDocsRootFallbackPayload.test","testWorkspaceDocsRootFallbackRejectsBlankText"],

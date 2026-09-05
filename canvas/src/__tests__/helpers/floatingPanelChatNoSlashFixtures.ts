@@ -1,0 +1,53 @@
+export const NO_SLASH_IMAGE_PROMPT = 'what ![strybldr-starter-source.png](http://localhost:5181/api/storage/media/airvio/runs/upload-017d1e965528642f/image/strybldr-starter-source-017d1e965528642f.png?agentic_os_media_token=secret)'
+export const NO_SLASH_WHATS_IMAGE_PROMPT = "what's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
+export const NO_SLASH_WHATS_IN_IMAGE_PROMPT = "what's in ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
+export const NO_SLASH_WHY_IMAGE_PROMPT = "why there's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
+export const MEDIA_ONLY_IMAGE_PROMPT = NO_SLASH_IMAGE_PROMPT.replace(/^what\s+/, '')
+export const TRACE_ONLY_ASSISTANT_TEXT = [
+  '## Provider Stream Trace',
+  '',
+  'The provider stream is active. Incoming reasoning, tool, and assistant deltas are appended below.',
+  '',
+  '### Stream Transcript',
+  '',
+  '[signal]',
+  '- Stream events are arriving.',
+  '',
+  '### Terminal Metadata',
+  '',
+  '- SSE events: 5',
+].join('\n')
+export const REPEATED_PARTIAL_RESPONSE_YAML = [
+  '```yaml',
+  'response:',
+  '  intent: "Provide a neutral visual description of the attached media."',
+  '  domain_vars: {}',
+  '  context_scope: "image-analysis:attached image"',
+  '  structuredContent:',
+  '    cards:',
+  '      - id: attached-image-analysis',
+  '        label: "Attached image analysis"',
+  '        kind: "description"',
+  '        output:',
+  '          - "The attached image contains a source object that should be described without inventing unavailable context."',
+  '  table:',
+  '    - id: image-attachment',
+  '      field: description',
+  '      value: "partial',
+  '```yaml',
+  'response:',
+  '  intent: "Provide a neutral visual description of the attached media."',
+  '  domain_vars: {}',
+  '  context_scope: "image-analysis:attached image"',
+  '  structuredContent:',
+  '    cards:',
+  '      - id: attached-image-analysis',
+  '        label: "Attached image analysis"',
+  '        kind: "description"',
+  '        output:',
+  '          - "The attached image contains a source object that should be described without inventing unavailable context."',
+  '  table:',
+  '    - id: image-attachment',
+  '      field: description',
+  '      value: "partial',
+].join('\n')

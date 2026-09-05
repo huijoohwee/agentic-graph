@@ -1,5 +1,6 @@
 import { ensureTestEnvPolyfills } from '../env/polyfills'
 import { resetCanvasTestRuntime } from '../lib/resetCanvasTestRuntime'
+import { disposeRemainingReactRoots } from '../lib/reactRootLifecycle'
 import type { TestResult } from './testRunnerTypes'
 
 let cachedFilterLower: string | null | undefined
@@ -45,10 +46,16 @@ export const execTest = async (results: TestResult[], name: string, fn: () => vo
   const filterLower = readFilterLower()
   if (filterLower && !name.toLowerCase().includes(filterLower)) return
 
+  const startedAt = Date.now()
+  const errors: unknown[] = []
+  const message = (error: unknown) => String((error as { message?: unknown } | null)?.message ?? error)
+  const recordError = (error: unknown) => {
+    errors.push(error)
+    console.log(`FAIL ${name} — ${message(error)}`)
+  }
   try {
     ensureTestEnvPolyfills()
     console.log(`RUN ${name}`)
-    const startedAt = Date.now()
     setCurrentRunningTest(name)
     const timeoutMs = readTimeoutMs()
     let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -70,18 +77,20 @@ export const execTest = async (results: TestResult[], name: string, fn: () => vo
       if (timeoutId != null) clearTimeout(timeoutId)
     }
 
-    const durationMs = Date.now() - startedAt
-    console.log(`DONE ${name} (${durationMs}ms)`)
-    results.push({ name, ok: true })
-  } catch (e: unknown) {
-    const msg = (() => {
-      const em = e as { message?: unknown }
-      return String(em?.message ?? e)
-    })()
+  } catch (error) { recordError(error) }
+  finally {
+    // Mounted subscribers must leave before reset mutates the store and DOM.
+    try { await disposeRemainingReactRoots() } catch (error) { recordError(error) }
+    try { resetCanvasTestRuntime() } catch (error) { recordError(error) }
+    clearCurrentRunningTest()
+  }
+
+  if (errors.length) {
+    const msg = errors.map(message).join('; ')
     console.log(`DONE ${name} (error)`)
     results.push({ name, ok: false, error: msg })
-  } finally {
-    resetCanvasTestRuntime()
-    clearCurrentRunningTest()
+  } else {
+    console.log(`DONE ${name} (${Date.now() - startedAt}ms)`)
+    results.push({ name, ok: true })
   }
 }

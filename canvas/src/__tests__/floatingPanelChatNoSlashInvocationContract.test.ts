@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import { load as parseYaml } from 'js-yaml'
 import { buildChatSubmitRequestContext } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest'
 import { analyzeAgenticOsRequest } from '@/features/chat/chatAgenticOsRequestProfile'
@@ -16,62 +16,10 @@ import {
 import { buildOpenAiResponsesInput } from '@/features/chat/floatingPanelChat/floatingPanelChatOpenAiResponsesInput'
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
 
-const NO_SLASH_IMAGE_PROMPT = 'what ![strybldr-starter-source.png](http://localhost:5181/api/storage/media/airvio/runs/upload-017d1e965528642f/image/strybldr-starter-source-017d1e965528642f.png?agentic_os_media_token=secret)'
-const NO_SLASH_WHATS_IMAGE_PROMPT = "what's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
-const NO_SLASH_WHATS_IN_IMAGE_PROMPT = "what's in ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
-const NO_SLASH_WHY_IMAGE_PROMPT = "why there's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
-const MEDIA_ONLY_IMAGE_PROMPT = NO_SLASH_IMAGE_PROMPT.replace(/^what\s+/, '')
-const TRACE_ONLY_ASSISTANT_TEXT = [
-  '## Provider Stream Trace',
-  '',
-  'The provider stream is active. Incoming reasoning, tool, and assistant deltas are appended below.',
-  '',
-  '### Stream Transcript',
-  '',
-  '[signal]',
-  '- Stream events are arriving.',
-  '',
-  '### Terminal Metadata',
-  '',
-  '- SSE events: 5',
-].join('\n')
-const REPEATED_PARTIAL_RESPONSE_YAML = [
-  '```yaml',
-  'response:',
-  '  intent: "Provide a neutral visual description of the attached media."',
-  '  domain_vars: {}',
-  '  context_scope: "image-analysis:attached image"',
-  '  structuredContent:',
-  '    cards:',
-  '      - id: attached-image-analysis',
-  '        label: "Attached image analysis"',
-  '        kind: "description"',
-  '        output:',
-  '          - "The attached image contains a source object that should be described without inventing unavailable context."',
-  '  table:',
-  '    - id: image-attachment',
-  '      field: description',
-  '      value: "partial',
-  '```yaml',
-  'response:',
-  '  intent: "Provide a neutral visual description of the attached media."',
-  '  domain_vars: {}',
-  '  context_scope: "image-analysis:attached image"',
-  '  structuredContent:',
-  '    cards:',
-  '      - id: attached-image-analysis',
-  '        label: "Attached image analysis"',
-  '        kind: "description"',
-  '        output:',
-  '          - "The attached image contains a source object that should be described without inventing unavailable context."',
-  '  table:',
-  '    - id: image-attachment',
-  '      field: description',
-  '      value: "partial',
-].join('\n')
+import { NO_SLASH_IMAGE_PROMPT, NO_SLASH_WHATS_IMAGE_PROMPT, NO_SLASH_WHATS_IN_IMAGE_PROMPT, NO_SLASH_WHY_IMAGE_PROMPT, MEDIA_ONLY_IMAGE_PROMPT, TRACE_ONLY_ASSISTANT_TEXT, REPEATED_PARTIAL_RESPONSE_YAML } from './helpers/floatingPanelChatNoSlashFixtures'
 
 const readStoryboardTemplateContract = (): string =>
-  readFileSync(resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'template', 'agentic-graph-2d-renderer-storyboard-template.md'), 'utf8')
+  readFileSync(resolveSiblingFixturePath('huijoohwee.github.io', 'template/agentic-graph-2d-renderer-storyboard-template.md'), 'utf8')
 
 export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate() {
   const template = readStoryboardTemplateContract()

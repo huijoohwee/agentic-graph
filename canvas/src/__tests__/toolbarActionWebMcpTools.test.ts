@@ -1,3 +1,4 @@
+import { resolvePinnedAgenticDocsRoot } from '@/tests/lib/repoTestData'
 import Ajv2020 from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -91,7 +92,7 @@ export async function testMainToolbarActionsUseSourceBackedWebMcpInvocation(): P
     if (!source.includes(required)) throw new Error(`expected Main Toolbar buttons to expose the shared semantic invocation owner: ${required}`)
   }
 
-  const docsRoot = resolve(process.cwd(), '..', '..', 'agentic-canvas-os', 'docs')
+  const docsRoot = await resolvePinnedAgenticDocsRoot()
   const sourceContracts = [
     ['DICTIONARY-COMMAND.md', TOOLBAR_ACTION_COMMAND_TOKEN, TOOLBAR_ACTION_MCP_TOOL_NAME],
     ['DICTIONARY-SEMANTIC.md', TOOLBAR_ACTION_SEMANTIC_TOKEN, 'visible and hit-testable'],
