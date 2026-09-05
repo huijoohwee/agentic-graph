@@ -12,8 +12,13 @@ import {
   readAgenticCommerceX402Network,
   readAgenticCommerceX402PayToAddress,
 } from "../../grph-shared/dist/payments/agenticCommerceSsot.js";
+import {
+  buildAgenticCommercePaidResourceDiscoveryProjection,
+  readAgenticCommercePaidResourceConfiguration,
+} from "../../grph-shared/dist/payments/agenticCommercePaidResourceSsot.js";
 
 const jsonBody = (body) => JSON.stringify(body, null, 2);
+const PAID_RESOURCES_EXTENSION = "x-agentic-commerce-paid-resources";
 const trimOrigin = (value) => String(value || "").trim().replace(/\/+$/g, "");
 const encodeBase64 = (value) => {
   if (typeof btoa === "function") return btoa(value);
@@ -42,11 +47,58 @@ export const buildAgenticGraphCommerceDiscovery = (args = {}) => {
     amount: readAgenticCommerceX402Amount(env),
     facilitatorUrl: readAgenticCommerceX402FacilitatorUrl(env),
   }) : null;
+  const paidResourceConfig = readAgenticCommercePaidResourceConfiguration(env);
+  let xrplX402PaidResource = null;
+  if (paidResourceConfig.ok && origin) {
+    try {
+      xrplX402PaidResource = buildAgenticCommercePaidResourceDiscoveryProjection({
+        baseUrl: origin,
+        config: paidResourceConfig.config,
+      });
+    } catch {
+      xrplX402PaidResource = null;
+    }
+  }
+  const paidResources = xrplX402PaidResource ? [xrplX402PaidResource] : [];
+  const paidResourceExtension = paidResources.length > 0
+    ? { [PAID_RESOURCES_EXTENSION]: paidResources }
+    : {};
+  const acpDiscovery = {
+    ...buildAgenticCommerceAcpDiscovery({ sellerId, baseUrl: origin, web3Enabled }),
+    ...paidResourceExtension,
+  };
+  const ucpProfile = {
+    ...buildAgenticCommerceUcpProfile({ sellerId, baseUrl: origin, web3Enabled }),
+    ...paidResourceExtension,
+  };
+  const baseMppOpenApi = buildAgenticCommerceMppOpenApi({ baseUrl: origin });
+  const mppOpenApi = {
+    ...baseMppOpenApi,
+    ...paidResourceExtension,
+    paths: {
+      ...baseMppOpenApi.paths,
+      ...(xrplX402PaidResource ? {
+        [new URL(xrplX402PaidResource.url).pathname]: {
+          post: {
+            operationId: "purchaseAgenticGraphXrplTravelRequote",
+            summary: "Purchase one verified live flight requote with XRPL x402.",
+            "x-payment-info": xrplX402PaidResource.payment,
+            responses: {
+              200: { description: "Paid requote fulfilled" },
+              402: { description: "XRPL x402 payment required" },
+            },
+          },
+        },
+      } : {}),
+    },
+  };
   return {
-    acpDiscovery: buildAgenticCommerceAcpDiscovery({ sellerId, baseUrl: origin, web3Enabled }),
-    ucpProfile: buildAgenticCommerceUcpProfile({ sellerId, baseUrl: origin, web3Enabled }),
-    mppOpenApi: buildAgenticCommerceMppOpenApi({ baseUrl: origin }),
+    acpDiscovery,
+    ucpProfile,
+    mppOpenApi,
     x402PaymentRequired: x402,
+    paidResources,
+    ...(xrplX402PaidResource ? { xrplX402PaidResource } : {}),
   };
 };
 
@@ -66,6 +118,15 @@ export const buildAgenticGraphCommerceStaticFiles = (args = {}) => {
       body: jsonBody(discovery.mppOpenApi),
     },
   };
+};
+
+export const buildAgenticGraphCommerceRouteResponse = (request, env = {}) => {
+  const pathname = new URL(request.url).pathname.replace(/^\/+/, "");
+  const artifact = buildAgenticGraphCommerceStaticFiles({ requestUrl: request.url, env })[pathname];
+  if (!artifact) return null;
+  return new Response(request.method === "HEAD" ? null : artifact.body, {
+    headers: { "content-type": artifact.contentType, "cache-control": "no-store" },
+  });
 };
 
 export const buildAgenticGraphX402PaymentRequiredResponse = (request, env = {}) => {

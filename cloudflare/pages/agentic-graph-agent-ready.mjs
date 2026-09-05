@@ -42,6 +42,7 @@ import {
 } from "./agentic-graph-agent-ready-discovery.mjs";
 import {
   buildAgenticGraphCommerceDiscovery,
+  buildAgenticGraphCommerceRouteResponse,
   buildAgenticGraphCommerceStaticFiles,
 } from "./agentic-graph-agent-ready-commerce.mjs";
 import {
@@ -983,8 +984,7 @@ const buildHealthStatusBody = () => ({
     defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
   },
 });
-
-const buildAgentSurfaceInspection = async () => buildAgentSurfaceInspectionPayload({
+const buildAgentSurfaceInspection = async (env = {}) => buildAgentSurfaceInspectionPayload({
   baseUrl: APP_URL,
   health: buildHealthStatusBody(),
   apiCatalog,
@@ -992,9 +992,8 @@ const buildAgentSurfaceInspection = async () => buildAgentSurfaceInspectionPaylo
   mcpServerCard,
   agentCard: a2aAgentCard,
   agentSkills: await agentSkillsIndex(),
-  commerce: buildAgenticGraphCommerceDiscovery({ origin: SITE_ORIGIN }),
+  commerce: buildAgenticGraphCommerceDiscovery({ origin: SITE_ORIGIN, env }),
 });
-
 const PUBLISHED_MCP_TOOL_EXECUTORS = createPublishedAgentReadyToolExecutors({
   toolNames: PUBLISHED_TOOL_NAME_CONFIG,
   defaultWorkspaceId: DEFAULT_WORKSPACE_ID,
@@ -1096,16 +1095,15 @@ const isJsonRpcNotificationOrResponse = (rpc) => {
   const hasResultOrError = hasOwnProperty(rpc, "result") || hasOwnProperty(rpc, "error");
   return (hasMethod && !hasId) || (!hasMethod && hasResultOrError);
 };
-
-const executeMcpTool = async (name, args) => {
+const executeMcpTool = async (name, args, env = {}) => {
+  if (name === AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectAgentSurface) return buildAgentSurfaceInspection(env);
   const execute = PUBLISHED_MCP_TOOL_EXECUTORS[name];
   if (typeof execute !== "function") {
     throw new Error(`unknown tool: ${name}`);
   }
   return execute(args);
 };
-
-const readMcpResource = async (uri) => {
+const readMcpResource = async (uri, env = {}) => {
   const normalizedUri = normalizeToolString(uri);
   if (normalizedUri === AGENTIC_OS_MCP_APP_RESOURCE_URI) {
     return buildAgenticGraphMcpAppsResourceReadResult({
@@ -1116,13 +1114,12 @@ const readMcpResource = async (uri) => {
   }
   const sourceFileId = parseAgenticGraphSourceFileResourceUri(normalizedUri);
   if (sourceFileId) {
-    const sourceFile = await executeMcpTool(AGENTIC_OS_AGENT_READY_TOOL_IDS.fetch, { id: sourceFileId });
+    const sourceFile = await executeMcpTool(AGENTIC_OS_AGENT_READY_TOOL_IDS.fetch, { id: sourceFileId }, env);
     return buildAgenticGraphSourceFileResourceReadResult({ uri: normalizedUri, sourceFile });
   }
   throw new Error(`unknown resource: ${uri}`);
 };
-
-const handleMcpTransport = async (request) => {
+const handleMcpTransport = async (request, env = {}) => {
   const method = String(request.method || "GET").toUpperCase();
   if (method === "GET" || method === "HEAD") {
     if (requestAcceptsEventStream(request)) return emptyStatusResponse(405, { allow: "POST" });
@@ -1165,7 +1162,7 @@ const handleMcpTransport = async (request) => {
       const uri = normalizeToolString(rpc.params?.uri);
       if (!uri) return jsonRpcError(rpc.id, -32602, "Resource URI is required");
       try {
-        return jsonRpcResult(rpc.id, await readMcpResource(uri));
+        return jsonRpcResult(rpc.id, await readMcpResource(uri, env));
       } catch (error) {
         return jsonRpcError(rpc.id, -32602, error instanceof Error ? error.message : String(error));
       }
@@ -1175,7 +1172,7 @@ const handleMcpTransport = async (request) => {
       const toolArgs = rpc.params?.arguments && typeof rpc.params.arguments === "object" ? rpc.params.arguments : {};
       if (!toolName) return jsonRpcError(rpc.id, -32602, "Tool name is required");
       try {
-        const result = await executeMcpTool(toolName, toolArgs);
+        const result = await executeMcpTool(toolName, toolArgs, env);
         return jsonRpcResult(rpc.id, {
           content: [
             {
@@ -1211,8 +1208,8 @@ const buildAgenticGraphMcpAppHtmlBody = () => buildAgenticGraphMcpAppsResourceRe
   toolNames: mcpTools.map((tool) => tool.name),
 }).contents[0].text;
 
-export const buildAgentReadyStaticFiles = async () => ({
-  ...buildAgenticGraphCommerceStaticFiles({ origin: SITE_ORIGIN }),
+export const buildAgentReadyStaticFiles = async (args = {}) => ({
+  ...buildAgenticGraphCommerceStaticFiles({ origin: SITE_ORIGIN, env: args.env || {} }),
   "llms.txt": { contentType: "text/plain; charset=utf-8", body: rootLlmsTxt },
   "auth.md": { contentType: "text/markdown; charset=utf-8", body: authMd },
   "robots.txt": {
@@ -1299,7 +1296,7 @@ const withAgenticGraphRouteHeaders = (request, response) =>
     tag: resolveAgentReadyRouteTag(request),
   });
 
-const routeResponse = async (request) => {
+const routeResponse = async (request, env = {}) => {
   const url = new URL(request.url);
   const pathname = url.pathname.replace(/\/+$/, "") || "/";
   const publishedDocIdentity = resolvePublishedDocRequestIdentity(request.url);
@@ -1317,7 +1314,7 @@ const routeResponse = async (request) => {
     case HEALTH_PATH:
       return healthResponse(buildHealthStatusBody());
     case `${APP_BASE_PATH}/mcp`:
-      return handleMcpTransport(request);
+      return handleMcpTransport(request, env);
     case `${APP_BASE_PATH}/robots.txt`:
       return textResponse(robotsTxt, "text/plain; charset=utf-8");
     case `${APP_BASE_PATH}/sitemap.xml`:
@@ -1372,7 +1369,7 @@ async function routeRequest(context) {
   }
 
   if (method === "POST" && url.pathname.replace(/\/+$/, "") === `${APP_BASE_PATH}/mcp`) {
-    return withAgenticGraphRouteHeaders(request, await routeResponse(request));
+    return withAgenticGraphRouteHeaders(request, await routeResponse(request, env));
   }
 
   if (method === "POST" && isGitHubWorkspaceWriteRoutePath(url.pathname)) {
@@ -1383,11 +1380,14 @@ async function routeRequest(context) {
     return jsonStatusResponse(405, { ok: false, error: "unsupported_method" });
   }
 
+  const commerceResponse = buildAgenticGraphCommerceRouteResponse(request, env);
+  if (commerceResponse) return withAgenticGraphRouteHeaders(request, commerceResponse);
+
   if (handlesAgenticGraphStaticAsset(url.pathname, APP_BASE_PATH)) {
     return fetchAgenticGraphStaticAsset(context);
   }
 
-  const routed = await routeResponse(request);
+  const routed = await routeResponse(request, env);
   if (routed) {
     const next = withAgenticGraphRouteHeaders(request, routed);
     if (method === "HEAD") return new Response(null, next);

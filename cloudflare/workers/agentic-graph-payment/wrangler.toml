@@ -12,6 +12,10 @@ enabled = true
 binding = "NET_SETTLEMENT_EXECUTOR"
 service = "agentic-travel-settlement-executor-production"
 
+[[services]]
+binding = "TRAVEL_DISCOVERY_HARNESS"
+service = "agentic-travel-discovery"
+
 [vars]
 STRYTREE_CHECKOUT_MODE = "provider-webhook"
 STRYTREE_EXTERNAL_VIDEO_PROVIDER_BASE_URL = "https://api.external-video-provider.invalid"
@@ -56,6 +60,14 @@ SOLANA_PAY_NETWORK = "mainnet"
 SOLANA_PAY_COMMITMENT = "confirmed"
 # Placeholder only. Replace with an operator-owned EVM receiving wallet before x402 production readiness.
 X402_PAY_TO_ADDRESS = "0x0000000000000000000000000000000000000000"
+XRPL_X402_NETWORK = "xrpl:1"
+XRPL_X402_PAY_TO_ADDRESS = ""
+XRPL_X402_AMOUNT_DROPS = "1000"
+XRPL_X402_SOURCE_TAG = "804681468"
+XRPL_X402_DESTINATION_TAG = ""
+XRPL_X402_FACILITATOR_URL = "https://xrpl-facilitator-testnet.t54.ai"
+XRPL_X402_RPC_URL = "https://s.altnet.rippletest.net:51234"
+XRPL_X402_MAX_TIMEOUT_SECONDS = "300"
 
 [[routes]]
 pattern = "airvio.co/api/payments/*"

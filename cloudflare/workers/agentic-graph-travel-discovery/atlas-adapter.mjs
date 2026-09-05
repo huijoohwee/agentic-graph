@@ -1,5 +1,7 @@
-const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const INTENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,256}$/;
+import { isDiscoveryIdentifier } from "./discovery-contract.mjs";
+
+export { parseDiscoveryRequest } from "./discovery-contract.mjs";
+
 const IATA_PATTERN = /^[A-Z]{3}$/;
 const AIRLINE_PATTERN = /^[A-Z0-9]{2,3}$/;
 const DATE_PATTERN = /^\d{8}$/;
@@ -8,7 +10,7 @@ const MAX_CATALOGUE_ROUTES = 100;
 
 const isRecord = (value) => !!value && typeof value === "object" && !Array.isArray(value);
 const readString = (value) => typeof value === "string" ? value.trim() : "";
-const isIdentifier = (value) => typeof value === "string" && ID_PATTERN.test(value);
+const isIdentifier = isDiscoveryIdentifier;
 const isCount = (value) => Number.isInteger(value) && value >= 0 && value <= 4;
 const isConfiguredCredential = (value) => value.length >= 8 && !/^(?:replace-with|<)/i.test(value);
 
@@ -122,47 +124,6 @@ export const readAtlasConfiguration = (env) => {
         readinessProbeTimeoutMs,
         maxResponseBytes,
       });
-};
-
-export const parseDiscoveryRequest = (value) => {
-  if (!isRecord(value)) return null;
-  const allowed = new Set(["operation", "contractVersion", "agentId", "legId", "intent"]);
-  if (Object.keys(value).some((key) => !allowed.has(key))) return null;
-  if (
-    value.operation !== "discoverOffers"
-    || value.contractVersion !== "agentic-graph.travel-discovery/v1"
-    || !isIdentifier(value.agentId)
-    || !isIdentifier(value.legId)
-    || !isRecord(value.intent)
-  ) return null;
-  const intent = value.intent;
-  if (Object.keys(intent).some((key) => !["intentId", "category", "constraints"].includes(key))) return null;
-  if (typeof intent.intentId !== "string" || !INTENT_ID_PATTERN.test(intent.intentId) || intent.category !== "flight" || !isRecord(intent.constraints)) return null;
-  const constraints = intent.constraints;
-  if (Object.keys(constraints).some((key) => ![
-    "bundle_id", "changed_leg_id", "prior_offer_id", "prior_amount_minor",
-  ].includes(key))) return null;
-  if (
-    !isIdentifier(constraints.bundle_id)
-    || !isIdentifier(constraints.changed_leg_id)
-    || !(constraints.prior_offer_id === null || isIdentifier(constraints.prior_offer_id))
-    || !(constraints.prior_amount_minor === null || (
-      typeof constraints.prior_amount_minor === "number"
-      && Number.isSafeInteger(constraints.prior_amount_minor)
-      && constraints.prior_amount_minor >= 0
-    ))
-  ) return null;
-  return Object.freeze({
-    operation: value.operation,
-    contractVersion: value.contractVersion,
-    agentId: value.agentId,
-    legId: value.legId,
-    intent: Object.freeze({
-      intentId: intent.intentId,
-      category: intent.category,
-      constraints: Object.freeze({ ...constraints }),
-    }),
-  });
 };
 
 const decimalToMinor = (value, exponent) => {
