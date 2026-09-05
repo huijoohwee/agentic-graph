@@ -1,3 +1,9 @@
+import {
+  kindForInvocationToken,
+  serializeInvocationCatalogForDigest,
+  serializeInvocationRoutingForDigest,
+} from "agentic-os/invocation";
+
 export const AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME = "agentic-graph.agentic_canvas_os.docs.invoke";
 export const AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH = "/agentic-os/control-plane/mcp";
 export const AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA = "agentic-canvas-os-docs-routing/v1";
@@ -121,53 +127,15 @@ export const AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION = Object.freeze({
   outputSchema: AGENTIC_CANVAS_OS_DOCS_OUTPUT_SCHEMA,
 });
 
-export const kindForAgenticCanvasOsToken = (token) => {
-  const value = String(token || "").trim();
-  if (value.startsWith("/")) return "command";
-  if (value.startsWith("#")) return "semantic";
-  if (value.startsWith("@")) return "binding";
-  return "";
-};
+export const kindForAgenticCanvasOsToken = kindForInvocationToken;
 
 export const dictionaryFileForAgenticCanvasOsToken = (token) => {
   const kind = kindForAgenticCanvasOsToken(token);
   return kind ? AGENTIC_CANVAS_OS_DOCS_KIND_FILES[kind] : "";
 };
 
-const normalizeCatalogDigestText = (value) => String(value || "").trim();
+export const serializeAgenticCanvasOsDocsCatalogForDigest = serializeInvocationCatalogForDigest;
 
-export const serializeAgenticCanvasOsDocsCatalogForDigest = (catalog = []) => `${JSON.stringify(
-  [...catalog]
-    .map((entry) => ({
-      token: normalizeCatalogDigestText(entry?.token),
-      kind: normalizeCatalogDigestText(entry?.kind).toLowerCase(),
-      label: normalizeCatalogDigestText(entry?.label),
-      summary: normalizeCatalogDigestText(entry?.summary),
-      sourcePath: normalizeCatalogDigestText(entry?.sourcePath),
-    }))
-    .sort((left, right) => left.token.localeCompare(right.token)),
-)}\n`;
-
-const normalizeRoutingTokens = (values, sigil = "") => [
-  ...new Set((Array.isArray(values) ? values : [])
-    .map(normalizeCatalogDigestText)
-    .filter((value) => value && (!sigil || value.startsWith(sigil)))),
-];
-
-export const serializeAgenticCanvasOsDocsRoutingForDigest = (catalog = []) => `${JSON.stringify({
-  schema: AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA,
-  routes: [...catalog]
-    .map((entry) => ({
-      token: normalizeCatalogDigestText(entry?.token),
-      kind: normalizeCatalogDigestText(entry?.kind).toLowerCase(),
-      sourcePath: normalizeCatalogDigestText(entry?.sourcePath),
-      mcpTools: normalizeRoutingTokens(
-        Array.isArray(entry?.mcpTools)
-          ? entry.mcpTools
-          : normalizeCatalogDigestText(entry?.mcpTool) ? [entry.mcpTool] : [],
-      ),
-      semantics: normalizeRoutingTokens(entry?.semantics, "#"),
-      bindings: normalizeRoutingTokens(entry?.bindings, "@"),
-    }))
-    .sort((left, right) => left.token.localeCompare(right.token)),
-})}\n`;
+export const serializeAgenticCanvasOsDocsRoutingForDigest = (catalog = []) => (
+  serializeInvocationRoutingForDigest(catalog, AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA)
+);

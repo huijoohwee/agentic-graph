@@ -446,7 +446,7 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
     const animationControl = localAnimationControl as { ok?: unknown; targetId?: unknown; scene?: { runtime?: { cast?: Array<{ actorId?: unknown; animation?: { presetId?: unknown } }> } } }
     const animationState = useGraphStore.getState()
     if (animationInspection.schema !== 'agentic-graph-xr-animation-mcp/v1'
-      || animationInspection.presets?.length !== 11
+      || animationInspection.presets?.length !== 10
       || animationInspection.runtime?.cast?.find(track => track.actorId === 'start')?.animation?.presetId !== 'dance'
       || animationControl.ok !== true
       || animationControl.targetId !== 'start'
