@@ -79,6 +79,7 @@ export const execTest = async (results: TestResult[], name: string, fn: () => vo
       return String(em?.message ?? e)
     })()
     console.log(`DONE ${name} (error)`)
+    console.log(`FAIL ${name} — ${msg}`)
     results.push({ name, ok: false, error: msg })
   } finally {
     resetCanvasTestRuntime()
