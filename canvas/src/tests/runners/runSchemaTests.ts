@@ -39,9 +39,9 @@ const modXrArPlacementRuntime = () => import('@/__tests__/xrArPlacementRuntime.t
 const modWorkspaceImportXrSpatialCaptureIngestion = () => import('@/__tests__/workspaceImportXrSpatialCaptureIngestion.test')
 const modWorkspaceImportXrSpatialCaptureLaunchUrl = () => import('@/__tests__/workspaceImportXrSpatialCaptureLaunchUrl.test')
 const modWorkspaceImportXrSpatialCaptureRuntime = () => import('@/__tests__/workspaceImportXrSpatialCaptureRuntime.test')
-const modKnowledgeGraphLaunchIntegration = () => import('@/__tests__/knowledgeGraphLaunchIntegration.test')
-const modKnowledgeGraphHostAdapter = () => import('@/__tests__/knowledgeGraphHostAdapter.test')
-const modKnowledgeGraphHostAdapterProgress = () => import('@/__tests__/knowledgeGraphHostAdapterProgress.test')
+const modAgentGraphLaunchIntegration = () => import('@/__tests__/agentGraphLaunchIntegration.test')
+const modAgentGraphHostAdapter = () => import('@/__tests__/agentGraphHostAdapter.test')
+const modAgentGraphHostAdapterProgress = () => import('@/__tests__/agentGraphHostAdapterProgress.test')
 const modModelAssetRenderPayloadCache = () => import('@/__tests__/modelAssetRenderPayloadCache.test')
 const modSpatialCaptureRenderPerformance = () => import('@/__tests__/spatialCaptureRenderPerformance.test')
 const modGaussianSplatEditorModel = () => import('@/__tests__/gaussianSplatEditorModel.test')
@@ -319,81 +319,81 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
     await mod.testWorkspaceImportXrStandalonePlyLaunchImportFormatsStayAdvertised()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.handledSuppressesFallback', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    await mod.testKnowledgeGraphHandledResultSuppressesLegacyFallbackWithoutCreatedPaths()
+  await execTest(results, 'workspace.import.agentGraph.handledSuppressesFallback', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    await mod.testAgentGraphHandledResultSuppressesLegacyFallbackWithoutCreatedPaths()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.repositoryUsesCanonicalHost', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    await mod.testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreservesProjectionIds()
+  await execTest(results, 'workspace.import.agentGraph.repositoryUsesCanonicalHost', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    await mod.testAgentGraphRepositoryUrlUsesCanonicalHostAndPreservesProjectionIds()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.repositoryFailsClosedWithoutHost', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    await mod.testKnowledgeGraphRepositoryUrlFailsClosedWithoutCanonicalHost()
+  await execTest(results, 'workspace.import.agentGraph.repositoryFailsClosedWithoutHost', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    await mod.testAgentGraphRepositoryUrlFailsClosedWithoutCanonicalHost()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.repositoryRejectsUnsafeUrl', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    await mod.testKnowledgeGraphRepositoryUrlRejectsUnsafeVariants()
+  await execTest(results, 'workspace.import.agentGraph.repositoryRejectsUnsafeUrl', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    await mod.testAgentGraphRepositoryUrlRejectsUnsafeVariants()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.incompleteFailsClosed', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    await mod.testKnowledgeGraphIncompleteRepositoryImportFailsClosed()
+  await execTest(results, 'workspace.import.agentGraph.incompleteFailsClosed', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    await mod.testAgentGraphIncompleteRepositoryImportFailsClosed()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.folderUsesOpaqueCapability', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    await mod.testKnowledgeGraphFolderUsesOpaqueHostCapability()
+  await execTest(results, 'workspace.import.agentGraph.folderUsesOpaqueCapability', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    await mod.testAgentGraphFolderUsesOpaqueHostCapability()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.browserFolderFallbackIsSmall', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    await mod.testKnowledgeGraphBrowserFolderFallbackIsSmallAndExplicit()
+  await execTest(results, 'workspace.import.agentGraph.browserFolderFallbackIsSmall', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    await mod.testAgentGraphBrowserFolderFallbackIsSmallAndExplicit()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.projectionIsBounded', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    mod.testKnowledgeGraphCanvasProjectionRejectsUnboundedPayload()
+  await execTest(results, 'workspace.import.agentGraph.projectionIsBounded', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    mod.testAgentGraphCanvasProjectionRejectsUnboundedPayload()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.projectionRejectsPrivatePaths', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    mod.testKnowledgeGraphCanvasProjectionRejectsPrivatePathsAndNonCanonicalIds()
+  await execTest(results, 'workspace.import.agentGraph.projectionRejectsPrivatePaths', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    mod.testAgentGraphCanvasProjectionRejectsPrivatePathsAndNonCanonicalIds()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.projectionRejectsOversizedProperties', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    mod.testKnowledgeGraphCanvasProjectionRejectsOversizedProperties()
+  await execTest(results, 'workspace.import.agentGraph.projectionRejectsOversizedProperties', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    mod.testAgentGraphCanvasProjectionRejectsOversizedProperties()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.projectionBlocksMutations', async () => {
-    const mod = await modKnowledgeGraphLaunchIntegration()
-    mod.testKnowledgeGraphCanvasProjectionBlocksGraphContentMutations()
+  await execTest(results, 'workspace.import.agentGraph.projectionBlocksMutations', async () => {
+    const mod = await modAgentGraphLaunchIntegration()
+    mod.testAgentGraphCanvasProjectionBlocksGraphContentMutations()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.hostOpaqueFolderGrant', async () => {
-    const mod = await modKnowledgeGraphHostAdapter()
-    await mod.testKnowledgeGraphHostUsesOpaqueContentAddressedFolderGrant()
+  await execTest(results, 'workspace.import.agentGraph.hostOpaqueFolderGrant', async () => {
+    const mod = await modAgentGraphHostAdapter()
+    await mod.testAgentGraphHostUsesOpaqueContentAddressedFolderGrant()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.hostStrictMultipartFolder', async () => {
-    const mod = await modKnowledgeGraphHostAdapter()
-    await mod.testKnowledgeGraphHostStrictFolderCommitCompletesMultipartRuntime()
+  await execTest(results, 'workspace.import.agentGraph.hostStrictMultipartFolder', async () => {
+    const mod = await modAgentGraphHostAdapter()
+    await mod.testAgentGraphHostStrictFolderCommitCompletesMultipartRuntime()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.hostStreamsFolder', async () => {
-    const mod = await modKnowledgeGraphHostAdapter()
-    await mod.testKnowledgeGraphBrowserAdapterStreamsFolderAndSkipsGeneratedTrees()
+  await execTest(results, 'workspace.import.agentGraph.hostStreamsFolder', async () => {
+    const mod = await modAgentGraphHostAdapter()
+    await mod.testAgentGraphBrowserAdapterStreamsFolderAndSkipsGeneratedTrees()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.hostStreamsRepositoryProgress', async () => {
-    const mod = await modKnowledgeGraphHostAdapterProgress()
-    await mod.testKnowledgeGraphBrowserAdapterStreamsRepositoryProgress()
+  await execTest(results, 'workspace.import.agentGraph.hostStreamsRepositoryProgress', async () => {
+    const mod = await modAgentGraphHostAdapterProgress()
+    await mod.testAgentGraphBrowserAdapterStreamsRepositoryProgress()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.hostRepositoryBoundary', async () => {
-    const mod = await modKnowledgeGraphHostAdapter()
-    await mod.testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSafe()
+  await execTest(results, 'workspace.import.agentGraph.hostRepositoryBoundary', async () => {
+    const mod = await modAgentGraphHostAdapter()
+    await mod.testAgentGraphHostRepositoryBoundaryIsStrictAndPathSafe()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.defaultCanvasHostRoute', async () => {
-    const mod = await modKnowledgeGraphHostAdapter()
-    await mod.testKnowledgeGraphDefaultCanvasBridgeRunsSourceBackedRepositoryIngest()
+  await execTest(results, 'workspace.import.agentGraph.defaultCanvasHostRoute', async () => {
+    const mod = await modAgentGraphHostAdapter()
+    await mod.testAgentGraphDefaultCanvasBridgeRunsSourceBackedRepositoryIngest()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.defaultCanvasHostOwner', async () => {
-    const mod = await modKnowledgeGraphHostAdapter()
-    await mod.testKnowledgeGraphToolbarLauncherOwnsDefaultHostRegistration()
+  await execTest(results, 'workspace.import.agentGraph.defaultCanvasHostOwner', async () => {
+    const mod = await modAgentGraphHostAdapter()
+    await mod.testAgentGraphToolbarLauncherOwnsDefaultHostRegistration()
   })
-  await execTest(results, 'workspace.import.knowledgeGraph.hostBoundsBrowserProjection', async () => {
-    const mod = await modKnowledgeGraphHostAdapter()
-    await mod.testKnowledgeGraphHostRejectsOversizedProjectionBeforeBrowserTransfer()
+  await execTest(results, 'workspace.import.agentGraph.hostBoundsBrowserProjection', async () => {
+    const mod = await modAgentGraphHostAdapter()
+    await mod.testAgentGraphHostRejectsOversizedProjectionBeforeBrowserTransfer()
   })
   await execTest(results, 'workspace.import.xrSpatialCapture.noLegacyModelExports', async () => {
     const mod = await modWorkspaceImportXrSpatialCaptureIngestion()

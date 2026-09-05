@@ -1,0 +1,597 @@
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+import { LEGACY_AGENT_GRAPH_SCHEMA_VERSION, sha256, stableStringify } from "../agent-graph/contract.mjs";
+import { runAgentGraphObjectTransaction } from "../agent-graph/object-transaction.mjs";
+import { createAgentGraphRuntime } from "../agent-graph/runtime.mjs";
+import {
+  AGENT_GRAPH_POINTER_SCHEMA,
+  AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA,
+  AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V2,
+  LEGACY_AGENT_GRAPH_MANIFEST_SCHEMA,
+  LEGACY_AGENT_GRAPH_POINTER_SCHEMA,
+  LEGACY_AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V3,
+  LEGACY_AGENT_GRAPH_RESOLUTION_SHARD_SCHEMA,
+  LEGACY_AGENT_GRAPH_SOURCE_BUNDLE_SCHEMA,
+  LEGACY_AGENT_GRAPH_SOURCE_PART_SCHEMA,
+  LEGACY_AGENT_GRAPH_SOURCE_SHARD_SCHEMA,
+  agentGraphStoreRoot,
+  readAgentGraphRepositoryIndex,
+  readAgentGraphSnapshot,
+  readAgentGraphSourceBundle,
+  readAgentGraphSourceParts,
+  readAgentGraphSourceShard,
+  writeAgentGraphSnapshotAtomic,
+  writeAgentGraphSourceShard,
+} from "../agent-graph/store.mjs";
+async function fixture(t, options = {}) {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-source-sharding-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const corpusRoot = path.join(base, "corpus");
+  const outputRoot = path.join(base, "output");
+  await fs.mkdir(corpusRoot, { recursive: true });
+  const runtime = createAgentGraphRuntime({
+    agenticGraphRoot: base,
+    allowedRoots: [corpusRoot],
+    outputRoot,
+    ...options,
+  });
+  return { base, corpusRoot, outputRoot, runtime };
+}
+const pointerPath = (value, graphId) => path.join(
+  value.outputRoot,
+  "graphs",
+  `${graphId.slice("kg:graph:".length)}.json`,
+);
+function objectPath(graphPointer, digest) {
+  return path.join(
+    agentGraphStoreRoot(graphPointer),
+    "objects",
+    digest.slice(0, 2),
+    `${digest}.json`,
+  );
+}
+async function writeStoredObject(graphPointer, value) {
+  const serialized = stableStringify(value, 2);
+  const digest = sha256(serialized);
+  const target = objectPath(graphPointer, digest);
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, serialized, { flag: "wx" }).catch((error) => {
+    if (error?.code !== "EEXIST") throw error;
+  });
+  return { digest, bytes: Buffer.byteLength(serialized) };
+}
+
+async function readStoredObject(graphPointer, digest) {
+  return JSON.parse(await fs.readFile(objectPath(graphPointer, digest), "utf8"));
+}
+
+async function storedObjectDigests(graphPointer) {
+  const objectsRoot = path.join(agentGraphStoreRoot(graphPointer), "objects");
+  const prefixes = await fs.readdir(objectsRoot, { withFileTypes: true });
+  const digests = [];
+  for (const prefix of prefixes.filter((entry) => entry.isDirectory())) {
+    const names = await fs.readdir(path.join(objectsRoot, prefix.name));
+    digests.push(...names.filter((name) => name.endsWith(".json"))
+      .map((name) => name.slice(0, -".json".length)));
+  }
+  return digests.sort();
+}
+
+async function publishChangedBundle(graphPointer, snapshot, index, changedBundle) {
+  const storedBundle = await writeStoredObject(graphPointer, changedBundle);
+  const changedSource = {
+    ...index.sources[0],
+    bundleDigest: storedBundle.digest,
+    bundleBytes: storedBundle.bytes,
+    sourceArtifactBytes: changedBundle.partsBytes + storedBundle.bytes,
+    maxPartBytes: Math.max(
+      0,
+      ...changedBundle.nodeParts.map((part) => part.bytes),
+      ...changedBundle.edgeParts.map((part) => part.bytes),
+    ),
+  };
+  const storedIndex = await writeStoredObject(graphPointer, {
+    ...index,
+    sources: [changedSource, ...index.sources.slice(1)],
+  });
+  const changedManifest = {
+    ...snapshot.manifest,
+    repositories: snapshot.manifest.repositories.map((repository) => (
+      repository.repositoryId === index.repositoryId
+        ? { ...repository, indexDigest: storedIndex.digest }
+        : repository
+    )),
+  };
+  const storedManifest = await writeStoredObject(graphPointer, changedManifest);
+  await fs.writeFile(graphPointer, stableStringify({
+    schema: AGENT_GRAPH_POINTER_SCHEMA,
+    graphId: snapshot.pointer.graphId,
+    snapshotDigest: storedManifest.digest,
+    manifestDigest: storedManifest.digest,
+  }, 2));
+}
+
+async function publishLegacyV2Snapshot(graphPointer, snapshot, index) {
+  const legacySources = [];
+  for (const entry of index.sources) {
+    const shard = await readAgentGraphSourceShard(snapshot, entry);
+    const storedShard = await writeStoredObject(graphPointer, {
+      ...shard,
+      schema: LEGACY_AGENT_GRAPH_SOURCE_SHARD_SCHEMA,
+    });
+    const {
+      bundleDigest: _bundleDigest,
+      bundleBytes: _bundleBytes,
+      sourceArtifactBytes: _sourceArtifactBytes,
+      sourceArtifactRecords: _sourceArtifactRecords,
+      nodePartCount: _nodePartCount,
+      edgePartCount: _edgePartCount,
+      maxPartBytes: _maxPartBytes,
+      ...legacyEntry
+    } = entry;
+    legacySources.push({
+      ...legacyEntry,
+      shardDigest: storedShard.digest,
+      shardBytes: storedShard.bytes,
+    });
+  }
+  const storedIndex = await writeStoredObject(graphPointer, {
+    ...index,
+    schema: AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V2,
+    sources: legacySources,
+  });
+  const legacyManifest = {
+    ...snapshot.manifest,
+    schema: LEGACY_AGENT_GRAPH_MANIFEST_SCHEMA,
+    schemaVersion: LEGACY_AGENT_GRAPH_SCHEMA_VERSION,
+    repositories: snapshot.manifest.repositories.map((repository) => (
+      repository.repositoryId === index.repositoryId
+        ? { ...repository, indexDigest: storedIndex.digest }
+        : repository
+    )),
+  };
+  const storedManifest = await writeStoredObject(graphPointer, legacyManifest);
+  await fs.writeFile(graphPointer, stableStringify({
+    schema: LEGACY_AGENT_GRAPH_POINTER_SCHEMA,
+    graphId: snapshot.pointer.graphId,
+    snapshotDigest: storedManifest.digest,
+    manifestDigest: storedManifest.digest,
+  }, 2));
+  return storedManifest.digest;
+}
+
+async function publishLegacyV3Snapshot(graphPointer, snapshot, index) {
+  const sources = [];
+  for (const entry of index.sources) {
+    const bundle = await readAgentGraphSourceBundle(snapshot, entry);
+    const convertParts = async (descriptors) => Promise.all(descriptors.map(async (descriptor) => {
+      const part = await readStoredObject(graphPointer, descriptor.digest);
+      const stored = await writeStoredObject(graphPointer, {
+        ...part,
+        schema: LEGACY_AGENT_GRAPH_SOURCE_PART_SCHEMA,
+      });
+      return { ...descriptor, digest: stored.digest, bytes: stored.bytes };
+    }));
+    const nodeParts = await convertParts(bundle.nodeParts);
+    const edgeParts = await convertParts(bundle.edgeParts);
+    const partsBytes = [...nodeParts, ...edgeParts]
+      .reduce((total, part) => total + part.bytes, 0);
+    const storedBundle = await writeStoredObject(graphPointer, {
+      ...bundle,
+      schema: LEGACY_AGENT_GRAPH_SOURCE_BUNDLE_SCHEMA,
+      nodeParts,
+      edgeParts,
+      partsBytes,
+    });
+    sources.push({
+      ...entry,
+      bundleDigest: storedBundle.digest,
+      bundleBytes: storedBundle.bytes,
+      sourceArtifactBytes: storedBundle.bytes + partsBytes,
+      maxPartBytes: Math.max(0, ...nodeParts.map(part => part.bytes), ...edgeParts.map(part => part.bytes)),
+    });
+  }
+  const resolutionShardDigests = [];
+  for (const digest of index.resolutionShardDigests) {
+    const shard = await readStoredObject(graphPointer, digest);
+    resolutionShardDigests.push((await writeStoredObject(graphPointer, {
+      ...shard,
+      schema: LEGACY_AGENT_GRAPH_RESOLUTION_SHARD_SCHEMA,
+    })).digest);
+  }
+  const storedIndex = await writeStoredObject(graphPointer, {
+    ...index,
+    schema: LEGACY_AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V3,
+    sources,
+    resolutionShardDigests,
+  });
+  const manifest = {
+    ...snapshot.manifest,
+    schema: LEGACY_AGENT_GRAPH_MANIFEST_SCHEMA,
+    schemaVersion: LEGACY_AGENT_GRAPH_SCHEMA_VERSION,
+    repositories: snapshot.manifest.repositories.map(repository => ({
+      ...repository,
+      indexDigest: repository.repositoryId === index.repositoryId
+        ? storedIndex.digest : repository.indexDigest,
+    })),
+  };
+  const storedManifest = await writeStoredObject(graphPointer, manifest);
+  await fs.writeFile(graphPointer, stableStringify({
+    schema: LEGACY_AGENT_GRAPH_POINTER_SCHEMA,
+    graphId: snapshot.pointer.graphId,
+    snapshotDigest: storedManifest.digest,
+    manifestDigest: storedManifest.digest,
+  }, 2));
+  return storedManifest.digest;
+}
+
+test("source and snapshot artifact budgets fail closed and roll back every child object", async (t) => {
+  const value = await fixture(t);
+  const sourcePath = path.join(value.corpusRoot, "doc.md");
+  await fs.writeFile(sourcePath, "# Baseline\n");
+  const baseline = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(baseline.ok, true, JSON.stringify(baseline));
+  const graphPointer = pointerPath(value, baseline.graphId);
+  const pointerBefore = await fs.readFile(graphPointer, "utf8");
+  const objectsBefore = await storedObjectDigests(graphPointer);
+  const cases = [
+    {
+      code: "source_artifact_record_limit_exceeded",
+      options: { maxSourceArtifactRecords: 1 },
+    },
+    {
+      code: "source_artifact_byte_limit_exceeded",
+      options: { maxSourceArtifactBytes: 1_000 },
+    },
+    {
+      code: "snapshot_artifact_record_limit_exceeded",
+      options: { maxSnapshotArtifactRecords: 1 },
+    },
+    {
+      code: "snapshot_artifact_byte_limit_exceeded",
+      options: { maxSnapshotArtifactBytes: 1_000 },
+    },
+    {
+      code: "snapshot_source_part_limit_exceeded",
+      options: { maxSnapshotSourceParts: 1 },
+    },
+  ];
+  for (let index = 0; index < cases.length; index += 1) {
+    await fs.writeFile(
+      sourcePath,
+      `# Changed ${index}\n${Array.from({ length: 8 }, (_, line) => `line ${line}`).join("\n")}\n`,
+    );
+    const runtime = createAgentGraphRuntime({
+      agenticGraphRoot: value.base,
+      allowedRoots: [value.corpusRoot],
+      outputRoot: value.outputRoot,
+      maxSourceShardBytes: 8_192,
+      maxSourcePartTargetBytes: 4_096,
+      ...cases[index].options,
+    });
+    const result = await runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+    assert.equal(result.ok, false, `${cases[index].code}: ${JSON.stringify(result)}`);
+    assert.equal(result.error.code, cases[index].code);
+    assert.equal(await fs.readFile(graphPointer, "utf8"), pointerBefore);
+    assert.deepEqual(await storedObjectDigests(graphPointer), objectsBefore);
+  }
+});
+
+test("invalid source-bound evidence is rejected before any object or pointer publication", async (t) => {
+  const value = await fixture(t);
+  await fs.writeFile(path.join(value.corpusRoot, "evidence.md"), "# Evidence\nBody\n");
+  const baseline = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(baseline.ok, true, JSON.stringify(baseline));
+  const graphPointer = pointerPath(value, baseline.graphId);
+  const pointerBefore = await fs.readFile(graphPointer, "utf8");
+  const objectsBefore = await storedObjectDigests(graphPointer);
+  const snapshot = await readAgentGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: baseline.graphId,
+  });
+  const index = await readAgentGraphRepositoryIndex(
+    snapshot,
+    snapshot.manifest.repositories[0],
+  );
+  const entry = index.sources[0];
+  const shard = await readAgentGraphSourceShard(snapshot, entry);
+  const invalidFragment = structuredClone(shard);
+  invalidFragment.edges[0].properties["evidence:sourcePath"] = "forged.md";
+  await assert.rejects(
+    runAgentGraphObjectTransaction(
+      graphPointer,
+      { allowedRoot: value.outputRoot },
+      (objectTransaction) => writeAgentGraphSourceShard(
+        graphPointer,
+        {
+          relativePath: entry.sourcePath,
+          contentHash: entry.contentHash,
+          byteSize: entry.byteSize,
+          kind: entry.kind,
+          repositoryId: entry.repositoryId,
+          repositoryPath: entry.repositoryPath,
+        },
+        invalidFragment,
+        {
+          allowedRoot: value.outputRoot,
+          objectTransaction,
+        },
+      ),
+    ),
+    (error) => error?.code === "edge_evidence_invalid",
+  );
+  await assert.rejects(
+    runAgentGraphObjectTransaction(
+      graphPointer,
+      { allowedRoot: value.outputRoot },
+      (objectTransaction) => writeAgentGraphSourceShard(
+        graphPointer,
+        {
+          relativePath: entry.sourcePath,
+          contentHash: entry.contentHash,
+          byteSize: entry.byteSize,
+          kind: entry.kind,
+          repositoryId: entry.repositoryId,
+          repositoryPath: entry.repositoryPath,
+        },
+        {
+          parserId: entry.parserId,
+          parserVersion: entry.parserVersion,
+          status: "parsed",
+          diagnostics: [],
+          nodes: [{
+            id: "oversized-node",
+            type: "SourceFile",
+            label: "oversized",
+            properties: { content: "x".repeat(10_000) },
+          }],
+          edges: [],
+        },
+        {
+          allowedRoot: value.outputRoot,
+          objectTransaction,
+          maxSourceShardBytes: 4_096,
+        },
+      ),
+    ),
+    (error) => error?.code === "source_record_too_large",
+  );
+  assert.equal(await fs.readFile(graphPointer, "utf8"), pointerBefore);
+  assert.deepEqual(await storedObjectDigests(graphPointer), objectsBefore);
+});
+
+test("missing, reordered, and duplicated source parts fail closed", async (t) => {
+  async function multipart() {
+    const value = await fixture(t, {
+      maxSourceShardBytes: 32_768,
+      maxSourcePartTargetBytes: 16_384,
+    });
+    await fs.writeFile(
+      path.join(value.corpusRoot, "large.md"),
+      Array.from({ length: 160 }, (_, index) => `## Section ${index}\nparagraph ${index}`).join("\n"),
+    );
+    const ingest = await value.runtime.ingest({
+      rootPath: value.corpusRoot,
+      strict: true,
+      projectionLimit: 1_000,
+    });
+    assert.equal(ingest.ok, true, JSON.stringify(ingest));
+    const graphPointer = pointerPath(value, ingest.graphId);
+    const snapshot = await readAgentGraphSnapshot(graphPointer, {
+      allowedRoot: value.outputRoot,
+      expectedGraphId: ingest.graphId,
+    });
+    const index = await readAgentGraphRepositoryIndex(
+      snapshot,
+      snapshot.manifest.repositories[0],
+    );
+    const bundle = await readAgentGraphSourceBundle(snapshot, index.sources[0]);
+    assert.ok(bundle.nodeParts.length >= 2);
+    return { value, ingest, graphPointer, snapshot, index, bundle };
+  }
+
+  {
+    const current = await multipart();
+    await fs.unlink(objectPath(current.graphPointer, current.bundle.nodeParts[0].digest));
+    const result = await current.value.runtime.query({
+      graphId: current.ingest.graphId,
+      expectedSnapshotDigest: current.ingest.snapshotDigest,
+      mode: "search",
+      query: "Section",
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.error.code, "snapshot_object_missing");
+  }
+
+  {
+    const current = await multipart();
+    const changed = structuredClone(current.bundle);
+    [changed.nodeParts[0], changed.nodeParts[1]] = [
+      { ...changed.nodeParts[1], ordinal: 0 },
+      { ...changed.nodeParts[0], ordinal: 1 },
+    ];
+    await publishChangedBundle(current.graphPointer, current.snapshot, current.index, changed);
+    const nextSnapshot = await readAgentGraphSnapshot(current.graphPointer, {
+      allowedRoot: current.value.outputRoot,
+      expectedGraphId: current.ingest.graphId,
+    });
+    const nextIndex = await readAgentGraphRepositoryIndex(
+      nextSnapshot,
+      nextSnapshot.manifest.repositories[0],
+    );
+    await assert.rejects(
+      async () => {
+        for await (const _part of readAgentGraphSourceParts(
+          nextSnapshot,
+          nextIndex.sources[0],
+        )) {
+          assert.ok(_part);
+        }
+      },
+      (error) => error?.code === "source_part_invalid",
+    );
+  }
+
+  {
+    const current = await multipart();
+    const changed = structuredClone(current.bundle);
+    changed.nodeParts[1].digest = changed.nodeParts[0].digest;
+    await publishChangedBundle(current.graphPointer, current.snapshot, current.index, changed);
+    const nextSnapshot = await readAgentGraphSnapshot(current.graphPointer, {
+      allowedRoot: current.value.outputRoot,
+      expectedGraphId: current.ingest.graphId,
+    });
+    const nextIndex = await readAgentGraphRepositoryIndex(
+      nextSnapshot,
+      nextSnapshot.manifest.repositories[0],
+    );
+    await assert.rejects(
+      readAgentGraphSourceBundle(nextSnapshot, nextIndex.sources[0]),
+      (error) => error?.code === "source_part_invalid",
+    );
+  }
+
+  {
+    const current = await multipart();
+    const descriptor = current.bundle.edgeParts[0];
+    const edgePart = JSON.parse(await fs.readFile(
+      objectPath(current.graphPointer, descriptor.digest),
+      "utf8",
+    ));
+    edgePart.records[0].properties["evidence:sourcePath"] = "false-source.md";
+    const storedPart = await writeStoredObject(current.graphPointer, edgePart);
+    const changed = structuredClone(current.bundle);
+    changed.edgeParts[0] = {
+      ...changed.edgeParts[0],
+      digest: storedPart.digest,
+      bytes: storedPart.bytes,
+    };
+    changed.partsBytes = [...changed.nodeParts, ...changed.edgeParts]
+      .reduce((total, part) => total + part.bytes, 0);
+    await publishChangedBundle(current.graphPointer, current.snapshot, current.index, changed);
+    const nextSnapshot = await readAgentGraphSnapshot(current.graphPointer, {
+      allowedRoot: current.value.outputRoot,
+      expectedGraphId: current.ingest.graphId,
+    });
+    const nextIndex = await readAgentGraphRepositoryIndex(
+      nextSnapshot,
+      nextSnapshot.manifest.repositories[0],
+    );
+    await assert.rejects(
+      async () => {
+        for await (const part of readAgentGraphSourceParts(
+          nextSnapshot,
+          nextIndex.sources[0],
+        )) {
+          assert.ok(part);
+        }
+      },
+      (error) => error?.code === "edge_evidence_invalid",
+    );
+  }
+});
+
+test("the exact legacy v3 family reads once and migrates without mixed-family reuse", async (t) => {
+  const value = await fixture(t);
+  await fs.writeFile(path.join(value.corpusRoot, "legacy-v3.md"), "# Legacy v3\nBody\n");
+  const initial = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  const graphPointer = pointerPath(value, initial.graphId);
+  const snapshot = await readAgentGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot, expectedGraphId: initial.graphId,
+  });
+  const index = await readAgentGraphRepositoryIndex(snapshot, snapshot.manifest.repositories[0]);
+  const legacyDigest = await publishLegacyV3Snapshot(graphPointer, snapshot, index);
+  const legacy = await readAgentGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot, expectedGraphId: initial.graphId,
+  });
+  const legacyIndex = await readAgentGraphRepositoryIndex(legacy, legacy.manifest.repositories[0]);
+  assert.equal(legacy.schemaFamily, "legacy");
+  assert.equal(legacyIndex.schema, LEGACY_AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA_V3);
+  assert.equal((await readAgentGraphSourceShard(legacy, legacyIndex.sources[0])).schema, LEGACY_AGENT_GRAPH_SOURCE_SHARD_SCHEMA);
+  await assert.rejects(async () => {
+    for await (const part of readAgentGraphSourceParts(snapshot, legacyIndex.sources[0])) assert.ok(part);
+  }, (error) => error?.code === "source_entry_invalid");
+  let records = 0;
+  for await (const part of readAgentGraphSourceParts(legacy, legacyIndex.sources[0])) {
+    records += part.nodes.length + part.edges.length;
+  }
+  assert.ok(records > 0);
+  const migrated = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(migrated.counts.parsed, 1);
+  assert.equal(migrated.counts.reused, 0);
+  assert.notEqual(migrated.snapshotDigest, legacyDigest);
+  const canonical = await readAgentGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot, expectedGraphId: initial.graphId,
+  });
+  assert.equal(canonical.schemaFamily, "canonical");
+  assert.equal((await readAgentGraphRepositoryIndex(
+    canonical, canonical.manifest.repositories[0],
+  )).schema, AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA);
+});
+
+test("unchanged legacy source shards reparse once into a readable canonical v3 bundle", async (t) => {
+  const value = await fixture(t);
+  await fs.writeFile(path.join(value.corpusRoot, "legacy.md"), "# Legacy\nBody\n");
+  const initial = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(initial.ok, true, JSON.stringify(initial));
+  const graphPointer = pointerPath(value, initial.graphId);
+  const snapshot = await readAgentGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: initial.graphId,
+  });
+  const index = await readAgentGraphRepositoryIndex(
+    snapshot,
+    snapshot.manifest.repositories[0],
+  );
+  const legacyDigest = await publishLegacyV2Snapshot(graphPointer, snapshot, index);
+  const legacySnapshot = await readAgentGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: initial.graphId,
+  });
+  const legacyIndex = await readAgentGraphRepositoryIndex(
+    legacySnapshot,
+    legacySnapshot.manifest.repositories[0],
+  );
+  const pointerBeforeRejectedWrite = await fs.readFile(graphPointer, "utf8");
+  await assert.rejects(
+    writeAgentGraphSnapshotAtomic(graphPointer, {
+      graphId: initial.graphId,
+      sourceEntries: legacyIndex.sources,
+      derivedEdgesByRepository: new Map(),
+      diagnostics: legacySnapshot.manifest.diagnostics,
+      rootContentHash: legacySnapshot.manifest.rootContentHash,
+      admission: legacySnapshot.manifest.admission,
+      completeness: legacySnapshot.manifest.completeness,
+      parserRegistryDigest: legacySnapshot.manifest.parserRegistryDigest,
+    }, {
+      allowedRoot: value.outputRoot,
+    }),
+    (error) => error?.code === "source_entry_invalid",
+  );
+  assert.equal(await fs.readFile(graphPointer, "utf8"), pointerBeforeRejectedWrite);
+
+  const migrated = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(migrated.ok, true, JSON.stringify(migrated));
+  assert.equal(migrated.counts.parsed, 1);
+  assert.equal(migrated.counts.reused, 0);
+  assert.notEqual(migrated.snapshotDigest, legacyDigest);
+  const migratedSnapshot = await readAgentGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: migrated.graphId,
+  });
+  const migratedIndex = await readAgentGraphRepositoryIndex(
+    migratedSnapshot,
+    migratedSnapshot.manifest.repositories[0],
+  );
+  assert.equal(migratedIndex.schema, AGENT_GRAPH_REPOSITORY_INDEX_SCHEMA);
+  await readAgentGraphSourceBundle(migratedSnapshot, migratedIndex.sources[0]);
+
+  const reused = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(reused.ok, true, JSON.stringify(reused));
+  assert.equal(reused.snapshotDigest, migrated.snapshotDigest);
+  assert.equal(reused.counts.parsed, 0);
+  assert.equal(reused.counts.reused, 1);
+});

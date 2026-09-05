@@ -2,28 +2,28 @@ import type {
   MarkdownWorkspaceActionBridge,
   WorkspaceBridgeImportResult,
   WorkspaceFileSelection,
-  WorkspaceKnowledgeGraphImportResult,
-  WorkspaceKnowledgeGraphInvocation,
+  WorkspaceAgentGraphImportResult,
+  WorkspaceAgentGraphInvocation,
   WorkspaceImportUrlOpts,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import {
-  applyKnowledgeGraphCanvasProjection,
-  createKnowledgeGraphCanvasPreviewSession,
-} from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
+  applyAgentGraphCanvasProjection,
+  createAgentGraphCanvasPreviewSession,
+} from '@/features/agent-graph/agentGraphCanvasProjection'
 import {
-  normalizeKnowledgeGraphRepositoryRemoteUrl,
-  parseKnowledgeGraphRepositoryUrl,
-} from '@/features/knowledge-graph/knowledgeGraphRepositoryUrl'
+  normalizeAgentGraphRepositoryRemoteUrl,
+  parseAgentGraphRepositoryUrl,
+} from '@/features/agent-graph/agentGraphRepositoryUrl'
 import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
 import { isRemoteRateLimitFailureMessage } from '@/lib/net/fetchRemoteTextFailure'
 
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
 export const LAUNCH_FOLDER_PREVIEW_MAX_BYTES = 25 * 1024 * 1024
 
-export type LaunchKnowledgeGraphImportProgressStage = 'resolving' | 'ingesting' | 'projecting'
+export type LaunchAgentGraphImportProgressStage = 'resolving' | 'ingesting' | 'projecting'
 
 const repositoryImporterIds = new WeakMap<object, number>()
-const inFlightRepositoryImports = new Map<string, Promise<WorkspaceKnowledgeGraphImportResult>>()
+const inFlightRepositoryImports = new Map<string, Promise<WorkspaceAgentGraphImportResult>>()
 let nextRepositoryImporterId = 1
 
 function repositoryImporterId(importer: object): number {
@@ -38,7 +38,7 @@ function repositoryImporterId(importer: object): number {
 function repositoryImportOperationKey(args: {
   repositoryUrl: string
   opts?: WorkspaceImportUrlOpts
-  invocation: WorkspaceKnowledgeGraphInvocation
+  invocation: WorkspaceAgentGraphInvocation
   importer: object
 }): string {
   return JSON.stringify([
@@ -58,9 +58,9 @@ function repositoryImportOperationKey(args: {
   ])
 }
 
-function reportKnowledgeGraphImportProgress(
-  callback: ((stage: LaunchKnowledgeGraphImportProgressStage) => void) | undefined,
-  stage: LaunchKnowledgeGraphImportProgressStage,
+function reportAgentGraphImportProgress(
+  callback: ((stage: LaunchAgentGraphImportProgressStage) => void) | undefined,
+  stage: LaunchAgentGraphImportProgressStage,
 ): void {
   try {
     callback?.(stage)
@@ -80,12 +80,12 @@ export function canonicalLaunchRepositoryUrl(
       return null
     }
   }
-  return normalizeKnowledgeGraphRepositoryRemoteUrl(value)
+  return normalizeAgentGraphRepositoryRemoteUrl(value)
 }
 
-export function isLaunchKnowledgeGraphRepositoryUrl(value: string): boolean {
+export function isLaunchAgentGraphRepositoryUrl(value: string): boolean {
   try {
-    return parseKnowledgeGraphRepositoryUrl(value).explicitGitSuffix
+    return parseAgentGraphRepositoryUrl(value).explicitGitSuffix
   } catch {
     return false
   }
@@ -112,12 +112,12 @@ export function isLaunchImportRepositoryRateLimitFailure(value: unknown): boolea
   return !!message && isRemoteRateLimitFailureMessage(message)
 }
 
-export function canRecoverLaunchImportAsKnowledgeGraphRepository(value: string): boolean {
+export function canRecoverLaunchImportAsAgentGraphRepository(value: string): boolean {
   return canonicalLaunchRepositoryUrl(value, { forceRepository: true }) !== null
 }
 
-function isKnowledgeGraphImportResult(value: unknown): value is WorkspaceKnowledgeGraphImportResult {
-  return !!value && typeof value === 'object' && (value as { kind?: unknown }).kind === 'knowledge-graph'
+function isAgentGraphImportResult(value: unknown): value is WorkspaceAgentGraphImportResult {
+  return !!value && typeof value === 'object' && (value as { kind?: unknown }).kind === 'agent-graph'
 }
 
 function isHandledWorkspaceImport(result: void | WorkspaceBridgeImportResult): boolean {
@@ -127,20 +127,20 @@ function isHandledWorkspaceImport(result: void | WorkspaceBridgeImportResult): b
   )
 }
 
-function finishKnowledgeGraphImport(
-  result: WorkspaceKnowledgeGraphImportResult,
-): WorkspaceKnowledgeGraphImportResult {
-  applyKnowledgeGraphCanvasProjection(result)
+function finishAgentGraphImport(
+  result: WorkspaceAgentGraphImportResult,
+): WorkspaceAgentGraphImportResult {
+  applyAgentGraphCanvasProjection(result)
   return result
 }
 
-async function materializeRepositoryKnowledgeGraphArtifact(args: {
+async function materializeRepositoryAgentGraphArtifact(args: {
   bridge: MarkdownWorkspaceActionBridge
   repositoryUrl: string
-  invocation: WorkspaceKnowledgeGraphInvocation
-  result: WorkspaceKnowledgeGraphImportResult
+  invocation: WorkspaceAgentGraphInvocation
+  result: WorkspaceAgentGraphImportResult
 }): Promise<void> {
-  const materialize = args.bridge.materializeKnowledgeGraphImport
+  const materialize = args.bridge.materializeAgentGraphImport
   if (typeof materialize !== 'function') return
   await materialize({
     repositoryUrl: args.repositoryUrl,
@@ -193,18 +193,18 @@ export async function runLaunchImportLocalFolderPreview(args: {
   return args.fallback(snapshot)
 }
 
-export function hasLaunchKnowledgeGraphFolderImporter(bridge: MarkdownWorkspaceActionBridge): boolean {
-  return typeof bridge.knowledgeGraph?.importFolder === 'function'
+export function hasLaunchAgentGraphFolderImporter(bridge: MarkdownWorkspaceActionBridge): boolean {
+  return typeof bridge.agentGraph?.importFolder === 'function'
 }
 
-export async function runLaunchImportKnowledgeGraphFolder(args: {
+export async function runLaunchImportAgentGraphFolder(args: {
   bridge: MarkdownWorkspaceActionBridge
-}): Promise<WorkspaceKnowledgeGraphImportResult> {
-  const importFolder = args.bridge.knowledgeGraph?.importFolder
+}): Promise<WorkspaceAgentGraphImportResult> {
+  const importFolder = args.bridge.agentGraph?.importFolder
   if (typeof importFolder !== 'function') {
     throw new Error('Canonical knowledge graph folder import is unavailable.')
   }
-  return finishKnowledgeGraphImport(await importFolder())
+  return finishAgentGraphImport(await importFolder())
 }
 
 export async function runLaunchImportUrl(args: {
@@ -212,29 +212,29 @@ export async function runLaunchImportUrl(args: {
   opts?: WorkspaceImportUrlOpts
   bridge: MarkdownWorkspaceActionBridge
   fallback: (urlRaw: string, opts?: WorkspaceImportUrlOpts) => Promise<void | WorkspaceBridgeImportResult>
-  forceKnowledgeGraphRepository?: boolean
-  resolveMcpInvocation?: (mcpTool: string) => Promise<{ invocation: WorkspaceKnowledgeGraphInvocation }>
-  onKnowledgeGraphProgress?: (stage: LaunchKnowledgeGraphImportProgressStage) => void
-}): Promise<void | WorkspaceBridgeImportResult | WorkspaceKnowledgeGraphImportResult> {
+  forceAgentGraphRepository?: boolean
+  resolveMcpInvocation?: (mcpTool: string) => Promise<{ invocation: WorkspaceAgentGraphInvocation }>
+  onAgentGraphProgress?: (stage: LaunchAgentGraphImportProgressStage) => void
+}): Promise<void | WorkspaceBridgeImportResult | WorkspaceAgentGraphImportResult> {
   const url = String(args.urlRaw || '').trim()
   if (!url) return
   const repositoryUrl = canonicalLaunchRepositoryUrl(url, {
-    forceRepository: args.forceKnowledgeGraphRepository,
+    forceRepository: args.forceAgentGraphRepository,
   })
   if (repositoryUrl) {
-    const importRepositoryUrl = args.bridge.knowledgeGraph?.importRepositoryUrl
+    const importRepositoryUrl = args.bridge.agentGraph?.importRepositoryUrl
     if (typeof importRepositoryUrl !== 'function') {
       throw new Error('Canonical repository knowledge graph import is unavailable.')
     }
-    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'resolving')
+    reportAgentGraphImportProgress(args.onAgentGraphProgress, 'resolving')
     const resolved = args.resolveMcpInvocation
-      ? await args.resolveMcpInvocation(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
+      ? await args.resolveMcpInvocation(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest)
       : await import('@/features/agentic-os/agenticOsMcpInvocationResolver').then(
         ({ resolveAgenticOsMcpInvocation }) => resolveAgenticOsMcpInvocation(
-          AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+          AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest,
         ),
       )
-    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'ingesting')
+    reportAgentGraphImportProgress(args.onAgentGraphProgress, 'ingesting')
     const operationKey = repositoryImportOperationKey({
       repositoryUrl,
       opts: args.opts,
@@ -242,11 +242,11 @@ export async function runLaunchImportUrl(args: {
       importer: importRepositoryUrl as unknown as object,
     })
     const existingOperation = inFlightRepositoryImports.get(operationKey)
-    let result: WorkspaceKnowledgeGraphImportResult
+    let result: WorkspaceAgentGraphImportResult
     if (existingOperation) {
       result = await existingOperation
     } else {
-      const preview = createKnowledgeGraphCanvasPreviewSession()
+      const preview = createAgentGraphCanvasPreviewSession()
       const operation = Promise.resolve().then(() => importRepositoryUrl(
         repositoryUrl,
         args.opts,
@@ -256,7 +256,7 @@ export async function runLaunchImportUrl(args: {
       const completedOperation = operation
         .then(async importResult => {
           preview.commit(importResult)
-          await materializeRepositoryKnowledgeGraphArtifact({
+          await materializeRepositoryAgentGraphArtifact({
             bridge: args.bridge,
             repositoryUrl,
             invocation: resolved.invocation,
@@ -277,7 +277,7 @@ export async function runLaunchImportUrl(args: {
         }
       }
     }
-    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'projecting')
+    reportAgentGraphImportProgress(args.onAgentGraphProgress, 'projecting')
     return result
   }
   const bridgeImport = args.bridge.importUrl
@@ -288,7 +288,7 @@ export async function runLaunchImportUrl(args: {
     } catch {
       return args.fallback(url, args.opts)
     }
-    if (isKnowledgeGraphImportResult(result)) return finishKnowledgeGraphImport(result)
+    if (isAgentGraphImportResult(result)) return finishAgentGraphImport(result)
     if (isHandledWorkspaceImport(result)) return result
   }
   return args.fallback(url, args.opts)

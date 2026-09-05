@@ -11,7 +11,7 @@ import {
 import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
 
 export type AgenticOsMcpInvocationPacket = Readonly<{
-  schema: 'agentic-graph-knowledge-graph-invocation/v1'
+  schema: 'agentic-graph-agent-graph-invocation/v1'
   tool: string
   action: string
   semantics: readonly string[]
@@ -142,7 +142,7 @@ const resolveSourceBackedCommand = async (args: {
   }
   return Object.freeze({
     invocation: Object.freeze({
-      schema: 'agentic-graph-knowledge-graph-invocation/v1',
+      schema: 'agentic-graph-agent-graph-invocation/v1',
       tool: args.target,
       action: command.token,
       semantics: Object.freeze(semantics.map(entry => entry.token)),

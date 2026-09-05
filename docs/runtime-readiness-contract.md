@@ -1,19 +1,39 @@
 ---
+schema: "agentic-graph-runtime-readiness/v1"
 title: "agentic-graph Runtime Readiness Contract"
 doc_type: "Runtime Contract"
 status: "active"
 contract_version: 1
+version: "1.0.0"
+date: "2026-09-05"
+lang: "en-US"
 frontmatter_contract: "required"
+owner: "agentic-graph runtime-readiness"
+local_rung: "runtime-ready"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
+agent_id: "codex:graph_frontmatter_and_docs"
+doc_path: "docs/runtime-readiness-contract.md"
+guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md@2.4.0"
+production_release_authorized: false
+evidence_references:
+  - check: "npm run ci:integration"
+    result: "passed: runtime-ready status, 2224 runtime tests, 43 storage-relay tests, and 23 repository-pack tests"
+    surface: "authoring"
+    observed_at: "2026-09-05"
 invocation:
   action: "/runtime-ready.check"
-  semantic: "#runtime-ready"
+  semantics: ["#harness", "#vcc", "#runtime-ready"]
+  bindings: ["@local-harness", "@runtime-proof", "@repository-root"]
   actor: "@local-harness"
 stage_contract:
   module: "mcp/video-remix/stage-contract.js"
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-canvas-os.git"
-  ref: "1843e5a28273692b57159dbea2031a930bcc5655"
+  ref: "b62ba844b8c68e3b542099ee90acdcf8a5ba9e64"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-canvas-os/docs"
   required_files: ["FACTS.md", "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]

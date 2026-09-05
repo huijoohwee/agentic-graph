@@ -1,0 +1,221 @@
+---
+schema: "agentic-graph-runtime-contract/v1"
+title: "agentic-graph Deterministic Agent-Graph Runtime"
+doc_type: "Runtime Contract"
+id: "agentic-graph-deterministic-agent-graph-runtime"
+version: "1.2.0"
+date: "2026-09-05"
+status: "active"
+created: "2026-07-22"
+updated: "2026-09-05"
+author: "airvio / joohwee"
+domain: "agentic-graph"
+lang: "en-US"
+frontmatter_contract: "required"
+owner: "agent-graph runtime"
+local_rung: "runtime-ready"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
+agent_id: "codex:graph_frontmatter_and_docs"
+doc_path: "docs/documents/agentic-graph-deterministic-agent-graph-runtime.md"
+guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md@2.4.0"
+production_release_authorized: false
+evidence_references:
+  - check: "npm run agent-graph:check"
+    result: "passed: 105 MCP tests and 2 Canvas projection tests"
+    surface: "authoring"
+    observed_at: "2026-09-05"
+  - check: "npm run ci:integration"
+    result: "passed: affected integration gate"
+    surface: "authoring"
+    observed_at: "2026-09-05"
+runtime_surface: "local-stdio-mcp"
+invocation:
+  action: "/agentic.graph.ingest"
+  semantics: ["#agentic-graph", "#mcp", "#runtime-ready"]
+  bindings: ["@working-directory", "@agentic-graph", "@operator", "@runtime-proof"]
+  actor: "@operator"
+runtime:
+  product_identity: "agentic-graph"
+  feature_identity: "agent-graph"
+  owner: "agentic-graph"
+  readiness: "runtime-ready"
+  delivery_scope: "local-stdio-mcp"
+  canonical_writers_only: true
+  legacy_reader_policy: "exact-pre-rename-schema-family-only"
+  network_default: "deny"
+  model_call_count: 0
+implementation_policy: "Independently authored in-repository contracts and runtime; no copied parser generator, graph runtime, remote parsing service, or external conformance oracle."
+constraints:
+  - "deterministic"
+  - "local-first"
+  - "no-vector-store"
+  - "no-model-call"
+  - "network-only-for-explicit-repository-acquisition"
+  - "every-edge-explained"
+  - "honest-unsupported-diagnostics"
+tags:
+  - "agent-graph"
+  - "mcp"
+  - "ast"
+  - "lexical-traversal"
+  - "provenance"
+  - "runtime-contract"
+related:
+  - "docs/documents/agentic-graph-query-prd-tad.md"
+  - "mcp/README.md"
+  - "README.md"
+---
+
+# agentic-graph Deterministic Agent-Graph Runtime
+
+## Authority and Scope
+
+This document is the focused contract for agentic-graph's deterministic local agent-graph runtime. The earlier [Queryable Corpus Graph PRD/TAD](agentic-graph-query-prd-tad.md) remains authoritative for the 2026-05-29 browser, Source Files, Canvas, and FloatingPanel Chat implementation history.
+
+The 2026-07-22 runtime extension narrowly supersedes that PRD's Phase 1 no-CLI/MCP non-goal. The 2026-07-31 extension adds independently invocable parser generation and provider-neutral repository acquisition to the same local owner. It does not authorize a remote service, hosted graph API, second graph store, MCP-only materialization pipeline, model-backed retrieval path, or deployment.
+
+## Independent Implementation Boundary
+
+agentic-graph's contracts, tool names, evidence model, parser registry, implementation, tests, fixtures, and documentation are independently authored in this repository. The runtime does not copy or use another parser-generator or agent-graph project as an implementation source or conformance oracle. Registered local adapters may reuse the repository's pinned TypeScript compiler and the host Python standard-library AST; neither creates a remote parsing or graph service.
+
+## Local Invocation Surface
+
+The capability has exactly four local stdio MCP tool identities:
+
+| Tool | Purpose |
+|---|---|
+| `agentic-graph.agent_graph.parser_generate` | Return the `default-source` built-in local registry or compile bounded inert custom matchers and an optional declarative grammar into one canonical digest-bound parser registry. |
+| `agentic-graph.agent_graph.ingest` | Build or refresh deterministic graph evidence for a supported local corpus. |
+| `agentic-graph.agent_graph.query` | Retrieve graph evidence using lexical matching and graph traversal. |
+| `agentic-graph.agent_graph.explain_edge` | Explain one stored edge from its source evidence and extraction basis. |
+
+The matching Agentic Canvas OS aliases are:
+
+| MCP tool | Exact Agentic Canvas OS invocation |
+|---|---|
+| `agentic-graph.agent_graph.parser_generate` | `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof` |
+| `agentic-graph.agent_graph.ingest` | `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof` |
+| `agentic-graph.agent_graph.query` | `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
+| `agentic-graph.agent_graph.explain_edge` | `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
+
+A stdio MCP client calls the tool identity directly. `parser_generate` accepts exactly one selection: `profile: "default-source"` returns the existing built-in digest-pinned registry, while custom descriptors support bounded declared coverage. An ACOS-capable host resolves and validates the matching exact tuple above, then explicitly calls that tool; dictionary lookup alone never executes it. Callers use the input schema advertised by the running local server; authored docs do not duplicate that schema.
+
+## Architecture and Ownership
+
+The runtime follows one agentic-graph-owned path:
+
+```text
+local corpus or acquired immutable repository -> verified parser-registry v2 -> deterministic AST/structural/inventory adapters -> sharded explained-edge snapshot -> lexical graph traversal -> MCP evidence
+```
+
+- Existing corpus, GraphData, evidence, and local MCP owners remain authoritative.
+- The MCP surface is an adapter over shared graph contracts, not a new graph owner.
+- The deterministic runtime does not require Neo4j, a vector database, an embedding index, or an external parsing service.
+- Optional FloatingPanel Chat answer synthesis remains a separate downstream harness concern and is not part of these four tools.
+- New pointers, manifests, indexes, shards, bundles, parts, and materialized metadata use only the canonical agent-graph schema family. Readers accept the exact pre-rename family as one complete family and reject mixed-family artifacts; the next ingest reparses it into canonical objects rather than reusing legacy writes.
+- The pre-rename ingest-lock identity remains unchanged so upgraded and predecessor processes serialize the same corpus. Host configuration accepts only `AGENTIC_OS_AGENT_GRAPH_*`; automatic discovery of an existing pre-rename output directory is retained solely to keep stored snapshots reachable.
+- A materialized artifact records the source snapshot as `snapshotDigest` and its own content digest as `digest`; neither field substitutes for the other.
+
+Repository URLs are input data, not routing identities. Acquisition is selected
+from the source-backed command and capability contract, while host admission is
+an injected policy over canonical HTTPS repository identities. No repository,
+organization, forge brand, or submitted URL receives a private invocation path.
+
+## Deterministic Coverage Contract
+
+Coverage is capability-driven. A filename or extension never implies a successful parse by itself.
+
+| Corpus family | Required local behavior |
+|---|---|
+| Supported code | Use a registered deterministic AST adapter for structural symbols and relationships. |
+| Supported documentation | Extract only locally observable document structure, bounded non-code text units, and source references. |
+| Supported SQL schemas | Extract only locally observable schema structure and relationships. |
+| Supported configuration | Extract structural keys, sections, and non-secret references without executing the configuration. |
+| Supported PDFs | Extract locally available text and document structure without remote OCR or model fallback. |
+| Generated language grammar | Compile bounded inert tokens and production rules, then emit a deterministic AST whose edges retain exact source spans and grammar identity. |
+| Unknown or binary input | Preserve a deterministic inventory node so the source remains discoverable without inventing unsupported structural facts. |
+
+Unknown formats remain visible through inventory evidence. Unavailable parsers, malformed or unreadable files, encrypted or image-only PDFs, unsupported syntax, and unresolved references must stay visible as limited, unsupported, or unresolved diagnostics. The runtime must not silently substitute a model, remote parser, embedding model, or guessed relationship. An explicit `repositoryUrl` ingest may use the network only to resolve and acquire one canonical credential-free HTTPS repository revision; parsing, storage, query, and explanation remain local and network-free.
+
+## Every-Edge Explanation Contract
+
+Every stored edge must be auditable from source-backed evidence:
+
+- the edge identifies its relationship and direction
+- its evidence identifies the source location and deterministic extraction basis
+- its explanation states why that relationship exists without model-generated prose
+- inferred or ambiguous resolution remains distinguishable from directly extracted structure
+- supporting premises remain inspectable when an edge depends on other graph evidence
+- missing or invalid evidence prevents the edge from being presented as authoritative
+
+`agentic-graph.agent_graph.explain_edge` reads this stored evidence. It does not recreate an explanation through a model or vector lookup.
+
+## Query Contract
+
+`agentic-graph.agent_graph.query` uses lexical matching to select graph evidence and bounded graph traversal to expand it. Results retain edge direction, relationship labels, and source provenance.
+
+The query path must:
+
+- be deterministic for the same snapshot and request
+- honor runtime depth, result, and output bounds
+- distinguish an empty match from an incomplete or unsupported result
+- return evidence rather than an uncited synthesized answer
+- make zero embedding, vector-store, model, and network calls
+
+Read-only graph projections remain transport-bounded rather than snapshot-bounded. The runtime fits
+projection nodes and edges deterministically inside one shared byte ceiling, retains endpoint
+closure for surviving edges, and reports `projection_byte_limit` when byte trimming rather than
+result-count trimming makes the projection incomplete.
+
+## Security Bounds
+
+- Canonicalized source paths and resolved symlink targets remain inside the host-owned allowed root.
+- Indexed content is parsed as data and is never executed as code, script, SQL, configuration, document action, or PDF behavior.
+- Output remains inside the host-owned store boundary and must not present a partial or invalid run as complete.
+- Content-addressed source, deterministically chunked repository-resolution, index, and manifest shards are individually bounded and committed behind one atomic current-snapshot pointer. In non-strict mode, an oversized source artifact becomes explicit `limited` source evidence with `source_artifact_limit_exceeded`; strict mode and an oversized single resolution record fail before pointer replacement.
+- A cross-process, dead-owner-recoverable per-graph lease serializes ingest publication and rollback. Ingest writes immutable source shards as each source completes, retains only cross-source resolution records, and applies aggregate record and serialized-byte ceilings to both resolution inputs and derived edges. Ambiguous edges retain the exact candidate count plus a deterministic bounded candidate set that includes their target. A failed unpublished ingest rolls back objects it created and leaves the current pointer unchanged.
+- File, corpus, traversal, and output limits fail closed with explicit diagnostics.
+- Configuration structure may be indexed, but secret values must not be returned as graph evidence.
+- Source-controlled labels and evidence are sanitized before MCP output.
+- Local-directory ingest, parsing, storage, query, and explanation make no model call, network request, embedding request, or vector-store write. Explicit repository acquisition is the only network-capable phase.
+
+When the installed local Python runtime predates a known grammar feature at the exact syntax-error
+line, the parser may lower only a conservative validated subset of newer syntax and retain
+deterministic lexical declarations/imports with explicit recovery diagnostics. Unvalidated or
+unrelated malformed syntax still fails honestly and cannot be upgraded into a successful parse.
+
+## Honest Diagnostic Contract
+
+| Condition | Required outcome |
+|---|---|
+| Root or symlink escape | Reject the request without reading the escaped target. |
+| Unsupported parser or syntax | Identify the unsupported source or capability; do not guess. |
+| Malformed, unreadable, encrypted, or image-only input | Return an explicit bounded diagnostic. |
+| Unresolved relationship | Preserve the unresolved state or omit the edge; do not fabricate a target. |
+| Missing graph snapshot, node, or edge | Return a not-found diagnostic distinct from an empty successful query. |
+| Runtime limit reached | Mark the result incomplete or rejected; do not imply full coverage. |
+| Invalid edge evidence | Reject the authoritative edge explanation. |
+
+## Acceptance and Validation
+
+The runtime is ready only when all of the following hold:
+
+- the local stdio inventory exposes the four declared agent-graph tool identities
+- the `/`, `#`, and `@` mappings exactly match this contract
+- parser generation emits only a canonical v2 registry; declarative grammars are finite JSON data with hard token, rule, repetition, byte, recursion, and operation bounds
+- supported code uses deterministic AST parsing and supported non-code inputs use deterministic structural extraction
+- every returned edge has a source-backed deterministic explanation
+- query uses lexical graph traversal with no vector store
+- ingest, query, and explain make zero model calls; only explicit repository acquisition may use the network
+- path, symlink, secret, execution, size, traversal, and output bounds fail closed
+- unsupported inputs and unresolved evidence return honest diagnostics
+- no copied or separately hosted parser-generator or graph runtime appears in manifests, imports, subprocesses, runtime calls, vendored content, fixtures, tests, or generated assets
+
+Documentation validation requires valid YAML frontmatter, `git diff --check`, and an authored-file length below 600 lines. Runtime implementation and tests remain owned by their existing code contracts; this document does not duplicate request schemas or test fixtures.
+
+## Readiness Boundary
+
+This contract proves only the local stdio agent-graph lane. It does not claim a Pages, Worker, Cloudflare, public HTTP, hosted MCP, browser WebMCP, vector, model, or cross-project graph service. Any future expansion requires a separate owner, threat model, acceptance gate, and explicit authorization.

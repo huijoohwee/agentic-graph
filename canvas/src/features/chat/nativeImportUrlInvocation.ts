@@ -2,8 +2,8 @@ import {
   getMarkdownWorkspaceActionBridge,
   type WorkspaceBridgeImportResult,
   type WorkspaceImportUrlOpts,
-  type WorkspaceKnowledgeGraphCounts,
-  type WorkspaceKnowledgeGraphImportResult,
+  type WorkspaceAgentGraphCounts,
+  type WorkspaceAgentGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import {
   isWorkspaceUrlImportCanvasRendererId,
@@ -49,12 +49,12 @@ export type NativeImportUrlWorkspaceFilesRunResult = NativeImportUrlRunResultCom
   removedPaths: string[]
 }
 
-export type NativeImportUrlKnowledgeGraphRunResult = NativeImportUrlRunResultCommon & {
-  kind: 'knowledge-graph'
+export type NativeImportUrlAgentGraphRunResult = NativeImportUrlRunResultCommon & {
+  kind: 'agent-graph'
   graphId: string
   snapshotDigest: string
   complete: true
-  counts: WorkspaceKnowledgeGraphCounts
+  counts: WorkspaceAgentGraphCounts
   projectionToken: string
   projectionComplete: boolean
   projectionTruncated: boolean
@@ -68,12 +68,12 @@ export type NativeImportUrlKnowledgeGraphRunResult = NativeImportUrlRunResultCom
 
 export type NativeImportUrlRunResult =
   | NativeImportUrlWorkspaceFilesRunResult
-  | NativeImportUrlKnowledgeGraphRunResult
+  | NativeImportUrlAgentGraphRunResult
 
-export const isNativeImportUrlKnowledgeGraphRunResult = (
+export const isNativeImportUrlAgentGraphRunResult = (
   result: NativeImportUrlRunResult,
-): result is NativeImportUrlKnowledgeGraphRunResult => (
-  'kind' in result && result.kind === 'knowledge-graph'
+): result is NativeImportUrlAgentGraphRunResult => (
+  'kind' in result && result.kind === 'agent-graph'
 )
 
 export type NativeImportUrlMutationFailure = {
@@ -122,12 +122,12 @@ const normalizePaths = (value: unknown): string[] => {
     .filter((path, index, paths) => Boolean(path) && paths.indexOf(path) === index)
 }
 
-const isKnowledgeGraphImportResult = (
+const isAgentGraphImportResult = (
   value: unknown,
-): value is WorkspaceKnowledgeGraphImportResult => (
+): value is WorkspaceAgentGraphImportResult => (
   !!value
   && typeof value === 'object'
-  && (value as { kind?: unknown }).kind === 'knowledge-graph'
+  && (value as { kind?: unknown }).kind === 'agent-graph'
 )
 
 const buildInvocationText = (invocation: NativeImportUrlInvocation): string =>
@@ -261,7 +261,7 @@ export const executeNativeImportUrlInvocation = async (
     },
   })
   const invocationText = buildInvocationText(normalizedInvocation)
-  if (isKnowledgeGraphImportResult(result)) {
+  if (isAgentGraphImportResult(result)) {
     const projectionCounts = {
       nodes: result.projection.graphData.nodes.length,
       edges: result.projection.graphData.edges.length,
@@ -281,7 +281,7 @@ export const executeNativeImportUrlInvocation = async (
       ...(result.projection.reason ? [`- Projection reason: ${result.projection.reason}`] : []),
     ].join('\n')
     return {
-      kind: 'knowledge-graph',
+      kind: 'agent-graph',
       source: normalizedInvocation.url,
       invocation: invocationText,
       renderer: normalizedInvocation.canvas2dRenderer,
@@ -404,7 +404,7 @@ export const tryActivateNativeImportUrlInvocation = async (args: {
       response = result.outputText
       submitArgs.pushUiLog?.({
         kind: 'success',
-        message: isNativeImportUrlKnowledgeGraphRunResult(result)
+        message: isNativeImportUrlAgentGraphRunResult(result)
           ? `Native knowledge graph import finished: ${result.graphId}`
           : `Native URL import finished: ${invocation.url}`,
         source: 'chat:nativeImportUrl',

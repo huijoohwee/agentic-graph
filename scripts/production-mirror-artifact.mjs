@@ -1,49 +1,30 @@
 import { createHash } from 'node:crypto'
-import { execFileSync } from 'node:child_process'
+import { execFile, execFileSync, spawn } from 'node:child_process'
+import { createReadStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
-import {
-  CANONICAL_IMAGE_ROOT,
-  isExplicitLegacyMirrorRemovalPath,
-  isLegacyMirrorInventoryPath,
-} from './mirror-namespace-contract.mjs'
-import {
-  assertManagedDeletedPaths,
-  assertTrackedDeletedPaths,
-  listSealedLegacyPathsAtRevision,
-  removeEmptyLegacyMirrorDirectories,
-} from './production-mirror-artifact-deletions.mjs'
-import {
-  assertSafeRoot,
-  normalizeGitRelativePath,
-  normalizeRelativePath,
-  parseNulTerminatedGitPaths,
-  resolveWithin,
-} from './production-mirror-artifact-paths.mjs'
-import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS } from './xr-v2/production-publish-contract.mjs'
+import { CANONICAL_IMAGE_ROOT, LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS,
+  LEGACY_MIRROR_NAMED_FILE_INVENTORY, LEGACY_MIRROR_ROOT_INVENTORIES,
+  LEGACY_MIRROR_TRACKED_EXACT_FILE_INVENTORY, LEGACY_MIRROR_TRACKED_EXACT_PATHS,
+  isExplicitLegacyMirrorRemovalPath, isLegacyMirrorInventoryPath } from './mirror-namespace-contract.mjs'
+import { assertManagedDeletedPaths, assertPlannedMirrorPathsAbsent, assertTrackedDeletedPaths,
+  removeEmptyLegacyMirrorDirectories, removePlannedMirrorFiles } from './production-mirror-artifact-deletions.mjs'
+import { assertSealedLegacyMirrorRootInventory, assertSealedLegacyNamedFileInventory,
+  digestRelativeFileContents } from './legacy-mirror-inventory.mjs'
+import { assertSafeRoot, normalizeGitRelativePath, normalizeRelativePath,
+  parseNulTerminatedGitPaths, resolveWithin } from './production-mirror-artifact-paths.mjs'
+import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
+  XR_V2_LEGACY_MIRROR_SHA256_BY_PATH } from './xr-v2/production-publish-contract.mjs'
 
 export const productionMirrorArtifactManifestName = '.agentic-graph-production-artifact-manifest.json'
 export const productionMirrorArtifactEntries = [
-  '404.html',
-  'README.md',
-  'content/agentic-graph',
-  'agentic-graph',
-  CANONICAL_IMAGE_ROOT,
-  'functions',
-  'canvas',
-  'contracts',
-  'grph-shared',
-  '_worker.js',
-  '_routes.json',
-  '_headers',
-  '_redirects',
+  '404.html', 'README.md', 'content/agentic-graph', 'agentic-graph', CANONICAL_IMAGE_ROOT, 'functions', 'canvas',
+  'contracts', 'grph-shared', '_worker.js', '_routes.json', '_headers', '_redirects',
   '.well-known/runtime-readiness.json',
 ]
-const productionMirrorArtifactDeletionEntries = new Set([
-  'index.html',
-  ...XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
-])
+const productionMirrorArtifactDeletionEntries = new Set(['index.html', ...XR_V2_LEGACY_MIRROR_RELATIVE_PATHS])
 const manifestSchema = 'agentic-graph-production-mirror-artifact/v1'
 export const CANONICAL_DESCENDANT_MIRROR_PROOF_SCHEMA = 'agentic-graph-canonical-descendant-mirror-proof/v1'
 export const canonicalDescendantMirrorOptionNames = Object.freeze(['previous-rollback-recapture', 'mirror-repository-root', 'mirror-remote-ref', 'mirror-protected-pr', 'gamexr-source-sha', 'gamexr-artifact-digest'])
@@ -56,10 +37,8 @@ const canonicalDescendantIdentity = Object.freeze({
 })
 const exactRevisionPattern = /^[0-9a-f]{40}$/
 const exactDigestPattern = /^[0-9a-f]{64}$/
-const isolatedGitEnvironment = Object.fromEntries(
-  Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')),
-)
-
+const isolatedGitEnvironment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')))
+const execFileAsync = promisify(execFile), streamChunkBytes = 256 * 1024, treeInventoryBytes = 16 * 1024 * 1024
 const isManagedArtifactPath = relativePath => productionMirrorArtifactEntries
   .some(entry => relativePath === entry || relativePath.startsWith(`${entry}/`))
   || productionMirrorArtifactDeletionEntries.has(relativePath)
@@ -69,34 +48,78 @@ const isManagedPath = (relativePath, sealedLegacyPaths) => isManagedArtifactPath
 const isManagedDescendantExclusionPath = relativePath => isManagedArtifactPath(relativePath)
   || isExplicitLegacyMirrorRemovalPath(relativePath)
   || isLegacyMirrorInventoryPath(relativePath)
-
 const readGitText = (root, args) => execFileSync('git', args, {
   cwd: root,
   encoding: 'utf8',
   env: isolatedGitEnvironment,
   stdio: ['ignore', 'pipe', 'pipe'],
 }).trim()
-
 const readGitBuffer = (root, args) => execFileSync('git', args, {
   cwd: root,
   encoding: 'buffer',
   env: isolatedGitEnvironment,
   stdio: ['ignore', 'pipe', 'pipe'],
 })
-
-const readGitTreeRelativeFiles = ({ root, revision, relativeRoot }) => {
-  const normalizedRoot = normalizeRelativePath(relativeRoot)
-  const prefix = `${normalizedRoot}/`
-  return parseNulTerminatedGitPaths(readGitBuffer(root, [
-    'ls-tree', '-r', '--name-only', '-z', revision, '--', normalizedRoot,
-  ])).map(relativePath => {
-    if (!relativePath.startsWith(prefix)) {
-      throw new Error(`Git tree returned a file outside its requested root: ${relativePath}`)
+const digestStream = async stream => {
+  const hash = createHash('sha256')
+  let bytes = 0
+  for await (const value of stream) {
+    const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value)
+    for (let offset = 0; offset < chunk.length; offset += streamChunkBytes) {
+      const bounded = chunk.subarray(offset, offset + streamChunkBytes)
+      hash.update(bounded)
+      bytes += bounded.length
     }
-    return relativePath.slice(prefix.length)
-  })
+  }
+  return { bytes, sha256: hash.digest('hex') }
 }
-
+const digestGitBlob = async ({ root, oid, expectedBytes, relativePath }) => {
+  const child = spawn('git', ['cat-file', 'blob', oid], { cwd: root, env: isolatedGitEnvironment, stdio: ['ignore', 'pipe', 'pipe'] })
+  let stderr = ''
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', value => { stderr = `${stderr}${value}`.slice(-streamChunkBytes) })
+  const closed = new Promise((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', (code, signal) => resolve([code, signal]))
+  })
+  const [record, [code, signal]] = await Promise.all([digestStream(child.stdout), closed])
+  if (code !== 0) throw new Error(`git cat-file failed (${signal || code}): ${stderr.trim() || 'no diagnostic output'}`)
+  if (record.bytes !== expectedBytes) throw new Error(`Git blob byte count drifted for ${relativePath}`)
+  return record
+}
+const parseGitTree = output => {
+  if (output.length > 0 && output.at(-1) !== 0) throw new Error('Git tree inventory is not NUL-terminated')
+  const payload = output.length > 0 ? output.subarray(0, -1) : output, decoded = payload.toString('utf8')
+  if (!Buffer.from(decoded, 'utf8').equals(payload)) throw new Error('Git tree inventory contains invalid UTF-8')
+  const entries = new Map()
+  for (const value of decoded ? decoded.split('\0') : []) {
+    const match = /^([0-7]{6}) (blob|commit) ([0-9a-f]{40,64}) +([0-9]+|-)\t([\s\S]+)$/.exec(value)
+    if (!match) throw new Error('Git tree inventory contains a malformed entry')
+    const relativePath = normalizeGitRelativePath(match[5]), bytes = match[4] === '-' ? null : Number(match[4])
+    if (entries.has(relativePath) || (bytes !== null && (!Number.isSafeInteger(bytes) || bytes < 0))) throw new Error('Git tree inventory contains an invalid or duplicate entry')
+    entries.set(relativePath, { type: match[2], oid: match[3], bytes })
+  }
+  return entries
+}
+const readGitTree = async ({ root, revision }) => {
+  const { stdout } = await execFileAsync('git', ['ls-tree', '-r', '-l', '-z', '--full-tree', revision, '--'],
+    { cwd: root, env: isolatedGitEnvironment, encoding: 'buffer', maxBuffer: treeInventoryBytes })
+  const entries = parseGitTree(stdout)
+  const readFileRecord = async relativePath => {
+    const normalizedPath = normalizeRelativePath(relativePath), entry = entries.get(normalizedPath)
+    if (!entry) return null
+    if (entry.type !== 'blob' || entry.bytes === null) throw new Error(`Git tree path is not a blob: ${normalizedPath}`)
+    return digestGitBlob({ root, oid: entry.oid, expectedBytes: entry.bytes, relativePath: normalizedPath })
+  }
+  const listRelativeFiles = relativeRoot => {
+    const normalizedRoot = normalizeRelativePath(relativeRoot), prefix = `${normalizedRoot}/`
+    return [...entries.keys()].filter(value => value === normalizedRoot || value.startsWith(prefix)).map(value => {
+      if (!value.startsWith(prefix)) throw new Error(`Git tree returned a file outside its requested root: ${value}`)
+      return value.slice(prefix.length)
+    })
+  }
+  return { entries, readFileRecord, listRelativeFiles }
+}
 const canonicalJson = value => {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
   if (value && typeof value === 'object') {
@@ -104,51 +127,80 @@ const canonicalJson = value => {
   }
   return JSON.stringify(value)
 }
-
 const digestValue = value => createHash('sha256').update(
   typeof value === 'string' || Buffer.isBuffer(value) ? value : canonicalJson(value),
 ).digest('hex')
-
 const requireExactRevision = (value, label) => {
   if (!exactRevisionPattern.test(String(value || ''))) throw new Error(`${label} must be an exact Git SHA`)
   return value
 }
-
 const requireExactDigest = (value, label) => {
   if (!exactDigestPattern.test(String(value || ''))) throw new Error(`${label} must be a SHA-256 digest`)
   return value
 }
-
+const readDigestRecords = async ({ tree, paths, prefix, label }) => {
+  const records = []
+  for (const relativePath of paths) {
+    const record = await tree.readFileRecord(prefix ? `${prefix}/${relativePath}` : relativePath)
+    if (!record) throw new Error(`${label} is missing ${relativePath}`)
+    records.push({ relativePath, sha256: record.sha256 })
+  }
+  return records
+}
+const assertContentInventory = ({ records, inventory, label }) => {
+  const contentDigest = digestRelativeFileContents(records)
+  if (records.length !== inventory.count || contentDigest !== inventory.contentDigest) throw new Error(
+    `${label} content drifted: expected count=${inventory.count} digest=${inventory.contentDigest}, received count=${records.length} digest=${contentDigest}`,
+  )
+}
+const listSealedLegacyPaths = async tree => {
+  for (const relativePath of LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS) {
+    if (tree.entries.has(relativePath)) throw new Error(`Ignored live legacy path must not be tracked by Git: ${relativePath}`)
+  }
+  const groups = Object.entries(LEGACY_MIRROR_ROOT_INVENTORIES).map(([prefix, inventory]) => ({ prefix, inventory,
+    label: `Legacy mirror root ${prefix}`, paths: assertSealedLegacyMirrorRootInventory({ root: prefix, relativePaths: tree.listRelativeFiles(prefix) }) }))
+  groups.push({ prefix: '.well-known/agent-skills', inventory: LEGACY_MIRROR_NAMED_FILE_INVENTORY,
+    label: 'Legacy named-file inventory', paths: assertSealedLegacyNamedFileInventory({ relativePaths: tree.listRelativeFiles('.well-known/agent-skills') }) })
+  groups.push({ prefix: '', inventory: LEGACY_MIRROR_TRACKED_EXACT_FILE_INVENTORY,
+    label: 'Legacy exact-file inventory', paths: LEGACY_MIRROR_TRACKED_EXACT_PATHS.filter(relativePath => tree.entries.has(relativePath)) })
+  const sealedPaths = []
+  for (const group of groups.sort((left, right) => left.prefix.localeCompare(right.prefix))) {
+    if (group.paths.length === 0) continue
+    const records = await readDigestRecords({ tree, paths: group.paths, prefix: group.prefix, label: group.label })
+    assertContentInventory({ records, inventory: group.inventory, label: group.label })
+    sealedPaths.push(...records.map(record => group.prefix ? `${group.prefix}/${record.relativePath}` : record.relativePath))
+  }
+  const xrPaths = [], missingPaths = []
+  for (const [relativePath, expectedSha256] of Object.entries(XR_V2_LEGACY_MIRROR_SHA256_BY_PATH).sort(([left], [right]) => left.localeCompare(right))) {
+    const record = await tree.readFileRecord(relativePath)
+    if (!record) missingPaths.push(relativePath)
+    else if (record.sha256 !== expectedSha256) throw new Error(`Legacy XR v2 file inventory content drifted for ${relativePath}: expected sha256=${expectedSha256}, received sha256=${record.sha256}`)
+    else xrPaths.push(relativePath)
+  }
+  if (xrPaths.length > 0 && missingPaths.length > 0) throw new Error(`Legacy XR v2 file inventory is incomplete; missing ${missingPaths.join(', ')}`)
+  return [...new Set([...sealedPaths, ...xrPaths])].sort((left, right) => left.localeCompare(right))
+}
 const requireExactFields = (value, fields, label) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be an object`)
   const actual = Object.keys(value).sort(), expected = [...fields].sort()
-  if (actual.length !== expected.length || actual.some((field, index) => field !== expected[index])) {
-    throw new Error(`${label} contains missing or unknown fields`)
-  }
+  if (actual.length !== expected.length || actual.some((field, index) => field !== expected[index])) throw new Error(`${label} contains missing or unknown fields`)
 }
-
 const requireText = (value, label) => {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} must be non-empty`)
   return value
 }
-
 const requireExactInstant = (value, label) => {
   const parsed = typeof value === 'string' ? Date.parse(value) : Number.NaN
-  if (Number.isNaN(parsed) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)) {
-    throw new Error(`${label} must be an exact ISO timestamp`)
-  }
+  if (Number.isNaN(parsed) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)) throw new Error(`${label} must be an exact ISO timestamp`)
   return new Date(parsed).toISOString()
 }
-
 const normalizeCanonicalDescendantMirrorProof = value => {
   requireExactFields(value, ['schema', 'repository', 'baseRevision', 'descendantRevision', 'remoteRevision',
     'changedPaths', 'protectedPullRequest', 'gamexrArtifact', 'proofDigest'], 'canonical descendant mirror proof')
   if (value.schema !== CANONICAL_DESCENDANT_MIRROR_PROOF_SCHEMA) throw new Error('canonical descendant mirror proof schema is invalid')
   requireText(value.repository, 'canonical descendant mirror repository')
   for (const field of ['baseRevision', 'descendantRevision', 'remoteRevision']) requireExactRevision(value[field], `canonical descendant mirror ${field}`)
-  if (value.baseRevision === value.descendantRevision || value.remoteRevision !== value.descendantRevision) {
-    throw new Error('canonical descendant mirror proof does not bind a remote-exact descendant')
-  }
+  if (value.baseRevision === value.descendantRevision || value.remoteRevision !== value.descendantRevision) throw new Error('canonical descendant mirror proof does not bind a remote-exact descendant')
   if (!Array.isArray(value.changedPaths) || value.changedPaths.length === 0) throw new Error('canonical descendant mirror proof requires changed paths')
   const changedPaths = value.changedPaths.map(normalizeGitRelativePath)
   const ordered = [...changedPaths].sort((left, right) => left.localeCompare(right))
@@ -168,9 +220,7 @@ const normalizeCanonicalDescendantMirrorProof = value => {
   requireExactRevision(pullRequest.mergeRevision, 'canonical descendant mirror pull request mergeRevision')
   pullRequest.mergedAt = requireExactInstant(pullRequest.mergedAt, 'canonical descendant mirror pull request mergedAt')
   if (pullRequest.mergeRevision !== value.descendantRevision
-      || pullRequest.url !== `https://github.com/${value.repository}/pull/${pullRequest.number}`) {
-    throw new Error('canonical descendant mirror protected pull request identity drifted')
-  }
+      || pullRequest.url !== `https://github.com/${value.repository}/pull/${pullRequest.number}`) throw new Error('canonical descendant mirror protected pull request identity drifted')
   requireExactFields(value.gamexrArtifact, ['root', 'sourceRevision', 'artifactDigest', 'manifestDigest'],
     'canonical descendant mirror GameXR artifact')
   if (value.gamexrArtifact.root !== 'content/gamexr') throw new Error('canonical descendant mirror GameXR artifact root is invalid')
@@ -184,7 +234,6 @@ const normalizeCanonicalDescendantMirrorProof = value => {
   if (digestValue(proof) !== value.proofDigest) throw new Error('canonical descendant mirror proofDigest drifted')
   return { ...proof, proofDigest: value.proofDigest }
 }
-
 const normalizePriorRollbackRecapture = value => {
   requireExactFields(value, ['schema', 'rollbackIdentity', 'capturedAt'], 'previous rollback recapture')
   if (value.schema !== 'agentic-graph-production-rollback-recapture/v1') throw new Error('previous rollback recapture schema is invalid')
@@ -202,9 +251,7 @@ const normalizePriorRollbackRecapture = value => {
   requireExactRevision(identity.mirror.revision, 'previous rollback mirror revision')
   for (const field of ['stateContractDigest', 'readbackDigest']) requireExactDigest(identity.d1[field], `previous rollback D1 ${field}`)
   requireExactFields(identity.d1.counts, ['documentCount', 'chunkCount', 'graphCount'], 'previous rollback D1 counts')
-  if (Object.values(identity.d1.counts).some(count => !Number.isSafeInteger(count) || count < 0) || identity.d1.counts.graphCount !== 0) {
-    throw new Error('previous rollback D1 counts are invalid')
-  }
+  if (Object.values(identity.d1.counts).some(count => !Number.isSafeInteger(count) || count < 0) || identity.d1.counts.graphCount !== 0) throw new Error('previous rollback D1 counts are invalid')
   return { schema: value.schema, rollbackIdentity: identity, capturedAt }
 }
 
@@ -233,16 +280,10 @@ export const assertSuccessfulReleaseMirrorIdentity = ({
   const expectedD1 = { stateContractDigest: stateReceipt.stateContractDigest, readbackDigest: stateReceipt.readbackDigest,
     counts: stateReceipt.observedCounts }
   if (canonicalJson(previous.rollbackIdentity.pages) !== canonicalJson(expectedPages)
-      || canonicalJson(previous.rollbackIdentity.d1) !== canonicalJson(expectedD1)) {
-    throw new Error('previous rollback recapture drifted from the production-complete carrier')
-  }
+      || canonicalJson(previous.rollbackIdentity.d1) !== canonicalJson(expectedD1)) throw new Error('previous rollback recapture drifted from the production-complete carrier')
   if (previous.rollbackIdentity.mirror.repository !== currentMirror.repository || proof.repository !== currentMirror.repository
-      || proof.baseRevision !== previous.rollbackIdentity.mirror.revision || proof.descendantRevision !== currentMirror.revision) {
-    throw new Error('canonical descendant mirror proof drifted from the old and current mirror identities')
-  }
-  if (publicationDigest(previous.rollbackIdentity.mirror.revision) !== publication.publicationIdentitiesDigest) {
-    throw new Error('previous rollback mirror did not originate from the terminal publication receipt')
-  }
+      || proof.baseRevision !== previous.rollbackIdentity.mirror.revision || proof.descendantRevision !== currentMirror.revision) throw new Error('canonical descendant mirror proof drifted from the old and current mirror identities')
+  if (publicationDigest(previous.rollbackIdentity.mirror.revision) !== publication.publicationIdentitiesDigest) throw new Error('previous rollback mirror did not originate from the terminal publication receipt')
   if (Date.parse(previous.capturedAt) > Date.parse(firstPagesCapturedAt)) throw new Error('previous rollback recapture cannot follow the descendant observation')
   if (Date.parse(proof.protectedPullRequest.mergedAt) > Date.parse(firstPagesCapturedAt)) throw new Error('canonical mirror descendant was not merged before the first observation')
 }
@@ -250,21 +291,19 @@ export const assertSuccessfulReleaseMirrorIdentity = ({
 const readDeletedPaths = root => parseNulTerminatedGitPaths(readGitBuffer(root, [
   'diff', '--no-renames', '--name-only', '--diff-filter=D', '-z', 'HEAD', '--',
 ])).sort((left, right) => left.localeCompare(right))
-
 const readManifest = async artifactRoot => {
   const manifestPath = resolveWithin(artifactRoot, productionMirrorArtifactManifestName)
   const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'))
   if (manifest?.schema !== manifestSchema) throw new Error(`Unexpected production artifact schema: ${manifest?.schema}`)
-  if (!exactRevisionPattern.test(manifest?.mirrorRevision || '')) {
-    throw new Error('Production artifact manifest requires an exact mirror revision')
-  }
+  if (!exactRevisionPattern.test(manifest?.mirrorRevision || '')) throw new Error('Production artifact manifest requires an exact mirror revision')
   if (!Array.isArray(manifest?.deletedPaths)) throw new Error('Production artifact manifest requires deletedPaths')
   const deletedPaths = manifest.deletedPaths.map(normalizeRelativePath)
   if (new Set(deletedPaths).size !== deletedPaths.length) throw new Error('Production artifact manifest has duplicate deleted paths')
   return { ...manifest, deletedPaths }
 }
 
-const digestFile = async filePath => createHash('sha256').update(await fs.readFile(filePath)).digest('hex')
+const digestFileRecord = filePath => digestStream(createReadStream(filePath, { highWaterMark: streamChunkBytes }))
+const digestFile = async filePath => (await digestFileRecord(filePath)).sha256
 
 const collectDirectoryFiles = async (directory, relativeRoot = '') => {
   const files = new Map()
@@ -295,8 +334,8 @@ const collectArtifactRecords = async (directory, relativeRoot = '') => {
     }
     if (!entry.isFile()) throw new Error(`GameXR artifact rejects non-file entry: ${relativePath}`)
     if (relativePath === 'release-manifest.json') continue
-    const bytes = await fs.readFile(entryPath)
-    records.push({ path: relativePath, bytes: bytes.byteLength, sha256: digestValue(bytes) })
+    const record = await digestFileRecord(entryPath)
+    records.push({ path: relativePath, bytes: record.bytes, sha256: record.sha256 })
   }
   return records.sort((left, right) => left.path.localeCompare(right.path))
 }
@@ -317,79 +356,45 @@ const validateWholeGamexrArtifact = async ({ root, sourceRevision, artifactDiges
       || manifest.source?.versionControl !== 'git'
       || manifest.source?.head !== 'resolved'
       || manifest.source?.worktree !== 'clean'
-      || manifest.source?.statusDigest !== digestValue(Buffer.alloc(0))) {
-    throw new Error('GameXR mirror artifact source identity drifted')
-  }
+      || manifest.source?.statusDigest !== digestValue(Buffer.alloc(0))) throw new Error('GameXR mirror artifact source identity drifted')
   if (manifest.artifactDigest !== artifactDigest) throw new Error('GameXR mirror artifact digest drifted')
-  if (!Array.isArray(manifest.artifacts) || manifest.artifacts.length === 0) {
-    throw new Error('GameXR mirror artifact must inventory every artifact file')
-  }
+  if (!Array.isArray(manifest.artifacts) || manifest.artifacts.length === 0) throw new Error('GameXR mirror artifact must inventory every artifact file')
   const expected = await collectArtifactRecords(artifactRoot)
   const actual = manifest.artifacts.map(record => {
     const relativePath = normalizeGitRelativePath(record?.path)
-    if (!Number.isSafeInteger(record?.bytes) || record.bytes < 0) {
-      throw new Error(`GameXR artifact byte count is invalid: ${relativePath}`)
-    }
+    if (!Number.isSafeInteger(record?.bytes) || record.bytes < 0) throw new Error(`GameXR artifact byte count is invalid: ${relativePath}`)
     requireExactDigest(record?.sha256, `GameXR artifact digest for ${relativePath}`)
     return { path: relativePath, bytes: record.bytes, sha256: record.sha256 }
   }).sort((left, right) => left.path.localeCompare(right.path))
   if (new Set(actual.map(record => record.path)).size !== actual.length
-      || canonicalJson(actual) !== canonicalJson(expected)) {
-    throw new Error('GameXR mirror artifact manifest does not cover the whole exact artifact')
-  }
+      || canonicalJson(actual) !== canonicalJson(expected)) throw new Error('GameXR mirror artifact manifest does not cover the whole exact artifact')
   const aggregate = digestValue(actual.map(record => `${record.path}\0${record.bytes}\0${record.sha256}`).join('\n'))
   if (aggregate !== artifactDigest) throw new Error('GameXR mirror aggregate artifact digest is invalid')
-  return {
-    root: 'content/gamexr',
-    sourceRevision,
-    artifactDigest,
-    manifestDigest: digestValue(manifestBytes),
-  }
+  return { root: 'content/gamexr', sourceRevision, artifactDigest, manifestDigest: digestValue(manifestBytes) }
 }
 
 const normalizeProtectedPullRequest = ({ value, repository, baseRevision, descendantRevision, root }) => {
-  if (!Number.isSafeInteger(value?.number) || value.number < 1
-      || value.state !== 'MERGED'
-      || value.baseRefName !== 'main'
-      || typeof value.headRefName !== 'string' || !value.headRefName.trim()) {
-    throw new Error('Mirror descendant requires one exact merged protected pull request')
-  }
+  if (!Number.isSafeInteger(value?.number) || value.number < 1 || value.state !== 'MERGED'
+      || value.baseRefName !== 'main' || typeof value.headRefName !== 'string'
+      || !value.headRefName.trim()) throw new Error('Mirror descendant requires one exact merged protected pull request')
   requireExactRevision(value.headRefOid, 'mirror pull request head')
   const mergeRevision = requireExactRevision(value.mergeCommit?.oid, 'mirror pull request merge revision')
   const mergedAt = requireExactInstant(value.mergedAt, 'mirror pull request mergedAt')
   const expectedUrl = `https://github.com/${repository}/pull/${value.number}`
-  if (value.url !== expectedUrl || mergeRevision !== descendantRevision) {
-    throw new Error('Mirror pull request identity drifted from the exact descendant')
-  }
+  if (value.url !== expectedUrl || mergeRevision !== descendantRevision) throw new Error('Mirror pull request identity drifted from the exact descendant')
   const parents = readGitText(root, ['rev-list', '--parents', '-n', '1', descendantRevision]).split(' ')
-  if (parents.length !== 2 || parents[0] !== descendantRevision || parents[1] !== baseRevision) {
-    throw new Error('Mirror descendant is not the direct protected squash successor of the rollback mirror')
-  }
+  if (parents.length !== 2 || parents[0] !== descendantRevision || parents[1] !== baseRevision) throw new Error(
+    'Mirror descendant is not the direct protected squash successor of the rollback mirror',
+  )
   const descendantTree = readGitText(root, ['rev-parse', `${descendantRevision}^{tree}`])
   const reviewedTree = readGitText(root, ['rev-parse', `${value.headRefOid}^{tree}`])
   if (descendantTree !== reviewedTree) throw new Error('Mirror protected pull request tree drifted from the merged descendant')
-  return {
-    number: value.number,
-    url: value.url,
-    state: value.state,
-    baseRefName: value.baseRefName,
-    headRefName: value.headRefName,
-    headRefOid: value.headRefOid,
-    mergeRevision,
-    mergedAt,
-  }
+  return { number: value.number, url: value.url, state: value.state, baseRefName: value.baseRefName,
+    headRefName: value.headRefName, headRefOid: value.headRefOid, mergeRevision, mergedAt }
 }
 
-export const createCanonicalDescendantMirrorRollbackProof = async ({
-  mirrorRoot,
-  repository,
-  baseRevision,
-  descendantRevision,
-  remoteRef,
-  protectedPullRequest,
-  gamexrSourceRevision,
-  gamexrArtifactDigest,
-}) => {
+export const createCanonicalDescendantMirrorRollbackProof = async ({ mirrorRoot, repository, baseRevision,
+  descendantRevision, remoteRef, protectedPullRequest, gamexrSourceRevision, gamexrArtifactDigest }) => {
   const root = assertSafeRoot(mirrorRoot, 'Production mirror root')
   if (typeof repository !== 'string' || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
     throw new Error('Production mirror repository identity is invalid')
@@ -450,16 +455,8 @@ export const createCanonicalDescendantMirrorRollbackProof = async ({
     descendantRevision,
     root,
   })
-  const proof = {
-    schema: CANONICAL_DESCENDANT_MIRROR_PROOF_SCHEMA,
-    repository,
-    baseRevision,
-    descendantRevision,
-    remoteRevision,
-    changedPaths,
-    protectedPullRequest: normalizedPullRequest,
-    gamexrArtifact,
-  }
+  const proof = { schema: CANONICAL_DESCENDANT_MIRROR_PROOF_SCHEMA, repository, baseRevision,
+    descendantRevision, remoteRevision, changedPaths, protectedPullRequest: normalizedPullRequest, gamexrArtifact }
   return { ...proof, proofDigest: digestValue(proof) }
 }
 
@@ -502,16 +499,24 @@ const assertEntryParity = async (artifactRoot, mirrorRoot, relativePath) => {
   }
 }
 
+const createDeletionPlan = async ({ deletedPaths, sealedLegacyPaths, tree, label }) => {
+  assertManagedDeletedPaths({ deletedPaths, sealedLegacyPaths, isManagedPath, label })
+  assertTrackedDeletedPaths({ deletedPaths, trackedPaths: new Set(tree.entries.keys()), label })
+  const plan = []
+  for (const relativePath of deletedPaths) {
+    const record = await tree.readFileRecord(relativePath)
+    if (!record) throw new Error(`${label} deletion is missing from its base revision: ${relativePath}`)
+    plan.push({ relativePath, sha256: record.sha256 })
+  }
+  return plan
+}
 export const createProductionMirrorArtifactManifest = async ({ mirrorRoot }) => {
   const root = assertSafeRoot(mirrorRoot, 'Production mirror root')
   const mirrorRevision = readGitText(root, ['rev-parse', 'HEAD'])
   if (!exactRevisionPattern.test(mirrorRevision)) throw new Error('Production mirror base must be an exact revision')
   const deletedPaths = readDeletedPaths(root)
-  const sealedLegacyPaths = new Set(await listSealedLegacyPathsAtRevision({
-    readGitTreeRelativeFiles,
-    root,
-    revision: mirrorRevision,
-  }))
+  const tree = await readGitTree({ root, revision: mirrorRevision })
+  const sealedLegacyPaths = new Set(await listSealedLegacyPaths(tree))
   assertManagedDeletedPaths({ deletedPaths, sealedLegacyPaths, isManagedPath, label: 'Production sync' })
   const manifest = { schema: manifestSchema, mirrorRevision, deletedPaths }
   const manifestPath = resolveWithin(root, productionMirrorArtifactManifestName)
@@ -519,7 +524,7 @@ export const createProductionMirrorArtifactManifest = async ({ mirrorRoot }) => 
   return { manifest, manifestPath }
 }
 
-export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRoot }) => {
+export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRoot, onDeletionCommitted }) => {
   const sourceRoot = assertSafeRoot(artifactRoot, 'Production artifact root')
   const targetRoot = assertSafeRoot(mirrorRoot, 'Production mirror root')
   if (sourceRoot === targetRoot) throw new Error('Production artifact and mirror roots must differ')
@@ -531,24 +536,10 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
   if (readGitText(targetRoot, ['status', '--porcelain=v1'])) {
     throw new Error('Production mirror checkout must be clean before artifact reconciliation')
   }
-  const sealedLegacyPaths = new Set(await listSealedLegacyPathsAtRevision({
-    readGitTreeRelativeFiles,
-    root: targetRoot,
-    revision: targetRevision,
-  }))
-  assertManagedDeletedPaths({
-    deletedPaths: manifest.deletedPaths,
-    sealedLegacyPaths,
-    isManagedPath,
-    label: 'Production artifact',
-  })
-  const trackedPaths = new Set(parseNulTerminatedGitPaths(readGitBuffer(targetRoot, [
-    'ls-tree', '-r', '--name-only', '-z', targetRevision, '--',
-  ])))
-  assertTrackedDeletedPaths({
-    deletedPaths: manifest.deletedPaths,
-    trackedPaths,
-    label: 'Production artifact',
+  const tree = await readGitTree({ root: targetRoot, revision: targetRevision })
+  const sealedLegacyPaths = new Set(await listSealedLegacyPaths(tree))
+  const deletionPlan = await createDeletionPlan({
+    deletedPaths: manifest.deletedPaths, sealedLegacyPaths, tree, label: 'Production artifact',
   })
 
   const readinessPath = '.well-known/runtime-readiness.json'
@@ -560,9 +551,9 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
   if (!rootReadiness.equals(contentReadiness)) throw new Error('Production artifact readiness markers must be byte-identical')
 
   for (const relativePath of productionMirrorArtifactEntries) await fs.stat(resolveWithin(sourceRoot, relativePath))
-  for (const deletedPath of manifest.deletedPaths) {
-    await fs.rm(resolveWithin(targetRoot, deletedPath), { force: true })
-  }
+  await removePlannedMirrorFiles({ root: targetRoot, entries: deletionPlan, label: 'Production artifact deletion' })
+  await onDeletionCommitted?.({ entries: deletionPlan.map(entry => ({ ...entry })) })
+  await assertPlannedMirrorPathsAbsent({ root: targetRoot, entries: deletionPlan, label: 'Production artifact' })
   for (const relativePath of productionMirrorArtifactEntries) {
     const sourcePath = resolveWithin(sourceRoot, relativePath)
     const targetPath = resolveWithin(targetRoot, relativePath)
@@ -575,6 +566,7 @@ export const reconcileProductionMirrorArtifact = async ({ artifactRoot, mirrorRo
   for (const relativePath of productionMirrorArtifactEntries) {
     await assertEntryParity(sourceRoot, targetRoot, relativePath)
   }
+  await assertPlannedMirrorPathsAbsent({ root: targetRoot, entries: deletionPlan, label: 'Production artifact' })
   return manifest
 }
 

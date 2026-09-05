@@ -37,7 +37,7 @@ export const testGeoJsonImportWithForeignMembers = () => {
   const geoJsonText = JSON.stringify({
     type: 'FeatureCollection',
     metadata: { name: 'singapoly-like' },
-    knowledgeGraph: { edges: [{ source: 1, target: 2, type: 'district' }] },
+    agentGraph: { edges: [{ source: 1, target: 2, type: 'district' }] },
     features: [
       {
         type: 'Feature',

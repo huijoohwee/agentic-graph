@@ -154,7 +154,7 @@ mermaid: |
 
 ## PART I: PRODUCT REQUIREMENTS DOCUMENT (PRD)
 
-### Feature: GraphRAG Text-to-Knowledge-Graph Pipeline with Advanced Analytics
+### Feature: GraphRAG Text-to-Knowledge Graph Pipeline with Advanced Analytics
 
 #### Problem Statement
 
@@ -174,7 +174,7 @@ Data analysts, researchers, and knowledge workers struggle to extract structured
 
 ### User Stories
 
-#### Epic: Text-to-Knowledge-Graph with Analytics
+#### Epic: Text-to-Knowledge Graph with Analytics
 
 **PRD-E001: Core Pipeline** (from v1.0.0)
 

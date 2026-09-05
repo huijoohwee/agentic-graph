@@ -1,6 +1,6 @@
 import { BROWSER_API_TOOL } from "./browser-api-runtime.js"; import { buildOsStatusToolDefinition } from "./os-status-contract.js";
 import { buildLocalAgentRuntimeToolDefinition } from "./local-agent-tool-contract.js";
-import { buildKnowledgeGraphToolDefinitions } from "./knowledge-graph-tool-contract.js";
+import { buildAgentGraphToolDefinitions } from "./agent-graph-tool-contract.js";
 import { AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID, AGENTIC_OS_AGENT_READY_TOOL_IDS, buildAgenticGraphAgentReadyToolContracts } from "../canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs";
 import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES as SHARED_AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/agentic-graph-vdeoxpln-contract.mjs";
 import { buildAgenticGraphMcpNoauthSecuritySchemes } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
@@ -279,7 +279,7 @@ export const buildAgenticGraphLocalMcpToolDefinitions = (args = {}) => {
         },
       },
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
-    ...buildKnowledgeGraphToolDefinitions({ toolNames: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, processAnnotations: Object.freeze({ readOnlyHint: false, destructiveHint: true, openWorldHint: false, idempotentHint: true }) }),
+    ...buildAgentGraphToolDefinitions({ toolNames: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, processAnnotations: Object.freeze({ readOnlyHint: false, destructiveHint: true, openWorldHint: false, idempotentHint: true }) }),
     withLocalMcpDescriptorDefaults(
       buildLocalAgentRuntimeToolDefinition(
         AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.superagentRun,

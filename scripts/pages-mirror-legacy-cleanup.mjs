@@ -6,7 +6,8 @@ import {
   canonicalImageDestinationForLegacyPath,
   LEGACY_MIRROR_EXACT_PATHS,
 } from './mirror-namespace-contract.mjs'
-import { listSealedLegacyMirrorPaths } from './legacy-mirror-inventory.mjs'
+import { listSealedLegacyMirrorEntries } from './legacy-mirror-inventory.mjs'
+import { assertPlannedMirrorFile, removePlannedMirrorFiles } from './production-mirror-artifact-deletions.mjs'
 
 const joinRelativePath = (...parts) => parts.join('/')
 
@@ -38,16 +39,30 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
   const listRelativeFiles = relativeRoot => listRegularFiles(resolveMirrorRelativePath(relativeRoot))
 
   const regularFileHash = async (filePath, label) => {
-    const stat = await fs.lstat(filePath).catch(() => null)
+    const stat = await fs.lstat(filePath).catch(error => {
+      if (error?.code === 'ENOENT') return null
+      throw error
+    })
     if (!stat) return null
     if (!stat.isFile()) throw new Error(`${label} must be a regular file: ${filePath}`)
     return createHash('sha256').update(await fs.readFile(filePath)).digest('hex')
   }
 
-  const sealedLegacyPaths = async () => listSealedLegacyMirrorPaths({ listRelativeFiles })
+  const readRelativeFile = async relativePath => {
+    const filePath = resolveMirrorRelativePath(relativePath)
+    const stat = await fs.lstat(filePath).catch(error => {
+      if (error?.code === 'ENOENT') return null
+      throw error
+    })
+    if (!stat) return null
+    if (!stat.isFile()) throw new Error(`Legacy mirror inventory entry must be a regular file: ${filePath}`)
+    return fs.readFile(filePath)
+  }
+
+  const sealedLegacyEntries = async () => listSealedLegacyMirrorEntries({ listRelativeFiles, readRelativeFile })
 
   const assertLegacyMirrorInventoryIsBounded = async () => {
-    await sealedLegacyPaths()
+    const entries = await sealedLegacyEntries()
     const knownLegacyImageFiles = new Set(
       LEGACY_MIRROR_EXACT_PATHS.filter(relativePath => relativePath.startsWith('image/knowgrph/')),
     )
@@ -57,19 +72,46 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
     if (unexpectedLegacyImageFiles.length > 0) {
       throw new Error(`Legacy image namespace contains unmanaged files: ${unexpectedLegacyImageFiles.join(', ')}`)
     }
+    return entries
   }
 
   const collectLegacyMirrorFilesToRemove = async ({ obsoleteGeneratedMirrorFiles }) => {
-    await assertLegacyMirrorInventoryIsBounded()
-    const files = new Set((await sealedLegacyPaths()).filter(relativePath => !relativePath.startsWith('image/agenticgraph/')))
+    const sealedEntries = await assertLegacyMirrorInventoryIsBounded()
+    const files = new Map(sealedEntries
+      .filter(entry => !entry.relativePath.startsWith('image/agenticgraph/'))
+      .map(entry => [entry.relativePath, entry]))
     for (const relativePath of obsoleteGeneratedMirrorFiles) {
-      if (await regularFileHash(resolveMirrorRelativePath(relativePath), 'Legacy generated mirror file')) files.add(relativePath)
+      const sha256 = await regularFileHash(resolveMirrorRelativePath(relativePath), 'Legacy generated mirror file')
+      if (!sha256) continue
+      const sealedEntry = files.get(relativePath)
+      if (sealedEntry && sealedEntry.sha256 !== sha256) {
+        throw new Error(`Sealed legacy mirror content drifted while planning deletion: ${relativePath}`)
+      }
+      if (!sealedEntry) files.set(relativePath, { relativePath, sha256 })
     }
-    return [...files].sort((left, right) => left.localeCompare(right))
+    return [...files.values()].sort((left, right) => left.relativePath.localeCompare(right.relativePath))
+  }
+
+  const removeLegacyMirrorFiles = entries => removePlannedMirrorFiles({
+    root: mirrorRoot,
+    entries,
+    label: 'Planned legacy mirror deletion',
+  })
+
+  const copyLegacyImageFile = async entry => {
+    const sourcePath = await assertPlannedMirrorFile({
+      root: mirrorRoot,
+      entry: { relativePath: entry.sourceRelativePath, sha256: entry.sourceSha256 },
+      label: 'Planned legacy image copy',
+    })
+    await fs.mkdir(path.dirname(entry.destinationPath), { recursive: true })
+    await fs.copyFile(sourcePath, entry.destinationPath)
   }
 
   const createLegacyImageMigrationPlan = async () => {
-    await assertLegacyMirrorInventoryIsBounded()
+    const sealedEntries = new Map(
+      (await assertLegacyMirrorInventoryIsBounded()).map(entry => [entry.relativePath, entry]),
+    )
     const legacyImageFiles = (await listRelativeFiles('image/agenticgraph'))
       .map(relativePath => joinRelativePath('image/agenticgraph', relativePath))
     const canonicalImageFiles = (await listRelativeFiles(CANONICAL_IMAGE_ROOT))
@@ -81,7 +123,12 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
       const destinationRelativePath = canonicalImageDestinationForLegacyPath(sourceRelativePath)
       if (!destinationRelativePath) throw new Error(`Legacy image namespace contains an unmanaged file: ${sourceRelativePath}`)
       const sourcePath = resolveMirrorRelativePath(sourceRelativePath)
-      const sourceDigest = await regularFileHash(sourcePath, 'Legacy image payload')
+      const sourceDigest = sealedEntries.get(sourceRelativePath)?.sha256
+      if (!sourceDigest) throw new Error(`Legacy image payload is outside the sealed inventory: ${sourceRelativePath}`)
+      const currentSourceDigest = await regularFileHash(sourcePath, 'Legacy image payload')
+      if (currentSourceDigest !== sourceDigest) {
+        throw new Error(`Sealed legacy image content drifted while planning migration: ${sourceRelativePath}`)
+      }
       const destinationPath = resolveMirrorRelativePath(destinationRelativePath)
       const destinationDigest = await regularFileHash(destinationPath, 'Canonical image payload')
       const priorSourceDigest = destinationDigests.get(destinationRelativePath)
@@ -92,7 +139,14 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
       if (destinationDigest && destinationDigest !== sourceDigest) {
         throw new Error(`Legacy image migration refuses to overwrite ${destinationRelativePath} with different bytes`)
       }
-      entries.push({ sourceRelativePath, sourcePath, destinationRelativePath, destinationPath, needsCopy: !destinationDigest })
+      entries.push({
+        sourceRelativePath,
+        sourcePath,
+        sourceSha256: sourceDigest,
+        destinationRelativePath,
+        destinationPath,
+        needsCopy: !destinationDigest,
+      })
       runtimeEntries.set(destinationRelativePath, destinationDigest ? destinationPath : sourcePath)
     }
     return {
@@ -131,7 +185,9 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
   return {
     assertLegacyMirrorInventoryIsBounded,
     collectLegacyMirrorFilesToRemove,
+    copyLegacyImageFile,
     createLegacyImageMigrationPlan,
+    removeLegacyMirrorFiles,
     removeEmptyDirs,
     resolveMirrorRelativePath,
   }

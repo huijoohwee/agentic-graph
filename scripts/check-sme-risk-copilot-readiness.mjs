@@ -3,9 +3,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { resolveSurfacePaths } from "./surface/workspace-paths.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
-const demoPath = path.resolve(root, "..", "huijoohwee", "docs", "agentic-graph-sme-care-agent-demo.md");
+const configuredPublishRoot = String(process.env.AGENTIC_OS_PUBLISH_REPOSITORY_ROOT || "").trim();
+const publishRoot = path.resolve(configuredPublishRoot || resolveSurfacePaths({ repositoryRoot: root }).publicOriginRoot);
+const demoPath = path.join(publishRoot, "docs", "agentic-graph-sme-care-agent-demo.md");
 
 const commands = [
   [process.execPath, ["--test", "mcp/__tests__/probe-tree-runtime.test.mjs", "mcp/__tests__/sme-risk-copilot-runtime.test.mjs", "mcp/__pbt__/sme-risk-copilot.pbt.test.mjs", "mcp/__tests__/sme-risk-copilot-stdio-e2e.test.mjs", "mcp/__tests__/sme-risk-coverage-runtime.test.mjs", "mcp/__pbt__/sme-risk-coverage.pbt.test.mjs"]],

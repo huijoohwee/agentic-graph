@@ -46,7 +46,7 @@ edge_predicates:
 tags:
   - "token-economics"
   - "agenticOs"
-  - "knowledge-graph"
+  - "agent-graph"
   - "harness"
   - "tco"
   - "foss"

@@ -43,7 +43,7 @@ related:
   - "docs/documents/agentic-graph-source-files-import-document.md"
   - "docs/documents/agentic-graph-chat-ai-markdown-pipeline-document.md"
   - "docs/documents/agentic-graph-agent-ready-prd-tad.md"
-  - "docs/documents/agentic-graph-deterministic-knowledge-graph-runtime.md"
+  - "docs/documents/agentic-graph-deterministic-agent-graph-runtime.md"
 ---
 
 # agentic-graph Queryable Corpus Graph - PRD and TAD
@@ -60,7 +60,7 @@ The original min-viable-max-value version finetuned the existing E2E pipeline wi
 
 **Long-horizon harness note (2026-06-04)**: The queryable corpus graph is a research/scout input for agentic-graph's native SuperAgent harness, not a separate harness memory store. SuperAgent runs must reuse the same source-unit, GraphData, citation, and chat-pack owners; DeerFlow-style long-horizon concepts are inspiration only and must not introduce copied graph extraction, parser, or query execution paths.
 
-**Deterministic local runtime extension (2026-07-22)**: The earlier Phase 1 no-CLI/MCP non-goal is superseded only for the bounded local stdio tools and ACOS aliases defined in the [focused deterministic knowledge-graph runtime contract](agentic-graph-deterministic-knowledge-graph-runtime.md); the original browser/chat implementation history remains unchanged.
+**Deterministic local runtime extension (2026-07-22)**: The earlier Phase 1 no-CLI/MCP non-goal is superseded only for the bounded local stdio tools and ACOS aliases defined in the [focused deterministic agent-graph runtime contract](agentic-graph-deterministic-agent-graph-runtime.md); the original browser/chat implementation history remains unchanged.
 
 ## Directive Commitments
 
@@ -270,7 +270,7 @@ Out of scope for Phase 1:
 - remote crawler of arbitrary repos
 - background watch mode
 - mandatory paid multimodal model calls
-- remote MCP or hosted knowledge-graph service
+- remote MCP or hosted agent-graph service
 - any MCP-only graph store, vector index, or duplicate materialization pipeline
 - separate graph database
 

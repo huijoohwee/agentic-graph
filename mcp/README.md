@@ -30,7 +30,7 @@ It is intentionally distinct from the other shipped agentic-graph MCP-ready surf
    - Owners:
      - `mcp/server.js`
      - `mcp/local-tool-contract.js`
-   - Scope: read-only published Source Files retrieval, deterministic local knowledge-graph indexing/query/edge explanation, Agentic Canvas OS docs `/` `#` `@` invocation lookup, bounded skill-text evolution, prompt/resource/template discovery, local UI launch, local pipelines, exact application catalog/plan/execute composition, a private Dev-only AGENTIC_OS-backed ECS session runtime, local superagent harness, deny-first sandbox policy validation and authorization preflight, approval-gated video-remix run manifests, local browser API bridge, SEA-LION sidecar calls, HTML video rendering, visual annotation, scoped memory, local probe-tree branching, AI Showrunner dry-runs, zero-token OS status, vdeoxpln registry inspection, and credential-gated Google/Microsoft spreadsheet or slide publication
+   - Scope: read-only published Source Files retrieval, deterministic local agent-graph indexing/query/edge explanation, Agentic Canvas OS docs `/` `#` `@` invocation lookup, bounded skill-text evolution, prompt/resource/template discovery, local UI launch, local pipelines, exact application catalog/plan/execute composition, a private Dev-only AGENTIC_OS-backed ECS session runtime, local superagent harness, deny-first sandbox policy validation and authorization preflight, approval-gated video-remix run manifests, local browser API bridge, SEA-LION sidecar calls, HTML video rendering, visual annotation, scoped memory, local probe-tree branching, AI Showrunner dry-runs, zero-token OS status, vdeoxpln registry inspection, and credential-gated Google/Microsoft spreadsheet or slide publication
    - Transport: stdio only
    - MCP Apps metadata: advertises the shared `ui://agentic-graph/agent-ready` resource, no-auth `securitySchemes`, mirrored `_meta.securitySchemes` for UI-linked tools, and widget-accessibility metadata from the shared contract
 
@@ -91,23 +91,23 @@ Role-based collaboration registers the exact source-backed tuple `/agent.team #r
 
 Provider-neutral agent and LLM applications use the exact host invocation `/application.compose #application-composition @application-manifest @component-catalog @integration-profile @runtime-proof`. `agentic-graph.application.catalog` returns authoring schemas and sanitized exact runtime evidence, `agentic-graph.application.plan` creates an immutable mode-bound zero-call plan, and `agentic-graph.application.execute` replans and delegates bounded steps to existing owners. Live external authorization is host-injected and never accepted as an MCP argument. See `docs/agent-application-composition.md`.
 
-### Deterministic knowledge-graph tools
+### Deterministic agent-graph tools
 
-The local stdio knowledge-graph capability is intentionally limited to these tool identities:
+The local stdio agent-graph capability is intentionally limited to these tool identities:
 
-- `agentic-graph.knowledge_graph.parser_generate` — returns the digest-pinned built-in local registry with `profile: "default-source"`, or compiles bounded custom inert descriptors and optional finite declarative grammar data
-- `agentic-graph.knowledge_graph.ingest` — indexes supported local corpus structure through agentic-graph-owned deterministic adapters
-- `agentic-graph.knowledge_graph.query` — retrieves matching graph evidence through lexical matching and graph traversal
-- `agentic-graph.knowledge_graph.explain_edge` — explains a stored relationship from its source evidence and extraction basis
+- `agentic-graph.agent_graph.parser_generate` — returns the digest-pinned built-in local registry with `profile: "default-source"`, or compiles bounded custom inert descriptors and optional finite declarative grammar data
+- `agentic-graph.agent_graph.ingest` — indexes supported local corpus structure through agentic-graph-owned deterministic adapters
+- `agentic-graph.agent_graph.query` — retrieves matching graph evidence through lexical matching and graph traversal
+- `agentic-graph.agent_graph.explain_edge` — explains a stored relationship from its source evidence and extraction basis
 
 The matching Agentic Canvas OS invocation tokens are:
 
 | MCP tool | Exact Agentic Canvas OS invocation |
 |---|---|
-| `agentic-graph.knowledge_graph.parser_generate` | `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof` |
-| `agentic-graph.knowledge_graph.ingest` | `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof` |
-| `agentic-graph.knowledge_graph.query` | `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
-| `agentic-graph.knowledge_graph.explain_edge` | `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
+| `agentic-graph.agent_graph.parser_generate` | `/agentic.graph.parser.generate #agentic-graph #parser-generation #mcp @parser-specification @runtime-proof` |
+| `agentic-graph.agent_graph.ingest` | `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof` |
+| `agentic-graph.agent_graph.query` | `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
+| `agentic-graph.agent_graph.explain_edge` | `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof` |
 
 Invoke the tool identity directly from a stdio MCP client, or resolve and validate the matching exact tuple through the existing ACOS docs invocation contract before explicitly calling the mapped tool. Use the input schema advertised by the running local server; this README does not duplicate or invent request fields.
 
@@ -115,21 +115,21 @@ This is a deterministic structural path:
 
 - supported code is parsed with a registered local AST adapter
 - supported documentation, SQL schemas, configuration, and PDFs contribute only locally observable structure and source locations
-- every edge retains enough source evidence for `agentic-graph.knowledge_graph.explain_edge`; no opaque similarity edge is accepted
+- every edge retains enough source evidence for `agentic-graph.agent_graph.explain_edge`; no opaque similarity edge is accepted
 - query uses lexical matching and graph traversal, not embeddings or a vector store
 - bounded query results report explicit completeness, truncation, and limit/depth reasons rather than presenting a partial traversal as exhaustive
 - local-directory ingest, parsing, query, and edge explanation make no model or network call; an explicit repository URL may use the network only during bounded immutable-revision acquisition
 - missing parser coverage, malformed or unreadable input, encrypted or image-only PDF content, unresolved references, and unsupported syntax return explicit diagnostics rather than guessed graph facts
 
-The focused authority for coverage, provenance, diagnostics, and security is the [deterministic knowledge-graph runtime contract](../docs/documents/agentic-graph-deterministic-knowledge-graph-runtime.md).
+The focused authority for coverage, provenance, diagnostics, and security is the [deterministic agent-graph runtime contract](../docs/documents/agentic-graph-deterministic-agent-graph-runtime.md).
 
 Host configuration keeps arbitrary-codebase access explicit:
 
-- `AGENTIC_OS_KNOWLEDGE_GRAPH_ALLOWED_ROOTS` is a platform path-delimited allowlist of corpus roots; without it, ingestion is confined to `AGENTIC_OS_ROOT`.
-- `AGENTIC_OS_KNOWLEDGE_GRAPH_OUTPUT_ROOT` owns generated snapshots and defaults to `data/outputs/knowledge-graph` under `AGENTIC_OS_ROOT`; callers cannot redirect storage outside this boundary, and the runtime excludes the boundary from discovery whenever it is nested under the indexed root.
+- `AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS` is a platform path-delimited allowlist of corpus roots; without it, ingestion is confined to `AGENTIC_OS_ROOT`.
+- `AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT` owns generated snapshots. New installations default to `data/outputs/agent-graph`; upgrades continue an existing pre-rename default root, and ambiguous dual roots fail closed until the operator selects one exact root. Callers cannot redirect storage outside this boundary, and the runtime excludes the boundary from discovery whenever it is nested under the indexed root.
 - Snapshots use bounded content-addressed source, deterministically chunked repository-resolution, index, and manifest shards behind one atomic current pointer. Non-strict ingest records an oversized source artifact as explicit `limited` evidence with `source_artifact_limit_exceeded`; strict ingest and oversized single resolution records fail before pointer replacement, preserving the prior ready snapshot.
 - A cross-process, dead-owner-recoverable per-graph ingest lease fences publication and rollback. Source shards are written incrementally while only cross-source resolution records remain in memory. The ingest schema exposes hard-bounded aggregate record and serialized-byte ceilings across retained inputs and derived edges; ambiguous evidence keeps the exact count and a deterministic bounded candidate set containing the edge target. Exceeding a ceiling returns a typed failure, rolls back newly created unpublished objects, and does not replace the current pointer.
-- `AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS` and `AGENTIC_OS_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES` bound the native local PDF adapter.
+- `AGENTIC_OS_AGENT_GRAPH_PDF_TIMEOUT_MS` and `AGENTIC_OS_AGENT_GRAPH_PDF_MAX_OUTPUT_BYTES` bound the native local PDF adapter.
 - `AGENTIC_OS_PYTHON` selects the local Python 3 interpreter used only for stdlib AST extraction; an unavailable or invalid interpreter produces a typed parser failure, and strict ingest preserves the previous artifact instead of falling back.
 - Query and explain calls must send the exact `expectedSnapshotDigest` returned by ingest alongside its opaque `graphId`, so a replaced or tampered snapshot fails closed.
 
@@ -264,7 +264,7 @@ This local README does **not** claim that the following are implemented in `mcp/
 - a server-side D1 shadow graph for the browser canvas pipeline
 - a second MCP-only graph materialization path outside the current FloatingPanel Chat ->
   YAML frontmatter -> Canvas apply flow
-- embeddings, a vector store, model-backed graph extraction/query, or a network parser for the deterministic knowledge-graph tools
+- embeddings, a vector store, model-backed graph extraction/query, or a network parser for the deterministic agent-graph tools
 - compatibility, conformance, integration, execution, or dependency on another parser-generator or graph runtime
 - live Google or Microsoft account readiness, recipient sharing permissions, or provider latency from local/mock tests alone
 - a Prod, Pages, Worker, or Cloudflare export route; `export.publish` is local stdio functionality
@@ -413,9 +413,9 @@ Cross-provider/runtime settings are:
 
 Then you can call:
 
-- `agentic-graph.knowledge_graph.ingest`, or `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof`, using the input schema advertised by the local server
-- `agentic-graph.knowledge_graph.query`, or `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, using the input schema advertised by the local server
-- `agentic-graph.knowledge_graph.explain_edge`, or `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, using the input schema advertised by the local server
+- `agentic-graph.agent_graph.ingest`, or `/agentic.graph.ingest #agentic-graph #mcp #runtime-ready @working-directory @agentic-graph @operator @runtime-proof`, using the input schema advertised by the local server
+- `agentic-graph.agent_graph.query`, or `/agentic.graph.query #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, using the input schema advertised by the local server
+- `agentic-graph.agent_graph.explain_edge`, or `/agentic.graph.explain #agentic-graph #mcp #vcc @agentic-graph @runtime-proof`, using the input schema advertised by the local server
 - `search` with `{ "query": "renderer architecture", "limit": 10 }`
 - `fetch` with `{ "id": "kgdoc::docs%2Fexample.md" }`
 - `agentic-graph.ui.launch` with `{ "target": "workspaceEditor" }` (or `canvas` / `geospatial`)
@@ -524,7 +524,7 @@ If an agent should connect to the browser runtime MCP directly instead of going 
 
 By default, tool path arguments are restricted to **inside `AGENTIC_OS_ROOT`**. This prevents accidental reads/writes outside the repo.
 
-For the deterministic knowledge-graph surface, root containment is only the first bound:
+For the deterministic agent-graph surface, root containment is only the first bound:
 
 - canonicalized source paths and resolved symlink targets must remain inside the configured root
 - indexed files are parsed as data and are never executed
