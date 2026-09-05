@@ -435,15 +435,17 @@ export function FloatingPanelSkillsCommandsView({
             <MotionCapturePlatformProjection variant="skills" />
           </>
         )}
-        <SkillsCommandsView
-          collapsedGroupKeys={collapsedGroupKeys}
-          grammarGroupBy={grammarGroupBy}
-          onCollapsedGroupKeysChange={setCollapsedGroupKeys}
-          onCommandActivate={selectCommand}
-          prefixFilter={prefixFilter}
-          searchQuery={search.searchQuery}
-          highlightedTokens={targetTokens}
-        />
+        {mcpTarget.status === 'idle' || mcpTarget.status === 'ready' ? (
+          <SkillsCommandsView
+            collapsedGroupKeys={collapsedGroupKeys}
+            grammarGroupBy={grammarGroupBy}
+            onCollapsedGroupKeysChange={setCollapsedGroupKeys}
+            onCommandActivate={selectCommand}
+            prefixFilter={prefixFilter}
+            searchQuery={search.searchQuery}
+            highlightedTokens={targetTokens}
+          />
+        ) : null}
       </section>
     </section>
   )

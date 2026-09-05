@@ -321,6 +321,6 @@
     "vitest": "4.1.0",
     "wrangler": "4.124.0",
     "zod": "^4.4.3",
-    "agentic-os": "github:huijoohwee/agentic-os#cee007ee4402e683eaa0fc424a08179c1e71c63d"
+    "agentic-os": "github:huijoohwee/agentic-os#8c2650cefac8ba37435832adfa2314846725f21a"
   }
 }
