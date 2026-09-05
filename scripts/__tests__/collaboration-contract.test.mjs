@@ -209,12 +209,42 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
     'README.md',
   ], contract)
 
-  assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'runtime', 'documentation'])
+  assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'runtime', 'xrpl_paid_resource', 'documentation'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.deepEqual(plan.commands, [
     ['npm', 'run', 'check'],
     ['npm', 'run', 'runtime:check'],
+    ['npm', 'run', 'payment:x402:xrpl:source-check'],
   ])
+})
+
+test('XRPL paid-resource owners require source proof without live payment or unrelated expansion', async () => {
+  const contract = await readContract()
+  const sourceCommand = 'npm run payment:x402:xrpl:source-check'
+  const ownerPaths = [
+    'cloudflare/d1/migrations/0018_agentic_commerce_paid_resources.sql',
+    'scripts/smoke-xrpl-x402-paid-resource.mjs', 'scripts/check-xrpl-x402-pages-candidate.mjs',
+    'scripts/configure-xrpl-x402-paid-resource.mjs', 'scripts/check-xrpl-x402-paid-resource.mjs',
+    'docs/documents/agentic-graph-xrpl-x402-paid-resource-prd-tad-adr.md',
+    'grph-shared/src/payments/agenticCommercePaidResourceSsot.ts', 'grph-shared/src/payments/xrplClassicAddress.ts',
+    'cloudflare/workers/agentic-graph-payment/agenticCommercePaidResourceSettlement.ts',
+    'cloudflare/workers/agentic-graph-payment/agenticCommerceX402Xrpl.ts',
+    'cloudflare/workers/agentic-graph-payment/__tests__/agentic-commerce-x402-xrpl-adversarial.test.ts',
+    'cloudflare/pages/agentic-graph-agent-ready-commerce.mjs', 'scripts/pages-mirror-agent-ready.mjs',
+    'scripts/__tests__/xrpl-x402-paid-resource-discovery.test.mjs',
+    'cloudflare/workers/agentic-graph-payment/wrangler.toml', 'package.json', 'package-lock.json',
+  ]
+  for (const ownerPath of ownerPaths) {
+    const plan = selectAffectedCommands([ownerPath], contract)
+    assert.deepEqual(plan.unmatchedPaths, [], ownerPath)
+    assert.ok(plan.commands.some(command => command.join(' ') === sourceCommand), ownerPath)
+  }
+  const commands = selectAffectedCommands([...ownerPaths, ownerPaths[0]], contract).commands.map(command => command.join(' '))
+  assert.equal(commands.filter(command => command === sourceCommand).length, 1)
+  assert.ok(!commands.some(command => /payment:x402:xrpl:(?:smoke|configure|check)$/.test(command)))
+  for (const unrelated of ['README.md', 'cloudflare/workers/agentic-graph-payment/strytreeApi.ts']) {
+    assert.ok(!selectAffectedCommands([unrelated], contract).commands.some(command => command.join(' ') === sourceCommand), unrelated)
+  }
 })
 
 test('exact generated Worker CI is whole-diff, deletion-safe, and contract-validated', async () => {
@@ -300,7 +330,7 @@ test('affected XR review expands the composite gate and runs the shared check on
     pkg.scripts?.['xr-v2:review-candidate'],
     'npm run check && npm run xr-v2:unit && npm run video-editor:unit && npm run video-editor:compatibility && npm run video-editor:source-ready && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser',
   )
-  assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'xr_v2_video_editor'])
+  assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'xr_v2_video_editor', 'xrpl_paid_resource'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.equal(
     plan.commands.filter(command => command.join(' ') === 'npm run check').length,
@@ -318,6 +348,7 @@ test('affected XR review expands the composite gate and runs the shared check on
     ['npm', 'run', 'video-editor:source-ready'],
     ['npm', 'run', 'xr-v2:source-ready'],
     ['npm', '-C', 'canvas', 'run', 'test:smoke:xr-v2:browser'],
+    ['npm', 'run', 'payment:x402:xrpl:source-check'],
   ])
   assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'check'], contract), 300000)
   assert.equal(
