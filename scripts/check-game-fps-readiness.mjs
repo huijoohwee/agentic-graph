@@ -6,6 +6,7 @@ import {
   assertRapierIndependentDependencyBoundary,
   assertRapierIndependentPhysicsSourceBoundary,
 } from './lib/rapier-independence-boundary.mjs'
+import { assertGameFpsThreeOwnership, THREE_PRESENTATION_PATTERN as threePresentationPattern } from './lib/game-fps-three-ownership.mjs'
 import {
   CITY_SIM_OVERLAY_AUTHORITY,
   CITY_SIM_SEED_RELATIVE_PATH,
@@ -230,38 +231,12 @@ for (const { name, source } of featureSources) {
   }
 }
 
-const gameThreeOwners = featureSources
-  .filter(({ source }) => /@react-three\/fiber|from ['"]three['"]/.test(source))
-  .map(({ name }) => name)
-if (gameThreeOwners.length !== 1 || gameThreeOwners[0] !== 'GameFpsMissionStage.tsx') {
-  throw new Error(`Game FPS Three ownership must be actor-only in GameFpsMissionStage.tsx, received ${gameThreeOwners.join(', ')}`)
-}
-
 const productionSources = authorityExecutableSources.filter(({ relPath }) => relPath.startsWith('canvas/src/'))
-const gameAwarePattern = /\b(?:GameFpsMissionStage|gameFpsActive|gameMode\.active|readGameModeSnapshot|subscribeGameModeSnapshot)\b|from\s+['"][^'"]*(?:features\/game-fps|\/game-fps\/|\.\/game(?:Fps|Mode))/
-const threePresentationPattern = /@react-three\/fiber|from\s+['"]three(?:\/|['"])|<(?:Canvas|primitive|group|mesh|ambientLight|directionalLight|hemisphereLight|pointLight|spotLight|Environment|Sky|Stars|[A-Za-z][A-Za-z0-9]*Geometry)\b/
-const gameAwareThreeOwners = productionSources
-  .filter(({ source }) => gameAwarePattern.test(source) && threePresentationPattern.test(source))
-  .map(({ relPath }) => relPath)
-const expectedGameAwareThreeOwners = [
-  'canvas/src/features/game-fps/GameFpsMissionStage.tsx',
-  'canvas/src/lib/three/ThreeGraph.impl.tsx',
-]
-if (JSON.stringify(gameAwareThreeOwners) !== JSON.stringify(expectedGameAwareThreeOwners)) {
-  throw new Error(`Game-aware Three ownership must remain renderer mount plus actor-only stage, received ${gameAwareThreeOwners.join(', ')}`)
-}
+assertGameFpsThreeOwnership({ featureSources, productionSources })
 const missionStageSource = featureSources.find(({ name }) => name === 'GameFpsMissionStage.tsx')?.source || ''
 const simulationClockSource = featureSources.find(({ name }) => name === 'gameFpsSimulationClock.ts')?.source || ''
 const modelSource = featureSources.find(({ name }) => name === 'gameFpsModel.ts')?.source || ''
 const decisionStoreSource = await text('canvas/src/features/workspace-fs/workspaceDecisionStore.ts')
-const missionStageTags = [...missionStageSource.matchAll(/^\s*<([a-z][A-Za-z0-9]*)\b/gm)].map(match => match[1])
-const missionStageComponentTags = [...missionStageSource.matchAll(/^\s*<([A-Z][A-Za-z0-9]*)\b/gm)].map(match => match[1])
-const allowedMissionStageTags = ['group', 'mesh', 'capsuleGeometry', 'meshStandardMaterial']
-if (missionStageTags.length !== allowedMissionStageTags.length
-  || missionStageTags.some(tag => !allowedMissionStageTags.includes(tag))
-  || missionStageComponentTags.length > 0) {
-  throw new Error(`Game FPS stage must contain only its actor root and NPC mesh template, received ${[...missionStageTags, ...missionStageComponentTags].join(', ')}`)
-}
 if (!modelSource.includes('export const GAME_FPS_FIXED_STEP_SECONDS = 1 / 60')
   || !missionStageSource.includes('window.setInterval(clock.requestStep, SIMULATION_CLOCK_INTERVAL_MS)')
   || !missionStageSource.includes('window.clearInterval(timer)')

@@ -508,7 +508,6 @@ export async function testStoryboardWidgetPinnedWidgetsReseedWhenInitiallyStacke
       }
       throw new Error('expected stacked widgets to reseed into spread positions')
     })()
-
     const zoomK = useGraphStore.getState().zoomState?.k || 1
     const panelScale = computeCollectiveFollowPinnedScale({
       zoomK,

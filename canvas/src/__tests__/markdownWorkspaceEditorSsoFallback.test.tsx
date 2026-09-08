@@ -75,7 +75,7 @@ export async function testMarkdownWorkspaceImmediatelySyncsPlainDocumentOnFileSw
 
   const waitFor = async (predicate: () => boolean, maxTicks = 48) => {
     for (let i = 0; i < maxTicks; i += 1) {
-      await tick(dom)
+      await React.act(async () => { await tick(dom) })
       if (predicate()) return
     }
     throw new Error(`timed out waiting for markdown workspace state: ${JSON.stringify({ name: useGraphStore.getState().markdownDocumentName, activePath: useMarkdownExplorerStore.getState().activePath, text: String(useGraphStore.getState().markdownDocumentText || '').slice(0, 120), targetVisible: dom.window.document.body.textContent?.includes('video-demo-switch-source.md') })}`)
@@ -104,11 +104,11 @@ export async function testMarkdownWorkspaceImmediatelySyncsPlainDocumentOnFileSw
     graph.setMarkdownDocumentSourceUrl(null)
 
     root = createRoot(doc.getElementById('root') as unknown as HTMLElement)
-    root.render(React.createElement(MarkdownWorkspace))
+    await React.act(async () => { root!.render(React.createElement(MarkdownWorkspace)) })
 
     await waitFor(() => String(doc.body.textContent || '').includes('video-demo-switch-source.md'))
 
-    useMarkdownExplorerStore.getState().setActivePath(secondPath)
+    React.act(() => { useMarkdownExplorerStore.getState().setActivePath(secondPath) })
 
     await waitFor(() => {
       const state = useGraphStore.getState()

@@ -236,6 +236,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["ui.workspaceView.update.frontmatterCollectiveLayoutRefresh","@/__tests__/workspaceViewCollectiveLayoutRefreshRegression.test","testWorkspaceViewUpdateSchedulesFrontmatterMediaOverlayLayoutRefresh"],
   ["ui.workspaceView.update.collectiveLayout.initIndexingToggleNoMutation","@/__tests__/workspaceViewCollectiveLayoutRefreshRegression.test","testCollectiveInitializationIndexingAndWorkspaceToggleDoNotMutateBalancedLayoutContracts"],
   ["ui.workspaceView.update.d3SceneBuildKey.ignoresWorkspaceGestureToggles","@/__tests__/workspaceViewCollectiveLayoutRefreshRegression.test","testD3SceneBuildKeyIgnoresWorkspaceGestureOverlayToggles"],
+  ["ui.workspaceView.graphMutation.semanticKeyAndCameraInitialization","@/__tests__/workspaceViewGraphMutationTransitionState.test","testWorkspaceGraphMutationTransitionUsesSemanticKeyAndExpiry"],
   ["ui.workspaceView.graphMutation.rendererSwitchBlocksStoryboardWidgets","@/__tests__/workspaceViewGraphMutationTransitionGuard.test","testRendererSwitchTransitionBlocksStoryboardWidgetLayoutMutation"],
   ["ui.workspaceView.graphMutation.runAllCommitPreservesStoryboardWidgets","@/__tests__/workspaceViewGraphMutationTransitionGuard.test","testRunAllLayoutLockPreservesStoryboardWidgetGeometryDuringGraphCommit"],
   ["ui.workspaceView.graphMutation.runAllSuppressesAutoZoom","@/__tests__/workspaceViewGraphMutationTransitionGuard.test","testRunAllLayoutLockSuppressesAutoZoomUntilMutationGuardReleases"],
