@@ -55,12 +55,21 @@ export function testMonacoTextEditorSourceWiresTouchIntentGate() {
   }
 
   const markdownWorkspaceMainText = readFileSync(resolve(process.cwd(), 'src/features/markdown-workspace/main/MarkdownWorkspaceMain.tsx'), 'utf8')
+  const documentStateText = readFileSync(resolve(process.cwd(), 'src/features/markdown-workspace/main/useWorkspaceDocumentState.ts'), 'utf8')
+  if (!markdownWorkspaceMainText.includes("import { useWorkspaceDocumentState } from './useWorkspaceDocumentState'")
+    || !markdownWorkspaceMainText.includes('} = useWorkspaceDocumentState({')) {
+    throw new Error('expected MarkdownWorkspaceMain to use the shared document-state hook')
+  }
+  if (!markdownWorkspaceMainText.includes('renderJsonEditor={renderJsonEditorPane}')) {
+    throw new Error('expected the workspace layout to render the shared JSON editor callback')
+  }
   for (const snippet of [
     'const renderJsonEditorPane = React.useCallback(',
-    'language="json"',
-    'ariaLabel="JSON Editor Text"',
+    'React.createElement(MarkdownEditorPane, {',
+    "language: 'json'",
+    "ariaLabel: 'JSON Editor Text'",
   ]) {
-    if (!markdownWorkspaceMainText.includes(snippet)) {
+    if (!documentStateText.includes(snippet)) {
       throw new Error(`expected the split workspace JSON pane to stay on the shared MarkdownEditorPane path: ${snippet}`)
     }
   }

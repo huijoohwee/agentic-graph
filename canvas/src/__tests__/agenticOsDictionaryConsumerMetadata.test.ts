@@ -59,8 +59,8 @@ export function testAgenticOsDictionariesExposeConsumerMetadata() {
 
   for (const spec of DICTIONARY_SPECS) {
     const { text, frontmatter } = readDictionary(spec.fileName)
-    if (frontmatter.date !== '2026-07-26') {
-      throw new Error(`Expected ${spec.fileName} date to reflect the consumer metadata update`)
+    if (typeof frontmatter.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(frontmatter.date) || !Number.isFinite(Date.parse(frontmatter.date)) || frontmatter.date < '2026-07-26') {
+      throw new Error(`Expected ${spec.fileName} date to be an ISO date at or after the consumer metadata introduction`)
     }
     if (frontmatter.prefix !== spec.prefix) {
       throw new Error(`Expected ${spec.fileName} prefix ${spec.prefix}, got ${String(frontmatter.prefix)}`)

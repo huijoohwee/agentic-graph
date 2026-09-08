@@ -1,3 +1,4 @@
+import { resolveThreeCanvasSurfaceLifecycle } from '@/lib/three/threeRendererLifecycle'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { act } from 'react'
@@ -13,7 +14,7 @@ import {
   shouldDocumentSwitchOwnCanvasViewport,
   shouldShowLiveCanvasHero,
 } from '@/features/canvas/liveCanvasHeroVisibility'
-import { buildCanvasEmbedIframeMarkup } from '@/features/canvas/canvasEmbedIframeMarkup'
+import { buildCanvasEmbedIframeMarkup, AGENTIC_OS_XR_IFRAME_ALLOW } from '@/features/canvas/canvasEmbedIframeMarkup'
 import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
 import {
   AGENTIC_OS_CANVAS_EMBED_MESSAGE_VERSION,
@@ -140,11 +141,12 @@ export function testLiveCanvasHeroPhysicsPlaygroundSourceFidelity(): void {
   ) {
     throw new Error('expected local and published Physics Playground identities to resolve one canonical startup source')
   }
-  if (!text.includes('auto_start: true') || graphData.nodes.length !== 4) {
-    throw new Error(`expected the source-backed runtime-ready Physics Playground graph, got ${graphData.nodes.length} nodes/${graphData.edges.length} edges`)
+  if (!text.includes('auto_start: true') || graphData.nodes.length !== 5) {
+    throw new Error(`expected the authored Physics Playground graph, got ${graphData.nodes.length} nodes/${graphData.edges.length} edges`)
   }
+  if (!text.includes('broaderXrState: "blocked"') || !text.includes('applying this seed does not rerun the browser smoke')) throw new Error('expected the scoped XR evidence node to preserve the broader runtime evidence boundary')
   const nodeIds = new Set(graphData.nodes.map(node => String(node.id)))
-  for (const id of ['xr_demo_entry', 'xr_ball_controller', 'xr_rocket_controller', 'xr_runtime_gate']) {
+  for (const id of ['xr_demo_entry', 'xr_ball_controller', 'xr_rocket_controller', 'xr_runtime_gate', 'xr_edited_media_proof']) {
     if (!nodeIds.has(id)) throw new Error(`expected authored Physics Playground node ${id}`)
   }
   for (const connection of ['from: "xr_demo_entry"', 'to: "xr_ball_controller"', 'to: "xr_rocket_controller"']) {
@@ -276,6 +278,16 @@ export function testLiveCanvasHeroRetainsViewportOwnershipDuringPersistedDocumen
 }
 
 export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
+  for (const liveCanvasHeroVisible of [false, true]) {
+    const state = resolveThreeCanvasSurfaceLifecycle({
+      sourceFilesBootstrapAdmitted: true, sourceFilesBootstrapReady: true,
+      rendererPreviouslyMounted: false, geospatialOverlayOwnsViewport: false,
+      liveCanvasHeroVisible, canvasRenderMode: '3d', heavyRuntimeIntentBlocked: false,
+      activeSurface: '3d', documentSwitchOwnsViewport: false,
+    })
+    if (state.mounted !== !liveCanvasHeroVisible || state.active !== !liveCanvasHeroVisible) throw new Error('expected Hero ownership to suppress 3D mounting and activity through the shared lifecycle')
+  }
+
   const viewportSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx'), 'utf8')
   const canvasPageSource = readFileSync(resolve(process.cwd(), 'src', 'pages', 'Canvas.tsx'), 'utf8')
   const heroSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'LiveCanvasHero.tsx'), 'utf8')
@@ -303,8 +315,9 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
     'hasSearchParams,\n    isEmbeddedPreview:',
     'data-kg-live-canvas-hero-viewport-owner="true"',
     '&& !liveCanvasHeroVisible\n    && workspaceEditorOverlayOpen',
-    "!liveCanvasHeroVisible && canvasRenderMode === '3d'",
-    'xrPhysicsRunReadyDemo && !gameFpsActive && !liveCanvasHeroVisible',
+    'resolveThreeCanvasSurfaceLifecycle({',
+    'geospatialOverlayOwnsViewport, liveCanvasHeroVisible, canvasRenderMode,',
+    'xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible',
   ]) {
     if (!`${viewportSource}\n${heroSource}\n${heroHookSource}`.includes(contract)) throw new Error(`expected interactive workspace canvas contract ${contract}`)
   }
@@ -338,8 +351,8 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
   if (!heroHookSource.includes('readPersistedLiveCanvasHeroSourceSelection')) {
     throw new Error('expected Home to restore an explicit Share canvas embed selection for the current session')
   }
-  if (!viewportSource.includes("alternateCanvasSurfaceActive: geospatialModeEnabled || canvasRenderMode !== '2d'")
-    || viewportSource.includes("alternateCanvasSurfaceActive: geospatialModeEnabled || canvasRenderMode !== '2d' || active2dSurface !== 'storyboard'")) {
+  if (!viewportSource.includes("alternateCanvasSurfaceActive: geospatialCompositionEnabled || canvasRenderMode !== '2d'")
+    || viewportSource.includes("alternateCanvasSurfaceActive: geospatialCompositionEnabled || canvasRenderMode !== '2d' || active2dSurface !== 'storyboard'")) {
     throw new Error('expected the root hero to override any current 2D renderer while preserving alternate 3D and geospatial ownership')
   }
   if (!flowCanvasSource.includes('canvas2dRendererOverride || storeCanvas2dRenderer')
@@ -430,7 +443,7 @@ export function testLiveCanvasHeroEmbedUrlUsesSelectedOrSourceAddress(): void {
     '<iframe',
     'sandbox="allow-scripts allow-same-origin"',
     'referrerpolicy="no-referrer"',
-    'allow="fullscreen"',
+    `allow="${AGENTIC_OS_XR_IFRAME_ALLOW}"`,
     'loading="lazy"',
     'kgPreview=1&amp;kgLiveHero=1',
   ]) {

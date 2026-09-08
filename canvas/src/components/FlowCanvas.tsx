@@ -263,14 +263,17 @@ export default function FlowCanvas({
     exposeRuntimeRef?.(runtimeRef)
   }, [exposeRuntimeRef])
 
-  const handleInteractionFrame = React.useCallback(() => {
-    lastUserInteractionAtMsRef.current = Date.now()
+  const handleLayoutFrame = React.useCallback(() => {
     if (storyboardWidgetMode) {
       mediaOverlayInteractionFrameSchedulerRef.current?.()
       onOverlayInteractionFrame?.()
     }
     onInteractionFrame?.()
   }, [storyboardWidgetMode, onInteractionFrame, onOverlayInteractionFrame])
+  const handleInteractionFrame = React.useCallback(() => {
+    lastUserInteractionAtMsRef.current = Date.now()
+    handleLayoutFrame()
+  }, [handleLayoutFrame])
   const registerMediaOverlayInteractionFrameScheduler = React.useCallback((scheduler: null | (() => void)) => {
     mediaOverlayInteractionFrameSchedulerRef.current = scheduler
   }, [])
@@ -417,7 +420,7 @@ export default function FlowCanvas({
   useFlowCanvasRuntime({
     active,
     storyboardWidgetSurfaceId,
-    allowNodeDragOverride,
+    allowNodeDragOverride: allowMutations,
     collisionDuringDrag,
     viewportControlsPreset,
     storyboardWidgetSelectionOnDrag,
@@ -451,6 +454,8 @@ export default function FlowCanvas({
     zoomViewKey,
     graphDataRevision,
     sceneGraphData: nativeSceneGraphData,
+    authoredOverlayGraphData: sceneGraphData,
+    storyboardCollectiveZoomBaselineKRef,
     overlayAabbByNodeId,
     computedPositions,
     seededFallbackPositions,
@@ -524,7 +529,7 @@ export default function FlowCanvas({
           drawArgsRef={drawArgsRef}
           positionsDirtySinceCommitRef={positionsDirtySinceCommitRef}
           requestCommit={requestCommit}
-          onInteractionFrame={handleInteractionFrame}
+          onLayoutFrame={handleLayoutFrame}
           schema={schema}
           canvas2dRenderer={canvas2dRenderer}
           frontmatterModeEnabled={frontmatterModeEnabled}

@@ -7,8 +7,7 @@ const buildKey = (url: string, optionsKey?: string | null): string => {
   const base = String(url || '').trim()
   if (!base) return ''
   const opt = String(optionsKey || '').trim()
-  if (!opt) return base
-  return `${base}::${opt}`
+  return JSON.stringify([base, opt])
 }
 
 export function getCachedWebpageLayoutSnapshot(url: string, optionsKey?: string | null): WebpageLayoutSnapshot | null {

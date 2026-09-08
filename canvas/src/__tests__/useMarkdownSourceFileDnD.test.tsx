@@ -105,7 +105,7 @@ export async function testUseMarkdownSourceFileDnDCentralizesSourcePanelReorderS
     const draggingAfterBlocked = container.querySelector('[data-testid="dragging"]')?.textContent || ''
     if (draggingAfterBlocked !== '') throw new Error(`expected blocked interactive drag target to keep drag state empty, got ${draggingAfterBlocked}`)
 
-    const fileRow = container.querySelector('div[aria-label="file-a"]')
+    const fileRow = container.querySelector('section[aria-label="file-a"]')
     if (!(fileRow instanceof dom.window.HTMLElement)) throw new Error('expected file drag row')
     const dragStart = createDragEvent('dragstart', fileRow)
     await act(async () => {

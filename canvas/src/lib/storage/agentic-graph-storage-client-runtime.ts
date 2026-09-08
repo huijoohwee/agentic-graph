@@ -3,7 +3,6 @@ import { getAgenticGraphStorageDeviceId } from '@/lib/storage/agentic-graph-stor
 import {
   buildAgenticGraphStorageCursorId,
   buildAgenticGraphStoragePullRequest,
-  AGENTIC_OS_STORAGE_API_VERSION,
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
   type AgenticGraphStoragePullResponse,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
@@ -18,9 +17,6 @@ import {
   DEFAULT_SCHEDULE_DELAY_MS,
   AGENTIC_OS_STORAGE_SYNC_POLL_PREFIX,
   AGENTIC_OS_STORAGE_SYNC_TASK_PREFIX,
-  applyPulledDocumentChunks,
-  applyPulledDocuments,
-  applyPulledGraphSnapshots,
   ensureAgenticGraphStorageNumericRepair,
   getDbState,
   inFlightSyncByWorkspace,
@@ -47,7 +43,8 @@ import {
   resolveAgenticGraphStorageApiUrl,
 } from '@/lib/storage/agentic-graph-storage-client-transport'
 import { pushAgenticGraphStorageOutbox } from '@/lib/storage/agentic-graph-storage-client-push'
-import { needsAgenticGraphStorageConflictCandidateRefresh, partitionPulledAgenticGraphStorageChanges, readAgenticGraphStorageConflictEntries, recordAgenticGraphStoragePushConflictCandidates } from '@/lib/storage/agentic-graph-storage-conflict-store'
+import { applyAgenticGraphStoragePullPage, validateAgenticGraphStoragePullResponse } from '@/lib/storage/agentic-graph-storage-client-apply'
+import { needsAgenticGraphStorageConflictCandidateRefresh, readAgenticGraphStorageConflictEntries, recordAgenticGraphStoragePushConflictCandidates } from '@/lib/storage/agentic-graph-storage-conflict-store'
 import { runWorkspaceSeedSyncTask, type WorkspaceSeedSyncTaskContext } from '@/lib/workspace/workspaceSeedSyncRuntime'
 type AgenticGraphStorageSyncLifecycleArgs = AgenticGraphStorageSyncNowArgs & { runAfterInFlight?: boolean; signal?: AbortSignal }
 type ScheduledAgenticGraphStorageSyncArgs = AgenticGraphStorageSyncLifecycleArgs & { delayMs?: number; signature?: string | null }
@@ -217,6 +214,7 @@ const pullAgenticGraphStorageChanges = async (
     if (!response.ok || !('ok' in json) || json.ok !== true) {
       throw new Error(`agentic-graph storage pull failed: ${'error' in json ? String(json.error || 'request failed') : 'request failed'}`)
     }
+    validateAgenticGraphStoragePullResponse(json, args.workspaceId)
     finalResponse = json
     pulledDocumentCount += json.changes.documents.length
     pulledChunkCount += json.changes.documentChunks.length
@@ -224,30 +222,28 @@ const pullAgenticGraphStorageChanges = async (
     const pageHasChanges = json.changes.documents.length > 0
       || json.changes.documentChunks.length > 0
       || json.changes.graphSnapshots.length > 0
+      || json.changes.deletions.length > 0
     hasPulledChanges ||= pageHasChanges
-    if (pageHasChanges) {
-      const { applicableChanges } = await partitionPulledAgenticGraphStorageChanges({
-        dbState: args.dbState,
-        workspaceId: args.workspaceId,
-        changes: json.changes,
-      })
-      const documentWriteCount = await applyPulledDocuments(args.dbState, applicableChanges.documents)
-      const chunkApply = await applyPulledDocumentChunks(args.dbState.collections, applicableChanges.documentChunks)
-      const graphWriteCount = await applyPulledGraphSnapshots(args.dbState.collections, applicableChanges.graphSnapshots)
-      cacheWriteCount += documentWriteCount + chunkApply.writtenCount + graphWriteCount
-      reusedChunkCount += chunkApply.reusedCount
-      const pageHasApplicableChanges = applicableChanges.documents.length > 0
-        || applicableChanges.documentChunks.length > 0
-        || applicableChanges.graphSnapshots.length > 0
+    {
+      const applied = await applyAgenticGraphStoragePullPage({ dbState: args.dbState, workspaceId: args.workspaceId,
+        changes: json.changes, signal: args.signal, includeDeferred: pageIndex === 0 })
+      const applicableChanges = applied.changes
+      cacheWriteCount += applied.cacheWriteCount
+      reusedChunkCount += applied.reusedChunkCount
+      const pageHasApplicableChanges = Object.values(applicableChanges).some(rows => rows.length > 0)
+      hasPulledChanges ||= pageHasApplicableChanges
       if (pageHasApplicableChanges && typeof args.onPulledChangesApplied === 'function') {
         await args.onPulledChangesApplied({
           workspaceId: args.workspaceId,
           deviceId: args.deviceId,
           changes: applicableChanges,
+          projection: applied.projection,
           signal: args.signal,
           taskContext: args.taskContext,
         })
       }
+      throwIfStorageSyncAborted(args.signal)
+      await applied.finishProjection()
     }
     const next = normalizeString(json.nextPageCursor) || null
     if (json.pageComplete !== false || !next) break

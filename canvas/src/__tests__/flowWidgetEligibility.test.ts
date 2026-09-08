@@ -64,7 +64,7 @@ export function testFlowWidgetEligibilityReusesSharedReaders() {
   if (!text.includes("import { readEdgeEndpointId } from '@/lib/graph/edgeEndpoints'")) {
     throw new Error('expected flow widget eligibility to reuse the shared edge endpoint reader upstream')
   }
-  if (!text.includes("import { readNodeProperties } from '@/lib/graph/nodeProperties'")) {
+  if (!/import\s*\{[^}]*\breadNodeProperties\b[^}]*\}\s*from\s*['"]@\/lib\/graph\/nodeProperties['"]/.test(text)) {
     throw new Error('expected flow widget eligibility to reuse the shared node properties reader upstream')
   }
   if (!text.includes("import { isPlainObject } from '@/lib/graph/value'")) {

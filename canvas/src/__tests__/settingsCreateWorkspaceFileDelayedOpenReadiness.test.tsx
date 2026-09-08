@@ -17,17 +17,16 @@ import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-f
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
+import { createAsyncActionTracker, installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 
 type RegisteredSettingsActions = {
   apply: () => void
   reset: () => void
 }
 
-const AGENTIC_OS_CREATED_PATH = '/workspace/chat/agenticOs_20260523160000.md'
+const AGENTIC_OS_CREATED_PATH = '/workspace/chat/20260523T160000Z/agenticOs_20260523T160000Z.md'
 const HISTORY_CREATED_PATH = '/workspace/chat/chh_20260523160000.md'
 const PREVIOUS_ACTIVE_PATH = '/workspace/chat/already-open-before-create.md'
-const DELAYED_OPEN_DELAY_MS = 200
 
 const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonElement => {
   const buttons = Array.from(container.querySelectorAll('button')) as HTMLButtonElement[]
@@ -36,13 +35,10 @@ const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonEle
   return match
 }
 
-const waitForMs = async (ms: number) =>
-  await new Promise<void>(resolve => {
-    setTimeout(resolve, ms)
-  })
-
 function SettingsCreateWorkspaceFileDelayedOpenHarness(props: {
   actionsRef: React.MutableRefObject<RegisteredSettingsActions | null>
+  actionTracker: ReturnType<typeof createAsyncActionTracker>
+  queueOpen: (path: string) => void
 }): React.ReactElement {
   const {
     values,
@@ -74,11 +70,7 @@ function SettingsCreateWorkspaceFileDelayedOpenHarness(props: {
     chatLocalStorageRootPath: values.chatLocalStorageRootPath,
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
     chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
-    openWorkspaceFileImpl: path => {
-      setTimeout(() => {
-        useMarkdownExplorerStore.getState().setActivePath(path)
-      }, DELAYED_OPEN_DELAY_MS)
-    },
+    openWorkspaceFileImpl: props.queueOpen,
   })
 
   return (
@@ -93,13 +85,13 @@ function SettingsCreateWorkspaceFileDelayedOpenHarness(props: {
       <section data-history-status={String(chatHistoryPathStatus || '')} />
       <button
         type="button"
-        onClick={() => void createAndSelectAgenticGraphFile()}
+        onClick={() => props.actionTracker.track(createAndSelectAgenticGraphFile())}
       >
         Create Delayed-Open agentic-graph File
       </button>
       <button
         type="button"
-        onClick={() => void createAndSelectChatHistoryFile()}
+        onClick={() => props.actionTracker.track(createAndSelectChatHistoryFile())}
       >
         Create Delayed-Open History File
       </button>
@@ -114,13 +106,20 @@ export async function testSettingsCreateFilesDelayedOpenKeepsCommittedSurfaceTru
   let settingsRoot: ReturnType<typeof createRoot> | null = null
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
+  const actionTracker = createAsyncActionTracker()
+  const delayedOpens: string[] = []
+  const releaseDelayedOpens = () => {
+    for (const path of delayedOpens.splice(0)) useMarkdownExplorerStore.getState().setActivePath(path)
+  }
   const originalDateNow = Date.now
 
   let cleanupAssertionError: Error | null = null
+  let bodyError: unknown
+  let bodyFailed = false
   try {
     resetBrowserLocalSurfaceSnapshotsForTests()
     resetWorkspaceFsForTests()
-    Date.now = () => new Date(2026, 4, 23, 16, 0, 0, 0).getTime()
+    Date.now = () => Date.UTC(2026, 4, 23, 16, 0, 0, 0)
     const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
     anyWindow.requestAnimationFrame = installDeterministicRaf(dom.window)
 
@@ -148,7 +147,7 @@ export async function testSettingsCreateFilesDelayedOpenKeepsCommittedSurfaceTru
     settingsRoot = createRoot(settingsContainer as unknown as HTMLElement)
     chatRoot = createRoot(chatContainer as unknown as HTMLElement)
 
-    await mountReactRoot(settingsRoot, React.createElement(SettingsCreateWorkspaceFileDelayedOpenHarness, { actionsRef }), {
+    await mountReactRoot(settingsRoot, React.createElement(SettingsCreateWorkspaceFileDelayedOpenHarness, { actionsRef, actionTracker, queueOpen: path => { delayedOpens.push(path) } }), {
       window: dom.window as unknown as Window,
       frames: 10,
     })
@@ -174,11 +173,11 @@ export async function testSettingsCreateFilesDelayedOpenKeepsCommittedSurfaceTru
 
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Create Delayed-Open agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 4)
+      await actionTracker.settle()
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Create Delayed-Open History File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 4)
+      await actionTracker.settle()
     })
 
     const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agentic-graph-storage-mode]')?.getAttribute('data-draft-agentic-graph-storage-mode')
@@ -233,7 +232,7 @@ export async function testSettingsCreateFilesDelayedOpenKeepsCommittedSurfaceTru
     }
 
     await act(async () => {
-      await waitForMs(DELAYED_OPEN_DELAY_MS + 50)
+      releaseDelayedOpens()
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
@@ -280,14 +279,27 @@ export async function testSettingsCreateFilesDelayedOpenKeepsCommittedSurfaceTru
         chatHistoryStorageMode: useGraphStore.getState().chatHistoryStorageMode,
       })}`)
     }
+  } catch (error) {
+    bodyError = error
+    bodyFailed = true
   } finally {
+    try {
+      await act(async () => {
+        try { await actionTracker.settle() } finally { releaseDelayedOpens() }
+      })
+    } catch (error) {
+      cleanupAssertionError = error instanceof Error ? error : new Error(String(error))
+    }
     Date.now = originalDateNow
     if (chatRoot) {
       await unmountReactRoot(chatRoot, { window: dom.window as unknown as Window })
     }
     const clearedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (clearedChatInspection.available !== false) {
-      cleanupAssertionError = new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedChatInspection)}`)
+      const snapshotError = new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedChatInspection)}`)
+      cleanupAssertionError = cleanupAssertionError
+        ? new AggregateError([cleanupAssertionError, snapshotError], 'Settings fixture cleanup failed')
+        : snapshotError
     }
     if (settingsRoot) {
       await unmountReactRoot(settingsRoot, { window: dom.window as unknown as Window })
@@ -298,6 +310,10 @@ export async function testSettingsCreateFilesDelayedOpenKeepsCommittedSurfaceTru
     useMarkdownExplorerStore.getState().setActivePath(null)
     restoreDom()
     restoreWindow()
+  }
+  if (bodyFailed) {
+    if (cleanupAssertionError) throw new AggregateError([bodyError, cleanupAssertionError], 'Settings fixture body and cleanup failed')
+    throw bodyError
   }
   if (cleanupAssertionError) throw cleanupAssertionError
 }

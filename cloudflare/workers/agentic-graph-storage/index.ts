@@ -1,5 +1,6 @@
 import {
   AGENTIC_OS_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
   AGENTIC_OS_STORAGE_SYNC_LIMITS,
   type AgenticGraphStorageErrorResponse,
@@ -71,6 +72,7 @@ import {
   readAgenticGraphStoragePullPage,
 } from './storageSyncReadRuntime'
 import { handleSecuredAgenticGraphStorageDocumentRoute } from './storageDocumentRouteSecurity'
+import { isStorageSyncTimestamp } from './storageSyncCursor'
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -119,14 +121,14 @@ const errorResponse = (
 const okPushResponse = (body: Omit<AgenticGraphStoragePushResponse, 'ok' | 'apiVersion'>): Response =>
   json(200, {
     ok: true,
-    apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+    apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
     ...body,
   } satisfies AgenticGraphStoragePushResponse)
 
 const okPullResponse = (body: Omit<AgenticGraphStoragePullResponse, 'ok' | 'apiVersion'>): Response =>
   json(200, {
     ok: true,
-    apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+    apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
     ...body,
   } satisfies AgenticGraphStoragePullResponse)
 
@@ -195,7 +197,7 @@ const isPushRequest = (value: unknown): value is AgenticGraphStoragePushRequest 
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return (
-    record.apiVersion === AGENTIC_OS_STORAGE_API_VERSION
+    record.apiVersion === AGENTIC_OS_STORAGE_SYNC_API_VERSION
     && typeof record.workspaceId === 'string'
     && typeof record.deviceId === 'string'
     && Array.isArray(record.mutations)
@@ -206,10 +208,10 @@ const isPullRequest = (value: unknown): value is AgenticGraphStoragePullRequest 
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return (
-    record.apiVersion === AGENTIC_OS_STORAGE_API_VERSION
+    record.apiVersion === AGENTIC_OS_STORAGE_SYNC_API_VERSION
     && typeof record.workspaceId === 'string'
     && typeof record.deviceId === 'string'
-    && (typeof record.since === 'string' || record.since == null)
+    && (record.since == null || isStorageSyncTimestamp(record.since))
     && (typeof record.pageCursor === 'string' || record.pageCursor == null)
     && (record.knownChunks == null || Array.isArray(record.knownChunks))
   )
@@ -249,6 +251,9 @@ const handlePush = async (
       `storage mutation exceeds the ${AGENTIC_OS_STORAGE_SYNC_LIMITS.maxMutationBytes} byte limit`,
     )
   }
+  if (!db.batch) throw new Error('Storage sync requires transactional database batch support')
+  await db.prepare(`SELECT sync_revision, workspace_id, entity, document_id, identity_key, record_id, deleted, updated_at
+    FROM storage_child_state LIMIT 0`).all()
   const nowIso = new Date().toISOString()
   const serverTimeMs = Date.parse(nowIso)
   await ensureWorkspaceRow(db, workspaceId, nowIso)
@@ -321,10 +326,6 @@ const handlePull = async (
     throw error
   }
   const changes: AgenticGraphStoragePullChanges = page.changes
-  const hasChanges =
-    changes.documents.length > 0
-    || changes.documentChunks.length > 0
-    || changes.graphSnapshots.length > 0
   if (page.pageComplete) {
     await ensureWorkspaceRow(db, workspaceId, nowIso)
     await ensureSyncDeviceRow(db, workspaceId, deviceId, nowIso)
@@ -366,6 +367,7 @@ const handleExport = async (
       [],
       normalizeString(url.searchParams.get('cursor')) || null,
       nowIso,
+      'export',
     )
   } catch (error) {
     if (error instanceof AgenticGraphStorageSyncResultLimitError) return resultLimitResponse(error)

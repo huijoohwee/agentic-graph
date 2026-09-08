@@ -1,5 +1,7 @@
+import { initNodeWindowHarness } from '@/tests/lib/windowHarness'
 import fs from 'node:fs'
 import path from 'node:path'
+import { resolveDocsSsotFixturePath, readDocsSsotFixtureText } from '@/tests/lib/docsSsotFixture'
 import { parse as parseYaml } from 'yaml'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { buildStoryboardBoardModel, buildStoryboardInlineMediaCommandContext } from '@/components/StoryboardCanvas/storyboardModel'
@@ -72,7 +74,7 @@ const STRYBLDR_STARTER_TEMPLATE_REFERENCE = ['docs', STRYBLDR_STARTER_TEMPLATE_N
 const resolveStrybldrStarterTemplatePath = (): string => {
   const externalValidationInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   if (externalValidationInput && path.basename(externalValidationInput) === STRYBLDR_STARTER_TEMPLATE_NAME) return externalValidationInput
-  return path.resolve(process.cwd(), '../..', 'huijoohwee', 'docs', STRYBLDR_STARTER_TEMPLATE_NAME)
+  return resolveDocsSsotFixturePath(STRYBLDR_STARTER_TEMPLATE_NAME)
 }
 
 const readStrybldrStarterTemplateText = (): string => fs.readFileSync(resolveStrybldrStarterTemplatePath(), 'utf8')
@@ -90,8 +92,7 @@ const assertStrybldrStarterTemplateHasNoRepoHardcodedRuntimeMedia = (text: strin
 }
 
 const readStrybldrDemoText = (): string => {
-  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agentic-graph-strybldr-demo.md')
-  return fs.readFileSync(demoPath, 'utf8')
+  return readDocsSsotFixtureText('agentic-graph-strybldr-demo.md')
 }
 
 const readStrybldrDemoFrontmatterValue = (text: string, key: string): string => {
@@ -336,7 +337,7 @@ export function testStrybldrSourceBackedCardFieldCommitDoesNotUseFloatingPanel()
   const cardInlineTextEditorText = readSource('lib', 'cards', 'CardInlineTextEditor.tsx')
   assert(!fs.existsSync(path.resolve(process.cwd(), 'src', 'features', 'strybldr', 'StrybldrFloatingPanelView.tsx')), 'expected Strybldr FloatingPanel card editor owner to be removed')
   assert(!fs.existsSync(path.resolve(process.cwd(), 'src', 'features', 'strybldr', 'StrybldrCardEditorSection.tsx')), 'expected stale Strybldr panel card editor section to be removed')
-  assert(graphSyncText.includes('buildStrybldrCardOverridePatchFromGraphNodeChange'), 'expected source-backed card field commits to persist through the shared graph/frontmatter sync owner')
+  assert(graphSyncText.includes("from './graphDataFrontmatterFlowSyncSupport'") && graphSyncText.includes('syncStrybldrStoryboardMarkdownFromParsedGraph({') && readSource('hooks', 'store', 'graph-data-slice', 'graphDataFrontmatterFlowSyncSupport.ts').includes('const cardPatch = buildStrybldrCardOverridePatchFromGraphNodeChange({'), 'expected source-backed card field commits to persist through the shared graph/frontmatter sync owner')
   assert(storyboardCanvasText.includes('updateStrybldrStoryboardMarkdownCardOverride({'), 'expected Storyboard card edits to write Strybldr card overrides without a panel-local editor')
   assert(cardInlineTextEditorText.includes('textareaInvocationProjection'), 'expected card field editing to reuse shared invocation/media textarea projection')
 }
@@ -396,8 +397,7 @@ export function testStrybldrStoryboardRemoveElementPersistsToStructuredPayload()
 
 export function testStrybldrWorkspaceStructuredGraphFeedsStoryboardRenderers() {
   const demoName = 'agentic-graph-strybldr-demo.md'
-  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs', demoName)
-  const text = fs.readFileSync(demoPath, 'utf8')
+  const text = readDocsSsotFixtureText(demoName)
   const graph = parseWorkspaceStrybldrStoryboardGraphDataCached({
     markdownName: demoName,
     markdownText: text,
@@ -990,7 +990,7 @@ export async function testStrybldrVideoHandoffReusesBytePlusOwnerWithFallbackArt
               angle: 'front',
               level: 'eye-level',
               shot: 'close-up',
-              note: 'Keep lens stable.',
+              note: 'Keep lens stable.', focalLengthMm: 85,
             }),
           },
         }
@@ -1008,7 +1008,7 @@ export async function testStrybldrVideoHandoffReusesBytePlusOwnerWithFallbackArt
   })
   assert(handoff.prompt.includes('Approved edited product card.'), 'expected handoff prompt to read updated graph card text')
   assert(handoff.prompt.includes('Camera: Front · Eye Level · Close-up · Keep lens stable.'), 'expected handoff prompt to include saved Strybldr camera metadata')
-  assert(handoff.cards.some(card => card.camera === 'Camera: Front · Eye Level · Close-up · Keep lens stable.'), 'expected handoff card to preserve camera settings as data')
+  assert(handoff.cards.some(card => card.id === 'approved-card' && card.camera.startsWith('Camera: Front · Eye Level · Close-up · Keep lens stable. · ') && card.camera.includes(' · 85mm · ')), 'expected handoff card to preserve camera settings as data')
   assert(handoff.cards.some(card => card.sourceUnitId === 'corpus-source-video'), 'expected handoff cards to preserve source-unit provenance')
   assert(markdown.includes('kgStrybldrVideoHandoff: true'), 'expected fallback artifact frontmatter')
   assert(markdown.includes('paidCallCount: 0'), 'expected handoff cost evidence')
@@ -1212,7 +1212,7 @@ export async function testStrybldrRunGeneratedVideoUpdatesStoryboardCardOutputAn
   const parsed = await loadGraphDataFromTextViaParser('run-output.strybldr.md', serializeStrybldrStoryboardMarkdown(doc), { applyToStore: false })
   assert(parsed?.graphData, 'expected Strybldr graph for generated output regression')
   const handoff = buildStrybldrVideoHandoffFromGraphData(parsed.graphData)
-  const targetCard = handoff.cards[0]
+  const targetCard = handoff.cards.find(card => card.lane === 'Storyboard')!
   assert(targetCard?.id, 'expected handoff to expose a target storyboard card')
   const artifactText = buildStrybldrVideoHandoffMarkdown({
     handoff,
@@ -1227,7 +1227,7 @@ export async function testStrybldrRunGeneratedVideoUpdatesStoryboardCardOutputAn
   })
   const updated = applyStrybldrVideoArtifactToGraphData({
     graphData: parsed.graphData,
-    targetNodeId: targetCard.id,
+    targetNodeId: handoff.cards[0].id,
     handoff,
     status: 'generated',
     artifactPath: '/strybldr-video-test.md',
@@ -1238,6 +1238,7 @@ export async function testStrybldrRunGeneratedVideoUpdatesStoryboardCardOutputAn
     sourceUrl: handoff.sourceVideoUrl,
   })
   assert(updated, 'expected Strybldr generated video artifact to update graph data')
+  assert(updated.nodes[0] === parsed.graphData.nodes[0], 'source card must stay unchanged when artifact targets the storyboard')
   const board = buildStoryboardBoardModel({ graphData: updated, graphRevision: 1 })
   const card = board.lanes.flatMap(lane => lane.cards).find(candidate => candidate.id === targetCard.id)
   assert(card, 'expected generated artifact target card to remain visible on the storyboard')
@@ -1245,7 +1246,6 @@ export async function testStrybldrRunGeneratedVideoUpdatesStoryboardCardOutputAn
   assert(card.output.includes('/strybldr-video-test.md'), 'expected generated artifact output to link the workspace handoff path')
   assert(card.media?.kind === 'iframe' && card.media.srcDoc, 'expected generated local animatic to render as card media via outputSrcDoc')
   assert(card.references.some(reference => reference.url === '/strybldr-video-test.md'), 'expected generated artifact path to be preserved as a card reference')
-
   const updatedMarkdown = updateStrybldrStoryboardMarkdownCardOverride({
     text: serializeStrybldrStoryboardMarkdown(doc),
     nodeId: targetCard.id,
@@ -1446,8 +1446,8 @@ export function testStrybldrVideoArtifactCleanupKeepsOnlyTargetOverride() {
   assert(!sourceCard, 'expected stale source artifact override to be removed entirely')
   assert(targetCard?.prompt === 'keep me', `expected target card non-artifact overrides to remain, got ${JSON.stringify(targetCard)}`)
 }
-
 export async function testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic() {
+  const { restore } = initNodeWindowHarness()
   try {
     resetWorkspaceFsForTests()
     const text = readStrybldrDemoText()
@@ -1499,10 +1499,9 @@ export async function testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic
     assert(String(generatedText || '').includes('srcdoc='), 'expected generated local artifact to include playable srcdoc')
     assert(!String(generatedText || '').includes('stream.videodb.io'), 'expected generated local artifact not to fabricate VideoDB media')
   } finally {
-    resetWorkspaceFsForTests()
+    resetWorkspaceFsForTests(); restore()
   }
 }
-
 export async function testStrybldrVideoSourceKeepsRenderableMediaAcrossMergeAndHandoff() {
   const videoId = ['Stry', 'Media', '123'].join('')
   const watchUrl = ['https://www.youtube.com/watch', `?v=${videoId}`].join('')

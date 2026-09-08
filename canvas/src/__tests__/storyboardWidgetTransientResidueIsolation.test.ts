@@ -148,11 +148,11 @@ export function testStoryboardWidgetOverlayCollisionRebalancesOnGraphContentRevi
   if (!collisionText.includes('graphContentRevision: number')) {
     throw new Error('expected Storyboard Widget overlay collision hook to accept graphContentRevision so indexing recomposition can invalidate stale layout state')
   }
-  if (!collisionText.includes('resetOverlayCollisionTransientState()\n    scheduleOverlayCollisionResolve()')) {
+  if (!collisionText.includes('resetOverlayCollisionTransientState()\n    scheduleOverlayCollisionResolveRef.current()')) {
     throw new Error('expected Storyboard Widget overlay collision effect to clear stale resolve keys before rebalancing on graph-content changes')
   }
-  if (!collisionText.includes('args.graphContentRevision,')) {
-    throw new Error('expected Storyboard Widget overlay collision effect dependencies to include graphContentRevision')
+  if (!collisionText.includes('overlayNodeLayoutSignature,') || !collisionText.includes('return buildOverlayNodeLayoutSignature(graphDataForOverlayRuntime)')) {
+    throw new Error('expected collision invalidation to follow shared node-layout changes without replaying on edge-only publication')
   }
   if (!runtimeStoreText.includes('graphContentRevision: s.graphContentRevision || 0')) {
     throw new Error('expected Storyboard Widget runtime to read graphContentRevision from store')
@@ -168,12 +168,16 @@ export function testRuntimeTraceResidueUsesSharedInMemoryTrace() {
   if (!traceHelperText.includes('export function reportRuntimeTrace(entry: RuntimeTraceEntry): void {')) {
     throw new Error('expected runtime debug residue to centralize through the shared in-memory trace helper')
   }
-  const workspaceSeedProviderText = readFileSync(resolve(process.cwd(), 'src', 'features', 'workspace-fs', 'workspaceSeedProvider.ts'), 'utf8')
-  if (!workspaceSeedProviderText.includes('reportRuntimeTrace({')) {
+  const workspaceMirrorTraceText = readFileSync(resolve(process.cwd(), 'src', 'features', 'workspace-fs', 'workspaceSeedProviderLocalIo.ts'), 'utf8')
+  if (!workspaceMirrorTraceText.includes('reportRuntimeTrace({')) {
     throw new Error('expected workspace mirror diagnostics to reuse the shared in-memory trace helper')
   }
   for (const relativePath of [
     ['features', 'workspace-fs', 'workspaceSeedProvider.ts'],
+    ['features', 'workspace-fs', 'workspaceSeedProviderLocalIo.ts'],
+    ['features', 'workspace-fs', 'workspaceSeedProviderPaths.ts'],
+    ['features', 'workspace-fs', 'workspaceSeedProviderSourceReaders.ts'],
+    ['features', 'workspace-fs', 'workspaceSeedProviderStorage.ts'],
     ['components', 'FlowCanvas', 'useFlowCanvasGraphState.ts'],
     ['components', 'StoryboardWidgetCanvas.runtime.tsx'],
     ['components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetOverlayCollision.ts'],

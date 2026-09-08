@@ -45,8 +45,8 @@ function readSource(relativePath: string): string {
 function readWorkspaceSeed(basename: string): string {
   return readFileSync(resolve(process.cwd(), '..', 'docs', 'workspace-seeds', basename), 'utf8')
 }
-
-export function testXrModeNormalizesAndCanvasViewSelectionActivatesSurface() {
+export async function testXrModeNormalizesAndCanvasViewSelectionActivatesSurface() {
+  await Promise.all([import('@/features/game-fps/gameModeRuntime'), import('@/features/game-flight-sim/flightSimRuntime'), import('@/features/game-city-sim/citySimRuntime')])
   if (normalizeCanvas3dMode('xr') !== 'xr') {
     throw new Error('Expected XR Mode to normalize as a first-class 3D canvas mode')
   }
@@ -257,7 +257,7 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
   const canvasViewMenuText = readSource('components/toolbar/canvasViewMenu.ts')
   const geoXrActivationText = readSource('features/geospatial/geoXrSurfaceActivation.ts')
   const geospatialModeCommitText = readSource('features/geospatial/geospatialModeCommit.ts')
-  const flightSurfaceOwnershipText = readSource('features/game-flight-sim/flightSimSurfaceOwnershipRuntime.ts')
+  const flightSurfaceOwnershipText = readSource('features/game-flight-sim/flightSimSurfaceOwnershipRuntime.ts') + readSource('features/geospatial/geospatialSurfaceOwnershipRuntime.ts')
   const canvas3dModeText = readSource('lib/canvas/canvas3dMode.ts')
   if (!canvasViewActionsText.includes('applyCanvasSurfaceModeSelection')) {
     throw new Error('Expected Canvas View Surface Mode actions to reuse the shared surface-mode selection owner')
@@ -303,7 +303,7 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
     !geoXrActivationText.includes('await dependencies.preloadGeospatial()')
     || !geospatialModeCommitText.includes('flushSync(() =>')
     || !geoXrActivationText.includes('commitCanvasGeospatialModeEnabled')
-    || !flightSurfaceOwnershipText.includes('commitCanvasGeospatialModeEnabled(enabled)')
+    || !flightSurfaceOwnershipText.includes('commitCanvasGeospatialSurfaceOwnership(enabled)') || !flightSurfaceOwnershipText.includes('commitCanvasGeospatialModeEnabled(enabled)')
     || !geoXrActivationText.includes('await dependencies.commitGeospatialEnabled(true)')
     || !geoXrActivationText.includes('geospatialComposite: true')
     || !geoXrActivationText.includes('preserveGameplay: true')
@@ -384,8 +384,8 @@ export async function testXrSurfaceFrontmatterPresetActivatesXrCanvasMode() {
     }
   }
 }
-
 export async function testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels() {
+  await import('@/features/game-flight-sim/flightSimRuntime')
   const draftDocuments = [
     'agentic-graph-game-flight-sim-demo.companion.md',
     'agentic-graph-game-mmorpg-demo.companion.md',
@@ -587,7 +587,7 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
   }
   const cameraMotion = readSource('features/three/XrCameraMotionSection.tsx')
   const simulationWorkbenchStart = cameraMotion.indexOf('const openSimulationWorkbench')
-  const simulationWorkbenchEnd = cameraMotion.indexOf('const nativeControllerActive', simulationWorkbenchStart)
+  const simulationWorkbenchEnd = cameraMotion.indexOf('\n  const ', simulationWorkbenchStart + 1)
   const simulationWorkbench = simulationWorkbenchStart >= 0 && simulationWorkbenchEnd > simulationWorkbenchStart
     ? cameraMotion.slice(simulationWorkbenchStart, simulationWorkbenchEnd)
     : ''

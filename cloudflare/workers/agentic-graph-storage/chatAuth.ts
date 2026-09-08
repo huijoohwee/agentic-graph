@@ -42,6 +42,11 @@ const CORS_HEADERS = {
 export const AGENTIC_OS_STORAGE_BROWSER_SESSION_COOKIE_NAME = '__Host-agentic_os_storage_session'
 const MAX_BROWSER_SESSION_COOKIE_TOKEN_LENGTH = 512
 const BROWSER_SESSION_COOKIE_TOKEN = /^[A-Za-z0-9_-]+$/
+const BROWSER_SESSION_COOKIE_PRESENT = new RegExp(`(?:^|;)\\s*${AGENTIC_OS_STORAGE_BROWSER_SESSION_COOKIE_NAME}\\s*(?==|;|$)`)
+
+// Presence fences anonymous fallback even when the bounded token parser rejects it.
+export const hasAgenticGraphStorageBrowserSessionCredential = (request: Request): boolean =>
+  BROWSER_SESSION_COOKIE_PRESENT.test(String(request.headers.get('cookie') || ''))
 
 const jsonHeaders = {
   'content-type': 'application/json; charset=utf-8',
@@ -109,9 +114,9 @@ const readBearerSessionCredential = (request: Request): AuthenticatedSessionCred
 }
 
 /**
- * Cookie credentials are limited to the browser-session and D1 snapshot
- * surfaces. Chat and Canvas-room callers retain their existing bearer/query
- * boundary until their separate WebSocket-ticket migration is complete.
+ * Cookie credentials are limited to browser sessions, D1 snapshots, document reads, and the
+ * explicitly admitted workspace blob/media capability/asset routes. Chat and Canvas-room callers
+ * retain their existing bearer/query boundary pending their separate migration.
  */
 const readStorageSnapshotSessionCredential = (request: Request): AuthenticatedSessionCredential | null => {
   const bearer = readBearerSessionCredential(request)

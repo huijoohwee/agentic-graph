@@ -653,7 +653,7 @@ export function testOpenAiServerManagedProxyLoadsLocalEnvFiles() {
   }
   const helperSource = readFileSync(helperPath, 'utf8')
   const expectedViteSnippets = [
-    "import { loadChatProxyServerManagedEnv } from './viteChatProxyEnv'",
+    "import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './viteChatProxyEnv'",
     'loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname })',
     'process.env.AGENTIC_OS_CHAT_PROXY_OPENAI_API_KEY || process.env.OPENAI_API_KEY',
     'process.env.AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_BASE_URL',

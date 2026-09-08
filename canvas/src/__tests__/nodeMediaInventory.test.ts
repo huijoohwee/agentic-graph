@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { HTML_VIEWER_RUNTIME_FULL } from '@/lib/graph/htmlViewer/runtimeTemplate.compiled'
 import { buildNodeMediaInventory } from '@/components/GraphCanvas/helpers'
 
 export function testBuildNodeMediaInventoryCountsKindsAcrossCanonicalMediaSpecs() {
@@ -105,7 +106,10 @@ export function testAudioMediaUsesSharedCardPanelAndHtmlViewerOwners() {
   const cardPreview = readFileSync(resolve(process.cwd(), 'src', 'lib', 'cards', 'CardMediaPreview.tsx'), 'utf8')
   const htmlViewer = readFileSync(resolve(process.cwd(), 'src', 'lib', 'graph', 'htmlViewer', 'buildGraphHtmlViewerMarkup.ts'), 'utf8')
   const htmlViewerRuntime = readFileSync(resolve(process.cwd(), 'src', 'lib', 'graph', 'htmlViewer', 'runtimeScript.ts'), 'utf8')
-  const richMediaPanel = readFileSync(resolve(process.cwd(), 'src', 'components', 'RichMediaPanel.tsx'), 'utf8')
+  const readPanel = (name: string) => readFileSync(resolve(process.cwd(), 'src', 'components', `${name}.tsx`), 'utf8')
+  const richMediaPanel = readPanel('RichMediaPanelDirectMediaSurface')
+  const htmlOverlay = readFileSync(resolve(process.cwd(), 'src', 'lib', 'graph', 'htmlViewer', 'htmlViewerOverlaySeeds.ts'), 'utf8')
+  const htmlShell = readFileSync(resolve(process.cwd(), 'src', 'lib', 'graph', 'htmlViewer', 'htmlViewerDocumentShell.ts'), 'utf8')
   const richMediaOverlayLayer = readFileSync(resolve(process.cwd(), 'src', 'components', 'GraphCanvasRoot', 'components', 'RichMediaOverlayLayer2d.tsx'), 'utf8')
   const webpageLayoutToGraph = readFileSync(resolve(process.cwd(), 'src', 'lib', 'websites', 'webpageLayoutToGraph.ts'), 'utf8')
   const mediaLightboxPromptParameters = readFileSync(resolve(process.cwd(), 'src', 'lib', 'ui', 'mediaLightboxPromptParameters.ts'), 'utf8')
@@ -114,6 +118,7 @@ export function testAudioMediaUsesSharedCardPanelAndHtmlViewerOwners() {
     'MediaCatalogPanel.tsx',
     'MediaCatalogPanelView.tsx',
     'mediaCatalogCandidateItems.tsx',
+    'mediaCatalogListItems.tsx',
     'mediaCatalogShared.tsx',
     'mediaCatalogTypes.ts',
     'mediaCatalogUploadedFields.tsx',
@@ -132,21 +137,20 @@ export function testAudioMediaUsesSharedCardPanelAndHtmlViewerOwners() {
   ) {
     throw new Error('expected shared CardMediaPreview to keep lazy image decoding and metadata-only video/audio loading')
   }
-  if (!richMediaPanel.includes("kind === 'video' || kind === 'audio'") || !richMediaPanel.includes('kind={kind}')) {
+  if (!readPanel('RichMediaPanel').includes('<RichMediaPanelSurface')
+    || !readPanel('RichMediaPanelSurface').includes('<RichMediaPanelContentSurface')
+    || !readPanel('RichMediaPanelContentSurface').includes('<RichMediaPanelDirectMediaSurface')
+    || !richMediaPanel.includes("if (model.kind === 'audio')")
+    || !richMediaPanel.includes('<CardMediaPreview') || !richMediaPanel.includes('kind={model.kind}')) {
     throw new Error('expected RichMediaPanel to render audio through shared CardMediaPreview')
   }
-  const commandMenuThumbnailCount = (commandMenuCatalogPanel.match(/data-kg-command-menu-media-thumbnail="1"/g) || []).length
-  const commandMenuLazyCount = (commandMenuCatalogPanel.match(/loading="lazy"/g) || []).length
-  const commandMenuAsyncCount = (commandMenuCatalogPanel.match(/decoding="async"/g) || []).length
-  const commandMenuLowPriorityCount = (commandMenuCatalogPanel.match(/\{\.\.\.LOW_PRIORITY_MEDIA_THUMBNAIL_IMAGE_PROPS\}/g) || []).length
-  if (
-    commandMenuThumbnailCount < 4 ||
-    commandMenuLazyCount < commandMenuThumbnailCount ||
-    commandMenuAsyncCount < commandMenuThumbnailCount ||
-    commandMenuLowPriorityCount < commandMenuThumbnailCount ||
-    !commandMenuCatalogPanel.includes("fetchpriority: 'low'")
-  ) {
-    throw new Error('expected FloatingPanel Media thumbnails to use lazy image loading, async decoding, and low fetch priority')
+  // Count actual image opening tags, not selector strings containing the same marker.
+  const thumbnails = ((commandMenuCatalogPanel.match(/<img\b[\s\S]*?\/>/g) || []) as string[])
+    .filter(tag => tag.includes('data-kg-command-menu-media-thumbnail="1"'))
+  if (thumbnails.length < 5 || thumbnails.some(tag => !tag.includes('loading="lazy"')
+    || !tag.includes('decoding="async"') || !tag.includes('{...LOW_PRIORITY_MEDIA_THUMBNAIL_IMAGE_PROPS}'))
+    || !commandMenuCatalogPanel.includes("fetchpriority: 'low'")) {
+    throw new Error('expected every FloatingPanel Media thumbnail to use lazy loading, async decoding, and low fetch priority')
   }
   if (!richMediaOverlayLayer.includes("n.kind === 'audio'")) {
     throw new Error('expected D3 rich media overlay layer to preserve shared audio media kind')
@@ -170,12 +174,14 @@ export function testAudioMediaUsesSharedCardPanelAndHtmlViewerOwners() {
   ) {
     throw new Error('expected Generate Media to create browser-native procedural image/audio/video artifacts and route video through the shared video-sequence timeline owner')
   }
-  if (!htmlViewer.includes('audio[src]') || !htmlViewer.includes('.kg-mediaBody audio')) {
+  if (!htmlViewer.includes("from './htmlViewerOverlaySeeds'") || !htmlViewer.includes("from './htmlViewerDocumentShell'")
+    || !htmlOverlay.includes('audio[src]') || !htmlShell.includes('.kg-mediaBody audio')) {
     throw new Error('expected exported HTML viewer to discover and style audio media nodes')
   }
   if (
-    !htmlViewerRuntime.includes("querySelectorAll('iframe,img,video,audio,source')")
-    || !htmlViewerRuntime.includes("kind === 'audio'")
+    !htmlViewerRuntime.includes("from './runtimeTemplate.compiled'")
+    || !HTML_VIEWER_RUNTIME_FULL.includes('querySelectorAll("iframe,img,video,audio,source")')
+    || !HTML_VIEWER_RUNTIME_FULL.includes('.style.pointerEvents=')
   ) {
     throw new Error('expected exported HTML viewer runtime to preserve audio interactivity')
   }

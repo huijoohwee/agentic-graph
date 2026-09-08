@@ -27,7 +27,7 @@ export type WorkspaceRunReadyDemoSeed = {
   label: string
   validationSeedRelPath: string
   seedRelPathCandidates: readonly string[]
-  sourceRoot: 'huijoohwee/docs' | 'agentic-graph/docs'
+  sourceRoot: 'agentic-graph/docs'
   cleanCanvasRecommended: boolean
 }
 
@@ -65,7 +65,7 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
       `docs/${CARE_AGENT_DEMO_WORKSPACE_SEED_BASENAME}`,
       CARE_AGENT_DEMO_WORKSPACE_SEED_BASENAME,
     ],
-    sourceRoot: 'huijoohwee/docs',
+    sourceRoot: 'agentic-graph/docs',
     cleanCanvasRecommended: true,
   },
   {
@@ -77,7 +77,7 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
       `docs/${RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME}`,
       RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME,
     ],
-    sourceRoot: 'huijoohwee/docs',
+    sourceRoot: 'agentic-graph/docs',
     cleanCanvasRecommended: true,
   },
   {

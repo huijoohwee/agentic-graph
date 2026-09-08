@@ -1,5 +1,6 @@
 import {
   createPersistedCollectionDb,
+  type PersistedCollectionAtomicCondition,
   type PersistedCollectionAtomicMutation,
   type PersistedCollectionDb,
   type PersistedCollectionMap,
@@ -18,6 +19,7 @@ import type {
   AgenticGraphStorageCursorRecord,
   AgenticGraphStorageMutation,
   AgenticGraphStorageOutboxRecord,
+  AgenticGraphStorageChildState,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import type { PaymentRailId, PaymentSettlementAsset } from 'grph-shared/payments/paymentRailSsot'
 import type {
@@ -50,7 +52,18 @@ export type KgStorageConflictCandidateRecord = {
   recordId: string
   serverRevision: number | null
   remoteRecord: AgenticGraphStorageMutation['record'] | null
+  childState?: AgenticGraphStorageChildState | null
   receivedAtMs: number
+}
+
+export type KgStorageDeferredRecord = {
+  id: string
+  workspaceId: string
+  entity: AgenticGraphStorageMutation['entity']
+  recordId: string
+  record: AgenticGraphStorageMutation['record'] | null
+  childState: AgenticGraphStorageChildState | null
+  projection?: { previousText?: string | null; previousGraph?: KgGraphSnapshotRecord | null }
 }
 
 export type KgPaymentIntentQueueRecord = {
@@ -92,6 +105,8 @@ export type AgenticGraphStorageRecordMap = {
   graphSnapshots: KgGraphSnapshotRecord
   syncOutbox: AgenticGraphStorageOutboxRecord
   syncConflicts: KgStorageConflictCandidateRecord
+  syncChildState: AgenticGraphStorageChildState & { id: string }
+  syncDeferred: KgStorageDeferredRecord
   syncCursor: AgenticGraphStorageCursorRecord
   paymentIntentQueue: KgPaymentIntentQueueRecord
   paymentChainEvidence: KgChainEvidenceRecord
@@ -101,6 +116,7 @@ export type AgenticGraphStorageRecordMap = {
 export type AgenticGraphStorageCollections = PersistedCollectionMap<AgenticGraphStorageRecordMap>
 export type AgenticGraphStorageDb = PersistedCollectionDb<AgenticGraphStorageRecordMap> & {
   atomicWriteWithRevisions?: IndexedDbCollectionDb<AgenticGraphStorageRecordMap>['atomicWriteWithRevisions']
+  compareAndWriteWithRevisions?: IndexedDbCollectionDb<AgenticGraphStorageRecordMap>['compareAndWriteWithRevisions']
   revisionHistory?: IndexedDbCollectionDb<AgenticGraphStorageRecordMap>['revisionHistory']
   collaborationOutbox?: IndexedDbCollectionDb<AgenticGraphStorageRecordMap>['collaborationOutbox']
 }
@@ -118,6 +134,8 @@ export const AGENTIC_OS_STORAGE_COLLECTION_NAMES = Object.freeze([
   'graphSnapshots',
   'syncOutbox',
   'syncConflicts',
+  'syncChildState',
+  'syncDeferred',
   'syncCursor',
   'paymentIntentQueue',
   'paymentChainEvidence',
@@ -201,6 +219,25 @@ export const commitAgenticGraphStorageMutationUnit = async (
   }
   // The explicit memory adapter preserves mutation atomicity, but never claims revision durability.
   await dbState.atomicWrite(unit.mutations)
+}
+
+export const compareAndCommitAgenticGraphStorageMutationUnit = async (
+  dbState: AgenticGraphStorageDb,
+  unit: AgenticGraphStorageMutationUnit & {
+    conditions: ReadonlyArray<PersistedCollectionAtomicCondition<AgenticGraphStorageRecordMap>>
+  },
+): Promise<boolean> => {
+  const persistence = dbState.persistence.getState()
+  if (persistence.status !== 'active') throw new Error('Conditional storage write requires active persistence.')
+  if (persistence.mode === 'indexeddb') {
+    if (!dbState.compareAndWriteWithRevisions) throw new Error('Storage adapter cannot compare and commit atomically.')
+    return dbState.compareAndWriteWithRevisions(unit.mutations, (unit.revisionDocuments || []).map(record => ({
+      record: { workspaceId: record.workspaceId, documentId: record.id, documentRevision: record.documentRevision,
+        contentMd: record.contentMd, contentHash: record.contentHash, updatedAtMs: record.updatedAtMs },
+      keep: AGENTIC_OS_STORAGE_SYNC_BOUNDS.minDocumentRevisionsRetained,
+    })), unit.conditions)
+  }
+  return dbState.compareAndWrite(unit.mutations, unit.conditions)
 }
 
 export const listAgenticGraphStorageDocumentRevisions = async (

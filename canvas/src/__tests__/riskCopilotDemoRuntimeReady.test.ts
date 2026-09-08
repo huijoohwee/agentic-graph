@@ -3,7 +3,7 @@ import path from 'node:path'
 import { load as parseYaml } from 'js-yaml'
 
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
-import { readWorkspaceInitializationDocsMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
+import { readCanonicalWorkspaceSeedMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
 import {
   RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME,
   RISK_COPILOT_RUN_READY_DEMO_ID,
@@ -18,9 +18,9 @@ import {
 
 type PlainRecord = Record<string, unknown>
 
-const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
+import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
 const REPO_ROOT = path.resolve(process.cwd(), '..')
-const DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME)
+const DOC_PATH = resolveRepoSourcePath(path.join('docs/workspace-seeds', RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME))
 const DOCS_ROOT = path.dirname(DOC_PATH)
 const EVIDENCE_PATH = path.join(REPO_ROOT, 'sme-agent', 'demo', 'sme-care-agent-canvas-evidence.md')
 
@@ -57,8 +57,8 @@ export function testRiskCopilotDemoIsRuntimeReadyFromLocalProof() {
   const runReadyDemo = asRecord(meta.run_ready_demo, 'run_ready_demo')
   if (
     runReadyDemo.id !== RISK_COPILOT_RUN_READY_DEMO_ID
-    || runReadyDemo.source_root !== 'huijoohwee/docs'
-    || runReadyDemo.source_path !== `../huijoohwee/docs/${RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME}`
+    || runReadyDemo.source_root !== 'agentic-graph/docs'
+    || runReadyDemo.source_path !== `docs/workspace-seeds/${RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME}`
     || runReadyDemo.validation_seed_path !== `/${RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME}`
   ) {
     throw new Error(`expected risk-copilot source identity to match the shared seed, got ${JSON.stringify(runReadyDemo)}`)
@@ -92,7 +92,7 @@ export function testRiskCopilotDemoIsRuntimeReadyFromLocalProof() {
 
 export async function testRiskCopilotDemoRunReadyModeLoadsSourceBackedCleanCanvasSeed() {
   const seed = resolveWorkspaceRunReadyDemoSeed(RISK_COPILOT_RUN_READY_DEMO_ID)
-  if (!seed || seed.validationSeedRelPath !== RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME || seed.sourceRoot !== 'huijoohwee/docs' || seed.cleanCanvasRecommended !== true) {
+  if (!seed || seed.validationSeedRelPath !== RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME || seed.sourceRoot !== 'agentic-graph/docs' || seed.cleanCanvasRecommended !== true) {
     throw new Error(`unexpected risk-copilot run-ready seed ${JSON.stringify(seed)}`)
   }
   if (resolveWorkspaceValidationSeedRelPath({ explicitRelPath: '', runReadyDemoId: RISK_COPILOT_RUN_READY_DEMO_ID, defaultRelPath: 'fallback.md' }) !== RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME) {
@@ -115,9 +115,9 @@ export async function testRiskCopilotDemoRunReadyModeLoadsSourceBackedCleanCanva
       const files = String(body.path || '') === DOCS_ROOT ? [{ relPath: seed.validationSeedRelPath, text: sourceText, updatedAtMs: 1710000000000 }] : []
       return new Response(JSON.stringify({ ok: true, files }), { status: 200, headers: { 'content-type': 'application/json' } })
     }) as typeof fetch
-    const entries = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
-    const loaded = entries.find(entry => entry.relPath === seed.validationSeedRelPath)
-    if (!loaded || loaded.text !== sourceText) throw new Error('expected run-ready mode to load the actual sibling SME risk-copilot source')
+    const entries = await readCanonicalWorkspaceSeedMirrorEntries()
+    const loaded = entries.find(entry => entry.relPath === `workspace-seeds/${seed.validationSeedRelPath}`)
+    if (!loaded || loaded.text !== sourceText) throw new Error('expected run-ready mode to load the canonical SME risk-copilot source')
     readFrontmatter(loaded.text)
   } finally {
     if (previousFetch) (globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch

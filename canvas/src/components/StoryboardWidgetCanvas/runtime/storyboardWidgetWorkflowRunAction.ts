@@ -250,6 +250,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
         resolveImageToThreeJsOwnedOutputPanelRunInput,
         publishAnnotationRunOutputToRichMediaPanel,
       } = createStoryboardWidgetWorkflowRichMediaPublishers({
+        suppressStoreGraphWriteback: suppressLayoutMutation,
         context: workflowNodeResolutionContext,
         graphForRun,
         allowCreateRichMediaPanel,

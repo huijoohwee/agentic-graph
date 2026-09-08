@@ -7,10 +7,11 @@ export function testGraphFieldsViewAddsSmartMediaWidgetGalleryPresetSetup() {
   const text = readFileSync(storyboardWidgetGraphTabPath, 'utf8')
   const graphFieldsViewText = readFileSync(graphFieldsViewPath, 'utf8')
 
+  const commandText = readFileSync(resolve(process.cwd(), 'src/features/panels/views/graph-fields/graphFieldsEntryCommands.ts'), 'utf8')
   const hasConsolidatedEntryShortcut =
-    text.includes('const WORKFLOW_SHORTCUT_LABELS = [') &&
-    text.includes('Nodes · Widget Gallery') &&
-    text.includes('Clusters · Samples') &&
+    text.includes('entryShortcutLabels={WORKFLOW_MANAGER_GRAPH_FIELDS_COMMAND_ENTRY_LABELS}') && text.includes('onEntryShortcutClick={openEntryInFieldSettings}') && text.includes('entryOpenRequest={entryOpenRequest}') &&
+    commandText.includes('Nodes · Widget Gallery') &&
+    commandText.includes('Clusters · Samples') &&
     graphFieldsViewText.includes('Entry shortcuts (click to open Field Settings)')
 
   if (text.includes('buildWidgetDraftFromSmartFields')) {

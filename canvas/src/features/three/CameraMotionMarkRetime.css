@@ -154,7 +154,7 @@
   border-width: 2px;
   border-color: var(--kg-canvas-accent, #2563eb);
   box-shadow: none;
-  transition: border-color 140ms ease-out;
+  transition: border-color var(--kg-motion-duration-fast) var(--kg-motion-ease-standard);
 }
 
 .xr-shot-target-timeline-bar--camera {

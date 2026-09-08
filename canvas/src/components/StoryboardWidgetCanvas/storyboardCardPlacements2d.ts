@@ -1,3 +1,4 @@
+import { resolveEffectiveFlowWidgetPinnedInCanvas } from '@/lib/storyboardWidget/widgetPlacementAuthority'
 import { isStoryboardFixedCardOwnedNode } from '@/components/StoryboardWidgetCanvas/storyboardCardOwnership2d'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
@@ -191,7 +192,7 @@ export const applyFixedStoryboardCardPlacementsToGraphData2d = (args: {
     if (id && isProbeTreeLayoutOwnedNode(node)) {
       placement = readStoryboardCardCenter2d(node) || placement
     }
-    if (!placement || !readFlowWidgetPinnedInCanvas(args.flowWidgetPinnedByNodeId, id)) return node
+    if (!placement || !resolveEffectiveFlowWidgetPinnedInCanvas({ graphMetaKind: String(graphData.metadata?.kind || ''), node, pinnedValue: args.flowWidgetPinnedByNodeId?.[id] })) return node
     if (node.x === placement.x && node.y === placement.y) return node
     changed = true
     return { ...node, x: placement.x, y: placement.y } as GraphNode

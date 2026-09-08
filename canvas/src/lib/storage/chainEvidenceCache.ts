@@ -4,7 +4,7 @@ import type {
   EvidenceCache,
   EvidenceCacheKey,
   TypedVerificationFailure,
-} from '../../../../grph-shared/src/payments/chainEvidenceContract'
+} from 'grph-shared/payments/chainEvidenceContract'
 import {
   getAgenticGraphStorageDb,
   type KgChainEvidenceRecord,

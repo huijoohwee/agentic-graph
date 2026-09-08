@@ -1,4 +1,4 @@
-import type { FlightGeoOverlaySnapshot } from '../../../../gympgrph/src/flightGeoOverlay'
+import type { FlightGeoOverlaySnapshot } from 'gympgrph/testkit/flightGeoOverlay'
 
 export function flightOverlay(
   headingDegrees = 0,

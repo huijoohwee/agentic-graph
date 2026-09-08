@@ -5,7 +5,8 @@ import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { buildCorpusQueryEvidencePack } from '@/features/queryable-corpus/queryEvidencePack'
 import { everyCorpusEdgeHasEvidence, isCorpusSourceUnitMarkdown } from '@/features/queryable-corpus/corpusGraph'
 import { importWorkspaceLocalFiles, importWorkspaceLocalFolder } from '@/features/markdown-workspace/workspaceImport/localImport'
-import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
+import { PNG_WITH_IHDR_BYTES } from './fixtures/pngHeaderFixture'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -21,57 +22,6 @@ function readQueryableCorpusPrdTad(): string {
   const cwd = process.cwd()
   const repoRoot = path.basename(cwd) === 'canvas' ? path.resolve(cwd, '..') : cwd
   return fs.readFileSync(path.join(repoRoot, 'docs/documents/agentic-graph-query-prd-tad.md'), 'utf8')
-}
-
-function createMemoryWorkspaceFs(): WorkspaceFs & { readAll: () => WorkspaceEntry[] } {
-  const entries = new Map<string, WorkspaceEntry>()
-  const now = () => 1
-  const normalize = (path: string) => path.replace(/\/+/g, '/').replace(/\/$/, '') || '/'
-  const fs: WorkspaceFs & { readAll: () => WorkspaceEntry[] } = {
-    ensureSeed: async () => false,
-    listEntries: async () => Array.from(entries.values()),
-    readFileText: async (path: WorkspacePath) => entries.get(normalize(path))?.text ?? null,
-    writeFileText: async (path: WorkspacePath, text: string) => {
-      const normalized = normalize(path)
-      const existing = entries.get(normalized)
-      entries.set(normalized, {
-        path: normalized,
-        parentPath: existing?.parentPath ?? '/',
-        kind: 'file',
-        name: existing?.name ?? (normalized.split('/').pop() || 'file'),
-        text,
-        updatedAtMs: now(),
-      })
-    },
-    createFile: async ({ parentPath, name, text }) => {
-      const normalized = normalize(`${parentPath}/${name}`)
-      entries.set(normalized, {
-        path: normalized,
-        parentPath,
-        kind: 'file',
-        name,
-        text,
-        updatedAtMs: now(),
-      })
-      return normalized
-    },
-    createFolder: async ({ parentPath, name }) => {
-      const normalized = normalize(`${parentPath}/${name}`)
-      entries.set(normalized, {
-        path: normalized,
-        parentPath,
-        kind: 'folder',
-        name,
-        updatedAtMs: now(),
-      })
-      return normalized
-    },
-    deleteEntry: async path => {
-      entries.delete(normalize(path))
-    },
-    readAll: () => Array.from(entries.values()),
-  }
-  return fs
 }
 
 function buildSubmitArgsFixture(overrides: Partial<FloatingPanelChatSubmitArgs> = {}): FloatingPanelChatSubmitArgs {
@@ -226,14 +176,16 @@ export async function testQueryableCorpusMediaImportCreatesMetadataSourceUnit() 
   const imageFile = {
     name: 'diagram.png',
     type: 'image/png',
-    size: 42,
-    text: async () => 'binary should not be read',
+    size: PNG_WITH_IHDR_BYTES.byteLength,
+    arrayBuffer: async () => PNG_WITH_IHDR_BYTES.slice().buffer,
+    text: async () => { throw new Error('PNG import must read bytes') },
   } as unknown as File
   const result = await importWorkspaceLocalFiles({ fs, files: [imageFile] })
-  assert(result.createdPaths.length === 1, 'expected one created media metadata document')
-  const created = fs.readAll().find(entry => entry.kind === 'file')
+  assert(result.createdPaths.length === 3, 'expected PNG source metadata plus GLB and GLTF artifacts')
+  const sourcePath = result.createdPaths.find(path => path.endsWith('.source.md'))
+  const created = (await fs.listEntries()).find(entry => entry.path === sourcePath)
   assert(created, 'expected media metadata workspace file')
-  assert(created.name === 'diagram.png.source.md', `expected metadata markdown filename, got ${created.name}`)
+  assert(created.name === 'diagram.source.md', `expected metadata markdown filename, got ${created.name}`)
   assert(isCorpusSourceUnitMarkdown(String(created.text || '')), 'expected media import to create corpus source-unit frontmatter')
 
   const parsed = await loadGraphDataFromTextViaParser(created.name, String(created.text || ''), { applyToStore: false })

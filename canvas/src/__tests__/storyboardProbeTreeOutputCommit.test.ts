@@ -24,31 +24,34 @@ export function testStoryboardProbeTreeOutputCommitUpdatesDurableDraftAndCanonic
     edges: [],
   }
   let committedGraph: GraphData | null = null
-  let canonicalStoreProperties: Record<string, unknown> | null = null
+  let publicationCount = 0
+  let downstreamPatchCount = 0
   const history: string[] = []
   commitStoryboardCardCanonicalText2d({
     addHistory: label => history.push(label),
     canonicalKey: textModel.secondaryField.canonicalKey,
     cardId,
-    commitGraphData: next => { committedGraph = next },
+    // The graph publisher owns both durable draft and canonical-store updates.
+    commitGraphData: next => { committedGraph = next; publicationCount += 1 },
     currentProperties: {},
     graphData,
     historyLabel: 'Storyboard output',
     nextValue: nextOutput,
     preserveFormatting: true,
     propertyKeys: textModel.secondaryField.propertyKeys,
-    updateNode: (_id, patch) => {
-      canonicalStoreProperties = (patch.properties || {}) as Record<string, unknown>
-    },
+    updateNode: () => { downstreamPatchCount += 1 },
   })
   const committedProperties = committedGraph?.nodes?.[0]?.properties || {}
-  if (committedProperties.output !== nextOutput || canonicalStoreProperties?.output !== nextOutput) {
-    throw new Error(`expected Output commit in durable draft and canonical store, got ${JSON.stringify({ committedProperties, canonicalStoreProperties })}`)
+  if (committedProperties.output !== nextOutput || publicationCount !== 1 || downstreamPatchCount !== 0) {
+    throw new Error(`expected one authoritative Output publication without a competing node patch, got ${JSON.stringify({ committedProperties, publicationCount, downstreamPatchCount })}`)
   }
-  if ('response' in committedProperties || 'response' in (canonicalStoreProperties || {})) {
+  if ('response' in committedProperties) {
     throw new Error('expected Output commit to remove stale response aliases')
   }
   if (committedProperties.keep !== 'yes' || history.join('|') !== 'Storyboard output') {
     throw new Error(`expected Output commit to retain sibling properties and add one history entry, got ${JSON.stringify({ committedProperties, history })}`)
+  }
+  if (graphData.nodes[0].properties?.response !== 'stale alias' || 'output' in graphData.nodes[0].properties) {
+    throw new Error('expected Output publication to preserve the input graph snapshot')
   }
 }

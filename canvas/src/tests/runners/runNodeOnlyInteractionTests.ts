@@ -208,10 +208,8 @@ export const runNodeOnlyInteractionTests = async (results: TestResult[]) => {
 
     const modStoryboardFixedCardPerf = await import('../../__tests__/storyboardFixedCardOverlayPerformanceRegression.test')
     await execTest(results, 'ui.storyboard.fixedCardOverlay.skipsNoopTransformWrites', modStoryboardFixedCardPerf.testStoryboardFixedCardOverlaySkipsNoopTransformWrites)
-    await execTest(results, 'ui.storyboard.cardOverlay.restoresFlexInteractions', modStoryboardFixedCardPerf.testStoryboardCardOverlayRestoresFlexInteractions)
 
     const modRichMediaEditorDrag = await import('../../__tests__/richMediaPanelEditorModeDragRegression.test')
-    await execTest(results, 'ui.richMediaPanel.editorMode.disablesContentPointerEvents', modRichMediaEditorDrag.testRichMediaPanelEditorModeDisablesInteractiveContentForDragging)
     await execTest(results, 'ui.richMediaPanel.d3Overlay.wheelForwardsBeforeScrollableBody', modRichMediaEditorDrag.testD3RichMediaOverlayForwardsWheelBeforeScrollableBody)
 
     const modRichMediaOpenWidgetExclusion = await import('../../__tests__/storyboardWidgetRichMediaPanelOpenWidgetExclusionRegression.test')

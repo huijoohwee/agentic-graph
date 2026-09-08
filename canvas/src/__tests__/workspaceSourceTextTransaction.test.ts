@@ -5,6 +5,12 @@ import {
   publishWorkspaceSourceTextRevision,
   readWorkspaceSourceTextSnapshot,
 } from '@/features/workspace-fs/workspaceSourceTextTransaction'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
+import { readWorkspaceActiveDocumentObservedText } from '@/features/source-files/sourceFilesRuntimeActive'
+import { readCachedWorkspaceSelectionResolvedTextForActivePath, type MarkdownWorkspaceSelectionResolvedTextCache } from '@/lib/markdown-workspace-runtime/markdownWorkspaceSelectionResolvedText'
+import { readMarkdownWorkspaceWriteExpectation, resolveMarkdownWorkspaceLoadedSnapshot } from '@/lib/markdown-workspace-runtime/markdownWorkspaceWritebackCommit'
+import type { MarkdownWorkspaceLoadedSnapshot } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.types'
+import { withLocalDocsMirror } from './helpers/workspaceSeedMirrorHarness'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { writeWorkspaceFileAndSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
@@ -221,4 +227,188 @@ export async function testActiveMarkdownDocumentAllowsExpectedDocumentSwitchRevi
       applyViewPreset: previousApplyPreset,
     })
   }
+}
+
+const observedPath = '/docs/observed-baseline.md'
+const canonicalText = '# Canonical document\n\nComplete source-owned content.\n'
+const rawText = '# Retained raw bytes\n'
+const createObservedFs = (text: string | null) => createMemoryWorkspaceFs({ initialEntries: [
+  { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+  { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+  ...(text === null ? [] : [{ path: observedPath, parentPath: '/docs', kind: 'file' as const, name: 'observed-baseline.md', text, updatedAtMs: 1 }]),
+] })
+const readObserved = (fs: WorkspaceFs) => readWorkspaceActiveDocumentObservedText({
+  activePath: observedPath, fs, preferCanonicalPathText: true,
+})
+const boundedObservation = async <T>(operation: Promise<T>): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try { return await Promise.race([operation, new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Owned baseline observation did not settle')), 5000)
+  })]) } finally { if (timer !== undefined) clearTimeout(timer) }
+}
+
+export async function testWorkspaceObservedProjectionCommitsCapturedRawBaseline() {
+  await withLocalDocsMirror({ 'observed-baseline.md': canonicalText }, async () => {
+    const fs = createObservedFs(rawText), originalWrite = fs.writeFileText.bind(fs)
+    let writes = 0
+    fs.writeFileText = async (...args) => { writes += 1; await originalWrite(...args) }
+    const observed = await readObserved(fs)
+    assert.equal(observed.text, canonicalText, 'initial selection retains canonical display priority')
+    assert.equal(observed.observedWorkspaceText, rawText)
+    assert.equal(observed.observedWorkspaceFs, fs)
+    assert.equal(await fs.readFileText(observedPath), rawText)
+    assert.equal(writes, 0, 'loading a display projection must never repair disk')
+    const lastLoadedRef: { current: MarkdownWorkspaceLoadedSnapshot | null } = { current: { path: observedPath, ...observed } }
+    const expected = readMarkdownWorkspaceWriteExpectation(lastLoadedRef.current, observedPath)
+    assert.ok(expected)
+    const edited = '# Authored keyboard change\n'
+    assert.equal(await writeWorkspaceFileAndSync({
+      path: observedPath, text: edited, getFs: async () => fs, lastLoadedRef,
+      ...expected, resetParsedState: false,
+    }), true)
+    assert.equal(await fs.readFileText(observedPath), edited)
+    assert.equal(lastLoadedRef.current?.text, edited)
+    assert.equal(lastLoadedRef.current?.observedWorkspaceText, edited)
+    assert.equal(lastLoadedRef.current?.observedWorkspaceFs, fs)
+    assert.equal(writes, 1)
+    await writeWorkspaceFileAndSync({ path: observedPath, text: '# Display only', getFs: async () => fs, lastLoadedRef, skipWrite: true, resetParsedState: false })
+    assert.equal(lastLoadedRef.current?.observedWorkspaceText, edited, 'skipWrite must not authorize unobserved bytes')
+    assert.equal(writes, 1)
+  })
+}
+
+export async function testWorkspaceObservedProjectionRejectsUnseenChangesAndOwnerDrift() {
+  await withLocalDocsMirror({ 'observed-baseline.md': canonicalText }, async () => {
+    for (const newer of ['# A newer authored edit', '', null]) {
+      const fs = createObservedFs(rawText), observed = await readObserved(fs)
+      if (newer === null) await fs.deleteEntry(observedPath)
+      else await fs.writeFileText(observedPath, newer)
+      let writes = 0
+      fs.writeFileText = async () => { writes += 1 }
+      const lastLoadedRef = { current: { path: observedPath, ...observed } }
+      const expected = readMarkdownWorkspaceWriteExpectation(lastLoadedRef.current, observedPath)
+      assert.ok(expected)
+      assert.equal(await writeWorkspaceFileAndSync({ path: observedPath, text: '# Stale editor', getFs: async () => fs, lastLoadedRef, ...expected, resetParsedState: false }), false)
+      assert.equal(await fs.readFileText(observedPath), newer)
+      assert.equal(writes, 0)
+      assert.equal(lastLoadedRef.current.observedWorkspaceText, rawText)
+    }
+    for (const [expectedText, actual] of [['', null], [null, '']] as const) {
+      const fs = createObservedFs(actual)
+      assert.equal(await writeWorkspaceFileAndSync({ path: observedPath, text: '# Unseen replacement', getFs: async () => fs,
+        lastLoadedRef: { current: { path: observedPath, text: canonicalText } }, expectedWorkspaceText: expectedText, expectedWorkspaceFs: fs, resetParsedState: false }), false)
+      assert.equal(await fs.readFileText(observedPath), actual, 'missing and empty are distinct observations')
+    }
+    const owner = createObservedFs(rawText), replacement = createObservedFs(rawText)
+    assert.equal(await writeWorkspaceFileAndSync({ path: observedPath, text: '# Wrong owner', getFs: async () => replacement,
+      lastLoadedRef: { current: { path: observedPath, text: canonicalText } }, expectedWorkspaceText: rawText, expectedWorkspaceFs: owner, resetParsedState: false }), false)
+    assert.equal(await replacement.readFileText(observedPath), rawText)
+  })
+}
+
+export async function testWorkspaceObservedProjectionDropsDelayedCanonicalTextAfterRawDrift() {
+  for (const newer of ['# Newer during mirror resolution', '', null]) {
+    await withLocalDocsMirror({ 'observed-baseline.md': canonicalText }, async () => {
+      const fs = createObservedFs(rawText), originalFetch = globalThis.fetch
+      let release = () => {}, started = () => {}
+      const gate = new Promise<void>(resolve => { release = resolve })
+      const requested = new Promise<void>(resolve => { started = resolve })
+      let operation: ReturnType<typeof readObserved> | undefined
+      globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+        const response = await originalFetch(...args)
+        if (response.ok) { started(); await gate }
+        return response
+      }) as typeof fetch
+      try {
+        operation = readObserved(fs)
+        await boundedObservation(requested)
+        if (newer === null) await fs.deleteEntry(observedPath)
+        else await fs.writeFileText(observedPath, newer)
+        release()
+        const result = await boundedObservation(operation)
+        assert.equal(result.text, newer ?? '', 'canonical text from the old raw read must not accompany newer bytes')
+        assert.equal(result.observedWorkspaceText, newer)
+        assert.equal(await fs.readFileText(observedPath), newer)
+      } finally {
+        release()
+        try { if (operation) await Promise.allSettled([operation]) }
+        finally { globalThis.fetch = originalFetch }
+      }
+    })
+  }
+}
+
+export async function testWorkspaceObservedReadCoalescingRetainsGenerationAndFsOwnership() {
+  await withLocalDocsMirror({ 'observed-baseline.md': canonicalText }, async () => {
+    const fs = createObservedFs(rawText), originalFetch = globalThis.fetch
+    const cacheRef: { current: MarkdownWorkspaceSelectionResolvedTextCache | null } = { current: null }
+    let release = () => {}, started = () => {}, secondRead = () => {}
+    const gate = new Promise<void>(resolve => { release = resolve })
+    const requested = new Promise<void>(resolve => { started = resolve })
+    const secondObserved = new Promise<void>(resolve => { secondRead = resolve })
+    const reads: Promise<unknown>[] = []
+    globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+      const response = await originalFetch(...args)
+      if (response.ok) { started(); await gate }
+      return response
+    }) as typeof fetch
+    try {
+      const read = () => readCachedWorkspaceSelectionResolvedTextForActivePath({ activePath: observedPath, fs, cacheRef, preferPathResolvedText: true, observeWorkspaceText: true })
+      const first = readWorkspaceSourceTextSnapshot({ path: observedPath, read, maxAttempts: 1 }); reads.push(first)
+      await boundedObservation(requested)
+      await fs.writeFileText(observedPath, '# New raw generation')
+      publishWorkspaceSourceTextRevision(observedPath)
+      const nativeRead = fs.readFileText.bind(fs)
+      fs.readFileText = async path => { secondRead(); return nativeRead(path) }
+      const second = readWorkspaceSourceTextSnapshot({ path: observedPath, read, maxAttempts: 1 }); reads.push(second)
+      await boundedObservation(secondObserved)
+      const replacement = createObservedFs('# Replacement owner')
+      let replacementStarted = () => {}
+      const replacementObserved = new Promise<void>(resolve => { replacementStarted = resolve })
+      const replacementNativeRead = replacement.readFileText.bind(replacement)
+      replacement.readFileText = async path => { replacementStarted(); return replacementNativeRead(path) }
+      const replacementReadPromise = readCachedWorkspaceSelectionResolvedTextForActivePath({ activePath: observedPath, fs: replacement, cacheRef, preferPathResolvedText: true, observeWorkspaceText: true })
+      reads.push(replacementReadPromise)
+      await boundedObservation(replacementObserved)
+      release()
+      const [oldSnapshot, nextSnapshot] = await boundedObservation(Promise.all([first, second]))
+      assert.equal(oldSnapshot.current, false)
+      assert.equal(oldSnapshot.value.text, '# New raw generation')
+      assert.equal(nextSnapshot.current, true)
+      assert.equal(nextSnapshot.value.text, canonicalText, 'new generation must perform its own canonical-priority load')
+      assert.equal(nextSnapshot.value.observedWorkspaceText, '# New raw generation')
+      const replacementRead = await boundedObservation(replacementReadPromise)
+      assert.equal(replacementRead.observedWorkspaceFs, replacement)
+      assert.equal(replacementRead.observedWorkspaceText, '# Replacement owner')
+      assert.equal(cacheRef.current, null, 'paired observations are never retained after settlement')
+    } finally {
+      release()
+      try { await Promise.allSettled(reads) } finally { globalThis.fetch = originalFetch }
+    }
+  })
+}
+
+export async function testWorkspaceObservedReadPreservesFallbackWithoutInventingAuthority() {
+  await withLocalDocsMirror({ 'observed-baseline.md': canonicalText }, async () => {
+    const missing = createObservedFs(null), missingResult = await readObserved(missing)
+    assert.equal(missingResult.text, canonicalText)
+    assert.equal(missingResult.observedWorkspaceText, null)
+    assert.equal(missingResult.observedWorkspaceFs, missing)
+    for (const failFirst of [true, false]) {
+      const fs = createObservedFs(rawText), read = fs.readFileText.bind(fs)
+      let count = 0
+      fs.readFileText = async path => { if (failFirst || ++count > 1) throw new Error('Owned FS unavailable'); return read(path) }
+      const result = await readObserved(fs)
+      assert.equal(result.text, canonicalText)
+      assert.equal(Object.hasOwn(result, 'observedWorkspaceText'), true)
+      assert.equal(result.observedWorkspaceText, undefined)
+      assert.equal(result.observedWorkspaceFs, undefined)
+      const previous = { path: observedPath, text: canonicalText, observedWorkspaceText: rawText, observedWorkspaceFs: fs }
+      const refreshed = resolveMarkdownWorkspaceLoadedSnapshot({ previous, path: observedPath, ...result })
+      assert.equal(readMarkdownWorkspaceWriteExpectation(refreshed, observedPath), null, 'a new failed observation clears previous authority on the same path')
+    }
+    const fallback = await readWorkspaceActiveDocumentObservedText({ activePath: '/notes/inline-only.md', fs: missing, fallbackText: '# Inline selected entry' })
+    assert.equal(fallback.text, '# Inline selected entry')
+    assert.equal(fallback.observedWorkspaceText, null)
+  })
 }

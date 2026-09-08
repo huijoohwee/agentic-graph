@@ -97,13 +97,16 @@ export function testGraphCenteredSvg3dEdgeRgbaAlphaControlsStrokeOpacity() {
     paddingPx: 60,
     includeXmlDeclaration: false,
     animated: false,
+    // Snapshot callers disable depth fading when checking authored opacity.
+    exportDepthOpacityMin: 1,
+    exportDepthOpacityMax: 1,
   })
   if (!svg) throw new Error('expected svg markup')
   if (!svg.includes('stroke="rgb(255, 0, 0)"')) throw new Error('expected rgba to be normalized to rgb stroke')
   if (!svg.includes('stroke-opacity="0.2"')) throw new Error('expected rgba alpha to drive stroke-opacity')
 }
 
-export function testGraphCenteredSvg3dShaderLineModeIgnoresSchemaEdgeOpacity() {
+export function testGraphCenteredSvg3dShaderLineModeRespectsSchemaEdgeOpacity() {
   const g: GraphData = {
     type: 'Graph',
     nodes: [
@@ -114,7 +117,7 @@ export function testGraphCenteredSvg3dShaderLineModeIgnoresSchemaEdgeOpacity() {
   }
   const svg = exportGraphAsCentered3dSvgMarkup({
     graphData: g,
-    schema: defaultSchema,
+    schema: { ...defaultSchema, three: { ...defaultSchema.three, linkOpacity: 0.25 } },
     widthPx: 900,
     heightPx: 600,
     paddingPx: 60,
@@ -123,7 +126,7 @@ export function testGraphCenteredSvg3dShaderLineModeIgnoresSchemaEdgeOpacity() {
     threeEdgeRenderer: 'shaderLine',
   })
   if (!svg) throw new Error('expected svg markup')
-  if (!svg.includes('stroke-opacity="1"')) throw new Error('expected shaderLine export to use opaque edges')
+  if (!svg.includes('stroke-opacity="0.25"')) throw new Error('expected shaderLine export to preserve schema edge opacity')
 }
 
 export function testGraphCenteredSvg3dNodeVisualOpacityAffectsSvgOpacity() {
@@ -142,8 +145,52 @@ export function testGraphCenteredSvg3dNodeVisualOpacityAffectsSvgOpacity() {
     paddingPx: 60,
     includeXmlDeclaration: false,
     animated: false,
+    // Snapshot callers disable depth fading when checking authored opacity.
+    exportDepthOpacityMin: 1,
+    exportDepthOpacityMax: 1,
   })
   if (!svg) throw new Error('expected svg markup')
   if (!svg.includes('data-node-id="a"')) throw new Error('expected node present')
   if (!svg.includes('opacity="0.2"')) throw new Error('expected visual:opacity to drive exported node opacity')
+}
+
+export function testGraphCenteredSvg3dAnimationPreservesAuthoredOpacity() {
+  for (const [minimum, maximum, renderer, expectedNode, expectedEdge, edgeOpacity = 0.2] of [
+    [1, 1, 'mesh', 0.2, 0.2], [0, 0, 'mesh', 0, 0],
+    [0.8, 0.2, 'mesh', 0.16, 0.16], [0, 0, 'shaderLine', 0, 0.2], [1, 1, 'mesh', 0.2, 0, 0],
+  ] as const) {
+    const env = initJsdomHarness()
+    try {
+      const svg = exportGraphAsCentered3dSvgMarkup({
+        graphData: { type: 'Graph', nodes: [
+          { id: 'a', type: 'Entity', label: 'A', properties: { pos3d: [0, 0, 0], 'visual:opacity': 0.2 } },
+          { id: 'b', type: 'Entity', label: 'B', properties: { pos3d: [40, 0, 0] } },
+        ], edges: [{ id: 'e1', source: 'a', target: 'b', label: 'rel', properties: { opacity: edgeOpacity } }] },
+        schema: defaultSchema, widthPx: 900, heightPx: 600, animated: true,
+        exportShaderLineWidthPx: 2.75, exportDepthOpacityMin: minimum, exportDepthOpacityMax: maximum, threeEdgeRenderer: renderer,
+      })
+      if (!svg) throw new Error('Expected animated SVG')
+      const doc = env.dom.window.document
+      doc.body.innerHTML = svg
+      const root = doc.querySelector('svg')!
+      const node = root.querySelector('[data-node-id="a"] [data-role="node-circle"]')!
+      const edge = root.querySelector('[data-edge-id="e1"]')!
+      const script = root.querySelector('script')?.textContent
+      if (!node || !edge || !script) throw new Error('Expected exported node, edge, and animation script')
+      const assertOpacity = () => {
+        if (renderer === 'shaderLine' && Number(edge.getAttribute('stroke-width')) !== 2.75) throw new Error('Expected fixed shader line width')
+        if (Math.abs(Number(node.getAttribute('fill-opacity')) - expectedNode) > 0.001
+          || Math.abs(Number(edge.getAttribute('stroke-opacity')) - expectedEdge) > 0.001) {
+          throw new Error(`Animation opacity mismatch for ${minimum}/${maximum}/${renderer}: node=${node.getAttribute('fill-opacity')} edge=${edge.getAttribute('stroke-opacity')}`)
+        }
+      }
+      assertOpacity()
+      let frame: (() => void) | undefined
+      new Function('document', 'requestAnimationFrame', 'performance', script)(
+        { currentScript: { ownerSVGElement: root } }, (callback: () => void) => { frame = callback; return 1 }, { now: () => 0 },
+      )
+      if (!frame) throw new Error('Expected the generated animation to schedule a frame')
+      frame(); assertOpacity(); frame(); assertOpacity()
+    } finally { env.restore() }
+  }
 }

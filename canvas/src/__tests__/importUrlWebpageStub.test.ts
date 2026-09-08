@@ -1,20 +1,57 @@
+import { installUnavailableWebpageDomFixture } from './helpers/workspaceImportUrlFixtures'
 import { fetchWorkspaceUrlContent } from '@/features/markdown-workspace/workspaceImport'
 import { isFrontmatterOnlyDoc } from '@/lib/markdown/frontmatter'
 import { buildWebpageWorkspaceEntryTextFromUpstreamMarkdown } from '@/features/markdown-workspace/workspaceImport'
 import { resetWorkspaceUrlContentCacheForTests } from '@/features/markdown-workspace/workspaceImport/urlContentCache'
+import { buildWebpageProxyUrl } from '@/lib/url'
+import { clearWebpageIframeSrcdocCaches } from '@/lib/websites/webpageIframeSrcdoc'
 
 export const testImportUrlWebpageCreatesHtmlFrontmatterStub = async () => {
+  const url = 'https://example.test/pricing?fixture=html-frontmatter'
+  const proxyUrl = buildWebpageProxyUrl(url, 'strip')
+  const sourceBody = 'The public workshop offers a complete materials list, a guided repair session, and a written maintenance plan.'
+  const html = `<!doctype html><html><head><title>Workshop pricing</title></head><body><h1>Workshop pricing</h1><p>${sourceBody}</p><a href="${url}">Read the workshop details</a></body></html>`
+  const previousFetch = globalThis.fetch
+  const calls: string[] = []
+  const unexpectedCalls: string[] = []
   resetWorkspaceUrlContentCacheForTests()
-  const res = await fetchWorkspaceUrlContent('https://grapesjs.com/pricing')
-  if (!res || typeof res.text !== 'string') throw new Error('missing content')
-  const text = res.text
-  if (!text.includes('kgWebpageUrl:')) throw new Error('missing kgWebpageUrl')
-  if (!text.includes('kgWebpageView:')) throw new Error('missing kgWebpageView')
-  if (!/kgWebpageView:\s*"html"/i.test(text) && !/kgWebpageView:\s*html/i.test(text)) {
-    throw new Error('expected kgWebpageView to be html')
+  clearWebpageIframeSrcdocCaches()
+  // This fixture represents a readable public response, not an authenticated browser session.
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const requestUrl = input instanceof Request ? input.url : String(input)
+    const method = String(init?.method || (input instanceof Request ? input.method : 'GET')).toUpperCase()
+    const request = `${method} ${requestUrl}`
+    calls.push(request)
+    if (requestUrl === url && method === 'HEAD') {
+      return new Response(null, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+    }
+    if (requestUrl === proxyUrl && method === 'GET') {
+      return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+    }
+    unexpectedCalls.push(request)
+    throw new Error(`Unexpected public webpage fixture request: ${request}`)
+  }) as typeof fetch
+  try {
+    const res = await fetchWorkspaceUrlContent(url)
+    if (unexpectedCalls.length) throw new Error(`Unexpected fixture requests: ${unexpectedCalls.join(', ')}`)
+    if (JSON.stringify(calls) !== JSON.stringify([`HEAD ${url}`, `GET ${proxyUrl}`])) {
+      throw new Error(`expected direct HEAD then exact webpage proxy GET, got ${JSON.stringify(calls)}`)
+    }
+    if (!res || typeof res.text !== 'string') throw new Error('missing content')
+    const text = res.text
+    if (!text.includes(`kgWebpageUrl: "${url}"`)) throw new Error('missing exact kgWebpageUrl')
+    if (!text.includes('kgWebpageView:')) throw new Error('missing kgWebpageView')
+    if (!/kgWebpageView:\s*"html"/i.test(text) && !/kgWebpageView:\s*html/i.test(text)) {
+      throw new Error('expected kgWebpageView to be html')
+    }
+    const body = text.replace(/^---[\s\S]*?\n---\n?/m, '')
+    if (!body.includes(url)) throw new Error('expected body to include the webpage URL')
+    if (!body.includes(sourceBody)) throw new Error('expected actual public source content, not a URL-only artifact')
+  } finally {
+    globalThis.fetch = previousFetch
+    resetWorkspaceUrlContentCacheForTests()
+    clearWebpageIframeSrcdocCaches()
   }
-  const body = text.replace(/^---[\s\S]*?\n---\n?/m, '')
-  if (!body.includes('https://grapesjs.com/pricing')) throw new Error('expected stub body to include the webpage URL')
 }
 
 export const testImportUrlWebpageRefreshUsesSourceFaithfulForMultipleUrls = async () => {
@@ -30,6 +67,7 @@ export const testImportUrlWebpageRefreshUsesSourceFaithfulForMultipleUrls = asyn
 
   const g = globalThis as unknown as { fetch?: unknown }
   const prevFetch = g.fetch
+  const domFixture = installUnavailableWebpageDomFixture(urls)
   try {
     g.fetch = (async (input: unknown, init?: unknown) => {
       const initObj = init && typeof init === 'object' ? (init as { method?: unknown }) : null
@@ -64,8 +102,10 @@ export const testImportUrlWebpageRefreshUsesSourceFaithfulForMultipleUrls = asyn
         throw new Error(`expected HTML-derived heading in body for URL: ${url}`)
       }
     }
+    domFixture.assertRequests()
   } finally {
     g.fetch = prevFetch
+    domFixture.restore()
   }
 }
 

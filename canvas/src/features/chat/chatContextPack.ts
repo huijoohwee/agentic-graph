@@ -40,22 +40,42 @@ const clipText = (raw: unknown, maxChars: number): string => {
   return `${cleaned.slice(0, Math.max(0, maxChars - 3))}...`
 }
 
+const CHAT_CONTEXT_JSON_MAX_DEPTH = 8
+const CHAT_CONTEXT_JSON_MAX_VALUES = 512
+const CHAT_CONTEXT_JSON_TRUNCATED = '[context truncated]'
+
 const clipJsonValue = (raw: unknown, maxChars: number): JSONValue => {
-  if (raw == null) return null
-  if (typeof raw === 'string') return clipText(raw, maxChars)
-  if (typeof raw === 'number' || typeof raw === 'boolean') return raw
-  if (Array.isArray(raw)) {
-    return raw
-      .slice(0, 12)
-      .map(v => clipJsonValue(v, Math.max(24, Math.floor(maxChars / 3))))
+  let remaining = CHAT_CONTEXT_JSON_MAX_VALUES
+  const ancestors = new WeakSet<object>()
+  const visit = (value: unknown, chars: number, depth: number): JSONValue => {
+    if (remaining <= 0) return CHAT_CONTEXT_JSON_TRUNCATED
+    remaining -= 1
+    if (value == null) return null
+    if (typeof value === 'string') return clipText(value, chars)
+    if (typeof value === 'number' || typeof value === 'boolean') return value
+    if (typeof value !== 'object') return clipText(String(value), chars)
+    if (depth >= CHAT_CONTEXT_JSON_MAX_DEPTH || ancestors.has(value)) return CHAT_CONTEXT_JSON_TRUNCATED
+    ancestors.add(value)
+    try {
+      if (Array.isArray(value)) {
+        const out: JSONValue[] = []
+        for (const item of value.slice(0, 12)) {
+          if (remaining <= 0) { out.push(CHAT_CONTEXT_JSON_TRUNCATED); break }
+          out.push(visit(item, Math.max(24, Math.floor(chars / 3)), depth + 1))
+        }
+        return out
+      }
+      const out: Record<string, JSONValue> = {}
+      for (const key of Object.keys(value).slice(0, 24)) {
+        if (remaining <= 0) { out[key] = CHAT_CONTEXT_JSON_TRUNCATED; break }
+        out[key] = visit((value as Record<string, unknown>)[key], Math.max(24, Math.floor(chars / 2)), depth + 1)
+      }
+      return out
+    } finally {
+      ancestors.delete(value)
+    }
   }
-  if (isRecord(raw)) {
-    const out: Record<string, JSONValue> = {}
-    const keys = Object.keys(raw).slice(0, 24)
-    for (const k of keys) out[k] = clipJsonValue(raw[k], Math.max(24, Math.floor(maxChars / 2)))
-    return out
-  }
-  return clipText(String(raw), maxChars)
+  return visit(raw, maxChars, 0)
 }
 
 const extractFrontmatterJson = (markdownText: string | null): Record<string, JSONValue> | null => {

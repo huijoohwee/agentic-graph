@@ -6,18 +6,18 @@ import {
 import {
   applyCityGeoPresentationToMap,
   mapHasExactCityGeoPresentation,
-} from '../../../gympgrph/src/cityGeoPresentationMapLibre'
+} from 'gympgrph/testkit/cityGeoPresentationMapLibre'
 import {
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import {
   REGIONAL_POI_LAYER_ORDER,
   REGIONAL_POI_SOURCE_ID,
   applyRegionalPoiProfileToMap,
   mapHasExactRegionalPoiProfile,
   type RegionalPoiFeatureCollection,
-} from '../../../gympgrph/src/regionalPoiMapLibre'
+} from 'gympgrph/testkit/regionalPoiMapLibre'
 import {
   createSyntheticCityGeoOverlaySnapshot,
   TEST_LAYER_ANCHOR,

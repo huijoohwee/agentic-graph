@@ -60,6 +60,55 @@
 
 ---
 
+## Browser fixtures and document readiness
+
+Docs fixture unit reads use `AG_TEST_DOCS_SSOT_ROOT`, then
+`AGENTIC_OS_PUBLISHED_DOCS_ROOT`, then the workspace-resolved mirror owner.
+They reread bounded local bytes and fail on missing documents without network
+fallback. Explicit `AG_TEST_DOCS_SSOT_STORAGE_BASE_URL` selects the published
+storage route, with a 20-second request deadline and responses below 500 kB.
+Remote path consumers retain at most 64 private temporary files per process;
+each read refreshes the source. Unit fixtures do not establish deployed
+publication, provider availability, or production runtime readiness.
+
+SVG/export cases create their own `initJsdomHarness()` and restore it in `finally`.
+The shared harness owns `DOMParser` and `XMLSerializer`; nested serialization
+uses the active window and restores the preceding serializer descriptor. Tests
+must not borrow globals or retain `#kg-root` elements from earlier cases.
+Await asynchronous surface restoration before closing the fixture DOM. Bound
+test-owned gates and cleanup waits, release gates in `finally`, and restore
+globals even when cleanup fails; the runner timeout does not cancel test logic.
+
+Snapshot exporters normalize XML namespace declarations on cloned elements.
+Live and generated Markdown overlays retain XHTML descendants with HTML or XML
+document owners. Native XML parsing and browser checks verify content, links and
+geometry; snapshot normalization preserves the authored source attributes.
+
+Document writeback tests exercise the native transition guard before editing.
+Their owned clock advances past the observed mutation deadline; they then prove
+native readiness and inspect persisted Markdown, typed envelopes, positions and
+edges. Fixture clock/state restoration is separate from production readiness.
+Knowledge-source success vectors carry independently checked content and envelope
+digests; rejection controls keep their altered bytes and invalid proofs.
+
+Structured MCP document checks preserve card lineage alongside the shared compute
+route to output panels. The extractor infers missing dataflow from authored nodes
+and edges before adding generated parent relations. Existing authored edges or
+compute nodes remain authoritative. The canonical-document case checks both
+extraction controls, persisted metadata, canvas application and live recomputation.
+Bare HTML hints without authored HTML/geospatial data retain the Markdown `output`
+channel; authored diagram and geospatial outputs retain their HTML channels.
+`chat.responseContract.storage.structuredContentExplicitFrontmatterMetadata`
+selects this path without a provider call or deployment.
+
+Workspace hydration checks distinguish missing inline text (`undefined`) and absent
+filesystem content (`null`) from authored empty or whitespace strings. Missing
+active documents share one storage request; authored strings remain unchanged and
+inactive documents are not fetched. Export-cache checks exercise synchronous
+loader re-entry, thrown and asynchronous failures, independent caller snapshots,
+and reset followed by a replacement request. A retiring request must neither
+replace nor clear the newer request or its cached result.
+
 ## Component Responsibility Matrix
 
 | Layer/Subsystem       | Path/Module                                   | Component                   | Interface/Method            | Responsibility (S-V-O)                                                                        | Dependencies                          | Contracts                                         | LOC    |
@@ -91,8 +140,8 @@
 | `runParserTests.ts`       | Parser registry, custom parsers, wildcards        | ~500       | Parser loading, transform chaining, aggregation    |
 
 **Test Registration**:
-- New test files must be explicitly registered in `canvas/src/tests/run.ts` to be executed by the CI runner.
-- Individual tests can be imported and registered via `exec('name', testFunction)`.
+- New cases must be explicitly registered in the owning `canvas/src/tests/registry/` table to run in CI.
+- Registration tuples bind the case ID, module path and exported test function.
 - Large groups of related tests should be organized into a dedicated runner module (e.g., `runCollisionTests.ts`) and called from `runAllTests`.
 
 **Aggregation Pattern**:

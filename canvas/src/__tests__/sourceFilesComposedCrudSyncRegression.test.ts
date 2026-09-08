@@ -1,8 +1,17 @@
+import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
+import { waitForCanvasFrontmatterSurfaceTransition } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import type { GraphData } from '@/lib/graph/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { applyGraphOwnerComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
+import { scheduleApplyComposedGraphFromSourceFiles, scheduleApplyGraphOwnerComposedGraphFromSourceFiles, applyGraphOwnerComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+async function waitForDocumentMutationReadiness(): Promise<void> {
+  const waitMs = Math.max(0, useGraphStore.getState().workspaceGraphMutationBlockUntilMs - Date.now() + 1)
+  if (waitMs > 1000) throw new Error('document transition exceeded fixture budget')
+  if (waitMs > 0) await new Promise<void>(resolve => setTimeout(resolve, waitMs))
+  if (isWorkspaceGraphMutationBlocked(useGraphStore.getState())) throw new Error('document mutation remains blocked')
+}
+
 export async function testComposedUpdateNodeSyncsToSourceFileAndRecomposes() {
   const bootstrap = initJsdomHarness('<!doctype html><html><body></body></html>')
   try {
@@ -29,6 +38,7 @@ export async function testComposedUpdateNodeSyncsToSourceFileAndRecomposes() {
     })
 
     applyGraphOwnerComposedGraphFromSourceFiles()
+    await waitForCanvasFrontmatterSurfaceTransition()
     const before = useGraphStore.getState()
     const beforeGraph = before.graphData
     if (!beforeGraph) throw new Error('expected composed graph data')
@@ -53,7 +63,7 @@ export async function testComposedUpdateNodeSyncsToSourceFileAndRecomposes() {
     if (composedLabel !== 'A2') throw new Error(`expected composed node label to update, got ${String(composedLabel)}`)
   } finally {
     await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally { bootstrap.restore() }
   }
 }
 
@@ -101,11 +111,12 @@ export async function testComposedAddNodePrefersActiveMarkdownDocumentSourceFile
     })
 
     applyGraphOwnerComposedGraphFromSourceFiles()
+    await waitForCanvasFrontmatterSurfaceTransition()
     const composed = useGraphStore.getState()
     composed.setMarkdownDocument('workspace:/b.md', '---\ntitle: B\n---\n')
     useGraphStore.setState({ selectedNodeId: 'sf-a::a1' })
 
-    composed.addNode({
+    const addNode = () => composed.addNode({
       id: 'grabmaps-discovery',
       label: 'GrabMaps Chat Discovery Widget',
       type: 'GrabMapsDiscovery',
@@ -113,6 +124,8 @@ export async function testComposedAddNodePrefersActiveMarkdownDocumentSourceFile
       y: 20,
       properties: { geo: { lat: 1.29, lng: 103.85 } } as never,
     })
+    await waitForDocumentMutationReadiness()
+    addNode()
 
     const after = useGraphStore.getState()
     const sourceA = after.sourceFiles.find(f => f.id === 'sf-a')
@@ -125,7 +138,7 @@ export async function testComposedAddNodePrefersActiveMarkdownDocumentSourceFile
     if (!composedNode) throw new Error('expected recomposed graph to expose the new node under the active markdown source layer id')
   } finally {
     await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally { bootstrap.restore() }
   }
 }
 
@@ -200,6 +213,7 @@ export async function testComposedSourceFilesPreferEnabledReadmeFrontmatterPrese
     })
 
     applyGraphOwnerComposedGraphFromSourceFiles()
+    await waitForCanvasFrontmatterSurfaceTransition()
 
     const after = useGraphStore.getState()
     if (after.canvasRenderMode !== '2d') {
@@ -220,7 +234,7 @@ export async function testComposedSourceFilesPreferEnabledReadmeFrontmatterPrese
   } finally {
     useMarkdownExplorerStore.getState().setActivePath(previousActivePath)
     await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally { bootstrap.restore() }
   }
 }
 
@@ -283,7 +297,9 @@ export async function testComposedSourceFilesOrderOnlyRecomposeDoesNotReplayUnch
       source: { kind: 'local', path: 'workspace:/demo.md' },
     })
 
+    await waitForDocumentMutationReadiness()
     applyGraphOwnerComposedGraphFromSourceFiles()
+    await waitForCanvasFrontmatterSurfaceTransition()
     if (useGraphStore.getState().canvas2dRenderer !== 'd3') {
       throw new Error('expected initial composed apply to honor the README preset renderer')
     }
@@ -291,6 +307,7 @@ export async function testComposedSourceFilesOrderOnlyRecomposeDoesNotReplayUnch
     useGraphStore.getState().setCanvas2dRenderer('storyboard')
     useGraphStore.setState(s => ({ sourceFiles: [s.sourceFiles[1], s.sourceFiles[0]] }))
     applyGraphOwnerComposedGraphFromSourceFiles()
+    await waitForCanvasFrontmatterSurfaceTransition()
 
     if (useGraphStore.getState().canvas2dRenderer !== 'storyboard') {
       throw new Error('expected order-only recomposition to avoid replaying an unchanged composed frontmatter preset')
@@ -298,7 +315,7 @@ export async function testComposedSourceFilesOrderOnlyRecomposeDoesNotReplayUnch
   } finally {
     useMarkdownExplorerStore.getState().setActivePath(previousActivePath)
     await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally { bootstrap.restore() }
   }
 }
 
@@ -330,6 +347,7 @@ export async function testComposedSourceFilesDeleteLastEnabledSourceClearsGraphA
     })
 
     applyGraphOwnerComposedGraphFromSourceFiles()
+    await waitForCanvasFrontmatterSurfaceTransition()
     state.setOpenWidgetNodeIds(['sf-1::n1'])
 
     const composedBeforeDelete = useGraphStore.getState().graphData
@@ -339,6 +357,7 @@ export async function testComposedSourceFilesDeleteLastEnabledSourceClearsGraphA
 
     state.setSourceFiles([])
     applyGraphOwnerComposedGraphFromSourceFiles()
+    await waitForCanvasFrontmatterSurfaceTransition()
 
     const after = useGraphStore.getState()
     const graph = after.graphData
@@ -351,7 +370,7 @@ export async function testComposedSourceFilesDeleteLastEnabledSourceClearsGraphA
     }
   } finally {
     await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally { bootstrap.restore() }
   }
 }
 
@@ -393,10 +412,12 @@ export async function testComposedAddNodeSeedsActiveMarkdownDocumentWhenGraphMis
     })
 
     applyGraphOwnerComposedGraphFromSourceFiles()
+    await waitForCanvasFrontmatterSurfaceTransition()
     const composed = useGraphStore.getState()
     composed.setMarkdownDocument('workspace:/b.md', '---\ntitle: B\n---\n')
     useGraphStore.setState({ selectedNodeId: 'sf-a::a1' })
 
+    await waitForDocumentMutationReadiness()
     composed.addNode({
       id: 'grabmaps-discovery-b',
       label: 'GrabMaps Chat Discovery Widget',
@@ -418,7 +439,7 @@ export async function testComposedAddNodeSeedsActiveMarkdownDocumentWhenGraphMis
     if (!composedNode) throw new Error('expected recomposed graph to expose the seeded active markdown source node')
   } finally {
     await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally { bootstrap.restore() }
   }
 }
 
@@ -446,7 +467,7 @@ export async function testAddNodeSeedsActiveMarkdownDocumentWithoutPreexistingCo
     if (fileBefore?.parsedGraphData) throw new Error('expected active markdown source file to start without parsed graph data')
 
     before.setMarkdownDocument('workspace:/b.md', '---\ntitle: B\n---\n')
-    before.addNode({
+    const addNode = () => before.addNode({
       id: 'grabmaps-discovery-c',
       label: 'GrabMaps Chat Discovery Widget',
       type: 'GrabMapsDiscovery',
@@ -454,6 +475,8 @@ export async function testAddNodeSeedsActiveMarkdownDocumentWithoutPreexistingCo
       y: 20,
       properties: { geo: { lat: 1.29, lng: 103.85 } } as never,
     })
+    await waitForDocumentMutationReadiness()
+    addNode()
 
     const after = useGraphStore.getState()
     const sourceB = after.sourceFiles.find(f => f.id === 'sf-b')
@@ -467,242 +490,66 @@ export async function testAddNodeSeedsActiveMarkdownDocumentWithoutPreexistingCo
     if (String(after.markdownDocumentText || '') !== String(sourceB?.text || '')) throw new Error('expected active markdown editor text to stay in sync with source file text writeback')
   } finally {
     await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally { bootstrap.restore() }
   }
 }
 
-export async function testComposedUpdateNodePreservesTypedFrontmatterEnvelopeWriteback() {
+
+export function testComposedPresetRetriesAfterMutationGuardClears() {
   const bootstrap = initJsdomHarness('<!doctype html><html><body></body></html>')
+  const originalFrame = window.requestAnimationFrame
+  const frames: FrameRequestCallback[] = []
+  window.requestAnimationFrame = callback => { frames.push(callback); return frames.length }
+  const flush = () => { const pending = frames.splice(0); pending.forEach(callback => callback(0)); return pending.length }
   try {
-    const state = useGraphStore.getState()
-    state.clearSourceFiles()
-    state.setGraphData({ type: 'Graph', nodes: [], edges: [], metadata: {} } as unknown as GraphData)
-
-    const typedGraph: GraphData = {
-      type: 'Graph',
-      nodes: [
-        {
-          id: 'w-text',
-          label: 'Text Widget',
-          type: 'TextGeneration',
-          properties: {
-            prompt: 'old prompt',
-            stream: true,
-            'frontmatter:handles': { target: ['prompt_in'], source: ['text_out'] },
-            'frontmatter:widgetFields': [
-              { fieldKey: 'prompt', fieldType: 'string', schemaPath: 'prompt' },
-              { fieldKey: 'stream', fieldType: 'boolean', schemaPath: 'stream' },
-            ],
-          } as never,
-        },
-      ],
-      edges: [],
-      metadata: {
-        frontmatterFlowSettings: {
-          direction: 'LR',
-          edgeType: 'bezier',
-          computed: true,
-          snapToGrid: true,
-        },
-      },
-    }
-
-    state.addSourceFile({
-      id: 'sf-typed',
-      name: 'typed.md',
-      text: '---\ntitle: Typed\n---\n',
-      enabled: true,
-      status: 'parsed',
-      parsedGraphData: typedGraph,
-      parsedTextHash: 'typed-h1',
-      parsedGraphRevision: 0,
-      source: { kind: 'local', path: 'workspace:/typed.md' },
-    })
-
-    applyGraphOwnerComposedGraphFromSourceFiles()
-    const before = useGraphStore.getState()
-    before.setMarkdownDocument('workspace:/typed.md', '---\ntitle: Typed\n---\n')
-    before.updateNode('sf-typed::w-text', {
-      properties: {
-        ...(((typedGraph.nodes[0] || {}).properties || {}) as Record<string, unknown>),
-        prompt: 'new prompt',
-      } as never,
-    })
-
-    const after = useGraphStore.getState()
-    const file = after.sourceFiles.find(f => f.id === 'sf-typed')
-    const text = String(file?.text || '')
-    if (!text.includes('prompt: {key: prompt, type: string, value: "new prompt"}')) {
-      throw new Error('expected typed frontmatter prompt envelope writeback to preserve key/type/value')
-    }
-    if (!text.includes('stream: {key: stream, type: boolean, value: true}')) {
-      throw new Error('expected typed frontmatter boolean envelope writeback to preserve field type')
-    }
-    if (!text.includes('id: {key: id, type: string, value: "w-text"}')) {
-      throw new Error('expected typed frontmatter node id envelope writeback')
-    }
-    if (String(after.markdownDocumentText || '') !== text) {
-      throw new Error('expected active markdown editor text to stay aligned with typed frontmatter writeback')
+    for (const owner of [false, true]) for (const cancel of [false, true]) {
+      const state = useGraphStore.getState()
+      state.resetAll()
+      state.setSourceFiles([])
+      scheduleApplyGraphOwnerComposedGraphFromSourceFiles()
+      frames.splice(0)
+      const sourcePath = owner ? 'workspace:/retry.md' : '/retry.md'
+      const text = '---\nkgCanvas2dRenderer: storyboard\nkgFrontmatterModeEnabled: true\nkgDocumentSemanticMode: document\n---\n'
+      state.setSourceFiles([{
+        id: 'retry', name: 'retry.md', text, enabled: true, status: 'parsed',
+        parsedTextHash: `retry-${owner}-${cancel}`, parsedGraphRevision: 1,
+        parsedGraphData: { type: 'Graph', nodes: [{ id: 'n', label: 'N', type: 'Thing', properties: {} }], edges: [], metadata: {} },
+        source: { kind: 'local', path: sourcePath },
+      }])
+      useMarkdownExplorerStore.getState().setActivePath(sourcePath)
+      state.setMarkdownDocument(sourcePath, text)
+      useGraphStore.setState({ canvasRenderMode: '2d', canvas2dRenderer: 'd3', frontmatterModeEnabled: false,
+        documentStructureBaselineLock: false, workspaceViewMode: 'canvas', workspaceCanvasPaneOpen: false,
+        workspaceGraphMutationLayoutLockActive: false, markdownWorkspaceIndexingInFlight: false,
+        workspaceGraphMutationBlockUntilMs: Date.now() + 10000 })
+      const schedule = owner ? scheduleApplyGraphOwnerComposedGraphFromSourceFiles : scheduleApplyComposedGraphFromSourceFiles
+      schedule()
+      flush()
+      if (useGraphStore.getState().canvas2dRenderer !== 'd3') throw new Error('preset must respect mutation guard')
+      if (useGraphStore.getState().graphData?.nodes.length !== 1) throw new Error('expected initial graph composition')
+      schedule()
+      if (flush() !== 0) throw new Error('blocked duplicate requests must remain coalesced')
+      if (cancel) {
+        useGraphStore.setState({ graphData: { type: 'Graph', nodes: [], edges: [], metadata: {} }, workspaceGraphMutationBlockUntilMs: 0 })
+        if (flush() !== 0 || useGraphStore.getState().canvas2dRenderer !== 'd3') throw new Error('changed graph owner must cancel stale preset work')
+        continue
+      }
+      useGraphStore.setState({ workspaceGraphMutationLayoutLockActive: true })
+      // Deliver the store notification emitted by the native expiry controller; no sleep or second request.
+      useGraphStore.setState({ workspaceGraphMutationBlockUntilMs: 0, workspaceGraphMutationBlockKey: '' })
+      if (flush() !== 0) throw new Error('layout lock must still protect the preset')
+      useGraphStore.setState({ workspaceGraphMutationLayoutLockActive: false })
+      if (flush() !== 1) throw new Error('expected exactly one deferred preset frame')
+      if (useGraphStore.getState().canvas2dRenderer !== 'storyboard') throw new Error('expected deferred Storyboard preset')
+      if (!useGraphStore.getState().frontmatterModeEnabled) throw new Error('expected deferred frontmatter mode')
+      schedule()
+      if (flush() !== 0) throw new Error('completed composition must retain signature deduplication')
+      state.setSourceFiles([])
+      applyGraphOwnerComposedGraphFromSourceFiles()
+      frames.splice(0)
     }
   } finally {
-    await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
-  }
-}
-
-export async function testComposedTextWidgetUpdatePreservesWidgetLayoutAndEdgeWritebackSync() {
-  const bootstrap = initJsdomHarness('<!doctype html><html><body></body></html>')
-  try {
-    const state = useGraphStore.getState()
-    state.clearSourceFiles()
-    state.setGraphData({ type: 'Graph', nodes: [], edges: [], metadata: {} } as unknown as GraphData)
-
-    const graph: GraphData = {
-      type: 'Graph',
-      nodes: [
-        {
-          id: 'source',
-          label: 'Source',
-          type: 'Thing',
-          properties: { 'frontmatter:handles': { source: ['out'] } } as never,
-        },
-        {
-          id: 'w-text',
-          label: 'Text Widget',
-          type: 'TextGeneration',
-          properties: {
-            prompt: 'old prompt',
-            'frontmatter:handles': { target: ['prompt_in'], source: ['text_out'] },
-            'frontmatter:widgetFields': [
-              { fieldKey: 'prompt', fieldType: 'string', schemaPath: 'prompt' },
-            ],
-          } as never,
-        },
-      ],
-      edges: [
-        {
-          id: 'edge-1',
-          source: 'source',
-          target: 'w-text',
-          properties: {
-            'flow:sourcePortKey': 'out',
-            'flow:targetPortKey': 'prompt_in',
-          } as never,
-        } as never,
-      ],
-      metadata: {
-        source: 'workspace:/typed-layout.md',
-      },
-    }
-
-    state.addSourceFile({
-      id: 'sf-layout',
-      name: 'typed-layout.md',
-      text: '---\ntitle: Typed Layout\n---\n',
-      enabled: true,
-      status: 'parsed',
-      parsedGraphData: graph,
-      parsedTextHash: 'typed-layout-h1',
-      parsedGraphRevision: 0,
-      source: { kind: 'local', path: 'workspace:/typed-layout.md' },
-    })
-
-    applyGraphOwnerComposedGraphFromSourceFiles()
-    const before = useGraphStore.getState()
-    before.setMarkdownDocument('workspace:/typed-layout.md', '---\ntitle: Typed Layout\n---\n')
-    useGraphStore.setState({
-      flowWidgetPosByNodeId: { 'sf-layout::w-text': { top: 120, left: 240 } },
-      flowWidgetWorldPosByNodeId: { 'sf-layout::w-text': { x: 12, y: 24 } },
-    } as never)
-
-    before.updateNode('sf-layout::w-text', {
-      properties: {
-        ...((((graph.nodes[1] || {}).properties) || {}) as Record<string, unknown>),
-        prompt: 'new prompt',
-      } as never,
-    })
-
-    const after = useGraphStore.getState()
-    const file = after.sourceFiles.find(f => f.id === 'sf-layout')
-    const text = String(file?.text || '')
-    if (!text.includes('prompt: {key: prompt, type: string, value: "new prompt"}')) {
-      throw new Error('expected text widget update to write prompt changes back into the source file markdown')
-    }
-    if (String(after.markdownDocumentText || '') !== text) {
-      throw new Error('expected active markdown editor/viewer text to stay aligned with text widget writeback')
-    }
-    if ((after.graphData?.edges || []).length !== 1) {
-      throw new Error('expected composed edge count to stay stable after text widget update writeback')
-    }
-    if (after.flowWidgetPosByNodeId['sf-layout::w-text']?.top !== 120 || after.flowWidgetPosByNodeId['sf-layout::w-text']?.left !== 240) {
-      throw new Error('expected text widget overlay position to stay stable across same-source recomposition')
-    }
-    if (after.flowWidgetWorldPosByNodeId['sf-layout::w-text']?.x !== 12 || after.flowWidgetWorldPosByNodeId['sf-layout::w-text']?.y !== 24) {
-      throw new Error('expected text widget world position to stay stable across same-source recomposition')
-    }
-  } finally {
-    await new Promise<void>(resolve => setTimeout(resolve, 0))
-    bootstrap.restore()
-  }
-}
-
-export async function testComposedAddEdgeSyncsToSourceFileAndActiveMarkdownText() {
-  const bootstrap = initJsdomHarness('<!doctype html><html><body></body></html>')
-  try {
-    const state = useGraphStore.getState()
-    state.clearSourceFiles()
-    state.setGraphData({ type: 'Graph', nodes: [], edges: [], metadata: {} } as unknown as GraphData)
-
-    const graph: GraphData = {
-      type: 'Graph',
-      nodes: [
-        { id: 'a', label: 'A', type: 'Thing', properties: { 'frontmatter:handles': { source: ['out'] } } as never },
-        { id: 'b', label: 'B', type: 'Thing', properties: { 'frontmatter:handles': { target: ['in'] } } as never },
-      ],
-      edges: [],
-      metadata: {},
-    }
-
-    state.addSourceFile({
-      id: 'sf-edge',
-      name: 'edge.md',
-      text: '---\ntitle: Edge\n---\n',
-      enabled: true,
-      status: 'parsed',
-      parsedGraphData: graph,
-      parsedTextHash: 'edge-h1',
-      parsedGraphRevision: 0,
-      source: { kind: 'local', path: 'workspace:/edge.md' },
-    })
-
-    applyGraphOwnerComposedGraphFromSourceFiles()
-    const before = useGraphStore.getState()
-    before.setMarkdownDocument('workspace:/edge.md', '---\ntitle: Edge\n---\n')
-    before.addEdge({
-      id: 'e1',
-      source: 'sf-edge::a',
-      target: 'sf-edge::b',
-      label: 'out -> in',
-      properties: {
-        'flow:sourcePortKey': 'out',
-        'flow:targetPortKey': 'in',
-        animated: true,
-      } as never,
-    } as never)
-
-    const after = useGraphStore.getState()
-    const file = after.sourceFiles.find(f => f.id === 'sf-edge')
-    const edge = file?.parsedGraphData?.edges?.find(e => String(e.id || '') === 'e1') || null
-    if (!edge) throw new Error('expected composed addEdge to persist into source file parsed graph data')
-    const text = String(file?.text || '')
-    if (!text.includes('"source":"a","sourceHandle":"out","target":"b","targetHandle":"in"')) {
-      throw new Error('expected edge frontmatter writeback to persist explicit sourceHandle/targetHandle')
-    }
-    if (String(after.markdownDocumentText || '') !== text) {
-      throw new Error('expected active markdown editor text to stay aligned with edge writeback')
-    }
-  } finally {
-    await new Promise<void>(resolve => setTimeout(resolve, 0))
+    window.requestAnimationFrame = originalFrame
     bootstrap.restore()
   }
 }

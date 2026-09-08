@@ -35,7 +35,7 @@ const GRAPH_BYTES_SQL = `(
 )`
 
 const readPredicate = (table: string, since: string | null): string =>
-  `${table}.workspace_id = ?${since ? ` and ${table}.updated_at > ?` : ''}`
+  `${table}.workspace_id = ?${since ? ` and ${table}.updated_at >= ?` : ''}`
 const readValues = (workspaceId: string, since: string | null): unknown[] =>
   since ? [workspaceId, since] : [workspaceId]
 const readAggregate = async (args: {

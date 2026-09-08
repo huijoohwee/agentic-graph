@@ -30,10 +30,14 @@ export class SimpleTtlLruCache<Key, Value> {
     this.entries.set(key, { value, expiresAt: Date.now() + this.ttlMs })
     this.evictExpired()
     while (this.entries.size > this.maxEntries) {
-      const oldestKey = this.entries.keys().next().value
-      if (oldestKey === undefined) break
-      this.entries.delete(oldestKey)
+      const oldest = this.entries.keys().next()
+      if (oldest.done) break
+      this.entries.delete(oldest.value)
     }
+  }
+
+  delete(key: Key): boolean {
+    return this.entries.delete(key)
   }
 
   clear(): void {

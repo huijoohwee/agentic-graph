@@ -1,6 +1,12 @@
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import type { UiToastInput } from '@/hooks/store/types'
 import { buildChatPromotionRetryInsertAction } from './floatingPanelChatPromotionRetryUiAction'
+import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { readAgenticGraphStorageBaseUrl } from '@/features/source-files/source-files-agentic-graph-storage-settings'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { getAgenticGraphStorageDb } from '@/lib/storage/agentic-graph-storage-db'
+import type { SelectedStorageDocumentContent, PublishWorkspaceEntriesToAgenticGraphStorageResult } from '@/features/source-files/sourceFileShareUrl'
+
 
 const GENERATED_ARTIFACT_PROMOTION_TOAST_TTL_MS = 12_000
 
@@ -100,6 +106,65 @@ export const buildWorkspacePromotionRetryToast = (
   }
 }
 
+const readSelectedVisibleContent = (paths: ReadonlyArray<string>): string => {
+  const selected = new Set(paths.map(normalizeAssistantWorkspacePath))
+  const state = useGraphStore.getState()
+  return JSON.stringify({
+    active: selected.has(normalizeAssistantWorkspacePath(state.markdownDocumentName))
+      ? [state.markdownDocumentName, state.markdownDocumentText] : null,
+    sources: state.sourceFiles.filter(file => selected.has(normalizeAssistantWorkspacePath(file.source?.path)))
+      .map(file => [file.id, file.source?.path, file.text]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+  })
+}
+
+const readSelectedStorageState = async (workspaceId: string, selected: ReadonlyArray<SelectedStorageDocumentContent>) => {
+  const { collections } = await getAgenticGraphStorageDb()
+  const paths = new Set(selected.map(row => row.canonicalPath))
+  const documents = (await collections.documents.find({ selector: { workspaceId } }).exec())
+    .map(row => row.toJSON()).filter(row => paths.has(row.canonicalPath))
+  const ids = new Set(documents.map(row => row.id))
+  const belongs = (recordId: string, record: unknown) => {
+    const value = record as { canonicalPath?: string; documentId?: string } | null
+    return ids.has(recordId) || paths.has(String(value?.canonicalPath || '')) || ids.has(String(value?.documentId || ''))
+  }
+  const pending = (await collections.syncOutbox.find({ selector: { workspaceId } }).exec())
+    .map(row => row.toJSON()).filter(row => belongs(row.recordId, row.payload.record as Record<string, unknown>))
+  const conflicts = (await collections.syncConflicts.find({ selector: { workspaceId } }).exec())
+    .map(row => row.toJSON()).filter(row => belongs(row.recordId, row.remoteRecord))
+  if (pending.length || conflicts.length) throw new Error('The selected artifact still has pending storage changes or conflicts.')
+  return JSON.stringify(documents.sort((a, b) => a.id.localeCompare(b.id)))
+}
+
+async function verifySelectedStoragePromotion(args: {
+  result: PublishWorkspaceEntriesToAgenticGraphStorageResult
+  paths: string[]; visibleBefore: string
+  baseUrl?: string | null; fetchImpl?: typeof fetch
+}): Promise<void> {
+  const { result } = args
+  if (result.syncResult?.transportStatus !== 'synced') {
+    throw new Error(result.syncResult?.transportError || 'Storage mirroring remains queued; retry the saved artifact when sync is enabled.')
+  }
+  if (result.selectedContent.length !== args.paths.length) {
+    throw new Error('Storage mirroring did not include every selected saved artifact.')
+  }
+  const before = await readSelectedStorageState(result.workspaceId, result.selectedContent)
+  const { verifyStoredWorkspaceDocumentContents } = await import('@/features/source-files/sourceFileShareUrl')
+  if (!await verifyStoredWorkspaceDocumentContents({
+    workspaceId: result.workspaceId, selectedContent: result.selectedContent,
+    baseUrl: args.baseUrl, fetchImpl: args.fetchImpl,
+  })) throw new Error('Remote storage does not contain the selected artifact bytes.')
+  const fs = await getWorkspaceFs()
+  for (const selected of result.selectedContent) {
+    if (await fs.readFileText(selected.workspacePath) !== selected.text) {
+      throw new Error('The saved artifact changed during storage verification; retry its current content.')
+    }
+  }
+  const after = await readSelectedStorageState(result.workspaceId, result.selectedContent)
+  if (after !== before || readSelectedVisibleContent(args.paths) !== args.visibleBefore) {
+    throw new Error('Local artifact state changed during storage verification; retry the saved artifact.')
+  }
+}
+
 type GeneratedChatPromotionFetch = typeof fetch
 
 export const promoteGeneratedChatWorkspacePaths = async (
@@ -143,16 +208,22 @@ export const promoteGeneratedChatWorkspacePaths = async (
     result.githubStatus = 'skipped'
   }
   try {
+    const visibleBefore = readSelectedVisibleContent(uniquePaths)
+    const storageBaseUrl = String(options.storageBaseUrl || '').trim() || readAgenticGraphStorageBaseUrl()
     const { publishGeneratedWorkspacePathsToAgenticGraphStorage } = await import('@/features/source-files/sourceFileShareUrl')
     const storageResult = await publishGeneratedWorkspacePathsToAgenticGraphStorage({
       paths: uniquePaths,
       workspaceId: options.storageWorkspaceId,
       syncNow: options.storageSyncNow,
-      baseUrl: options.storageBaseUrl,
+      baseUrl: storageBaseUrl,
       deviceId: options.storageDeviceId,
       fetchImpl: options.storageFetchImpl,
     })
-    result.storageStatus = storageResult.storedCount > 0 ? 'applied' : 'skipped'
+    await verifySelectedStoragePromotion({
+      result: storageResult, paths: uniquePaths, visibleBefore,
+      baseUrl: storageBaseUrl, fetchImpl: options.storageFetchImpl,
+    })
+    result.storageStatus = 'applied'
   } catch (error) {
     console.warn(
       githubWriteApplied

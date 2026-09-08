@@ -26,12 +26,7 @@ const createMessageEvent = (data: unknown, source: Window): MessageEvent => {
   return e as unknown as MessageEvent
 }
 
-export function testWebpageDomExportUsesSharedSemanticKeyForInflightDedupe() {
-  const text = readFileSync(resolve(process.cwd(), 'src', 'lib', 'websites', 'webpageDomExport.ts'), 'utf8')
-  if (!text.includes("buildScopedGraphSemanticKey('webpage-dom-export'")) {
-    throw new Error('expected DOM export inflight dedupe to use shared semantic-key helper')
-  }
-}
+export { testWebpageDomExportUsesCompleteInputsForInflightDedupe as testWebpageDomExportUsesSharedSemanticKeyForInflightDedupe } from './webpageDomReuse.test'
 
 export function testWebpageDomExportInjectedCaptureScopesThinkingPanels() {
   const text = readFileSync(resolve(process.cwd(), 'vite.config.ts'), 'utf8')

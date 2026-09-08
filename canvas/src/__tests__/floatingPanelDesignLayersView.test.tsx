@@ -136,6 +136,7 @@ export async function testFloatingPanelInteractionViewIsRemovedAfterSkillsComman
 export async function testFloatingPanelGeoViewRemainsClickableWhenDisabledByState() {
   const { restore, dom } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
   const store = useGraphStore.getState()
+  let root: ReturnType<typeof createRoot> | null = null
   try {
     try {
       dom.window.localStorage.setItem(LS_KEYS.geospatialOverlayEnabled, '0')
@@ -150,7 +151,7 @@ export async function testFloatingPanelGeoViewRemainsClickableWhenDisabledByStat
     const container = dom.window.document.getElementById('root')
     if (!container) throw new Error('missing root container')
 
-    const root = createRoot(container)
+    root = createRoot(container)
     await mountReactRoot(root,
       <ToolbarToolMenu
         pipelineStatus={null}
@@ -187,16 +188,11 @@ export async function testFloatingPanelGeoViewRemainsClickableWhenDisabledByStat
     if (enabledValue !== 'true' && enabledValue !== '1') {
       throw new Error(`expected clicking Geo to enable geospatial mode through the shared bridge, got ${JSON.stringify(enabledValue)}`)
     }
-    if (
-      !text.includes('Geospatial') &&
-      !text.includes('Enable Geospatial Mode to view this panel.') &&
-      !text.includes('Enabling Geospatial Mode...')
-    ) {
+    if (!(Array.from(geoPanel.querySelectorAll('button')) as HTMLButtonElement[]).some(button => !button.disabled)) {
       throw new Error(`expected Geo panel to remain actionable when disabled, got ${JSON.stringify(text)}`)
     }
 
-    await unmountReactRoot(root, { tasks: 1 })
   } finally {
-    restore()
+    try { if (root) await unmountReactRoot(root, { tasks: 1 }) } finally { restore() }
   }
 }

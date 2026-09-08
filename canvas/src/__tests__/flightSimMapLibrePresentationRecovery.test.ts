@@ -7,27 +7,27 @@ import {
   readFlightGeoOverlay,
   readFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
-} from '../../../gympgrph/src/flightGeoOverlay'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import {
   applyFlightGeoEnvironmentToMap,
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
   mapHasExactFlightGeoEnvironment,
-} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+} from 'gympgrph/testkit/flightGeoEnvironmentMapLibre'
 import {
   applyFlightGeoOverlayToMap,
   FLIGHT_GEO_OVERLAY_LAYER_ORDER,
   mapHasExactFlightGeoOverlay,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import {
   beginMapLibreFlightBootstrap,
   disposeMapLibreFlightBootstrap,
   markMapLibreFlightBootstrapApplied,
   markMapLibreFlightOverlayPresented,
   reconcileMapLibreFlightBootstrap,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrap'
 import {
   deferFlightGeoPresentationForBootstrapRecovery,
-} from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
+} from 'gympgrph/testkit/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
   flightOverlay,
   presentationHarness,

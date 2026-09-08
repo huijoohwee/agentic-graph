@@ -12,6 +12,11 @@ export const testMarkdownWorkspaceMainDefersHiddenPaneHeavyDerivations = () => {
   const dropdownPath = path.resolve(process.cwd(), 'src', 'components', 'toolbar', 'ToolbarDropdownSelect.tsx')
   const typesPath = path.resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'main', 'types.ts')
   const mainText = readUtf8(mainPath)
+  const documentStateText = readUtf8(path.resolve(path.dirname(mainPath), 'useWorkspaceDocumentState.ts'))
+  if (!mainText.includes("import { useWorkspaceDocumentState } from './useWorkspaceDocumentState'")
+    || !mainText.includes('} = useWorkspaceDocumentState({')) {
+    throw new Error('expected MarkdownWorkspaceMain to use the shared document-state hook')
+  }
   const editorPaneText = readUtf8(editorPanePath)
   const layoutText = readUtf8(layoutPath)
   const initialPaneVisibilityText = readUtf8(initialPaneVisibilityPath)
@@ -41,16 +46,17 @@ export const testMarkdownWorkspaceMainDefersHiddenPaneHeavyDerivations = () => {
   }
   if (
     !mainText.includes('React.useState<MarkdownWorkspaceDerivedViewerMode>(() => (') ||
-    !mainText.includes("documentPanePreset === 'viewer' && hasJsonSourcePreviewText") ||
+    !mainText.includes("documentPanePreset === 'viewer' && (hasJsonSourcePreviewText || isMarkdownWorkspaceDelimitedTextPath(activeDocumentKey))") ||
+    !mainText.includes('shouldUseDataViewDocumentPreset\n') ||
     !mainText.includes("? 'multiDimTable'") ||
     !mainText.includes(": 'read'")
   ) {
-    throw new Error('Expected workspace main viewer mode to initialize from the cheap read SSOT with a CSV attached-JSON table preset')
+    throw new Error('Expected workspace main viewer mode to initialize from the cheap read SSOT with attached-JSON or delimited-source table presets')
   }
-  if (!mainText.includes('const deferredSourceEditorTextRaw = React.useDeferredValue(sourceEditorTextRaw)')) {
+  if (!documentStateText.includes('const deferredSourceEditorTextRaw = React.useDeferredValue(sourceEditorTextRaw)')) {
     throw new Error('Expected workspace main to defer JSON editor source text before expensive JSON/JSON-LD derivations')
   }
-  if (!mainText.includes('if (!jsonPaneVisible) return')) {
+  if (!documentStateText.includes('if (!jsonPaneVisible) return')) {
     throw new Error('Expected JSON editor text derivation to be gated by JSON pane visibility')
   }
   if (mainText.includes('setSplitPaneVisibility({ json: true, markdown: true, viewer: true })')) {
@@ -78,10 +84,10 @@ export const testMarkdownWorkspaceMainDefersHiddenPaneHeavyDerivations = () => {
     || !initialPaneVisibilityText.includes('if (args.splitPaneVisibility.viewer && args.splitPaneVisibility.html) return')) {
     throw new Error('Expected workspace pane preset normalization to check current visibility before scheduling state updates')
   }
-  if (!mainText.includes('if (viewerInlineMarkdownDraftText !== null) setViewerInlineMarkdownDraftText(null)')
-    || !mainText.includes('if (viewerInlineViewerText !== null) setViewerInlineViewerText(null)')
-    || !mainText.includes('if (jsonDerivedMarkdownDraft !== null) setJsonDerivedMarkdownDraft(null)')
-    || !mainText.includes('if (jsonDerivedMarkdownDraft !== jsonDerivedMarkdownBase) setJsonDerivedMarkdownDraft(jsonDerivedMarkdownBase)')) {
+  if (!documentStateText.includes('if (viewerInlineMarkdownDraftText !== null) setViewerInlineMarkdownDraftText(null)')
+    || !documentStateText.includes('if (viewerInlineViewerText !== null) setViewerInlineViewerText(null)')
+    || !documentStateText.includes('if (jsonDerivedMarkdownDraft !== null) setJsonDerivedMarkdownDraft(null)')
+    || !documentStateText.includes('if (jsonDerivedMarkdownDraft !== jsonDerivedMarkdownBase) setJsonDerivedMarkdownDraft(jsonDerivedMarkdownBase)')) {
     throw new Error('Expected workspace draft reset effects to avoid scheduling no-op state updates during workspace open')
   }
   if (dropdownText.includes('flushSync')) {
@@ -105,7 +111,7 @@ export const testMarkdownWorkspaceMainDefersHiddenPaneHeavyDerivations = () => {
   if (!mainText.includes('forceMarkdownEditorInEditorMode') || !mainText.includes('resolveMarkdownWorkspacePaneVisibility({')) {
     throw new Error('Expected workspace main pane visibility to reuse the shared visibility helper SSOT')
   }
-  if (!mainText.includes('if (!markdownPaneVisible && !viewerPaneVisible) return null')) {
+  if (!documentStateText.includes('if (!markdownPaneVisible && !viewerPaneVisible) return null')) {
     throw new Error('Expected JSON-to-markdown derivation to be skipped when markdown and viewer panes are hidden')
   }
   if (!layoutText.includes('resolveMarkdownWorkspacePaneVisibility({')) {

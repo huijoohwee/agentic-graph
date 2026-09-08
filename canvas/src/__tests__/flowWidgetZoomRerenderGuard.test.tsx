@@ -6,12 +6,14 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
+import { emitStoryboardWidgetInteractionFrame, STORYBOARD_WIDGET_INTERACTION_FRAME_EVENT } from '@/lib/canvas/storyboard-widget-overlay-proxy'
 
 export async function testFlowWidgetZoomUpdatesDoNotRerenderPanel() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { dom, restore: restoreDom } = initJsdomHarness()
   let root: ReturnType<typeof createRoot> | null = null
+  const failures: unknown[] = []
 
   try {
     const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
@@ -23,6 +25,7 @@ export async function testFlowWidgetZoomUpdatesDoNotRerenderPanel() {
     const api = useGraphStore.getState()
     api.resetAll()
     api.setZoomState({ k: 1, x: 0, y: 0 })
+    api.selectNode('n1')
 
     const doc = dom.window.document
     const container = doc.createElement('section')
@@ -35,7 +38,7 @@ export async function testFlowWidgetZoomUpdatesDoNotRerenderPanel() {
       commits += 1
     }
 
-    root.render(
+    await React.act(async () => { root!.render(
       React.createElement(
         React.Profiler,
         { id: 'widget', onRender },
@@ -59,7 +62,7 @@ export async function testFlowWidgetZoomUpdatesDoNotRerenderPanel() {
           onEnableHandlesForAllInputs: () => void 0,
         } as never),
       ),
-    )
+    ) })
 
     const tick = () =>
       new Promise<void>(resolve => {
@@ -68,18 +71,22 @@ export async function testFlowWidgetZoomUpdatesDoNotRerenderPanel() {
         else setTimeout(() => resolve(), 0)
       })
 
-    await tick()
-    await tick()
-    await tick()
-    await tick()
+    // Drain the actual interaction frame and its React updates before sampling.
+    await React.act(async () => { await tick() })
 
     const panel = document.body.querySelector('aside[data-kg-canvas-wheel-ignore="true"]')
     if (!panel) throw new Error('expected widget to render an overlay aside')
     const initialTransform = String((panel as HTMLElement).style.transform || '')
     const initialCommits = commits
 
-    api.setZoomState({ k: 2, x: 50, y: 60 })
-    await tick()
+    const frameIntents: boolean[] = []
+    dom.window.addEventListener(STORYBOARD_WIDGET_INTERACTION_FRAME_EVENT, event => {
+      frameIntents.push((event as CustomEvent<{ updateToolbarLayout?: boolean }>).detail?.updateToolbarLayout !== false)
+    })
+    await React.act(async () => {
+      api.setZoomState({ k: 2, x: 50, y: 60 })
+      await tick()
+    })
 
     const nextTransform = String((panel as HTMLElement).style.transform || '')
     if (nextTransform === initialTransform) {
@@ -89,13 +96,45 @@ export async function testFlowWidgetZoomUpdatesDoNotRerenderPanel() {
     if (commits !== initialCommits) {
       throw new Error(`expected zoomState updates to avoid React rerenders, commits ${initialCommits} -> ${commits}`)
     }
-  } finally {
-    try {
-      root?.unmount()
-    } catch {
-      void 0
+    if (frameIntents.join(',') !== 'false') {
+      throw new Error('expected one real position-only interaction frame after zoom')
     }
-    restoreDom()
-    restoreWindow()
+
+    const toolbar = panel.querySelector('[data-kg-bubble-toolbar="1"]')?.parentElement
+    if (!toolbar) throw new Error('expected widget action toolbar placement surface')
+    const toolbarPosition = () => `${toolbar.style.top}|${toolbar.style.transform}`
+    for (const geometryFirst of [false, true]) {
+      if (geometryFirst) {
+        const beforeZoom = commits
+        await React.act(async () => {
+          api.setZoomState({ k: 1, x: 0, y: 0 })
+          await tick()
+        })
+        if (commits !== beforeZoom) throw new Error('expected subsequent zoom to keep React commits unchanged')
+      }
+      frameIntents.length = 0
+      const previousToolbar = toolbarPosition()
+      const previousCommits = commits
+      await React.act(async () => {
+        if (geometryFirst) emitStoryboardWidgetInteractionFrame()
+        emitStoryboardWidgetInteractionFrame({ updateToolbarLayout: false })
+        if (!geometryFirst) emitStoryboardWidgetInteractionFrame()
+        await tick()
+      })
+      if (frameIntents.join(',') !== 'true') {
+        throw new Error('expected geometry intent to survive either coalescing order')
+      }
+      if (commits <= previousCommits || toolbarPosition() === previousToolbar) {
+        throw new Error('expected geometry interaction frame to refresh actual toolbar placement')
+      }
+    }
+  } catch (error) {
+    failures.push(error)
+  } finally {
+    try { await React.act(async () => { root?.unmount() }) } catch (error) { failures.push(error) }
+    try { restoreDom() } catch (error) { failures.push(error) }
+    try { restoreWindow() } catch (error) { failures.push(error) }
   }
+  if (failures.length === 1) throw failures[0]
+  if (failures.length > 1) throw new AggregateError(failures, failures.map(error => String(error)).join('; '))
 }

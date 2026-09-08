@@ -4,13 +4,9 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MarkdownWorkspaceMain } from '@/features/markdown-workspace/main/MarkdownWorkspaceMain'
 import type { MarkdownPresentationApi } from '@/features/markdown-workspace/markdownWorkspaceTypes'
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
-import { isFrontmatterOnlyDoc } from '@/lib/markdown/frontmatter'
-import { fetchWorkspaceUrlContent } from '@/features/markdown-workspace/workspaceImport'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { resetWorkspaceUrlContentCacheForTests } from '@/features/markdown-workspace/workspaceImport/urlContentCache'
 
-const BYTEPLUS_TEST_URL =
-  'https://api.byteplus.com/api-sdk/view?serviceCode=ecs&version=2020-04-01&language=Python'
 const WEBPAGE_TEST_URL = 'https://docs.byteplus.com/'
 
 const waitUntil = async (predicate: () => boolean, timeoutMs = 1600) => {
@@ -19,6 +15,7 @@ const waitUntil = async (predicate: () => boolean, timeoutMs = 1600) => {
     if (predicate()) return
     await new Promise<void>(resolve => setTimeout(resolve, 25))
   }
+  if (!predicate()) throw new Error(`workspace view did not become ready within ${timeoutMs}ms`)
 }
 
 export async function testMarkdownWorkspaceWebpageHtmlViewRendersIframe() {
@@ -44,17 +41,6 @@ export async function testMarkdownWorkspaceWebpageHtmlViewRendersIframe() {
         text: async () => `<!doctype html><html><head><base href="${WEBPAGE_TEST_URL}"></head><body><h1>OK</h1></body></html>`,
       }
     }) as unknown
-
-    const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: () => void) => number }
-    const tick = () =>
-      new Promise<void>(resolve => {
-        const raf = anyWindow.requestAnimationFrame
-        if (raf) {
-          raf(() => resolve())
-          return
-        }
-        setTimeout(() => resolve(), 0)
-      })
 
     const cases = [
       { view: 'html', expectsIframe: true },
@@ -96,9 +82,14 @@ export async function testMarkdownWorkspaceWebpageHtmlViewRendersIframe() {
 
       await waitUntil(() => {
         const iframe = doc.querySelector('section[aria-label="Webpage Viewer"] iframe')
-        return expectsIframe ? Boolean(iframe) : true
+        if (!expectsIframe) return !iframe
+        if (!iframe) return false
+        const src = iframe.getAttribute('src') || ''
+        const srcdoc = iframe.getAttribute('srcdoc') || ''
+        return view === 'html'
+          ? src.startsWith('/__webpage_proxy?url=') || srcdoc.includes('<base')
+          : !src && srcdoc.includes('<base') && srcdoc.includes('source_url')
       }, 2400)
-      for (let i = 0; i < 6; i += 1) await tick()
 
       const iframe = doc.querySelector('section[aria-label="Webpage Viewer"] iframe')
       if (expectsIframe) {
@@ -117,6 +108,9 @@ export async function testMarkdownWorkspaceWebpageHtmlViewRendersIframe() {
         } else {
           if (src) throw new Error(`expected no iframe src for srcdoc mode view=${view}`)
           if (!srcdoc.includes('<base')) throw new Error(`expected srcdoc to include base tag for view=${view}`)
+          if (!srcdoc.includes('source_url') || !srcdoc.includes('OK')) {
+            throw new Error('expected JSON view to render converted source content')
+          }
         }
 
         const sandbox = String(iframe.getAttribute('sandbox') || '')
@@ -452,103 +446,7 @@ export async function testMarkdownWorkspaceWebpageMarkdownViewerRendersRichMedia
   }
 }
 
-export async function testMarkdownWorkspaceImportUrlHtmlPageSsotAndViewModes() {
-  resetWorkspaceUrlContentCacheForTests()
-  const importUrl = `${BYTEPLUS_TEST_URL}?import-e2e=1`
-  const prevFetch = (globalThis as unknown as { fetch?: unknown }).fetch
-  const htmlBody =
-    `<!doctype html><html><head><base href="${WEBPAGE_TEST_URL}"></head><body><h1>BytePlus ECS Python SDK</h1><p>Section 1</p><p>Section 2</p></body></html>`
-  try {
-    ;(globalThis as unknown as { fetch?: unknown }).fetch = (async (input: unknown, init?: unknown) => {
-      const initObj = init && typeof init === 'object' ? (init as { method?: unknown }) : null
-      const methodRaw = initObj?.method
-      const method = (typeof methodRaw === 'string' ? methodRaw : 'GET').toUpperCase()
-
-      const url = input instanceof URL ? input.toString() : typeof input === 'string' ? input : ''
-      if (url.includes('/__fetch_remote')) {
-        throw new Error(`expected webpage import to avoid __fetch_remote, got ${url}`)
-      }
-      if (url.includes('/__webpage_proxy') && method === 'HEAD') {
-        const res = {
-          ok: true,
-          status: 200,
-          headers: {
-            get: (k: string) => (k.toLowerCase() === 'content-type' ? 'text/html; charset=utf-8' : null),
-          },
-          text: async () => '',
-        }
-        return res as unknown as Response
-      }
-      const res = {
-        ok: true,
-        status: 200,
-        headers: {
-          get: () => null,
-        },
-        text: async () => (method === 'HEAD' ? '' : htmlBody),
-      }
-      return res as unknown as Response
-    }) as unknown
-
-    const imported = await fetchWorkspaceUrlContent(importUrl, { mode: 'import' })
-    if (imported.normalizedUrl !== importUrl) {
-      throw new Error('expected normalizedUrl to equal input URL for Import URL pipeline')
-    }
-    if (!imported.name || !imported.name.endsWith('.md')) {
-      throw new Error('expected Import URL pipeline to derive a .md file name')
-    }
-    const frontmatterPrefix = imported.text.split('\n').slice(0, 12).join('\n')
-    if (!frontmatterPrefix.includes(`kgWebpageUrl: "${importUrl}"`)) {
-      throw new Error('expected frontmatter to include kgWebpageUrl with BytePlus URL')
-    }
-    if (!frontmatterPrefix.includes('kgWebpageView: "html"')) {
-      throw new Error('expected frontmatter to set kgWebpageView: "html"')
-    }
-    if (frontmatterPrefix.includes('kgWebpageScriptPolicy:')) {
-      throw new Error('expected Import URL to keep Script: Auto (omit kgWebpageScriptPolicy)')
-    }
-    if (frontmatterPrefix.includes('kgWebpageIncludeImages:')) {
-      throw new Error('expected Import URL to omit explicit kgWebpageIncludeImages and auto-route image inclusion')
-    }
-    if (frontmatterPrefix.includes('kgWebpageFidelityLevel:')) {
-      throw new Error('expected Import URL to keep Fid: Auto (omit kgWebpageFidelityLevel)')
-    }
-    if (imported.text.includes('Fetching content in background')) {
-      throw new Error('expected Import URL to write parsed content without a background placeholder')
-    }
-    if (isFrontmatterOnlyDoc(imported.text)) {
-      throw new Error('expected Import URL to have non-empty body, not frontmatter-only')
-    }
-    if (!imported.text.includes('ECS Python SDK')) {
-      throw new Error('expected Import URL body to include heading derived from HTML')
-    }
-
-    const refreshed = await fetchWorkspaceUrlContent(importUrl, { mode: 'refresh' })
-    if (refreshed.normalizedUrl !== importUrl) {
-      throw new Error('expected normalizedUrl to equal input URL for refresh mode')
-    }
-    if (!refreshed.name || !refreshed.name.endsWith('.md')) {
-      throw new Error('expected refresh mode to derive a .md file name')
-    }
-    if (!refreshed.text.includes(`kgWebpageUrl: "${importUrl}"`)) {
-      throw new Error('expected refresh markdown to include kgWebpageUrl with BytePlus URL')
-    }
-    if (!refreshed.text.includes('kgWebpageView: "html"')) {
-      throw new Error('expected refresh markdown to keep kgWebpageView: "html" in frontmatter')
-    }
-    if (isFrontmatterOnlyDoc(refreshed.text)) {
-      throw new Error('expected refresh markdown to have non-empty body, not frontmatter-only')
-    }
-    if (!refreshed.text.includes('ECS Python SDK')) {
-      throw new Error('expected refresh markdown to include heading derived from HTML')
-    }
-    if (!refreshed.text.includes('Section 1') || !refreshed.text.includes('Section 2')) {
-      throw new Error('expected refresh markdown to include HTML paragraph text')
-    }
-  } finally {
-    ;(globalThis as unknown as { fetch?: unknown }).fetch = prevFetch
-  }
-}
+export { testMarkdownWorkspaceImportUrlHtmlPageSsotAndViewModes } from './workspaceImportHtmlViewModes.test'
 
 export async function testMarkdownWorkspaceEditorTextOverrideWorks() {
   const { dom, restore } = initJsdomHarness()

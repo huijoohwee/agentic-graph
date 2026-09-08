@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 export function testCanvasWheelIgnoreIsAppliedToExternalPanels() {
   const root = process.cwd()
-  const tablePath = resolve(root, 'src', 'features', 'graph-data-table', 'ui', 'GraphDataTableTable.tsx')
+  const tablePath = resolve(root, 'src', 'lib', 'graph-data-table', 'ui', 'GraphDataTableTable.impl.tsx')
   const viewportPath = resolve(root, 'src', 'features', 'panels', 'views', 'preview-panel', 'ui', 'ZoomPanViewport.tsx')
   const table = readFileSync(tablePath, 'utf8')
   const viewport = readFileSync(viewportPath, 'utf8')

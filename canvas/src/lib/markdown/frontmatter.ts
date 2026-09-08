@@ -242,27 +242,33 @@ export function readFloatingPanelViewPreset(value: unknown): FloatingPanelView |
   return undefined
 }
 
+function readCanvasPresetField(meta: Record<string, unknown>, legacyKey: string): unknown {
+  const canonicalKey = `agenticOs${legacyKey.slice(2)}`
+  // Explicit source-native fields own conflicts; false and invalid values are not missing.
+  return Object.prototype.hasOwnProperty.call(meta, canonicalKey) ? meta[canonicalKey] : meta[legacyKey]
+}
+
 function coerceCanvasWorkspaceFrontmatterPreset(meta: Record<string, unknown> | null | undefined): CanvasWorkspaceFrontmatterPreset | null {
   if (!meta) return null
 
-  const canvasSurfaceMode = readCanvasSurfaceModePreset(meta.kgCanvasSurfaceMode)
-  const canvasRenderMode = readCanvasRenderModePreset(meta.kgCanvasRenderMode)
-  const canvasRenderSurfaceAlias = readCanvasSurfaceModePreset(meta.kgCanvasRenderMode)
-  const canvas3dMode = readCanvas3dModePreset(meta.kgCanvas3dMode)
+  const canvasSurfaceMode = readCanvasSurfaceModePreset(readCanvasPresetField(meta, 'kgCanvasSurfaceMode'))
+  const canvasRenderMode = readCanvasRenderModePreset(readCanvasPresetField(meta, 'kgCanvasRenderMode'))
+  const canvasRenderSurfaceAlias = readCanvasSurfaceModePreset(readCanvasPresetField(meta, 'kgCanvasRenderMode'))
+  const canvas3dMode = readCanvas3dModePreset(readCanvasPresetField(meta, 'kgCanvas3dMode'))
     ?? (canvasSurfaceMode === 'xr' || canvasSurfaceMode === 'geo-xr' || canvasRenderSurfaceAlias === 'xr' ? 'xr' : undefined)
-  const canvas2dRendererRaw = readCanvas2dRendererPreset(meta.kgCanvas2dRenderer)
-  const videoSequenceTimelineEnabled = readBooleanPreset(meta.kgVideoSequenceTimeline) === true
+  const canvas2dRendererRaw = readCanvas2dRendererPreset(readCanvasPresetField(meta, 'kgCanvas2dRenderer'))
+  const videoSequenceTimelineEnabled = readBooleanPreset(readCanvasPresetField(meta, 'kgVideoSequenceTimeline')) === true
   const canvas2dRenderer = videoSequenceTimelineEnabled && canvas2dRendererRaw === 'gantt'
     ? 'media'
     : canvas2dRendererRaw
-  const bottomPanelOpen = readBooleanPreset(meta.kgBottomPanelOpen)
-  const bottomPanelTab = readBottomSurfaceTabPreset(meta.kgBottomPanelTab)
-  const floatingPanelOpen = readBooleanPreset(meta.kgFloatingPanelOpen)
-  const floatingPanelView = readFloatingPanelViewPreset(meta.kgFloatingPanelView)
-  const documentSemanticMode = readDocumentSemanticModePreset(meta.kgDocumentSemanticMode)
-  const frontmatterModeEnabled = readBooleanPreset(meta.kgFrontmatterModeEnabled)
-  const multiDimTableModeEnabled = readBooleanPreset(meta.kgMultiDimTableModeEnabled)
-  const documentStructureBaselineLock = readBooleanPreset(meta.kgDocumentStructureBaselineLock)
+  const bottomPanelOpen = readBooleanPreset(readCanvasPresetField(meta, 'kgBottomPanelOpen'))
+  const bottomPanelTab = readBottomSurfaceTabPreset(readCanvasPresetField(meta, 'kgBottomPanelTab'))
+  const floatingPanelOpen = readBooleanPreset(readCanvasPresetField(meta, 'kgFloatingPanelOpen'))
+  const floatingPanelView = readFloatingPanelViewPreset(readCanvasPresetField(meta, 'kgFloatingPanelView'))
+  const documentSemanticMode = readDocumentSemanticModePreset(readCanvasPresetField(meta, 'kgDocumentSemanticMode'))
+  const frontmatterModeEnabled = readBooleanPreset(readCanvasPresetField(meta, 'kgFrontmatterModeEnabled'))
+  const multiDimTableModeEnabled = readBooleanPreset(readCanvasPresetField(meta, 'kgMultiDimTableModeEnabled'))
+  const documentStructureBaselineLock = readBooleanPreset(readCanvasPresetField(meta, 'kgDocumentStructureBaselineLock'))
 
   if (
     canvasSurfaceMode === undefined &&
@@ -321,19 +327,24 @@ export function parseCanvasWorkspaceFrontmatterPresetBlock(block: YamlFrontmatte
     }
     return preset
   }
-  const canvasSurfaceModeRaw = readYamlFrontmatterValue(block.rawBlock, 'kgCanvasSurfaceMode')
-  const canvasRenderModeRaw = readYamlFrontmatterValue(block.rawBlock, 'kgCanvasRenderMode')
-  const canvas3dModeRaw = readYamlFrontmatterValue(block.rawBlock, 'kgCanvas3dMode')
-  const canvas2dRendererRaw = readYamlFrontmatterValue(block.rawBlock, 'kgCanvas2dRenderer')
-  const videoSequenceTimelineRaw = readYamlFrontmatterValue(block.rawBlock, 'kgVideoSequenceTimeline')
-  const bottomPanelOpenRaw = readYamlFrontmatterValue(block.rawBlock, 'kgBottomPanelOpen')
-  const bottomPanelTabRaw = readYamlFrontmatterValue(block.rawBlock, 'kgBottomPanelTab')
-  const floatingPanelOpenRaw = readYamlFrontmatterValue(block.rawBlock, 'kgFloatingPanelOpen')
-  const floatingPanelViewRaw = readYamlFrontmatterValue(block.rawBlock, 'kgFloatingPanelView')
-  const documentSemanticModeRaw = readYamlFrontmatterValue(block.rawBlock, 'kgDocumentSemanticMode')
-  const frontmatterModeEnabledRaw = readYamlFrontmatterValue(block.rawBlock, 'kgFrontmatterModeEnabled')
-  const multiDimTableModeEnabledRaw = readYamlFrontmatterValue(block.rawBlock, 'kgMultiDimTableModeEnabled')
-  const documentStructureBaselineLockRaw = readYamlFrontmatterValue(block.rawBlock, 'kgDocumentStructureBaselineLock')
+  const readPresetValue = (key: string): string => {
+    const canonicalKey = `agenticOs${key.slice(2)}`
+    const selectedKey = new RegExp(`^${canonicalKey}:`, 'm').test(block.rawBlock) ? canonicalKey : key
+    return readYamlFrontmatterValue(block.rawBlock, selectedKey)
+  }
+  const canvasSurfaceModeRaw = readPresetValue('kgCanvasSurfaceMode')
+  const canvasRenderModeRaw = readPresetValue('kgCanvasRenderMode')
+  const canvas3dModeRaw = readPresetValue('kgCanvas3dMode')
+  const canvas2dRendererRaw = readPresetValue('kgCanvas2dRenderer')
+  const videoSequenceTimelineRaw = readPresetValue('kgVideoSequenceTimeline')
+  const bottomPanelOpenRaw = readPresetValue('kgBottomPanelOpen')
+  const bottomPanelTabRaw = readPresetValue('kgBottomPanelTab')
+  const floatingPanelOpenRaw = readPresetValue('kgFloatingPanelOpen')
+  const floatingPanelViewRaw = readPresetValue('kgFloatingPanelView')
+  const documentSemanticModeRaw = readPresetValue('kgDocumentSemanticMode')
+  const frontmatterModeEnabledRaw = readPresetValue('kgFrontmatterModeEnabled')
+  const multiDimTableModeEnabledRaw = readPresetValue('kgMultiDimTableModeEnabled')
+  const documentStructureBaselineLockRaw = readPresetValue('kgDocumentStructureBaselineLock')
   const preset = coerceCanvasWorkspaceFrontmatterPreset({
     kgCanvasSurfaceMode: canvasSurfaceModeRaw || undefined,
     kgCanvasRenderMode: canvasRenderModeRaw || undefined,

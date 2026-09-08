@@ -49,9 +49,12 @@ export function useWidgetPlacementRuntimeRefSync(args: {
 
   React.useEffect(() => {
     screenAuthorityZoomBaselineKRef.current = null
+  }, [floatingUsesScreenAuthority, storyboardWidgetSurfaceId, graphMetaKey, nodeId, screenAuthorityZoomBaselineKRef])
+
+  React.useEffect(() => {
     screenAuthorityLayoutZoomBaseRef.current = null
     screenAuthorityHandoffPosRef.current = null
-  }, [floatingUsesScreenAuthority, storyboardWidgetSurfaceId, graphMetaKey, nodeId, screenAuthorityHandoffPosRef, screenAuthorityLayoutZoomBaseRef, screenAuthorityZoomBaselineKRef])
+  }, [storyboardWidgetSurfaceId, graphMetaKey, nodeId, screenAuthorityHandoffPosRef, screenAuthorityLayoutZoomBaseRef])
 
   React.useEffect(() => {
     viewportRef.current = { width: viewportW, height: viewportH }

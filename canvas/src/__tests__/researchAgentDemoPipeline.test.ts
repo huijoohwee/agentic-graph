@@ -328,8 +328,8 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
   }
   const textPanel = readPanelPreview('panel_text_research_brief')
   requireAgenticOsReadingSummary('panel_text_research_brief', 'staged research brief')
-  if (textPanel.panel.activeTab !== 'text' || textPanel.preview.kind !== 'iframe' || !String(textPanel.preview.srcDoc || '').includes('Review brief')) {
-    throw new Error('expected text Rich Media Panel to render review brief output through iframe srcDoc')
+  if (textPanel.panel.activeTab !== 'text' || textPanel.preview.kind !== 'iframe' || textPanel.preview.srcDoc || !String(textPanel.panel.text || '').includes('Review brief')) {
+    throw new Error('expected text Rich Media Panel to retain review brief content on the shared native Markdown surface')
   }
   const imagePanel = readPanelPreview('panel_image_evidence_map')
   if (imagePanel.panel.activeTab !== 'image' || imagePanel.preview.kind !== 'image' || !String(imagePanel.preview.url || '').startsWith('data:image/svg+xml,')) {
@@ -340,8 +340,8 @@ export async function testResearchAgentDemoIngestsParsesAndBuildsFlowScene() {
     throw new Error('expected chart Rich Media Panel to render outputSrcDoc through shared iframe preview')
   }
   const swarmTextPanel = readPanelPreview(AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[0])
-  if (swarmTextPanel.panel.activeTab !== 'text' || swarmTextPanel.preview.kind !== 'iframe' || !String(swarmTextPanel.preview.srcDoc || '').includes('Swarm report')) {
-    throw new Error('expected swarm text Rich Media Panel to render markdown report output')
+  if (swarmTextPanel.panel.activeTab !== 'text' || swarmTextPanel.preview.kind !== 'iframe' || swarmTextPanel.preview.srcDoc || !String(swarmTextPanel.panel.text || '').includes('Swarm report')) {
+    throw new Error('expected swarm text Rich Media Panel to retain its report on the shared native Markdown surface')
   }
   const swarmImagePanel = readPanelPreview(AGENTIC_OS_SUPERAGENT_SWARM_RICH_MEDIA_OUTPUT_NODE_IDS[1])
   if (swarmImagePanel.panel.activeTab !== 'image' || swarmImagePanel.preview.kind !== 'image' || !String(swarmImagePanel.preview.url || '').startsWith('data:image/svg+xml')) {

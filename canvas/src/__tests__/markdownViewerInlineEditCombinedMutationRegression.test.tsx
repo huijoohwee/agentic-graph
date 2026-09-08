@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { MarkdownBlockContainer } from '@/features/markdown/ui/MarkdownBlockContainer'
 import { normalizeInvocationTokenSpacing } from '@/lib/markdown/invocationTokens'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { waitFor } from '@/tests/lib/flowCanvasIntegrationFixture'
 
 const tick = async (count: number = 1) => {
   for (let index = 0; index < count; index += 1) {
@@ -52,6 +53,7 @@ export async function testMarkdownViewerInlineEditCombinedBoldColorHighlightMuta
   }
 
   const { restore, dom } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
+  let root: ReturnType<typeof createRoot> | null = null
   try {
     const rangePrototype = dom.window.Range.prototype as unknown as {
       getBoundingClientRect?: () => DOMRect
@@ -74,7 +76,7 @@ export async function testMarkdownViewerInlineEditCombinedBoldColorHighlightMuta
     if (!container) throw new Error('missing root container')
     const replaceCalls: Array<{ startLine: number; endLine: number; replacementLines: string[] }> = []
     const draftChanges: string[] = []
-    const root = createRoot(container)
+    root = createRoot(container)
     root.render(
       <MarkdownBlockContainer
         as="p"
@@ -126,7 +128,7 @@ export async function testMarkdownViewerInlineEditCombinedBoldColorHighlightMuta
     openToolbarMenu(dom, 'Text color')
     await tick(2)
     clickToolbarMenuAction(dom, 'Text color menu', 'Red')
-    await tick(4)
+    await waitFor({ ms: 1000, pollMs: 16, ok: () => draftChanges.at(-1) === '**`#EF4444:storyboard`**' })
 
     const colored = editor.querySelector('[data-kg-sigil="1"]') as HTMLElement | null
     if (!colored || colored.getAttribute('data-kg-sigil-color') !== '#EF4444') {
@@ -142,7 +144,7 @@ export async function testMarkdownViewerInlineEditCombinedBoldColorHighlightMuta
     openToolbarMenu(dom, 'Highlight')
     await tick(2)
     clickToolbarMenuAction(dom, 'Highlight menu', 'Yellow')
-    await tick(4)
+    await waitFor({ ms: 1000, pollMs: 16, ok: () => draftChanges.at(-1) === canonicalSigil })
 
     const combined = editor.querySelector('[data-kg-sigil="1"]') as HTMLElement | null
     if (
@@ -165,15 +167,15 @@ export async function testMarkdownViewerInlineEditCombinedBoldColorHighlightMuta
       key: 'Enter',
       ctrlKey: true,
     }))
-    await tick(8)
+    await waitFor({ ms: 1000, pollMs: 16, ok: () => replaceCalls.length > 0 })
 
     const replacement = replaceCalls.at(-1)?.replacementLines
     if (replacement?.length !== 1 || replacement[0] !== canonicalSigil) {
       throw new Error(`expected canonical combined mutation, got ${JSON.stringify(replaceCalls)}, drafts=${JSON.stringify(draftChanges)}, html=${editor.innerHTML}`)
     }
 
-    root.unmount()
   } finally {
+    root?.unmount()
     restore()
   }
 }

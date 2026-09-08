@@ -38,8 +38,7 @@ const escapeHtml = (value: unknown): string =>
 const jsonScriptPayload = (value: unknown): string =>
   JSON.stringify(value)
     .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026')
+
 
 export function buildWorkspaceHtmlExportDocument(args: BuildWorkspaceHtmlExportDocumentArgs): string {
   const title = String(args.title || '').trim() || 'agentic-graph Workspace Export'

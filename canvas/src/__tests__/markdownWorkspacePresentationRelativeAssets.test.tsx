@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { mountReactRoot, unmountReactRoot, waitForTasks } from '@/tests/lib/reactRootHarness'
+import { mountReactRoot, unmountReactRoot, waitForReactCondition } from '@/tests/lib/reactRootHarness'
 import { MarkdownWorkspaceMain } from '@/features/markdown-workspace/main/MarkdownWorkspaceMain'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
@@ -64,14 +64,12 @@ export async function testMarkdownWorkspacePresentationResolvesRelativeAssetsAnd
       { window: dom.window as unknown as Window, frames: 2, tasks: 4 },
     )
 
-    for (let i = 0; i < 40; i += 1) {
-      const img = container.querySelector('img')
-      if (img) break
-      await waitForTasks(1)
-    }
+    await waitForReactCondition(() => Boolean(container.querySelector('[data-testid="markdown-presentation-root"]')), {
+      describe: () => `presentation renderer; apiReady=${Boolean(presentationApiRef.current)}, surfaceMounted=${Boolean(container.querySelector('[aria-label="Presentation Surface"]'))}, text=${JSON.stringify(container.textContent?.slice(-300))}`,
+    })
 
     const img = container.querySelector('img')
-    if (!img) throw new Error('expected an <img> in presentation mode')
+    if (!img) throw new Error(`expected an <img> in presentation mode; apiReady=${Boolean(presentationApiRef.current)}, surfaceMounted=${Boolean(container.querySelector('[aria-label="Presentation Surface"]'))}, text=${JSON.stringify(container.textContent?.slice(-300))}`)
     const srcAttr = img.getAttribute('src') || ''
     if (srcAttr !== '/__codebase_asset?path=docs%2Fimages%2Fa.png') {
       throw new Error(`expected relative image to resolve to __codebase_asset URL, got ${srcAttr}`)

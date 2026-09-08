@@ -44,11 +44,11 @@ test('publish sync removes stale generated assets through a sealed legacy bounda
   assert.match(syncSource, /const isPublicManagedRelativePath = relativePath => Boolean\(relativePath\)/)
   assert.match(syncSource, /filesToRemove\.push\(relativePath\)/)
   assert.match(syncSource, /publicFilesToRemove\.push\(relativePath\)/)
-  assert.match(syncSource, /collectLegacyMirrorFilesToRemove/)
+  assert.match(syncSource, /await createLegacyMigrationPlan\(\{ obsoleteGeneratedMirrorFiles \}\)/)
   assert.equal(
     syncSource.match(/await assertLegacyMirrorInventoryIsBounded\(\)/g)?.length,
-    2,
-    'expected the sealed inventory to be checked before planning and after cleanup',
+    1,
+    'expected a fresh post-cleanup inventory check after the combined preflight',
   )
   assert.match(cleanupSource, /listSealedLegacyMirrorEntries/)
   assert.match(cleanupSource, /removeLegacyMirrorFiles/)
@@ -262,4 +262,106 @@ test('only the canonical namespace receives generated routes', () => {
   assert.match(redirects, /\/agentic-graph \/content\/agentic-graph\/index\.html 200/)
   assert.doesNotMatch(redirects, /\/old\b/)
   assert.equal(buildAgenticGraphRedirects({ existing: redirects, rootFiles }), redirects)
+})
+
+test('legacy source docs migrate losslessly before deletion, retry safely, and reject destination drift', async t => {
+  const mirrorRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-doc-migration-'))
+  t.after(() => fsPromises.rm(mirrorRoot, { recursive: true, force: true }))
+  const relativePath = 'docs/agenticgraph-agentic-video-canvas-demo.md'
+  const destination = path.join(mirrorRoot, 'docs/agentic-graph-agentic-video-canvas-demo.md')
+  const source = path.join(mirrorRoot, relativePath)
+  const bytes = Buffer.from('---\ntitle: Authored source\n---\nExact bytes: π\r\n')
+  await fsPromises.mkdir(path.dirname(source), { recursive: true })
+  await fsPromises.writeFile(source, bytes)
+  const entry = { relativePath, sha256: createHash('sha256').update(bytes).digest('hex') }
+  const cleanup = createPagesMirrorLegacyCleanup({ mirrorRoot })
+  await assert.rejects(cleanup.removeLegacyMirrorFiles([entry]))
+  assert.deepEqual(await fsPromises.readFile(source), bytes)
+  await cleanup.copyLegacyDocumentFile(entry)
+  await cleanup.copyLegacyDocumentFile(entry)
+  assert.deepEqual(await fsPromises.readFile(destination), bytes)
+  await fsPromises.writeFile(destination, 'operator replacement')
+  await assert.rejects(cleanup.copyLegacyDocumentFile(entry), /refuses to overwrite/)
+  await assert.rejects(cleanup.removeLegacyMirrorFiles([entry]), /content drifted/)
+  assert.deepEqual(await fsPromises.readFile(source), bytes)
+  await fsPromises.writeFile(destination, bytes)
+  await cleanup.removeLegacyMirrorFiles([entry])
+  await assert.rejects(fsPromises.stat(source), { code: 'ENOENT' })
+  assert.deepEqual(await fsPromises.readFile(destination), bytes)
+})
+
+test('legacy document copy rejects changed source and paths outside the finite migration map', async t => {
+  const mirrorRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-doc-source-'))
+  t.after(() => fsPromises.rm(mirrorRoot, { recursive: true, force: true }))
+  const relativePath = 'docs/agenticgraph-strybldr-starter-template.md'
+  await fsPromises.mkdir(path.join(mirrorRoot, 'docs'))
+  await fsPromises.writeFile(path.join(mirrorRoot, relativePath), 'changed')
+  const cleanup = createPagesMirrorLegacyCleanup({ mirrorRoot })
+  await assert.rejects(cleanup.copyLegacyDocumentFile({ relativePath, sha256: createHash('sha256').update('original').digest('hex') }), /content drifted/)
+  await assert.rejects(cleanup.copyLegacyDocumentFile({ relativePath: 'docs/agenticgraph-unknown.md', sha256: 'a'.repeat(64) }), /outside the sealed source inventory/)
+  assert.deepEqual(await fsPromises.readdir(path.join(mirrorRoot, 'docs')), ['agenticgraph-strybldr-starter-template.md'])
+})
+
+test('combined migration preflight scans the sealed roots once and refreshes on every invocation', async t => {
+  const mirrorRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-migration-scan-'))
+  t.after(() => fsPromises.rm(mirrorRoot, { recursive: true, force: true }))
+  await fsPromises.writeFile(path.join(mirrorRoot, 'index.html'), 'old generated file')
+  const original = fsPromises.readdir
+  let sealedRootReads = 0
+  t.mock.method(fsPromises, 'readdir', async (...args) => {
+    if (args[0] === path.join(mirrorRoot, 'content/agenticgraph')) sealedRootReads += 1
+    return original(...args)
+  })
+  const cleanup = createPagesMirrorLegacyCleanup({ mirrorRoot })
+  const options = { obsoleteGeneratedMirrorFiles: ['index.html'] }
+  const first = await cleanup.createLegacyMigrationPlan(options)
+  assert.equal(sealedRootReads, 1)
+  assert.equal(first.legacyMirrorFilesToRemove.length, 1)
+  assert.deepEqual(first.legacyDocumentMigration, [])
+  await fsPromises.writeFile(path.join(mirrorRoot, 'index.html'), 'new generated file')
+  const second = await cleanup.createLegacyMigrationPlan(options)
+  assert.equal(sealedRootReads, 2)
+  assert.notEqual(second.legacyMirrorFilesToRemove[0].sha256, first.legacyMirrorFilesToRemove[0].sha256)
+  await assert.rejects(cleanup.removeLegacyMirrorFiles(first.legacyMirrorFilesToRemove), /content drifted/)
+  assert.equal(await fsPromises.readFile(path.join(mirrorRoot, 'index.html'), 'utf8'), 'new generated file')
+})
+
+const generatePolicyHeaders = existing => buildAgentReadyHeaders({
+  existing,
+  artifacts: {},
+  agentReadyHomepageLinkHeaderValue: '<https://example.invalid/agent.json>; rel="agent-ready"',
+  productionRuntimeReadinessHeaderLines,
+})
+
+test('generated headers preserve authored content policies and adjacent unrelated routes', () => {
+  const report = "  Content-Security-Policy-Report-Only: default-src 'self'; object-src 'none'"
+  const enforced = "  Content-Security-Policy: frame-ancestors 'self'"
+  const unrelated = '/unrelated/*\n  X-Example: retained'
+  const existing = ['/agenticgraph/*', report, unrelated, 'https://example.invalid/remote/*', '  X-Remote: retained', '/content/knowgrph/*', '  ! Content-Security-Policy', enforced, '/knowgrph/*', report, ''].join('\n')
+  const output = generatePolicyHeaders(existing)
+  assert.ok(output.includes('/agentic-graph/*\n' + report))
+  assert.ok(output.includes('/content/agentic-graph/*\n  ! Content-Security-Policy\n' + enforced))
+  assert.ok(output.includes(unrelated))
+  assert.ok(output.includes('https://example.invalid/remote/*\n  X-Remote: retained'))
+  assert.equal(output.split(report).length - 1, 1)
+  assert.doesNotMatch(output, /^\/(?:content\/)?(?:agenticgraph|knowgrph)(?:\/|\*)/m)
+})
+
+test('generated headers reject conflicting legacy policies and retain explicit canonical policy', () => {
+  const a = "  Content-Security-Policy-Report-Only: default-src 'self'"
+  const b = "  Content-Security-Policy-Report-Only: default-src 'none'"
+  const legacy = ['/agenticgraph/*', a, '', '/knowgrph/*', b, ''].join('\n')
+  assert.throws(() => generatePolicyHeaders(legacy), /conflicting legacy content policies/)
+  const output = generatePolicyHeaders(legacy + '\n/agentic-graph/*\n' + b + '\n')
+  assert.ok(output.includes('/agentic-graph/*\n' + b))
+  assert.ok(!output.includes(a))
+  assert.equal(output.split(b).length - 1, 1)
+})
+
+test('generated headers have stable bytes immediately after first generation', () => {
+  const once = generatePolicyHeaders('/*\n  X-Content-Type-Options: nosniff\n')
+  const twice = generatePolicyHeaders(once)
+  assert.equal(twice, once)
+  assert.equal(generatePolicyHeaders(twice), twice)
+  assert.ok(once.endsWith('\n') && !once.endsWith('\n\n'))
 })

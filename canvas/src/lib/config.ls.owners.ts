@@ -212,6 +212,7 @@ export const LS_KEY_OWNERS: Partial<Record<LsKeyId, LsKeyOwner>> = {
   flowWidgetRichMediaKtvRows: 'ui.floatingPanel',
   flowWidgetPosByNodeId: 'ui.floatingPanel',
   flowWidgetWorldPosByNodeId: 'ui.floatingPanel',
+  flowWidgetStateByDocument: 'ui.floatingPanel',
   flowWidgetPinnedByGraphMetaKey: 'ui.floatingPanel',
   flowWidgetPosByGraphMetaKey: 'ui.floatingPanel',
   flowWidgetWorldPosByGraphMetaKey: 'ui.floatingPanel',

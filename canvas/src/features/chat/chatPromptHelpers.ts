@@ -1,6 +1,7 @@
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
 const serializeGraphValue = (raw: unknown): string => {
   if (raw == null) return 'null'
@@ -179,26 +180,29 @@ const CHAT_WORKSPACE_CONTEXT_MAX_TOTAL_CHARS = 18_000
 const CHAT_WORKSPACE_CONTEXT_MAX_SOURCE_FILES = 8
 const CHAT_WORKSPACE_CONTEXT_MAX_EXPLORER_FILES = 10
 const CHAT_WORKSPACE_CONTEXT_MAX_FILE_SNIPPET_CHARS = 2_400
-const CHAT_WORKSPACE_CONTEXT_CACHE_LIMIT = 24
-const CHAT_WORKSPACE_CONTEXT_CACHE_TTL_MS = 60_000
-
-type WorkspaceContextCacheEntry = {
-  value: string | null
-  tsMs: number
-}
-
-const workspaceContextCache = new Map<string, WorkspaceContextCacheEntry>()
-const workspaceContextInFlight = new Map<string, Promise<string | null>>()
-
 export type WorkspaceContextCacheStatus = 'disabled' | 'ready' | 'hot' | 'loading'
 
-export const resolveWorkspaceContextCacheStatus = (cacheKey: unknown): WorkspaceContextCacheStatus => {
-  const key = String(cacheKey || '').trim()
-  if (!key) return 'disabled'
-  if (workspaceContextInFlight.has(key)) return 'loading'
-  const cached = workspaceContextCache.get(key)
-  if (cached && Date.now() - cached.tsMs <= CHAT_WORKSPACE_CONTEXT_CACHE_TTL_MS) return 'hot'
-  return 'ready'
+// Compatibility for status consumers: filesystem caching stays with its source owner.
+// A caller hint cannot authenticate current workspace contents or concurrent requests.
+export const resolveWorkspaceContextCacheStatus = (_cacheKey: unknown): WorkspaceContextCacheStatus => 'disabled'
+
+export const selectWorkspaceContextFiles = (entries: readonly WorkspaceEntry[]): WorkspaceEntry[] => {
+  const selected: WorkspaceEntry[] = []
+  for (const entry of entries) {
+    if (entry.kind !== 'file' || !String(entry.path || '').trim()) continue
+    const path = String(entry.path).trim()
+    const prior = selected.findIndex(candidate => String(candidate.path).trim() === path)
+    const time = Number(entry.updatedAtMs) || 0
+    if (prior >= 0) {
+      if ((Number(selected[prior].updatedAtMs) || 0) >= time) continue
+      selected.splice(prior, 1)
+    }
+    const position = selected.findIndex(candidate => (Number(candidate.updatedAtMs) || 0) < time)
+    if (position >= 0) selected.splice(position, 0, entry)
+    else if (selected.length < CHAT_WORKSPACE_CONTEXT_MAX_EXPLORER_FILES) selected.push(entry)
+    if (selected.length > CHAT_WORKSPACE_CONTEXT_MAX_EXPLORER_FILES) selected.pop()
+  }
+  return selected
 }
 
 const clipChatContextText = (raw: unknown, maxChars: number): string => {
@@ -212,24 +216,12 @@ export const buildWorkspaceWideContextPrompt = async ({
   markdownDocumentName,
   markdownText,
   sourceFiles,
-  cacheKey,
 }: {
   markdownDocumentName: string | null
   markdownText: string | null
   sourceFiles: SourceFile[]
   cacheKey?: string
 }): Promise<string | null> => {
-  const key = String(cacheKey || '').trim()
-  if (key) {
-    const cached = workspaceContextCache.get(key)
-    if (cached && Date.now() - cached.tsMs <= CHAT_WORKSPACE_CONTEXT_CACHE_TTL_MS) {
-      return cached.value
-    }
-    const inFlight = workspaceContextInFlight.get(key)
-    if (inFlight) return inFlight
-  }
-
-  const compute = async (): Promise<string | null> => {
   const sections: string[] = []
   let used = 0
   const appendSection = (title: string, body: string): void => {
@@ -251,31 +243,22 @@ export const buildWorkspaceWideContextPrompt = async ({
     )
   }
 
-  const sourceEnabled = Array.isArray(sourceFiles)
-    ? sourceFiles.filter(f => f && f.enabled !== false && typeof f.text === 'string' && f.text.trim())
-    : []
-  if (sourceEnabled.length) {
-    const sourceLines: string[] = []
-    for (let i = 0; i < sourceEnabled.length; i += 1) {
-      if (i >= CHAT_WORKSPACE_CONTEXT_MAX_SOURCE_FILES) break
-      const file = sourceEnabled[i]
-      const name = String(file.name || file.id || `source-${i + 1}`).trim() || `source-${i + 1}`
-      const snippet = clipChatContextText(file.text, CHAT_WORKSPACE_CONTEXT_MAX_FILE_SNIPPET_CHARS)
-      if (!snippet) continue
-      sourceLines.push(`File: ${name}`)
-      sourceLines.push('Content:')
-      sourceLines.push(wrapFence(snippet, 'markdown'))
-      sourceLines.push('')
-    }
-    appendSection('Source Files (enabled):', sourceLines.join('\n').trim())
+  const sourceLines: string[] = []
+  let sourceCount = 0
+  for (const file of Array.isArray(sourceFiles) ? sourceFiles : []) {
+    if (!file || file.enabled === false || typeof file.text !== 'string' || !file.text.trim()) continue
+    const name = String(file.name || file.id || `source-${sourceCount + 1}`).trim() || `source-${sourceCount + 1}`
+    const snippet = clipChatContextText(file.text, CHAT_WORKSPACE_CONTEXT_MAX_FILE_SNIPPET_CHARS)
+    sourceLines.push(`File: ${name}`, 'Content:', wrapFence(snippet, 'markdown'), '')
+    sourceCount += 1
+    if (sourceCount >= CHAT_WORKSPACE_CONTEXT_MAX_SOURCE_FILES) break
   }
+  appendSection('Source Files (enabled):', sourceLines.join('\n').trim())
 
   try {
     const fs = await getWorkspaceFs()
     const entries = await fs.listEntries()
-    const files = entries
-      .filter(e => e.kind === 'file')
-      .sort((a, b) => (Number(b.updatedAtMs) || 0) - (Number(a.updatedAtMs) || 0))
+    const files = selectWorkspaceContextFiles(entries)
     const seen = new Set<string>()
     const explorerLines: string[] = []
     for (let i = 0; i < files.length; i += 1) {
@@ -307,23 +290,4 @@ export const buildWorkspaceWideContextPrompt = async ({
     '',
     sections.join('\n\n'),
   ].join('\n')
-  }
-
-  if (!key) return await compute()
-  const run = compute()
-  workspaceContextInFlight.set(key, run)
-  try {
-    const value = await run
-    if (workspaceContextCache.has(key)) {
-      workspaceContextCache.delete(key)
-    }
-    workspaceContextCache.set(key, { value, tsMs: Date.now() })
-    if (workspaceContextCache.size > CHAT_WORKSPACE_CONTEXT_CACHE_LIMIT) {
-      const oldest = workspaceContextCache.keys().next().value
-      if (typeof oldest === 'string' && oldest) workspaceContextCache.delete(oldest)
-    }
-    return value
-  } finally {
-    workspaceContextInFlight.delete(key)
-  }
 }

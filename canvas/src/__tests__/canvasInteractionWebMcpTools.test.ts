@@ -1,3 +1,4 @@
+import { resolvePinnedAgenticDocsRoot } from '@/tests/lib/repoTestData'
 import Ajv2020 from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -102,7 +103,7 @@ export async function testInteractionRowsUseSourceBackedWebMcpInvocation(): Prom
     }
   }
 
-  const docsRoot = resolve(process.cwd(), '..', '..', 'agentic-canvas-os', 'docs')
+  const docsRoot = await resolvePinnedAgenticDocsRoot()
   const sourceContracts = [
     ['DICTIONARY-COMMAND.md', CANVAS_INTERACTION_COMMAND_TOKEN, CANVAS_INTERACTION_MCP_TOOL_NAME],
     ['DICTIONARY-SEMANTIC.md', CANVAS_INTERACTION_SEMANTIC_TOKEN, 'semantic, visible, and hit-testable'],

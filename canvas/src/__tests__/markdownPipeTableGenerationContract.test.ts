@@ -113,7 +113,7 @@ export function testChatResponseStructuredContentPersistsTablesAsMarkdownBlockSc
   if (!surface || surface.nodes.length !== 1) throw new Error(`Expected one structured table node, got: ${JSON.stringify(surface)}`)
   const table = surface.nodes[0]
   const output = String(table?.properties.output || '')
-  for (const token of ['| Name | Status |', '| ---- | ------ |', '| Home \\| Primary | Success Cached |', '| About | Success |']) {
+  for (const token of ['| Name | Status |', '| --- | --- |', '| Home \\| Primary | Success Cached |', '| About | Success |']) {
     if (!output.includes(token)) throw new Error(`Expected structured table Markdown token ${token}, got: ${output}`)
   }
   if (table.kind !== 'text' || table.sourceHandle !== 'output' || table.targetHandle !== 'output') throw new Error(`Expected structured table to use Markdown output handles, got: ${JSON.stringify(table)}`)

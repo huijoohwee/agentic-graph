@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 
 export function testStoryboardWidgetTextRunsPersistWorkspaceOutputArtifacts() {
   const workflowActionsText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts'), 'utf8')
+  const specializedText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowSpecializedRunHandlers.ts'), 'utf8')
   const headlessTextRunText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetHeadlessTextRun.ts'), 'utf8')
   const richMediaPublicationText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRichMediaPublication.ts'), 'utf8')
   const richMediaRunText = readFileSync(resolve(process.cwd(), 'src', 'features', 'chat', 'richMediaRun.ts'), 'utf8')
@@ -16,7 +17,7 @@ export function testStoryboardWidgetTextRunsPersistWorkspaceOutputArtifacts() {
   if (!headlessTextRunText.includes('writeTextWidgetRunOutputArtifact({')) {
     throw new Error('expected Storyboard Widget text/transcript run finalizers to land generated output in the Editor Workspace')
   }
-  if (!richMediaPublicationText.includes('outputPath: panelArgs.outputPath') || !workflowActionsText.includes("model: 'youtube', outputPath })") || !headlessTextRunText.includes('outputPath: projection.artifactPath')) {
+  if (!richMediaPublicationText.includes('outputPath: panelArgs.outputPath') || !workflowActionsText.includes('runStoryboardWidgetSpecializedWorkflowNode({') || !/args\.publishTextRunOutputToRichMediaPanel\(\{[^}]*model: 'youtube',[^}]*outputPath,/.test(specializedText) || !headlessTextRunText.includes('outputPath: projection.artifactPath')) {
     throw new Error('expected Storyboard Widget text run patches to carry the shared workspace output path into widgets and Rich Media Panels')
   }
 }
@@ -47,6 +48,7 @@ export function testGeneratedArtifactsAndCanvasDocumentsUseDurablePersistenceCon
   const sourceLayersText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'graph', 'sourceLayers.ts'), 'utf8')
   const graphFlowSyncText = readFileSync(resolve(process.cwd(), 'src', 'hooks', 'store', 'graph-data-slice', 'graphDataFrontmatterFlowSync.ts'), 'utf8')
   const graphSourceWriteQueueText = readFileSync(resolve(process.cwd(), 'src', 'hooks', 'store', 'graph-data-slice', 'workspaceSourceTextWriteQueue.ts'), 'utf8')
+  const transactionText = readFileSync(resolve(process.cwd(), 'src/features/workspace-fs/workspaceSourceTextTransaction.ts'), 'utf8')
   const workflowRunText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts'), 'utf8')
   const workflowRunTypesText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunTypes.ts'), 'utf8')
   const canvasRuntimeText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas.runtime.tsx'), 'utf8')
@@ -70,15 +72,15 @@ export function testGeneratedArtifactsAndCanvasDocumentsUseDurablePersistenceCon
     || !sourceLayersText.includes('export function projectComposedGraphToSourceLayer(args: {')
     || !graphSourceText.includes('shouldUpdateStoryboardCardMediaGraphActiveDocument({')
     || !graphSourceText.includes('const persisted = await writeActiveMarkdownDocumentTextIfPresent({')
-    || !graphSourceText.includes('if (!sourceSync.accepted) return false')
-    || !graphSourceText.includes("if (typeof sourceSync.markdownDocumentText !== 'string') return true")
+    || !graphSourceText.includes('if (!sourceSync.accepted) return null')
+    || !graphSourceText.includes('if (!synchronized) return false') || !graphSourceText.includes('return persistStoryboardCardMediaGraphSourceSynchronization(synchronized, options)')
     || !graphSourceText.includes('markdownDocumentApplyViewPreset: false')
     || !graphSourceText.includes('if (!persisted) throw new Error(')) {
     throw new Error('expected generated Canvas documents to persist without treating same-document graph publication as a viewport-resetting document switch')
   }
   if (!graphFlowSyncText.includes('return enqueueWorkspaceSourceTextWrite(activePath, args.text)')
-    || !graphSourceWriteQueueText.includes('pendingWorkspaceSourceTextWrites.get(workspacePath)')
-    || !graphSourceWriteQueueText.includes('pendingWorkspaceSourceTextWrites.set(workspacePath, next)')) {
+    || !graphSourceWriteQueueText.includes('return enqueueWorkspaceSourceTextTransaction({') || !graphSourceWriteQueueText.includes('path: workspacePath,') || !transactionText.includes('pendingTransactionByPath.get(path)')
+    || !transactionText.includes('pendingTransactionByPath.set(path, next)')) {
     throw new Error('expected shared Canvas document writes to serialize by workspace path and preserve generation order')
   }
   if (!workflowRunTypesText.includes('options?: StoryboardCardMediaGraphPersistenceOptions')

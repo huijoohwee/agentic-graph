@@ -12,6 +12,8 @@ const tick = async () => {
 export async function testMarkdownWorkspaceViewShellFileSelectionClearsCanvasSelectionAuthority() {
   const harness = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
   let root: ReturnType<typeof createRoot> | null = null
+  let selectionCommit: (() => Promise<boolean>) | undefined
+  let selectFolder: (path: WorkspacePath) => void = () => { throw new Error('expected mounted folder owner') }
 
   try {
     const store = useGraphStore.getState()
@@ -42,18 +44,19 @@ export async function testMarkdownWorkspaceViewShellFileSelectionClearsCanvasSel
         selectionPath,
         selectionEntryKind: 'file',
         setActivePathSafe: path => setActivePath(path),
-        setSelectionPathSafe: path => setSelectionPath(path),
+        setSelectionPathSafe: path => selectionCommit ? selectionCommit().then(applied => { if (applied) setSelectionPath(path); return applied }) : setSelectionPath(path),
         setSelectionSource: source => {
           useGraphStore.getState().setSelectionSource(source)
           forceRender()
         },
         setExpandedPaths,
         resolveFolderContractDocPath: folderPath => folderPath,
-        pickFolderContractTargetPath: () => null,
+        pickFolderContractTargetPath: path => path === '/repo' ? '/repo/repo.sitemap.md' : null,
         revealLineInEditor: () => {},
         setStatusWithAutoClear: () => {},
       })
 
+      selectFolder = viewShell.onSelectFolder
       return (
         <button
           id="select-readme"
@@ -94,6 +97,15 @@ export async function testMarkdownWorkspaceViewShellFileSelectionClearsCanvasSel
     const nextSelectionSource = String(button.dataset.selectionSource || '')
     if (nextSelectionSource !== 'editor') {
       throw new Error(`expected workspace file selection to override stale canvas selection authority, got ${nextSelectionSource}`)
+    }
+    for (const accepted of [false, true]) {
+      let finishCommit: (applied: boolean) => void = () => { throw new Error('expected pending selection commit') }
+      selectionCommit = () => new Promise<boolean>(resolve => { finishCommit = resolve })
+      await act(async () => { selectFolder('/repo'); await tick() })
+      if (String(button.dataset.activePath) !== '/workspace-readme.md') throw new Error('folder activation must wait for the pending selection commit')
+      await act(async () => { finishCommit(accepted); await tick() })
+      const expected = accepted ? '/repo/repo.sitemap.md' : '/workspace-readme.md'
+      if (String(button.dataset.activePath) !== expected) throw new Error(`expected folder commit accepted=${accepted} to leave active path ${expected}, got ${button.dataset.activePath}`)
     }
   } finally {
     try {

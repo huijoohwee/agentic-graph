@@ -45,7 +45,7 @@ jobs:
         run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json\nagentic-graph/canvas/package-lock.json" }
+        with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" }
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with: { python-version: '3.11' }
@@ -170,7 +170,7 @@ jobs:
         with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-canvas-os }
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json\nagentic-graph/canvas/package-lock.json" }
+        with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" }
       - name: Install dependencies
         working-directory: agentic-graph
         run: bash ./scripts/install-production-release-dependencies.sh

@@ -132,6 +132,8 @@
 - `chatHistoryStorageMode` selects `local` (default, workspace file) vs `cloud` (reserved; does not write anywhere yet).
 - `chatHistoryCloudUrl` reserves a future sync target (e.g. GitHub URL) and is inert until a backend exists.
 - Chat history setup actions in Settings should reuse Toolbar Launch import pipelines: local mode reuses `Import local files` and cloud URL mode reuses `Import URL`, with bridge-first execution and Launch fallbacks.
+- Settings workspace creation and local/cloud import actions return their completion promises. Import completion includes the bridge or fallback and any directly awaited storage sync; active-path retry timers remain separately bounded and are canceled on unmount. Draft choices still update immediately and become canonical only through Apply.
+- Native Settings readiness tests await captured action work before checking completion or restoring shared state. Deferred import/open cases use explicit release gates, and generated-file expectations use UTC timestamps with per-session agentic-graph directories; arbitrary imported paths remain valid.
 - `integrationConfigsJson` remains the SSOT for AI chat enable/open-tab routing and simulation command defaults; MainPanel Integrations should show live Chat status, expose format/enable-disable helpers, and open a `chat` Settings search with matching groups expanded so `chatProvider`, `chatContextScope`, and `integrationConfigsJson` stay visible together.
 
 ---

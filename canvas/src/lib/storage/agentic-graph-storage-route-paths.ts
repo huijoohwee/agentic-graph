@@ -1,6 +1,7 @@
 export const AGENTIC_OS_STORAGE_ROUTE_PATHS = {
   push: '/api/storage/push',
   pull: '/api/storage/pull',
+  publications: '/api/storage/publications',
   mediaCapability: '/api/storage/media-capabilities',
   collabSave: '/api/storage/collab/save',
   browserSession: '/api/storage/auth/session',

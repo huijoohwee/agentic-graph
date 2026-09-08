@@ -9,6 +9,7 @@ import {
   readCitySimSnapshot,
   resetCitySimRuntimeForTests,
 } from '@/features/game-city-sim/citySimRuntime'
+import { exitCitySimSurfaceAndWait } from '@/features/game-city-sim/citySimSurfaceExit'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import {
   beginSourceFilesDocumentIntent,
@@ -37,7 +38,6 @@ import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import {
   mountReactRoot,
   unmountReactRoot,
-  waitForTasks,
 } from '@/tests/lib/reactRootHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import {
@@ -47,6 +47,32 @@ import {
 
 const CITY_SEED_PATH = `/${CITY_SIM_DEMO_REPO_REL_PATH}`
 const NEUTRAL_PATH = '/docs/workspace-seeds/workspace-readme.md'
+
+async function waitForCitySourceOperation<T>(operation: Promise<T>, label: string): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(`${label} did not settle within 5000ms`)), 5000)
+      }),
+    ])
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout)
+  }
+}
+
+async function waitForIdentityApply(
+  started: Promise<void>,
+  materialization: Promise<void>,
+): Promise<void> {
+  await waitForCitySourceOperation(Promise.race([
+    started,
+    materialization.then(() => {
+      throw new Error('City source materialization completed before the identity barrier')
+    }),
+  ]), 'City source identity application')
+}
 
 function createCityWorkspaceFixture() {
   const seedText = readFileSync(
@@ -203,6 +229,23 @@ export async function testCitySimLaterSourceIntentRetainsMountedPreviousSurfaceO
   const previousStore = useGraphStore.getState()
   const previousExplorerStore = useMarkdownExplorerStore.getState()
   const previousDemoSelector = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
+  const frameTimers = new Set<ReturnType<typeof setTimeout>>()
+  const originalRequestFrame = dom.window.requestAnimationFrame
+  const originalCancelFrame = dom.window.cancelAnimationFrame
+  // Two event-loop ticks cannot prove that the native two-frame handoff settled.
+  dom.window.requestAnimationFrame = callback => {
+    const timer = setTimeout(() => {
+      frameTimers.delete(timer)
+      callback(Date.now())
+    }, 25)
+    frameTimers.add(timer)
+    return timer as unknown as number
+  }
+  dom.window.cancelAnimationFrame = id => {
+    const timer = id as unknown as ReturnType<typeof setTimeout>
+    clearTimeout(timer)
+    frameTimers.delete(timer)
+  }
   let root: ReturnType<typeof createRoot> | null = null
   try {
     delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
@@ -250,10 +293,11 @@ export async function testCitySimLaterSourceIntentRetainsMountedPreviousSurfaceO
     assert.equal(useGraphStore.getState().floatingPanelView, 'cityBuilder')
 
     await act(async () => {
-      exitCitySimSurface()
-      await waitForTasks(2)
+      await waitForCitySourceOperation(exitCitySimSurfaceAndWait(), 'City surface restoration')
     })
+    assert.equal(frameTimers.size, 0, 'Exit must finish its owned surface frames before restoring the fixture')
     const restored = useGraphStore.getState()
+    assert.equal(readCitySimSnapshot().phase, 'idle', readCitySimSnapshot().message)
     assert.equal(readCitySimSnapshot().active, false, 'Exit must not relaunch the selected City document')
     assert.equal(restored.canvasRenderMode, '3d')
     assert.equal(restored.canvas3dMode, 'xr')
@@ -266,24 +310,35 @@ export async function testCitySimLaterSourceIntentRetainsMountedPreviousSurfaceO
       'Exit must restore the prior panel without replacing the selected City source',
     )
   } finally {
-    exitCitySimSurface({ restorePreviousSurface: false })
-    resetCitySimRuntimeForTests({ webglSupported: true })
-    if (root) {
-      await unmountReactRoot(root, {
-        window: dom.window as unknown as Window,
-        tasks: 1,
-      }).catch(() => undefined)
+    try {
+      // The shared Geo queue must settle while its frame and timeout owner exists.
+      await waitForCitySourceOperation(exitCitySimSurfaceAndWait(), 'City surface cleanup')
+    } finally {
+      exitCitySimSurface({ restorePreviousSurface: false })
+      resetCitySimRuntimeForTests({ webglSupported: true })
+      try {
+        if (root) {
+          await unmountReactRoot(root, {
+            window: dom.window as unknown as Window,
+            tasks: 1,
+          })
+        }
+      } finally {
+        clearSourceFilesDocumentIntent(intentKey)
+        if (typeof previousDemoSelector === 'string') {
+          process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemoSelector
+        } else {
+          delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
+        }
+        useGraphStore.setState(previousStore, true)
+        useMarkdownExplorerStore.setState(previousExplorerStore, true)
+        for (const timer of frameTimers) clearTimeout(timer)
+        frameTimers.clear()
+        dom.window.requestAnimationFrame = originalRequestFrame
+        dom.window.cancelAnimationFrame = originalCancelFrame
+        try { restoreDom() } finally { restoreWindow() }
+      }
     }
-    clearSourceFilesDocumentIntent(intentKey)
-    if (typeof previousDemoSelector === 'string') {
-      process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemoSelector
-    } else {
-      delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
-    }
-    useGraphStore.setState(previousStore, true)
-    useMarkdownExplorerStore.setState(previousExplorerStore, true)
-    restoreDom()
-    restoreWindow()
   }
 }
 
@@ -325,22 +380,27 @@ export async function testCitySimGraphOwningMaterializationFencesDelayedPathDrif
     })
 
     pendingMaterialization = materializeCityFixture()
-    await identityApplyStarted
+    await waitForIdentityApply(identityApplyStarted, pendingMaterialization)
     useMarkdownExplorerStore.getState().setActivePath(NEUTRAL_PATH as never)
     pathDrifted = true
     useGraphStore.getState().setFloatingPanelView('motionControl')
     releaseIdentityApply()
-    await pendingMaterialization
+    await waitForCitySourceOperation(pendingMaterialization, 'City source materialization')
 
     assert.equal(staleCityBuilderCommits, 0)
     assert.equal(useGraphStore.getState().floatingPanelView, 'motionControl')
   } finally {
     releaseIdentityApply()
-    await pendingMaterialization?.catch(() => undefined)
-    unsubscribe()
-    useGraphStore.setState(previousStore, true)
-    useMarkdownExplorerStore.setState(previousExplorerStore, true)
-    restore()
+    try {
+      if (pendingMaterialization) {
+        await waitForCitySourceOperation(pendingMaterialization.catch(() => undefined), 'City source cleanup')
+      }
+    } finally {
+      unsubscribe()
+      useGraphStore.setState(previousStore, true)
+      useMarkdownExplorerStore.setState(previousExplorerStore, true)
+      restore()
+    }
   }
 }
 
@@ -370,7 +430,7 @@ export async function testCitySimGraphOwningMaterializationUsesFreshSourceFilesA
     })
 
     pendingMaterialization = materializeCityFixture()
-    await identityApplyStarted
+    await waitForIdentityApply(identityApplyStarted, pendingMaterialization)
     useGraphStore.setState({
       sourceFiles: [
         ...useGraphStore.getState().sourceFiles,
@@ -385,7 +445,7 @@ export async function testCitySimGraphOwningMaterializationUsesFreshSourceFilesA
       ],
     })
     releaseIdentityApply()
-    await pendingMaterialization
+    await waitForCitySourceOperation(pendingMaterialization, 'City source materialization')
 
     assert.ok(
       useGraphStore.getState().sourceFiles.some(file => file.id === 'newer-source-during-city-identity'),
@@ -393,9 +453,14 @@ export async function testCitySimGraphOwningMaterializationUsesFreshSourceFilesA
     )
   } finally {
     releaseIdentityApply()
-    await pendingMaterialization?.catch(() => undefined)
-    useGraphStore.setState(previousStore, true)
-    useMarkdownExplorerStore.setState(previousExplorerStore, true)
-    restore()
+    try {
+      if (pendingMaterialization) {
+        await waitForCitySourceOperation(pendingMaterialization.catch(() => undefined), 'City source cleanup')
+      }
+    } finally {
+      useGraphStore.setState(previousStore, true)
+      useMarkdownExplorerStore.setState(previousExplorerStore, true)
+      restore()
+    }
   }
 }

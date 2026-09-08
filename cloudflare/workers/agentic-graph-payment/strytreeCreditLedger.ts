@@ -1,3 +1,4 @@
+import { readBoundedJson } from './travelAgency/boundedJson'
 import {
   execute,
   queryAll,
@@ -8,6 +9,7 @@ import {
 
 const MAX_BODY_BYTES = 32 * 1024
 const MAX_TEXT_LENGTH = 512
+const UNLOCK_KEY_PREFIX = 'strytree-unlock-v1:'
 
 type SqlCursor<T> = { toArray(): T[] }
 type LedgerActorState = {
@@ -26,6 +28,7 @@ export type StrytreeLedgerEnv = Record<string, unknown> & {
 type MutationPayload = {
   id?: unknown
   user_id?: unknown
+  node_id?: unknown
   event_type?: unknown
   amount_credits?: unknown
   related_object_type?: unknown
@@ -173,9 +176,14 @@ const semanticDigest = async (mutation: Mutation): Promise<string> => {
     userId: mutation.userId,
     version: 1,
   })
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical))
-  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+  return digestText(canonical)
 }
+const digestText = async (text: string): Promise<string> => {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, '0')).join('')
+}
+export const scopedUnlockKey = async (userId: string, clientKey: string): Promise<string> =>
+  UNLOCK_KEY_PREFIX + await digestText(JSON.stringify(['unlock-v1', userId, clientKey]))
 
 const localRowToEvent = (row: LocalEventRow): LedgerEvent => Object.freeze({
   id: row.id,
@@ -235,15 +243,17 @@ export class StrytreeCreditLedgerActor {
         return json(503, { ok: false, code: 'ledger-authority-unavailable' })
       }
     }
-    if (request.method !== 'POST' || (!url.pathname.endsWith('/mutations') && !url.pathname.endsWith('/debit'))) {
+    if (request.method !== 'POST' || (!url.pathname.endsWith('/mutations') && !url.pathname.endsWith('/debit') && !url.pathname.endsWith('/unlock-replay'))) {
       return json(404, { ok: false, code: 'strytree-credit-ledger-route-not-found' })
     }
     try {
       const payload = await this.readPayload(request)
+      if (url.pathname.endsWith('/unlock-replay')) return await this.replayUnlock(payload)
       const allowProofless = asString(this.env.STRYTREE_CHECKOUT_MODE).toLowerCase() === 'local-development'
       const mutation = parseMutation(payload, allowProofless)
       await this.ensureBootstrapped(mutation.userId)
       const digest = await semanticDigest(mutation)
+      await this.checkUnlockKey(mutation)
       await this.claimProviderEffect(mutation, digest)
       const { event, replay } = this.mutate(mutation, digest)
       await this.project(event)
@@ -286,14 +296,66 @@ export class StrytreeCreditLedgerActor {
   }
 
   private async readPayload(request: Request): Promise<MutationPayload> {
-    const text = await request.text()
-    if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) throw new MutationFailure(413, 'request-too-large')
+    const payload = await readBoundedJson(request, MAX_BODY_BYTES)
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new MutationFailure(400, 'invalid-json-body')
+    return payload as MutationPayload
+  }
+
+  private async replayUnlock(payload: MutationPayload): Promise<Response> {
+    const userId = asString(payload.user_id), nodeId = asString(payload.node_id), clientKey = asString(payload.idempotency_key)
+    if (![userId, nodeId, clientKey].every(validText)) throw new MutationFailure(400, 'invalid-unlock-replay')
+    await this.ensureBootstrapped(userId)
+    const scopedKey = await scopedUnlockKey(userId, clientKey)
+    const rows = this.ctx.storage.sql.exec<LocalEventRow>(
+      'SELECT * FROM ledger_events WHERE idempotency_key IN (?, ?)', clientKey, scopedKey,
+    ).toArray()
+    const row = rows.find(event => event.idempotency_key === clientKey) || rows.find(event => event.idempotency_key === scopedKey)
+    if (!row) return json(200, { ok: true, found: false, scoped_key: scopedKey })
+    if (row.user_id !== userId || row.event_type !== 'unlock_debit'
+      || row.related_object_type !== 'strytree_node' || row.related_object_id !== nodeId) {
+      throw new MutationFailure(409, 'idempotency-conflict')
+    }
     try {
-      const value = JSON.parse(text)
-      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('not-object')
-      return value as MutationPayload
-    } catch {
-      throw new MutationFailure(400, 'invalid-json-body')
+      parseMutation(row)
+      const metadata = JSON.parse(normalizeMetadata(row.metadata_json))
+      if (metadata?.unlock_client_key !== undefined && metadata.unlock_client_key !== clientKey) {
+        throw new MutationFailure(409, 'idempotency-conflict')
+      }
+      if (!Number.isSafeInteger(row.amount_credits) || row.amount_credits >= 0 || row.provider_event_id !== null
+        || !Number.isSafeInteger(row.balance_after_credits) || row.balance_after_credits < 0
+        || !Number.isSafeInteger(row.authority_version) || row.authority_version < 1
+        || !metadata || typeof metadata !== 'object' || Array.isArray(metadata)
+        || typeof metadata.creator_user_id !== 'string' || !validText(asString(metadata.creator_user_id))
+        || !Number.isSafeInteger(metadata.creator_credit_credits) || metadata.creator_credit_credits < 0
+        || !Number.isSafeInteger(metadata.platform_fee_credits) || metadata.platform_fee_credits < 0
+        || metadata.creator_credit_credits + metadata.platform_fee_credits !== -row.amount_credits
+        || row.idempotency_key === scopedKey && metadata.unlock_client_key !== clientKey
+        || row.semantic_digest !== await semanticDigest(localRowToEvent(row))) throw new Error('invalid-unlock-event')
+    } catch (error) {
+      if (error instanceof MutationFailure && error.status === 409) throw error
+      throw new MutationFailure(503, 'unlock-reconciliation-required')
+    }
+    const body = { ok: true, found: true, scoped_key: scopedKey, event: row }
+    if (new TextEncoder().encode(JSON.stringify(body)).byteLength > MAX_BODY_BYTES) throw new MutationFailure(503, 'unlock-reconciliation-required')
+    await this.project(localRowToEvent(row))
+    return json(200, body)
+  }
+
+  private async checkUnlockKey(mutation: Mutation): Promise<void> {
+    if (!mutation.idempotencyKey.startsWith(UNLOCK_KEY_PREFIX)) return
+    // Existing exact legacy replays keep their identity; new reserved keys are owner-derived.
+    if (this.ctx.storage.sql.exec('SELECT id FROM ledger_events WHERE idempotency_key = ?', mutation.idempotencyKey).toArray()[0]) return
+    const metadata = JSON.parse(mutation.metadataJson)
+    if (mutation.eventType !== 'unlock_debit' || mutation.relatedObjectType !== 'strytree_node'
+      || mutation.amountCredits >= 0 || !metadata || typeof metadata.unlock_client_key !== 'string'
+      || !validText(metadata.unlock_client_key)
+      || mutation.idempotencyKey !== await scopedUnlockKey(mutation.userId, metadata.unlock_client_key)) {
+      throw new MutationFailure(409, 'unlock-key-conflict')
+    }
+    if (await queryFirst(this.db(), 'SELECT id FROM strytree_token_ledger WHERE idempotency_key = ? LIMIT 1', [mutation.idempotencyKey])) {
+      if (this.ctx.storage.sql.exec('SELECT id FROM ledger_events WHERE idempotency_key = ?', mutation.idempotencyKey).toArray()[0]) return
+      // An unowned legacy/global projection cannot become a second local debit.
+      throw new MutationFailure(409, 'unlock-key-conflict')
     }
   }
 
@@ -315,8 +377,12 @@ export class StrytreeCreditLedgerActor {
       if (current.user_id !== userId) throw new MutationFailure(409, 'ledger-actor-user-conflict')
       return
     }
-    if (!this.bootstrapPromise) this.bootstrapPromise = this.bootstrap(userId)
-    await this.bootstrapPromise
+    const pending = this.bootstrapPromise ||= this.bootstrap(userId)
+    try {
+      await pending
+    } finally {
+      if (this.bootstrapPromise === pending) this.bootstrapPromise = null
+    }
     this.account(userId)
   }
 
@@ -332,12 +398,7 @@ export class StrytreeCreditLedgerActor {
     let balance = 0
     for (let index = 0; index < rows.length; index += 1) {
       const row = rows[index]
-      const mutation = parseMutation({
-        id: row.id, user_id: row.user_id, event_type: row.event_type,
-        amount_credits: row.amount_credits, related_object_type: row.related_object_type,
-        related_object_id: row.related_object_id, provider_event_id: row.provider_event_id,
-        idempotency_key: row.idempotency_key, metadata_json: row.metadata_json || '{}', created_at: row.created_at,
-      }, true)
+      const mutation = parseMutation({ ...row, metadata_json: row.metadata_json || '{}' }, true)
       balance += mutation.amountCredits
       if (!Number.isSafeInteger(balance) || balance < 0 || balance !== Number(row.balance_after_credits)) {
         throw new MutationFailure(503, 'legacy-ledger-reconciliation-required')
@@ -471,7 +532,7 @@ export class StrytreeCreditLedgerActor {
         FROM strytree_token_ledger WHERE user_id = ? AND idempotency_key = ? LIMIT 1
       `, [event.userId, event.idempotencyKey])
     }
-    if (!projected || projected.id !== event.id || projected.semantic_digest !== event.semanticDigest
+    if (!projected || !this.sameProjection(projected, event) || projected.semantic_digest !== event.semanticDigest
       || Number(projected.balance_after_credits) !== event.balanceAfterCredits
       || Number(projected.authority_version) !== event.authorityVersion) {
       throw new MutationFailure(503, 'ledger-projection-unavailable')

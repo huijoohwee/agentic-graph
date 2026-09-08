@@ -16,6 +16,7 @@
     "verbatimModuleSyntax": false,
     "moduleDetection": "force",
     "noEmit": true,
+    "incremental": true,
     "jsx": "react-jsx",
     "strict": false,
     "noUnusedLocals": false,

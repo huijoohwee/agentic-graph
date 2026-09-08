@@ -4,16 +4,8 @@ import { LS_KEYS } from '@/lib/config'
 import { lsRemove } from '@/lib/persistence'
 import { persistGraphDataToLocalStorage } from '@/hooks/store/graphDataPersistence'
 import { normalizeGraphData } from '@/lib/graph/normalize'
-import { buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
+import { buildGraphDocumentMetaKey, buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
 import { isStoryboardCanvas2dRenderer } from '@/lib/config.render'
-import {
-  shouldCarryForwardFlowWidgetOverlayStateOnGraphCommit,
-  shouldPreserveFrontmatterAutoManagedBalancedCollective,
-  stripFrontmatterAutoManagedWidgetPinnedStates,
-  stripFrontmatterAutoManagedWidgetWorldPositions,
-  stripFrontmatterAutoManagedWidgetScreenPositions,
-} from '@/lib/storyboardWidget/widgetPlacementAuthority'
-import { buildCanonicalNodeLookup, canonicalNodeIdSetHas, parseCanonicalNodeIds } from '@/lib/graph/canonicalNodeIds'
 import {
   applyLayoutAutosuggestFromMetadata,
   applyWidgetRegistryFromMetadata,
@@ -29,8 +21,9 @@ import {
 } from '@/features/graph-data-table/graphDataTable'
 import { resetComposedPositionWrites } from './graphDataComposedSource'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
-import { buildRetainedNodePlacementContinuityAcrossTopologyChange, hasStableSameSourceNodeLayout, hasStableSameSourceTopology } from './graphDataRetainedPlacementContinuity'
+import { hasStableSameSourceTopology } from './graphDataRetainedPlacementContinuity'
 import { hasSameReadOnlyAgentGraphProjectionIdentity } from '@/features/agent-graph/agentGraphProjectionPolicy'
+import { buildCommittedFlowWidgetState } from './graphDataWidgetStateCommit'
 
 function readGraphSourceIdentity(graph: GraphData | null | undefined): string {
   const meta = ((graph || null)?.metadata || {}) as Record<string, unknown>
@@ -45,101 +38,6 @@ function readGraphSourceIdentity(graph: GraphData | null | undefined): string {
   const semanticGraphKey = buildGraphMetaKeyIgnoringPending(graph)
   if (semanticGraphKey) return semanticGraphKey
   return ''
-}
-
-function getCanonicalLookupValue<T>(lookup: ReadonlyMap<string, T>, rawId: unknown): T | undefined {
-  const candidateIds = parseCanonicalNodeIds(rawId)
-  for (let i = 0; i < candidateIds.length; i += 1) {
-    const candidateId = String(candidateIds[i] || '').trim()
-    if (!candidateId || !lookup.has(candidateId)) continue
-    return lookup.get(candidateId)
-  }
-  return undefined
-}
-
-function remapNodeKeyedRecordByCanonicalNodeId<T>(
-  graphData: GraphData | null | undefined,
-  valueByNodeId: Record<string, T>,
-  allowedCanonicalNodeIds?: ReadonlySet<string> | null,
-): Record<string, T> {
-  const nodes = Array.isArray(graphData?.nodes) ? graphData.nodes : []
-  const entries = Object.entries(valueByNodeId || {}).filter(([rawId]) => String(rawId || '').trim().length > 0)
-  if (nodes.length === 0 || entries.length === 0) return valueByNodeId
-  const lookup = buildCanonicalNodeLookup(entries.map(([rawId, value]) => [rawId, value] as const))
-  const next: Record<string, T> = {}
-  for (let i = 0; i < nodes.length; i += 1) {
-    const rawId = String(nodes[i]?.id || '').trim()
-    if (!rawId) continue
-    if (allowedCanonicalNodeIds && !canonicalNodeIdSetHas(allowedCanonicalNodeIds, rawId)) continue
-    const value = getCanonicalLookupValue(lookup, rawId)
-    if (typeof value === 'undefined') continue
-    next[rawId] = value
-  }
-  const prevKeys = Object.keys(valueByNodeId || {})
-  const nextKeys = Object.keys(next)
-  if (prevKeys.length === nextKeys.length) {
-    let unchanged = true
-    for (let i = 0; i < nextKeys.length; i += 1) {
-      const key = nextKeys[i]
-      if (!(key in (valueByNodeId || {})) || valueByNodeId[key] !== next[key]) {
-        unchanged = false
-        break
-      }
-    }
-    if (unchanged) return valueByNodeId
-  }
-  return next
-}
-
-function isSameFlowWidgetScreenPosByNodeId(
-  a: Record<string, { top: number; left: number }>,
-  b: Record<string, { top: number; left: number }>,
-): boolean {
-  const aKeys = Object.keys(a)
-  const bKeys = Object.keys(b)
-  if (aKeys.length !== bKeys.length) return false
-  for (let i = 0; i < aKeys.length; i += 1) {
-    const key = aKeys[i]
-    if (!Object.prototype.hasOwnProperty.call(b, key)) return false
-    const av = a[key]
-    const bv = b[key]
-    if (!av || !bv) return false
-    if (av.top !== bv.top || av.left !== bv.left) return false
-  }
-  return true
-}
-
-function isSameFlowWidgetWorldPosByNodeId(
-  a: Record<string, { x: number; y: number }>,
-  b: Record<string, { x: number; y: number }>,
-): boolean {
-  const aKeys = Object.keys(a)
-  const bKeys = Object.keys(b)
-  if (aKeys.length !== bKeys.length) return false
-  for (let i = 0; i < aKeys.length; i += 1) {
-    const key = aKeys[i]
-    if (!Object.prototype.hasOwnProperty.call(b, key)) return false
-    const av = a[key]
-    const bv = b[key]
-    if (!av || !bv) return false
-    if (av.x !== bv.x || av.y !== bv.y) return false
-  }
-  return true
-}
-
-function resolveCommittedFlowWidgetScreenPositions(args: {
-  graphData: GraphData
-  posByNodeId: Record<string, { top: number; left: number }>
-  pinnedByNodeId?: Record<string, boolean>
-  preserveStableSameSourceOverlayState: boolean
-}): Record<string, { top: number; left: number }> {
-  return stripFrontmatterAutoManagedWidgetScreenPositions({
-    graphData: args.graphData,
-    posByNodeId: args.posByNodeId,
-    pinnedByNodeId: args.pinnedByNodeId,
-    preserveBalancedCollective: args.preserveStableSameSourceOverlayState,
-    preserveStableSameSourceOverlayState: args.preserveStableSameSourceOverlayState,
-  })
 }
 
 function cloneDesignLayerState(
@@ -175,18 +73,13 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
       void 0
     }
 
+    if (!isWorkspaceGraphMutationBlocked(get())) get().loadFlowWidgetDocument(buildGraphDocumentMetaKey(graphData))
     const currentGraph = get().graphData
     const currentGraphKey = buildGraphMetaKeyIgnoringPending(currentGraph)
     const collapsedKey = buildGraphMetaKeyIgnoringPending(nextGraphDataBase)
     const currentSourceIdentity = readGraphSourceIdentity(currentGraph)
     const nextSourceIdentity = readGraphSourceIdentity(nextGraphDataBase)
     const stableSameSourceTopology = hasStableSameSourceTopology(currentGraph, nextGraphDataBase)
-    const retainedPlacementContinuity = currentSourceIdentity && currentSourceIdentity === nextSourceIdentity
-      ? buildRetainedNodePlacementContinuityAcrossTopologyChange(currentGraph, nextGraphDataBase)
-      : { nodeSetChanged: false, stableCanonicalNodeIds: new Set<string>() }
-    const stableRetainedNodeIdsAcrossTopologyChange = retainedPlacementContinuity.stableCanonicalNodeIds
-    const hasSameSourceNodeSetChange = retainedPlacementContinuity.nodeSetChanged
-    const hasStableSameSourceRetainedPlacement = stableRetainedNodeIdsAcrossTopologyChange.size > 0
     const carryForwardSameSourceUiState =
       !!collapsedKey &&
       !!currentGraphKey &&
@@ -194,26 +87,7 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
       currentSourceIdentity === nextSourceIdentity &&
       collapsedKey !== currentGraphKey &&
       stableSameSourceTopology
-    const currentPinnedByNodeId = get().flowWidgetPinnedByNodeId || {}
-    const currentPosByNodeId = get().flowWidgetPosByNodeId || {}
     const workspaceGraphMutationBlocked = isWorkspaceGraphMutationBlocked(get())
-    const carryForwardBalancedFloatingCollectiveState =
-      stableSameSourceTopology &&
-      !!currentSourceIdentity &&
-      currentSourceIdentity === nextSourceIdentity &&
-      shouldPreserveFrontmatterAutoManagedBalancedCollective({
-        graphData: currentGraph,
-        posByNodeId: currentPosByNodeId,
-        pinnedByNodeId: currentPinnedByNodeId,
-      })
-    const carryForwardSameSourceWidgetOverlayState =
-      shouldCarryForwardFlowWidgetOverlayStateOnGraphCommit({
-        graphData: nextGraphDataBase,
-        carryForwardSameSourceUiState: carryForwardSameSourceUiState || hasStableSameSourceRetainedPlacement,
-        stableSameSourceNodeLayout: hasStableSameSourceNodeLayout(currentGraph, nextGraphDataBase)
-          || hasStableSameSourceRetainedPlacement,
-        preserveBalancedCollective: carryForwardBalancedFloatingCollectiveState,
-      })
     const carryForwardSameSourceDesignFrameState = carryForwardSameSourceUiState
     set(s => {
       const nextRevision = (s.graphDataRevision || 0) + 1
@@ -244,58 +118,6 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
         collapsedKey && carryForwardSameSourceDesignFrameState && designFrameSizeKeyMissing
           ? { ...(s.designFrameSizeById || {}) }
           : collapsedKey ? (designFrameSizeByKey[collapsedKey] || {}) : s.designFrameSizeById
-      const pinnedByKey = (s.flowWidgetPinnedByNodeIdByGraphMetaKey || {}) as Record<string, Record<string, boolean>>
-      const posByKey = (s.flowWidgetPosByNodeIdByGraphMetaKey || {}) as Record<string, Record<string, { top: number; left: number }>>
-      const worldByKey = (s.flowWidgetWorldPosByNodeIdByGraphMetaKey || {}) as Record<string, Record<string, { x: number; y: number }>>
-      const pinnedKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(pinnedByKey, collapsedKey) : false
-      const posKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(posByKey, collapsedKey) : false
-      const worldKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(worldByKey, collapsedKey) : false
-      const nextPinnedRaw =
-        collapsedKey && hasSameSourceNodeSetChange
-          ? remapNodeKeyedRecordByCanonicalNodeId(
-              nextGraphData,
-              { ...(s.flowWidgetPinnedByNodeId || {}) },
-              stableRetainedNodeIdsAcrossTopologyChange,
-            )
-          : collapsedKey && carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing
-            ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetPinnedByNodeId || {}) })
-            : collapsedKey ? (pinnedByKey[collapsedKey] || {}) : s.flowWidgetPinnedByNodeId
-      const nextPinned = stripFrontmatterAutoManagedWidgetPinnedStates({ graphData: nextGraphData, pinnedByNodeId: nextPinnedRaw || {} })
-      const nextPosRaw =
-        collapsedKey && hasSameSourceNodeSetChange
-          ? remapNodeKeyedRecordByCanonicalNodeId(
-              nextGraphData,
-              { ...(s.flowWidgetPosByNodeId || {}) },
-              stableRetainedNodeIdsAcrossTopologyChange,
-            )
-          : collapsedKey && carryForwardSameSourceWidgetOverlayState && posKeyMissing
-            ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetPosByNodeId || {}) })
-            : collapsedKey ? (posByKey[collapsedKey] || {}) : s.flowWidgetPosByNodeId
-      const nextPos = hasSameSourceNodeSetChange
-        ? nextPosRaw || {}
-        : resolveCommittedFlowWidgetScreenPositions({
-            graphData: nextGraphData,
-            posByNodeId: nextPosRaw || {},
-            pinnedByNodeId: nextPinned || {},
-            preserveStableSameSourceOverlayState: carryForwardSameSourceWidgetOverlayState,
-          })
-      const nextWorldRaw =
-        collapsedKey && hasSameSourceNodeSetChange
-          ? remapNodeKeyedRecordByCanonicalNodeId(
-              nextGraphData,
-              { ...(s.flowWidgetWorldPosByNodeId || {}) },
-              stableRetainedNodeIdsAcrossTopologyChange,
-            )
-          : collapsedKey && carryForwardSameSourceWidgetOverlayState
-            ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetWorldPosByNodeId || {}) })
-            : collapsedKey ? (worldByKey[collapsedKey] || {}) : s.flowWidgetWorldPosByNodeId
-      const nextWorld =
-        carryForwardSameSourceWidgetOverlayState
-          ? nextWorldRaw
-          : stripFrontmatterAutoManagedWidgetWorldPositions({
-              graphData: nextGraphData,
-              worldPosByNodeId: nextWorldRaw || {},
-            })
       const nextCollapsedByKey =
         collapsedKey && carryForwardSameSourceUiState && collapsedKeyMissing
           ? { ...byKey, [collapsedKey]: nextCollapsed }
@@ -312,18 +134,6 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
         collapsedKey && carryForwardSameSourceDesignFrameState && designFrameSizeKeyMissing
           ? { ...designFrameSizeByKey, [collapsedKey]: nextDesignFrameSize }
           : designFrameSizeByKey
-      const nextPinnedByKey = collapsedKey
-        && (hasSameSourceNodeSetChange || (carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing))
-          ? { ...pinnedByKey, [collapsedKey]: nextPinned }
-          : pinnedByKey
-      const nextPosByKey =
-        collapsedKey && (posKeyMissing || !isSameFlowWidgetScreenPosByNodeId(posByKey[collapsedKey] || {}, nextPos))
-          ? { ...posByKey, [collapsedKey]: nextPos }
-          : posByKey
-      const nextWorldByKey =
-        collapsedKey && (worldKeyMissing || !isSameFlowWidgetWorldPosByNodeId(worldByKey[collapsedKey] || {}, nextWorld || {}))
-          ? { ...worldByKey, [collapsedKey]: nextWorld }
-          : worldByKey
       return {
         graphData: nextGraphData,
         graphDataRevision: nextRevision,
@@ -339,14 +149,14 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
         ...(collapsedKey ? { designFramePosByIdByGraphMetaKey: nextDesignFramePosByKey } : {}),
         ...(collapsedKey ? { designFrameSizeById: nextDesignFrameSize } : {}),
         ...(collapsedKey ? { designFrameSizeByIdByGraphMetaKey: nextDesignFrameSizeByKey } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetPinnedByNodeId: nextPinned } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetPinnedByNodeIdByGraphMetaKey: nextPinnedByKey } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetPosByNodeId: nextPos } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetPosByNodeIdByGraphMetaKey: nextPosByKey } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetWorldPosByNodeId: nextWorld } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetWorldPosByNodeIdByGraphMetaKey: nextWorldByKey } : {}),
+        ...buildCommittedFlowWidgetState({
+          state: s,
+          graphData: nextGraphData,
+          workspaceGraphMutationBlocked,
+        }),
       }
     })
+    if (!workspaceGraphMutationBlocked) get().persistFlowWidgetDocument(buildGraphDocumentMetaKey(graphData))
     const stateNow = get()
     const nextGraphData = stateNow.graphData as GraphData
 
@@ -455,18 +265,13 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
       void 0
     }
 
+    if (!isWorkspaceGraphMutationBlocked(get())) get().loadFlowWidgetDocument(buildGraphDocumentMetaKey(graphData))
     const currentGraph = get().graphData
     const currentGraphKey = buildGraphMetaKeyIgnoringPending(currentGraph)
     const collapsedKey = buildGraphMetaKeyIgnoringPending(nextGraphData)
     const currentSourceIdentity = readGraphSourceIdentity(currentGraph)
     const nextSourceIdentity = readGraphSourceIdentity(nextGraphData)
     const stableSameSourceTopology = hasStableSameSourceTopology(currentGraph, nextGraphData)
-    const retainedPlacementContinuity = currentSourceIdentity && currentSourceIdentity === nextSourceIdentity
-      ? buildRetainedNodePlacementContinuityAcrossTopologyChange(currentGraph, nextGraphData)
-      : { nodeSetChanged: false, stableCanonicalNodeIds: new Set<string>() }
-    const stableRetainedNodeIdsAcrossTopologyChange = retainedPlacementContinuity.stableCanonicalNodeIds
-    const hasSameSourceNodeSetChange = retainedPlacementContinuity.nodeSetChanged
-    const hasStableSameSourceRetainedPlacement = stableRetainedNodeIdsAcrossTopologyChange.size > 0
     const carryForwardSameSourceUiState =
       !!collapsedKey &&
       !!currentGraphKey &&
@@ -474,26 +279,7 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
       currentSourceIdentity === nextSourceIdentity &&
       collapsedKey !== currentGraphKey &&
       stableSameSourceTopology
-    const currentPinnedByNodeId = get().flowWidgetPinnedByNodeId || {}
-    const currentPosByNodeId = get().flowWidgetPosByNodeId || {}
     const workspaceGraphMutationBlocked = isWorkspaceGraphMutationBlocked(get())
-    const carryForwardBalancedFloatingCollectiveState =
-      stableSameSourceTopology &&
-      !!currentSourceIdentity &&
-      currentSourceIdentity === nextSourceIdentity &&
-      shouldPreserveFrontmatterAutoManagedBalancedCollective({
-        graphData: currentGraph,
-        posByNodeId: currentPosByNodeId,
-        pinnedByNodeId: currentPinnedByNodeId,
-      })
-    const carryForwardSameSourceWidgetOverlayState =
-      shouldCarryForwardFlowWidgetOverlayStateOnGraphCommit({
-        graphData: nextGraphData,
-        carryForwardSameSourceUiState: carryForwardSameSourceUiState || hasStableSameSourceRetainedPlacement,
-        stableSameSourceNodeLayout: hasStableSameSourceNodeLayout(currentGraph, nextGraphData)
-          || hasStableSameSourceRetainedPlacement,
-        preserveBalancedCollective: carryForwardBalancedFloatingCollectiveState,
-      })
     const carryForwardSameSourceDesignFrameState = carryForwardSameSourceUiState
     set(s => {
       const nextRevision = (s.graphDataRevision || 0) + 1
@@ -521,58 +307,6 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
         collapsedKey && carryForwardSameSourceDesignFrameState && designFrameSizeKeyMissing
           ? { ...(s.designFrameSizeById || {}) }
           : collapsedKey ? (designFrameSizeByKey[collapsedKey] || {}) : s.designFrameSizeById
-      const pinnedByKey = (s.flowWidgetPinnedByNodeIdByGraphMetaKey || {}) as Record<string, Record<string, boolean>>
-      const posByKey = (s.flowWidgetPosByNodeIdByGraphMetaKey || {}) as Record<string, Record<string, { top: number; left: number }>>
-      const worldByKey = (s.flowWidgetWorldPosByNodeIdByGraphMetaKey || {}) as Record<string, Record<string, { x: number; y: number }>>
-      const pinnedKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(pinnedByKey, collapsedKey) : false
-      const posKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(posByKey, collapsedKey) : false
-      const worldKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(worldByKey, collapsedKey) : false
-      const nextPinnedRaw =
-        collapsedKey && hasSameSourceNodeSetChange
-          ? remapNodeKeyedRecordByCanonicalNodeId(
-              nextGraphData,
-              { ...(s.flowWidgetPinnedByNodeId || {}) },
-              stableRetainedNodeIdsAcrossTopologyChange,
-            )
-          : collapsedKey && carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing
-            ? { ...(s.flowWidgetPinnedByNodeId || {}) }
-            : collapsedKey ? (pinnedByKey[collapsedKey] || {}) : s.flowWidgetPinnedByNodeId
-      const nextPinned = stripFrontmatterAutoManagedWidgetPinnedStates({ graphData: nextGraphData, pinnedByNodeId: nextPinnedRaw || {} })
-      const nextPosRaw =
-        collapsedKey && hasSameSourceNodeSetChange
-          ? remapNodeKeyedRecordByCanonicalNodeId(
-              nextGraphData,
-              { ...(s.flowWidgetPosByNodeId || {}) },
-              stableRetainedNodeIdsAcrossTopologyChange,
-            )
-          : collapsedKey && carryForwardSameSourceWidgetOverlayState && posKeyMissing
-            ? { ...(s.flowWidgetPosByNodeId || {}) }
-            : collapsedKey ? (posByKey[collapsedKey] || {}) : s.flowWidgetPosByNodeId
-      const nextPos = hasSameSourceNodeSetChange
-        ? nextPosRaw || {}
-        : resolveCommittedFlowWidgetScreenPositions({
-            graphData: nextGraphData,
-            posByNodeId: nextPosRaw || {},
-            pinnedByNodeId: nextPinned || {},
-            preserveStableSameSourceOverlayState: carryForwardSameSourceWidgetOverlayState,
-          })
-      const nextWorldRaw =
-        collapsedKey && hasSameSourceNodeSetChange
-          ? remapNodeKeyedRecordByCanonicalNodeId(
-              nextGraphData,
-              { ...(s.flowWidgetWorldPosByNodeId || {}) },
-              stableRetainedNodeIdsAcrossTopologyChange,
-            )
-          : collapsedKey && carryForwardSameSourceWidgetOverlayState
-            ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetWorldPosByNodeId || {}) })
-            : collapsedKey ? (worldByKey[collapsedKey] || {}) : s.flowWidgetWorldPosByNodeId
-      const nextWorld =
-        carryForwardSameSourceWidgetOverlayState
-          ? nextWorldRaw
-          : stripFrontmatterAutoManagedWidgetWorldPositions({
-              graphData: nextGraphData,
-              worldPosByNodeId: nextWorldRaw || {},
-            })
       const nextCollapsedByKey =
         collapsedKey && carryForwardSameSourceUiState && collapsedKeyMissing
           ? { ...byKey, [collapsedKey]: nextCollapsed }
@@ -589,18 +323,6 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
         collapsedKey && carryForwardSameSourceDesignFrameState && designFrameSizeKeyMissing
           ? { ...designFrameSizeByKey, [collapsedKey]: nextDesignFrameSize }
           : designFrameSizeByKey
-      const nextPinnedByKey = collapsedKey
-        && (hasSameSourceNodeSetChange || (carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing))
-          ? { ...pinnedByKey, [collapsedKey]: nextPinned }
-          : pinnedByKey
-      const nextPosByKey =
-        collapsedKey && (posKeyMissing || !isSameFlowWidgetScreenPosByNodeId(posByKey[collapsedKey] || {}, nextPos))
-          ? { ...posByKey, [collapsedKey]: nextPos }
-          : posByKey
-      const nextWorldByKey =
-        collapsedKey && (worldKeyMissing || !isSameFlowWidgetWorldPosByNodeId(worldByKey[collapsedKey] || {}, nextWorld || {}))
-          ? { ...worldByKey, [collapsedKey]: nextWorld }
-          : worldByKey
       return {
         graphData: withGraphDataRevision(nextGraphData, nextRevision),
         graphDataRevision: nextRevision,
@@ -614,14 +336,14 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
         ...(collapsedKey ? { designFramePosByIdByGraphMetaKey: nextDesignFramePosByKey } : {}),
         ...(collapsedKey ? { designFrameSizeById: nextDesignFrameSize } : {}),
         ...(collapsedKey ? { designFrameSizeByIdByGraphMetaKey: nextDesignFrameSizeByKey } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetPinnedByNodeId: nextPinned } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetPinnedByNodeIdByGraphMetaKey: nextPinnedByKey } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetPosByNodeId: nextPos } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetPosByNodeIdByGraphMetaKey: nextPosByKey } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetWorldPosByNodeId: nextWorld } : {}),
-        ...(!workspaceGraphMutationBlocked && collapsedKey ? { flowWidgetWorldPosByNodeIdByGraphMetaKey: nextWorldByKey } : {}),
+        ...buildCommittedFlowWidgetState({
+          state: s,
+          graphData: nextGraphData,
+          workspaceGraphMutationBlocked,
+        }),
       }
     })
+    if (!workspaceGraphMutationBlocked) get().persistFlowWidgetDocument(buildGraphDocumentMetaKey(graphData))
     const stateNow = get()
     const committed = stateNow.graphData as GraphData
 

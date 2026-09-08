@@ -6,7 +6,7 @@ import {
 import { resolveAgenticGraphStorageApiUrl } from '@/lib/storage/agentic-graph-storage-client-sync'
 import {
   AGENTIC_OS_STORAGE_API_VERSION,
-  AGENTIC_OS_STORAGE_R2_MEDIA_OBJECT_PREFIX,
+  buildAgenticGraphStorageMediaWorkspace,
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
   buildAgenticGraphStorageMediaAssetListPath,
   buildAgenticGraphStorageMediaAssetPersistPath,
@@ -22,11 +22,19 @@ import {
 import {
   buildApiOriginKey,
   buildAgenticGraphStorageSyncAuthHeaders,
+  getClientFetch,
+  fetchWithTimeout,
+  cancelStorageStream,
   parseStorageResponseJson,
 } from '@/lib/storage/agentic-graph-storage-client-transport'
 import { buildRuntimeStorageMediaAccessUrl } from '@/lib/storage/runtimeMediaUrl'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
+
+const readUploadedMediaClientFetch = (fetchImpl?: typeof fetch): typeof fetch | null => {
+  const candidate = fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
+  return candidate ? getClientFetch(candidate) : null
+}
 
 const bytesToHex = (bytes: Uint8Array): string =>
   Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
@@ -154,16 +162,20 @@ const requestMediaCapability = async (args: {
   objectKey: string
   operation: 'read' | 'write'
   ttlSeconds?: number | null
+  requestTimeoutMs?: number
 }): Promise<{ token: string; urlPath: string } | null> => {
-  const response = await args.fetchImpl(resolveAgenticGraphStorageApiUrl(AGENTIC_OS_STORAGE_ROUTE_PATHS.mediaCapability, args.baseUrl), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', ...buildAgenticGraphStorageSyncAuthHeaders(null) },
-    body: JSON.stringify({
-      workspaceId: args.workspaceId,
-      objectKey: args.objectKey,
-      operation: args.operation,
-      ttlSeconds: args.ttlSeconds ?? 15 * 60,
-    }),
+  const response = await fetchWithTimeout({
+    fetchImpl: args.fetchImpl, input: resolveAgenticGraphStorageApiUrl(AGENTIC_OS_STORAGE_ROUTE_PATHS.mediaCapability, args.baseUrl), timeoutMs: args.requestTimeoutMs,
+    init: {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...buildAgenticGraphStorageSyncAuthHeaders(null) },
+      body: JSON.stringify({
+        workspaceId: args.workspaceId,
+        objectKey: args.objectKey,
+        operation: args.operation,
+        ttlSeconds: args.ttlSeconds ?? 15 * 60,
+      }),
+    },
   })
   const body = await parseStorageResponseJson<{ ok?: boolean; token?: string; urlPath?: string }>(response, {
     requestLabel: 'agentic-graph media capability', apiOrigin: buildApiOriginKey(args.baseUrl),
@@ -176,19 +188,26 @@ const requestMediaCapability = async (args: {
 export const listUploadedMediaFromAgenticGraphStorage = async (args: {
   workspaceId?: string | null
   fetchImpl?: typeof fetch
+  requestTimeoutMs?: number
   limit?: number | null
 } = {}): Promise<UploadedMediaStorageResult[]> => {
   if (!readAgenticGraphStorageRuntimeSyncEnabled()) return []
   const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   if (!workspaceId) return []
-  const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
+  const fetchImpl = readUploadedMediaClientFetch(args.fetchImpl)
   if (!fetchImpl) return []
   const baseUrl = readAgenticGraphStorageBaseUrl()
-  const response = await fetchImpl(resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetListPath(workspaceId, args.limit ?? 50), baseUrl), {
-    method: 'GET',
-    headers: { accept: 'application/json', ...buildAgenticGraphStorageSyncAuthHeaders(null) },
+  const response = await fetchWithTimeout({
+    fetchImpl, input: resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetListPath(workspaceId, args.limit ?? 50), baseUrl), timeoutMs: args.requestTimeoutMs,
+    init: {
+      method: 'GET',
+      headers: { accept: 'application/json', ...buildAgenticGraphStorageSyncAuthHeaders(null) },
+    },
   })
-  if (!response.ok) return []
+  if (!response.ok) {
+    cancelStorageStream(response.body, 'media asset response rejected')
+    return []
+  }
   const body = await parseStorageResponseJson<AgenticGraphMediaAssetListResponse | null>(response, {
     requestLabel: 'agentic-graph media asset list', apiOrigin: buildApiOriginKey(baseUrl),
   }).catch(() => null)
@@ -196,7 +215,7 @@ export const listUploadedMediaFromAgenticGraphStorage = async (args: {
   const results: UploadedMediaStorageResult[] = []
   for (const artifact of body.artifacts) {
     const capability = await requestMediaCapability({
-      fetchImpl, baseUrl, workspaceId, objectKey: artifact.objectKey, operation: 'read',
+      fetchImpl, baseUrl, workspaceId, objectKey: artifact.objectKey, operation: 'read', requestTimeoutMs: args.requestTimeoutMs,
     })
     const storage = capability ? buildUploadedMediaStorageFromArtifact({
       workspaceId,
@@ -212,49 +231,69 @@ export const renameUploadedMediaInAgenticGraphStorage = async (args: {
   storage: UploadedMediaStorageResult
   name: string
   fetchImpl?: typeof fetch
+  requestTimeoutMs?: number
 }): Promise<UploadedMediaStorageResult | null> => {
   const nextName = normalizeString(args.name)
   if (!nextName) return null
-  const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
+  const fetchImpl = readUploadedMediaClientFetch(args.fetchImpl)
   if (!fetchImpl) return null
   const baseUrl = readAgenticGraphStorageBaseUrl()
-  const response = await fetchImpl(resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetPersistPath(), baseUrl), {
-    method: 'PATCH',
-    headers: {
-      accept: 'application/json',
-      ...buildAgenticGraphStorageSyncAuthHeaders(null),
-      'content-type': 'application/json',
+  const response = await fetchWithTimeout({
+    fetchImpl, input: resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetPersistPath(), baseUrl), timeoutMs: args.requestTimeoutMs,
+    init: {
+      method: 'PATCH',
+      headers: {
+        accept: 'application/json',
+        ...buildAgenticGraphStorageSyncAuthHeaders(null),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        workspaceId: args.storage.workspaceId,
+        artifactId: artifactIdFromStorage(args.storage),
+        name: nextName,
+      }),
     },
-    body: JSON.stringify({
-      workspaceId: args.storage.workspaceId,
-      artifactId: artifactIdFromStorage(args.storage),
-      name: nextName,
-    }),
   })
-  if (!response.ok) return null
+  if (!response.ok) {
+    cancelStorageStream(response.body, 'media asset response rejected')
+    return null
+  }
   const body = await parseStorageResponseJson<AgenticGraphMediaAssetRenameResponse | null>(response, {
     requestLabel: 'agentic-graph media asset rename', apiOrigin: buildApiOriginKey(baseUrl),
   }).catch(() => null)
   if (!body || body.ok !== true || !body.artifact) return null
-  return buildUploadedMediaStorageFromArtifact({ workspaceId: body.workspaceId || args.storage.workspaceId, artifact: body.artifact })
+  const workspaceId = body.workspaceId || args.storage.workspaceId
+  const capability = await requestMediaCapability({
+    fetchImpl, baseUrl, workspaceId, objectKey: body.artifact.objectKey, operation: 'read', requestTimeoutMs: args.requestTimeoutMs,
+  })
+  return capability ? buildUploadedMediaStorageFromArtifact({
+    workspaceId, artifact: body.artifact, accessUrl: resolveAgenticGraphStorageApiUrl(capability.urlPath, baseUrl),
+  }) : null
 }
 
 export const deleteUploadedMediaFromAgenticGraphStorage = async (args: {
   storage: UploadedMediaStorageResult
   fetchImpl?: typeof fetch
+  requestTimeoutMs?: number
 }): Promise<AgenticGraphMediaAssetDeleteResponse | null> => {
-  const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
+  const fetchImpl = readUploadedMediaClientFetch(args.fetchImpl)
   if (!fetchImpl) return null
   const baseUrl = readAgenticGraphStorageBaseUrl()
   const path = `${buildAgenticGraphStorageMediaAssetPersistPath()}?workspaceId=${encodeURIComponent(args.storage.workspaceId)}&artifactId=${encodeURIComponent(artifactIdFromStorage(args.storage))}`
-  const response = await fetchImpl(resolveAgenticGraphStorageApiUrl(path, baseUrl), {
-    method: 'DELETE',
-    headers: {
-      accept: 'application/json',
-      ...buildAgenticGraphStorageSyncAuthHeaders(null),
+  const response = await fetchWithTimeout({
+    fetchImpl, input: resolveAgenticGraphStorageApiUrl(path, baseUrl), timeoutMs: args.requestTimeoutMs,
+    init: {
+      method: 'DELETE',
+      headers: {
+        accept: 'application/json',
+        ...buildAgenticGraphStorageSyncAuthHeaders(null),
+      },
     },
   })
-  if (!response.ok) return null
+  if (!response.ok) {
+    cancelStorageStream(response.body, 'media asset response rejected')
+    return null
+  }
   const body = await parseStorageResponseJson<AgenticGraphMediaAssetDeleteResponse | null>(response, {
     requestLabel: 'agentic-graph media asset delete', apiOrigin: buildApiOriginKey(baseUrl),
   }).catch(() => null)
@@ -266,6 +305,7 @@ export const uploadMediaFileToAgenticGraphStorage = async (args: {
   collaborationRoomId?: string | null
   accessTtlSeconds?: number | null
   fetchImpl?: typeof fetch
+  requestTimeoutMs?: number
   uploadNow?: boolean
 }): Promise<UploadedMediaStorageResult | null> => {
   const kind = readUploadedMediaKind(args.file)
@@ -274,7 +314,7 @@ export const uploadMediaFileToAgenticGraphStorage = async (args: {
     ? args.uploadNow
     : readAgenticGraphStorageRuntimeSyncEnabled()
   if (!shouldUpload) return null
-  const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
+  const fetchImpl = readUploadedMediaClientFetch(args.fetchImpl)
   if (!fetchImpl) return null
   const workspaceId = readActiveAgenticGraphStorageWorkspaceId()
   const contentHash = await hashBlobSha256(args.file)
@@ -282,32 +322,34 @@ export const uploadMediaFileToAgenticGraphStorage = async (args: {
 
   const hashSlug = normalizeSlug(contentHash.replace(/^sha256:/, '').slice(0, 16), 'media')
   const nameSlug = normalizeSlug(args.file.name.replace(/\.[^.]+$/u, ''), kind)
-  const runId = `upload-${hashSlug}`
+  const workspace = await buildAgenticGraphStorageMediaWorkspace(workspaceId)
+  const runId = `${workspace.key}-upload-${hashSlug}`
   const stageId = kind
   const shotId = `${nameSlug}-${hashSlug}`
-  const objectKey = `${AGENTIC_OS_STORAGE_R2_MEDIA_OBJECT_PREFIX}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`
+  const objectKey = `${workspace.prefix}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`
   const publicPath = buildAgenticGraphStorageMediaPath(objectKey)
   const baseUrl = readAgenticGraphStorageBaseUrl()
   const publicUrl = resolveAgenticGraphStorageApiUrl(publicPath, baseUrl)
   const contentType = normalizeString(args.file.type) || 'application/octet-stream'
   const writeCapability = await requestMediaCapability({
     fetchImpl, baseUrl, workspaceId, objectKey, operation: 'write', ttlSeconds: args.accessTtlSeconds,
+    requestTimeoutMs: args.requestTimeoutMs,
   })
-  const readCapability = await requestMediaCapability({
-    fetchImpl, baseUrl, workspaceId, objectKey, operation: 'read', ttlSeconds: args.accessTtlSeconds,
-  })
-  if (!writeCapability || !readCapability) return null
-  const accessUrl = resolveAgenticGraphStorageApiUrl(readCapability.urlPath, baseUrl)
+  if (!writeCapability) return null
 
-  const writeResponse = await fetchImpl(resolveAgenticGraphStorageApiUrl(publicPath, baseUrl), {
-    method: 'PUT',
-    headers: {
-      'x-agentic-graph-media-capability': writeCapability.token,
-      'content-type': contentType,
-      'x-agentic-graph-content-hash': contentHash,
+  const writeResponse = await fetchWithTimeout({
+    fetchImpl, input: resolveAgenticGraphStorageApiUrl(publicPath, baseUrl), timeoutMs: args.requestTimeoutMs,
+    init: {
+      method: 'PUT',
+      headers: {
+        'x-agentic-graph-media-capability': writeCapability.token,
+        'content-type': contentType,
+        'x-agentic-graph-content-hash': contentHash,
+      },
+      body: args.file,
     },
-    body: args.file,
   })
+  cancelStorageStream(writeResponse.body, 'media upload response status consumed')
   if (!writeResponse.ok) return null
 
   const persistRequest: AgenticGraphMediaAssetPersistRequest = {
@@ -329,23 +371,31 @@ export const uploadMediaFileToAgenticGraphStorage = async (args: {
     },
     layout: null,
     version: 1,
-    presignedUrl: accessUrl,
+    presignedUrl: null,
     accessTtlSeconds: args.accessTtlSeconds ?? 15 * 60,
     collaborationRoomId: normalizeString(args.collaborationRoomId) || null,
   }
-  const persistResponse = await fetchImpl(resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetPersistPath(), baseUrl), {
-    method: 'POST',
-    headers: {
-      ...buildAgenticGraphStorageSyncAuthHeaders(null),
-      'content-type': 'application/json',
+  const persistResponse = await fetchWithTimeout({
+    fetchImpl, input: resolveAgenticGraphStorageApiUrl(buildAgenticGraphStorageMediaAssetPersistPath(), baseUrl), timeoutMs: args.requestTimeoutMs,
+    init: {
+      method: 'POST',
+      headers: {
+        ...buildAgenticGraphStorageSyncAuthHeaders(null),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(persistRequest),
     },
-    body: JSON.stringify(persistRequest),
   })
-  if (!persistResponse.ok) return null
+  if (!persistResponse.ok) {
+    cancelStorageStream(persistResponse.body, 'media persist response rejected')
+    return null
+  }
   const response = await parseStorageResponseJson<AgenticGraphMediaAssetPersistResponse | null>(persistResponse, {
     requestLabel: 'agentic-graph media asset persist', apiOrigin: buildApiOriginKey(baseUrl),
   }).catch(() => null)
   if (!response || response.ok !== true) return null
+  const accessUrl = normalizeString(response.access?.url)
+  if (!accessUrl) return null
   return {
     workspaceId,
     runId,

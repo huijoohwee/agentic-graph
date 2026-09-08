@@ -54,6 +54,9 @@ Keep `Key` aligned to the Help icon text key in source. Keep `Type` aligned to t
 | mainPanel.help | mainPanel.help | Operator reference | MainPanel tab for shortcuts, Command Menu catalog, workflow links, panel tour, and icon library. |
 | floatingPanel.propsPanel | floatingPanel.propsPanel | Selection properties | FloatingPanel view for node, edge, widget, and media properties. |
 | floatingPanel.skillsCommands | floatingPanel.skillsCommands | Skills and commands | FloatingPanel view for skill discovery, command references, and guided operator actions. |
+| floatingPanel.promptPresets | floatingPanel.promptPresets | Prompt presets | Marks reusable prompt selection and configuration. |
+| floatingPanel.gameMode | floatingPanel.gameMode | Game Mode | Marks gameplay controls and selected actor state. |
+| floatingPanel.flightSim | floatingPanel.flightSim | Flight simulator | Marks flight controls and training views. |
 | floatingPanel.view | floatingPanel.view | Data view controls | FloatingPanel view for workspace data-view settings. |
 | floatingPanel.media | floatingPanel.media | Media list | FloatingPanel view and SSOT for current `@` image, audio, video, webpage, iframe, YouTube, and graph rich-media candidates; the full `/`, `@`, and `#` command catalog lives in MainPanel Help → Command Menu. |
 | floatingPanel.animation | floatingPanel.animation | XR choreography | FloatingPanel view for native character motions, action paths, shared Timeline transport, upstream `/animation.control` invocation, and deterministic motion-reference export. |

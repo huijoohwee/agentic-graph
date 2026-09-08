@@ -33,7 +33,7 @@ export const testLayoutDatasetKeyReusesSharedReaders = () => {
   if (!text.includes('const meta = toMetadataRecord(graphData?.metadata)')) {
     throw new Error('expected layout dataset key graph metadata reads to reuse the shared document metadata reader')
   }
-  if (!text.includes('const props = readNodeProperties(n as { properties?: unknown } | null | undefined)')) {
+  if (!text.includes("const props = readNodeProperties(n as Pick<GraphNode, 'properties'> | null | undefined)")) {
     throw new Error('expected layout dataset key document node property reads to reuse the shared node properties reader')
   }
   if (!text.includes('const nMeta = toMetadataRecord(n?.metadata)')) {

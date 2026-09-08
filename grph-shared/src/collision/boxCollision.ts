@@ -186,7 +186,15 @@ export function resolveGroupCollisions(args: {
     const aMinZ = broadphaseUsesZ ? (a.cz ?? 0) - (a.halfD ?? 0) - aGapZ : -Infinity
     const aMaxZ = broadphaseUsesZ ? (a.cz ?? 0) + (a.halfD ?? 0) + aGapZ : Infinity
 
-    spatialIndex.query(aMinX, aMinY, aMinZ, aMaxX, aMaxY, aMaxZ, (bWrapper) => {
+    // Query the same clearance envelope used by the narrowphase. Raw box
+    // overlap alone drops near-separated pairs before anti-stick clearance settles.
+    const queryEpsilonX = Math.max(0, touchEpsilonX)
+    const queryEpsilonY = Math.max(0, touchEpsilonY)
+    const queryEpsilonZ = Math.max(0, touchEpsilonZ)
+    spatialIndex.query(
+      aMinX - queryEpsilonX, aMinY - queryEpsilonY, aMinZ - queryEpsilonZ,
+      aMaxX + queryEpsilonX, aMaxY + queryEpsilonY, aMaxZ + queryEpsilonZ,
+      (bWrapper) => {
       const b = bWrapper.original
       if (a === b) return
       const bIdx = indexByItem.get(b)

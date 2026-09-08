@@ -1,3 +1,4 @@
+import { testRemoteFetchNormalRequestClosePreservesBody } from './remoteFetchBackpressure.test'
 import path from 'node:path'
 
 import { readUtf8 } from './geospatialHostIntegrationTestUtils'
@@ -112,10 +113,10 @@ export const testHostEnableDoesNotForce2dViewMode = () => {
 }
 
 export const testHostTailwindScansGympgrphClasses = () => {
-  const tailwindConfigPath = path.resolve(process.cwd(), 'tailwind.config.js')
-  const text = readUtf8(tailwindConfigPath)
-  if (!text.includes('../gympgrph/src/**/*.{js,ts,jsx,tsx}')) {
-    throw new Error('Expected agentic-graph host Tailwind config to scan gympgrph sources for class generation')
+  const tailwindThemePath = path.resolve(process.cwd(), 'src', 'styles', 'tailwind-theme.css')
+  const text = readUtf8(tailwindThemePath)
+  if (!text.includes('@source "../../../gympgrph/src";')) {
+    throw new Error('Expected agentic-graph host Tailwind CSS to scan gympgrph sources for class generation')
   }
 }
 
@@ -165,36 +166,20 @@ export const testGeospatialModeEventContractIsShared = () => {
 }
 
 export const testFloatingPanelRequestedGeoViewEnsuresGeospatialEnabled = () => {
-  const toolbarToolMenuPath = path.resolve(process.cwd(), 'src', 'lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
-  const text = readUtf8(toolbarToolMenuPath)
-
-  if (!text.includes('setFloatingPanelView(requestedFloatingPanelView)')) {
-    throw new Error('Expected FloatingPanel requested-view handler to set the requested view')
+  const text = readUtf8(path.resolve(process.cwd(), 'src', 'lib', 'toolbar', 'ToolbarToolMenu.impl.tsx'))
+  const handler = text.slice(text.indexOf('const handleSelectView ='), text.indexOf('const handleClose ='))
+  if (!text.includes('handleSelectView(requestedFloatingPanelView)')) {
+    throw new Error('Requested views must reuse the toolbar selection handler')
   }
-  if (!text.includes("requestedFloatingPanelView === 'geo'")) {
-    throw new Error('Expected FloatingPanel requested-view handler to branch on geo view')
+  if (!handler.includes('setFloatingPanelView(view)')) {
+    throw new Error('Shared selection handler must set the selected view')
   }
-  if (!text.includes('ensureGeospatialEnabled()')) {
-    throw new Error('Expected FloatingPanel requested-view handler to ensure Geospatial Mode is enabled for geo view')
-  }
-}
-
-export const testRemoteFetchProxyDoesNotAbortOnCloseOrTruncate = () => {
-  const vitePath = path.resolve(process.cwd(), 'vite.config.ts')
-  const text = readUtf8(vitePath)
-  if (!text.includes('function createRemoteFetchHandler')) {
-    throw new Error('Expected vite.config.ts to include createRemoteFetchHandler for /__fetch_remote')
-  }
-  if (text.includes("res.on('close'") || text.includes('res.on("close"')) {
-    throw new Error('Remote fetch proxy must not abort upstream fetch on response close events')
-  }
-  if (text.includes("req.on('close'") || text.includes('req.on("close"')) {
-    throw new Error('Remote fetch proxy must not abort upstream fetch on request close events')
-  }
-  if (!text.includes("res.setHeader('Content-Length', String(buf.byteLength))")) {
-    throw new Error('Expected remote fetch proxy to set Content-Length from full buffered body')
+  if (!handler.includes("if (view === 'geo') void ensureGeospatialEnabled()")) {
+    throw new Error('Shared selection handler must enable Geospatial Mode for geo views')
   }
 }
+
+export const testRemoteFetchProxyDoesNotAbortOnCloseOrTruncate = testRemoteFetchNormalRequestClosePreservesBody
 
 export const testGympgrphMapLibreBasemapSupportsGlobeProjection = () => {
   const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
@@ -280,8 +265,10 @@ export const testGympgrphMapLibreBasemapFallsBackFromUnsafeRuntimeErrors = () =>
   if (!text.includes("setRuntimeProjectionMode('mercator')")) {
     throw new Error('Expected basemap hook to fall back to mercator on known unsafe runtime errors')
   }
-  if (!text.includes('fallbackUnsafeMapLibreRuntime') || !text.includes('map.setStyle?.(RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL)')) {
-    throw new Error('Expected basemap hook to fall back to the shared safe MapLibre style on known unsafe runtime errors')
+  const fallback = text.slice(text.indexOf('const fallbackUnsafeMapLibreRuntime ='), text.indexOf('if (isGrabMapsServiceUnavailable(trimmed))'))
+  if (!fallback.includes('requestResolvedBasemapStyleWithoutDroppingFlight(')
+    || !/requestResolvedBasemapStyleWithoutDroppingFlight\(\s*'unsafe-maplibre-runtime',\s*RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL,/.test(fallback)) {
+    throw new Error('Unsafe runtime fallback must request the safe style through the shared flight-preserving owner')
   }
   if (!text.includes('isKnownUnsafeMapLibreRuntimeError(msg)')) {
     throw new Error('Expected basemap hook to suppress known unsafe MapLibre construction failures into the fallback surface')

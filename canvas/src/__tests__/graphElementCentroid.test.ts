@@ -104,7 +104,9 @@ export function test2dRendererCentroidOwnersReuseSharedGraphElementCentroidUtils
   for (let i = 0; i < files.length; i += 1) {
     const file = files[i]!
     const text = readFileSync(resolve(root, file), 'utf8')
-    if (!text.includes('@/lib/canvas/graph-elements/centroid')) {
+    const sharedRectOwner = file === 'src/components/FlowCanvas/applyZoomRequestNative.ts'
+      && text.includes("import { measureLayoutRectSet } from '@/lib/canvas/layoutCentroid'") && text.includes('measureLayoutRectSet(entries.map(')
+    if (!sharedRectOwner && !text.includes('@/lib/canvas/graph-elements/centroid')) {
       throw new Error(`expected ${file} to reuse the shared graph-element centroid helper`)
     }
     if (/\b(sumCenterX|sumCenterY)\b/.test(text)) {

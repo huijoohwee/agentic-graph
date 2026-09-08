@@ -1,5 +1,5 @@
 import { resolveCanvasAspectRatioSize } from '@/lib/canvas/canvasAspectRatioDisplayControls'
-import { applyVectorPaintedOverlayBox, type VectorPaintedOverlayPositionMode } from '@/lib/canvas/vectorPaintedOverlayProjection'
+import { applyVectorPaintedOverlayBox, isParentOwnedOverlayPlacement, type VectorPaintedOverlayPositionMode } from '@/lib/canvas/vectorPaintedOverlayProjection'
 import type { MediaPanelDensity } from '@/lib/render/mediaPanelSpec'
 
 export type MediaPanelCssMetrics = {
@@ -284,6 +284,7 @@ export function applyPanelBox(el: HTMLElement, args: {
   scale?: number
   positionMode?: VectorPaintedOverlayPositionMode
 }): void {
+  if (isParentOwnedOverlayPlacement(el)) return
   const left = Number.isFinite(args.left) ? args.left : 0
   const top = Number.isFinite(args.top) ? args.top : 0
   const w = Number.isFinite(args.w) ? args.w : 1

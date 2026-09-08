@@ -509,14 +509,9 @@ export function StoryboardCardOverlayLayer2d(props: {
     invokeProbeTreeFromStoryboardToolbar({
       card,
       graphData,
-      commitGraphData: nextGraphData => {
-        if (commitGraphData) commitGraphData(nextGraphData)
-        else useGraphStore.getState().setGraphDataPreservingLayout(nextGraphData)
-      },
-      addHistory,
       upsertUiToast,
     })
-  }, [addHistory, commitGraphData, graphData, upsertUiToast])
+  }, [graphData, upsertUiToast])
   const openCardInSidepane = React.useCallback((card: StoryboardCardModel) => {
     selectCard(card)
     updateOpenWidgetNodeIds(prev => (prev.includes(card.id) ? prev : [...prev, card.id]))

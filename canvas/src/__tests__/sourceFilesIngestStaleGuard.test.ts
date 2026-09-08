@@ -294,7 +294,7 @@ export function testWorkspaceImportParseIdentityUsesSemanticsVersionAndName() {
 export function testParsedGraphStateOwnershipIsCentralized() {
   const helperPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFileParsedState.ts')
   const revisionHelperPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFileParsedGraphRevision.ts')
-  const ingestPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesIngestIntegration.ts')
+  const ingestPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesParseRuntime.ts')
   const importPath = resolve(process.cwd(), 'src', 'features', 'workspace-fs', 'applyWorkspaceImportToCanvas.ts')
   const indexingPath = resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'useMarkdownWorkspaceIndexing.tsx')
   const markdownApplyPath = resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'hooks', 'useMarkdownApply.ts')
@@ -734,17 +734,14 @@ export function testWorkspaceBootstrapActivePathRematerializeAvoidsImplicitGraph
   if (!bootstrapText.includes('const runWorkspaceRematerializeRequest = React.useCallback(async (request: WorkspaceRematerializeRequest) => {')) {
     throw new Error('expected source files bootstrap rematerialization scheduling to centralize one rematerialize run in a dedicated helper')
   }
-  if (!bootstrapText.includes('const drainWorkspaceRematerializeRequests = React.useCallback(async (initialRequest?: WorkspaceRematerializeRequest | null) => {')) {
-    throw new Error('expected source files bootstrap rematerialization scheduling to centralize in-flight draining and queued reruns in a dedicated helper')
+  if (!bootstrapText.includes('createWorkspaceSeedSyncDeferredScheduler<WorkspaceRematerializeRequest>') || !bootstrapText.includes('workspaceRematerializeSeedSyncScheduler.schedule(request)')) {
+    throw new Error('expected rematerialization to delegate debouncing and draining to the shared scheduler')
   }
   if (!bootstrapText.includes('const scheduleWorkspaceRematerializeRequest = React.useCallback((request: WorkspaceRematerializeRequest | null) => {') || !bootstrapText.includes('const scheduleWorkspaceRematerialize = React.useCallback((args?: {')) {
     throw new Error('expected source files bootstrap rematerialization scheduling to centralize both prepared-request scheduling and fallback request resolution behind dedicated helpers')
   }
-  if (!bootstrapText.includes('const pendingWorkspaceRematerializeRequestRef = React.useRef<WorkspaceRematerializeRequest | null>(null)')) {
-    throw new Error('expected source files bootstrap rematerialization scheduling to retain the latest debounced rematerialize request across mutation bursts')
-  }
-  if (!bootstrapText.includes('await runWorkspaceRematerializeRequest(request)') || !bootstrapText.includes('pendingWorkspaceRematerializeRequestRef.current = request')) {
-    throw new Error('expected rematerialize scheduling to drain dedicated rematerialize requests and retain the latest burst request while work is in flight')
+  if (!bootstrapText.includes('return runWorkspaceRematerializeRequest(request)') || !bootstrapText.includes('workspaceRematerializeSeedSyncScheduler.retainPending(request)') || !bootstrapText.includes('workspaceRematerializeSeedSyncScheduler.cleanup()')) {
+    throw new Error('expected shared rematerialization scheduling to run requests, retain bursts and release its timer lease on cleanup')
   }
   if (
     !bootstrapText.includes('scheduleWorkspaceRematerializeRequest(resolveWorkspaceRematerializeRequest(args))') ||
@@ -1135,10 +1132,10 @@ export function testWorkspaceImportFocusDoesNotDuplicateGraphApply() {
   const text = readFileSync(importPath, 'utf8')
   const fallbackText = readFileSync(fallbackPath, 'utf8')
 
-  if (!text.includes("await focusAfterImport(createdPath, { applyToGraph, jobId })")) {
+  if (!text.includes("await focusAfterImport(createdPath, { applyToGraph, jsonSourceText, jobId })")) {
     throw new Error('expected local workspace import focus to reuse the shared graph-apply decision when activating the imported file')
   }
-  if (!text.includes("await focusAfterImport(createdPath, { sourceUrl, applyToGraph, jobId })")) {
+  if (!text.includes("await focusAfterImport(createdPath, { sourceUrl, jsonSourceText, applyToGraph, jobId })")) {
     throw new Error('expected URL workspace import focus to reuse the shared graph-apply decision when activating imported documents')
   }
   if (!fallbackText.includes('await focusFirstImportedWorkspaceFile({ fs, createdPaths: res.createdPaths, applyToGraph })')) {
@@ -1269,7 +1266,7 @@ export function testWorkspaceWriteThroughAndActiveDocSyncOwnershipIsCentralized(
   ) {
     throw new Error('expected markdown document actions to centralize pending markdown/frontmatter graph handoff in a shared helper')
   }
-  if (!documentActionsText.includes('if (applyViewPresetForSwitch) {\n        get().setGraphData(buildPendingMarkdownDocumentGraph({')
+  if (!documentActionsText.includes('if (applyViewPresetForSwitch && didSwitchActiveDocument) {\n        get().setGraphData(buildPendingMarkdownDocumentGraph({')
     || !documentActionsText.includes('currentGraph: get().graphData,')) {
     throw new Error('expected markdown graph applies to publish a selected-document pending graph immediately so the previous scene cannot stay render-authoritative during async handoff')
   }
@@ -1489,7 +1486,7 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
   if (!text.includes('const nextRequest = pendingAgenticGraphStorageQueueRequestRef.current') || !text.includes('runAgenticGraphStorageQueueRequest(nextRequest)') || !text.includes('scheduleWorkspaceSyncTask(') || !text.includes('drainAgenticGraphStorageQueueRequest,')) {
     throw new Error('expected source files storage queue scheduling to centralize debounced draining behind a helper that runs the latest pending agentic-graph storage request instead of rereading sourceFiles from store state inside the delayed task')
   }
-  if (!text.includes('handleAgenticGraphStorageQueueRequestSuccess({') || !text.includes('handleAgenticGraphStorageQueueRequestFailure(request)')) {
+  if (!text.includes('handleAgenticGraphStorageQueueRequestSuccess({') || !text.includes('handleAgenticGraphStorageQueueRequestFailure(queuedRequest)') || !text.includes('request: queuedRequest,')) {
     throw new Error('expected source files storage queue runner to delegate result-state mutations to the dedicated success and failure helpers')
   }
   if (!text.includes('scheduleAgenticGraphStorageQueueSyncFollowUp({')) {
@@ -1809,7 +1806,7 @@ export function testWorkspaceActiveMaterializationSkipsImportWhenGraphApplyDisab
 
 export function testMarkdownDocumentSettersStayDecoupledFromWorkspaceViewMode() {
   const graphSlicePath = resolve(process.cwd(), 'src', 'hooks', 'store', 'graphDataSlice.ts')
-  const ingestPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesIngestIntegration.ts')
+  const ingestPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesParseRuntime.ts')
   const importEffectsPath = resolve(process.cwd(), 'src', 'features', 'toolbar', 'importSideEffects.ts')
   const youtubePath = resolve(process.cwd(), 'src', 'features', 'toolbar', 'youtubeImportAction.ts')
   const fallbackPath = resolve(process.cwd(), 'src', 'features', 'toolbar', 'launchDropdownFallbacks.ts')

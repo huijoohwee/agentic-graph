@@ -12,7 +12,6 @@ import { renderMermaidWithRuntime } from '@/lib/mermaid/mermaidRuntime'
 import { postprocessMermaidSvg } from '@/lib/mermaid/mermaidSvg'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 const MERMAID_TOAST_DEDUPE_MS = 1500
-const mermaidErrorToastSeenAt = new Map<string, number>()
 
 const buildMermaidConfig = (opts: {
   rootThemeMode: 'light' | 'dark'
@@ -28,18 +27,13 @@ const buildMermaidConfig = (opts: {
       : null
   const requestedTheme = typeof fm.theme === 'string' ? (fm.theme as string) : ''
   const theme = themeVariables ? 'base' : (requestedTheme || themeFromUi)
-  const mergedThemeVariables = themeVariables
-    ? { darkMode: opts.rootThemeMode === 'dark', ...themeVariables }
-    : { darkMode: opts.rootThemeMode === 'dark' }
   return {
     securityLevel: 'loose',
     theme,
     ...(Object.keys(fm).length ? fm : {}),
-    ...(themeVariables ? { themeVariables: mergedThemeVariables } : {}),
+    ...(themeVariables ? { themeVariables: { darkMode: opts.rootThemeMode === 'dark', ...themeVariables } } : {}),
   }
 }
-
-
 export function MermaidDiagram({
   code,
   highlightClass,
@@ -242,15 +236,10 @@ export function MermaidDiagram({
     const key = message
     if (lastErrorToastKeyRef.current === key) return
     const now = Date.now()
-    const seenAt = mermaidErrorToastSeenAt.get(key)
-    if (typeof seenAt === 'number' && now - seenAt < MERMAID_TOAST_DEDUPE_MS) return
-    mermaidErrorToastSeenAt.set(key, now)
-    if (mermaidErrorToastSeenAt.size > 200) {
-      const floor = now - MERMAID_TOAST_DEDUPE_MS * 2
-      for (const [k, ts] of mermaidErrorToastSeenAt) {
-        if (ts < floor) mermaidErrorToastSeenAt.delete(k)
-      }
-    }
+    // Reuse the bounded visible-toast owner; dismissed errors retain no second cache.
+    if (useGraphStore.getState().uiToasts.some(toast =>
+      toast.id.startsWith('mermaid-render-error-') && toast.message === `Mermaid render failed: ${message}`
+      && now >= toast.createdAtMs && now - toast.createdAtMs < MERMAID_TOAST_DEDUPE_MS)) return
     lastErrorToastKeyRef.current = key
     upsertUiToast({
       id: `mermaid-render-error-${id}`,

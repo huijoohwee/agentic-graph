@@ -1,4 +1,4 @@
-import { getAgenticOsRemoteGrammarCatalogSnapshot } from './agenticOsRemoteGrammarClient'
+import { getAgenticOsRemoteGrammarCatalogSnapshot, type AgenticOsRemoteGrammarCatalogEntry } from './agenticOsRemoteGrammarClient'
 import type {
   AgenticOsDictionaryInvocation,
   AgenticOsDictionaryInvocationKind,
@@ -49,11 +49,11 @@ export function createAgenticOsInvocationCatalogRuntime(options: CatalogRuntimeO
   let resolvedByToken = new Map<string, ResolvedInvocation>()
   let dictionaryByActionId = new Map<string, AgenticOsDictionaryInvocation>()
 
-  const merge = (fallback: readonly AgenticOsDictionaryInvocation[], kind: AgenticOsDictionaryInvocationKind) => {
+  const merge = (fallback: readonly AgenticOsDictionaryInvocation[], kind: AgenticOsDictionaryInvocationKind,
+    entries: readonly AgenticOsRemoteGrammarCatalogEntry[]) => {
     const fallbackByToken = new Map(fallback.map(invocation => [invocation.token.toLowerCase(), invocation]))
     const mergedByToken = new Map(fallbackByToken)
-    for (const entry of getAgenticOsRemoteGrammarCatalogSnapshot().entries) {
-      if (entry.kind !== kind) continue
+    for (const entry of entries) {
       const token = String(entry.token || '').trim() as AgenticOsDictionaryInvocation['token']
       if (!token) continue
       const fallbackInvocation = fallbackByToken.get(token.toLowerCase())
@@ -91,29 +91,43 @@ export function createAgenticOsInvocationCatalogRuntime(options: CatalogRuntimeO
   const ensure = () => {
     const snapshot = getAgenticOsRemoteGrammarCatalogSnapshot()
     if (snapshot.version === snapshotVersion) return
-    snapshotVersion = snapshot.version
-    commands = merge(options.commands, 'command')
-    semantics = merge(options.semantics, 'semantic')
-    bindings = merge(options.bindings, 'binding')
-    dictionary = [...commands, ...semantics, ...bindings]
-    resolvedByToken = new Map()
-    dictionaryByActionId = new Map()
+    const entriesByKind: Record<AgenticOsDictionaryInvocationKind, AgenticOsRemoteGrammarCatalogEntry[]> = {
+      command: [], semantic: [], binding: [],
+    }
+    for (const entry of snapshot.entries) {
+      const kind = entry.kind
+      if (kind === 'command' || kind === 'semantic' || kind === 'binding') entriesByKind[kind].push(entry)
+    }
+    const nextCommands = merge(options.commands, 'command', entriesByKind.command)
+    const nextSemantics = merge(options.semantics, 'semantic', entriesByKind.semantic)
+    const nextBindings = merge(options.bindings, 'binding', entriesByKind.binding)
+    const nextDictionary = [...nextCommands, ...nextSemantics, ...nextBindings]
+    const nextResolvedByToken = new Map<string, ResolvedInvocation>()
+    const nextDictionaryByActionId = new Map<string, AgenticOsDictionaryInvocation>()
     options.docs.forEach(doc => {
       const resolved = { kind: 'doc' as const, label: doc.label, summary: doc.summary, sourcePath: doc.sourcePath }
-      resolvedByToken.set(doc.slashCommand.toLowerCase(), { ...resolved, token: doc.slashCommand })
-      resolvedByToken.set(doc.hashToken.toLowerCase(), { ...resolved, token: doc.hashToken })
-      resolvedByToken.set(doc.atToken.toLowerCase(), { ...resolved, token: doc.atToken })
+      nextResolvedByToken.set(doc.slashCommand.toLowerCase(), { ...resolved, token: doc.slashCommand })
+      nextResolvedByToken.set(doc.hashToken.toLowerCase(), { ...resolved, token: doc.hashToken })
+      nextResolvedByToken.set(doc.atToken.toLowerCase(), { ...resolved, token: doc.atToken })
     })
-    dictionary.forEach(invocation => {
-      resolvedByToken.set(invocation.token.toLowerCase(), {
+    nextDictionary.forEach(invocation => {
+      nextResolvedByToken.set(invocation.token.toLowerCase(), {
         kind: invocation.kind,
         token: invocation.token,
         label: invocation.label,
         summary: invocation.summary,
         sourcePath: invocation.sourcePath,
       })
-      dictionaryByActionId.set(`${options.dictionaryActionIdPrefix}${invocation.id}`, invocation)
+      nextDictionaryByActionId.set(`${options.dictionaryActionIdPrefix}${invocation.id}`, invocation)
     })
+    // Publish only after every builder and index succeeds; failures remain retryable.
+    commands = nextCommands
+    semantics = nextSemantics
+    bindings = nextBindings
+    dictionary = nextDictionary
+    resolvedByToken = nextResolvedByToken
+    dictionaryByActionId = nextDictionaryByActionId
+    snapshotVersion = snapshot.version
   }
 
   return {

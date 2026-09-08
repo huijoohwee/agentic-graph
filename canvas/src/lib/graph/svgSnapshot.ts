@@ -1,73 +1,13 @@
-const SVG_NS = 'http://www.w3.org/2000/svg'
-const XLINK_NS = 'http://www.w3.org/1999/xlink'
+import {
+  SVG_NS, XLINK_NS, DEFAULT_STYLE_PROPS, MARKDOWN_DESIGN_BLOCK_SELECTOR,
+  ensureSvgNamespaces, inlineComputedStylesIntoClone, cloneMarkdownBlockForSvg,
+} from '@/lib/graph/htmlViewer/markdownDesignSvgOverlay'
 
-const DEFAULT_STYLE_PROPS: readonly string[] = [
-  'color',
-  'opacity',
-  'display',
-  'visibility',
-  'pointer-events',
-  'cursor',
-  'fill',
-  'fill-opacity',
-  'fill-rule',
-  'stroke',
-  'stroke-width',
-  'stroke-linecap',
-  'stroke-linejoin',
-  'stroke-miterlimit',
-  'stroke-dasharray',
-  'stroke-dashoffset',
-  'stroke-opacity',
-  'marker',
-  'marker-start',
-  'marker-mid',
-  'marker-end',
-  'paint-order',
-  'vector-effect',
-  'shape-rendering',
-  'text-rendering',
-  'overflow',
-  'clip-rule',
-  'transform',
-  'transform-origin',
-  'transform-box',
-  'animation',
-  'animation-name',
-  'animation-duration',
-  'animation-timing-function',
-  'animation-delay',
-  'animation-iteration-count',
-  'animation-direction',
-  'animation-fill-mode',
-  'animation-play-state',
-  'transition',
-  'transition-property',
-  'transition-duration',
-  'transition-timing-function',
-  'transition-delay',
-  'font-family',
-  'font-size',
-  'font-weight',
-  'font-style',
-  'letter-spacing',
-  'text-anchor',
-  'dominant-baseline',
-  'alignment-baseline',
-  'baseline-shift',
-  'filter',
-  'mix-blend-mode',
-  'clip-path',
-  'mask',
-  'stop-color',
-  'stop-opacity',
-] as const
-
-const MARKDOWN_DESIGN_BLOCK_SELECTOR = '[data-md-id]'
-
-const readMarkdownDesignBlockId = (el: Element): string => {
-  return String(el.getAttribute('data-md-id') || '').trim()
-}
+// Preserve the snapshot API used by toolbar, panel and standalone HTML exporters.
+export {
+  HTML_STYLE_PROPS, inlineComputedStylesIntoClone,
+  injectLiveMarkdownDesignBlocksIntoSvgMarkup, injectLiveMarkdownDesignBlocksIntoSvgMarkupAnchored,
+} from '@/lib/graph/htmlViewer/markdownDesignSvgOverlay'
 
 export type SvgSnapshotOptions = {
   includeXmlDeclaration?: boolean
@@ -83,15 +23,6 @@ const clampFinite = (n: unknown, min: number, max: number): number => {
   const v = typeof n === 'number' && Number.isFinite(n) ? n : NaN
   if (!Number.isFinite(v)) return min
   return Math.max(min, Math.min(max, v))
-}
-
-const ensureSvgNamespaces = (svg: SVGSVGElement) => {
-  try {
-    if (!svg.getAttribute('xmlns')) svg.setAttribute('xmlns', SVG_NS)
-    if (!svg.getAttribute('xmlns:xlink')) svg.setAttribute('xmlns:xlink', XLINK_NS)
-  } catch {
-    void 0
-  }
 }
 
 const removeDataAttrsDeep = (root: Element) => {
@@ -121,49 +52,6 @@ const removeClassesDeep = (root: Element) => {
       el.removeAttribute('class')
     } catch {
       void 0
-    }
-  }
-}
-
-export const inlineComputedStylesIntoClone = (srcSvg: Element, dstSvg: Element, props: readonly string[]) => {
-  const srcAll = [srcSvg, ...Array.from(srcSvg.querySelectorAll('*'))]
-  const dstAll = [dstSvg, ...Array.from(dstSvg.querySelectorAll('*'))]
-  const len = Math.min(srcAll.length, dstAll.length)
-  for (let i = 0; i < len; i += 1) {
-    const src = srcAll[i] as Element
-    const dst = dstAll[i] as Element
-    let cs: CSSStyleDeclaration | null = null
-    try {
-      cs = getComputedStyle(src)
-    } catch {
-      cs = null
-    }
-    if (!cs) continue
-
-    const kv: string[] = []
-    for (let p = 0; p < props.length; p += 1) {
-      const prop = props[p] || ''
-      let v = ''
-      try {
-        v = String(cs.getPropertyValue(prop) || '').trim()
-      } catch {
-        v = ''
-      }
-      if (!v) continue
-      kv.push(`${prop}:${v}`)
-    }
-    if (kv.length > 0) {
-      try {
-        dst.setAttribute('style', kv.join(';'))
-      } catch {
-        void 0
-      }
-    } else {
-      try {
-        dst.removeAttribute('style')
-      } catch {
-        void 0
-      }
     }
   }
 }
@@ -215,30 +103,6 @@ const computeContentBBoxFromClone = (
     }
   }
 }
-
-export const HTML_STYLE_PROPS: readonly string[] = [
-  ...DEFAULT_STYLE_PROPS,
-  'background', 'background-color', 'background-image', 'background-position', 'background-size', 'background-repeat',
-  'border', 'border-radius', 'border-top', 'border-bottom', 'border-left', 'border-right',
-  'border-color', 'border-width', 'border-style',
-  'border-top-color', 'border-top-width', 'border-top-style',
-  'border-right-color', 'border-right-width', 'border-right-style',
-  'border-bottom-color', 'border-bottom-width', 'border-bottom-style',
-  'border-left-color', 'border-left-width', 'border-left-style',
-  'border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius',
-  'padding', 'padding-top', 'padding-bottom', 'padding-left', 'padding-right',
-  'margin', 'margin-top', 'margin-bottom', 'margin-left', 'margin-right',
-  'box-sizing', 'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
-  'overflow', 'overflow-wrap', 'white-space', 'text-overflow', 'word-break',
-  'text-decoration', 'text-transform', 'line-height', 'list-style', 'position',
-  'top', 'left', 'right', 'bottom', 'z-index', 'transform', 'transform-origin',
-  'align-items', 'justify-content', 'flex-direction', 'flex-wrap', 'display', 'gap',
-  'flex', 'flex-grow', 'flex-shrink', 'flex-basis',
-  'grid-template-columns', 'grid-template-rows', 'grid-column', 'grid-row', 'grid-area', 'grid-template-areas', 'grid-auto-columns', 'grid-auto-rows', 'grid-auto-flow',
-  'color', 'font-family', 'font-size', 'font-weight', 'font-style', 'text-align', 'vertical-align',
-  'box-shadow', 'backdrop-filter', 'outline', 'outline-color', 'outline-width', 'outline-style', 'outline-offset',
-  'text-indent', 'text-shadow', 'border-collapse', 'border-spacing', 'table-layout', 'empty-cells'
-]
 
 export const buildStandaloneSvgMarkupFromElement = (svgEl: SVGSVGElement, options?: SvgSnapshotOptions): string | null => {
   try {
@@ -379,20 +243,7 @@ export const buildViewportSvgMarkupFromElement = (svgEl: SVGSVGElement, options?
             fo.setAttribute('height', String(wh))
             fo.style.overflow = 'visible'
 
-            const content = block.cloneNode(true) as HTMLElement
-            content.removeAttribute('style')
-            content.style.margin = '0'
-            content.style.padding = '0'
-            content.style.width = '100%'
-            content.style.height = '100%'
-            content.style.overflow = 'hidden'
-            content.style.pointerEvents = 'none'
-
-            if (inlineComputedStyles) {
-              inlineComputedStylesIntoClone(block, content, HTML_STYLE_PROPS)
-            }
-
-            content.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml')
+            const content = cloneMarkdownBlockForSvg(block, inlineComputedStyles)
             fo.appendChild(content)
             mdLayer.appendChild(fo)
           }
@@ -431,269 +282,6 @@ export const buildViewportSvgMarkupFromElement = (svgEl: SVGSVGElement, options?
     return includeXmlDeclaration ? `<?xml version="1.0" encoding="UTF-8"?>\n${trimmed}\n` : trimmed
   } catch {
     return null
-  }
-}
-
-export const injectLiveMarkdownDesignBlocksIntoSvgMarkup = (svgMarkup: string): string => {
-  const raw = String(svgMarkup || '').trim()
-  if (!raw) return ''
-  if (typeof document === 'undefined') return raw
-  const noXml = raw.replace(/^<\?xml[^>]*>\s*/i, '')
-
-  let parsedDoc: Document
-  try {
-    const parser = new DOMParser()
-    parsedDoc = parser.parseFromString(noXml, 'image/svg+xml')
-  } catch {
-    return raw
-  }
-
-  const parsedSvg = parsedDoc.querySelector('svg') as unknown as SVGSVGElement | null
-  if (!parsedSvg) return raw
-
-  const svg = (() => {
-    try {
-      return document.importNode(parsedSvg, true) as unknown as SVGSVGElement
-    } catch {
-      return parsedSvg.cloneNode(true) as SVGSVGElement
-    }
-  })()
-
-  const doc = svg.ownerDocument
-  if (!doc) return raw
-
-  ensureSvgNamespaces(svg)
-
-  const findScopeEl = (): Element | null => {
-    try {
-      const root = typeof document !== 'undefined' ? document.getElementById('kg-root') : null
-      if (root) return root
-    } catch {
-      void 0
-    }
-    try {
-      return typeof document !== 'undefined' ? document.body : null
-    } catch {
-      return null
-    }
-  }
-
-  const scopeEl = findScopeEl()
-  const blocks = scopeEl ? scopeEl.querySelectorAll(MARKDOWN_DESIGN_BLOCK_SELECTOR) : null
-  if (!blocks || blocks.length === 0) return raw
-
-  const zoomRoot = (svg.querySelector('g') as unknown as SVGGElement | null) || null
-  if (!zoomRoot) return raw
-
-  let mdLayer = zoomRoot.querySelector('g[data-kg-layer="markdown-design-blocks"]') as SVGGElement | null
-  if (!mdLayer) {
-    mdLayer = doc.createElementNS('http://www.w3.org/2000/svg', 'g') as unknown as SVGGElement
-    mdLayer.setAttribute('data-kg-layer', 'markdown-design-blocks')
-    zoomRoot.appendChild(mdLayer)
-  }
-  while (mdLayer.firstChild) mdLayer.removeChild(mdLayer.firstChild)
-
-  for (let i = 0; i < blocks.length; i += 1) {
-    try {
-      const block = blocks[i] as HTMLElement
-      const wx = Number(block.getAttribute('data-kg-world-x'))
-      const wy = Number(block.getAttribute('data-kg-world-y'))
-      const ww = Number(block.getAttribute('data-kg-world-w'))
-      const wh = Number(block.getAttribute('data-kg-world-h'))
-      if (!Number.isFinite(wx) || !Number.isFinite(wy) || !Number.isFinite(ww) || !Number.isFinite(wh) || ww <= 0 || wh <= 0) continue
-
-      const fo = doc.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') as unknown as SVGForeignObjectElement
-      fo.setAttribute('x', String(wx))
-      fo.setAttribute('y', String(wy))
-      fo.setAttribute('width', String(ww))
-      fo.setAttribute('height', String(wh))
-      try {
-        ;(fo.style as any).overflow = 'visible'
-      } catch {
-        void 0
-      }
-
-      const content = block.cloneNode(true) as HTMLElement
-      try {
-        content.removeAttribute('style')
-      } catch {
-        void 0
-      }
-      content.style.margin = '0'
-      content.style.padding = '0'
-      content.style.width = '100%'
-      content.style.height = '100%'
-      content.style.overflow = 'hidden'
-      content.style.pointerEvents = 'none'
-
-      try {
-        inlineComputedStylesIntoClone(block, content, HTML_STYLE_PROPS)
-      } catch {
-        void 0
-      }
-
-      content.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml')
-      fo.appendChild(content)
-      mdLayer.appendChild(fo)
-    } catch {
-      void 0
-    }
-  }
-
-  try {
-    const out = new XMLSerializer().serializeToString(svg)
-    const trimmed = String(out || '').trim()
-    if (!trimmed) return raw
-    return raw.startsWith('<?xml') ? `<?xml version="1.0" encoding="UTF-8"?>\n${trimmed}\n` : trimmed
-  } catch {
-    try {
-      const alt = String((svg as unknown as { outerHTML?: unknown }).outerHTML || '').trim()
-      if (alt) return alt
-    } catch {
-      void 0
-    }
-    return raw
-  }
-}
-
-export const injectLiveMarkdownDesignBlocksIntoSvgMarkupAnchored = (args: {
-  svgMarkup: string
-  anchorNodeIdByBlockId?: Record<string, string> | null
-  nodePosById?: Record<string, { x: number; y: number }> | null
-}): string => {
-  const raw = String(args.svgMarkup || '').trim()
-  if (!raw) return ''
-  if (typeof document === 'undefined') return raw
-  const noXml = raw.replace(/^<\?xml[^>]*>\s*/i, '')
-
-  let parsedDoc: Document
-  try {
-    const parser = new DOMParser()
-    parsedDoc = parser.parseFromString(noXml, 'image/svg+xml')
-  } catch {
-    return raw
-  }
-
-  const parsedSvg = parsedDoc.querySelector('svg') as unknown as SVGSVGElement | null
-  if (!parsedSvg) return raw
-
-  const svg = (() => {
-    try {
-      return document.importNode(parsedSvg, true) as unknown as SVGSVGElement
-    } catch {
-      return parsedSvg.cloneNode(true) as SVGSVGElement
-    }
-  })()
-
-  const doc = svg.ownerDocument
-  if (!doc) return raw
-
-  ensureSvgNamespaces(svg)
-
-  const scopeEl = (() => {
-    try {
-      const root = document.getElementById('kg-root')
-      if (root) return root
-    } catch {
-      void 0
-    }
-    try {
-      return document.body
-    } catch {
-      return null
-    }
-  })()
-
-  const blocks = scopeEl ? scopeEl.querySelectorAll(MARKDOWN_DESIGN_BLOCK_SELECTOR) : null
-  if (!blocks || blocks.length === 0) return raw
-
-  const zoomRoot = (svg.querySelector('g') as unknown as SVGGElement | null) || null
-  if (!zoomRoot) return raw
-
-  let mdLayer = zoomRoot.querySelector('g[data-kg-layer="markdown-design-blocks"]') as SVGGElement | null
-  if (!mdLayer) {
-    mdLayer = doc.createElementNS('http://www.w3.org/2000/svg', 'g') as unknown as SVGGElement
-    mdLayer.setAttribute('data-kg-layer', 'markdown-design-blocks')
-    zoomRoot.appendChild(mdLayer)
-  }
-  while (mdLayer.firstChild) mdLayer.removeChild(mdLayer.firstChild)
-
-  const anchorMap = args.anchorNodeIdByBlockId || null
-  const nodePosById = args.nodePosById || null
-
-  for (let i = 0; i < blocks.length; i += 1) {
-    try {
-      const block = blocks[i] as HTMLElement
-      const blockId = readMarkdownDesignBlockId(block)
-      const ww = Number(block.getAttribute('data-kg-world-w'))
-      const wh = Number(block.getAttribute('data-kg-world-h'))
-      if (!Number.isFinite(ww) || !Number.isFinite(wh) || ww <= 0 || wh <= 0) continue
-
-      const wx0 = Number(block.getAttribute('data-kg-world-x'))
-      const wy0 = Number(block.getAttribute('data-kg-world-y'))
-      const baseX = Number.isFinite(wx0) ? wx0 : 0
-      const baseY = Number.isFinite(wy0) ? wy0 : 0
-
-      const anchorId = blockId && anchorMap && anchorMap[blockId] ? String(anchorMap[blockId] || '').trim() : blockId
-      const nodePos = anchorId && nodePosById ? nodePosById[anchorId] : null
-      const cx = nodePos && Number.isFinite(nodePos.x) ? nodePos.x : baseX + ww / 2
-      const cy = nodePos && Number.isFinite(nodePos.y) ? nodePos.y : baseY + wh / 2
-      const x = cx - ww / 2
-      const y = cy - wh / 2
-
-      const fo = doc.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') as unknown as SVGForeignObjectElement
-      fo.setAttribute('x', String(x))
-      fo.setAttribute('y', String(y))
-      fo.setAttribute('width', String(ww))
-      fo.setAttribute('height', String(wh))
-      if (anchorId) fo.setAttribute('data-kg-anchor-node-id', anchorId)
-      if (blockId) fo.setAttribute('data-kg-markdown-block-id', blockId)
-      try {
-        ;(fo.style as any).overflow = 'visible'
-      } catch {
-        void 0
-      }
-
-      const content = block.cloneNode(true) as HTMLElement
-      try {
-        content.removeAttribute('style')
-      } catch {
-        void 0
-      }
-      content.style.margin = '0'
-      content.style.padding = '0'
-      content.style.width = '100%'
-      content.style.height = '100%'
-      content.style.overflow = 'hidden'
-      content.style.pointerEvents = 'none'
-
-      try {
-        inlineComputedStylesIntoClone(block, content, HTML_STYLE_PROPS)
-      } catch {
-        void 0
-      }
-
-      content.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml')
-      fo.appendChild(content)
-      mdLayer.appendChild(fo)
-    } catch {
-      void 0
-    }
-  }
-
-  try {
-    const out = new XMLSerializer().serializeToString(svg)
-    const trimmed = String(out || '').trim()
-    if (!trimmed) return raw
-    return raw.startsWith('<?xml') ? `<?xml version="1.0" encoding="UTF-8"?>\n${trimmed}\n` : trimmed
-  } catch {
-    try {
-      const alt = String((svg as unknown as { outerHTML?: unknown }).outerHTML || '').trim()
-      if (alt) return alt
-    } catch {
-      void 0
-    }
-    return raw
   }
 }
 

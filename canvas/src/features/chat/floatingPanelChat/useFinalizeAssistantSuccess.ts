@@ -40,7 +40,7 @@ const classifyWorkspaceArtifactType = (workspacePath: string): 'USER_MODEL' | 'T
   if (normalized.includes('/trace') || base.startsWith('agentic-os-trace_') || base.includes('--trace')) return 'TRACE'
   if (base.startsWith('agentic-os-output_') || normalized.includes('/output')) return 'OUTPUT'
   if (normalized.includes('/report') || base.includes('report')) return 'REPORT'
-  if (base.startsWith('agenticOs_')) return 'AGENTIC_OS'
+  if (base.startsWith('agenticos_')) return 'AGENTIC_OS'
   return 'DOC'
 }
 

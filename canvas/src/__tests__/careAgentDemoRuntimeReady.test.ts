@@ -1,8 +1,12 @@
+import { resolvePinnedAgenticDocsRoot, resolveRepoSourcePath } from '@/tests/lib/repoTestData'
+import { runFlowComputeSource, readFlowComputeSource } from '@/lib/storyboardWidget/flowComputeInline'
+import { computeFlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
+import { FLOW_WIDGET_REGISTRY_METADATA_KEY } from '@/lib/config'
 import fs from 'node:fs'
 import path from 'node:path'
 import { load as parseYaml } from 'js-yaml'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
-import { readWorkspaceInitializationDocsMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
+import { readCanonicalWorkspaceSeedMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
 import {
   readWorkspaceDocsMirrorRootPathSetting,
   writeWorkspaceDocsMirrorRootPathSetting,
@@ -17,8 +21,7 @@ import {
 
 type PlainRecord = Record<string, unknown>
 
-const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
-const CARE_AGENT_DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agentic-graph-care-agent-demo.md')
+const CARE_AGENT_DOC_PATH = resolveRepoSourcePath('docs/workspace-seeds/agentic-graph-care-agent-demo.md')
 const CARE_AGENT_DOCS_ROOT = path.dirname(CARE_AGENT_DOC_PATH)
 const RUNTIME_READY_TEST_ID = 'docs.careAgentDemo.runtimeReady'
 const RUN_READY_MODE_TEST_ID = 'docs.careAgentDemo.runReadyMode'
@@ -61,8 +64,8 @@ const readCareAgentDoc = (): { markdownText: string; meta: PlainRecord } => {
   return { markdownText, meta: parsed }
 }
 
-const readDictionaryEntries = (fileName: string): string[] => {
-  const source = fs.readFileSync(path.join(GITHUB_ROOT, 'agentic-canvas-os', 'docs', fileName), 'utf8')
+const readDictionaryEntries = (docsRoot: string, fileName: string): string[] => {
+  const source = fs.readFileSync(path.join(docsRoot, fileName), 'utf8')
   const parsed = parseYaml(extractFrontmatterYaml(source))
   return asStringArray(asRecord(parsed, `${fileName} frontmatter`).dictionary_entries, `${fileName}.dictionary_entries`)
 }
@@ -95,7 +98,7 @@ const assertTrueFlags = (record: PlainRecord, label: string, flags: string[]): v
   }
 }
 
-export function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
+export async function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
   const { markdownText, meta } = readCareAgentDoc()
 
   if (meta.runtime_status !== 'runtime-ready') {
@@ -167,9 +170,10 @@ export function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
   const pipeline = asRecord(meta.agentic_os_care_agent_pipeline, 'agentic_os_care_agent_pipeline')
   if (pipeline.status !== 'runtime-ready') throw new Error(`expected pipeline status runtime-ready, got ${String(pipeline.status)}`)
   const routes = asRecord(pipeline.invocation_routes, 'agentic_os_care_agent_pipeline.invocation_routes')
-  assertSubset('slash routes', asStringArray(routes.slash, 'slash routes'), readDictionaryEntries('DICTIONARY-COMMAND.md'))
-  assertSubset('semantic routes', asStringArray(routes.semantic, 'semantic routes'), readDictionaryEntries('DICTIONARY-SEMANTIC.md'))
-  assertSubset('binding routes', asStringArray(routes.binding, 'binding routes'), readDictionaryEntries('DICTIONARY-BINDING.md'))
+  const pinnedDocsRoot = await resolvePinnedAgenticDocsRoot()
+  assertSubset('slash routes', asStringArray(routes.slash, 'slash routes'), readDictionaryEntries(pinnedDocsRoot, 'DICTIONARY-COMMAND.md'))
+  assertSubset('semantic routes', asStringArray(routes.semantic, 'semantic routes'), readDictionaryEntries(pinnedDocsRoot, 'DICTIONARY-SEMANTIC.md'))
+  assertSubset('binding routes', asStringArray(routes.binding, 'binding routes'), readDictionaryEntries(pinnedDocsRoot, 'DICTIONARY-BINDING.md'))
 
   const harness = asRecord(meta.care_agent_harness, 'care_agent_harness')
   const bounds = asRecord(harness.bounds, 'care_agent_harness.bounds')
@@ -189,6 +193,19 @@ export function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
   const parsed = tryParseMarkdownFrontmatterFlowGraph(path.basename(CARE_AGENT_DOC_PATH), markdownText)
   if (!parsed) throw new Error('expected care-agent demo to parse as frontmatter-flow')
   const graphData = parsed.graphData
+  const sourcePlan = 'Confirm unclear instructions with the care team.\nReview the supplied checklist.'
+  const graphWithPlan = { ...graphData, nodes: graphData.nodes.map(node => node.id === 'care_source'
+    ? { ...node, properties: { ...node.properties, redactedCarePlan: sourcePlan } } : node) }
+  const connected = computeFlowConnectedValuesBySchemaPath({ graphData: graphWithPlan,
+    registry: graphData.metadata?.[FLOW_WIDGET_REGISTRY_METADATA_KEY] as never[] || [],
+    targetNodeIds: new Set(['care_harness']), preserveMaterializedOutputs: false })
+  const tasks = connected.get('care_harness')?.['properties.taskCards']?.value
+  if (!Array.isArray(tasks) || tasks.map(task => task.text).join('\n') !== sourcePlan) {
+    throw new Error('expected connected local Care preparation to preserve supplied instructions without inventing clinical advice')
+  }
+  const harnessSource = graphData.nodes.find(node => node.id === 'care_harness')!
+  const localDraft = runFlowComputeSource(readFlowComputeSource(harnessSource), { taskCards: tasks })
+  if (!localDraft || (localDraft.costLog as PlainRecord)?.estimated_cost_usd !== 0) throw new Error('expected a zero-cost local Care draft')
   if (graphData.context !== 'frontmatter-flow') throw new Error(`expected frontmatter-flow context, got ${String(graphData.context || '')}`)
   const graphMeta = asRecord(graphData.metadata || {}, 'graph metadata')
   const flowSettings = asRecord(graphMeta.frontmatterFlowSettings, 'frontmatterFlowSettings')
@@ -273,7 +290,7 @@ export async function testCareAgentDemoRunReadyModeLoadsSourceBackedCleanCanvasS
   if (demoSeed.validationSeedRelPath !== CARE_AGENT_DEMO_WORKSPACE_SEED_BASENAME) {
     throw new Error(`expected care-agent validation seed basename, got ${demoSeed.validationSeedRelPath}`)
   }
-  if (demoSeed.sourceRoot !== 'huijoohwee/docs' || demoSeed.cleanCanvasRecommended !== true) {
+  if (demoSeed.sourceRoot !== 'agentic-graph/docs' || demoSeed.cleanCanvasRecommended !== true) {
     throw new Error(`expected care-agent demo to remain source-backed and clean-canvas-ready, got ${JSON.stringify(demoSeed)}`)
   }
 
@@ -331,10 +348,10 @@ export async function testCareAgentDemoRunReadyModeLoadsSourceBackedCleanCanvasS
         headers: { 'content-type': 'application/json' },
       })
     }) as typeof fetch
-    const mirroredEntries = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
-    const demoEntry = mirroredEntries.find(entry => entry.relPath === demoSeed.validationSeedRelPath) || null
+    const mirroredEntries = await readCanonicalWorkspaceSeedMirrorEntries()
+    const demoEntry = mirroredEntries.find(entry => entry.relPath === `workspace-seeds/${demoSeed.validationSeedRelPath}`) || null
     if (!demoEntry || demoEntry.text !== sourceText) {
-      throw new Error(`expected care-agent demo mode to load the sibling docs source through the docs mirror proxy; docsRoot=${readWorkspaceDocsMirrorRootPathSetting()} requests=${JSON.stringify(proxyRequests)}`)
+      throw new Error(`expected care-agent demo mode to load the canonical authored source through the workspace seed reader; docsRoot=${readWorkspaceDocsMirrorRootPathSetting()} requests=${JSON.stringify(proxyRequests)}`)
     }
     const parsed = tryParseMarkdownFrontmatterFlowGraph(demoSeed.validationSeedRelPath, demoEntry.text)
     if (!parsed) throw new Error('expected care-agent demo seed to parse as a clean-canvas frontmatter-flow document')

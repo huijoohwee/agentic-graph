@@ -134,6 +134,22 @@ export function testCoordinatorFanoutRunMaterializationPreservesRightwardTopDown
     throw new Error(`expected a constrained natural-size viewport to collapse the coordinator and ordered fanout into one visible rightward top-down column, got ${JSON.stringify(constrainedRects)}`)
   }
 
+  for (const width of [280, 400]) {
+    const snapshot = buildSnapshot(width)
+    const before = JSON.stringify(snapshot)
+    const rects = projectRects(planStoryboardWidgetRunMaterializationPositions({
+      snapshot, sourceItem: sourceSize, items, topology, preset: 'richMedia',
+    }))
+    const coordinator = rects[1]!
+    if (rects.some(rect => rect.left !== coordinator.left)
+      || coordinator.left <= Number(snapshot.screen?.left) + sourceSize.width
+      || rects[0]!.top < coordinator.top + coordinator.height + STORYBOARD_WIDGET_RUN_MATERIALIZATION_MIN_INTERACTION_GAP_PX
+      || rects[2]!.top < rects[0]!.top + rects[0]!.height + STORYBOARD_WIDGET_RUN_MATERIALIZATION_MIN_INTERACTION_GAP_PX
+      || JSON.stringify(snapshot) !== before) {
+      throw new Error(`expected an undersized viewport to preserve one non-overlapping downstream column and the captured source/camera, got ${JSON.stringify(rects)}`)
+    }
+  }
+
   const balancedFallback = planStoryboardWidgetRunMaterializationPositions({
     snapshot: constrainedSnapshot,
     sourceItem: sourceSize,

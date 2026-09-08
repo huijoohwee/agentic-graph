@@ -9,11 +9,10 @@ import {
   mapGraphSnapshotRow,
   normalizeString,
   type D1DatabaseLike,
-  type DocumentChunkRow,
   type DocumentRow,
-  type GraphSnapshotRow,
 } from './db'
 import { readAgenticGraphStorageSyncPageRows } from './storageSyncPageRows'
+import { mapStorageChildStateRow } from './storageChildMutation'
 import {
   decodeAgenticGraphStorageSyncCursor,
   encodeAgenticGraphStorageSyncCursor,
@@ -27,7 +26,7 @@ const jsonByteLength = (value: unknown): number =>
   new TextEncoder().encode(JSON.stringify(value)).byteLength
 
 const assertResultBounds = (changes: AgenticGraphStoragePullChanges): void => {
-  const rows = [...changes.documents, ...changes.documentChunks, ...changes.graphSnapshots]
+  const rows = [...changes.documents, ...changes.documentChunks, ...changes.graphSnapshots, ...changes.deletions]
   if (rows.length > AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResultRows) {
     throw new AgenticGraphStorageSyncResultLimitError(
       `storage sync result exceeds the ${AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResultRows} row limit`,
@@ -51,6 +50,7 @@ export const readAgenticGraphStoragePullPage = async (
   knownChunks: AgenticGraphStoragePullRequest['knownChunks'] = [],
   pageCursor: string | null = null,
   firstSnapshotAt = new Date().toISOString(),
+  mode: 'sync' | 'export' = 'sync',
 ): Promise<{
   changes: AgenticGraphStoragePullChanges
   nextPageCursor: string | null
@@ -59,7 +59,7 @@ export const readAgenticGraphStoragePullPage = async (
 }> => {
   let cursor = null
   try {
-    cursor = pageCursor ? decodeAgenticGraphStorageSyncCursor({ token: pageCursor, workspaceId, since }) : null
+    cursor = pageCursor ? decodeAgenticGraphStorageSyncCursor({ token: pageCursor, workspaceId, since, mode }) : null
   } catch (error) {
     throw new AgenticGraphStorageSyncResultLimitError(error instanceof Error ? error.message : 'invalid storage page cursor')
   }
@@ -72,6 +72,7 @@ export const readAgenticGraphStoragePullPage = async (
       since,
       snapshotAt,
       cursor,
+      mode,
       maxRows: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResultRows,
       maxStoredResultBytes: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes - 65_536,
     })
@@ -92,19 +93,21 @@ export const readAgenticGraphStoragePullPage = async (
   }
   const changes: AgenticGraphStoragePullChanges = {
     documents: (rows.documents as DocumentRow[]).map(mapDocumentRow),
-    documentChunks: (rows.documentChunks as DocumentChunkRow[]).map(row => {
-      const mapped = mapDocumentChunkRow(row)
+    documentChunks: rows.documentChunks.map(row => {
+      const mapped = { ...mapDocumentChunkRow(row), syncRevision: row.sync_revision }
       const knownHash = knownChunkHashBySemanticKey.get(`${mapped.documentId}\u0000${mapped.chunkKey}`)
       return knownHash === mapped.contentHash
         ? { ...mapped, markdown: '', contentReused: true }
         : mapped
     }),
-    graphSnapshots: (rows.graphSnapshots as GraphSnapshotRow[]).map(mapGraphSnapshotRow),
+    graphSnapshots: rows.graphSnapshots.map(row => ({ ...mapGraphSnapshotRow(row), syncRevision: row.sync_revision })),
+    deletions: rows.deletions.map(row => ({ ...mapStorageChildStateRow(row), deleted: true })),
   }
   assertResultBounds(changes)
   const nextPageCursor = rows.hasMore && rows.lastKey
     ? encodeAgenticGraphStorageSyncCursor({
         workspaceId,
+        mode,
         since,
         snapshotAt,
         lastUpdatedAt: rows.lastKey.updated_at,

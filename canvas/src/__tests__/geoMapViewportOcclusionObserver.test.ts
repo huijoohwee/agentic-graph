@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom'
 import {
   observeGeoMapOcclusionChanges,
   readGeoMapViewportPadding,
-} from '../../../gympgrph/src/geoMapViewport'
+} from 'gympgrph/testkit/geoMapViewport'
 
 async function flushMutations(window: Window): Promise<void> {
   await new Promise<void>(resolve => window.setTimeout(resolve, 0))

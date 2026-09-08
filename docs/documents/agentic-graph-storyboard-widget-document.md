@@ -275,6 +275,10 @@
 
 ## Persistence (SSOT)
 
+Widget placement now persists as one atomic `LS_KEYS.flowWidgetStateByDocument` shard per document, containing pin, screen/world positions, and compact canonical node/type/rounded-coordinate and edge-topology evidence. Revisions replace that document's record; pending placeholders preserve its last ready evidence. Ready graphs validate inactive or pending placement against authored layout before restoring it, and ready-empty or anonymous graphs clear active placement without borrowing another document's state.
+
+The existing 90 ms scheduler coalesces writes per document and captures the exact Storage owner. Failed writes retain their pending bytes for a later retry and report through the existing toast/log; identical retries and coordinate-only edits remain eligible. `persist: false` positions stay outside durable snapshots when other channels change. Reset cancels only owned pending work and leaves saved bytes intact. Legacy or malformed records without valid layout evidence are withheld with a warning; their original storage bytes are preserved rather than silently migrated or deleted.
+
 - All persistence keys are defined in `LS_KEYS` in `canvas/src/lib/config.ls.ts`:
   - `LS_KEYS.flowWidgetPinnedByNodeId`
   - `LS_KEYS.flowWidgetPinnedSemanticsVersion`

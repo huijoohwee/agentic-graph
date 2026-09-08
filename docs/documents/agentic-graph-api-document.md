@@ -471,18 +471,16 @@ sequenceDiagram
 | Proxy injection | Dev chat proxy | `x-kg-chat-api-key` header (BYOK) or `process.env.AGENTIC_OS_*` (serverManaged) | `Authorization: Bearer <key>` | None | Return 400 with provider-specific error message if key missing |
 | Request | Upstream provider | `Authorization` header | API response | None | Surface upstream 401/403 to the UI |
 | Reload | Page hydration | — | `chatApiKey` defaults to `null` | Nothing to hydrate (RAM-only) | Operator must re-enter BYOK key; serverManaged mode works without re-entry |
-
 ---
-
 ### Security Invariants
 
-These invariants must hold for every current and future provider. They are verified by repo tests (see `chatApiKeyAuthModeAutoByok.test.ts`, `chatResponseContractPrompt.test.ts`).
+These invariants must hold for every current and future provider. They are verified by repo tests (see `chatApiKeyAuthModeAutoByok.test.ts`, `chatSubmitRequestContract.test.ts`).
 
 | Invariant | Rule | Verification |
 |---|---|---|
 | No key in browser persistence | `chatApiKey` is never written to `localStorage` or `sessionStorage` | `SettingsFallbackDetails.chatApiKey` documents `in-memory only, never localStorage`; targeted store tests assert the write path |
 | No key in source | Literal credential values never appear in `.ts`, `.md`, fixture, or test files | Repo grep assertions in CI for known env var name patterns |
-| BYOK preflight | Empty BYOK key blocks submission before any API call | `chatResponseContractPrompt.test.ts` asserts rejection for each provider |
+| BYOK preflight | Empty BYOK key blocks submission before any API call | `chatSubmitRequestContract.test.ts` asserts rejection for each provider |
 | Host allowlist | Dev proxy rejects requests to hosts not in `parseAllowedChatProxyHosts()` | `vite.config.ts` `allowedChatProxyHosts` set; new providers must be added explicitly |
 | Stripe server-only | Stripe credentials are Worker secrets only; `payment:stripe:readiness` fails if Stripe key appears in visible Worker `[vars]` | `stripeCheckoutSecurity.test.ts` asserts server-managed-route-only paths |
 | HMAC raw key isolation | For HMAC-JWT providers, raw signing material never reaches browser state; only derived JWT is forwarded | SenseNova server-integration contract; JWT cache holds derived token only |

@@ -25,6 +25,7 @@ export function testLaunchDropdownNewMarkdownUsesSharedDocsCreator() {
   const p = resolve(process.cwd(), 'src', 'lib', 'toolbar', 'LaunchDropdown.impl.tsx')
   const text = readFileSync(p, 'utf8')
   const helper = readFileSync(resolve(process.cwd(), 'src', 'features', 'source-files', 'createNewMarkdownSourceFile.ts'), 'utf8')
+  const persistence = readFileSync(resolve(process.cwd(), 'src', 'features', 'source-files', 'upsertWorkspaceMarkdownSourceFile.ts'), 'utf8')
   const timestampHelper = readFileSync(resolve(process.cwd(), 'src', 'features', 'workspace-fs', 'workspaceTimestamp.ts'), 'utf8')
 
   const required = [
@@ -41,13 +42,15 @@ export function testLaunchDropdownNewMarkdownUsesSharedDocsCreator() {
   const helperRequired = [
     'WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH',
     'formatWorkspaceUtcSessionTimestamp',
-    'ensureWorkspaceFolderTreeIfMissing',
-    'setWorkspaceEntrySource',
+    'await upsertWorkspaceMarkdownSourceFile({',
+    "sourcePersistence: 'sync'",
   ]
   const helperMissing = helperRequired.filter(snippet => !helper.includes(snippet))
   if (helperMissing.length) {
     throw new Error(`expected source-file creator to own authored-notes timestamped markdown creation: ${helperMissing.join(', ')}`)
   }
+  if (!persistence.includes('await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: parentPath })')
+    || !persistence.includes('setWorkspaceEntrySource(path, args.source, {')) throw new Error('expected shared source persistence to create folders and record provenance')
   if (helper.includes("name: 'note.md'") || helper.includes('WORKSPACE_ROOT_PATH')) {
     throw new Error('expected new markdown source helper to remove the stale root note.md hardcode')
   }

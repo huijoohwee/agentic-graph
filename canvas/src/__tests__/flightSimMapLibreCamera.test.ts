@@ -1,12 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { JSDOM } from 'jsdom'
-import type { FlightGeoOverlaySnapshot } from '../../../gympgrph/src/flightGeoOverlay'
+import type { FlightGeoOverlaySnapshot } from 'gympgrph/testkit/flightGeoOverlay'
 import {
   applyFlightGeoOverlayCameraToMap,
   fitMapToFlightGeoOverlay,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre'
-import { readGeoMapViewportPadding } from '../../../gympgrph/src/geoMapViewport'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
+import { readGeoMapViewportPadding } from 'gympgrph/testkit/geoMapViewport'
 import { flightOverlay } from './helpers/flightSimMapLibreFixtures'
 
 test('Flight camera preserves 2D north-up and 3D oblique mode ownership', () => {

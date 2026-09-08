@@ -8,7 +8,7 @@ import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import type { PanelTypography } from '@/lib/ui/panelTypography'
 
-export async function testGraphDataTableTypographyUsesUiSettings() {
+export async function testGraphTableTypographyUsesUiSettings() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { dom, restore: restoreDom } = initJsdomHarness()

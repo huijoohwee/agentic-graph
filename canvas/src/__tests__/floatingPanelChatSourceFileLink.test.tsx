@@ -145,8 +145,15 @@ export async function testFloatingPanelChatRendersUserMediaMarkdownAsInlineChip(
     const sharedPill = chip.querySelector('[data-kg-card-inline-media-pill="1"]')
     if (!sharedPill) throw new Error(`expected message media chip to reuse the shared inline media pill, html=${chip.innerHTML}`)
     const thumbnail = chip.querySelector('[data-kg-inline-command-thumbnail="image"] img') as HTMLImageElement | null
-    if (!thumbnail || thumbnail.getAttribute('src') !== mediaUrl) {
-      throw new Error(`expected message media chip thumbnail to preserve the media URL, got ${JSON.stringify(thumbnail?.getAttribute('src') || null)}`)
+    if (!thumbnail?.getAttribute('src')) throw new Error('expected an image thumbnail source')
+    const renderedUrl = new URL(thumbnail.getAttribute('src')!, dom.window.location.href)
+    const originalUrl = new URL(mediaUrl)
+    if (renderedUrl.origin !== dom.window.location.origin || renderedUrl.pathname !== originalUrl.pathname) {
+      throw new Error('expected the same media asset on the current runtime origin')
+    }
+    const renewedToken = renderedUrl.searchParams.get('agentic_os_media_token')
+    if (!renewedToken || renewedToken === originalUrl.searchParams.get('agentic_os_media_token')) {
+      throw new Error('expected the stale media access token to be renewed')
     }
 
     const visibleText = String(bubble.textContent || '')

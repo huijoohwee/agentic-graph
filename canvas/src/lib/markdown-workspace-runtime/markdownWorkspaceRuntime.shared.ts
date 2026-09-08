@@ -1,3 +1,4 @@
+import type { MarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceRuntime.types'
 import type { MutableRefObject } from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { resolveWorkspaceSourcePathKey } from '@/features/workspace-fs/syncToSourceFiles'
@@ -174,7 +175,7 @@ export function pruneWorkspaceEntriesForInlineSnapshot(
 
 export const resolveWorkspaceDirtyState = (args: {
   path: WorkspacePath
-  lastLoadedRef: MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   activeTextRef: MutableRefObject<string>
   userEditedActiveTextRef: MutableRefObject<boolean>
 }): boolean => {

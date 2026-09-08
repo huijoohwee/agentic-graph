@@ -20,7 +20,7 @@ export type XrImageWorkspaceArtifact = {
   path: WorkspacePath
   name: string
   text: string
-  role: 'source' | 'glb' | 'gltf'
+  role: 'source' | 'original' | 'glb' | 'gltf'
 }
 
 export type XrImageWorkspaceImportResult = {
@@ -173,6 +173,7 @@ function buildSourceMetadataMarkdown(args: {
   sourceUrl?: string | null
   glbPath: string
   gltfPath: string
+  originalPath?: string
 }): string {
   const source = buildCorpusMediaMetadataMarkdown({
     originalName: args.originalName,
@@ -188,6 +189,7 @@ function buildSourceMetadataMarkdown(args: {
     'XR model artifacts:',
     `- GLB: ${args.glbPath}`,
     `- GLTF: ${args.gltfPath}`,
+    args.originalPath ? `- Original source: ${args.originalPath}` : '',
     sourceUrl ? `- Source URL: ${sourceUrl}` : '',
     '',
   ].filter(line => line !== '').join('\n')
@@ -241,6 +243,9 @@ async function createXrImageWorkspaceArtifacts(args: {
   const byteSize = format === 'svg'
     ? new TextEncoder().encode(String(args.sourceText || '')).byteLength
     : Math.max(0, Number((args.sourceBytes as ArrayBuffer | null | undefined)?.byteLength || 0))
+  const originalArtifact = format === 'svg' ? await writeArtifactFile({
+    fs: args.fs, parentPath, name: `${stem}.svg`, text: String(args.sourceText || ''), role: 'original',
+  }) : null
   const glbArtifact = await writeArtifactFile({
     fs: args.fs,
     parentPath,
@@ -265,6 +270,7 @@ async function createXrImageWorkspaceArtifacts(args: {
     sourceUrl: args.sourceUrl,
     glbPath: glbArtifact.path,
     gltfPath: gltfArtifact.path,
+    originalPath: originalArtifact?.path,
   })
 
   const sourceArtifact = await writeArtifactFile({ fs: args.fs, parentPath, name: sourceDocName, text: sourceText, role: 'source' })
@@ -274,7 +280,7 @@ async function createXrImageWorkspaceArtifacts(args: {
     gltfPath: gltfArtifact.path,
     gltfText: gltf.gltfText,
   })
-  const artifacts = [sourceArtifact, glbArtifact, gltfArtifact]
+  const artifacts = [sourceArtifact, glbArtifact, gltfArtifact, ...(originalArtifact ? [originalArtifact] : [])]
   return {
     createdPaths: artifacts.map(artifact => artifact.path),
     sources: artifacts.map(artifact => ({

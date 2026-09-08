@@ -1,6 +1,7 @@
 import { getAgenticGraphStorageDeviceId } from '@/lib/storage/agentic-graph-storage-device-identity'
 import {
   buildAgenticGraphStorageOutboxId,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
   type AgenticGraphStorageMutation,
   type AgenticGraphStorageOutboxRecord,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
@@ -28,6 +29,11 @@ export const buildAgenticGraphStorageOutboxRecord = (
   if (!mutationId) throw new Error('mutationId is required to queue a storage mutation')
   const recordId = normalizeString(args.recordId) || normalizeString(args.record.id)
   if (!recordId) throw new Error('recordId is required to queue a storage mutation')
+  const baseRevision = args.baseRevision === undefined && args.entity !== 'document'
+    ? args.record.syncRevision ?? null : args.baseRevision ?? null
+  if (args.entity !== 'document' && baseRevision !== null && (!Number.isSafeInteger(baseRevision) || baseRevision < 1)) {
+    throw new Error('A child edit requires its observed positive sync revision or an explicit new-record base')
+  }
   const record = sanitizeMutationRecord(
     args.entity,
     args.record as AgenticGraphStorageMutation['record'],
@@ -38,7 +44,7 @@ export const buildAgenticGraphStorageOutboxRecord = (
     entity: args.entity,
     op: args.op,
     recordId,
-    baseRevision: args.baseRevision ?? null,
+    baseRevision,
     record: record as never,
   }
   return sanitizeOutboxRecord({
@@ -48,7 +54,8 @@ export const buildAgenticGraphStorageOutboxRecord = (
     entity: args.entity,
     op: args.op,
     recordId,
-    baseRevision: args.baseRevision ?? null,
+    baseRevision: payload.baseRevision,
+    syncApiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
     payload: payload as unknown as Record<string, unknown>,
     payloadHash: '',
     attemptCount: 0,

@@ -497,6 +497,11 @@
       "types": "./dist/rich-media/videoThumbnail.d.ts",
       "import": "./dist/rich-media/videoThumbnail.js",
       "default": "./dist/rich-media/videoThumbnail.js"
+    },
+    "./payments/chainEvidenceContract": {
+      "types": "./dist/payments/chainEvidenceContract.d.ts",
+      "import": "./dist/payments/chainEvidenceContract.js",
+      "default": "./dist/payments/chainEvidenceContract.js"
     }
   },
   "files": [

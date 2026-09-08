@@ -2187,7 +2187,7 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
   if (
     !canvasArrangeActionBarText.includes('UI_RESPONSIVE_CANVAS_FLOATING_ACTION_ROW_CLASSNAME') ||
     !threeGraphXrText.includes('UI_RESPONSIVE_CANVAS_FLOATING_ACTION_ROW_CLASSNAME') ||
-    !canvasArrangeActionBarText.includes('flex flex-nowrap') ||
+    !canvasArrangeActionBarText.includes(' flex ') || !canvasArrangeActionBarText.includes('flex-nowrap') || !canvasArrangeActionBarText.includes('overflow-x-auto') ||
     !flowCanvasInteractionRuntimeText.includes('CanvasArrangeActionBar') ||
     !graphCanvasArrangeToolbarText.includes('CanvasArrangeActionBar') ||
     !designCanvasArrangeActionBarText.includes('CanvasArrangeActionBar') ||

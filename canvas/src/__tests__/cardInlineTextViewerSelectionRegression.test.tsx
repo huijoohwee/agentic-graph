@@ -86,6 +86,7 @@ export async function testCardInlineTextEditorViewerMediaCatalogInsertionKeepsMi
     if (!outsideSelection) throw new Error('expected browser selection')
     outsideSelection.removeAllRanges()
     outsideSelection.addRange(outsideRange)
+    Simulate.keyUp(editor)
     const inserted = insertMediaIntoActiveCardInlineTextEditor({
       kind: 'image',
       url: mediaUrl,

@@ -397,7 +397,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     'data-kg-xr-timeline-player="1"',
     'data-kg-xr-timeline-transport="reused-gantt-player"',
     'renderClipOverlay={renderXrSceneStageClipOverlay}',
-    'if (!args.selected) return null',
+    "if (!args.selected || selectedTimelineLaneId !== 'scene') return null",
     'data-kg-xr-motion-scene-controls="click-appear"',
     'data-kg-xr-motion-scene-control-strip="click-appear"',
     'className="xr-camera-motion-mark-selection-controls xr-camera-motion-mark-selection-controls--lane xr-timeline-scene-stage-control xr-timeline-scene-stage-control--selected"',

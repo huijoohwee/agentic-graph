@@ -217,21 +217,20 @@ export const testFlowWidgetPortHandleDomAnchorsPresent = async () => {
 
 export const testTextWidgetCellsStayLocallyEditable = async () => {
   const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'http://localhost' })
-  const g = globalThis as unknown as { window?: unknown; document?: unknown }
-  g.window = dom.window
-  g.document = dom.window.document
+  const restoreGlobals = installDomGlobals(dom)
   const host = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(host)
   const root = createRoot(host)
   const patched: Array<Record<string, unknown>> = []
-  root.render(
+  try {
+  await act(async () => { root.render(
     React.createElement(WidgetEditorRegistrySection, {
       active: true,
       properties: {
-        chatProvider: 'openai',
+        chatProvider: 'byteplus',
         prompt: 'hello',
-        chatEndpointUrl: CHAT_OPENAI_ENDPOINT_URL,
-        chatModel: 'gpt-5-nano',
+        chatEndpointUrl: CHAT_BYTEPLUS_AP_SOUTHEAST_ENDPOINT_URL,
+        chatModel: CHAT_BYTEPLUS_TEXT_MODEL_DEFAULT,
         chatTopP: 0.7,
       },
       registryEntry: {
@@ -257,8 +256,7 @@ export const testTextWidgetCellsStayLocallyEditable = async () => {
       portHandlesEnabled: true,
       onSetProperties: next => patched.push(next),
     }),
-  )
-  await new Promise<void>(resolve => setTimeout(resolve, 20))
+  ) })
   const promptInput = host.querySelector<HTMLElement>('#prompt')
   const modelInput = host.querySelector<HTMLElement>('#chatModel')
   const topPInput = host.querySelector<HTMLElement>('#chatTopP')
@@ -270,11 +268,10 @@ export const testTextWidgetCellsStayLocallyEditable = async () => {
   await changeControlValue(promptInput, 'updated prompt')
   await changeControlValue(modelInput, 'seed-2-0-lite-custom')
   await changeControlValue(topPInput, '0.4')
-  await new Promise<void>(resolve => setTimeout(resolve, 20))
-  if (patched.length === 0) {
-    throw new Error('expected local BytePlus text widget field edits to patch widget properties')
+  for (const [key, value] of [['prompt', 'updated prompt'], ['chatModel', 'seed-2-0-lite-custom'], ['chatTopP', 0.4]] as const) {
+    if (!patched.some(patch => patch[key] === value)) throw new Error(`expected local BytePlus edit to persist ${key}=${value}`)
   }
-  root.unmount()
+  } finally { await act(async () => root.unmount()); restoreGlobals() }
 }
 
 export const testWidgetRegistrySelectFieldsStayEditable = async () => {

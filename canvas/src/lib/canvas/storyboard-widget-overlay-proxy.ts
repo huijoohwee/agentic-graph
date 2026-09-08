@@ -52,7 +52,10 @@ export const STORYBOARD_WIDGET_OVERLAY_INTERACTIVE_SELECTOR =
 export const STORYBOARD_WIDGET_INTERACTION_FRAME_EVENT = 'kg-storyboard-widget-interaction-frame'
 export const STORYBOARD_WIDGET_GEOMETRY_COMMITTED_EVENT = 'kg-storyboard-widget-geometry-committed'
 
+export type StoryboardWidgetInteractionFrameOptions = { updateToolbarLayout?: boolean }
+
 let storyboardWidgetInteractionFrameRaf: number | null = null
+let storyboardWidgetInteractionFrameUpdatesToolbar = false
 
 export function escapeStoryboardWidgetOverlaySelectorAttrValue(value: string): string {
   const text = String(value || '')
@@ -83,12 +86,16 @@ export function queryStoryboardWidgetOverlayRootsForSurface(args: {
     .filter(el => readStoryboardWidgetOverlaySurfaceId(el) === surfaceId)
 }
 
-export function emitStoryboardWidgetInteractionFrame(): void {
+export function emitStoryboardWidgetInteractionFrame(opts?: StoryboardWidgetInteractionFrameOptions): void {
   if (typeof window === 'undefined') return
+  // A geometry request must survive coalescing with position-only zoom frames.
+  storyboardWidgetInteractionFrameUpdatesToolbar ||= opts?.updateToolbarLayout !== false
   if (storyboardWidgetInteractionFrameRaf != null) return
   storyboardWidgetInteractionFrameRaf = window.requestAnimationFrame(() => {
+    const detail = { updateToolbarLayout: storyboardWidgetInteractionFrameUpdatesToolbar }
     storyboardWidgetInteractionFrameRaf = null
-    try { window.dispatchEvent(new Event(STORYBOARD_WIDGET_INTERACTION_FRAME_EVENT)) } catch { void 0 }
+    storyboardWidgetInteractionFrameUpdatesToolbar = false
+    try { window.dispatchEvent(new CustomEvent(STORYBOARD_WIDGET_INTERACTION_FRAME_EVENT, { detail })) } catch { void 0 }
   })
 }
 

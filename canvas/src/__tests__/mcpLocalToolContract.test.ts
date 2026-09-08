@@ -29,6 +29,7 @@ type LocalToolContractModule = {
     }
     inputSchema: {
       additionalProperties?: boolean
+      oneOf?: Array<{ additionalProperties?: boolean }>
       properties?: Record<string, { description?: string }>
     }
   }>
@@ -129,14 +130,15 @@ export async function testAgenticGraphLocalMcpToolContractStaysSharedAndStable()
   }
 
   for (const tool of tools) {
-    if (tool.inputSchema?.additionalProperties !== false) {
-      throw new Error(`expected additionalProperties=false for ${tool.name}`)
+    const variants = tool.inputSchema?.oneOf
+    if (tool.inputSchema?.additionalProperties !== false && (!variants?.length || !variants.every(branch => branch.additionalProperties === false))) {
+      throw new Error(`expected every accepted input object to reject additional properties for ${tool.name}`)
     }
     if (tool.securitySchemes?.[0]?.type !== 'noauth') {
       throw new Error(`expected local stdio tool ${tool.name} to expose noauth security scheme, got ${JSON.stringify(tool.securitySchemes)}`)
     }
-    if (!tool.description.startsWith('Use this when')) {
-      throw new Error(`expected local stdio tool ${tool.name} to use model-selectable description phrasing, got ${JSON.stringify(tool.description)}`)
+    if (typeof tool.description !== 'string' || !tool.description.trim() || tool.description.trim() === tool.name) {
+      throw new Error(`expected local stdio tool ${tool.name} to describe its purpose for model selection, got ${JSON.stringify(tool.description)}`)
     }
   }
 

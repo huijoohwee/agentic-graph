@@ -9,6 +9,7 @@ import {
   CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS,
   CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS,
   AGENTIC_OS_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
   AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS,
   AGENTIC_OS_STORAGE_COLLECTION_NAMES,
   AGENTIC_OS_STORAGE_D1_BINDING_NAME,
@@ -72,7 +73,7 @@ export const testAgenticGraphStorageContractExposesExpectedRoutesAndBindings = (
     pullRequest.workspaceId !== 'wk_123'
     || pullRequest.deviceId !== 'dev_macbook'
     || pullRequest.since !== 'cursor_1'
-    || pullRequest.apiVersion !== AGENTIC_OS_STORAGE_API_VERSION
+    || pullRequest.apiVersion !== AGENTIC_OS_STORAGE_SYNC_API_VERSION
   ) {
     throw new Error('expected pull request helper to build the documented POST payload shape')
   }

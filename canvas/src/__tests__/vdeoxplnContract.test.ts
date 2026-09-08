@@ -38,7 +38,9 @@ export async function testAgenticGraphVdeoxplnRegistryProjectsToAgentSkillsMainP
     throw new Error('expected vdeoxpln semantic keys to retain the source-owned semantic-key contract')
   }
   const syncScriptText = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'sync-pages-agentic-graph.mjs'), 'utf8')
-  if (!syncScriptText.includes("'dist/hash/signature.js'")) {
+  const syncOwnerText = fs.readFileSync(path.resolve(repoRoot, 'scripts/pages-mirror-sync.mjs'), 'utf8')
+  const agentReadyOwnerText = fs.readFileSync(path.resolve(repoRoot, 'scripts/pages-mirror-agent-ready.mjs'), 'utf8')
+  if (!syncScriptText.includes("from './pages-mirror-sync.mjs'") || !syncScriptText.includes('runPagesMirrorSync({') || !syncOwnerText.includes("from './pages-mirror-agent-ready.mjs'") || !syncOwnerText.includes('buildPagesMirrorAgentReadyPlan({') || !agentReadyOwnerText.includes("'dist/hash/signature.js'")) {
     throw new Error('expected Pages sync to publish the shared hash signature runtime')
   }
   const registry = buildAgenticGraphVdeoxplnRegistry()

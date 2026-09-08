@@ -1,3 +1,7 @@
+import assert from 'node:assert/strict'
+import { Group, Mesh } from 'three'
+import { applyGameFpsNpcSelectionHighlight } from '@/features/game-fps/GameFpsSharedNpcHighlights'
+import { readGameFpsSnapshot } from '@/features/game-fps/gameFpsRuntime'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { GraphData } from '@/lib/graph/types'
@@ -276,13 +280,14 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     ]) {
       if (!sceneLibrarySubjectSource.includes(marker)) throw new Error(`expected authored XR subjects to expose shared timeline highlight metadata through ${marker}`)
     }
-    for (const marker of [
-      "kgXrTimelineHighlight: 'npc-selected'",
-      'npcHighlightRefs',
-      'agentic_os_game_fps_npc_shared_highlight_',
-    ]) {
-      if (!gameStageSource.includes(marker)) throw new Error(`expected active Game Mode npc-* meshes to expose selected timeline highlights through ${marker}`)
+    if (!gameStageSource.includes('<GameFpsSharedNpcHighlights highlightRef={npcHighlightRef} />')) {
+      throw new Error('expected active NPC selection to reuse the shared highlight with already-rendered NPC poses')
     }
+    for (const marker of ["kgXrTimelineHighlight: 'npc-selected'", 'agentic_os_game_fps_npc_shared_highlight_']) {
+      if (!npcHighlightSource.includes(marker)) throw new Error(`expected the shared NPC renderer to expose ${marker}`)
+    }
+    if (!gameStageSource.includes('applyGameFpsNpcSelectionHighlight(highlight, npc, mesh)')) throw new Error('expected the active NPC loop to own highlight updates without a second animation pass')
+    assertNpcSelectionHighlightTracksRenderedPose()
     for (const marker of [
       "selectedActor={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === track.actorId}",
       'agentic_os_xr_motion_cast_live_highlight_',
@@ -329,5 +334,43 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     useGraphStore.setState(previousSurface as never)
     hydrateCanonicalXrMotionReferenceRuntime()
     hydrateCanonicalXrPhysicsRuntime()
+  }
+}
+
+function assertNpcSelectionHighlightTracksRenderedPose(): void {
+  const before = readGameFpsSnapshot()
+  const npc = { id: 'npc-scout', x: 3, z: -7, health: 50, action: 'hold' as const }
+  const highlight = new Mesh(), renderedNpc = new Mesh(), stage = new Group()
+  stage.position.set(4, 2, -1)
+  stage.scale.setScalar(3)
+  stage.add(highlight, renderedNpc)
+  try {
+    applyGameFpsNpcSelectionHighlight(highlight, npc)
+    assert.equal(highlight.visible, true)
+    assert.deepEqual(highlight.position.toArray(), [3, 0.9, -7])
+    assert.equal(highlight.userData.kgXrSharedAssetTarget, npc.id)
+    renderedNpc.position.set(8, 1.4, -2)
+    renderedNpc.rotation.set(0.1, 0.8, -0.3)
+    renderedNpc.scale.set(1.12, 0.4, 1.12)
+    applyGameFpsNpcSelectionHighlight(highlight, npc, renderedNpc)
+    stage.updateMatrixWorld(true)
+    assert.deepEqual(highlight.matrixWorld.toArray(), renderedNpc.matrixWorld.toArray(), 'highlight must follow the existing animated pose and inherited stage scale')
+    for (const target of [undefined, { ...npc, health: 0 }, { ...npc, health: NaN }]) {
+      applyGameFpsNpcSelectionHighlight(highlight, target)
+      assert.equal(highlight.visible, false)
+      assert.equal(highlight.userData.kgXrSharedAssetSelected, false)
+      assert.equal(highlight.userData.kgXrSharedAssetTarget, '')
+    }
+    applyGameFpsNpcSelectionHighlight(highlight, npc, null)
+    assert.equal(highlight.visible, false, 'missing active NPC mesh must not fall back to an inactive-stage marker')
+    renderedNpc.visible = false
+    applyGameFpsNpcSelectionHighlight(highlight, npc, renderedNpc)
+    assert.equal(highlight.visible, false, 'hidden active NPC must hide its highlight')
+    assert.equal(readGameFpsSnapshot(), before, 'selection rendering must not advance or mutate gameplay')
+  } finally {
+    highlight.geometry.dispose(); renderedNpc.geometry.dispose()
+    for (const mesh of [highlight, renderedNpc]) {
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) material.dispose()
+    }
   }
 }

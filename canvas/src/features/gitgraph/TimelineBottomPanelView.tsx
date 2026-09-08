@@ -1,12 +1,14 @@
 import React from 'react'
 import { GanttTimelineTransportPanel } from './GanttTimelineTransportPanel'
 import { useMermaidGanttDocument } from './useMermaidGanttDocument'
+import { useStoryboardWidgetDiagramSelectionBridge } from './useStoryboardWidgetDiagramSelectionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { XrCameraMotionSection } from '@/features/three/XrCameraMotionSection'
 
 function MediaTimelineBottomPanelView({ compact }: { compact: boolean }) {
-  const { code: mediaGanttCode } = useMermaidGanttDocument({ purpose: 'media' })
-  return <GanttTimelineTransportPanel code={mediaGanttCode} compact={compact} mode="media" />
+  const { code: mediaGanttCode, ganttModel, graphData } = useMermaidGanttDocument({ purpose: 'media' })
+  const { handleDiagramSelectedRowKeyChange } = useStoryboardWidgetDiagramSelectionBridge({ graphData, diagramModel: ganttModel, kind: 'gantt' })
+  return <GanttTimelineTransportPanel code={mediaGanttCode} compact={compact} mode="media" onSelectedRowKeyChange={handleDiagramSelectedRowKeyChange} />
 }
 
 export function TimelineBottomPanelView({

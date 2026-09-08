@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
+import { readMarkdownWorkspaceWriteExpectation } from '@/lib/markdown-workspace-runtime/markdownWorkspaceWritebackCommit'
 import { shouldAutosaveWorkspaceFile } from '@/features/markdown-workspace/workspaceAutosave'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -73,6 +76,19 @@ export const testWorkspaceAutosaveGuardsAgainstPathSwitchOverwrite = () => {
     })
   ) {
     throw new Error('expected false when the app-level autosave policy is disabled')
+  }
+}
+
+export const testWorkspaceAutosaveUsesObservedRawBaselineForProjectedEditorText = () => {
+  const path = '/docs/projected.md', fs = createMemoryWorkspaceFs()
+  const loaded = { path, text: '# Canonical display', observedWorkspaceText: '# Original raw bytes', observedWorkspaceFs: fs }
+  assert.equal(shouldAutosaveWorkspaceFile({ enabled: true, path, lastLoaded: loaded, activeText: loaded.text, debouncedText: loaded.text }), false)
+  assert.equal(shouldAutosaveWorkspaceFile({ enabled: true, path, lastLoaded: loaded, activeText: '# Authored', debouncedText: '# Authored' }), true)
+  assert.deepEqual(readMarkdownWorkspaceWriteExpectation(loaded, path), { expectedWorkspaceText: '# Original raw bytes', expectedWorkspaceFs: fs })
+  assert.equal(readMarkdownWorkspaceWriteExpectation({ path, text: loaded.text }, path), null)
+  assert.equal(readMarkdownWorkspaceWriteExpectation(loaded, '/docs/other.md'), null)
+  for (const observedWorkspaceText of ['', null]) {
+    assert.deepEqual(readMarkdownWorkspaceWriteExpectation({ ...loaded, observedWorkspaceText }, path), { expectedWorkspaceText: observedWorkspaceText, expectedWorkspaceFs: fs })
   }
 }
 

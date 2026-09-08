@@ -18,7 +18,7 @@ import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-f
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
+import { createAsyncActionTracker, installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 
 type RegisteredSettingsActions = {
   apply: () => void
@@ -29,7 +29,7 @@ const IMPORTED_AGENTIC_OS_FILE_NAME = 'agenticOs_20260523170900.md'
 const IMPORTED_HISTORY_FILE_NAME = 'history_local_import_20260523170900.md'
 const IMPORTED_AGENTIC_OS_PATH = `/workspace/chat/${IMPORTED_AGENTIC_OS_FILE_NAME}`
 const IMPORTED_HISTORY_PATH = `/workspace/chat/${IMPORTED_HISTORY_FILE_NAME}`
-const CREATED_AGENTIC_OS_PATH = '/workspace/chat/agenticOs_20260523171000.md'
+const CREATED_AGENTIC_OS_PATH = '/workspace/chat/20260523T171000Z/agenticOs_20260523T171000Z.md'
 const CREATED_HISTORY_PATH = '/workspace/chat/chh_20260523171000.md'
 
 const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonElement => {
@@ -41,6 +41,7 @@ const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonEle
 
 function SettingsLocalImportThenCreateHarness(props: {
   actionsRef: React.MutableRefObject<RegisteredSettingsActions | null>
+  asyncActions: ReturnType<typeof createAsyncActionTracker>
 }): React.ReactElement {
   const {
     values,
@@ -95,16 +96,16 @@ function SettingsLocalImportThenCreateHarness(props: {
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
       <section data-agentic-graph-status={String(agenticGraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
-      <button type="button" onClick={() => importLocalFilesForAgenticGraph(agenticGraphFiles)}>
+      <button type="button" onClick={() => props.asyncActions.track(importLocalFilesForAgenticGraph(agenticGraphFiles))}>
         Import agentic-graph Local File
       </button>
-      <button type="button" onClick={() => importLocalFilesForChatHistory(historyFiles)}>
+      <button type="button" onClick={() => props.asyncActions.track(importLocalFilesForChatHistory(historyFiles))}>
         Import History Local File
       </button>
-      <button type="button" onClick={() => void createAndSelectAgenticGraphFile()}>
+      <button type="button" onClick={() => props.asyncActions.track(createAndSelectAgenticGraphFile())}>
         Create agentic-graph File
       </button>
-      <button type="button" onClick={() => void createAndSelectChatHistoryFile()}>
+      <button type="button" onClick={() => props.asyncActions.track(createAndSelectChatHistoryFile())}>
         Create History File
       </button>
     </section>
@@ -118,6 +119,7 @@ export async function testSettingsLocalImportThenCreateKeepsCommittedSurfaceTrut
   let settingsRoot: ReturnType<typeof createRoot> | null = null
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
+  const asyncActions = createAsyncActionTracker()
   const importedFileNames: string[] = []
   const originalDateNow = Date.now
   const unregisterBridge = registerMarkdownWorkspaceActionBridge('test-local-import-then-create-bridge', {
@@ -137,7 +139,7 @@ export async function testSettingsLocalImportThenCreateKeepsCommittedSurfaceTrut
   try {
     resetBrowserLocalSurfaceSnapshotsForTests()
     resetWorkspaceFsForTests()
-    Date.now = () => new Date(2026, 4, 23, 17, 10, 0, 0).getTime()
+    Date.now = () => Date.UTC(2026, 4, 23, 17, 10, 0, 0)
     const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
     anyWindow.requestAnimationFrame = installDeterministicRaf(dom.window)
 
@@ -164,7 +166,7 @@ export async function testSettingsLocalImportThenCreateKeepsCommittedSurfaceTrut
     settingsRoot = createRoot(settingsContainer as unknown as HTMLElement)
     chatRoot = createRoot(chatContainer as unknown as HTMLElement)
 
-    await mountReactRoot(settingsRoot, React.createElement(SettingsLocalImportThenCreateHarness, { actionsRef }), {
+    await mountReactRoot(settingsRoot, React.createElement(SettingsLocalImportThenCreateHarness, { actionsRef, asyncActions }), {
       window: dom.window as unknown as Window,
       frames: 10,
     })
@@ -179,19 +181,19 @@ export async function testSettingsLocalImportThenCreateKeepsCommittedSurfaceTrut
 
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Import agentic-graph Local File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 2)
+      await asyncActions.settle()
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Import History Local File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 2)
+      await asyncActions.settle()
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Create agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 4)
+      await asyncActions.settle()
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Create History File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 4)
+      await asyncActions.settle()
     })
 
     const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agentic-graph-storage-mode]')?.getAttribute('data-draft-agentic-graph-storage-mode')
@@ -284,6 +286,11 @@ export async function testSettingsLocalImportThenCreateKeepsCommittedSurfaceTrut
       })}`)
     }
   } finally {
+    try {
+      await act(async () => { await asyncActions.settle() })
+    } catch (error) {
+      cleanupAssertionError = error instanceof Error ? error : new Error(String(error))
+    }
     unregisterBridge()
     Date.now = originalDateNow
     if (chatRoot) {
@@ -291,7 +298,7 @@ export async function testSettingsLocalImportThenCreateKeepsCommittedSurfaceTrut
     }
     const clearedInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (clearedInspection.available !== false) {
-      cleanupAssertionError = new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedInspection)}`)
+      cleanupAssertionError ??= new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedInspection)}`)
     }
     if (settingsRoot) {
       await unmountReactRoot(settingsRoot, { window: dom.window as unknown as Window })

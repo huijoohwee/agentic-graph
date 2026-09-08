@@ -317,9 +317,9 @@ Minimal canvas preset keys remain a supported import surface, but the contract m
 | Surface | Existing test / code guard | What it proves |
 |---|---|---|
 | Prompt snippets and contract wording | `canvas/src/__tests__/chatResponseContractPrompt.test.ts` | AGENTIC_OS and generic prompt contracts include required structural guidance. |
-| Structured AGENTIC_OS compatibility | `chatResponseContractPrompt.test.ts` | Base template and deterministic fallback are parseable by frontmatter-flow parser and validation rules. |
-| Submit helper ownership | `chatResponseContractPrompt.test.ts` | Thin hook delegation, request-build, transport fallback, preflight, coordinator, and AGENTIC_OS retry helpers stay decomposed and behaviorally aligned. |
-| Finalize-to-canvas apply path | `chatResponseContractPrompt.test.ts` | Finalize uses `applyChatAgenticOsWorkspaceDocumentToCanvas()` and the workspace-document apply flags. |
+| Structured AGENTIC_OS compatibility | `chatResponseContractPrompt.test.ts`, `chatResponseFallbackContract.test.ts` | Base template and deterministic fallback are parseable by frontmatter-flow parser and validation rules. |
+| Submit helper ownership | `chatResponseContractPrompt.test.ts`, `chatSubmitRequestContract.test.ts`, `chatSubmitCoordinatorContract.test.ts`, `chatSubmitLifecycleTransport.test.ts` | Thin hook delegation, request-build, transport fallback, preflight, coordinator, and AGENTIC_OS retry helpers stay decomposed and behaviorally aligned. |
+| Finalize-to-canvas apply path | `chatResponseFallbackContract.test.ts`, `chatFinalizeWorkspaceArtifacts.test.ts` | Finalize uses `applyChatAgenticOsWorkspaceDocumentToCanvas()` and the workspace-document apply flags. |
 | Stream artifact session writes | `canvas/src/__tests__/chatStreamArtifacts.test.ts` | Session-folder stream logs, reports, and dereferenced markdown artifacts stay on the shared workspace path. |
 | Stream hardcode guard | `canvas/src/__tests__/miromindStreamArtifactHardcodeGuard.test.ts` | Example shared URLs are not committed as repo literals. |
 | Frontmatter-flow parse behavior | `frontmatterFlowNodeNormalize.test.ts` | Frontmatter-flow node and subgraph normalization stays valid. |

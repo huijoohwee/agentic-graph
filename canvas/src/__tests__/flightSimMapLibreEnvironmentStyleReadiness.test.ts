@@ -9,10 +9,10 @@ import {
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
   mapHasExactFlightGeoEnvironment,
   removeFlightGeoEnvironmentFromMap,
-} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+} from 'gympgrph/testkit/flightGeoEnvironmentMapLibre'
 import type {
   FlightGeoOverlaySnapshot,
-} from '../../../gympgrph/src/flightGeoOverlay'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import { environmentOverlay } from './helpers/flightSimMapLibreEnvironmentFixture'
 
 type EnvironmentSourceFeature = {

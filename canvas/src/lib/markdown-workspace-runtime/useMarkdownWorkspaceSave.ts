@@ -1,3 +1,4 @@
+import type { MarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceRuntime.types'
 import React from 'react'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
 import { normalizeWorkspacePath, workspaceBasename, workspaceExtLower, workspaceStem, WORKSPACE_ROOT_PATH } from '@/features/workspace-fs/path'
@@ -18,12 +19,14 @@ import {
   type WorkspaceSourceTextRevision,
 } from '@/features/workspace-fs/workspaceSourceTextTransaction'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { readMarkdownWorkspaceWriteExpectation } from './markdownWorkspaceWritebackCommit'
 
 type PendingWorkspaceAutosave = {
   path: WorkspacePath
   text: string
   expectedSourceRevision: WorkspaceSourceTextRevision
-  expectedWorkspaceText: string
+  expectedWorkspaceText: string | null
+  expectedWorkspaceFs: NonNullable<MarkdownWorkspaceLoadedSnapshot['observedWorkspaceFs']>
 }
 
 export type MarkdownWorkspaceSaveArgs = MarkdownWorkspaceRuntimeProgressStatusBindings & {
@@ -37,7 +40,7 @@ export type MarkdownWorkspaceSaveArgs = MarkdownWorkspaceRuntimeProgressStatusBi
   activeDocumentKey: string
   activeDocumentSourceUrl: string | null
   getFs: MarkdownWorkspaceRuntimeGetFs
-  lastLoadedRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: React.MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   patchWorkspaceEntryInlineText: (path: WorkspacePath, text: string) => void
   setActiveMarkdownDocument: MarkdownWorkspaceRuntimeSetActiveDocument
   setGraphRagWorkflowJsonText: (text: string) => void
@@ -191,6 +194,7 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
       syncWorkspaceTextState({
         path: createdPath,
         text: textToSave,
+        observedWorkspaceText: textToSave, observedWorkspaceFs: fs,
         lastLoadedRef: args.lastLoadedRef,
         setActiveText: args.setActiveTextProgrammatic,
       })
@@ -214,6 +218,8 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
     if (!hasUnsavedActiveText) return true
     cancelMarkdownWorkspaceAutosaveSync(path)
     try {
+      const expectation = readMarkdownWorkspaceWriteExpectation(lastLoaded, path)
+      if (!expectation) throw new Error('Reload the source before saving edits without an observed workspace baseline.')
       const saved = await writeWorkspaceFileAndSync({
         path,
         text: activeText,
@@ -226,7 +232,7 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
         setGraphRagWorkflowJsonText: args.setGraphRagWorkflowJsonText,
         setActiveText: args.setActiveTextProgrammatic,
         expectedSourceRevision: captureWorkspaceSourceTextRevision(path),
-        expectedWorkspaceText: lastLoaded.text,
+        ...expectation,
         resetParsedState: false,
       })
       if (!saved) {
@@ -254,11 +260,13 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
     if (!shouldAutosaveWorkspaceFile({ enabled: workspaceAutosaveEnabled, path, lastLoaded: last, activeText: args.activeText, debouncedText: args.debouncedText })) {
       return
     }
+    const expectation = readMarkdownWorkspaceWriteExpectation(last, path)
+    if (!expectation) { applyAutosaveErrorStatus(new Error('Reload the source before autosaving edits without an observed workspace baseline.')); return }
     const autosaveRequest: PendingWorkspaceAutosave = {
       path,
       text: args.debouncedText,
       expectedSourceRevision: captureWorkspaceSourceTextRevision(path),
-      expectedWorkspaceText: String(last?.text || ''),
+      ...expectation,
     }
     scheduleMarkdownWorkspaceAutosaveSync(() => {
       if (autosaveInFlightRef.current) {
@@ -288,6 +296,7 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
                 setGraphRagWorkflowJsonText: args.setGraphRagWorkflowJsonText,
                 expectedSourceRevision: nextRequest.expectedSourceRevision,
                 expectedWorkspaceText: nextRequest.expectedWorkspaceText,
+                expectedWorkspaceFs: nextRequest.expectedWorkspaceFs,
                 resetParsedState: false,
               })
               if (!saved) {

@@ -106,6 +106,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
   context: StoryboardWidgetWorkflowNodeResolutionContext
   graphForRun: GraphData
   allowCreateRichMediaPanel: boolean
+  suppressStoreGraphWriteback?: boolean
   withRunLayoutMutationGuard: <T>(run: () => T) => T
   scheduleWorkflowOutputEdgeRefresh: () => void
   readLiveDraftGraphData: () => GraphData | null
@@ -151,7 +152,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
       scheduleWorkflowOutputEdgeRefresh: args.scheduleWorkflowOutputEdgeRefresh,
     })
     const nextPanelProps = mergeStoryboardWidgetWorkflowPropertyPatch(existingPanelProps, patch)
-    if (!areStoryboardWidgetWorkflowRecordValuesEqual(existingPanelProps, nextPanelProps)) {
+    if (args.suppressStoreGraphWriteback !== true && !areStoryboardWidgetWorkflowRecordValuesEqual(existingPanelProps, nextPanelProps)) {
       args.updateNode(panelNodeId, { properties: nextPanelProps as never })
     }
   }

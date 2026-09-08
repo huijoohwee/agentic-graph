@@ -7,21 +7,21 @@ import {
   FLIGHT_GEO_OVERLAY_LAYER_ORDER,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   retainFlightGeoOverlayDuringStyleSwap,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import {
   flightGeoEnvironmentMapLibreFeatureCollection,
   FLIGHT_GEO_ENVIRONMENT_LAYER_DEFINITIONS,
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
-} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+} from 'gympgrph/testkit/flightGeoEnvironmentMapLibre'
 import type {
   FlightGeoOverlaySnapshot,
-} from '../../../gympgrph/src/flightGeoOverlay'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import {
   promoteMapLibreFlightProviderStyle,
   type MapLibreFlightProviderPromotionState,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightProviderPromotion'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightProviderPromotion'
 
 function exactOverlay(): FlightGeoOverlaySnapshot {
   const ring = [

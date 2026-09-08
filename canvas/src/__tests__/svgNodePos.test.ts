@@ -1,7 +1,10 @@
 import { extractNodePosByIdFromSvgMarkup } from '@/lib/graph/svgNodePos'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 export async function testExtractNodePosByIdFromSvgMarkupReadsNodesAndEdges(): Promise<void> {
-  const svg = `
+  const { restore } = initJsdomHarness()
+  try {
+    const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <g>
         <g data-kg-layer="nodes">
@@ -18,12 +21,15 @@ export async function testExtractNodePosByIdFromSvgMarkupReadsNodesAndEdges(): P
     </svg>
   `.trim()
 
-  const pos = extractNodePosByIdFromSvgMarkup(svg)
-  if (!pos || typeof pos !== 'object') throw new Error('Expected pos map')
-  if (!pos.a || pos.a.x !== 10 || pos.a.y !== 20) throw new Error('Expected circle pos for a')
-  if (!pos.b || pos.b.x !== 45 || pos.b.y !== 60) throw new Error('Expected rect center pos for b')
-  if (!pos.c || pos.c.x !== 7 || pos.c.y !== 8) throw new Error('Expected translate pos for c')
-  if (!pos.g1 || pos.g1.x !== 16 || pos.g1.y !== 18) throw new Error('Expected g pos for g1')
-  if (!pos.d || pos.d.x !== 1 || pos.d.y !== 2) throw new Error('Expected source endpoint pos for d')
-  if (!pos.e || pos.e.x !== 3 || pos.e.y !== 4) throw new Error('Expected target endpoint pos for e')
+    const pos = extractNodePosByIdFromSvgMarkup(svg)
+    if (!pos || typeof pos !== 'object') throw new Error('Expected pos map')
+    if (!pos.a || pos.a.x !== 10 || pos.a.y !== 20) throw new Error('Expected circle pos for a')
+    if (!pos.b || pos.b.x !== 45 || pos.b.y !== 60) throw new Error('Expected rect center pos for b')
+    if (!pos.c || pos.c.x !== 7 || pos.c.y !== 8) throw new Error('Expected translate pos for c')
+    if (!pos.g1 || pos.g1.x !== 16 || pos.g1.y !== 18) throw new Error('Expected g pos for g1')
+    if (!pos.d || pos.d.x !== 1 || pos.d.y !== 2) throw new Error('Expected source endpoint pos for d')
+    if (!pos.e || pos.e.x !== 3 || pos.e.y !== 4) throw new Error('Expected target endpoint pos for e')
+  } finally {
+    restore()
+  }
 }

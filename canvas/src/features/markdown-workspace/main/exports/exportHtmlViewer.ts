@@ -614,9 +614,9 @@ export async function buildHtmlViewerSnapshotDocument(args: BuildHtmlViewerSnaps
         '',
       ].join('\n')
     }
-
     const buildFallbackViewerHtml = async (): Promise<string | null> => {
       const root = await renderFallbackMarkdownViewerRoot()
+      ;(root?.querySelector('article') || root)?.setAttribute('data-kg-editor-workspace-fallback', 'markdown')
       const html = root ? await buildHtmlFromViewerRoot(root, { includeSourceContext: true }) : null
       if (html) return html
       return buildFallbackMarkdownViewerDocument({
