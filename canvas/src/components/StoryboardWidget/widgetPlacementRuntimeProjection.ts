@@ -249,8 +249,8 @@ export function applyWidgetOverlayPosition(args: {
     lastStoryboardPinnedTransformRef.current = null
   }
   const currentStoredWorld = readStoredWidgetWorldPos()
-  if (currentStoredWorld && !storyboardPinnedCardLayoutActive) widgetWorldPosRef.current = currentStoredWorld
-  const currentStoredWorldForPlacement = storyboardPinnedCardLayoutActive || floatingUsesScreenAuthority ? null : currentStoredWorld
+  if (currentStoredWorld) widgetWorldPosRef.current = currentStoredWorld
+  const currentStoredWorldForPlacement = floatingUsesScreenAuthority ? null : currentStoredWorld
   const storedWorld = currentStoredWorldForPlacement || (floatingUsesScreenAuthority ? null : widgetWorldPosRef.current)
   const storedWorldScreen = storedWorld ? worldToScreen({ transform: placementTransform, x: storedWorld.x, y: storedWorld.y }) : null
   const usableFloatingScreenPos = (() => {
@@ -289,6 +289,13 @@ export function applyWidgetOverlayPosition(args: {
         height: frameHeight,
       })
     : null
+  const explicitPinnedWorld = worldDragOverride || effectiveStoredWorld
+  if (storyboardPinnedRawScreenBox && explicitPinnedWorld) {
+    // Captured and dragged placements store the frame top-left, not its center.
+    const screen = worldToScreen({ transform: placementTransform, x: explicitPinnedWorld.x, y: explicitPinnedWorld.y })
+    storyboardPinnedRawScreenBox.left = screen.sx
+    storyboardPinnedRawScreenBox.top = screen.sy
+  }
   const storyboardPinnedScreenBox = storyboardPinnedRawScreenBox
     ? (() => {
         const projected = projectVectorPaintedOverlayZoomBox({

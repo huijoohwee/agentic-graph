@@ -132,7 +132,6 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
     return selected ? FLOW_WIDGET_OVERLAY_Z_INDEX_SELECTED : FLOW_WIDGET_OVERLAY_Z_INDEX_BASE - idx
   }, [nodeId, selectedNodeId, stackIndex])
 
-  const storyboardCardLayoutSurface = String(storyboardWidgetSurfaceId || '').trim() === 'storyboard'
   const isRichMediaPanelNode = String(node.type || '').trim() === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID
   const autoStackOffset = React.useMemo(() => computeWidgetAnchoredStackOffset(stackIndex), [stackIndex])
 
@@ -162,10 +161,8 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
     schema,
     openWidgetNodeCount: effectiveOverlayCollectiveCount,
     autoStackOffset,
-    floating: storyboardCardLayoutSurface ? false : pinnedInCanvasForPlacement !== true,
-    floatingUsesScreenAuthority: storyboardCardLayoutSurface
-      ? false
-      : shouldUseStoryboardWidgetFloatingScreenAuthority({ graphMetaKind, pinnedInCanvas: pinnedInCanvasForPlacement, storyboardWidgetSurfaceId }),
+    floating: pinnedInCanvasForPlacement !== true,
+    floatingUsesScreenAuthority: shouldUseStoryboardWidgetFloatingScreenAuthority({ graphMetaKind, pinnedInCanvas: pinnedInCanvasForPlacement, storyboardWidgetSurfaceId }),
   })
   const uiState = useWidgetEditorOverlayUiState({
     node,
@@ -183,13 +180,11 @@ const FlowWidgetOverlayInner = React.memo(function FlowWidgetOverlayInner({
   })
   const pinnedInCanvas = uiState.pinnedInCanvas
   const effectiveHideFields = isRichMediaPanelNode ? uiState.richMediaKtvRows : uiState.hideFields
-  const floating = storyboardCardLayoutSurface ? false : pinnedInCanvas !== true
+  const floating = pinnedInCanvas !== true
   const headerDragAllowedByPin = isFlowWidgetHeaderDragAllowedByPin({
     pinnedInCanvas,
   })
-  const floatingUsesScreenAuthority = storyboardCardLayoutSurface
-    ? false
-    : shouldUseStoryboardWidgetFloatingScreenAuthority({ graphMetaKind, pinnedInCanvas, storyboardWidgetSurfaceId })
+  const floatingUsesScreenAuthority = shouldUseStoryboardWidgetFloatingScreenAuthority({ graphMetaKind, pinnedInCanvas, storyboardWidgetSurfaceId })
 
   React.useEffect(() => {
     placement.applyOverlayPosition({ emitInteractionFrame: false })

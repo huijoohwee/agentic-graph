@@ -81,6 +81,9 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     pretendToBeVisual: true,
   })
 
+  // JSDOM has no layout hit-testing; individual tests can supply explicit hits.
+  if (typeof dom.window.document.elementFromPoint !== 'function') dom.window.document.elementFromPoint = () => null
+
   const g = globalThis as typeof globalThis
   const originalIsReactActEnvironment = (g as unknown as { IS_REACT_ACT_ENVIRONMENT?: unknown }).IS_REACT_ACT_ENVIRONMENT
 

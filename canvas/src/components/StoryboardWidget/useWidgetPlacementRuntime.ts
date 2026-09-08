@@ -518,7 +518,7 @@ export function useWidgetPlacementRuntime(args: {
   }, [active, applyOverlayPosition, nodeId])
 
   React.useEffect(() => {
-    if (!active || floating || !nodeId || widgetWorldPosRef.current) return
+    if (!active || floating || !nodeId || widgetWorldPosRef.current || String(storyboardWidgetSurfaceId || '').trim() === 'storyboard') return
     applyOverlayPosition()
     const z = (getLiveZoomTransform ? getLiveZoomTransform() : null) || zoomStateRef.current || { k: 1, x: 0, y: 0 }
     const world = screenToWorld({
@@ -527,7 +527,7 @@ export function useWidgetPlacementRuntime(args: {
       sy: anchoredPosRef.current.top + autoStackOffset.top,
     })
     persistWorldPos(world)
-  }, [active, applyOverlayPosition, autoStackOffset.left, autoStackOffset.top, floating, getLiveZoomTransform, nodeId, persistWorldPos])
+  }, [active, applyOverlayPosition, autoStackOffset.left, autoStackOffset.top, floating, getLiveZoomTransform, nodeId, persistWorldPos, storyboardWidgetSurfaceId])
 
   React.useEffect(() => {
     const unsub = useGraphStore.subscribe(

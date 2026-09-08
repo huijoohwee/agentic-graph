@@ -60,7 +60,7 @@ export function testStoryboardWidgetFrontmatterManualPlacementAuthorityUsesShare
   if (!overlayText.includes("from '@/lib/storyboardWidget/widgetPlacementAuthority'")) {
     throw new Error('expected widget runtime to import placement authority directly from the shared lib owner')
   }
-  if (!overlayPlacementRuntimeText.includes('const currentStoredWorldForPlacement = storyboardPinnedCardLayoutActive || floatingUsesScreenAuthority')
+  if (!overlayPlacementRuntimeText.includes('const currentStoredWorldForPlacement = floatingUsesScreenAuthority ? null : currentStoredWorld')
     || !overlayPlacementRuntimeText.includes('const storedWorld = currentStoredWorldForPlacement || (floatingUsesScreenAuthority ? null : widgetWorldPosRef.current)')) {
     throw new Error('expected floating screen-authority mode to ignore stored world placement authority')
   }

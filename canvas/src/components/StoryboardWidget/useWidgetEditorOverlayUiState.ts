@@ -159,41 +159,6 @@ export function useWidgetEditorOverlayUiState(args: {
   }, [graphMetaKey, graphMetaKind, nodeId, placement, placementAuthorityNode, storyboardWidgetSurfaceId])
 
   React.useEffect(() => {
-    if (!nodeId || !shouldUseStoryboardWidgetFloatingScreenAuthority({ graphMetaKind, pinnedInCanvas: false, storyboardWidgetSurfaceId })) return
-    const readRawPinned = (s: unknown): boolean | null => {
-      const state = s as {
-        graphData?: unknown
-        flowWidgetPinnedByNodeId?: Record<string, boolean>
-        flowWidgetPinnedByNodeIdByGraphMetaKey?: Record<string, Record<string, boolean>>
-      }
-      const v = readScopedFlowWidgetNodeValue({
-        nodeId,
-        graphMetaKey,
-        graphData: state.graphData,
-        keyedByGraphMetaKey: state.flowWidgetPinnedByNodeIdByGraphMetaKey,
-        globalByNodeId: state.flowWidgetPinnedByNodeId,
-      })
-      return typeof v === 'boolean' ? v : null
-    }
-    let prevRawPinned = readRawPinned(useGraphStore.getState())
-    const unsub = useGraphStore.subscribe(readRawPinned, nextRawPinned => {
-      const wasRawPinned = prevRawPinned === true
-      prevRawPinned = nextRawPinned
-      if (!wasRawPinned || nextRawPinned === true) return
-      const applied = placement.lastAppliedRef.current
-      if (!applied) return
-      placement.persistFloatingPlacement({ top: applied.top, left: applied.left })
-    })
-    return () => {
-      try {
-        unsub()
-      } catch {
-        void 0
-      }
-    }
-  }, [graphMetaKey, graphMetaKind, nodeId, placement, storyboardWidgetSurfaceId])
-
-  React.useEffect(() => {
     if (!active || !autoRevealKey) return
     setMinimized(prev => {
       if (!prev) return prev
