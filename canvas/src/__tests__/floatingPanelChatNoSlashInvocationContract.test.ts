@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import { load as parseYaml } from 'js-yaml'
 import { buildChatSubmitRequestContext } from '@/features/chat/floatingPanelChat/floatingPanelChatSubmitRequest'
 import { analyzeAgenticOsRequest } from '@/features/chat/chatAgenticOsRequestProfile'
@@ -16,68 +16,16 @@ import {
 import { buildOpenAiResponsesInput } from '@/features/chat/floatingPanelChat/floatingPanelChatOpenAiResponsesInput'
 import { buildSubmitArgsFixture } from '@/__tests__/helpers/chatSubmitArgsFixture'
 
-const NO_SLASH_IMAGE_PROMPT = 'what ![strybldr-starter-source.png](http://localhost:5181/api/storage/media/airvio/runs/upload-017d1e965528642f/image/strybldr-starter-source-017d1e965528642f.png?agentic_os_media_token=secret)'
-const NO_SLASH_WHATS_IMAGE_PROMPT = "what's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
-const NO_SLASH_WHATS_IN_IMAGE_PROMPT = "what's in ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
-const NO_SLASH_WHY_IMAGE_PROMPT = "why there's ![1920s_Singapore_Malaya_202606190937.jpeg](http://localhost:5180/api/storage/media/airvio/runs/upload-170a76238422bb27/image/1920s_singapore_malaya_202606190937-170a76238422bb27.jpeg?agentic_os_media_token=secret)"
-const MEDIA_ONLY_IMAGE_PROMPT = NO_SLASH_IMAGE_PROMPT.replace(/^what\s+/, '')
-const TRACE_ONLY_ASSISTANT_TEXT = [
-  '## Provider Stream Trace',
-  '',
-  'The provider stream is active. Incoming reasoning, tool, and assistant deltas are appended below.',
-  '',
-  '### Stream Transcript',
-  '',
-  '[signal]',
-  '- Stream events are arriving.',
-  '',
-  '### Terminal Metadata',
-  '',
-  '- SSE events: 5',
-].join('\n')
-const REPEATED_PARTIAL_RESPONSE_YAML = [
-  '```yaml',
-  'response:',
-  '  intent: "Provide a neutral visual description of the attached media."',
-  '  domain_vars: {}',
-  '  context_scope: "image-analysis:attached image"',
-  '  structuredContent:',
-  '    cards:',
-  '      - id: attached-image-analysis',
-  '        label: "Attached image analysis"',
-  '        kind: "description"',
-  '        output:',
-  '          - "The attached image contains a source object that should be described without inventing unavailable context."',
-  '  table:',
-  '    - id: image-attachment',
-  '      field: description',
-  '      value: "partial',
-  '```yaml',
-  'response:',
-  '  intent: "Provide a neutral visual description of the attached media."',
-  '  domain_vars: {}',
-  '  context_scope: "image-analysis:attached image"',
-  '  structuredContent:',
-  '    cards:',
-  '      - id: attached-image-analysis',
-  '        label: "Attached image analysis"',
-  '        kind: "description"',
-  '        output:',
-  '          - "The attached image contains a source object that should be described without inventing unavailable context."',
-  '  table:',
-  '    - id: image-attachment',
-  '      field: description',
-  '      value: "partial',
-].join('\n')
+import { NO_SLASH_IMAGE_PROMPT, NO_SLASH_WHATS_IMAGE_PROMPT, NO_SLASH_WHATS_IN_IMAGE_PROMPT, NO_SLASH_WHY_IMAGE_PROMPT, MEDIA_ONLY_IMAGE_PROMPT, TRACE_ONLY_ASSISTANT_TEXT, REPEATED_PARTIAL_RESPONSE_YAML } from './helpers/floatingPanelChatNoSlashFixtures'
 
 const readStoryboardTemplateContract = (): string =>
-  readFileSync(resolve(process.cwd(), '..', '..', 'huijoohwee.github.io', 'template', 'agentic-graph-2d-renderer-storyboard-template.md'), 'utf8')
+  readFileSync(resolveSiblingFixturePath('huijoohwee.github.io', 'template/agentic-graph-2d-renderer-storyboard-template.md'), 'utf8')
 
 export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate() {
   const template = readStoryboardTemplateContract()
   for (const templateSnippet of [
     'schema: "agentic-os-2d-renderer-storyboard-template/v1"',
-    'kgCanvas2dRenderer: "storyboard"',
+    'agenticOsCanvas2dRenderer: "storyboard"',
     'runtime_readiness:',
     'agentic_os_contract:',
     'semantic_html_projection:',
@@ -97,7 +45,7 @@ export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate
       '`kgCanvas2dRenderer: "storyboard"`',
       '`runtime_readiness.status` cannot become runtime-ready without local proof',
       'Prod mirror and Cloudflare remain blocked until explicit operator instruction',
-      'Semantic HTML projection uses `main`, `section`, `article`, `header`, `nav`, `aside`, `figure`, `figcaption`, and `table`',
+      'Semantic HTML projection uses `main`, `section`, `article`, `header`, `nav`, `aside`, `figure`, and `figcaption`; generic `div` is layout-only and never the primary surface boundary. Table DOM is derived at runtime from persisted Markdown pipe tables only.',
       'no hardcoded source-specific media IDs',
     ]) {
       if (!contract.includes(required)) throw new Error(`Expected response contract to include storyboard template rule: ${required}`)
@@ -108,43 +56,6 @@ export function testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate
   }
 }
 
-export async function testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocationPromptsClean() {
-  const context = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
-    nextMessages: [{ id: 'user-1', role: 'user', content: NO_SLASH_IMAGE_PROMPT }],
-    assistantMessageId: 'assistant-pending',
-  })
-  const systemText = context.systemMessages.map(message => message.content).join('\n\n')
-  if (context.systemMessages[0]?.content !== CHAT_BASE_RESPONSE_CONTRACT_PROMPT) {
-    throw new Error('Expected no-slash chatAgenticGraph request to use the plain response base contract')
-  }
-  for (const required of [
-    'Plain no-slash chat stays Markdown/`response:` YAML',
-    'agentic-os-2d-renderer-storyboard-template/v1',
-    'Semantic HTML projection uses',
-    'runtime_readiness.status',
-  ]) {
-    if (!systemText.includes(required)) {
-      throw new Error(`Expected no-slash plain contract to retain storyboard template rule: ${required}`)
-    }
-  }
-  for (const forbidden of [
-    'chatResponseBaseContract slash variant:',
-    'agentic-graph vdeoxpln execution contract:',
-    'Agentic OS invocation contract:',
-    'Storyboard template Agentic OS directive context:',
-    'For chatAgenticGraph output',
-    'agentic-os-pipeline/v1',
-    'agentic-os-computing-flow/v1',
-    'Computing Flow Definition',
-    '/storybuilding',
-    'agentic_os_media_token=secret',
-  ]) {
-    if (systemText.includes(forbidden)) {
-      throw new Error(`Expected no-slash image prompt to stay clean of ${forbidden}`)
-    }
-  }
-}
 
 export async function testFloatingPanelChatPrdTadSlashUsesStructuredAgenticOsContract() {
   const userQuery = `/prd-tad.create ${NO_SLASH_WHATS_IMAGE_PROMPT}`
@@ -261,83 +172,6 @@ export async function testFloatingPanelChatPrdTadSlashTextQueryMatchesNoSlashPro
   }
 }
 
-export async function testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCompilesRoute() {
-  const placeholderQuery = '/prd-tad.create [attached image]'
-  const placeholderResponsiveQuery = resolveChatRuntimeInvocationResponsiveQueryText(placeholderQuery)
-  if (placeholderResponsiveQuery !== "what's [attached image]") {
-    throw new Error(`Expected sparse slash media query to synthesize no-slash image question, got ${placeholderResponsiveQuery}`)
-  }
-  const placeholderContext = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
-    nextMessages: [{ id: 'user-1', role: 'user', content: placeholderQuery }],
-    assistantMessageId: 'assistant-pending',
-  })
-  if (placeholderContext.systemMessages[0]?.content !== CHAT_BASE_RESPONSE_CONTRACT_PROMPT) {
-    throw new Error('Expected sparse /prd-tad.create media query to use the plain response contract')
-  }
-  const placeholderUserMessage = placeholderContext.conversationMessages.find(message => message.role === 'user')
-  if (
-    placeholderUserMessage?.content.includes('/prd-tad.create') ||
-    !placeholderUserMessage?.content.startsWith("what's [attached image]?") ||
-    !placeholderUserMessage.content.includes('Use the answer as source context for PRD/TAD create.') ||
-    !placeholderUserMessage.content.includes('Produce or refresh the combined PRD/TAD contract from validated context.') ||
-    placeholderUserMessage.content.startsWith('PRD/TAD create.')
-  ) {
-    throw new Error(`Expected sparse media slash query to keep a visible user question for provider, got ${JSON.stringify(placeholderUserMessage)}`)
-  }
-
-  const slashMediaQuery = `/prd-tad.create ${MEDIA_ONLY_IMAGE_PROMPT}`
-  const profile = analyzeAgenticOsRequest(slashMediaQuery)
-  if (profile.intent !== "what's [attached image]" || profile.product || profile.namedTerms.length > 0 || profile.artifact !== 'PRD + TAD') {
-    throw new Error(`Expected media-only slash profile to keep AGENTIC_OS clean route metadata, got ${JSON.stringify({
-      intent: profile.intent,
-      product: profile.product,
-      namedTerms: profile.namedTerms,
-      artifact: profile.artifact,
-    })}`)
-  }
-  const context = await buildChatSubmitRequestContext({
-    submitArgs: buildSubmitArgsFixture({ chatStorageTarget: 'chatAgenticGraph' }),
-    nextMessages: [{ id: 'user-1', role: 'user', content: slashMediaQuery }],
-    assistantMessageId: 'assistant-pending',
-  })
-  const systemText = context.systemMessages.map(message => message.content).join('\n\n')
-  if (context.systemMessages[0]?.content !== CHAT_BASE_RESPONSE_CONTRACT_PROMPT) {
-    throw new Error('Expected media-only slash provider context to use the plain response contract')
-  }
-  for (const forbidden of ['For chatAgenticGraph output', 'validated AGENTIC_OS Markdown', 'agentic-os-pipeline/v1']) {
-    if (systemText.includes(forbidden)) {
-      throw new Error(`Expected media-only slash prompt to avoid AGENTIC_OS-only response contract text: ${forbidden}`)
-    }
-  }
-  const slashUserMessage = context.conversationMessages.find(message => message.role === 'user')
-  if (
-    slashUserMessage?.content.includes('/prd-tad.create') ||
-    !slashUserMessage?.content.startsWith(`what's ${MEDIA_ONLY_IMAGE_PROMPT}?`) ||
-    !slashUserMessage.content.includes('Use the answer as source context for PRD/TAD create.') ||
-    !slashUserMessage.content.includes('Produce or refresh the combined PRD/TAD contract from validated context.')
-  ) {
-    throw new Error(`Expected media-only slash provider message to keep media markdown inside a user question, got ${JSON.stringify(slashUserMessage)}`)
-  }
-  const responsesInput = await buildOpenAiResponsesInput(context.conversationMessages, {
-    fetchFn: async () => new Response(new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' }), { status: 200 }),
-  })
-  const userInputMessage = responsesInput.find(message => message.role === 'user')
-  const userInputText = userInputMessage?.content.find(part => part.type === 'input_text')
-  const userInputImage = userInputMessage?.content.find(part => part.type === 'input_image')
-  if (
-    userInputText?.type !== 'input_text' ||
-    userInputText.text.includes('/prd-tad.create') ||
-    !userInputText.text.startsWith("what's [attached image]?") ||
-    !userInputText.text.includes('Use the answer as source context for PRD/TAD create.') ||
-    !userInputText.text.includes('Produce or refresh the combined PRD/TAD contract from validated context.')
-  ) {
-    throw new Error(`Expected Responses input_text to keep sparse slash media query responsive, got ${JSON.stringify(userInputText)}`)
-  }
-  if (userInputImage?.type !== 'input_image' || !userInputImage.image_url.startsWith('data:image/png;base64,')) {
-    throw new Error(`Expected Responses input_image to preserve local media attachment, got ${JSON.stringify(userInputMessage?.content)}`)
-  }
-}
 
 export function testAgenticOsPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
   const sparseProfile = analyzeAgenticOsRequest('/prd-tad.create [attached image]')
@@ -649,3 +483,8 @@ export async function testFloatingPanelChatNoSlashTraceArtifactsSanitizeLocalMed
     if (rendered.logText.includes(forbidden)) throw new Error(`Expected stream log to sanitize local media detail: ${forbidden}`)
   }
 }
+
+export {
+  testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocationPromptsClean,
+  testFloatingPanelChatPrdTadSlashMediaOnlyProviderPayloadCompilesRoute,
+} from './floatingPanelChatRequestContractBoundary.test'

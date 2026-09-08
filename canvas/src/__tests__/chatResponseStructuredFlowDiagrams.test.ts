@@ -12,6 +12,7 @@ import {
 } from '@/lib/config.storyboard-widget'
 import { computeFlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
 import { collectStructuredFrontmatterFields } from '@/features/chat/chatResponseStructuredFrontmatter'
+import { extractChatResponseStructuredSurface } from '@/features/chat/chatResponseStructuredContent'
 import type { JSONValue } from '@/lib/graph/types'
 
 const readNodeById = (graphData: NonNullable<ReturnType<typeof useGraphStore.getState>['graphData']>, id: string) => (
@@ -225,7 +226,70 @@ export function testChatResponseStructuredContentFlowDiagramsRejectsAliasRemap()
   }
 }
 
+const assertStructuredLineageDataflow = () => {
+  const sourceIds = ['mcp-response-intake', 'mcp-response-option']
+  const panelId = 'mcp-response-result'
+  const extract = (parentNodeId: string | undefined, extra: Record<string, unknown> = {}) => {
+    const surface = extractChatResponseStructuredSurface(JSON.stringify({ response: { structuredContent: {
+      cards: [
+        { id: 'intake', kind: 'text', output: 'Buyer request' },
+        { id: 'option', kind: 'text', output: 'Candidate response', parentNodeId },
+      ],
+      panels: [{ id: 'result', kind: 'html' }],
+      ...extra,
+    } } }))
+    if (!surface) throw new Error('Expected a native structured document surface')
+    const lineage = surface.edges.filter(edge => edge.label === 'candidateOption')
+    if (parentNodeId && (lineage.length !== 1 || lineage[0].source !== sourceIds[0] || lineage[0].target !== sourceIds[1])) {
+      throw new Error('Expected exactly one retained parent-to-candidate lineage edge')
+    }
+    if (!parentNodeId && lineage.length) throw new Error('Expected no invented parent lineage')
+    const panel = surface.nodes.find(node => node.id === panelId)
+    if (panel?.kind !== 'text' || panel.targetHandle !== 'output') {
+      throw new Error('Expected a bare HTML hint without authored HTML to retain the Markdown output policy')
+    }
+    const option = surface.nodes.find(node => node.id === sourceIds[1])
+    if (!option || option.properties.parentNodeId !== parentNodeId || option.properties.output !== 'Candidate response') {
+      throw new Error('Expected structured candidate content and parent metadata to remain intact')
+    }
+    return surface
+  }
+  for (const parentNodeId of [undefined, 'intake']) {
+    const surface = extract(parentNodeId)
+    const compute = surface.nodes.filter(node => typeof node.properties['flow:compute'] === 'string')
+    if (compute.length !== 1 || surface.nodes.length !== 4) throw new Error('Expected one shared compute for two cards and one panel')
+    for (const source of sourceIds) {
+      if (!surface.edges.some(edge => edge.source === source && edge.target === compute[0].id && edge.targetHandle === 'prompt_in')) {
+        throw new Error('Expected both cards to feed the shared compute')
+      }
+    }
+    if (!surface.edges.some(edge => edge.source === compute[0].id && edge.target === panelId && edge.sourceHandle === 'output' && edge.targetHandle === 'output')) {
+      throw new Error('Expected the shared compute to supply the Markdown panel')
+    }
+  }
+  const authored = extract('intake', { edges: [{
+    id: 'authored-route', source: 'intake', target: 'result', sourceHandle: 'output', targetHandle: 'outputSrcDoc',
+  }] })
+  const route = authored.edges.find(edge => edge.id === 'e-mcp-response-authored-route')
+  if (authored.nodes.length !== 3 || authored.nodes.some(node => node.properties['flow:compute'])
+    || route?.source !== sourceIds[0] || route.target !== panelId || route.sourceHandle !== 'output' || route.targetHandle !== 'outputSrcDoc') {
+    throw new Error('Expected authored wiring to remain authoritative without inferred compute')
+  }
+  const authoredCompute = 'return { outputSrcDoc: "<p>Authored response</p>" }'
+  const existing = extract('intake', { widgets: [{
+    id: 'authored-runner', nodeTypeId: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
+    properties: { 'flow:compute': authoredCompute },
+  }] })
+  const computeNodes = existing.nodes.filter(node => typeof node.properties['flow:compute'] === 'string')
+  if (existing.nodes.length !== 4 || computeNodes.length !== 1 || computeNodes[0].id !== 'mcp-response-authored-runner'
+    || computeNodes[0].properties['flow:compute'] !== authoredCompute
+    || existing.edges.some(edge => edge.source === computeNodes[0].id && edge.target === panelId)) {
+    throw new Error('Expected authored compute to retain its code and wiring without inferred replacements')
+  }
+}
+
 export async function testChatResponseStructuredContentProjectsExplicitFrontmatterMetadata() {
+  assertStructuredLineageDataflow()
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
@@ -345,12 +409,12 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
     ]) {
       if (!canonicalText.includes(snippet)) throw new Error(`Expected canonical AGENTIC_OS file to include ${snippet}`)
     }
-    for (const forbidden of [
-      'forbidden-frontmatter-node',
-      'forbidden-structured-content',
-      'forbidden-rich-media',
-    ]) {
-      if (canonicalText.includes(forbidden)) throw new Error(`Expected graph-channel frontmatter record to stay unprojected: ${forbidden}`)
+    const forbiddenMarkers = ['forbidden-frontmatter-node', 'forbidden-structured-content', 'forbidden-rich-media']
+    const structuredSurface = extractChatResponseStructuredSurface(assistantText)
+    if (!structuredSurface) throw new Error('Expected the structured response to extract before canonical apply')
+    const extractedText = JSON.stringify(structuredSurface)
+    for (const forbidden of forbiddenMarkers) {
+      if (extractedText.includes(forbidden)) throw new Error(`Expected graph-channel frontmatter record to stay unprojected: ${forbidden}`)
     }
 
     const applied = await applyChatAgenticOsWorkspaceDocumentToCanvas(workspacePath)
@@ -360,6 +424,22 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
       throw new Error(`Expected active canvas graph to be frontmatter-flow, got: ${JSON.stringify(graphData?.metadata || null)}`)
     }
     const frontmatterMeta = (graphData.metadata || {}).frontmatterMeta as Record<string, unknown> | undefined
+    const response = frontmatterMeta?.response as { value?: { markdown_body?: { value?: unknown } } } | undefined
+    const retainedMarkdown = response?.value?.markdown_body?.value
+    if (typeof retainedMarkdown !== 'string' || retainedMarkdown.replace(/\n$/, '') !== assistantText || !canonicalText.includes(assistantText)) {
+      throw new Error('Expected the exact original response to remain as inert source Markdown')
+    }
+    // Exclude only the retained source-text value; every other projected field stays checked.
+    const projectedMeta = { ...frontmatterMeta, response: { ...response, value: { ...response?.value,
+      markdown_body: { ...response?.value?.markdown_body, value: undefined },
+    } } }
+    const projectedText = JSON.stringify({ metadata: { ...graphData.metadata, frontmatterMeta: projectedMeta }, nodes: graphData.nodes, edges: graphData.edges })
+    for (const forbidden of forbiddenMarkers) {
+      if (projectedText.includes(forbidden)) throw new Error(`Expected rejected graph-channel metadata to stay out of the applied graph: ${forbidden}`)
+    }
+    for (const key of ['nodes', 'edges', 'structured-content', 'rich-media']) {
+      if (Object.hasOwn(frontmatterMeta || {}, key)) throw new Error(`Expected reserved frontmatter field to remain absent: ${key}`)
+    }
     if (frontmatterMeta?.storytree_product !== 'strytree') throw new Error(`Expected storytree_product metadata, got ${JSON.stringify(frontmatterMeta)}`)
     if (frontmatterMeta?.kgWorkflowManagerModeEnabled !== true) throw new Error(`Expected workflow-manager metadata to normalize to boolean true, got ${JSON.stringify(frontmatterMeta)}`)
     if (frontmatterMeta?.kgStrybldrStoryboard !== true) throw new Error(`Expected Strybldr storyboard metadata to normalize to boolean true, got ${JSON.stringify(frontmatterMeta)}`)
@@ -402,7 +482,7 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
     })
     const gitgraphSrcDoc = connected.get('flow-diagram-storytree_gitgraph-panel')?.['properties.outputSrcDoc']
     const ganttSrcDoc = connected.get('flow-diagram-storytree_gantt-panel')?.['properties.outputSrcDoc']
-    const panelSrcDoc = connected.get('mcp-response-storytree-panel')?.['properties.outputSrcDoc']
+    const panelOutput = connected.get('mcp-response-storytree-panel')?.['properties.output']
     if (
       typeof gitgraphSrcDoc?.value !== 'string'
       || !gitgraphSrcDoc.value.includes('research_synthesis')
@@ -414,10 +494,20 @@ export async function testChatResponseStructuredContentProjectsExplicitFrontmatt
       || !ganttSrcDoc.sources.some(source => source.nodeId === 'flow-diagram-storytree_gantt-compute' && source.portKey === 'outputSrcDoc')
     ) throw new Error(`Expected computed Strytree Gantt Rich Media output, got: ${JSON.stringify(ganttSrcDoc)}`)
     if (
-      typeof panelSrcDoc?.value !== 'string'
-      || !panelSrcDoc.value.includes('Lineage intake keeps card parent data upstream.')
-      || !panelSrcDoc.sources.some(source => source.nodeId === 'mcp-response-structured-compute' && source.portKey === 'outputSrcDoc')
-    ) throw new Error(`Expected computed structured Rich Media output, got: ${JSON.stringify(panelSrcDoc)}`)
+      typeof panelOutput?.value !== 'string'
+      || !panelOutput.value.includes('Lineage intake keeps card parent data upstream.')
+      || !panelOutput.sources.some(source => source.nodeId === 'mcp-response-structured-compute' && source.portKey === 'output')
+    ) throw new Error(`Expected computed structured Markdown output, got: ${JSON.stringify(panelOutput)}`)
+    const updatedGraph = { ...graphData, nodes: graphData.nodes.map(node => node.id === 'mcp-response-storytree-source-review'
+      ? { ...node, properties: { ...node.properties, output: 'Updated buyer request' } } : node) }
+    const recomputed = computeFlowConnectedValuesBySchemaPath({
+      graphData: updatedGraph, registry, targetNodeIds: new Set(['mcp-response-storytree-panel']),
+    }).get('mcp-response-storytree-panel')?.['properties.output']
+    if (typeof recomputed?.value !== 'string' || !recomputed.value.includes('Updated buyer request')
+      || recomputed.value.includes('Lineage intake keeps card parent data upstream.')
+      || !recomputed.sources.some(source => source.nodeId === 'mcp-response-structured-compute' && source.portKey === 'output')) {
+      throw new Error(`Expected live lineage input edits to recompute the owned Markdown output, got: ${JSON.stringify(recomputed)}`)
+    }
   } finally {
     useGraphStore.getState().clearGraphData()
     resetWorkspaceFsForTests()

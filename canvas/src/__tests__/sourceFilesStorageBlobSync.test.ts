@@ -1,3 +1,6 @@
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { withDurableBrowserStorage } from '@/__tests__/helpers/durable-browser-storage'
+import { createFakeAgenticGraphStorageBrowserSession } from '@/__tests__/helpers/fake-agentic-graph-storage-browser-session'
 import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import { createStorageWorkerFetch, readStorageWorker } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
 import {
@@ -7,7 +10,8 @@ import {
 import {
   buildAgenticGraphStorageBlobPath,
   buildAgenticGraphStorageDocPath,
-  AGENTIC_OS_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
+  hashAgenticGraphStorageContent,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   publishGeneratedWorkspaceEntriesToAgenticGraphStorage,
@@ -141,78 +145,83 @@ export async function testStorageWorkerR2BlobRouteStoresAndServesBinaryObject() 
 }
 
 export async function testSourceFileShareUrlPublishesOverExistingCanonicalPathDocument() {
-  await __resetAgenticGraphStorageDbForTests()
-  const env = createFakeAgenticGraphStorageWorkerEnv()
-  const fetchImpl = createStorageWorkerFetch(env)
-  const workspaceId = 'kgws:test-share-url-canonical-upsert'
-  const canonicalPath = 'huijoohwee/docs/shared.md'
-  const seedResponse = await readStorageWorker().fetch(
-    new Request('https://example.com/api/storage/push', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-        workspaceId,
-        deviceId: 'dev_seed',
-        mutations: [{
-          mutationId: 'mut_seed_shared',
-          workspaceId,
-          entity: 'document',
-          op: 'upsert',
-          recordId: 'docs:seeded-shared',
-          baseRevision: null,
-          record: {
-            id: 'docs:seeded-shared',
+  const dom = initJsdomHarness()
+  dom.dom.reconfigure({ url: 'https://example.com/' })
+  try {
+    await withDurableBrowserStorage(async () => {
+      await __resetAgenticGraphStorageDbForTests()
+      const workspaceId = 'kgws:test-share-url-canonical-upsert'
+      const session = await createFakeAgenticGraphStorageBrowserSession(workspaceId, { origin: window.location.origin })
+      const { env, fetch: fetchImpl } = session
+      const canonicalPath = 'agentic-canvas-os/docs/shared.md'
+      const seedResponse = await fetchImpl(
+        new Request('https://example.com/api/storage/push', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
             workspaceId,
-            canonicalPath,
-            title: 'shared.md',
-            docType: 'markdown',
-            lang: null,
-            graphId: null,
-            sourceKind: 'markdown',
-            contentMd: '# Seeded shared',
-            contentHash: 'sha256:seeded-shared',
-            parserVersion: 'seed-storage-docs-to-cloudflare:v1',
-            revision: 7,
-            updatedAtMs: 1_777_400_100_000,
-            deleted: false,
-          },
-        }],
-      }),
-    }),
-    env as never,
-  )
-  if (!seedResponse.ok) throw new Error(`expected seed document push ok, got ${seedResponse.status}`)
+            deviceId: 'dev_seed',
+            mutations: [{
+              mutationId: 'mut_seed_shared',
+              workspaceId,
+              entity: 'document',
+              op: 'upsert',
+              recordId: 'docs:seeded-shared',
+              baseRevision: null,
+              record: {
+                id: 'docs:seeded-shared',
+                workspaceId,
+                canonicalPath,
+                title: 'shared.md',
+                docType: 'markdown',
+                lang: null,
+                graphId: null,
+                sourceKind: 'markdown',
+                contentMd: '# Seeded shared',
+                contentHash: hashAgenticGraphStorageContent('# Seeded shared'),
+                parserVersion: 'seed-storage-docs-to-cloudflare:v1',
+                revision: 7,
+                updatedAtMs: 1_777_400_100_000,
+                deleted: false,
+              },
+            }],
+          }),
+        }),
+      )
+      if (!seedResponse.ok) throw new Error(`expected seed document push ok, got ${seedResponse.status}`)
 
-  const shareUrl = await publishWorkspaceEntryShareUrl({
-    workspaceId,
-    baseUrl: 'https://example.com',
-    fetchImpl,
-    entry: {
-      path: '/docs/shared.md',
-      parentPath: '/docs',
-      kind: 'file',
-      name: 'shared.md',
-      text: '# Shared URL edit',
-      updatedAtMs: 1_777_400_200_000,
-    },
-  })
-  if (!shareUrl) throw new Error('expected Share URL publish to succeed for an existing canonical D1 document row')
-  if (env.DB.documents.size !== 1) {
-    throw new Error(`expected canonical path upsert to preserve one D1 document row, got ${env.DB.documents.size}`)
-  }
-  const storedRow = Array.from(env.DB.documents.values())[0]
-  if (Number(storedRow?.revision || 0) !== 8) {
-    throw new Error(`expected canonical path upsert to advance the existing document revision, got ${String(storedRow?.revision || '')}`)
-  }
-  const docResponse = await readStorageWorker().fetch(
-    new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, canonicalPath)}`),
-    env as never,
-  )
-  if (!docResponse.ok) throw new Error(`expected shared document route ok after canonical upsert, got ${docResponse.status}`)
-  const text = await docResponse.text()
-  if (text !== '# Shared URL edit') {
-    throw new Error(`expected Share URL publish to update the canonical document body, got ${text}`)
-  }
-  await __resetAgenticGraphStorageDbForTests()
+      const shareUrl = await publishWorkspaceEntryShareUrl({
+        workspaceId,
+        baseUrl: session.origin,
+        fetchImpl,
+        entry: {
+          path: '/docs/shared.md',
+          parentPath: '/docs',
+          kind: 'file',
+          name: 'shared.md',
+          text: '# Shared URL edit',
+          updatedAtMs: 1_777_400_200_000,
+        },
+      })
+      if (!shareUrl) throw new Error('expected Share URL publish to succeed for an existing canonical D1 document row')
+      if (env.DB.documents.size !== 1) {
+        throw new Error(`expected canonical path upsert to preserve one D1 document row, got ${env.DB.documents.size}`)
+      }
+      const storedRow = Array.from(env.DB.documents.values())[0]
+      if (Number(storedRow?.revision || 0) !== 8) {
+        throw new Error(`expected canonical path upsert to advance the existing document revision, got ${String(storedRow?.revision || '')}`)
+      }
+      const docResponse = await readStorageWorker().fetch(
+        new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, canonicalPath)}`),
+        env as never,
+      )
+      if (!docResponse.ok) throw new Error(`expected shared document route ok after canonical upsert, got ${docResponse.status}`)
+      const text = await docResponse.text()
+      if (text !== '# Shared URL edit') {
+        throw new Error(`expected Share URL publish to update the canonical document body, got ${text}`)
+      }
+      await __resetAgenticGraphStorageDbForTests()
+    })
+  } finally { dom.restore() }
 }

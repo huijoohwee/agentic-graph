@@ -114,26 +114,25 @@ function installControlledRaf(window: TestWindow): ControlledRaf {
   }
 }
 
-function holdWindowTimeouts(window: TestWindow): HeldTimeouts {
-  const originalSetTimeout = window.setTimeout.bind(window)
-  const originalClearTimeout = window.clearTimeout.bind(window)
+function holdSurfaceDeadlineTimeouts(): HeldTimeouts {
+  const originalSetTimeout = globalThis.setTimeout
+  const originalClearTimeout = globalThis.clearTimeout
   let nextTimeoutId = 1_000_000
   const timeouts = new Map<number, () => void>()
-  window.setTimeout = ((handler: TimerHandler, timeout?: number) => {
+  globalThis.setTimeout = ((handler: (...args: unknown[]) => void, timeout?: number, ...args: unknown[]) => {
     assert.equal(typeof handler, 'function')
     const surfaceDeadlineThreshold =
       FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS * 0.9
     if (typeof timeout === 'number' && timeout < surfaceDeadlineThreshold) {
-      return originalSetTimeout(handler, timeout)
+      return originalSetTimeout(handler, timeout, ...args)
     }
     const timeoutId = nextTimeoutId
     nextTimeoutId += 1
-    timeouts.set(timeoutId, handler as () => void)
+    timeouts.set(timeoutId, () => handler(...args))
     return timeoutId
-  }) as typeof window.setTimeout
-  window.clearTimeout = (timeoutId?: number) => {
-    if (typeof timeoutId !== 'number') return
-    if (timeouts.delete(timeoutId)) return
+  }) as typeof globalThis.setTimeout
+  globalThis.clearTimeout = (timeoutId) => {
+    if (typeof timeoutId === 'number' && timeouts.delete(timeoutId)) return
     originalClearTimeout(timeoutId)
   }
   return {
@@ -147,8 +146,8 @@ function holdWindowTimeouts(window: TestWindow): HeldTimeouts {
     },
     pendingCount: () => timeouts.size,
     restore: () => {
-      window.setTimeout = originalSetTimeout
-      window.clearTimeout = originalClearTimeout
+      globalThis.setTimeout = originalSetTimeout
+      globalThis.clearTimeout = originalClearTimeout
     },
   }
 }
@@ -498,7 +497,7 @@ test('non-Geo restoration fails on its wall-clock deadline when rAF stalls', asy
   })
 })
 
-test('a stale restoration failure cannot poison a newer active Flight lifecycle', async () => {
+test('a stale restoration failure cannot poison a newer active Flight lifecycle', async context => {
   await withSurfaceDom(GEO_CANVAS_MARKUP, async (window, document) => {
     const previous = stageGeoRestorationTarget()
     const opened = await openFlightSimSurface({
@@ -509,7 +508,8 @@ test('a stale restoration failure cannot poison a newer active Flight lifecycle'
     assert.equal(opened.active, true, opened.runtimeError || undefined)
 
     const controlledRaf = installControlledRaf(window)
-    const heldTimeouts = holdWindowTimeouts(window)
+    const heldTimeouts = holdSurfaceDeadlineTimeouts()
+    context.after(heldTimeouts.restore)
     exitFlightSimSurface()
     const staleRestoration = waitForFlightSimSurfaceRestoration()
     await controlledRaf.waitForPending()

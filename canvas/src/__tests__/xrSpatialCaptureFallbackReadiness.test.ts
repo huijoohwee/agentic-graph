@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 
 function readSource(...parts: string[]): string {
@@ -12,7 +13,8 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
   const readinessDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-xr-spatial-capture-fallback-readiness.md')
   const runtimeApiDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-xr-invocation-runtime-api.md')
   const xrModeDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-xr-mode-prd-tad.md')
-  const capabilitySliceDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-ar-vr-xr-prd-tad-adr.md')
+  // The historical XR v2 design is immutable, not the mutable fallback runtime guide.
+  execFileSync(process.execPath, [resolve(process.cwd(), '..', 'scripts', 'xr-v2', 'pin-consistency-checker.mjs'), '--json'], { timeout: 30_000, maxBuffer: 128 * 1024 })
 
   if (!canvasManifest.includes('"test:smoke:xr-spatial-capture-fallback:source": "node ../scripts/run-xr-spatial-capture-fallback-source-smoke.mjs"')) {
     throw new Error('expected canvas manifest to keep XR source smoke bound to the repo-owned source runner')
@@ -62,8 +64,6 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
   for (const documentation of [
     testingDocumentation,
     runtimeApiDocumentation,
-    xrModeDocumentation,
-    capabilitySliceDocumentation,
   ]) {
     for (const snippet of [
       'npm run xr:review-ready',
@@ -74,6 +74,13 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
       if (!documentation.includes(snippet)) {
         throw new Error(`expected XR docs to reference the readiness contract and acceptance command: ${snippet}`)
       }
+    }
+  }
+
+  // Higher-level specs link to the fallback acceptance owner; they do not duplicate its commands.
+  for (const documentation of [xrModeDocumentation]) {
+    if (!documentation.includes('agentic-graph-xr-spatial-capture-fallback-readiness.md')) {
+      throw new Error('expected aggregate XR specs to reference the fallback acceptance boundary')
     }
   }
 
@@ -98,8 +105,8 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
     'ThreeGraphXrSessionPolicy.ts',
     'ThreeGraphXr.tsx',
   ]) {
-    if (!capabilitySliceDocumentation.includes(snippet)) {
-      throw new Error(`expected the harmonized capability document to preserve runtime truth: ${snippet}`)
+    if (!xrModeDocumentation.includes(snippet)) {
+      throw new Error(`expected the current XR Mode guide to preserve fallback runtime truth: ${snippet}`)
     }
   }
 
@@ -112,13 +119,13 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
     'canvas.xrPipeline.',
     '/xr.capture',
   ]) {
-    if (capabilitySliceDocumentation.includes(forbiddenSnippet) || xrModeDocumentation.includes(forbiddenSnippet)) {
+    if (xrModeDocumentation.includes(forbiddenSnippet)) {
       throw new Error(`expected harmonized XR documents to remove unowned contract ${forbiddenSnippet}`)
     }
   }
 
   for (const [name, documentation] of [
-    ['capability', capabilitySliceDocumentation],
+    ['fallback readiness', readinessDocumentation],
     ['XR mode', xrModeDocumentation],
   ] as const) {
     const lineCount = documentation.split(/\r?\n/u).length

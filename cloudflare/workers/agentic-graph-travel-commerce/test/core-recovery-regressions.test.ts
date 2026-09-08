@@ -303,20 +303,28 @@ describe('transaction and recovery regressions', () => {
     expect(settlements).toBe(0)
   })
 
-  it('bypasses non-authoritative cache failure and types ledger failure closed', async () => {
+  it('checks authoritative balance with zero advisory KV operations and fails closed', async () => {
+    let cacheCalls = 0
+    let ledgerCalls = 0
     const cache = {
-      get: async () => { throw new Error('kv-down') },
-      put: async () => { throw new Error('kv-down') },
-      delete: async () => { throw new Error('kv-down') },
+      get: async () => { cacheCalls += 1; throw new Error('kv-down') },
+      put: async () => { cacheCalls += 1; throw new Error('kv-down') },
+      delete: async () => { cacheCalls += 1; throw new Error('kv-down') },
     }
     const working = {
       BALANCE_CACHE: cache,
       ENVELOPE_LEDGER: { getByName: () => ({
-        getAvailableBalance: async () => ({ principalId: 'principal-gate', availableBalanceMinor: 50, revision: 'r1' }),
+        getAvailableBalance: async () => {
+          ledgerCalls += 1
+          return { principalId: 'principal-gate', availableBalanceMinor: 50, revision: 'r1' }
+        },
       }) },
     } as unknown as TravelCommerceEnv
     expect(await guardrailEnvelopeCheck(working, 'principal-gate', 50))
       .toEqual({ status: 'pass', availableBalanceMinor: 50 })
+    expect(await guardrailEnvelopeCheck(working, 'principal-gate', 51)).toMatchObject({ reason: 'insufficient-envelope' })
+    expect(ledgerCalls).toBe(2)
+    expect(cacheCalls).toBe(0)
     const down = {
       ...working,
       ENVELOPE_LEDGER: { getByName: () => ({ getAvailableBalance: async () => { throw new Error('do-down') } }) },

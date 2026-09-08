@@ -1,5 +1,5 @@
 import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
-import type { FlightGeoOverlaySnapshot } from '../../../../gympgrph/src/flightGeoOverlay'
+import type { FlightGeoOverlaySnapshot } from 'gympgrph/testkit/flightGeoOverlay'
 
 export function environmentOverlay(): FlightGeoOverlaySnapshot {
   const regionalPoiSurface = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.find(

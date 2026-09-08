@@ -26,6 +26,11 @@ import { resolveFlowWidgetStateGraphKey } from '@/lib/storyboardWidget/widgetSta
 import { resolveGraphActivationFitDecision } from '@/lib/zoom/graphActivationFit'
 
 let pendingComposeRaf: number | null = null
+let pendingComposedImportModes: {
+  graphData: ReturnType<typeof useGraphStore.getState>['graphData']
+  sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']
+  includeWorkspaceBacked: boolean
+} | null = null
 let pendingComposeAfterWorkspaceOverlayClose = false
 let pendingComposeAfterWorkspaceOverlayCloseIncludesWorkspaceBacked = false
 let pendingComposeIncludesWorkspaceBackedSources = false
@@ -76,6 +81,7 @@ function readSourceFilesForComposedApply(
 }
 
 function resetPendingComposedGraphApplyState() {
+  pendingComposedImportModes = null
   pendingComposedGraphSignature = ''
   pendingComposeAfterWorkspaceOverlayClose = false
   pendingComposeAfterWorkspaceOverlayCloseIncludesWorkspaceBacked = false
@@ -110,8 +116,18 @@ function readCurrentComposedGraphSignature(options: ComposeSourceFilesOptions = 
 function ensureWorkspaceOverlayComposeRetrySubscription() {
   if (workspaceOverlayComposeRetryUnsubscribe) return
   workspaceOverlayComposeRetryUnsubscribe = useGraphStore.subscribe(
-    s => [s.workspaceViewMode, s.workspaceCanvasPaneOpen] as const,
+    s => [s.workspaceViewMode, s.workspaceCanvasPaneOpen, s.workspaceGraphMutationBlockUntilMs,
+      s.markdownWorkspaceIndexingInFlight, s.workspaceGraphMutationLayoutLockActive, s.graphData] as const,
     ([workspaceViewMode, workspaceCanvasPaneOpen], previous) => {
+      const current = useGraphStore.getState()
+      if (pendingComposedImportModes && (pendingComposedImportModes.graphData !== current.graphData
+        || pendingComposedImportModes.sourceFiles !== current.sourceFiles)) pendingComposedImportModes = null
+      if (pendingComposedImportModes && !isWorkspaceGraphMutationBlocked(current)) {
+        const { includeWorkspaceBacked } = pendingComposedImportModes
+        lastAppliedComposedGraphSignature = ''
+        pendingComposedImportModes = null
+        scheduleApplyComposedGraphFromSourceFiles(includeWorkspaceBacked ? buildExplicitGraphOwnerComposeOptions() : {})
+      }
       const workspaceOverlayOpen = isWorkspaceEditorOverlayOpen({ workspaceViewMode, workspaceCanvasPaneOpen })
       const previousOverlayOpen = Array.isArray(previous)
         ? isWorkspaceEditorOverlayOpen({ workspaceViewMode: previous[0], workspaceCanvasPaneOpen: previous[1] })
@@ -169,13 +185,20 @@ function buildComposedImportModesSignature(args: {
   }
 }
 
+function deferComposedImportModes(store: ReturnType<typeof useGraphStore.getState>, includeWorkspaceBacked: boolean) {
+  pendingComposedImportModes = { graphData: store.graphData, sourceFiles: store.sourceFiles, includeWorkspaceBacked }
+  ensureWorkspaceOverlayComposeRetrySubscription()
+}
+
 function applyComposedSourceImportModes(
   graphData: ReturnType<typeof composeGraphFromSourceLayers>['graphData'],
   sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles'],
+  includeWorkspaceBacked: boolean,
 ) {
   try {
     const store = useGraphStore.getState()
-    if (isWorkspaceGraphMutationBlocked(store)) return
+    if (isWorkspaceGraphMutationBlocked(store)) return deferComposedImportModes(store, includeWorkspaceBacked)
+    pendingComposedImportModes = null
     const explorerActivePath = useMarkdownExplorerStore.getState().activePath
     const { signature, rawText } = buildComposedImportModesSignature({
       state: store,
@@ -261,7 +284,8 @@ export function scheduleApplyComposedGraphFromSourceFiles(options: ComposeSource
       ? { ...buildExplicitGraphOwnerComposeOptions(), ...(options.precomputedSignature ? { precomputedSignature: options.precomputedSignature } : {}) }
       : options.precomputedSignature ? { precomputedSignature: options.precomputedSignature } : undefined,
   )
-  if (requestedSignature && requestedSignature === lastAppliedComposedGraphSignature) return
+  if (requestedSignature && requestedSignature === lastAppliedComposedGraphSignature
+    && (!pendingComposedImportModes || isWorkspaceGraphMutationBlocked(useGraphStore.getState()))) return
   if (includeWorkspaceBacked) pendingComposeIncludesWorkspaceBackedSources = true
   if (pendingComposeRaf != null && requestedSignature && requestedSignature === pendingComposedGraphSignature) return
   if (requestedSignature) pendingComposedGraphSignature = requestedSignature
@@ -348,7 +372,7 @@ export function applyComposedGraphFromSourceFiles(options: ComposeSourceFilesOpt
         ? (graphData.metadata as Record<string, unknown>)
         : null
     if (graphData && String(metadata?.sourceLayerComposition || '') === 'compose') {
-      applyComposedSourceImportModes(graphData, sourceFilesForComposition)
+      applyComposedSourceImportModes(graphData, sourceFilesForComposition, includeWorkspaceBacked)
     }
     return
   }
@@ -388,6 +412,6 @@ export function applyComposedGraphFromSourceFiles(options: ComposeSourceFilesOpt
     return
   }
   store.setGraphData(graphData)
-  applyComposedSourceImportModes(graphData, sourceFilesForComposition)
+  applyComposedSourceImportModes(graphData, sourceFilesForComposition, includeWorkspaceBacked)
   requestWorkspaceOpenStoryboardWidgetFit(graphData)
 }

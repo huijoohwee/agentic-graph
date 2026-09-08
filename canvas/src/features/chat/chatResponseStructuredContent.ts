@@ -584,8 +584,9 @@ export const extractChatResponseStructuredSurface = (
     const edge = normalizeStructuredEdge({ raw: rawEdges[i], index: i, nodeIdByReferenceKey, nodeSourceHandleById, nodeTargetHandleById })
     if (edge) pushEdge(edge)
   }
-  buildStructuredCardParentEdges({ nodes, nodeIdByReferenceKey, nodeSourceHandleById }).forEach(pushEdge)
+  // Authored wiring controls inference; generated lineage remains a separate relation.
   ensureStructuredSurfaceDataflow({ nodes, edges })
+  buildStructuredCardParentEdges({ nodes, nodeIdByReferenceKey, nodeSourceHandleById }).forEach(pushEdge)
   nodes.forEach((node, index) => pushEdge(buildDefaultResponseEdge(node, index)))
   return Object.keys(frontmatter).length > 0 ? { nodes, edges, frontmatter } : { nodes, edges }
 }

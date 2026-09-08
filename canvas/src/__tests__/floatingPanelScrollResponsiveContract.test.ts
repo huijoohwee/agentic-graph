@@ -16,7 +16,12 @@ export function testFloatingPanelScrollBodiesUseSharedResponsiveOwner() {
     'src/features/panels/views/graph-fields/GraphFieldsListPanelBody.tsx',
     'src/features/panels/views/graph-fields/FieldSamplesPanel.tsx',
   ]
-  const consumerTexts = consumerPaths.map(readUtf8)
+  const consumerTexts = consumerPaths.map(relativePath => {
+    const source = readUtf8(relativePath)
+    if (relativePath !== 'src/components/StoryboardWidget/WidgetEditorForm.tsx') return source
+    if (!source.includes('<WidgetEditorFormContent') || !source.includes("from '@/components/StoryboardWidget/WidgetEditorFormContent'")) throw new Error('expected WidgetEditorForm to render its shared content owner')
+    return source + readUtf8('src/components/StoryboardWidget/WidgetEditorFormContent.tsx')
+  })
 
   if (!classText.includes('UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME')) {
     throw new Error('expected floating panel scroll body owner to be exported from the shared responsive class registry')

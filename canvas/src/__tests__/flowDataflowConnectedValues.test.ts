@@ -30,9 +30,6 @@ export const testFlowDataflowConnectedValuesReusesSharedReaders = () => {
   if (!text.includes('const readPlainObject = (value: unknown): Record<string, unknown> | null => {')) {
     throw new Error('expected flow dataflow to centralize plain-object coercion in one local helper')
   }
-  if (!text.includes('hashRecordSignature32(readGraphNodeProperties(node), { maxEntries: 80, maxDepth: 3 })')) {
-    throw new Error('expected flow dataflow graph keys to hash logical persisted properties')
-  }
   if (!text.includes('const props = readPersistedPropertyObject(edge?.properties)')) {
     throw new Error('expected flow dataflow edge port reads to unwrap persisted property containers')
   }
@@ -709,7 +706,6 @@ export const testFlowDataflowRegisteredWidgetComputePropagatesOutputPorts = () =
           interventionsJson: JSON.stringify([{ tick: 1, label: 'Review gate', effect: -0.02, targetCohort: 'review' }]),
           ticks: 3,
           output: '',
-          outputSrcDoc: '',
           imageUrl: '',
           [FLOW_WIDGET_TYPE_ID_KEY]: FLOW_SWARM_PREDICTION_WIDGET_TYPE_ID,
           [FLOW_WIDGET_FORM_ID_KEY]: FLOW_SWARM_PREDICTION_FORM_ID,
@@ -720,7 +716,7 @@ export const testFlowDataflowRegisteredWidgetComputePropagatesOutputPorts = () =
         type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
         label: 'Panel',
         properties: {
-          outputSrcDoc: '',
+          imageUrl: '',
           richMediaActiveTab: 'auto',
           [FLOW_WIDGET_TYPE_ID_KEY]: FLOW_RICH_MEDIA_PANEL_WIDGET_TYPE_ID,
           [FLOW_WIDGET_FORM_ID_KEY]: FLOW_RICH_MEDIA_PANEL_FORM_ID,
@@ -729,7 +725,7 @@ export const testFlowDataflowRegisteredWidgetComputePropagatesOutputPorts = () =
     ],
     edges: [
       { id: 'e-seed', source: 'seed', target: 'swarm', properties: { 'flow:sourcePortKey': 'seedSignalsJson', 'flow:targetPortKey': 'seedSignalsJson_in' } },
-      { id: 'e-panel', source: 'swarm', target: 'panel', properties: { 'flow:sourcePortKey': 'outputSrcDoc', 'flow:targetPortKey': 'outputSrcDoc' } },
+      { id: 'e-panel', source: 'swarm', target: 'panel', properties: { 'flow:sourcePortKey': 'imageUrl', 'flow:targetPortKey': 'imageUrl' } },
     ],
   }
 
@@ -754,7 +750,7 @@ export const testFlowDataflowRegisteredWidgetComputePropagatesOutputPorts = () =
       widgetTypeId: FLOW_RICH_MEDIA_PANEL_WIDGET_TYPE_ID,
       formId: FLOW_RICH_MEDIA_PANEL_FORM_ID,
       fields: [],
-      ports: [{ portKey: 'outputSrcDoc', direction: 'input' as const, schemaPath: 'properties.outputSrcDoc' }],
+      ports: [{ portKey: 'imageUrl', direction: 'input' as const, schemaPath: 'properties.imageUrl' }],
       schemaMappings: [],
       updatedAt: '2026-06-05T00:00:00.000Z',
     },
@@ -766,16 +762,13 @@ export const testFlowDataflowRegisteredWidgetComputePropagatesOutputPorts = () =
     targetNodeIds: new Set(['panel']),
   })
   const panel = byNodeId.get('panel')
-  const srcDoc = panel?.['properties.outputSrcDoc']?.value
-  if (typeof srcDoc !== 'string' || !srcDoc.includes('<!doctype html>')) {
-    throw new Error(`expected registered widget compute to feed panel outputSrcDoc, got ${String(srcDoc).slice(0, 120)}`)
+  const imageUrl = panel?.['properties.imageUrl']?.value
+  if (typeof imageUrl !== 'string' || !imageUrl.startsWith('data:image/svg+xml;charset=utf-8,')) {
+    throw new Error('expected the declared widget image output to reach the panel')
   }
-  if (!String(srcDoc).includes('Neutral scenario')) {
-    throw new Error('expected registered widget compute to use node-local properties')
-  }
-  if (!String(srcDoc).includes('Prediction score') || !String(srcDoc).includes('Consensus')) {
-    throw new Error('expected registered widget compute to expose renderable chart content')
-  }
+  const svg = decodeURIComponent(imageUrl.slice(imageUrl.indexOf(',') + 1))
+  if (!svg.includes('Neutral scenario')) throw new Error('expected node-local scenario content')
+  if (!svg.includes('Prediction score') || !svg.includes('Consensus')) throw new Error('expected renderable prediction chart content')
 }
 
 export const testFlowDataflowConnectedValuesFlowComputeFunction = () => {

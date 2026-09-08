@@ -62,16 +62,16 @@ export function testAgenticGraphProbeTreeInvocationGrammarUsesDocAliasesAndToolI
     '```',
   ].join('\n'))
   const node = surface?.nodes[0]
-  if (node?.properties['chat:structuredRole'] !== 'card' || node.properties.parentNodeId !== 'care_source' || node.properties.nextAction !== 'agentic-graph.probe.select' || node.properties.summary !== 'Any severe, worsening, or urgent symptoms?' || node.properties.output !== '') {
-    throw new Error(`expected Probe-Tree structured response cards to project as selectable card nodes, got ${JSON.stringify(surface)}`)
+  if (node?.properties['chat:structuredRole'] !== 'card' || node.properties.parentNodeId !== '' || node.properties.parentGraphNodeId !== '' || node.properties.nextAction !== 'agentic-graph.probe.select' || node.properties.summary !== 'Any severe, worsening, or urgent symptoms?' || node.properties.output !== '') {
+    throw new Error(`expected assistant Probe-Tree cards to preserve semantic content without provider-assigned parent authority, got ${JSON.stringify(surface)}`)
   }
   const candidateEdge = surface?.edges.find(edge => (
     edge.source === 'care_source'
     && edge.target === node?.id
     && edge.label === 'candidateOption'
   ))
-  if (!candidateEdge) {
-    throw new Error(`expected Probe-Tree structured response cards to infer a candidateOption edge from parentNodeId, got ${JSON.stringify(surface?.edges || [])}`)
+  if (candidateEdge || surface?.edges.some(edge => edge.label === 'candidateOption')) {
+    throw new Error(`expected assistant card parent metadata to create no authoritative candidateOption edges, got ${JSON.stringify(surface?.edges || [])}`)
   }
 
   const docMarkdown = readFileSync(resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-probe-tree-prd-tad.md'), 'utf8')

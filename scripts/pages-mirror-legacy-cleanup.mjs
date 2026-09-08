@@ -4,6 +4,7 @@ import path from 'node:path'
 import {
   CANONICAL_IMAGE_ROOT,
   canonicalImageDestinationForLegacyPath,
+  canonicalDocumentDestinationForLegacyPath,
   LEGACY_MIRROR_EXACT_PATHS,
 } from './mirror-namespace-contract.mjs'
 import { listSealedLegacyMirrorEntries } from './legacy-mirror-inventory.mjs'
@@ -75,8 +76,7 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
     return entries
   }
 
-  const collectLegacyMirrorFilesToRemove = async ({ obsoleteGeneratedMirrorFiles }) => {
-    const sealedEntries = await assertLegacyMirrorInventoryIsBounded()
+  const buildLegacyRemovalPlan = async (sealedEntries, { obsoleteGeneratedMirrorFiles }) => {
     const files = new Map(sealedEntries
       .filter(entry => !entry.relativePath.startsWith('image/agenticgraph/'))
       .map(entry => [entry.relativePath, entry]))
@@ -92,11 +92,38 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
     return [...files.values()].sort((left, right) => left.relativePath.localeCompare(right.relativePath))
   }
 
-  const removeLegacyMirrorFiles = entries => removePlannedMirrorFiles({
-    root: mirrorRoot,
-    entries,
-    label: 'Planned legacy mirror deletion',
-  })
+  const removeLegacyMirrorFiles = async entries => {
+    // Validate all preserved documents before the first legacy deletion.
+    for (const entry of entries) {
+      const destination = canonicalDocumentDestinationForLegacyPath(entry.relativePath)
+      if (destination) await assertPlannedMirrorFile({ root: mirrorRoot,
+        entry: { relativePath: destination, sha256: entry.sha256 }, label: 'Preserved canonical document' })
+    }
+    return removePlannedMirrorFiles({ root: mirrorRoot, entries, label: 'Planned legacy mirror deletion' })
+  }
+
+  const buildLegacyDocumentMigrationPlan = async sealedEntries => {
+    const entries = sealedEntries
+      .filter(entry => canonicalDocumentDestinationForLegacyPath(entry.relativePath))
+    for (const entry of entries) {
+      const destination = canonicalDocumentDestinationForLegacyPath(entry.relativePath)
+      const existing = await regularFileHash(resolveMirrorRelativePath(destination), 'Canonical document')
+      if (existing && existing !== entry.sha256) throw new Error(`Legacy document migration refuses to overwrite ${destination}`)
+    }
+    return entries
+  }
+
+  const copyLegacyDocumentFile = async entry => {
+    const destination = canonicalDocumentDestinationForLegacyPath(entry.relativePath)
+    if (!destination) throw new Error('Legacy document is outside the sealed source inventory')
+    const sourcePath = await assertPlannedMirrorFile({ root: mirrorRoot, entry, label: 'Planned legacy document copy' })
+    const destinationPath = resolveMirrorRelativePath(destination)
+    const existing = await regularFileHash(destinationPath, 'Canonical document')
+    if (existing && existing !== entry.sha256) throw new Error(`Legacy document migration refuses to overwrite ${destination}`)
+    if (!existing) await fs.copyFile(sourcePath, destinationPath, fs.constants.COPYFILE_EXCL)
+    await assertPlannedMirrorFile({ root: mirrorRoot,
+      entry: { relativePath: destination, sha256: entry.sha256 }, label: 'Preserved canonical document' })
+  }
 
   const copyLegacyImageFile = async entry => {
     const sourcePath = await assertPlannedMirrorFile({
@@ -108,10 +135,8 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
     await fs.copyFile(sourcePath, entry.destinationPath)
   }
 
-  const createLegacyImageMigrationPlan = async () => {
-    const sealedEntries = new Map(
-      (await assertLegacyMirrorInventoryIsBounded()).map(entry => [entry.relativePath, entry]),
-    )
+  const buildLegacyImageMigrationPlan = async inventory => {
+    const sealedEntries = new Map(inventory.map(entry => [entry.relativePath, entry]))
     const legacyImageFiles = (await listRelativeFiles('image/agenticgraph'))
       .map(relativePath => joinRelativePath('image/agenticgraph', relativePath))
     const canonicalImageFiles = (await listRelativeFiles(CANONICAL_IMAGE_ROOT))
@@ -158,6 +183,22 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
     }
   }
 
+  // One preflight inventory per invocation; effect boundaries still re-read bytes.
+  const createLegacyMigrationPlan = async options => {
+    const inventory = await assertLegacyMirrorInventoryIsBounded()
+    return {
+      legacyImageMigration: await buildLegacyImageMigrationPlan(inventory),
+      legacyDocumentMigration: await buildLegacyDocumentMigrationPlan(inventory),
+      legacyMirrorFilesToRemove: await buildLegacyRemovalPlan(inventory, options),
+    }
+  }
+  const collectLegacyMirrorFilesToRemove = async options =>
+    buildLegacyRemovalPlan(await assertLegacyMirrorInventoryIsBounded(), options)
+  const createLegacyDocumentMigrationPlan = async () =>
+    buildLegacyDocumentMigrationPlan(await assertLegacyMirrorInventoryIsBounded())
+  const createLegacyImageMigrationPlan = async () =>
+    buildLegacyImageMigrationPlan(await assertLegacyMirrorInventoryIsBounded())
+
   const removeEmptyDirs = async rootDir => {
     const readDirectory = async directory => {
       try {
@@ -183,10 +224,13 @@ export const createPagesMirrorLegacyCleanup = ({ mirrorRoot }) => {
   }
 
   return {
+    createLegacyMigrationPlan,
     assertLegacyMirrorInventoryIsBounded,
     collectLegacyMirrorFilesToRemove,
     copyLegacyImageFile,
     createLegacyImageMigrationPlan,
+    createLegacyDocumentMigrationPlan,
+    copyLegacyDocumentFile,
     removeLegacyMirrorFiles,
     removeEmptyDirs,
     resolveMirrorRelativePath,

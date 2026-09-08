@@ -297,6 +297,12 @@ export function planStoryboardWidgetRunMaterializationPositions(
       strictFanoutTop += entry.item.screenHeight + gapPx
     }
 
+    // Width is a topology constraint, not a weighted preference. Do not
+    // allocate a second plan when the three stages fit the available width.
+    if (strictPlacements.every(rect => (
+      rect.left >= margins.left && rect.left + rect.width <= viewportW - margins.right
+    ))) return projectPlacementsToWorld(strictPlacements)
+
     // A natural-size 100% viewport may not fit three complete columns. Keep
     // the source stable and collapse only the downstream stages into one
     // rightward, top-down column rather than changing camera or card scale.
@@ -326,55 +332,9 @@ export function planStoryboardWidgetRunMaterializationPositions(
       compactTop += entry.item.screenHeight + gapPx
       return rect
     })
-    const occupiedSource: ScreenLayoutRect = {
-      left: anchorLocal.left,
-      top: anchorLocal.top,
-      width: sourceScreenSize.width,
-      height: sourceScreenSize.height,
-    }
-    const topologyCandidateScore = (
-      placements: Array<ScreenLayoutRect & { itemIndex: number }>,
-    ): number => {
-      const sourceOverlap = placements.reduce(
-        (sum, rect) => sum + rectIntersectionArea(rect, occupiedSource),
-        0,
-      )
-      const pairOverlap = placements.reduce((sum, rect, index) => (
-        sum + placements.slice(index + 1).reduce(
-          (pairSum, other) => pairSum + rectIntersectionArea(rect, other),
-          0,
-        )
-      ), 0)
-      const viewportOverflow = placements.reduce(
-        (sum, rect) => sum + rectOverflowArea(rect, {
-          left: 0,
-          top: 0,
-          right: viewportW,
-          bottom: viewportH,
-        }),
-        0,
-      )
-      const marginOverflow = placements.reduce(
-        (sum, rect) => sum + rectOverflowArea(rect, {
-          left: margins.left,
-          top: margins.top,
-          right: viewportW - margins.right,
-          bottom: viewportH - margins.bottom,
-        }),
-        0,
-      )
-      return (
-        (sourceOverlap + pairOverlap) * 1_000_000_000
-        + viewportOverflow * 1_000_000
-        + marginOverflow * 1_000
-      )
-    }
-    const strictScore = topologyCandidateScore(strictPlacements)
-    const compactScore = topologyCandidateScore(compactPlacements)
-    return projectPlacementsToWorld(
-      strictScore <= compactScore ? strictPlacements : compactPlacements,
-    )
+    return projectPlacementsToWorld(compactPlacements)
   }
+
   const targetAspect = Math.max(0.5, Math.min(2.8, viewportW / Math.max(1, viewportH)))
   const candidates: Array<{
     placements: Array<ScreenLayoutRect & { itemIndex: number }>

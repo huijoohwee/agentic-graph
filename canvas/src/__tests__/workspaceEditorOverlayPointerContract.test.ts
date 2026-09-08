@@ -1,3 +1,4 @@
+import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { resolveStoryboardWidgetVisibleViewport } from '@/components/FlowCanvas/applyZoomRequestNative'
@@ -39,20 +40,7 @@ const setFixedElementRect = (
 }
 
 function readMarkdownDesignOverlaySourceText(): string {
-  const base = resolve(process.cwd(), 'src')
-  const candidatePaths = [
-    resolve(base, 'features', 'markdown-edgeless', 'MarkdownDesignOverlay.tsx'),
-    resolve(base, 'lib', 'markdown-edgeless', 'MarkdownDesignOverlay.impl.tsx'),
-  ]
-  let latest = ''
-  for (let i = 0; i < candidatePaths.length; i += 1) {
-    const text = readFileSync(candidatePaths[i], 'utf8')
-    latest = text
-    if (text.includes('pointer-events-none') || text.includes("pointerEvents: 'none'")) {
-      return text
-    }
-  }
-  return latest
+  return readFileSync(resolveRepoSourcePath('canvas/src/lib/markdown-edgeless/MarkdownDesignOverlay.impl.tsx'), 'utf8')
 }
 
 export function testWorkspaceEditorOverlayDoesNotInstallBlockingScrim() {

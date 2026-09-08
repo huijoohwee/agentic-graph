@@ -11,7 +11,7 @@ import {
   readStructuredSourceFieldLineMode,
   readStructuredSourceRowHeightPreset,
 } from '@/features/markdown-workspace/main/viewer/workspaceStructuredSourceDataViewPresentation'
-import { TEST_VALIDATION_WORKSPACE_SEED_REL_PATH } from '@/features/workspace-fs/workspaceFs'
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 
 const readQuotedYamlValue = (line: string): string =>
   String(line || '')
@@ -157,8 +157,8 @@ export function testMultiDimTableStructuredSourcePresentationDefaults() {
   if (readStructuredSourceRowHeightPreset(undefined) !== 'comfortable' || readStructuredSourceRowHeightPreset('compact') !== 'compact') {
     throw new Error('expected structured source row-height defaults to be readable while preserving explicit compact setting')
   }
-  if (readStructuredSourceFieldLineMode(undefined) !== 'double' || readStructuredSourceFieldLineMode('single') !== 'single') {
-    throw new Error('expected structured source field-line defaults to show two-line previews while preserving explicit single-line setting')
+  if (readStructuredSourceFieldLineMode(undefined) !== 'single' || readStructuredSourceFieldLineMode('double') !== 'double' || readStructuredSourceFieldLineMode('flex') !== 'flex') {
+    throw new Error('expected structured source field-line defaults to use shared single-line density and preserve explicit double/flex settings')
   }
   if (coerceStructuredSourceValueColumnMode(undefined) !== 'type-specific' || coerceStructuredSourceValueColumnMode('type-generic') !== 'type-generic') {
     throw new Error('expected structured source value-column mode to default to type-specific and preserve explicit generic mode')
@@ -219,7 +219,7 @@ export function testMultiDimTableStructuredSourceMetadataBuildsVisibleTable() {
   if (!table.includes('| flow | nodes | id |  |  | id | string | typed_node |  |  | typed_node |')) {
     throw new Error(`expected YAML list-map rows with typed inline maps to be visible as native source rows, got:\n${table}`)
   }
-  if (!table.includes('| flow | nodes | id | properties | agenticOs:readingSummary | agenticOs:readingSummary | scalar | Opening summary | Opening summary |  |  | Opening summary |') || !table.includes('| flow | nodes | id | properties | action | action | scalar | Review source | Review source |  |  |  |  | Review source |')) {
+  if (!table.includes('| flow | nodes | id | properties | agentic-os:readingSummary | agentic-os:readingSummary | scalar | Opening summary | Opening summary |  |  | Opening summary |') || !table.includes('| flow | nodes | id | properties | action | action | scalar | Review source | Review source |  |  |  |  | Review source |')) {
     throw new Error(`expected structured source metadata table to derive Summary and Action columns from YAML-native fields, got:\n${table}`)
   }
   if (!table.includes('## Markdown YAML Frontmatter') || table.includes('## Storyboard Cards')) {
@@ -319,7 +319,7 @@ export function testMultiDimTableStructuredSourceMetadataBuildsVisibleTable() {
 
 export function testMultiDimTableYamlFrontmatterReflectsStrybldrValidationSource() {
   const externalValidationInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
-  const sourcePath = externalValidationInput || path.resolve(process.cwd(), '..', '..', 'huijoohwee', TEST_VALIDATION_WORKSPACE_SEED_REL_PATH)
+  const sourcePath = externalValidationInput || resolveSiblingFixturePath('huijoohwee', 'docs/agenticgraph-strybldr-starter-template.md')
   const sourceText = fs.readFileSync(sourcePath, { encoding: 'utf8' })
   const validationKey = 'validation_input_forbid_hardcode_in_repo'
   const storyboardKey = 'strybldr_storyboard'
@@ -403,6 +403,11 @@ export function testWorkspaceTableViewModeSupportsMultiDimTableSsot() {
   const workspaceModePath = path.resolve(process.cwd(), 'src', 'features', 'workspace-table', 'workspaceEditorMode.ts')
   const presentationPath = path.resolve(process.cwd(), 'src', 'features', 'workspace-table', 'workspaceEditorModePresentation.ts')
   const workspaceMainText = fs.readFileSync(workspaceMainPath, { encoding: 'utf8' })
+  const documentStateText = fs.readFileSync(path.resolve(path.dirname(workspaceMainPath), 'useWorkspaceDocumentState.ts'), { encoding: 'utf8' })
+  if (!workspaceMainText.includes("import { useWorkspaceDocumentState } from './useWorkspaceDocumentState'")
+    || !workspaceMainText.includes('} = useWorkspaceDocumentState({')) {
+    throw new Error('expected MarkdownWorkspaceMain to use the shared document-state hook')
+  }
   const workspaceModeText = fs.readFileSync(workspaceModePath, { encoding: 'utf8' })
   const presentationText = fs.readFileSync(presentationPath, { encoding: 'utf8' })
 
@@ -412,19 +417,20 @@ export function testWorkspaceTableViewModeSupportsMultiDimTableSsot() {
   ) {
     throw new Error('expected source-attached Multi-dimensional Table views to stay inline-editable through the shared Viewer')
   }
-  if (!workspaceMainText.includes('sourceAttachedMarkdownTableText || activeJsonSourcePreviewText || viewerText')) {
+  if (!documentStateText.includes('sourceAttachedMarkdownTableText || activeJsonSourcePreviewText || viewerText')) {
     throw new Error('expected Multi-dimensional Table source views to render the editable Markdown table before readonly JSON candidates')
   }
-  if (!workspaceMainText.includes('buildStructuredSourceDataViewProjection(activeText)') || !workspaceMainText.includes('structuredSourceDataViewProjection?.markdownText')) {
+  if (!documentStateText.includes('buildStructuredSourceDataViewProjection(activeText)') || !documentStateText.includes('structuredSourceDataViewProjection?.markdownText')) {
     throw new Error('expected Editor Workspace Multi-dimensional Table to prefer structured Markdown source projections before generic JSON-row tables')
   }
-  if (!workspaceMainText.includes('applyStructuredSourceDataViewReplacement({') || !workspaceMainText.includes('if (isStructuredSourceAttachedMarkdownTable) return')) {
+  if (!documentStateText.includes('applyStructuredSourceDataViewReplacement({') || !documentStateText.includes('if (isStructuredSourceAttachedMarkdownTable) return')) {
     throw new Error('expected Editor Workspace Multi-dimensional Table edits to route through structured source replacement without falling back to generated-table source writes')
   }
-  if (workspaceMainText.includes('if (nextText !== activeText) setActiveText(nextText); return')) {
+  if (workspaceMainText.includes('if (nextText !== activeText) setActiveText(nextText); return')
+    || documentStateText.includes('if (nextText !== activeText) setActiveText(nextText); return')) {
     throw new Error('expected structured source projection edits to avoid committing generated table text back into the source Markdown document')
   }
-  if (!workspaceMainText.includes('serializeJsonMarkdownDraftToSourceText({') || !workspaceMainText.includes('if (isSourceAttachedMarkdownTable)')) {
+  if (!documentStateText.includes('serializeJsonMarkdownDraftToSourceText({') || !documentStateText.includes('if (isSourceAttachedMarkdownTable)')) {
     throw new Error('expected source-attached table edits to commit through the existing JSON-Markdown serialization utility')
   }
   if (!workspaceModeText.includes("export type WorkspaceTableViewMode = WorkspaceEditorMode | 'geospatial'")) {
@@ -507,7 +513,7 @@ export function testMultiDimTableSupportsRowsColumnsPivot() {
   if (!derivedViewerText.includes("orientation={viewConfig?.orientation === 'columns' ? 'columns' : 'rows'}")) {
     throw new Error('expected MarkdownWorkspaceDerivedViewer to pass persisted pivot orientation to the table renderer')
   }
-  if (!tableViewText.includes("orientation?: 'rows' | 'columns'") || !tableViewText.includes("if (orientation === 'columns')") || !tableViewText.includes('MarkdownDataViewColumnsTableView') || !tableViewText.includes('MarkdownDataViewColumnResizeHandle') || !tableViewText.includes('<colgroup>') || !tableViewText.includes('readMarkdownDataViewDefaultColumnWidth') || !tableViewText.includes('style={{ width: rowRecordTableWidth }}') || !tableViewText.includes('overflow-hidden border-b') || !tableViewText.includes('border-separate border-spacing-0') || !tableViewText.includes('sticky top-0 z-30 isolate') || !tableViewText.includes('relative z-[31]')) {
+  if (!tableViewText.includes("orientation?: 'rows' | 'columns'") || !tableViewText.includes("if (orientation === 'columns')") || !tableViewText.includes('MarkdownDataViewColumnsTableView') || !tableViewText.includes('MarkdownDataViewColumnResizeHandle') || !tableViewText.includes('<colgroup>') || !tableViewText.includes('readMarkdownDataViewDefaultColumnWidth') || !tableViewText.includes('style={tableStyle}') || !tableViewText.includes("? { minWidth: rowRecordTableWidth, width: '100%' }") || !tableViewText.includes(': { width: rowRecordTableWidth }') || !tableViewText.includes('overflow-hidden border-b') || !tableViewText.includes('border-separate border-spacing-0') || !tableViewText.includes('sticky top-0 z-30 isolate') || !tableViewText.includes('relative z-[31]')) {
     throw new Error('expected MarkdownDataViewTableView to render row-column pivot mode and resize columns through the shared table renderer')
   }
   if (!columnSizingText.includes('MARKDOWN_DATA_VIEW_DEFAULT_COLUMN_WIDTH_PX = 192') || !columnSizingText.includes("normalized === 'Value' || /^.+ Value$/.test(normalized)") || !columnSizingText.includes('return 184')) {
@@ -523,5 +529,19 @@ export function testMultiDimTableSupportsRowsColumnsPivot() {
   const resizeHandleText = fs.readFileSync(resizeHandlePath, { encoding: 'utf8' })
   if (!resizeHandleText.includes('bindResizeSeparatorDragRuntime') || !resizeHandleText.includes("cursor: 'col-resize'") || !resizeHandleText.includes('data-kg-markdown-data-view-column-resize')) {
     throw new Error('expected Markdown data-view column resize to reuse the shared resize separator drag runtime')
+  }
+}
+
+export function testStructuredSourceSemanticSummaryAliases() {
+  for (const key of ['summary', 'reading_summary', 'agenticOs:readingSummary', 'agenticOs:reading_summary', 'agentic-os:readingSummary', 'agentic-os:reading_summary', 'unrelated']) {
+    const table = buildMarkdownPipeTableFromStructuredSourceMetadata(`---\n"${key}": "Authored summary"\n---`)
+    if (!table) throw new Error('Expected metadata table')
+    const rows = table.split('\n').filter(line => line.startsWith('|')).map(line => line.split('|').map(cell => cell.trim()))
+    const header = rows.find(row => row.includes('Summary') && row.includes('Key'))
+    if (!header) throw new Error('Expected semantic columns')
+    const row = rows.find(row => row[header.indexOf('Key')] === key)
+    if (!row || row[header.indexOf('Summary')] !== (key === 'unrelated' ? '' : 'Authored summary')) {
+      throw new Error(`Expected source-preserving summary classification for ${key}`)
+    }
   }
 }

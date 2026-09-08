@@ -79,11 +79,11 @@ export function useMarkdownWorkspaceViewShell(args: {
     })
   }, [setExpandedPaths])
 
-  const onSelectFile = React.useCallback(
-    (path: WorkspacePath) => {
+  const selectPathAndActivate = React.useCallback(
+    (path: WorkspacePath, activeTarget: WorkspacePath | null) => {
       const normalized = normalizeWorkspacePath(path)
       setSelectionSource('editor')
-      const applyActivePath = () => setActivePathSafe(normalized)
+      const applyActivePath = () => { if (activeTarget) setActivePathSafe(normalizeWorkspacePath(activeTarget)) }
       const pendingSelection = setSelectionPathSafe(normalized)
       if (pendingSelection) {
         void pendingSelection.then(applied => {
@@ -96,14 +96,12 @@ export function useMarkdownWorkspaceViewShell(args: {
     [setActivePathSafe, setSelectionPathSafe, setSelectionSource],
   )
 
+  const onSelectFile = React.useCallback(
+    (path: WorkspacePath) => selectPathAndActivate(path, path), [selectPathAndActivate],
+  )
   const onSelectFolder = React.useCallback(
-    (path: WorkspacePath) => {
-      setSelectionSource('editor')
-      setSelectionPathSafe(path)
-      const target = pickFolderContractTargetPath(path, folderModeContract)
-      if (target) setActivePathSafe(target)
-    },
-    [folderModeContract, pickFolderContractTargetPath, setActivePathSafe, setSelectionPathSafe, setSelectionSource],
+    (path: WorkspacePath) => selectPathAndActivate(path, pickFolderContractTargetPath(path, folderModeContract)),
+    [folderModeContract, pickFolderContractTargetPath, selectPathAndActivate],
   )
 
   const renderSourceFileRight = React.useCallback(

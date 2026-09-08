@@ -1,3 +1,7 @@
+import { AGENTIC_OS_STORAGE_SYNC_API_VERSION as apiVersion } from '@/lib/storage/agentic-graph-storage-sync-records'
+import { validateAgenticGraphStoragePullResponse } from '@/lib/storage/agentic-graph-storage-client-apply'
+import { requestAgenticGraphStoragePushWithRetry } from '@/lib/storage/agentic-graph-storage-client-push'
+import { exportAgenticGraphStorageWorkspace } from '@/lib/storage/agentic-graph-storage-client-export'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
@@ -113,4 +117,49 @@ test('XR v2 review browser gate retains comprehensive and Explorer evidence', ()
     canvasPackage.scripts['test:smoke:xr-v2:browser'],
     /browser:workspace-seed && npm run test:smoke:xr-v2:browser:comprehensive/u,
   )
+})
+
+test('XR storage fixture replies satisfy the owning sync and export clients before browser launch', async () => {
+  const { createXrV2ExistingStorageFixture } = await import('../../scripts/lib/xr-v2-existing-storage-fixture.mjs')
+  const { storageFixture, installExistingStorageFixture } = createXrV2ExistingStorageFixture()
+  const routes = new Map<string, (route: unknown) => Promise<void>>()
+  await installExistingStorageFixture({ route: async (pattern: string, handler: (route: unknown) => Promise<void>) => {
+    routes.set(pattern, handler)
+  } })
+  const fetchImpl = async (url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    let reply: { status: number; headers?: Record<string, string>; body: string } | undefined
+    const request = new Request(url, init)
+    const bytes = Buffer.from(await request.arrayBuffer())
+    await routes.get('**/api/storage/**')!({
+      request: () => ({ url: () => request.url, method: () => request.method,
+        postDataJSON: () => JSON.parse(bytes.toString()), postDataBuffer: () => bytes,
+        headers: () => Object.fromEntries(request.headers.entries()) }),
+      fulfill: async (value: typeof reply) => { reply = value },
+    })
+    assert.ok(reply, 'fixture must produce one explicit response')
+    return new Response(reply.body, { status: reply.status, headers: reply.headers })
+  }
+  const workspaceId = 'xr-fixture-contract', now = Date.now(), baseUrl = 'http://localhost'
+  const record = { id: 'manifest', workspaceId, canonicalPath: 'xr-assets/capture.md',
+    title: null, docType: null, lang: null, graphId: null, sourceKind: 'markdown' as const,
+    contentHash: 'fixture-hash', parserVersion: 'source-files',
+    contentMd: '# Recorded fixture', revision: 1, updatedAtMs: now, deleted: false }
+  const mutation = { mutationId: 'publish', workspaceId, recordId: record.id, entity: 'document' as const,
+    op: 'upsert' as const, baseRevision: null, record }
+  const pushed = await requestAgenticGraphStoragePushWithRetry({ workspaceId, deviceId: 'fixture',
+    mutations: [mutation], baseUrl, fetchImpl, maxRetryCount: 1, requestTimeoutMs: 1000 })
+  assert.equal(pushed.apiVersion, apiVersion)
+  assert.ok(Number.isFinite(Date.parse(pushed.ackCursor)))
+  assert.deepEqual(pushed.acknowledgements.map(ack => [ack.mutationId, ack.status, ack.serverRevision]), [['publish', 'applied', 1]])
+  const pulled = await (await fetchImpl(`${baseUrl}/api/storage/pull`, { method: 'POST',
+    body: JSON.stringify({ apiVersion, workspaceId, deviceId: 'fixture', since: null, knownChunks: [] }) })).json()
+  validateAgenticGraphStoragePullResponse(pulled, workspaceId)
+  assert.throws(() => validateAgenticGraphStoragePullResponse({ ...pulled, nextCursor: 'fixture-pull-1788880000000' }, workspaceId), /cursor/)
+  const exported = await exportAgenticGraphStorageWorkspace({ workspaceId, baseUrl, fetchImpl })
+  assert.deepEqual(exported.documents, [record])
+  assert.deepEqual(storageFixture.events, ['manifest-push', 'manifest-list'])
+  await assert.rejects(() => fetchImpl(`${baseUrl}/api/storage/pull`, { method: 'POST',
+    body: JSON.stringify({ apiVersion: 'unsupported', workspaceId }) }))
+  const fresh = createXrV2ExistingStorageFixture()
+  assert.equal(fresh.storageFixture.documents.size, 0, 'separate fixture instances must not share records')
 })

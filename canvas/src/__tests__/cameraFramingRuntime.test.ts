@@ -3,7 +3,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import {
   publishCameraFramingRuntime,
   readCameraFramingRuntime,
+  readCameraFramingRuntimeDocumentKey,
   resetCameraFramingRuntimeForDocument,
+  resetCameraFramingRuntimeForTests,
   subscribeCameraFramingRuntime,
 } from '@/features/strybldr/cameraFramingRuntime'
 import {
@@ -102,6 +104,21 @@ export function testCameraFramingRuntimePublishesImmutableNormalizedSnapshots() 
     source: 'document',
   })
   assertCondition(notifications === 3, 'expected unsubscribe to detach the conventional store listener')
+  let resetNotifications = 0
+  const stopResetListener = subscribeCameraFramingRuntime(() => { resetNotifications += 1 })
+  try {
+    const cleared = resetCameraFramingRuntimeForTests()
+    assertCondition(!cleared.claimed && readCameraFramingRuntimeDocumentKey() === '', 'expected fixture cleanup to release framing and document identity')
+    assertCondition(resetNotifications === 1, 'expected cleanup to notify the live listener once')
+    assertCondition(resetCameraFramingRuntimeForTests() === cleared && resetNotifications === 1, 'expected repeated cleanup to avoid revision and notification churn')
+    resetCameraFramingRuntimeForDocument('same-document')
+    const next = publishCameraFramingRuntime({ anchorId: 'next-card', settings: null, source: 'panel' })
+    assertCondition(resetNotifications === 3, 'expected fixture cleanup to preserve live subscribers')
+    assertCondition(resetCameraFramingRuntimeForDocument('same-document') === next, 'expected same-document activation to retain the operator framing claim')
+  } finally {
+    stopResetListener()
+    resetCameraFramingRuntimeForTests()
+  }
 }
 
 export function testCameraFramingPoseConversionsStayFiniteAndConventional() {

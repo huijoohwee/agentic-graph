@@ -3,7 +3,7 @@ import {
   CLOUDFLARE_PAY_PER_CRAWL_DOC_URL,
   CLOUDFLARE_PAY_PER_CRAWL_REQUEST_HEADERS,
   CLOUDFLARE_PAY_PER_CRAWL_RESPONSE_HEADERS,
-  AGENTIC_OS_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
   AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS,
   AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   buildAgenticGraphStorageDocPath,
@@ -13,6 +13,7 @@ import {
   hashAgenticGraphStorageContent,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
+import { pushCrawlerDocument } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
 
 const worker = (
   typeof (storageWorkerModule as { fetch?: unknown }).fetch === 'function'
@@ -20,12 +21,13 @@ const worker = (
     : (storageWorkerModule as unknown as { default: typeof storageWorkerModule }).default
 ) as typeof storageWorkerModule
 
-const assertCrawlerVisibleDocHeaders = (response: Response, routeLabel: string) => {
+const assertPrivateDocHeaders = (response: Response, routeLabel: string) => {
   if (!String(response.headers.get('content-type') || '').includes('text/markdown')) {
     throw new Error(`expected ${routeLabel} response to be served as text/markdown`)
   }
-  if (response.headers.get('x-robots-tag') !== 'all') {
-    throw new Error(`expected ${routeLabel} response to allow crawler indexing`)
+  if (response.headers.get('x-robots-tag') !== 'noindex, nofollow'
+    || response.headers.get('cache-control') !== 'private, no-store') {
+    throw new Error(`expected ${routeLabel} local response to prevent indexing and caching`)
   }
   if (response.headers.get(AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS.source) !== 'd1-documents-doc-view') {
     throw new Error(`expected ${routeLabel} response to declare the D1 doc-view crawler source`)
@@ -45,7 +47,7 @@ export async function testAgenticGraphStorageWorkerPushPullAndExportFlow() {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_1',
         deviceId: 'dev_1',
         mutations: [
@@ -131,7 +133,7 @@ export async function testAgenticGraphStorageWorkerPushPullAndExportFlow() {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_1',
         deviceId: 'dev_1',
         since: null,
@@ -165,7 +167,7 @@ export async function testAgenticGraphStorageWorkerRepeatedPushPullReusesSyncDev
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_repeat',
         deviceId: 'dev_repeat',
         mutations: [],
@@ -176,7 +178,7 @@ export async function testAgenticGraphStorageWorkerRepeatedPushPullReusesSyncDev
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_repeat',
         deviceId: 'dev_repeat',
         since: null,
@@ -202,7 +204,7 @@ export async function testAgenticGraphStorageWorkerReturnsConflictForStaleDocume
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+      apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
       workspaceId: 'wk_conflict',
       deviceId: 'dev_a',
       mutations: [
@@ -240,7 +242,7 @@ export async function testAgenticGraphStorageWorkerReturnsConflictForStaleDocume
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_conflict',
         deviceId: 'dev_b',
         mutations: [
@@ -314,7 +316,7 @@ export async function testAgenticGraphStorageWorkerDocViewRebuildsChunkOnlyMarkd
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_doc_view_chunks',
         deviceId: 'dev_doc_view_chunks',
         mutations: [
@@ -394,7 +396,7 @@ export async function testAgenticGraphStorageWorkerDocViewRebuildsChunkOnlyMarkd
     env as never,
   )
   if (!docViewResponse.ok) throw new Error(`expected doc view response ok, received ${docViewResponse.status}`)
-  assertCrawlerVisibleDocHeaders(docViewResponse, 'workspace doc view')
+  assertPrivateDocHeaders(docViewResponse, 'workspace doc view')
   const markdown = await docViewResponse.text()
   if (markdown.trim() !== '# Chunk Title\n\nChunk body') {
     throw new Error(`expected doc view to rebuild chunk-only markdown, got "${markdown}"`)
@@ -417,61 +419,11 @@ export async function testAgenticGraphStorageWorkerServesDefaultDocViewWithoutWo
     env as never,
   )
   if (!response.ok) throw new Error(`expected default doc view response ok, received ${response.status}`)
-  assertCrawlerVisibleDocHeaders(response, 'default doc view')
+  assertPrivateDocHeaders(response, 'default doc view')
   const markdown = await response.text()
   if (markdown.trim() !== '# Default Doc') {
     throw new Error(`expected default doc view to return the default workspace markdown, got "${markdown}"`)
   }
-}
-
-const pushCrawlerDocument = async (args: {
-  env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>
-  workspaceId: string
-  documentId: string
-  canonicalPath: string
-  title: string
-  contentMd: string
-  deleted?: boolean
-}) => {
-  const response = await worker.fetch(
-    new Request('https://example.com/api/storage/push', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-        workspaceId: args.workspaceId,
-        deviceId: 'dev_crawler',
-        mutations: [
-          {
-            mutationId: `mut_${args.documentId}`,
-            workspaceId: args.workspaceId,
-            entity: 'document',
-            op: 'upsert',
-            recordId: args.documentId,
-            baseRevision: null,
-            record: {
-              id: args.documentId,
-              workspaceId: args.workspaceId,
-              canonicalPath: args.canonicalPath,
-              title: args.title,
-              docType: 'markdown',
-              lang: null,
-              graphId: null,
-              sourceKind: 'markdown',
-              contentMd: args.contentMd,
-              contentHash: hashAgenticGraphStorageContent(args.contentMd),
-              parserVersion: 'source-files',
-              revision: 1,
-              updatedAtMs: 1_777_400_000_000,
-              deleted: args.deleted === true,
-            },
-          },
-        ],
-      }),
-    }),
-    args.env as never,
-  )
-  if (!response.ok) throw new Error(`expected crawler fixture push ok, received ${response.status}`)
 }
 
 export async function testAgenticGraphStorageWorkerServesSourceFilesCrawlerIndex() {
@@ -502,8 +454,9 @@ export async function testAgenticGraphStorageWorkerServesSourceFilesCrawlerIndex
   if (!String(response.headers.get('content-type') || '').includes('text/markdown')) {
     throw new Error('expected Source Files crawler index to be served as markdown')
   }
-  if (response.headers.get('x-robots-tag') !== 'all') {
-    throw new Error('expected Source Files crawler index to allow crawler indexing')
+  if (response.headers.get('x-robots-tag') !== 'noindex, nofollow'
+    || response.headers.get('cache-control') !== 'private, no-store') {
+    throw new Error('expected local Source Files index to prevent indexing and caching')
   }
   if (response.headers.get(AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy) !== 'cloudflare-zone-policy') {
     throw new Error('expected Source Files crawler index to declare Cloudflare-owned Pay Per Crawl policy')
@@ -599,8 +552,9 @@ export async function testAgenticGraphStorageWorkerServesWorkspaceLlmsSourceFile
   if (!String(response.headers.get('content-type') || '').includes('text/plain')) {
     throw new Error('expected workspace llms source-files response to be served as text/plain')
   }
-  if (response.headers.get('x-robots-tag') !== 'all') {
-    throw new Error('expected workspace llms source-files response to allow crawler indexing')
+  if (response.headers.get('x-robots-tag') !== 'noindex, nofollow'
+    || response.headers.get('cache-control') !== 'private, no-store') {
+    throw new Error('expected local workspace llms response to prevent indexing and caching')
   }
   if (response.headers.get(AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy) !== 'cloudflare-zone-policy') {
     throw new Error('expected workspace llms source-files response to declare Cloudflare-owned Pay Per Crawl policy')

@@ -1,3 +1,5 @@
+import { deepStrictEqual } from 'node:assert/strict'
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parse as parseYaml } from 'yaml'
@@ -5,7 +7,7 @@ import { parse as parseYaml } from 'yaml'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { parseStrybldrStoryboardMarkdown } from '@/features/strybldr/strybldrStoryboard'
-import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
+import { extractYamlFrontmatterHeaderBlock, parseCanvasWorkspaceFrontmatterPresetBlock, readCanvasWorkspaceFrontmatterPresetFromMeta, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
 
 const STORYBOARD_2D_RENDERER_TEMPLATE_NAME = 'agentic-graph-2d-renderer-storyboard-template.md'
 
@@ -22,7 +24,7 @@ const readTemplateText = (): string => {
   const externalValidationInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   const templatePath = externalValidationInput && path.basename(externalValidationInput) === STORYBOARD_2D_RENDERER_TEMPLATE_NAME
     ? externalValidationInput
-    : path.resolve(process.cwd(), '../..', 'huijoohwee.github.io', 'template', STORYBOARD_2D_RENDERER_TEMPLATE_NAME)
+    : resolveSiblingFixturePath('huijoohwee.github.io', `template/${STORYBOARD_2D_RENDERER_TEMPLATE_NAME}`)
   return fs.readFileSync(templatePath, 'utf8')
 }
 
@@ -62,23 +64,45 @@ const assertNoStoredGeneratedOutputSrcDocPayload = (payload: unknown): void => {
   assert(offenders.length === 0, `expected Storyboard renderer template not to store generated outputSrcDoc values: ${offenders.join(', ')}`)
 }
 
+function assertCanvasPresetNamespaceCompatibility() {
+  const fields = { CanvasSurfaceMode: '2d', CanvasRenderMode: '2d', Canvas2dRenderer: 'design',
+    DocumentSemanticMode: 'keyword', FrontmatterModeEnabled: false, MultiDimTableModeEnabled: true,
+    DocumentStructureBaselineLock: false, BottomPanelOpen: false, BottomPanelTab: 'gantt',
+    FloatingPanelOpen: true, FloatingPanelView: 'gantt' }
+  const expected = readCanvasWorkspaceFrontmatterPresetFromMeta(Object.fromEntries(Object.entries(fields).map(([key, value]) => ['kg' + key, value])))
+  assert(expected?.canvas2dRenderer === 'design' && expected.frontmatterModeEnabled === false, 'expected explicit renderer and false flags in the legacy preset')
+  for (const prefix of ['kg', 'agenticOs']) {
+    const meta = Object.fromEntries(Object.entries(fields).map(([key, value]) => [prefix + key, value]))
+    const block = extractYamlFrontmatterHeaderBlock('---\n' + Object.entries(meta).map(([key, value]) => key + ': ' + JSON.stringify(value)).join('\n') + '\n---')!
+    deepStrictEqual(readCanvasWorkspaceFrontmatterPresetFromMeta(meta), expected, prefix + ' metadata preset')
+    deepStrictEqual(parseCanvasWorkspaceFrontmatterPresetBlock(block), expected, prefix + ' YAML preset')
+    deepStrictEqual(parseCanvasWorkspaceFrontmatterPresetBlock(block), expected, prefix + ' cached YAML preset')
+  }
+  const conflicting = { kgCanvas2dRenderer: 'design', agenticOsCanvas2dRenderer: 'storyboard', kgFrontmatterModeEnabled: true, agenticOsFrontmatterModeEnabled: false }
+  const resolved = readCanvasWorkspaceFrontmatterPresetFromMeta(conflicting)
+  assert(resolved?.canvas2dRenderer === 'storyboard' && resolved.frontmatterModeEnabled === false, 'expected explicit Agentic OS fields to own conflicts, including false')
+  assert(readCanvasWorkspaceFrontmatterPresetFromMeta({ kgCanvas2dRenderer: 'design', agenticOsCanvas2dRenderer: 'invalid-renderer' })?.canvas2dRenderer === undefined, 'expected an invalid explicit canonical renderer not to revive a conflicting legacy renderer')
+}
+
 export async function testStrybldr2dRendererStoryboardTemplateStaysRuntimeReadyAndNeutral() {
+  assertCanvasPresetNamespaceCompatibility()
   const text = readTemplateText()
   const frontmatter = extractYamlFrontmatterHeaderBlock(text)
   assert(frontmatter, 'expected Storyboard renderer template to keep byte-zero YAML frontmatter')
   const frontmatterPayload = parseFrontmatterPayload(frontmatter.rawBlock)
-  assert(readYamlFrontmatterValue(frontmatter.rawBlock, 'kgCanvas2dRenderer').trim() === 'storyboard', 'expected Storyboard renderer template to route to the shared Storyboard renderer')
+  assert(parseCanvasWorkspaceFrontmatterPresetBlock(frontmatter)?.canvas2dRenderer === 'storyboard', 'expected Storyboard renderer template to route to the shared Storyboard renderer')
   assert(readYamlFrontmatterValue(frontmatter.rawBlock, 'validation_input_forbid_hardcode_in_repo').trim() === 'true', 'expected Storyboard renderer template to declare hardcode-free validation input mode')
   assertNoRepoHardcodedRuntimeMedia(text)
   assert(!text.includes('\n  cards:\n'), 'expected Storyboard renderer template not to store runtime card override payloads')
   assert(!text.includes('Generated Strybldr'), 'expected Storyboard renderer template not to store generated runtime handoff copy')
   assertNoStoredGeneratedOutputSrcDocPayload(frontmatterPayload)
-  const versionControl = frontmatterPayload.version_control as Record<string, unknown> | undefined
-  assert(versionControl?.version === 'agentic-graph-version-history/v1', 'expected Storyboard renderer template to declare the version-history contract')
-  assert(versionControl?.source === 'runtime-history', 'expected runtime history to remain the version-control SSOT')
-  assert(versionControl?.generated_mermaid_is_projection === true, 'expected generated GitGraph Mermaid to remain a derived projection')
-  assert(versionControl?.static_commit_fixtures_forbidden === true, 'expected Storyboard renderer template to forbid static commit fixtures')
-  assert(versionControl?.branch_merge_supported === false, 'expected linear history not to overclaim branch or merge support')
+  const readiness = frontmatterPayload.runtime_readiness as Record<string, unknown> | undefined
+  assert(readiness?.status === 'template-ready', 'expected the seed to report template readiness without claiming executed runtime proof')
+  assert(readiness?.default_runtime === 'local-dry-run-first', 'expected the seed to start with a local dry run')
+  assert(readiness?.paid_call_count === 0, 'expected no paid calls in an unexecuted template')
+  assert(readiness?.publish_scope === 'local-only', 'expected the seed to preserve local publication scope')
+  for (const key of ['provider_job_id', 'stream_url', 'generated_asset_url', 'runtime_proof_path']) assert(readiness?.[key] === '', `expected ${key} to remain empty until execution supplies evidence`)
+  for (const key of ['prod_mirror', 'cloudflare']) assert(readiness?.[key] === 'blocked until operator instruction', `expected ${key} to preserve explicit release authority`)
   const doc = parseStrybldrStoryboardMarkdown(text)
   assert(doc, 'expected Storyboard renderer template to expose a structured Strybldr storyboard payload')
   const parsed = await loadGraphDataFromTextViaParser(STORYBOARD_2D_RENDERER_TEMPLATE_NAME, text, {

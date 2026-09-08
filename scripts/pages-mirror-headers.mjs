@@ -16,16 +16,51 @@ const replaceOrAppendBlock = (existing, start, end, block) => {
   return `${trimmed}\n\n${block}\n`
 }
 
-const stripLegacyProductNamespaceHeaderBlocks = existing => existing
-  .replace(
-    /# BEGIN (?:agenticgraph|knowgrph) generated [^\n]+\n[\s\S]*?# END (?:agenticgraph|knowgrph) generated [^\n]+\n?/g,
-    '',
-  )
-  .split(/\n{2,}/)
-  .filter(block => !/(^|\n)\/(?:content\/)?(?:agenticgraph|knowgrph)(?:\/|\*|\s|$)/.test(block))
-  .join('\n\n')
-  .replace(/\n{3,}/g, '\n\n')
-  .trimEnd()
+const readMigratedContentPolicyBlocks = existing => {
+  let route = ''
+  const policies = []
+  for (const line of existing.split('\n')) {
+    if (/^\S/.test(line) && !line.startsWith('#')) route = line.trim()
+    const header = line.match(/^[ \t]+(![ \t]+)?(Content-Security-Policy(?:-Report-Only)?)(?::[ \t]*(.*))?$/i)
+    const product = route.match(/^\/(content\/)?(agentic-graph|agenticgraph|knowgrph)(?=\/|\*|$)/)
+    if (header && product && (header[1] || header[3] !== undefined)) {
+      policies.push({ route, line, name: header[2].toLowerCase(), detached: !!header[1], value: (header[3] || '').trim(), product })
+    }
+  }
+  const canonical = new Set(policies.filter(p => p.product[2] === 'agentic-graph').map(p => `${p.route}\n${p.name}`))
+  const emitted = new Map(), blocks = new Map()
+  for (const policy of policies) {
+    if (policy.product[2] === 'agentic-graph') continue
+    const target = policy.route.replace(policy.product[0], `/${policy.product[1] || ''}agentic-graph`)
+    const ownerKey = `${target}\n${policy.name}`
+    const key = `${ownerKey}\n${policy.detached}`
+    if (canonical.has(ownerKey)) continue
+    if (emitted.has(key)) {
+      if (emitted.get(key) !== policy.value) throw new Error(`conflicting legacy content policies for ${target}: ${policy.name}`)
+      continue
+    }
+    emitted.set(key, policy.value)
+    if (!blocks.has(target)) blocks.set(target, [])
+    blocks.get(target).push(policy.line)
+  }
+  return [...blocks].map(([target, lines]) => [target, ...lines].join('\n'))
+}
+
+const stripLegacyProductNamespaceHeaderBlocks = existing => {
+  const policies = readMigratedContentPolicyBlocks(existing)
+  const stripped = existing
+    .replace(
+      /# BEGIN (?:agenticgraph|knowgrph) generated [^\n]+\n[\s\S]*?# END (?:agenticgraph|knowgrph) generated [^\n]+\n?/g,
+      '',
+    )
+    .split(/(?=^(?:\/|https?:\/\/|# BEGIN ))/m)
+    .filter(block => !/^\/(?:content\/)?(?:agenticgraph|knowgrph)(?:\/|\*|\s|$)/.test(block))
+    .join('')
+    .replace(/\n{3,}/g, '\n\n')
+    .trimEnd()
+
+  return [stripped, ...policies].filter(Boolean).join('\n\n')
+}
 
 export const buildAgentReadyHeaders = ({
   existing,
@@ -89,5 +124,5 @@ export const buildAgentReadyHeaders = ({
   next = replaceOrAppendBlock(next, GENERATED_AGENT_HEADERS_START, GENERATED_AGENT_HEADERS_END, staticArtifactBlock)
   next = replaceOrAppendBlock(next, GENERATED_APP_SHELL_HEADERS_START, GENERATED_APP_SHELL_HEADERS_END, appShellHeaderBlock)
   next = replaceOrAppendBlock(next, GENERATED_XR_RUNTIME_HEADERS_START, GENERATED_XR_RUNTIME_HEADERS_END, xrRuntimeHeaderBlock)
-  return replaceOrAppendBlock(next, GENERATED_AGENT_HOMEPAGE_HEADERS_START, GENERATED_AGENT_HOMEPAGE_HEADERS_END, homepageHeaderBlock)
+  return replaceOrAppendBlock(next, GENERATED_AGENT_HOMEPAGE_HEADERS_START, GENERATED_AGENT_HOMEPAGE_HEADERS_END, homepageHeaderBlock).trimEnd() + '\n'
 }

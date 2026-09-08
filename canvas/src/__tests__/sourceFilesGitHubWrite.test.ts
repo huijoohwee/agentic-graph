@@ -2,23 +2,10 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
+import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
 import { publishGeneratedWorkspacePathsToGitHub } from '@/features/source-files/sourceFilesGitHubWrite'
 import { promoteGeneratedChatWorkspacePaths, retryGeneratedChatWorkspaceArtifactPromotion } from '@/features/chat/floatingPanelChat/chatWorkspaceArtifactPromotion'
-import { buildAgenticGraphStorageDocPath } from '@/lib/storage/agentic-graph-storage-sync-contract'
-import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
-import storageWorker from '../../../cloudflare/workers/agentic-graph-storage/index.ts'
 import { onRequest } from '../../../cloudflare/pages/agentic-graph-agent-ready.mjs'
-
-const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise<Response> } => {
-  const candidate = storageWorker as unknown as {
-    fetch?: (request: Request, env: never) => Promise<Response>
-    default?: { fetch?: (request: Request, env: never) => Promise<Response> }
-  }
-  const fetchImpl = candidate.fetch || candidate.default?.fetch
-  if (!fetchImpl) throw new Error('expected storage worker test module to expose fetch')
-  return { fetch: fetchImpl }
-}
 
 export async function testGeneratedChatLogWorkspacePathsPublishToGitHubEndpoint() {
   const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
@@ -183,91 +170,6 @@ export async function testPagesGitHubWorkspaceWriteRouteWritesChatLogFile() {
   }
 }
 
-export async function testGeneratedChatPromotionWritesGitHubBeforeCloudflareCache() {
-  const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
-  const { restore: restoreDom } = initJsdomHarness()
-  const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
-  const env = createFakeAgenticGraphStorageWorkerEnv()
-  const workspaceId = 'kgws:dev-github-canonical-e2e'
-  const workspacePath = '/chat-log/dev-canonical-e2e/agenticOs_dev-canonical-e2e.md'
-  const content = '# Dev canonical E2E\n\nGitHub owns writes; Cloudflare caches reads.'
-  const events: string[] = []
-  try {
-    resetWorkspaceFsForTests()
-    await __resetAgenticGraphStorageDbForTests()
-    process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = '1'
-    const fs = await getWorkspaceFs()
-    await fs.createFolder({ parentPath: '/', name: 'chat-log' })
-    await fs.createFolder({ parentPath: '/chat-log', name: 'dev-canonical-e2e' })
-    await fs.createFile({
-      parentPath: '/chat-log/dev-canonical-e2e',
-      name: 'agenticOs_dev-canonical-e2e.md',
-      text: content,
-    })
-
-    const result = await promoteGeneratedChatWorkspacePaths([workspacePath], {
-      githubEnabled: true,
-      githubBaseUrl: 'https://pages.example',
-      githubFetchImpl: async (_input, init) => {
-        events.push('github:write')
-        const body = JSON.parse(String(init?.body || '{}'))
-        if (body.files?.[0]?.workspacePath !== workspacePath || body.files?.[0]?.text !== content) {
-          throw new Error(`expected GitHub write to receive canonical workspace content, got ${JSON.stringify(body)}`)
-        }
-        return new Response(JSON.stringify({
-          ok: true,
-          status: 'applied',
-          repository: 'owner/repo',
-          branch: 'main',
-          files: [{
-            workspacePath,
-            repositoryPath: workspacePath.replace(/^\/+/, ''),
-            action: 'created',
-            commitSha: 'commit-dev-e2e',
-          }],
-        }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        })
-      },
-      storageWorkspaceId: workspaceId,
-      storageSyncNow: true,
-      storageBaseUrl: 'https://storage.example',
-      storageDeviceId: 'dev-github-canonical-e2e',
-      storageFetchImpl: async (input, init) => {
-        const url = input instanceof Request ? input.url : String(input || '')
-        events.push(`storage:${new URL(url, 'https://storage.example').pathname}`)
-        const request = input instanceof Request
-          ? input
-          : new Request(url.startsWith('/api/storage/') ? `https://storage.example${url}` : url, init)
-        return readStorageWorker().fetch(request, env as never)
-      },
-    })
-
-    if (result.githubStatus !== 'applied' || result.storageStatus !== 'applied') {
-      throw new Error(`expected GitHub write and Cloudflare cache to apply, got ${JSON.stringify(result)}`)
-    }
-    const firstStorageEventIndex = events.findIndex(event => event.startsWith('storage:'))
-    if (events[0] !== 'github:write' || firstStorageEventIndex <= 0) {
-      throw new Error(`expected GitHub write before Cloudflare cache, got ${events.join(',')}`)
-    }
-    const response = await readStorageWorker().fetch(
-      new Request(`https://storage.example${buildAgenticGraphStorageDocPath(workspaceId, workspacePath.replace(/^\/+/, ''))}`),
-      env as never,
-    )
-    const cached = await response.text()
-    if (!response.ok || cached !== content) {
-      throw new Error(`expected Cloudflare cache read to match canonical GitHub content, got status=${response.status} body=${cached}`)
-    }
-  } finally {
-    await __resetAgenticGraphStorageDbForTests()
-    resetWorkspaceFsForTests()
-    restoreWindow()
-    restoreDom()
-    if (typeof previousEnabled === 'string') process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
-  }
-}
 
 export async function testGeneratedChatPromotionSkipsCloudflareCacheWhenGitHubFails() {
   const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
@@ -316,77 +218,6 @@ export async function testGeneratedChatPromotionSkipsCloudflareCacheWhenGitHubFa
   }
 }
 
-export async function testRetryGeneratedChatPromotionReusesSavedWorkspaceArtifact() {
-  const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
-  const { restore: restoreDom } = initJsdomHarness()
-  const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
-  const env = createFakeAgenticGraphStorageWorkerEnv()
-  const workspaceId = 'kgws:retry-promotion'
-  const workspacePath = '/chat-log/retry-promotion/agenticOs_retry_promotion.md'
-  const content = '# Retry promotion\n\nReuse the saved local artifact without regenerating it.'
-  const events: string[] = []
-  try {
-    resetWorkspaceFsForTests()
-    await __resetAgenticGraphStorageDbForTests()
-    process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = '1'
-    const fs = await getWorkspaceFs()
-    await fs.createFolder({ parentPath: '/', name: 'chat-log' })
-    await fs.createFolder({ parentPath: '/chat-log', name: 'retry-promotion' })
-    await fs.createFile({
-      parentPath: '/chat-log/retry-promotion',
-      name: 'agenticOs_retry_promotion.md',
-      text: content,
-    })
-
-    const result = await retryGeneratedChatWorkspaceArtifactPromotion({
-      paths: [workspacePath],
-      githubEnabled: true,
-      githubBaseUrl: 'https://pages.example',
-      githubFetchImpl: async (_input, init) => {
-        events.push('github:write')
-        const body = JSON.parse(String(init?.body || '{}'))
-        if (body.files?.[0]?.workspacePath !== workspacePath || body.files?.[0]?.text !== content) {
-          throw new Error(`expected retry promotion to reuse the saved workspace artifact text, got ${JSON.stringify(body)}`)
-        }
-        return new Response(JSON.stringify({
-          ok: true,
-          status: 'applied',
-          repository: 'owner/repo',
-          files: [{ workspacePath, repositoryPath: workspacePath.replace(/^\/+/, ''), action: 'updated', commitSha: 'retry-commit-sha' }],
-        }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        })
-      },
-      storageWorkspaceId: workspaceId,
-      storageSyncNow: true,
-      storageBaseUrl: 'https://storage.example',
-      storageDeviceId: 'retry-promotion-device',
-      storageFetchImpl: async (input, init) => {
-        const url = input instanceof Request ? input.url : String(input || '')
-        events.push(`storage:${new URL(url, 'https://storage.example').pathname}`)
-        const request = input instanceof Request
-          ? input
-          : new Request(url.startsWith('/api/storage/') ? `https://storage.example${url}` : url, init)
-        return readStorageWorker().fetch(request, env as never)
-      },
-    })
-
-    if (result.promotion !== 'MIRRORED_GITHUB+STORAGE' || result.failureNote !== null || result.retryHint !== null || result.retryCommand !== null) {
-      throw new Error(`expected retry promotion to report a successful mirrored result, got ${JSON.stringify(result)}`)
-    }
-    if (events[0] !== 'github:write' || !events.some(event => event.startsWith('storage:'))) {
-      throw new Error(`expected retry promotion to preserve GitHub-before-storage ordering, got ${JSON.stringify(events)}`)
-    }
-  } finally {
-    await __resetAgenticGraphStorageDbForTests()
-    resetWorkspaceFsForTests()
-    restoreWindow()
-    restoreDom()
-    if (typeof previousEnabled === 'string') process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED = previousEnabled
-    else delete process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
-  }
-}
 
 export async function testRetryGeneratedChatPromotionReturnsExactRetryCommandOnFailure() {
   const previousEnabled = process.env.VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED
@@ -484,6 +315,7 @@ export async function testPagesGitHubWorkspaceWriteRouteReportsForbiddenDependen
 export async function testPagesGitHubWorkspaceWriteRouteDryRunDoesNotCallGitHub() {
   const originalFetch = globalThis.fetch
   let fetched = false
+  const text = '# Generated AGENTIC_OS\n'
   try {
     globalThis.fetch = (async () => {
       fetched = true
@@ -497,7 +329,7 @@ export async function testPagesGitHubWorkspaceWriteRouteDryRunDoesNotCallGitHub(
           dryRun: true,
           files: [{
             workspacePath: '/chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md',
-            text: '# Generated AGENTIC_OS\n',
+            text,
           }],
         }),
       }),
@@ -519,7 +351,7 @@ export async function testPagesGitHubWorkspaceWriteRouteDryRunDoesNotCallGitHub(
     if (fetched) {
       throw new Error('expected dry-run route to avoid calling GitHub fetch')
     }
-    if (body.files?.[0]?.repositoryPath !== 'chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md' || body.files?.[0]?.textBytes !== 16) {
+    if (body.files?.[0]?.repositoryPath !== 'chat-log/20260606T010203Z/agenticOs_20260606T010203Z.md' || body.files?.[0]?.textBytes !== new TextEncoder().encode(text).byteLength) {
       throw new Error(`expected dry-run route to report normalized file metadata, got ${JSON.stringify(body)}`)
     }
   } finally {

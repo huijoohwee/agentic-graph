@@ -98,7 +98,7 @@ test('production release rejects a stale delayed protected-main event', () => {
 test('integration forbids alternate standalone Game Mode and XR Physics source owners', () => {
   assert.equal(packageScripts['game-mode:source-authority'], 'node ./scripts/check-game-fps-readiness.mjs')
   assert.match(packageScripts['conflict:source'], /^npm run game-mode:source-authority && /)
-  assertAllMatch(gameModeSourceAuthorityScript, [ /authorityExecutableRoots/, /deletedStandaloneMarkers/, /workspaceSeedPaths/, /declaresStandaloneXrWorld/, /gameAwareThreeOwners/, /xrPhysicsThreeOwners/,
+  assertAllMatch(gameModeSourceAuthorityScript, [ /authorityExecutableRoots/, /deletedStandaloneMarkers/, /workspaceSeedPaths/, /declaresStandaloneXrWorld/, /assertGameFpsThreeOwnership\(\{ featureSources, productionSources \}\)/, /xrPhysicsThreeOwners/,
     /__pbt__\|__tests__\|fixtures\|test\|tests/, ])
 })
 test('GitHub workflows pin Node 24 actions to immutable revisions', () => {

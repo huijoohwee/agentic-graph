@@ -12,7 +12,7 @@
 // only topology and forbid-hardcode-in-repo invariants.
 // =============================================================================
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, openSync, readSync, closeSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
@@ -28,7 +28,50 @@ export const DEMO_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agentic-g
 // The renderer-agnostic 2D renderer set (design glossary `rendererAgnostic`).
 export const RENDERER_SET = ['storyboard']
 
-export const readDoc = (p) => readFileSync(p, 'utf8')
+const STRYTREE_COMPANIONS = [
+  ['agentic-graph-strytree-tad-architecture.md', '# Part C -'],
+  ['agentic-graph-strytree-tad-workflows-api.md', '## C6.'],
+  ['agentic-graph-strytree-tad-runtime-validation.md', '## C8.'],
+  ['agentic-graph-strytree-adr-validation.md', '# Part D -'],
+]
+
+// Exact ordered owners only: bounded fresh reads, no recursive discovery.
+export function readDoc(p) {
+  if (p !== PRD_TAD_PATH) return readFileSync(p, 'utf8')
+  const buffer = Buffer.allocUnsafe(500_000)
+  const readPart = (file) => {
+    const fd = openSync(file, 'r')
+    let size = 0
+    try {
+      while (size < buffer.length) {
+        const count = readSync(fd, buffer, size, buffer.length - size, null)
+        if (!count) break
+        size += count
+      }
+    } finally { closeSync(fd) }
+    if (size === buffer.length) throw new Error(`Strytree document exceeds byte bound: ${file}`)
+    const text = buffer.subarray(0, size).toString('utf8')
+    const lineCount = text.split('\n').length - Number(text.endsWith('\n'))
+    if (!text.trim() || lineCount >= 600) {
+      throw new Error(`Strytree document is empty or exceeds line bound: ${file}`)
+    }
+    return text
+  }
+  const parts = [readPart(p)]
+  let combinedBytes = Buffer.byteLength(parts[0])
+  for (const [name, heading] of STRYTREE_COMPANIONS) {
+    const file = path.join(path.dirname(p), name)
+    const { frontmatter, body } = splitFrontmatter(readPart(file))
+    const prefix = '\n[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad.md).\n\n'
+    if (!frontmatter.includes('source_contract: "./agentic-graph-strytree-prd-tad.md"') ||
+        !body.startsWith(prefix + heading)) throw new Error(`Invalid Strytree companion: ${file}`)
+    const content = body.slice(prefix.length)
+    combinedBytes += 1 + Buffer.byteLength(content)
+    if (combinedBytes >= 500_000) throw new Error('Combined Strytree document exceeds byte bound')
+    parts.push(content)
+  }
+  return parts.join('\n')
+}
 
 // ---------------------------------------------------------------------------
 // Frontmatter / body splitting + block extraction (raw text, no YAML parse)

@@ -1,4 +1,5 @@
 import React from 'react'
+import { applyGameFpsNpcSelectionHighlight, GameFpsSharedNpcHighlights } from './GameFpsSharedNpcHighlights'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Color, Euler, Quaternion, Vector3, type Group, type Mesh, type MeshStandardMaterial, type PerspectiveCamera } from 'three'
 import {
@@ -94,6 +95,7 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
   const snapshotRef = React.useRef(readGameFpsSnapshot())
   const stageRootRef = React.useRef<Group | null>(null)
   const npcMeshRefs = React.useRef(new Map<string, Mesh>())
+  const npcHighlightRef = React.useRef<Mesh | null>(null)
   const firstFramePublishedRef = React.useRef(false)
   const readyFrameCountRef = React.useRef(0)
   const inputClaimedRef = React.useRef(false)
@@ -177,6 +179,8 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
     gl.domElement.dataset.kgGameFpsCameraFov = String(perspectiveCamera?.fov ?? '')
     gl.domElement.dataset.kgGameFpsGroundedCamera = perspectiveCamera?.fov === GAME_FPS_CAMERA_FOV_DEGREES ? '1' : '0'
 
+    const highlight = npcHighlightRef.current
+    if (highlight) applyGameFpsNpcSelectionHighlight(highlight, undefined)
     for (const npc of snapshot.npcs) {
       const mesh = npcMeshRefs.current.get(npc.id)
       if (!mesh) continue
@@ -215,6 +219,9 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
       mesh.userData.kgXrSharedAssetSelected = sharedControl.selected
       mesh.userData.kgXrSharedAssetPreset = sharedControl.assignedPresetId
       mesh.userData.kgXrSharedAssetHandPose = sharedControl.handPoseActive
+      if (highlight?.userData.kgXrHighlightNpcId === npc.id && sharedControl.selected) {
+        applyGameFpsNpcSelectionHighlight(highlight, npc, mesh)
+      }
       setMeshColor(
         mesh,
         livePose
@@ -243,6 +250,7 @@ export function GameFpsMissionStage({ coordinateScale = 1 }: {
 
   return (
     <group ref={stageRootRef} name="agentic_os_game_fps_mission" scale={coordinateScale} userData={{ coordinateScale }}>
+      <GameFpsSharedNpcHighlights highlightRef={npcHighlightRef} />
       {GAME_FPS_NPC_IDS.map(id => {
         const npc = snapshotRef.current.npcs.find(candidate => candidate.id === id)!
         return (

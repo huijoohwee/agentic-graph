@@ -1,3 +1,4 @@
+import { resolvePinnedAgenticDocsRoot } from '@/tests/lib/repoTestData'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -99,10 +100,11 @@ const assertRegistryHasTokens = (
 }
 
 const assertSourceDictionaryHasTokens = (
+  docsRoot: string,
   dictionaryFileName: string,
   expectedTokens: readonly string[],
 ) => {
-  const sourcePath = resolve(process.cwd(), '..', '..', 'agentic-canvas-os', 'docs', dictionaryFileName)
+  const sourcePath = resolve(docsRoot, dictionaryFileName)
   const source = readFileSync(sourcePath, 'utf8')
   for (const token of expectedTokens) {
     if (!source.includes(`  - "${token}"`)) {
@@ -129,7 +131,8 @@ const registerCanvasGrammar = () => {
   registerAgenticOsRemoteGrammarCatalogEntries(entries)
 }
 
-export function testCanvasPanelFunctionsAreAgenticOsInvokable() {
+export async function testCanvasPanelFunctionsAreAgenticOsInvokable() {
+  const docsRoot = await resolvePinnedAgenticDocsRoot()
   resetAgenticOsRemoteGrammarCatalogForTests()
   registerCanvasGrammar()
   const slashTokens = collectExpectedTokens('/')
@@ -140,9 +143,9 @@ export function testCanvasPanelFunctionsAreAgenticOsInvokable() {
   assertRegistryHasTokens(getAgenticOsSemanticInvocations(), hashTokens, 'DICTIONARY-SEMANTIC.md')
   assertRegistryHasTokens(getAgenticOsBindingInvocations(), atTokens, 'DICTIONARY-BINDING.md')
 
-  assertSourceDictionaryHasTokens('DICTIONARY-COMMAND.md', slashTokens)
-  assertSourceDictionaryHasTokens('DICTIONARY-SEMANTIC.md', hashTokens)
-  assertSourceDictionaryHasTokens('DICTIONARY-BINDING.md', atTokens)
+  assertSourceDictionaryHasTokens(docsRoot, 'DICTIONARY-COMMAND.md', slashTokens)
+  assertSourceDictionaryHasTokens(docsRoot, 'DICTIONARY-SEMANTIC.md', hashTokens)
+  assertSourceDictionaryHasTokens(docsRoot, 'DICTIONARY-BINDING.md', atTokens)
 
   for (const invocation of CANVAS_FUNCTION_INVOCATIONS) {
     for (const token of [...invocation.slash, ...invocation.hash, ...invocation.at]) {

@@ -1,3 +1,4 @@
+import type { MarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceRuntime.types'
 import React from 'react'
 import { useDebouncedValue } from '@/features/hooks/useDebouncedValue'
 import type { HighlightedLineRange, MarkdownPresentationApi } from '@/features/markdown-workspace/markdownWorkspaceTypes'
@@ -73,7 +74,7 @@ export function useMarkdownWorkspaceBootstrapState(args: {
   const workspaceRootRef = React.useRef<HTMLElement | null>(null)
   const presentationApiRef = React.useRef<MarkdownPresentationApi | null>(null)
   const [highlightedLineRange, setHighlightedLineRange] = React.useState<HighlightedLineRange>(null)
-  const lastLoadedRef = React.useRef<{ path: WorkspacePath; text: string } | null>(null)
+  const lastLoadedRef = React.useRef<MarkdownWorkspaceLoadedSnapshot | null>(null)
   const activeTextRef = React.useRef('')
   const [activeText, setActiveTextState] = React.useState('')
   const setActiveText = React.useCallback<React.Dispatch<React.SetStateAction<string>>>(next => {

@@ -18,7 +18,7 @@ import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-f
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
+import { createAsyncActionTracker, installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 
 type RegisteredSettingsActions = {
   apply: () => void
@@ -37,6 +37,7 @@ const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonEle
 
 function SettingsCreateWorkspaceFileDefaultRootHarness(props: {
   actionsRef: React.MutableRefObject<RegisteredSettingsActions | null>
+  actionTracker: ReturnType<typeof createAsyncActionTracker>
 }): React.ReactElement {
   const {
     values,
@@ -89,13 +90,13 @@ function SettingsCreateWorkspaceFileDefaultRootHarness(props: {
       </button>
       <button
         type="button"
-        onClick={() => void createAndSelectAgenticGraphFile()}
+        onClick={() => props.actionTracker.track(createAndSelectAgenticGraphFile())}
       >
         Create agentic-graph File
       </button>
       <button
         type="button"
-        onClick={() => void createAndSelectChatHistoryFile()}
+        onClick={() => props.actionTracker.track(createAndSelectChatHistoryFile())}
       >
         Create History File
       </button>
@@ -110,9 +111,12 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
   let settingsRoot: ReturnType<typeof createRoot> | null = null
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
+  const actionTracker = createAsyncActionTracker()
   const originalDateNow = Date.now
 
   let cleanupAssertionError: Error | null = null
+  let bodyError: unknown
+  let bodyFailed = false
   try {
     resetBrowserLocalSurfaceSnapshotsForTests()
     resetWorkspaceFsForTests()
@@ -143,7 +147,7 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
     settingsRoot = createRoot(settingsContainer as unknown as HTMLElement)
     chatRoot = createRoot(chatContainer as unknown as HTMLElement)
 
-    await mountReactRoot(settingsRoot, React.createElement(SettingsCreateWorkspaceFileDefaultRootHarness, { actionsRef }), {
+    await mountReactRoot(settingsRoot, React.createElement(SettingsCreateWorkspaceFileDefaultRootHarness, { actionsRef, actionTracker }), {
       window: dom.window as unknown as Window,
       frames: 10,
     })
@@ -179,11 +183,11 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
 
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Create agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 4)
+      await actionTracker.settle()
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Create History File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 4)
+      await actionTracker.settle()
     })
 
     const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agentic-graph-storage-mode]')?.getAttribute('data-draft-agentic-graph-storage-mode')
@@ -267,14 +271,27 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
         chatLocalStorageRootPath: useGraphStore.getState().chatLocalStorageRootPath,
       })}`)
     }
+  } catch (error) {
+    bodyError = error
+    bodyFailed = true
   } finally {
+    try {
+      await act(async () => {
+        await actionTracker.settle()
+      })
+    } catch (error) {
+      cleanupAssertionError = error instanceof Error ? error : new Error(String(error))
+    }
     Date.now = originalDateNow
     if (chatRoot) {
       await unmountReactRoot(chatRoot, { window: dom.window as unknown as Window })
     }
     const clearedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (clearedChatInspection.available !== false) {
-      cleanupAssertionError = new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedChatInspection)}`)
+      const snapshotError = new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedChatInspection)}`)
+      cleanupAssertionError = cleanupAssertionError
+        ? new AggregateError([cleanupAssertionError, snapshotError], 'Settings fixture cleanup failed')
+        : snapshotError
     }
     if (settingsRoot) {
       await unmountReactRoot(settingsRoot, { window: dom.window as unknown as Window })
@@ -285,6 +302,10 @@ export async function testSettingsCreateFilesBlankRootFallsBackToDefaultLocalRoo
     useMarkdownExplorerStore.getState().setActivePath(null)
     restoreDom()
     restoreWindow()
+  }
+  if (bodyFailed) {
+    if (cleanupAssertionError) throw new AggregateError([bodyError, cleanupAssertionError], 'Settings fixture body and cleanup failed')
+    throw bodyError
   }
   if (cleanupAssertionError) throw cleanupAssertionError
 }

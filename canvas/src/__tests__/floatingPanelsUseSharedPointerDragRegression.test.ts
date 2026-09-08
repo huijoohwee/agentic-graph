@@ -4,7 +4,8 @@ import { resolve } from 'node:path'
 export function testToolMenuDragUsesSharedPointerDrag() {
   const p = resolve(process.cwd(), 'src', 'features', 'toolbar', 'useToolMenuState.ts')
   const text = readFileSync(p, 'utf8')
-  if (!text.includes('startPointerDrag')) throw new Error('expected tool menu drag to use shared startPointerDrag')
+  const owner = readFileSync(resolve(process.cwd(), 'src/lib/ui/overlayPanelDrag.ts'), 'utf8')
+  if (!text.includes('beginOverlayPanelPositionDrag({') || !owner.includes("from 'grph-shared/dom/pointerDrag'") || !owner.includes('startPointerDrag({')) throw new Error('expected tool menu drag to delegate through the shared overlay owner to startPointerDrag')
   if (text.includes("window.addEventListener('pointermove'")) throw new Error('expected tool menu drag to avoid manual window pointermove listeners')
   if (text.includes("window.addEventListener('pointerup'")) throw new Error('expected tool menu drag to avoid manual window pointerup listeners')
 }
@@ -50,7 +51,7 @@ export function testFloatingPanelDefaultGeometryMatchesCanvasCommandPanel() {
   if (toolbarToolMenuText.includes('bottomSurfaceHeightRatio') || toolbarToolMenuText.includes('safeBottomRatio')) {
     throw new Error('expected FloatingPanel shell height not to shrink against stale bottom-surface ratio state')
   }
-  if (!toolbarToolMenuText.includes('FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS') || !toolbarToolMenuText.includes('FLOATING_PANEL_DEFAULT_WIDTH_RATIO')) {
+  if (!toolbarToolMenuText.includes('width: resolveFloatingPanelWidthCss(floatingPanelWidthRatio)') || !geometryText.includes('Number.isFinite(widthRatio) ? widthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO') || !geometryText.includes('max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw)')) {
     throw new Error('expected FloatingPanel shell width to use shared 20 percent wider geometry constants')
   }
   if (gitGraphCanvasText.includes('data-kg-gitgraph-crud-panel') || gitGraphCanvasText.includes('CardInlineTextEditor')) {

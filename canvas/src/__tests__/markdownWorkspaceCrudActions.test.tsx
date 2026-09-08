@@ -1,3 +1,6 @@
+import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
+import { persistMarkdownSourceFolderPaths, readPersistedMarkdownSourceFolderPaths } from '@/features/markdown/ui/markdownSourceFilesPersistence'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { MarkdownWorkspace } from '@/lib/markdown-workspace-runtime'
@@ -35,12 +38,18 @@ export async function testMarkdownWorkspaceExplorerCrudActionsCreateAndDeleteFil
   const root = createRoot(container as unknown as HTMLElement)
   const prompt = dom.window.prompt
   const confirm = dom.window.confirm
+  const previousExpanded = readPersistedMarkdownSourceFolderPaths()
+  let cleanupFixture: (() => Promise<void>) | undefined
 
   try {
     useGraphStore.getState().resetAll()
     useMarkdownExplorerStore.getState().setActivePath(null)
     const fs = await getWorkspaceFs()
     await fs.ensureSeed()
+    await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH })
+    persistMarkdownSourceFolderPaths([...readPersistedMarkdownSourceFolderPaths(), WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH])
+    const fixturePath = await fs.createFile({ parentPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH, name: 'crud-context-source.md', text: '# CRUD source' })
+    cleanupFixture = () => fs.deleteEntry(fixturePath)
     const beforeEntries = await fs.listEntries()
     const beforePaths = new Set(beforeEntries.map(e => e.path))
     const createName = 'note-context-menu.md'
@@ -58,7 +67,7 @@ export async function testMarkdownWorkspaceExplorerCrudActionsCreateAndDeleteFil
       await tick()
       sourceFileBtn = (Array.from(container.querySelectorAll('button')).find(button => {
         const label = String((button as HTMLButtonElement).getAttribute('aria-label') || '')
-        return label.startsWith('File ')
+        return label === `File ${fixturePath.split('/').pop()}`
       }) as HTMLButtonElement | undefined) || null
       if (sourceFileBtn) break
     }
@@ -178,6 +187,8 @@ export async function testMarkdownWorkspaceExplorerCrudActionsCreateAndDeleteFil
     } catch {
       void 0
     }
+    await cleanupFixture?.()
+    persistMarkdownSourceFolderPaths(previousExpanded)
     restoreDom()
   }
 }

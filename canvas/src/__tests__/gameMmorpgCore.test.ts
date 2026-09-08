@@ -29,7 +29,7 @@ import {
   releaseGameOsWorldLease,
   sealGameOsWorldEnvelope,
   type GameOsWorldState,
-} from '../../../grph-shared/src/game-os/index.js'
+} from 'grph-shared/game-os/index'
 
 Dexie.dependencies.indexedDB = indexedDB
 Dexie.dependencies.IDBKeyRange = IDBKeyRange
@@ -167,8 +167,8 @@ describe('Game MMORPG browser persistence contract', () => {
     const sources = await Promise.all([
       'gameMmorpgCore.ts', 'gameMmorpgToolSurface.ts',
     ].map(fileName => readFile(new URL(`../features/game-mmorpg/${fileName}`, import.meta.url), 'utf8')))
-    assert.match(sources[0], /grph-shared\/src\/game-os\/index\.js/u)
-    assert.match(sources[0], /lib\/storage\/agenticGraphStorageEnginePersistence/u)
+    assert.match(sources[0], /from 'grph-shared\/game-os\/index'/u)
+    assert.match(sources[0], /lib\/storage\/agentic-graph-storage-engine-persistence/u)
     for (const source of sources) {
       assert.doesNotMatch(source, /\bfetch\s*\(|XMLHttpRequest|WebSocket|https?:\/\//u)
       assert.doesNotMatch(source, /three|WebGL|renderer|createObjectStore|indexedDB\.open|new GameOsModeRegistry|modelTransport|authoringAssist|externalGameRuntime/iu)

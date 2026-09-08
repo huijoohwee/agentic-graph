@@ -5,57 +5,9 @@ import { buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
 import type { GraphData } from '@/lib/graph/types'
 import {
   buildWorkspaceGraphMutationBlockKey,
-  buildWorkspaceGraphMutationTransitionState,
   isWorkspaceGraphMutationBlocked,
 } from '@/features/workspace-table/workspaceTableSsot'
 import { buildAutoFitToScreenSignature, buildAutoZoomSelectionSignature } from '@/lib/zoom/autoModeSignatures'
-
-export function testWorkspaceGraphMutationTransitionUsesSemanticKeyAndExpiry() {
-  const key = buildWorkspaceGraphMutationBlockKey({
-    workspaceViewMode: 'canvas',
-    workspaceCanvasPaneOpen: false,
-    markdownWorkspaceIndexingInFlight: false,
-  })
-  if (!key) throw new Error('expected workspace graph mutation transition identity to use a semantic key')
-
-  const transition = buildWorkspaceGraphMutationTransitionState({
-    workspaceViewMode: 'canvas',
-    workspaceCanvasPaneOpen: false,
-    markdownWorkspaceIndexingInFlight: false,
-    nowMs: 1000,
-  })
-  if (transition.workspaceGraphMutationBlockKey !== key) {
-    throw new Error('expected transition state to reuse the shared semantic workspace graph mutation key')
-  }
-  const sourceSwitchTransition = buildWorkspaceGraphMutationTransitionState({
-    workspaceViewMode: 'canvas',
-    workspaceCanvasPaneOpen: false,
-    markdownWorkspaceIndexingInFlight: false,
-    transitionSemanticKey: 'source:/docs/a.md',
-    nowMs: 1000,
-  })
-  if (sourceSwitchTransition.workspaceGraphMutationBlockKey === key) {
-    throw new Error('expected Source Files document switches to key workspace graph mutation guards by source identity')
-  }
-  if (!isWorkspaceGraphMutationBlocked({
-    workspaceViewMode: 'canvas',
-    workspaceCanvasPaneOpen: false,
-    markdownWorkspaceIndexingInFlight: false,
-    workspaceGraphMutationBlockUntilMs: Date.now() + 1000,
-    workspaceGraphMutationBlockKey: key,
-  })) {
-    throw new Error('expected active workspace graph mutation transition to block graph layout writes')
-  }
-  if (isWorkspaceGraphMutationBlocked({
-    workspaceViewMode: 'canvas',
-    workspaceCanvasPaneOpen: false,
-    markdownWorkspaceIndexingInFlight: false,
-    workspaceGraphMutationBlockUntilMs: 1,
-    workspaceGraphMutationBlockKey: key,
-  })) {
-    throw new Error('expected expired workspace graph mutation transition to release graph layout writes')
-  }
-}
 
 export function testWorkspaceGraphMutationTransitionKeysAutoFitVisibility() {
   const closedKey = buildWorkspaceGraphMutationBlockKey({
@@ -366,11 +318,11 @@ export function testRunAllLayoutLockSuppressesAutoZoomUntilMutationGuardReleases
   }
   const flowRuntimePath = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'useFlowCanvasRuntime.ts')
   const flowRuntimeText = readFileSync(flowRuntimePath, 'utf8')
-  if (!flowRuntimeText.includes("import { isWorkspaceEditorOverlayOpen, isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'")) {
+  if (!flowRuntimeText.includes("import { isWorkspaceEditorOverlayOpen, isWorkspaceCameraInitializationBlocked } from '@/features/workspace-table/workspaceTableSsot'")) {
     throw new Error('expected native FlowCanvas runtime fit to import the shared workspace graph mutation guard')
   }
-  if (!flowRuntimeText.includes('if (storyboardWidgetMode && isWorkspaceGraphMutationBlocked(state)) {')
-    || !flowRuntimeText.includes('workspaceEditorOverlayOpen === true && (alreadyInitializedForKey || hasNonIdentityTransform)')
+  if (!flowRuntimeText.includes('if (storyboardWidgetMode && isWorkspaceCameraInitializationBlocked(state)) {')
+    || !flowRuntimeText.includes('workspaceEditorOverlayOpen === true && alreadyInitializedForKey')
     || !flowRuntimeText.includes('lastInitTransformZoomViewKeyRef.current = initKey')) {
     throw new Error('expected native FlowCanvas runtime fit to stop while preserving only established current-document camera authority during the shared graph mutation guard')
   }

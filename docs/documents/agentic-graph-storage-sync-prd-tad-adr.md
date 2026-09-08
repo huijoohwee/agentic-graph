@@ -261,7 +261,7 @@ absence is a stated fact rather than an undocumented gap.
 | Stage | Component | Input | Output | Persistence | Error handling |
 |---|---|---|---|---|---|
 | Ingest | sync client | outbox + cursor | bounded request | request-scoped | retain outbox |
-| Transform | shared Worker | typed mutations/base revisions | applied/conflict/rejected/deferred | transaction-scoped | typed revision/quota result; current structured routes do not enforce auth |
+| Transform | shared Worker | typed mutations/base revisions | applied/conflict/rejected/deferred | transaction-scoped | typed revision/quota result; session authentication and workspace authorization |
 | Store | structured/binary/room owner | accepted record/update | shared projection | declared retention/region | rollback/reconcile |
 | Serve | reconciler | response + local state | updated cursor/conflict | local history | no silent overwrite |
 
@@ -296,12 +296,12 @@ move until the CRDT-merge and squash-to-candidate fixtures named in S4a exist an
 | Room provider (CRDT) | Merges concurrent edits for exactly one open document through WebSocket/Durable Object and the Yjs sync protocol, then squashes merged state to a Markdown/frontmatter candidate; `y-indexeddb`-equivalent local persistence stays alongside, not in place of, the working store. | One Durable Object per document and the existing S9 review path; exactly one active provider per document; idle hibernation. | FOSS: Yjs, MIT (reference implementation; ADR-2 owns alternatives). | S4/S4a; no evidence recorded and the remote/live adapter is unimplemented; Local `spec-complete`, Delivered `undocumented`. |
 | Lark configuration/import adapter | A host-owned adapter discovers scoped Base/Wiki/Docs resources and produces an immutable provider snapshot for the deterministic mapper through host-mediated OpenAPI; the browser receives no reusable credential. | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad.md`; scope allowlist and snapshot retention window. | Proprietary Lark platform, project-owned adapter; ADR-3 owns the TCO/FOSS comparison. | S9; remote fetch/write-back is not evidenced; Local and Delivered `undocumented`. |
 
-The generic blob handler currently has no auth and permits overwrite at a workspace/path key. The
-run-media token checks expiry and run id but is not signed. The binary contract owns those blockers.
-The structured push, pull, and export handlers also have no authorization gate; current browser
-clients send content type but no credential. These routes must not be treated as safe public shared
-storage until S7 is implemented and evidenced. Optional KV support is not assumed live merely because
-a binding is supported.
+Current source authenticates snapshot push/pull/export and workspace blob/media requests, then checks
+workspace membership. Browser sessions use same-origin HttpOnly cookies and require configured Access
+settings. Private document reads use the same session and membership checks; anonymous document reads
+require an explicit publication matching the current revision. Chat, relay, room and crawler routes retain
+their existing credential contracts. Native coverage lives in `storage-relay/storagePublicationBrowserSession.test.ts`
+and adjacent storage security tests. Source checks do not establish deployed S7 readiness or live KV bindings.
 
 ## Integration Contracts
 

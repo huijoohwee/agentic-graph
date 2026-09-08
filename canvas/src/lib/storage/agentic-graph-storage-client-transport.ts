@@ -121,6 +121,21 @@ export const sleep = async (
   })
 }
 
+// The exact Response keeps the original header-and-body budget without changing
+// each native caller. Weak keys retain no completed response or payload cache.
+const responseDeadlines = new WeakMap<Response, {
+  deadlineMs: number; timeoutMs: number; controller: AbortController
+}>()
+
+export const cancelStorageStream = (
+  stream: { cancel(reason?: unknown): Promise<void> } | null,
+  reason: string,
+): void => {
+  // A producer's cancel promise may never settle. Cleanup cannot hold a caller
+  // or a retry slot indefinitely, and a late rejection must still be handled.
+  try { void stream?.cancel(reason).catch(() => undefined) } catch { /* already locked or closed */ }
+}
+
 export const fetchWithTimeout = async (args: {
   fetchImpl: AgenticGraphStorageFetchLike
   input: RequestInfo | URL
@@ -132,6 +147,7 @@ export const fetchWithTimeout = async (args: {
     AGENTIC_OS_STORAGE_SYNC_BOUNDS.pushRequestTimeoutMs,
   )
   const controller = new AbortController()
+  const deadlineMs = performance.now() + timeoutMs
   let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null
   const timeout = new Promise<never>((_resolve, reject) => {
     timeoutId = globalThis.setTimeout(() => {
@@ -142,14 +158,21 @@ export const fetchWithTimeout = async (args: {
     }, timeoutMs)
   })
   try {
-    return await Promise.race([
-      args.fetchImpl(args.input, {
+    // Native Window.fetch rejects an unrelated object receiver.
+    const fetchImpl = args.fetchImpl
+    const response = await Promise.race([
+      fetchImpl(args.input, {
         ...args.init,
         credentials: args.init.credentials || 'same-origin',
         signal: controller.signal,
+      }).then(response => {
+        if (controller.signal.aborted) cancelStorageStream(response.body, 'storage request expired before headers')
+        return response
       }),
       timeout,
     ])
+    responseDeadlines.set(response, { deadlineMs, timeoutMs, controller })
+    return response
   } catch (error) {
     if (error instanceof AgenticGraphStorageRetryableTransportError) throw error
     const name = error && typeof error === 'object'
@@ -214,52 +237,91 @@ export const isNetworkLoadFailure = (error: unknown): boolean => {
   )
 }
 
-const readBoundedStorageResponseText = async (response: Response): Promise<string> => {
+export const readResponseTextWithDeadline = async (
+  response: Response,
+  args: { timeoutMs?: number; maxBytes: number | null; fatalUtf8?: boolean },
+): Promise<string> => {
+  const maxBytes = args.maxBytes
+  if (maxBytes !== null && (!Number.isSafeInteger(maxBytes) || maxBytes < 0)) {
+    cancelStorageStream(response.body, 'invalid response byte limit')
+    throw new RangeError('response byte limit must be null or a non-negative safe integer')
+  }
+  const inherited = responseDeadlines.get(response)
+  responseDeadlines.delete(response)
+  const timeoutMs = normalizePositiveInt(args.timeoutMs, inherited?.timeoutMs ?? AGENTIC_OS_STORAGE_SYNC_BOUNDS.pushRequestTimeoutMs)
+  const deadlineMs = Math.min(inherited?.deadlineMs ?? Infinity, performance.now() + timeoutMs)
+  const timeoutError = () => new AgenticGraphStorageRetryableTransportError(
+    `agentic-graph storage response timed out within ${timeoutMs}ms request budget`,
+  )
+  const assertWithinDeadline = () => { if (performance.now() >= deadlineMs) throw timeoutError() }
   const declaredText = response.headers.get('content-length')
-  if (declaredText && /^\d+$/.test(declaredText)) {
+  if (maxBytes !== null && declaredText && /^\d+$/.test(declaredText)) {
     const declaredBytes = Number(declaredText)
-    if (Number.isSafeInteger(declaredBytes) && declaredBytes > AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes) {
-      try { await response.body?.cancel('storage response exceeds the byte limit') } catch { /* already locked */ }
+    if (Number.isSafeInteger(declaredBytes) && declaredBytes > maxBytes) {
+      cancelStorageStream(response.body, 'storage response exceeds the byte limit')
       throw new AgenticGraphStorageResponseLimitError(
-        `agentic-graph storage response exceeds ${AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes} bytes`,
+        `agentic-graph storage response exceeds ${maxBytes} bytes`,
       )
     }
   }
-  if (!response.body) return ''
+  if (!response.body) { assertWithinDeadline(); return '' }
   const reader = response.body.getReader()
-  const decoder = new TextDecoder('utf-8', { fatal: true })
+  const decoder = new TextDecoder('utf-8', { fatal: args.fatalUtf8 === true })
   let text = ''
   let totalBytes = 0
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null
   try {
-    while (true) {
-      const next = await reader.read()
-      if (next.done) break
-      totalBytes += next.value.byteLength
-      if (totalBytes > AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes) {
-        await reader.cancel('storage response exceeds the byte limit')
-        throw new AgenticGraphStorageResponseLimitError(
-          `agentic-graph storage response exceeds ${AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes} bytes`,
-        )
+    assertWithinDeadline()
+    const timeout = new Promise<never>((_resolve, reject) => {
+      timeoutId = globalThis.setTimeout(() => reject(timeoutError()), Math.max(0, deadlineMs - performance.now()))
+    })
+    const consume = async () => {
+      while (true) {
+        // Also check elapsed time: an always-ready stream can starve timer tasks.
+        assertWithinDeadline()
+        const next = await reader.read()
+        assertWithinDeadline()
+        if (next.done) break
+        totalBytes += next.value.byteLength
+        if (maxBytes !== null && totalBytes > maxBytes) {
+          cancelStorageStream(reader, 'storage response exceeds the byte limit')
+          throw new AgenticGraphStorageResponseLimitError(
+            `agentic-graph storage response exceeds ${maxBytes} bytes`,
+          )
+        }
+        text += decoder.decode(next.value, { stream: true })
       }
-      text += decoder.decode(next.value, { stream: true })
+      text += decoder.decode()
+      assertWithinDeadline()
+      return text
     }
-    text += decoder.decode()
-    return text
+    // Race once; racing every chunk against one pending timer retains a promise
+    // reaction for every chunk until the deadline and grows memory needlessly.
+    return await Promise.race([consume(), timeout])
   } catch (error) {
     if (error instanceof AgenticGraphStorageResponseLimitError) throw error
-    try { await reader.cancel('storage response stream failed') } catch { /* already closed */ }
+    cancelStorageStream(reader, 'storage response stream failed')
+    if (error instanceof AgenticGraphStorageRetryableTransportError) {
+      inherited?.controller.abort()
+      throw error
+    }
     throw new Error('agentic-graph storage response is unreadable')
   } finally {
+    if (timeoutId != null) globalThis.clearTimeout(timeoutId)
     try { reader.releaseLock() } catch { /* already released */ }
   }
 }
 
 export const parseStorageResponseJson = async <T>(
   response: Response,
-  args: { requestLabel: string; apiOrigin: string },
+  args: { requestLabel: string; apiOrigin: string; timeoutMs?: number },
 ): Promise<T> => {
   const contentType = normalizeString(response.headers.get('content-type')).toLowerCase()
-  const text = await readBoundedStorageResponseText(response)
+  const text = await readResponseTextWithDeadline(response, {
+    timeoutMs: args.timeoutMs,
+    maxBytes: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes,
+    fatalUtf8: true,
+  })
   const trimmed = String(text || '').trim()
   const isJsonLikeContentType = contentType.includes('application/json') || contentType.endsWith('+json')
   const routeUnavailable =

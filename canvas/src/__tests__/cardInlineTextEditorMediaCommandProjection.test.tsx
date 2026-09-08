@@ -277,8 +277,8 @@ export async function testCardInlineTextEditorAttachedMediaStaysOutOfTextareaEdi
       throw new Error(`expected inactive display @ media chip shell to avoid empty right-side width, html=${initialDisplayChip.outerHTML}`)
     }
     const initialDisplayText = String(display.textContent || '')
-    if (!initialDisplayText.includes('I can ...') || !initialDisplayText.includes('@strybldr-starter-source.png') || initialDisplayText.includes(mediaUrl) || initialDisplayText.includes('![')) {
-      throw new Error(`expected inactive display chip to preserve prose plus compact @ label only, got ${JSON.stringify(initialDisplayText)}`)
+    if (!initialDisplayText.includes('I can ...') || !initialDisplayText.includes('strybldr-starter-source.png') || initialDisplayChip.getAttribute('data-kg-chat-input-media-token') !== '@strybldr-starter-source.png' || initialDisplayText.includes(mediaUrl) || initialDisplayText.includes('![')) {
+      throw new Error(`expected inactive display chip to preserve prose and compact media label with the original @ token metadata, got ${JSON.stringify(initialDisplayText)}`)
     }
     await act(async () => {
       display.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
@@ -312,8 +312,8 @@ export async function testCardInlineTextEditorAttachedMediaStaysOutOfTextareaEdi
       throw new Error(`expected post-commit @ media display chip label to keep shared 15ch truncation, html=${postCommitDisplayChip.outerHTML}`)
     }
     const postCommitDisplayText = String(reopenedDisplay.textContent || '')
-    if (!postCommitDisplayText.includes('I can ...') || !postCommitDisplayText.includes('@strybldr-starter-source.png') || postCommitDisplayText.includes(mediaUrl) || postCommitDisplayText.includes('![')) {
-      throw new Error(`expected post-commit display chip to keep compact @ label without source backfill, got ${JSON.stringify(postCommitDisplayText)}`)
+    if (!postCommitDisplayText.includes('I can ...') || !postCommitDisplayText.includes('strybldr-starter-source.png') || postCommitDisplayChip.getAttribute('data-kg-chat-input-media-token') !== '@strybldr-starter-source.png' || postCommitDisplayText.includes(mediaUrl) || postCommitDisplayText.includes('![')) {
+      throw new Error(`expected post-commit display chip to keep compact media label and @ token metadata without source backfill, got ${JSON.stringify(postCommitDisplayText)}`)
     }
     await act(async () => {
       reopenedDisplay.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))

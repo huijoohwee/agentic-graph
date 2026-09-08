@@ -1,4 +1,4 @@
-import { cancelCoalescedTask, scheduleCoalescedTask } from '@/lib/async/coalescedScheduler'
+import { cancelCoalescedTask, hasPendingCoalescedTask, scheduleCoalescedTask } from '@/lib/async/coalescedScheduler'
 
 const WORKSPACE_SYNC_SCHEDULER_KEY = 'workspace:sync:runtime-persistence'
 const WORKSPACE_SYNC_SIGNATURE_LIMIT = 400
@@ -17,8 +17,9 @@ export type WorkspaceSyncTaskOptions = {
 const pendingWorkspaceSyncTasks = new Map<string, WorkspaceSyncTaskEntry>()
 const lastExecutedWorkspaceSyncTaskSignature = new Map<string, string>()
 const pendingWorkspaceSyncSignatureOwner = new Map<string, string>()
-let workspaceSyncFlushScheduled = false
-let workspaceSyncFlushDelayMs = 0
+let workspaceSyncFlushAt: number | null = null
+let workspaceSyncOwner: Window | null | undefined
+let workspaceSyncOwnerGeneration = 0
 
 const signatureOwnerKey = (scopeKey: string, signature: string): string => `${scopeKey}::${signature}`
 const normalizeSignature = (raw: string | null): string | null => {
@@ -56,8 +57,11 @@ const getOrCreatePendingTaskEntry = (key: string): WorkspaceSyncTaskEntry => {
 }
 
 const flushWorkspaceSyncTasks = (): void => {
-  workspaceSyncFlushScheduled = false
-  workspaceSyncFlushDelayMs = 0
+  const owner = workspaceSyncOwner
+  const generation = workspaceSyncOwnerGeneration
+  const isCurrentOwner = () => generation === workspaceSyncOwnerGeneration && owner === workspaceSyncOwner
+    && owner === (typeof window === 'undefined' ? null : window)
+  workspaceSyncFlushAt = null
 
   const run = [...pendingWorkspaceSyncTasks.entries()]
   pendingWorkspaceSyncTasks.clear()
@@ -65,6 +69,7 @@ const flushWorkspaceSyncTasks = (): void => {
   const executedSignatures = new Set<string>()
 
   for (let i = 0; i < run.length; i += 1) {
+    if (!isCurrentOwner()) break
     const [taskName, task] = run[i]
     const signature = task.signature
     const scopeKey = task.scopeKey || taskName
@@ -76,7 +81,7 @@ const flushWorkspaceSyncTasks = (): void => {
     }
     try {
       task.fn()
-      if (signature) {
+      if (signature && isCurrentOwner()) {
         setLastExecutedSignature(scopeKey, signature)
       }
     } catch {
@@ -96,6 +101,19 @@ export const scheduleWorkspaceSyncTask = (
   delayMs: number,
   options?: WorkspaceSyncTaskOptions,
 ): boolean => {
+  const owner = typeof window === 'undefined' ? null : window
+  const ownerChanged = workspaceSyncOwner !== owner
+  const retiredFlush = workspaceSyncFlushAt !== null && !hasPendingCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY)
+  if (ownerChanged || retiredFlush) {
+    // Retired callbacks cannot own new work, including a temporary Window replacement and return.
+    cancelCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY)
+    pendingWorkspaceSyncTasks.clear()
+    pendingWorkspaceSyncSignatureOwner.clear()
+    if (ownerChanged) lastExecutedWorkspaceSyncTaskSignature.clear()
+    workspaceSyncFlushAt = null
+    workspaceSyncOwner = owner
+    workspaceSyncOwnerGeneration += 1
+  }
   const key = String(taskKey || '').trim() || 'default'
   const scopeKey = String(options?.scopeKey || '').trim() || key
   const signatureRaw = typeof options?.signature === 'string' ? options.signature : null
@@ -124,15 +142,10 @@ export const scheduleWorkspaceSyncTask = (
   entry.signature = signature
   entry.scopeKey = scopeKey
   const normalizedDelay = Number.isFinite(delayMs) && delayMs >= 0 ? Math.floor(delayMs) : 0
-  if (!workspaceSyncFlushScheduled) {
-    workspaceSyncFlushScheduled = true
-    workspaceSyncFlushDelayMs = normalizedDelay
-    scheduleCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY, flushWorkspaceSyncTasks, normalizedDelay)
-    return true
-  }
-  if (normalizedDelay < workspaceSyncFlushDelayMs) {
-    workspaceSyncFlushDelayMs = normalizedDelay
-    scheduleCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY, flushWorkspaceSyncTasks, normalizedDelay)
+  const requestedFlushAt = Date.now() + normalizedDelay
+  if (workspaceSyncFlushAt === null || requestedFlushAt < workspaceSyncFlushAt) {
+    workspaceSyncFlushAt = requestedFlushAt
+    scheduleCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY, flushWorkspaceSyncTasks, Math.max(0, requestedFlushAt - Date.now()))
   }
   return true
 }
@@ -150,7 +163,6 @@ export const cancelWorkspaceSyncTask = (taskKey: string): void => {
   pendingWorkspaceSyncTasks.delete(key)
   if (pendingWorkspaceSyncTasks.size > 0) return
   pendingWorkspaceSyncSignatureOwner.clear()
-  workspaceSyncFlushScheduled = false
-  workspaceSyncFlushDelayMs = 0
+  workspaceSyncFlushAt = null
   cancelCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY)
 }

@@ -368,7 +368,7 @@ export function useFlowCanvasLayoutState(args: UseFlowCanvasLayoutStateArgs) {
       .map(node => {
         const id = String(node?.id || '').trim()
         const point = positions[id]
-        return point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { ...node, x: point.x, y: point.y } : null
+        return point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { ...node, x: point.x, y: point.y } : Number.isFinite(node.x) && Number.isFinite(node.y) ? node : null
       })
       .filter(Boolean) as GraphNode[]
   }, [canvas2dRenderer, computedPositions, graphDataForZoom, seededFallbackPositions])

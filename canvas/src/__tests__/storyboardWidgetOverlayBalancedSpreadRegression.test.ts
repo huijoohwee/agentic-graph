@@ -341,7 +341,7 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   if (!handlesText.includes('rebalanceRichMediaPanelHandles')) {
     throw new Error('expected shared flow handle planner to own rich media panel handle rebalancing')
   }
-  if (!handlesText.includes("activeTab === 'text'")) {
+  if (!handlesText.includes('resolveRichMediaFlowPortPriority(props?.richMediaActiveTab)') || !handlesText.includes('return RICH_MEDIA_FLOW_PORT_PRIORITY_BY_TAB[normalizedTab] || []')) {
     throw new Error('expected shared flow handle planner to rebalance panel handles by active rich media tab')
   }
   if (!handlesText.includes('FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID')) {
@@ -367,7 +367,7 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   if (!overlayEdgeRenderGraphHelperText.includes("import { pickDefaultFlowPortKey, readFlowEdgePortKey } from '@/lib/graph/flowPorts'")) {
     throw new Error('expected Storyboard Widget overlay edge graph helper to own shared flow port helper reuse')
   }
-  if (!overlayEdgeRenderGraphHelperText.includes("const sourcePortKey =\n      readFlowEdgePortKey(edgeWithProps, 'source')")) {
+  if (!overlayEdgeRenderGraphHelperText.includes("presentationSource === source\n        ? readFlowEdgePortKey(edgeWithProps, 'source')") || !overlayEdgeRenderGraphHelperText.includes("defaultPortKeyByNodeId.get(presentationSource)?.out")) {
     throw new Error('expected Storyboard Widget overlay edge graph helper to resolve source endpoint keys through shared flow port helpers')
   }
   if (!overlayEdgeRenderGraphHelperText.includes("const targetPortKey =\n      readFlowEdgePortKey(edgeWithProps, 'target')")) {
@@ -419,7 +419,7 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   const workflowRunAllText = readUtf8(workflowRunAllPath)
   const workspaceTableSsotText = readUtf8(workspaceTableSsotPath)
   const workflowWritebackText = readUtf8(workflowWritebackPath)
-  const workflowRichMediaPanelText = readUtf8(workflowRichMediaPanelPath)
+  const workflowRichMediaPanelText = readUtf8(workflowRichMediaPanelPath); const publicationText = readUtf8(path.resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaPublication.ts'))
   if (!workflowWritebackText.includes('export function areStoryboardWidgetWorkflowRecordValuesEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean')) {
     throw new Error('expected shared workflow writeback helper to compare semantic property values before replacing node objects')
   }
@@ -460,7 +460,7 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   if (!workflowText.includes('scheduleWorkflowOutputEdgeRefresh: scheduleRunOutputEdgeRefresh')) {
     throw new Error('expected workflow output, loading, and Rich Media Panel patches to use the run-scoped edge refresh gate')
   }
-  if (!workflowText.includes('if (!suppressLayoutMutation) args.updateNode(panelNodeId, { properties: { ...existingPanelProps, ...patch } as never })')) {
+  if (!workflowText.includes('createStoryboardWidgetWorkflowRichMediaPublishers({\n        suppressStoreGraphWriteback: suppressLayoutMutation,') || !publicationText.includes('if (args.suppressStoreGraphWriteback !== true && !areStoryboardWidgetWorkflowRecordValuesEqual(existingPanelProps, nextPanelProps))')) {
     throw new Error('expected Rich Media Panel output mirrors to avoid graph-store writeback during output-only Run all')
   }
   if (!workspaceTableSsotText.includes('workspaceGraphMutationLayoutLockActive?: boolean')) {
@@ -486,7 +486,7 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   if (!workflowRichMediaPanelText.includes('if (!args.allowCreateRichMediaPanel) return null')) {
     throw new Error('expected shared Rich Media Panel helper to skip node creation when Run all is output-only')
   }
-  if (!workflowRunAllText.includes('await args.runWorkflowNode(nodeId, { allowCreateRichMediaPanel: false, suppressLayoutMutation: true })')) {
+  if (!/await args\.runWorkflowNode\(nodeId, \{\s*allowCreateRichMediaPanel: false,\s*suppressLayoutMutation: true,/.test(workflowRunAllText)) {
     throw new Error('expected Toolbar Run all to write outputs into existing nodes only without appending Rich Media Panel nodes or mutating Storyboard Widget layout')
   }
   if (!workflowActionsText.includes('readDraftGraphData: () => (args.draftGraphDataRef.current || args.draftGraphData) as GraphData | null')) {
@@ -507,10 +507,10 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   if (!workflowRunAllText.includes('args.scheduleOutputEdgeRefresh()')) {
     throw new Error('expected Run all to refresh connected outputs once after the locked batch')
   }
-  if (!workflowText.includes('const existingPanelProps = (updatedPanel?.properties || {}) as Record<string, unknown>')) {
+  if (!publicationText.includes('existingPanelProps = readPanelProperties(panelNodeId)') || !publicationText.includes('mergeStoryboardWidgetWorkflowPropertyPatch(existingPanelProps, patch)')) {
     throw new Error('expected Rich Media Panel output writes to preserve existing layout and sizing properties')
   }
-  if (!workflowText.includes('args.updateNode(panelNodeId, { properties: { ...existingPanelProps, ...patch } as never })')) {
+  if (!publicationText.includes('args.updateNode(panelNodeId, { properties: nextPanelProps as never })')) {
     throw new Error('expected Rich Media Panel graph-store write to merge output into existing panel properties instead of replacing layout')
   }
 }

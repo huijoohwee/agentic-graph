@@ -34,6 +34,8 @@ export type ProbeTreeBranchCardMaterializationResult = {
   invocationText: string
 }
 
+type ProbeTreeRevealResult = ProbeTreeBranchCardMaterializationResult & { changed: false }
+
 const cleanPromptValue = (value: unknown, maxLength = 180): string => (
   String(unwrapGraphCellValue(value) ?? '').replace(/\s+/g, ' ').trim().slice(0, maxLength)
 )
@@ -139,7 +141,7 @@ export function revealProbeTreeBranchCardsOnCanvas(nodeIds: readonly string[]): 
 export function materializeProbeTreeBranchCards(args: {
   graphData: GraphData | null | undefined
   card?: StoryboardCardModel | null
-}): ProbeTreeBranchCardMaterializationResult {
+}): ProbeTreeRevealResult {
   const invocationText = resolveProbeTreeCardMaterializationRequestText(args.card)
   if (!args.graphData || !args.card || !invocationText) {
     return {
@@ -190,7 +192,7 @@ export function materializeProbeTreeBranchCards(args: {
 export function materializeProbeTreeBranchCardsFromGraphNode(args: {
   graphData: GraphData | null | undefined
   node?: GraphNode | null
-}): ProbeTreeBranchCardMaterializationResult {
+}): ProbeTreeRevealResult {
   return materializeProbeTreeBranchCards({
     graphData: args.graphData,
     card: args.node ? buildProbeTreeCardFromGraphNode(args.node) : null,
@@ -200,16 +202,10 @@ export function materializeProbeTreeBranchCardsFromGraphNode(args: {
 export function invokeProbeTreeFromStoryboardToolbar(args: {
   card?: StoryboardCardModel | null
   graphData: GraphData | null | undefined
-  commitGraphData: (graphData: GraphData) => void
-  addHistory: (label: string) => void
   upsertUiToast: (toast: UiToastInput) => void
-}): ProbeTreeBranchCardMaterializationResult {
+}): ProbeTreeRevealResult {
   disableAutoZoomModesForUserGesture(useGraphStore.getState())
   const result = materializeProbeTreeBranchCards({ graphData: args.graphData, card: args.card })
-  if (result.changed && result.graphData) {
-    args.commitGraphData(result.graphData)
-    args.addHistory('Probe-Tree branch cards')
-  }
   if (result.materializedNodeIds.length > 0) {
     revealProbeTreeBranchCardsOnCanvas(result.materializedNodeIds)
   }

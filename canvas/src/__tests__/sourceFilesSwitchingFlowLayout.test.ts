@@ -28,7 +28,7 @@ import { computeNaturalCanvasInitialTransform } from '@/lib/zoom/fixedZoomPreset
 import { buildAuthoredMarkdownNoteInitialText } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 
 export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresInteractionPositions() {
-  const ingestText = readFileSync(resolve(process.cwd(), 'src/features/source-files/sourceFilesIngestIntegration.ts'), 'utf8')
+  const ingestText = readFileSync(resolve(process.cwd(), 'src/features/source-files/sourceFilesParseRuntime.ts'), 'utf8')
   const loaderText = readFileSync(resolve(process.cwd(), 'src/features/markdown-workspace/useMarkdownLoader.ts'), 'utf8')
   const selectionText = readFileSync(resolve(process.cwd(), 'src/lib/markdown-workspace-runtime/useMarkdownWorkspaceSelection.ts'), 'utf8')
   const switchApplyText = readFileSync(resolve(process.cwd(), 'src/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply.ts'), 'utf8')
@@ -40,7 +40,7 @@ export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresIn
   const runtimeMaterializationText = readFileSync(resolve(process.cwd(), 'src/features/source-files/sourceFilesRuntimeMaterialization.ts'), 'utf8')
   const canvasViewportText = readFileSync(resolve(process.cwd(), 'src/components/CanvasViewport.tsx'), 'utf8')
 
-  if (!ingestText.includes('autoEnableFrontmatter: false') || !ingestText.includes('applyViewPreset: opts?.applyToGraph === true')) {
+  if (!ingestText.includes('autoEnableFrontmatter: false') || !ingestText.includes('applyViewPreset: options?.applyToGraph === true')) {
     throw new Error('expected Source Files import activation to apply YAML/frontmatter presets only when graph apply is explicit')
   }
   if (ingestText.includes('forceApplyToGraph: true')) {
@@ -64,11 +64,11 @@ export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresIn
   if (!selectionText.includes('resolveActivePathFromWorkspaceFileSelection({') || !selectionText.includes('setActivePathSafe(nextActivePath)')) {
     throw new Error('expected Source Files file selection to promote restored file selection paths back to the active Canvas document path')
   }
-  if (!selectionText.includes('shouldHydrateStableWorkspaceSelectionText({') || !selectionText.includes('sourceUrl: activeDocumentSourceUrl')) {
+  if (!switchApplyText.includes('shouldHydrateStableWorkspaceSelectionText(args)') || !selectionText.includes('resolveStableWorkspaceSelectionSyncDecision({') || !selectionText.includes('sourceUrl: activeDocumentSourceUrl')) {
     throw new Error('expected stable Source Files hydration to apply selected file content/frontmatter to Canvas, not only editor text')
   }
   if (
-    !selectionText.includes('shouldApplyStableWorkspaceSelectionToCanvas({') ||
+    !switchApplyText.includes('shouldApplyStableWorkspaceSelectionToCanvas(args)') || !selectionText.includes('if (syncDecision.applyToCanvas && activeDocumentKey) {') ||
     !selectionText.includes('markdownDocumentName: args.markdownDocumentName') ||
     !selectionText.includes('graphDataSource: args.graphDataSource') ||
     !selectionText.includes('canvas2dRenderer: args.canvas2dRenderer')
@@ -151,7 +151,7 @@ export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresIn
     throw new Error('expected Source Files Canvas switching to clear stale graph data with a selected-document pending graph keyed by the active file and parsed YAML/frontmatter preset when present')
   }
   if (
-    !documentActionsText.includes('if (applyViewPresetForSwitch) {\n        get().setGraphData(buildPendingMarkdownDocumentGraph({') ||
+    !documentActionsText.includes('if (applyViewPresetForSwitch && didSwitchActiveDocument) {\n        get().setGraphData(buildPendingMarkdownDocumentGraph({') ||
     documentActionsText.includes('if (strictStoryboardPreset)') ||
     documentActionsText.includes('applyViewPresetForSwitch && parsedTextPreset')
   ) {
@@ -170,7 +170,7 @@ export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresIn
     throw new Error('expected Source Files row selection to update the active file synchronously under renderer load')
   }
   if (!canvasViewportText.includes("activePathAuthority: documentSwitchPending ? 'workspace-selection' : 'markdown-document'")
-    || !canvasViewportText.includes('(!documentSwitchPending && isFrontmatterFlowGraph(activeGraphData))')) {
+    || !canvasViewportText.includes('const workspaceStoryboardSurfaceActive = !documentSwitchPending')) {
     throw new Error('expected a pending Source Files switch to exclude the previous document graph from Canvas surface authority')
   }
   if (!topologyText.includes("buildScopedGraphSemanticKey('flow-layout-topology'")) {
@@ -183,44 +183,44 @@ export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresIn
 
 export async function testSourceFilesSwitchingPrimesCanvasForSelectedFileWithoutFrontmatterGraph() {
   const state = useGraphStore.getState()
-  state.resetAll()
-  state.setGraphData({
-    type: 'Graph',
-    context: 'frontmatter-flow',
-    metadata: {
-      kind: 'frontmatter-flow',
-      source: 'markdown:stale-frontmatter.md',
-    },
-    nodes: [
-      { id: 'stale-node', label: 'Stale node', type: 'Stale' },
-    ],
-    edges: [],
-  } as never)
+  state.resetAll(); try {
+    state.setGraphData({
+      type: 'Graph',
+      context: 'frontmatter-flow',
+      metadata: {
+        kind: 'frontmatter-flow',
+        source: 'markdown:stale-frontmatter.md',
+      },
+      nodes: [
+        { id: 'stale-node', label: 'Stale node', type: 'Stale' },
+      ],
+      edges: [],
+    } as never)
+    const text = 'Plain selected file body without YAML frontmatter or graph syntax.'
+    const ok = await useGraphStore.getState().setActiveMarkdownDocument({
+      name: 'notes/plain-selected-file.txt',
+      text,
+      autoEnableFrontmatter: false,
+      applyViewPreset: true,
+      applyToGraph: true,
+      forceApplyToGraph: true,
+    })
 
-  const text = 'Plain selected file body without YAML frontmatter or graph syntax.'
-  const ok = await useGraphStore.getState().setActiveMarkdownDocument({
-    name: 'notes/plain-selected-file.txt',
-    text,
-    autoEnableFrontmatter: false,
-    applyViewPreset: true,
-    applyToGraph: true,
-    forceApplyToGraph: true,
-  })
-
-  const after = useGraphStore.getState()
-  const meta = ((after.graphData?.metadata || null) as Record<string, unknown> | null) || {}
-  if (ok !== true) {
-    throw new Error('expected selected plain file switch to complete after applying the active document to Canvas')
-  }
-  if (after.markdownDocumentName !== 'notes/plain-selected-file.txt' || after.markdownDocumentText !== text) {
-    throw new Error('expected active markdown document to reflect the selected Source Files content')
-  }
-  if (String(meta.source || '') !== 'markdown:notes/plain-selected-file.txt' || meta.pending !== true) {
-    throw new Error(`expected Canvas to hold a selected-document pending graph instead of stale frontmatter graph, got ${JSON.stringify(meta)}`)
-  }
-  if ((after.graphData?.nodes || []).some(node => String(node.id || '') === 'stale-node')) {
-    throw new Error('expected selected plain file switch to remove stale graph nodes immediately')
-  }
+    const after = useGraphStore.getState()
+    const meta = ((after.graphData?.metadata || null) as Record<string, unknown> | null) || {}
+    if (ok !== true) {
+      throw new Error('expected selected plain file switch to complete after applying the active document to Canvas')
+    }
+    if (after.markdownDocumentName !== 'notes/plain-selected-file.txt' || after.markdownDocumentText !== text) {
+      throw new Error('expected active markdown document to reflect the selected Source Files content')
+    }
+    if (String(meta.source || '') !== 'markdown:notes/plain-selected-file.txt' || meta.pending !== true) {
+      throw new Error(`expected Canvas to hold a selected-document pending graph instead of stale frontmatter graph, got ${JSON.stringify(meta)}`)
+    }
+    if ((after.graphData?.nodes || []).some(node => String(node.id || '') === 'stale-node')) {
+      throw new Error('expected selected plain file switch to remove stale graph nodes immediately')
+    }
+  } finally { state.resetAll() }
 }
 
 export async function testSameDocumentGraphPublicationPreservesOpenWidgetPresentationState() {

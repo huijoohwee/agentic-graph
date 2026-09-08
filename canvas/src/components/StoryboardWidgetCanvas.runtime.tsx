@@ -761,11 +761,9 @@ export default function StoryboardWidgetCanvasRuntime(
     pendingOverlayNodeIdRef.current = null
     setPendingOverlayNode(null)
   }, [baseGraphData, openWidgetNodeIds, pendingOverlayNode, selectedNodeId, storyboardCardsMode])
-  const storyboardCanvasGraphDataOverride = storyboardCardDisplayActive
+  const storyboardCanvasGraphDataOverride = storyboardCardsMode
     ? appendPendingOverlayNodesToGraphData(storyboardCanvasGraphDataForDisplay, pendingOverlayNodesById) || storyboardCanvasGraphDataForDisplay
-    : storyboardCardsMode
-      ? (flowCanvasGraphDataWithPendingOverlays || storyboardCanvasGraphDataForDisplay)
-      : flowCanvasGraphDataWithPendingOverlays
+    : flowCanvasGraphDataWithPendingOverlays
   const storyboardRuntimeGraphSignature = React.useMemo(() => {
     return [
       String(storyboardCardsMode),

@@ -7,7 +7,8 @@ import { buildLocalFsFetchPath } from '@/lib/url'
 import { readEnvString } from '@/lib/config.env'
 import { buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState } from '@/features/source-files/sourceFilesStorageSync'
 import { loadPersistedSourceFilesWorkspace } from '@/features/source-files/sourceFilesDb'
-import { readFirstAgenticGraphStorageDocText } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
+import { fetchWorkspaceDocsMirrorResponse, readFirstAgenticGraphStorageDocText } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
+import { cancelStorageStream, readResponseTextWithDeadline } from '@/lib/storage/agentic-graph-storage-client-transport'
 import { readWorkspaceInitializationDocsMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
 import { isWorkspaceSourceMirrorFileName } from '@/features/workspace-fs/workspaceSourceMirrorFormats'
 import {
@@ -19,6 +20,7 @@ import { frontmatterFlowTextHasRepeatedCanonicalStringResidue } from '@/features
 import { readStorageCanonicalPathCandidatesForWorkspacePath } from '@/features/source-files/sourceFilesStoragePaths'
 import { buildModelAssetWorkspaceFallbackMarkdown } from '@/features/markdown-workspace/workspaceImport/glbAsset'
 import {
+  beginWorkspaceActiveEntrySnapshotRead,
   readCachedWorkspaceActiveEntrySnapshot,
   rememberWorkspaceActiveEntrySnapshot,
 } from '@/features/source-files/workspaceActiveEntryCache'
@@ -87,7 +89,7 @@ const resolveWorkspaceActiveDocumentText = (
   textRaw: string,
 ): string => {
   const text = normalizeRuntimeStorageMediaAccessUrlsInText({ text: textRaw })
-  if (!text.trim()) return ''
+  if (!text.trim()) return text
   if (!modelAssetFormat || hasWorkspaceModelAssetCanvasManifest(text)) return text
   return buildWorkspaceModelAssetFallbackText(activePath, modelAssetFormat)
 }
@@ -146,9 +148,12 @@ const readWorkspaceDocsRootFileFallbackText = async (
     const localFsUrl = buildLocalFsFetchPath(`${docsRoot}/${relPath}`)
     if (!localFsUrl) continue
     try {
-      const response = await fetch(localFsUrl)
-      if (!response.ok) continue
-      const text = await response.text()
+      const response = await fetchWorkspaceDocsMirrorResponse(localFsUrl)
+      if (!response.ok) {
+        cancelStorageStream(response.body, 'workspace docs root response status rejected')
+        continue
+      }
+      const text = await readResponseTextWithDeadline(response, { maxBytes: null })
       if (isAcceptableWorkspaceDocsRootFallbackPayload(text)) return text
     } catch {
       void 0
@@ -217,6 +222,7 @@ const readWorkspaceStorageDocFallbackText = async (
     fallbackByActivePath?.set(normalizedPath, '')
     return ''
   }
+  canonicalCandidates.unshift(`workspace:${normalizedPath}`)
   try {
     const workspaceIdCandidates = new Set<string>()
     const workspaceIdOverride = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
@@ -246,7 +252,7 @@ const readWorkspaceStorageDocFallbackText = async (
         workspaceId,
         canonicalPathCandidates: canonicalCandidates,
       })
-      if (text.trim()) {
+      if (text?.trim()) {
         fallbackByActivePath?.set(normalizedPath, text)
         return text
       }
@@ -264,13 +270,13 @@ export function readReusableWorkspaceEntriesSnapshot(
   return Array.isArray(workspaceEntries) && workspaceEntries.length > 0 ? workspaceEntries : undefined
 }
 
-export async function readWorkspaceActiveDocumentResolvedText(args: {
+async function readWorkspaceActiveDocumentTextResult(args: {
   activePath: WorkspacePath
   currentText?: string
   fs?: WorkspaceFs | Awaited<ReturnType<typeof getWorkspaceFs>>
   storageFallbackByPath?: Map<string, string>
   preferCanonicalPathText?: boolean
-}): Promise<string> {
+}): Promise<string | null> {
   const activePath = normalizeWorkspacePath(args.activePath)
   const modelAssetFormat = isWorkspaceModelAssetPath(activePath)
   const preferCanonicalDocsMirrorText = args.preferCanonicalPathText === true
@@ -295,15 +301,14 @@ export async function readWorkspaceActiveDocumentResolvedText(args: {
     if (canonicalDocsMirrorRepairText) return canonicalDocsMirrorRepairText
     return resolvedCurrentText
   }
-  let fsText = ''
+  let fsText: string | null = null
   try {
     const fs = args.fs || (await getWorkspaceFs())
-    fsText = String((await fs.readFileText(activePath)) || '')
+    fsText = await fs.readFileText(activePath)
   } catch {
-    fsText = ''
+    fsText = null
   }
-  const resolvedFsText = resolveWorkspaceActiveDocumentText(activePath, modelAssetFormat, fsText)
-  if (resolvedFsText.trim()) return resolvedFsText
+  if (typeof fsText === 'string') return resolveWorkspaceActiveDocumentText(activePath, modelAssetFormat, fsText)
   if (!preferCanonicalDocsMirrorText) {
     const docsMirrorText = resolveWorkspaceActiveDocumentText(
       activePath,
@@ -321,7 +326,59 @@ export async function readWorkspaceActiveDocumentResolvedText(args: {
   if (modelAssetFormat) {
     return buildWorkspaceModelAssetFallbackText(activePath, modelAssetFormat)
   }
-  return ''
+  return null
+}
+
+type ActiveDocumentReadArgs = Parameters<typeof readWorkspaceActiveDocumentTextResult>[0]
+export async function readWorkspaceActiveDocumentResolvedText(args: ActiveDocumentReadArgs & { preserveMissing: true }): Promise<string | null>
+export async function readWorkspaceActiveDocumentResolvedText(args: ActiveDocumentReadArgs & { preserveMissing?: false }): Promise<string>
+export async function readWorkspaceActiveDocumentResolvedText(args: ActiveDocumentReadArgs & { preserveMissing?: boolean }): Promise<string | null> {
+  const text = await readWorkspaceActiveDocumentTextResult(args)
+  return args.preserveMissing === true ? text : text ?? ''
+}
+
+export type WorkspaceActiveDocumentTextObservation = {
+  text: string
+  observedWorkspaceText?: string | null
+  observedWorkspaceFs?: WorkspaceFs
+}
+
+const resolveObservedWorkspaceActiveText = async (args: {
+  fs: WorkspaceFs; activePath: WorkspacePath; rawText: string | null
+  storageFallbackByPath?: Map<string, string>
+}): Promise<WorkspaceActiveDocumentTextObservation> => {
+  const modelAssetFormat = isWorkspaceModelAssetPath(args.activePath)
+  const currentText = resolveWorkspaceActiveDocumentText(args.activePath, modelAssetFormat, args.rawText ?? '')
+  const canonicalText = currentText.trim() ? await resolveCanonicalDocsMirrorRepairText({
+    activePath: args.activePath, currentText, modelAssetFormat, storageFallbackByPath: args.storageFallbackByPath,
+  }) : null
+  let observedWorkspaceText = args.rawText, text = currentText
+  if (canonicalText && canonicalText !== args.rawText) {
+    // The display projection and write expectation must come from one observation.
+    // A mirror response cannot authorize an edit, clear or deletion it outlived.
+    observedWorkspaceText = await args.fs.readFileText(args.activePath)
+    text = observedWorkspaceText === args.rawText ? canonicalText
+      : resolveWorkspaceActiveDocumentText(args.activePath, modelAssetFormat, observedWorkspaceText ?? '')
+  }
+  return { text, observedWorkspaceText, observedWorkspaceFs: args.fs }
+}
+
+export const readWorkspaceActiveDocumentObservedText = async (args: {
+  activePath: WorkspacePath; fs?: WorkspaceFs; storageFallbackByPath?: Map<string, string>; fallbackText?: string
+  preferCanonicalPathText?: boolean
+}): Promise<WorkspaceActiveDocumentTextObservation> => {
+  const activePath = normalizeWorkspacePath(args.activePath), fs = args.fs || await getWorkspaceFs()
+  // Inline/canonical entries are display projections, never observations of FS bytes.
+  let rawText: string | null | undefined
+  try { rawText = await fs.readFileText(activePath) } catch { /* Display fallback has no observed write authority. */ }
+  const resolved = await readWorkspaceActiveDocumentResolvedText({ ...args, fs, activePath, currentText: rawText ?? '' })
+  const displayText = resolved.trim() ? resolved : args.fallbackText ?? resolved
+  if (rawText === undefined) return { text: displayText, observedWorkspaceText: undefined, observedWorkspaceFs: undefined }
+  let latest: string | null
+  try { latest = await fs.readFileText(activePath) } catch { return { text: displayText, observedWorkspaceText: undefined, observedWorkspaceFs: undefined } }
+  const text = latest === rawText ? displayText
+    : resolveWorkspaceActiveDocumentText(activePath, isWorkspaceModelAssetPath(activePath), latest ?? '')
+  return { text, observedWorkspaceText: latest, observedWorkspaceFs: fs }
 }
 
 export const readWorkspaceActiveEntrySnapshot = async (args: {
@@ -331,45 +388,25 @@ export const readWorkspaceActiveEntrySnapshot = async (args: {
 }): Promise<WorkspaceEntry[]> => {
   const activePath = normalizeWorkspacePath(args.activePath)
   const provided = Array.isArray(args.workspaceEntries) ? args.workspaceEntries : []
-  const existingEntry = provided.find(entry => entry?.kind === 'file' && normalizeWorkspacePath(entry.path) === activePath) || null
-  if (existingEntry && typeof existingEntry.text === 'string' && existingEntry.text.trim()) {
-    const modelAssetFormat = isWorkspaceModelAssetPath(activePath)
-    const canonicalDocsMirrorRepairText = await resolveCanonicalDocsMirrorRepairText({
-      activePath,
-      currentText: existingEntry.text,
-      modelAssetFormat,
-    })
-    if (canonicalDocsMirrorRepairText && canonicalDocsMirrorRepairText !== String(existingEntry.text || '')) {
-      try {
-        await args.fs.writeFileText(activePath, canonicalDocsMirrorRepairText)
-      } catch {
-        void 0
-      }
-    }
-    const resolvedText = await readWorkspaceActiveDocumentResolvedText({
-      activePath,
-      currentText: existingEntry.text,
-      fs: args.fs,
-    })
+  const observedEntry = provided.find(entry => entry?.kind === 'file' && normalizeWorkspacePath(entry.path) === activePath)
+  const existingEntry = observedEntry ? { ...observedEntry } : null
+  if (existingEntry && typeof existingEntry.text === 'string') {
+    const token = beginWorkspaceActiveEntrySnapshotRead({ fs: args.fs, activePath })
+    const observed = await resolveObservedWorkspaceActiveText({ fs: args.fs, activePath, rawText: existingEntry.text })
     const snapshot = [{
       ...existingEntry,
-      text: resolvedText,
+      text: observed.observedWorkspaceText === null ? undefined : observed.text,
     }]
-    return rememberWorkspaceActiveEntrySnapshot({ activePath, entries: snapshot }) || snapshot
+    return rememberWorkspaceActiveEntrySnapshot({ fs: args.fs, activePath, entries: snapshot, token }) || snapshot
   }
   const cached = readCachedWorkspaceActiveEntrySnapshot({
+    fs: args.fs,
     activePath,
     minUpdatedAtMs: typeof existingEntry?.updatedAtMs === 'number' ? existingEntry.updatedAtMs : undefined,
   })
   if (cached) return cached
-  let text = existingEntry && typeof existingEntry.text === 'string' ? existingEntry.text : ''
-  if (!text.trim()) {
-    text = await readWorkspaceActiveDocumentResolvedText({
-      activePath,
-      currentText: text,
-      fs: args.fs,
-    })
-  }
+  const token = beginWorkspaceActiveEntrySnapshotRead({ fs: args.fs, activePath })
+  const text = await readWorkspaceActiveDocumentResolvedText({ activePath, fs: args.fs, preserveMissing: true })
   const pathParts = activePath.replace(/^\/+/, '').split('/').filter(Boolean)
   const name = pathParts[pathParts.length - 1] || ''
   const parentPath = pathParts.length > 1
@@ -381,10 +418,10 @@ export const readWorkspaceActiveEntrySnapshot = async (args: {
     parentPath,
     kind: 'file',
     name: String(existingEntry?.name || name),
-    text,
+    text: text ?? undefined,
     updatedAtMs: typeof existingEntry?.updatedAtMs === 'number' ? existingEntry.updatedAtMs : Date.now(),
   }]
-  return rememberWorkspaceActiveEntrySnapshot({ activePath, entries: snapshot }) || snapshot
+  return text === null ? snapshot : rememberWorkspaceActiveEntrySnapshot({ fs: args.fs, activePath, entries: snapshot, token }) || snapshot
 }
 
 export const readWorkspaceSourceRootEntriesSnapshot = async (args: {
@@ -419,6 +456,7 @@ export const readWorkspaceSourceRootEntriesSnapshot = async (args: {
 }
 
 export function readProvidedActiveWorkspaceEntriesSnapshot(args: {
+  fs?: WorkspaceFs
   activePath: WorkspacePath
   activeWorkspaceEntriesSnapshot?: WorkspaceEntry[]
 }): WorkspaceEntry[] | null {
@@ -426,9 +464,11 @@ export function readProvidedActiveWorkspaceEntriesSnapshot(args: {
   const provided = Array.isArray(args.activeWorkspaceEntriesSnapshot) ? args.activeWorkspaceEntriesSnapshot : []
   if (provided.length === 0) return null
   const activeEntry = provided.find(entry => entry?.kind === 'file' && normalizeWorkspacePath(entry.path) === activePath) || null
-  if (!activeEntry || typeof activeEntry.text !== 'string' || !activeEntry.text.trim()) return null
-  const snapshot = [activeEntry]
-  return rememberWorkspaceActiveEntrySnapshot({ activePath, entries: snapshot }) || snapshot
+  if (!activeEntry || typeof activeEntry.text !== 'string') return null
+  const snapshot = [{ ...activeEntry }]
+  if (!args.fs) return snapshot
+  const token = beginWorkspaceActiveEntrySnapshotRead({ fs: args.fs, activePath })
+  return rememberWorkspaceActiveEntrySnapshot({ fs: args.fs, activePath, entries: snapshot, token }) || snapshot
 }
 
 export async function resolveActiveWorkspaceEntriesSnapshot(args: {
@@ -438,6 +478,7 @@ export async function resolveActiveWorkspaceEntriesSnapshot(args: {
   activeWorkspaceEntriesSnapshot?: WorkspaceEntry[]
 }): Promise<WorkspaceEntry[]> {
   const providedSnapshot = readProvidedActiveWorkspaceEntriesSnapshot({
+    fs: args.fs,
     activePath: args.activePath,
     activeWorkspaceEntriesSnapshot: args.activeWorkspaceEntriesSnapshot,
   })
@@ -459,13 +500,13 @@ export async function readActiveWorkspaceSourceFileFallbackText(args: {
   const activeText = String(args.activeFile?.text || '')
   if (!args.ignoreActiveFileText && activeText.trim()) return activeText
   const providedSnapshot = readProvidedActiveWorkspaceEntriesSnapshot({
+    fs: args.fs,
     activePath: args.activePath,
     activeWorkspaceEntriesSnapshot: args.activeWorkspaceEntriesSnapshot,
   })
-  const providedText = String(providedSnapshot?.[0]?.text || '')
+  if (providedSnapshot) return providedSnapshot[0].text!
   return readWorkspaceActiveDocumentResolvedText({
     activePath: args.activePath,
-    currentText: providedText,
     fs: args.fs,
   })
 }
@@ -487,16 +528,17 @@ export async function hydrateWorkspaceEntriesInlineText(args: {
   const next = await Promise.all(
     entries.map(async entry => {
       if (!entry || entry.kind !== 'file') return entry
-      if (typeof entry.text === 'string' && entry.text.trim().length > 0) return entry
+      if (typeof entry.text === 'string') return entry
       const entryPath = normalizeWorkspacePath(entry.path)
       if (forceIncludePathSet.size > 0 && !forceIncludePathSet.has(entryPath)) return entry
       const fallbackText = await readWorkspaceActiveDocumentResolvedText({
+        preserveMissing: true,
         activePath: entryPath,
         currentText: typeof entry.text === 'string' ? entry.text : '',
         fs: args.fs,
         storageFallbackByPath,
       })
-      if (!fallbackText.trim()) return entry
+      if (fallbackText === null) return entry
       changed = true
       return {
         ...entry,

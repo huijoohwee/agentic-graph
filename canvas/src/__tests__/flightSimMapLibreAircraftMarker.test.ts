@@ -8,7 +8,7 @@ import {
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   mapHasExactFlightGeoOverlay,
   mapHasExactFlightGeoStyleSources,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import { createFlightSimRuntime } from '../features/game-flight-sim/flightSimRuntimeCore'
 import {
   projectFlightSimToGeospatialOverlay,

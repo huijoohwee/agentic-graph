@@ -89,7 +89,7 @@ export function testStoryboardCardOverlayRestoresFlexInteractions() {
     if (!overlayProxy.includes(snippet)) throw new Error(`expected shared Widget/Rich Media body-pan helper to preserve collective drag: ${snippet}`)
   }
   if (!mediaOverlays.includes('const richMediaBodyPanOwnedByCollective = storyboardSharedSurfaceRendererMode')
-    || !mediaOverlays.includes('richMediaPanelPinAllowsMovement && !richMediaBodyPanOwnedByCollective')) {
+    || !mediaOverlays.includes('(containedByGroupPanel || richMediaPanelPinAllowsMovement) && !richMediaBodyPanOwnedByCollective')) {
     throw new Error('expected Storyboard Rich Media body drag to reuse collective canvas pan while retaining local header drag')
   }
   if (!richMediaSurface.includes('|| storyboardWidgetInteractionMode')) {
@@ -148,7 +148,7 @@ export function testStoryboardCardOverlayRestoresFlexInteractions() {
     'flowWidgetPinnedByNodeId: args.flowWidgetPinnedByNodeId',
     'referencePlacements?: ReadonlyMap<string, StoryboardCardPlacement> | null',
     'readPlacementSize?: ReadStoryboardPlacementSize',
-    'if (!placement || !readFlowWidgetPinnedInCanvas(args.flowWidgetPinnedByNodeId, id)) return node',
+    "if (!placement || !resolveEffectiveFlowWidgetPinnedInCanvas({ graphMetaKind: String(graphData.metadata?.kind || ''), node, pinnedValue: args.flowWidgetPinnedByNodeId?.[id] })) return node",
     'export const buildFixedStoryboardCardReferencePlacements2d',
     'includeUnpinned: true',
   ]) {

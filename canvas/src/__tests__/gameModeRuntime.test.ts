@@ -191,7 +191,8 @@ test('Game Mode freeze contract retains authored presentation and removes every 
   assert.ok(subject.includes('onClick={onSelect ? event =>'))
 })
 
-test('all five shared XR panels use one surface and non-Game panels exit Game ownership', async () => {
+test('all registered shared XR panels use one surface and non-Game panels exit Game ownership', async () => {
+  await Promise.all([import('@/features/game-flight-sim/flightSimRuntime'), import('@/features/game-city-sim/citySimRuntime')])
   for (const panelView of XR_SCENE_FLOATING_PANEL_VIEWS) {
     await startGameMode({ decisions: [], webglSupported: true })
     armGameModeSimulation()
@@ -207,6 +208,7 @@ test('all five shared XR panels use one surface and non-Game panels exit Game ow
 })
 
 test('panel-only frontmatter presets on the current XR surface use shared Game ownership rules', async () => {
+  await Promise.all([import('@/features/game-flight-sim/flightSimRuntime'), import('@/features/game-city-sim/citySimRuntime')])
   for (const panelView of XR_SCENE_FLOATING_PANEL_VIEWS) {
     await startGameMode({ decisions: [], webglSupported: true })
     applyCanvasFrontmatterPreset({

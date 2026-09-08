@@ -1,3 +1,5 @@
+import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
+import type { MarkdownWorkspaceLoadedSnapshot, MarkdownWorkspaceExplorerPresentationArgs } from './markdownWorkspaceRuntime.types'
 import React from 'react'
 import { startPointerDrag } from 'grph-shared/dom/pointerDrag'
 import { LS_KEYS } from '@/lib/config'
@@ -35,7 +37,6 @@ import { persistMarkdownExplorerViewPreferences } from '@/features/markdown/ui/m
 import { persistMarkdownExplorerSectionCollapseState } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { SIDEBAR_MAX_PX, SIDEBAR_MIN_PX } from '@/features/markdown-workspace/markdownWorkspaceUtils'
-import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
 import type { WorkspaceRefreshSnapshot } from '@/features/markdown-workspace/useWorkspaceFileActions/types'
 import {
   cancelMarkdownWorkspacePrefsSync,
@@ -71,30 +72,18 @@ const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.
   })
 }
 
-export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntimeInteractionStatusBindings & {
+export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntimeInteractionStatusBindings & MarkdownWorkspaceExplorerPresentationArgs & {
   active: boolean
   activePathRef: React.MutableRefObject<WorkspacePath | null>
   activeTextRef: React.MutableRefObject<string>
   viewerInlineEditActiveRef: React.MutableRefObject<boolean>
-  lastLoadedRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: React.MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   entries: WorkspaceEntry[]
   setEntries: React.Dispatch<React.SetStateAction<WorkspaceEntry[]>>
   setSourcesByPath: React.Dispatch<React.SetStateAction<WorkspaceSourceIndex>>
   setLoading: React.Dispatch<React.SetStateAction<boolean>>
   setLoadError: React.Dispatch<React.SetStateAction<string>>
-  sidebarWidthPx: number
-  explorerOpen: boolean
-  sourceFilesCollapsed: boolean
-  tocCollapsed: boolean
-  backlinksCollapsed: boolean
-  markdownWordWrap: boolean
-  markdownTextHighlight: boolean
   folderModeContract: FolderModeContract
-  layoutMode: MarkdownWorkspaceLayoutMode
-  expandedPaths: Set<string>
-  resizeHandleEl: HTMLHRElement | null
-  setSidebarWidthPx: React.Dispatch<React.SetStateAction<number>>
-  search: string
 }) {
   const workspaceFsRef = React.useRef<Awaited<ReturnType<typeof getWorkspaceFs>> | null>(null)
   const refreshInFlightRef = React.useRef(false)

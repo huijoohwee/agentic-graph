@@ -128,7 +128,7 @@ export function testStoryboardWidgetOverlayOnlyModeDoesNotBlankCanvasWhenNoOverl
   if (surfaceText.includes('nativeSurfaceMode') || overlaySurfaceText.includes('overlayOwnsScene')) {
     throw new Error('Expected Storyboard Widget overlay-only mode to avoid native surface suppression controls')
   }
-  if (!surfaceText.includes('{(props.overlayOnlyActive || props.hasOverlayEditors) && (')) {
+  if (!surfaceText.includes('{(props.overlayOnlyActive || props.hasOverlayEditors || storyboardCardsActive) && (')) {
     throw new Error('Expected overlay edge host to stay mounted while Storyboard Widget overlay editors are visible')
   }
 }
@@ -141,8 +141,10 @@ export function testWorkspacePanesOutrankStoryboardWidgetOverlays() {
   } catch {
     throw new Error(`Expected to read ${filePath}`)
   }
-  if (!text.includes('Workspace Toolbar Header') || !text.includes('z-[400]')) {
-    throw new Error('Expected workspace header baseline to stay above the workspace editor shell and canvas overlays in split views')
+  const layer = text.match(/toolbarHeaderLayerClassName = toolbarHeaderElevated \? 'z-\[(\d+)\]' : 'z-\[(\d+)\]'/)
+  const editor = text.match(/className="absolute inset-0 z-\[(\d+)\] pointer-events-none"/)
+  if (!text.includes('Workspace Toolbar Header') || !text.includes('${toolbarHeaderLayerClassName}') || !layer || !editor || !(Number(layer[2]) < Number(editor[1]) && Number(editor[1]) < Number(layer[1]))) {
+    throw new Error('Expected the editor to outrank the resting workspace header and the elevated toolbar to outrank the editor')
   }
 }
 

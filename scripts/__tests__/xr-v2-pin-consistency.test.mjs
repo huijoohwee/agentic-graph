@@ -49,6 +49,10 @@ function createCommittedFixture(t) {
   const root = resolve(fixtureParent, 'repository')
   t.after(() => removeFixtureTree(fixtureParent))
   execFileSync('git', ['clone', '--quiet', '--shared', '--no-checkout', REPOSITORY_ROOT, root])
+  // Keep the full commit/index; only materialize the source surfaces these tests exercise.
+  execFileSync('git', ['-C', root, 'sparse-checkout', 'set', '--no-cone', '--stdin'], {
+    input: [XR_V2_PINNED_DOCUMENT_PATH, ...SURFACE_PATHS].map(path => `/${path}`).join('\n') + '\n',
+  })
   execFileSync('git', ['-C', root, 'checkout', '--quiet', '--detach', 'HEAD'])
   for (const relativePath of SURFACE_PATHS) {
     const destination = resolve(root, relativePath)

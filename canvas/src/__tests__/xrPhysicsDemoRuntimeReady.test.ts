@@ -341,7 +341,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     })
     if (
       loaded.isFallback
-      || loaded.text !== markdownText.trim()
+      || loaded.text !== markdownText
       || loaded.text === externalConflictText
       || !requestedUrls.includes(expectedProviderUrl)
       || requestedUrls.some(url => url.includes(externalRoot))

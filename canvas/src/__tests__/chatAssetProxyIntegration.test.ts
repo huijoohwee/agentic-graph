@@ -10,7 +10,7 @@ export function testViteConfigRoutesChatAssetProxyThroughSharedRemoteFetchHandle
   if (!text.includes("req.url?.startsWith(CHAT_BINARY_DOWNLOAD_PROXY_PREFIX)")) {
     throw new Error('expected vite config to route the chat asset proxy through the shared remote fetch middleware')
   }
-  if (!text.includes('createRemoteFetchHandler()(req, res, next)')) {
+  if (!text.includes('createRemoteFetchHandler({ repoRoot, injectWebpageProxyHtml })(req, res, next)')) {
     throw new Error('expected vite config to reuse the existing upstream remote fetch handler for chat asset proxy requests')
   }
 }

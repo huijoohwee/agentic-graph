@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+import { observeGroupResizeLayout } from './groupResizeHandleParityRegression.test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -5,19 +7,13 @@ const readUtf8 = (filePath: string): string => readFileSync(filePath, 'utf8')
 
 export function testGroupResizeVisualPolishKeepsActiveOutlineAndLabelFeedback() {
   const groupsText = readUtf8(resolve(process.cwd(), 'src/components/GraphCanvas/layers/groups.ts'))
-  const layoutText = readUtf8(resolve(process.cwd(), 'src/components/GraphCanvas/layers/groupsLayout.ts'))
-
-  if (!groupsText.includes("data-kg-base-stroke-width")) {
-    throw new Error('expected group visuals to preserve a base stroke-width attribute for active resize emphasis')
+  for (const token of ['data-kg-base-stroke-width', 'data-kg-base-fill-opacity']) {
+    assert.ok(groupsText.includes(token), 'group owner preserves base styling for resize feedback')
   }
-  if (!groupsText.includes("data-kg-base-fill-opacity")) {
-    throw new Error('expected group visuals to preserve a base fill-opacity attribute for active resize emphasis')
-  }
-  if (!layoutText.includes("labelEl.setAttribute('font-weight', isActiveResize ? '700' : '500')")) {
-    throw new Error('expected active resize to emphasize the group label weight')
-  }
-  if (!layoutText.includes("chevronEl.setAttribute('stroke-width', String(isActiveResize ? 2.3 : 1.75))")) {
-    throw new Error('expected active resize to emphasize the group chevron stroke')
+  const { labels, chevrons } = observeGroupResizeLayout({ selected: 'child', active: 'child' })
+  for (const [id, weight, stroke] of [['child', '700', '2.3'], ['parent', '600', '2.05'], ['other', '500', '1.75']]) {
+    assert.equal(labels.get(id)!.attrs.get('font-weight'), weight, `${id} label emphasis`)
+    assert.equal(chevrons.get(id)!.attrs.get('stroke-width'), stroke, `${id} chevron emphasis`)
   }
 }
 

@@ -1,10 +1,10 @@
 import React from 'react'
 import { useMarkdownEditorSsotSync } from '@/features/markdown-workspace/useMarkdownEditorSsotSync'
 import { commitActiveMarkdownBlockEditors } from '@/lib/markdown-core/ui/markdownBlockContainerCore.activeEditor'
-import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
-import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
+import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { applyActiveMarkdownDocumentPayload } from '@/features/markdown/activeMarkdownDocument'
-import type { MarkdownWorkspaceRuntimeSetActiveDocument } from './markdownWorkspaceRuntime.types'
+import type { MarkdownWorkspaceSelectionArgs } from './markdownWorkspaceRuntime.types'
+export type { MarkdownWorkspaceSelectionArgs } from './markdownWorkspaceRuntime.types'
 import { resolveWorkspaceDirtyState } from './markdownWorkspaceRuntime.shared'
 import { resolveMarkdownWorkspaceSelectionCollapseTransition } from './markdownWorkspaceSelectionCollapseTransition'
 import { resolveMarkdownWorkspaceBootstrapActivePath } from './markdownWorkspaceSelectionBootstrap'
@@ -23,7 +23,6 @@ import {
   resolveInvalidatedMarkdownWorkspaceSelectionPath,
 } from './markdownWorkspaceSelectionSync'
 import { buildWorkspaceEntriesIndex } from './workspaceEntriesIndex'
-import type { MarkdownWorkspaceRuntimeGetFs } from './markdownWorkspaceRuntime.types'
 import {
   readWorkspaceSourceTextSnapshot,
 } from '@/features/workspace-fs/workspaceSourceTextTransaction'
@@ -53,36 +52,6 @@ export {
   readWorkspaceSelectionEntryTextForActivePath,
   readWorkspaceSelectionResolvedTextForActivePath,
 } from './markdownWorkspaceSelectionResolvedText'
-export type MarkdownWorkspaceSelectionArgs = {
-  activePath: WorkspacePath | null
-  setActivePath: (path: WorkspacePath) => void
-  entries: WorkspaceEntry[]
-  loading: boolean
-  activeText: string
-  setActiveText: (text: string) => void
-  setActiveTextProgrammatic: (text: string) => void
-  markdownDocumentName: string
-  markdownDocumentText: string
-  graphDataSource?: string
-  setActiveMarkdownDocument: MarkdownWorkspaceRuntimeSetActiveDocument
-  getFs: MarkdownWorkspaceRuntimeGetFs
-  sourcesByPath: WorkspaceSourceIndex
-  viewerInlineEditActive: boolean
-  activeRef: React.MutableRefObject<boolean>
-  activeTextRef: React.MutableRefObject<string>
-  lastLoadedRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
-  userEditedActiveTextRef: React.MutableRefObject<boolean>
-  collapsedSnapshotRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
-  prevCollapsedRef: React.MutableRefObject<boolean>
-  effectiveBottomSurfaceCollapsed: boolean
-  canvas2dRenderer: string
-  lastSetActivePath: { path: WorkspacePath; atMs: number } | null
-  lastRequestedActivePathRef: React.MutableRefObject<{ path: WorkspacePath; atMs: number } | null>
-  commitActiveTextBeforeSelectionRef: React.MutableRefObject<(() => Promise<boolean>) | null>
-  patchWorkspaceEntryInlineText: (path: WorkspacePath, text: string) => void
-  clearStatus: () => void
-  setHighlightedLineRange: (value: null) => void
-}
 export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionArgs) {
   const storageFallbackByPathRef = React.useRef<Map<string, string>>(new Map())
   const resolvedTextCacheRef = React.useRef<MarkdownWorkspaceSelectionResolvedTextCache | null>(null)
@@ -218,13 +187,13 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         path: nextPath,
         read: async () => {
           const fs = await args.getFs()
-          if (cancelled || switchedActivePathRef.current?.next !== nextPath || args.activePath !== nextPath) return ''
+          if (cancelled || switchedActivePathRef.current?.next !== nextPath || args.activePath !== nextPath) return { text: '' }
           return readCachedWorkspaceSelectionResolvedTextForActivePath({
             activePath: nextPath,
             activeEntry,
             fs,
             storageFallbackByPath: storageFallbackByPathRef.current,
-            preferPathResolvedText: true,
+            preferPathResolvedText: true, observeWorkspaceText: true,
             cacheRef: resolvedTextCacheRef,
           })
         },
@@ -234,17 +203,17 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         pendingSwitchPath: switchedActivePathRef.current?.next || null,
         activeEntryKind,
         activeDocumentKey,
-        snapshot,
+        snapshot: { ...snapshot, value: snapshot.value.text },
       })) {
         return
       }
-      const nextText = snapshot.value
+      const nextText = snapshot.value.text
       if (cancelled || switchedActivePathRef.current?.next !== nextPath || args.activePath !== nextPath) return
       const currentText = String(args.activeTextRef.current || '')
       if (currentText !== nextText) {
         args.setActiveTextProgrammatic(nextText)
       }
-      args.lastLoadedRef.current = { path: nextPath, text: nextText }
+      args.lastLoadedRef.current = { path: nextPath, ...snapshot.value }
       args.patchWorkspaceEntryInlineText(nextPath, nextText)
     }
     void run()
@@ -290,13 +259,13 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         path: switched.next,
         read: async () => {
           const fs = await args.getFs()
-          if (cancelled || switchedActivePathRef.current?.next !== switched.next || args.activePath !== switched.next) return ''
+          if (cancelled || switchedActivePathRef.current?.next !== switched.next || args.activePath !== switched.next) return { text: '' }
           return readCachedWorkspaceSelectionResolvedTextForActivePath({
             activePath: switched.next,
             activeEntry,
             fs,
             storageFallbackByPath: storageFallbackByPathRef.current,
-            preferPathResolvedText: true,
+            preferPathResolvedText: true, observeWorkspaceText: true,
             cacheRef: resolvedTextCacheRef,
           })
         },
@@ -306,14 +275,14 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         pendingSwitchPath: switchedActivePathRef.current?.next || null,
         activeEntryKind,
         activeDocumentKey,
-        snapshot,
+        snapshot: { ...snapshot, value: snapshot.value.text },
       })) {
         return
       }
-      const nextText = snapshot.value
+      const nextText = snapshot.value.text
       if (cancelled || switchedActivePathRef.current?.next !== switched.next || args.activePath !== switched.next) return
 
-      args.lastLoadedRef.current = { path: switched.next, text: nextText }
+      args.lastLoadedRef.current = { path: switched.next, ...snapshot.value }
       args.patchWorkspaceEntryInlineText(switched.next, nextText)
       if (String(args.activeTextRef.current || '') !== nextText) {
         args.setActiveTextProgrammatic(nextText)
@@ -328,6 +297,7 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         markdownDocumentText: args.markdownDocumentText,
         canvas2dRenderer: args.canvas2dRenderer,
       })
+      if (cancelled || switchedActivePathRef.current?.next !== switched.next || args.activePath !== switched.next) return
       if ((applied === 'applied' || applied === 'settled') && switchedActivePathRef.current?.next === switched.next) {
         switchedActivePathRef.current = null
         clearDocumentSwitchApplyRetry()
@@ -368,19 +338,19 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         path,
         read: async () => {
           const fs = await args.getFs()
-          if (cancelled || args.activePath !== path) return ''
+          if (cancelled || args.activePath !== path) return { text: '' }
           return readCachedWorkspaceSelectionResolvedTextForActivePath({
             activePath: path,
             activeEntry,
             fs,
             storageFallbackByPath: storageFallbackByPathRef.current,
-            preferPathResolvedText: true,
+            preferPathResolvedText: true, observeWorkspaceText: true,
             cacheRef: resolvedTextCacheRef,
           })
         },
       })
       if (!snapshot.current) return
-      const nextText = snapshot.value
+      const nextText = snapshot.value.text
       const syncDecision = resolveStableWorkspaceSelectionSyncDecision({
         activePath: path,
         activeEntryKind,
@@ -394,13 +364,14 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         graphDataSource: args.graphDataSource,
         canvas2dRenderer: args.canvas2dRenderer,
       })
-      if (!syncDecision.hydrateText && !syncDecision.applyToCanvas) return
       if (cancelled || args.activePath !== path) return
+      if (!args.userEditedActiveTextRef.current && args.lastLoadedRef.current?.path === path && args.lastLoadedRef.current.text === nextText) args.lastLoadedRef.current = { path, ...snapshot.value }
+      if (!syncDecision.hydrateText && !syncDecision.applyToCanvas) return
       if (syncDecision.hydrateText) {
         if (String(args.activeTextRef.current || '') !== nextText) {
           args.setActiveTextProgrammatic(nextText)
         }
-        args.lastLoadedRef.current = { path, text: nextText }
+        args.lastLoadedRef.current = { path, ...snapshot.value }
         args.patchWorkspaceEntryInlineText(path, nextText)
       }
       if (syncDecision.applyToCanvas && activeDocumentKey) {

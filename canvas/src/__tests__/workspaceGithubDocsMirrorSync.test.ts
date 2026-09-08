@@ -139,6 +139,8 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
   const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousRepoLocal = process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
   const previousDefaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
+  const extraEnvKeys = ['VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT', 'VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT', 'VITE_WORKSPACE_DOCS_MIRROR_STORAGE_FALLBACK_ENABLED'] as const
+  const previousExtraEnv = extraEnvKeys.map(key => process.env[key])
   const localMirrorReadRoots: string[] = []
   const requestedUrls: string[] = []
 
@@ -149,6 +151,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
     process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = AG_AGENTIC_CANVAS_OS_DOCS_ROOT
     process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://storage.example.test'
     process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '0'
+    for (const key of extraEnvKeys) process.env[key] = ''
     writeWorkspaceImportDefaultSourceUrlSetting('')
 
     const routes: MockRoute[] = [
@@ -199,6 +202,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
           documents: [
             {
               id: 'doc-alpha',
+              workspaceId: 'kgws:canonical-docs',
               canonicalPath: 'agentic-canvas-os/docs/alpha.md',
               contentMd: '# canonical storage alpha\n',
               updatedAtMs: 10,
@@ -206,6 +210,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
             },
             {
               id: 'doc-prompt-catalog',
+              workspaceId: 'kgws:canonical-docs',
               canonicalPath: 'agentic-canvas-os/docs/PROMPT-PRESETS.md',
               contentMd: '# canonical prompt catalog\n',
               updatedAtMs: 11,
@@ -213,6 +218,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
             },
             {
               id: 'stale-bare-alias',
+              workspaceId: 'kgws:canonical-docs',
               canonicalPath: 'PROMPT-PRESETS.md',
               contentMd: '# stale bare alias\n',
               updatedAtMs: 100,
@@ -220,6 +226,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
             },
             {
               id: 'stale-docs-alias',
+              workspaceId: 'kgws:canonical-docs',
               canonicalPath: 'docs/PROMPT-PRESETS.md',
               contentMd: '# stale docs alias\n',
               updatedAtMs: 100,
@@ -241,17 +248,19 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
       return new Response(`not found: ${url}`, { status: 404 })
     }) as typeof fetch
 
+    const local = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+    if (!local.some(entry => entry.text === '# stale local\n') || requestedUrls.some(url => url.startsWith('https://'))) {
+      throw new Error('expected explicitly available local docs to take precedence over published sources')
+    }
+    process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = ''
+    process.env.VITE_WORKSPACE_DOCS_MIRROR_STORAGE_FALLBACK_ENABLED = '0'
+    localMirrorReadRoots.length = 0
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
     const byPath = new Map(mirrored.map(entry => [entry.relPath, entry.text]))
 
-    if (
-      localMirrorReadRoots.length !== 1
-      || localMirrorReadRoots[0] !== '/workspace/agentic-graph/docs/workspace-seeds'
-    ) {
-      throw new Error(`expected only the canonical local seed root to overlay GitHub docs, got ${JSON.stringify(localMirrorReadRoots)}`)
-    }
+    if (localMirrorReadRoots.length !== 0) throw new Error('unconfigured local roots must not be requested')
     if (byPath.get('demo.md') !== '# canonical demo\n') {
-      throw new Error(`expected demo.md to come from the canonical demo repository, got ${String(byPath.get('demo.md') || '')}`)
+      throw new Error(`expected demo.md to come from the canonical demo repository, got ${String(byPath.get('demo.md') || '')}; paths=${JSON.stringify([...byPath.keys()])}; requests=${JSON.stringify(requestedUrls)}`)
     }
     if (byPath.get('docs_/output.md') !== '# canonical output\n') {
       throw new Error(`expected output.md to retain the canonical output namespace, got ${String(byPath.get('docs_/output.md') || '')}`)
@@ -259,14 +268,11 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
     if (byPath.get('agentic-canvas-os/docs/alpha.md') !== '# canonical storage alpha\n') {
       throw new Error(`expected Agentic alpha.md to retain its canonical storage namespace, got ${String(byPath.get('agentic-canvas-os/docs/alpha.md') || '')}`)
     }
-    if (byPath.get('workspace-seeds/local-seed.md') !== '# canonical local seed\n') {
-      throw new Error('expected the canonical local workspace-seed inventory to overlay the published aggregate')
-    }
     if (byPath.has('PROMPT-PRESETS.md') || byPath.has('docs/PROMPT-PRESETS.md')) {
       throw new Error('expected stale bare and docs aliases to stay outside the canonical Agentic docs namespace')
     }
-    if (!mirrored.some(entry => entry.authority === 'huijoohwee-demo-docs-github') || !mirrored.some(entry => entry.authority === 'huijoohwee-output-docs-github') || !mirrored.some(entry => entry.authority === 'agentic-canvas-os-storage') || !mirrored.some(entry => entry.authority === 'agentic-graph-workspace-seeds-local')) {
-      throw new Error('expected demo, output, canonical storage, and local seed documents to retain distinct source authority')
+    if (!mirrored.some(entry => entry.authority === 'huijoohwee-demo-docs-github') || !mirrored.some(entry => entry.authority === 'huijoohwee-output-docs-github') || !mirrored.some(entry => entry.authority === 'agentic-canvas-os-storage')) {
+      throw new Error('expected demo, output, and canonical storage documents to retain distinct source authority')
     }
     if (requestedUrls.some(url => url.includes('/huijoohwee/agentic-canvas-os/'))) {
       throw new Error(`published Agentic docs must not request mutable GitHub sources: ${JSON.stringify(requestedUrls)}`)
@@ -282,6 +288,15 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
       throw new Error(`expected canonical D1 writes to prefer Agentic Canvas OS docs, got ${JSON.stringify(canonicalCandidates)}`)
     }
 
+    process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT = '/workspace/agentic-graph/docs/workspace-seeds'
+    const seeds = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+    if (!seeds.some(entry => entry.relPath === 'workspace-seeds/local-seed.md' && entry.text === '# canonical local seed\n' && entry.authority === 'agentic-graph-workspace-seeds-local')) {
+      throw new Error('expected configured local seed inventory to retain its namespace and authority')
+    }
+    if (JSON.stringify(localMirrorReadRoots) !== JSON.stringify([process.env.VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT])) {
+      throw new Error('expected only the configured local seed root to be requested')
+    }
+
     resetWorkspaceSeedProviderStorageCacheForTests()
     g.fetch = (async () => jsonResponse({
       ok: true,
@@ -290,6 +305,7 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
       exportedAtMs: 12,
       documents: [{
         id: 'oversized-agentic-doc',
+        workspaceId: 'kgws:canonical-docs',
         canonicalPath: 'agentic-canvas-os/docs/oversized.md',
         contentMd: 'x'.repeat((500 * 1024) + 1),
         updatedAtMs: 12,
@@ -304,23 +320,34 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
     }
 
     resetWorkspaceSeedProviderStorageCacheForTests()
-    g.fetch = (async () => jsonResponse({
-      ok: true,
-      apiVersion: '2026-05-04',
-      workspaceId: 'kgws:canonical-docs',
-      exportedAtMs: 13,
-      documents: Array.from({ length: 501 }, (_, index) => ({
-        id: `agentic-doc-${index}`,
-        canonicalPath: `agentic-canvas-os/docs/doc-${index}.md`,
-        contentMd: `# Agentic document ${index}\n`,
-        updatedAtMs: 13,
-        deleted: false,
-      })),
-      documentChunks: [],
-      graphSnapshots: [],
-    })) as typeof fetch
+    let inventoryOffset = 0
+    g.fetch = (async () => {
+      const offset = inventoryOffset
+      inventoryOffset += 100
+      return jsonResponse({
+        ok: true,
+        apiVersion: '2026-05-04',
+        workspaceId: 'kgws:canonical-docs',
+        exportedAtMs: 13,
+        pageComplete: inventoryOffset >= 501,
+        nextPageCursor: inventoryOffset < 501 ? String(inventoryOffset) : null,
+        documents: Array.from({ length: Math.min(100, 501 - offset) }, (_, row) => {
+          const index = offset + row
+          return {
+            id: `agentic-doc-${index}`,
+            workspaceId: 'kgws:canonical-docs',
+            canonicalPath: `agentic-canvas-os/docs/doc-${index}.md`,
+            contentMd: `# Agentic document ${index}\n`,
+            updatedAtMs: 13,
+            deleted: false,
+          }
+        }),
+        documentChunks: [],
+        graphSnapshots: [],
+      })
+    }) as typeof fetch
     const overLimitEntries = await readPublishedAgenticDocsMirrorEntries()
-    if (overLimitEntries.length > 0) {
+    if (overLimitEntries.length > 0 || inventoryOffset !== 600) {
       throw new Error('expected an over-limit canonical Agentic document inventory to fail closed')
     }
   } finally {
@@ -333,6 +360,10 @@ export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDoc
     else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     if (typeof previousRepoLocal === 'string') process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = previousRepoLocal
     else delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+    extraEnvKeys.forEach((key, index) => {
+      if (previousExtraEnv[index] === undefined) delete process.env[key]
+      else process.env[key] = previousExtraEnv[index]
+    })
     if (originalFetch) g.fetch = originalFetch
     restore()
   }
@@ -402,13 +433,13 @@ export async function testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersis
       '',
       '# agentic-graph Token Economics Model Demo',
       '',
-      'Canonical docs mirror text must repair a blank persisted workspace row.',
+      'Canonical docs mirror text supplies a missing workspace document.',
       '',
     ].join('\n')
     let mirrorReadCount = 0
     const capturedUrls: string[] = []
 
-    g.fetch = (async (input: RequestInfo | URL) => {
+    g.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const raw = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
       capturedUrls.push(raw)
       if (raw.includes('/api/storage/export/')) {
@@ -423,6 +454,8 @@ export async function testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersis
         })
       }
       if (raw === '/__agentic_os_fs_list') {
+        const request = JSON.parse(String(init?.body || '{}'))
+        if (request.path !== '/tmp/workspace/docs') return jsonResponse({ ok: true, files: [] })
         mirrorReadCount += 1
         return jsonResponse({
           ok: true,
@@ -459,14 +492,20 @@ export async function testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersis
       deleteEntry: async () => void 0,
     }
 
+    const authoredEmpty = await readWorkspaceActiveDocumentResolvedText({
+      activePath: targetPath, currentText: '', fs: blankPersistedFs,
+    })
+    if (authoredEmpty !== '' || capturedUrls.length !== 0) {
+      throw new Error('Authored empty content must remain empty without a remote read')
+    }
     const resolved = await readWorkspaceActiveDocumentResolvedText({
       activePath: targetPath,
       currentText: '',
-      fs: blankPersistedFs,
+      fs: { ...blankPersistedFs, readFileText: async () => null },
     })
 
     if (resolved !== remoteText) {
-      throw new Error(`expected docs mirror text to repair blank persisted workspace text, got ${JSON.stringify(resolved.slice(0, 120))}; urls=${JSON.stringify(capturedUrls)}`)
+      throw new Error(`expected docs mirror fallback for missing workspace text, got ${JSON.stringify(resolved.slice(0, 120))}; urls=${JSON.stringify(capturedUrls)}`)
     }
     if (mirrorReadCount !== 1) {
       throw new Error(`expected one docs mirror read, got ${mirrorReadCount}`)

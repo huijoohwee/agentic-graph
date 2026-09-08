@@ -4,7 +4,9 @@ import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
 import { applyChatAgenticOsWorkspaceDocumentToCanvas } from '@/features/chat/chatAgenticOsCanvasApply'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
-import { useGraphStore } from '@/hooks/useGraphStore'
+import { resetGraphStoreForTests, useGraphStore } from '@/hooks/useGraphStore'
+import { createGraphMutationTransitionClock } from '@/tests/lib/resetCanvasTestRuntime'
+import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
 import {
   FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
   FLOW_TEXT_GENERATION_NODE_TYPE_ID,
@@ -283,9 +285,12 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
+  const clock = createGraphMutationTransitionClock()
   try {
     resetWorkspaceFsForTests()
-    useGraphStore.getState().clearGraphData()
+    resetGraphStoreForTests()
+    useGraphStore.getState().clearSourceFiles()
+    useGraphStore.setState({ markdownDocumentName: null, markdownDocumentText: null, workspaceGraphMutationLayoutLockActive: false })
     globalThis.fetch = (async () => ({ ok: true } as Response)) as typeof fetch
 
     const assistantText = JSON.stringify({
@@ -443,7 +448,7 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
       throw new Error(`Expected literal MCP inline compute output to flow into panel, got: ${String(computedOutput)}`)
     }
     const editedCardOutput = 'inline edited card result'
-    useGraphStore.getState().updateNode('mcp-response-literal-card', {
+    const editCard = () => useGraphStore.getState().updateNode('mcp-response-literal-card', {
       properties: buildGraphNodeCanonicalTextPatch({
         currentProperties: card.properties || {},
         propertyKeys: GRAPH_NODE_CARD_OUTPUT_PROPERTY_KEYS,
@@ -451,6 +456,8 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
         nextValue: editedCardOutput,
       }) as never,
     })
+    clock.expectBlockedThenAdvance(editCard)
+    editCard()
     const editedState = useGraphStore.getState()
     const editedGraphData = editedState.graphData
     const editedCard = editedGraphData?.nodes.find(node => String(node.id || '') === 'mcp-response-literal-card')
@@ -528,10 +535,17 @@ export async function testChatResponseLiteralMcpResultFinalizesWorkspaceAndAppli
       if (!overlayIds.has(id)) throw new Error(`Expected literal MCP overlay ids to include ${id}, got: ${Array.from(overlayIds).join(', ')}`)
     }
   } finally {
-    useGraphStore.getState().clearGraphData()
-    resetWorkspaceFsForTests()
-    globalThis.fetch = originalFetch
-    restoreDom()
-    restoreWindow()
+    try { await settleWorkspaceSourceTextWrites() } finally {
+      try {
+        useGraphStore.getState().clearSourceFiles()
+        useGraphStore.getState().setMarkdownDocument(null, null)
+        resetGraphStoreForTests()
+        resetWorkspaceFsForTests()
+      } finally {
+        clock.restore()
+        globalThis.fetch = originalFetch
+        try { restoreDom() } finally { restoreWindow() }
+      }
+    }
   }
 }

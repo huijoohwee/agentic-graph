@@ -16,6 +16,7 @@ import {
   GRAPH_NODE_CARD_SUMMARY_PROPERTY_KEYS,
   GRAPH_NODE_CARD_TITLE_PROPERTY_KEYS,
   readGraphNodeAuthoredTextProperty,
+  readGraphNodeProperties,
 } from '@/lib/cards/graphNodeCardFields'
 import { buildStoryboardInvocationTokensByLane, readStoryboardCardInvocationTokens } from '@/components/StoryboardCanvas/storyboardInvocationTokens'
 import { readImageToThreeJsRenderMode, type ImageToThreeJsRenderMode } from '@/features/image-to-threejs/imageToThreeJsContract'
@@ -154,8 +155,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 const readNodeProperties = (node: GraphNode): GraphNodeProperties => {
-  const properties = unwrapGraphCellValue(node.properties)
-  return isPlainObject(properties) ? (properties as GraphNodeProperties) : {}
+  return readGraphNodeProperties(node) as GraphNodeProperties
 }
 
 const isStoryboardCanvasRichMediaPanelNode = (node: GraphNode): boolean => {

@@ -343,17 +343,14 @@ export function exportGraphAsCentered3dSvgMarkup(args: {
       const ps = nodeFrame0.get(ed.s)
       const pt = nodeFrame0.get(ed.t)
       if (!ps || !pt) continue
+      const kAvg = (ps.k + pt.k) * 0.5
+      const w = threeEdgeRenderer === 'shaderLine' ? shaderLineWidthPx : Math.max(0.25, ed.baseWidth * kAvg)
+      const op = (threeEdgeRenderer === 'shaderLine' ? 1 : Math.min(depthOpacity(ps.z), depthOpacity(pt.z))) * Math.max(0, Math.min(1, ed.opacity))
       if (includeInternalScript) {
-        const op = Math.min(depthOpacity(ps.z), depthOpacity(pt.z)) * Math.max(0, Math.min(1, ed.opacity))
-        const kAvg = (ps.k + pt.k) * 0.5
-        const w = Math.max(0.25, ed.baseWidth * kAvg)
         edgeParts.push(
           `<line data-edge-id="${escapeXml(ed.id)}" data-source="${escapeXml(ed.s)}" data-target="${escapeXml(ed.t)}" x1="${fmt(ps.x)}" y1="${fmt(ps.y)}" x2="${fmt(pt.x)}" y2="${fmt(pt.y)}" stroke="${escapeXml(ed.stroke)}" stroke-width="${fmt(w)}" stroke-opacity="${fmtOp(op)}" stroke-linecap="round"/>`,
         )
       } else {
-        const kAvg = (ps.k + pt.k) * 0.5
-        const w = threeEdgeRenderer === 'shaderLine' ? shaderLineWidthPx : Math.max(0.25, ed.baseWidth * kAvg)
-        const op = threeEdgeRenderer === 'shaderLine' ? Math.max(0, Math.min(1, ed.opacity)) : Math.min(depthOpacity(ps.z), depthOpacity(pt.z)) * Math.max(0, Math.min(1, ed.opacity))
         const d = computeSvgQuadraticEdgePathD3d({
           sourceId: ed.s,
           targetId: ed.t,
@@ -504,9 +501,9 @@ export function exportGraphAsCentered3dSvgMarkup(args: {
           `var tiltX=Number(payload.tiltX)||0;` +
           `var yaw0=Number(payload.yaw0)||0;` +
           `var cx=Number(payload.cx)||0,cy=Number(payload.cy)||0,cz=Number(payload.cz)||0;` +
-          `var minZ=Number(payload.minZ)||-1,maxZ=Number(payload.maxZ)||1;` +
-          `var zSpan=Math.max(1e-6,maxZ-minZ);` +
-          `var depthOpacity=function(z){var t=(Number(z)-minZ)/zSpan;if(!isFinite(t))t=0;t=Math.max(0,Math.min(1,t));return 0.35+0.65*t;};` +
+          `var minZ=Number(payload.minZ),maxZ=Number(payload.maxZ);if(!isFinite(minZ))minZ=-1;if(!isFinite(maxZ))maxZ=1;` +
+          `var zSpan=Math.max(1e-6,maxZ-minZ);var oMin=Math.max(0,Math.min(1,Number(payload.depthOpacityMin)));var oMax=Math.max(oMin,Math.min(1,Number(payload.depthOpacityMax)));` +
+          `var depthOpacity=function(z){var t=(Number(z)-minZ)/zSpan;if(!isFinite(t))t=0;t=Math.max(0,Math.min(1,t));return oMin+(oMax-oMin)*t;};` +
           `var nodeStrokeAlpha=Number(payload.nodeStrokeAlpha);if(!isFinite(nodeStrokeAlpha))nodeStrokeAlpha=1;` +
           `var labelFillAlpha=Number(payload.labelFillAlpha);if(!isFinite(labelFillAlpha))labelFillAlpha=1;` +
           `var motionRaw=Number(payload.motion);var motion=(isFinite(motionRaw)?Math.max(0,Math.min(2,motionRaw)):1);` +
@@ -524,7 +521,7 @@ export function exportGraphAsCentered3dSvgMarkup(args: {
           `var edgeLs=root.querySelectorAll('[data-edge-id]');` +
           `for(var li=0;li<edgeLs.length;li++){var el=edgeLs[li];var eid=String(el.getAttribute('data-edge-id')||'');if(eid)edgeElById.set(eid,el);}` +
           `var edgeEls=[];` +
-          `for(var j=0;j<edges.length;j++){var eid=String(edges[j].id||'');if(!eid)continue;var el=edgeElById.get(eid);if(!el)continue;edgeEls.push({id:eid,el:el,s:String(edges[j].s||edges[j].source||''),t:String(edges[j].t||edges[j].target||''),baseWidth:Number(edges[j].baseWidth)||1,baseOpacity:Number(edges[j].baseOpacity)||0.6,strokeAlpha:Number(edges[j].strokeAlpha)||1});}` +
+          `for(var j=0;j<edges.length;j++){var eid=String(edges[j].id||'');if(!eid)continue;var el=edgeElById.get(eid);if(!el)continue;edgeEls.push({id:eid,el:el,s:String(edges[j].s||edges[j].source||''),t:String(edges[j].t||edges[j].target||''),baseWidth:Number(edges[j].baseWidth)||1,opacity:isFinite(edges[j].opacity)?Number(edges[j].opacity):0.6});}` +
           `var rotateY=function(x,y,z,a){var c=Math.cos(a),s=Math.sin(a);return [x*c+z*s,y,-x*s+z*c];};` +
           `var rotateX=function(x,y,z,a){var c=Math.cos(a),s=Math.sin(a);return [x,y*c-z*s,y*s+z*c];};` +
           `var project=function(x,y,z){var denom=Math.max(1e-3,cameraZ-z);var k=cameraZ/denom;return {x:x*k,y:y*k,k:k,z:z};};` +
@@ -559,9 +556,9 @@ export function exportGraphAsCentered3dSvgMarkup(args: {
             `for(var e2=0;e2<edgeEls.length;e2++){` +
               `var ed=edgeEls[e2];var ps=projById.get(ed.s);var pt=projById.get(ed.t);` +
               `if(!ps||!pt)continue;` +
-              `var opEdge=Math.min(depthOpacity(ps.z),depthOpacity(pt.z))*Math.max(0,Math.min(1,ed.baseOpacity))*Math.max(0,Math.min(1,Number(ed.strokeAlpha)||1));` +
+              `var opEdge=(payload.threeEdgeRenderer==='shaderLine'?1:Math.min(depthOpacity(ps.z),depthOpacity(pt.z)))*Math.max(0,Math.min(1,ed.opacity));` +
               `var kAvg=(ps.k+pt.k)*0.5;` +
-              `var w=Math.max(0.25,(ed.baseWidth||1)*kAvg);` +
+              `var w=payload.threeEdgeRenderer==='shaderLine'?Number(payload.shaderLineWidthPx):Math.max(0.25,(ed.baseWidth||1)*kAvg);` +
               `ed.el.setAttribute('x1',String(ps.x));ed.el.setAttribute('y1',String(ps.y));ed.el.setAttribute('x2',String(pt.x));ed.el.setAttribute('y2',String(pt.y));` +
               `ed.el.setAttribute('stroke-opacity',String(opEdge));ed.el.setAttribute('stroke-width',String(w));` +
               `edgeOrder.push({id:ed.id,z:(ps.z+pt.z)*0.5,el:ed.el});` +

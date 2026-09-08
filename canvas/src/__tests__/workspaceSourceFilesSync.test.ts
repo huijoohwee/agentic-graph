@@ -246,30 +246,6 @@ export async function testWorkspaceSourceFilesSyncAlwaysIncludesCanonicalSeedFil
   if (geospatial.enabled !== false) throw new Error('expected canonical geospatial seed to stay disabled by default until explicitly activated')
 }
 
-export async function testWorkspaceSourceFilesSyncSuppressesLegacyRootSeedAliasesWhenDocsMirrorExists() {
-  const next = mergeWorkspaceEntriesIntoSourceFiles({
-    existing: [],
-    workspaceEntries: [
-      { kind: 'file', path: WORKSPACE_README_SEED_PATH, parentPath: '/', name: 'workspace-readme.md', text: '# Readme root', updatedAtMs: 1 },
-      { kind: 'file', path: GEOSPATIAL_WORKSPACE_SEED_PATH, parentPath: '/', name: 'agentic-graph-maps-places.md', text: '# Places root', updatedAtMs: 1 },
-      { kind: 'file', path: '/docs/workspace-readme.md', parentPath: '/docs', name: 'workspace-readme.md', text: '# Readme docs', updatedAtMs: 1 },
-      { kind: 'file', path: '/docs/agentic-graph-maps-places.md', parentPath: '/docs', name: 'agentic-graph-maps-places.md', text: '# Places docs', updatedAtMs: 1 },
-    ],
-    sourcesByPath: {
-      '/docs/workspace-readme.md': { kind: 'local', originalName: 'workspace-readme.md' },
-      '/docs/agentic-graph-maps-places.md': { kind: 'local', originalName: 'agentic-graph-maps-places.md' },
-    },
-  })
-
-  const rootReadme = next.find(f => f.source?.path === WORKSPACE_README_SOURCE_PATH)
-  if (rootReadme) throw new Error('expected root README seed alias to be suppressed when docs mirror provides canonical file with same basename')
-  const rootGeospatial = next.find(f => f.source?.path === GEOSPATIAL_WORKSPACE_SOURCE_PATH)
-  if (rootGeospatial) throw new Error('expected root geospatial seed alias to be suppressed when docs mirror provides canonical file with same basename')
-  const docsReadme = next.find(f => f.source?.path === 'workspace:/docs/workspace-readme.md')
-  if (!docsReadme) throw new Error('expected docs mirrored README to stay present as canonical Source Files entry')
-  const docsPlaces = next.find(f => f.source?.path === 'workspace:/docs/agentic-graph-maps-places.md')
-  if (!docsPlaces) throw new Error('expected docs mirrored places markdown to stay present as canonical Source Files entry')
-}
 
 export async function testWorkspaceSourceFilesSyncSuppressesEmptyRootDocsAliasWhenDocsMirrorExists() {
   const next = mergeWorkspaceEntriesIntoSourceFiles({

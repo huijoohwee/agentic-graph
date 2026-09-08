@@ -1,3 +1,6 @@
+import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
+import { persistMarkdownSourceFolderPaths, readPersistedMarkdownSourceFolderPaths } from '@/features/markdown/ui/markdownSourceFilesPersistence'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { MarkdownWorkspace } from '@/lib/markdown-workspace-runtime'
@@ -5,7 +8,8 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
-import { WORKSPACE_ROOT_PATH, normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { createId } from '@/lib/id'
 
@@ -31,18 +35,24 @@ const waitFor = async (dom: { window: Window }, predicate: () => boolean, timeou
 
 export async function testMarkdownWorkspaceFolderModeContractOpensDocs() {
   const storage = new MemoryStorage()
-  const { restore: restoreWindow } = initWindowHarness({ storage })
   const { dom, restore: restoreDom } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
+  const { restore: restoreWindow } = initWindowHarness({ storage })
   let root: ReturnType<typeof createRoot> | null = null
 
   try {
     const doc = dom.window.document
     const fs = await getWorkspaceFs()
     await fs.ensureSeed()
+    await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH })
+    persistMarkdownSourceFolderPaths([...readPersistedMarkdownSourceFolderPaths(), WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH])
     const folderName = `repo-${createId('t').slice(0, 6)}`
-    const folderPath = await fs.createFolder({ parentPath: WORKSPACE_ROOT_PATH, name: folderName })
+    const folderPath = await fs.createFolder({ parentPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH, name: folderName })
     const sitemapPath = await fs.createFile({ parentPath: folderPath, name: 'repo.sitemap.md', text: '# Sitemap\n\nHello' })
     const journeyPath = await fs.createFile({ parentPath: folderPath, name: 'repo.user-journey.md', text: '# Journey\n\nHello' })
+    useGraphStore.getState().resetAll()
+    useMarkdownExplorerStore.getState().setActivePath(journeyPath)
+    useGraphStore.getState().setMarkdownDocument(workspaceDocumentKey(journeyPath), '# Journey\n\nHello')
+    useGraphStore.getState().setMarkdownDocumentSourceUrl(null)
 
     root = createRoot(doc.getElementById('root') as unknown as HTMLElement)
     root.render(React.createElement(MarkdownWorkspace))
@@ -80,7 +90,7 @@ export async function testMarkdownWorkspaceFolderModeContractOpensDocs() {
     } catch {
       void 0
     }
-    restoreDom()
     restoreWindow()
+    restoreDom()
   }
 }

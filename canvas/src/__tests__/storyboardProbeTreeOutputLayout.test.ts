@@ -389,7 +389,8 @@ export function testProbeTreeToolbarPublicationVersionsOneCanonicalGraph() {
   assert(source.includes('revisionFloor: graphRevision'), 'expected toolbar publication to advance from the active graph revision')
   assert(source.includes('storyboardRunGraphRef.current = committedGraphData'), 'expected the next toolbar run to read the revisioned graph')
   assert(source.includes('setGraphDataPreservingLayout(committedGraphData)'), 'expected the live Canvas to receive the same revisioned graph')
-  assert(source.includes('persistStoryboardCardMediaGraphSource(committedGraphData, { sourceOwner:'), 'expected source persistence to receive the same revisioned graph with its semantic Markdown owner')
+  assert(/synchronizeStoryboardCardMediaGraphSource\(committedGraphData,\s*\{\s*sourceOwner: \{ documentName: markdownDocumentName, documentText: markdownDocumentText \}/.test(source), 'expected source synchronization to receive the same revisioned graph with its semantic Markdown owner')
+  assert(source.indexOf('synchronizeStoryboardCardMediaGraphSource(committedGraphData, {') < source.indexOf('setGraphDataPreservingLayout(committedGraphData)'), 'expected the semantic source to be synchronized before the graph projection is published')
 }
 
 export function testProbeTreePinnedOutputPanelUsesGrowingGraphPositionOverStaleOverlayState() {

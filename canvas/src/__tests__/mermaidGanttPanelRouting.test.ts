@@ -49,7 +49,7 @@ const root = () => resolve(process.cwd(), 'src')
 const readSource = (...parts: string[]) => readFileSync(resolve(root(), ...parts), 'utf8')
 export function testTimelineBarClickRequiresDragIntentBeforePreview() {
   const interactionsText = readSource('features', 'gitgraph', 'useGanttTimelineInteractions.ts')
-  const dragCommitGuardIndex = interactionsText.indexOf('if (!resolveMermaidGanttBarDragCommitted(preview.deltaPx)) return')
+  const dragCommitGuardIndex = interactionsText.indexOf('if (!resolveMermaidGanttBarDragCommitted(preview.deltaPx) && !displayLaneDelta) return')
   const dragPreviewUpdateIndex = interactionsText.indexOf('setDragPreview(nextPreview)')
   const trackPointerStartIndex = interactionsText.indexOf('const handleTrackPointerStart')
   const trackPointerStartEndIndex = interactionsText.indexOf('return {', trackPointerStartIndex)
@@ -278,8 +278,8 @@ export function testTypedMermaidDiagramResolverReadsNeutralFlowTimelinePayload()
   if (
     !directCode.includes('gantt') ||
     !directCode.includes('section Source capture') ||
-    !directCode.includes('Capture URL : capture, 00:00, 1m') ||
-    !directCode.includes('Persist MP4 : artifact, 00:05, 1m')
+    !directCode.includes('Capture URL : capture, kgpos_0, 00:00, 0.02m') ||
+    !directCode.includes('Persist MP4 : artifact, kgpos_0_08, 00:05, 0.02m')
   ) {
     throw new Error(`expected neutral timeline payload to convert to source-backed Mermaid Gantt code, got ${directCode}`)
   }
@@ -836,7 +836,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
   if (
     !timelineBottomText.includes('GanttTimelineTransportPanel') ||
     !timelineBottomText.includes("useMermaidGanttDocument({ purpose: 'media' })") ||
-    !timelineBottomText.includes('<GanttTimelineTransportPanel code={mediaGanttCode} compact={compact} mode="media" />') ||
+    !/<GanttTimelineTransportPanel\b[^>]*code=\{mediaGanttCode\}[^>]*compact=\{compact\}[^>]*mode="media"[^>]*\/>/.test(timelineBottomText) ||
     timelineBottomText.includes('MermaidDiagramPanelView') ||
     timelineBottomText.includes('useMermaidTimelineDocument') ||
     timelineBottomText.includes('kind="timeline"') ||
@@ -869,7 +869,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
     ganttTransportText.includes('useGanttTimelineTransportView') ||
     ganttTransportText.includes('showRange={false}') ||
     ganttTransportText.includes('shellClassName="timeline-transport-shell--video-sequence"') ||
-    ganttTransportText.includes('VideoSequenceTimelineRuler') ||
+    ganttTransportText.includes('<VideoSequenceTimelineRuler') ||
     ganttTransportText.includes('VideoSequenceMonitorPanel') ||
     ganttTransportText.includes('rulerBelow={(') ||
     !ganttTransportChromeModelText.includes('VIDEO_SEQUENCE_TIMELINE_TOOLS') ||
@@ -967,7 +967,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
     !ganttTransportCommandModelText.includes('useGanttTimelineTransportCommandModel') ||
     !ganttTransportCommandModelText.includes('useGanttTimelineDocumentActions') ||
     !ganttTransportCommandModelText.includes('chromeModelCommands') ||
-    !ganttTransportCommandModelText.includes('handleCommittedDragUpdate: documentActions.handleCommittedDragUpdate') ||
+    !ganttTransportCommandModelText.includes('markdownFallback: () => documentActions.handleCommittedDragUpdate(input)') || !ganttTransportCommandModelText.includes("kind: 'drag-edit'") ||
     !ganttTransportCommandModelText.includes('handleToggleVideoSequenceTimingSyncMode: documentActions.handleToggleVideoSequenceTimingSyncMode') ||
     !ganttTransportCommandModelText.includes('timingSyncMode: documentActions.timingSyncMode') ||
     !ganttDocumentActionsText.includes('useGanttTimelineDocumentActions') ||
@@ -1388,7 +1388,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
   ) {
     throw new Error('expected Media Canvas video playback and BottomPanel Timeline slider to share the neutral Gantt transport state')
   }
-  if (!timelineBottomText.includes('<GanttTimelineTransportPanel code={mediaGanttCode} compact={compact} mode="media" />') ||
+  if (!/<GanttTimelineTransportPanel\b[^>]*code=\{mediaGanttCode\}[^>]*compact=\{compact\}[^>]*mode="media"[^>]*\/>/.test(timelineBottomText) ||
     timelineBottomText.includes('TimelineVideoSequenceEmptyState') ||
     timelineBottomText.includes('TimelineVideoSequenceEmptyDropState') ||
     timelineBottomText.includes('onDropMedia={rulerModel.onDropMedia}')) {

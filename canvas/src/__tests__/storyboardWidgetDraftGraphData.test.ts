@@ -196,9 +196,8 @@ export function testStoryboardWidgetBaseResetDoesNotConflateAmbiguousInnerIdsAcr
   }
 }
 
-export function testStoryboardWidgetBaseResetEffectKeysOffRevisionInsteadOfDerivedGraphIdentity() {
+export async function testStoryboardWidgetBaseResetEffectKeysOffRevisionInsteadOfDerivedGraphIdentity() {
   const source = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetRenderState.ts'), 'utf8')
-  const storeSource = readFileSync(resolve(process.cwd(), 'src/hooks/useGraphStore.ts'), 'utf8')
   if (!source.includes('const storyboardWidgetBaseGraphDataRef = React.useRef(args.storyboardWidgetBaseGraphData)')) {
     throw new Error('expected the draft reset effect to read the latest derived base graph through a stable ref')
   }
@@ -214,10 +213,38 @@ export function testStoryboardWidgetBaseResetEffectKeysOffRevisionInsteadOfDeriv
   if (source.includes('forceBaseReset: historyIndexChanged') || source.includes('args.historyIndex')) {
     throw new Error('expected ordinary history snapshot recording to stop forcing a Storyboard draft reset')
   }
-  if (!storeSource.includes('historyRestoreRevision: (get().historyRestoreRevision || 0) + 1')) {
-    throw new Error('expected full store reset to advance the same monotonic restore revision used by Storyboard draft authority')
+  const { useGraphStore } = await import('@/hooks/useGraphStore')
+  const { initWindowHarness } = await import('@/tests/lib/windowHarness')
+  const { MemoryStorage } = await import('@/tests/lib/memoryStorage')
+  const previous = useGraphStore.getState()
+  const committerKey = '__AG_HISTORY_COMMITTER__'
+  const previousCommitter = Object.getOwnPropertyDescriptor(globalThis, committerKey)
+  const harness = initWindowHarness({ storage: new MemoryStorage() })
+  const errors: unknown[] = []
+  try {
+    useGraphStore.getState().resetAll()
+    Reflect.deleteProperty(globalThis, committerKey)
+    useGraphStore.setState({ graphData: graph(1, ['history-reset']), historyDebounceMs: 10 })
+    useGraphStore.getState().scheduleHistory('must not survive reset')
+    const scheduled = (globalThis as unknown as Record<string, { fn?: unknown }>)[committerKey]
+    if (typeof scheduled?.fn !== 'function') throw new Error('expected the native history owner to schedule a pending commit')
+    const beforeRevision = useGraphStore.getState().historyRestoreRevision || 0
+    useGraphStore.getState().resetAll()
+    await new Promise(resolve => globalThis.setTimeout(resolve, 35))
+    const reset = useGraphStore.getState()
+    if (reset.history.length !== 0 || reset.historyIndex !== -1) {
+      throw new Error('expected reset to cancel pending history so it cannot repopulate cleared history')
+    }
+    if (reset.historyRestoreRevision !== beforeRevision + 1) {
+      throw new Error('expected reset to advance exactly one history restoration revision')
+    }
+  } catch (error) { errors.push(error) } finally {
+    for (const cleanup of [() => useGraphStore.getState().resetAll(), () => useGraphStore.setState(previous),
+      () => { if (previousCommitter) Object.defineProperty(globalThis, committerKey, previousCommitter); else Reflect.deleteProperty(globalThis, committerKey) },
+      () => harness.restore()]) {
+      try { cleanup() } catch (error) { errors.push(error) }
+    }
   }
-  if (!storeSource.includes('resetAll: () => {\n    cancelScheduledHistoryCommit()')) {
-    throw new Error('expected full store reset to cancel pending debounced history commits before clearing history')
-  }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length) throw new AggregateError(errors, 'History reset behavior or fixture cleanup failed')
 }

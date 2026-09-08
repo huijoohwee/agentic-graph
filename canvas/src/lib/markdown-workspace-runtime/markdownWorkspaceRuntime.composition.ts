@@ -1,3 +1,4 @@
+import type { MarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceRuntime.types'
 import type React from 'react'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import type { UseWorkspaceFileActionsArgs, WorkspaceFileActions } from '@/features/markdown-workspace/useWorkspaceFileActions/types'
@@ -18,7 +19,7 @@ export function buildMarkdownWorkspaceFileActionsArgs(args: {
   activeDocumentSourceUrl: string | null
   setActiveText: (next: string) => void
   setEntries: React.Dispatch<React.SetStateAction<WorkspaceEntry[]>>
-  lastLoadedRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: React.MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   setExpandedPaths: React.Dispatch<React.SetStateAction<Set<string>>>
   setActivePathSafe: (path: WorkspacePath) => void
   setSelectionPathSafe: (path: WorkspacePath) => void | Promise<boolean>

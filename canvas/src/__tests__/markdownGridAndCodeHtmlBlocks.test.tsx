@@ -11,12 +11,13 @@ export async function testMarkdownPreviewRendersHtmlGridAndPreCodeBlocks() {
     throw new Error('expected Markdown image grids to use the renderer-owned mobile-first responsive helper')
   }
   const { dom, restore: restoreDom } = initJsdomHarness()
+  let root: ReturnType<typeof createRoot> | null = null
   try {
     const doc = dom.window.document
     const container = doc.createElement('section')
     container.id = 'root'
     doc.body.appendChild(container)
-    const root = createRoot(container as unknown as HTMLElement)
+    root = createRoot(container as unknown as HTMLElement)
 
     const markdownText = [
       '<section style="display:grid;grid-template-columns:1fr 2fr;gap:8px">',
@@ -101,6 +102,7 @@ export async function testMarkdownPreviewRendersHtmlGridAndPreCodeBlocks() {
         highlightedLineRange: null,
         markdownWordWrap: true,
         markdownPresentationMode: false,
+        markdownViewerMediaMode: 'image',
         markdownTextHighlight: false,
         uiPanelTextFontClass: 'font-sans',
         uiPanelMonospaceTextClass: 'font-mono',
@@ -219,8 +221,7 @@ export async function testMarkdownPreviewRendersHtmlGridAndPreCodeBlocks() {
     const colStyle = String(cols[0]?.getAttribute('style') || '')
     if (!/width:\s*25%/i.test(colStyle)) throw new Error(`expected col width style to be preserved, got: ${colStyle}`)
 
-    root.unmount()
   } finally {
-    restoreDom()
+    try { root?.unmount() } finally { restoreDom() }
   }
 }

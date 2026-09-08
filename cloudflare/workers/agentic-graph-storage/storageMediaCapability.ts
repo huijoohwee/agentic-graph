@@ -1,11 +1,13 @@
 import {
   AGENTIC_OS_STORAGE_API_VERSION,
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
+  buildAgenticGraphStorageMediaPath,
+  assertAgenticGraphStorageMediaWriteKey,
   type AgenticGraphStorageR2ObjectLike,
   type AgenticGraphStorageWorkerEnv,
 } from './contract'
 import { normalizeString } from './db'
-import { AGENTIC_OS_MEDIA_ROUTE_PREFIX, readMediaObjectKey } from './media'
+import { readMediaObjectKey } from './media'
 
 export const AGENTIC_OS_STORAGE_MEDIA_CAPABILITY_SCHEMA = 'agentic-graph-storage-media-capability/v1' as const
 const MAX_TTL_SECONDS = 15 * 60
@@ -85,12 +87,13 @@ export const mintAgenticGraphStorageMediaCapability = async (args: {
     nonce: crypto.randomUUID(),
   }
   if (!payload.workspaceId || !payload.objectKey || !payload.subjectUserId) throw new Error('invalid media capability request')
+  if (payload.operation === 'write') await assertAgenticGraphStorageMediaWriteKey(payload.workspaceId, payload.objectKey)
   const payloadBytes = new TextEncoder().encode(JSON.stringify(payload))
   const token = `${base64UrlEncode(payloadBytes)}.${base64UrlEncode(await sign(payloadBytes, readSecret(args.env)))}`
   return {
     token,
     expiresAtMs: payload.expiresAtMs,
-    urlPath: `${AGENTIC_OS_MEDIA_ROUTE_PREFIX}${payload.objectKey}?agentic_os_media_capability=${encodeURIComponent(token)}`,
+    urlPath: `${buildAgenticGraphStorageMediaPath(payload.objectKey)}?agentic_os_media_capability=${encodeURIComponent(token)}`,
   }
 }
 
@@ -124,6 +127,7 @@ const verifyCapability = async (args: {
     || payload.expiresAtMs <= nowMs
     || payload.expiresAtMs - payload.issuedAtMs > MAX_TTL_SECONDS * 1_000
   ) throw new Error('media capability does not authorize this request')
+  if (payload.operation === 'write') await assertAgenticGraphStorageMediaWriteKey(payload.workspaceId, payload.objectKey)
   return payload
 }
 
@@ -177,7 +181,7 @@ export const handleAgenticGraphStorageCapabilityMediaRoute = async (
       objectKey,
       etag: normalizeString(object?.httpEtag || object?.etag) || null,
       storedAtMs,
-      publicPath: `${AGENTIC_OS_MEDIA_ROUTE_PREFIX}${objectKey}`,
+      publicPath: buildAgenticGraphStorageMediaPath(objectKey),
     })
   }
   const object = request.method === 'HEAD' && typeof bucket.head === 'function'

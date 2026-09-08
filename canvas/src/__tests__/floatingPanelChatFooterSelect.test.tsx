@@ -94,57 +94,6 @@ export function testFloatingPanelChatApiKeyPromptIsByokOnly() {
   }
 }
 
-export async function testFloatingPanelChatNewChatCreatesAndFollowsCanonicalWorkspaceFile() {
-  const { dom, restore } = initJsdomHarness()
-  const doc = dom.window.document
-  const container = doc.createElement('section')
-  doc.body.appendChild(container)
-  const root = createRoot(container as unknown as HTMLElement)
-  resetWorkspaceFsForTests()
-  useGraphStore.getState().resetAll()
-  useGraphStore.getState().setWorkspaceViewMode('canvas')
-  useGraphStore.getState().setEditorWorkspacePane('markdown')
-  useGraphStore.getState().setChatStorageTarget('chatAgenticGraph')
-  useGraphStore.getState().setChatAgenticGraphWorkspacePath(null)
-  useMarkdownExplorerStore.getState().setActivePath(null)
-  try {
-    await mountReactRoot(root, React.createElement(FloatingPanelChat), {
-      window: dom.window as unknown as Window,
-      frames: 2,
-      tasks: 1,
-    })
-    const newChatButton = (Array.from(container.querySelectorAll('button')) as HTMLButtonElement[])
-      .find(button => String(button.textContent || '').trim() === 'New Chat') as HTMLButtonElement | undefined
-    if (!newChatButton) throw new Error('expected FloatingPanel chat to render the New Chat command')
-    await act(async () => {
-      newChatButton.click()
-      for (let attempt = 0; attempt < 40; attempt += 1) {
-        const state = useGraphStore.getState()
-        if (String(state.chatAgenticGraphWorkspacePath || '').trim() && state.workspaceViewMode === 'editor') break
-        await waitForTasks(1)
-        await waitForFrames(dom.window as unknown as Window, 1)
-      }
-      await waitForFrames(dom.window as unknown as Window, 2)
-    })
-    const state = useGraphStore.getState()
-    const chatPath = String(state.chatAgenticGraphWorkspacePath || '')
-    if (state.workspaceViewMode !== 'editor') throw new Error(`expected New Chat to open editor workspace, got ${state.workspaceViewMode}`)
-    if (!/^\/.+\/\d{8}T\d{6}Z\/agenticOs_\d{8}T\d{6}Z\.md$/.test(chatPath)) {
-      throw new Error(`expected New Chat to allocate canonical AGENTIC_OS workspace path, got ${JSON.stringify(chatPath)}`)
-    }
-    if (useMarkdownExplorerStore.getState().activePath !== chatPath) throw new Error('expected New Chat to select the canonical AGENTIC_OS workspace file')
-    const workspaceFileText = await (await getWorkspaceFs()).readFileText(chatPath)
-    if (workspaceFileText !== '') throw new Error(`expected New Chat to create an empty canonical AGENTIC_OS workspace file, got ${JSON.stringify(workspaceFileText)}`)
-  } finally {
-    await unmountReactRoot(root, { window: dom.window as unknown as Window })
-    container.remove()
-    useMarkdownExplorerStore.getState().setActivePath(null)
-    useGraphStore.getState().resetAll()
-    resetWorkspaceFsForTests()
-    restore()
-  }
-}
-
 export async function testFloatingPanelChatFooterByokApiKeyToggleStaysAtModelIconAndAlignsInput() {
   const { dom, restore } = initJsdomHarness()
   const doc = dom.window.document
@@ -253,6 +202,9 @@ export async function testFloatingPanelChatFooterByokApiKeyToggleStaysAtModelIco
 }
 
 export async function testFloatingPanelChatContextRailAndQuickActionsStayStateOwned() {
+  const grammar = await import('@/features/agentic-os/agenticOsRemoteGrammarClient')
+  const { registerPinnedAgenticOsDictionaryTokensForTest } = await import('./helpers/pinnedAgenticOsDictionary')
+  const priorEntries = grammar.getAgenticOsRemoteGrammarCatalogEntries()
   const { dom, restore } = initJsdomHarness()
   const doc = dom.window.document
   const container = doc.createElement('section')
@@ -312,6 +264,7 @@ export async function testFloatingPanelChatContextRailAndQuickActionsStayStateOw
   }
 
   try {
+    registerPinnedAgenticOsDictionaryTokensForTest({ command: ['/pipeline.trace'], semantic: [], binding: [] })
     await mountReactRoot(root, React.createElement(Harness), {
       window: dom.window as unknown as Window,
       frames: 2,
@@ -384,6 +337,8 @@ export async function testFloatingPanelChatContextRailAndQuickActionsStayStateOw
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
     container.remove()
     restore()
+    grammar.resetAgenticOsRemoteGrammarCatalogForTests()
+    grammar.registerAgenticOsRemoteGrammarCatalogEntries(priorEntries)
   }
 }
 

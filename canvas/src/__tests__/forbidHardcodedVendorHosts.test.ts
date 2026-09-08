@@ -34,10 +34,11 @@ function walkFiles(rootDir: string): string[] {
 
 function listTrackedSourceFiles(repoRoot: string): string[] {
   try {
-    return execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf8' })
-      .split(/\r?\n/)
-      .map(file => file.trim())
-      .filter(Boolean)
+    const list = (...args: string[]): string[] => execFileSync('git', ['ls-files', '-z', ...args], { cwd: repoRoot, encoding: 'utf8' }).split('\0').filter(Boolean)
+    const files = list('--cached', '--others', '--exclude-standard')
+    const deleted = new Set(list('--deleted'))
+    return [...new Set(files)]
+      .filter(file => !deleted.has(file))
       .filter(file => SOURCE_EXTENSIONS.has(path.extname(file)))
       .map(file => path.join(repoRoot, file))
   } catch {

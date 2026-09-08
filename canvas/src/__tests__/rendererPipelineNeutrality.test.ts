@@ -518,7 +518,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (!canvasViewMenuText.includes('isD3Like2dRenderer(option.id)')) {
     throw new Error('expected Canvas view menu to reuse the shared D3-like helper for renderer option gating')
   }
-  if (!canvasViewMenuText.includes('CANVAS_2D_RENDERER_ORDER.map')) {
+  if (!canvasViewMenuText.includes('CANVAS_2D_RENDERER_MENU_ORDER.map') || !renderConfigText.includes('CANVAS_2D_RENDERER_MENU_ORDER: readonly Canvas2dRendererId[] = CANVAS_2D_RENDERER_ORDER')) {
     throw new Error('expected Canvas view menu renderer options to derive menu order from the shared renderer spec')
   }
   if (!canvasViewMenuText.includes('getCanvas2dRendererMenuLabel(id)')) {
@@ -545,8 +545,8 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (rendererGraphTopologySummaryText.includes('grid grid-cols-2 gap-x-3 gap-y-1 text-xs')) {
     throw new Error('expected renderer topology stats to avoid fixed mobile two-column grid literals')
   }
-  if (!threeControlsText.includes('isD3Like2dRenderer(canvas2dRenderer)')) {
-    throw new Error('expected Three controls bridge to reuse the shared D3-like helper')
+  if (!threeControlsText.includes('const req = threeCameraRequest') || !/if \(store.canvasRenderMode === '2d'\) \{\s*store.requestZoom\(type\)\s*return/.test(readFileSync(resolve(root, 'lib', 'canvas', 'runtimeZoomDispatch.ts'), 'utf8'))) {
+    throw new Error('expected the shared zoom dispatcher to route 2D requests before Three camera controls')
   }
   if (
     !minimapText.includes('buildMinimapStoryboardWidgetOverlaySubset({') ||

@@ -33,9 +33,14 @@ export function isWorkspaceEditorOverlayOpen(args: {
 }
 
 export function isWorkspaceGraphMutationBlocked(args: WorkspaceGraphMutationState): boolean {
+  return isWorkspaceCameraInitializationBlocked(args) || isWorkspaceEditorOverlayOpen(args)
+}
+
+/** Reading an initial camera does not take ownership of the editor's graph mutations. */
+export function isWorkspaceCameraInitializationBlocked(args: WorkspaceGraphMutationState): boolean {
   if (isReadOnlyAgentGraphProjection(args.graphData)) return true
   if (args.workspaceGraphMutationLayoutLockActive === true) return true
-  if (isWorkspaceEditorOverlayOpen(args) || args.markdownWorkspaceIndexingInFlight === true) return true
+  if (args.markdownWorkspaceIndexingInFlight === true) return true
   const untilMs = Number(args.workspaceGraphMutationBlockUntilMs || 0)
   return Number.isFinite(untilMs) && untilMs > Date.now()
 }

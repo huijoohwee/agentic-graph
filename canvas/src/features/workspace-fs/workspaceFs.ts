@@ -26,26 +26,12 @@ import {
   upsertShadowEntry,
 } from './workspaceFsShadow'
 
-const notifyWorkspaceFsDegraded = async (err: unknown) => {
-  try {
-    if (typeof window === 'undefined') return
-    const mod = (await import('@/hooks/useGraphStore')) as typeof import('@/hooks/useGraphStore')
-    const msg =
-      err && typeof err === 'object' && 'message' in err
-        ? String((err as { message?: unknown }).message || '').trim()
-        : ''
-    mod.useGraphStore.getState().pushUiToast({
-      id: 'workspace-fs-persistence-disabled',
-      kind: 'warning',
-      message: `Workspace persistence is unavailable. Changes may not survive reload.${msg ? ` ${msg}` : ''}`,
-    })
-  } catch {
-    void 0
-  }
-}
+import { notifyWorkspaceFsDegraded } from './workspaceFsDegraded'
 
 let fsSingleton: WorkspaceFs | null = null
 let warnedDegraded = false
+let fsGeneration = 0
+let fsInitialization: Promise<WorkspaceFs> | null = null
 
 const isRxConflictError = (err: unknown): boolean => {
   if (!err || typeof err !== 'object') return false
@@ -65,7 +51,7 @@ const waitConflictRetryTick = async (attemptIndex: number): Promise<void> => {
 
 const MAX_RX_CONFLICT_RETRIES = 3
 
-export const createResilientWorkspaceFs = (inner: WorkspaceFs): WorkspaceFs => {
+export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGeneration): WorkspaceFs => {
   const run = async <T>(op: keyof WorkspaceFs, fn: (fs: WorkspaceFs) => Promise<T>): Promise<T> => {
     try {
       return await fn(inner)
@@ -85,7 +71,7 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs): WorkspaceFs => {
         console.warn(`[workspace-fs] persisted cache conflict persisted on ${String(op)} after retries — falling back to shadow memory fs`)
         const { createMemoryWorkspaceFs } = (await import('./workspaceFsMemory.ts')) as typeof import('./workspaceFsMemory.ts')
         const memory = createMemoryWorkspaceFs({ initialEntries: snapshotShadowEntries() })
-        fsSingleton = memory
+        if (generation === fsGeneration) fsSingleton = memory
         try {
           await memory.ensureSeed()
         } catch {
@@ -96,13 +82,13 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs): WorkspaceFs => {
       }
       const { createMemoryWorkspaceFs } = (await import('./workspaceFsMemory.ts')) as typeof import('./workspaceFsMemory.ts')
       const memory = createMemoryWorkspaceFs({ initialEntries: snapshotShadowEntries() })
-      fsSingleton = memory
+      if (generation === fsGeneration) fsSingleton = memory
       try {
         await memory.ensureSeed()
       } catch {
         void 0
       }
-      if (!warnedDegraded) {
+      if (generation === fsGeneration && !warnedDegraded) {
         warnedDegraded = true
         await notifyWorkspaceFsDegraded(e)
       }
@@ -181,31 +167,34 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs): WorkspaceFs => {
   }
 }
 
-export async function getWorkspaceFs(): Promise<WorkspaceFs> {
-  if (fsSingleton) return fsSingleton
-
-  const { createMemoryWorkspaceFs } = await import('./workspaceFsMemory.ts')
-  const memory = createMemoryWorkspaceFs({ initialEntries: snapshotShadowEntries() })
-
-  try {
-    const { createWorkspacePersistedFs } = await import('./workspaceFsPersisted.ts')
-    const persistentFs = createResilientWorkspaceFs(createWorkspacePersistedFs())
-    await persistentFs.ensureSeed()
-    fsSingleton = persistentFs
-    return fsSingleton
-  } catch (e: unknown) {
-    fsSingleton = createResilientWorkspaceFs(memory)
+export function getWorkspaceFs(): Promise<WorkspaceFs> {
+  if (fsInitialization) return fsInitialization
+  if (fsSingleton) return Promise.resolve(fsSingleton)
+  const generation = fsGeneration
+  const initialize = async (): Promise<WorkspaceFs> => {
+    let initialized: WorkspaceFs
     try {
-      await fsSingleton.ensureSeed()
-    } catch {
-      void 0
+      const { createWorkspacePersistedFs } = await import('./workspaceFsPersisted.ts')
+      initialized = createResilientWorkspaceFs(createWorkspacePersistedFs(), generation)
+      await initialized.ensureSeed()
+    } catch (error: unknown) {
+      const { createMemoryWorkspaceFs } = await import('./workspaceFsMemory.ts')
+      const memory = createMemoryWorkspaceFs({ initialEntries: snapshotShadowEntries() })
+      initialized = createResilientWorkspaceFs(memory, generation)
+      try { await initialized.ensureSeed() } catch { /* retain the memory fallback */ }
+      if (generation === fsGeneration && !warnedDegraded) {
+        warnedDegraded = true
+        await notifyWorkspaceFsDegraded(error)
+      }
     }
-    if (!warnedDegraded) {
-      warnedDegraded = true
-      await notifyWorkspaceFsDegraded(e)
-    }
-    return fsSingleton
+    if (generation === fsGeneration) fsSingleton = initialized
+    return initialized
   }
+  const pending = initialize().finally(() => {
+    if (fsInitialization === pending) fsInitialization = null
+  })
+  fsInitialization = pending
+  return pending
 }
 
 export async function ensureSeedWorkspaceFs(): Promise<void> {
@@ -214,6 +203,8 @@ export async function ensureSeedWorkspaceFs(): Promise<void> {
 }
 
 export function resetWorkspaceFsForTests(): void {
+  fsGeneration += 1
+  fsInitialization = null
   fsSingleton = null
   warnedDegraded = false
 }

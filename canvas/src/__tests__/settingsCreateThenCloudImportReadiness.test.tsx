@@ -18,14 +18,14 @@ import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-f
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
+import { createAsyncActionTracker, installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 
 type RegisteredSettingsActions = {
   apply: () => void
   reset: () => void
 }
 
-const CREATED_AGENTIC_OS_PATH = '/workspace/chat/agenticOs_20260523173000.md'
+const CREATED_AGENTIC_OS_PATH = '/workspace/chat/20260523T173000Z/agenticOs_20260523T173000Z.md'
 const CREATED_HISTORY_PATH = '/workspace/chat/chh_20260523173000.md'
 const CLOUD_AGENTIC_OS_URL = 'https://cloud.example/agentic-graph-after-create.md'
 const CLOUD_HISTORY_URL = 'https://cloud.example/history-after-create.md'
@@ -39,6 +39,7 @@ const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonEle
 
 function SettingsCreateThenCloudImportHarness(props: {
   actionsRef: React.MutableRefObject<RegisteredSettingsActions | null>
+  tracker: ReturnType<typeof createAsyncActionTracker>
 }): React.ReactElement {
   const {
     values,
@@ -84,10 +85,10 @@ function SettingsCreateThenCloudImportHarness(props: {
       <section data-draft-history-workspace-path={String(values.chatHistoryWorkspacePath || '')} />
       <section data-agentic-graph-status={String(agenticGraphPathStatus || '')} />
       <section data-history-status={String(chatHistoryPathStatus || '')} />
-      <button type="button" onClick={() => void createAndSelectAgenticGraphFile()}>
+      <button type="button" onClick={() => props.tracker.track(createAndSelectAgenticGraphFile())}>
         Create agentic-graph File
       </button>
-      <button type="button" onClick={() => void createAndSelectChatHistoryFile()}>
+      <button type="button" onClick={() => props.tracker.track(createAndSelectChatHistoryFile())}>
         Create History File
       </button>
       <button
@@ -99,10 +100,10 @@ function SettingsCreateThenCloudImportHarness(props: {
       >
         Set Cloud Draft URLs
       </button>
-      <button type="button" onClick={() => importCloudUrlForAgenticGraph()}>
+      <button type="button" onClick={() => props.tracker.track(importCloudUrlForAgenticGraph())}>
         Import agentic-graph Cloud URL
       </button>
-      <button type="button" onClick={() => importCloudUrlForChatHistory()}>
+      <button type="button" onClick={() => props.tracker.track(importCloudUrlForChatHistory())}>
         Import History Cloud URL
       </button>
     </section>
@@ -116,6 +117,7 @@ export async function testSettingsCreateThenCloudImportKeepsCommittedSurfaceTrut
   let settingsRoot: ReturnType<typeof createRoot> | null = null
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
+  const tracker = createAsyncActionTracker()
   const importedUrls: string[] = []
   const originalDateNow = Date.now
   const unregisterBridge = registerMarkdownWorkspaceActionBridge('test-create-then-cloud-import-bridge', {
@@ -128,7 +130,7 @@ export async function testSettingsCreateThenCloudImportKeepsCommittedSurfaceTrut
   try {
     resetBrowserLocalSurfaceSnapshotsForTests()
     resetWorkspaceFsForTests()
-    Date.now = () => new Date(2026, 4, 23, 17, 30, 0, 0).getTime()
+    Date.now = () => Date.UTC(2026, 4, 23, 17, 30, 0, 0)
     const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
     anyWindow.requestAnimationFrame = installDeterministicRaf(dom.window)
 
@@ -155,7 +157,7 @@ export async function testSettingsCreateThenCloudImportKeepsCommittedSurfaceTrut
     settingsRoot = createRoot(settingsContainer as unknown as HTMLElement)
     chatRoot = createRoot(chatContainer as unknown as HTMLElement)
 
-    await mountReactRoot(settingsRoot, React.createElement(SettingsCreateThenCloudImportHarness, { actionsRef }), {
+    await mountReactRoot(settingsRoot, React.createElement(SettingsCreateThenCloudImportHarness, { actionsRef, tracker }), {
       window: dom.window as unknown as Window,
       frames: 10,
     })
@@ -170,11 +172,11 @@ export async function testSettingsCreateThenCloudImportKeepsCommittedSurfaceTrut
 
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Create agentic-graph File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 4)
+      await tracker.settle()
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Create History File').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 4)
+      await tracker.settle()
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Set Cloud Draft URLs').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
@@ -182,11 +184,11 @@ export async function testSettingsCreateThenCloudImportKeepsCommittedSurfaceTrut
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Import agentic-graph Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 2)
+      await tracker.settle()
     })
     await act(async () => {
       findButtonByLabel(settingsContainer, 'Import History Cloud URL').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await waitForFrames(dom.window as unknown as Window, 2)
+      await tracker.settle()
     })
 
     const draftAgenticGraphStorageMode = settingsContainer.querySelector('[data-draft-agentic-graph-storage-mode]')?.getAttribute('data-draft-agentic-graph-storage-mode')
@@ -286,6 +288,11 @@ export async function testSettingsCreateThenCloudImportKeepsCommittedSurfaceTrut
       })}`)
     }
   } finally {
+    try {
+      await act(async () => { await tracker.settle() })
+    } catch (error) {
+      cleanupAssertionError = error instanceof Error ? error : new Error(String(error))
+    }
     unregisterBridge()
     Date.now = originalDateNow
     if (chatRoot) {
@@ -293,7 +300,7 @@ export async function testSettingsCreateThenCloudImportKeepsCommittedSurfaceTrut
     }
     const clearedInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (clearedInspection.available !== false) {
-      cleanupAssertionError = new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedInspection)}`)
+      cleanupAssertionError ||= new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedInspection)}`)
     }
     if (settingsRoot) {
       await unmountReactRoot(settingsRoot, { window: dom.window as unknown as Window })

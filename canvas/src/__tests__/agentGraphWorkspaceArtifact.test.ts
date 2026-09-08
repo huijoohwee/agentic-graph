@@ -93,6 +93,12 @@ export async function testAgentGraphRepositoryImportMaterializesSourceFilesArtif
   const importedResult = agentGraphResult()
   const artifactPath = agentGraphArtifactPath()
   const nextArtifactPath = agentGraphArtifactPath(ARTIFACT_TIMESTAMP_MS + 1_000)
+  let artifactFs: Awaited<ReturnType<typeof getWorkspaceFs>> | null = null
+  const previousArtifacts: Array<{
+    path: string
+    text: string | null
+    source: ReturnType<typeof loadWorkspaceSourceIndex>[string] | null
+  }> = []
   importedResult.projection = {
     ...importedResult.projection,
     complete: false,
@@ -106,6 +112,14 @@ export async function testAgentGraphRepositoryImportMaterializesSourceFilesArtif
     resetWorkspaceFsForTests()
     useGraphStore.getState().resetAll()
     useGraphStore.getState().setSourceFiles([])
+    artifactFs = await getWorkspaceFs()
+    for (const path of [artifactPath, nextArtifactPath]) {
+      previousArtifacts.push({
+        path,
+        text: await artifactFs.readFileText(path),
+        source: loadWorkspaceSourceIndex()[path] || null,
+      })
+    }
     const focusCalls: Array<{ path: string; applyToGraph?: boolean }> = []
     const bridge = {
       ...buildMarkdownWorkspaceActionBridge({
@@ -242,11 +256,19 @@ export async function testAgentGraphRepositoryImportMaterializesSourceFilesArtif
       throw new Error('expected a later codebase graph import to retain its own timestamped artifact')
     }
   } finally {
-    setWorkspaceEntrySource(artifactPath, null, { persist: 'sync' })
-    setWorkspaceEntrySource(nextArtifactPath, null, { persist: 'sync' })
-    useGraphStore.getState().resetAll()
-    resetWorkspaceFsForTests()
-    restore()
+    try {
+      for (const previous of previousArtifacts) {
+        if (previous.text === null) await artifactFs!.deleteEntry(previous.path, { mirrorToHost: false })
+        else await artifactFs!.writeFileText(previous.path, previous.text, { mirrorToHost: false })
+      }
+    } finally {
+      for (const previous of previousArtifacts) {
+        setWorkspaceEntrySource(previous.path, previous.source, { persist: 'sync' })
+      }
+      useGraphStore.getState().resetAll()
+      resetWorkspaceFsForTests()
+      restore()
+    }
   }
 }
 

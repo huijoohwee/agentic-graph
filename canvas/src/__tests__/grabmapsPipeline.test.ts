@@ -1,3 +1,4 @@
+import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
@@ -101,7 +102,9 @@ export const testGrabMapsMarkdownPoiColumnKeysUseVariantsNotAliases = () => {
 
 export const testGrabMapsPresetUsesPreferredStyleSetting = () => {
   const panelPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialPanelHost.tsx')
-  const text = readUtf8(panelPath)
+  const host = readUtf8(panelPath)
+  if (!host.includes('<GeospatialPanelDisplayControls') || !host.includes("from './GeospatialPanelDisplayControls.js'")) throw new Error('Expected the host to render the shared display controls')
+  const text = host + readUtf8(path.resolve(path.dirname(panelPath), 'GeospatialPanelDisplayControls.tsx'))
   if (!text.includes('readPreferredGrabMapsStyleUrl')) {
     throw new Error('Expected GrabMaps preset to read the preferred style URL helper')
   }
@@ -111,7 +114,7 @@ export const testGrabMapsPresetUsesPreferredStyleSetting = () => {
   if (!text.includes('isGrabMapsPresetActive(committedStyleUrl, geospatialViewMode)')) {
     throw new Error('Expected GrabMaps panel host to reuse shared preset-active detection')
   }
-  if (!text.includes("active={geospatialViewMode === '2d-modern' && !isGrabMapsPresetActive(committedStyleUrl, geospatialViewMode)}")) {
+  if (!text.includes("isActive={geospatialViewMode === '2d-modern' && !grabMapsActive}")) {
     throw new Error('Expected MapLibre Modern and GrabMaps preset selections to be mutually exclusive')
   }
   if (!text.includes('resolveStandardViewModeStyleUrl(')) {
@@ -243,7 +246,7 @@ export const testCanvasGeospatialRuntimeDeduplicatesRepeatedModeEvents = () => {
 }
 
 export const testWorkspaceInitializationDocsRenderableThroughYamlFrontmatterPipeline = async () => {
-  const docsRoot = path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs')
+  const docsRoot = resolveRepoSourcePath('docs/workspace-seeds')
   const readmeCandidate = fs
     .readdirSync(docsRoot)
     .filter(name => name.endsWith('.md'))

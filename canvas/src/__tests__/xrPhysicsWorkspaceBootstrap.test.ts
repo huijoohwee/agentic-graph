@@ -1,3 +1,4 @@
+import { resetCanonicalPublishedDocsMirrorCacheForTests } from '@/features/workspace-fs/workspaceGithubDocsMirror'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { LS_KEYS } from '@/lib/config'
@@ -183,7 +184,9 @@ export async function testXrPhysicsCanonicalSeedSurvivesFreshPersistedDocsOnlyBo
 
   delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
   delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  delete process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL
+  // Node does not expose Vite DEV; explicitly select the local development policy.
+  process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
+  resetCanonicalPublishedDocsMirrorCacheForTests()
   globalThis.fetch = (async (input: string | URL | Request) => {
     requestedUrls.push(typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url)
     return new Response('', { status: 404 })
@@ -215,6 +218,7 @@ export async function testXrPhysicsCanonicalSeedSurvivesFreshPersistedDocsOnlyBo
       throw new Error(`expected persisted canonical XR bootstrap not to require an external or sibling docs mirror, requested ${JSON.stringify(requestedUrls)}`)
     }
   } finally {
+    resetCanonicalPublishedDocsMirrorCacheForTests()
     globalThis.fetch = previousFetch
     restoreWindow()
     if (previousDemo === undefined) delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]

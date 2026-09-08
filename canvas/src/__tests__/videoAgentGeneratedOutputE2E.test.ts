@@ -1,6 +1,9 @@
-import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
-import { readStorageWorker } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
+import { withDurableBrowserStorage } from '@/__tests__/helpers/durable-browser-storage'
+import { exportAgenticGraphStorageWorkspace } from '@/lib/storage/agentic-graph-storage-client-export'
+import { createFakeAgenticGraphStorageBrowserSession } from '@/__tests__/helpers/fake-agentic-graph-storage-browser-session'
 import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
+import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
+import { buildStoryboardCardTextModel } from '@/components/StoryboardWidgetCanvas/storyboardCardTextModel'
 import {
   CHAT_BYTEPLUS_AP_SOUTHEAST_ENDPOINT_URL,
   CHAT_BYTEPLUS_IMAGE_MODEL_DEFAULT,
@@ -22,13 +25,14 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
 import { readStoredUploadedMediaPanelItems } from '@/lib/storage/uploadedMediaPanelItems'
+import { listUploadedMediaFromAgenticGraphStorage } from '@/lib/storage/uploadedMediaStorage'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 const INPUT_PATH = '/workspace/video-agent-input.md'
 const INVOCATION = '/video-agent @provider.byteplus @text @image @video #spec.low @[video-agent-input.md](workspace:/workspace/video-agent-input.md)'
 
 const routeProviderAndStorageFetch = (
-  env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>,
+  session: Awaited<ReturnType<typeof createFakeAgenticGraphStorageBrowserSession>>,
 ): typeof fetch => {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input || '')
@@ -85,11 +89,8 @@ const routeProviderAndStorageFetch = (
         headers: { 'content-type': 'video/mp4' },
       })
     }
-    if (url.startsWith('/api/storage/') || url.startsWith('https://example.com/api/storage/')) {
-      const request = input instanceof Request
-        ? input
-        : new Request(url.startsWith('/') ? `https://example.com${url}` : url, init)
-      return readStorageWorker().fetch(request, env as never)
+    if (url.startsWith('/api/storage/') || url.startsWith(`${session.origin}/api/storage/`)) {
+      return session.fetch(input, init)
     }
     throw new Error(`unexpected zero-spend generation request: ${url}`)
   }) as typeof fetch
@@ -107,6 +108,7 @@ const assertNonEmptySourceFile = (workspacePath: string): void => {
 }
 
 export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvocableEndToEnd() {
+  return withDurableBrowserStorage(async () => {
   const { restore } = initJsdomHarness()
   const originalFetch = globalThis.fetch
   const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
@@ -115,17 +117,18 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
   const store = useGraphStore.getState()
   const previousGraphData = store.graphData
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-video-agent-generated-output-e2e'
 
   try {
+    const session = await createFakeAgenticGraphStorageBrowserSession(workspaceId, { origin: window.location.origin })
+    const { env } = session
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
     store.setSourceFiles([])
     process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = session.origin
     process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
-    globalThis.fetch = routeProviderAndStorageFetch(env)
+    globalThis.fetch = routeProviderAndStorageFetch(session)
 
     const invocation = parseGenerationInvocation(INVOCATION)
     if (
@@ -242,8 +245,21 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
 
     const graphNodes = useGraphStore.getState().graphData?.nodes || []
     const projectedText = graphNodes.find(node => node.id === textNode.id)
-    if (!String(projectedText?.properties?.output || '').trim() || !String(projectedText?.properties?.outputSrcDoc || '').trim()) {
-      throw new Error('expected generated text to project into the canvas Card/Widget output surface')
+    const board = buildStoryboardBoardModel({
+      graphData: useGraphStore.getState().graphData,
+      graphRevision: useGraphStore.getState().graphDataRevision || 0,
+    })
+    const textCard = board.lanes.flatMap(lane => lane.cards).find(card => card.id === textNode.id)
+    const textModel = textCard ? buildStoryboardCardTextModel(textCard) : null
+    if (
+      projectedText?.properties?.output !== generatedText
+      || textCard?.output !== generatedText
+      || !textModel
+      || textModel.primaryRaw !== generatedText
+      || textModel.primaryField.id !== 'output'
+      || textModel.primaryDisplay !== '# Generated Script\nA source-backed shot plan with narration and subtitles.'
+    ) {
+      throw new Error('expected exact generated text to project into the native canvas Card/Widget text surface')
     }
     for (const nodeId of ['video-agent-image-widget', 'video-agent-image-panel', 'video-agent-video-widget', 'video-agent-video-panel']) {
       const node = graphNodes.find(candidate => candidate.id === nodeId)
@@ -271,10 +287,36 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
     if (env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size !== 2) {
       throw new Error(`expected two durable R2 media objects, got ${env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size}`)
     }
-    const publishedPaths = Array.from(env.DB.documents.values()).map(row => String(row.canonical_path || ''))
+    const artifacts = Array.from(env.DB.mediaArtifacts.values())
+    if (artifacts.length !== 2 || artifacts.some(row => row.workspace_id !== workspaceId)
+      || !artifacts.some(row => row.kind === 'image') || !artifacts.some(row => row.kind === 'video')) {
+      throw new Error(`expected both generated media artifacts to persist in workspace-owned D1 rows, got ${JSON.stringify(artifacts)}`)
+    }
+    const replayCatalog = await listUploadedMediaFromAgenticGraphStorage({ workspaceId, fetchImpl: session.fetch })
+    if (replayCatalog.length !== 2) throw new Error('expected a fresh Worker catalog read to recover both media artifacts')
+    for (const artifact of artifacts) {
+      const stored = replayCatalog.find(item => item.contentHash === artifact.content_hash)
+      if (!stored?.accessUrl) throw new Error('expected a fresh signed read capability for the stored artifact')
+      const replay = await session.fetch(stored.accessUrl)
+      const bytes = new Uint8Array(await replay.arrayBuffer())
+      const expected = artifact.kind === 'image'
+        ? Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])
+        : Uint8Array.from([0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109])
+      if (!replay.ok || bytes.length !== expected.length || bytes.some((value, index) => value !== expected[index])) {
+        throw new Error(`expected exact generated ${String(artifact.kind)} bytes to replay through the real Worker, got ${replay.status}`)
+      }
+    }
+    const snapshot = await exportAgenticGraphStorageWorkspace({ workspaceId, baseUrl: session.origin, fetchImpl: session.fetch })
+    const documents = snapshot.documents.filter(row => row.workspaceId === workspaceId && !row.deleted)
+    const publishedPaths = documents.map(row => row.canonicalPath)
     for (const path of [textOutputPath, imageResult.outputManifestPath, videoResult.outputManifestPath]) {
       if (!publishedPaths.includes(path.replace(/^\//, ''))) {
         throw new Error(`expected ${path} to remain replayable from D1, got ${JSON.stringify(publishedPaths)}`)
+      }
+      const document = documents.find(row => row.canonicalPath === path.replace(/^\//, ''))
+      const expected = await fs.readFileText(path)
+      if (!expected || document?.contentMd !== expected) {
+        throw new Error(`expected exact generated source/manifest bytes to replay from the authenticated snapshot: ${path}`)
       }
     }
   } finally {
@@ -291,4 +333,5 @@ export async function testVideoAgentGeneratedOutputsPersistProjectAndRemainInvoc
     else delete process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
     restore()
   }
+  })
 }

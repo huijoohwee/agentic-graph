@@ -5,6 +5,7 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
+  AGENTIC_OS_WORKSPACE_SEED_INVENTORY,
   CITY_SIM_SEED_RELATIVE_PATH,
   DRAFT_WORKSPACE_SEED_BASENAMES,
   FLIGHT_COMPANION_BASENAME,
@@ -198,15 +199,14 @@ const fixture = async () => {
   await mkdir(path.dirname(canonicalPath), { recursive: true })
   await mkdir(path.dirname(projectionPath), { recursive: true })
   await mkdir(publishRoot, { recursive: true })
-  await writeFile(path.join(path.dirname(canonicalPath), 'README.md'), '# Workspace Seed Authority\n')
+  for (const basename of AGENTIC_OS_WORKSPACE_SEED_INVENTORY) {
+    await writeFile(path.join(path.dirname(canonicalPath), basename), '# Source seed\n')
+  }
   await writeFile(canonicalPath, canonicalSeed)
   await writeFile(path.join(agenticGraphRoot, XR_V2_SEED_RELATIVE_PATH), xrV2RuntimeSeed)
   await writeFile(path.join(agenticGraphRoot, CITY_SIM_SEED_RELATIVE_PATH), cityRuntimeSeed)
   await writeFile(path.join(agenticGraphRoot, FLIGHT_SEED_RELATIVE_PATH), flightRuntimeSeed)
-  await writeFile(
-    path.join(agenticGraphRoot, 'docs/workspace-seeds', FLIGHT_COMPANION_BASENAME),
-    flightCompanion,
-  )
+  await writeFile(path.join(agenticGraphRoot, 'docs/workspace-seeds', FLIGHT_COMPANION_BASENAME), flightCompanion)
   for (const basename of DRAFT_WORKSPACE_SEED_BASENAMES) {
     const frontmatter = basename.endsWith('.companion.md')
       ? `status: "draft"\nactivatable_seed: false\nnote_kind: "projection-contract"\n${safeDraftPresentation}`

@@ -32,20 +32,20 @@ export function testOverlayHeaderDragForcesTickRedrawDuringDrag() {
 }
 
 export function testFlowCanvasOverlayHeaderDragDisablesGridSnapDuringMove() {
-  const p = resolve(process.cwd(), 'src', 'components', 'FlowCanvas.tsx')
+  const p = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'FlowCanvasMediaOverlays.tsx')
   const text = readFileSync(p, 'utf8')
   mustInclude(text, 'snapToGrid: false', 'expected FlowCanvas overlay header drag to disable snapToGrid during move for cursor tracking')
 }
 
 export function testDesignCanvasOverlayHeaderDragDisablesGridSnapDuringMove() {
-  const p = resolve(process.cwd(), 'src', 'components', 'DesignCanvas.tsx')
+  const p = resolve(process.cwd(), 'src', 'components', 'DesignCanvas', 'useDesignCanvasShellControllers.ts')
   const text = readFileSync(p, 'utf8')
   mustInclude(text, 'snapToGrid: false', 'expected DesignCanvas overlay header drag to disable snapToGrid during move for cursor tracking')
 }
 
-export function testOverlayPanIgnoresSpeedMultipliersForCursorTracking() {
+export async function testOverlayPanIgnoresSpeedMultipliersForCursorTracking() {
   const p1 = resolve(process.cwd(), 'src', 'components', 'GraphCanvasRoot', 'hooks', 'useOverlayInteractions2d.ts')
-  const p2 = resolve(process.cwd(), 'src', 'components', 'FlowCanvas.tsx')
+  const p2 = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'FlowCanvasMediaOverlays.tsx')
   const p3 = resolve(process.cwd(), 'src', 'components', 'DesignCanvas.tsx')
   const t1 = readFileSync(p1, 'utf8')
   const t2 = readFileSync(p2, 'utf8')
@@ -53,6 +53,18 @@ export function testOverlayPanIgnoresSpeedMultipliersForCursorTracking() {
   mustInclude(t1, 'applySpeedMultipliers: false', 'expected D3 overlay pan to ignore speed multipliers for cursor tracking')
   mustInclude(t2, 'applySpeedMultipliers: false', 'expected FlowCanvas overlay pan to ignore speed multipliers for cursor tracking')
   mustInclude(t3, 'applySpeedMultipliers: false', 'expected DesignCanvas overlay pan to ignore speed multipliers for cursor tracking')
+  const { computeOverlayPanTransform2d } = await import('@/lib/canvas/overlayInteractions2d')
+  const { zoomIdentity } = await import('d3')
+  for (const zoom of [0.5, 2]) {
+    for (const multiplier of [0.2, 3]) {
+      const next = computeOverlayPanTransform2d({
+        startTransform: zoomIdentity.translate(10, -20).scale(zoom),
+        dxClientPx: 7, dyClientPx: -11, canvasPanSpeedMultiplier: multiplier,
+        canvasInteractionSpeedMultiplier: multiplier, applySpeedMultipliers: false,
+      })
+      if (next.x !== 17 || next.y !== -31 || next.k !== zoom) throw new Error('expected overlay pan to preserve cursor displacement and zoom across speed settings')
+    }
+  }
 }
 
 export function testGraphCanvasRootOverlayScheduleIncludesMarkdownOverlays() {

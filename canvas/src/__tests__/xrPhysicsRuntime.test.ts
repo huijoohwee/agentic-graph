@@ -554,7 +554,7 @@ function testImplementationBoundary(): void {
     source('features', 'physics', 'spatialPhysicsStep.ts'),
     source('features', 'three', 'xrPhysicsRuntime.ts'),
     readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
-    readFileSync(resolve(process.cwd(), 'package-lock.json'), 'utf8'),
+    readFileSync(resolve(process.cwd(), '..', 'package-lock.json'), 'utf8'),
   ].join('\n').toLowerCase()
   const forbidden = [
     ['8th', 'wall'].join(''),

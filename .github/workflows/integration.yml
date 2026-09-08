@@ -126,7 +126,6 @@ jobs:
           cache: npm
           cache-dependency-path: |
             agentic-graph/package-lock.json
-            agentic-graph/canvas/package-lock.json
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7

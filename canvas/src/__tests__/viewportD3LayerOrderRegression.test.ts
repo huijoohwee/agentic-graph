@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { observeGroupAltDrag } from './flowCanvasSharedLookupRegression.test'
 
 import { DEFAULT_CANVAS_LAYER_ORDER_2D } from '@/lib/canvas/layerOrder2d'
 
@@ -21,13 +20,16 @@ export function testGraphCanvasLayerOrderSsotIncludesResizeHandlesAndGroupHit() 
 }
 
 export function testGraphCanvasGroupDragWritesVisualZIndexNotOverrideKey() {
-  const p = resolve(process.cwd(), 'src', 'components', 'GraphCanvas', 'layers', 'groups.ts')
-  const text = readFileSync(p, 'utf8')
-  if (text.includes('visual:zIndexOverride')) {
-    throw new Error('expected groups drag z-index override to use visual:zIndex (SSOT)')
-  }
-  if (!text.includes("'visual:zIndex'")) {
-    throw new Error('expected groups drag z-index override to write visual:zIndex')
+  for (const shiftKey of [false, true]) {
+    const { writes, sourceNode } = observeGroupAltDrag(shiftKey)
+    if (writes.length !== 1 || writes[0].id !== 'group') throw new Error('expected one selected-group update')
+    const properties = writes[0].updates.properties || {}
+    if (properties['visual:zIndex'] !== (shiftKey ? -4 : 8)) {
+      throw new Error('expected Alt/Alt-Shift z-order to move past siblings at the same depth')
+    }
+    if (Object.hasOwn(properties, 'visual:zIndexOverride')) throw new Error('unexpected retired z-index override key')
+    if (properties.retained !== 'source-owner' || Object.hasOwn(sourceNode.properties || {}, 'visual:zIndex')) {
+      throw new Error('expected group z-order to preserve original node properties without mutating them')
+    }
   }
 }
-
