@@ -95,7 +95,7 @@ export default function FlowCanvasMediaOverlays(args: {
   drawArgsRef: React.MutableRefObject<FlowNativeDrawArgs>
   positionsDirtySinceCommitRef: React.MutableRefObject<boolean>
   requestCommit: () => void
-  onInteractionFrame?: () => void
+  onLayoutFrame?: () => void
   schema: unknown
   canvas2dRenderer: string
   frontmatterModeEnabled: boolean
@@ -129,7 +129,7 @@ export default function FlowCanvasMediaOverlays(args: {
     drawArgsRef,
     positionsDirtySinceCommitRef,
     requestCommit,
-    onInteractionFrame,
+    onLayoutFrame,
     schema,
     canvas2dRenderer,
     frontmatterModeEnabled,
@@ -622,7 +622,7 @@ export default function FlowCanvasMediaOverlays(args: {
     if (!active) return
     if (stopPassiveLayoutWhileWorkspaceOverlayOpen) return
     mediaOverlayLayoutScheduleRef.current?.()
-    onInteractionFrame?.()
+    onLayoutFrame?.()
   }, [
     active,
     canvas2dRenderer,
@@ -631,7 +631,7 @@ export default function FlowCanvasMediaOverlays(args: {
     storyboardWidgetFrontmatterInteractionMode,
     mediaLayoutItemIdsKey,
     mediaLayoutPropsSignature,
-    onInteractionFrame,
+    onLayoutFrame,
   ])
   React.useEffect(() => {
     const stopPassiveLayoutWhileWorkspaceOverlayOpen =

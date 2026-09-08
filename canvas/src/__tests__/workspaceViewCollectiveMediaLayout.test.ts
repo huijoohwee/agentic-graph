@@ -48,17 +48,11 @@ export function testWorkspaceViewUpdateSchedulesFrontmatterMediaOverlayLayoutRef
   if (flowLayoutCommitGuardIndex < 0 || flowZoomCommitWriteIndex > flowLayoutCommitGuardIndex) {
     throw new Error('expected Flow request commit to gate layout persistence separately from zoom persistence while Workspace/Indexing mutation guard is active')
   }
-  if (!runtimeText.includes('const lateStoryboardWidgetInitAfterSceneBuild =')) {
-    throw new Error('expected Flow runtime to name the late Storyboard Widget init guard explicitly')
-  }
   if (!runtimeTextIncludesAll('const initialW = Math.max(1, Math.floor(viewportW * dpr))', 'const initialH = Math.max(1, Math.floor(viewportH * dpr))')) {
     throw new Error('expected Flow runtime to prime canvas backing-store size before first draw for workspace-open sharpness')
   }
-  if (!runtimeText.includes('lastBuiltGraphKeyRef.current.length > 0')) {
-    throw new Error('expected Flow runtime late init guard to detect scene builds that raced ahead of zoom-key initialization')
-  }
-  if (!runtimeText.includes('Continue into fit so the first visible frame does not stay frozen at identity.')) {
-    throw new Error('expected Flow runtime late init guard to continue into fit instead of freezing Storyboard Widget at identity')
+  if (!runtimeText.includes('if (!alreadyInitializedForKey && Number(state.workspaceGraphMutationBlockUntilMs) > Date.now()) scheduleWorkspaceViewportSettleRetry()')) {
+    throw new Error('expected uninitialized cameras to retry after a temporary workspace mutation lock expires')
   }
   if (runtimeText.includes('const graphKey = `${graphDataRevision}:')) {
     throw new Error('expected Flow runtime scene rebuild key to avoid raw graphDataRevision churn')
@@ -257,10 +251,10 @@ export function testWorkspaceViewUpdateSchedulesFrontmatterMediaOverlayLayoutRef
   if (!runtimeText.includes('if (prev != null && prev !== storyboardCameraViewKey) {')) {
     throw new Error('expected Flow runtime workspace-open recovery to reset stabilized/user-controlled authority when active view key changes')
   }
-  if (!runtimeTextIncludesAll('if (open && !prev) {', 'lastInitTransformZoomViewKeyRef.current = storyboardCameraViewKey')
+  if (!runtimeTextIncludesAll('if (open && !prev) {', 'workspaceOverlayOpenedAtMsRef.current = Date.now()')
     || runtimeText.includes('if (lastInitTransformZoomViewKeyRef.current !== storyboardCameraViewKey) lastInitTransformZoomViewKeyRef.current = null')
     || runtimeText.includes('lastOffscreenOverlayRecoveryKeyRef.current = null')) {
-    throw new Error('expected Flow runtime workspace reopen edge to claim the rendered document camera without clearing initialized transform authority')
+    throw new Error('expected workspace reopen to preserve existing camera identity without initializing a new document')
   }
   if (!runtimeTextIncludesAll('if (!open) {', 'Keep the initialized Storyboard Widget transform through close') || runtimeText.includes('Drop init/recovery memoization on close')) {
     throw new Error('expected Flow runtime workspace close edge to preserve initialized transform authority until the next reopen owns the reset')
@@ -274,11 +268,9 @@ export function testWorkspaceViewUpdateSchedulesFrontmatterMediaOverlayLayoutRef
   if (!runtimeText.includes('workspaceEditorOverlayOpen === true\n      && (alreadyInitializedForKey || workspaceOverlayUserControlledRef.current)')) {
     throw new Error('expected Flow runtime workspace-open init-preserve guard to preserve established identity before skipping re-fit')
   }
-  const overlayOpenCameraClaimIndex = runtimeText.indexOf('lastInitTransformZoomViewKeyRef.current = storyboardCameraViewKey')
-  const overlayOpenTimestampIndex = runtimeText.indexOf('workspaceOverlayOpenedAtMsRef.current = Date.now()')
-  if (overlayOpenCameraClaimIndex < 0
-    || overlayOpenTimestampIndex < overlayOpenCameraClaimIndex) {
-    throw new Error('expected workspace overlay startup to claim the already-rendered document camera before a blocked init effect can miss it')
+  const openBlock = runtimeText.slice(runtimeText.indexOf('if (open && !prev) {'), runtimeText.indexOf('if (!open) {'))
+  if (!openBlock || openBlock.includes('lastInitTransformZoomViewKeyRef.current =')) {
+    throw new Error('workspace opening must not promote an uninitialized or foreign camera to the current view')
   }
   if (!runtimeText.includes('const deriveExpectedOverlayCollectiveIds = React.useCallback((graphData: any): string[] => {')
     || !runtimeText.includes('const isOverlayCollectiveCoverageComplete = React.useCallback((args: {')

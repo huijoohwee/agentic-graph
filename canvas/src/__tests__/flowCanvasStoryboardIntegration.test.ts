@@ -1,4 +1,5 @@
 import React from 'react'
+import { quantizeZoomStateForCommit } from '@/lib/zoom/zoomStateQuantize'
 import { createRoot } from 'react-dom/client'
 import FlowCanvas from '@/components/FlowCanvas'
 import { __flowCanvasDebug } from '@/components/FlowCanvas/flowCanvasDebug'
@@ -143,6 +144,7 @@ export const testStoryboardWidgetWheelPanKeepsInfiniteCanvasOffViewportWithoutLa
   }
 
   const afterTransform = runtime.transform
+  const expectedCommit = quantizeZoomStateForCommit(afterTransform)
   const key = String(__flowCanvasDebug.lastZoomViewKey || '')
   await waitFor({
     ms: 5_000,
@@ -152,8 +154,9 @@ export const testStoryboardWidgetWheelPanKeepsInfiniteCanvasOffViewportWithoutLa
       const committed = (key ? st.zoomStateByKey?.[key] : null) || st.zoomState || null
       return !!(
         committed &&
-        Math.abs(committed.x - afterTransform.x) <= 1e-6 &&
-        Math.abs(committed.y - afterTransform.y) <= 1e-6
+        Math.abs(committed.x - expectedCommit.x) <= 1e-6 &&
+        Math.abs(committed.y - expectedCommit.y) <= 1e-6 &&
+        Math.abs(committed.k - expectedCommit.k) <= 1e-6
       )
     },
   }).catch(e => {

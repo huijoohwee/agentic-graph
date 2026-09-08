@@ -1,3 +1,4 @@
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
@@ -101,7 +102,7 @@ export function testStoryboardWidgetCanvasRunsFlowComputeBeforeProviderTextBranc
   }
   if (/<div\b/i.test(sourceBackedOutput)) throw new Error(`expected source-backed card Run output to avoid generic div markup, got ${sourceBackedOutput}`)
 
-  const missAlphaPath = resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agentic-graph-missalph-demo.md')
+  const missAlphaPath = resolveSiblingFixturePath('huijoohwee', 'docs/agentic-graph-missalph-demo.md')
   const missAlphaMarkdown = readFileSync(missAlphaPath, 'utf8')
   const missAlphaParsed = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-missalph-demo.md', missAlphaMarkdown)
   if (!missAlphaParsed) throw new Error('expected MissAlpha demo to parse as a frontmatter flow graph')
@@ -119,7 +120,7 @@ export function testStoryboardWidgetCanvasRunsFlowComputeBeforeProviderTextBranc
     throw new Error(`expected MissAlpha Toolbar Run all to schedule all six compute nodes, got ${JSON.stringify(missAlphaPlan)}`)
   }
 
-  const computingTemplatePath = resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agentic-graph-storyboard-widget-computing-flow-template.md')
+  const computingTemplatePath = resolveSiblingFixturePath('huijoohwee', 'docs/agentic-graph-storyboard-widget-computing-flow-template.md')
   const computingTemplateMarkdown = readFileSync(computingTemplatePath, 'utf8')
   const computingTemplateParsed = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-storyboard-widget-computing-flow-template.md', computingTemplateMarkdown)
   if (!computingTemplateParsed) throw new Error('expected computing-flow template to parse as a frontmatter flow graph')

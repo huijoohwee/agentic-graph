@@ -148,7 +148,7 @@ export function testStoryboardCardOverlayRestoresFlexInteractions() {
     'flowWidgetPinnedByNodeId: args.flowWidgetPinnedByNodeId',
     'referencePlacements?: ReadonlyMap<string, StoryboardCardPlacement> | null',
     'readPlacementSize?: ReadStoryboardPlacementSize',
-    'if (!placement || !readFlowWidgetPinnedInCanvas(args.flowWidgetPinnedByNodeId, id)) return node',
+    "if (!placement || !resolveEffectiveFlowWidgetPinnedInCanvas({ graphMetaKind: String(graphData.metadata?.kind || ''), node, pinnedValue: args.flowWidgetPinnedByNodeId?.[id] })) return node",
     'export const buildFixedStoryboardCardReferencePlacements2d',
     'includeUnpinned: true',
   ]) {

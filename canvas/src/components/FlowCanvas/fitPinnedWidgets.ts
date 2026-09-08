@@ -62,9 +62,31 @@ export function fitStoryboardWidgetPinnedWidgets(args: {
   fitOpts: FitAllTransformOptions
   frontmatterOverlayFitProxyScales?: Partial<FrontmatterOverlayFitProxyScales> | null
   readOverlayPanelSize?: ReadOverlayPanelSize | null
+  authoredOverlayNodes?: readonly GraphNode[]
 }): d3.ZoomTransform {
   const nodes = Array.isArray(args.nodes) ? args.nodes : []
   if (nodes.length === 0) return d3.zoomIdentity
+
+  // Main-surface widgets paint fixed-size frames at authored top-left coordinates.
+  // Fit those frames directly; the balanced fallback grid is a different layout.
+  const authored = args.authoredOverlayNodes
+  if (authored?.length && authored.every(node => Number.isFinite(node.x) && Number.isFinite(node.y))) {
+    const frames = authored.map(node => ({ x: node.x!, y: node.y!, ...(args.readOverlayPanelSize?.(node) || WIDGET_BASE_SIZE) }))
+    const mean = frames.reduce((sum, frame) => ({ x: sum.x + frame.x, y: sum.y + frame.y, w: sum.w + frame.width, h: sum.h + frame.height }), { x: 0, y: 0, w: 0, h: 0 })
+    for (const key of ['x', 'y', 'w', 'h'] as const) mean[key] /= frames.length
+    let k = 1
+    for (const frame of frames) {
+      const dx = frame.x - mean.x
+      const dy = frame.y - mean.y
+      if (dx < 0) k = Math.min(k, (args.fitW / 2 - mean.w / 2 - 20) / -dx)
+      if (dx > 0) k = Math.min(k, (args.fitW / 2 + mean.w / 2 - frame.width - 20) / dx)
+      if (dy < 0) k = Math.min(k, (args.viewportH / 2 - mean.h / 2 - 24) / -dy)
+      if (dy > 0) k = Math.min(k, (args.viewportH / 2 + mean.h / 2 - frame.height - 24) / dy)
+    }
+    if (Number.isFinite(k) && k > 0) return d3.zoomIdentity
+      .translate(args.fitW / 2 - mean.x * k - mean.w / 2, args.viewportH / 2 - mean.y * k - mean.h / 2)
+      .scale(k)
+  }
 
   const graphMeta = (args.graphData?.metadata || {}) as Record<string, unknown>
   const graphContext = String(args.graphData?.context || '').trim()

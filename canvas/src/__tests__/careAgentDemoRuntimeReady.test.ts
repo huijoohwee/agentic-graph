@@ -1,3 +1,4 @@
+import { resolvePinnedAgenticDocsRoot, resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
 import { load as parseYaml } from 'js-yaml'
@@ -17,8 +18,7 @@ import {
 
 type PlainRecord = Record<string, unknown>
 
-const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
-const CARE_AGENT_DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agentic-graph-care-agent-demo.md')
+const CARE_AGENT_DOC_PATH = resolveSiblingFixturePath('huijoohwee', 'docs/agentic-graph-care-agent-demo.md')
 const CARE_AGENT_DOCS_ROOT = path.dirname(CARE_AGENT_DOC_PATH)
 const RUNTIME_READY_TEST_ID = 'docs.careAgentDemo.runtimeReady'
 const RUN_READY_MODE_TEST_ID = 'docs.careAgentDemo.runReadyMode'
@@ -61,8 +61,8 @@ const readCareAgentDoc = (): { markdownText: string; meta: PlainRecord } => {
   return { markdownText, meta: parsed }
 }
 
-const readDictionaryEntries = (fileName: string): string[] => {
-  const source = fs.readFileSync(path.join(GITHUB_ROOT, 'agentic-canvas-os', 'docs', fileName), 'utf8')
+const readDictionaryEntries = (docsRoot: string, fileName: string): string[] => {
+  const source = fs.readFileSync(path.join(docsRoot, fileName), 'utf8')
   const parsed = parseYaml(extractFrontmatterYaml(source))
   return asStringArray(asRecord(parsed, `${fileName} frontmatter`).dictionary_entries, `${fileName}.dictionary_entries`)
 }
@@ -95,7 +95,7 @@ const assertTrueFlags = (record: PlainRecord, label: string, flags: string[]): v
   }
 }
 
-export function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
+export async function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
   const { markdownText, meta } = readCareAgentDoc()
 
   if (meta.runtime_status !== 'runtime-ready') {
@@ -167,9 +167,10 @@ export function testCareAgentDemoIsRuntimeReadyFromLocalProof() {
   const pipeline = asRecord(meta.agentic_os_care_agent_pipeline, 'agentic_os_care_agent_pipeline')
   if (pipeline.status !== 'runtime-ready') throw new Error(`expected pipeline status runtime-ready, got ${String(pipeline.status)}`)
   const routes = asRecord(pipeline.invocation_routes, 'agentic_os_care_agent_pipeline.invocation_routes')
-  assertSubset('slash routes', asStringArray(routes.slash, 'slash routes'), readDictionaryEntries('DICTIONARY-COMMAND.md'))
-  assertSubset('semantic routes', asStringArray(routes.semantic, 'semantic routes'), readDictionaryEntries('DICTIONARY-SEMANTIC.md'))
-  assertSubset('binding routes', asStringArray(routes.binding, 'binding routes'), readDictionaryEntries('DICTIONARY-BINDING.md'))
+  const pinnedDocsRoot = await resolvePinnedAgenticDocsRoot()
+  assertSubset('slash routes', asStringArray(routes.slash, 'slash routes'), readDictionaryEntries(pinnedDocsRoot, 'DICTIONARY-COMMAND.md'))
+  assertSubset('semantic routes', asStringArray(routes.semantic, 'semantic routes'), readDictionaryEntries(pinnedDocsRoot, 'DICTIONARY-SEMANTIC.md'))
+  assertSubset('binding routes', asStringArray(routes.binding, 'binding routes'), readDictionaryEntries(pinnedDocsRoot, 'DICTIONARY-BINDING.md'))
 
   const harness = asRecord(meta.care_agent_harness, 'care_agent_harness')
   const bounds = asRecord(harness.bounds, 'care_agent_harness.bounds')

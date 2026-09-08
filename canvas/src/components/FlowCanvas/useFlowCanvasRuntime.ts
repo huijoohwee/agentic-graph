@@ -29,6 +29,7 @@ import { subscribeFlowResetZoomFloorCache } from '@/components/FlowCanvas/shared
 import { fitAllTransform } from '@/components/GraphCanvas/fit'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphSchema } from '@/lib/graph/schema'
+import type { GraphData } from '@/lib/graph/types'
 import {
   buildFlowCanvasNativeSceneKey,
   hasFlowGroupSceneChanged,
@@ -38,7 +39,7 @@ import type { ViewportControlsPreset } from '@/lib/config.viewport-controls'
 import type { ZoomWheelGuardState } from '@/lib/canvas/zoom-wheel-guard'
 import { pickZoomStateForView } from '@/lib/canvas/zoom-effective'
 import { pickInitialZoomTransform } from '@/lib/zoom/viewport'
-import { isWorkspaceEditorOverlayOpen, isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
+import { isWorkspaceEditorOverlayOpen, isWorkspaceCameraInitializationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { isStoryboardWidgetFrontmatterDocumentModeRequested } from '@/lib/graph/frontmatterMode'
 import { STORYBOARD_WIDGET_INTERACTION_FRAME_EVENT } from '@/lib/canvas/storyboard-widget-overlay-proxy'
 import { isHorizontalOverlayStrip, isVerticalOverlayCluster } from '@/lib/ui/overlayBalancedSpread'
@@ -97,6 +98,8 @@ export function useFlowCanvasRuntime(args: {
   rankdir: 'TB' | 'LR'
   zoomViewKey: string
   graphDataRevision: number
+  authoredOverlayGraphData?: GraphData | null
+  storyboardCollectiveZoomBaselineKRef?: React.MutableRefObject<number | null>
   sceneGraphData: any
   overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb>
   computedPositions: Record<string, { x: number; y: number }> | null
@@ -434,10 +437,7 @@ export function useFlowCanvasRuntime(args: {
     const open = workspaceEditorOverlayOpen === true
     const prev = workspaceOverlayOpenPrevRef.current
     if (open && !prev) {
-      // The already-rendered camera owns this document even when workspace graph
-      // mutation temporarily suppresses the init effect during overlay startup.
-      // Otherwise the first same-document topology change can re-arm initial fit.
-      lastInitTransformZoomViewKeyRef.current = storyboardCameraViewKey
+      // Keep the existing view key: opening the editor cannot initialize a new document.
       workspaceOverlayOpenedAtMsRef.current = Date.now()
       workspaceOverlayUserControlledRef.current = false
       workspaceOverlayStabilizedRef.current = false
@@ -792,8 +792,10 @@ export function useFlowCanvasRuntime(args: {
     ) return
 
     const state = useGraphStore.getState()
-    if (storyboardWidgetMode && isWorkspaceGraphMutationBlocked(state)) {
-      if (workspaceEditorOverlayOpen === true && (alreadyInitializedForKey || hasNonIdentityTransform)) {
+    if (storyboardWidgetMode && isWorkspaceCameraInitializationBlocked(state)) {
+      // Camera initialization reads the graph; editor ownership still forbids source writes.
+      if (!alreadyInitializedForKey && Number(state.workspaceGraphMutationBlockUntilMs) > Date.now()) scheduleWorkspaceViewportSettleRetry()
+      if (workspaceEditorOverlayOpen === true && alreadyInitializedForKey) {
         // A mutation lock suppresses camera writes, but the document already on
         // screen still owns an established transform. A fresh remount at identity
         // has no camera authority yet and must initialize after the lock releases.
@@ -816,17 +818,6 @@ export function useFlowCanvasRuntime(args: {
       nextViewportW: viewportW,
       nextViewportH: viewportH,
     })
-    const lateStoryboardWidgetInitAfterSceneBuild =
-      storyboardWidgetMode &&
-      !alreadyInitializedForKey &&
-      !hasNonIdentityTransform &&
-      initial == null &&
-      lastBuiltGraphKeyRef.current.length > 0
-    if (lateStoryboardWidgetInitAfterSceneBuild) {
-      // The scene can build before the Storyboard Widget zoom key is initialized.
-      // Continue into fit so the first visible frame does not stay frozen at identity.
-      void lastBuiltGraphKeyRef
-    }
     const opts = buildFlowFitOptions({
       schema: state.schema,
       intent: fitToScreenMode ? 'fitToScreen' : 'initialFit',
@@ -896,6 +887,7 @@ export function useFlowCanvasRuntime(args: {
           ? fitAllTransform(nodesForFit, fitW, fitH, { ...opts, graphData: graphDataForFit || undefined })
           : fitStoryboardWidgetPinnedWidgets({
               nodes: nodesForFit,
+              authoredOverlayNodes: args.storyboardWidgetSurfaceId === 'storyboard' ? args.authoredOverlayGraphData?.nodes : undefined,
               fitW,
               viewportH: fitH,
               viewportW: fitW,
@@ -948,6 +940,7 @@ export function useFlowCanvasRuntime(args: {
         ? current
         : d3.zoomIdentity.translate(fitSeed.x, fitSeed.y).scale(fitSeed.k)
     const next = d3.zoomIdentity.translate(seed.x, seed.y).scale(seed.k)
+    if (!shouldUseInitialTransform && !preserveCurrentTransform && args.storyboardCollectiveZoomBaselineKRef) args.storyboardCollectiveZoomBaselineKRef.current = next.k
     lastInitTransformZoomViewKeyRef.current = initKey
     if (Math.abs(current.k - next.k) > 1e-9 || Math.abs(current.x - next.x) > 1e-6 || Math.abs(current.y - next.y) > 1e-6) {
       cancelFlowZoomRequestAnim(runtime)
@@ -957,6 +950,8 @@ export function useFlowCanvasRuntime(args: {
     requestCommit()
   }, [
     active,
+    args.authoredOverlayGraphData,
+    args.storyboardCollectiveZoomBaselineKRef,
     canvas2dRenderer,
     documentSemanticMode,
     documentStructureBaselineLock,

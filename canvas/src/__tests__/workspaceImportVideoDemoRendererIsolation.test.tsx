@@ -19,6 +19,8 @@ import { readStoryboardWidgetScreenAuthorityPanSnapshot } from '@/lib/storyboard
 import { DOCS_SSOT_VALIDATION_FIXTURE_BASENAME, readDocsSsotFixtureText } from '@/tests/lib/docsSsotFixture'
 import { assertFlowWidgetStateScopedToEligibleIds } from '@/tests/lib/flowWidgetStateScopeAssert'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { waitForStoryboardWidgetViewportLayout } from '@/tests/lib/storyboardWidgetViewportFixture'
+import { __flowCanvasDebug } from '@/components/FlowCanvas/flowCanvasDebug'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 type NonStoryboardRenderer = 'd3' | 'flowchart' | 'flow' | 'design'
@@ -44,6 +46,10 @@ type StoryboardWidgetTransformEntry = {
 function readVideoDemoLayoutFailureSnapshot(): string {
   const state = useGraphStore.getState()
   return JSON.stringify({ renderer: state.canvas2dRenderer, open: state.openWidgetNodeIds,
+    workspace: { mode: state.workspaceViewMode, pane: state.workspaceCanvasPaneOpen, indexing: state.markdownWorkspaceIndexingInFlight, layoutLock: state.workspaceGraphMutationLayoutLockActive, blockRemainingMs: Number(state.workspaceGraphMutationBlockUntilMs || 0) - Date.now() },
+    zoom: state.zoomState, keyedZoom: state.zoomStateByKey, graphKind: state.graphData?.metadata?.kind,
+    nativeCanvases: Array.from(document.querySelectorAll('canvas')).map(el => ({ width: el.width, height: el.height, scene: el.getAttribute('data-kg-canvas-scene-node-count'), rect: { width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height } })),
+    runtime: { expectedFit: __flowCanvasDebug.lastExpectedFit, reason: __flowCanvasDebug.lastRecoveryReason, transform: __flowCanvasDebug.lastRuntimeTransform },
     worldIds: Object.keys(state.flowWidgetWorldPosByNodeId || {}), screenIds: Object.keys(state.flowWidgetPosByNodeId || {}),
     nodes: state.graphData?.nodes.slice(0, 24).map(node => ({ id: node.id, type: node.type })),
     overlays: Array.from(document.querySelectorAll<HTMLElement>('[data-kg-widget]')).slice(0, 12).map(el => ({
@@ -142,10 +148,11 @@ async function waitForStoryboardWidgetTransformSpread(args: {
     const entries = readStoryboardWidgetTransformEntries(args.doc)
     const ids = new Set(entries.map(entry => entry.id))
     const bins = new Set(entries.map(entry => `${Math.round(entry.left / 20)}:${Math.round(entry.top / 20)}`))
-    const minLeft = Math.min(...entries.map(entry => entry.left))
-    const maxLeft = Math.max(...entries.map(entry => entry.left))
-    const minTop = Math.min(...entries.map(entry => entry.top))
-    const maxTop = Math.max(...entries.map(entry => entry.top))
+    const frames = Array.from(args.doc.querySelectorAll<HTMLElement>('[data-kg-widget][data-kg-storyboard-widget-mode="1"]')).map(el => el.getBoundingClientRect())
+    const minLeft = Math.min(...frames.map(frame => frame.left))
+    const maxLeft = Math.max(...frames.map(frame => frame.right))
+    const minTop = Math.min(...frames.map(frame => frame.top))
+    const maxTop = Math.max(...frames.map(frame => frame.bottom))
     const spanW = Number.isFinite(minLeft) && Number.isFinite(maxLeft) ? maxLeft - minLeft : 0
     const spanH = Number.isFinite(minTop) && Number.isFinite(maxTop) ? maxTop - minTop : 0
     lastSnapshot = JSON.stringify({
@@ -918,6 +925,8 @@ export async function testVideoDemoSourceFilesRuntimeCollectiveBalancedFit1920x1
       throw new Error('expected source-files video-demo landing to enable frontmatter mode')
     }
 
+    if (!(await store.setActiveMarkdownDocument({ name: sourcePath, text: sourceText, normalizeMermaidMmd: false, sourceUrl: null, applyViewPreset: true, applyToGraph: true }))) throw new Error('expected selected-document activation before viewport validation')
+
     const graphNodes = parsedGraphData.nodes
     const eligibleWidgetIds = Array.from(buildFlowWidgetEligibleNodeIdSet(graphNodes as never))
       .map(id => String(id || '').trim())
@@ -941,81 +950,9 @@ export async function testVideoDemoSourceFilesRuntimeCollectiveBalancedFit1920x1
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
 
-    const waitForBalancedFit = async () => {
-      const deadline = Date.now() + 2500
-      let lastSnapshot = ''
-      while (Date.now() < deadline) {
-        const state = useGraphStore.getState() as unknown as {
-          flowWidgetWorldPosByNodeId?: Record<string, { x: number; y: number }>
-          zoomState?: { k?: number; x?: number; y?: number }
-          zoomStateByKey?: Record<string, { k?: number; x?: number; y?: number }>
-        }
-        const worldById = state.flowWidgetWorldPosByNodeId || {}
-        const seededIds = eligibleWidgetIds.filter(id => {
-          const pos = worldById[id]
-          return !!pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)
-        })
-        const zoomK = Number.isFinite(state.zoomState?.k) ? Math.max(0.001, Number(state.zoomState?.k)) : 1
-        const zoomX = Number.isFinite(state.zoomState?.x) ? Number(state.zoomState?.x) : 0
-        const zoomY = Number.isFinite(state.zoomState?.y) ? Number(state.zoomState?.y) : 0
-        if (seededIds.length > 0) {
-          const panelScale = computeCollectiveFollowPinnedScale({
-            zoomK,
-            viewportW: targetViewport.width,
-            viewportH: targetViewport.height,
-            count: seededIds.length,
-            baseWidth: WIDGET_BASE_SIZE.width,
-            baseHeight: WIDGET_BASE_SIZE.height,
-          })
-          const panelScreen = computeWidgetScaledSize(panelScale)
-          const panelWorldW = panelScreen.width / zoomK
-          const panelWorldH = panelScreen.height / zoomK
-          let minLeft = Number.POSITIVE_INFINITY
-          let minTop = Number.POSITIVE_INFINITY
-          let maxRight = Number.NEGATIVE_INFINITY
-          let maxBottom = Number.NEGATIVE_INFINITY
-          let centroidX = 0
-          let centroidY = 0
-          for (let i = 0; i < seededIds.length; i += 1) {
-            const id = seededIds[i]!
-            const world = worldById[id]!
-            const left = world.x * zoomK + zoomX
-            const top = world.y * zoomK + zoomY
-            const right = (world.x + panelWorldW) * zoomK + zoomX
-            const bottom = (world.y + panelWorldH) * zoomK + zoomY
-            minLeft = Math.min(minLeft, left)
-            minTop = Math.min(minTop, top)
-            maxRight = Math.max(maxRight, right)
-            maxBottom = Math.max(maxBottom, bottom)
-            centroidX += left + panelScreen.width / 2
-            centroidY += top + panelScreen.height / 2
-          }
-          centroidX /= seededIds.length
-          centroidY /= seededIds.length
-          const fitsViewport =
-            minLeft >= -1 &&
-            minTop >= -1 &&
-            maxRight <= targetViewport.width + 1 &&
-            maxBottom <= targetViewport.height + 1
-          const centroidNearViewportCenter =
-            Math.abs(centroidX - targetViewport.width / 2) <= 6 &&
-            Math.abs(centroidY - targetViewport.height / 2) <= 6
-          lastSnapshot = JSON.stringify({
-            seededCount: seededIds.length,
-            zoomK,
-            zoomX,
-            zoomY,
-            bounds: { minLeft, minTop, maxRight, maxBottom },
-            centroid: { x: centroidX, y: centroidY },
-          })
-          if (fitsViewport && centroidNearViewportCenter) return
-        }
-        await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
-      }
-      throw new Error(
-        `expected source-files Storyboard Widget collective widget layout to fit 1920x1080 viewport with centroid centered; snapshot=${lastSnapshot || readVideoDemoLayoutFailureSnapshot()}`,
-      )
-    }
+    const waitForBalancedFit = () => waitForStoryboardWidgetViewportLayout({
+      doc, expectedIds: eligibleWidgetIds, viewport: targetViewport, label: 'source-files-initial-fit', sourceText, readSourceText: () => useGraphStore.getState().markdownDocumentText, diagnostics: readVideoDemoLayoutFailureSnapshot,
+    })
 
     await waitForBalancedFit(); assertFlowWidgetStateScopedToEligibleIds({ eligibleWidgetIds, messagePrefix: 'expected source-files Storyboard Widget state to stay on graph-owned node ids' })
   } finally {
@@ -1617,6 +1554,8 @@ export async function testVideoDemoSourceFilesRuntimeOpenCloseReopenStaysInView1
       throw new Error(`expected source-files video-demo landing to use storyboard renderer, got ${String(postCompose.canvas2dRenderer || '')}`)
     }
 
+    if (!(await store.setActiveMarkdownDocument({ name: sourcePath, text: sourceText, normalizeMermaidMmd: false, sourceUrl: null, applyViewPreset: true, applyToGraph: true }))) throw new Error('expected selected-document activation before viewport validation')
+
     const graphNodes = parsedGraphData.nodes
     const eligibleWidgetIds = Array.from(buildFlowWidgetEligibleNodeIdSet(graphNodes as never))
       .map(id => String(id || '').trim())
@@ -1642,78 +1581,9 @@ export async function testVideoDemoSourceFilesRuntimeOpenCloseReopenStaysInView1
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
 
-    const waitForInViewCollective = async (phase: string) => {
-      const deadline = Date.now() + 3000
-      let lastSnapshot = ''
-      while (Date.now() < deadline) {
-        const state = useGraphStore.getState() as unknown as {
-          flowWidgetWorldPosByNodeId?: Record<string, { x: number; y: number }>
-          zoomState?: { k?: number; x?: number; y?: number }
-          zoomStateByKey?: Record<string, { k?: number; x?: number; y?: number }>
-        }
-        const worldById = state.flowWidgetWorldPosByNodeId || {}
-        const seededIds = eligibleWidgetIds.filter(id => {
-          const pos = worldById[id]
-          return !!pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)
-        })
-        const zoomK = Number.isFinite(state.zoomState?.k) ? Math.max(0.001, Number(state.zoomState?.k)) : 1
-        const zoomX = Number.isFinite(state.zoomState?.x) ? Number(state.zoomState?.x) : 0
-        const zoomY = Number.isFinite(state.zoomState?.y) ? Number(state.zoomState?.y) : 0
-        if (seededIds.length > 0) {
-          const panelScale = computeCollectiveFollowPinnedScale({
-            zoomK,
-            viewportW: targetViewport.width,
-            viewportH: targetViewport.height,
-            count: seededIds.length,
-            baseWidth: WIDGET_BASE_SIZE.width,
-            baseHeight: WIDGET_BASE_SIZE.height,
-          })
-          const panelScreen = computeWidgetScaledSize(panelScale)
-          const panelWorldW = panelScreen.width / zoomK
-          const panelWorldH = panelScreen.height / zoomK
-          let minLeft = Number.POSITIVE_INFINITY
-          let minTop = Number.POSITIVE_INFINITY
-          let maxRight = Number.NEGATIVE_INFINITY
-          let maxBottom = Number.NEGATIVE_INFINITY
-          let centroidX = 0
-          let centroidY = 0
-          for (let i = 0; i < seededIds.length; i += 1) {
-            const id = seededIds[i]!
-            const world = worldById[id]!
-            const left = world.x * zoomK + zoomX
-            const top = world.y * zoomK + zoomY
-            const right = (world.x + panelWorldW) * zoomK + zoomX
-            const bottom = (world.y + panelWorldH) * zoomK + zoomY
-            minLeft = Math.min(minLeft, left)
-            minTop = Math.min(minTop, top)
-            maxRight = Math.max(maxRight, right)
-            maxBottom = Math.max(maxBottom, bottom)
-            centroidX += left + panelScreen.width / 2
-            centroidY += top + panelScreen.height / 2
-          }
-          centroidX /= seededIds.length
-          centroidY /= seededIds.length
-          const fitsViewport =
-            minLeft >= -1 &&
-            minTop >= -1 &&
-            maxRight <= targetViewport.width + 1 &&
-            maxBottom <= targetViewport.height + 1
-          const centroidNearViewportCenter =
-            Math.abs(centroidX - targetViewport.width / 2) <= 6 &&
-            Math.abs(centroidY - targetViewport.height / 2) <= 6
-          lastSnapshot = JSON.stringify({
-            phase,
-            seededCount: seededIds.length,
-            zoomK,
-            bounds: { minLeft, minTop, maxRight, maxBottom },
-            centroid: { x: centroidX, y: centroidY },
-          })
-          if (fitsViewport && centroidNearViewportCenter) return
-        }
-        await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
-      }
-      throw new Error(`expected source-files Storyboard Widget collective layout to remain in-view after ${phase}; snapshot=${lastSnapshot || readVideoDemoLayoutFailureSnapshot()}`)
-    }
+    const waitForInViewCollective = (phase: string) => waitForStoryboardWidgetViewportLayout({
+      doc, expectedIds: eligibleWidgetIds, viewport: targetViewport, label: phase, sourceText, readSourceText: () => useGraphStore.getState().markdownDocumentText, diagnostics: readVideoDemoLayoutFailureSnapshot,
+    })
 
     const assertOverlayToggleDoesNotMutateGeometry = (
       beforeEntries: StoryboardWidgetTransformEntry[],
@@ -1897,7 +1767,12 @@ export async function testVideoDemoSourceFilesRuntimeInitialWorkspaceOpenStaysIn
     }])
     explorer.setActivePath(sourcePath)
     store.setMarkdownDocument(sourcePath, sourceText)
-    applyComposedGraphFromSourceFiles(); await waitFor({ ms: 1500, pollMs: TEST_RUNTIME_FRAME_MS, ok: () => useGraphStore.getState().canvas2dRenderer === 'storyboard' })
+    const rendererBeforeActivation = useGraphStore.getState().canvas2dRenderer
+    applyComposedGraphFromSourceFiles()
+    if (useGraphStore.getState().canvas2dRenderer !== rendererBeforeActivation) throw new Error('background composition changed the editor-owned renderer')
+    const activated = await store.setActiveMarkdownDocument({ name: sourcePath, text: sourceText, normalizeMermaidMmd: false, sourceUrl: null, applyViewPreset: true, applyToGraph: true })
+    if (!activated) throw new Error('expected explicit selected-document activation to succeed')
+    await waitFor({ ms: 1500, pollMs: TEST_RUNTIME_FRAME_MS, ok: () => useGraphStore.getState().canvas2dRenderer === 'storyboard' })
 
     const postCompose = useGraphStore.getState()
     if (postCompose.canvas2dRenderer !== 'storyboard') {
@@ -1915,81 +1790,9 @@ export async function testVideoDemoSourceFilesRuntimeInitialWorkspaceOpenStaysIn
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
 
-    const waitForInViewCollective = async () => {
-      const deadline = Date.now() + 3200
-      let lastSnapshot = ''
-      while (Date.now() < deadline) {
-        const state = useGraphStore.getState() as unknown as {
-          flowWidgetWorldPosByNodeId?: Record<string, { x: number; y: number }>
-          zoomState?: { k?: number; x?: number; y?: number }
-          zoomStateByKey?: Record<string, { k?: number; x?: number; y?: number }>
-        }
-        const worldById = state.flowWidgetWorldPosByNodeId || {}
-        const seededIds = eligibleWidgetIds.filter(id => {
-          const pos = worldById[id]
-          return !!pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)
-        })
-        const zoomK = Number.isFinite(state.zoomState?.k) ? Math.max(0.001, Number(state.zoomState?.k)) : 1
-        const zoomX = Number.isFinite(state.zoomState?.x) ? Number(state.zoomState?.x) : 0
-        const zoomY = Number.isFinite(state.zoomState?.y) ? Number(state.zoomState?.y) : 0
-        if (seededIds.length > 0) {
-          const panelScale = computeCollectiveFollowPinnedScale({
-            zoomK,
-            viewportW: targetViewport.width,
-            viewportH: targetViewport.height,
-            count: seededIds.length,
-            baseWidth: WIDGET_BASE_SIZE.width,
-            baseHeight: WIDGET_BASE_SIZE.height,
-          })
-          const panelScreen = computeWidgetScaledSize(panelScale)
-          const panelWorldW = panelScreen.width / zoomK
-          const panelWorldH = panelScreen.height / zoomK
-          let minLeft = Number.POSITIVE_INFINITY
-          let minTop = Number.POSITIVE_INFINITY
-          let maxRight = Number.NEGATIVE_INFINITY
-          let maxBottom = Number.NEGATIVE_INFINITY
-          let centroidX = 0
-          let centroidY = 0
-          for (let i = 0; i < seededIds.length; i += 1) {
-            const id = seededIds[i]!
-            const world = worldById[id]!
-            const left = world.x * zoomK + zoomX
-            const top = world.y * zoomK + zoomY
-            const right = (world.x + panelWorldW) * zoomK + zoomX
-            const bottom = (world.y + panelWorldH) * zoomK + zoomY
-            minLeft = Math.min(minLeft, left)
-            minTop = Math.min(minTop, top)
-            maxRight = Math.max(maxRight, right)
-            maxBottom = Math.max(maxBottom, bottom)
-            centroidX += left + panelScreen.width / 2
-            centroidY += top + panelScreen.height / 2
-          }
-          centroidX /= seededIds.length
-          centroidY /= seededIds.length
-          const fitsViewport =
-            minLeft >= -1 &&
-            minTop >= -1 &&
-            maxRight <= targetViewport.width + 1 &&
-            maxBottom <= targetViewport.height + 1
-          const centroidNearViewportCenter =
-            Math.abs(centroidX - targetViewport.width / 2) <= 6 &&
-            Math.abs(centroidY - targetViewport.height / 2) <= 6
-          lastSnapshot = JSON.stringify({
-            seededCount: seededIds.length,
-            zoomK,
-            zoomX,
-            zoomY,
-            bounds: { minLeft, minTop, maxRight, maxBottom },
-            centroid: { x: centroidX, y: centroidY },
-          })
-          if (fitsViewport && centroidNearViewportCenter) return
-        }
-        await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
-      }
-      throw new Error(
-        `expected source-files initial workspace-open Storyboard Widget collective layout to stay in-view; snapshot=${lastSnapshot || readVideoDemoLayoutFailureSnapshot()}`,
-      )
-    }
+    const waitForInViewCollective = () => waitForStoryboardWidgetViewportLayout({
+      doc, expectedIds: eligibleWidgetIds, viewport: targetViewport, label: 'initial-workspace-open', sourceText, readSourceText: () => useGraphStore.getState().markdownDocumentText, diagnostics: readVideoDemoLayoutFailureSnapshot,
+    })
 
     await waitForInViewCollective()
   } finally {

@@ -7,7 +7,7 @@ import { useIsomorphicLayoutEffect } from '@/lib/react/useIsomorphicLayoutEffect
 import { DEFAULT_ZOOM_MAX_SCALE, DEFAULT_ZOOM_MIN_SCALE, DEFAULT_ZOOM_MIN_SCALE_HARD_CAP, readZoomScaleExtent } from '@/lib/graph/layoutDefaults'
 import { WIDGET_ACTIONS_TOOLBAR_MAX_WIDTH_PX } from '@/components/StoryboardWidget/flowWidgetOverlayShared'
 import { COLLECTIVE_OVERLAY_SCALE_LIMITS_16X9 } from '@/lib/ui/overlayScaleLimits'
-import { computeCollectiveFollowPinnedScale, computeCollectiveFollowZoomK, computeWidgetScaleKey, computeWidgetScaledSize, WIDGET_BASE_SIZE } from '@/lib/canvas/overlayWidgetZoom'
+import { buildCollectiveCameraFollowBaselineKey, resolveCollectiveCameraFollowBaselineRef, computeCollectiveFollowPinnedScale, computeCollectiveFollowZoomK, computeWidgetScaleKey, computeWidgetScaledSize, WIDGET_BASE_SIZE } from '@/lib/canvas/overlayWidgetZoom'
 import type { VectorPaintedOverlayScaleProjectionBase } from '@/lib/canvas/vectorPaintedOverlayProjection'
 import { isFrontmatterManagedOverlayNode } from '@/components/StoryboardWidget/widgetFrontmatterPlacement'
 import { STORYBOARD_WIDGET_SCREEN_AUTHORITY_COLLECTIVE_PAN_EVENT } from '@/lib/storyboardWidget/screenAuthorityCollectivePan'
@@ -147,10 +147,12 @@ export function useWidgetPlacementRuntime(args: {
     return readScreenAuthorityFollowZoomKState({
       zoomK,
       enabled,
-      screenAuthorityZoomBaselineKRef,
+      screenAuthorityZoomBaselineKRef: storyboardWidgetSurfaceId === 'storyboard'
+        ? resolveCollectiveCameraFollowBaselineRef(buildCollectiveCameraFollowBaselineKey({ surfaceId: storyboardWidgetSurfaceId, graphKey: graphMetaKey }))
+        : screenAuthorityZoomBaselineKRef,
       computeCollectiveFollowZoomK,
     })
-  }, [])
+  }, [graphMetaKey, storyboardWidgetSurfaceId])
 
   const defaultFloatingPos = React.useMemo(() => {
     return resolveDefaultFloatingPosState({
@@ -255,11 +257,11 @@ export function useWidgetPlacementRuntime(args: {
     return readPinConversionTransformState({
       graphMetaKind,
       node: nodeRef.current,
-      floatingUsesScreenAuthority,
+      floatingUsesScreenAuthority: floatingUsesScreenAuthority && storyboardWidgetSurfaceId !== 'storyboard',
       getLiveZoomTransform,
       readCurrentTransform,
     })
-  }, [floatingUsesScreenAuthority, getLiveZoomTransform, graphMetaKind, readCurrentTransform])
+  }, [floatingUsesScreenAuthority, getLiveZoomTransform, graphMetaKind, readCurrentTransform, storyboardWidgetSurfaceId])
 
   const persistFloatingPlacement = React.useCallback((pos: { top: number; left: number }) => {
     persistFloatingPlacementState({
@@ -426,7 +428,7 @@ export function useWidgetPlacementRuntime(args: {
       const y = typeof rec.y === 'number' && Number.isFinite(rec.y) ? rec.y : null
       return x == null || y == null ? null : { x, y }
     }
-    widgetWorldPosRef.current = coerce(pick(useGraphStore.getState()))
+    widgetWorldPosRef.current = coerce(pick(useGraphStore.getState())) || widgetWorldPosRef.current
     const unsub = useGraphStore.subscribe(
       pick,
       next => {

@@ -12,8 +12,8 @@ export function testFlowCanvasSchedulesRichMediaOverlayOnInteractionFrame() {
   if (!flowText.includes('const handleInteractionFrame')) {
     throw new Error('expected FlowCanvas to define handleInteractionFrame')
   }
-  if (!flowText.includes('onInteractionFrame={handleInteractionFrame}')) {
-    throw new Error('expected FlowCanvas to forward interaction frames to FlowCanvasMediaOverlays')
+  if (!flowText.includes('onLayoutFrame={handleLayoutFrame}')) {
+    throw new Error('expected passive media layout notifications to avoid claiming user interaction')
   }
   if (!flowText.includes('if (storyboardWidgetMode) {\n      mediaOverlayInteractionFrameSchedulerRef.current?.()')) {
     throw new Error('expected FlowCanvas to schedule rich-media layout from live Storyboard Widget shared surface interaction frames without affecting Flow Canvas')

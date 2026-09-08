@@ -1,3 +1,4 @@
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
@@ -245,7 +246,7 @@ export const testCanvasGeospatialRuntimeDeduplicatesRepeatedModeEvents = () => {
 }
 
 export const testWorkspaceInitializationDocsRenderableThroughYamlFrontmatterPipeline = async () => {
-  const docsRoot = path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs')
+  const docsRoot = resolveSiblingFixturePath('huijoohwee', 'docs')
   const readmeCandidate = fs
     .readdirSync(docsRoot)
     .filter(name => name.endsWith('.md'))

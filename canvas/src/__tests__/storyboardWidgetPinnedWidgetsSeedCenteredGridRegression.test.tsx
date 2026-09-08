@@ -2,7 +2,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import StoryboardWidgetCanvas from '@/components/StoryboardWidgetCanvas'
-import { computeCollectiveFollowPinnedScale, computeWidgetScaledSize } from '@/lib/canvas/overlayWidgetZoom'
+import { computeCollectiveFollowPinnedScale, computeWidgetScaledSize, WIDGET_BASE_SIZE } from '@/lib/canvas/overlayWidgetZoom'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { viewportCenterToWorld } from '@/lib/zoom/viewport'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -503,24 +503,25 @@ export async function testStoryboardWidgetPinnedWidgetsReseedWhenInitiallyStacke
       while (Date.now() < deadline) {
         const current = readWorld()
         const unique = new Set(ids.map(id => `${Math.round((current[id]?.x || 0) * 1000)}:${Math.round((current[id]?.y || 0) * 1000)}`))
-        if (unique.size >= 2) return current
+        if (unique.size === ids.length) return current
         await waitForStoryboardTick()
       }
       throw new Error('expected stacked widgets to reseed into spread positions')
     })()
 
+    const zoomK = useGraphStore.getState().zoomState?.k || 1
     const panelScale = computeCollectiveFollowPinnedScale({
-      zoomK: 1,
+      zoomK,
       viewportW: 800,
       viewportH: 600,
       count: ids.length,
-      baseWidth: 360,
-      baseHeight: 520,
+      baseWidth: WIDGET_BASE_SIZE.width,
+      baseHeight: WIDGET_BASE_SIZE.height,
     })
     const panelScreen = computeWidgetScaledSize(panelScale)
     const rects = ids.map(id => {
       const p = worldById[id]!
-      return { id, left: p.x, top: p.y, right: p.x + panelScreen.width, bottom: p.y + panelScreen.height }
+      return { id, left: p.x, top: p.y, right: p.x + panelScreen.width / zoomK, bottom: p.y + panelScreen.height / zoomK }
     })
     for (let i = 0; i < rects.length; i += 1) {
       const a = rects[i]!
@@ -528,7 +529,7 @@ export async function testStoryboardWidgetPinnedWidgetsReseedWhenInitiallyStacke
         const b = rects[j]!
         const overlapX = a.left < b.right && b.left < a.right
         const overlapY = a.top < b.bottom && b.top < a.bottom
-        if (overlapX && overlapY) throw new Error(`expected no overlap after reseed: ${a.id} vs ${b.id}`)
+        if (overlapX && overlapY) throw new Error(`expected no overlap after reseed: ${a.id} vs ${b.id}; zoom=${zoomK}, rects=${JSON.stringify(rects)}`)
       }
     }
   } finally {
