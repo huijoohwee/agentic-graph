@@ -78,7 +78,7 @@ export async function testMarkdownWorkspaceImmediatelySyncsPlainDocumentOnFileSw
       await tick(dom)
       if (predicate()) return
     }
-    throw new Error('timed out waiting for markdown workspace state')
+    throw new Error(`timed out waiting for markdown workspace state: ${JSON.stringify({ name: useGraphStore.getState().markdownDocumentName, activePath: useMarkdownExplorerStore.getState().activePath, text: String(useGraphStore.getState().markdownDocumentText || '').slice(0, 120), targetVisible: dom.window.document.body.textContent?.includes('video-demo-switch-source.md') })}`)
   }
 
   try {
@@ -100,7 +100,7 @@ export async function testMarkdownWorkspaceImmediatelySyncsPlainDocumentOnFileSw
 
     useMarkdownExplorerStore.getState().setActivePath(firstPath)
     const graph = useGraphStore.getState()
-    graph.setMarkdownDocument(workspaceDocumentKey(firstPath), '# GrabMaps Switch Source\n\nAlpha')
+    await graph.setActiveMarkdownDocument({ name: workspaceDocumentKey(firstPath), text: '# GrabMaps Switch Source\n\nAlpha', normalizeMermaidMmd: false, applyToGraph: true })
     graph.setMarkdownDocumentSourceUrl(null)
 
     root = createRoot(doc.getElementById('root') as unknown as HTMLElement)

@@ -1,3 +1,4 @@
+import { initNodeWindowHarness } from '@/tests/lib/windowHarness'
 import fs from 'node:fs'
 import path from 'node:path'
 import { resolveDocsSsotFixturePath, readDocsSsotFixtureText } from '@/tests/lib/docsSsotFixture'
@@ -1445,8 +1446,8 @@ export function testStrybldrVideoArtifactCleanupKeepsOnlyTargetOverride() {
   assert(!sourceCard, 'expected stale source artifact override to be removed entirely')
   assert(targetCard?.prompt === 'keep me', `expected target card non-artifact overrides to remain, got ${JSON.stringify(targetCard)}`)
 }
-
 export async function testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic() {
+  const { restore } = initNodeWindowHarness()
   try {
     resetWorkspaceFsForTests()
     const text = readStrybldrDemoText()
@@ -1498,10 +1499,9 @@ export async function testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic
     assert(String(generatedText || '').includes('srcdoc='), 'expected generated local artifact to include playable srcdoc')
     assert(!String(generatedText || '').includes('stream.videodb.io'), 'expected generated local artifact not to fabricate VideoDB media')
   } finally {
-    resetWorkspaceFsForTests()
+    resetWorkspaceFsForTests(); restore()
   }
 }
-
 export async function testStrybldrVideoSourceKeepsRenderableMediaAcrossMergeAndHandoff() {
   const videoId = ['Stry', 'Media', '123'].join('')
   const watchUrl = ['https://www.youtube.com/watch', `?v=${videoId}`].join('')

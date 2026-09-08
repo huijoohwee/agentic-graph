@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
+import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
 import {
   TEST_VALIDATION_WORKSPACE_SEED_BASENAME,
   TEST_VALIDATION_WORKSPACE_SEED_PATH,
@@ -49,7 +49,7 @@ const resolveDocsSsotStorageBaseUrl = (): string => readEnvString('AG_TEST_DOCS_
 
 const resolveLocalDocsRoot = (): string => {
   const explicit = readEnvString('AG_TEST_DOCS_SSOT_ROOT') || readEnvString('AGENTIC_OS_PUBLISHED_DOCS_ROOT')
-  return explicit ? path.resolve(explicit) : resolveSiblingFixturePath('huijoohwee', 'docs')
+  return explicit ? path.resolve(explicit) : resolveRepoSourcePath('docs/workspace-seeds')
 }
 
 const decodeFixtureText = (bytes: Buffer, label: string): string => {

@@ -5,8 +5,8 @@ import { FLOW_WIDGET_REGISTRY_METADATA_KEY } from '@/lib/config'
 import { computeFlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
 import { isUnsafeFlowComputeSource, readFlowComputeSource, runFlowComputeSource } from '@/lib/storyboardWidget/flowComputeInline'
 
-import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
-const DEMO_DOC_PATH = resolveSiblingFixturePath('huijoohwee', path.join('docs', 'agentic-graph-agentic-canvas-os-demo.md'))
+import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
+const DEMO_DOC_PATH = resolveRepoSourcePath(path.join('docs/workspace-seeds', 'agentic-graph-agentic-canvas-os-demo.md'))
 
 const COMPUTE_NODE_EXPECTATIONS = [
   ['market_radar', 'Market Radar Report'],

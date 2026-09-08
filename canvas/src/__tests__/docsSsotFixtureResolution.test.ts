@@ -8,7 +8,7 @@ import {
   resolveDocsSsotFixturePath,
   resolveDocsSsotRootPath,
 } from '@/tests/lib/docsSsotFixture'
-import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
+import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
 
 const ENV_KEYS = [
   'AG_TEST_DOCS_SSOT_ROOT', 'AGENTIC_OS_PUBLISHED_DOCS_ROOT',
@@ -89,8 +89,8 @@ export function testDocsSsotFixtureMissingAndInvalidLocalInputsFailWithoutNetwor
 
 export function testDocsSsotFixtureDefaultRootUsesCanonicalWorkspaceOwner(): void {
   withFixtureDirectory(() => {
-    assert.equal(resolveDocsSsotRootPath(), resolveSiblingFixturePath('huijoohwee', 'docs'))
-    assert.ok(!resolveDocsSsotRootPath().includes('/.worktrees/'))
+    assert.equal(resolveDocsSsotRootPath(), resolveRepoSourcePath('docs/workspace-seeds'))
+    assert.ok(fs.existsSync(path.join(resolveDocsSsotRootPath(), 'README.md')))
   })
 }
 

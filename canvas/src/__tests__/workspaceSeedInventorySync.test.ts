@@ -65,7 +65,7 @@ export async function testBundledWorkspaceSeedInventoryMatchesAuthoredSourceExac
   }
 }
 
-export function testBundledWorkspaceSeedInventoryUsesEagerRawGlobInBuilds(): void {
+export function testBundledWorkspaceSeedInventoryUsesLazyRawGlobInBuilds(): void {
   const bundlePath = path.resolve(
     process.cwd(),
     'src',
@@ -80,8 +80,8 @@ export function testBundledWorkspaceSeedInventoryUsesEagerRawGlobInBuilds(): voi
   if (!text.includes("query: '?raw'")) {
     throw new Error('expected canonical workspace seed bundle glob to request raw markdown bytes')
   }
-  if (!text.includes('eager: true')) {
-    throw new Error('expected canonical workspace seed bundle glob to stay eager for production builds')
+  if (text.includes('eager: true') || !text.includes('await loadModule()')) {
+    throw new Error('expected canonical workspace seed bundle glob to load raw Markdown modules on demand in production builds')
   }
   if (text.includes('bundlePromise')) {
     throw new Error('expected canonical workspace seed reads not to retain a stale process-lifetime promise')

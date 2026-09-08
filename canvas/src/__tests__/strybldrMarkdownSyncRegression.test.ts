@@ -96,7 +96,7 @@ const assertStrybldrStarterTemplateHasNoRepoHardcodedRuntimeMedia = (text: strin
 }
 
 const readStrybldrDemoText = (): string => {
-  const demoPath = path.resolve(process.cwd(), '../..', 'huijoohwee/docs/agentic-graph-strybldr-demo.md')
+  const demoPath = resolveDocsSsotFixturePath('agentic-graph-strybldr-demo.md')
   return fs.readFileSync(demoPath, 'utf8')
 }
 
