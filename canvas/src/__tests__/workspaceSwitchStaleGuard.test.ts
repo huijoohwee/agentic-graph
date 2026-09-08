@@ -249,8 +249,8 @@ export const testMarkdownWorkspaceSelectionPreservesEditorTextUntilSwitchSnapsho
   if (!clearEffectSection.includes('const switchedActivePathRef = React.useRef<{ prev: WorkspacePath; next: WorkspacePath } | null>(null)')) {
     throw new Error('Expected markdown workspace selection to track explicit switched active path pair for deterministic same-tick switch hydration')
   }
-  if (!clearEffectSection.includes('args.lastLoadedRef.current = { path: nextPath, text: nextText }')) {
-    throw new Error('Expected markdown workspace selection to update last-loaded snapshot when immediate switched-path text hydration is applied')
+  if (!clearEffectSection.includes('args.lastLoadedRef.current = { path: nextPath, ...snapshot.value }')) {
+    throw new Error('Expected switched-path hydration to retain the complete loaded snapshot, including displayed text and the stored-text observation used for guarded writes')
   }
   if (!clearEffectSection.includes('args.setActiveTextProgrammatic(nextText)')) {
     throw new Error('Expected markdown workspace selection to hydrate switched-file text immediately when inline active entry text is available')

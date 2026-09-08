@@ -5,17 +5,17 @@ import {
   clearCityGeoOverlay,
   setCityGeoOverlay,
   type CityGeoOverlayListener,
-} from '../../../gympgrph/src/cityGeoOverlay.js'
+} from 'gympgrph/testkit/cityGeoOverlay'
 import {
   applyCityGeoPresentationToMap,
   cityGeoPresentationStateEntries,
   clearCityGeoPresentationFromMap,
   mapHasExactCityGeoPresentation,
-} from '../../../gympgrph/src/cityGeoPresentationMapLibre.js'
+} from 'gympgrph/testkit/cityGeoPresentationMapLibre'
 import {
   createCityGeoOverlayMapLibreController,
   fitMapToCityPresentation,
-} from '../../../gympgrph/src/cityGeoOverlayMapLibreController.js'
+} from 'gympgrph/testkit/cityGeoOverlayMapLibreController'
 import {
   REGIONAL_POI_LAYER_IDS,
   REGIONAL_POI_LAYER_ORDER,
@@ -25,8 +25,8 @@ import {
   mapHasExactRegionalPoiProfile,
   regionalPoiFeatureCollection,
   regionalPoiProfileBounds,
-} from '../../../gympgrph/src/regionalPoiMapLibre.js'
-import { useCityGeoOverlayMapLibrePresentation } from '../../../gympgrph/src/features/geospatial/useCityGeoOverlayMapLibrePresentation.js'
+} from 'gympgrph/testkit/regionalPoiMapLibre'
+import { useCityGeoOverlayMapLibrePresentation } from 'gympgrph/testkit/features/geospatial/useCityGeoOverlayMapLibrePresentation'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import {
   createSyntheticCityGeoOverlaySnapshot,

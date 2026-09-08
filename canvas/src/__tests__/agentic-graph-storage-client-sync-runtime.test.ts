@@ -1,4 +1,7 @@
-import storageWorkerModule from '../../../cloudflare/workers/agentic-graph-storage/index.ts'
+import {
+  readStorageWorker,
+  createStorageWorkerFetch as createWorkerFetch,
+} from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
 import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import {
   __resetAgenticGraphStorageDbForTests,
@@ -11,27 +14,17 @@ import {
 } from '@/lib/storage/agentic-graph-storage-client-sync'
 import { applyReviewedAgenticGraphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { partitionPulledAgenticGraphStorageChanges } from '@/lib/storage/agentic-graph-storage-conflict-store'
+import { applyAgenticGraphStoragePullPage } from '@/lib/storage/agentic-graph-storage-client-apply'
 import {
-  AGENTIC_OS_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
   hashAgenticGraphStorageContent,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
-const worker = (
-  typeof (storageWorkerModule as { fetch?: unknown }).fetch === 'function'
-    ? storageWorkerModule
-    : (storageWorkerModule as unknown as { default: typeof storageWorkerModule }).default
-) as typeof storageWorkerModule
-
-const createWorkerFetch = (env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>) => {
-  return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const request = input instanceof Request ? input : new Request(String(input), init)
-    return worker.fetch(request, env as never)
-  }
-}
+const worker = readStorageWorker()
 
 export async function testAgenticGraphStorageClientSyncRetainsConflictingOutboxMutationsForResolution() {
   await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const fetchImpl = createWorkerFetch(env)
   const dbState = await getAgenticGraphStorageDb()
@@ -42,7 +35,7 @@ export async function testAgenticGraphStorageClientSyncRetainsConflictingOutboxM
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_client_conflict',
         deviceId: 'dev_remote_seed',
         mutations: [
@@ -114,7 +107,7 @@ export async function testAgenticGraphStorageClientSyncRetainsConflictingOutboxM
   const result = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_conflict',
     deviceId,
-    baseUrl: 'https://example.com',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
     fetchImpl,
     dbState,
   })
@@ -147,6 +140,7 @@ export async function testAgenticGraphStorageClientSyncRetainsConflictingOutboxM
 
 export async function testAgenticGraphStorageClientSyncAutoClearsStaleRetainedConflictsAfterPull() {
   await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const fetchImpl = createWorkerFetch(env)
   const dbState = await getAgenticGraphStorageDb()
@@ -157,7 +151,7 @@ export async function testAgenticGraphStorageClientSyncAutoClearsStaleRetainedCo
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_client_conflict_retained',
         deviceId: 'dev_remote_seed_retained',
         mutations: [
@@ -254,7 +248,7 @@ export async function testAgenticGraphStorageClientSyncAutoClearsStaleRetainedCo
   const result = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_conflict_retained',
     deviceId,
-    baseUrl: 'https://example.com',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
     fetchImpl,
     dbState,
   })
@@ -316,20 +310,20 @@ export async function testAgenticGraphStorageClientSyncAutoClearsStaleRetainedCo
       attemptCount: retainedStatuses[index] === 'deferred' ? 1_000 : 0,
     })
   }
-  const retainedPartition = await partitionPulledAgenticGraphStorageChanges({
+  const retainedPartition = await applyAgenticGraphStoragePullPage({
     dbState,
     workspaceId: 'wk_client_conflict_retained',
-    changes: { documents: retainedRemoteRecords, documentChunks: [], graphSnapshots: [] },
+    changes: { documents: retainedRemoteRecords, documentChunks: [], graphSnapshots: [], deletions: [] },
   })
-  if (retainedPartition.applicableChanges.documents.length !== 2 || retainedPartition.retainedCandidateCount !== 1) {
-    throw new Error('expected only retryable pending work to fence pulls; rejected and exhausted rows remain inspectable')
+  if (retainedPartition.changes.documents.length !== 0 || (await dbState.collections.syncConflicts.find({ selector: { workspaceId: 'wk_client_conflict_retained' } }).exec()).length !== 4) {
+    throw new Error('all pending, rejected and exhausted local bytes must fence remote replacement and retain candidates')
   }
   const retainedStatusResult = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_conflict_retained', deviceId,
-    baseUrl: 'https://example.com', fetchImpl, dbState,
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com', fetchImpl, dbState,
   })
-  if (retainedStatusResult.rejectedCount !== 1 || retainedStatusResult.deferredCount !== 1) {
-    throw new Error('expected later sync results to keep retained rejected and exhausted deferred rows visible')
+  if (retainedStatusResult.unresolvedConflictCount !== 4) {
+    throw new Error('the original conflict and all three overlapping retained edits must remain visible for conflict review')
   }
 
   await __resetAgenticGraphStorageDbForTests()
@@ -337,6 +331,7 @@ export async function testAgenticGraphStorageClientSyncAutoClearsStaleRetainedCo
 
 export async function testAgenticGraphStorageClientSyncCanApplyPulledRemoteChangesIntoVisibleSourceFiles() {
   await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
   const env = createFakeAgenticGraphStorageWorkerEnv()
@@ -349,7 +344,7 @@ export async function testAgenticGraphStorageClientSyncCanApplyPulledRemoteChang
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_client_visible',
         deviceId: 'dev_remote_visible',
         mutations: [
@@ -415,7 +410,7 @@ export async function testAgenticGraphStorageClientSyncCanApplyPulledRemoteChang
   await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_visible',
     deviceId,
-    baseUrl: 'https://example.com',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
     fetchImpl,
     dbState,
     onPulledChangesApplied: async ({ workspaceId, changes, signal, taskContext }) => {
@@ -460,14 +455,14 @@ export async function testAgenticGraphStorageClientSyncSkipsUnavailableRoutesWit
   const first = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_unavailable',
     deviceId: 'dev_unavailable',
-    baseUrl: 'http://127.0.0.1:5173',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'http://127.0.0.1:5173',
     fetchImpl,
     dbState,
   })
   const second = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_unavailable',
     deviceId: 'dev_unavailable',
-    baseUrl: 'http://127.0.0.1:5173',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'http://127.0.0.1:5173',
     fetchImpl,
     dbState,
   })
@@ -499,14 +494,14 @@ export async function testAgenticGraphStorageClientSyncSkipsNetworkLoadFailuresW
   const first = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_load_failed',
     deviceId: 'dev_load_failed',
-    baseUrl: 'http://127.0.0.1:5174',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'http://127.0.0.1:5174',
     fetchImpl,
     dbState,
   })
   const second = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_load_failed',
     deviceId: 'dev_load_failed',
-    baseUrl: 'http://127.0.0.1:5174',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'http://127.0.0.1:5174',
     fetchImpl,
     dbState,
   })

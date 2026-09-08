@@ -18,7 +18,7 @@ export function testStoryboardWidgetCanvasRunSetsSharedOutputLoadingState() {
   if (!headlessTextRun.includes('const projectResponse = (projection: {')) throw new Error('expected one text output publishing SSOT')
   if (!execution.includes('const runProvider = normalizedProvider || args.generationRuntime.chatProvider') || !execution.includes('const runEndpointUrl = args.generationRuntime.chatEndpointUrl.trim() || getChatDefaultEndpointUrlForProvider(runProvider)')) throw new Error('expected active provider and provider-scoped endpoint fallback')
   if (execution.includes('const runProvider = CHAT_PROVIDER_BYTEPLUS') || execution.includes('getChatDefaultEndpointUrlForProvider(CHAT_PROVIDER_BYTEPLUS)')) throw new Error('expected no BytePlus-only provider pinning')
-  if (!headlessTextRun.includes('nextText => {') || !headlessTextRun.includes('projectResponse({ responseText: nextText, loading: true })')) throw new Error('expected progressive text updates')
+  if (!headlessTextRun.includes('buildHeadlessResponseProviderPrompt(prepared),\n      undefined,') || !headlessTextRun.includes('responseText: runResult.responseText,\n      loading: false,')) throw new Error('expected only terminal canonical text publication after provider completion')
   if (!text.includes('args.draftGraphDataRef.current || args.draftGraphData') || !runAction.includes('args.readDraftGraphData()')) throw new Error('expected output updates to use latest draft graph state')
   if (!writeback.includes('if (updated) args.scheduleWorkflowOutputEdgeRefresh()')) throw new Error('expected output writes to refresh overlay edges')
   if (!renderGraph.includes('export function getCachedStoryboardWidgetWorkflowRunPlan(args: {')) throw new Error('expected centralized workflow plan derivation')

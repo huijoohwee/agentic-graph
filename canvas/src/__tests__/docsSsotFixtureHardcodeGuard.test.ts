@@ -21,11 +21,10 @@ export async function testDocsSsotValidationFixtureForbidsHardcodedEndpointLiter
   }
 }
 
-export async function testDocsSsotFixtureReadsCloudflareD1BackedRouteInsteadOfLocalDocsRoot() {
+export async function testDocsSsotFixtureSeparatesLocalInputsFromExplicitCloudflareReads() {
   const helperPath = path.resolve(process.cwd(), 'src', 'tests', 'lib', 'docsSsotFixture.ts')
   const helperText = fs.readFileSync(helperPath, 'utf8')
   const legacyRootTupleLiteral = `[${["'..'", "'..'", "'huijoohwee'", "'docs'"].join(', ')}]`
-  const legacyRootEnvName = ['AG_TEST', 'DOCS_SSOT_ROOT'].join('_')
   const legacyAbsoluteRoot = [
     '',
     'Users',
@@ -37,13 +36,12 @@ export async function testDocsSsotFixtureReadsCloudflareD1BackedRouteInsteadOfLo
   ].join('/')
   const forbiddenLiterals = [
     legacyRootTupleLiteral,
-    legacyRootEnvName,
     legacyAbsoluteRoot,
   ]
   const matched = forbiddenLiterals.filter((literal) => helperText.includes(literal))
   if (matched.length > 0) {
     throw new Error(
-      `expected docs SSOT fixture helper to read the Cloudflare D1-backed storage route instead of a local docs root; found: ${matched.join(', ')}`,
+      `expected docs fixture helper to resolve its selected source without machine-specific or worktree-relative roots; found: ${matched.join(', ')}`,
     )
   }
   if (!helperText.includes('/api/storage/doc/')) {

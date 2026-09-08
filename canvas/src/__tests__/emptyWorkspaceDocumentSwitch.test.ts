@@ -1,3 +1,6 @@
+import { withLocalDocsMirror } from '@/__tests__/helpers/workspaceSeedMirrorHarness'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
+import { readWorkspaceActiveDocumentObservedText } from '@/features/source-files/sourceFilesRuntimeActive'
 import path from 'node:path'
 import os from 'node:os'
 import fsPromises from 'node:fs/promises'
@@ -280,108 +283,10 @@ export async function testWorkspaceSelectionResolvedTextCacheCoalescesConcurrent
   }
 }
 
-export async function testWorkspaceSelectionSwitchPrefersCanonicalMirrorTextOverPollutedWorkspaceFs() {
-  const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'workspace-switch-docs-mirror-'))
-  const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = tempRoot
-  delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  try {
-    await fsPromises.writeFile(path.join(tempRoot, 'agentic-graph-video-demo.md'), '# agentic-graph Video Demo')
-    const pollutedVideoEntry: WorkspaceEntry = {
-      path: '/docs/agentic-graph-video-demo.md',
-      parentPath: '/docs',
-      kind: 'file',
-      name: 'agentic-graph-video-demo.md',
-      text: '# agentic-graph Token Economics Model Demo',
-      updatedAtMs: 1,
-    }
-    const resolved = await readWorkspaceSelectionResolvedTextForActivePath({
-      activePath: '/docs/agentic-graph-video-demo.md',
-      activeEntry: pollutedVideoEntry,
-      preferPathResolvedText: true,
-      storageFallbackByPath: new Map<string, string>(),
-      fs: {
-        ensureSeed: async () => true,
-        listEntries: async () => [],
-        readFileText: async path => String(path || '') === '/docs/agentic-graph-video-demo.md'
-          ? '# agentic-graph Token Economics Model Demo'
-          : null,
-        writeFileText: async () => {},
-        createFile: async () => '/docs/new.md',
-        createFolder: async () => '/docs/new-folder',
-        deleteEntry: async () => {},
-      },
-    })
-    if (resolved !== '# agentic-graph Video Demo') {
-      throw new Error(`expected selected video demo path to prefer canonical mirror text over polluted workspace fs text, got ${JSON.stringify(resolved)}`)
-    }
-  } finally {
-    if (typeof previousAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousAbsRoot
-    else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-    await fsPromises.rm(tempRoot, { recursive: true, force: true })
-  }
-}
-
-export async function testWorkspaceSelectionCanonicalMirrorRefreshesAfterExternalFileChange() {
-  const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'workspace-switch-docs-mirror-refresh-'))
-  const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-  const previousStorageBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = tempRoot
-  delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  try {
-    const mirrorFile = path.join(tempRoot, 'agentic-graph-video-demo.md')
-    const fallbackByPath = new Map<string, string>()
-    const pollutedVideoEntry: WorkspaceEntry = {
-      path: '/docs/agentic-graph-video-demo.md',
-      parentPath: '/docs',
-      kind: 'file',
-      name: 'agentic-graph-video-demo.md',
-      text: '# agentic-graph Token Economics Model Demo',
-      updatedAtMs: 1,
-    }
-    const fs = {
-      ensureSeed: async () => true,
-      listEntries: async () => [],
-      readFileText: async () => '# agentic-graph Token Economics Model Demo',
-      writeFileText: async () => {},
-      createFile: async () => '/docs/new.md',
-      createFolder: async () => '/docs/new-folder',
-      deleteEntry: async () => {},
-    }
-    await fsPromises.writeFile(mirrorFile, '# agentic-graph Token Economics Model Demo')
-    const staleResolved = await readWorkspaceSelectionResolvedTextForActivePath({
-      activePath: '/docs/agentic-graph-video-demo.md',
-      activeEntry: pollutedVideoEntry,
-      preferPathResolvedText: true,
-      storageFallbackByPath: fallbackByPath,
-      fs,
-    })
-    if (staleResolved !== '# agentic-graph Token Economics Model Demo') {
-      throw new Error(`expected first canonical mirror read to use current mirror text, got ${JSON.stringify(staleResolved)}`)
-    }
-
-    await fsPromises.writeFile(mirrorFile, '# agentic-graph Video Demo')
-    const refreshedResolved = await readWorkspaceSelectionResolvedTextForActivePath({
-      activePath: '/docs/agentic-graph-video-demo.md',
-      activeEntry: pollutedVideoEntry,
-      preferPathResolvedText: true,
-      storageFallbackByPath: fallbackByPath,
-      fs,
-    })
-    if (refreshedResolved !== '# agentic-graph Video Demo') {
-      throw new Error(`expected canonical mirror reads to refresh after external file changes, got ${JSON.stringify(refreshedResolved)}`)
-    }
-  } finally {
-    if (typeof previousAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousAbsRoot
-    else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
-    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousStorageBaseUrl
-    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-    await fsPromises.rm(tempRoot, { recursive: true, force: true })
-  }
-}
+export {
+  testWorkspaceSelectionSwitchPrefersCanonicalMirrorTextOverPollutedWorkspaceFs,
+  testWorkspaceSelectionCanonicalMirrorRefreshesAfterExternalFileChange,
+} from './workspaceCanonicalMirrorSelection.test'
 
 export async function testWorkspaceExplicitSavePrefersSelectedPathTextOverStaleEditorText() {
   const selectedPath = '/docs/agentic-graph-token-economics-model-demo.md'
@@ -581,20 +486,28 @@ export async function testWorkspaceWriteFileAndSyncPreservesYamlFrontmatterFence
 }
 
 export async function testWorkspaceIndexingResolvesCanonicalMirrorBeforeCachedInlineText() {
-  const sourcePath = path.resolve(process.cwd(), 'src/lib/markdown-workspace-runtime/useMarkdownWorkspaceIndexing.tsx')
-  const source = await fsPromises.readFile(sourcePath, 'utf8')
-  const resolverImport = "import { readWorkspaceActiveDocumentResolvedText } from '@/features/source-files/sourceFilesRuntimeActive'"
-  if (!source.includes(resolverImport)) {
-    throw new Error('expected workspace indexing to import the shared active-document resolver')
-  }
-  const cacheBranchIndex = source.indexOf('if (canUseCachedText) {')
-  const canonicalResolverIndex = source.indexOf('preferCanonicalPathText: true')
-  if (cacheBranchIndex < 0 || canonicalResolverIndex < cacheBranchIndex) {
-    throw new Error('expected workspace indexing cached-text branch to prefer canonical path text before trusting inline cache')
-  }
-  if (!source.includes('if (!canUseCachedText || nextText !== cachedText)')) {
-    throw new Error('expected workspace indexing to refresh polluted inline cache when canonical text differs')
-  }
+  await withLocalDocsMirror({ 'demo.md': FENCED_FRONTMATTER_MARKDOWN }, async () => {
+    const storedText = '# Retained stored bytes', cachedText = '# Polluted inline cache'
+    const workspaceFs = createMemoryWorkspaceFs({ initialEntries: [
+      { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+      { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+      { path: '/docs/demo.md', parentPath: '/docs', kind: 'file', name: 'demo.md', text: storedText, updatedAtMs: 1 },
+    ] })
+    const observed = await readWorkspaceActiveDocumentObservedText({
+      activePath: '/docs/demo.md', fs: workspaceFs, fallbackText: cachedText, preferCanonicalPathText: true,
+    })
+    if (observed.text !== FENCED_FRONTMATTER_MARKDOWN || observed.observedWorkspaceText !== storedText || observed.observedWorkspaceFs !== workspaceFs) {
+      throw new Error('expected canonical display to replace polluted inline cache while retaining its observed filesystem baseline')
+    }
+    if (await workspaceFs.readFileText('/docs/demo.md') !== storedText) {
+      throw new Error('expected canonical display resolution to preserve stored bytes')
+    }
+    const sourcePath = path.resolve(process.cwd(), 'src/lib/markdown-workspace-runtime/useMarkdownWorkspaceIndexing.tsx')
+    const source = await fsPromises.readFile(sourcePath, 'utf8')
+    if (!source.includes('if (!canUseCachedText || nextText !== cachedText)')) {
+      throw new Error('expected workspace indexing to refresh polluted inline cache when canonical text differs')
+    }
+  })
 }
 
 export async function testWorkspaceDocsMirrorWriteRejectsBlankOverwriteOfNonEmptyFile() {

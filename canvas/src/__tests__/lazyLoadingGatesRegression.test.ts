@@ -1138,7 +1138,7 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!viteConfigText.includes("name: 'agentic-graph-strip-mermaid-architecture-detector'")) {
     throw new Error('expected vite config to strip the stock mermaid architecture detector from the standard runtime path')
   }
-  if (!viteConfigText.includes("registerLazyLoadedDiagrams(detector_default, detector_default3);")) {
+  if (!viteConfigText.includes(String.raw`code.replace(/,\s*architectureDetector_default(?=\s*\))/g, '')`) || !viteConfigText.includes('withoutRegistration === code || next === withoutRegistration') || !viteConfigText.includes('refusing to ship the disabled renderer')) {
     throw new Error('expected vite config to patch mermaid core so architecture is not registered by default')
   }
   if (!viteConfigText.includes("(?:assets\\/)?mermaid-[^/]+\\.(?:js|css)$")) {

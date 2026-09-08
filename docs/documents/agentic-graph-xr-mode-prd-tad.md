@@ -202,8 +202,8 @@ paths so that inline, immersive, and camera experiences remain understandable.
 Acceptance:
 
 1. The entry owner publishes `agentic-graph-xr-capability-snapshot/v1`.
-2. Recommendation order is immersive session, spatial-capture camera fallback,
-   inline viewer, native handoff, then unsupported.
+2. Recommendation order is `immersive-session`, spatial-capture `monocular-capture`,
+   `inline-viewer`, `native-handoff`, then `unsupported`.
 3. Immersive sessions are requested only from the explicit user action.
 4. A qualifying spatial-capture fallback renders **Open camera capture**.
 5. That action selects the existing `capture` primary mode and opens the
@@ -440,7 +440,7 @@ SPZ rendering, phone-video asset publication, Production, or Cloudflare.
 - [x] The second renderer/camera/physics/timeline path is excluded.
 - [x] Aggregate XR Mode readiness fails closed if any E1-E4 or browser stage
   fails or if the root command is narrowed.
-- [x] Both XR documents remain below 600 lines.
+- [x] Current XR Mode and fallback readiness guides remain below 600 lines; the XR v2 design is an immutable pin.
 - [ ] Physical mobile and immersive-device evidence.
 - [ ] Native SPZ runtime.
 - [ ] Persisted phone-camera spatial asset contract.

@@ -1,3 +1,4 @@
+import { testCaptureEndedLifecycle } from './helpers/motionControlCaptureEndedLifecycle'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { assertPinnedAgenticOsDictionaryTokensForTest, PINNED_MOTION_CONTROL_DICTIONARY_TOKENS } from '@/__tests__/helpers/pinnedAgenticOsDictionary'
@@ -25,7 +26,6 @@ import {
 } from '@/features/three/motionControlPose'
 import {
   readMotionControlSnapshot,
-  startMotionControl,
   stopMotionControl,
 } from '@/features/three/motionControlRuntime'
 import {
@@ -55,89 +55,6 @@ function poseFrame(timestampMs: number): MotionControlPoseFrame {
   landmarks[26] = landmark(0.54, 0.76, 0.02)
   const world = landmarks.map(item => landmark(item.x - 0.5, item.y - 0.58, item.z))
   return Object.freeze({ timestampMs, confidence: 0.92, landmarks: Object.freeze(landmarks), worldLandmarks: Object.freeze(world) })
-}
-
-async function testCaptureEndedLifecycle() {
-  class CameraTrack extends EventTarget {
-    readyState: MediaStreamTrackState = 'live'
-    stopped = false
-
-    end(): void {
-      this.readyState = 'ended'
-      this.dispatchEvent(new Event('ended'))
-    }
-
-    stop(): void {
-      this.stopped = true
-      this.readyState = 'ended'
-    }
-  }
-
-  const track = new CameraTrack()
-  const stream = {
-    getTracks: () => [track],
-    getVideoTracks: () => [track],
-  } as unknown as MediaStream
-  let resolvePlay = () => void 0
-  let playCalled = false
-  const playPromise = new Promise<void>(resolve => { resolvePlay = resolve })
-  const video = {
-    autoplay: false,
-    muted: false,
-    pause: () => void 0,
-    play: () => {
-      playCalled = true
-      return playPromise
-    },
-    playsInline: false,
-    srcObject: null,
-  }
-  const fakeDocument = Object.assign(new EventTarget(), {
-    createElement: () => video,
-    visibilityState: 'visible',
-  })
-  const fakeWindow = Object.assign(new EventTarget(), {
-    cancelAnimationFrame: () => void 0,
-    isSecureContext: true,
-    requestAnimationFrame: () => 1,
-  })
-  const descriptors = new Map(['document', 'navigator', 'window'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
-  try {
-    Object.defineProperty(globalThis, 'document', { configurable: true, value: fakeDocument })
-    Object.defineProperty(globalThis, 'window', { configurable: true, value: fakeWindow })
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: { mediaDevices: { getUserMedia: async () => stream } },
-    })
-    const beforeStops = readMotionControlSnapshot().revision
-    await Promise.all([stopMotionControl(), stopMotionControl()])
-    if (readMotionControlSnapshot().revision !== beforeStops + 1) {
-      throw new Error('expected concurrent stop calls to share one serialized teardown')
-    }
-    if (!openMotionControlSurface('motion-control')) throw new Error('expected an approved XR capture surface')
-    const starting = startMotionControl('wasm')
-    for (let attempt = 0; attempt < 12 && readMotionControlSnapshot().phase !== 'requesting-camera'; attempt += 1) {
-      await Promise.resolve()
-    }
-    if (readMotionControlSnapshot().phase !== 'requesting-camera') throw new Error('expected camera request phase before lifecycle test')
-    for (let attempt = 0; attempt < 12 && !playCalled; attempt += 1) await Promise.resolve()
-    if (!playCalled) throw new Error('expected camera preview to bind before lifecycle test')
-    track.end()
-    resolvePlay()
-    await starting
-    for (let attempt = 0; attempt < 12 && readMotionControlSnapshot().phase !== 'error'; attempt += 1) await Promise.resolve()
-    const ended = readMotionControlSnapshot()
-    if (ended.phase !== 'error' || ended.cameraActive || ended.pose || !track.stopped) {
-      throw new Error('expected a revoked or ended camera track to clear capture and publish an error')
-    }
-  } finally {
-    resolvePlay()
-    await stopMotionControl()
-    for (const [key, descriptor] of descriptors) {
-      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
-      else Reflect.deleteProperty(globalThis, key)
-    }
-  }
 }
 
 export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {

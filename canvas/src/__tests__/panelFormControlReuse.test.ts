@@ -1,8 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-
 const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8')
-
 export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const sharedControlsText = readUtf8('src/lib/ui/panelFormControls.tsx')
   const dataViewDensityText = readUtf8('src/lib/ui/dataViewDensity.ts')
@@ -87,7 +85,6 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const graphDataTableBodyText = readUtf8('src/features/graph-data-table/ui/GraphDataTableBody.tsx')
   const graphDataTableFieldsPanelText = readUtf8('src/features/graph-data-table/ui/GraphDataTableFieldsPanel.tsx')
   const graphDataTableSortPanelText = readUtf8('src/features/graph-data-table/ui/GraphDataTableSortPanel.tsx')
-
   if (
     !panelKeyTypeColorTextValueRowText.includes("from '@/lib/ui/panelFormControls'") ||
     !panelKeyTypeColorTextValueRowText.includes('PanelTextInput') ||
@@ -593,13 +590,12 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
 
   if (
     !graphFieldsFieldStylesText.includes("from '@/lib/ui/panelFormControls'") ||
-    !graphFieldsFieldStylesText.includes("from '@/features/panels/views/graph-fields/GraphFieldsPanelControls'") ||
     !graphFieldsFieldStylesText.includes('PanelTextInput') ||
-    !graphFieldsFieldStylesText.includes('GraphFieldsCompactCheckbox') ||
+    !graphFieldsFieldStylesText.includes('<PanelSelect') ||
     graphFieldsFieldStylesText.includes('PlainTextInputEditor') ||
     graphFieldsFieldStylesText.includes('type="checkbox"')
   ) {
-    throw new Error('expected FieldStylesSection to reuse shared panel text inputs and the shared graph-fields compact checkbox primitive instead of local/raw boolean and number controls')
+    throw new Error('expected FieldStylesSection to reuse shared panel text and select controls without local/raw inputs')
   }
 
   if (
@@ -847,6 +843,8 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
 }
 
 export function testStoryboardAndFlowWidgetsReuseSharedChatModelCredentialControls() {
+  const widgetEditorContentText = readUtf8('src/components/StoryboardWidget/WidgetEditorFormContent.tsx')
+  const projectionText = readUtf8('src/features/chat/floatingPanelChat/floatingPanelChatCredentialContext.ts')
   const storyboardCanvasText = readUtf8('src/components/StoryboardCanvas.tsx')
   const widgetEditorFormText = readUtf8('src/components/StoryboardWidget/WidgetEditorForm.tsx')
   const floatingPanelChatSectionsText = readUtf8('src/features/chat/FloatingPanelChatSections.tsx')
@@ -857,7 +855,7 @@ export function testStoryboardAndFlowWidgetsReuseSharedChatModelCredentialContro
 
   for (const [name, text] of [
     ['StoryboardCanvas', storyboardCanvasText],
-    ['WidgetEditorForm', widgetEditorFormText],
+    ['WidgetEditorFormContent', widgetEditorContentText],
     ['FloatingPanelChatSections', floatingPanelChatSectionsText],
   ] as const) {
     if (!text.includes("from '@/features/chat/ChatModelCredentialControls'") || !text.includes('ChatModelCredentialControls')) {
@@ -865,12 +863,14 @@ export function testStoryboardAndFlowWidgetsReuseSharedChatModelCredentialContro
     }
   }
 
+  if (!widgetEditorFormText.includes('<WidgetEditorFormContent') || !widgetEditorFormText.includes('resolveChatModelCredentialProjection({') || !storyboardCanvasText.includes('resolveChatModelCredentialProjection({')) throw new Error('expected source consumers to delegate credential projection and form rendering')
   for (const [name, text] of [
     ['StoryboardCanvas', storyboardCanvasText],
     ['WidgetEditorForm', widgetEditorFormText],
     ['FloatingPanelChat', readUtf8('src/features/chat/FloatingPanelChat.tsx')],
   ] as const) {
-    if (!text.includes("from '@/features/chat/chatModelCredentialResolver'") || !text.includes('resolveSharedChatModelSelect')) {
+    const resolverText = name === 'FloatingPanelChat' ? text : projectionText
+    if (!resolverText.includes("from '@/features/chat/chatModelCredentialResolver'") || !resolverText.includes('resolveSharedChatModelSelect({')) {
       throw new Error(`expected ${name} to reuse the shared provider-scoped chat model resolver`)
     }
   }
@@ -895,8 +895,8 @@ export function testStoryboardAndFlowWidgetsReuseSharedChatModelCredentialContro
   }
 
   if (
-    !widgetEditorFormText.includes('onPatchProperties({ chatModel: nextModel })') ||
-    widgetEditorFormText.includes('apiKey: next') ||
+    !widgetEditorContentText.includes('onPatchProperties({ chatModel: nextModel })') ||
+    [widgetEditorFormText, widgetEditorContentText].some(text => text.includes('apiKey: next')) ||
     storyboardCanvasText.includes('apiKey: cleanModel')
   ) {
     throw new Error('expected Flow widgets to persist only chatModel while shared BYOK password stays in the chat credential store')

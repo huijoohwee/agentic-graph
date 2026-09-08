@@ -10,8 +10,8 @@ import {
   normalizePersistedGeospatialStyleUrl,
   resolveCanonicalPersistedGeospatialStyleUrl,
   resolveEffectiveGeospatialStyleUrl,
-} from '../../../gympgrph/src/features/geospatial/basemapStyle.js'
-import { createDefaultGympgrphGeospatialState } from '../../../gympgrph/src/hooks/store/geospatialSlice.js'
+} from 'gympgrph/testkit/features/geospatial/basemapStyle'
+import { createDefaultGympgrphGeospatialState } from 'gympgrph/testkit/hooks/store/geospatialSlice'
 
 test('Geo+XR selects the current MapLibre view default unless GrabMaps is explicit', () => {
   assert.equal(normalizePersistedGeospatialStyleUrl(null), '')

@@ -5,7 +5,7 @@ import { GraphStoreRuntime } from '@/features/canvas/GraphStoreRuntime'
 import { applySavedDocumentUiPresentationState } from '@/features/canvas/graphStoreDocumentUiRestoreHelpers'
 import { applyFrontmatterFlowImportModes } from '@/features/parsers/frontmatterFlowImportMode'
 import { applyInteractiveImportModes } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
-import { resolveCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import { applyCanvasFrontmatterPreset, resolveCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
 import {
   waitForCanvasFrontmatterSurfaceTransition,
 } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
@@ -385,7 +385,6 @@ export function testWorkspaceImportModesNormalizeCanonicalRendererTokensAndExpli
   useGraphStore.getState().setDocumentSemanticMode('document')
   useGraphStore.getState().setFrontmatterModeEnabled(true)
   useGraphStore.getState().setMultiDimTableModeEnabled(false)
-
   const rawText = [
     '---',
     'title: "Flowchart Token"',
@@ -399,23 +398,24 @@ export function testWorkspaceImportModesNormalizeCanonicalRendererTokensAndExpli
     '',
     '# Flowchart Token',
   ].join('\n')
-
   const preset = resolveCanvasFrontmatterPreset({ rawText })
   if (!preset) throw new Error('expected flowchart canonical-token preset to resolve')
   if (preset.canvas2dRenderer !== 'flowchart') throw new Error(`expected flowchart token to normalize to flowchart, got ${String(preset.canvas2dRenderer)}`)
   if (preset.documentSemanticMode !== 'keyword') throw new Error(`expected keyword token to normalize to keyword, got ${String(preset.documentSemanticMode)}`)
   if (preset.frontmatterModeEnabled !== false) throw new Error('expected explicit frontmatter OFF to resolve')
   if (preset.multiDimTableModeEnabled !== true) throw new Error('expected explicit multi-dimensional table mode ON to resolve')
-
   applyInteractiveImportModes({ rawText })
-
   const st = useGraphStore.getState()
   if (st.canvasRenderMode !== '2d') throw new Error(`expected explicit preset to force 2d canvas render mode, got ${String(st.canvasRenderMode)}`)
-  if (st.canvas2dRenderer !== 'flowchart') throw new Error(`expected flowchart token landing to use flowchart, got ${String(st.canvas2dRenderer)}`)
+  if (st.canvas2dRenderer !== 'multiDimTable') throw new Error(`expected explicit table mode to select its dedicated renderer, got ${String(st.canvas2dRenderer)}`)
   if (st.documentSemanticMode !== 'keyword') throw new Error(`expected explicit keyword mode landing, got ${String(st.documentSemanticMode)}`)
   if (st.frontmatterModeEnabled !== false) throw new Error('expected explicit frontmatter OFF to be preserved')
   if (st.multiDimTableModeEnabled !== true) throw new Error('expected explicit multi-dimensional table mode ON to be preserved')
   if (st.documentStructureBaselineLock !== false) throw new Error('expected explicit preset to unlock baseline lock')
+  // Renderer setters normalize table state; reapplying the same preset must restore its explicit mode.
+  applyCanvasFrontmatterPreset({ rawText })
+  const repeated = useGraphStore.getState()
+  if (repeated.canvas2dRenderer !== 'multiDimTable' || repeated.multiDimTableModeEnabled !== true) throw new Error(`expected repeated table preset to preserve its landing, got ${repeated.canvas2dRenderer}/${repeated.multiDimTableModeEnabled}`)
 }
 
 export function testWorkspaceImportModesStoryboardPresetDisablesConflictingTableMode() {

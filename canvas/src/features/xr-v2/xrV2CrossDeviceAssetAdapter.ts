@@ -1,3 +1,6 @@
+import { XrV2CrossDeviceAssetError, runLifecycle, lifecycleFetch, type LifecycleInput } from './xrV2CrossDeviceAssetLifecycle'
+export { XrV2CrossDeviceAssetError, type XrV2CrossDeviceAssetErrorCode } from './xrV2CrossDeviceAssetLifecycle'
+import { AgenticGraphStorageRetryableTransportError, cancelStorageStream } from '@/lib/storage/agentic-graph-storage-client-transport'
 import { uploadGeneratedWorkspaceBlobToAgenticGraphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
 import {
   buildAgenticGraphStorageBlobPath,
@@ -35,27 +38,6 @@ import {
 
 export * from './xrV2CrossDeviceAssetManifest'
 
-export type XrV2CrossDeviceAssetErrorCode =
-  | 'cancelled'
-  | 'deadline-exceeded'
-  | 'identity-conflict'
-  | 'integrity-failed'
-  | 'not-found'
-  | 'catalog-bound-exceeded'
-  | 'local-import-failed'
-
-export class XrV2CrossDeviceAssetError extends Error {
-  readonly code: XrV2CrossDeviceAssetErrorCode
-  readonly causeValue: unknown
-
-  constructor(code: XrV2CrossDeviceAssetErrorCode, message: string, causeValue?: unknown) {
-    super(message)
-    this.name = 'XrV2CrossDeviceAssetError'
-    this.code = code
-    this.causeValue = causeValue
-  }
-}
-
 export type XrV2CrossDeviceDeferredReason =
   | 'offline'
   | 'transport-unavailable'
@@ -86,12 +68,6 @@ export type XrV2CrossDeviceReadResult =
       frameBundle: XrV2StoredCaptureFrameBundle | null
     }>
   | Deferred
-
-type LifecycleInput = Readonly<{
-  signal?: AbortSignal
-  deadlineAtMs?: number
-  timeoutMs?: number
-}>
 
 export type XrV2CrossDeviceLocalStore = Pick<XrV2CaptureArtifactStore,
   | 'readBlob' | 'readFrameBundle' | 'readPublishedSpatialAsset'
@@ -161,62 +137,13 @@ export type XrV2CrossDeviceAssetAdapter = Readonly<{
   read(input: XrV2CrossDeviceReadInput): Promise<XrV2CrossDeviceReadResult>
 }>
 
-type Lifecycle = Readonly<{ signal: AbortSignal; dispose(): void; kind(): 'active' | 'cancelled' | 'deadline' }>
-
-function lifecycle(config: XrV2CrossDeviceAssetConfig, input: LifecycleInput): Lifecycle {
-  const controller = new AbortController()
-  let state: 'active' | 'cancelled' | 'deadline' = 'active'
-  const timeoutMs = input.timeoutMs ?? config.operationTimeoutMs
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs! < 100 || timeoutMs! > 60_000) {
-    throw new Error('cross-device operation timeout is outside the admitted bound')
-  }
-  const remaining = input.deadlineAtMs == null ? timeoutMs! : Math.min(timeoutMs!, input.deadlineAtMs - Date.now())
-  if (!Number.isFinite(remaining) || remaining <= 0) {
-    throw new XrV2CrossDeviceAssetError('deadline-exceeded', 'XR cross-device operation deadline elapsed')
-  }
-  const cancel = () => { state = 'cancelled'; controller.abort(input.signal?.reason) }
-  if (input.signal?.aborted) cancel()
-  else input.signal?.addEventListener('abort', cancel, { once: true })
-  const timer = setTimeout(() => {
-    if (state !== 'active') return
-    state = 'deadline'
-    controller.abort(new DOMException('XR cross-device operation deadline elapsed', 'TimeoutError'))
-  }, remaining)
-  return Object.freeze({
-    signal: controller.signal,
-    kind: () => state,
-    dispose: () => { clearTimeout(timer); input.signal?.removeEventListener('abort', cancel) },
-  })
-}
-
-async function runLifecycle<T>(
-  config: XrV2CrossDeviceAssetConfig,
-  input: LifecycleInput,
-  operation: (signal: AbortSignal) => Promise<T>,
-): Promise<T> {
-  const active = lifecycle(config, input)
-  try {
-    if (active.kind() === 'cancelled') throw new XrV2CrossDeviceAssetError('cancelled', 'XR cross-device operation was cancelled')
-    return await operation(active.signal)
-  } catch (error) {
-    if (active.kind() === 'deadline') {
-      throw new XrV2CrossDeviceAssetError('deadline-exceeded', 'XR cross-device operation deadline elapsed', error)
-    }
-    if (active.kind() === 'cancelled' || (error instanceof DOMException && error.name === 'AbortError')) {
-      throw new XrV2CrossDeviceAssetError('cancelled', 'XR cross-device operation was cancelled', error)
-    }
-    throw error
-  } finally {
-    active.dispose()
-  }
-}
-
 function deferred(reason: XrV2CrossDeviceDeferredReason, path: string | null): Deferred {
   return Object.freeze({ status: 'deferred', reason, retryable: true, manifestCanonicalPath: path })
 }
 
 function transportFailure(error: unknown): boolean {
   if (error instanceof XrV2CrossDeviceAssetError) return false
+  if (error instanceof AgenticGraphStorageRetryableTransportError) return true
   const message = String(error instanceof Error ? error.message : error).toLowerCase()
   return error instanceof TypeError || /network|offline|fetch|transport|route unavailable|retry exhausted/.test(message)
 }
@@ -231,6 +158,7 @@ async function responseBytes(
   const declared = contentLength === null ? null : Number(contentLength)
   if (declared !== null && Number.isFinite(declared) && declared >= 0
     && (declared > maximum || (expectedSize != null && declared !== expectedSize))) {
+    cancelStorageStream(response.body, 'XR response length does not match its manifest')
     throw new XrV2CrossDeviceAssetError('integrity-failed', 'Remote XR part Content-Length does not match its manifest')
   }
   const reader = response.body?.getReader()
@@ -241,20 +169,32 @@ async function responseBytes(
   }
   const chunks: Uint8Array[] = []
   let total = 0
+  let cancelled = false
+  const onAbort = () => {
+    if (cancelled) return
+    cancelled = true
+    cancelStorageStream(reader, 'XR response operation ended')
+  }
+  signal.addEventListener('abort', onAbort, { once: true })
   try {
     while (true) {
-      if (signal.aborted) throw new DOMException('aborted', 'AbortError')
+      signal.throwIfAborted()
       const next = await reader.read()
+      signal.throwIfAborted()
       if (next.done) break
       const chunk = next.value
       total += chunk.byteLength
       if (total > maximum) {
-        await reader.cancel('byte bound exceeded')
+        onAbort()
         throw new XrV2CrossDeviceAssetError('integrity-failed', 'Remote XR response exceeds its byte bound')
       }
       chunks.push(chunk)
     }
+  } catch (error) {
+    onAbort()
+    throw error
   } finally {
+    signal.removeEventListener('abort', onAbort)
     reader.releaseLock()
   }
   const bytes = new Uint8Array(total)
@@ -263,15 +203,14 @@ async function responseBytes(
   return bytes
 }
 
-function lifecycleFetch(fetchImpl: typeof fetch, signal: AbortSignal): typeof fetch {
-  return (input, init) => fetchImpl(input, { ...init, signal })
-}
-
 async function defaultReadManifest(input: Parameters<NonNullable<XrV2CrossDeviceAssetAdapterDependencies['readManifestText']>>[0]): Promise<string | null> {
   const path = buildAgenticGraphStorageDocPath(input.workspaceId, input.canonicalPath)
   const response = await input.fetchImpl(resolveAgenticGraphStorageApiUrl(path, input.baseUrl), { method: 'GET', signal: input.signal })
-  if (response.status === 404) return null
-  if (!response.ok) throw new Error(`XR manifest read failed with HTTP ${response.status}`)
+  if (!response.ok) {
+    cancelStorageStream(response.body, 'XR manifest response status rejected')
+    if (response.status === 404) return null
+    throw new Error(`XR manifest read failed with HTTP ${response.status}`)
+  }
   const bytes = await responseBytes(response, XR_V2_CROSS_DEVICE_MAX_MANIFEST_BYTES, input.signal)
   try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes) } catch {
     throw new XrV2CrossDeviceAssetError('integrity-failed', 'XR asset manifest is not valid UTF-8')
@@ -409,10 +348,12 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
           return Object.freeze({ status: 'existing', manifest: existing })
         }
         const upload = dependencies.uploadBlob || (args => uploadGeneratedWorkspaceBlobToAgenticGraphStorage({ ...args, uploadNow: true }))
+        signal.throwIfAborted()
         const rawReceipt = await upload({
           workspacePath: paths.rawWorkspacePath, blob: local.raw, workspaceId: config.workspaceId,
           baseUrl: config.baseUrl, fetchImpl: scopedFetch,
         })
+        signal.throwIfAborted()
         if (!rawReceipt) return deferred('blob-upload-unconfirmed', paths.manifestCanonicalPath)
         validateUpload(rawReceipt, rawPart, config)
         if (encoded && framePart) {
@@ -421,10 +362,12 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
             workspacePath: paths.frameBundleWorkspacePath, blob: bundleBlob, workspaceId: config.workspaceId,
             baseUrl: config.baseUrl, fetchImpl: scopedFetch,
           })
+          signal.throwIfAborted()
           if (!receipt) return deferred('blob-upload-unconfirmed', paths.manifestCanonicalPath)
           validateUpload(receipt, framePart, config)
         }
         const publishManifest = dependencies.publishManifest || publishXrV2ManifestThroughExistingStorage
+        signal.throwIfAborted()
         const receipt = await publishManifest({
           workspacePath: paths.manifestWorkspacePath,
           canonicalPath: paths.manifestCanonicalPath,
@@ -511,9 +454,13 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
             throw new XrV2CrossDeviceAssetError('integrity-failed', 'XR part public path is not canonical')
           }
           const response = await scopedFetch(resolveAgenticGraphStorageApiUrl(remote.public_path, config.baseUrl), { method: 'GET' })
-          if (!response.ok) throw new Error(`XR part read failed with HTTP ${response.status}`)
+          if (!response.ok) {
+            cancelStorageStream(response.body, 'XR part response status rejected')
+            throw new Error(`XR part read failed with HTTP ${response.status}`)
+          }
           const responseType = String(response.headers.get('content-type') || '').split(';')[0].trim()
           if (responseType && responseType !== remote.content_type) {
+            cancelStorageStream(response.body, 'XR part response type does not match its manifest')
             throw new XrV2CrossDeviceAssetError('integrity-failed', 'XR part content type does not match its manifest')
           }
           const bytes = await responseBytes(response, config.maxPartBytes, signal, remote.size_bytes)
@@ -536,6 +483,7 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
         if (existing && !compatibleLocalAsset(existing, manifest.asset)) {
           throw new XrV2CrossDeviceAssetError('identity-conflict', 'Local XR asset id already belongs to different content')
         }
+        signal.throwIfAborted()
         const asset = await input.localStore.importSavedAssetAtomically({
           rawKind: manifest.raw_kind,
           rawClip,

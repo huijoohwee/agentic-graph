@@ -24,7 +24,7 @@ export function testXrSpatialCaptureFallbackRuntimeReadyKeepsRepoOwnedLocalAccep
   if (rootManifest.scripts?.['xr:source-runner:test'] !== 'node --test ./scripts/__tests__/xr-spatial-capture-fallback-source-smoke.test.mjs') {
     throw new Error('expected the root manifest to expose the XR source runner contract test')
   }
-  if (rootManifest.scripts?.['xr:review-ready'] !== 'npm run xr:source-runner:test && npm run xr:runtime-ready') {
+  if (rootManifest.scripts?.['xr:review-ready'] !== 'npm run xr:source-runner:test && npm run xr:runtime-ready && npm run xr-v2:review-ready') {
     throw new Error('expected the root manifest to expose the XR one-command review path')
   }
 

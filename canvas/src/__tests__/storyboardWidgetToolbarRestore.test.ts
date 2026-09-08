@@ -191,7 +191,7 @@ export function testStoryboardWidgetToolbarRestoresTinyFloatingActionsWithRun() 
       throw new Error(`expected Probe-Tree toolbar action to avoid FloatingPanel Chat route: ${forbidden}`)
     }
   }
-  for (const expected of ['materializeProbeTreeBranchCards({ graphData: args.graphData, card: args.card })', 'args.commitGraphData(result.graphData)', 'revealProbeTreeBranchCardsOnCanvas(result.materializedNodeIds)']) {
+  for (const expected of ['materializeProbeTreeBranchCards({ graphData: args.graphData, card: args.card })', 'revealProbeTreeBranchCardsOnCanvas(result.materializedNodeIds)']) {
     if (!probeTreeActionText.includes(expected)) {
       throw new Error(`expected Probe-Tree toolbar action to materialize selectable cards on canvas: ${expected}`)
     }
@@ -208,22 +208,19 @@ export function testStoryboardWidgetToolbarRestoresTinyFloatingActionsWithRun() 
     || noModelBranches.materializedNodeIds.length !== 0
     || !noModelBranches.message.includes('does not create hardcoded preview branches')
   ) throw new Error(`expected the Probe-Tree toolbar to fail closed without accepted model cards, got ${JSON.stringify(noModelBranches)}`)
-  let toolbarCommittedGraph: GraphData | null = null
-  const toolbarHistory: string[] = []
   const toolbarToasts: Array<{ kind?: string; message?: string }> = []
+  const originalGraphBytes = JSON.stringify(probeTreeGraph)
   const toolbarResult = invokeProbeTreeFromStoryboardToolbar({
     card: probeTreeCard,
     graphData: probeTreeGraph,
-    commitGraphData: nextGraphData => { toolbarCommittedGraph = nextGraphData },
-    addHistory: label => { toolbarHistory.push(label) },
     upsertUiToast: toast => { toolbarToasts.push(toast) },
   })
   if (
     toolbarResult.changed
-    || toolbarCommittedGraph !== null
-    || toolbarHistory.length !== 0
+    || toolbarResult.graphData !== probeTreeGraph
+    || JSON.stringify(probeTreeGraph) !== originalGraphBytes
     || !toolbarToasts[0]?.message?.includes('does not create hardcoded preview branches')
-  ) throw new Error(`expected Probe-Tree toolbar action to leave the graph unchanged before model-backed Run, got ${JSON.stringify({ toolbarResult, toolbarHistory, toolbarToasts })}`)
+  ) throw new Error(`expected Probe-Tree toolbar action to leave the graph unchanged before model-backed Run, got ${JSON.stringify({ toolbarResult, toolbarToasts })}`)
 
   const acceptedGraph: GraphData = {
     ...probeTreeGraph,
@@ -250,12 +247,16 @@ export function testStoryboardWidgetToolbarRestoresTinyFloatingActionsWithRun() 
       properties: {},
     })),
   }
-  const materialized = materializeProbeTreeBranchCards({ graphData: acceptedGraph, card: probeTreeCard })
+  const acceptedGraphBytes = JSON.stringify(acceptedGraph)
+  const materialized = invokeProbeTreeFromStoryboardToolbar({
+    graphData: acceptedGraph, card: probeTreeCard, upsertUiToast: toast => toolbarToasts.push(toast),
+  })
   if (
     materialized.changed
     || materialized.kind !== 'neutral'
     || materialized.materializedNodeIds.length !== 3
     || materialized.graphData !== acceptedGraph
+    || JSON.stringify(acceptedGraph) !== acceptedGraphBytes
   ) throw new Error(`expected Probe-Tree toolbar to reveal only accepted model-backed branch cards, got ${JSON.stringify(materialized)}`)
   assertProbeTreeRevealPreservesExplicitPinsAndViewport(materialized.materializedNodeIds)
   if (!toolbarText.includes('GRAPH_FIELDS_ENTRY_SHORTCUT_NODE_LABEL')) {

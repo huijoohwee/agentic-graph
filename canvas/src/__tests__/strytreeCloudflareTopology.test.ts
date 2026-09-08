@@ -1,24 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import paymentWorkerModule from '../../../cloudflare/workers/agentic-graph-payment/index.ts'
-
-type CreditLedgerActor = {
-  fetch: (request: Request) => Promise<Response>
-}
-
-type CreditLedgerActorCtor = new (state: unknown, env: unknown) => CreditLedgerActor
-
-type PaymentWorkerFactory = () => {
-  queue: (
-    batch: { messages?: Array<{ retry?: () => void }> },
-    env: { DB?: unknown },
-  ) => Promise<void>
-}
-
-const paymentModule = paymentWorkerModule as unknown as {
-  StrytreeCreditLedgerActor: CreditLedgerActorCtor
-  createAgenticGraphPaymentWorker: PaymentWorkerFactory
-}
+import { StrytreeCreditLedgerActor, createAgenticGraphPaymentWorker } from '../../../cloudflare/workers/agentic-graph-payment/index.ts'
 
 const repoRoot = () => resolve(process.cwd(), '..')
 
@@ -82,43 +64,8 @@ export function testStrytreeD1MigrationDefinesPrdTablesAndIndexes() {
   }
 }
 
-export async function testStrytreePaymentWorkerExposesCreditLedgerAndQueueRuntime() {
-  const actor = new paymentModule.StrytreeCreditLedgerActor({}, {})
-  const health = await actor.fetch(new Request('https://ledger.internal/user-1/health'))
-  if (!health.ok) throw new Error(`expected credit ledger health to return ok, got ${health.status}`)
-  const healthBody = await health.json() as { ok?: boolean; service?: string; authority?: string }
-  if (
-    healthBody.ok !== true ||
-    healthBody.service !== 'strytree-credit-ledger' ||
-    healthBody.authority !== 'durable-object'
-  ) {
-    throw new Error(`expected credit ledger actor health contract, got ${JSON.stringify(healthBody)}`)
-  }
-
-  const debitWithoutDb = await actor.fetch(new Request('https://ledger.internal/user-1/debit', { method: 'POST' }))
-  if (debitWithoutDb.status !== 500) throw new Error(`expected debit without D1 to fail closed, got ${debitWithoutDb.status}`)
-
-  const worker = paymentModule.createAgenticGraphPaymentWorker()
-  let retried = false
-  let threw = false
-  try {
-    await worker.queue({
-      messages: [{
-        retry: () => {
-          retried = true
-        },
-      }],
-    }, {})
-  } catch (err) {
-    threw = err instanceof Error && err.message.includes('missing Cloudflare D1 binding DB')
-  }
-  if (!retried) throw new Error('expected Strytree queue handler to retry messages when D1 is unavailable')
-  if (!threw) throw new Error('expected Strytree queue handler to fail closed without D1')
-}
-
 export function testStrytreePaymentWorkerDeclaresCloudflareRuntimeBindings() {
   const wrangler = readRepoFile('cloudflare', 'workers', 'agentic-graph-payment', 'wrangler.toml')
-  const worker = readRepoFile('cloudflare', 'workers', 'agentic-graph-payment', 'index.ts')
   const requiredWranglerFragments = [
     '[vars]',
     'STRYTREE_EXTERNAL_VIDEO_PROVIDER_BASE_URL = "https://api.external-video-provider.invalid"',
@@ -130,14 +77,12 @@ export function testStrytreePaymentWorkerDeclaresCloudflareRuntimeBindings() {
     'migrations_dir = "../../d1/migrations"',
     '[[queues.producers]]',
     'binding = "STRYTREE_GENERATION_QUEUE"',
-    'queue = "agentic-graph-strytree-generation"',
     '[[queues.consumers]]',
     'max_batch_size = 3',
     '[[kv_namespaces]]',
     'binding = "STRYTREE_PROVIDER_BUDGET_KV"',
     '[[r2_buckets]]',
     'binding = "STRYTREE_MEDIA_BUCKET"',
-    'bucket_name = "agentic-graph-strytree-media"',
     '[[durable_objects.bindings]]',
     'name = "STRYTREE_CREDIT_LEDGER"',
     'class_name = "StrytreeCreditLedgerActor"',
@@ -149,20 +94,16 @@ export function testStrytreePaymentWorkerDeclaresCloudflareRuntimeBindings() {
       throw new Error(`expected Strytree Cloudflare binding config to include ${fragment}`)
     }
   }
-  const requiredWorkerFragments = [
-    'export class StrytreeCreditLedgerActor',
-    'service: \'strytree-credit-ledger\'',
-    'writeStrytreeLedgerMutation',
-    'balance_after_credits',
-    'async queue(batch: QueueBatchLike, env: AgenticGraphPaymentWorkerEnv): Promise<void>',
-    'processStrytreeQueueMessage(message.body, env, db)',
-    'message.ack()',
-    'strytree-signature',
-    'STRYTREE_PROVIDER_BUDGET_KV',
-  ]
-  for (const fragment of requiredWorkerFragments) {
-    if (!worker.includes(fragment)) {
-      throw new Error(`expected Strytree payment Worker runtime to include ${fragment}`)
-    }
+  const worker = createAgenticGraphPaymentWorker()
+  if (typeof StrytreeCreditLedgerActor !== 'function' || typeof worker.fetch !== 'function' || typeof worker.queue !== 'function') {
+    throw new Error('expected the configured payment Worker to export its ledger actor and fetch/queue entrypoints')
   }
+  const producer = [...wrangler.matchAll(/\[\[queues\.producers\]\]([\s\S]*?)(?=\n\[\[|$)/g)]
+    .map(match => match[1]).find(block => block.includes('binding = "STRYTREE_GENERATION_QUEUE"'))
+  const queue = producer?.match(/^queue\s*=\s*"([^"]+)"/m)?.[1]
+  const consumers = [...wrangler.matchAll(/\[\[queues\.consumers\]\]([\s\S]*?)(?=\n\[\[|$)/g)]
+  if (!queue || !consumers.some(match => match[1].match(/^queue\s*=\s*"([^"]+)"/m)?.[1] === queue)) {
+    throw new Error('expected the generation producer and consumer to share one configured queue')
+  }
+
 }

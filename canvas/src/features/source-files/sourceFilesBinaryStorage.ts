@@ -3,7 +3,7 @@ import {
   type AgenticGraphStorageBlobUploadResponse,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { resolveAgenticGraphStorageApiUrl } from '@/lib/storage/agentic-graph-storage-client-sync'
-import { buildAgenticGraphStorageSyncAuthHeaders } from '@/lib/storage/agentic-graph-storage-client-transport'
+import { buildAgenticGraphStorageSyncAuthHeaders, getClientFetch, fetchWithTimeout, cancelStorageStream, parseStorageResponseJson, buildApiOriginKey } from '@/lib/storage/agentic-graph-storage-client-transport'
 import {
   readPrimaryStorageCanonicalPathForWorkspacePath,
 } from '@/features/source-files/sourceFilesStoragePaths'
@@ -49,6 +49,7 @@ export const uploadGeneratedWorkspaceBlobToAgenticGraphStorage = async (args: {
   uploadNow?: boolean
   sessionToken?: string | null
   fetchImpl?: typeof fetch
+  requestTimeoutMs?: number
 }): Promise<UploadGeneratedWorkspaceBlobToAgenticGraphStorageResult | null> => {
   const shouldUpload = typeof args.uploadNow === 'boolean'
     ? args.uploadNow
@@ -57,24 +58,33 @@ export const uploadGeneratedWorkspaceBlobToAgenticGraphStorage = async (args: {
   const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   const canonicalPath = readPrimaryStorageCanonicalPathForWorkspacePath(normalizeString(args.workspacePath), { markdownOnly: false })
   if (!workspaceId || !canonicalPath) return null
-  const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
-  if (!fetchImpl) return null
+  const candidateFetch = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
+  if (!candidateFetch) return null
+  const fetchImpl = getClientFetch(candidateFetch)
   const baseUrl = normalizeString(args.baseUrl) || readAgenticGraphStorageBaseUrl()
   const publicPath = buildAgenticGraphStorageBlobPath(workspaceId, canonicalPath)
   const contentType = normalizeString(args.blob.type) || 'application/octet-stream'
   const contentHash = await hashBlobSha256(args.blob)
-  const response = await fetchImpl(resolveAgenticGraphStorageApiUrl(publicPath, baseUrl), {
-    method: 'POST',
-    headers: {
-      ...buildAgenticGraphStorageSyncAuthHeaders(args.sessionToken),
-      'content-type': contentType,
-      'x-agentic-graph-content-kind': 'generated-binary-artifact',
-      ...(contentHash ? { 'x-agentic-graph-content-hash': contentHash } : {}),
+  const response = await fetchWithTimeout({
+    fetchImpl, input: resolveAgenticGraphStorageApiUrl(publicPath, baseUrl), timeoutMs: args.requestTimeoutMs,
+    init: {
+      method: 'POST',
+      headers: {
+        ...buildAgenticGraphStorageSyncAuthHeaders(args.sessionToken),
+        'content-type': contentType,
+        'x-agentic-graph-content-kind': 'generated-binary-artifact',
+        ...(contentHash ? { 'x-agentic-graph-content-hash': contentHash } : {}),
+      },
+      body: args.blob,
     },
-    body: args.blob,
   })
-  if (!response.ok) return null
-  const body = await response.json().catch(() => null) as AgenticGraphStorageBlobUploadResponse | null
+  if (!response.ok) {
+    cancelStorageStream(response.body, 'binary upload response rejected')
+    return null
+  }
+  const body = await parseStorageResponseJson<AgenticGraphStorageBlobUploadResponse | null>(response, {
+    requestLabel: 'agentic-graph binary artifact upload', apiOrigin: buildApiOriginKey(baseUrl),
+  }).catch(() => null)
   if (!body || body.ok !== true) return null
   const resolvedPublicPath = normalizeString(body.publicPath) || publicPath
   return {

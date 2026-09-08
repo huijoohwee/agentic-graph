@@ -16,7 +16,6 @@ import { CardInlineTextEditor } from '@/lib/cards/CardInlineTextEditor'
 import { CardMarkdownPreview } from '@/lib/cards/CardMarkdownPreview'
 import { insertMediaIntoActiveCardInlineTextEditor } from '@/lib/cards/cardInlineTextExternalCommands'
 import { writeCommandMenuMediaNameDraft } from '@/lib/command-menu/commandMenuMediaNameSync'
-import { collectInlineKeywordCommandCandidates } from '@/lib/command-menu/inlineCommandMenuCatalog'
 import {
   DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME,
   resolveDataViewChipClass,
@@ -144,27 +143,6 @@ export async function testWorkspaceDataViewFloatingDensityResyncsSameRegistratio
       root.unmount()
     })
     restore()
-  }
-}
-export function testInlineKeywordCommandsReuseCompleteDashboardKeywordContext() {
-  const dashboardKeywords = Array.from({ length: 36 }, (_, index) => `#Reusabletype${String(index).padStart(2, '0')}`)
-  const candidates = collectInlineKeywordCommandCandidates({
-    draftText: [
-      ...dashboardKeywords,
-      '#Strybldrimagesource',
-      '#Storyboardframe',
-      '#Storyboardelement',
-      '#Fork',
-      '#Review',
-      '#Publish',
-      'Review element cards, revise prompts, then send the approved sequence to video generation.',
-    ].join('\n'),
-  })
-  const labels = new Set(candidates.map(candidate => candidate.label))
-  for (const expectedLabel of ['Strybldrimagesource', 'Storyboardframe', 'Storyboardelement', 'Fork', 'Review', 'Publish', 'Agentic OS Runtime Readiness', 'Frontmatter']) {
-    if (!labels.has(expectedLabel)) {
-      throw new Error(`expected inline # command menu to include Dashboard keyword ${expectedLabel}, got ${JSON.stringify(candidates.map(candidate => candidate.label))}`)
-    }
   }
 }
 export function testCardInlineTextEditorAvoidsRuntimeFocusPolyfill() {

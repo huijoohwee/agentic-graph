@@ -1,6 +1,9 @@
 import {
   AGENTIC_OS_STORAGE_API_VERSION,
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
+  buildAgenticGraphStorageMediaPath,
+  AgenticGraphStorageMediaWorkspaceError,
+  assertAgenticGraphStorageMediaWriteKey,
   type AgenticGraphStorageErrorResponse,
   type AgenticGraphStorageWorkerEnv,
 } from './contract'
@@ -14,6 +17,7 @@ import {
 import { handleMediaRead, handleMediaWrite, isAgenticGraphStorageMediaRoute, readMediaObjectKey } from './media'
 import { handleMediaAssetPersist, isAgenticGraphStorageMediaAssetRoute } from './mediaAssetSync'
 import {
+  authenticateAgenticGraphStorageArtifactRequest,
   authenticateAgenticGraphStorageSyncRequest,
   authorizeAgenticGraphStorageWorkspace,
   cancelAgenticGraphStorageRequestBody,
@@ -62,8 +66,8 @@ const readMediaAssetWorkspaceId = (request: Request): string => {
  * Secures inherited binary/media surfaces before their legacy handlers can
  * inspect a body or touch D1/R2. A production session plus workspace
  * membership is sufficient for workspace-addressed blobs and asset listing.
- * Raw media and asset mutations cannot be tenant-bound with the stored legacy
- * metadata, so they intentionally fail closed outside the explicit local mode.
+ * Media capabilities/assets also accept configured browser sessions. Raw media
+ * stays capability-authorized, and stored workspace metadata fences asset writes.
  */
 export const handleSecuredAgenticGraphStorageDataRoute = async (args: {
   request: Request
@@ -75,7 +79,7 @@ export const handleSecuredAgenticGraphStorageDataRoute = async (args: {
     return handleAgenticGraphStoragePublicationRoute({ request: args.request, env: args.env, db: args.db })
   }
   if (isAgenticGraphStorageMediaCapabilityRoute(args.pathname)) {
-    const auth = await authenticateAgenticGraphStorageSyncRequest(args.request, args.env, args.db)
+    const auth = await authenticateAgenticGraphStorageArtifactRequest(args.request, args.env, args.db)
     if (auth.ok === false) return auth.response
     if (args.request.method !== 'POST') return errorResponse(405, 'bad_request', 'media capabilities require POST')
     const parsed = await readBoundedAgenticGraphStorageSyncJson(args.request)
@@ -87,7 +91,7 @@ export const handleSecuredAgenticGraphStorageDataRoute = async (args: {
     const objectKey = String(body?.objectKey || '').trim().replace(/^\/+/, '')
     const operation = body?.operation === 'read' || body?.operation === 'write' ? body.operation : null
     const ttlSeconds = Number(body?.ttlSeconds || 300)
-    const parsedKey = readMediaObjectKey(`${AGENTIC_OS_STORAGE_ROUTE_PATHS.mediaPrefix}${objectKey}`)
+    const parsedKey = readMediaObjectKey(buildAgenticGraphStorageMediaPath(objectKey))
     if (!workspaceId || !operation || !parsedKey || !Number.isSafeInteger(ttlSeconds)) {
       return errorResponse(400, 'bad_request', 'workspaceId, valid objectKey, operation, and ttlSeconds are required')
     }
@@ -116,13 +120,14 @@ export const handleSecuredAgenticGraphStorageDataRoute = async (args: {
         operation,
         ...capability,
       }), { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...CORS_HEADERS } })
-    } catch {
+    } catch (error) {
+      if (error instanceof AgenticGraphStorageMediaWorkspaceError) return errorResponse(403, 'forbidden', error.message)
       return errorResponse(503, 'server_error', 'media capability signing is unavailable')
     }
   }
 
   if (isAgenticGraphStorageMediaAssetRoute(args.pathname)) {
-    const auth = await authenticateAgenticGraphStorageSyncRequest(args.request, args.env, args.db)
+    const auth = await authenticateAgenticGraphStorageArtifactRequest(args.request, args.env, args.db)
     if (auth.ok === false) return auth.response
     if (auth.principal.local) return handleMediaAssetPersist(args.request, args.env, args.db)
     if (args.request.method === 'GET') {
@@ -155,6 +160,15 @@ export const handleSecuredAgenticGraphStorageDataRoute = async (args: {
       if (access.ok === false) return access.response
       if (args.request.method === 'POST') {
         const objectKey = String(body?.objectKey || '').trim().replace(/^\/+/, '')
+        try { await assertAgenticGraphStorageMediaWriteKey(workspaceId, objectKey) } catch (error) {
+          if (error instanceof AgenticGraphStorageMediaWorkspaceError) return errorResponse(403, 'forbidden', error.message)
+          throw error
+        }
+        const [runId, stageId, fileName] = objectKey.split('/').slice(-3)
+        if (!fileName || body?.runId !== runId || body?.stageId !== stageId
+          || body?.shotId !== fileName.slice(0, fileName.lastIndexOf('.'))) {
+          return errorResponse(400, 'bad_request', 'media artifact identity must match its workspace object key')
+        }
         const bucket = args.env.AGENTIC_OS_STORAGE_BLOB_BUCKET
         const object = objectKey && bucket?.head ? await bucket.head(objectKey) : null
         if (!object || object.customMetadata?.agenticGraphWorkspaceId !== workspaceId) {
@@ -171,6 +185,8 @@ export const handleSecuredAgenticGraphStorageDataRoute = async (args: {
           })
           forwardedValue = {
             ...body,
+            // Preserve the existing raw-key D1 representation; public URLs encode segments.
+            durableR2Url: `${AGENTIC_OS_STORAGE_ROUTE_PATHS.mediaPrefix}${objectKey}`,
             presignedUrl: new URL(capability.urlPath, args.request.url).toString(),
           }
         } catch {
@@ -215,7 +231,7 @@ export const handleSecuredAgenticGraphStorageDataRoute = async (args: {
   }
 
   if (isAgenticGraphStorageBlobRoute(args.pathname)) {
-    const auth = await authenticateAgenticGraphStorageSyncRequest(args.request, args.env, args.db)
+    const auth = await authenticateAgenticGraphStorageArtifactRequest(args.request, args.env, args.db)
     if (auth.ok === false) return auth.response
     const route = readAgenticGraphStorageBlobRoute(args.pathname)
     if (!route) return errorResponse(400, 'bad_request', 'workspaceId and canonicalPath are required')

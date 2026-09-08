@@ -242,7 +242,7 @@ export const testLaunchDropdownFallbackActivatesFirstImportedWorkspaceFile = () 
   const sharedRequired = [
     'export async function activateFirstImportedWorkspaceFile',
     'useMarkdownExplorerStore.getState().setActivePath',
-    'await state.setActiveMarkdownDocument({',
+    'activated = await useGraphStore.getState().setActiveMarkdownDocument({',
   ]
   const missingShared = sharedRequired.filter(snippet => !importActionsText.includes(snippet))
   if (missingShared.length) {

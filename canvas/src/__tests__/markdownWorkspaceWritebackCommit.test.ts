@@ -1,9 +1,11 @@
+import assert from 'node:assert/strict'
+import type { MarkdownWorkspaceLoadedSnapshot } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.types'
 import { commitMarkdownWorkspaceWriteback } from '@/lib/markdown-workspace-runtime/markdownWorkspaceWritebackCommit'
 import { syncWorkspaceTextState } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
 
 export function testMarkdownWorkspaceWritebackCommitCentralizesWorkspaceAndEditorRefresh() {
   const calls: string[] = []
-  const lastLoadedRef = { current: null as { path: string; text: string } | null }
+  const lastLoadedRef: { current: MarkdownWorkspaceLoadedSnapshot | null } = { current: null }
 
   commitMarkdownWorkspaceWriteback({
     path: '/docs/demo.md' as never,
@@ -26,6 +28,26 @@ export function testMarkdownWorkspaceWritebackCommitCentralizesWorkspaceAndEdito
   if (calls.join('|') !== 'patch:/docs/demo.md:# Demo|editor:# Demo') {
     throw new Error(`expected writeback commit helper to patch workspace text before refreshing the editor, got ${calls.join('|')}`)
   }
+  lastLoadedRef.current = { path: '/docs/demo.md', text: '# Canonical', observedWorkspaceText: '# Raw residue' }
+  commitMarkdownWorkspaceWriteback({
+    path: '/docs/demo.md', text: '# Canonical reapply', lastLoadedRef,
+    patchWorkspaceEntryInlineText: () => {}, setActiveTextProgrammatic: () => {},
+  })
+  const reapplied = lastLoadedRef.current as { text: string; observedWorkspaceText?: string | null }
+  if (reapplied.text !== '# Canonical reapply' || reapplied.observedWorkspaceText !== '# Raw residue') {
+    throw new Error('expected display-only reapply to retain the observed raw write baseline')
+  }
+  commitMarkdownWorkspaceWriteback({
+    path: '/docs/demo.md', text: '# Read failed', lastLoadedRef,
+    observedWorkspaceText: undefined, observedWorkspaceFs: undefined,
+    patchWorkspaceEntryInlineText: () => {}, setActiveTextProgrammatic: () => {},
+  })
+  assert.equal(lastLoadedRef.current?.observedWorkspaceText, undefined)
+  lastLoadedRef.current = { path: '/docs/demo.md', text: '# Canonical', observedWorkspaceText: '# Raw residue' }
+  commitMarkdownWorkspaceWriteback({ path: '/docs/other.md', text: '# Other', lastLoadedRef,
+    patchWorkspaceEntryInlineText: () => {}, setActiveTextProgrammatic: () => {},
+  })
+  assert.equal(lastLoadedRef.current?.observedWorkspaceText, undefined, 'a new path cannot inherit prior write authority')
 }
 
 export function testMarkdownWorkspaceTextStateSyncCentralizesEditorAndDocumentRefresh() {

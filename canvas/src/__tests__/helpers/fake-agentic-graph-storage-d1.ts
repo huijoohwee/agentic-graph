@@ -1,4 +1,6 @@
+import { mutateFakeMediaArtifacts } from './fake-agentic-graph-storage-media-artifacts'
 import { FakeAgenticGraphStorageR2Bucket } from './fake-agentic-graph-storage-r2'
+import { runNativeStorageStatements, type NativeStorageStatement } from './native-agentic-graph-storage-d1'
 import {
   readFakeAgenticGraphStorageRawRows,
   readFakeAgenticGraphStorageRows,
@@ -13,10 +15,15 @@ const normalizeSql = (sql: string): string =>
     .trim()
 
 export class FakeAgenticGraphStorageD1Database {
+  statementTime = () => new Date().toISOString()
   workspaces = new Map<string, FakeRow>()
   documents = new Map<string, FakeRow>()
+  mediaArtifacts = new Map<string, FakeRow>()
   documentChunks = new Map<string, FakeRow>()
   graphSnapshots = new Map<string, FakeRow>()
+  storageChildState = new Map<string, FakeRow>()
+  storageChildSequence = 0
+  private nativeStatements = new WeakMap<object, () => NativeStorageStatement>()
   syncDevices = new Map<string, FakeRow>()
   syncEvents = new Map<string, FakeRow>()
   users = new Map<string, FakeRow>()
@@ -54,26 +61,22 @@ export class FakeAgenticGraphStorageD1Database {
         return this.readRawRows(sql, boundValues) as T[]
       },
     }
+    this.nativeStatements.set(statement, () => ({ sql, values: [...boundValues] }))
     return statement
+  }
+
+  async batch(statements: object[]) {
+    const inputs = statements.map(statement => {
+      const input = this.nativeStatements.get(statement)
+      if (!input) throw new Error('Storage batch requires statements from this fixture database')
+      return input()
+    })
+    return runNativeStorageStatements(this, inputs)
   }
 
   private applyMutation(sql: string, values: unknown[]) {
     const normalizedSql = normalizeSql(sql)
-    if (normalizedSql.includes('insert into document_publications')) {
-      const [workspaceId, documentId, canonicalPath, documentRevision, contentHash, status, publishedByUserId, publishedAt, updatedAt] = values
-      this.documentPublications.set(`${workspaceId}::${documentId}`, {
-        workspace_id: workspaceId,
-        document_id: documentId,
-        canonical_path: canonicalPath,
-        document_revision: documentRevision,
-        content_hash: contentHash,
-        status,
-        published_by_user_id: publishedByUserId,
-        published_at: publishedAt,
-        updated_at: updatedAt,
-      })
-      return
-    }
+    if (mutateFakeMediaArtifacts(this.mediaArtifacts, normalizedSql, values)) return
     if (normalizedSql.includes('insert into workspaces')) {
       const [id, slug, title, createdAt, updatedAt] = values
       this.workspaces.set(String(id), { id, slug, title, visibility: 'private', created_at: createdAt, updated_at: updatedAt })
@@ -171,7 +174,6 @@ export class FakeAgenticGraphStorageD1Database {
         revision,
         deleted,
         createdAt,
-        updatedAt,
       ] = values
       const existingByPath = Array.from(this.documents.entries()).find(
         ([, row]) => row.workspace_id === workspaceId && row.canonical_path === canonicalPath,
@@ -194,7 +196,7 @@ export class FakeAgenticGraphStorageD1Database {
         revision,
         deleted,
         created_at: existing.created_at || createdAt,
-        updated_at: updatedAt,
+        updated_at: this.statementTime(),
       })
       return
     }
@@ -212,7 +214,6 @@ export class FakeAgenticGraphStorageD1Database {
         parserVersion,
         revision,
         deleted,
-        updatedAt,
         id,
         workspaceId,
       ] = values
@@ -231,13 +232,13 @@ export class FakeAgenticGraphStorageD1Database {
         parser_version: parserVersion,
         revision,
         deleted,
-        updated_at: updatedAt,
+        updated_at: this.statementTime(),
       })
       return
     }
     if (normalizedSql.includes('insert into document_chunks')) {
       this.storageRecordWriteCounts.documentChunks += 1
-      const [id, documentId, workspaceId, chunkKey, chunkOrder, heading, markdown, tokenEstimate, contentHash, updatedAt] = values
+      const [id, documentId, workspaceId, chunkKey, chunkOrder, heading, markdown, tokenEstimate, contentHash] = values
       this.documentChunks.set(String(id), {
         id,
         document_id: documentId,
@@ -248,13 +249,13 @@ export class FakeAgenticGraphStorageD1Database {
         markdown,
         token_estimate: tokenEstimate,
         content_hash: contentHash,
-        updated_at: updatedAt,
+        updated_at: this.statementTime(),
       })
       return
     }
     if (normalizedSql.includes('update document_chunks set')) {
       this.storageRecordWriteCounts.documentChunks += 1
-      const [documentId, workspaceId, chunkKey, chunkOrder, heading, markdown, tokenEstimate, contentHash, updatedAt, id] = values
+      const [documentId, workspaceId, chunkKey, chunkOrder, heading, markdown, tokenEstimate, contentHash, id] = values
       const existing = this.documentChunks.get(String(id))
       if (!existing || existing.workspace_id !== workspaceId) return
       this.documentChunks.set(String(id), {
@@ -267,7 +268,7 @@ export class FakeAgenticGraphStorageD1Database {
         markdown,
         token_estimate: tokenEstimate,
         content_hash: contentHash,
-        updated_at: updatedAt,
+        updated_at: this.statementTime(),
       })
       return
     }
@@ -277,7 +278,7 @@ export class FakeAgenticGraphStorageD1Database {
     }
     if (normalizedSql.includes('insert into graph_snapshots')) {
       this.storageRecordWriteCounts.graphSnapshots += 1
-      const [id, documentId, workspaceId, graphRevision, graphHash, graphJson, layoutJson, derivedFromDocumentRevision, updatedAt] = values
+      const [id, documentId, workspaceId, graphRevision, graphHash, graphJson, layoutJson, derivedFromDocumentRevision] = values
       this.graphSnapshots.set(String(id), {
         id,
         document_id: documentId,
@@ -287,7 +288,7 @@ export class FakeAgenticGraphStorageD1Database {
         graph_json: graphJson,
         layout_json: layoutJson,
         derived_from_document_revision: derivedFromDocumentRevision,
-        updated_at: updatedAt,
+        updated_at: this.statementTime(),
       })
       return
     }
@@ -301,7 +302,6 @@ export class FakeAgenticGraphStorageD1Database {
         graphJson,
         layoutJson,
         derivedFromDocumentRevision,
-        updatedAt,
         id,
       ] = values
       const existing = this.graphSnapshots.get(String(id))
@@ -315,7 +315,7 @@ export class FakeAgenticGraphStorageD1Database {
         graph_json: graphJson,
         layout_json: layoutJson,
         derived_from_document_revision: derivedFromDocumentRevision,
-        updated_at: updatedAt,
+        updated_at: this.statementTime(),
       })
       return
     }
@@ -508,6 +508,9 @@ export class FakeAgenticGraphStorageD1Database {
   }
 
   private readRows(sql: string, values: unknown[]): FakeRow[] {
+    if (/^\s*WITH candidates AS MATERIALIZED\b/i.test(sql) || /\bFROM storage_child_state\b/i.test(sql)) {
+      return runNativeStorageStatements(this, [{ sql, values }])[0]!.results
+    }
     return readFakeAgenticGraphStorageRows(this, sql, values)
   }
 

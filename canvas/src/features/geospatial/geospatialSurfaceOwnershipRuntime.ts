@@ -1,3 +1,4 @@
+import { waitForSurfaceFrame } from '@/features/geospatial/surfaceFrameWait'
 import { importGympgrph } from '@/features/geospatial/gympgrphBridge'
 import { commitCanvasGeospatialModeEnabled } from '@/features/geospatial/geospatialModeCommit'
 
@@ -28,33 +29,6 @@ export class GeospatialSurfaceOwnershipRestorationError extends Error {
     )
     this.name = 'GeospatialSurfaceOwnershipRestorationError'
   }
-}
-
-function waitForSurfaceFrame(
-  deadline: number,
-  timeoutMessage: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const remainingMs = deadline - Date.now()
-    if (remainingMs <= 0) {
-      reject(new Error(timeoutMessage))
-      return
-    }
-    let settled = false
-    let frameId = 0
-    const timeoutId = window.setTimeout(() => {
-      if (settled) return
-      settled = true
-      if (frameId !== 0) window.cancelAnimationFrame(frameId)
-      reject(new Error(timeoutMessage))
-    }, remainingMs)
-    frameId = window.requestAnimationFrame(() => {
-      if (settled) return
-      settled = true
-      window.clearTimeout(timeoutId)
-      resolve()
-    })
-  })
 }
 
 async function waitForFlightSourceSettlement(

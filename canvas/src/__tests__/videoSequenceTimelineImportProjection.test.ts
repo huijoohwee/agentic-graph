@@ -28,8 +28,8 @@ export async function testWorkspaceImportLocalMultipleVideosCreatesStackedVideoA
       'overlay-clip.webm',
       'section Video',
       'section Audio',
-      'kgsrc_0_5, 00:00, 5m',
-      'kgsrc_0_5, 00:02, 5m',
+      'kgsrc_0_300, 00:00, 5m',
+      'kgsrc_0_300, 00:02, 5m',
       'audio : clip_',
     ]) {
       if (!text.includes(token)) throw new Error(`expected multi-video sequence token ${token}, got ${text}`)

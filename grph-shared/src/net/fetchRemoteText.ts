@@ -39,27 +39,93 @@ const DEFAULT_TIMEOUT_MS = 12_000
 const DEFAULT_MAX_BYTES = 2_000_000
 const DEFAULT_ERROR_TEXT_MAX_BYTES = 16_000
 
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  if (!timeoutMs || timeoutMs <= 0) return promise
-  return new Promise<T>((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error('timeout')), timeoutMs)
-    promise.then(
-      v => {
-        clearTimeout(t)
-        resolve(v)
-      },
-      err => {
-        clearTimeout(t)
-        reject(err)
-      },
+const cancelBody = (body: ReadableStream<Uint8Array> | null, reason: string): void => {
+  try {
+    if (body) void Promise.resolve(body.cancel(reason)).catch(() => undefined)
+  } catch {
+    // Cleanup must not replace the response's known HTTP/result semantics.
+  }
+}
+
+function createRequestDeadline(timeoutMs: number) {
+  const controller = new AbortController()
+  const deadlineMs = performance.now() + timeoutMs
+  const timeoutError = new Error('timeout')
+  const pending = new Set<(error: Error) => void>()
+  let expired = false
+  const expire = () => {
+    if (expired) return
+    expired = true
+    for (const reject of pending) reject(timeoutError)
+    try { controller.abort(timeoutError) } catch { /* bounded rejection already delivered */ }
+  }
+  const timer = setTimeout(expire, timeoutMs)
+  const assertActive = () => {
+    if (!expired && performance.now() >= deadlineMs) expire()
+    if (expired) throw timeoutError
+  }
+  const wait = <T,>(promise: Promise<T>, disposeLate?: (value: T) => void): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      let settled = false
+      const fail = (error: unknown) => {
+        if (settled) return
+        settled = true
+        pending.delete(fail)
+        reject(error)
+      }
+      pending.add(fail)
+      // One current waiter per read, without accumulating reactions on a shared timeout promise.
+      promise.then(value => {
+        if (!settled) {
+          try { assertActive() } catch (error) { fail(error) }
+        }
+        if (settled) { disposeLate?.(value); return }
+        settled = true
+        pending.delete(fail)
+        resolve(value)
+      }, fail)
+      try { assertActive() } catch (error) { fail(error) }
+    })
+  return {
+    signal: controller.signal,
+    assertActive,
+    wait,
+    close: () => clearTimeout(timer),
+  }
+}
+
+type RequestDeadline = ReturnType<typeof createRequestDeadline>
+
+async function withResponseDeadline<T>(
+  targetUrl: string,
+  init: RequestInit,
+  timeoutMs: number,
+  consume: (response: Response, deadline: RequestDeadline) => Promise<T>,
+): Promise<T> {
+  const deadline = createRequestDeadline(timeoutMs)
+  let response: Response | undefined
+  try {
+    response = await deadline.wait<Response>(
+      Promise.resolve().then(() => {
+        deadline.assertActive()
+        return fetch(targetUrl, { ...init, signal: deadline.signal })
+      }),
+      late => cancelBody(late.body, 'remote response arrived after deadline'),
     )
-  })
+    return await consume(response, deadline)
+  } finally {
+    deadline.close()
+    // HEAD, advertised oversize, and early failures never acquire a reader.
+    if (response && !response.bodyUsed) cancelBody(response.body, 'remote response body unused')
+  }
 }
 
 async function readResponseTextBounded(
   res: Response,
   args: { maxBytes: number; onProgress?: (args: { loadedBytes: number; totalBytes?: number }) => void },
+  deadline: RequestDeadline,
 ): Promise<{ text: string; contentLength?: number } | { kind: 'too_large'; contentLength?: number }> {
+  deadline.assertActive()
   const contentLengthHeader = res.headers.get('content-length')
   const contentLength = contentLengthHeader ? Number.parseInt(contentLengthHeader, 10) : undefined
   if (contentLength != null && Number.isFinite(contentLength) && contentLength > args.maxBytes) {
@@ -67,32 +133,42 @@ async function readResponseTextBounded(
   }
 
   if (!res.body) {
-    const text = await res.text()
-    if (text.length > args.maxBytes) return { kind: 'too_large', contentLength }
+    const text = await deadline.wait(res.text())
+    if (new TextEncoder().encode(text).byteLength > args.maxBytes) return { kind: 'too_large', contentLength }
+    deadline.assertActive()
     return { text, contentLength }
   }
 
   const reader = res.body.getReader()
-  const chunks: Uint8Array[] = []
+  const decoder = new TextDecoder('utf-8')
+  const parts: string[] = []
   let loadedBytes = 0
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    if (value) {
-      loadedBytes += value.byteLength
-      if (loadedBytes > args.maxBytes) return { kind: 'too_large', contentLength }
-      chunks.push(value)
-      args.onProgress?.({ loadedBytes, totalBytes: contentLength })
+  let complete = false
+  try {
+    while (true) {
+      const { done, value } = await deadline.wait(reader.read())
+      if (done) { complete = true; break }
+      if (value) {
+        loadedBytes += value.byteLength
+        if (loadedBytes > args.maxBytes) return { kind: 'too_large', contentLength }
+        // Streaming decoding preserves split UTF-8 sequences and avoids a second full byte buffer.
+        const text = decoder.decode(value, { stream: true })
+        if (text) parts.push(text)
+        args.onProgress?.({ loadedBytes, totalBytes: contentLength })
+        deadline.assertActive()
+      }
     }
+    const tail = decoder.decode()
+    if (tail) parts.push(tail)
+    const text = parts.join('')
+    deadline.assertActive()
+    return { text, contentLength }
+  } finally {
+    if (!complete) {
+      try { void Promise.resolve(reader.cancel('remote response read abandoned')).catch(() => undefined) } catch { /* preserve result */ }
+    }
+    try { reader.releaseLock() } catch { /* preserve result */ }
   }
-  const merged = new Uint8Array(loadedBytes)
-  let offset = 0
-  for (const c of chunks) {
-    merged.set(c, offset)
-    offset += c.byteLength
-  }
-  const text = new TextDecoder('utf-8').decode(merged)
-  return { text, contentLength }
 }
 
 function buildProxyUrl(proxyEndpoint: string, url: string): string {
@@ -123,60 +199,73 @@ function runValidate(
 }
 
 async function fetchVia(url: string, options: FetchRemoteTextDetailedOptions, useProxy: boolean): Promise<FetchRemoteTextResult> {
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
-  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES
+  const configuredTimeout = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+  const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0
+    ? Math.min(configuredTimeout, 2_147_483_647)
+    : DEFAULT_TIMEOUT_MS
+  const configuredMaxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES
+  const maxBytes = Number.isFinite(configuredMaxBytes) && configuredMaxBytes >= 0
+    ? configuredMaxBytes
+    : DEFAULT_MAX_BYTES
   const proxyEndpoint = options.proxyEndpoint || REMOTE_FETCH_PROXY_ENDPOINT
   const targetUrl = useProxy ? buildProxyUrl(proxyEndpoint, url) : url
   const headers = options.headers
   const method = options.method || 'GET'
 
   try {
+    // Preserve independent attempts: optional preflight HEAD and each GET/HEAD request
+    // receive their own budget; alternate transport starts a new attempt as before.
     if (options.preflightHead && method !== 'HEAD') {
       try {
-        const headRes = await withTimeout(fetch(targetUrl, { method: 'HEAD', headers }), timeoutMs)
-        const cl = headRes.headers.get('content-length')
-        const contentLength = cl ? Number.parseInt(cl, 10) : undefined
-        if (contentLength != null && Number.isFinite(contentLength) && contentLength > maxBytes) {
-          return { ok: false, kind: 'too_large', url, usedProxy: useProxy, status: headRes.status, contentLength }
-        }
+        const oversized = await withResponseDeadline(targetUrl, { method: 'HEAD', headers }, timeoutMs, async headRes => {
+          const cl = headRes.headers.get('content-length')
+          const contentLength = cl ? Number.parseInt(cl, 10) : undefined
+          return contentLength != null && Number.isFinite(contentLength) && contentLength > maxBytes
+            ? { ok: false as const, kind: 'too_large' as const, url, usedProxy: useProxy, status: headRes.status, contentLength }
+            : null
+        })
+        if (oversized) return oversized
       } catch {
         void 0
       }
     }
 
-    const res = await withTimeout(fetch(targetUrl, { method, headers }), timeoutMs)
-    const status = res.status
-    if (!res.ok) {
-      const errorText = await (async () => {
-        try {
-          const body = await readResponseTextBounded(res, { maxBytes: Math.min(maxBytes, DEFAULT_ERROR_TEXT_MAX_BYTES) })
-          if (!('text' in body)) return undefined
-          const t = String(body.text || '')
-          return t.length > DEFAULT_ERROR_TEXT_MAX_BYTES ? t.slice(0, DEFAULT_ERROR_TEXT_MAX_BYTES) : t
-        } catch {
-          return undefined
-        }
-      })()
-      return { ok: false, kind: 'http', url, usedProxy: useProxy, status, errorText }
-    }
-    const contentType = String(res.headers.get('content-type') || '').trim() || undefined
-    const contentLengthHeader = res.headers.get('content-length')
-    const contentLength = contentLengthHeader ? Number.parseInt(contentLengthHeader, 10) : undefined
-    if (method === 'HEAD') {
-      if (contentLength != null && Number.isFinite(contentLength) && contentLength > maxBytes) {
-        return { ok: false, kind: 'too_large', url, usedProxy: useProxy, status, contentLength }
+    return await withResponseDeadline(targetUrl, { method, headers }, timeoutMs, async (res, deadline): Promise<FetchRemoteTextResult> => {
+      const status = res.status
+      if (!res.ok) {
+        const errorText = await (async () => {
+          try {
+            const body = await readResponseTextBounded(res, { maxBytes: Math.min(maxBytes, DEFAULT_ERROR_TEXT_MAX_BYTES) }, deadline)
+            if (!('text' in body)) return undefined
+            const t = String(body.text || '')
+            return t.length > DEFAULT_ERROR_TEXT_MAX_BYTES ? t.slice(0, DEFAULT_ERROR_TEXT_MAX_BYTES) : t
+          } catch {
+            // A stalled diagnostic body cannot turn an authoritative HTTP rejection
+            // into a transport timeout eligible for alternate-origin replay.
+            return undefined
+          }
+        })()
+        return { ok: false, kind: 'http', url, usedProxy: useProxy, status, errorText }
       }
-      return { ok: true, text: '', url, usedProxy: useProxy, status, contentLength, contentType }
-    }
-    const body = await readResponseTextBounded(res, { maxBytes, onProgress: options.onProgress })
-    if (!('text' in body)) {
-      return { ok: false, kind: 'too_large', url, usedProxy: useProxy, status, contentLength: body.contentLength }
-    }
-    const text = body.text
-    if (options.validate && !runValidate(options.validate, { text, url })) {
-      return { ok: false, kind: 'network', url, usedProxy: useProxy, status, contentLength: body.contentLength }
-    }
-    return { ok: true, text, url, usedProxy: useProxy, status, contentLength: body.contentLength, contentType }
+      const contentType = String(res.headers.get('content-type') || '').trim() || undefined
+      const contentLengthHeader = res.headers.get('content-length')
+      const contentLength = contentLengthHeader ? Number.parseInt(contentLengthHeader, 10) : undefined
+      if (method === 'HEAD') {
+        if (contentLength != null && Number.isFinite(contentLength) && contentLength > maxBytes) {
+          return { ok: false, kind: 'too_large', url, usedProxy: useProxy, status, contentLength }
+        }
+        return { ok: true, text: '', url, usedProxy: useProxy, status, contentLength, contentType }
+      }
+      const body = await readResponseTextBounded(res, { maxBytes, onProgress: options.onProgress }, deadline)
+      if (!('text' in body)) {
+        return { ok: false, kind: 'too_large', url, usedProxy: useProxy, status, contentLength: body.contentLength }
+      }
+      const text = body.text
+      if (options.validate && !runValidate(options.validate, { text, url })) {
+        return { ok: false, kind: 'network', url, usedProxy: useProxy, status, contentLength: body.contentLength }
+      }
+      return { ok: true, text, url, usedProxy: useProxy, status, contentLength: body.contentLength, contentType }
+    })
   } catch (err: any) {
     if (String(err?.message || '').toLowerCase().includes('timeout')) {
       return { ok: false, kind: 'timeout', url, usedProxy: useProxy }

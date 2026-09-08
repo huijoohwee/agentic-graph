@@ -1,3 +1,6 @@
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { withDurableBrowserStorage } from '@/__tests__/helpers/durable-browser-storage'
+import { createFakeAgenticGraphStorageBrowserSession } from '@/__tests__/helpers/fake-agentic-graph-storage-browser-session'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
@@ -264,7 +267,7 @@ export async function testSelectedWorkspaceEntriesFlushToPublicStorageWorker() {
   const result = await publishWorkspaceEntriesToAgenticGraphStorage({
     workspaceId,
     syncNow: true,
-    baseUrl: 'https://example.com',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
     fetchImpl,
     dbState,
     entries: [
@@ -304,7 +307,7 @@ export async function testSourceFileShareUrlFailsClosedWhenStoragePublishFails()
   try {
     await publishWorkspaceEntryShareUrl({
       workspaceId: 'kgws:test-share-url-fail-closed',
-      baseUrl: 'https://example.com',
+      baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
       fetchImpl: async () => new Response(JSON.stringify({ ok: false, error: 'push failed' }), {
         status: 500,
         headers: { 'content-type': 'application/json' },
@@ -328,110 +331,128 @@ export async function testSourceFileShareUrlFailsClosedWhenStoragePublishFails()
 }
 
 export async function testSourceFileShareUrlReturnsAirvioOpaquePublicRouteAfterPublish() {
-  await __resetAgenticGraphStorageDbForTests()
-  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
+  const dom = initJsdomHarness()
+  dom.dom.reconfigure({ url: 'https://airvio.co/' })
   try {
-    const env = createFakeAgenticGraphStorageWorkerEnv()
-    const fetchImpl = createStorageWorkerFetch(env)
-    const shareUrl = await publishWorkspaceEntryShareUrl({
-      workspaceId: 'kgws:test-share-url-public-route',
-      baseUrl: 'https://example.com',
-      fetchImpl,
-      entry: {
-        path: '/workspace/chat/public.md',
-        parentPath: '/workspace/chat',
-        kind: 'file',
-        name: 'public.md',
-        text: '# Public Share URL',
-        updatedAtMs: 1,
-      },
+    await withDurableBrowserStorage(async () => {
+      await __resetAgenticGraphStorageDbForTests()
+      const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+      process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
+      try {
+        const session = await createFakeAgenticGraphStorageBrowserSession('kgws:test-share-url-public-route', { origin: window.location.origin })
+        const fetchImpl = session.fetch
+        const shareUrl = await publishWorkspaceEntryShareUrl({
+          workspaceId: 'kgws:test-share-url-public-route',
+          baseUrl: session.origin,
+          fetchImpl,
+          entry: {
+            path: '/workspace/chat/public.md',
+            parentPath: '/workspace/chat',
+            kind: 'file',
+            name: 'public.md',
+            text: '# Public Share URL',
+            updatedAtMs: 1,
+          },
+        })
+        if (!shareUrl || !shareUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
+          throw new Error(`expected Share URL to use the public airvio.co opaque share route, got ${String(shareUrl || '')}`)
+        }
+      } finally {
+        if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+        else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+        await __resetAgenticGraphStorageDbForTests()
+      }
     })
-    if (!shareUrl || !shareUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
-      throw new Error(`expected Share URL to use the public airvio.co opaque share route, got ${String(shareUrl || '')}`)
-    }
-  } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-    await __resetAgenticGraphStorageDbForTests()
-  }
+  } finally { dom.restore() }
 }
 
 export function testPublishedDocCanvasEmbedUrlAppendsPreviewParamToOpaqueShareRoute() {
-  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
+  const dom = initJsdomHarness()
   try {
-    const embedUrl = buildPublishedDocCanvasEmbedUrl({
-      workspaceId: 'kgws:test-share-url-public-route',
-      canonicalPath: 'workspace/chat/public.md',
-    })
-    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
-      throw new Error(`expected canvas embed URL to keep the public opaque share route, got ${String(embedUrl || '')}`)
+    const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
+    try {
+      const embedUrl = buildPublishedDocCanvasEmbedUrl({
+        workspaceId: 'kgws:test-share-url-public-route',
+        canonicalPath: 'workspace/chat/public.md',
+      })
+      if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
+        throw new Error(`expected canvas embed URL to keep the public opaque share route, got ${String(embedUrl || '')}`)
+      }
+      if (!embedUrl.includes('kgPreview=1')) {
+        throw new Error(`expected canvas embed URL to append the embedded preview param, got ${String(embedUrl || '')}`)
+      }
+    } finally {
+      if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+      else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     }
-    if (!embedUrl.includes('kgPreview=1')) {
-      throw new Error(`expected canvas embed URL to append the embedded preview param, got ${String(embedUrl || '')}`)
-    }
-  } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  }
+  } finally { dom.restore() }
 }
 
 export function testPublishedDocCanvasEmbedUrlFromSourceParsesDocRoute() {
-  const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
+  const dom = initJsdomHarness()
   try {
-    const embedUrl = buildPublishedDocCanvasEmbedUrlFromSource({
-      sourceUrl: '/api/storage/doc/kgws:test-share-url-public-route/workspace%2Fchat%2Fpublic.md',
-    })
-    if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
-      throw new Error(`expected canvas embed source URL helper to resolve the public opaque share route, got ${String(embedUrl || '')}`)
+    const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://airvio.co'
+    try {
+      const embedUrl = buildPublishedDocCanvasEmbedUrlFromSource({
+        sourceUrl: '/api/storage/doc/kgws:test-share-url-public-route/workspace%2Fchat%2Fpublic.md',
+      })
+      if (!embedUrl || !embedUrl.startsWith('https://airvio.co/agentic-graph/share/')) {
+        throw new Error(`expected canvas embed source URL helper to resolve the public opaque share route, got ${String(embedUrl || '')}`)
+      }
+      if (!embedUrl.includes('kgPreview=1')) {
+        throw new Error(`expected canvas embed source URL helper to append the embedded preview param, got ${String(embedUrl || '')}`)
+      }
+    } finally {
+      if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
+      else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
     }
-    if (!embedUrl.includes('kgPreview=1')) {
-      throw new Error(`expected canvas embed source URL helper to append the embedded preview param, got ${String(embedUrl || '')}`)
-    }
-  } finally {
-    if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
-    else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
-  }
+  } finally { dom.restore() }
 }
 
 export async function testSourceFileShareUrlHydratesMetadataOnlyWorkspaceEntryBeforePublish() {
-  await __resetAgenticGraphStorageDbForTests()
+  const dom = initJsdomHarness()
+  dom.dom.reconfigure({ url: 'https://example.com/' })
   try {
-    const env = createFakeAgenticGraphStorageWorkerEnv()
-    const fetchImpl = createStorageWorkerFetch(env)
-    const workspaceId = 'kgws:test-share-url-hydrates-entry'
-    const shareUrl = await publishWorkspaceEntryShareUrl({
-      workspaceId,
-      baseUrl: 'https://example.com',
-      fetchImpl,
-      readEntryText: entry => entry.path === '/workspace/chat/public.md' ? '# Hydrated Public Share URL' : '',
-      entry: {
-        path: '/workspace/chat/public.md',
-        parentPath: '/workspace/chat',
-        kind: 'file',
-        name: 'public.md',
-        updatedAtMs: 1,
-      },
+    await withDurableBrowserStorage(async () => {
+      await __resetAgenticGraphStorageDbForTests()
+      try {
+        const workspaceId = 'kgws:test-share-url-hydrates-entry'
+        const session = await createFakeAgenticGraphStorageBrowserSession(workspaceId, { origin: window.location.origin })
+        const { env, fetch: fetchImpl } = session
+        const shareUrl = await publishWorkspaceEntryShareUrl({
+          workspaceId,
+          baseUrl: session.origin,
+          fetchImpl,
+          readEntryText: entry => entry.path === '/workspace/chat/public.md' ? '# Hydrated Public Share URL' : '',
+          entry: {
+            path: '/workspace/chat/public.md',
+            parentPath: '/workspace/chat',
+            kind: 'file',
+            name: 'public.md',
+            updatedAtMs: 1,
+          },
+        })
+        if (!shareUrl) {
+          throw new Error('expected metadata-only workspace entry to resolve text before Share URL publication')
+        }
+        const docResponse = await readStorageWorker().fetch(
+          new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'workspace/chat/public.md')}`),
+          env as never,
+        )
+        if (!docResponse.ok) {
+          throw new Error(`expected hydrated Share URL document to be publicly readable, got ${docResponse.status}`)
+        }
+        const text = await docResponse.text()
+        if (text !== '# Hydrated Public Share URL') {
+          throw new Error(`expected Share URL publication to store hydrated workspace text, got ${text}`)
+        }
+      } finally {
+        await __resetAgenticGraphStorageDbForTests()
+      }
     })
-    if (!shareUrl) {
-      throw new Error('expected metadata-only workspace entry to resolve text before Share URL publication')
-    }
-    const docResponse = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'workspace/chat/public.md')}`),
-      env as never,
-    )
-    if (!docResponse.ok) {
-      throw new Error(`expected hydrated Share URL document to be publicly readable, got ${docResponse.status}`)
-    }
-    const text = await docResponse.text()
-    if (text !== '# Hydrated Public Share URL') {
-      throw new Error(`expected Share URL publication to store hydrated workspace text, got ${text}`)
-    }
-  } finally {
-    await __resetAgenticGraphStorageDbForTests()
-  }
+  } finally { dom.restore() }
 }
 
 export function testSourceFilesPersistenceBootstrapOwnsAgenticGraphStorageLoopAndQueueIntegration() {

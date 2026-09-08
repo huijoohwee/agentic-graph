@@ -5,23 +5,23 @@ import {
   clearFlightGeoPresentationAttemptDebug,
   recordFlightGeoStoppedPresentation,
   writeFlightGeoPresentationDebug,
-} from '../../../gympgrph/src/features/geospatial/flightGeoPresentationDebug'
+} from 'gympgrph/testkit/features/geospatial/flightGeoPresentationDebug'
 import type {
   FlightGeoOverlaySnapshot,
-} from '../../../gympgrph/src/flightGeoOverlay'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import {
   clearFlightGeoOverlayFromMap,
   FLIGHT_GEO_OVERLAY_LAYER_ORDER,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import {
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
-} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+} from 'gympgrph/testkit/flightGeoEnvironmentMapLibre'
 import {
   isFlightGeoMapLibreDisposalPrepared,
   prepareFlightGeoMapLibreForDisposal,
-} from '../../../gympgrph/src/features/geospatial/flightGeoMapLibreDisposal'
+} from 'gympgrph/testkit/features/geospatial/flightGeoMapLibreDisposal'
 
 test('Flight overlay disposal clear is idempotent and never creates a missing source', () => {
   const layers = new Set<string>(FLIGHT_GEO_OVERLAY_LAYER_ORDER)

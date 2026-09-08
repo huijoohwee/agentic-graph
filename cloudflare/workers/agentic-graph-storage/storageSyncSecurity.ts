@@ -92,9 +92,9 @@ const authenticateAgenticGraphStorageRequest = async (args: {
 }
 
 /**
- * Existing bearer-token protection for non-snapshot storage endpoints. Cookie
- * credentials intentionally do not leak into chat, relay, document, or room
- * authentication while those runtimes keep their own token contracts.
+ * Bearer-token protection remains the default for storage endpoints. Cookie
+ * authentication is opt-in for snapshots, private document reads/publication, workspace blobs and media capabilities/assets;
+ * chat, relay, crawler, and room callers keep their existing token contracts.
  */
 export const authenticateAgenticGraphStorageSyncRequest = async (
   request: Request,
@@ -104,9 +104,9 @@ export const authenticateAgenticGraphStorageSyncRequest = async (
   authenticateAgenticGraphStorageRequest({ request, env, db, readContext: readAuthenticatedChatContext })
 
 /**
- * Browser cookies are accepted only for the D1 workspace snapshot protocol:
- * push, pull, and export. This keeps the browser session independent from the
- * chat/WebSocket credential migration and from canonical Git publication.
+ * Cookie-aware storage sessions require the configured browser Access boundary.
+ * Snapshot push, pull, export, private document reads and explicit publication use this credential implementation;
+ * workspace blobs and media capabilities/assets opt in explicitly below.
  */
 export const authenticateAgenticGraphStorageSnapshotRequest = async (
   request: Request,
@@ -120,6 +120,13 @@ export const authenticateAgenticGraphStorageSnapshotRequest = async (
     readContext: readAuthenticatedStorageSyncContext,
     requireBrowserSessionConfigurationForCookie: true,
   })
+
+/**
+ * Workspace blobs and media capabilities/assets use the configured browser session.
+ * The Worker entrypoint checks exact Origin for cookie mutations before dispatch;
+ * each media route still applies its workspace and capability ownership checks.
+ */
+export const authenticateAgenticGraphStorageArtifactRequest = authenticateAgenticGraphStorageSnapshotRequest
 
 export const authorizeAgenticGraphStorageWorkspace = async (args: {
   db: D1DatabaseLike

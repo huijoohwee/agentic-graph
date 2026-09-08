@@ -1,17 +1,18 @@
 import path from 'node:path'
+import assert from 'node:assert/strict'
+import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
+import { buildStoryboardWidgetInsertionPlacement } from '@/lib/storyboardWidget/widgetInsertionPlacement'
 
 import { readUtf8 } from './geospatialHostIntegrationTestUtils'
 
 export const testGeospatialOverlayHostNotGatedBySidebar = () => {
-  const canvasPath = path.resolve(process.cwd(), 'src', 'pages', 'Canvas.tsx')
-  const text = readUtf8(canvasPath)
-  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx')
-  const viewportText = readUtf8(viewportPath)
-  if (text.includes("active={isSidebarOpen && floatingPanelTab === 'geo'}")) {
-    throw new Error('GeospatialOverlayHost must not be gated by FloatingPanel expand/collapse')
-  }
+  const text = readUtf8(path.resolve(process.cwd(), 'src', 'pages', 'Canvas.tsx'))
+  const viewportText = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx'))
+  assert.ok(!text.includes("active={isSidebarOpen && floatingPanelTab === 'geo'}"),
+    'GeospatialOverlayHost must not be gated by FloatingPanel expand/collapse')
   if (!text.includes('geospatialModeEnabled')) throw new Error('Expected geospatialModeEnabled state to exist')
-  if (!(text.includes('geospatialModeEnabled &&') || viewportText.includes('geospatialModeEnabled &&'))) {
+  if (!viewportText.includes('const geospatialCompositionEnabled = geospatialModeEnabled')
+    || !viewportText.includes('geospatialCompositionEnabled && !heavyRuntimeIntentBlocked')) {
     throw new Error('Expected GeospatialOverlayHost to mount only when Geospatial Mode is enabled')
   }
 }
@@ -47,18 +48,22 @@ export const testFitToViewActionDoesNotRouteStoryboard2dToGeospatialFallback = (
 }
 
 export const testCanvasForbidsGraphWhenGeospatialEnabled = () => {
-  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx')
-  const text = readUtf8(viewportPath)
-
-  if (!text.includes('!geospatialModeEnabled && canvasRenderMode === \'2d\'')) {
-    throw new Error('Expected 2D canvas to be gated off while Geospatial Mode is enabled')
+  for (const canvasRenderMode of ['2d', '3d'] as const) {
+    const input = {
+      canvasRenderMode, cityMapLibreSurfaceRequested: false, flightSimActive: false,
+      gameplayOverlayActive: false, geospatialModeEnabled: true, geospatialXrModeEnabled: false,
+      workspaceEditorOverlayOpen: false, workspaceStoryboardSurfaceActive: false,
+    }
+    assert.deepEqual(resolveCanvasSurfaceOwnership(input), {
+      activeSurface: 'geo', geospatialOverlayOwnsViewport: true,
+    })
+    assert.equal(resolveCanvasSurfaceOwnership({ ...input, geospatialModeEnabled: false }).activeSurface, canvasRenderMode)
   }
-  if (!text.includes('!geospatialModeEnabled && canvasRenderMode === \'3d\'')) {
-    throw new Error('Expected 3D canvas to be gated off while Geospatial Mode is enabled')
-  }
-  if (!(text.includes('!geospatialModeEnabled') && text.includes('<MinimapLazy />'))) {
-    throw new Error('Expected minimap overlay to be gated by Geospatial Mode')
-  }
+  const viewport = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx'))
+  assert.ok(viewport.includes('resolveCanvasSurfaceOwnership({'))
+  assert.ok(viewport.includes('geospatialModeEnabled: geospatialCompositionEnabled'))
+  assert.ok(viewport.includes('&& !geospatialOverlayOwnsViewport'))
+  assert.ok(viewport.includes('{minimapOverlayVisible ? ('))
 }
 
 export const testGeospatialStoryboardWidgetDropBridgeStaysMounted = () => {
@@ -67,7 +72,7 @@ export const testGeospatialStoryboardWidgetDropBridgeStaysMounted = () => {
   const viewportText = readUtf8(viewportPath)
   const storyboardWidgetText = readUtf8(storyboardWidgetPath)
 
-  if (!viewportText.includes("geospatialModeEnabled && active2dSurface === 'storyboard'")) {
+  if (!viewportText.includes("geospatialCompositionEnabled && active2dSurface === 'storyboard'")) {
     throw new Error('Expected Geospatial mode to mount the Storyboard widget drop bridge when Storyboard is selected')
   }
   if (!viewportText.includes('<StoryboardWidgetDropBridgeLazy active={false} widgetDropCaptureEnabled geospatialWidgetPanelMode />')) {
@@ -82,28 +87,23 @@ export const testGeospatialStoryboardWidgetDropBridgeStaysMounted = () => {
 }
 
 export const testGeospatialWidgetPanelsDefaultToFloatingAndHideMapDots = () => {
-  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx')
-  const storyboardWidgetPath = path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetDropBridge.ts')
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const viewportText = readUtf8(viewportPath)
-  const storyboardWidgetText = readUtf8(storyboardWidgetPath)
-  const hostText = readUtf8(hostPath)
-
-  if (!viewportText.includes('geospatialPanelNodeIds')) {
-    throw new Error('Expected CanvasViewport geospatial snapshot to publish panel-rendered widget node ids')
-  }
-  if (!storyboardWidgetText.includes("import { setFlowWidgetPinnedById } from '@/lib/storyboardWidget/flowWidgetPinnedState'")
-    || !storyboardWidgetText.includes('setFlowWidgetPinnedById(st.flowWidgetPinnedByNodeId, actualId, false)')) {
-    throw new Error('Expected geospatial widget drops to default to unpinned floating panels')
-  }
-  if (!hostText.includes('if (panelNodeIds.has(nodeId)) continue')) {
-    throw new Error('Expected GeospatialHost to suppress point rendering for panel-rendered widget nodes')
-  }
+  const overlay = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx'))
+  const bridge = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetDropBridge.ts'))
+  const host = readUtf8(path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx'))
+  assert.ok(overlay.includes('geospatialPanelNodeIds: storyboardWidgetPanelsActive ? gympgrphBridge.openWidgetNodeIds : []'))
+  assert.ok(bridge.includes('pinTargetInCanvas: args.geospatialWidgetPanelMode !== true'))
+  assert.ok(bridge.includes('buildStoryboardWidgetInsertionPlacement({'))
+  assert.ok(bridge.includes('state.setFlowWidgetPinnedByNodeIdForGraph(graphMetaKey, placement.pinnedByNodeId)'))
+  const placement = buildStoryboardWidgetInsertionPlacement({
+    snapshot: { pinnedByNodeId: {}, screenByNodeId: {}, worldByNodeId: {} },
+    targetNodeId: 'widget', targetWorldPosition: { x: 10, y: 20 }, pinTargetInCanvas: false,
+  })
+  assert.equal(placement.pinnedByNodeId.widget, false)
+  assert.ok(host.includes('if (panelNodeIds.has(nodeId)) continue'))
 }
 
 export const testGeospatialWidgetPanelsResolvePendingOpenAgainstRenderedGraph = () => {
-  const storyboardWidgetPath = path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas.tsx')
-  const storyboardWidgetText = readUtf8(storyboardWidgetPath)
+  const storyboardWidgetText = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetSelectionBookkeeping.ts'))
 
   if (!storyboardWidgetText.includes('resolveGraphNodeIdByCanonicalId(renderGraphDataOverride as GraphData | null, pending) || pending')) {
     throw new Error('Expected StoryboardWidgetCanvas to resolve pending widget opens against rendered graph canonical ids')
@@ -114,30 +114,33 @@ export const testGeospatialWidgetPanelsResolvePendingOpenAgainstRenderedGraph = 
 }
 
 export const testGeospatialWidgetPanelsDoNotBindDiscoveryWidgetsToGeoCoordinates = () => {
-  const storyboardWidgetPath = path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas.tsx')
+  const storyboardWidgetPath = path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetDropBridge.ts')
   const storyboardWidgetText = readUtf8(storyboardWidgetPath)
 
-  if (!storyboardWidgetText.includes('if (!geospatialWidgetPanelMode) {')) {
+  if (!storyboardWidgetText.includes('if (!args.geospatialWidgetPanelMode) {')) {
     throw new Error('Expected geospatial widget panel mode to guard coordinate-coupled discovery widget behavior')
   }
-  if (!storyboardWidgetText.includes('if (entry.nodeTypeId === FLOW_GRABMAPS_DISCOVERY_NODE_TYPE_ID && !geospatialWidgetPanelMode) {')) {
+  if (!storyboardWidgetText.includes('if (entry.nodeTypeId === FLOW_GRABMAPS_DISCOVERY_NODE_TYPE_ID && !args.geospatialWidgetPanelMode) {')) {
     throw new Error('Expected post-drop discovery geo sync to stay disabled for geospatial widget panel mode')
   }
-  if (!storyboardWidgetText.includes('if (!geospatialWidgetPanelMode) {\n          const dropGeo = readFiniteGeoLatLng(properties)')) {
+  if (!storyboardWidgetText.includes('if (!args.geospatialWidgetPanelMode) {\n          const dropGeo = readFiniteGeoLatLng(properties)')) {
     throw new Error('Expected map recentering to stay disabled for geospatial widget panel mode discovery widget drops')
   }
 }
 
 export const testGeospatialWidgetPanelsOverrideStalePinnedReuseOnDrop = () => {
-  const storyboardWidgetPath = path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetDropBridge.ts')
-  const storyboardWidgetText = readUtf8(storyboardWidgetPath)
-
-  if (!storyboardWidgetText.includes('const nextPinnedMap = setFlowWidgetPinnedById(st.flowWidgetPinnedByNodeId, actualId, false)')) {
-    throw new Error('Expected geospatial widget panel drops to override stale pinned state for reused node ids')
+  const snapshot = {
+    pinnedByNodeId: { reused: true, unrelated: true },
+    screenByNodeId: { reused: { top: 2, left: 3 } },
+    worldByNodeId: { reused: { x: 4, y: 5 } },
   }
-  if (!storyboardWidgetText.includes('if (nextPinnedMap) st.setFlowWidgetPinnedByNodeId(nextPinnedMap)')) {
-    throw new Error('Expected geospatial widget panel drops to force new widgets back to floating mode')
-  }
+  const placement = buildStoryboardWidgetInsertionPlacement({
+    snapshot, targetNodeId: 'reused', targetWorldPosition: { x: 10, y: 20 }, pinTargetInCanvas: false,
+  })
+  assert.deepEqual(placement.pinnedByNodeId, { reused: false, unrelated: true })
+  assert.deepEqual(placement.screenByNodeId, snapshot.screenByNodeId)
+  assert.deepEqual(placement.worldByNodeId, snapshot.worldByNodeId)
+  assert.equal(snapshot.pinnedByNodeId.reused, true)
 }
 
 export const testGeospatialWidgetPanelsIncludeRichMediaPanelInSharedOpenPath = () => {
@@ -222,8 +225,8 @@ export const testGeospatialOverlayHostSupportsMapLibreGlobeRenderer = () => {
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const text = readUtf8(hostPath)
   if (!text.includes('useMapLibreBasemap')) throw new Error('Expected GeospatialOverlayHost to use MapLibre basemap hook')
-  if (!text.includes('basemap3d')) throw new Error('Expected GeospatialOverlayHost to create dedicated 3D basemap instance')
-  if (!text.includes("projectionMode: 'globe'")) throw new Error('Expected GeospatialOverlayHost 3D view to use MapLibre globe projection')
+  assert.equal((text.match(/useMapLibreBasemap\(\{/g) || []).length, 1, '2D and 3D must share one basemap instance')
+  assert.ok(text.includes("projectionMode: show3d ? 'globe' : 'mercator'"), 'Shared basemap must follow the selected projection')
   if (!text.includes('resolveEffectiveGeospatialStyleUrl') || !text.includes('normalizeGeospatialViewMode')) {
     throw new Error('Expected GeospatialOverlayHost 3D mode to route default style resolution through the shared geospatial basemap-style SSOT')
   }
@@ -386,16 +389,16 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
 export const testGeospatialOverlayHostDoesNotOverlaySvgFallbackOnHealthyMapLibreBasemap = () => {
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const text = readUtf8(hostPath)
-  if (!text.includes('const hasRenderableMapLibreBasemap = !!activeBasemap.map && !activeBasemap.basemapUnavailable && activeBasemap.probe.tilesLoaded')) {
+  if (!text.includes('const hasRenderableMapLibreBasemap = !!basemap.map && !basemap.basemapUnavailable && basemap.probe.tilesLoaded')) {
     throw new Error('Expected GeospatialOverlayHost SVG overlay gating to trust confirmed renderable MapLibre tiles')
   }
-  if (!text.includes('|| (!hasRenderableMapLibreBasemap && !!String(activeBasemap.mapError || \'\').trim())')) {
+  if (!text.includes('|| (!hasRenderableMapLibreBasemap && !!String(basemap.mapError || \'\').trim())')) {
     throw new Error('Expected GeospatialOverlayHost SVG overlay gating to treat map errors as hard failures only before renderable tiles are confirmed')
   }
   if (!text.includes('if (!hasHardMapUnavailable) return false')) {
     throw new Error('Expected GeospatialOverlayHost to avoid SVG overlay on healthy MapLibre basemaps')
   }
-  if (!text.includes('return !activeBasemap.map || activeBasemap.basemapUnavailable || !activeBasemap.probe.tilesLoaded')) {
+  if (!text.includes('return !basemap.map || basemap.basemapUnavailable || !basemap.probe.tilesLoaded')) {
     throw new Error('Expected GeospatialOverlayHost to avoid full-screen error overlays on renderable MapLibre basemaps')
   }
   if (text.includes('featureCount < 1')) {
@@ -447,7 +450,7 @@ export const testGeospatialOverlayHostOverlaysSvgFallbackWhenMapLibreMountsBlank
   if (!hookText.includes('if (!requestedGrabMapsStyle) return false')) {
     throw new Error('Expected blank-style fallback switching to stay scoped to GrabMaps, not active OpenFreeMap tile stacks')
   }
-  if (!hostText.includes('activeBasemap.basemapUnavailable')) {
+  if (!hostText.includes('basemap.basemapUnavailable')) {
     throw new Error('Expected GeospatialHost SVG fallback overlay to cover MapLibre instances that mounted without renderable basemap tiles')
   }
 }

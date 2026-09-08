@@ -344,9 +344,9 @@ export function testVideoAgentStructuredDiagramFloatingPanelOpenEventRoutesMedia
   for (const staleToken of ['GanttTimelineTransportPanel', 'TimelineTransportControls', 'data-kg-gantt-timeline-transport']) {
     if (timelineFloatingText.includes(staleToken)) throw new Error(`expected video-agent FloatingPanel Timeline to avoid BottomPanel transport owner token: ${staleToken}`)
   }
+  if (!/<GanttTimelineTransportPanel\s+code=\{mediaGanttCode\}\s+compact=\{compact\}\s+mode="media"[^>]*\/>/.test(timelineBottomText)) throw new Error('expected media transport panel with the current callback props')
   for (const token of [
     "useMermaidGanttDocument({ purpose: 'media' })",
-    '<GanttTimelineTransportPanel code={mediaGanttCode} compact={compact} mode="media" />',
     'GanttTimelineTransportPlaybackRuntime',
     '<GanttTimelineTransportPlaybackRuntime />',
     "useGanttTimelineTransportSession({ code, mode: 'media' })",
@@ -401,8 +401,8 @@ export function testVideoAgentTimelineDenseFbfClipsDoNotForceOverlap() {
     "&& !verticalMarker && !compactSourceMedia",
     "lane === 'fbf' && !verticalMarker",
     'compactTimelineBar ? 0 : (index % 2) * 2',
-    '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--milestone):not([data-kg-video-sequence-dense-fbf="1"])',
-    '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-fbf):not(.timeline-transport-track-clip--milestone):not([data-kg-video-sequence-dense-fbf="1"])',
+    '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"])',
+    '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-fbf):not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"])',
     '.timeline-transport-track-clip--lane-fbf[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--milestone):not([data-kg-video-sequence-dense-fbf="1"])',
     '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]::before',
     '[data-kg-timeline-clip-compact="1"] .timeline-transport-track-clip-move',

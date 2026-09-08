@@ -1,3 +1,4 @@
+import { HTML_VIEWER_RUNTIME_FULL } from '@/lib/graph/htmlViewer/runtimeTemplate.compiled'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -6,10 +7,10 @@ const readUtf8 = (filePath: string): string => readFileSync(filePath, 'utf8')
 export function testResizeTransitionPolishKeepsSharedShapeAndLabelTransitions() {
   const groupsText = readUtf8(resolve(process.cwd(), 'src/components/GraphCanvas/layers/groups.ts'))
   const cssText = readUtf8(resolve(process.cwd(), 'src/index.css'))
-  if (!cssText.includes('--kg-motion-fast: 140ms;')) {
+  if (!cssText.includes('--kg-motion-duration-fast: 140ms;') || !cssText.includes('--kg-motion-fast: var(--kg-motion-duration-fast);')) {
     throw new Error('expected root CSS to define a shared fast motion token')
   }
-  if (!cssText.includes('--kg-motion-ease: ease;')) {
+  if (!cssText.includes('--kg-motion-ease: var(--kg-motion-ease-standard);') || !cssText.includes('--kg-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);')) {
     throw new Error('expected root CSS to define a shared motion easing token')
   }
   if (!cssText.includes('--kg-transition-action: transform var(--kg-motion-fast) var(--kg-motion-ease), box-shadow var(--kg-motion-fast) var(--kg-motion-ease), background var(--kg-motion-fast) var(--kg-motion-ease);')) {
@@ -121,11 +122,11 @@ export function testResizeTransitionPolishKeepsChevronAndHandleDotTransitions() 
   if (htmlViewerRuntimeText.includes("out = replaceAllExact(\n    out,\n    \"el.setAttribute('data-kg-canvas-wheel-ignore', 'true');\",\n    '',\n  )")) {
     throw new Error('expected html viewer runtime patching to stop carrying the dead wheel-ignore removal branch once the emitted runtime is already unchanged without it')
   }
-  if (htmlViewerRuntimeText.split("var UI_IGNORE_SELECTOR = '#kg-hud, #kg-hud *';").length - 1 !== 1) {
-    throw new Error('expected html viewer runtime patching to keep only one live HUD-only UI ignore selector rewrite after duplicate cleanup')
+  if (HTML_VIEWER_RUNTIME_FULL.split("#kg-hud, #kg-hud *").length - 1 !== 1 || !htmlViewerRuntimeText.includes("from './runtimeTemplate.compiled'")) {
+    throw new Error('expected compiled HTML viewer output to retain one HUD ignore selector through the consumer import')
   }
-  if (htmlViewerRuntimeText.split("\"var src = String(edgeEl.getAttribute('data-source-id') || edgeEl.getAttribute('data-source') || '').trim();\\n      var tgt = String(edgeEl.getAttribute('data-target-id') || edgeEl.getAttribute('data-target') || '').trim();\"").length - 1 !== 1) {
-    throw new Error('expected html viewer runtime patching to keep only one live edge source-target resolver rewrite branch after duplicate cleanup')
+  if (!HTML_VIEWER_RUNTIME_FULL.includes('getAttribute("data-source-id")') || !HTML_VIEWER_RUNTIME_FULL.includes('getAttribute("data-target-id")') || htmlViewerRuntimeText.includes("replaceOnceExact(")) {
+    throw new Error('expected compiled edge endpoint readers without downstream runtime rewrites')
   }
   if (htmlViewerRuntimeText.includes("out = replaceOnceExact(\n    out,\n    \"function updateEdgeGeometryByEl(edgeEl){\\n      if (!edgeEl || !edgeEl.getAttribute) return;\\n      var src = String(edgeEl.getAttribute('data-source-id') || edgeEl.getAttribute('data-source') || '').trim();")) {
     throw new Error('expected html viewer runtime patching to stop carrying the dead raw edgeEl geometry rewrite branch once earlier source-target canonicalization makes it unreachable')

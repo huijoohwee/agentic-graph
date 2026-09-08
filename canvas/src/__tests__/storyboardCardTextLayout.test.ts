@@ -502,7 +502,7 @@ export function testStoryboardCardOverlayTextLayoutUsesReadableCardChrome() {
     'inlineChipDensity="compact"',
     'showCommandLaunchers={false}',
     "textModel.secondaryEditable && textModel.secondaryField?.id === 'output' ? (",
-    '<StoryboardCardOutputEditSurface card={card} textModel={textModel} onActivate={() => onSelect(card)} onCommitText={onCommitPrimaryText} />',
+    '<StoryboardCardOutputEditSurface card={card} textModel={textModel} onActivate={activateCard} onCommitText={onCommitPrimaryText} />',
     'ariaLabel={`${outputField.label} for ${card.id}`}',
     'placeholder={outputField.placeholder}',
     'markdownCommandMenus={false}',

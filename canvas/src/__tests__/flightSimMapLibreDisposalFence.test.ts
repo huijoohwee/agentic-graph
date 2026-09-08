@@ -8,7 +8,7 @@ import {
   acquireMapLibreMapDisposalPreparation,
   isMapLibreMapPreparingForDisposal,
   subscribeMapLibreMapDisposalPreparation,
-} from '../../../gympgrph/src/features/geospatial/mapLibreHostLease.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreHostLease'
 import {
   claimMapLibreMapLease,
   isGeospatialModeEnabled,

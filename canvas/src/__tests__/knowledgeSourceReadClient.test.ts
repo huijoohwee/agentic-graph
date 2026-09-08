@@ -35,7 +35,7 @@ const DOCUMENT_ENVELOPE: AgenticGraphKnowledgeSourceSnapshotEnvelope = {
   fetchedAt: '2026-08-06T00:00:00.000Z',
   counts: { pages: 1, fields: 0, records: 0, documents: 1, bytes: 18 },
   contentDigest: 'sha256:a58c30391f833e26658ed23557a470b061b82ec60bc5870c34c3a51a1c0dcad2',
-  envelopeDigest: 'sha256:888a1dd91e4fe5e1633fec15890e62e8c1f1f72de39d75e1d7bfb0906ca82a83',
+  envelopeDigest: 'sha256:a6b900901bc92b6763641942b247d31d974730ebaeb7e12c20bc02d078fac57d',
   snapshot: {
     type: 'document',
     name: 'Product Handbook',

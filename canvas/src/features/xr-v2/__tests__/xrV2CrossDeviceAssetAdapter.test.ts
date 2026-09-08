@@ -419,3 +419,173 @@ test('targeted manifest upsert flushes after an already-running workspace sync',
     true,
   )
 })
+
+
+function xrHeldDependency() {
+  let release!: () => void
+  const promise = new Promise<void>(resolve => { release = resolve })
+  return { promise, release }
+}
+
+function rawOnlyXrAsset() {
+  const original = asset()
+  return createXrV2PublishedSpatialAsset({
+    assetId: original.asset_id, sessionId: original.session_id, rawClipRef: original.raw_clip_ref,
+    metadata: { ...original.metadata, depth_metadata_ref: null }, createdAtMs: original.created_at_ms,
+  })
+}
+
+async function expectXrAbortWhileDependencyHeld(operation: Promise<unknown>, code: 'cancelled' | 'deadline-exceeded') {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await assert.rejects(Promise.race([operation, new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => reject(new Error('XR operation did not settle before its held-dependency rescue')), 500)
+    })]), error => error instanceof XrV2CrossDeviceAssetError && error.code === code)
+  } finally { if (timer !== undefined) clearTimeout(timer) }
+}
+
+const xrNextTurn = () => new Promise<void>(resolve => setImmediate(resolve))
+
+test('XR lifecycle composes request and operation signals through response body ownership', { timeout: 2_000 }, async () => {
+  for (const owner of ['request', 'operation'] as const) {
+    const remote = remoteStorage(), request = new AbortController(), operation = new AbortController()
+    const reason = new DOMException(`cancel ${owner} after headers`, 'AbortError')
+    const observed: { signal?: AbortSignal; response?: Response; detach?: () => void } = {}
+    const adapter = createXrV2CrossDeviceAssetAdapter({
+      config: { workspaceId: WORKSPACE_ID, baseUrl: BASE_URL },
+      dependencies: { ...remote.dependencies,
+        fetchImpl: async (_input, init) => {
+          const signal = init?.signal
+          assert.ok(signal, 'The scoped fetch must supply a signal')
+          observed.signal = signal
+          const body = new ReadableStream<Uint8Array>({ start(controller) {
+            const aborted = () => controller.error(signal.reason)
+            signal.addEventListener('abort', aborted, { once: true })
+            observed.detach = () => signal.removeEventListener('abort', aborted)
+          } })
+          return observed.response = new Response(body)
+        },
+        uploadBlob: async input => {
+          const response = await input.fetchImpl(`${BASE_URL}/signal-probe`, { method: 'POST', signal: request.signal })
+          assert.equal(observed.signal?.aborted, false)
+          ;(owner === 'request' ? request : operation).abort(reason)
+          assert.equal(observed.signal?.aborted, true, `${owner} abort must survive the scoped fetch after headers`)
+          assert.equal(observed.signal?.reason, reason)
+          await assert.rejects(response.text(), error => error === reason)
+          throw reason
+        },
+      },
+    })
+    try {
+      await assert.rejects(adapter.publish({ sourceId: SOURCE_ID, asset: rawOnlyXrAsset(),
+        rawClip: new Blob(['raw'], { type: 'video/webm' }), frameBundle: null, signal: operation.signal }),
+      error => error instanceof XrV2CrossDeviceAssetError && error.code === 'cancelled')
+      assert.equal(remote.manifests.size, 0)
+    } finally {
+      observed.detach?.()
+      request.abort(reason); operation.abort(reason)
+      await observed.response?.body?.cancel().catch(() => undefined)
+    }
+  }
+})
+
+test('XR lifecycle rejects expiry while ignored upload is held and prevents a late manifest', { timeout: 2_000 }, async () => {
+  const remote = remoteStorage(), entered = xrHeldDependency(), release = xrHeldDependency()
+  const adapter = createXrV2CrossDeviceAssetAdapter({
+    config: { workspaceId: WORKSPACE_ID, baseUrl: BASE_URL, operationTimeoutMs: 100 },
+    dependencies: { ...remote.dependencies, uploadBlob: async input => {
+      const receipt = await remote.dependencies.uploadBlob!(input)
+      entered.release()
+      await release.promise
+      return receipt
+    } },
+  })
+  const operation = adapter.publish({ sourceId: SOURCE_ID, asset: rawOnlyXrAsset(),
+    rawClip: new Blob(['raw'], { type: 'video/webm' }), frameBundle: null })
+  const observed = operation.then(() => { throw new Error('XR operation completed before the held upload') })
+  try {
+    await Promise.race([entered.promise, observed])
+    await expectXrAbortWhileDependencyHeld(operation, 'deadline-exceeded')
+    assert.equal(remote.manifests.size, 0)
+  } finally {
+    release.release()
+    await operation.catch(() => undefined)
+    await xrNextTurn()
+  }
+  assert.equal(remote.events.filter(event => event.startsWith('blob:')).length, 1, 'An already uploaded part is retained')
+  assert.equal(remote.manifests.size, 0, 'Late upload completion must not start discoverable manifest publication')
+})
+
+test('XR lifecycle rejects cancellation while ignored local lookup is held and prevents a late atomic import', { timeout: 2_000 }, async () => {
+  const remote = remoteStorage(), entered = xrHeldDependency(), release = xrHeldDependency(), cancel = new AbortController()
+  const adapter = createXrV2CrossDeviceAssetAdapter({
+    config: { workspaceId: WORKSPACE_ID, baseUrl: BASE_URL }, dependencies: remote.dependencies,
+  })
+  const published = await adapter.publish({ sourceId: SOURCE_ID, asset: rawOnlyXrAsset(),
+    rawClip: new Blob(['raw'], { type: 'video/webm' }), frameBundle: null })
+  assert.equal(published.status, 'published')
+  if (published.status !== 'published') assert.fail('A verified published fixture is required')
+  const local = createXrV2MemoryArtifactStore()
+  let imports = 0, lateImport: Promise<ReturnType<typeof rawOnlyXrAsset>> | undefined
+  const operation = adapter.read({ sourceId: SOURCE_ID, assetId: published.manifest.asset.asset_id,
+    manifest: published.manifest, signal: cancel.signal, localStore: { ...local,
+      readPublishedSpatialAsset: async () => { entered.release(); await release.promise; return null },
+      importSavedAssetAtomically: input => { imports += 1; return lateImport = local.importSavedAssetAtomically(input) },
+    } })
+  const observed = operation.then(() => { throw new Error('XR operation completed before the held local lookup') })
+  try {
+    await Promise.race([entered.promise, observed])
+    cancel.abort(new DOMException('cancel pending local lookup', 'AbortError'))
+    await expectXrAbortWhileDependencyHeld(operation, 'cancelled')
+  } finally {
+    cancel.abort(); release.release()
+    await operation.catch(() => undefined)
+    await xrNextTurn()
+    await lateImport
+  }
+  assert.equal(imports, 0, 'A cancelled late lookup must not start atomic local persistence')
+  assert.deepEqual(await local.listPublishedSpatialAssets(), [])
+})
+
+
+test('XR lifecycle cancels a pending real response reader without awaiting producer cancellation', { timeout: 2_000 }, async () => {
+  const remote = remoteStorage(), entered = xrHeldDependency(), cancelled = xrHeldDependency()
+  const cancel = new AbortController(), local = createXrV2MemoryArtifactStore()
+  const publisher = createXrV2CrossDeviceAssetAdapter({
+    config: { workspaceId: WORKSPACE_ID, baseUrl: BASE_URL }, dependencies: remote.dependencies,
+  })
+  const published = await publisher.publish({ sourceId: SOURCE_ID, asset: rawOnlyXrAsset(),
+    rawClip: new Blob(['raw'], { type: 'video/webm' }), frameBundle: null })
+  if (published.status !== 'published') assert.fail('A verified published fixture is required')
+  let producer!: ReadableStreamDefaultController<Uint8Array>, cancelCalls = 0, imports = 0
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) { producer = controller },
+    pull() { entered.release() },
+    cancel() { cancelCalls += 1; return cancelled.promise },
+  }, { highWaterMark: 0 })
+  const adapter = createXrV2CrossDeviceAssetAdapter({
+    config: { workspaceId: WORKSPACE_ID, baseUrl: BASE_URL },
+    dependencies: { ...remote.dependencies, fetchImpl: async () => new Response(body) },
+  })
+  const operation = adapter.read({ sourceId: SOURCE_ID, assetId: published.manifest.asset.asset_id,
+    manifest: published.manifest, signal: cancel.signal, localStore: { ...local,
+      importSavedAssetAtomically: input => { imports += 1; return local.importSavedAssetAtomically(input) },
+    } })
+  const observed = operation.then(() => { throw new Error('XR operation completed before its pending body read') })
+  try {
+    await Promise.race([entered.promise, observed])
+    assert.equal(body.locked, true, 'The native body reader must own the stream before cancellation')
+    cancel.abort(new DOMException('cancel stalled XR body', 'AbortError'))
+    await expectXrAbortWhileDependencyHeld(operation, 'cancelled')
+    await xrNextTurn()
+    assert.equal(cancelCalls, 1, 'The native reader cancels its producer exactly once')
+    assert.equal(body.locked, false, 'Producer cancellation must not retain the native reader lock')
+    assert.equal(imports, 0)
+    assert.deepEqual(await local.listPublishedSpatialAssets(), [])
+  } finally {
+    cancel.abort(); cancelled.release()
+    try { producer.close() } catch { /* Cancellation already closed the owned stream. */ }
+    await operation.catch(() => undefined)
+    await xrNextTurn()
+  }
+})

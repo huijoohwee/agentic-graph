@@ -3,10 +3,8 @@ import { scheduleWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
 
 const LS_COALESCED_WRITE_DELAY_MS = 80
 const LS_COALESCED_TASK_PREFIX = 'ls:coalesced'
-const LS_LAST_WRITTEN_LIMIT = 500
 const STORAGE_SCOPE_PREFIX = 'kg:scope:'
 
-const lastWrittenValueByKey = new Map<string, string>()
 const scopedStorageProxyByStorage = new WeakMap<Storage, Storage>()
 
 const normalizeStorageScopeBasePath = (raw: string | null | undefined): string => {
@@ -98,24 +96,6 @@ const wrapScopedStorage = (storage: Storage | null): Storage | null => {
   }) as Storage
   scopedStorageProxyByStorage.set(storage, proxy)
   return proxy
-}
-
-const noteLastWrittenValue = (key: string, value: string): void => {
-  if (!key) return
-  if (lastWrittenValueByKey.has(key)) {
-    lastWrittenValueByKey.delete(key)
-  }
-  lastWrittenValueByKey.set(key, value)
-  if (lastWrittenValueByKey.size <= LS_LAST_WRITTEN_LIMIT) return
-  const oldestKey = lastWrittenValueByKey.keys().next().value
-  if (typeof oldestKey === 'string' && oldestKey) {
-    lastWrittenValueByKey.delete(oldestKey)
-  }
-}
-
-const readLastWrittenValue = (key: string): string | null => {
-  if (!key) return null
-  return lastWrittenValueByKey.get(key) ?? null
 }
 
 export function readNumFromStorage(storage: Storage | null, key: string, fallback: number): number {
@@ -258,8 +238,8 @@ export function writeJsonToStorage<T>(storage: Storage | null, key: string, valu
 
 export const getLocalStorage = (): Storage | null => {
   try {
-    if (typeof window === 'undefined' || !window.localStorage) return null
-    return wrapScopedStorage(window.localStorage)
+    const storage = typeof window === 'undefined' ? null : window.localStorage
+    return wrapScopedStorage(storage)
   } catch {
     return null
   }
@@ -317,32 +297,35 @@ export const lsSetJson = <T>(key: LsStorageKey, value: T) => {
 
 type CoalescedWriteOptions = {
   delayMs?: number
-  /**
-   * When provided, prevents redundant scheduling/execution without needing to
-   * stringify/serialize the payload.
-   */
+  /** Legacy caller hint; current storage bytes determine whether a write is redundant. */
   signature?: string | null
 }
 
-export const lsSetJsonCoalesced = <T>(key: LsStorageKey, value: T, opts?: CoalescedWriteOptions): T => {
+const scheduleStorageWrite = (
+  key: LsStorageKey,
+  kind: 'json' | 'int' | 'bool',
+  serialize: () => string,
+  opts?: CoalescedWriteOptions,
+): void => {
   const safeKey = String(key || '').trim()
-  if (!safeKey) return value
-  const delayMs = typeof opts?.delayMs === 'number' && Number.isFinite(opts.delayMs) ? Math.max(0, Math.floor(opts.delayMs)) : LS_COALESCED_WRITE_DELAY_MS
-  const signature = typeof opts?.signature === 'string' && opts.signature.length > 0 ? opts.signature : null
-  const taskKey = `${LS_COALESCED_TASK_PREFIX}:json:${safeKey}`
-  scheduleWorkspaceSyncTask(taskKey, () => {
+  if (!safeKey) return
+  const delayMs = typeof opts?.delayMs === 'number' && Number.isFinite(opts.delayMs)
+    ? Math.max(0, Math.floor(opts.delayMs)) : LS_COALESCED_WRITE_DELAY_MS
+  // Coalesce pending values, but never let an executed signature stand in for current storage.
+  scheduleWorkspaceSyncTask(`${LS_COALESCED_TASK_PREFIX}:${kind}:${safeKey}`, () => {
     const storage = getLocalStorage()
     if (!storage) return
     try {
-      const nextRaw = JSON.stringify(value)
-      const lastRaw = readLastWrittenValue(taskKey)
-      if (lastRaw === nextRaw) return
-      storage.setItem(safeKey, nextRaw)
-      noteLastWrittenValue(taskKey, nextRaw)
+      const nextRaw = serialize()
+      if (storage.getItem(safeKey) !== nextRaw) storage.setItem(safeKey, nextRaw)
     } catch {
       void 0
     }
-  }, delayMs, { signature })
+  }, delayMs)
+}
+
+export const lsSetJsonCoalesced = <T>(key: LsStorageKey, value: T, opts?: CoalescedWriteOptions): T => {
+  scheduleStorageWrite(key, 'json', () => JSON.stringify(value), opts)
   return value
 }
 
@@ -351,52 +334,17 @@ export const lsSetIntCoalesced = (
   value: number,
   opts?: { min?: number; max?: number } & CoalescedWriteOptions,
 ): number => {
-  const safeKey = String(key || '').trim()
-  if (!safeKey) return value
-  const delayMs = typeof opts?.delayMs === 'number' && Number.isFinite(opts.delayMs) ? Math.max(0, Math.floor(opts.delayMs)) : LS_COALESCED_WRITE_DELAY_MS
-  const signature = typeof opts?.signature === 'string' && opts.signature.length > 0 ? opts.signature : null
+  if (!String(key || '').trim()) return value
   const min = typeof opts?.min === 'number' ? opts.min : 1
   const max = typeof opts?.max === 'number' ? opts.max : 1024
   const x = Math.max(min, Math.min(max, Math.floor(value)))
-  const taskKey = `${LS_COALESCED_TASK_PREFIX}:int:${safeKey}`
-  const effectiveSignature =
-    typeof signature === 'string' && signature.length > 0 ? signature : String(x)
-  scheduleWorkspaceSyncTask(taskKey, () => {
-    const storage = getLocalStorage()
-    if (!storage) return
-    const nextRaw = String(x)
-    const lastRaw = readLastWrittenValue(taskKey)
-    if (lastRaw === nextRaw) return
-    try {
-      storage.setItem(safeKey, nextRaw)
-      noteLastWrittenValue(taskKey, nextRaw)
-    } catch {
-      void 0
-    }
-  }, delayMs, { signature: effectiveSignature })
+  scheduleStorageWrite(key, 'int', () => String(x), opts)
   return x
 }
 
 export const lsSetBoolCoalesced = (key: LsStorageKey, value: boolean, opts?: CoalescedWriteOptions): boolean => {
-  const safeKey = String(key || '').trim()
-  if (!safeKey) return !!value
-  const delayMs = typeof opts?.delayMs === 'number' && Number.isFinite(opts.delayMs) ? Math.max(0, Math.floor(opts.delayMs)) : LS_COALESCED_WRITE_DELAY_MS
   const next = !!value
-  const signature = typeof opts?.signature === 'string' && opts.signature.length > 0 ? opts.signature : String(next)
-  const taskKey = `${LS_COALESCED_TASK_PREFIX}:bool:${safeKey}`
-  scheduleWorkspaceSyncTask(taskKey, () => {
-    const storage = getLocalStorage()
-    if (!storage) return
-    const nextRaw = next ? '1' : '0'
-    const lastRaw = readLastWrittenValue(taskKey)
-    if (lastRaw === nextRaw) return
-    try {
-      storage.setItem(safeKey, nextRaw)
-      noteLastWrittenValue(taskKey, nextRaw)
-    } catch {
-      void 0
-    }
-  }, delayMs, { signature })
+  scheduleStorageWrite(key, 'bool', () => next ? '1' : '0', opts)
   return next
 }
 
@@ -412,8 +360,8 @@ export const lsRemove = (key: LsStorageKey): void => {
 
 export const getSessionStorage = (): Storage | null => {
   try {
-    if (typeof window === 'undefined' || !window.sessionStorage) return null
-    return wrapScopedStorage(window.sessionStorage)
+    const storage = typeof window === 'undefined' ? null : window.sessionStorage
+    return wrapScopedStorage(storage)
   } catch {
     return null
   }

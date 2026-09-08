@@ -70,6 +70,10 @@ ci_scopes:
     roots: ["canvas/src/", "canvas/scripts/", "grph-shared/src/", "gympgrph/src/"]
     commands:
       - ["npm", "run", "check"]
+  storage_parent_child_browser:
+    roots: ["package.json", "package-lock.json", "canvas/package.json", "canvas/package-lock.json", "canvas/src/lib/storage/", "canvas/src/features/source-files/sourceFilesInboundStorageApply", "canvas/scripts/run_storage_parent_child_browser_smoke.mjs", "canvas/scripts/verify_storage_parent_child_browser_smoke.mjs", "canvas/scripts/lib/run-local-vite-browser-smoke.mjs", "canvas/scripts/lib/local-chromium-executable.mjs", "docs/documents/agentic-graph-storage-sync-document.companion.md"]
+    commands:
+      - ["npm", "--prefix", "canvas", "run", "test:storage-parent-child-browser-smoke"]
   rich_media_preview_timing:
     roots: ["canvas/schemas/rich-media-catalog-preview-timing.v1.schema.json", "canvas/scripts/lib/rich-media-catalog-preview-timing-schema.mjs", "canvas/scripts/validate_rich_media_catalog_preview_timing.mjs", "canvas/scripts/__tests__/rich-media-catalog-preview-timing-schema.test.mjs", "canvas/scripts/run_rich_media_browser_smoke.mjs", "canvas/scripts/verify_rich_media_browser_smoke.py", "canvas/src/features/testing/RichMediaBrowserSmokePage.tsx", "canvas/src/features/testing/richMediaBrowserSmokeFixtures.json", "canvas/src/__tests__/richMediaBrowserSmokeContract.test.ts"]
     commands:

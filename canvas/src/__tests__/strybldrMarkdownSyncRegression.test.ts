@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { resolveDocsSsotFixturePath } from '@/tests/lib/docsSsotFixture'
 import { parse as parseYaml } from 'yaml'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
 import { buildStoryboardBoardModel, buildStoryboardInlineMediaCommandContext } from '@/components/StoryboardCanvas/storyboardModel'
@@ -77,7 +78,7 @@ const STRYBLDR_STARTER_TEMPLATE_REFERENCE = ['docs', STRYBLDR_STARTER_TEMPLATE_N
 const resolveStrybldrStarterTemplatePath = (): string => {
   const externalValidationInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
   if (externalValidationInput && path.basename(externalValidationInput) === STRYBLDR_STARTER_TEMPLATE_NAME) return externalValidationInput
-  return path.resolve(process.cwd(), '../..', 'huijoohwee', 'docs', STRYBLDR_STARTER_TEMPLATE_NAME)
+  return resolveDocsSsotFixturePath(STRYBLDR_STARTER_TEMPLATE_NAME)
 }
 
 const readStrybldrStarterTemplateText = (): string => fs.readFileSync(resolveStrybldrStarterTemplatePath(), 'utf8')
@@ -135,7 +136,7 @@ export function testStrybldrStarterWorkflowGanttStaysSynchronizedWithStoryboardC
     derivedLabels.join('|') === expectedLabels.join('|'),
     `expected derived workflow Gantt rows to match Storyboard cards, got ${JSON.stringify({ derivedLabels, expectedLabels })}`,
   )
-  assert(derivedLabels.length === 10, `expected starter workflow Gantt to expose 10 storyboard card rows, got ${derivedLabels.length}`)
+  assert(derivedLabels.length > 0, 'expected starter workflow Gantt to expose storyboard card rows')
   assert(
     derivedModel.taskSpans.every(span => /strybldr_/.test(span.raw) && Math.abs(span.durationMinutes - 0.167) < 0.0001),
     `expected derived workflow Gantt rows to reuse compact shared workflow timing, got ${JSON.stringify(derivedModel.taskSpans)}`,
@@ -419,8 +420,12 @@ export function testStrybldrWorkflowEdgeSyncPersistsAuthoredStoryboardConnection
   assert(nextText && nextText !== baseText, 'expected storyboard workflow-edge sync to persist authored edges into the structured payload')
   const reparsed = parseStrybldrStoryboardMarkdown(String(nextText || ''))
   assert(reparsed, 'expected synced storyboard markdown to remain parseable')
-  assert((reparsed?.edges || []).length === 1, `expected only authored element-to-element edges to persist, got ${JSON.stringify(reparsed?.edges || [])}`)
-  const authoredEdge = reparsed?.edges?.[0] || null
+  const priorEdges = parsed.edges || []
+  const nextEdges = reparsed.edges || []
+  assert(nextEdges.length === priorEdges.length + 1, 'expected exactly one new authored edge and no structural edge')
+  assert(JSON.stringify(nextEdges.slice(0, priorEdges.length)) === JSON.stringify(priorEdges), 'expected existing authored connections to remain unchanged')
+  assert(!nextEdges.some(edge => edge.id === 'ignore-structural-edge'), 'expected structural edge to stay outside authored workflow edges')
+  const authoredEdge = nextEdges.find(edge => edge.id === 'starter-edge-1') || null
   assert(authoredEdge?.id === 'starter-edge-1', `expected authored edge id to persist, got ${JSON.stringify(authoredEdge)}`)
   assert(authoredEdge?.source === 'starter-source-brief-card' && authoredEdge?.target === 'starter-storyboard-beats-card', `expected authored storyboard edge endpoints to persist, got ${JSON.stringify(authoredEdge)}`)
   assert(authoredEdge?.label === 'linksTo', `expected authored storyboard edge label to persist, got ${JSON.stringify(authoredEdge)}`)

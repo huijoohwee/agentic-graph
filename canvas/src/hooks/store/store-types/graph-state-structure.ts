@@ -1,3 +1,4 @@
+import type { WidgetLayoutEvidence } from '../graph-data-slice/graphDataRetainedPlacementContinuity'
 import type { GraphData, GraphNode, GraphEdge, JSONValue } from '@/lib/graph/types'
 import type { GraphSchema, GraphBehavior, PropertySpec } from '@/lib/graph/schema'
 import type { ThemeMode, ResolvedThemeMode } from '@/lib/ui/theme'
@@ -82,6 +83,10 @@ export interface GraphStateStructure {
   flowWidgetPosByNodeIdByGraphMetaKey: Record<string, Record<string, { top: number; left: number }>>;
   flowWidgetWorldPosByNodeId: Record<string, { x: number; y: number }>;
   flowWidgetWorldPosByNodeIdByGraphMetaKey: Record<string, Record<string, { x: number; y: number }>>;
+  flowWidgetLayoutEvidenceByGraphMetaKey: Record<string, WidgetLayoutEvidence | null>;
+  loadFlowWidgetDocument: (graphKey: string) => void;
+  persistFlowWidgetDocument: (graphKey: string, channel?: 'commit' | 'pinned' | 'pos' | 'world') => void;
+  resetFlowWidgetPersistence: () => void;
   flowWidgetDraggingNodeId: string | null;
   graphFieldsOpOk: boolean | null;
   graphFieldsOpMsg: string;

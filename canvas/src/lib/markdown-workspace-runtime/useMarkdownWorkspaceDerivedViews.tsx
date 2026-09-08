@@ -1,3 +1,4 @@
+import type { MarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceRuntime.types'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { abortControllerSafely, isAsyncRequestStale } from '@/lib/async/asyncGuards'
@@ -30,7 +31,7 @@ export type MarkdownWorkspaceDerivedViewsArgs = MarkdownWorkspaceRuntimeProgress
   layoutMode: string
   getFs: MarkdownWorkspaceRuntimeGetFs
   sourcesByPath: WorkspaceSourceIndex
-  lastLoadedRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: React.MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   activeTextRef: React.MutableRefObject<string>
   userEditedActiveTextRef: React.MutableRefObject<boolean>
   patchWorkspaceEntryInlineText: (path: WorkspacePath, text: string) => void

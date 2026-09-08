@@ -71,33 +71,31 @@ export const filterGraphToFrontmatterMermaid = (data: GraphData): GraphData => {
     if (topParentId && addId(topParentId)) parentQueue.push(topParentId)
   }
 
+  const neighborsById = new Map<string, string[]>()
+  const edgeEndpoints = allEdges.map(edge => {
+    const source = readEdgeEndpointId(edge.source)
+    const target = readEdgeEndpointId(edge.target)
+    if (source && target) {
+      const sourceNeighbors = neighborsById.get(source) || []
+      sourceNeighbors.push(target)
+      neighborsById.set(source, sourceNeighbors)
+      const targetNeighbors = neighborsById.get(target) || []
+      targetNeighbors.push(source)
+      neighborsById.set(target, targetNeighbors)
+    }
+    return { edge, source, target }
+  })
   const reachableQueue = Array.from(included)
-  let reachableQi = 0
-  while (reachableQi < reachableQueue.length) {
-    const currentId = reachableQueue[reachableQi] as string
-    reachableQi += 1
-    for (let i = 0; i < allEdges.length; i += 1) {
-      const edge = allEdges[i]
-      const src = readEdgeEndpointId(edge?.source)
-      const tgt = readEdgeEndpointId(edge?.target)
-      if (!src || !tgt) continue
-      if (src === currentId) {
-        const next = nodeById.get(tgt)
-        if (isFrontmatterMermaidScopedNode(next) && addId(tgt)) reachableQueue.push(tgt)
-      }
-      if (tgt === currentId) {
-        const prev = nodeById.get(src)
-        if (isFrontmatterMermaidScopedNode(prev) && addId(src)) reachableQueue.push(src)
-      }
+  for (let i = 0; i < reachableQueue.length; i += 1) {
+    for (const nextId of neighborsById.get(reachableQueue[i]!) || []) {
+      if (isFrontmatterMermaidScopedNode(nodeById.get(nextId)) && addId(nextId)) reachableQueue.push(nextId)
     }
   }
 
   const nodes = allNodes.filter(n => included.has(String(n.id)))
-  const edges = allEdges.filter(e => {
-    const src = readEdgeEndpointId(e.source)
-    const tgt = readEdgeEndpointId(e.target)
-    return src && tgt && included.has(String(src)) && included.has(String(tgt))
-  })
+  const edges = edgeEndpoints.filter(({ source, target }) => (
+    source && target && included.has(source) && included.has(target)
+  )).map(({ edge }) => edge)
 
   return { ...data, nodes, edges }
 }

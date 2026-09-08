@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { createKgFsPathPolicy } from '../../viteWorkspaceArtifactBridge'
 
 import { importWorkspaceUrl } from '@/features/markdown-workspace/workspaceImport'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
@@ -375,10 +376,24 @@ export function testViteKgFsWriteHandlerAcceptsMirrorMkdirOnlyRequests(): void {
     throw new Error('expected /__agentic_os_fs_write mkdirOnly requests to be handled before file-extension validation')
   }
   const mkdirBranch = text.slice(mkdirBranchIndex, extensionGateIndex)
-  if (!mkdirBranch.includes('await fs.mkdir(requestedAbsPath, { recursive: true })')) {
+  const mkdirIndex = mkdirBranch.indexOf('await fs.mkdir(requestedAbsPath, { recursive: true })')
+  if (mkdirIndex < 0) {
     throw new Error('expected /__agentic_os_fs_write mkdirOnly requests to create the requested directory path')
   }
-  if (!mkdirBranch.includes('if (!isAllowed(requestedAbsPath))')) {
-    throw new Error('expected /__agentic_os_fs_write mkdirOnly requests to keep the shared allowed-root guard')
+  const guardIndex = mkdirBranch.indexOf('if (!pathPolicy.isAllowed(requestedAbsPath))')
+  if (guardIndex < 0 || guardIndex > mkdirIndex) {
+    throw new Error('expected mkdirOnly requests to check the shared path policy before creating directories')
+  }
+  const rejectionBranch = mkdirBranch.slice(guardIndex, mkdirIndex)
+  if (!/res\.statusCode\s*=\s*403/.test(rejectionBranch) || !/\breturn\b/.test(rejectionBranch)) {
+    throw new Error('expected a rejected directory path to return 403 before mkdir')
+  }
+  const repoRoot = path.resolve('/workspace/.worktrees/agentic-graph/mirror-write-test')
+  const policy = createKgFsPathPolicy(repoRoot)
+  for (const allowed of [path.join(repoRoot, 'docs_', 'new-directory'), path.resolve('/workspace/docs_/new-directory')]) {
+    if (!policy.isAllowed(allowed)) throw new Error(`expected an in-root directory to be allowed: ${allowed}`)
+  }
+  for (const rejected of [path.resolve('/workspace/../outside/new-directory'), path.resolve('/workspace-other/docs_/new-directory')]) {
+    if (policy.isAllowed(rejected)) throw new Error(`expected escaped or sibling-prefix directory rejection: ${rejected}`)
   }
 }

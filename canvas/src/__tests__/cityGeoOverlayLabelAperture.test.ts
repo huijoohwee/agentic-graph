@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { JSDOM } from 'jsdom'
 import {
   fitMapToCityPresentation,
-} from '../../../gympgrph/src/cityGeoOverlayMapLibreController.js'
+} from 'gympgrph/testkit/cityGeoOverlayMapLibreController'
 import {
   createSyntheticCityGeoOverlaySnapshot,
 } from './helpers/cityGeoOverlayMapLibreHarness.js'

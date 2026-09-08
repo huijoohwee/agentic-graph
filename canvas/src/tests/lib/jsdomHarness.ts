@@ -38,13 +38,14 @@ export const restoreActiveJsdomGlobalsForTests = (): void => {
     Range?: typeof Range
     NodeFilter?: typeof NodeFilter
     DOMParser?: typeof DOMParser
+    XMLSerializer?: typeof XMLSerializer
     HTMLIFrameElement?: typeof HTMLIFrameElement
     requestAnimationFrame?: (cb: FrameRequestCallback) => number
     cancelAnimationFrame?: (id: number) => void
   }
   const windowConstructors = activeJsdomWindow as unknown as Pick<
     typeof globalThis,
-    'Node' | 'Element' | 'HTMLElement' | 'Range' | 'DOMParser'
+    'Node' | 'Element' | 'HTMLElement' | 'Range' | 'DOMParser' | 'XMLSerializer'
   >
   const windowEventConstructors = activeJsdomWindow as unknown as {
     Event: typeof Event
@@ -60,6 +61,7 @@ export const restoreActiveJsdomGlobalsForTests = (): void => {
   g.Range = windowConstructors.Range
   g.NodeFilter = (activeJsdomWindow as unknown as { NodeFilter?: typeof NodeFilter }).NodeFilter as typeof NodeFilter
   g.DOMParser = windowConstructors.DOMParser
+  g.XMLSerializer = windowConstructors.XMLSerializer
   g.HTMLIFrameElement =
     (activeJsdomWindow as unknown as { HTMLIFrameElement?: typeof HTMLIFrameElement }).HTMLIFrameElement as
       typeof HTMLIFrameElement
@@ -92,6 +94,7 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
   const originalRange = (g as { Range?: typeof Range }).Range
   const originalNodeFilter = (g as { NodeFilter?: typeof NodeFilter }).NodeFilter
   const originalDomParser = (g as { DOMParser?: typeof DOMParser }).DOMParser
+  const originalXmlSerializerDescriptor = Object.getOwnPropertyDescriptor(g, 'XMLSerializer')
   const originalHtmlIFrameElement = (g as { HTMLIFrameElement?: typeof HTMLIFrameElement }).HTMLIFrameElement
   const originalObjectProtoHtmlIFrameElementDesc = Object.getOwnPropertyDescriptor(Object.prototype, 'HTMLIFrameElement')
   const originalDocumentProtoActiveElementDesc = Object.getOwnPropertyDescriptor(dom.window.Document.prototype, 'activeElement')
@@ -258,6 +261,7 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
   ;(g as { NodeFilter: typeof NodeFilter }).NodeFilter = polyfillNodeFilter
   ;(dom.window as unknown as { NodeFilter: typeof NodeFilter }).NodeFilter = polyfillNodeFilter
   ;(g as { DOMParser: typeof DOMParser }).DOMParser = dom.window.DOMParser as unknown as typeof DOMParser
+  Object.defineProperty(g, 'XMLSerializer', { configurable: true, writable: true, value: dom.window.XMLSerializer })
 
   try {
     const anyWindow = dom.window as unknown as { HTMLIFrameElement?: typeof HTMLIFrameElement }
@@ -468,6 +472,9 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     } else {
       ;(g as { DOMParser: typeof DOMParser }).DOMParser = originalDomParser as typeof DOMParser
     }
+
+    if (originalXmlSerializerDescriptor) Object.defineProperty(g, 'XMLSerializer', originalXmlSerializerDescriptor)
+    else delete (g as { XMLSerializer?: typeof XMLSerializer }).XMLSerializer
 
     if (typeof originalHtmlIFrameElement === 'undefined') {
       delete (g as { HTMLIFrameElement?: typeof HTMLIFrameElement }).HTMLIFrameElement

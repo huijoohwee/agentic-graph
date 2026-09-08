@@ -1,15 +1,16 @@
 import { normalizeNullableString, normalizeString } from './db'
 
-export const AGENTIC_OS_STORAGE_SYNC_CURSOR_SCHEMA = 'agentic-graph-storage-sync-cursor/v1' as const
+export const AGENTIC_OS_STORAGE_SYNC_CURSOR_SCHEMA = 'agentic-graph-storage-sync-cursor/v2' as const
 
 export type AgenticGraphStorageSyncCursor = Readonly<{
   schema: typeof AGENTIC_OS_STORAGE_SYNC_CURSOR_SCHEMA
   workspaceId: string
+  mode: 'sync' | 'export'
   since: string | null
   snapshotAt: string
   lastUpdatedAt: string
   lastEntityRank: 1 | 2 | 3
-  lastId: string
+  lastId: string | number
 }>
 
 const encodeBase64Url = (bytes: Uint8Array): string => {
@@ -26,12 +27,17 @@ const decodeBase64Url = (value: string): Uint8Array => {
 }
 
 const readIso = (value: unknown, label: string): string => {
-  const normalized = normalizeString(value)
-  if (!normalized || normalized.length > 64 || !Number.isFinite(Date.parse(normalized))) {
+  if (!isStorageSyncTimestamp(value)) {
     throw new Error(`invalid storage page cursor ${label}`)
   }
-  return normalized
+  return value
 }
+
+export const isStorageSyncTimestamp = (value: unknown): value is string =>
+  typeof value === 'string'
+  && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
+  && Number.isFinite(Date.parse(value))
+  && new Date(value).toISOString() === value
 
 export const encodeAgenticGraphStorageSyncCursor = (
   cursor: Omit<AgenticGraphStorageSyncCursor, 'schema'>,
@@ -44,6 +50,7 @@ export const decodeAgenticGraphStorageSyncCursor = (args: {
   token: string
   workspaceId: string
   since: string | null
+  mode?: 'sync' | 'export'
 }): AgenticGraphStorageSyncCursor => {
   let value: unknown
   try {
@@ -53,24 +60,28 @@ export const decodeAgenticGraphStorageSyncCursor = (args: {
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('invalid storage page cursor')
   const record = value as Record<string, unknown>
-  const rank = Number(record.lastEntityRank)
+  const rank = record.lastEntityRank
   const cursor: AgenticGraphStorageSyncCursor = {
     schema: record.schema as typeof AGENTIC_OS_STORAGE_SYNC_CURSOR_SCHEMA,
     workspaceId: normalizeString(record.workspaceId),
-    since: normalizeNullableString(record.since),
+    mode: record.mode as 'sync' | 'export',
+    since: record.since === null ? null : readIso(record.since, 'since'),
     snapshotAt: readIso(record.snapshotAt, 'snapshot'),
     lastUpdatedAt: readIso(record.lastUpdatedAt, 'position'),
     lastEntityRank: rank as 1 | 2 | 3,
-    lastId: normalizeString(record.lastId),
+    lastId: rank === 1 ? normalizeString(record.lastId) : record.lastId as number,
   }
   if (
     cursor.schema !== AGENTIC_OS_STORAGE_SYNC_CURSOR_SCHEMA
     || cursor.workspaceId !== normalizeString(args.workspaceId)
+    || cursor.mode !== (args.mode || 'sync')
     || cursor.since !== normalizeNullableString(args.since)
-    || ![1, 2, 3].includes(rank)
-    || !cursor.lastId
-    || cursor.lastId.length > 1_024
+    || typeof rank !== 'number' || ![1, 2, 3].includes(rank)
+    || (rank === 1
+      ? typeof record.lastId !== 'string' || !cursor.lastId || String(cursor.lastId).length > 1_024
+      : typeof cursor.lastId !== 'number' || !Number.isSafeInteger(cursor.lastId) || cursor.lastId < 1)
     || cursor.lastUpdatedAt > cursor.snapshotAt
+    || (cursor.since !== null && cursor.lastUpdatedAt < cursor.since)
   ) {
     throw new Error('storage page cursor does not match the request')
   }

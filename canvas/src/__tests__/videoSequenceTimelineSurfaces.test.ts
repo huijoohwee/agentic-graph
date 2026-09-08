@@ -234,7 +234,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     readSource('components', 'timeline', 'videoSequenceSourceThumbnailSet.ts'),
     readSource('components', 'timeline', 'VideoSequenceClipThumbnailStrip.tsx'),
   ].join('\n')
-  const rulerCssText = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.css')
+  const rulerCssText = [readSource('components', 'timeline', 'VideoSequenceTimelineRuler.css'), readSource('components', 'timeline', 'VideoSequenceTimelineScope.css')].join('\n')
   if (
     controlsCssText.includes('rgb(130 130 226 / 0.88)') ||
     controlsCssText.includes('rgb(59 130 246 / 0.88)') ||
@@ -367,7 +367,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !rulerText.includes('resolveVisibleVideoSequenceTimelineDisplayLanes(taskSpans, projectionOptions)') ||
     !rulerText.includes('resolveRenderableVideoSequenceTimelineSpans(taskSpans, projectionOptions)') ||
     rulerText.includes("sourceCoverageMode: 'source-covered'") ||
-    !rulerText.includes('visibleLanes.map(lane =>') ||
+    (!rulerText.includes('timelineLanes.map(lane =>') || !rulerText.includes('return visibleLanes.flatMap(lane =>')) ||
     !['resolveVideoSequenceTimelineDisplayLaneId(span, renderableSpans, projectionOptions)', 'visibleLaneIndexById.get(displayLaneId)', 'data-kg-video-sequence-display-lane', 'data-kg-video-sequence-display-lane-label', 'data-kg-video-sequence-lane-append'].every(token => rulerText.includes(token)) ||
     !['buildVideoSequenceTimelineCueSamples', 'buildVideoSequenceTimelineFrameSamples', 'buildVideoSequenceTimelineWaveformSamples', 'buildVideoSequenceClipMediaCache', 'const clipMediaByRowKey = React.useMemo', "const waveformSamples = lane === 'audio' && !verticalMarker", 'sourceAudioWaveformSamples', "sourceAudioWaveformSamples.length ? 'source' : 'synthetic'"].every(token => rulerText.includes(token)) ||
     !rulerText.includes('timeline-video-sequence-clip-timecode') ||
@@ -389,7 +389,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !['.timeline-video-sequence-keyframe-strip', '.timeline-video-sequence-morph-strip', '.timeline-video-sequence-text-strip', '.timeline-video-sequence-nested-strip'].every(token => rulerCssText.includes(token)) ||
     !rulerCssText.includes('.timeline-video-sequence-clip-timecode') ||
     !rulerCssText.includes('.timeline-video-sequence-audio-waveform-bar') ||
-    !rulerCssText.includes('.timeline-video-sequence-ruler-scope-strip') ||
+    (!rulerCssText.includes("@import './VideoSequenceTimelineScope.css'") || !rulerCssText.includes('.timeline-video-sequence-ruler-scope-strip')) ||
     !rulerCssText.includes('.timeline-video-sequence-editor[data-kg-animation-engine="native"]') ||
     !rulerCssText.includes('.timeline-video-sequence-motion-vector') ||
     !rulerCssText.includes('--kg-motion-eased') ||
@@ -442,7 +442,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     transportPanelText.includes('rulerBelow={(') ||
     transportPanelText.includes('VideoSequenceClipEditPanel') ||
     transportPanelText.includes('VideoSequenceMonitorPanel') ||
-    transportPanelText.includes('VideoSequenceTimelineRuler') ||
+    transportPanelText.includes('<VideoSequenceTimelineRuler') ||
     transportPanelText.includes('scopes={monitorScopes}') ||
     transportPanelText.includes('<TimelineTransportChrome') ||
     transportPanelText.includes('useGanttTimelinePlaybackControls') ||
@@ -611,10 +611,10 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !transportCommandModelText.includes('useGanttTimelineTransportCommandModel') ||
     !transportCommandModelText.includes('useGanttTimelineDocumentActions') ||
     !transportCommandModelText.includes('chromeModelCommands') ||
-    !transportCommandModelText.includes('handleCommittedDragUpdate: documentActions.handleCommittedDragUpdate') ||
+    (!transportCommandModelText.includes('routeGanttTimelineTransportCommand({') || !transportCommandModelText.includes('markdownFallback: () => documentActions.handleCommittedDragUpdate(input)')) ||
     !transportCommandModelText.includes('handleToggleVideoSequenceTimingSyncMode: documentActions.handleToggleVideoSequenceTimingSyncMode') ||
     !transportCommandModelText.includes('timingSyncMode: documentActions.timingSyncMode') ||
-    !transportCommandModelText.includes('handleVideoSequenceClipEdit: documentActions.handleVideoSequenceClipEdit') ||
+    (!transportCommandModelText.includes('routeGanttTimelineTransportClipEdit({') || !transportCommandModelText.includes('markdownFallback: () => documentActions.handleVideoSequenceClipEdit(action)')) ||
     !transportDocumentActionsText.includes('useTimelineTransportTimingSyncStoreBinding') ||
     !transportDocumentActionsText.includes('setTimelineTransportTimingSyncMode(timingSyncMode ===') ||
     !transportDocumentActionsText.includes('resolveGanttTimelineVideoSequenceSplitAction') ||

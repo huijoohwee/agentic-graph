@@ -3,11 +3,11 @@ import test from 'node:test'
 
 import {
   createMapLibreFlightRuntimeFallbackRequester,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightRuntimeFallback'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightRuntimeFallback'
 import {
   acquireMapLibreMapDisposalPreparation,
   isMapLibreMapPreparingForDisposal,
-} from '../../../gympgrph/src/features/geospatial/mapLibreHostLease'
+} from 'gympgrph/testkit/features/geospatial/mapLibreHostLease'
 
 const flush = () => new Promise<void>(resolve => setImmediate(resolve))
 

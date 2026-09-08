@@ -9,11 +9,17 @@ import {
 
 export async function testWorkspaceFsChangedBatchCoalescesNotifications() {
   const { restore } = initJsdomHarness()
+  let unsubscribe = () => {}
   try {
+    notifyWorkspaceFsChanged({ op: 'ensureSeed' })
     const received: WorkspaceFsChangedDetail[] = []
-    const unsubscribe = subscribeWorkspaceFsChanged(detail => {
+    unsubscribe = subscribeWorkspaceFsChanged(detail => {
       received.push(detail)
     })
+    if (received.length !== 1 || !received.some(detail => detail.op === 'ensureSeed')) {
+      throw new Error(`expected exactly one retained ensureSeed replay, got ${JSON.stringify(received)}`)
+    }
+    received.length = 0
 
     notifyWorkspaceFsChanged({ op: 'createFile', path: '/a.md' })
     if (received.length !== 1) throw new Error(`expected 1 event, got ${received.length}`)
@@ -30,19 +36,24 @@ export async function testWorkspaceFsChangedBatchCoalescesNotifications() {
     if (received.length !== 1) throw new Error(`expected 1 batched event, got ${received.length}`)
     if (received[0]?.op !== 'batch') throw new Error(`expected op=batch, got ${String(received[0]?.op || '')}`)
 
-    unsubscribe()
   } finally {
-    restore()
+    try { unsubscribe() } finally { restore() }
   }
 }
 
 export async function testWorkspaceFsChangedBatchCanSuppressManualRefreshFollowUpEvent() {
   const { restore } = initJsdomHarness()
+  let unsubscribe = () => {}
   try {
+    notifyWorkspaceFsChanged({ op: 'ensureSeed' })
     const received: WorkspaceFsChangedDetail[] = []
-    const unsubscribe = subscribeWorkspaceFsChanged(detail => {
+    unsubscribe = subscribeWorkspaceFsChanged(detail => {
       received.push(detail)
     })
+    if (received.length !== 1 || !received.some(detail => detail.op === 'ensureSeed')) {
+      throw new Error(`expected exactly one retained ensureSeed replay, got ${JSON.stringify(received)}`)
+    }
+    received.length = 0
 
     const result = await runWorkspaceFsChangedBatch(async () => {
       suppressNextWorkspaceFsChangedEvent()
@@ -58,8 +69,7 @@ export async function testWorkspaceFsChangedBatchCanSuppressManualRefreshFollowU
       throw new Error(`expected suppressed manual-refresh batch to emit 0 events, got ${received.length}`)
     }
 
-    unsubscribe()
   } finally {
-    restore()
+    try { unsubscribe() } finally { restore() }
   }
 }

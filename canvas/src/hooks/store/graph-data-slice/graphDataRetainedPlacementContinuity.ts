@@ -51,12 +51,8 @@ export function hasStableSameSourceTopology(
     if (currentNodeIds[index] !== nextNodeIds[index]) return false
   }
 
-  const edgeSignature = (graphData: GraphData) => (graphData.edges || [])
-    .map(edge => `${readCanonicalNodeId(edge?.id)}|${readCanonicalNodeId(edge?.source)}|${readCanonicalNodeId(edge?.target)}`)
-    .filter(Boolean)
-    .sort()
-  const currentEdges = edgeSignature(current)
-  const nextEdges = edgeSignature(next)
+  const currentEdges = readCanonicalEdgeTopology(current)
+  const nextEdges = readCanonicalEdgeTopology(next)
   if (currentEdges.length !== nextEdges.length) return false
   for (let index = 0; index < currentEdges.length; index += 1) {
     if (currentEdges[index] !== nextEdges[index]) return false
@@ -138,4 +134,45 @@ export function buildRetainedNodePlacementContinuityAcrossTopologyChange(
     nodeSetChanged,
     stableCanonicalNodeIds: nodeSetChanged ? stableRetainedNodeIds : new Set(),
   }
+}
+
+export type WidgetLayoutEvidence = {
+  kind: string
+  nodes: Array<[string, string, number | null, number | null]>
+  edges: string[]
+}
+
+function readCanonicalEdgeTopology(graphData: GraphData): string[] {
+  return (graphData.edges || [])
+    .map(edge => `${readCanonicalNodeId(edge?.id)}|${readCanonicalNodeId(edge?.source)}|${readCanonicalNodeId(edge?.target)}`)
+    .filter(Boolean)
+    .sort()
+}
+
+export function buildWidgetLayoutEvidence(graphData: GraphData): WidgetLayoutEvidence | null {
+  const nodes = indexUniqueNodesByCanonicalId(graphData)
+  if (!nodes) return null
+  return {
+    kind: String(graphData.metadata?.kind || '').trim(),
+    nodes: [...nodes].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+      .map(([id, layout]) => [id, layout.type, layout.x, layout.y]),
+    edges: readCanonicalEdgeTopology(graphData),
+  }
+}
+
+export function compareWidgetLayoutEvidence(previous: WidgetLayoutEvidence, next: WidgetLayoutEvidence) {
+  const before = new Map(previous.nodes.map(([id, type, x, y]) => [id, { type, x, y }]))
+  const after = new Map(next.nodes.map(([id, type, x, y]) => [id, { type, x, y }]))
+  const nodeSetChanged = before.size !== after.size || [...before.keys()].some(id => !after.has(id))
+  const stableCanonicalNodeIds = new Set<string>()
+  let stableTypes = !nodeSetChanged
+  for (const [id, old] of before) {
+    const current = after.get(id)
+    if (!current || current.type !== old.type) stableTypes = false
+    if (current && current.type === old.type && current.x === old.x && current.y === old.y) stableCanonicalNodeIds.add(id)
+  }
+  const stableTopology = previous.kind === next.kind && !nodeSetChanged
+    && previous.edges.length === next.edges.length && previous.edges.every((edge, i) => edge === next.edges[i])
+  return { nodeSetChanged, stableCanonicalNodeIds, stableTopology, stableTypes,
+    stableLayout: stableTopology && stableCanonicalNodeIds.size === before.size }
 }

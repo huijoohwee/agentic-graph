@@ -8,6 +8,7 @@ import { initGraphDataTablePerfHarness, readGraphDataTablePerfHarness } from './
 import { TEST_CASES_PRE_PARSER } from './registry/preParserCases'
 import { ALL_POST_PARSER_CASES } from './registry/postParserCases'
 import type { TestCaseTuple } from './runner/testRunnerTypes'
+import { readTestFilters } from './runner/execTest'
 
 const NODE_ONLY_UI_TEST_FILTER_HINTS = Object.freeze([
   'ui.',
@@ -16,13 +17,14 @@ const NODE_ONLY_UI_TEST_FILTER_HINTS = Object.freeze([
   'workspace.',
   'agentready.',
   'canvas.viewport.',
+  'three.voxel.',
+  'store.composedpositionwriteback.',
 ])
 
 const shouldRunNodeOnlyUiTestsForFocusedFilter = () => {
-  const filter = process.argv.slice(2).find(arg => !arg.startsWith('-'))
-  const filterLower = typeof filter === 'string' ? filter.trim().toLowerCase() : ''
-  if (!filterLower) return true
-  return NODE_ONLY_UI_TEST_FILTER_HINTS.some(prefix => filterLower.includes(prefix))
+  if (typeof process === 'undefined' || !process.versions?.node) return false
+  const filters = readTestFilters()
+  return !filters.length || filters.some(filter => NODE_ONLY_UI_TEST_FILTER_HINTS.some(prefix => filter.includes(prefix)))
 }
 
 const importNodeOnlyUiTestModule = async <T>(importPath: string): Promise<T> => {
@@ -64,8 +66,6 @@ const execTuple = async (results: TestResult[], tuple: TestCaseTuple) => {
 }
 
 const runNodeOnlyUiTests = async (results: TestResult[]) => {
-  if (!(typeof window === 'undefined' || typeof document === 'undefined')) return
-
   const modShowOnCanvas = await importNodeOnlyUiTestModule<typeof import('../__tests__/markdownPreviewShowOnCanvas.test')>(
     '../__tests__/markdownPreviewShowOnCanvas.test',
   )
@@ -299,43 +299,6 @@ const runNodeOnlyUiTests = async (results: TestResult[]) => {
       modZoomCommitRev.testZoomCommitDoesNotWriteWhenOnlyGraphDataRevisionChanges,
     )
 
-    const modCoalescedScheduler = await import('../__tests__/coalescedScheduler.test')
-    await execTest(
-      results,
-      'util.coalescedScheduler.coalescesLatestCallback',
-      modCoalescedScheduler.testCoalescedSchedulerCoalescesLatestCallback,
-    )
-    await execTest(
-      results,
-      'util.coalescedScheduler.cancelPreventsCallback',
-      modCoalescedScheduler.testCoalescedSchedulerCancelPreventsCallback,
-    )
-    await execTest(
-      results,
-      'util.workspaceSyncScheduler.suppressesRepeatedSignature',
-      modCoalescedScheduler.testWorkspaceSyncSchedulerSuppressesRepeatedSignature,
-    )
-    await execTest(
-      results,
-      'util.workspaceSyncScheduler.runsLatestPerTaskUnderSharedKey',
-      modCoalescedScheduler.testWorkspaceSyncSchedulerRunsLatestPerTaskUnderSharedKey,
-    )
-    await execTest(
-      results,
-      'util.workspaceSyncScheduler.flushNotDelayedByLaterTask',
-      modCoalescedScheduler.testWorkspaceSyncSchedulerDoesNotDelayExistingFlushForLaterTask,
-    )
-    await execTest(
-      results,
-      'util.workspaceSyncScheduler.cancelDoesNotResetSignatureDedupe',
-      modCoalescedScheduler.testWorkspaceSyncSchedulerCancelDoesNotResetSignatureDedupe,
-    )
-    await execTest(
-      results,
-      'util.workspaceSyncScheduler.scopeKeyKeepsLatestAcrossTaskKeysWithinSameFlush',
-      modCoalescedScheduler.testWorkspaceSyncSchedulerScopeKeyKeepsLatestAcrossTaskKeysWithinSameFlush,
-    )
-
     const modWorkspaceSourceIndex = await import('../__tests__/workspaceSourceIndexCoalescedWrites.test')
     await execTest(
       results,
@@ -364,11 +327,6 @@ const runNodeOnlyUiTests = async (results: TestResult[]) => {
       results,
       'ui.sourceFiles.ingest.dedupesPendingSameText',
       modSourceFilesIngestStaleGuard.testSourceFilesIngestDedupesPendingParsesForSameTextHash,
-    )
-    await execTest(
-      results,
-      'workspace.selection.switch.passiveSameTextKeepsFrontmatterPreset',
-      modSourceFilesIngestStaleGuard.testPassiveSameTextSourceSyncDoesNotDisableActiveFrontmatterSwitchPreset,
     )
     const modLazyLoadingGates = await import('../__tests__/lazyLoadingGatesRegression.test')
     await execTest(

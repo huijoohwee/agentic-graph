@@ -59,7 +59,7 @@ export function testStoryboardWidgetRichMediaOverlayResizePersistsVisualSize() {
     || !cardDragText.includes("args.updateNode(id, { x: snapped.x, y: snapped.y })") || !cardProjectionText.includes('dragWorldOverrideByCardIdRef.current.has(cardId)')) {
     throw new Error('expected unpinned Card drag to use a local visual override and commit only the target node at drag-end')
   }
-  if (!text.includes('mediaOverlayHeaderDragRef.current = { id, pointerId') || !text.includes('setFlowWidgetDraggingNodeId(id)')
+  if (!/mediaOverlayHeaderDragRef\.current = \{[^}]*\bid,[^}]*\bpointerId,/.test(text) || !text.includes('setFlowWidgetDraggingNodeId(id)')
     || !text.includes('flowWidgetDraggingNodeId === id) useGraphStore.getState().setFlowWidgetDraggingNodeId(null)')) {
     throw new Error('expected Widget and Rich Media drag to share the collection-layout lock for the complete drag lifecycle')
   }

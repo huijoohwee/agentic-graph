@@ -264,22 +264,22 @@ export async function testDocumentSummaryUsesSharedHeadlessCoordinatorBeforeSour
     anchorNode: node,
     liveDraftGraphData: graphData,
   })
-  if (
-    requestBodies.length !== 1
-    || !providerPayload.includes(requestText)
-    || updatedSource?.properties.output !== generatedText
-    || updatedSource?.properties.headlessResponseRunSchema !== HEADLESS_RESPONSE_RUN_SCHEMA
-    || resultPanels.length !== 1
-    || resultPanels[0]?.properties.output !== generatedText
-    || resultPanels[0]?.properties.markdownWorkspaceViewerSurface !== true
-    || resultPanels[0]?.x !== expectedPanelPosition.x
-    || resultPanels[0]?.y !== expectedPanelPosition.y
-    || resultPanels[0]?.properties[STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION_PROPERTY]
-      !== STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION
-    || toasts.some(toast => toast.message === 'Generated source-backed Rich Media output.')
-  ) {
-    throw new Error(`expected a Document card summary to run as natural-language input through the shared headless coordinator, got ${JSON.stringify({ requestBodies, graphData, toasts })}`)
+  const checks = {
+    oneRequest: requestBodies.length === 1,
+    requestPreserved: providerPayload.includes(requestText),
+    sourceOutput: updatedSource?.properties.output === generatedText,
+    headlessReceipt: updatedSource?.properties.headlessResponseRunSchema === HEADLESS_RESPONSE_RUN_SCHEMA,
+    onePanel: resultPanels.length === 1,
+    panelOutput: resultPanels[0]?.properties.output === generatedText,
+    viewerSurface: resultPanels[0]?.properties.markdownWorkspaceViewerSurface === true,
+    panelX: resultPanels[0]?.x === expectedPanelPosition.x,
+    panelY: resultPanels[0]?.y === expectedPanelPosition.y,
+    layoutVersion: resultPanels[0]?.properties[STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION_PROPERTY]
+      === STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION,
+    noSourceFallback: !toasts.some(toast => toast.message === 'Generated source-backed Rich Media output.'),
   }
+  const failed = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name)
+  if (failed.length) throw new Error(`Headless document summary failed: ${failed.join(', ')}; panel=${JSON.stringify({ expected: expectedPanelPosition, actual: { x: resultPanels[0]?.x, y: resultPanels[0]?.y } })}`)
 }
 
 export async function testRunMaterializationUsesCapturedExecutionAnchorAtNaturalZoom() {

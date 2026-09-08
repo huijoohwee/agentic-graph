@@ -1,7 +1,12 @@
-import Dexie, { type Table } from 'dexie'
+import { IndexedCollectionDexie, type IndexedDocumentRevisionRecord, type IndexedDocumentRevisionWrite,
+  type IndexedCollaborationUpdateRecord } from '@/lib/storage/indexedDbCollectionSchema'
+export type { IndexedDocumentRevisionRecord, IndexedDocumentRevisionWrite, IndexedCollaborationUpdateRecord }
+  from '@/lib/storage/indexedDbCollectionSchema'
 import { toCloneSafeValue } from '@/lib/storage/cloneSafe'
 import {
   createPersistedCollectionDb,
+  equalPersistedCollectionRecords,
+  type PersistedCollectionAtomicCondition,
   type PersistedCollection,
   type PersistedCollectionAtomicMutation,
   type PersistedCollectionChangeEvent,
@@ -16,62 +21,16 @@ type StoredRecordMap = Record<string, StoredRecord>
 type Selector<T> = Partial<{ [K in keyof T]: T[K] }>
 type SortSpec<T> = Partial<Record<Extract<keyof T, string>, 'asc' | 'desc'>>
 
-type IndexedCollectionRecord = {
-  key: string
-  collection: string
-  id: string
-  value: StoredRecord
-}
-
-export type IndexedDocumentRevisionRecord = {
-  key: string
-  workspaceId: string
-  documentId: string
-  documentRevision: number
-  contentMd: string
-  contentHash: string
-  updatedAtMs: number
-}
-
-export type IndexedCollaborationUpdateRecord = {
-  updateId: string
-  workspaceId: string
-  documentKey: string
-  roomId: string
-  provider: 'pocketbase' | 'durable-object'
-  clientSeq: number
-  updateBase64: string
-  attemptCount: number
-  acknowledgedAtMs: number | null
-  createdAtMs: number
-  updatedAtMs: number
-}
-
-export type IndexedDocumentRevisionWrite = {
-  record: Omit<IndexedDocumentRevisionRecord, 'key'>
-  keep?: number
-}
-
-class IndexedCollectionDexie extends Dexie {
-  records!: Table<IndexedCollectionRecord, string>
-  documentRevisions!: Table<IndexedDocumentRevisionRecord, string>
-  collaborationUpdates!: Table<IndexedCollaborationUpdateRecord, string>
-
-  constructor(databaseName: string) {
-    super(databaseName)
-    this.version(1).stores({
-      records: '&key, collection, id, [collection+id]',
-      documentRevisions: '&key, [workspaceId+documentId], documentRevision, updatedAtMs',
-      collaborationUpdates: '&updateId, [workspaceId+documentKey], roomId, acknowledgedAtMs, createdAtMs',
-    })
-  }
-}
-
 export type IndexedDbCollectionDb<Collections extends StoredRecordMap> = PersistedCollectionDb<Collections> & {
   atomicWriteWithRevisions(
     mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
     revisionWrites: ReadonlyArray<IndexedDocumentRevisionWrite>,
   ): Promise<void>
+  compareAndWriteWithRevisions(
+    mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
+    revisionWrites: ReadonlyArray<IndexedDocumentRevisionWrite>,
+    conditions: ReadonlyArray<PersistedCollectionAtomicCondition<Collections>>,
+  ): Promise<boolean>
   revisionHistory: {
     put(record: Omit<IndexedDocumentRevisionRecord, 'key'>, keep?: number): Promise<void>
     list(workspaceId: string, documentId: string): Promise<IndexedDocumentRevisionRecord[]>
@@ -448,30 +407,51 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
     for (const change of changes) emitChange(change.collectionName, change.event)
   }
 
-  const atomicWriteWithRevisions = async (
+  const writeAtomic = async (
     mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
     revisionWrites: ReadonlyArray<IndexedDocumentRevisionWrite>,
-  ): Promise<void> => {
+    conditions: ReadonlyArray<PersistedCollectionAtomicCondition<Collections>> = [],
+  ): Promise<boolean> => {
     if (persistenceState.mode !== 'indexeddb' || persistenceState.status !== 'active') {
       throw new Error('Atomic durable write requires active IndexedDB persistence.')
     }
-    const changes = await buildAtomicChanges(mutations)
+    const changes: Awaited<ReturnType<typeof buildAtomicChanges>> = []
     try {
-      await raw.transaction('rw', raw.records, raw.documentRevisions, async () => {
+      const committed = await raw.transaction('rw', raw.records, raw.documentRevisions, async () => {
+        for (const condition of conditions) {
+          if (!collections[condition.collectionName]) throw new Error('Unknown conditional storage collection.')
+          const collectionName = String(condition.collectionName)
+          const id = condition.selector.id
+          const rows = typeof id === 'string'
+            ? [await raw.records.get(collectionRecordKey(collectionName, id.trim()))]
+            : await raw.records.where('collection').equals(collectionName).toArray()
+          const actual = rows.flatMap(row => row && matchesSelector<StoredRecord>(row.value, condition.selector) ? [row.value] : [])
+          if (!equalPersistedCollectionRecords(actual, condition.records)) return false
+        }
         for (const mutation of mutations) {
+          if (!collections[mutation.collectionName]) throw new Error('Unknown storage collection.')
           const collectionName = String(mutation.collectionName)
           if (mutation.kind === 'remove') {
-            await raw.records.delete(collectionRecordKey(collectionName, String(mutation.id).trim()))
+            const id = String(mutation.id).trim(), key = collectionRecordKey(collectionName, id)
+            if (!id) throw new Error(`${collectionName} record id is required`)
+            const previous = await raw.records.get(key)
+            await raw.records.delete(key)
+            if (previous) changes.push({ collectionName: mutation.collectionName,
+              event: { operation: 'DELETE', documentId: id, documentData: cloneValue(previous.value) as Collections[keyof Collections] } })
             continue
           }
           const record = cloneValue(mutation.record)
           const id = readId(record)
+          if (!id) throw new Error(`${collectionName} record id is required`)
+          const previous = await raw.records.get(collectionRecordKey(collectionName, id))
           await raw.records.put({
             key: collectionRecordKey(collectionName, id),
             collection: collectionName,
             id,
             value: record,
           })
+          changes.push({ collectionName: mutation.collectionName,
+            event: { operation: previous ? 'UPDATE' : 'INSERT', documentId: id, documentData: record } })
         }
         for (const write of revisionWrites) {
           const record = cloneValue(write.record)
@@ -486,14 +466,27 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
           const expiredKeys = rows.slice(keep).map(row => row.key)
           if (expiredKeys.length > 0) await raw.documentRevisions.bulkDelete(expiredKeys)
         }
+        return true
       })
+      if (!committed) return false
     } catch (error) {
       degradeToMemory(error)
       throw error
     }
     await memory.atomicWrite(mutations)
     for (const change of changes) emitChange(change.collectionName, change.event)
+    return true
   }
+
+  const atomicWriteWithRevisions: IndexedDbCollectionDb<Collections>['atomicWriteWithRevisions'] = async (mutations, revisions) => {
+    await writeAtomic(mutations, revisions)
+  }
+  const compareAndWriteWithRevisions: IndexedDbCollectionDb<Collections>['compareAndWriteWithRevisions'] = async (mutations, revisions, conditions) =>
+    writeAtomic(
+      mutations.map(cloneValue),
+      revisions.map(write => ({ ...write, record: cloneValue(write.record) })),
+      conditions.map(condition => ({ ...condition, selector: cloneValue(condition.selector), records: condition.records.map(cloneValue) })),
+    )
 
   return {
     db: {
@@ -514,6 +507,10 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
         : applyMemoryAtomicWrite(mutations)
     },
     atomicWriteWithRevisions,
+    compareAndWriteWithRevisions,
+    compareAndWrite(mutations, conditions) {
+      return compareAndWriteWithRevisions(mutations, [], conditions)
+    },
     persistence: {
       getState() {
         return cloneValue(persistenceState)

@@ -32,6 +32,9 @@ export async function testWorkspaceBootstrapRetriesGraphOwningMaterializationAft
     let firstRead = true
     const fs: WorkspaceFs = {
       ...baseFs,
+      // This workspace is already seeded; retry must read these owned files,
+      // without discovering unrelated local or remote seed repositories.
+      ensureSeed: async () => false,
       readFileText: async path => {
         if (firstRead && path === pathA) {
           firstRead = false

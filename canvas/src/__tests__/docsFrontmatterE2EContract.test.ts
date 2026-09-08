@@ -4,9 +4,9 @@ import { load as parseYaml } from 'js-yaml'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
 import { isUnsafeFlowComputeSource, readFlowComputeSource } from '@/lib/storyboardWidget/flowComputeInline'
 
-const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
-const HUIJOOHWEE_DOCS_ROOT = path.join(GITHUB_ROOT, 'huijoohwee', 'docs')
-const GUIDELINES_ROOT = path.join(GITHUB_ROOT, 'huijoohwee.github.io', 'guidelines')
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
+const HUIJOOHWEE_DOCS_ROOT = resolveSiblingFixturePath('huijoohwee', 'docs')
+const GUIDELINES_ROOT = resolveSiblingFixturePath('huijoohwee.github.io', 'guidelines')
 
 const YAML_GUIDELINES_PATH = path.join(GUIDELINES_ROOT, 'yaml-frontmatter-guidelines.md')
 const MARKDOWN_GUIDELINES_PATH = path.join(GUIDELINES_ROOT, 'markdown-syntax-guidelines.md')
@@ -113,7 +113,7 @@ const listMarkdownFiles = (rootPath: string): string[] => {
 
 const readUtf8 = (filePath: string): string => fs.readFileSync(filePath, 'utf8')
 
-const toRepoRelativePath = (filePath: string): string => path.relative(GITHUB_ROOT, filePath)
+const toRepoRelativePath = (filePath: string): string => path.relative(path.dirname(path.dirname(HUIJOOHWEE_DOCS_ROOT)), filePath)
 
 const resolveMarkdownDocBySemanticFragments = (
   requiredFragments: readonly string[],
@@ -397,23 +397,22 @@ export function testCanonicalAnimaticAndStoryboardDocsUsePlainYamlFrontmatter() 
 export function testGuidelinesDescribeCanonicalAndNormalizedFrontmatterContracts() {
   const yamlGuidelines = readUtf8(YAML_GUIDELINES_PATH)
   const markdownGuidelines = readUtf8(MARKDOWN_GUIDELINES_PATH)
-  const yamlRequired = [
-    'Canonical authored Markdown stays plain YAML for source-of-truth authoring',
-    'E2E ingestion and rendering fixtures may use a normalized typed wrapper shape after parsing',
-    'Use `{key, type, value}` wrappers only in normalized validation fixtures',
+  const required: Array<[string, string, RegExp]> = [
+    ['YAML canonical authoring', yamlGuidelines, /Canonical authored Markdown[^\n]*plain YAML/],
+    ['YAML normalized pipeline', yamlGuidelines, /E2E ingestion and rendering fixtures[^\n]*typed wrapper[^\n]*after parsing/],
+    ['YAML wrapper scope', yamlGuidelines, /Use `\{key, type, value\}` wrappers only in normalized validation fixtures/],
+    ['Markdown canonical authoring', markdownGuidelines, /Canonical authored Markdown[^\n]*`flow:`[^\n]*plain YAML scalars, arrays, and objects/],
+    ['Markdown wrapper scope', markdownGuidelines, /Normalized `\{key, type, value\}` wrappers are reserved for E2E[^\n]*fixtures after parsing/],
   ]
-  const markdownRequired = [
-    'Canonical authored Markdown uses plain YAML scalars, arrays, and objects in the `flow:` block.',
-    'Normalized E2E pipeline fixtures may wrap individual values as `{key, type, value}` after parsing',
-    '- id: {key: id, type: string, value: "w-text-script"}',
-  ]
-  const missing = [
-    ...yamlRequired.filter(snippet => !yamlGuidelines.includes(snippet)).map(snippet => `yaml-frontmatter-guidelines.md missing ${JSON.stringify(snippet)}`),
-    ...markdownRequired.filter(snippet => !markdownGuidelines.includes(snippet)).map(snippet => `markdown-syntax-guidelines.md missing ${JSON.stringify(snippet)}`),
-  ]
-  if (missing.length > 0) {
-    throw new Error(`Expected guidelines to describe canonical authoring and normalized E2E frontmatter contracts:\n${missing.join('\n')}`)
-  }
+  const missing = required.filter(([, text, pattern]) => !pattern.test(text)).map(([label]) => label)
+  const examples = yamlGuidelines.match(/## E2E Normalized Frontmatter\n([\s\S]*?)(?=\n## |$)/)?.[1] || ''
+  const nodes = [...examples.matchAll(/```yaml\n([\s\S]*?)```/g)].flatMap(([, text]) => {
+    const meta = parseYaml(text)
+    return isPlainRecord(meta) && isPlainRecord(meta.flow) && Array.isArray(meta.flow.nodes) ? meta.flow.nodes : []
+  })
+  if (!nodes.some(node => isPlainRecord(node) && typeof node.id === 'string')) missing.push('plain YAML node example')
+  if (!nodes.some(node => isPlainRecord(node) && ['id', 'type', 'label'].every(key => isTypedValueWrapper(node[key], key)))) missing.push('normalized typed node example')
+  if (missing.length) throw new Error(`Expected frontmatter guidelines to preserve authoring and normalized fixture contracts: ${missing.join(', ')}`)
 }
 
 export function testPublishedStoryboardWidgetDocsKeepFrontmatterAsMachineSsot() {

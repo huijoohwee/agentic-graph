@@ -1,7 +1,6 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
-import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
 import type { WorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import {
   hydrateWorkspaceFileFromPendingLocalImport,
@@ -235,10 +234,6 @@ export async function activateFirstImportedWorkspaceFile(args: {
     if (!activated) return false
     if (args.applyToGraph === true) {
       try {
-        applyCanvasFrontmatterPreset({
-          graphData: useGraphStore.getState().graphData,
-          rawText: activationText,
-        })
         activateStrybldrImportSurface({
           graphData: useGraphStore.getState().graphData,
           rawText: activationText,

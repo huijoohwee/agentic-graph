@@ -7,6 +7,18 @@ import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { createStoryboardWidgetTextOutputHarness as createTextOutputHarness } from '@/tests/lib/storyboardWidgetTextOutputHarness'
 
 export function testSelectedGenerationConnectsResultDuringRunAll() {
+  for (const suppressStoreGraphWriteback of [false, true]) {
+    const anchor: GraphNode = { id: 'media-input', type: 'ImageGeneration', label: 'Input', properties: {} }
+    const panel: GraphNode = { id: 'media-result', type: 'RichMediaPanel', label: 'Result', properties: { 'visual:width': 640, 'visual:height': 360, imageUrl: 'old.png' } }
+    const graph: GraphData = { type: 'Graph', nodes: [anchor, panel], edges: [{ id: 'media-output', label: 'Output', source: anchor.id, target: panel.id, properties: {} }] }
+    const harness = createTextOutputHarness(graph, graph, false, { suppressStoreGraphWriteback })
+    harness.publishers.publishMediaRunOutputToRichMediaPanel({ anchorNode: anchor, patch: { imageUrl: 'new.png' } })
+    const output = harness.readGraph().nodes.find(node => node.id === panel.id)
+    if (output?.properties.imageUrl !== 'new.png' || output.properties['visual:width'] !== 640 || output.properties['visual:height'] !== 360) throw new Error('media publication must retain draft output and authored size in both modes')
+    const expectedMirrors = suppressStoreGraphWriteback ? 0 : 1
+    if (harness.readStoreMirrorCount() !== expectedMirrors) throw new Error(`expected ${expectedMirrors} graph-store media mirrors, got ${harness.readStoreMirrorCount()}`)
+  }
+
   const selectedChild: GraphNode = {
     id: 'mcp-response-n1-qa1',
     type: 'TextGeneration',

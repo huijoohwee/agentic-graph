@@ -9,7 +9,7 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
   const storyboardWidgetSurfaceSource = readFileSync(new URL('../components/StoryboardWidgetCanvas/runtime/StoryboardWidgetCanvasSurface.tsx', import.meta.url), 'utf8')
   const storyboardWidgetDropBridgeSource = readFileSync(new URL('../components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetDropBridge.ts', import.meta.url), 'utf8')
   const graphCanvasRootSource = readFileSync(new URL('../components/GraphCanvasRoot/GraphCanvasRootImpl.tsx', import.meta.url), 'utf8')
-  const graphStoryboardOverlaySource = readFileSync(new URL('../components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d.tsx', import.meta.url), 'utf8') + readFileSync(new URL('../components/StoryboardWidgetCanvas/storyboardCardPlacements2d.ts', import.meta.url), 'utf8')
+  const graphStoryboardOverlaySource = ['../components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d.tsx', '../components/StoryboardWidgetCanvas/storyboardCardPlacements2d.ts', '../components/StoryboardWidgetCanvas/useStoryboardCardOverlayProjection2d.ts', '../components/StoryboardWidgetCanvas/StoryboardCardTextEditSurface.tsx'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n')
   const graphCanvasSceneSource = readFileSync(new URL('../components/GraphCanvas/scene.ts', import.meta.url), 'utf8')
   const graphCanvasZoomSource = readFileSync(new URL('../components/GraphCanvas/zoom.ts', import.meta.url), 'utf8')
   const graphRichMediaOverlaySource = readFileSync(new URL('../components/GraphCanvasRoot/components/RichMediaOverlayLayer2d.tsx', import.meta.url), 'utf8')
@@ -85,7 +85,7 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
       throw new Error(`expected StoryboardWidgetCanvas runtime to own Storyboard card-surface snippet: ${snippet}`)
     }
   }
-  for (const snippet of ["from '@/components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d'", "from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'",
+  for (const snippet of ["from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetCanvasSurfaceDeferred'", "from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'",
     "const storyboardSurfaceRouteActive = String(props.storyboardWidgetSurfaceId || '').trim() === 'storyboard' || canvas2dRenderer === 'storyboard'",
     'const storyboardCardsActive = props.storyboardCardsMode === true && storyboardSurfaceRouteActive',
     'const storyboardSharedSurfaceActive =',
@@ -97,12 +97,12 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
     'const readFlowCanvasBaseGraphDataOverride = React.useCallback(() => {',
     'const flowCanvasGraphDataOverride = storyboardSharedSurfaceActive ? storyboardGraphData : props.renderGraphDataOverride',
     'const flowCanvasGraphDataOverride = React.useMemo(() => {',
-    'filterGraphByExcludedNodeIds({',
-    'excludedNodeIds: storyboardHiddenNodeIds,',
-    'const flowCanvasHiddenNodeIds = storyboardSharedSurfaceActive ? storyboardHiddenNodeIds : undefined',
+    'const flowCanvasNativeSceneExcludedNodeIds = React.useMemo(() => (',
+    '...storyboardOverlayConsumerNodeIds,',
+    'excludeNativeSceneNodeIds={flowCanvasNativeSceneExcludedNodeIds}',
     'graphDataOverride={flowCanvasGraphDataOverride}',
-    'excludeRichMediaOverlayNodeIds={flowCanvasHiddenNodeIds}',
-    '<StoryboardCardOverlayLayer2d',
+    'excludeRichMediaOverlayNodeIds={flowCanvasRichMediaOverlayExcludedNodeIds}',
+    '<DeferredStoryboardCardOverlayLayer2d',
     'active={storyboardCardsActive}',
     'graphData={storyboardGraphData}',
     'flowWidgetPinnedByNodeId: effectiveFlowWidgetPinnedByNodeId',
@@ -174,8 +174,8 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
     'MEDIA_POINTER_DRAG_DROP_EVENT',
     'appendMediaPanelFromDrop',
     'appendMediaPanelAtClientPoint',
-    'isMediaPointerDropDistanceAccepted',
-    'addRichMediaPanelFromMediaAtWorld({ media: { ...mediaPayload, url: mediaUrl }, x: pos.x, y: pos.y })',
+    'isMediaPointerDragDistanceAccepted',
+    'addRichMediaPanelFromMediaAtWorld({ media: { ...mediaPayload, url: mediaUrl }, releaseClientPoint: { clientX, clientY }, x: pos.x, y: pos.y })',
     "id: 'storyboard-widget-drop-media'",
     'Created Rich Media Panel node.',
     "document.addEventListener('drop', onDropCapture, true)",
@@ -213,25 +213,25 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
     'data-kg-storyboard-fixed-card="1"',
     'Storyboard card ${card.title}',
     'computeStoryboardWidgetOverlayScreenBox({',
-    'applyVectorPaintedOverlayBox(el, {',
+    'applyVectorPaintedOverlayBox(item.el, {',
     'scale: box.scale',
     'strybldrStoryboardBoardLayoutMode',
-    'visibleLanes',
+    'const cardCount = packedCards.length',
     'centerLaneOffset',
-    'for (let laneIndex = 0; laneIndex < visibleLanes.length; laneIndex += 1)',
-    'for (let rowIndex = 0; rowIndex < lane.cards.length; rowIndex += 1)',
+    'const columnIndex = index % columnCount',
+    'const rowIndex = Math.floor(index / columnCount)',
     'readSnapGridConfigFromSchema',
     'snapPointToGrid',
     'readStableRichMediaPanelSize',
     'buildFixedStoryboardCardPlacements2d',
     'applyFixedStoryboardCardPlacementsToGraphData2d',
     'flowWidgetPinnedByNodeId: effectiveFlowWidgetPinnedByNodeId',
-    'resolveFlowWidgetStateGraphKey({',
+    'graphMetaKey: props.flowWidgetStateGraphKey',
     'resolveScopedFlowWidgetNodeMap({',
     'readCanvasBoardLayoutMode',
     "storyboardBoardLayoutMode === 'fixed'",
     'CardInlineTextEditor',
-    'getStoryboardWidgetPanelChromeClassName',
+    'getStoryboardWidgetPanelSurfaceChromeClassName',
     'buildStoryboardToolbarActionBindings',
     'data-kg-storyboard-fixed-card-lane',
     'data-kg-storyboard-fixed-card-rich-media-chrome="1"',
@@ -267,7 +267,7 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
     'buildSharedRichMediaOverlayToolbarProps',
     'data-kg-rich-media-overlay-shell="1"',
     'data-kg-rich-media-overlay-shell-id={n.id}',
-    'const selected = activePanelId === n.id || selectedNodeId === n.id || (Array.isArray(selectedNodeIds) && selectedNodeIds.some',
+    'const selected = isCanonicalNodeIdEqual(activePanelId, n.id)',
     '{...buildSharedRichMediaOverlayToolbarProps()}',
     'onOpenInSidepane={() => openPanelInSidepane(n.id)}',
     'onDuplicate={() => duplicatePanel(n.id)}',
@@ -390,7 +390,7 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
     "from '@/components/StoryboardCanvas/storyboardHelpAction'",
     "from '@/components/StoryboardCanvas/storyboardOpenSidepaneAction'",
     "from '@/components/StoryboardCanvas/storyboardRunAction'",
-    "from '@/components/StoryboardCanvas/storyboardClearOutputAction'",
+    "from '@/components/StoryboardCanvas/storyboardCardResetAction'",
     "from '@/components/StoryboardCanvas/storyboardConvertLoopAction'",
     "from '@/components/StoryboardCanvas/storyboardRemoveAction'",
     "from '@/components/StoryboardCanvas/storyboardSelectAction'",
@@ -482,8 +482,8 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
     "const isMarkdownBackedCard = sourceId.startsWith('blk:md:')",
     "message: 'Duplicate is unavailable for markdown-backed storyboard cards until a durable document duplicate path is available.'",
     'duplicateDisabled: !canDuplicateStoryboardCard(card)',
-    'clearCardOutput: clearStoryboardCardOutput',
-    'runStoryboardClearOutputAction({',
+    'clearCardOutput: resetStoryboardCard',
+    'runStoryboardCardResetAction({',
     'showStoryboardCardHelp',
     'buildStoryboardHelpToast({',
     'openCardInSidepane: openStoryboardCardInSidepane',
@@ -695,8 +695,8 @@ export function testStoryboardCanvasKeepsNativeRendererContract() {
       throw new Error(`expected shared media lightbox to retain prompt/media panel snippet: ${snippet}`)
     }
   }
-  if (mediaLightboxSource.includes('RichMediaPanel')) {
-    throw new Error('expected shared media lightbox to render raw CardMediaPreview media, not RichMediaPanel chrome')
+  if (!mediaLightboxSource.includes('placementOwner="parent"') || !mediaLightboxSource.includes('data-kg-media-lightbox-audio="1"') || !mediaLightboxSource.includes('<CardMediaPreview')) {
+    throw new Error('expected image/video lightbox panels to retain parent placement and audio to reuse CardMediaPreview')
   }
   for (const snippet of [
     'buildMediaLightboxPromptParameters',

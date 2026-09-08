@@ -11,7 +11,7 @@ import {
   type GameOsModeDeclaration,
   type GameOsSession,
   type GameOsSessionProjection,
-} from '../../../../grph-shared/src/game-os/index.js'
+} from 'grph-shared/game-os/index'
 import {
   createAgenticGraphStorageEnginePersistence,
   type AgenticGraphStorageEnginePersistence,

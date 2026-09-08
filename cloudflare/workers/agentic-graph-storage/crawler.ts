@@ -147,6 +147,7 @@ const buildCrawlerHeaders = (
   contentType: string,
   corsHeaders: Record<string, string>,
   nextPageUrl: string | null,
+  publishedOnly: boolean,
 ): HeadersInit => ({
   'content-type': contentType,
   'cache-control': 'private, no-store',
@@ -154,7 +155,7 @@ const buildCrawlerHeaders = (
     `<${CLOUDFLARE_PAY_PER_CRAWL_DOC_URL}>; rel="help"; title="Cloudflare AI Crawl Control Pay Per Crawl"`,
     ...(nextPageUrl ? [`<${nextPageUrl}>; rel="next"`] : []),
   ].join(', '),
-  'x-robots-tag': 'noindex, nofollow',
+  'x-robots-tag': publishedOnly ? 'all' : 'noindex, nofollow',
   [AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS.source]: 'd1-documents-doc-view',
   [AGENTIC_OS_STORAGE_CRAWLER_ACCESS_HEADERS.payPerCrawlPolicy]: 'cloudflare-zone-policy',
   ...corsHeaders,
@@ -329,5 +330,6 @@ export const handleCrawlerSourceFiles = async (
   const contentType = route.format === 'manifest'
     ? 'application/json; charset=utf-8'
     : route.format === 'llms' ? 'text/plain; charset=utf-8' : 'text/markdown; charset=utf-8'
-  return new Response(body, { status: 200, headers: buildCrawlerHeaders(contentType, corsHeaders, nextPageUrl) })
+  return new Response(body, { status: 200,
+    headers: buildCrawlerHeaders(contentType, corsHeaders, nextPageUrl, options.publishedOnly === true) })
 }

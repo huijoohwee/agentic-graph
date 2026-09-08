@@ -5,13 +5,13 @@ import {
   clearFlightGeoOverlay,
   readFlightGeoOverlay,
   setFlightGeoOverlay,
-} from '../../../gympgrph/src/flightGeoOverlay.js'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import {
   flightGeoOverlayFeatureCollection,
   FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   retainFlightGeoOverlayDuringStyleSwap,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre.js'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import {
   canMapLibreFlightOverlayPresent,
   disposeMapLibreFlightBootstrap,
@@ -20,12 +20,12 @@ import {
   markMapLibreFlightReadyFramePresented,
   reconcileMapLibreFlightBootstrap,
   subscribeMapLibreFlightBootstrapSettled,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrap'
 import {
   captureNativeGeospatialMapLibreLease,
   claimMapLibreMapLease,
   NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
-} from '../../../gympgrph/src/features/geospatial/mapLibreHostLease.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreHostLease'
 import {
   applyProviderStyleImmediately,
   flushMicrotasks,
@@ -33,7 +33,7 @@ import {
 } from './helpers/flightSimGeoMapLibreLeaseHarness'
 import {
   deferFlightGeoPresentationForBootstrapRecovery,
-} from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
+} from 'gympgrph/testkit/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 
 test('native Geo lease ignores inline Markdown maps and fences stale releases', () => {
   const hostCanvas = {} as HTMLCanvasElement

@@ -200,6 +200,7 @@ export const LS_KEYS = {
   flowWidgetRichMediaKtvRows: 'kg:ui:storyboardWidget:richMedia:ktvRows',
   flowWidgetPosByNodeId: 'kg:ui:storyboardWidget:widget:posByNodeId',
   flowWidgetWorldPosByNodeId: 'kg:ui:storyboardWidget:widget:worldPosByNodeId',
+  flowWidgetStateByDocument: 'kg:ui:storyboardWidget:widget:stateByDocument:v1',
   flowWidgetPinnedByGraphMetaKey: 'kg:ui:storyboardWidget:widget:pinnedByGraphMetaKey',
   flowWidgetPosByGraphMetaKey: 'kg:ui:storyboardWidget:widget:posByGraphMetaKey',
   flowWidgetWorldPosByGraphMetaKey: 'kg:ui:storyboardWidget:widget:worldPosByGraphMetaKey',

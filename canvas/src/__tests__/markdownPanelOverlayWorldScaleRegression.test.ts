@@ -1,20 +1,24 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-import { startMarkdownPanelOverlayLoop2d } from '@/features/markdown-edgeless/markdownPanelOverlayLoop2d'
+import { readVectorPaintedOverlayPosition, readVectorPaintedOverlayScale } from '@/lib/canvas/vectorPaintedOverlayProjection'
+import { startMarkdownPanelOverlayLoop2d, type MarkdownOverlayPanelLoop } from '@/features/markdown-edgeless/markdownPanelOverlayLoop2d'
 
 export async function testMarkdownPanelOverlayUsesWorldSizeAndScaleForCardLayout() {
   const { dom, restore } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
+  let loop: MarkdownOverlayPanelLoop | undefined
   try {
     const root = dom.window.document.getElementById('root')
     if (!root) throw new Error('expected root container')
     const el = dom.window.document.createElement('section')
     root.appendChild(el)
+    let itemReads = 0
+    let items = [{ id: 'table-1', cx: 260, cy: 210, w: 520, h: 420 }]
 
-    const loop = startMarkdownPanelOverlayLoop2d({
+    loop = startMarkdownPanelOverlayLoop2d({
       enabled: true,
       loop: 'onDemand',
-      getItems: () => [{ id: 'table-1', cx: 260, cy: 210, w: 520, h: 420 }],
+      getItems: () => { itemReads += 1; return items },
       getViewport: () => ({ w: 960, h: 540 }),
       readTransform: () => ({
         k: 0.4,
@@ -35,9 +39,12 @@ export async function testMarkdownPanelOverlayUsesWorldSizeAndScaleForCardLayout
     if (el.style.width !== '520px' || el.style.height !== '420px') {
       throw new Error(`expected markdown overlay panel to preserve world card size before zoom scaling, got ${el.style.width}x${el.style.height}`)
     }
-    if (!String(el.style.transform || '').includes('scale(0.4)')) {
-      throw new Error(`expected markdown overlay panel transform to scale with renderer zoom, got ${el.style.transform}`)
+    if (readVectorPaintedOverlayScale(el) !== 0.4) {
+      throw new Error('expected markdown overlay panel to scale with renderer zoom')
     }
+    const initialPosition = readVectorPaintedOverlayPosition(el)
+    if (initialPosition?.left !== 0 || initialPosition.top !== 0) throw new Error('expected scaled panel at its projected center')
+    if (itemReads !== 1) throw new Error('expected one item snapshot for sizing and placement per frame')
     if (el.style.getPropertyValue('--kg-media-panel-header-h') !== '28px') {
       throw new Error(`expected zoom-scaled world panel to avoid double-scaling shared chrome vars, got ${el.style.getPropertyValue('--kg-media-panel-header-h')}`)
     }
@@ -45,21 +52,32 @@ export async function testMarkdownPanelOverlayUsesWorldSizeAndScaleForCardLayout
       throw new Error('expected markdown overlay panel to remain positioned through the shared overlay loop')
     }
 
-    loop.stop()
+    items = [{ ...items[0], cx: 360 }]
+    loop.schedule()
+    await new Promise<void>(resolve => setTimeout(resolve, 0))
+    if (Number(itemReads) !== 2 || readVectorPaintedOverlayPosition(el)?.left !== 40) {
+      throw new Error('expected the next frame to observe fresh item data exactly once')
+    }
+    items = []
+    loop.schedule()
+    await new Promise<void>(resolve => setTimeout(resolve, 0))
+    if (Number(itemReads) !== 3) throw new Error('expected one item read on an empty frame')
   } finally {
+    loop?.stop()
     restore()
   }
 }
 
 export async function testMarkdownPanelOverlayClampUsesViewportOrigin() {
   const { dom, restore } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
+  let loop: MarkdownOverlayPanelLoop | undefined
   try {
     const root = dom.window.document.getElementById('root')
     if (!root) throw new Error('expected root container')
     const el = dom.window.document.createElement('section')
     root.appendChild(el)
 
-    const loop = startMarkdownPanelOverlayLoop2d({
+    loop = startMarkdownPanelOverlayLoop2d({
       enabled: true,
       loop: 'onDemand',
       getItems: () => [{ id: 'panel-1', cx: 2000, cy: 220, w: 240, h: 120 }],
@@ -80,25 +98,22 @@ export async function testMarkdownPanelOverlayClampUsesViewportOrigin() {
     loop.schedule()
     await new Promise<void>(resolve => setTimeout(resolve, 0))
 
-    const transform = String(el.style.transform || '')
-    const match = /translate3d\(([-0-9.]+)px,\s*([-0-9.]+)px,\s*0px\)/.exec(transform)
-    if (!match) {
-      throw new Error(`expected markdown overlay panel to use translated panel box, got ${transform}`)
-    }
-    const left = Number(match[1])
-    const top = Number(match[2])
+    const position = readVectorPaintedOverlayPosition(el)
+    if (!position) throw new Error('expected projected panel position')
+    const { left, top } = position
     if (left !== 879 || top !== 160) {
       throw new Error(`expected panel clamp to respect visible viewport origin, got left=${left} top=${top}`)
     }
 
-    loop.stop()
   } finally {
+    loop?.stop()
     restore()
   }
 }
 
 export async function testMarkdownPanelOverlayCollectiveFitSpreadsPanelsInVisibleViewport() {
   const { dom, restore } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
+  let loop: MarkdownOverlayPanelLoop | undefined
   try {
     const root = dom.window.document.getElementById('root')
     if (!root) throw new Error('expected root container')
@@ -107,7 +122,7 @@ export async function testMarkdownPanelOverlayCollectiveFitSpreadsPanelsInVisibl
     root.appendChild(first)
     root.appendChild(second)
 
-    const loop = startMarkdownPanelOverlayLoop2d({
+    loop = startMarkdownPanelOverlayLoop2d({
       enabled: true,
       loop: 'onDemand',
       getItems: () => [
@@ -133,10 +148,9 @@ export async function testMarkdownPanelOverlayCollectiveFitSpreadsPanelsInVisibl
     await new Promise<void>(resolve => setTimeout(resolve, 0))
 
     const readLeft = (el: HTMLElement) => {
-      const transform = String(el.style.transform || '')
-      const match = /translate3d\(([-0-9.]+)px,\s*([-0-9.]+)px,\s*0px\)/.exec(transform)
-      if (!match) throw new Error(`expected translated panel box, got ${transform}`)
-      return Number(match[1])
+      const position = readVectorPaintedOverlayPosition(el)
+      if (!position) throw new Error('expected projected panel position')
+      return position.left
     }
     const leftA = readLeft(first)
     const leftB = readLeft(second)
@@ -144,8 +158,8 @@ export async function testMarkdownPanelOverlayCollectiveFitSpreadsPanelsInVisibl
       throw new Error(`expected collective fit to spread markdown panels inside visible viewport, got leftA=${leftA} leftB=${leftB}`)
     }
 
-    loop.stop()
   } finally {
+    loop?.stop()
     restore()
   }
 }
@@ -156,8 +170,8 @@ export function testMarkdownCardPreviewTablesUseCardWidthContract() {
 
   for (const snippet of [
     'const cardPreviewMode = opts.markdownCardPreviewMode === true',
-    "const cardPreviewTableFrameClassName = 'overflow-auto max-h-full'",
-    "const blockSpacingClassName = cardPreviewMode ? 'm-0' : 'mt-4 mb-4'",
+    "const figureClassName = cardPreviewMode ? CARD_MARKDOWN_PREVIEW_FRAME_CLASS_NAME : documentTableFrameClassName",
+    "const blockSpacingClassName = cardPreviewMode ? CARD_MARKDOWN_PREVIEW_BLOCK_SPACING_CLASS_NAME : 'mt-4 mb-4'",
     "cardPreviewMode ? 'w-full table-fixed' : 'min-w-full table-auto'",
     "cardPreviewMode ? 'px-2 py-1.5 break-words whitespace-normal'",
   ]) {

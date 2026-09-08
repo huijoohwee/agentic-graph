@@ -222,7 +222,8 @@ export function testHtmlVideoRendererSourceContractsAvoidParallelStorageAndAdapt
     throw new Error('expected shared rich media writer to accept manifest metadata')
   }
   const workflowText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts'), 'utf8')
-  if (!workflowText.includes('createHtmlVideoEngineRegistryFromRuntimeConfig()')) {
+  const mediaHandlerText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowMediaRunHandlers.ts'), 'utf8')
+  if (!workflowText.includes('await runStoryboardWidgetMediaWorkflowNode({') || !mediaHandlerText.includes('createHtmlVideoEngineRegistryFromRuntimeConfig()')) {
     throw new Error('expected Storyboard Widget runner to read runtime-injected HTML video engines')
   }
 }

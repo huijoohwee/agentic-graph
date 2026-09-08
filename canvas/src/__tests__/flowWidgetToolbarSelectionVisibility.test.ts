@@ -33,14 +33,15 @@ export function testFlowWidgetToolbarVisibleWhenViewLockOn() {
   const overlayText = readWidgetEditorImplementationText()
   const toolbarText = readFileSync(toolbarPath, 'utf8')
 
-  if (!overlayText.includes('onPointerDownCapture={(ev) => {')) {
-    throw new Error('expected WidgetEditor to keep pointer-down selection path for widget clicks')
+  const capture = overlayText.match(/const handleRootPointerCapture = React.useCallback\(([\s\S]*?)\}, \[/)?.[1] || ''
+  if (!overlayText.includes('onPointerDownCapture={handleRootPointerCapture}')
+    || !overlayText.includes('onMouseDownCapture={handleRootPointerCapture}')
+    || !capture.includes("setSelectionSource('editor')") || !capture.includes('selectNode(id)')
+    || !capture.includes('setToolbarVisible(true)')) {
+    throw new Error('expected pointer and mouse widget clicks to select and show the shared floating toolbar')
   }
-  if (overlayText.includes('if (!active) return')) {
-    const aroundPointerDown = overlayText.includes('onPointerDownCapture={(ev) => {\n        if (!active) return')
-    if (aroundPointerDown) {
-      throw new Error('expected widget click in View Lock ON to still allow showing floating-toolbar')
-    }
+  if (/if\s*\(\s*!active\s*\)\s*return/.test(capture)) {
+    throw new Error('expected View Lock ON to preserve pointer selection and toolbar visibility')
   }
   if (toolbarText.includes('if (!visible || !active) return null')) {
     throw new Error('expected floating-toolbar to remain visible in View Lock ON')

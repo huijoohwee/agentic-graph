@@ -1,5 +1,4 @@
 import type { PersistedCollectionMap } from '@/lib/storage/persistedCollectionStore'
-import { hashStringToHexCached } from '@/lib/hash/textHashCache'
 import { isAgenticGraphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
 import {
@@ -42,7 +41,12 @@ type WorkspaceDocsMirrorEntry = {
 const WORKSPACE_DOCS_MIRROR_ROOT_PATH = normalizeWorkspacePath('/docs')
 const WORKSPACE_AGENTIC_DOCS_MIRROR_ROOT_PATH = normalizeWorkspacePath('/agentic-canvas-os/docs')
 const WORKSPACE_OUTPUT_DOCS_MIRROR_ROOT_PATH = normalizeWorkspacePath('/docs_')
-let lastDocsMirrorSyncSignature = ''
+// Retain preparation only. Destination and source ownership remain live inputs.
+const PREPARED_MAX_ROWS = 500
+const PREPARED_MAX_TEXT_UNITS = 128_000
+const MAX_PENDING_RECONCILIATIONS = 32
+let preparedMirror: { input: WorkspaceDocsMirrorEntry[]; entries: Map<WorkspacePath, WorkspaceEntry> } | null = null
+const reconciliationQueues = new WeakMap<WorkspaceCollections['entries'], { tail: Promise<void>; pending: number }>()
 
 const normalizeUpdatedAtMs = (value: unknown, fallback = Date.now()): number => {
   const n = Number(value)
@@ -256,27 +260,27 @@ export const hasOnlyCanonicalXrPhysicsFile = async (
     && normalizeWorkspacePath(String(rows[0]?.get('path') || '')) === XR_PHYSICS_WORKSPACE_SEED_PATH
 }
 
-const buildDocsMirrorSyncSignature = (
-  docsEntries: ReadonlyArray<WorkspaceDocsMirrorEntry>,
-): string => {
-  const rows = (Array.isArray(docsEntries) ? docsEntries : [])
-    .map(entry => {
-      const relPath = normalizeDocsMirrorRelPath(String(entry?.relPath || ''))
-      if (!relPath) return ''
-      const text = String(entry?.text || '')
-      const contentHash = hashStringToHexCached('workspace-docs-mirror-sync', text)
-      return `${relPath}:${Number(entry?.updatedAtMs || 0)}:${contentHash}:${String(entry?.authority || '')}`
-    })
-    .filter(Boolean)
-    .sort()
-  return rows.join('|')
+const sameMirrorInput = (left: ReadonlyArray<WorkspaceDocsMirrorEntry>, right: ReadonlyArray<WorkspaceDocsMirrorEntry>): boolean => {
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) {
+    const entry = left[index], other = right[index]
+    if (entry?.relPath !== other?.relPath || entry?.text !== other?.text
+      || entry?.updatedAtMs !== other?.updatedAtMs || entry?.authority !== other?.authority) return false
+  }
+  return true
 }
+const snapshotMirrorInput = (entry: WorkspaceDocsMirrorEntry): WorkspaceDocsMirrorEntry => entry ? ({
+  relPath: entry?.relPath, text: entry?.text, updatedAtMs: entry?.updatedAtMs, authority: entry?.authority,
+}) : entry
+const clonePreparedEntries = (entries: ReadonlyMap<WorkspacePath, WorkspaceEntry>): Map<WorkspacePath, WorkspaceEntry> =>
+  new Map([...entries].map(([path, entry]) => [path, { ...entry }]))
 
 export const buildWorkspaceDocsMirrorDesiredEntries = (
   docsEntriesInput: ReadonlyArray<WorkspaceDocsMirrorEntry>,
 ): Map<WorkspacePath, WorkspaceEntry> => {
-  const desiredEntriesByPath = new Map<WorkspacePath, WorkspaceEntry>()
   const docsEntries = Array.isArray(docsEntriesInput) ? docsEntriesInput : []
+  if (preparedMirror && sameMirrorInput(docsEntries, preparedMirror.input)) return clonePreparedEntries(preparedMirror.entries)
+  const desiredEntriesByPath = new Map<WorkspacePath, WorkspaceEntry>()
   for (let i = 0; i < docsEntries.length; i += 1) {
     const entry = docsEntries[i]
     if (!entry) continue
@@ -290,14 +294,27 @@ export const buildWorkspaceDocsMirrorDesiredEntries = (
       if (next) desiredEntriesByPath.set(next.path, next)
     }
   }
-  return desiredEntriesByPath
+  let retainedUnits = 0
+  const cacheable = docsEntries.length <= PREPARED_MAX_ROWS && desiredEntriesByPath.size <= PREPARED_MAX_ROWS
+    && docsEntries.every(entry => {
+      if (!entry || !Number.isFinite(entry.updatedAtMs)) return false
+      retainedUnits += String(entry.relPath || '').length + String(entry.text || '').length + String(entry.authority || '').length
+      return retainedUnits <= PREPARED_MAX_TEXT_UNITS
+    })
+  if (cacheable) for (const entry of desiredEntriesByPath.values()) {
+    retainedUnits += entry.path.length + String(entry.parentPath || '').length + entry.name.length + String(entry.text || '').length
+    if (retainedUnits > PREPARED_MAX_TEXT_UNITS) break
+  }
+  const retain = cacheable && retainedUnits <= PREPARED_MAX_TEXT_UNITS
+  preparedMirror = retain ? { input: docsEntries.map(snapshotMirrorInput), entries: desiredEntriesByPath } : null
+  return retain ? clonePreparedEntries(desiredEntriesByPath) : desiredEntriesByPath
 }
 
 export const resetWorkspaceDocsMirrorSyncForPersistedFs = (): void => {
-  lastDocsMirrorSyncSignature = ''
+  preparedMirror = null
 }
 
-export const syncWorkspaceDocsMirrorEntries = async (
+const reconcileWorkspaceDocsMirrorEntries = async (
   collections: WorkspaceCollections,
   docsEntriesInput?: ReadonlyArray<WorkspaceDocsMirrorEntry>,
   options?: { scope?: 'all' | 'canonical-workspace-seeds' },
@@ -307,10 +324,9 @@ export const syncWorkspaceDocsMirrorEntries = async (
     : await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
   if (docsEntries.length === 0) return false
   const canonicalWorkspaceSeedsOnly = options?.scope === 'canonical-workspace-seeds'
-  const docsMirrorSignature = buildDocsMirrorSyncSignature(docsEntries)
-  if (docsMirrorSignature && docsMirrorSignature === lastDocsMirrorSyncSignature) return false
   const desiredEntriesByPath = buildWorkspaceDocsMirrorDesiredEntries(docsEntries)
   if (desiredEntriesByPath.size === 0) return false
+  const existingRows = await collections.entries.find().exec()
   const workspaceSourceIndex = loadWorkspaceSourceIndex()
   for (const desiredPath of desiredEntriesByPath.keys()) {
     if (isMigratedAuthoredMarkdownNoteMirrorPath(desiredPath, workspaceSourceIndex)) {
@@ -337,7 +353,6 @@ export const syncWorkspaceDocsMirrorEntries = async (
     )),
   )
   const sourceOwnedDocsPaths = buildWorkspaceDocsMirrorSourceOwnedPathSet(workspaceSourceIndex)
-  const existingRows = await collections.entries.find().exec()
   let changed = false
   for (let i = 0; i < existingRows.length; i += 1) {
     const row = existingRows[i]
@@ -346,7 +361,7 @@ export const syncWorkspaceDocsMirrorEntries = async (
     const underVisibleDocs = existingPath.startsWith(`${WORKSPACE_DOCS_MIRROR_ROOT_PATH}/`)
     const underRuntimeDocs = existingPath.startsWith(`${WORKSPACE_AGENTIC_DOCS_MIRROR_ROOT_PATH}/`)
     const underOutputDocs = existingPath.startsWith(`${WORKSPACE_OUTPUT_DOCS_MIRROR_ROOT_PATH}/`)
-    if (!underVisibleDocs && !underRuntimeDocs && !underOutputDocs) continue
+    if (!underVisibleDocs && !underRuntimeDocs && !underOutputDocs && !desiredEntriesByPath.has(existingPath)) continue
     if (
       canonicalWorkspaceSeedsOnly
       && existingPath !== WORKSPACE_DOCS_MIRROR_ROOT_PATH
@@ -453,6 +468,28 @@ export const syncWorkspaceDocsMirrorEntries = async (
   ) {
     changed = true
   }
-  if (docsMirrorSignature) lastDocsMirrorSyncSignature = docsMirrorSignature
   return changed
+}
+
+// One destination owns its reconciliation order across scopes. Unrelated stores
+// proceed independently; failures release the queue without replaying work.
+export const syncWorkspaceDocsMirrorEntries = async (
+  collections: WorkspaceCollections,
+  docsEntriesInput?: ReadonlyArray<WorkspaceDocsMirrorEntry>,
+  options?: { scope?: 'all' | 'canonical-workspace-seeds' },
+): Promise<boolean> => {
+  const destination = collections.entries
+  const state = reconciliationQueues.get(destination) || { tail: Promise.resolve(), pending: 0 }
+  if (state.pending >= MAX_PENDING_RECONCILIATIONS) throw new Error('workspace_reconciliation_queue_capacity_exceeded')
+  const input = Array.isArray(docsEntriesInput) ? docsEntriesInput.map(snapshotMirrorInput) : undefined
+  const scope = options?.scope
+  const job = state.tail.then(() => reconcileWorkspaceDocsMirrorEntries({ entries: destination }, input, { scope }))
+  state.pending += 1
+  const release = () => {
+    state.pending -= 1
+    if (state.pending === 0 && reconciliationQueues.get(destination) === state) reconciliationQueues.delete(destination)
+  }
+  state.tail = job.then(release, release)
+  reconciliationQueues.set(destination, state)
+  return job
 }

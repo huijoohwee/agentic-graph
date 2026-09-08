@@ -57,10 +57,10 @@ export function testStoryboardWidgetCanvasTextRunUsesSharedRichMediaOutputPatch(
   if (!text.includes('buildTextWidgetOutputPatch')) {
     throw new Error('expected StoryboardWidgetCanvas text widget run path to reuse shared text-widget rich-media output patch helper')
   }
-  if (!text.includes('...clearRichMediaOutputProperties(nodeProps)')) {
+  if (!text.includes('...clearRichMediaOutputProperties({})')) {
     throw new Error('expected StoryboardWidgetCanvas text widget run path to clear stale rich-media output properties before writing next output')
   }
-  if (!text.includes('...buildTextWidgetOutputPatch({')) {
+  if (!text.includes('const textOutputPatch = buildTextWidgetOutputPatch({') || !text.includes('...textOutputPatch,')) {
     throw new Error('expected StoryboardWidgetCanvas text widget run path to write shared rich-media panel output metadata')
   }
   if (!workflowRichMediaPanelText.includes('export function ensureStoryboardWidgetWorkflowRichMediaPanelNodeId(args: {')) {
@@ -69,7 +69,7 @@ export function testStoryboardWidgetCanvasTextRunUsesSharedRichMediaOutputPatch(
   if (!text.includes('const createdPanelNodeId = explicitPanelNodeIds.length > 0 ? null : ensureStoryboardWidgetWorkflowRichMediaPanelNodeId({')) {
     throw new Error('expected StoryboardWidgetCanvas text widget run path to reuse the shared rich-media panel target helper')
   }
-  if (!text.includes('applyStoryboardWidgetWorkflowRichMediaPanelDraftPatch({') || !text.includes('applyPublishedPanelPatch(panelNodeId, patch)')) {
+  if (!text.includes('applyStoryboardWidgetWorkflowRichMediaPanelDraftPatch({') || !text.includes('panelNodeId, patch, readLiveDraftGraphData: transaction.readDraftGraphData,')) {
     throw new Error('expected StoryboardWidgetCanvas text widget run path to reuse the shared rich-media panel draft patch helper')
   }
 }
@@ -151,9 +151,7 @@ export function testRichMediaRenderPathsReuseSemanticGraphKeysForConnectedValueC
   if (!flowDataflowText.includes('graphSemanticKey?: string')) {
     throw new Error('expected flow dataflow cache SSOT to accept an explicit semantic graph key')
   }
-  if (!flowDataflowText.includes("buildScopedGraphSemanticKey('flow-connected-values-graph'")) {
-    throw new Error('expected flow dataflow cache SSOT to derive cache keys from the shared semantic graph key helper')
-  }
+  // Complete-input and semantic-key cache behavior is exercised by flowConnectedValuesCache.test.ts.
   if (!flowCanvasStateText.includes('graphSemanticKey: sceneGraphSemanticKey,')) {
     throw new Error('expected FlowCanvas rich media connected-value path to reuse the scene graph semantic key')
   }
@@ -367,7 +365,7 @@ export function testRichMediaPanelMarkdownPreviewDisablesGlobalTokenStoreSync() 
     !panelText.includes("from '@/lib/cards/CardInlineTextEditor'")
     || !panelText.includes("markdownPreview={props.panel?.markdownPresentationMode === true ? true : 'auto'}")
     || !cardMarkdownPreviewText.includes('markdownTokenStoreSync={false}')
-    || !panelText.includes("React.lazy(() => import('@/features/markdown/ui/MarkdownPreview'))")
+    || !cardMarkdownPreviewText.includes("React.lazy(() => import('@/features/markdown/ui/MarkdownPreview'))") || !panelText.includes('const MarkdownWorkspaceViewerSurface = React.lazy(') || !panelText.includes("import('@/features/markdown-workspace/main/viewer/MarkdownWorkspaceViewerSurface')")
     || !panelText.includes('markdownTokenStoreSync={false}')
   ) {
     throw new Error('expected RichMediaPanel Card and Workspace Viewer markdown paths to disable global markdown token store synchronization')

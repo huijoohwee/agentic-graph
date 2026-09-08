@@ -385,10 +385,11 @@ export function applyCanvasFrontmatterPreset(args: {
     changed = true
   }
 
+  // Earlier setters normalize related modes; compare each effect against current state.
   const documentSemanticMode = frontmatterOnlyPolicyActive
     ? 'document'
     : (preset?.documentSemanticMode ?? args.defaultDocumentSemanticMode)
-  if (documentSemanticMode && store.documentSemanticMode !== documentSemanticMode) {
+  if (documentSemanticMode && useGraphStore.getState().documentSemanticMode !== documentSemanticMode) {
     store.setDocumentSemanticMode(documentSemanticMode)
     changed = true
   }
@@ -400,26 +401,26 @@ export function applyCanvasFrontmatterPreset(args: {
     ? false
     : (preset?.multiDimTableModeEnabled ?? args.defaultMultiDimTableModeEnabled)
 
-  if (typeof frontmatterModeEnabled === 'boolean' && frontmatterModeEnabled === false && store.frontmatterModeEnabled !== false) {
+  if (typeof frontmatterModeEnabled === 'boolean' && frontmatterModeEnabled === false && useGraphStore.getState().frontmatterModeEnabled !== false) {
     store.setFrontmatterModeEnabled(false)
     changed = true
   }
-  if (typeof multiDimTableModeEnabled === 'boolean' && multiDimTableModeEnabled === false && store.multiDimTableModeEnabled !== false) {
+  if (typeof multiDimTableModeEnabled === 'boolean' && multiDimTableModeEnabled === false && useGraphStore.getState().multiDimTableModeEnabled !== false) {
     store.setMultiDimTableModeEnabled(false)
     changed = true
   }
-  if (typeof multiDimTableModeEnabled === 'boolean' && multiDimTableModeEnabled === true && store.multiDimTableModeEnabled !== true) {
+  if (typeof multiDimTableModeEnabled === 'boolean' && multiDimTableModeEnabled === true && useGraphStore.getState().multiDimTableModeEnabled !== true) {
     store.setMultiDimTableModeEnabled(true)
     changed = true
   }
-  if (typeof frontmatterModeEnabled === 'boolean' && frontmatterModeEnabled === true && store.frontmatterModeEnabled !== true) {
+  if (typeof frontmatterModeEnabled === 'boolean' && frontmatterModeEnabled === true && useGraphStore.getState().frontmatterModeEnabled !== true) {
     store.setFrontmatterModeEnabled(true)
     changed = true
   }
 
   if (
     documentStructureBaselineLock === true &&
-    store.documentStructureBaselineLock !== documentStructureBaselineLock
+    useGraphStore.getState().documentStructureBaselineLock !== documentStructureBaselineLock
   ) {
     store.setDocumentStructureBaselineLock(documentStructureBaselineLock)
     changed = true

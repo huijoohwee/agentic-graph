@@ -44,8 +44,9 @@ export async function testStandaloneSvgRewriteRewritesAllUrlAttrs(): Promise<voi
     if (href !== 'https://example.com/a.png') throw new Error('Expected rewritten href to be unwrapped')
     if (xlinkHref !== 'https://example.com/a.png') throw new Error('Expected rewritten xlink:href to be unwrapped')
 
-    const div = parsed.documentElement.querySelector('foreignObject div')
-    const style = div?.getAttribute('style') || ''
+    const section = parsed.documentElement.querySelector('foreignObject section')
+    if (!section) throw new Error('Expected exported foreignObject section to remain present')
+    const style = section.getAttribute('style') || ''
     if (!style.includes('url(https://example.com/bg.png)')) throw new Error('Expected rewritten css url() to be unwrapped')
 
     const a = parsed.documentElement.querySelector('foreignObject a')

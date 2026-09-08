@@ -205,3 +205,118 @@ an explicit endpoint remains authoritative. This keeps local and hosted `/`, `@`
 | `agentic-graph-mcp/agentic-graph-stripe-mcp-service.md` | Remains Stripe MCP/service documentation, not the top-level commerce UI owner. |
 | `agentic-graph-settings-document.md` | Remains settings architecture owner for row rendering and generated schema. |
 | `agentic-graph-cross-repo-publish-topology.md` | Remains Dev -> Prod -> Cloudflare topology owner. |
+
+## Strytree Payment Fulfillment
+
+The [Strytree payment requirements](./agentic-graph-strytree-prd-tad.md) own
+`PRD-STR-E04-AC-01` through `AC-04`. The payment Worker's `strytreeCheckout.ts`
+implements that boundary; `strytreeApi.ts` remains the public route dispatcher.
+Signed fulfillment requires a recognized success event, explicit paid status,
+and amount, currency, package, user, and provider-session evidence matching the
+server-owned purchase. A signature alone grants no credit. Supplied event aliases
+must agree; ambiguous record-shaped payload envelopes are rejected. Both signature
+header names, either single event envelope, and string event discriminators remain supported.
+
+Settlement writes the authoritative ledger, then its replay-safe audit, then the
+completed session state. A retry after audit failure repairs the pending session
+without applying credit twice. Completed sessions reject a different provider
+event and revalidate payment evidence before acknowledging an exact replay.
+This ordering does not repair historical completed sessions missing an audit.
+
+`npm run travel-commerce:strytree-ledger:test` exercises real local Worker, D1,
+and Durable Object SQLite bindings with the committed Strytree migrations. It
+covers pending wallets, concurrent delivery, actor restart, invalid evidence, and
+audit failure recovery. Checkout creation in these fixtures explicitly selects
+`local-development`; Production creation and client completion stay disabled.
+These tests establish local behavior, not live provider collection or revenue.
+
+### Generation Delivery And Cost Ownership
+
+CID `commerce.request-efficiency.generation` implements the Strytree wallet
+requirements `PRD-STR-E03-AC-01` through `AC-04` and generation audit coverage.
+The payment Worker records the buyer's request before its authoritative debit;
+identical retries recover that debit, while changed requests conflict. Missing
+Queue bindings cause no debit. A bounded enqueue claim coalesces concurrent
+senders; rejected or interrupted sends retain the recoverable request.
+
+The D1 job owns a 120-second renewable processing lease with an exact attempt
+token. Concurrent consumers retry; they cannot submit a second provider job.
+The provider job ID is saved before polling. Known jobs resume GET polling with
+at most 60 polls per attempt. An unknown submission outcome retains the debit
+and explicitly requires reconciliation; elapsed time never authorizes another
+POST or a refund. A confirmed provider failure records a resumable refund intent
+before applying its single authoritative credit.
+
+Before R2 writes, the job saves the exact finalization artifact, result, and
+local/provider mode. Retries reuse those bytes without another provider call;
+late writes cannot replace a winner's artifact with different attempt data.
+These existing-schema decisions favor recovery and cost control over duplicate
+provider work. Native purchase-to-generation tests cover queue rejection,
+concurrent creation/delivery, provider identity recovery, and artifact retries.
+They do not prove deployed Queue delivery, real provider billing, or autonomous
+resolution of a submission whose provider identity remains unknown.
+
+### Candidate Request And Publication Recovery
+
+CID `commerce.request-efficiency.candidates` extends the same wallet contract
+through candidate selection and publication. A request admits at most three
+candidates from a JSON body of at most 32 KiB. The resolved idempotency key is
+bounded to 512 characters. Exact retries preserve the original request and
+candidate content; a changed payload conflicts before another debit.
+
+The candidate run saves its frozen intent before contacting the authoritative
+ledger. Candidate rows, the completion audit, and completed status commit in
+one native D1 transaction. A failed transaction keeps the paid intent available
+for an exact retry, including when the remaining wallet balance is lower than
+the original price. Recovery uses the frozen content even if the parent changes.
+An incomplete legacy result requires reconciliation when its original content
+or payment evidence cannot be established.
+
+Publishing an eligible candidate commits the new node, merge plan, candidate
+state, story snapshot, and audit together. Concurrent identical requests share
+the same result; a changed publish intent conflicts. This transition needs no
+process-local lock, extra queue notice, schema migration, or external dependency.
+The generation queue retains its existing provider-delivery responsibility.
+
+The native ledger suite exercises signed local checkout, candidate creation,
+scorecard retrieval, publication, concurrent requests, and injected SQLite
+failures. These local contracts do not establish live provider collection,
+production deployment, or buyer willingness to pay.
+
+### Paid Unlock Recovery Status
+
+CID `commerce.request-efficiency.unlock` joins this implementation status to
+`PRD-STR-E05-AC-01` through `AC-03`. Its context is a paying fan retrying an
+interrupted unlock; its intent is to restore the purchased access with one debit.
+The directive is to recover the original authoritative effect and complete its
+entitlement using exact ownership and durable evidence.
+
+RAO: the credit-ledger actor applies or replays the buyer's frozen debit, producing
+one financial effect; the unlock owner commits entitlement, count, and audit,
+producing one completed purchase. SVO: the unlock owner finalizes the original
+paid entitlement. These joins describe the current source and its local evidence.
+The source-owned [C6 unlock workflow](./agentic-graph-strytree-tad-workflows-api.md#workflow-unlock-protected-branch)
+and [ADR-006](./agentic-graph-strytree-adr-validation.md#adr-006-atomic-credit-debit--durable-object-vs-d1-row-lock)
+record these separate commits; the canonical PRD retains the original E05 IDs.
+
+The existing per-buyer ledger actor owns the debit, amount, creator allocation,
+key, and version. Its bounded replay lookup verifies the requested buyer and
+node, stored digest, and complete D1 projection before returning frozen terms.
+An existing legacy key is checked first. Only explicit absence allows the new
+buyer-scoped key; a conflict or unavailable projection cannot cause another debit.
+Reusing one client key for another node conflicts. New scoped keys are reserved
+against unrelated mutation types and validated against their authenticated owner.
+
+Entitlement insertion, the node's paid-unlock count, and the success audit commit
+in one D1 batch. A concurrent loser rolls back; a lost acknowledgement requires
+the exact completed stored effect. Missing batch support prevents the debit.
+Retry uses the original allocation even after price, free-window, or creator
+changes; hidden and rejected content retain their access restrictions.
+The debit and its finalization have separate durable commits, with explicit
+recovery between them. Creator-allocation metadata does not prove a creator
+wallet credit or payout.
+
+The native ledger suite exercises local Worker, D1, and Durable Object SQLite
+boundaries, including interrupted writes, retries, and ownership conflicts.
+Deployed recovery, live provider collection, creator settlement, and ecosystem
+E2E readiness still require their own evidence.

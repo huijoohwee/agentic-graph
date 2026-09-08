@@ -106,10 +106,10 @@ The same crawl surface must survive the Dev -> Prod -> Cloudflare path so produc
 
 **Acceptance Criteria**:
 
-- **Given** D1 contains non-deleted Source Files for a workspace
+- **Given** D1 contains explicitly published, non-deleted Source Files for a workspace
 - **When** a crawler requests `/api/storage/source-files` or `/api/storage/source-files/{workspaceId}`
 - **Then** the Worker returns markdown with workspace ID, generated timestamp, document count, canonical paths, content hashes, revisions, updated timestamps, content lengths, and markdown doc-view links
-- **And** deleted Source Files are omitted
+- **And** unpublished, deleted, revoked, or changed-since-publication Source Files are omitted from anonymous reads
 
 ---
 
@@ -231,7 +231,7 @@ The same crawl surface must survive the Dev -> Prod -> Cloudflare path so produc
 ### Won't Have This Slice
 
 - App-local Pay Per Crawl pricing, charging, or crawler identity decisions
-- Authenticated private workspace crawling
+- Automatic indexing of authenticated or local private workspace reads
 - Import local files or Import URL as crawler access mechanisms
 - SPA rendering, graph recomposition, or markdown parsing during crawler index requests
 - Backward-compatible aliases for legacy crawler route names
@@ -397,9 +397,9 @@ sequenceDiagram
 | Header | Owner | Meaning |
 |---|---|---|
 | `content-type` | Worker | Response format, either markdown or text |
-| `cache-control` | Worker | Public short-lived cache with revalidation |
+| `cache-control` | Worker | `private, no-store` on both public and private reads; each new request rechecks publication authority |
 | `link` | Worker | Help link to Cloudflare Pay Per Crawl reference |
-| `x-robots-tag` | Worker | Allows crawler indexing of the route |
+| `x-robots-tag` | Worker | `all` for anonymous publication-filtered reads; `noindex, nofollow` for authenticated or local reads |
 | `x-agentic-graph-crawler-source` | Worker | Identifies D1 document/doc-view source ownership |
 | `x-agentic-graph-pay-per-crawl-policy` | Worker | Identifies policy as Cloudflare zone-owned |
 | `crawler-exact-price` | Cloudflare / AI crawler | Request header for exact paid-access intent; must be signed through Web Bot Auth |
@@ -407,6 +407,13 @@ sequenceDiagram
 | `crawler-price` | Cloudflare | Price returned with HTTP 402 when crawler payment is required |
 | `crawler-charged` | Cloudflare | Amount returned with HTTP 200 after successful paid crawler access |
 | `crawler-error` | Cloudflare | Error returned when paid crawler access is rejected |
+
+Anonymous document reads require a publication matching workspace, document, canonical path,
+revision, and content hash. Index and LLM routes apply the same publication predicate before
+allowing indexing. Private defaults remain unchanged for authenticated and local callers.
+The maintainer preserves public discovery by selecting headers after authorization and publication
+filtering; tests exercise exact publication, content/revision drift, and revocation through real SQLite.
+Revocation prevents subsequent origin reads; it cannot erase copies already retained by crawlers.
 
 ---
 
@@ -524,7 +531,7 @@ Metadata plus doc-view links gives crawlers freshness evidence and direct conten
 - Deleted Source Files are excluded from crawler indexes.
 - Pay Per Crawl headers that express price or charged amount belong to Cloudflare, not the Worker.
 - Pay Per Crawl request headers that express crawler payment intent also belong to Cloudflare and verified AI crawler owners; agentic-graph does not sign or synthesize them.
-- Private workspace authorization is out of scope for this slice and must be designed with multi-user membership before enabling private crawling.
+- Private workspace reads require membership or the trusted local runtime and remain excluded from indexing; anonymous reads require current explicit publication.
 
 ---
 

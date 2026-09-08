@@ -162,8 +162,14 @@ export async function testCitySimMcpInspectIsPureAndReportsZeroCostRuntime() {
     type: 'residential',
   })
   assert.equal(rejectedStructured.ok, false)
-  assert.equal(rejectedStructured.code, 'invalid-parcel')
-  assert.equal(readCitySimSnapshot(), beforeRejectedInput)
+  assert.equal(rejectedStructured.code, 'unknown-parcel')
+  const afterUnknownParcel = readCitySimSnapshot()
+  assert.equal(afterUnknownParcel.city, beforeRejectedInput.city)
+  assert.equal(afterUnknownParcel.lastResult?.code, 'unknown-parcel')
+  const malformed = await controlLocalCitySim({ operation: 'zone', parcel: 'Gardens-by-the-bay', type: 'residential' })
+  assert.equal(malformed.ok, false)
+  assert.equal(malformed.code, 'invalid-parcel')
+  assert.equal(readCitySimSnapshot(), afterUnknownParcel)
 
   resetCitySimRuntimeForTests({ webglSupported: true })
   const native = await controlLocalCitySim({

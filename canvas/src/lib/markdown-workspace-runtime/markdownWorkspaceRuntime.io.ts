@@ -1,3 +1,4 @@
+import type { MarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceRuntime.types'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { resolveWorkspaceSourcePathKey } from '@/features/workspace-fs/syncToSourceFiles'
@@ -11,7 +12,7 @@ import { useParserUIState } from '@/features/parsers/uiState'
 import { parseSchemaText } from '@/features/schema/io'
 import { buildSourceFileLifecycleState } from '@/features/source-files/sourceFileParsedState'
 import { applyActiveMarkdownDocumentPayload } from '@/features/markdown/activeMarkdownDocument'
-import { commitMarkdownWorkspaceWriteback } from './markdownWorkspaceWritebackCommit'
+import { commitMarkdownWorkspaceWriteback, resolveMarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceWritebackCommit'
 import { cancelWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
 import { WORKSPACE_SYNC_TASK_MARKDOWN_EDITOR_SSOT } from '@/lib/async/workspaceSyncKeys'
 import {
@@ -144,7 +145,7 @@ function resolveWorkspaceEntryInlineTextPatch(args: {
 export const syncWorkspaceTextState = (args: {
   path: WorkspacePath
   text: string
-  lastLoadedRef: MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   patchWorkspaceEntryInlineText?: (path: WorkspacePath, text: string) => void
   setEntries?: Dispatch<SetStateAction<WorkspaceEntry[]>>
   createEntryIfMissing?: boolean
@@ -154,6 +155,8 @@ export const syncWorkspaceTextState = (args: {
   activeDocumentSourceUrl?: string | null
   jsonSourceText?: string | null
   setActiveMarkdownDocument?: MarkdownWorkspaceRuntimeSetActiveDocument
+  observedWorkspaceText?: string | null
+  observedWorkspaceFs?: MarkdownWorkspaceLoadedSnapshot['observedWorkspaceFs']
 }): void => {
   const patchWorkspaceEntryInlineText = resolveWorkspaceEntryInlineTextPatch(args)
   const shouldRefreshTrackedPathOnly =
@@ -161,6 +164,7 @@ export const syncWorkspaceTextState = (args: {
   if (args.synchronizeActiveDocument !== false) {
     if (patchWorkspaceEntryInlineText) {
       commitMarkdownWorkspaceWriteback({
+        ...args,
         path: args.path,
         text: args.text,
         lastLoadedRef: args.lastLoadedRef,
@@ -170,7 +174,7 @@ export const syncWorkspaceTextState = (args: {
         },
       })
     } else {
-      args.lastLoadedRef.current = { path: args.path, text: args.text }
+      args.lastLoadedRef.current = resolveMarkdownWorkspaceLoadedSnapshot({ ...args, previous: args.lastLoadedRef.current })
       if (typeof args.setActiveText === 'function') args.setActiveText(args.text)
     }
     if (args.activeDocumentKey && args.setActiveMarkdownDocument) {
@@ -187,7 +191,7 @@ export const syncWorkspaceTextState = (args: {
       patchWorkspaceEntryInlineText(args.path, args.text)
     }
     if (shouldRefreshTrackedPathOnly) {
-      args.lastLoadedRef.current = { path: args.path, text: args.text }
+      args.lastLoadedRef.current = resolveMarkdownWorkspaceLoadedSnapshot({ ...args, previous: args.lastLoadedRef.current })
     }
   }
 }
@@ -197,7 +201,7 @@ export const writeWorkspaceFileAndSync = async (args: {
   text: string
   getFs: MarkdownWorkspaceRuntimeGetFs
   skipWrite?: boolean
-  lastLoadedRef: MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   patchWorkspaceEntryInlineText?: (path: WorkspacePath, text: string) => void
   setEntries?: Dispatch<SetStateAction<WorkspaceEntry[]>>
   createEntryIfMissing?: boolean
@@ -210,6 +214,7 @@ export const writeWorkspaceFileAndSync = async (args: {
   setGraphRagWorkflowJsonText?: (text: string) => void
   expectedSourceRevision?: WorkspaceSourceTextRevision
   expectedWorkspaceText?: string | null
+  expectedWorkspaceFs?: MarkdownWorkspaceLoadedSnapshot['observedWorkspaceFs']
   resetParsedState: boolean
 }): Promise<boolean> => {
   const lastLoaded = args.lastLoadedRef.current
@@ -220,6 +225,7 @@ export const writeWorkspaceFileAndSync = async (args: {
       })
     : args.text
   const hasExpectedWorkspaceText = Object.prototype.hasOwnProperty.call(args, 'expectedWorkspaceText')
+  let committedFs: MarkdownWorkspaceLoadedSnapshot['observedWorkspaceFs']
   const transaction = await enqueueWorkspaceSourceTextTransaction({
     path: args.path,
     text: textToWrite,
@@ -227,13 +233,16 @@ export const writeWorkspaceFileAndSync = async (args: {
     write: async ({ path, text }) => {
       if (args.skipWrite === true) return true
       const fs = await args.getFs()
+      if (args.expectedWorkspaceFs && args.expectedWorkspaceFs !== fs) return false
       if (hasExpectedWorkspaceText) {
-        const currentText = String(await fs.readFileText(path) ?? '')
-        const expectedWorkspaceText = String(args.expectedWorkspaceText ?? '')
+        if (args.expectedWorkspaceText === undefined) return false
+        const currentText = await fs.readFileText(path)
+        const expectedWorkspaceText = args.expectedWorkspaceText
         if (currentText !== expectedWorkspaceText && currentText !== text) return false
-        if (currentText === text) return true
+        if (currentText === text) { committedFs = fs; return true }
       }
       await fs.writeFileText(path, text)
+      committedFs = fs
     },
   })
   if (!transaction.accepted || !isWorkspaceSourceTextRevisionCurrent(transaction.revision)) return false
@@ -246,6 +255,7 @@ export const writeWorkspaceFileAndSync = async (args: {
   syncWorkspaceTextState({
     ...args,
     text: textToWrite,
+    ...(committedFs ? { observedWorkspaceText: textToWrite, observedWorkspaceFs: committedFs } : {}),
   })
   updateExistingWorkspaceSourceFile({
     path: args.path,
@@ -265,7 +275,7 @@ export const writeWorkspaceFileAndSync = async (args: {
 export const resolveAuthoritativeWorkspaceText = async (args: {
   path: WorkspacePath
   getFs: MarkdownWorkspaceRuntimeGetFs
-  lastLoadedRef: MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   activeTextRef: MutableRefObject<string>
   userEditedActiveTextRef: MutableRefObject<boolean>
 }): Promise<string> => {

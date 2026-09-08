@@ -19,12 +19,12 @@ import { FLOW_WIDGET_REGISTRY_METADATA_KEY } from '@/lib/config'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { defaultSchema } from '@/lib/graph/schema'
 import { readRecordPathValue } from '@/lib/graph/nodeProperties'
-import { resolveDocsSsotFixturePath } from '@/tests/lib/docsSsotFixture'
+import { resolveRepoTestDataPath } from '@/tests/lib/repoTestData'
 import { computeFlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { buildRichMediaPanelOverlayState, buildRichMediaPanelPreviewSpec } from '@/lib/render/richMediaSsot'
 
-const TOKEN_ECONOMICS_FIXTURE_BASENAME = 'agentic-graph-token-economics-model-demo.md'
+const TOKEN_ECONOMICS_FIXTURE_BASENAME = 'token-economics-flow-regression.md'
 
 type DomGlobalSnapshot = Partial<Pick<
   typeof globalThis,
@@ -105,16 +105,14 @@ function installDomGlobals(dom: JSDOM): () => void {
   }
 }
 
-function readAgenticGraphPublishedDocsFixturePath(): string {
+function readTokenEconomicsRegressionFixturePath(): string {
   const envPath = String(process.env.AG_TEST_TOKEN_ECONOMICS_FLOW_FIXTURE_PATH || '').trim()
   if (envPath) return envPath
-  const siblingDocsPath = path.resolve(process.cwd(), '..', 'huijoohwee', 'docs', TOKEN_ECONOMICS_FIXTURE_BASENAME)
-  if (fs.existsSync(siblingDocsPath)) return siblingDocsPath
-  return resolveDocsSsotFixturePath(TOKEN_ECONOMICS_FIXTURE_BASENAME)
+  return resolveRepoTestDataPath(TOKEN_ECONOMICS_FIXTURE_BASENAME)
 }
 
 function parseAgenticGraphTokenEconomicsFixture(): GraphData {
-  const fixturePath = readAgenticGraphPublishedDocsFixturePath()
+  const fixturePath = readTokenEconomicsRegressionFixturePath()
   const markdown = fs.readFileSync(fixturePath, 'utf8')
   const parsed = tryParseMarkdownFrontmatterFlowGraph(path.basename(fixturePath), markdown)
   if (!parsed) throw new Error('expected token-economics frontmatter flow fixture to parse')

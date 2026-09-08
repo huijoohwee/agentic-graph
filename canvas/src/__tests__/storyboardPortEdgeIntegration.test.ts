@@ -561,7 +561,7 @@ export function testMediaPointerReleaseUsesActualCursorPoint() {
   }
   const bridge = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetDropBridge.ts'), 'utf8')
   const surface = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/StoryboardWidgetCanvasSurface.tsx'), 'utf8')
-  if (!bridge.includes('const release = resolveMediaDragEventReleaseClientPoint(ev)') || !bridge.includes('release.clientX, release.clientY, rect')) {
+  if (!bridge.includes('const release = resolveMediaDragEventReleaseClientPoint(ev)') || !/return appendMediaPanelAtClientPoint\([\s\S]*?release\.clientX,\s*release\.clientY,\s*rect,/.test(bridge)) {
     throw new Error('expected shared widget drop bridge to convert native media drops from the resolved cursor release point')
   }
   if (!surface.includes('const release = resolveMediaDragEventReleaseClientPoint(ev.nativeEvent)') || !surface.includes('release.clientX, release.clientY')) {

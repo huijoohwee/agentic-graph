@@ -1,3 +1,6 @@
+import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
+import { persistMarkdownSourceFolderPaths, readPersistedMarkdownSourceFolderPaths } from '@/features/markdown/ui/markdownSourceFilesPersistence'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { MarkdownWorkspace } from '@/lib/markdown-workspace-runtime'
@@ -82,13 +85,15 @@ export async function testMarkdownWorkspaceImmediatelySyncsPlainDocumentOnFileSw
     const doc = dom.window.document
     const fs = await getWorkspaceFs()
     await fs.ensureSeed()
+    await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH })
+    persistMarkdownSourceFolderPaths([...readPersistedMarkdownSourceFolderPaths(), WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH])
     const firstPath = await fs.createFile({
-      parentPath: '/',
+      parentPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH,
       name: 'grabmaps-switch-source.md',
       text: '# GrabMaps Switch Source\n\nAlpha',
     })
     const secondPath = await fs.createFile({
-      parentPath: '/',
+      parentPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH,
       name: 'video-demo-switch-source.md',
       text: '# Video Demo Switch Target\n\nBeta',
     })

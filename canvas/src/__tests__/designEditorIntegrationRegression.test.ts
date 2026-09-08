@@ -52,6 +52,8 @@ export function testDesignEditorOverviewIsSharedByDesignSurfaces() {
 
 export function testImportUrlDesignSelectionActivatesSharedDesignSurface() {
   const launcher = read('src/lib/toolbar/LaunchDropdown.impl.tsx')
+  if (!launcher.includes('<LaunchDropdownImportUrlItem')) throw new Error('expected launcher to compose the shared URL import owner')
+  const importUrlItem = read('src/lib/toolbar/LaunchDropdownImportUrlItem.tsx')
   const importActions = read('src/features/markdown-workspace/useWorkspaceFileActions/importActions.ts')
   const fallbacks = read('src/features/toolbar/launchDropdownFallbacks.ts')
   const deerflowAction = read('src/features/markdown-workspace/useWorkspaceFileActions/deerflowUrlImportAction.ts')
@@ -62,7 +64,7 @@ export function testImportUrlDesignSelectionActivatesSharedDesignSurface() {
     throw new Error('expected Import URL renderer selection to expose Design explicitly without legacy bare-renderer remapping')
   }
   for (const [label, text] of [
-    ['LaunchDropdown', launcher],
+    ['LaunchDropdown URL item', importUrlItem],
     ['workspace import actions', importActions],
     ['launch fallback', fallbacks],
     ['DeerFlow action', deerflowAction],

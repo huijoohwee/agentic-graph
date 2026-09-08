@@ -52,19 +52,39 @@ export function useSettingsWorkspaceActions({
     chatHistory: null,
     'agentic-graph': null,
   })
+  const mountedRef = React.useRef(true)
+  const intentRef = React.useRef<Record<WorkspaceKind, object>>({ chatHistory: {}, 'agentic-graph': {} })
+  const isCurrentIntent = React.useCallback((kind: WorkspaceKind, intent: object): boolean =>
+    mountedRef.current && intentRef.current[kind] === intent, [])
+  const beginIntent = React.useCallback((kind: WorkspaceKind): object | null => {
+    if (!mountedRef.current) return null
+    const previousTimeout = activeWorkspaceSyncTimeoutsRef.current[kind]
+    if (previousTimeout !== null) window.clearTimeout(previousTimeout)
+    activeWorkspaceSyncTimeoutsRef.current[kind] = null
+    const intent = {}
+    intentRef.current[kind] = intent
+    if (kind === 'chatHistory') setIsUpdatingChatHistoryPath(false)
+    else setIsUpdatingAgenticGraphPath(false)
+    return intent
+  }, [])
   const bridge = getMarkdownWorkspaceActionBridge()
   const bridgeImportLocalFiles = bridge.importLocalFiles
   const bridgeImportLocalFolder = bridge.importLocalFolder
   const bridgeImportUrl = bridge.importUrl
   const pushUiToast = useGraphStore(s => s.pushUiToast)
   React.useEffect(() => {
+    mountedRef.current = true
     const timeouts = activeWorkspaceSyncTimeoutsRef.current
     return () => {
+      mountedRef.current = false
+      intentRef.current = { chatHistory: {}, 'agentic-graph': {} }
       if (timeouts.chatHistory !== null) {
         window.clearTimeout(timeouts.chatHistory)
+        timeouts.chatHistory = null
       }
       if (timeouts['agentic-graph'] !== null) {
         window.clearTimeout(timeouts['agentic-graph'])
+        timeouts['agentic-graph'] = null
       }
     }
   }, [])
@@ -79,7 +99,8 @@ export function useSettingsWorkspaceActions({
     useMarkdownExplorerStore.getState().setActivePath(normalized)
   }, [openWorkspaceFileImpl])
 
-  const syncPathFromActiveWorkspaceFile = React.useCallback((kind: WorkspaceKind, attempt = 0) => {
+  const syncPathFromActiveWorkspaceFile = React.useCallback((kind: WorkspaceKind, intent: object, attempt = 0) => {
+    if (!isCurrentIntent(kind, intent)) return
     const active = useMarkdownExplorerStore.getState().activePath
     const normalized = active ? normalizeWorkspacePath(active) : ''
     if (normalized && normalized.toLowerCase().endsWith('.md')) {
@@ -107,11 +128,13 @@ export function useSettingsWorkspaceActions({
     }
     const nextAttempt = attempt + 1
     activeWorkspaceSyncTimeoutsRef.current[kind] = window.setTimeout(() => {
-      syncPathFromActiveWorkspaceFile(kind, nextAttempt)
+      syncPathFromActiveWorkspaceFile(kind, intent, nextAttempt)
     }, ACTIVE_WORKSPACE_SYNC_RETRY_MS)
-  }, [patchChatValues])
+  }, [isCurrentIntent, patchChatValues])
 
   const createWorkspaceBackedFile = React.useCallback(async (kind: WorkspaceKind) => {
+    const intent = beginIntent(kind)
+    if (!intent) return
     const setPending = kind === 'chatHistory' ? setIsUpdatingChatHistoryPath : setIsUpdatingAgenticGraphPath
     const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setAgenticGraphPathStatus
     const storageType = kind === 'chatHistory' ? 'chatHistory' : 'chatAgenticGraph'
@@ -132,6 +155,7 @@ export function useSettingsWorkspaceActions({
         storageType,
         defaultLocalRootPath: String(chatLocalStorageRootPath || '').trim() || null,
       })
+      if (!isCurrentIntent(kind, intent)) return
       patchChatValues({
         ...patch,
         [pathKey]: created,
@@ -139,13 +163,14 @@ export function useSettingsWorkspaceActions({
       openWorkspaceFile(created)
       setStatus(created)
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : String(err || 'Failed to create file'))
+      if (isCurrentIntent(kind, intent)) setStatus(err instanceof Error ? err.message : String(err || 'Failed to create file'))
     } finally {
-      setPending(false)
+      if (isCurrentIntent(kind, intent)) setPending(false)
     }
-  }, [chatLocalStorageRootPath, createWorkspaceFilePathImpl, openWorkspaceFile, patchChatValues])
+  }, [beginIntent, isCurrentIntent, chatLocalStorageRootPath, createWorkspaceFilePathImpl, openWorkspaceFile, patchChatValues])
 
   const applyActiveWorkspaceFile = React.useCallback((kind: WorkspaceKind) => {
+    if (!beginIntent(kind)) return
     const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setAgenticGraphPathStatus
     setStatus(null)
     const active = useMarkdownExplorerStore.getState().activePath
@@ -169,7 +194,7 @@ export function useSettingsWorkspaceActions({
     }
     openWorkspaceFile(normalized)
     setStatus(normalized)
-  }, [openWorkspaceFile, patchChatValues])
+  }, [beginIntent, openWorkspaceFile, patchChatValues])
 
   const openFilePicker = React.useCallback((el: HTMLInputElement | null) => {
     if (!el) return
@@ -198,15 +223,18 @@ export function useSettingsWorkspaceActions({
   const syncImportedWorkspaceSelectionToStorage = React.useCallback(async (args: {
     createdPaths: string[]
     label: string
+    kind: WorkspaceKind
+    intent: object
   }) => {
-    if (args.createdPaths.length === 0) return
+    if (args.createdPaths.length === 0 || !isCurrentIntent(args.kind, args.intent)) return
     try {
       const { publishWorkspacePathsToAgenticGraphStorage } = (await import('@/features/source-files/sourceFileShareUrl')) as typeof import('@/features/source-files/sourceFileShareUrl')
+      if (!isCurrentIntent(args.kind, args.intent)) return
       const result = await publishWorkspacePathsToAgenticGraphStorage({
         paths: args.createdPaths,
         syncNow: true,
       })
-      if (result.storedCount <= 0) return
+      if (!isCurrentIntent(args.kind, args.intent) || result.storedCount <= 0) return
       pushUiToast({
         id: `settings-import-storage-sync-${Date.now().toString(36)}`,
         kind: 'success',
@@ -215,6 +243,7 @@ export function useSettingsWorkspaceActions({
         dismissible: true,
       })
     } catch (err) {
+      if (!isCurrentIntent(args.kind, args.intent)) return
       pushUiToast({
         id: 'settings-import-storage-sync-failed',
         kind: 'error',
@@ -223,11 +252,14 @@ export function useSettingsWorkspaceActions({
         dismissible: true,
       })
     }
-  }, [pushUiToast])
+  }, [isCurrentIntent, pushUiToast])
 
-  const importLocalSelection = React.useCallback((kind: WorkspaceKind, files: WorkspaceFileSelection, selectionKind: 'files' | 'folder') => {
+  const importLocalSelection = React.useCallback(async (kind: WorkspaceKind, files: WorkspaceFileSelection, selectionKind: 'files' | 'folder') => {
     const snapshot = files ? Array.from(files) : []
     if (snapshot.length === 0) return
+    const intent = beginIntent(kind)
+    if (!intent) return
+    const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setAgenticGraphPathStatus
     const label = selectionKind === 'folder' ? 'folder' : 'files'
     if (kind === 'chatHistory') {
       setChatHistoryPathStatus(`Importing local ${label}...`)
@@ -237,7 +269,7 @@ export function useSettingsWorkspaceActions({
       patchChatValues({ chatAgenticGraphStorageMode: 'local', chatAgenticGraphCloudUrl: '' })
     }
     const selection = snapshot
-    void (async () => {
+    try {
       const result = selectionKind === 'folder'
         ? typeof bridgeImportLocalFolder === 'function'
           ? await bridgeImportLocalFolder(selection)
@@ -245,13 +277,17 @@ export function useSettingsWorkspaceActions({
         : typeof bridgeImportLocalFiles === 'function'
           ? await bridgeImportLocalFiles(selection)
           : await importLocalFilesFallbackImpl({ files: selection, pushUiToast })
-      syncPathFromActiveWorkspaceFile(kind)
+      if (!isCurrentIntent(kind, intent)) return
+      syncPathFromActiveWorkspaceFile(kind, intent)
       await syncImportedWorkspaceSelectionToStorage({
-        createdPaths: readBridgeImportResultCreatedPaths(result),
-        label,
+        createdPaths: readBridgeImportResultCreatedPaths(result), label, kind, intent,
       })
-    })()
+    } catch (err) {
+      if (isCurrentIntent(kind, intent)) setStatus(err instanceof Error ? err.message : String(err || 'Failed to import files'))
+    }
   }, [
+    beginIntent,
+    isCurrentIntent,
     bridgeImportLocalFiles,
     bridgeImportLocalFolder,
     importLocalFilesFallbackImpl,
@@ -263,22 +299,28 @@ export function useSettingsWorkspaceActions({
     syncPathFromActiveWorkspaceFile,
   ])
 
-  const importCloudUrl = React.useCallback((kind: WorkspaceKind) => {
+  const importCloudUrl = React.useCallback(async (kind: WorkspaceKind) => {
     const next = String(kind === 'chatHistory' ? chatHistoryCloudUrl : chatAgenticGraphCloudUrl || '').trim()
     const setStatus = kind === 'chatHistory' ? setChatHistoryPathStatus : setAgenticGraphPathStatus
     if (!next) {
       setStatus(kind === 'chatHistory' ? 'Set chatHistoryCloudUrl first.' : 'Set chatAgenticGraphCloudUrl first.')
       return
     }
+    const intent = beginIntent(kind)
+    if (!intent) return
     if (kind === 'chatHistory') {
       patchChatValues({ chatHistoryStorageMode: 'cloud', chatHistoryCloudUrl: next })
     } else {
       patchChatValues({ chatAgenticGraphStorageMode: 'cloud', chatAgenticGraphCloudUrl: next })
     }
     setStatus(`Importing URL: ${next}`)
-    if (typeof bridgeImportUrl === 'function') bridgeImportUrl(next)
-    else void importUrlFallbackImpl({ urlRaw: next, pushUiToast })
-  }, [bridgeImportUrl, chatHistoryCloudUrl, chatAgenticGraphCloudUrl, importUrlFallbackImpl, patchChatValues, pushUiToast])
+    try {
+      if (typeof bridgeImportUrl === 'function') await bridgeImportUrl(next)
+      else await importUrlFallbackImpl({ urlRaw: next, pushUiToast })
+    } catch (err) {
+      if (isCurrentIntent(kind, intent)) setStatus(err instanceof Error ? err.message : String(err || 'Failed to import URL'))
+    }
+  }, [beginIntent, isCurrentIntent, bridgeImportUrl, chatHistoryCloudUrl, chatAgenticGraphCloudUrl, importUrlFallbackImpl, patchChatValues, pushUiToast])
 
   return {
     chatHistoryPathStatus,

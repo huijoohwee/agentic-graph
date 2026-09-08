@@ -26,7 +26,7 @@ import { buildRichMediaPanelOverlayState, resolveRichMediaPanelRenderNode } from
 import { resolveRepoTestDataPath } from '@/tests/lib/repoTestData'
 import { listDisplayRichMediaOverlayNodes } from '@/lib/render/richMediaSsot'
 import type { GraphNode } from '@/lib/graph/types'
-import { resolveDocsSsotFixturePath } from '@/tests/lib/docsSsotFixture'
+import { deepStrictEqual } from 'node:assert'
 
 const readSlideDemoOrFallback = (): { nameForParse: string; text: string; documentPath: string } => {
   const docPath = resolveMarkdownSlideDemoDocumentPath() || 'data/test-data/md-demo-00.md'
@@ -67,7 +67,7 @@ const readAgenticGraphVideoDemoPath = (): string => {
     ? process.env.AG_TEST_DOCS_SSOT_VALIDATION_FIXTURE_PATH.trim()
     : ''
   if (envPath) return envPath
-  return resolveDocsSsotFixturePath('agentic-graph-video-demo.md')
+  return resolveRepoTestDataPath('video-director-brief-flow-regression.md')
 }
 
 const readAgenticGraphVideoDemoSeededPath = (): string => {
@@ -397,7 +397,7 @@ export const testImportRenderPipelineAgenticGraphVideoDemoStoryboardWidgetDocume
   const targetNodeIds = new Set(richMediaPanelNodes.map(node => String(node.id || '').trim()).filter(Boolean))
   const connectedValuesA = computeFlowConnectedValuesBySchemaPath({ graphData: activeGraph, registry: widgetRegistry, targetNodeIds })
   const connectedValuesB = computeFlowConnectedValuesBySchemaPath({ graphData: activeGraph, registry: widgetRegistry, targetNodeIds })
-  if (connectedValuesA !== connectedValuesB) throw new Error('expected connected widget value cache reuse for video demo Rich Media Panels')
+  deepStrictEqual(connectedValuesA, connectedValuesB, 'expected stable Rich Media Panel values when a large graph bypasses the bounded cache')
   const storyboardWidgetRichMediaOverlays = listDisplayRichMediaOverlayNodes({
     renderMediaAsNodes: false,
     canvas2dRenderer: 'storyboard',

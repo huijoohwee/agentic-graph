@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util'
+import { readFieldValue } from '@/features/chat/chatResponseStructuredRecord'
 import { buildCanonicalAgenticOsTemplateFixtureDocument } from '@/__tests__/helpers/neutralAgenticOsFixture'
 import { buildResolvableVarKeySet, validateChatMarkdown } from '@/features/chat/chatMarkdownValidation'
 import { isAgenticOsStructuredMarkdown, normalizeAgenticOsAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
@@ -92,12 +94,14 @@ export function testAgenticOsFallbackGeneratesFlowDiagramsForArbitraryPromptDyna
     'BlueLark adapter, 17ms jitter budget, DeltaSync handoff,',
     'outputSrcDoc chart panel, and audioUrl review notes.',
   ].join(' ')
-  const md = normalizeAgenticOsAssistantBodyForStorage({
-    timestampMs: Date.UTC(2026, 5, 5, 4, 17, 40),
-    workspacePath: '/chat-log/20260605T041740Z/agenticOs_20260605T041740Z.md',
-    requestText,
-    assistantText: buildBaseTemplateSample(),
-  })
+  const normalizeArgs = { timestampMs: Date.UTC(2026, 5, 5, 4, 17, 40), workspacePath: '/chat-log/20260605T041740Z/agenticOs_20260605T041740Z.md', requestText }
+  const supplied = buildBaseTemplateSample()
+  const suppliedDiagrams = supplied.match(/^flow_diagrams:\n[\s\S]*?(?=^[^\s#][^\n]*:|^---)/m)?.[0]
+  if (!suppliedDiagrams) throw new Error('expected the canonical generated fixture to include supplied diagrams')
+  const readDiagramField = (markdown: string) => readFieldValue((tryParseMarkdownFrontmatterFlowGraph('supplied-diagrams.md', markdown)?.graphData.metadata?.frontmatterMeta as Record<string, unknown> | undefined) || {}, 'flow_diagrams')
+  const preserved = normalizeAgenticOsAssistantBodyForStorage({ ...normalizeArgs, assistantText: supplied })
+  if (!isDeepStrictEqual(readDiagramField(preserved), readDiagramField(supplied))) throw new Error('expected normalization to preserve supplied diagrams')
+  const md = normalizeAgenticOsAssistantBodyForStorage({ ...normalizeArgs, assistantText: supplied.replace(suppliedDiagrams, '') })
 
   assertIncludes(md, [
     'kgCanvas2dRenderer: "storyboard"',

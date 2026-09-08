@@ -6,25 +6,25 @@ import {
   markFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
   type FlightGeoOverlaySnapshot,
-} from '../../../gympgrph/src/flightGeoOverlay'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import {
   FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT,
   FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
-} from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
+} from 'gympgrph/testkit/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
   applyFlightGeoOverlayToMap,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import {
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
-} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+} from 'gympgrph/testkit/flightGeoEnvironmentMapLibre'
 import {
   recordFlightGeoStoppedPresentation,
   writeFlightGeoPresentationDebug,
-} from '../../../gympgrph/src/features/geospatial/flightGeoPresentationDebug'
+} from 'gympgrph/testkit/features/geospatial/flightGeoPresentationDebug'
 import {
   flightOverlay,
   presentationHarness,

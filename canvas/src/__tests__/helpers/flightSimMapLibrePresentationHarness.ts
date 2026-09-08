@@ -3,25 +3,25 @@ import assert from 'node:assert/strict'
 import {
   type FlightGeoOverlayPresentation,
   type FlightGeoOverlaySnapshot,
-} from '../../../../gympgrph/src/flightGeoOverlay'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import {
   createFlightGeoOverlayPresentationGate,
-} from '../../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
+} from 'gympgrph/testkit/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
   markMapLibreFlightBootstrapApplied,
-} from '../../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrap'
 import {
   applyFlightGeoOverlayToMap,
   flightGeoOverlayFeatureCollection,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
-} from '../../../../gympgrph/src/flightGeoOverlayMapLibre'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import {
   applyFlightGeoEnvironmentToMap,
   flightGeoEnvironmentMapLibreFeatureCollection,
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
-} from '../../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+} from 'gympgrph/testkit/flightGeoEnvironmentMapLibre'
 
 export function flightOverlay(
   phase: FlightGeoOverlaySnapshot['phase'],

@@ -417,7 +417,7 @@ export default function FlowCanvas({
   useFlowCanvasRuntime({
     active,
     storyboardWidgetSurfaceId,
-    allowNodeDragOverride,
+    allowNodeDragOverride: allowMutations,
     collisionDuringDrag,
     viewportControlsPreset,
     storyboardWidgetSelectionOnDrag,

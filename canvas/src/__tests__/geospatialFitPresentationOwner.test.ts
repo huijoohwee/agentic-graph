@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   applyGeospatialFitRequestForPresentation,
-} from '../../../gympgrph/src/geospatialFitRuntime'
+} from 'gympgrph/testkit/geospatialFitRuntime'
 
 const GRAPH_BOUNDS = [103.85, 1.28, 103.87, 1.3] as const
 const USER_BOUNDS = [103.8, 1.2, 103.9, 1.4] as const

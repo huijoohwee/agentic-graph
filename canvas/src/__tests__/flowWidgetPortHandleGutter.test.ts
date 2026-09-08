@@ -247,8 +247,8 @@ export const testFlowWidgetOutputPortHandleDomOrderPrefersCenterLane = () => {
   if (!registrySection.includes('if (!portHandlesVisible) return null') || !registrySection.includes('const visiblePortRows = showPortRows && portHandlesVisible ? portRows : []')) {
     throw new Error('expected registry handle visibility to be independent from interaction enablement')
   }
-  if (!overlayHandles.includes('(!props.selected && !isPendingTarget)') || !overlayHandles.includes('inputOnly={isPendingTarget && !props.selected}')) {
-    throw new Error('expected Card and Rich Media overlay handles to mount input-only targets during explicit edge drag')
+  if (!overlayHandles.includes('!props.selected && !isPendingSource && !isPendingTarget') || !overlayHandles.includes('outputOnly={persistentOutputOnly || pendingSourceOutputOnly}') || !overlayHandles.includes('pendingSourceIds.some(sourceId => isCanonicalNodeIdEqual(sourceId, nodeId))') || overlayHandles.includes('inputOnly={isPendingTarget')) {
+    throw new Error('expected shared overlays to preserve selected source cohorts and allow target chaining during explicit edge wiring')
   }
   if (!panel.includes('forceEnabled')) {
     throw new Error('expected the Rich Media outer pair to remain visible independently from schema interaction state')

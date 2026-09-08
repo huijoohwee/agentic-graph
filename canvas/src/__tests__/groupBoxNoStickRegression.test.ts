@@ -362,3 +362,43 @@ export function testNoStickUsesZAxisWhenGapZProvidedEvenWithZeroDepth() {
     throw new Error(`expected Z separation from gapZ, got oz=${oz1} (touchEpsilon=${touchEpsilon})`)
   }
 }
+
+function checkClearanceBroadphase(axis: 'x' | 'y' | 'z') {
+  for (const extraClearance of [0.5, 4.5]) {
+    const nodes = [{ vx: 0, vy: 0, vz: 0 }, { vx: 0, vy: 0, vz: 0 }]
+    const offset = 20 + 3 + extraClearance
+    const base = { halfW: 10, halfH: 10, halfD: 10, cx: 0, cy: 0, cz: 0, gap: 0 }
+    resolveGroupCollisions({
+      groups: [
+        { ...base, id: 'a', movableIdxs: [0], gapX: 1, gapY: 1, gapZ: 1 },
+        { ...base, id: 'b', movableIdxs: [1], gapX: 2, gapY: 2, gapZ: 2,
+          cx: axis === 'x' ? offset : 0,
+          cy: axis === 'y' ? offset : 0,
+          cz: axis === 'z' ? offset : 0 },
+      ],
+      nodes,
+      strength: 1,
+      touchEpsilon: 0,
+      touchEpsilonX: axis === 'x' ? 4 : 0,
+      touchEpsilonY: axis === 'y' ? 4 : 0,
+      touchEpsilonZ: axis === 'z' ? 4 : 0,
+    })
+    const key = axis === 'x' ? 'vx' : axis === 'y' ? 'vy' : 'vz'
+    if (extraClearance < 4) {
+      if (!(nodes[0][key] < 0 && nodes[1][key] > 0)) {
+        throw new Error(`expected ${axis} clearance candidate outside raw boxes to receive separation`)
+      }
+    } else if (nodes.some(node => node.vx !== 0 || node.vy !== 0 || node.vz !== 0)) {
+      throw new Error(`expected no push beyond ${axis} clearance`)
+    }
+    for (const other of ['vx', 'vy', 'vz'] as const) {
+      if (other !== key && nodes.some(node => node[other] !== 0)) {
+        throw new Error(`expected ${axis} clearance to preserve orthogonal velocity`)
+      }
+    }
+  }
+}
+
+export function testClearanceBroadphaseX() { checkClearanceBroadphase('x') }
+export function testClearanceBroadphaseY() { checkClearanceBroadphase('y') }
+export function testClearanceBroadphaseZ() { checkClearanceBroadphase('z') }

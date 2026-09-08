@@ -1,3 +1,4 @@
+import { PNG_SIGNATURE_BYTES, PNG_WITH_IHDR_BYTES } from './fixtures/pngHeaderFixture'
 import { parseGlbAssetDocument } from '@/lib/assets/glbAssetDocument'
 import { inspectGlbBytes, inspectGltfJson } from '@/lib/assets/gltfFormat'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
@@ -17,21 +18,6 @@ import {
   XR_IMAGE_MODEL_WORKSPACE_ROOT,
 } from '@/features/markdown-workspace/workspaceImport'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-
-const PNG_SIGNATURE_BYTES = new Uint8Array([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-  0x00, 0x00, 0x00, 0x00,
-])
-
-const PNG_WITH_IHDR_BYTES = new Uint8Array([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-  0x00, 0x00, 0x00, 0x0d,
-  0x49, 0x48, 0x44, 0x52,
-  0x00, 0x00, 0x00, 0x18,
-  0x00, 0x00, 0x00, 0x0c,
-  0x08, 0x06, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00,
-])
 
 function createTextFile(name: string, text: string, type = 'text/plain'): File {
   const blob = new Blob([text], { type })
@@ -337,6 +323,8 @@ export async function testXrImageLocalSvgImportCreatesSourceFilesAndModelArtifac
     const file = createTextFile('diagram.svg', '<svg viewBox="0 0 24 12"><rect width="24" height="12"/></svg>', 'image/svg+xml')
     const res = await importWorkspaceLocalFiles({ fs, files: [file], parentPath: '/' })
 
+    const originalSvg = await file.text()
+    if (await fs.readFileText(`${XR_IMAGE_MODEL_WORKSPACE_ROOT}/diagram.svg`) !== originalSvg || mirrored.get(`${XR_IMAGE_MODEL_WORKSPACE_ROOT}/diagram.svg`) !== originalSvg) throw new Error('expected exact authored SVG text in workspace and host mirror')
     const expectedSource = `${XR_IMAGE_MODEL_WORKSPACE_ROOT}/diagram.source.md`
     const expectedGlb = `${XR_IMAGE_MODEL_WORKSPACE_ROOT}/diagram.glb`
     const expectedGltf = `${XR_IMAGE_MODEL_WORKSPACE_ROOT}/diagram.gltf`
@@ -348,7 +336,7 @@ export async function testXrImageLocalSvgImportCreatesSourceFilesAndModelArtifac
     if (!mirroredBytes.has(expectedGlb)) throw new Error(`expected local SVG import to mirror raw GLB bytes at ${expectedGlb}`)
     if (!mirrored.has(expectedGltf)) throw new Error(`expected local SVG import to mirror raw GLTF JSON at ${expectedGltf}`)
     const sourceText = await fs.readFileText(expectedSource)
-    if (!sourceText?.includes('XR model artifacts:') || !sourceText.includes(expectedGlb) || !sourceText.includes(expectedGltf)) {
+    if (!sourceText?.includes('XR model artifacts:') || !sourceText.includes(expectedGlb) || !sourceText.includes(expectedGltf) || !sourceText.includes(`${XR_IMAGE_MODEL_WORKSPACE_ROOT}/diagram.svg`)) {
       throw new Error(`expected source metadata to link generated GLB/GLTF artifacts, got ${String(sourceText || '')}`)
     }
     const glbText = await fs.readFileText(expectedGlb)

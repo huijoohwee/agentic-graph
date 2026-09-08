@@ -1,4 +1,4 @@
-import { resolvePinnedAgenticDocsRoot } from '@/tests/lib/repoTestData'
+import { resolvePinnedAgenticDocsRoot, resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -22,9 +22,8 @@ import { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME } from '../../../mcp/agentic-canva
 
 type PlainRecord = Record<string, unknown>
 
-const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
-const DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agentic-graph-agentic-video-canvas-demo.md')
-const SCRIPT_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'AI视频-港岛实景写实风-异城算计与女主绝境求生-终极统一执行总表.md')
+const DOC_PATH = resolveSiblingFixturePath('huijoohwee', path.join('docs', 'agentic-graph-agentic-video-canvas-demo.md'))
+const SCRIPT_PATH = resolveSiblingFixturePath('huijoohwee', path.join('docs', 'AI视频-港岛实景写实风-异城算计与女主绝境求生-终极统一执行总表.md'))
 const TEXT_PACKAGE_SHEETS = ['Character sheet', 'Scene sheet', 'Dialogue sheet', 'Visual asset sheet', 'Audio sheet', 'Timing sheet', 'Metadata sheet', 'Prompt sheet'] as const
 
 const isRecord = (value: unknown): value is PlainRecord => (

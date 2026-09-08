@@ -4,6 +4,11 @@ import Dexie from 'dexie'
 import fc from 'fast-check'
 import { IDBKeyRange, indexedDB } from 'fake-indexeddb'
 import { createIndexedDbCollectionDb } from '@/lib/storage/indexedDbCollectionStore'
+import { createPersistedCollectionDb } from '@/lib/storage/persistedCollectionStore'
+import { pushAgenticGraphStorageOutbox, queueAgenticGraphStorageMutation } from '@/lib/storage/agentic-graph-storage-client-push'
+import { applyAgenticGraphStoragePullPage } from '@/lib/storage/agentic-graph-storage-client-apply'
+import { AGENTIC_OS_STORAGE_SYNC_API_VERSION, type KgDocumentRecord,
+  type AgenticGraphStorageOutboxRecord } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   AGENTIC_OS_STORAGE_COLLECTION_NAMES,
   type KgDocumentLocalRecord,
@@ -337,18 +342,27 @@ export function testStorageEnhancementProperty10PullFailurePreservesCursorAndOut
 }
 
 // Feature: agentic-graph-storage-sync-enhancement, Property 11: Empty pull performs no cache write
-export function testStorageEnhancementProperty11EmptyPullPerformsNoCacheWrite() {
-  const syncSource = sourceText('src/lib/storage/agentic-graph-storage-client-runtime.ts')
-  assert(
-    syncSource.indexOf('if (!hasChanges)') < syncSource.indexOf('const documentWriteCount = await applyPulledDocuments'),
-    'expected empty pulls to return before persisted-cache writes',
-  )
-  fc.assert(fc.property(fc.option(idArbitrary, { nil: null }), cursor => {
-    let cacheWrites = 0
-    const changes: unknown[] = []
-    if (changes.length > 0) cacheWrites += changes.length
-    return cacheWrites === 0 && (cursor === null || typeof cursor === 'string')
-  }), { numRuns: PROPERTY_RUNS })
+export async function testStorageEnhancementProperty11EmptyPullPerformsNoCacheWrite() {
+  const dbState = createPersistedCollectionDb<AgenticGraphStorageRecordMap>({ storageKey: 'empty-pull-property',
+    collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES], persistent: false })
+  const record: KgDocumentLocalRecord = { id: 'cached', workspaceId: 'empty-pull', canonicalPath: 'cached.md',
+    title: null, docType: null, lang: null, graphId: null, sourceKind: 'markdown', contentMd: 'retained bytes',
+    contentHash: 'retained-hash', parserVersion: '1', documentRevision: 2, updatedAtMs: 2, isDeleted: false }
+  await dbState.collections.documents.incrementalUpsert(record)
+  let writes = 0
+  const subscriptions = ['documents', 'documentChunks', 'graphSnapshots', 'syncDeferred'].map(name =>
+    dbState.collections[name as keyof AgenticGraphStorageRecordMap].$.subscribe(() => { writes += 1 }))
+  try {
+    const result = await applyAgenticGraphStoragePullPage({ dbState, workspaceId: record.workspaceId,
+      changes: { documents: [], documentChunks: [], graphSnapshots: [], deletions: [] } })
+    await result.finishProjection()
+    assert(result.cacheWriteCount === 0 && writes === 0, 'empty pulls must not write cache or projection records')
+    assert(JSON.stringify((await dbState.collections.documents.findOne(record.id).exec())?.toJSON()) === JSON.stringify(record),
+      'empty pull must preserve cached bytes and revision')
+  } finally {
+    subscriptions.forEach(subscription => subscription.unsubscribe())
+    await dbState.db.remove()
+  }
 }
 
 // Feature: agentic-graph-storage-sync-enhancement, Property 12: Content-hash chunk dedupe
@@ -389,4 +403,159 @@ export function testStorageEnhancementProperty13SyncPathIssuesNoLlmCalls() {
     return inferenceCalls === 0
       && !/\b(chatCompletion|modelInference|llmClient)\b/.test(syncSource)
   }), { numRuns: PROPERTY_RUNS })
+}
+
+export async function testStorageAtomicComparePreservesConcurrentWrites() {
+  type Rows = { cache: { id: string; workspaceId: string; body: string }; outbox: { id: string; workspaceId: string }; state: { id: string; revision: number } }
+  const names: Array<keyof Rows> = ['cache', 'outbox', 'state']
+  for (const mode of ['memory', 'indexeddb'] as const) {
+    const databaseName = `kg:compare:${mode}:${reloadDatabaseSequence++}`
+    const first = mode === 'indexeddb'
+      ? await createIndexedDbCollectionDb<Rows>({ databaseName, collectionNames: names })
+      : createPersistedCollectionDb<Rows>({ storageKey: databaseName, collectionNames: names, persistent: false })
+    const original = { id: 'child', workspaceId: 'workspace', body: 'original' }
+    await first.collections.cache.incrementalUpsert(original)
+    const second = mode === 'indexeddb'
+      ? await createIndexedDbCollectionDb<Rows>({ databaseName, collectionNames: names }) : first
+    try {
+      const condition = { collectionName: 'cache' as const, selector: { id: 'child' }, records: [original] }
+      const attempts = await Promise.all([first, second].map((db, index) => db.compareAndWrite([
+        { kind: 'upsert', collectionName: 'cache', record: { ...original, body: `winner:${index}` } },
+        { kind: 'upsert', collectionName: 'state', record: { id: 'watermark', revision: index + 1 } },
+      ], [condition])))
+      assert(attempts.filter(Boolean).length === 1, `${mode}: exactly one transaction must consume the observed state`)
+      const current = (await first.collections.cache.findOne('child').exec())!.toJSON()
+      const state = (await first.collections.state.findOne('watermark').exec())!.toJSON()
+      assert(current.body === `winner:${state.revision - 1}`, `${mode}: child and state must commit together`)
+      let changes = 0
+      let deletedBody: string | null = null
+      const subscription = first.collections.cache.$.subscribe(event => {
+        changes += 1
+        if (event.operation === 'DELETE') deletedBody = event.documentData?.body || null
+      })
+      await second.collections.outbox.incrementalUpsert({ id: 'offline-edit', workspaceId: 'workspace' })
+      const rejected = await first.compareAndWrite([
+        { kind: 'remove', collectionName: 'cache', id: 'child' },
+        { kind: 'upsert', collectionName: 'state', record: { id: 'watermark', revision: 99 } },
+      ], [
+        { collectionName: 'cache', selector: { id: 'child' }, records: [current] },
+        { collectionName: 'outbox', selector: { workspaceId: 'workspace' }, records: [] },
+      ])
+      assert(!rejected && changes === 0, `${mode}: a newly queued edit must reject deletion without events`)
+      assert((await first.collections.cache.findOne('child').exec())?.get('body') === current.body, 'rejected compare must preserve cache')
+      assert((await first.collections.state.findOne('watermark').exec())?.get('revision') === state.revision, 'rejected compare must preserve watermark')
+      assert(first.persistence.getState().status === 'active', 'ordinary contention must not degrade persistence')
+      if ('compareAndWriteWithRevisions' in first && typeof first.compareAndWriteWithRevisions === 'function') {
+        const finalRecord = { ...current, body: 'updated by another connection' }
+        await second.collections.cache.incrementalUpsert(finalRecord)
+        const committed = await first.compareAndWriteWithRevisions([
+          { kind: 'remove', collectionName: 'cache', id: 'child' },
+          { kind: 'upsert', collectionName: 'state', record: { id: 'watermark', revision: 100 } },
+        ], [{ record: { workspaceId: 'workspace', documentId: 'child', documentRevision: 100,
+          contentMd: '', contentHash: 'empty', updatedAtMs: 100 } }], [
+          { collectionName: 'cache', selector: { id: 'child' }, records: [finalRecord] },
+        ])
+        assert(committed, 'matching observation must commit with revision history')
+        assert(deletedBody === finalRecord.body, 'deletion event must use the durable record, not stale per-tab memory')
+        const reopened = await createIndexedDbCollectionDb<Rows>({ databaseName, collectionNames: names })
+        try {
+          assert(!await reopened.collections.cache.findOne('child').exec(), 'committed deletion must survive reopen')
+          assert((await reopened.collections.state.findOne('watermark').exec())?.get('revision') === 100, 'watermark must survive reopen')
+          assert((await reopened.revisionHistory.list('workspace', 'child')).length === 1, 'revision must share the durable commit')
+        } finally { await reopened.db.close() }
+      }
+      subscription.unsubscribe()
+    } finally {
+      if (second !== first) await second.db.close()
+      await first.db.remove()
+    }
+  }
+}
+
+export async function testStorageAcknowledgementsPreserveReplacedOutbox() {
+  const baseUrl = (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://storage.example'
+  for (const mode of ['memory', 'indexeddb'] as const) {
+    const databaseName = `kg:ack-compare:${mode}:${reloadDatabaseSequence++}`
+    const first = mode === 'indexeddb'
+      ? await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({ databaseName, collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES] })
+      : createPersistedCollectionDb<AgenticGraphStorageRecordMap>({ storageKey: databaseName, collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES], persistent: false })
+    const second = mode === 'indexeddb'
+      ? await createIndexedDbCollectionDb<AgenticGraphStorageRecordMap>({ databaseName, collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES] }) : first
+    try {
+      for (const status of ['applied', 'conflict', 'rejected', 'deferred', 'unchanged'] as const) {
+        const workspaceId = `workspace:${status}`
+        const record: KgDocumentRecord = { id: `doc:${status}`, workspaceId, canonicalPath: `${status}.md`, title: null,
+          docType: null, lang: null, graphId: null, sourceKind: 'markdown', contentMd: 'sent bytes', contentHash: '',
+          parserVersion: '1', revision: 1, updatedAtMs: 1, deleted: false }
+        const id = await queueAgenticGraphStorageMutation({ workspaceId, deviceId: 'sender', entity: 'document',
+          op: 'upsert', record, dbState: first })
+        let replacement: AgenticGraphStorageOutboxRecord | null = null
+        const result = await pushAgenticGraphStorageOutbox({ workspaceId, deviceId: 'sender', maxRetryCount: 1,
+          pushBatchSize: 50, dbState: first, baseUrl, fetchImpl: async () => {
+            if (status !== 'unchanged') {
+              const row = (await second.collections.syncOutbox.findOne(id).exec())!
+              const current = row.toJSON()
+              // Preserve the reported hash deliberately: acknowledgement identity must compare exact queued bytes.
+              replacement = { ...current, payload: { ...current.payload,
+                record: { ...record, contentMd: 'new offline bytes', revision: 2 } } }
+              await second.collections.syncOutbox.incrementalUpsert(replacement)
+              await second.collections.syncConflicts.incrementalUpsert({ id, workspaceId, mutationId: id,
+                entity: 'document', recordId: record.id, serverRevision: 9, remoteRecord: null, receivedAtMs: 9 })
+            }
+            return Response.json({ ok: true, apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION, workspaceId,
+              ackCursor: '2026-09-07T00:00:00.000Z', serverTimeMs: 1,
+              acknowledgements: status === 'deferred' ? [] : [{ mutationId: id, entity: 'document', recordId: record.id,
+                status: status === 'unchanged' ? 'applied' : status, serverRevision: 1, message: null }] })
+          } })
+        const retained = await second.collections.syncOutbox.findOne(id).exec()
+        if (status === 'unchanged') {
+          assert(!retained && result.appliedCount === 1, `${mode}: exact acknowledged row must be removed`)
+        } else {
+          assert(JSON.stringify(retained?.toJSON()) === JSON.stringify(replacement), `${mode}/${status}: preserve the replacement byte-for-byte`)
+          assert(!!await second.collections.syncConflicts.findOne(id).exec(), 'stale acknowledgement must preserve newer conflict data')
+          assert(result.appliedCount + result.conflictCount + result.rejectedCount + result.deferredCount === 0,
+            'count only acknowledgements applied to the actual sent row')
+        }
+      }
+    } finally {
+      if (second !== first) await second.db.close()
+      await first.db.remove()
+    }
+  }
+}
+
+export async function testStorageAcknowledgementValidationPrecedesEffects() {
+  const baseUrl = (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://storage.example'
+  const dbState = createPersistedCollectionDb<AgenticGraphStorageRecordMap>({ storageKey: 'ack-validation',
+    persistent: false, collectionNames: [...AGENTIC_OS_STORAGE_COLLECTION_NAMES] })
+  const workspaceId = 'workspace:ack-validation', ids: string[] = []
+  try {
+    for (const id of ['first', 'second']) {
+      const record: KgDocumentRecord = { id, workspaceId, canonicalPath: `${id}.md`, title: null,
+        docType: null, lang: null, graphId: null, sourceKind: 'markdown', contentMd: id, contentHash: '',
+        parserVersion: '1', revision: 1, updatedAtMs: 1, deleted: false }
+      ids.push(await queueAgenticGraphStorageMutation({ workspaceId, deviceId: 'sender', entity: 'document',
+        op: 'upsert', record, dbState }))
+    }
+    const snapshot = async () => JSON.stringify((await dbState.collections.syncOutbox.find().exec()).map(row => row.toJSON()))
+    const before = await snapshot()
+    for (const invalid of ['workspace', 'duplicate', 'identity']) {
+      let rejected = false
+      let responseCount = 0
+      try {
+        await pushAgenticGraphStorageOutbox({ workspaceId, deviceId: 'sender', maxRetryCount: 1, pushBatchSize: 50,
+          dbState, baseUrl, fetchImpl: async () => { responseCount += 1; return Response.json({
+            ok: true, apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
+            workspaceId: invalid === 'workspace' ? 'foreign-workspace' : workspaceId,
+            ackCursor: null, serverTimeMs: 1, acknowledgements: ids.map((id, index) => ({
+              mutationId: invalid === 'duplicate' ? ids[0] : id, entity: 'document', status: 'applied',
+              recordId: index === 0 ? 'first' : invalid === 'identity' ? 'foreign-record' : 'second',
+              serverRevision: 1, message: null,
+            })),
+          }) } })
+      } catch (error) { rejected = error instanceof Error && error.message.includes('acknowledgement') }
+      assert(responseCount === 1, `${invalid}: exercise the acknowledgement validator after transport`)
+      assert(rejected && await snapshot() === before, `${invalid}: validate the whole response before acknowledging its first row`)
+    }
+  } finally { await dbState.db.remove() }
 }

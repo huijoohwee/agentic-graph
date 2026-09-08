@@ -16,7 +16,7 @@ export function testGraphCanvasRootPrefersPlannedOverlayHideSet() {
   if (!text.includes('if (isStoryboardWidgetSurfaceRenderer(canvas2dRenderer)) return')) {
     throw new Error('expected GraphCanvasRoot to preserve clicked Rich Media Panel selection on shared Storyboard/Storyboard Widget surfaces')
   }
-  if (!text.includes('[canvas2dRenderer, panelOnlyNodeIdSetForScene, richMedia.mediaOverlayNodeIdSet, selectNode, selectedNodeId, selectedNodeIds]')) {
+  if (!text.includes('[canvas2dRenderer, openWidgetNodeIds, panelOnlyNodeIdSetForScene, richMedia.mediaOverlayNodeIdSet, selectNode, selectedNodeId, selectedNodeIds]')) {
     throw new Error('expected GraphCanvasRoot hidden-selection cleanup to depend on the active renderer gate')
   }
 }

@@ -243,36 +243,40 @@ export function testFrontmatterFlowWithoutDocumentRegistryFallsBackOnlyToWidgetS
 }
 
 export function testFrontmatterFlowOpenWidgetIdsAreScopedByRegistryForms() {
-  const store = useGraphStore.getState()
-  store.clearGraphData()
-  store.setGraphData({
-    type: 'Graph',
-    context: 'frontmatter-flow',
-    nodes: [
-      { id: 'n-pack', type: 'default', label: 'Pack', properties: {}, metadata: {} },
-      { id: 'n-other', type: 'default', label: 'Other', properties: {}, metadata: {} },
-    ],
-    edges: [],
-    metadata: {
-      kind: 'frontmatter-flow',
-      [FLOW_WIDGET_REGISTRY_METADATA_KEY]: [
-        {
-          id: 'doc-pack',
-          nodeTypeId: 'default',
-          widgetTypeId: 'default',
-          formId: 'fm:n-pack',
-          updatedAt: '2',
-          isEnabled: true,
-          fields: [{ fieldKey: 'context', fieldType: 'text' }],
-          ports: [],
-        },
+  const prior = useGraphStore.getState()
+  try {
+    const store = prior
+    store.clearGraphData()
+    store.setGraphData({
+      type: 'Graph',
+      context: 'frontmatter-flow',
+      nodes: [
+        { id: 'n-pack', type: 'default', label: 'Pack', properties: {}, metadata: {} },
+        { id: 'n-other', type: 'default', label: 'Other', properties: {}, metadata: {} },
+        { id: 'n-image', type: FLOW_IMAGE_GENERATION_NODE_TYPE_ID, label: 'Image', properties: {}, metadata: {} },
       ],
-    },
-  } as never)
+      edges: [],
+      metadata: {
+        kind: 'frontmatter-flow',
+        [FLOW_WIDGET_REGISTRY_METADATA_KEY]: [
+          {
+            id: 'doc-pack',
+            nodeTypeId: 'default',
+            widgetTypeId: 'default',
+            formId: 'fm:n-pack',
+            updatedAt: '2',
+            isEnabled: true,
+            fields: [{ fieldKey: 'context', fieldType: 'text' }],
+            ports: [],
+          },
+        ],
+      },
+    } as never)
 
-  store.setOpenWidgetNodeIds(['n-pack', 'n-other'])
-  const ids = useGraphStore.getState().openWidgetNodeIds || []
-  if (ids.length !== 1 || ids[0] !== 'n-pack') {
-    throw new Error(`expected frontmatter-flow open widget ids to stay registry-scoped, got ${JSON.stringify(ids)}`)
-  }
+    store.setOpenWidgetNodeIds(['n-pack', 'n-other', 'n-image'])
+    const ids = useGraphStore.getState().openWidgetNodeIds || []
+    if (ids.length !== 1 || ids[0] !== 'n-image') {
+      throw new Error(`expected canonical image widget eligibility without turning arbitrary registry metadata into executable widgets, got ${JSON.stringify(ids)}`)
+    }
+  } finally { useGraphStore.setState(prior, true) }
 }

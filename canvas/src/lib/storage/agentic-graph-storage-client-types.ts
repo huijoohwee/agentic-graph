@@ -3,15 +3,28 @@ import type {
   KgDocumentRecord,
   KgGraphSnapshotRecord,
   AgenticGraphStoragePullResponse,
+  AgenticGraphStorageChildState,
+  AgenticGraphStorageDeletedChildState,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import type { AgenticGraphStorageDb } from '@/lib/storage/agentic-graph-storage-db'
 import type { WorkspaceSeedSyncTaskContext } from '@/lib/workspace/workspaceSeedSyncRuntime'
 
 export type AgenticGraphStorageFetchLike = typeof fetch
+export type AgenticGraphStorageProjectionChanges = {
+  documents: KgDocumentRecord[]
+  documentChunks: KgDocumentChunkRecord[]
+  graphSnapshots: KgGraphSnapshotRecord[]
+  deletions?: AgenticGraphStorageDeletedChildState[]
+}
+export type AgenticGraphStoragePullProjection = {
+  documentTexts: Array<{ documentId: string; text: string; previousText: string | null }>
+  previousGraphs: Array<{ documentId: string; record: KgGraphSnapshotRecord | null }>
+}
 export type AgenticGraphStoragePulledChangesApplyArgs = {
   workspaceId: string
   deviceId: string
   changes: AgenticGraphStoragePullResponse['changes']
+  projection?: AgenticGraphStoragePullProjection
   signal: AbortSignal
   taskContext: WorkspaceSeedSyncTaskContext
 }
@@ -85,6 +98,8 @@ export type AgenticGraphStorageSyncRunResult = {
     canonicalPath?: string | null
     localRevision?: number | null
     serverRevision?: number | null
+    parentRecovery?: { documentId: string; parentRevision: number; retainedChildCount: number } | null
+    childState?: AgenticGraphStorageChildState | null
     message: string | null
   }>
   transportError?: string | null

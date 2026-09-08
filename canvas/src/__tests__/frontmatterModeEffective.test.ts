@@ -32,9 +32,11 @@ export function testFrontmatterModeEffectiveWhenSeedsExist() {
     metadata: {},
     nodes: [
       { id: 'm1', type: 'MermaidNode', label: 'm1', properties: { mermaidScope: 'frontmatter' } },
-      { id: 'n1', type: 'Entity', label: 'n1', properties: {} },
+      { id: 'n1', type: 'MermaidNode', label: 'n1', properties: {} },
+      { id: 'outside', type: 'Entity', label: 'outside', properties: {} },
     ],
-    edges: [{ id: 'e1', source: 'm1', target: 'n1', label: 'pointsTo', properties: {} }],
+    edges: [{ id: 'e1', source: 'm1', target: 'n1', label: 'pointsTo', properties: {} },
+      { id: 'e2', source: 'n1', target: 'outside', label: 'pointsTo', properties: {} }],
   }
 
   const effective = computeEffectiveFrontmatterMode({
@@ -47,7 +49,25 @@ export function testFrontmatterModeEffectiveWhenSeedsExist() {
   const filtered = filterGraphToFrontmatterMermaid(graphData)
   if (filtered === graphData) throw new Error('expected filtered graph to be a new object when seeds exist')
   const nodeIds = new Set((filtered.nodes || []).map(n => String(n.id)))
-  if (!nodeIds.has('m1') || !nodeIds.has('n1')) throw new Error('expected seed and reachable node to be included')
+  if (!nodeIds.has('m1') || !nodeIds.has('n1') || nodeIds.has('outside')) throw new Error('expected only the seed and reachable Mermaid-scoped node')
+  if (filtered.edges.length !== 1 || filtered.edges[0] !== graphData.edges[0]) throw new Error('expected original scoped edges without outside links')
+
+  let endpointReads = 0
+  const chain: GraphData = {
+    type: 'graph', metadata: {},
+    nodes: Array.from({ length: 32 }, (_, i) => ({ id: `n${i}`, type: 'MermaidNode', label: `n${i}`, properties: i === 0 ? { mermaidScope: 'frontmatter' } : {} })),
+    edges: Array.from({ length: 31 }, (_, i) => ({
+      id: `e${i}`, label: 'next', properties: {},
+      get source() { endpointReads += 1; return `n${i}` },
+      get target() { endpointReads += 1; return `n${i + 1}` },
+    })),
+  }
+  const projected = filterGraphToFrontmatterMermaid(chain)
+  if (projected.nodes.length !== 32 || projected.edges.length !== 31
+    || projected.nodes.some((node, i) => node !== chain.nodes[i]) || projected.edges.some((edge, i) => edge !== chain.edges[i])) {
+    throw new Error('expected chain traversal to preserve every node/edge identity and original order')
+  }
+  if (endpointReads > chain.edges.length * 2) throw new Error(`expected one read per edge endpoint, got ${endpointReads}`)
 }
 
 export function testFrontmatterModeEffectiveForFrontmatterFlowGraphWithoutMermaidSeeds() {

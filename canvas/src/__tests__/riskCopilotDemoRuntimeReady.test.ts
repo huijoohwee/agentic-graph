@@ -18,9 +18,9 @@ import {
 
 type PlainRecord = Record<string, unknown>
 
-const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 const REPO_ROOT = path.resolve(process.cwd(), '..')
-const DOC_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME)
+const DOC_PATH = resolveSiblingFixturePath('huijoohwee', path.join('docs', RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME))
 const DOCS_ROOT = path.dirname(DOC_PATH)
 const EVIDENCE_PATH = path.join(REPO_ROOT, 'sme-agent', 'demo', 'sme-care-agent-canvas-evidence.md')
 

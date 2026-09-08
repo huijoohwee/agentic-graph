@@ -1,6 +1,6 @@
 import type {
   FlightGeoOverlaySnapshot,
-} from '../../../../gympgrph/src/flightGeoOverlay.js'
+} from 'gympgrph/testkit/flightGeoOverlay'
 
 export const flushMicrotasks = () => new Promise<void>(resolve => setImmediate(resolve))
 export const applyProviderStyleImmediately = (apply: () => void) => {

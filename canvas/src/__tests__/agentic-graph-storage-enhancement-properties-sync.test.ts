@@ -11,7 +11,7 @@ import {
 } from '@/lib/storage/agentic-graph-storage-db'
 import { queueAgenticGraphStorageMutation } from '@/lib/storage/agentic-graph-storage-client-push'
 import { cancelAgenticGraphStorageSync } from '@/lib/storage/agentic-graph-storage-client-sync'
-import { partitionPulledAgenticGraphStorageChanges } from '@/lib/storage/agentic-graph-storage-conflict-store'
+import { applyAgenticGraphStoragePullPage } from '@/lib/storage/agentic-graph-storage-client-apply'
 import {
   __setAgenticGraphStorageConflictProjectionForTests,
   buildAgenticGraphStorageConflictAcceptRemoteActionId,
@@ -24,13 +24,11 @@ import {
   type KgDocumentRecord,
   type AgenticGraphStorageMutation,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
-import {
-  canEditRawJsonForCollaboration,
-} from '../../../grph-shared/src/collaboration/yjsSnapshot'
+import { canEditRawJsonForCollaboration } from 'grph-shared/collaboration/yjsSnapshot'
 import {
   DOCUMENT_REPOSITORY_TARGETS,
   resolveDocumentRepositoryAuthorityResult,
-} from '../../../grph-shared/src/collaboration/documentRepositoryAuthority'
+} from 'grph-shared/collaboration/documentRepositoryAuthority'
 import { handleCollaborationSave } from '../../../cloudflare/workers/agentic-graph-storage/collaborationBridge'
 import {
   processAgenticGraphStorageMutation,
@@ -276,12 +274,12 @@ export async function testStorageEnhancementProperty19StaleConflictAutoClearPart
   })
   const outbox = await dbState.collections.syncOutbox.findOne(mutationId).exec()
   await outbox?.incrementalPatch({ lastAckStatus: 'conflict' })
-  const partition = await partitionPulledAgenticGraphStorageChanges({
+  const partition = await applyAgenticGraphStoragePullPage({
     dbState,
     workspaceId,
-    changes: { documents: [remoteRecord], documentChunks: [], graphSnapshots: [] },
+    changes: { documents: [remoteRecord], documentChunks: [], graphSnapshots: [], deletions: [] },
   })
-  assert(partition.applicableChanges.documents.length === 0, 'conflicting pull must not overwrite local')
+  assert(partition.changes.documents.length === 0, 'conflicting pull must not overwrite local')
   assert(await dbState.collections.syncOutbox.findOne(mutationId).exec(), 'conflicting outbox row must remain')
   const candidate = await dbState.collections.syncConflicts.findOne(mutationId).exec()
   assert(candidate?.get('serverRevision') === 9, 'remote revision must be retained as an explicit candidate')
@@ -342,7 +340,7 @@ export async function testStorageEnhancementProperty20KeepLocalRetriesOncePerAct
     const graph = {
       id: 'graph-property-20', documentId: 'document-property-20', workspaceId: graphWorkspace,
       graphRevision: 3, graphHash: 'graph-local', graphJson: { local: true }, layoutJson: null,
-      derivedFromDocumentRevision: 2, updatedAtMs: 30,
+      derivedFromDocumentRevision: 2, updatedAtMs: 30, syncRevision: 3,
     }
     const graphId = await queueAgenticGraphStorageMutation({
       workspaceId: graphWorkspace, entity: 'graphSnapshot', op: 'delete', baseRevision: 3, record: graph, dbState,
@@ -350,7 +348,9 @@ export async function testStorageEnhancementProperty20KeepLocalRetriesOncePerAct
     await (await dbState.collections.syncOutbox.findOne(graphId).exec())?.incrementalPatch({ lastAckStatus: 'conflict' })
     await dbState.collections.syncConflicts.incrementalUpsert({
       id: graphId, workspaceId: graphWorkspace, mutationId: graphId, entity: 'graphSnapshot', recordId: graph.id,
-      serverRevision: 4, remoteRecord: { ...graph, graphRevision: 4 }, receivedAtMs: 2,
+      serverRevision: 4, remoteRecord: { ...graph, graphHash: 'graph-remote', graphJson: { remote: true }, syncRevision: 4 }, receivedAtMs: 2,
+      childState: { workspaceId: graphWorkspace, entity: 'graphSnapshot', documentId: graph.documentId,
+        recordId: graph.id, graphRevision: graph.graphRevision, syncRevision: 4, updatedAtMs: 31, deleted: false },
     })
     await runAgenticGraphStorageConflictAction(buildAgenticGraphStorageConflictKeepLocalActionId(graphWorkspace, graphId))
     cancelAgenticGraphStorageSync(graphWorkspace)
@@ -358,7 +358,8 @@ export async function testStorageEnhancementProperty20KeepLocalRetriesOncePerAct
     const graphMutation = graphRetry?.get('payload') as unknown as AgenticGraphStorageMutation | undefined
     assert(!(await dbState.collections.graphSnapshots.findOne(graph.id).exec()), 'Keep Local delete must preserve graph absence')
     assert(graphMutation?.entity === 'graphSnapshot' && graphMutation.op === 'delete'
-      && graphMutation.record.graphRevision === 5, 'Keep Local must queue one rebased graph delete')
+      && graphMutation.baseRevision === 4 && graphMutation.record.syncRevision === 4
+      && graphMutation.record.graphRevision === 3, 'Keep Local must rebase the delete without changing its authored graph revision')
   } finally {
     cancelAgenticGraphStorageSync(documentWorkspace)
     cancelAgenticGraphStorageSync(graphWorkspace)
@@ -499,24 +500,7 @@ export function testStorageEnhancementProperty23RepositoryAuthorityIsTotalAndRed
   }), { numRuns: PROPERTY_RUNS })
 }
 // Feature: agentic-graph-storage-sync-enhancement, Property 24: Cloud upload ordered round-trip
-export function testStorageEnhancementProperty24CloudUploadOrderedRoundTrip() {
-  const source = sourceText('src/features/source-files/sourceFileCanonicalCloudSync.ts')
-  const githubIndex = source.indexOf('const github = await retryCloudUploadStage(')
-  const d1Index = source.indexOf('const storageResult = await publishWorkspaceEntriesToAgenticGraphStorage')
-  const readBackIndex = source.indexOf('readBackText = await readCloudDocumentText')
-  assert(githubIndex >= 0 && githubIndex < d1Index && d1Index < readBackIndex, 'expected GitHub, D1, read-back ordering')
-  fc.assert(fc.property(markdownArbitrary, text => {
-    const events = ['github', 'd1']
-    let attempts = 0
-    let readBack: string | null = null
-    while (attempts < 3 && readBack !== text) {
-      attempts += 1
-      readBack = text
-      events.push('readback')
-    }
-    return events.join(',') === 'github,d1,readback' && attempts <= 3 && readBack === text
-  }), { numRuns: PROPERTY_RUNS })
-}
+export { testStorageEnhancementProperty24CloudUploadOrderedRoundTrip } from './agentic-graph-storage-cloud-upload-round-trip.test'
 // Feature: agentic-graph-storage-sync-enhancement, Property 25: Credentials never persist in the browser
 export function testStorageEnhancementProperty25CredentialsNeverPersistInBrowserState() {
   const dbSource = sourceText('src/lib/storage/agentic-graph-storage-db.ts')

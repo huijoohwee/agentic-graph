@@ -1,3 +1,4 @@
+import type { MarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceRuntime.types'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
@@ -20,7 +21,9 @@ import {
 } from '@/features/markdown-workspace/workspaceImport'
 import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
 import { buildSourceFileLifecycleState, buildSourceFileRecord } from '@/features/source-files/sourceFileParsedState'
-import { readWorkspaceActiveDocumentResolvedText } from '@/features/source-files/sourceFilesRuntimeActive'
+import { readWorkspaceActiveDocumentObservedText, type WorkspaceActiveDocumentTextObservation } from '@/features/source-files/sourceFilesRuntimeActive'
+import { readWorkspaceSourceTextSnapshot } from '@/features/workspace-fs/workspaceSourceTextTransaction'
+import { resolveMarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceWritebackCommit'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { runInIdle } from '@/features/panels/utils/idle'
 import { parseGeoJsonFeatureCollectionFromText } from '@/features/geospatial/geojsonParseCache'
@@ -64,7 +67,7 @@ export type MarkdownWorkspaceIndexingArgs = MarkdownWorkspaceRuntimeProgressStat
   activeDocumentSourceUrl: string | null
   sourcesByPath: WorkspaceSourceIndex
   getFs: MarkdownWorkspaceRuntimeGetFs
-  lastLoadedRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
+  lastLoadedRef: React.MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   activePathRef: React.MutableRefObject<WorkspacePath | null>
   activeTextRef: React.MutableRefObject<string>
   userEditedActiveTextRef: React.MutableRefObject<boolean>
@@ -159,21 +162,13 @@ export function useMarkdownWorkspaceIndexing(args: MarkdownWorkspaceIndexingArgs
             void 0
           }
 
-          const text = await (async () => {
+          let observed: WorkspaceActiveDocumentTextObservation | undefined
+          const snapshot = await readWorkspaceSourceTextSnapshot({ path, read: async () => {
             const fs = await args.getFs()
-            if (canUseCachedText) {
-              const resolved = await readWorkspaceActiveDocumentResolvedText({
-                activePath: path,
-                currentText: cachedText as string,
-                fs,
-                preferCanonicalPathText: true,
-              })
-              return String(resolved || '').trim() ? resolved : cachedText as string
-            }
-            const hydrated = await hydrateWorkspaceFileFromPendingLocalImport({ fs, path })
-            const loaded = hydrated ? hydrated.text : await fs.readFileText(path)
-            if (loaded != null) return loaded
-
+            if (!canUseCachedText) await hydrateWorkspaceFileFromPendingLocalImport({ fs, path })
+            observed = await readWorkspaceActiveDocumentObservedText({ activePath: path, fs, fallbackText: cachedText ?? undefined, preferCanonicalPathText: canUseCachedText })
+            const loaded = observed.observedWorkspaceText === null && !observed.text ? null : observed.text
+            if (loaded !== null || canUseCachedText) return loaded
             const normalizedPath = normalizeWorkspacePath(path)
             if (args.repairedMissingWorkspaceFilesRef.current.has(normalizedPath)) return loaded
             args.repairedMissingWorkspaceFilesRef.current.add(normalizedPath)
@@ -191,8 +186,11 @@ export function useMarkdownWorkspaceIndexing(args: MarkdownWorkspaceIndexingArgs
               void 0
             }
 
-            return await fs.readFileText(normalizedPath)
-          })()
+            observed = await readWorkspaceActiveDocumentObservedText({ activePath: normalizedPath, fs })
+            return observed.observedWorkspaceText === null && !observed.text ? null : observed.text
+          } })
+          if (!snapshot.current) return
+          const text = snapshot.value
           if (cancelled || args.activePathRef.current !== scheduledFor) return
           if (text == null) {
             applyLoadFailedStatus('Missing file contents', { fallbackMessage: 'Missing file contents' })
@@ -247,7 +245,10 @@ export function useMarkdownWorkspaceIndexing(args: MarkdownWorkspaceIndexingArgs
               void 0
             }
           } else {
-            args.lastLoadedRef.current = { path, text: nextText }
+            args.lastLoadedRef.current = resolveMarkdownWorkspaceLoadedSnapshot({
+              ...(observed && (observed.observedWorkspaceText === undefined || observed.text === nextText) ? observed : {}),
+              path, text: nextText, previous: args.lastLoadedRef.current,
+            })
             args.setActiveTextProgrammatic(nextText)
             if (!canUseCachedText || nextText !== cachedText) {
               args.setEntries(prev =>

@@ -338,13 +338,14 @@ async function recordSegment(args: {
   }
 }
 
-async function resolveRenderSegments(args: {
+export async function resolveVideoSequenceRenderSegments(args: {
   onEvent?: (event: VideoSequenceExportEvent) => void
   onProgress?: (progress: VideoSequenceExportProgress) => void
   plan: VideoSequenceExportPlan
   renderKind: VideoSequenceExportKind
   signal?: AbortSignal
 }): Promise<VideoSequenceRenderSegment[]> {
+  const durationByUrl = new Map<string, number>()
   let cursorMinutes = 0
   const secondsPerMinute = 1
   const out: VideoSequenceRenderSegment[] = []
@@ -358,17 +359,21 @@ async function resolveRenderSegments(args: {
     throwIfVideoSequenceExportAborted(args.signal)
     const url = resolveTimelinePlanSourceUrl(segment.source)
     if (!url) throw createVideoSequenceExportError('source-unavailable')
-    const probe = document.createElement('video')
-    probe.preload = 'metadata'
-    probe.crossOrigin = 'anonymous'
-    let duration = 0
-    try {
-      duration = await loadTimelinePlanVideoMetadata({ url, video: probe, timeoutMs: 8000 })
-    } finally {
-      probe.removeAttribute('src')
-      probe.load()
+    let duration = durationByUrl.get(url)
+    if (duration === undefined) {
+      const probe = document.createElement('video')
+      probe.preload = 'metadata'
+      probe.crossOrigin = 'anonymous'
+      try {
+        duration = await loadTimelinePlanVideoMetadata({ url, video: probe, timeoutMs: 8000 })
+      } finally {
+        probe.removeAttribute('src')
+        probe.load()
+      }
+      throwIfVideoSequenceExportAborted(args.signal)
+      if (!duration) throw createVideoSequenceExportError('source-load-failed')
+      durationByUrl.set(url, duration)
     }
-    if (!duration) throw createVideoSequenceExportError('source-load-failed')
     const gapMinutes = Math.max(0, segment.timelineStartMinutes - cursorMinutes)
     out.push({
       ...segment,
@@ -428,7 +433,7 @@ export async function renderVideoSequenceExport(args: {
     audioSource.connect(audioDestination)
     throwIfVideoSequenceExportAborted(args.signal)
     await audioContext.resume()
-    const renderSegments = await resolveRenderSegments({
+    const renderSegments = await resolveVideoSequenceRenderSegments({
       onEvent: args.onEvent,
       onProgress: args.onProgress,
       plan: args.plan,

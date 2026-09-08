@@ -5,7 +5,9 @@ const readUtf8 = (absPath: string): string => fs.readFileSync(absPath, { encodin
 
 export const testD3SceneUsesBudgetedLabelRelaxAndEdgePlacement = () => {
   const sceneHandlersPath = path.resolve(process.cwd(), 'src', 'components', 'GraphCanvas', 'sceneHandlers.ts')
-  const text = readUtf8(sceneHandlersPath)
+  const boundary = readUtf8(sceneHandlersPath)
+  if (!boundary.includes("export { renderLabels2d } from '@/components/GraphCanvas/sceneHandlers.simulationTick2d.labels'")) throw new Error('expected scene boundary to reuse the label owner')
+  const text = readUtf8(path.resolve(process.cwd(), 'src/components/GraphCanvas/sceneHandlers.simulationTick2d.labels.ts'))
   if (!text.includes("from '@/lib/graph/collision/relaxRunner'")) {
     throw new Error('Expected sceneHandlers to use relaxRunner SSOT for budgeted label relax')
   }
@@ -28,7 +30,8 @@ export const testFlowAndDesignUseBudgetedCollisionRelax = () => {
 
   const designPath = path.resolve(process.cwd(), 'src', 'components', 'DesignCanvas.tsx')
   const designText = readUtf8(designPath)
-  if (!designText.includes('relaxNodesWithCollision')) {
+  const dragText = readUtf8(path.resolve(process.cwd(), 'src/components/DesignCanvas/useFrameDragController.ts'))
+  if (!designText.includes('useFrameDragController({') || !dragText.includes('relaxNodesWithCollision({')) {
     throw new Error('Expected DesignCanvas to use relaxNodesWithCollision for overlap resolution')
   }
 }

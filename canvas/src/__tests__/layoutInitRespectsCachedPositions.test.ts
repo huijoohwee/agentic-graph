@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { initializeGraphLayout } from '@/components/GraphCanvas/layout/initialization'
 import { defaultSchema } from '@/lib/graph/schema'
 import type { GraphNode } from '@/lib/graph/types'
@@ -32,30 +33,37 @@ export const testLayoutInitRespectsStableCachedPositions = () => {
 }
 
 export const testLayoutInitSeedsOnlyMissingPositionsWhenStable = () => {
-  const nodes: GraphNode[] = [
-    { id: 'a', label: 'a', type: 'T', x: 10, y: 20, properties: {} },
-    { id: 'b', label: 'b', type: 'T', properties: {} },
-  ]
-  initializeGraphLayout({
-    nodes,
-    edges: [],
-    width: 800,
-    height: 600,
-    schema: defaultSchema,
-    seedCenter: { x: 400, y: 300 },
-    layoutPositions: {
-      a: { x: 10, y: 20 },
-    },
-  })
-
-  const a = nodes[0]!
-  const b = nodes[1]!
-  if ((a.x as number) !== 10 || (a.y as number) !== 20) {
-    throw new Error('expected existing node position to remain unchanged')
-  }
-  const bx = (b as unknown as { x?: unknown }).x
-  const by = (b as unknown as { y?: unknown }).y
-  if (!(typeof bx === 'number' && Number.isFinite(bx) && typeof by === 'number' && Number.isFinite(by))) {
-    throw new Error('expected missing node to be seeded with finite x/y')
+  for (const disjointComponents of [true, false]) {
+    const schema = {
+      ...defaultSchema,
+      layout: { ...defaultSchema.layout, forces: { ...defaultSchema.layout?.forces, disjointComponents } },
+    }
+    for (const cached of [true, false]) {
+      for (const count of [2, 6, 12]) {
+        const nodes: GraphNode[] = Array.from({ length: count }, (_, i) => ({
+          id: `n${i}`, label: `n${i}`, type: 'T', properties: {},
+          ...(i === 0 ? { x: 10, y: 20 } : {}),
+        }))
+        initializeGraphLayout({
+          nodes, edges: [], width: 800, height: 600, schema,
+          seedCenter: { x: 400, y: 300 },
+          layoutPositions: cached ? { n0: { x: 10, y: 20 } } : null,
+        })
+        assert.equal(nodes[0]!.x, 10, 'existing x must survive partial layout initialization')
+        assert.equal(nodes[0]!.y, 20, 'existing y must survive partial layout initialization')
+        assert.ok(nodes.every(n => Number.isFinite(n.x) && Number.isFinite(n.y)), 'missing positions must be finite')
+        const placed = nodes.map(n => [n.x, n.y])
+        initializeGraphLayout({ nodes, edges: [], width: 800, height: 600, schema })
+        assert.deepEqual(nodes.map(n => [n.x, n.y]), placed, 'unchanged reuse must not reseed')
+      }
+    }
+    const unstable: GraphNode[] = [
+      { id: 'a', label: 'a', type: 'T', x: 200000, y: 200000, properties: {} },
+      { id: 'b', label: 'b', type: 'T', properties: {} },
+    ]
+    initializeGraphLayout({ nodes: unstable, edges: [], width: 800, height: 600, schema })
+    assert.ok(unstable.every(n => Number.isFinite(n.x) && Number.isFinite(n.y)))
+    assert.ok(Math.abs(unstable[0]!.x!) < 120000 && Math.abs(unstable[0]!.y!) < 120000,
+      'unstable positions must still enter layout repair')
   }
 }

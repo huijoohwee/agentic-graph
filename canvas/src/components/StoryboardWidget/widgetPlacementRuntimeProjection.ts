@@ -451,5 +451,8 @@ export function applyWidgetOverlayPosition(args: {
     lastGoodWorldPosRef.current = seedWorld
     persistWorldPos(seedWorld)
   }
-  if (opts?.emitInteractionFrame !== false) emitStoryboardWidgetInteractionFrame()
+  if (opts?.emitInteractionFrame !== false) {
+    if (updateToolbarLayout) emitStoryboardWidgetInteractionFrame()
+    else emitStoryboardWidgetInteractionFrame({ updateToolbarLayout: false })
+  }
 }

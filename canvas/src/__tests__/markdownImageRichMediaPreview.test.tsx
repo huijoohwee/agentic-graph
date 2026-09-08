@@ -28,16 +28,13 @@ export async function testMarkdownPreviewRendersMarkdownImageAndVideoAudioIframe
     doc.body.appendChild(container)
     const root = createRoot(container as unknown as HTMLElement)
     const markdownText = [
-      'PNG:',
-      '',
+      'PNG:', '',
       '![](https://example.com/a.png)',
       '',
-      'JPG:',
-      '',
+      'JPG:', '',
       '![](https://example.com/a.jpg)',
       '',
-      'Proxied JPEG:',
-      '',
+      'Proxied JPEG:', '',
       '![](/__fetch_remote?url=https%3A%2F%2Fexample.com%2Fb.jpeg)',
       '',
       'Autolink PNG:',
@@ -49,10 +46,8 @@ export async function testMarkdownPreviewRendersMarkdownImageAndVideoAudioIframe
       '![](https://mmbiz.qpic.cn/mmbiz_png/test/640?wx_fmt=jpeg)',
       '',
       'Inline image: ![inline](https://example.com/inline.png)',
-      '',
-      'Agentic OS: /runtime-ready.check #frontmatter @operator #not-registered',
-      '',
-      'Agentic OS code: `/memory.seed #harness @source.frontmatter`',
+      '', 'Agentic OS: /runtime-ready.check #frontmatter @operator #not-registered',
+      '', 'Agentic OS code: `/memory.seed #harness @source.frontmatter`',
       '',
       'Local webpage asset path image:',
       '',
@@ -211,13 +206,18 @@ export async function testMarkdownPreviewRendersMarkdownImageAndVideoAudioIframe
   }
 }
 export async function testMarkdownPreviewViewerMediaDefaultsToInlineChip() {
+  const grammar = await import('@/features/agentic-os/agenticOsRemoteGrammarClient')
+  const { assertPinnedAgenticOsDictionaryTokensForTest } = await import('./helpers/pinnedAgenticOsDictionary')
+  const priorEntries = grammar.getAgenticOsRemoteGrammarCatalogEntries()
   const { dom, restore: restoreDom } = initJsdomHarness()
+  let root: ReturnType<typeof createRoot> | undefined
   try {
+    const revision = assertPinnedAgenticOsDictionaryTokensForTest({ command: ['/runtime-ready.check', '/memory.seed'], semantic: ['#frontmatter', '#harness'], binding: ['@operator', '@source.frontmatter'] })
     const doc = dom.window.document
     const container = doc.createElement('section')
     container.id = 'root'
     doc.body.appendChild(container)
-    const root = createRoot(container as unknown as HTMLElement)
+    root = createRoot(container as unknown as HTMLElement)
     const markdownText = [
       '---',
       'mediaUrl: https://example.com/storyboard-beats.png',
@@ -228,12 +228,9 @@ export async function testMarkdownPreviewViewerMediaDefaultsToInlineChip() {
       'This is the ![Image: mediaUrl](https://example.com/storyboard-beats.png) minimum viable source preview.',
       '',
       '![buddydrone.jpg](https://example.com/buddydrone.jpg)',
-      '',
-      'Agentic OS: /runtime-ready.check #frontmatter @operator #not-registered',
-      '',
-      'Agentic OS code: `/memory.seed #harness @source.frontmatter`',
-      '',
-      'Review #image source.',
+      '', 'Agentic OS: /runtime-ready.check #frontmatter @operator #not-registered',
+      '', 'Agentic OS code: `/memory.seed #harness @source.frontmatter`',
+      '', 'Review #image source.',
     ].join('\n')
     root.render(
       React.createElement(MarkdownPreview, {
@@ -308,20 +305,20 @@ export async function testMarkdownPreviewViewerMediaDefaultsToInlineChip() {
     }
     const slashInvocationChip = container.querySelector('a[data-kg-agentic-os-invocation-chip="1"][data-kg-agentic-os-invocation-token="/runtime-ready.check"]') as HTMLAnchorElement | null
     if (!slashInvocationChip) throw new Error(`expected Agentic OS / invocation chip to render as functional source link, html=${container.innerHTML}`)
-    if (!slashInvocationChip.href.includes('https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-COMMAND.md')) {
+    if (!slashInvocationChip.href.includes(`https://github.com/huijoohwee/agentic-canvas-os/blob/${revision}/docs/DICTIONARY-COMMAND.md`)) {
       throw new Error(`expected Agentic OS / invocation chip to link to command dictionary source, got ${slashInvocationChip.href}`)
     }
-    if (!slashInvocationChip.getAttribute('title')?.includes('Source: https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-COMMAND.md')) {
+    if (!slashInvocationChip.getAttribute('title')?.includes(`Source: https://github.com/huijoohwee/agentic-canvas-os/blob/${revision}/docs/DICTIONARY-COMMAND.md`)) {
       throw new Error(`expected Agentic OS / invocation chip to expose hover source, got ${JSON.stringify(slashInvocationChip.outerHTML)}`)
     }
     const hashInvocationChip = container.querySelector('a[data-kg-agentic-os-invocation-chip="1"][data-kg-agentic-os-invocation-token="#frontmatter"]') as HTMLAnchorElement | null
     if (!hashInvocationChip) throw new Error(`expected Agentic OS # invocation chip to render as functional source link, html=${container.innerHTML}`)
-    if (!hashInvocationChip.href.includes('https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-SEMANTIC.md')) {
+    if (!hashInvocationChip.href.includes(`https://github.com/huijoohwee/agentic-canvas-os/blob/${revision}/docs/DICTIONARY-SEMANTIC.md`)) {
       throw new Error(`expected Agentic OS # invocation chip to link to semantic dictionary source, got ${hashInvocationChip.href}`)
     }
     const bindingInvocationChip = container.querySelector('a[data-kg-agentic-os-invocation-chip="1"][data-kg-agentic-os-invocation-token="@operator"]') as HTMLAnchorElement | null
     if (!bindingInvocationChip) throw new Error(`expected Agentic OS @ invocation chip to render as functional source link, html=${container.innerHTML}`)
-    if (!bindingInvocationChip.href.includes('https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-BINDING.md')) {
+    if (!bindingInvocationChip.href.includes(`https://github.com/huijoohwee/agentic-canvas-os/blob/${revision}/docs/DICTIONARY-BINDING.md`)) {
       throw new Error(`expected Agentic OS @ invocation chip to link to binding dictionary source, got ${bindingInvocationChip.href}`)
     }
     const inlineCodeSlashInvocationChip = Array.from(container.querySelectorAll('a[data-kg-agentic-os-invocation-chip="1"][data-kg-agentic-os-invocation-token="/memory.seed"]') as NodeListOf<HTMLAnchorElement>)
@@ -344,9 +341,11 @@ export async function testMarkdownPreviewViewerMediaDefaultsToInlineChip() {
     if (!unknownKeywordChip || unknownKeywordChip.tagName.toLowerCase() === 'a' || unknownKeywordChip.getAttribute('data-kg-agentic-os-invocation-chip') === '1') {
       throw new Error(`expected unknown # chip to stay neutral, got ${JSON.stringify(unknownKeywordChip?.outerHTML || '')}`)
     }
-    root.unmount()
   } finally {
+    root?.unmount()
     restoreDom()
+    grammar.resetAgenticOsRemoteGrammarCatalogForTests()
+    grammar.registerAgenticOsRemoteGrammarCatalogEntries(priorEntries)
   }
 }
 export function testNormalizeEscapedInlineMediaMarkdownRestoresCanonicalImageToken() {

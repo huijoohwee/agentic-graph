@@ -66,20 +66,20 @@ export function testStoryboardWidgetFrontmatterUsesFlowFilterForWidgetOverlays()
   if (!canvasViewportText.includes('const activeSourceFile = React.useMemo(')
     || !canvasViewportText.includes('resolvePreferredEnabledComposedSourceFile({')
     || !canvasViewportText.includes('const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)')
-    || !canvasViewportText.includes('[explorerActivePath, markdownDocumentName, sourceFiles]')) {
+    || !canvasViewportText.includes('[documentSwitchPending, explorerActivePath, markdownDocumentName, sourceFiles]')) {
     throw new Error('expected CanvasViewport to resolve the active Source Files graph by explorer active path during workspace transitions')
   }
-  if (!canvasViewportText.includes('const workspaceStoryboardSurfaceActive = workspaceEditorOverlayOpen === true')
+  if (!canvasViewportText.includes('const workspaceStoryboardSurfaceActive = !documentSwitchPending') || !canvasViewportText.includes('&& workspaceEditorOverlayOpen === true')
     || !canvasViewportText.includes('&& isStoryboardCanvas2dRenderer(canvas2dRenderer)')
     || !canvasViewportText.includes('isFrontmatterFlowGraph(activeGraphData)')
     || !canvasViewportText.includes('isFrontmatterFlowGraph(activeSourceFile?.parsedGraphData)')
     || !canvasViewportText.includes("const active2dSurface = workspaceStoryboardSurfaceActive ? 'storyboard' : rawActive2dSurface")) {
-    throw new Error('expected CanvasViewport to keep Storyboard alive for frontmatter-flow handoff only when Storyboard is active')
+    throw new Error('expected CanvasViewport to keep active Storyboard frontmatter-flow authority after pending document handoff completes')
   }
-  if (!canvasViewportText.includes('const documentSwitchBlocksCanvas = documentSwitchPending && !workspaceStoryboardSurfaceActive')
+  if (!canvasViewportText.includes('const documentSwitchBlocksCanvas = documentSwitchPending')
     || !canvasViewportText.includes('const documentSwitchOwnsViewport = shouldDocumentSwitchOwnCanvasViewport({') || !canvasViewportText.includes("!documentSwitchOwnsViewport && !geospatialOverlayOwnsViewport && canvasRenderMode === '2d'")
     || !canvasViewportText.includes('{documentSwitchOwnsViewport ? (')) {
-    throw new Error('expected CanvasViewport document-switch gating to avoid blanking Storyboard when source graph authority is already frontmatter-flow')
+    throw new Error('expected pending document selection to own CanvasViewport until handoff completes')
   }
   if (!overlaySurfaceText.includes('if (!storyboardWidgetViewActive) {')) {
     throw new Error('expected storyboard widget id derivation to avoid live overlay ids whenever storyboard widget view is inactive')
@@ -89,7 +89,7 @@ export function testStoryboardWidgetFrontmatterUsesFlowFilterForWidgetOverlays()
     || !overlaySurfaceText.includes('stableOverlaySurfaceCacheKey')) {
     throw new Error('expected inactive-view cleanup to preserve stable overlay ids while Editor Workspace owns the Storyboard Widget surface')
   }
-  if (!overlaySurfaceText.includes('stableFrontmatterOverlaySurfaceCacheById')
+  if (!overlaySurfaceText.includes('readStableFrontmatterOverlaySurfaceCache(stableOverlaySurfaceCacheKey)')
     || !overlaySurfaceText.includes('cachedStableOverlaySurface.sourceKey === activeSourceSelectionKey')
     || !overlaySurfaceText.includes('if (workspaceOverlayOpen && sourceKey) return `workspace:${sourceKey}`')
     || !overlaySurfaceText.includes('clearStableFrontmatterOverlaySurfaceCache(stableOverlaySurfaceCacheKey)')
@@ -281,7 +281,7 @@ export function testStoryboardWidgetOverlayEdgesAnchorThroughSharedOverlayRoots(
   if (!edgeHookText.includes("import {\n  getCachedStoryboardWidgetOverlayEdgeGraph,\n  readCanonicalStoryboardWidgetOverlayIdentity,\n} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'")) {
     throw new Error('expected overlay edge renderer to consume shared overlay-edge graph and canonical overlay identity helpers')
   }
-  if (!renderGraphHelperText.includes("import { canonicalNodeIdSetHas, splitComposedNodeId } from '@/lib/graph/canonicalNodeIds'")) {
+  if (!renderGraphHelperText.includes("import { canonicalNodeIdSetHas, getCanonicalNodeLookupValue, splitComposedNodeId } from '@/lib/graph/canonicalNodeIds'")) {
     throw new Error('expected shared overlay edge graph helper to reuse canonical overlay identity helpers for workspace-composed graph ids')
   }
   if (!edgeHookText.includes('CANVAS_OVERLAY_PROXY_ROOT_SELECTOR')) {
@@ -344,7 +344,7 @@ export function testStoryboardWidgetOverlayEdgesAnchorThroughSharedOverlayRoots(
   if (!richMediaPanelSurfaceStateText.includes('const storyboardWidgetRichMediaOverlayRoot = storyboardWidgetInteractionMode || canvasOverlayProxyEnabled')) {
     throw new Error('expected Rich Media overlay root marker to include Storyboard Widget interaction mode, not only canvas proxy handlers')
   }
-  if (!richMediaPanelSurfaceStateText.includes("'data-kg-rich-media-overlay': storyboardWidgetRichMediaOverlayRoot ? '1' : undefined")) {
+  if (!richMediaPanelSurfaceStateText.includes("'data-kg-rich-media-overlay': storyboardWidgetRichMediaOverlayRoot && props.placementOwner !== 'parent' ? '1' : undefined")) {
     throw new Error('expected Rich Media Panel roots to participate in Storyboard Widget edge endpoint discovery whenever Storyboard Widget interaction mode is active')
   }
 }
@@ -378,8 +378,8 @@ export function testStoryboardWidgetOverlayEdgesPreserveStableNodeSetAcrossWorks
   if (!text.includes("scheduleTransientOverlayEdgeRetry(['missing-graph-data'")) {
     throw new Error('expected overlay edge renderer to preserve paths while graph data is transiently unavailable during init/workspace/run-all churn')
   }
-  if (!text.includes('const liveGraph = args.draftGraphDataRef.current || args.renderGraphDataOverride || null')) {
-    throw new Error('expected overlay edge renderer to read the live draft graph before deciding whether bounded stable fallback is required')
+  if (!text.includes('const liveGraph = resolveStoryboardWidgetOverlayEdgeGraphAuthority({') || !text.includes('draftGraphData: args.draftGraphDataRef.current') || !text.includes('renderedGraphData: args.renderGraphDataOverride') || !text.includes('fixedCardsOwnGraphAuthority: args.fixedCardsOwnGraphAuthority')) {
+    throw new Error('expected overlay edges to select draft/rendered authority through the shared fixed-card policy before bounded fallback')
   }
   if (!text.includes("'partial-overlay-node-set'")) {
     throw new Error('expected overlay edge renderer to preserve the last stable overlay node set during bounded partial DOM churn')
@@ -431,7 +431,7 @@ export function testStoryboardWidgetOverlayEdgesPreserveStableNodeSetAcrossWorks
   if (!text.includes("scheduleTransientOverlayEdgeRetry(['empty-filtered-edge-set'")) {
     throw new Error('expected overlay edge renderer to preserve paths while filtered edge endpoints are transiently empty during Run all refresh')
   }
-  if (!text.includes('const liveGraph = args.draftGraphDataRef.current || args.renderGraphDataOverride || null')) {
+  if (!text.includes('const liveGraph = resolveStoryboardWidgetOverlayEdgeGraphAuthority({') || !text.includes('draftGraphData: args.draftGraphDataRef.current') || !text.includes('renderedGraphData: args.renderGraphDataOverride') || !text.includes('fixedCardsOwnGraphAuthority: args.fixedCardsOwnGraphAuthority')) {
     throw new Error('expected overlay edge renderer to distinguish live post-close graph hydration from the stable fallback snapshot')
   }
   if (!text.includes('const graph = shouldReuseStableGraph ? stableGraph : liveGraph')) {
@@ -452,8 +452,8 @@ export function testStoryboardWidgetOverlayEdgesPreserveStableNodeSetAcrossWorks
   if (!renderGraphHelperText.includes('const nodeHandleSemanticKey = buildOverlayNodeHandleSignature(baseGraph.nodes)')) {
     throw new Error('expected shared overlay-edge helper to compute handle cache invalidation from the shared base graph semantics')
   }
-  if (!renderGraphHelperText.includes("hashSignatureParts([\n        'overlay-graph-semantic',")) {
-    throw new Error('expected shared overlay-edge helper to combine topology signature with node-handle semantics when graph revision metadata is absent')
+  if (!renderGraphHelperText.includes("hashSignatureParts([\n    'overlay-graph-semantic',")) {
+    throw new Error('expected shared overlay-edge helper to combine topology and node-handle semantics with any graph revision')
   }
   if (!renderGraphHelperText.includes("const overlayNodeIdsKey = hashScopedStringArraySignature('overlay-node-ids', overlayNodeIds, {")) {
     throw new Error('expected shared overlay-edge helper to derive a semantic overlay-node key before caching filtered graph lookups')
@@ -788,7 +788,7 @@ export function testFrontmatterFlowContractFormatsHandlesAsSemanticPortKeys() {
   }
 }
 
-export function testWidgetKvTableMaintainsPortKeyValuePortLayoutAndValueContainment() {
+export async function testWidgetKvTableMaintainsPortKeyValuePortLayoutAndValueContainment() {
   const kvTablePath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidget', 'WidgetEditorKvTable.tsx')
   const text = readFileSync(kvTablePath, 'utf8')
   const layoutText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidget', 'widgetEditorTableLayout.ts'), 'utf8')
@@ -796,9 +796,9 @@ export function testWidgetKvTableMaintainsPortKeyValuePortLayoutAndValueContainm
   if (!layoutText.includes("FLOW_WIDGET_KV_ROW_LAYOUT = 'port-key-value-port'") || !layoutText.includes("FLOW_WIDGET_KV_KEY_COLUMN_STYLE = { width: '34%' }") || !layoutText.includes("FLOW_WIDGET_KV_VALUE_COLUMN_STYLE = { width: '64%' }")) throw new Error('expected shared table layout owner to preserve KTV key/value column widths')
   const beatText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidget', 'WidgetEditorBeatByBeatSection.tsx'), 'utf8')
   if (!beatText.includes('data-kg-flow-widget-wiring-row-layout={FLOW_WIDGET_BEAT_WIRING_ROW_LAYOUT}') || !beatText.includes('FLOW_WIDGET_BEAT_WIRING_COLUMN_STYLES.map')) throw new Error('expected beat-by-beat wiring table to reuse the shared Storyboard Widget table layout owner')
-  if (['flowWidgetTypeLabel', 'row.typeNode', 'onTypeClick', 'WidgetEditorTypePill', 'FieldTypeBadgeIcon'].some(snippet => text.includes(snippet))) {
-    throw new Error('expected KV table to remove the rendered Type column and Storyboard Widget-local Type icon rendering')
-  }
+  const [{ createElement }, { renderToStaticMarkup }, { WidgetEditorKvTable }] = await Promise.all([import('react'), import('react-dom/server'), import('@/components/StoryboardWidget/WidgetEditorKvTable')])
+  const table = renderToStaticMarkup(createElement(WidgetEditorKvTable, { ariaLabel: 'Default widget fields', microLabelClass: '', showHeader: true, rows: [] }))
+  if ((table.match(/<col\b/g) || []).length !== 4 || table.includes('>Type<')) throw new Error('expected the default KV table to render four port/key/value/port columns without the optional Type column')
   if (!text.includes("className={cn('px-3 py-2 align-top overflow-hidden', UI_THEME_TOKENS.text.primary") || !text.includes('[&_label]:text-ellipsis') || !text.includes('[&_span]:text-ellipsis') || !text.includes("className={cn('px-3 py-2 align-top overflow-hidden', UI_THEME_TOKENS.text.secondary")) {
     throw new Error('expected KV table key/value columns to enforce overflow containment and shared ellipsis handling')
   }
@@ -1248,7 +1248,6 @@ export function testStoryboardWidgetPortHandleEdgeConnectivityUsesEndpointIdReso
   }
   if (
     !flowDataflowText.includes("import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'")
-    || !flowDataflowText.includes('const { src, tgt } = readGraphEdgeEndpoints(edge)')
     || !flowDataflowText.includes('const { src: sourceId, tgt: targetId } = readGraphEdgeEndpoints(e)')
   ) {
     throw new Error('expected flow dataflow connected-value pipeline to resolve edge endpoints via shared pair helper')

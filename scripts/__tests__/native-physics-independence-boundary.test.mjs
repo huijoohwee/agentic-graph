@@ -50,7 +50,6 @@ test('game source-authority gate discovers every workspace package manifest and 
     'package.json',
     'package-lock.json',
     'canvas/package.json',
-    'canvas/package-lock.json',
     'contracts/package.json',
     'ecs/package.json',
     'grph-shared/package.json',

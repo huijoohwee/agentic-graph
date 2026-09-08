@@ -6,8 +6,6 @@ import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import {
   appendCanvasPreviewParam,
   buildLocalDocCanvasEmbedUrl,
-  buildPublishedDocCanvasEmbedUrlFromSource,
-  buildPublishedDocShareUrlFromSource,
   isSameOriginCanvasEmbedUrl,
 } from '@/features/canvas/canvasDocDeepLink'
 import { publishWorkspaceEntryShareUrl } from '@/features/source-files/sourceFileShareUrl'
@@ -80,21 +78,11 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
 
   const buildShareUrl = React.useCallback((entry: WorkspaceEntry): string | null | Promise<string | null> => {
     if (entry.kind !== 'file') return null
-    const source = sourcesByPath?.[entry.path]
-    if (source?.kind === 'url') {
-      const sourceShareUrl = buildPublishedDocShareUrlFromSource({ sourceUrl: source.url })
-      if (sourceShareUrl) return sourceShareUrl
-    }
     return publishWorkspaceEntryShareUrl({ entry, sourcesByPath })
   }, [sourcesByPath])
 
   const buildCanvasEmbedUrl = React.useCallback(async (entry: WorkspaceEntry): Promise<string | null> => {
     if (entry.kind !== 'file') return null
-    const source = sourcesByPath?.[entry.path]
-    if (source?.kind === 'url') {
-      const sourceEmbedUrl = buildPublishedDocCanvasEmbedUrlFromSource({ sourceUrl: source.url })
-      if (sourceEmbedUrl) return sourceEmbedUrl
-    }
     const shareUrl = await publishWorkspaceEntryShareUrl({ entry, sourcesByPath })
     return appendCanvasPreviewParam(shareUrl || '')
   }, [sourcesByPath])
@@ -114,8 +102,6 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   const handleCanvasEmbedStart = React.useCallback((entry: WorkspaceEntry) => {
     const embedUrl = buildLocalDocCanvasEmbedUrl({ relativePath: entry.path })
     if (!embedUrl) return
-    const code = buildCanvasEmbedIframeMarkup(embedUrl)
-    if (code) openCanvasEmbedCodePanel({ sourceName: entry.name || entry.path, title: 'Canvas iframe embed', language: 'html', code })
     selectLiveCanvasHeroSource({ sourcePath: entry.path, embedUrl })
   }, [])
 

@@ -1,15 +1,19 @@
+import assert from 'node:assert/strict'
+import { observeGroupResizeLayout } from './groupResizeHandleParityRegression.test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const readUtf8 = (filePath: string): string => readFileSync(filePath, 'utf8')
 
 export function testNestedGroupResizeKeepsExclusiveActiveHandleOwnership() {
-  const layoutText = readUtf8(resolve(process.cwd(), 'src/components/GraphCanvas/layers/groupsLayout.ts'))
-  if (!layoutText.includes('const canResize = args.allowResize && (isActiveResize || (!activeResizeGroupId && isSelected))')) {
-    throw new Error('expected active resize to own handle visibility exclusively so nested parent and child handles do not compete')
-  }
-  if (!layoutText.includes("handleEl.setAttribute('data-kg-group-resize-active', isActiveResize ? '1' : '0')")) {
-    throw new Error('expected active resize handle ownership to remain source-visible')
+  for (const active of ['parent', 'child']) {
+    for (const selected of ['parent', 'child', 'other']) {
+      const { handles } = observeGroupResizeLayout({ selected, active })
+      for (const [id, handle] of handles) {
+        assert.equal(handle.style.display === 'none', id !== active, 'only active resize owns a visible handle')
+        assert.equal(handle.attrs.get('data-kg-group-resize-active'), id === active ? '1' : '0')
+      }
+    }
   }
 }
 

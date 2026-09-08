@@ -1,7 +1,28 @@
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { useFlowCanvasGraphState } from '@/components/FlowCanvas/useFlowCanvasGraphState'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 export function testViewLockCopyAndRendererGuardsStayConsistent() {
+  for (const locked of [false, true]) for (const override of [undefined, false, true]) {
+    let allowed: boolean | undefined
+    function Probe() {
+      allowed = useFlowCanvasGraphState({
+        graphDataOverride: undefined, storeGraphData: null, baseGraphDataRevision: 0,
+        selectedNodeId: null, selectedNodeIds: [], frontmatterModeEnabled: false,
+        documentSemanticMode: 'document', documentStructureBaselineLock: locked,
+        allowNodeDragOverride: override, canvas2dRenderer: 'flow', renderMediaAsNodes: false,
+        suppressMediaOverlays: false, infiniteCanvasInteractionMode: 'interactive',
+        openWidgetNodeIds: [], widgetRegistry: [], baseWidgetRegistry: [], documentWidgetRegistry: [],
+      }).allowMutations
+      return null
+    }
+    renderToStaticMarkup(React.createElement(Probe))
+    if (allowed !== (!locked && override !== false)) {
+      throw new Error(`expected Flow mutation permission to honor View Lock=${locked}, override=${String(override)}`)
+    }
+  }
   const interactionPath = resolve(process.cwd(), 'src', 'components', 'toolbar', 'InteractionModeSelect.tsx')
   const flowCanvasPath = resolve(process.cwd(), 'src', 'components', 'FlowCanvas.tsx')
   const flowCanvasGraphStatePath = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'useFlowCanvasGraphState.ts')
@@ -37,6 +58,9 @@ export function testViewLockCopyAndRendererGuardsStayConsistent() {
   }
   if (interactionText.includes("label: 'Mode switch: Lock'")) {
     throw new Error('unexpected legacy Mode switch label in Interaction menu')
+  }
+  if (!/useFlowCanvasRuntime\(\{\s*active,\s*storyboardWidgetSurfaceId,\s*allowNodeDragOverride: allowMutations,/.test(flowCanvasText)) {
+    throw new Error('expected Flow pointer runtime to use the same mutation permission as its interaction controls')
   }
   if (!flowCanvasGraphStateText.includes("const allowMutations = allowNodeDragOverride !== false && documentStructureBaselineLock !== true")) {
     throw new Error('expected Flow renderer to block drag mutations while View Lock is ON')

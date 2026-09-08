@@ -1,3 +1,5 @@
+import { withFetchAndEnv, withStoreMirrorState } from './helpers/workspaceSeedMirrorHarness'
+import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
@@ -15,7 +17,6 @@ import {
 } from '@/features/workspace-fs/workspaceSeedProvider'
 import { CANONICAL_WORKSPACE_SEED_BASENAMES } from '@/features/workspace-fs/workspaceCanonicalSeedBundle'
 import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
-import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 import { mergeWorkspaceEntriesIntoSourceFiles } from '@/features/workspace-fs/syncToSourceFiles'
 import { resolveDocumentRepositoryAuthority } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
@@ -34,47 +35,6 @@ const fileEntry = (path: string, text = '', updatedAtMs = 1): WorkspaceEntry => 
   const name = path.split('/').filter(Boolean).at(-1) || 'file.md'
   const parentPath = path.includes('/') ? path.slice(0, path.lastIndexOf('/')) || '/' : '/'
   return { path, parentPath, kind: 'file', name, text, updatedAtMs } as WorkspaceEntry
-}
-
-const restoreEnv = (key: string, value: string | undefined): void => {
-  if (typeof value === 'string') process.env[key] = value
-  else delete process.env[key]
-}
-
-const withFetchAndEnv = async (
-  env: Record<string, string | undefined>,
-  fetchImpl: typeof fetch,
-  run: () => Promise<void>,
-): Promise<void> => {
-  const previousFetch = globalThis.fetch
-  const previousEnv = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]))
-  for (const [key, value] of Object.entries(env)) restoreEnv(key, value)
-  ;(globalThis as unknown as { fetch: typeof fetch }).fetch = fetchImpl
-  try {
-    await run()
-  } finally {
-    for (const [key, value] of Object.entries(previousEnv)) restoreEnv(key, value)
-    if (previousFetch) (globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
-    else delete (globalThis as unknown as { fetch?: typeof fetch }).fetch
-  }
-}
-
-const withStoreMirrorState = async (run: () => Promise<void>): Promise<void> => {
-  const { restore } = initJsdomHarness()
-  const store = useGraphStore.getState()
-  const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  const previousHandle = store.localMarkdownFolderHandle
-  const previousCacheId = store.localMarkdownFolderCacheId
-  const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
-  try {
-    await run()
-  } finally {
-    store.setSourceFiles(previousSourceFiles)
-    store.setLocalMarkdownFolderHandle(previousHandle as FileSystemDirectoryHandle | null)
-    store.setLocalMarkdownFolderCacheId(previousCacheId, null)
-    store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
-    restore()
-  }
 }
 
 export async function testMaterializeActiveWorkspaceEntryReadsActiveFileWithoutListingWorkspace() {
@@ -130,24 +90,15 @@ export async function testReadWorkspaceActiveEntrySnapshotCachesRecentActiveFile
   const activePath = '/docs/recent-active.md'
   invalidateCachedWorkspaceActiveEntrySnapshot()
   let readCalls = 0
+  const fs = createMinimalFs({
+    readFileText: async path => {
+      readCalls += 1
+      return String(path || '').trim() === activePath ? '# recent active' : null
+    },
+  })
   try {
-    const first = await readWorkspaceActiveEntrySnapshot({
-      activePath,
-      fs: createMinimalFs({
-        readFileText: async path => {
-          readCalls += 1
-          return String(path || '').trim() === activePath ? '# recent active' : null
-        },
-      }),
-    })
-    const second = await readWorkspaceActiveEntrySnapshot({
-      activePath,
-      fs: createMinimalFs({
-        readFileText: async () => {
-          throw new Error('expected second active snapshot read to come from bounded cache')
-        },
-      }),
-    })
+    const first = await readWorkspaceActiveEntrySnapshot({ activePath, fs })
+    const second = await readWorkspaceActiveEntrySnapshot({ activePath, fs })
     if (readCalls !== 1) throw new Error(`expected exactly one active-file fs read, got ${readCalls}`)
     if (String(first[0]?.text || '') !== '# recent active' || String(second[0]?.text || '') !== '# recent active') {
       throw new Error('expected active workspace snapshot cache to preserve the recent active file text')
@@ -158,30 +109,36 @@ export async function testReadWorkspaceActiveEntrySnapshotCachesRecentActiveFile
 }
 
 export async function testHydrateWorkspaceEntriesInlineTextPrefersWorkspaceCanonicalD1PathForActiveDocs() {
-  const capturedUrls: string[] = []
-  await withFetchAndEnv({
-    VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://storage.example.test',
-    VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID: 'kgws:test-workspace-canonical',
-  }, (async input => {
-    const url = String(typeof input === 'string' ? input : (input as URL).toString())
-    capturedUrls.push(url)
-    const ok = url.includes('/api/storage/doc/') && url.includes(encodeURIComponent('workspace:/docs/active-document.md'))
-    return new Response(ok ? '# hydrated from workspace canonical d1 path' : '', { status: ok ? 200 : 404 })
-  }) as typeof fetch, async () => {
-    const entries = [fileEntry('/docs/active-document.md')]
-    const hydrated = await hydrateWorkspaceEntriesInlineText({
-      fs: createMinimalFs(),
-      workspaceEntries: entries,
-      forceIncludePaths: ['/docs/active-document.md'],
+  for (const exactAvailable of [true, false]) {
+    const keys = ['workspace:/docs/active-document.md', 'agentic-canvas-os/docs/active-document.md']
+    const expectedKeys = exactAvailable ? keys.slice(0, 1) : keys
+    const expectedText = exactAvailable ? '# workspace record' : '# legacy record'
+    const requestedKeys: string[] = []
+    await withFetchAndEnv({
+      VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://storage.example.test',
+      VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID: 'kgws:test-workspace-canonical',
+    }, (async input => {
+      const url = String(typeof input === 'string' ? input : (input as URL).toString())
+      if (!url.includes('/api/storage/doc/')) return new Response('', { status: 404 })
+      const key = decodeURIComponent(url.split('/').at(-1) || '')
+      requestedKeys.push(key)
+      const ok = key === expectedKeys.at(-1)
+      return new Response(ok ? expectedText : '', { status: ok ? 200 : 404 })
+    }) as typeof fetch, async () => {
+      const entries = [{ ...fileEntry('/docs/active-document.md'), text: undefined }]
+      const hydrated = await hydrateWorkspaceEntriesInlineText({
+        fs: createMinimalFs({ readFileText: async () => null }),
+        workspaceEntries: entries,
+        forceIncludePaths: ['/docs/active-document.md'],
+      })
+      if (hydrated === entries || hydrated[0]?.text !== expectedText) {
+        throw new Error(`expected missing active content to hydrate from its matching storage record, got ${JSON.stringify(hydrated)}`)
+      }
+      if (JSON.stringify(requestedKeys) !== JSON.stringify(expectedKeys)) {
+        throw new Error(`expected exact workspace key before fallback aliases, got ${JSON.stringify(requestedKeys)}`)
+      }
     })
-    if (hydrated === entries) throw new Error('expected active docs workspace entry text to hydrate from workspace canonical D1 doc path')
-    if (String(hydrated[0]?.text || '').trim() !== '# hydrated from workspace canonical d1 path') {
-      throw new Error(`expected workspace canonical D1 hydration, got ${String(hydrated[0]?.text || '')}`)
-    }
-    if (!capturedUrls[0]?.includes(encodeURIComponent('workspace:/docs/active-document.md'))) {
-      throw new Error(`expected workspace:/docs canonical path before legacy aliases, got ${JSON.stringify(capturedUrls)}`)
-    }
-  })
+  }
 }
 
 export async function testHydrateWorkspaceEntriesInlineTextOnlyFetchesActiveForceIncludedEntry() {
@@ -196,8 +153,8 @@ export async function testHydrateWorkspaceEntriesInlineTextOnlyFetchesActiveForc
     return new Response(active ? '# active from d1' : '', { status: active ? 200 : 404 })
   }) as typeof fetch, async () => {
     const hydrated = await hydrateWorkspaceEntriesInlineText({
-      fs: createMinimalFs(),
-      workspaceEntries: [fileEntry('/docs/active.md'), fileEntry('/docs/inactive.md', '', 2)],
+      fs: createMinimalFs({ readFileText: async () => null }),
+      workspaceEntries: [fileEntry('/docs/active.md'), fileEntry('/docs/inactive.md', '', 2)].map(entry => ({ ...entry, text: undefined })),
       forceIncludePaths: ['/docs/active.md'],
     })
     if (String(hydrated[0]?.text || '').trim() !== '# active from d1') {
@@ -225,14 +182,19 @@ export async function testHydrateWorkspaceEntriesInlineTextDedupesConcurrentStor
     await new Promise(resolve => setTimeout(resolve, 5))
     return new Response('# deduped active document', { status: 200 })
   }) as typeof fetch, async () => {
+    const authored = [fileEntry('/docs/dedupe.md'), fileEntry('/docs/dedupe.md', ' \n\t')]
     const hydrated = await hydrateWorkspaceEntriesInlineText({
-      fs: createMinimalFs(),
-      workspaceEntries: [fileEntry('/docs/dedupe.md'), fileEntry('/docs/dedupe.md')],
+      fs: createMinimalFs({ readFileText: async () => null }),
+      workspaceEntries: [{ ...authored[0], text: undefined }, { ...authored[0], text: undefined }, ...authored],
       forceIncludePaths: ['/docs/dedupe.md'],
     })
     if (storageDocFetches !== 1) throw new Error(`expected one in-flight D1 doc fetch, got ${storageDocFetches}`)
-    if (hydrated.some(entry => String(entry.text || '').trim() !== '# deduped active document')) {
+    if (hydrated.slice(0, 2).some(entry => entry.text !== '# deduped active document')) {
       throw new Error(`expected duplicate active entries to share deduped D1 text, got ${JSON.stringify(hydrated)}`)
+    }
+    if (hydrated[2] !== authored[0] || hydrated[3] !== authored[1]
+      || hydrated[2]?.text !== '' || hydrated[3]?.text !== ' \n\t') {
+      throw new Error('hydration must preserve authored empty and whitespace entries without remote replacement')
     }
   })
 }
@@ -270,39 +232,6 @@ export function testWorkspaceEntriesSemanticKeyForceIncludeOnlyIgnoresInactiveTe
   if (first !== second) throw new Error('expected active-only semantic key to ignore inactive workspace text churn')
 }
 
-export async function testApplyWorkspaceImportToCanvasForceIncludeOnlySkipsInactiveWorkspaceRecords() {
-  const store = useGraphStore.getState()
-  const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  const fs = createMemoryWorkspaceFs({
-    initialEntries: [
-      { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
-      { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
-      fileEntry('/docs/active.md', '# active'),
-      fileEntry('/docs/inactive.md', '# inactive', 2),
-    ],
-  })
-  try {
-    store.setSourceFiles([])
-    await applyWorkspaceImportToCanvas({
-      fs,
-      createdPaths: ['/docs/active.md'],
-      opts: {
-        applyToGraph: false,
-        workspaceEntries: await fs.listEntries(),
-        sourcesByPath: {
-          '/docs/active.md': { kind: 'local', originalName: 'active.md' },
-          '/docs/inactive.md': { kind: 'local', originalName: 'inactive.md' },
-        },
-      },
-    })
-    const sourceFiles = useGraphStore.getState().sourceFiles || []
-    if (sourceFiles.length !== 1 || String(sourceFiles[0]?.source?.path || '') !== 'workspace:/docs/active.md') {
-      throw new Error(`expected workspace import apply to skip inactive records, got ${JSON.stringify(sourceFiles)}`)
-    }
-  } finally {
-    store.setSourceFiles(previousSourceFiles)
-  }
-}
 
 export async function testWorkspaceSeedProviderIncompleteSourceFilesStorageFallbackDoesNotCrashWhenStorageExportMisses() {
   await withFetchAndEnv({
@@ -507,14 +436,15 @@ export async function testWorkspaceSeedProviderStorageExportDoesNotReuseStaleMir
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     if (!url.includes('/api/storage/export/')) return new Response('', { status: 404 })
     exportFetches += 1
+    const workspaceId = decodeURIComponent(new URL(url, window.location.href).pathname.slice(AGENTIC_OS_STORAGE_ROUTE_PATHS.exportPrefix.length))
     return new Response(JSON.stringify({
       ok: true,
       apiVersion: '2026-05-04',
-      workspaceId: 'kgws:test-cache',
+      workspaceId,
       exportedAtMs: 1710000005000,
       documents: [{
         id: 'doc:cached',
-        workspaceId: 'kgws:test-cache',
+        workspaceId,
         canonicalPath: 'cache-demo/cached.md',
         title: 'cached.md',
         docType: 'markdown',

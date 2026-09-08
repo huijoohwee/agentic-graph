@@ -11,9 +11,17 @@ export async function testWebpageSandboxPromotesLazyImageDataSrc() {
     '</body></html>',
   ].join('')
 
-  const out = buildWebpageHtmlSrcdoc({ html: raw, baseHref: 'https://example.com/page', scriptPolicy: 'strip' })
-  if (!out.includes('src="/__webpage_asset_path/https%3A%2F%2Fassets.example/images/640?asset_fmt=png"')) {
-    throw new Error('expected promoted img src to appear in sandbox html')
+  const globals = globalThis as unknown as { window?: unknown }
+  const previousWindow = globals.window
+  try {
+    for (const origin of ['', 'http://localhost:1234']) {
+      globals.window = origin ? { location: { origin } } : undefined
+      const out = buildWebpageHtmlSrcdoc({ html: raw, baseHref: 'https://example.com/page', scriptPolicy: 'strip' })
+      const expectedSrc = `${origin}/__webpage_asset_path/https%3A%2F%2Fassets.example/images/640?asset_fmt=png`
+      if (!out.includes(`src="${expectedSrc}"`)) throw new Error(`expected promoted img src ${expectedSrc} in sandbox html`)
+    }
+  } finally {
+    globals.window = previousWindow
   }
 }
 

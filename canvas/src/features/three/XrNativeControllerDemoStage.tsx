@@ -1,4 +1,5 @@
 import React from 'react'
+import { GameFpsSharedNpcHighlights } from '@/features/game-fps/GameFpsSharedNpcHighlights'
 import { useFrame } from '@react-three/fiber'
 import type { Group, Object3D } from 'three'
 import type { XrMotionReferenceStagePreset } from './xrSceneLibrary'
@@ -221,6 +222,7 @@ export function XrNativeControllerDemoStage({
       >
         {environmentVisible ? <XrNativeControllerDemoEnvironment objective={runtime.objective} stage={stage} /> : null}
         <XrNativeControllerAuthoredSubjects />
+        <GameFpsSharedNpcHighlights />
         <group ref={playerRootRef} name="agentic_os_xr_native_controller_player">
           <XrNativeControllerBallVisual rootRef={ballRootRef} />
           <XrNativeControllerRocketVisual rootRef={rocketRootRef} flameRef={flameRef} />

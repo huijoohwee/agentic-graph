@@ -550,7 +550,7 @@ export function testRichMediaPanelAndStoryboardReuseSharedCardMediaSurface() {
     || !richMediaPanelText.includes("data-kg-rich-media-inline-edit={model.panelTextEditable ? '1' : undefined}")
     || !richMediaPanelText.includes('editActivation="click"')
     || !richMediaPanelText.includes('onCommit={model.panelTextEditable ? nextValue => {')
-    || !richMediaPanelText.includes("props.onPanelChange?.({ activeTab: 'text', freezeConnectedOutput: true, text: nextText })")
+    || !/props\.onPanelChange\?\.\(\{\s*activeTab: 'text',\s*freezeConnectedOutput: true,\s*text: nextText,/.test(richMediaPanelText)
   ) {
     throw new Error('expected RichMediaPanel text mode inline edits to reuse the shared Storyboard Card inline editor')
   }

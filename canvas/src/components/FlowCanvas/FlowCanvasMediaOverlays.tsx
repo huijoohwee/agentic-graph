@@ -431,7 +431,7 @@ export default function FlowCanvasMediaOverlays(args: {
       dyClientPx: queued.dy,
       canvasPanSpeedMultiplier: store.canvasPanSpeedMultiplier,
       canvasInteractionSpeedMultiplier: store.canvasInteractionSpeedMultiplier,
-      applySpeedMultipliers: true,
+      applySpeedMultipliers: false,
     })
     setFlowNativeTransform(runtime, next)
     requestFlowNativeDraw(runtime, buildDrawArgs())

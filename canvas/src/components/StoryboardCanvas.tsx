@@ -708,10 +708,8 @@ export default function StoryboardCanvas({
   const materializeStoryboardProbeTree = React.useCallback((card: StoryboardCardModel) => invokeProbeTreeFromStoryboardToolbar({
     card,
     graphData: storyboardRunGraphRef.current || storeGraphData || graphData,
-    commitGraphData: commitStoryboardPublishedGraphData,
-    addHistory,
     upsertUiToast,
-  }), [addHistory, commitStoryboardPublishedGraphData, graphData, storeGraphData, upsertUiToast])
+  }), [graphData, storeGraphData, upsertUiToast])
   const captureStoryboardRunExecutionAnchor = React.useCallback((rawNodeId: string) => {
     // The delegated capture owner terminates through buildStoryboardWidgetRunExecutionAnchorSnapshot({
     return buildStoryboardRunExecutionAnchorCapture({

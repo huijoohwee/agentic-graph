@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
-import path from 'node:path'
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 
-const DEMO_DOC_PATH = path.resolve(process.cwd(), '..', '..', 'huijoohwee', 'docs', 'agentic-graph-animatic-demo.md')
+const DEMO_DOC_PATH = resolveSiblingFixturePath('huijoohwee', 'docs/agentic-graph-animatic-demo.md')
 const normalizeSpace = (value: string): string => String(value || '').replace(/\s+/g, ' ').trim()
 
 export function testAnimaticDemoReusesSharedFlowFrontmatterContract() {

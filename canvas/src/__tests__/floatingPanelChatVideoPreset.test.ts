@@ -52,7 +52,8 @@ const presetMarkdown = [
 export const createPresetWorkspace = async () => {
   const workspace = createMemoryWorkspaceFs()
   await workspace.ensureSeed()
-  await workspace.writeFileText(TEST_VALIDATION_WORKSPACE_SEED_PATH, presetMarkdown)
+  const presetPath = await workspace.createFile({ parentPath: path.dirname(TEST_VALIDATION_WORKSPACE_SEED_PATH), name: path.basename(TEST_VALIDATION_WORKSPACE_SEED_PATH), text: presetMarkdown })
+  if (presetPath !== TEST_VALIDATION_WORKSPACE_SEED_PATH) throw new Error('expected the isolated fixture to create the canonical preset path')
   await workspace.createFolder({ parentPath: '/', name: 'docs' })
   await workspace.createFile({ parentPath: '/docs', name: 'video-script.md', text: '# Source script' })
   await workspace.createFolder({ parentPath: '/', name: 'agentic-canvas-os' })
@@ -316,7 +317,7 @@ export function testFloatingPanelChatVideoPresetRunProgressUpdatesAssistantBubbl
 export function testFloatingPanelChatNewChatDefersHostArtifactUntilFinalization() {
   const source = fs.readFileSync(path.join(process.cwd(), 'src', 'features', 'chat', 'FloatingPanelChat.tsx'), 'utf8')
   const start = source.indexOf('const handleNewChat = React.useCallback')
-  const end = source.indexOf('const graphLookup = React.useMemo', start)
+  const end = source.indexOf('\n  const ', start + 1)
   const newChatOwner = source.slice(start, end)
   if (start < 0 || end <= start) throw new Error('expected New Chat lifecycle owner')
   if (newChatOwner.includes("writeWorkspaceFileTextEnsuringFile({ path: nextPath, text: '' })")) {

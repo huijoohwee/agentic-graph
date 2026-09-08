@@ -1,10 +1,5 @@
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
-import {
-  GEOSPATIAL_WORKSPACE_SEED_PATH,
-  TEST_VALIDATION_WORKSPACE_SEED_BASENAME,
-  TEST_VALIDATION_WORKSPACE_SEED_PATH,
-  WORKSPACE_README_SEED_PATH,
-} from '@/features/workspace-fs/workspaceFs'
+import { isInitializationWorkspacePath, XR_PHYSICS_WORKSPACE_SEED_PATH } from '@/features/workspace-fs/workspaceFs'
 
 export const testWorkspaceFsMemoryInitialEntries = async () => {
   const fs = createMemoryWorkspaceFs({
@@ -60,55 +55,44 @@ export const testWorkspaceFsMemoryRemovesLegacySourceRootsAndKeepsCanonicalArtif
 
 export const testWorkspaceFsMemoryForbidsInitializationFileDelete = async () => {
   const fs = createMemoryWorkspaceFs()
-
   await fs.ensureSeed()
-  await fs.deleteEntry(WORKSPACE_README_SEED_PATH)
-  await fs.deleteEntry(TEST_VALIDATION_WORKSPACE_SEED_PATH)
-  await fs.deleteEntry(GEOSPATIAL_WORKSPACE_SEED_PATH)
-
-  const entries = await fs.listEntries()
-  if (!entries.some(e => e.kind === 'file' && e.path === WORKSPACE_README_SEED_PATH)) throw new Error('Expected README initialization file to remain after delete')
-  if (!entries.some(e => e.kind === 'file' && e.path === TEST_VALIDATION_WORKSPACE_SEED_PATH)) throw new Error('Expected video demo initialization file to remain after delete')
-  if (!entries.some(e => e.kind === 'file' && e.path === GEOSPATIAL_WORKSPACE_SEED_PATH)) throw new Error('Expected geospatial initialization file to remain after delete')
+  const before = await fs.listEntries()
+  const protectedFiles = before.filter(entry => entry.kind === 'file' && isInitializationWorkspacePath(entry.path))
+  if (!protectedFiles.some(entry => entry.path === XR_PHYSICS_WORKSPACE_SEED_PATH)) {
+    throw new Error('Expected canonical XR initialization document before exercising deletion protection')
+  }
+  for (const entry of protectedFiles) await fs.deleteEntry(entry.path)
+  const after = await fs.listEntries()
+  if (JSON.stringify(after) !== JSON.stringify(before)) {
+    throw new Error('Deleting initialized documents must preserve the complete workspace snapshot')
+  }
 }
 
 export const testWorkspaceFsMemoryRefreshesStaleInitializationFileText = async () => {
+  const current = createMemoryWorkspaceFs()
+  await current.ensureSeed()
+  const canonicalText = await current.readFileText(XR_PHYSICS_WORKSPACE_SEED_PATH)
+  if (!canonicalText?.trim()) throw new Error('Expected nonempty canonical initialization text')
   const fs = createMemoryWorkspaceFs({
     initialEntries: [
       { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
       {
-        path: WORKSPACE_README_SEED_PATH,
-        parentPath: '/',
-        kind: 'file',
-        name: 'README.md',
-        text: 'stale README initialization content',
-        updatedAtMs: 1,
+        path: XR_PHYSICS_WORKSPACE_SEED_PATH,
+        parentPath: '/docs/workspace-seeds', kind: 'file',
+        name: XR_PHYSICS_WORKSPACE_SEED_PATH.split('/').pop()!,
+        text: 'stale initialization content', updatedAtMs: 1,
       },
       {
-        path: TEST_VALIDATION_WORKSPACE_SEED_PATH,
-        parentPath: '/',
-        kind: 'file',
-        name: TEST_VALIDATION_WORKSPACE_SEED_BASENAME,
-        text: 'stale video demo initialization content',
-        updatedAtMs: 1,
-      },
-      {
-        path: GEOSPATIAL_WORKSPACE_SEED_PATH,
-        parentPath: '/',
-        kind: 'file',
-        name: 'agentic-graph-maps-grabmap-multim-demo.md',
-        text: 'stale geospatial initialization content',
-        updatedAtMs: 1,
+        path: '/docs/private.md', parentPath: '/docs', kind: 'file', name: 'private.md',
+        text: '# Authored document', updatedAtMs: 1,
       },
     ],
   })
-
   await fs.ensureSeed()
-
-  const readmeText = await fs.readFileText(WORKSPACE_README_SEED_PATH)
-  const videoDemoText = await fs.readFileText(TEST_VALIDATION_WORKSPACE_SEED_PATH)
-  const geospatialText = await fs.readFileText(GEOSPATIAL_WORKSPACE_SEED_PATH)
-  if (!String(readmeText || '').includes('kgCanvas2dRenderer: "d3"')) throw new Error('Expected stale README initialization content to refresh from current seed source')
-  if (!String(videoDemoText || '').includes('kgCanvas2dRenderer: "storyboard"')) throw new Error('Expected stale video demo initialization content to refresh from current seed source')
-  if (!String(geospatialText || '').includes('kgCanvasSurfaceMode: "geospatial"')) throw new Error('Expected stale geospatial initialization content to refresh from current seed source')
+  if (await fs.readFileText(XR_PHYSICS_WORKSPACE_SEED_PATH) !== canonicalText) {
+    throw new Error('Expected stale initialized content to refresh from the current canonical source')
+  }
+  if (await fs.readFileText('/docs/private.md') !== '# Authored document') {
+    throw new Error('Refreshing initialized documents must preserve authored content')
+  }
 }
