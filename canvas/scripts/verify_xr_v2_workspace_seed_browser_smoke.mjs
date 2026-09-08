@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { chromium } from 'playwright'
+import { tsImport } from 'tsx/esm/api'
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const storageApiVersion = '2026-05-04'
+const { AGENTIC_OS_STORAGE_SYNC_API_VERSION: syncApiVersion } = await tsImport(
+  '../src/lib/storage/agentic-graph-storage-sync-records.ts', import.meta.url)
 const storageFixture = {
   blobs: new Map(),
   documents: new Map(),
@@ -90,8 +93,10 @@ async function installExistingStorageFixture(scope) {
     }
     if (url.pathname === '/api/storage/push' && method === 'POST') {
       const payload = request.postDataJSON()
+      assert.equal(payload.apiVersion, syncApiVersion)
       const acknowledgements = []
       for (const mutation of payload.mutations || []) {
+        assert.equal(mutation.entity, 'document', 'XR manifest fixture supports document mutations only')
         if (mutation.entity === 'document' && mutation.record?.canonicalPath) {
           const record = { ...mutation.record, deleted: mutation.op === 'delete' || Boolean(mutation.record.deleted) }
           storageFixture.documents.set(storageKey(payload.workspaceId, record.canonicalPath), record)
@@ -108,7 +113,7 @@ async function installExistingStorageFixture(scope) {
       storageFixture.events.push('manifest-push')
       await route.fulfill(jsonBody({
         ok: true,
-        apiVersion: storageApiVersion,
+        apiVersion: syncApiVersion,
         workspaceId: payload.workspaceId,
         ackCursor: `fixture-push-${Date.now()}`,
         serverTimeMs: Date.now(),
@@ -118,15 +123,16 @@ async function installExistingStorageFixture(scope) {
     }
     if (url.pathname === '/api/storage/pull' && method === 'POST') {
       const payload = request.postDataJSON()
+      assert.equal(payload.apiVersion, syncApiVersion)
       await route.fulfill(jsonBody({
         ok: true,
-        apiVersion: storageApiVersion,
+        apiVersion: syncApiVersion,
         workspaceId: payload.workspaceId,
         nextCursor: `fixture-pull-${Date.now()}`,
         nextPageCursor: null,
         pageComplete: true,
         serverTimeMs: Date.now(),
-        changes: { documents: [], documentChunks: [], graphSnapshots: [] },
+        changes: { documents: [], documentChunks: [], graphSnapshots: [], deletions: [] },
       }))
       return
     }
