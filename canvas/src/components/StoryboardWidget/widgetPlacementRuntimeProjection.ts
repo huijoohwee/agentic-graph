@@ -221,7 +221,7 @@ export function applyWidgetOverlayPosition(args: {
   const nx = typeof n.x === 'number' && Number.isFinite(n.x) ? n.x : null
   const ny = typeof n.y === 'number' && Number.isFinite(n.y) ? n.y : null
   const hasAuthoritativeNodeWorldPos = (liveX != null && liveY != null) || (nx != null && ny != null)
-  const storyboardRichMediaGraphWorldPreferred = String(storyboardWidgetSurfaceId || '').trim() === 'storyboard' && !!effectiveRichMediaFrameSize && nx != null && ny != null
+  const storyboardRichMediaGraphWorldPreferred = String(storyboardWidgetSurfaceId || '').trim() === 'storyboard' && nx != null && ny != null
   const preferredAuthoritativeWorldPos =
     storyboardRichMediaGraphWorldPreferred
       ? { x: nx, y: ny }
@@ -249,8 +249,8 @@ export function applyWidgetOverlayPosition(args: {
     lastStoryboardPinnedTransformRef.current = null
   }
   const currentStoredWorld = readStoredWidgetWorldPos()
-  if (currentStoredWorld && !storyboardPinnedCardLayoutActive) widgetWorldPosRef.current = currentStoredWorld
-  const currentStoredWorldForPlacement = storyboardPinnedCardLayoutActive || floatingUsesScreenAuthority ? null : currentStoredWorld
+  if (currentStoredWorld) widgetWorldPosRef.current = currentStoredWorld
+  const currentStoredWorldForPlacement = floatingUsesScreenAuthority ? null : currentStoredWorld
   const storedWorld = currentStoredWorldForPlacement || (floatingUsesScreenAuthority ? null : widgetWorldPosRef.current)
   const storedWorldScreen = storedWorld ? worldToScreen({ transform: placementTransform, x: storedWorld.x, y: storedWorld.y }) : null
   const usableFloatingScreenPos = (() => {
@@ -278,7 +278,7 @@ export function applyWidgetOverlayPosition(args: {
   const worldPinned = effectiveRichMediaFrameSize
     ? { x: worldPinnedTopLeft.x + frameWidth / 2, y: worldPinnedTopLeft.y + frameHeight / 2 }
     : worldPinnedTopLeft
-  const storyboardPaintScale = computeBoundedOverlayPaintScale(zoomK)
+  const storyboardPaintScale = frontmatterManagedNode ? panelScale : computeBoundedOverlayPaintScale(zoomK)
   const worldPinnedScreen = worldToScreen({ transform: placementTransform, x: worldPinnedTopLeft.x, y: worldPinnedTopLeft.y })
   const storyboardPinnedRawScreenBox = storyboardPinnedCardLayoutActive
     ? computeStoryboardWidgetOverlayScreenBox({
@@ -289,8 +289,16 @@ export function applyWidgetOverlayPosition(args: {
         height: frameHeight,
       })
     : null
+  const explicitPinnedWorld = worldDragOverride || effectiveStoredWorld
+  if (storyboardPinnedRawScreenBox && explicitPinnedWorld) {
+    // Captured and dragged placements store the frame top-left, not its center.
+    const screen = worldToScreen({ transform: placementTransform, x: explicitPinnedWorld.x, y: explicitPinnedWorld.y })
+    storyboardPinnedRawScreenBox.left = screen.sx
+    storyboardPinnedRawScreenBox.top = screen.sy
+  }
   const storyboardPinnedScreenBox = storyboardPinnedRawScreenBox
     ? (() => {
+        if (explicitPinnedWorld) return storyboardPinnedRawScreenBox
         const projected = projectVectorPaintedOverlayZoomBox({
           previousBox: lastAppliedRef.current,
           baseBox: storyboardPinnedZoomLayoutBaseRef.current,
@@ -362,6 +370,7 @@ export function applyWidgetOverlayPosition(args: {
     && floatingRef.current
     && floatingUsesScreenAuthority
     && !(effectiveRichMediaFrameSize && hasAuthoritativeNodeWorldPos)
+    && !(storyboardWidgetSurfaceId === 'storyboard' && hasAuthoritativeNodeWorldPos && !widgetPos && !screenAuthorityHandoffPos && !screenAuthorityLayoutZoomBaseRef.current && !dragOverride)
   const posBase = (() => {
     if (!screenAuthorityZoomLayoutActive) {
       screenAuthorityLayoutZoomBaseRef.current = null
@@ -451,5 +460,8 @@ export function applyWidgetOverlayPosition(args: {
     lastGoodWorldPosRef.current = seedWorld
     persistWorldPos(seedWorld)
   }
-  if (opts?.emitInteractionFrame !== false) emitStoryboardWidgetInteractionFrame()
+  if (opts?.emitInteractionFrame !== false) {
+    if (updateToolbarLayout) emitStoryboardWidgetInteractionFrame()
+    else emitStoryboardWidgetInteractionFrame({ updateToolbarLayout: false })
+  }
 }

@@ -107,7 +107,7 @@ export function testRichMediaPanelIframeScrollResizeSourceContract() {
   if (!mediaStateText.includes('shouldUsePanelOwnedRichMediaPanelSrcDocScroll(effectiveInlineSrcDoc)')) {
     throw new Error('expected srcdoc-authored panel scroll ownership to be detected from authored srcdoc')
   }
-  if (!mediaStateText.includes("inlineSrcDocRequestsPanelScroll ? 'panel' : declaredScrollOwner")) {
+  if (!mediaStateText.includes("inlineSrcDocRequestsPanelScroll ? 'panel' : inlineSrcDocRequestsMediaScroll ? 'media' : declaredScrollOwner")) {
     throw new Error('expected srcdoc-authored panel scroll ownership to override caller default scroll ownership')
   }
   if (!mediaStateText.includes('scrollOwner,') || !mediaStateText.includes('normalizeRichMediaPanelInlineSrcDoc({')) {

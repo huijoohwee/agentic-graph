@@ -1,12 +1,13 @@
 import {
-  AGENTIC_OS_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
   type AgenticGraphStorageMutation,
   type AgenticGraphStorageOutboxRecord,
   type AgenticGraphStoragePushResponse,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
+import { planAgenticGraphStorageAcknowledgedChild, readAgenticGraphStorageAcknowledgedChildState } from '@/lib/storage/agentic-graph-storage-child-state'
 import {
-  commitAgenticGraphStorageMutationUnit,
+  compareAndCommitAgenticGraphStorageMutationUnit,
   type AgenticGraphStorageCollections,
   type AgenticGraphStorageDb,
 } from '@/lib/storage/agentic-graph-storage-db'
@@ -18,7 +19,6 @@ import type {
   QueueAgenticGraphStorageMutationArgs,
 } from '@/lib/storage/agentic-graph-storage-client-types'
 import {
-  bumpOutboxAttemptCount,
   ensureAgenticGraphStorageNumericRepair,
   getDbState,
   normalizeNonNegativeInt,
@@ -33,6 +33,7 @@ import {
   AgenticGraphStorageRetryExhaustedError,
   buildApiOriginKey,
   buildAgenticGraphStorageSyncAuthHeaders,
+  cancelStorageStream,
   fetchWithTimeout,
   getClientFetch,
   isNetworkLoadFailure,
@@ -88,7 +89,7 @@ export const requestAgenticGraphStoragePushWithRetry = async (args: {
             ...buildAgenticGraphStorageSyncAuthHeaders(args.sessionToken),
           },
           body: JSON.stringify({
-            apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+            apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
             workspaceId: args.workspaceId,
             deviceId: args.deviceId,
             mutations: args.mutations,
@@ -96,6 +97,7 @@ export const requestAgenticGraphStoragePushWithRetry = async (args: {
         },
       })
       if (response.status >= 500) {
+        cancelStorageStream(response.body, 'storage push response will be retried')
         throw new AgenticGraphStorageRetryableTransportError(
           `agentic-graph storage push failed with ${response.status}`,
         )
@@ -112,6 +114,9 @@ export const requestAgenticGraphStoragePushWithRetry = async (args: {
             'error' in payload ? String(payload.error || 'request failed') : 'request failed'
           }`,
         )
+      }
+      if (payload.apiVersion !== AGENTIC_OS_STORAGE_SYNC_API_VERSION) {
+        throw new Error('Storage acknowledgement protocol version is unsupported.')
       }
       return payload
     } catch (error) {
@@ -143,8 +148,7 @@ export const readConflictCanonicalPath = async (
 
 export const readMutationRevision = (mutation: AgenticGraphStorageMutation): number | null => {
   if (mutation.entity === 'document') return normalizeNonNegativeInt(mutation.record.revision, 0)
-  if (mutation.entity === 'graphSnapshot') return normalizeNonNegativeInt(mutation.record.graphRevision, 0)
-  return null
+  return mutation.record.syncRevision ?? null
 }
 
 export const pushAgenticGraphStorageOutbox = async (
@@ -163,33 +167,41 @@ export const pushAgenticGraphStorageOutbox = async (
     args.maxRetryCount,
     args.pushBatchSize,
   )
-  if (outboxDocs.length === 0) {
-    return {
-      pushedCount: 0,
-      appliedCount: 0,
-      conflictCount: 0,
-      rejectedCount: 0,
-      deferredCount: 0,
-      conflictEntries: [],
-      ackCursor: null,
-    }
-  }
+  const emptyOutcome: SyncPushOutcome = { pushedCount: 0, appliedCount: 0, conflictCount: 0,
+    rejectedCount: 0, deferredCount: 0, conflictEntries: [], ackCursor: null }
+  if (outboxDocs.length === 0) return emptyOutcome
   const mutations: AgenticGraphStorageMutation[] = []
+  const sentById = new Map<string, AgenticGraphStorageOutboxRecord>()
   for (const doc of outboxDocs) {
-    const rawOutbox = doc.toJSON() as AgenticGraphStorageOutboxRecord
-    const sanitizedOutbox = sanitizeOutboxRecord(rawOutbox)
-    if (!recordsEqual(rawOutbox, sanitizedOutbox)) {
-      await doc.incrementalPatch({
-        baseRevision: sanitizedOutbox.baseRevision,
-        payload: sanitizedOutbox.payload,
-        payloadHash: sanitizedOutbox.payloadHash,
-        attemptCount: sanitizedOutbox.attemptCount,
-        createdAtMs: sanitizedOutbox.createdAtMs,
-        updatedAtMs: Date.now(),
+    const raw = doc.toJSON() as AgenticGraphStorageOutboxRecord
+    if (raw.entity !== 'document' && raw.syncApiVersion !== AGENTIC_OS_STORAGE_SYNC_API_VERSION) {
+      const message = 'This offline child edit predates sync revisions. Review the remote candidate before retrying.'
+      const committed = await compareAndCommitAgenticGraphStorageMutationUnit(args.dbState, {
+        conditions: [{ collectionName: 'syncOutbox', selector: { id: raw.id }, records: [raw] }],
+        mutations: [{ kind: 'upsert', collectionName: 'syncOutbox', record: { ...raw,
+          lastAckStatus: 'conflict', lastAckMessage: message, updatedAtMs: Date.now() } }],
       })
+      if (committed) {
+        emptyOutcome.conflictCount += 1
+        emptyOutcome.conflictEntries.push({ mutationId: raw.id, entity: raw.entity, recordId: raw.recordId,
+          canonicalPath: await readConflictCanonicalPath(collections, raw.payload as unknown as AgenticGraphStorageMutation),
+          localRevision: null, serverRevision: null, message })
+      }
+      continue
     }
-    mutations.push(sanitizedOutbox.payload as unknown as AgenticGraphStorageMutation)
+    let sent = sanitizeOutboxRecord(raw)
+    if (!recordsEqual(raw, sent)) {
+      sent = { ...sent, updatedAtMs: Date.now() }
+      const committed = await compareAndCommitAgenticGraphStorageMutationUnit(args.dbState, {
+        conditions: [{ collectionName: 'syncOutbox', selector: { id: raw.id }, records: [raw] }],
+        mutations: [{ kind: 'upsert', collectionName: 'syncOutbox', record: sent }],
+      })
+      if (!committed) continue
+    }
+    sentById.set(sent.id, sent)
+    mutations.push(sent.payload as unknown as AgenticGraphStorageMutation)
   }
+  if (mutations.length === 0) return emptyOutcome
   const response = await requestAgenticGraphStoragePushWithRetry({
     workspaceId: args.workspaceId,
     deviceId: args.deviceId,
@@ -201,67 +213,73 @@ export const pushAgenticGraphStorageOutbox = async (
     requestTimeoutMs: args.requestTimeoutMs,
     sleepImpl: args.sleepImpl,
   })
-  let appliedCount = 0
-  let conflictCount = 0
-  let rejectedCount = 0
-  const conflictEntries: AgenticGraphStorageSyncRunResult['conflictEntries'] = []
+  if (response.workspaceId !== args.workspaceId || !Array.isArray(response.acknowledgements)) {
+    throw new Error('Storage acknowledgements do not match the sent workspace.')
+  }
   const handledMutationIds = new Set<string>()
-  const nowMs = Date.now()
+  const childStates = new Map<string, ReturnType<typeof readAgenticGraphStorageAcknowledgedChildState>>()
   for (const acknowledgement of response.acknowledgements) {
-    handledMutationIds.add(acknowledgement.mutationId)
-    const outboxDoc = outboxDocs.find(doc => doc.get('id') === acknowledgement.mutationId)
-    if (!outboxDoc) continue
+    if (!acknowledgement || typeof acknowledgement !== 'object') throw new Error('Invalid storage acknowledgement')
+    const sent = sentById.get(acknowledgement.mutationId)
+    if (!sent || handledMutationIds.has(sent.id) || acknowledgement.entity !== sent.entity
+      || acknowledgement.recordId !== sent.recordId || !['applied', 'conflict', 'rejected'].includes(acknowledgement.status)) {
+      throw new Error('Storage acknowledgement does not match one sent mutation.')
+    }
+    childStates.set(sent.id, readAgenticGraphStorageAcknowledgedChildState(
+      sent.payload as unknown as AgenticGraphStorageMutation, acknowledgement))
+    handledMutationIds.add(sent.id)
+  }
+  let appliedCount = 0, conflictCount = emptyOutcome.conflictCount, rejectedCount = 0, deferredCount = 0
+  const conflictEntries = emptyOutcome.conflictEntries
+  const nowMs = Date.now()
+  const recordStatus = (sent: AgenticGraphStorageOutboxRecord, status: 'conflict' | 'rejected' | 'deferred', message: string | null) =>
+    compareAndCommitAgenticGraphStorageMutationUnit(args.dbState, {
+      conditions: [{ collectionName: 'syncOutbox', selector: { id: sent.id }, records: [sent] }],
+      mutations: [{ kind: 'upsert', collectionName: 'syncOutbox', record: { ...sent,
+        attemptCount: normalizeNonNegativeInt(sent.attemptCount, 0) + 1, updatedAtMs: nowMs,
+        lastAckStatus: status, lastAckMessage: message } }],
+    })
+  for (const acknowledgement of response.acknowledgements) {
+    const sent = sentById.get(acknowledgement.mutationId)!
     if (acknowledgement.status === 'applied') {
-      appliedCount += 1
-      await commitAgenticGraphStorageMutationUnit(args.dbState, { mutations: [
-        { kind: 'remove', collectionName: 'syncOutbox', id: acknowledgement.mutationId },
-        { kind: 'remove', collectionName: 'syncConflicts', id: acknowledgement.mutationId },
-      ] })
+      const state = childStates.get(sent.id) ?? null
+      const child = sent.entity !== 'document' ? await planAgenticGraphStorageAcknowledgedChild(args.dbState,
+        sent.payload as unknown as AgenticGraphStorageMutation, state) : { conditions: [], mutations: [] }
+      const conflict = (await collections.syncConflicts.findOne(sent.id).exec())?.toJSON()
+      const committed = await compareAndCommitAgenticGraphStorageMutationUnit(args.dbState, {
+        conditions: [...child.conditions,
+          { collectionName: 'syncOutbox', selector: { id: sent.id }, records: [sent] },
+          { collectionName: 'syncConflicts', selector: { id: sent.id }, records: conflict ? [conflict] : [] }],
+        mutations: [
+          ...child.mutations,
+          { kind: 'remove', collectionName: 'syncOutbox', id: sent.id },
+          { kind: 'remove', collectionName: 'syncConflicts', id: sent.id },
+        ],
+      })
+      if (committed) appliedCount += 1
       continue
     }
-    const attemptCount = normalizeNonNegativeInt(outboxDoc.get('attemptCount'), 0) + 1
+    if (!await recordStatus(sent, acknowledgement.status, acknowledgement.message || null)) continue
     if (acknowledgement.status === 'conflict') {
-      const mutation = outboxDoc.get('payload') as unknown as AgenticGraphStorageMutation
-      await bumpOutboxAttemptCount(collections, acknowledgement.mutationId, {
-        nextAttemptCount: attemptCount,
-        nowMs,
-        lastAckStatus: 'conflict',
-        lastAckMessage: acknowledgement.message || null,
-      })
+      const mutation = sent.payload as unknown as AgenticGraphStorageMutation
       conflictCount += 1
       conflictEntries.push({
-        mutationId: acknowledgement.mutationId,
-        entity: acknowledgement.entity,
-        recordId: acknowledgement.recordId,
+        mutationId: sent.id, entity: sent.entity, recordId: sent.recordId,
         canonicalPath: await readConflictCanonicalPath(collections, mutation),
-        localRevision: readMutationRevision(mutation),
-        serverRevision: acknowledgement.serverRevision,
+        localRevision: readMutationRevision(mutation), serverRevision: acknowledgement.serverRevision,
+        childState: childStates.get(sent.id) ?? null,
         message: acknowledgement.message || null,
       })
-      continue
-    }
-    await bumpOutboxAttemptCount(collections, acknowledgement.mutationId, {
-      nextAttemptCount: attemptCount,
-      nowMs,
-      lastAckStatus: 'rejected',
-      lastAckMessage: acknowledgement.message || null,
-    })
-    rejectedCount += 1
+    } else rejectedCount += 1
   }
-  let deferredCount = 0
-  for (const doc of outboxDocs) {
-    const id = normalizeString(doc.get('id'))
-    if (!id || handledMutationIds.has(id)) continue
-    await bumpOutboxAttemptCount(collections, id, {
-      nextAttemptCount: normalizeNonNegativeInt(doc.get('attemptCount'), 0) + 1,
-      nowMs,
-      lastAckStatus: 'deferred',
-      lastAckMessage: 'No acknowledgement received for queued mutation during the latest sync attempt.',
-    })
-    deferredCount += 1
+  for (const sent of sentById.values()) {
+    if (handledMutationIds.has(sent.id)) continue
+    if (await recordStatus(sent, 'deferred', 'No acknowledgement received for queued mutation during the latest sync attempt.')) {
+      deferredCount += 1
+    }
   }
   return {
-    pushedCount: outboxDocs.length,
+    pushedCount: mutations.length,
     appliedCount,
     conflictCount,
     rejectedCount,

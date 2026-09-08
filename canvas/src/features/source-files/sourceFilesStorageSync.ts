@@ -258,7 +258,8 @@ export const syncSourceFilesToAgenticGraphStorage = async (args: {
     const existingGraphSnapshotDoc = existingGraphSnapshotEntry?.row || null
     const existingGraphSnapshot = existingGraphSnapshotEntry?.record || null
     if (hasGraphData) {
-      const nextGraphSnapshot = buildGraphSnapshotRecordForSourceFile(workspaceId, file, nextLocalRecord.documentRevision)
+      const nextGraphSnapshot = { ...buildGraphSnapshotRecordForSourceFile(workspaceId, file, nextLocalRecord.documentRevision),
+        syncRevision: existingGraphSnapshot?.syncRevision }
       const didGraphChange =
         !existingGraphSnapshot
         || normalizeString(existingGraphSnapshot.graphHash) !== nextGraphSnapshot.graphHash
@@ -269,7 +270,7 @@ export const syncSourceFilesToAgenticGraphStorage = async (args: {
           entity: 'graphSnapshot',
           op: 'upsert',
           recordId: nextGraphSnapshot.id,
-          baseRevision: existingGraphSnapshot ? Number(existingGraphSnapshot.graphRevision || 0) : null,
+          baseRevision: existingGraphSnapshot?.syncRevision ?? null,
           record: nextGraphSnapshot,
           dbState,
         })
@@ -289,7 +290,7 @@ export const syncSourceFilesToAgenticGraphStorage = async (args: {
         entity: 'graphSnapshot',
         op: 'delete',
         recordId: graphSnapshotId,
-        baseRevision: Number(existingGraphSnapshot?.graphRevision || 0) || null,
+        baseRevision: existingGraphSnapshot?.syncRevision ?? null,
         record: deletedSnapshot,
         dbState,
       })
@@ -355,7 +356,7 @@ export const syncSourceFilesToAgenticGraphStorage = async (args: {
           entity: 'graphSnapshot',
           op: 'delete',
           recordId: graphSnapshotId,
-          baseRevision: Number(deletedSnapshot.graphRevision || 0) || null,
+          baseRevision: deletedSnapshot.syncRevision ?? null,
           record: deletedSnapshot,
           dbState,
         })

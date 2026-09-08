@@ -4,21 +4,21 @@ import { load as parseYaml } from 'js-yaml'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
 import { isUnsafeFlowComputeSource, readFlowComputeSource } from '@/lib/storyboardWidget/flowComputeInline'
 
-const GITHUB_ROOT = path.resolve(process.cwd(), '..', '..')
-const HUIJOOHWEE_DOCS_ROOT = path.join(GITHUB_ROOT, 'huijoohwee', 'docs')
-const GUIDELINES_ROOT = path.join(GITHUB_ROOT, 'huijoohwee.github.io', 'guidelines')
+import { resolveRepoSourcePath, resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
+const WORKSPACE_SEEDS_ROOT = resolveRepoSourcePath('docs/workspace-seeds')
+const GUIDELINES_ROOT = resolveSiblingFixturePath('huijoohwee.github.io', 'guidelines')
 
 const YAML_GUIDELINES_PATH = path.join(GUIDELINES_ROOT, 'yaml-frontmatter-guidelines.md')
 const MARKDOWN_GUIDELINES_PATH = path.join(GUIDELINES_ROOT, 'markdown-syntax-guidelines.md')
 const E2E_VIDEO_DOC_PATHS = [
-  path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-video-demo.md'),
-  path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-ralphthon-video-demo.md'),
+  path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-video-demo.md'),
+  path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-ralphthon-video-demo.md'),
 ]
-const STORYBOARD_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-demo.md')
-const STORYBOARD_PRODUCT_UI_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-product-ui-demo.md')
-const STORYBOARD_NEUTRAL_CONTRACT_TYPED_WRAPPER_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-neutral-schema-contract-demo.md')
-const STORYBOARD_WIDGET_COMPUTING_TEMPLATE_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-widget-computing-flow-template.md')
-const MISSALPH_STORYBOARD_WIDGET_DEMO_DOC_PATH = path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-missalph-demo.md')
+const STORYBOARD_TYPED_WRAPPER_DOC_PATH = path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-storyboard-demo.md')
+const STORYBOARD_PRODUCT_UI_TYPED_WRAPPER_DOC_PATH = path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-storyboard-product-ui-demo.md')
+const STORYBOARD_NEUTRAL_CONTRACT_TYPED_WRAPPER_DOC_PATH = path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-storyboard-neutral-schema-contract-demo.md')
+const STORYBOARD_WIDGET_COMPUTING_TEMPLATE_DOC_PATH = path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-storyboard-widget-computing-flow-template.md')
+const MISSALPH_STORYBOARD_WIDGET_DEMO_DOC_PATH = path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-missalph-demo.md')
 const APPROVED_STORYBOARD_TYPED_WRAPPER_DOC_PATHS = [
   STORYBOARD_TYPED_WRAPPER_DOC_PATH,
   STORYBOARD_PRODUCT_UI_TYPED_WRAPPER_DOC_PATH,
@@ -29,10 +29,9 @@ const APPROVED_TYPED_WRAPPER_DOC_PATHS = [
   ...APPROVED_STORYBOARD_TYPED_WRAPPER_DOC_PATHS,
   STORYBOARD_WIDGET_COMPUTING_TEMPLATE_DOC_PATH,
 ]
-const E2E_TYPED_WRAPPER_DOC_SET = new Set(APPROVED_TYPED_WRAPPER_DOC_PATHS)
 const CANONICAL_PLAIN_YAML_DOC_CONTRACTS = [
-  { filePath: path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-animatic-demo.md'), renderer: 'gantt', requiresFlow: true },
-  { filePath: path.join(HUIJOOHWEE_DOCS_ROOT, 'agentic-graph-storyboard-demo-index.md'), renderer: 'd3', requiresFlow: false },
+  { filePath: path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-animatic-demo.md'), renderer: 'gantt', requiresFlow: true },
+  { filePath: path.join(WORKSPACE_SEEDS_ROOT, 'agentic-graph-storyboard-demo-index.md'), renderer: 'd3', requiresFlow: false },
 ] as const
 const REQUIRED_FLOW_TYPED_SETTING_KEYS = ['direction', 'edgeType', 'snapToGrid', 'computed'] as const
 const REQUIRED_STORYBOARD_WIDGET_TYPED_FIXTURE_PRESET: Record<string, string | boolean> = {
@@ -113,19 +112,19 @@ const listMarkdownFiles = (rootPath: string): string[] => {
 
 const readUtf8 = (filePath: string): string => fs.readFileSync(filePath, 'utf8')
 
-const toRepoRelativePath = (filePath: string): string => path.relative(GITHUB_ROOT, filePath)
+const toRepoRelativePath = (filePath: string): string => path.relative(path.dirname(path.dirname(WORKSPACE_SEEDS_ROOT)), filePath)
 
 const resolveMarkdownDocBySemanticFragments = (
   requiredFragments: readonly string[],
   args: { optional?: boolean } = {},
 ): string | null => {
-  const candidates = listMarkdownFiles(HUIJOOHWEE_DOCS_ROOT)
+  const candidates = listMarkdownFiles(WORKSPACE_SEEDS_ROOT)
   const found = candidates.find(filePath => {
     const text = readUtf8(filePath)
     return requiredFragments.every(fragment => text.includes(fragment))
   })
   if (found || args.optional) return found || null
-  throw new Error(`Expected huijoohwee docs to contain a markdown document with semantic fragments: ${requiredFragments.join(', ')}`)
+  throw new Error(`Expected authored workspace seeds to contain a markdown document with semantic fragments: ${requiredFragments.join(', ')}`)
 }
 
 const isPlainRecord = (value: unknown): value is PlainRecord => {
@@ -204,7 +203,11 @@ const isTypedValueWrapper = (value: unknown, expectedKey?: string): value is { k
 }
 
 const listTypedWrapperMarkdownDocs = (): string[] => {
-  return listMarkdownFiles(HUIJOOHWEE_DOCS_ROOT).filter(filePath => readUtf8(filePath).includes('{key:'))
+  return APPROVED_TYPED_WRAPPER_DOC_PATHS.filter(filePath => {
+    const flow = readFrontmatterRecord(filePath).flow
+    return isPlainRecord(flow) && Array.isArray(flow.nodes)
+      && flow.nodes.some(node => isPlainRecord(node) && isTypedValueWrapper(node.id, 'id'))
+  })
 }
 
 const validateTypedWrapperFixtureFrontmatter = (
@@ -258,7 +261,7 @@ const validateTypedWrapperFixtureFrontmatter = (
 
 export function testHuijoohweeDocsAndGuidelinesForbidAbsoluteRepoPathHardcodes() {
   const targets = [
-    ...listMarkdownFiles(HUIJOOHWEE_DOCS_ROOT),
+    ...listMarkdownFiles(WORKSPACE_SEEDS_ROOT),
     YAML_GUIDELINES_PATH,
     MARKDOWN_GUIDELINES_PATH,
   ]
@@ -288,14 +291,11 @@ export function testHuijoohweeDocsAndGuidelinesForbidAbsoluteRepoPathHardcodes()
 export function testE2EVideoFixturesUseTypedFrontmatterValueWrappers() {
   const violations: string[] = []
   const typedWrapperDocs = listTypedWrapperMarkdownDocs()
-  const unexpectedTypedWrapperDocs = typedWrapperDocs
-    .filter(filePath => !E2E_TYPED_WRAPPER_DOC_SET.has(filePath))
-    .map(filePath => `${toRepoRelativePath(filePath)} uses {key, type, value} wrappers outside the approved E2E fixture set`)
   const missingTypedWrapperDocs = E2E_VIDEO_DOC_PATHS
     .filter(filePath => !typedWrapperDocs.includes(filePath))
     .map(filePath => `${toRepoRelativePath(filePath)} is missing typed-wrapper frontmatter content`)
 
-  violations.push(...unexpectedTypedWrapperDocs, ...missingTypedWrapperDocs)
+  violations.push(...missingTypedWrapperDocs)
 
   for (const filePath of E2E_VIDEO_DOC_PATHS) {
     validateTypedWrapperFixtureFrontmatter(filePath, violations, REQUIRED_STORYBOARD_WIDGET_TYPED_FIXTURE_PRESET)
@@ -397,23 +397,22 @@ export function testCanonicalAnimaticAndStoryboardDocsUsePlainYamlFrontmatter() 
 export function testGuidelinesDescribeCanonicalAndNormalizedFrontmatterContracts() {
   const yamlGuidelines = readUtf8(YAML_GUIDELINES_PATH)
   const markdownGuidelines = readUtf8(MARKDOWN_GUIDELINES_PATH)
-  const yamlRequired = [
-    'Canonical authored Markdown stays plain YAML for source-of-truth authoring',
-    'E2E ingestion and rendering fixtures may use a normalized typed wrapper shape after parsing',
-    'Use `{key, type, value}` wrappers only in normalized validation fixtures',
+  const required: Array<[string, string, RegExp]> = [
+    ['YAML canonical authoring', yamlGuidelines, /Canonical authored Markdown[^\n]*plain YAML/],
+    ['YAML normalized pipeline', yamlGuidelines, /E2E ingestion and rendering fixtures[^\n]*typed wrapper[^\n]*after parsing/],
+    ['YAML wrapper scope', yamlGuidelines, /Use `\{key, type, value\}` wrappers only in normalized validation fixtures/],
+    ['Markdown canonical authoring', markdownGuidelines, /Canonical authored Markdown[^\n]*`flow:`[^\n]*plain YAML scalars, arrays, and objects/],
+    ['Markdown wrapper scope', markdownGuidelines, /Normalized `\{key, type, value\}` wrappers are reserved for E2E[^\n]*fixtures after parsing/],
   ]
-  const markdownRequired = [
-    'Canonical authored Markdown uses plain YAML scalars, arrays, and objects in the `flow:` block.',
-    'Normalized E2E pipeline fixtures may wrap individual values as `{key, type, value}` after parsing',
-    '- id: {key: id, type: string, value: "w-text-script"}',
-  ]
-  const missing = [
-    ...yamlRequired.filter(snippet => !yamlGuidelines.includes(snippet)).map(snippet => `yaml-frontmatter-guidelines.md missing ${JSON.stringify(snippet)}`),
-    ...markdownRequired.filter(snippet => !markdownGuidelines.includes(snippet)).map(snippet => `markdown-syntax-guidelines.md missing ${JSON.stringify(snippet)}`),
-  ]
-  if (missing.length > 0) {
-    throw new Error(`Expected guidelines to describe canonical authoring and normalized E2E frontmatter contracts:\n${missing.join('\n')}`)
-  }
+  const missing = required.filter(([, text, pattern]) => !pattern.test(text)).map(([label]) => label)
+  const examples = yamlGuidelines.match(/## E2E Normalized Frontmatter\n([\s\S]*?)(?=\n## |$)/)?.[1] || ''
+  const nodes = [...examples.matchAll(/```yaml\n([\s\S]*?)```/g)].flatMap(([, text]) => {
+    const meta = parseYaml(text)
+    return isPlainRecord(meta) && isPlainRecord(meta.flow) && Array.isArray(meta.flow.nodes) ? meta.flow.nodes : []
+  })
+  if (!nodes.some(node => isPlainRecord(node) && typeof node.id === 'string')) missing.push('plain YAML node example')
+  if (!nodes.some(node => isPlainRecord(node) && ['id', 'type', 'label'].every(key => isTypedValueWrapper(node[key], key)))) missing.push('normalized typed node example')
+  if (missing.length) throw new Error(`Expected frontmatter guidelines to preserve authoring and normalized fixture contracts: ${missing.join(', ')}`)
 }
 
 export function testPublishedStoryboardWidgetDocsKeepFrontmatterAsMachineSsot() {
@@ -726,14 +725,14 @@ export function testPublishedStoryboardWidgetDocsKeepFrontmatterAsMachineSsot() 
 // template keys and declare correct panel routing on every typed diagram entry.
 // ---------------------------------------------------------------------------
 
-const STORYBOARD_WIDGET_DEMO_GLOB = path.join(HUIJOOHWEE_DOCS_ROOT, '*-demo.md')
+const STORYBOARD_WIDGET_DEMO_GLOB = path.join(WORKSPACE_SEEDS_ROOT, '*-demo.md')
 
 const listStoryboardWidgetDemoDocs = (): string[] => {
-  if (!fs.existsSync(HUIJOOHWEE_DOCS_ROOT)) return []
+  if (!fs.existsSync(WORKSPACE_SEEDS_ROOT)) return []
   return fs
-    .readdirSync(HUIJOOHWEE_DOCS_ROOT)
+    .readdirSync(WORKSPACE_SEEDS_ROOT)
     .filter(name => name.endsWith('-demo.md'))
-    .map(name => path.join(HUIJOOHWEE_DOCS_ROOT, name))
+    .map(name => path.join(WORKSPACE_SEEDS_ROOT, name))
     .filter(fp => {
       const text = fs.readFileSync(fp, 'utf8')
       return /kgCanvas2dRenderer:\s*["']?storyboard["']?/m.test(text)
@@ -876,12 +875,12 @@ export function testStoryboardWidgetDemoRunnableStructure() {
 // ---------------------------------------------------------------------------
 
 export function testStoryboardWidgetComputeIntegrity() {
-  if (!fs.existsSync(HUIJOOHWEE_DOCS_ROOT)) return
+  if (!fs.existsSync(WORKSPACE_SEEDS_ROOT)) return
 
   const allDocs = fs
-    .readdirSync(HUIJOOHWEE_DOCS_ROOT)
+    .readdirSync(WORKSPACE_SEEDS_ROOT)
     .filter(name => name.endsWith('.md'))
-    .map(name => path.join(HUIJOOHWEE_DOCS_ROOT, name))
+    .map(name => path.join(WORKSPACE_SEEDS_ROOT, name))
 
   const violations: string[] = []
 

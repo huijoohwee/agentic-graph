@@ -21,6 +21,136 @@
       "types": "./dist/testkit.d.ts",
       "import": "./dist/testkit.js",
       "default": "./dist/testkit.js"
+    },
+    "./testkit/cityGeoOverlay": {
+      "types": "./dist/cityGeoOverlay.d.ts",
+      "import": "./dist/cityGeoOverlay.js",
+      "default": "./dist/cityGeoOverlay.js"
+    },
+    "./testkit/cityGeoOverlayMapLibreController": {
+      "types": "./dist/cityGeoOverlayMapLibreController.d.ts",
+      "import": "./dist/cityGeoOverlayMapLibreController.js",
+      "default": "./dist/cityGeoOverlayMapLibreController.js"
+    },
+    "./testkit/cityGeoPresentationMapLibre": {
+      "types": "./dist/cityGeoPresentationMapLibre.d.ts",
+      "import": "./dist/cityGeoPresentationMapLibre.js",
+      "default": "./dist/cityGeoPresentationMapLibre.js"
+    },
+    "./testkit/features/geospatial/basemapStyle": {
+      "types": "./dist/features/geospatial/basemapStyle.d.ts",
+      "import": "./dist/features/geospatial/basemapStyle.js",
+      "default": "./dist/features/geospatial/basemapStyle.js"
+    },
+    "./testkit/features/geospatial/flightGeoMapLibreDisposal": {
+      "types": "./dist/features/geospatial/flightGeoMapLibreDisposal.d.ts",
+      "import": "./dist/features/geospatial/flightGeoMapLibreDisposal.js",
+      "default": "./dist/features/geospatial/flightGeoMapLibreDisposal.js"
+    },
+    "./testkit/features/geospatial/flightGeoPresentationDebug": {
+      "types": "./dist/features/geospatial/flightGeoPresentationDebug.d.ts",
+      "import": "./dist/features/geospatial/flightGeoPresentationDebug.js",
+      "default": "./dist/features/geospatial/flightGeoPresentationDebug.js"
+    },
+    "./testkit/features/geospatial/geospatialPresentationCameraOwner": {
+      "types": "./dist/features/geospatial/geospatialPresentationCameraOwner.d.ts",
+      "import": "./dist/features/geospatial/geospatialPresentationCameraOwner.js",
+      "default": "./dist/features/geospatial/geospatialPresentationCameraOwner.js"
+    },
+    "./testkit/features/geospatial/mapLibreFlightBootstrap": {
+      "types": "./dist/features/geospatial/mapLibreFlightBootstrap.d.ts",
+      "import": "./dist/features/geospatial/mapLibreFlightBootstrap.js",
+      "default": "./dist/features/geospatial/mapLibreFlightBootstrap.js"
+    },
+    "./testkit/features/geospatial/mapLibreFlightBootstrapState": {
+      "types": "./dist/features/geospatial/mapLibreFlightBootstrapState.d.ts",
+      "import": "./dist/features/geospatial/mapLibreFlightBootstrapState.js",
+      "default": "./dist/features/geospatial/mapLibreFlightBootstrapState.js"
+    },
+    "./testkit/features/geospatial/mapLibreFlightBootstrapStyleIdentity": {
+      "types": "./dist/features/geospatial/mapLibreFlightBootstrapStyleIdentity.d.ts",
+      "import": "./dist/features/geospatial/mapLibreFlightBootstrapStyleIdentity.js",
+      "default": "./dist/features/geospatial/mapLibreFlightBootstrapStyleIdentity.js"
+    },
+    "./testkit/features/geospatial/mapLibreFlightProviderPromotion": {
+      "types": "./dist/features/geospatial/mapLibreFlightProviderPromotion.d.ts",
+      "import": "./dist/features/geospatial/mapLibreFlightProviderPromotion.js",
+      "default": "./dist/features/geospatial/mapLibreFlightProviderPromotion.js"
+    },
+    "./testkit/features/geospatial/mapLibreFlightRuntimeFallback": {
+      "types": "./dist/features/geospatial/mapLibreFlightRuntimeFallback.d.ts",
+      "import": "./dist/features/geospatial/mapLibreFlightRuntimeFallback.js",
+      "default": "./dist/features/geospatial/mapLibreFlightRuntimeFallback.js"
+    },
+    "./testkit/features/geospatial/mapLibreHostLease": {
+      "types": "./dist/features/geospatial/mapLibreHostLease.d.ts",
+      "import": "./dist/features/geospatial/mapLibreHostLease.js",
+      "default": "./dist/features/geospatial/mapLibreHostLease.js"
+    },
+    "./testkit/features/geospatial/mapLibreInitialCameraAlignment": {
+      "types": "./dist/features/geospatial/mapLibreInitialCameraAlignment.d.ts",
+      "import": "./dist/features/geospatial/mapLibreInitialCameraAlignment.js",
+      "default": "./dist/features/geospatial/mapLibreInitialCameraAlignment.js"
+    },
+    "./testkit/features/geospatial/mapLibreProviderStyle": {
+      "types": "./dist/features/geospatial/mapLibreProviderStyle.d.ts",
+      "import": "./dist/features/geospatial/mapLibreProviderStyle.js",
+      "default": "./dist/features/geospatial/mapLibreProviderStyle.js"
+    },
+    "./testkit/features/geospatial/singaporeMapPolicy": {
+      "types": "./dist/features/geospatial/singaporeMapPolicy.d.ts",
+      "import": "./dist/features/geospatial/singaporeMapPolicy.js",
+      "default": "./dist/features/geospatial/singaporeMapPolicy.js"
+    },
+    "./testkit/features/geospatial/useCityGeoOverlayMapLibrePresentation": {
+      "types": "./dist/features/geospatial/useCityGeoOverlayMapLibrePresentation.d.ts",
+      "import": "./dist/features/geospatial/useCityGeoOverlayMapLibrePresentation.js",
+      "default": "./dist/features/geospatial/useCityGeoOverlayMapLibrePresentation.js"
+    },
+    "./testkit/features/geospatial/useFlightGeoOverlayMapLibrePresentation": {
+      "types": "./dist/features/geospatial/useFlightGeoOverlayMapLibrePresentation.d.ts",
+      "import": "./dist/features/geospatial/useFlightGeoOverlayMapLibrePresentation.js",
+      "default": "./dist/features/geospatial/useFlightGeoOverlayMapLibrePresentation.js"
+    },
+    "./testkit/features/geospatial/useMapLibreBasemap": {
+      "types": "./dist/features/geospatial/useMapLibreBasemap.d.ts",
+      "import": "./dist/features/geospatial/useMapLibreBasemap.js",
+      "default": "./dist/features/geospatial/useMapLibreBasemap.js"
+    },
+    "./testkit/flightGeoEnvironmentMapLibre": {
+      "types": "./dist/flightGeoEnvironmentMapLibre.d.ts",
+      "import": "./dist/flightGeoEnvironmentMapLibre.js",
+      "default": "./dist/flightGeoEnvironmentMapLibre.js"
+    },
+    "./testkit/flightGeoOverlay": {
+      "types": "./dist/flightGeoOverlay.d.ts",
+      "import": "./dist/flightGeoOverlay.js",
+      "default": "./dist/flightGeoOverlay.js"
+    },
+    "./testkit/flightGeoOverlayMapLibre": {
+      "types": "./dist/flightGeoOverlayMapLibre.d.ts",
+      "import": "./dist/flightGeoOverlayMapLibre.js",
+      "default": "./dist/flightGeoOverlayMapLibre.js"
+    },
+    "./testkit/geoMapViewport": {
+      "types": "./dist/geoMapViewport.d.ts",
+      "import": "./dist/geoMapViewport.js",
+      "default": "./dist/geoMapViewport.js"
+    },
+    "./testkit/geospatialFitRuntime": {
+      "types": "./dist/geospatialFitRuntime.d.ts",
+      "import": "./dist/geospatialFitRuntime.js",
+      "default": "./dist/geospatialFitRuntime.js"
+    },
+    "./testkit/hooks/store/geospatialSlice": {
+      "types": "./dist/hooks/store/geospatialSlice.d.ts",
+      "import": "./dist/hooks/store/geospatialSlice.js",
+      "default": "./dist/hooks/store/geospatialSlice.js"
+    },
+    "./testkit/regionalPoiMapLibre": {
+      "types": "./dist/regionalPoiMapLibre.d.ts",
+      "import": "./dist/regionalPoiMapLibre.js",
+      "default": "./dist/regionalPoiMapLibre.js"
     }
   },
   "dependencies": {

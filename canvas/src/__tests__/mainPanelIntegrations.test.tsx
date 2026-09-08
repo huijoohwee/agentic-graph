@@ -1757,11 +1757,10 @@ export async function testMainPanelRequestedIntegrationsSearchRendersBytePlusMes
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { dom, restore: restoreDom } = initJsdomHarness()
   let root: ReturnType<typeof createRoot> | null = null
-
+  const previousMessagesJson = useGraphStore.getState().chatMessagesJson
   try {
     const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
     anyWindow.requestAnimationFrame = installDeterministicRaf(dom.window)
-
     useGraphStore.getState().resetAll()
     useGraphStore.getState().setChatMessagesJson('[{"role":"user","content":"hi"}]')
 
@@ -1793,6 +1792,7 @@ export async function testMainPanelRequestedIntegrationsSearchRendersBytePlusMes
     } catch {
       void 0
     }
+    useGraphStore.setState({ chatMessagesJson: previousMessagesJson })
     restoreDom()
     restoreWindow()
   }

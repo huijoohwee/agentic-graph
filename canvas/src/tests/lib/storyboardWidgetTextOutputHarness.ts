@@ -5,9 +5,10 @@ export function createStoryboardWidgetTextOutputHarness(
   initialGraph: GraphData,
   storeGraph: GraphData = initialGraph,
   allowCreateRichMediaPanel = true,
-  options: { commitPublishedGraphData?: boolean } = {},
+  options: { commitPublishedGraphData?: boolean; suppressStoreGraphWriteback?: boolean } = {},
 ) {
   let draft = initialGraph
+  let storeMirrorCount = 0
   let draftCommitCount = 0
   let publishedCommitCount = 0
   const resolveNode = (nodeId: string) => draft.nodes.find(node => String(node.id) === nodeId)
@@ -30,6 +31,7 @@ export function createStoryboardWidgetTextOutputHarness(
     } as never,
     graphForRun: initialGraph,
     allowCreateRichMediaPanel,
+    ...{ suppressStoreGraphWriteback: options.suppressStoreGraphWriteback },
     withRunLayoutMutationGuard: run => run(),
     scheduleWorkflowOutputEdgeRefresh: () => undefined,
     readLiveDraftGraphData: () => draft,
@@ -43,6 +45,7 @@ export function createStoryboardWidgetTextOutputHarness(
       draft = next
     } }),
     updateNode: (id, patch) => {
+      storeMirrorCount += 1
       draft = { ...draft, nodes: draft.nodes.map(node => String(node.id) === id ? { ...node, ...patch } : node) }
     },
     resolveNodeByIdAcrossGraphs: resolveNode,
@@ -50,6 +53,7 @@ export function createStoryboardWidgetTextOutputHarness(
   return {
     publishers,
     readGraph: () => draft,
+    readStoreMirrorCount: () => storeMirrorCount,
     readCommitCounts: () => ({ draft: draftCommitCount, published: publishedCommitCount }),
   }
 }

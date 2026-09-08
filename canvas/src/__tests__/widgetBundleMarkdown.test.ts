@@ -53,7 +53,7 @@ export function testWidgetBundleMarkdownReusesSharedPlainObjectGuard() {
   if (!text.includes('const record = readPlainObject(entry) || {}')) {
     throw new Error('expected widget bundle registry signature shaping to reuse the shared local plain-object helper')
   }
-  if (!text.includes('const graph = readPlainObject(parsed.graph)')) {
+  if (!text.includes('const bundle = readPlainObject(parsed)') || !text.includes('const graph = readPlainObject(bundle.graph)')) {
     throw new Error('expected widget bundle markdown parsing to reuse the shared local plain-object helper')
   }
   if (text.includes('function isJsonRecord(') || text.includes('function isUnknownRecord(')) {

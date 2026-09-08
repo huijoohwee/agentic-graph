@@ -3,13 +3,13 @@ import test from 'node:test'
 
 import {
   markMapLibreFlightBootstrapApplied,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrap'
 import {
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
-} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+} from 'gympgrph/testkit/flightGeoEnvironmentMapLibre'
 import {
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
-} from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+} from 'gympgrph/testkit/flightGeoOverlayMapLibre'
 import {
   acquireFlightSimGeospatialBootstrapRequest,
   readFlightSimGeospatialBootstrapRequested,

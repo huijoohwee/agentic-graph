@@ -447,13 +447,14 @@ export function testProbeTreeRunMaterializationFitsCapturedVisibleViewport() {
     world: sourceWorldTopLeft,
     screen: sourceScreenTopLeft,
     paintScale: 1,
+    defaultFixedCardSize: { width: RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX, height: RICH_MEDIA_PANEL_DEFAULT_HEIGHT_PX },
     transform: renderedTransform,
     visibleViewport: {
       left: 0,
       top: 0,
-      right: 520,
+      right: 920,
       bottom: 920,
-      width: 520,
+      width: 920,
       height: 920,
     },
   }

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { JSDOM } from 'jsdom'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { buildWorkspaceHtmlExportDocument } from '@/features/markdown-workspace/main/exports/exportHtmlWorkspace'
 import { buildHtmlViewerSnapshotDocument } from '@/features/markdown-workspace/main/exports/exportHtmlViewer'
 import { buildMarkdownHtmlViewerDocument } from '@/features/markdown/htmlViewerCss'
@@ -32,7 +33,7 @@ export function testBuildWorkspaceHtmlExportDocumentEmbedsEditorAndCanvasPayload
   })
 
   if (!html.includes('data-kg-workspace-export="workspace"')) throw new Error('expected workspace export marker')
-  if (/<section\b|<\/div>/i.test(html)) throw new Error(`expected outer Workspace HTML export to avoid generic HTML division element containers, got: ${html}`)
+  if (/<div\b|<\/div>/i.test(html)) throw new Error(`expected outer Workspace HTML export to avoid generic HTML division element containers, got: ${html}`)
   if (!html.includes('data-kg-workspace-export-section="editor-workspace"')) throw new Error('expected Editor Workspace section')
   if (!html.includes('data-kg-workspace-export-section="canvas"')) throw new Error('expected Canvas section')
   if (!html.includes('kg-workspace-editor-frame') || !html.includes('kg-workspace-canvas-frame')) {
@@ -110,7 +111,7 @@ export function testMarkdownHtmlViewerDocumentNormalizesGenericDivContainers() {
       '</section>',
     ].join(''),
   })
-  if (/<section\b|<\/div>/i.test(html)) {
+  if (/<div\b|<\/div>/i.test(html)) {
     throw new Error(`expected generated markdown viewer HTML to avoid generic HTML division element containers, got: ${html}`)
   }
   if (!/<section\b[^>]*class="outer"[^>]*role="article"[^>]*>/.test(html)) {
@@ -122,43 +123,49 @@ export function testMarkdownHtmlViewerDocumentNormalizesGenericDivContainers() {
 }
 
 export async function testWorkspaceHtmlViewerFallbackAvoidsOpenViewerWarning() {
-  const toasts: Array<{ message?: string }> = []
-  const fallbackMarkdownText = ['# Editor Workspace', '', 'Fallback body from active text with footnote.[^1]', '', '- Item one', '', '[^1]: Footnote body'].join('\n')
-  const html = await buildHtmlViewerSnapshotDocument({
-    exportBaseName: 'editor-workspace',
-    showWebpageHtml: false,
-    iframeSrcDoc: null,
-    viewerEl: null,
-    viewerRefCurrent: null,
-    fallbackMarkdownText,
-    pushUiToast: toast => {
-      toasts.push({ message: String(toast.message || '') })
-    },
-  })
-  const webpageHtml = await buildHtmlViewerSnapshotDocument({
-    exportBaseName: 'editor-webpage-workspace',
-    showWebpageHtml: true,
-    iframeSrcDoc: null,
-    viewerEl: null,
-    viewerRefCurrent: null,
-    fallbackMarkdownText,
-    pushUiToast: toast => {
-      toasts.push({ message: String(toast.message || '') })
-    },
-  })
+  const { dom, restore } = initJsdomHarness()
+  try {
+    const toasts: Array<{ message?: string }> = []
+    const fallbackMarkdownText = ['# Editor Workspace', '', 'Fallback body from active text with footnote.[^1]', '', '- Item one', '', '[^1]: Footnote body'].join('\n')
+    const html = await buildHtmlViewerSnapshotDocument({
+      exportBaseName: 'editor-workspace',
+      showWebpageHtml: false,
+      iframeSrcDoc: null,
+      viewerEl: null,
+      viewerRefCurrent: null,
+      fallbackMarkdownText,
+      pushUiToast: toast => {
+        toasts.push({ message: String(toast.message || '') })
+      },
+    })
+    const webpageHtml = await buildHtmlViewerSnapshotDocument({
+      exportBaseName: 'editor-webpage-workspace',
+      showWebpageHtml: true,
+      iframeSrcDoc: null,
+      viewerEl: null,
+      viewerRefCurrent: null,
+      fallbackMarkdownText,
+      pushUiToast: toast => {
+        toasts.push({ message: String(toast.message || '') })
+      },
+    })
 
-  if (!html) throw new Error('expected active editor text to build fallback Viewer HTML')
-  if (!webpageHtml) throw new Error('expected active editor text to build fallback webpage Viewer HTML')
-  if (!html.includes('data-kg-editor-workspace-fallback="markdown"')) throw new Error('expected editor workspace fallback marker')
-  if (!webpageHtml.includes('data-kg-editor-workspace-fallback="markdown"')) throw new Error('expected webpage editor workspace fallback marker')
-  if (!new RegExp('<h1\\b[^>]*>Editor Workspace</h1>').test(html)) throw new Error(`expected markdown fallback to render heading, got ${html}`)
-  if (!html.includes('Fallback body from active text')) throw new Error('expected markdown fallback to preserve active text body')
-  if (!html.includes('footnote')) throw new Error('expected markdown fallback to use full viewer markdown plugin support')
-  if (!html.includes('data-kg-editor-workspace-source="1"')) throw new Error('expected markdown fallback to preserve Editor Workspace source context')
-  if (!html.includes('[^1]: Footnote body')) throw new Error('expected markdown fallback source context to preserve raw active text')
-  if (toasts.some(toast => String(toast.message || '').includes('Open the Viewer to export HTML'))) {
-    throw new Error('expected Workspace HTML fallback to avoid Open the Viewer warning')
-  }
+    if (!html) throw new Error('expected active editor text to build fallback Viewer HTML')
+    if (!webpageHtml) throw new Error('expected active editor text to build fallback webpage Viewer HTML')
+    if (!/<article\b/.test(html)) throw new Error('expected editor fallback to exercise the rendered Markdown preview path')
+    if (dom.window.document.querySelector('[data-kg-export-hidden-viewer-render]')) throw new Error('expected hidden export viewer roots to be released')
+    if (!html.includes('data-kg-editor-workspace-fallback="markdown"')) throw new Error('expected editor workspace fallback marker')
+    if (!webpageHtml.includes('data-kg-editor-workspace-fallback="markdown"')) throw new Error('expected webpage editor workspace fallback marker')
+    const heading = new dom.window.DOMParser().parseFromString(html, 'text/html').querySelector('h1')?.textContent?.trim()
+    if (heading !== 'Editor Workspace') throw new Error(`expected exported Markdown heading text, got ${heading}`)
+    if (!html.includes('Fallback body from active text')) throw new Error('expected markdown fallback to preserve active text body')
+    if (!html.includes('footnote')) throw new Error('expected markdown fallback to use full viewer markdown plugin support')
+    if (!html.includes('data-kg-editor-workspace-source="1"')) throw new Error('expected markdown fallback to preserve Editor Workspace source context')
+    if (!html.includes('[^1]: Footnote body')) throw new Error('expected markdown fallback source context to preserve raw active text')
+    if (toasts.some(toast => String(toast.message || '').includes('Open the Viewer to export HTML'))) {
+      throw new Error('expected Workspace HTML fallback to avoid Open the Viewer warning')
+    }
+  } finally { restore() }
 }
 
 export async function testHtmlViewerWebpageSrcDocInlinesStandaloneAssets() {
@@ -292,4 +299,21 @@ export function testWorkspaceExportBridgePassesActiveEditorFallback() {
   if (!/exportHtmlWorkspaceFromWorkspace\(\{[\s\S]*?fallbackMarkdownText:\s*exportFallbackMarkdownText[\s\S]*?\}\)/.test(text)) {
     throw new Error('expected Workspace HTML export action to pass active editor fallback text')
   }
+}
+
+export function testWorkspaceHtmlPackagingPreservesRawScriptPayloadBytes() {
+  const editorHtml = '<!doctype html><title>“多设备” & > </title><script>window.value="</script>"</script>'
+  const canvasHtml = '<svg data-value="a > b & c"><text>line 1\nline 2</text></svg><script>window.canvas=true</script>'
+  const html = buildWorkspaceHtmlExportDocument({ title: 'Exact payload', editorHtml, canvasHtml,
+    meta: { kind: 'workspace', title: 'Exact payload', exportedAt: '2026-09-06', graphNodeCount: 1, graphEdgeCount: 0, graphSemanticKey: 'fixture', canvasMode: '2d' },
+  })
+  const dom = new JSDOM(html)
+  try {
+    for (const [id, expected] of [['kg-workspace-export-editor-html', editorHtml], ['kg-workspace-export-canvas-html', canvasHtml]]) {
+      const element = dom.window.document.getElementById(id!)
+      if (!element || JSON.parse(element.textContent || '') !== expected) throw new Error(`Workspace payload bytes changed: ${id}`)
+      if (element.textContent?.includes('<')) throw new Error('A raw-script payload retained an HTML tag opener')
+    }
+    if (dom.window.document.querySelectorAll('script').length !== 4) throw new Error('Embedded payload escaped its JSON script boundary')
+  } finally { dom.window.close() }
 }

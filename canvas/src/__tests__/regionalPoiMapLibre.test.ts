@@ -15,7 +15,7 @@ import {
   mapHasExactRegionalPoiSource,
   regionalPoiFeatureCollection,
   regionalPoiProfileBounds,
-} from '../../../gympgrph/src/regionalPoiMapLibre.js'
+} from 'gympgrph/testkit/regionalPoiMapLibre'
 import {
   TEST_LAYER_ANCHOR,
   TestMapLibreMap,

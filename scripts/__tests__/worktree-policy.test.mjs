@@ -178,6 +178,7 @@ test('standalone preflight checks every canonical source without fetching or sta
 
 test('Git hooks and lifecycle commands are pinned to the Agentic OS authority runtime', () => {
   const packageJson = JSON.parse(readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8'))
+  const lockfile = JSON.parse(readFileSync(path.resolve(repoRoot, 'package-lock.json'), 'utf8'))
   const integrationWorkflow = readFileSync(path.resolve(repoRoot, '.github/workflows/integration.yml'), 'utf8')
   const hookDigest = name => createHash('sha256')
     .update(readFileSync(path.resolve(repoRoot, `.githooks/${name}`)))
@@ -187,10 +188,11 @@ test('Git hooks and lifecycle commands are pinned to the Agentic OS authority ru
   assert.equal(packageJson.scripts['worktree:lifecycle:classify'], undefined)
   assert.equal(packageJson.scripts['worktree:lifecycle:cleanup'], undefined)
   assert.ok(packageJson.scripts['ci:integration'].startsWith('npm run worktree:check && npm --prefix node_modules/agentic-os run evals &&'))
-  assert.equal(
-    packageJson.devDependencies['agentic-os'],
-    'github:huijoohwee/agentic-os#a452a9727dbbf7adf5ba6c27de45f45c850b39aa',
-  )
+  const authorityPin = packageJson.dependencies['agentic-os']
+  assert.match(authorityPin, /^github:huijoohwee\/agentic-os#[a-f0-9]{40}$/u)
+  assert.equal(lockfile.packages[''].dependencies['agentic-os'], authorityPin)
+  assert.equal(lockfile.packages['node_modules/agentic-os'].resolved,
+    `git+ssh://git@github.com/huijoohwee/agentic-os.git#${authorityPin.split('#')[1]}`)
   assert.equal(packageJson.scripts.postinstall, undefined)
   assert.equal(packageJson.scripts['hooks:install'], undefined)
   assert.equal(packageJson.scripts['agentic-os:setup'], 'agentic-os setup')

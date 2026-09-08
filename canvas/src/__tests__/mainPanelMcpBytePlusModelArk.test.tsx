@@ -163,7 +163,9 @@ const assertHubSurfacesBytePlusModelArkMcpConfig = (container: Element): void =>
       throw new Error(`expected hub to include BytePlus ModelArk MCP config token ${JSON.stringify(token)}, got ${JSON.stringify(searchableText)}`)
     }
   })
-  assertNoSecretOrProviderEndpointMaterial(searchableText)
+  const providerRows = Array.from(container.querySelectorAll<HTMLElement>('[data-kg-anchor^="mcp-row-byteplus-modelark-"]'))
+  if (!providerRows.length) throw new Error('expected source-owned BytePlus MCP rows before checking their material')
+  assertNoSecretOrProviderEndpointMaterial(providerRows.map(row => `${row.textContent || ''}\n${readRenderedFormValues(row)}`).join('\n'))
   const mcpAnchors = Array.from(container.querySelectorAll<HTMLElement>('[data-kg-anchor]'))
     .map(el => String(el.dataset.kgAnchor || ''))
     .filter(Boolean)

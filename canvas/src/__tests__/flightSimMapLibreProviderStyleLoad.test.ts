@@ -5,23 +5,23 @@ import test from 'node:test'
 import {
   loadMapLibreProviderStyleDocument,
   shouldPreflightInitialMapLibreStyle,
-} from '../../../gympgrph/src/features/geospatial/useMapLibreBasemap.js'
+} from 'gympgrph/testkit/features/geospatial/useMapLibreBasemap'
 import {
   canFetchMapLibreProviderStyle,
   preflightMapLibreStyle,
   resolveInitialMapLibreStyle,
   resolveMapLibreFlightProviderStyle,
-} from '../../../gympgrph/src/features/geospatial/mapLibreProviderStyle.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreProviderStyle'
 import {
   cancelMapLibreFlightProviderStyleLoad,
   promoteMapLibreFlightProviderStyle,
   type MapLibreFlightProviderPromotionState,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightProviderPromotion.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightProviderPromotion'
 import {
   canMapLibreFlightOverlayPresent,
   markMapLibreFlightBootstrapApplied,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
-import type { FlightGeoOverlayPresentation } from '../../../gympgrph/src/flightGeoOverlay.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrap'
+import type { FlightGeoOverlayPresentation } from 'gympgrph/testkit/flightGeoOverlay'
 import { resolveGeoXrGameplayPresentationOwner } from '@/features/geospatial/geoXrFlightOverlayComposition'
 import {
   acquireFlightSimGeospatialBootstrapRequest,

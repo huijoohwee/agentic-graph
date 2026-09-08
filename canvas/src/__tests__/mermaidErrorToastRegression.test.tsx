@@ -88,6 +88,9 @@ export async function testMermaidRenderErrorUsesToastAndDoesNotRenderInlineBelow
 }
 
 export async function testMermaidSvgErrorPayloadUsesToastAndNoInlineRender() {
+  await testMermaidRenderErrorUsesToastAndDoesNotRenderInlineBelowCanvas()
+  const store = useGraphStore.getState()
+  for (const toast of store.uiToasts) store.dismissUiToast(toast.id)
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { dom, restore: restoreDom } = initJsdomHarness()

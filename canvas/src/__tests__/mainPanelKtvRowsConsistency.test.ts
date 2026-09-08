@@ -311,7 +311,7 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     || !canvasKeyTypeValueStaticRow.includes("from '@/features/panels/ui/canvasKeyTypeValueRuntime'")
     || !canvasKeyTypeValueStaticRow.includes("from '@/features/panels/ui/canvasKeyTypeValueMarkdownBridge'")
     || !canvasKeyTypeValueStaticRow.includes('export interface KeyTypeValueRowProps')
-    || !canvasKeyTypeValueStaticRow.includes('export interface CanvasKeyTypeValueStaticRowProps')
+    || !canvasKeyTypeValueStaticRow.includes('export type CanvasKeyTypeValueStaticRowProps = KeyTypeValueRowProps')
     || !canvasKeyTypeValueStaticRow.includes('export function CanvasKeyTypeValueStaticRow')
   ) {
     throw new Error('Expected the canvas static-row compatibility owner and shared row prop shape to live in a dedicated compatibility-row module')

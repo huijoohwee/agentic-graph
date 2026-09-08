@@ -228,6 +228,41 @@ const readYamlTypeValueColumnName = (type: string): string => {
   return label ? `${label} Value` : ''
 }
 
+const summaryKeys = new Set(['summary', 'reading_summary', 'agenticOs:readingSummary', 'agenticOs:reading_summary', 'agentic-os:readingSummary', 'agentic-os:reading_summary'].map(normalizeSemanticKey))
+const actionKeys = new Set(['action', 'actions', 'next_action', 'required_action'])
+const outputKeys = new Set([
+  'output',
+  'outputs',
+  'output_src_doc',
+  'outputsrcdoc',
+  'output_policy',
+  'download_url',
+  'stream_url',
+  'videodb_stream_url',
+  'video_url',
+  'image_url',
+  'publish_packet_path',
+])
+const referenceKeys = new Set([
+  'reference',
+  'references',
+  'reference_pack',
+  'source',
+  'source_url',
+  'sourceunitid',
+  'source_unit_id',
+  'workspace_path',
+  'relative_path',
+  'media_url',
+  'webpage_url',
+  'kgwebpageurl',
+  'implementation_contract',
+  'mcp_docs_url',
+  'upstream_reference',
+  'api_base_url',
+  'base_url',
+])
+
 const readYamlRowSemanticColumns = (args: {
   key: string
   levels: readonly string[]
@@ -238,40 +273,6 @@ const readYamlRowSemanticColumns = (args: {
   const value = String(args.value || '')
   const sourceValue = String(args.sourceValue || '')
   const referenceValue = sourceValue || value
-  const summaryKeys = new Set(['summary', 'reading_summary', 'agenticOs_readingsummary', 'agenticOs_reading_summary'])
-  const actionKeys = new Set(['action', 'actions', 'next_action', 'required_action'])
-  const outputKeys = new Set([
-    'output',
-    'outputs',
-    'output_src_doc',
-    'outputsrcdoc',
-    'output_policy',
-    'download_url',
-    'stream_url',
-    'videodb_stream_url',
-    'video_url',
-    'image_url',
-    'publish_packet_path',
-  ])
-  const referenceKeys = new Set([
-    'reference',
-    'references',
-    'reference_pack',
-    'source',
-    'source_url',
-    'sourceunitid',
-    'source_unit_id',
-    'workspace_path',
-    'relative_path',
-    'media_url',
-    'webpage_url',
-    'kgwebpageurl',
-    'implementation_contract',
-    'mcp_docs_url',
-    'upstream_reference',
-    'api_base_url',
-    'base_url',
-  ])
   return {
     summary: keys.some(key => summaryKeys.has(key)) ? value : '',
     output: keys.some(key => outputKeys.has(key)) ? value : '',

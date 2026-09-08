@@ -398,6 +398,6 @@ export async function testStoryboardWidgetZoomRequestAnimationCommitsOnceAtSettl
     } else {
       delete (globalThis as unknown as { cancelAnimationFrame?: unknown }).cancelAnimationFrame
     }
-    api.resetAll()
+    useGraphStore.setState(api, true)
   }
 }

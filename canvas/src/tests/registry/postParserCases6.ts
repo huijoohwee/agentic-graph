@@ -1,6 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
+  ["groupBoxNoStickRegression.clearanceX","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseX"],
+  ["groupBoxNoStickRegression.clearanceY","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseY"],
+  ["groupBoxNoStickRegression.clearanceZ","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseZ"],
   ["chat.headlessResponse.plainLanguageSkipsMcp","@/__tests__/headlessResponseCoordinator.test","testHeadlessResponsePlainLanguageSkipsMcp"],
   ["chat.headlessResponse.explicitSigilsResolveOnce","@/__tests__/headlessResponseCoordinator.test","testHeadlessResponseExplicitSigilsResolveOnce"],
   ["chat.headlessResponse.unresolvedInvocationFailsClosed","@/__tests__/headlessResponseCoordinator.test","testHeadlessResponseUnresolvedInvocationFailsBeforeInference"],
@@ -105,7 +108,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["ui.floatingPanelChat.apiKeyPrompt.selectedProviderRendered","@/__tests__/byokProviderContext.test","testFloatingPanelChatRendersSelectedTextGenerationProviderOnByokInput"],
   ["chat.responseContract.errors.byteplusKeyFormatRegionDiagnosis","@/__tests__/byokProviderContext.test","testResolveSubmitRuntimeFriendlyMessageMapsBytePlusKeyFormatMismatchWithRegionAndRequestId"],
   ["ui.floatingPanelChat.apiKey.modelIconAlignment","@/__tests__/floatingPanelChatFooterSelect.test","testFloatingPanelChatFooterByokApiKeyToggleStaysAtModelIconAndAlignsInput"],
-  ["ui.floatingPanelChat.newChat.workspaceFile","@/__tests__/floatingPanelChatFooterSelect.test","testFloatingPanelChatNewChatCreatesAndFollowsCanonicalWorkspaceFile"],
+  ["ui.floatingPanelChat.newChat.workspaceFile","@/__tests__/floatingPanelChatDurableResume.test","testFloatingPanelChatNewChatCreatesAndFollowsCanonicalWorkspaceFile"],
   ["ui.floatingPanelChat.videoPreset.loadsSourceBackedInvocation","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatVideoPresetLoadsSourceBackedInvocation"],
   ["ui.floatingPanelChat.videoPreset.prefersCanonicalDocsMirror","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatVideoPresetPrefersCanonicalDocsMirrorAtRuntime"],
   ["ui.floatingPanelChat.videoPreset.repairsDriftedRuntimeMirror","@/__tests__/videoAgentDemoPresetSourceReconciliation.test","testFloatingPanelChatVideoPresetRepairsDriftedRuntimeMirrorFromCanonicalSource"],
@@ -115,7 +118,6 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["ui.home.promptPreset.canonicalRepoLocalDocsSource","@/__tests__/floatingPanelPromptPresetCatalog.test","testHomePromptPresetCatalogUsesCanonicalRepoLocalDocsSource"],
   ["ui.floatingPanelChat.promptPreset.invocationRouteDriftFailsClosed","@/__tests__/floatingPanelPromptPresetCatalog.test","testFloatingPanelChatPromptPresetCatalogRejectsInvocationRouteDrift"],
   ["ui.floatingPanelChat.promptPreset.invalidCatalogFailsClosed","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatPromptPresetCatalogFailsClosedOnMissingEntry"],
-  ["ui.floatingPanelChat.videoPreset.rendersAfterNewChat","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatVideoPresetRendersAfterNewChat"],
   ["ui.floatingPanel.promptPresets.firstClassView","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelPromptPresetsIsFirstClassViewAfterSkillsCommands"],
   ["ui.floatingPanel.promptPresets.chatHandoff","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff"],
   ["ui.floatingPanel.promptPresets.renderedChoices","@/__tests__/floatingPanelPromptPresetCatalog.test","testFloatingPanelPromptPresetsViewRendersAndInvokesAgentChoices"],
@@ -252,6 +254,12 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["agenticOsDocs.mcpClient.incompleteCoverageFailsClosed","@/__tests__/agenticOsDocsMcpBridge.test","testAgenticOsDocsMcpClientRejectsIncompleteInvocationCoverage"],
   ["agenticOsDocs.mcpClient.routingProofDriftFailsClosed","@/__tests__/agenticOsDocsMcpBridge.test","testAgenticOsDocsMcpClientRejectsRoutingProofDrift"],
   ["ui.floatingPanelChat.storyboardTemplate.responseContract","@/__tests__/floatingPanelChatNoSlashInvocationContract.test","testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate"],
+  ["chat.contextProjection.bounds.cycles","@/__tests__/chatContextProjectionBounds.test","testChatContextProjectionHandlesCycles"],
+  ["chat.contextProjection.bounds.repeatedSubtrees","@/__tests__/chatContextProjectionBounds.test","testChatContextProjectionBoundsRepeatedSubtrees"],
+  ["chat.contextProjection.bounds.ordinaryValues","@/__tests__/chatContextProjectionBounds.test","testChatContextProjectionPreservesOrdinaryValues"],
+  ["chat.workspaceContext.freshness.boundedSelection","@/__tests__/chatWorkspaceContextFreshness.test","testWorkspaceContextSelectionIsBoundedAndStable"],
+  ["chat.workspaceContext.freshness.repeatedHint","@/__tests__/chatWorkspaceContextFreshness.test","testWorkspaceContextUsesCurrentInputWithRepeatedHint"],
+  ["chat.workspaceContext.freshness.concurrentInput","@/__tests__/chatWorkspaceContextFreshness.test","testWorkspaceContextConcurrentRequestsKeepTheirOwnInput"],
   ["ui.floatingPanelChat.noSlash.cleanSlateRuntimePrompts","@/__tests__/floatingPanelChatNoSlashInvocationContract.test","testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocationPromptsClean"],
   ["ui.floatingPanelChat.prdTadSlash.structuredAgenticOsContract","@/__tests__/floatingPanelChatPrdTadInvocationContract.test","testFloatingPanelChatPrdTadSlashUsesStructuredAgenticOsContract"],
   ["ui.floatingPanelChat.prdTadSlash.textQueryProviderPayload","@/__tests__/floatingPanelChatPrdTadInvocationContract.test","testFloatingPanelChatPrdTadSlashTextQueryMatchesNoSlashProviderPayload"],
@@ -300,4 +308,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["agentReady.webMcpRuntime.workspaceLaunchControl","@/__tests__/workspaceLaunchWebMcpTools.test","testLaunchRowsUseSourceBackedWebMcpInvocation"],
   ["agentReady.webMcpRuntime.toolbarActionControl","@/__tests__/toolbarActionWebMcpTools.test","testMainToolbarActionsUseSourceBackedWebMcpInvocation"],
   ["graph.data.preserveLayout.probeTreeOutputContentCommit","@/__tests__/graphDataPreservingLayoutSync.test","testSetGraphDataPreservingLayoutCommitsProbeTreeOutputWithoutTopologyChange"],
+  ["harness.cleanup.mediaRendererIsolation","@/__tests__/canvasTestRuntimeMediaIsolation.test","testCanvasRuntimeCleanupRestoresMediaAndRendererSelection"],
+  ["remoteFetch.backpressure.abort","@/__tests__/remoteFetchBackpressure.test","testRemoteFetchAbortReleasesBackpressure"],
+  ["remoteFetch.backpressure.disconnect","@/__tests__/remoteFetchBackpressure.test","testRemoteFetchDisconnectReleasesBackpressure"],
 ]

@@ -318,7 +318,6 @@ function assertExpandedCleanRoomBoundary(): void {
     'src/lib/three/ThreeGraphXr.tsx',
     'src/lib/three/ThreeGraphXrSessionPolicy.ts',
     'package.json',
-    'package-lock.json',
   ].map(path => resolve(process.cwd(), path))
   paths.push(resolve(repoRoot, 'package.json'), resolve(repoRoot, 'package-lock.json'))
   paths.push(resolve(repoRoot, 'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'))

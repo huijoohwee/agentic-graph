@@ -108,6 +108,15 @@ export function resetCameraFramingRuntimeForDocument(documentKeyValue: unknown):
   const documentKey = normalizeAnchorId(documentKeyValue)
   if (documentKey === activeDocumentKey) return snapshot
   activeDocumentKey = documentKey
+  return clearCameraFramingSnapshot()
+}
+
+export function resetCameraFramingRuntimeForTests(): CameraFramingRuntimeSnapshot {
+  activeDocumentKey = ''
+  return snapshot.claimed ? clearCameraFramingSnapshot() : snapshot
+}
+
+function clearCameraFramingSnapshot(): CameraFramingRuntimeSnapshot {
   snapshot = createSnapshot({
     anchorId: SHARED_CANVAS_CAMERA_ANCHOR_ID,
     claimed: false,

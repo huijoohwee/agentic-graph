@@ -1,4 +1,4 @@
-export type D1RunResult = { success?: boolean; meta?: unknown }
+export type D1RunResult = { success?: boolean; meta?: unknown; results?: unknown[] }
 export type D1AllResult<T> = { results?: T[] }
 export type D1StatementLike = {
   bind: (...values: unknown[]) => D1StatementLike
@@ -6,6 +6,7 @@ export type D1StatementLike = {
   all: <T = Record<string, unknown>>() => Promise<D1AllResult<T>>
 }
 export type D1DatabaseLike = {
+  batch?(statements: D1StatementLike[]): Promise<D1RunResult[]>
   prepare: (query: string) => D1StatementLike
 }
 

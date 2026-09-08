@@ -72,8 +72,8 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     productionRuntimeFunctionTargetBody, textFileNeedsUpdate, toPosixRel, writeTextFile,
   } = createPagesMirrorFileOperations({ isAllowedRelativePath })
   const {
-    assertLegacyMirrorInventoryIsBounded, collectLegacyMirrorFilesToRemove, copyLegacyImageFile,
-    createLegacyImageMigrationPlan,
+    assertLegacyMirrorInventoryIsBounded, createLegacyMigrationPlan, copyLegacyImageFile,
+    copyLegacyDocumentFile,
     removeEmptyDirs, removeLegacyMirrorFiles, resolveMirrorRelativePath,
   } = createPagesMirrorLegacyCleanup({ mirrorRoot })
   const plan = await buildPagesMirrorAgentReadyPlan({ agenticGraphRoot, mirrorRoot })
@@ -110,9 +110,8 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     { rel: '404.html', src: path.resolve(agenticGraphRoot, 'cloudflare', 'pages', '404.html') },
     { rel: 'README.md', src: path.resolve(agenticGraphRoot, 'README.md') },
   ]
-  await assertLegacyMirrorInventoryIsBounded()
-  const legacyImageMigration = await createLegacyImageMigrationPlan()
-  const legacyMirrorFilesToRemove = await collectLegacyMirrorFilesToRemove({ obsoleteGeneratedMirrorFiles })
+  const { legacyImageMigration, legacyDocumentMigration, legacyMirrorFilesToRemove } =
+    await createLegacyMigrationPlan({ obsoleteGeneratedMirrorFiles })
   const runtimeReadiness = await buildProductionRuntimeReadiness({
     sourceRevision, agenticGraphRoot, mirrorRoot, contentRoot: targetDir,
     artifactEntries: [
@@ -243,6 +242,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     summaryList('agent-ready route Functions needing sync', agentReadyRouteUpdates, target => toPosixRel(mirrorRoot, target))
     summaryList('root agent-ready static files needing sync', agentReadyStaticFilesToWrite)
     summaryList('bounded legacy mirror files needing removal', legacyMirrorFilesToRemove, entry => entry.relativePath)
+    summaryList('legacy documents requiring byte-preserving migration', legacyDocumentMigration, entry => entry.relativePath)
     if (legacyImageMigration.legacyImageFiles.length > 0) {
       const copies = legacyImageMigration.entries.filter(entry => entry.needsCopy).length
       summaryList(`legacy image payloads needing byte-preserving migration (copies=${copies})`, legacyImageMigration.entries, entry => `${entry.sourceRelativePath} -> ${entry.destinationRelativePath}`)
@@ -295,6 +295,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     await copyLegacyImageFile(entry)
     legacyImagePayloadsCopied += 1
   }
+  for (const entry of legacyDocumentMigration) await copyLegacyDocumentFile(entry)
   await removeLegacyMirrorFiles(legacyMirrorFilesToRemove)
   await removeLegacyMirrorFiles(legacyImageMigration.entries.map(entry => ({
     relativePath: entry.sourceRelativePath,
@@ -306,6 +307,6 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   await assertLegacyMirrorInventoryIsBounded()
   if (headersNeedUpdate) await fs.writeFile(headersPath, nextHeaders, 'utf8')
   console.log(
-    `[agentic-graph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootManagedFilesToCopy.length}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, plainFilesUpdated=${plainCopyUpdates.length}, runtimeFunctionsUpdated=${productionRuntimeFunctionUpdates.length}, agentReadyRuntimeUpdated=${agentReadyRuntimeFilesToCopy.length}, agentReadyRoutesUpdated=${agentReadyRouteUpdates.length}, agentReadyStaticUpdated=${agentReadyStaticFilesToWrite.length}, legacyMirrorFilesRemoved=${legacyMirrorFilesToRemove.length}, legacyImagePayloadsCopied=${legacyImagePayloadsCopied}, legacyImagePayloadsRemoved=${legacyImageMigration.legacyImageFiles.length})`,
+    `[agentic-graph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootManagedFilesToCopy.length}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, plainFilesUpdated=${plainCopyUpdates.length}, runtimeFunctionsUpdated=${productionRuntimeFunctionUpdates.length}, agentReadyRuntimeUpdated=${agentReadyRuntimeFilesToCopy.length}, agentReadyRoutesUpdated=${agentReadyRouteUpdates.length}, agentReadyStaticUpdated=${agentReadyStaticFilesToWrite.length}, legacyMirrorFilesRemoved=${legacyMirrorFilesToRemove.length}, legacyDocumentsPreserved=${legacyDocumentMigration.length}, legacyImagePayloadsCopied=${legacyImagePayloadsCopied}, legacyImagePayloadsRemoved=${legacyImageMigration.legacyImageFiles.length})`,
   )
 }

@@ -1,16 +1,9 @@
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { importNodeFsPromises, importNodePath } from './workspaceSeedNodeModules'
 
-export const CANONICAL_WORKSPACE_SEED_BASENAMES = [
-  'README.md',
-  'agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
-  'agentic-graph-game-city-building-sim-demo.md',
-  'agentic-graph-game-flight-sim-demo.companion.md',
-  'agentic-graph-game-flight-sim-demo.md',
-  'agentic-graph-game-mmorpg-demo.companion.md',
-  'agentic-graph-game-mmorpg-demo.md',
-  'agentic-graph-physics-playground-demo.md',
-] as const
+import sourceInventory from '../../../../config/workspace-seed-inventory.json'
+
+export const CANONICAL_WORKSPACE_SEED_BASENAMES: readonly string[] = Object.freeze(sourceInventory)
 
 export type CanonicalWorkspaceSeedBasename = typeof CANONICAL_WORKSPACE_SEED_BASENAMES[number]
 
@@ -116,17 +109,17 @@ const BUNDLED_SOURCE_MODULES = (() => {
     return import.meta.glob('../../../../docs/workspace-seeds/*.md', {
       query: '?raw',
       import: 'default',
-      eager: true,
-    }) as Record<string, string | RawSourceModule>
+    }) as Record<string, () => Promise<string | RawSourceModule>>
   } catch {
-    return {} as Record<string, string | RawSourceModule>
+    return {} as Record<string, () => Promise<string | RawSourceModule>>
   }
 })()
 
-const readBundledSource = (basename: CanonicalWorkspaceSeedBasename): string => {
+const readBundledSource = async (basename: CanonicalWorkspaceSeedBasename): Promise<string> => {
   const expectedSuffix = `/docs/workspace-seeds/${basename}`
-  for (const [modulePath, rawModule] of Object.entries(BUNDLED_SOURCE_MODULES)) {
+  for (const [modulePath, loadModule] of Object.entries(BUNDLED_SOURCE_MODULES)) {
     if (!modulePath.endsWith(expectedSuffix)) continue
+    const rawModule = await loadModule()
     if (typeof rawModule === 'string') return normalizeSource(rawModule)
     return normalizeSource(rawModule?.default)
   }
@@ -167,7 +160,7 @@ const readNodeSource = async (basename: CanonicalWorkspaceSeedBasename): Promise
 const readCanonicalSource = async (
   basename: CanonicalWorkspaceSeedBasename,
 ): Promise<string> => {
-  const bundled = readBundledSource(basename)
+  const bundled = await readBundledSource(basename)
   if (bundled) return bundled
   return readNodeSource(basename)
 }

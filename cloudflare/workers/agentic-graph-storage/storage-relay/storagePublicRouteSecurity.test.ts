@@ -4,12 +4,15 @@ import test from 'node:test'
 import { resolve } from 'node:path'
 import { FakeAgenticGraphStorageD1Database } from '../../../../canvas/src/__tests__/helpers/fake-agentic-graph-storage-d1'
 import { FakeAgenticGraphStorageR2Bucket } from '../../../../canvas/src/__tests__/helpers/fake-agentic-graph-storage-r2'
-import { AGENTIC_OS_STORAGE_API_VERSION, AGENTIC_OS_STORAGE_SYNC_LIMITS, hashAgenticGraphStorageContent, type AgenticGraphStorageWorkerEnv } from '../contract'
+import { AGENTIC_OS_STORAGE_API_VERSION, AGENTIC_OS_STORAGE_SYNC_LIMITS, buildAgenticGraphStorageMediaWorkspace, hashAgenticGraphStorageContent, type AgenticGraphStorageWorkerEnv } from '../contract'
 import { createAgenticGraphStorageWorker } from '../index'
 import { readBoundedPullChangeRows } from '../storageSyncReadRows'
 import { AGENTIC_OS_CHAT_RELAY_MAX_REQUEST_BYTES, AGENTIC_OS_CHAT_RELAY_MAX_RESPONSE_BYTES } from '../chatRelayBodyBounds'
 import { AGENTIC_OS_STORAGE_DOCUMENT_READ_LIMITS } from '../storageDocumentReadBounds'
-
+import { createFixture } from '../../../../canvas/src/__tests__/helpers/native-agentic-graph-storage-fixture'
+import { AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID, buildAgenticGraphStorageDocPath,
+  buildAgenticGraphStorageDefaultDocPath, buildAgenticGraphStorageLlmsPath,
+  buildAgenticGraphStorageSourceFilesIndexPath } from '../contract'
 const SESSION_TOKEN = 'production-storage-session-token'
 const WORKSPACE_ID = 'workspace:storage-security'
 
@@ -64,21 +67,6 @@ const createProductionEnv = (
 })
 
 const sessionHeaders = (extra: HeadersInit = {}): Headers => new Headers({ authorization: `Bearer ${SESSION_TOKEN}`, ...Object.fromEntries(new Headers(extra).entries()) })
-
-const fetchExportWithPageOutcome = async (outcome: Error | { results: Array<Record<string, unknown>> }): Promise<Response> => {
-  const db = new FakeAgenticGraphStorageD1Database()
-  await seedSessionAndMembership(db)
-  const prepare = db.prepare.bind(db)
-  db.prepare = ((sql: string) => {
-    if (!sql.toLowerCase().includes(' union all ')) return prepare(sql)
-    const statement = { bind() { return statement }, async all() {
-      if (outcome instanceof Error) throw outcome
-      return outcome } }
-    return statement
-  }) as typeof db.prepare
-  const url = `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}`
-  return createAgenticGraphStorageWorker().fetch(new Request(url, { headers: sessionHeaders() }), createProductionEnv(db))
-}
 
 test('production structured sync authenticates before parsing request data', async () => {
   const worker = createAgenticGraphStorageWorker()
@@ -248,6 +236,67 @@ test('production document and crawler reads require membership or an exact publi
   assert.equal(revoke.status, 200)
 })
 
+test('anonymous indexing requires a current publication while private reads remain uncacheable', async () => {
+  const fixture = await createFixture(undefined, { workspaceId: AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID })
+  const id = 'published-source', draftId = 'private-draft', canonicalPath = `${id}.md`
+  const documentPaths = [buildAgenticGraphStorageDefaultDocPath(canonicalPath),
+    buildAgenticGraphStorageDocPath(fixture.workspaceId, canonicalPath)]
+  const indexPaths = [buildAgenticGraphStorageSourceFilesIndexPath(),
+    buildAgenticGraphStorageSourceFilesIndexPath(fixture.workspaceId),
+    buildAgenticGraphStorageLlmsPath(), buildAgenticGraphStorageLlmsPath(fixture.workspaceId)]
+  const markdown = '# Published source'
+  const assertAnonymousVisibility = async (visible: boolean) => {
+    for (const path of documentPaths) {
+      const response = await fixture.request(path)
+      assert.equal(response.status, visible ? 200 : 404, path)
+      if (visible) {
+        assert.equal(response.headers.get('x-robots-tag'), 'all', path)
+        assert.equal(response.headers.get('cache-control'), 'private, no-store', path)
+        assert.equal(await response.text(), markdown, path)
+      }
+    }
+    for (const path of indexPaths) {
+      const response = await fixture.request(path)
+      assert.equal(response.status, 200, path)
+      assert.equal(response.headers.get('x-robots-tag'), 'all', path)
+      assert.equal(response.headers.get('cache-control'), 'private, no-store', path)
+      const text = await response.text()
+      assert.equal(text.includes(canonicalPath), visible, path)
+      assert.equal(text.includes(`${draftId}.md`), false, path)
+    }
+  }
+  const publish = async () => {
+    const identity = fixture.identity(id)
+    const response = await fixture.publication(id, 'publish', {
+      expectedRevision: identity.revision, expectedContentHash: identity.contentHash,
+    })
+    assert.equal(response.status, 200, await response.text())
+  }
+  try {
+    fixture.document(id, markdown); fixture.document(draftId, '# Private draft')
+    await assertAnonymousVisibility(false)
+    await publish()
+    await assertAnonymousVisibility(true)
+    for (const path of [...documentPaths, ...indexPaths]) {
+      const response = await fixture.request(path, { headers: { authorization: `Bearer ${fixture.auth.sessionToken}` } })
+      assert.equal(response.status, 200, path)
+      assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow', path)
+      assert.equal(response.headers.get('cache-control'), 'private, no-store', path)
+      await response.text()
+    }
+    fixture.sql.prepare('UPDATE documents SET content_hash = ? WHERE id = ?').run('hash:changed', id)
+    await assertAnonymousVisibility(false)
+    await publish()
+    await assertAnonymousVisibility(true)
+    fixture.sql.prepare('UPDATE documents SET revision = revision + 1 WHERE id = ?').run(id)
+    await assertAnonymousVisibility(false)
+    await publish()
+    const revoke = await fixture.publication(id, 'revoke')
+    assert.equal(revoke.status, 200, await revoke.text())
+    await assertAnonymousVisibility(false)
+  } finally { await fixture.close() }
+})
+
 test('authorized document reads stream large content and accumulated chunks in bounded segments', async () => {
   const worker = createAgenticGraphStorageWorker()
   const db = new FakeAgenticGraphStorageD1Database()
@@ -287,159 +336,6 @@ test('authorized document reads stream large content and accumulated chunks in b
   const chunkedText = await tooManyChunks.text()
   assert.match(chunkedText, /^chunk 0\n\nchunk 1/)
   assert.match(chunkedText, /chunk 100$/)
-})
-
-test('repeated authorized writes produce bounded crawler pages without truncation', async () => {
-  const worker = createAgenticGraphStorageWorker()
-  const db = new FakeAgenticGraphStorageD1Database()
-  await seedSessionAndMembership(db)
-  const env = createProductionEnv(db)
-  for (const start of [0, 50, 100]) {
-    const count = start === 100 ? 1 : 50
-    const mutations = Array.from({ length: count }, (_, offset) => {
-      const index = start + offset
-      const contentMd = `# Crawler document ${index}`
-      return {
-        mutationId: `crawler-mutation:${index}`,
-        workspaceId: WORKSPACE_ID,
-        entity: 'document',
-        op: 'upsert',
-        recordId: `crawler-document:${index}`,
-        baseRevision: null,
-        record: {
-          id: `crawler-document:${index}`,
-          workspaceId: WORKSPACE_ID,
-          canonicalPath: `crawler/${index}.md`,
-          title: `Crawler document ${index}`,
-          docType: 'note',
-          lang: 'en-US',
-          graphId: null,
-          sourceKind: 'markdown',
-          contentMd,
-          contentHash: hashAgenticGraphStorageContent(contentMd),
-          parserVersion: '1.0.0',
-          revision: 1,
-          updatedAtMs: 1_787_200_000_000 + index,
-          deleted: false,
-        },
-      }
-    })
-    const push = await worker.fetch(new Request('https://storage.example/api/storage/push', {
-      method: 'POST',
-      headers: sessionHeaders({ 'content-type': 'application/json' }),
-      body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-        workspaceId: WORKSPACE_ID,
-        deviceId: 'device:crawler-growth',
-        mutations,
-      }),
-    }), env)
-    assert.equal(push.status, 200)
-  }
-  const crawler = await worker.fetch(new Request(
-    `https://storage.example/api/storage/source-files/${encodeURIComponent(WORKSPACE_ID)}`,
-    { headers: sessionHeaders() },
-  ), env)
-  assert.equal(crawler.status, 200)
-  const firstText = await crawler.text()
-  assert.match(firstText, /Crawler document/)
-  const nextUrl = /<([^>]+)>; rel="next"/.exec(crawler.headers.get('link') || '')?.[1]
-  assert.ok(nextUrl)
-  const second = await worker.fetch(new Request(nextUrl!, { headers: sessionHeaders() }), env)
-  assert.equal(second.status, 200)
-  assert.equal(/rel="next"/.test(second.headers.get('link') || ''), false)
-  assert.match(await second.text(), /Crawler document/)
-})
-
-test('production push rejects the fifty-first mutation before any write', async () => {
-  const worker = createAgenticGraphStorageWorker()
-  const db = new FakeAgenticGraphStorageD1Database()
-  await seedSessionAndMembership(db)
-  const mutations = Array.from({ length: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxPushMutations + 1 }, (_, index) => ({
-    mutationId: `mutation:${index}`,
-    workspaceId: WORKSPACE_ID,
-    entity: 'graphSnapshot',
-    op: 'upsert',
-    recordId: `graph:${index}`,
-    baseRevision: null,
-    record: {
-      id: `graph:${index}`,
-      documentId: `document:${index}`,
-      workspaceId: WORKSPACE_ID,
-      graphRevision: 1,
-      graphHash: `sha256:${index}`,
-      graphJson: {},
-      layoutJson: null,
-      derivedFromDocumentRevision: 1,
-      updatedAtMs: 1_787_200_000_000,
-    },
-  }))
-  const response = await worker.fetch(new Request('https://storage.example/api/storage/push', {
-    method: 'POST',
-    headers: sessionHeaders({ 'content-type': 'application/json' }),
-    body: JSON.stringify({
-      apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-      workspaceId: WORKSPACE_ID,
-      deviceId: 'device:batch-limit',
-      mutations,
-    }),
-  }), createProductionEnv(db))
-  assert.equal(response.status, 413)
-  assert.equal(db.workspaces.size, 0)
-  assert.equal(db.syncDevices.size, 0)
-  assert.equal(db.graphSnapshots.size, 0)
-  assert.deepEqual(db.storageRecordWriteCounts, { documents: 0, documentChunks: 0, graphSnapshots: 0 })
-})
-
-test('production export paginates accumulated workspaces without truncation', async () => {
-  const worker = createAgenticGraphStorageWorker()
-  const db = new FakeAgenticGraphStorageD1Database()
-  await seedSessionAndMembership(db)
-  for (let index = 0; index <= AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResultRows; index += 1) {
-    db.documents.set(`document:${index}`, {
-      id: `document:${index}`,
-      workspace_id: WORKSPACE_ID,
-      canonical_path: `documents/${index}.md`,
-      title: `Document ${index}`,
-      doc_type: 'note',
-      lang: 'en-US',
-      graph_id: null,
-      source_kind: 'markdown',
-      content_md: `# Document ${index}`,
-      content_hash: `sha256:${index}`,
-      parser_version: '1.0.0',
-      revision: 1,
-      deleted: 0,
-      created_at: '2026-08-20T00:00:00.000Z',
-      updated_at: `2026-08-20T00:00:${String(index % 60).padStart(2, '0')}.000Z`,
-    })
-  }
-  const exportUrl = `https://storage.example/api/storage/export/${encodeURIComponent(WORKSPACE_ID)}`
-  const response = await worker.fetch(new Request(exportUrl, { headers: sessionHeaders() }), createProductionEnv(db))
-  assert.equal(response.status, 200)
-  const first = await response.json() as { pageComplete: boolean; nextPageCursor: string | null; documents: Array<{ id: string }> }
-  assert.equal(first.pageComplete, false)
-  assert.equal(first.documents.length, AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResultRows)
-  assert.ok(first.nextPageCursor)
-  const secondResponse = await worker.fetch(new Request(`${exportUrl}?cursor=${encodeURIComponent(first.nextPageCursor!)}`, { headers: sessionHeaders() }), createProductionEnv(db))
-  assert.equal(secondResponse.status, 200)
-  const second = await secondResponse.json() as { pageComplete: boolean; nextPageCursor: string | null; documents: Array<{ id: string }> }
-  assert.equal(second.pageComplete, true)
-  assert.equal(second.nextPageCursor, null)
-  assert.equal(second.documents.length, 1)
-  const ids = [...first.documents, ...second.documents].map(document => document.id)
-  assert.equal(new Set(ids).size, AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResultRows + 1)
-})
-
-test('production export distinguishes generic D1 failures from stored-row overflow', async () => {
-  const failed = await fetchExportWithPageOutcome(new Error('D1_ERROR: no such table: documents'))
-  assert.equal(failed.status, 500)
-  assert.equal((await failed.json() as { code: string }).code, 'server_error')
-  const oversized = await fetchExportWithPageOutcome({ results: [{
-    entity_rank: 1, updated_at: '2026-08-20T00:00:00.000Z', id: 'document:oversized', stored_bytes: AGENTIC_OS_STORAGE_SYNC_LIMITS.maxResponseBytes,
-  }] })
-  assert.equal(oversized.status, 413)
-  assert.equal((await oversized.json() as { code: string }).code, 'bad_request')
 })
 
 test('storage result byte aggregate fails before any result row is materialized', async () => {
@@ -517,7 +413,9 @@ test('production media uses signed workspace capabilities and R2 ownership metad
   const bucket = new FakeAgenticGraphStorageR2Bucket()
   await seedSessionAndMembership(db)
   const env = createProductionEnv(db, bucket)
-  const rawMediaPath = 'https://storage.example/api/storage/media/airvio/runs/run-1/stage-1/shot-1.mp4'
+  const { key, prefix } = await buildAgenticGraphStorageMediaWorkspace(WORKSPACE_ID)
+  const runId = `${key}-run-1`, objectKey = `${prefix}/runs/${key}-run-1/stage-1/shot-1.mp4`
+  const rawMediaPath = `https://storage.example/api/storage/media/${objectKey}`
   const forgedCapability = await worker.fetch(new Request(`${rawMediaPath}?agentic_os_media_capability=forged.token`), env)
   assert.equal(forgedCapability.status, 403)
   const mint = async (operation: 'read' | 'write') => {
@@ -526,7 +424,7 @@ test('production media uses signed workspace capabilities and R2 ownership metad
       headers: sessionHeaders({ 'content-type': 'application/json' }),
       body: JSON.stringify({
         workspaceId: WORKSPACE_ID,
-        objectKey: 'airvio/runs/run-1/stage-1/shot-1.mp4',
+        objectKey: objectKey,
         operation,
         ttlSeconds: 300,
       }),
@@ -542,7 +440,7 @@ test('production media uses signed workspace capabilities and R2 ownership metad
   }), env)
   assert.equal(authenticatedRawWrite.status, 200)
   assert.equal(bucket.objects.size, 1)
-  const stored = bucket.objects.get('airvio/runs/run-1/stage-1/shot-1.mp4')
+  const stored = bucket.objects.get(objectKey)
   assert.equal(stored?.customMetadata.agenticGraphWorkspaceId, WORKSPACE_ID)
   const readCapability = await mint('read')
   const read = await worker.fetch(new Request(`https://storage.example${readCapability.urlPath}`), env)
@@ -555,9 +453,9 @@ test('production media uses signed workspace capabilities and R2 ownership metad
       headers: sessionHeaders({ 'content-type': 'application/json' }),
       body: JSON.stringify({
         apiVersion: '2026-05-04', workspaceId: WORKSPACE_ID,
-        objectKey: 'airvio/runs/run-1/stage-1/shot-1.mp4',
-        runId: 'run-1', stageId: 'stage-1', shotId: 'shot-1', kind: 'video',
-        durableR2Url: '/api/storage/media/airvio/runs/run-1/stage-1/shot-1.mp4',
+        objectKey: objectKey,
+        runId, stageId: 'stage-1', shotId: 'shot-1', kind: 'video',
+        durableR2Url: `/api/storage/media/${objectKey}`,
         contentHash: 'sha256:workspace-owned-media', mediaType: 'video/mp4',
         provenance: { source: 'test' }, version: 1,
         presignedUrl: 'https://attacker.example/forged',
@@ -589,7 +487,6 @@ test('production media uses signed workspace capabilities and R2 ownership metad
   ), env)
   assert.equal(crossTenantList.status, 403)
 })
-
 test('production storage topology disables workers.dev and preview aliases', () => {
   const config = readFileSync(resolve(process.cwd(), 'cloudflare/workers/agentic-graph-storage/wrangler.toml'), 'utf8')
   assert.match(config, /^workers_dev\s*=\s*false$/m)

@@ -1,6 +1,7 @@
 name = "agentic-storage"
 main = "index.ts"
 compatibility_date = "2026-05-07"
+minify = true
 workers_dev = false
 preview_urls = false
 

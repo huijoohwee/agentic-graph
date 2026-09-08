@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createMapLibreInitialCameraAlignment } from '../../../gympgrph/src/features/geospatial/mapLibreInitialCameraAlignment'
-import { readGeospatialPresentationCameraOwner } from '../../../gympgrph/src/features/geospatial/geospatialPresentationCameraOwner'
-import { readSingaporeCanvasCameraPolicy } from '../../../gympgrph/src/features/geospatial/singaporeMapPolicy'
-import { createCityGeoOverlayMapLibreController } from '../../../gympgrph/src/cityGeoOverlayMapLibreController'
+import { createMapLibreInitialCameraAlignment } from 'gympgrph/testkit/features/geospatial/mapLibreInitialCameraAlignment'
+import { readGeospatialPresentationCameraOwner } from 'gympgrph/testkit/features/geospatial/geospatialPresentationCameraOwner'
+import { readSingaporeCanvasCameraPolicy } from 'gympgrph/testkit/features/geospatial/singaporeMapPolicy'
+import { createCityGeoOverlayMapLibreController } from 'gympgrph/testkit/cityGeoOverlayMapLibreController'
 import {
   readCityGeoOverlay,
   setCityGeoOverlay,
-} from '../../../gympgrph/src/cityGeoOverlay'
+} from 'gympgrph/testkit/cityGeoOverlay'
 import {
   createSyntheticCityGeoOverlaySnapshot,
   TEST_LAYER_ANCHOR,

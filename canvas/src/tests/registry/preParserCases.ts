@@ -1,6 +1,8 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_PRE_PARSER: TestCaseTuple[] = [
+  ['testIsolation.repositoryFixtures.candidateAndSiblings', '../__tests__/repositoryFixtureRoots.test', 'testRepositoryFixturesPreserveCandidateAndSiblingSources'],
+  ['testIsolation.repositoryFixtures.pinnedDocs', '../__tests__/repositoryFixtureRoots.test', 'testRepositoryFixturesRequireExactPinnedDocs'],
   ['canvas.shortcuts.arrangeAndNudge', '../__tests__/arrangeShortcuts.test', 'testArrangeShortcutsParseAndNudge'],
   [
     'flowCollisionSticking: testCorrectlyNestsH2InsideH1AndEnforcesContainmentSeparation',

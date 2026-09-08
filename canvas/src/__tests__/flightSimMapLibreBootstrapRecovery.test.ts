@@ -5,7 +5,7 @@ import {
   clearFlightGeoOverlay,
   readFlightGeoOverlay,
   setFlightGeoOverlay,
-} from '../../../gympgrph/src/flightGeoOverlay.js'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import {
   beginMapLibreFlightBootstrap,
   canMapLibreFlightOverlayPresent,
@@ -16,20 +16,20 @@ import {
   requestMapLibreFlightPresentationBootstrap,
   resumeMapLibreFlightBootstrapAfterDisposal,
   suspendMapLibreFlightBootstrapForDisposal,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrap'
 import {
   readMapLibreFlightBootstrapState,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrapState.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrapState'
 import {
   hasExpectedMapLibreFlightBootstrapStyleIdentity,
   readMapLibreFlightBootstrapStyleIdentity,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrapStyleIdentity.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrapStyleIdentity'
 import {
   createMapLibreFlightRuntimeFallbackRequester,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightRuntimeFallback.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightRuntimeFallback'
 import {
   deferFlightGeoPresentationForBootstrapRecovery,
-} from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
+} from 'gympgrph/testkit/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
   applyProviderStyleImmediately,
   flushMicrotasks,

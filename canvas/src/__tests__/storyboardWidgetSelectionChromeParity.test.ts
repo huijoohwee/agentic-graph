@@ -6,18 +6,28 @@ import {
   getStoryboardWidgetPanelSelectionChromeClassName,
   getStoryboardWidgetPanelSurfaceChromeClassName,
 } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
-import { applyVectorPaintedOverlayBox } from '@/lib/canvas/vectorPaintedOverlayProjection'
+import { applyVectorPaintedOverlayBox, applyVectorPaintedOverlayPosition } from '@/lib/canvas/vectorPaintedOverlayProjection'
+
+import { applyPanelBox } from '@/lib/render/mediaPanelLayout'
 
 const readSource = (...parts: string[]): string => readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8')
 
 export function testStoryboardWidgetSelectionChromeParity() {
+  const rejectWrite = {
+    set() { throw new Error('parent-owned overlay must reject imperative writes') },
+    defineProperty() { throw new Error('parent-owned overlay must reject imperative definitions') },
+    deleteProperty() { throw new Error('parent-owned overlay must reject imperative deletions') },
+  }
   const parentOwnedPanel = {
-    dataset: { kgOverlayPlacementOwner: 'parent' },
-    style: { left: '0px', top: '0px', width: '' },
+    dataset: new Proxy({ kgOverlayPlacementOwner: 'parent' }, rejectWrite),
+    style: new Proxy({ left: '0px', top: '0px', width: '', transform: '', zoom: '' }, rejectWrite),
   } as unknown as HTMLElement
   applyVectorPaintedOverlayBox(parentOwnedPanel, { left: 480, top: 640, width: 360, height: 203, display: 'flex', scale: 0.31 })
-  if (parentOwnedPanel.style.left !== '0px' || parentOwnedPanel.style.top !== '0px' || parentOwnedPanel.style.width) {
-    throw new Error('expected parent-owned Rich Media surfaces to reject imperative panel placement writes')
+  applyVectorPaintedOverlayPosition(parentOwnedPanel, { left: 480, top: 640 })
+  for (const display of ['block', 'flex', 'none'] as const) {
+    for (const positionMode of ['matrix', 'vectorPainted'] as const) {
+      applyPanelBox(parentOwnedPanel, { left: 480, top: 640, w: 360, h: 203, display, positionMode, scale: 0.31 })
+    }
   }
   const panelChrome = getStoryboardWidgetPanelChromeClassName()
   const selectedChrome = getStoryboardWidgetPanelSelectionChromeClassName(true)
@@ -69,10 +79,6 @@ export function testStoryboardWidgetSelectionChromeParity() {
     || !richMediaSurface.includes("element.style.width = '100%'")
     || !richMediaSurface.includes("'data-kg-storyboard-widget-selected': showStoryboardWidgetChrome && props.selected === true ? '1' : undefined")) {
     throw new Error('expected Rich Media Panel to consume shared selection chrome and reset nested parent-owned placement')
-  }
-  const vectorPaintedOverlayProjection = readSource('lib', 'canvas', 'vectorPaintedOverlayProjection.ts')
-  if (!vectorPaintedOverlayProjection.includes("if (el.dataset.kgOverlayPlacementOwner === 'parent') return")) {
-    throw new Error('expected the shared overlay projection writer to reject parent-owned Rich Media surfaces')
   }
   if (!flowMediaOverlay.includes('data-kg-rich-media-overlay="1"')
     || !flowMediaOverlay.includes('data-kg-storyboard-widget-mode="1"')

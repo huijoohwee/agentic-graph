@@ -7,8 +7,8 @@ export const GAME_OS_REPOSITORY_ASSET_PROVENANCE_FIXTURE: GameOsAssetRecord = Ob
   provenance: Object.freeze({
     origin: 'agentic-graph repository-authored neutral mesh fixture',
     license: 'CC0-1.0',
-    repositoryRevision: '7132c7096539fb1079e00bffc0f2cd024d423d9d',
-    contentDigest: 'sha256:ad90e36f1835a97d9559132d28993ea4b3825f2d621217a4fe54054b8fb076eb',
+    repositoryRevision: '90b4276e4fac76c8f06b734c9cdc8c0bd71dc789',
+    contentDigest: 'sha256:4d07f7b7dc264ff2ff2cf7cf5c86133c570d7e930ef88e8453866eb1f69e13b6',
   }),
 })
 

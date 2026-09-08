@@ -381,7 +381,7 @@ export async function testWorkspaceImportLocalFilesSvgPreservesBytes() {
     const svg = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">', '<circle cx="5" cy="5" r="4"/>', '</svg>', ''].join('\n')
     const files = [createFile('icon.svg', svg)]
     const res = await importWorkspaceLocalFiles({ fs, files, parentPath: '/' })
-    if (res.createdPaths.length !== 1) throw new Error('expected 1 created path')
+    if (res.createdPaths.length !== 4) throw new Error(`expected original SVG plus metadata, GLB and GLTF, got ${JSON.stringify(res)}`)
 
     const entries = await fs.listEntries()
     const svgPath = entries.find(e => e.kind === 'file' && e.name === 'icon.svg')?.path || ''
@@ -1270,8 +1270,8 @@ export async function testActivateFirstImportedWorkspaceFilePreservesImportedFro
     })
 
     const afterPriorActiveImport = useGraphStore.getState()
-    if (afterPriorActiveImport.canvas2dRenderer !== 'd3') {
-      throw new Error(`expected prior active import to land on d3, got ${String(afterPriorActiveImport.canvas2dRenderer || '')}`)
+    if (afterPriorActiveImport.canvas2dRenderer !== 'multiDimTable') {
+      throw new Error(`expected prior active import to land on its explicit table renderer, got ${String(afterPriorActiveImport.canvas2dRenderer || '')}`)
     }
 
     const videoText = readDocsSsotFixtureText(DOCS_SSOT_VALIDATION_FIXTURE_BASENAME)

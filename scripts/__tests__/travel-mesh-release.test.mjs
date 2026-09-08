@@ -140,7 +140,7 @@ const fakeCloudflare = (environment, { extraBaselineSecrets = {}, empty = false,
     setFailUpload: worker => { failUploadWorker = worker },
     setExposeOnUpload: worker => { exposeOnUploadWorker = worker },
     setCompeteBeforeActivation: worker => { competeBeforeActivationWorker = worker },
-    setFailMigration: () => { failMigration = true; appliedMigrationNames = allMigrations.slice(0, -1) },
+    setFailMigration: pending => { failMigration = true; appliedMigrationNames = allMigrations.filter(name => name !== pending) },
     setProviderSecrets: (worker, names) => { states.get(worker).providerSecrets = [...names].sort() },
     baseline: new Map([...states].map(([worker, state]) => [worker, state.active])) }
 }
@@ -567,7 +567,7 @@ test('a partial D1 migration failure is re-inventoried and never reported as rol
   const environment = protectedEnvironment(), cloudflare = fakeCloudflare(environment)
   const now = () => new Date('2026-08-20T00:10:00.000Z')
   const preflight = await preflightMesh({ sourceSha, candidateDigest, authorization, environment, run: cloudflare.run, apiFetch: cloudflare.apiFetch, now })
-  cloudflare.setFailMigration()
+  cloudflare.setFailMigration('0018_agentic_commerce_paid_resources.sql')
   await assert.rejects(() => deployMesh({ sourceSha, candidateDigest, authorization, preflight, environment,
     run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn: fetchReadiness, now }), error => {
     assert.equal(error.receipt.status, 'preserve-required')

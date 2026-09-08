@@ -6,15 +6,15 @@ import {
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { readRecordPathValue, unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
-import type { WidgetRegistryEntry, WidgetRegistryField, WidgetRegistryPort, WidgetRegistrySchemaMapping } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
+import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import { resolveWidgetRegistryEntry } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
 import { applyFlowDataflowReducer, applyFlowDataflowTransform } from '@/lib/storyboardWidget/flowDataflowTransforms'
 import { isFrontmatterFlowComputedEnabled } from '@/lib/graph/frontmatterFlowSettings'
 import { readFlowComputeSource, runFlowComputeSource } from '@/lib/storyboardWidget/flowComputeInline'
 import { runRegisteredFlowWidgetCompute } from '@/lib/storyboardWidget/widgetComputeRegistry'
 import { buildTextWidgetOutputSrcDoc } from '@/lib/render/widgetOutputSrcDoc'
-import { hashRecordSignature32, hashSignatureParts } from '@/lib/hash/signature'
-import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
+import { hashRecordSignature32 } from '@/lib/hash/signature'
+import { buildBoundedFlowCacheKey, createFlowConnectedValuesCache } from './flowConnectedValuesCache'
 import { isPlainObject } from '@/lib/graph/value'
 import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
 import { readGraphNodeProperties } from '@/lib/cards/graphNodeCardFields'
@@ -29,38 +29,12 @@ export type FlowConnectedValue = {
   sources: ReadonlyArray<FlowConnectedValueSource>
 }
 export type FlowConnectedValuesBySchemaPath = Record<string, FlowConnectedValue>
-const CONNECTED_VALUES_RESULT_CACHE_LIMIT = 64
-const connectedValuesResultCache = new Map<string, Map<string, Map<string, Map<string, FlowConnectedValuesBySchemaPath>>>>()
+const connectedValuesCache = createFlowConnectedValuesCache<Map<string, FlowConnectedValuesBySchemaPath>>()
 function cleanString(v: unknown): string {
   const scalar = unwrapGraphCellValue(v)
   return typeof scalar === 'string' ? scalar.trim() : ''
 }
 
-function registryCollectionKey(registry: ReadonlyArray<WidgetRegistryEntry>): string {
-  if (!Array.isArray(registry) || registry.length === 0) return ''
-  const parts: string[] = []
-  for (let i = 0; i < registry.length; i += 1) {
-    const entry = registry[i]
-    if (!entry || entry.isEnabled !== true) continue
-    const nodeTypeId = cleanString(entry.nodeTypeId)
-    if (!nodeTypeId) continue
-    const fields = Array.isArray(entry.fields) ? entry.fields as ReadonlyArray<WidgetRegistryField> : []
-    const ports = Array.isArray(entry.ports) ? entry.ports as ReadonlyArray<WidgetRegistryPort> : []
-    const mappings = Array.isArray(entry.schemaMappings) ? entry.schemaMappings as ReadonlyArray<WidgetRegistrySchemaMapping> : []
-    const fieldsKey = fields.map(field => `${cleanString(field.fieldKey)}:${cleanString(field.schemaPath)}`).join(',')
-    const portsKey = ports.map(port => `${cleanString(port.portKey)}:${cleanString(port.direction)}:${cleanString(port.schemaPath)}`).join(',')
-    const mappingsKey = mappings.map(mapping => `${cleanString(mapping.fromPath)}>${cleanString(mapping.toPath)}`).join(',')
-    parts.push([
-      nodeTypeId,
-      cleanString(entry.widgetTypeId),
-      cleanString(entry.formId),
-      fieldsKey,
-      portsKey,
-      mappingsKey,
-    ].join('|'))
-  }
-  return parts.join('\n')
-}
 const readPlainObject = (value: unknown): Record<string, unknown> | null => {
   return isPlainObject(value) ? (value as Record<string, unknown>) : null
 }
@@ -77,101 +51,12 @@ function isStoppedFlowValue(value: unknown): boolean { return value == null }
 
 function isMaterializedFlowOutputValue(value: unknown): boolean { return !isStoppedFlowValue(value) && (typeof value !== 'string' || value.trim().length > 0) }
 
-function buildConnectedValuesTargetKey(targetNodeIds?: ReadonlySet<string>): string {
-  if (!targetNodeIds || targetNodeIds.size === 0) return '*'
-  return Array.from(targetNodeIds.values()).map(v => cleanString(v)).filter(Boolean).sort((a, b) => a.localeCompare(b)).join('\n')
-}
-
 function normalizeConnectedValuesTargetNodeIds(graph: GraphData, targetNodeIds?: ReadonlySet<string>): ReadonlySet<string> | undefined {
   if (!targetNodeIds || targetNodeIds.size === 0) return undefined
   return new Set(Array.from(targetNodeIds.values()).map(rawId => {
     const id = cleanString(rawId)
     return id ? cleanString(resolveGraphNodeByCanonicalId(graph, id)?.id) || id : ''
   }).filter(Boolean))
-}
-
-function buildConnectedValuesGraphKey(args: {
-  graph: GraphData
-  graphRevision?: number
-  graphSemanticKey?: string
-  preserveMaterializedOutputs?: boolean
-}): string {
-  const explicitGraphSemanticKey = String(args.graphSemanticKey || '').trim()
-  if (explicitGraphSemanticKey) {
-    return buildScopedGraphSemanticKey('flow-connected-values-graph', {
-      graphRevision: args.graphRevision,
-      graphSemanticKey: [
-        explicitGraphSemanticKey,
-        args.preserveMaterializedOutputs === false ? 'recompute-materialized-outputs' : 'preserve-materialized-outputs',
-      ].join('|'),
-    })
-  }
-  const graph = args.graph
-  const nodes = Array.isArray(graph.nodes) ? graph.nodes : []
-  const edges = Array.isArray(graph.edges) ? graph.edges : []
-  const parts: Array<string | number | boolean> = [
-    'rev',
-    Number.isFinite(args.graphRevision) ? Number(args.graphRevision) : -1,
-    'preserve',
-    args.preserveMaterializedOutputs !== false,
-    'nodes',
-    nodes.length,
-  ]
-  for (let i = 0; i < nodes.length; i += 1) {
-    const node = nodes[i] as GraphNode
-    parts.push(
-      cleanString(node?.id),
-      cleanString(node?.type),
-      hashRecordSignature32(readGraphNodeProperties(node), { maxEntries: 80, maxDepth: 3 }),
-    )
-  }
-  parts.push('edges', edges.length)
-  for (let i = 0; i < edges.length; i += 1) {
-    const edge = edges[i] as GraphEdge
-    const { src, tgt } = readGraphEdgeEndpoints(edge)
-    parts.push(
-      cleanString((edge as unknown as { id?: unknown })?.id),
-      src || '',
-      tgt || '',
-      hashRecordSignature32(readPersistedPropertyObject(edge?.properties) || {}, { maxEntries: 40, maxDepth: 2 }),
-    )
-  }
-  return hashSignatureParts(parts)
-}
-
-function readConnectedValuesResultCache(args: {
-  graphKey: string
-  registryKey: string
-  targetKey: string
-}): Map<string, FlowConnectedValuesBySchemaPath> | null {
-  return connectedValuesResultCache.get(args.graphKey)?.get(args.registryKey)?.get(args.targetKey) || null
-}
-
-function writeConnectedValuesResultCache(args: {
-  graphKey: string
-  registryKey: string
-  targetKey: string
-  result: Map<string, FlowConnectedValuesBySchemaPath>
-}): void {
-  let byRegistry = connectedValuesResultCache.get(args.graphKey)
-  if (!byRegistry) {
-    byRegistry = new Map<string, Map<string, Map<string, FlowConnectedValuesBySchemaPath>>>()
-    if (connectedValuesResultCache.size >= CONNECTED_VALUES_RESULT_CACHE_LIMIT) {
-      const oldestKey = connectedValuesResultCache.keys().next().value
-      if (typeof oldestKey === 'string') connectedValuesResultCache.delete(oldestKey)
-    }
-    connectedValuesResultCache.set(args.graphKey, byRegistry)
-  }
-  let byTarget = byRegistry.get(args.registryKey)
-  if (!byTarget) {
-    byTarget = new Map<string, Map<string, FlowConnectedValuesBySchemaPath>>()
-    byRegistry.set(args.registryKey, byTarget)
-  }
-  if (!byTarget.has(args.targetKey) && byTarget.size >= CONNECTED_VALUES_RESULT_CACHE_LIMIT) {
-    const oldestKey = byTarget.keys().next().value
-    if (typeof oldestKey === 'string') byTarget.delete(oldestKey)
-  }
-  byTarget.set(args.targetKey, args.result)
 }
 
 function normalizeSchemaPath(schemaPath: string | undefined, fallbackKey: string): string {
@@ -511,16 +396,12 @@ export function computeFlowConnectedValuesBySchemaPath(args: {
   const graph = args.graphData
   if (!graph) return new Map()
   const registry = Array.isArray(args.registry) ? args.registry : []
-  const registryKey = registryCollectionKey(registry)
   const requestedTargets = normalizeConnectedValuesTargetNodeIds(graph, args.targetNodeIds)
-  const targetKey = buildConnectedValuesTargetKey(requestedTargets)
-  const graphKey = buildConnectedValuesGraphKey({
-    graph,
-    graphRevision: args.graphRevision,
-    graphSemanticKey: args.graphSemanticKey,
-    preserveMaterializedOutputs: args.preserveMaterializedOutputs,
-  })
-  const cached = readConnectedValuesResultCache({ graphKey, registryKey, targetKey })
+  const cacheKey = buildBoundedFlowCacheKey([
+    graph, registry, requestedTargets ? [...requestedTargets] : null,
+    args.graphRevision, args.graphSemanticKey, args.preserveMaterializedOutputs !== false,
+  ])
+  const cached = connectedValuesCache.read(cacheKey)
   if (cached) return cached
   const computeEnabled = isFrontmatterFlowComputedEnabled(graph)
   const nodes = Array.isArray(graph.nodes) ? graph.nodes : []
@@ -602,7 +483,7 @@ export function computeFlowConnectedValuesBySchemaPath(args: {
       if (requestedTargets && !requestedTargets.has(id)) continue
       out.set(id, computedByNodeId.get(id) || {})
     }
-    writeConnectedValuesResultCache({ graphKey, registryKey, targetKey, result: out })
+    connectedValuesCache.write(cacheKey, out)
     return out
   }
 
@@ -691,6 +572,6 @@ export function computeFlowConnectedValuesBySchemaPath(args: {
     if (requestedTargets && !requestedTargets.has(id)) continue
     out.set(id, computedByNodeId.get(id) || {})
   }
-  writeConnectedValuesResultCache({ graphKey, registryKey, targetKey, result: out })
+  connectedValuesCache.write(cacheKey, out)
   return out
 }

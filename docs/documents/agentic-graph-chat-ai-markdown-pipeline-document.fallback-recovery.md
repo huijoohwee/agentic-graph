@@ -26,5 +26,5 @@ The canonical recovery owner is the shared upstream recovery path reused by subm
 ## Guardrails
 - Strip residual artifacts: bare `agenticOs`, escaped `\---`, escaped fence wrappers.
 - Strip duplicated recovered shell sections (`# {{subject}}`, `## Intent`, `## Request`, leading `## Solution`) but keep useful content headings.
-- Strip legacy parallel grouping aliases so the recovered canonical document keeps `flow.subgraphs` as the only grouping authoring surface.
+- `chatHistoryWorkspace.agenticOs.recovery.ts` preserves invalid parallel grouping in recovered candidates for `chatMarkdownValidation.ts` to reject. `chatHistoryWorkspace.agenticOs.build.ts` accepts only validated recovered content; otherwise it rebuilds a canonical fallback with `flow.subgraphs` as the only grouping authoring surface.
 - Avoid adding new fallback branches outside the canonical recovery path.

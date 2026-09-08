@@ -58,15 +58,9 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   worldOwnership: 'overlay-only',
 })
 export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze(['agentic-graph-game-mmorpg-demo.companion.md', 'agentic-graph-game-mmorpg-demo.md'])
-export const AGENTIC_OS_WORKSPACE_SEED_INVENTORY = Object.freeze([
-  'README.md',
-  XR_V2_SEED_BASENAME,
-  CITY_SIM_SEED_BASENAME,
-  FLIGHT_COMPANION_BASENAME,
-  FLIGHT_SEED_BASENAME,
-  ...DRAFT_WORKSPACE_SEED_BASENAMES,
-  PHYSICS_SEED_BASENAME,
-])
+export const AGENTIC_OS_WORKSPACE_SEED_INVENTORY = Object.freeze(JSON.parse(
+  await readFile(new URL('../config/workspace-seed-inventory.json', import.meta.url), 'utf8'),
+))
 export const AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY = Object.freeze([
   PHYSICS_SEED_BASENAME,
 ])

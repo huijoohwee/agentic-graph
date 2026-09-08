@@ -1,5 +1,5 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
+import { buildGraphDocumentMetaKey } from '@/lib/graph/graphMetaKey'
 
 export function testFlowWidgetUiStateIsScopedByGraphMetaKey() {
   useGraphStore.getState().setDocumentStructureBaselineLock(false)
@@ -9,7 +9,7 @@ export function testFlowWidgetUiStateIsScopedByGraphMetaKey() {
     context: 'frontmatter-flow',
     nodes: [{ id: 'NODE_SVO', type: 'Node', label: 'SVO', properties: {} }],
     edges: [],
-    metadata: { kind: 'frontmatter-flow', sourceLayerHash: 'graph-a' },
+    metadata: { kind: 'frontmatter-flow', source: 'workspace:/graph-a.md', sourceLayerHash: 'graph-a' },
   } as never)
 
   useGraphStore.getState().setFlowWidgetPinnedByNodeId({ NODE_SVO: false })
@@ -21,12 +21,31 @@ export function testFlowWidgetUiStateIsScopedByGraphMetaKey() {
   if (afterA.flowWidgetPosByNodeId.NODE_SVO?.top !== 10) throw new Error('expected pos for graph A')
   if (afterA.flowWidgetWorldPosByNodeId.NODE_SVO?.x !== 1) throw new Error('expected world pos for graph A')
 
+  const graphA = afterA.graphData!
+  const documentKeyA = buildGraphDocumentMetaKey(graphA)
+  useGraphStore.getState().setGraphData({
+    ...graphA, nodes: [], edges: [], metadata: { ...graphA.metadata, pending: true },
+  })
+  const whilePending = useGraphStore.getState()
+  if (whilePending.flowWidgetPinnedByNodeIdByGraphMetaKey[documentKeyA] !== afterA.flowWidgetPinnedByNodeIdByGraphMetaKey[documentKeyA]
+    || whilePending.flowWidgetPosByNodeIdByGraphMetaKey[documentKeyA] !== afterA.flowWidgetPosByNodeIdByGraphMetaKey[documentKeyA]
+    || whilePending.flowWidgetWorldPosByNodeIdByGraphMetaKey[documentKeyA] !== afterA.flowWidgetWorldPosByNodeIdByGraphMetaKey[documentKeyA]) {
+    throw new Error('expected a pending placeholder to preserve all graph A placement caches')
+  }
+  useGraphStore.getState().setGraphData(graphA)
+  const afterReadyA = useGraphStore.getState()
+  if (afterReadyA.flowWidgetPinnedByNodeId.NODE_SVO !== false
+    || afterReadyA.flowWidgetPosByNodeId.NODE_SVO?.left !== 20
+    || afterReadyA.flowWidgetWorldPosByNodeId.NODE_SVO?.y !== 2) {
+    throw new Error('expected pending-to-ready graph A to restore pin, screen, and world placement')
+  }
+
   useGraphStore.getState().setGraphData({
     type: 'Graph',
     context: 'frontmatter-flow',
     nodes: [{ id: 'NODE_SVO', type: 'Node', label: 'SVO', properties: {} }],
     edges: [],
-    metadata: { kind: 'frontmatter-flow', sourceLayerHash: 'graph-b' },
+    metadata: { kind: 'frontmatter-flow', source: 'workspace:/graph-b.md', sourceLayerHash: 'graph-b' },
   } as never)
 
   const afterB = useGraphStore.getState()
@@ -39,7 +58,7 @@ export function testFlowWidgetUiStateIsScopedByGraphMetaKey() {
     context: 'frontmatter-flow',
     nodes: [{ id: 'NODE_SVO', type: 'Node', label: 'SVO', properties: {} }],
     edges: [],
-    metadata: { kind: 'frontmatter-flow', sourceLayerHash: 'graph-a' },
+    metadata: { kind: 'frontmatter-flow', source: 'workspace:/graph-a.md', sourceLayerHash: 'graph-a' },
   } as never)
 
   const afterARestore = useGraphStore.getState()
@@ -49,6 +68,8 @@ export function testFlowWidgetUiStateIsScopedByGraphMetaKey() {
 }
 
 export function testFlowWidgetUiStateCarriesAcrossSameSourceRecomposeHashChanges() {
+  const readWidgetCacheKeys = () => { const s = useGraphStore.getState(); return [s.flowWidgetPinnedByNodeIdByGraphMetaKey, s.flowWidgetPosByNodeIdByGraphMetaKey, s.flowWidgetWorldPosByNodeIdByGraphMetaKey].flatMap(Object.keys) }
+  const cacheKeysBefore = new Set(readWidgetCacheKeys())
   useGraphStore.getState().setDocumentStructureBaselineLock(false)
 
   useGraphStore.getState().setGraphData({
@@ -106,6 +127,9 @@ export function testFlowWidgetUiStateCarriesAcrossSameSourceRecomposeHashChanges
   } as never)
 
   const afterGrowth = useGraphStore.getState()
+  if (readWidgetCacheKeys().some(key => key.startsWith('frontmatter-flow:workspace:/typed.md:') && !cacheKeysBefore.has(key))) {
+    throw new Error('expected document revisions to reuse widget caches without creating revision-key entries')
+  }
   if (afterGrowth.flowWidgetPinnedByNodeId.NODE_TEXT !== true) {
     throw new Error('expected same-document topology growth to preserve retained widget placement authority')
   }
@@ -224,7 +248,7 @@ export function testFlowWidgetUiStateCarriesOnlyStableRetainedNodesAcrossSameSou
       throw new Error(`expected removed, new, and layout-changed IDs to remain unplaced, got ${JSON.stringify(actualPlacementKeySets)}`)
     }
 
-    const activeGraphKey = buildGraphMetaKeyIgnoringPending(after.graphData)
+    const activeGraphKey = buildGraphDocumentMetaKey(after.graphData)
     const scopedPlacementKeys = Object.keys(
       (after.flowWidgetPosByNodeIdByGraphMetaKey || {})[activeGraphKey] || {},
     ).sort()

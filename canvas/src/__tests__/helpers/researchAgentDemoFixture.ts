@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { resolveRepoTestDataPath } from '@/tests/lib/repoTestData'
 
 export type ResearchAgentDemoFixture = {
   path: string
@@ -17,22 +18,6 @@ const RESEARCH_AGENT_DEMO_SIGNATURES = [
   'kgra_superagent_harness',
 ] as const
 
-const findAgenticGraphRoot = (startDir: string): string => {
-  let current = path.resolve(startDir)
-  for (let i = 0; i < 8; i += 1) {
-    if (
-      fs.existsSync(path.join(current, 'canvas', 'src')) &&
-      fs.existsSync(path.join(current, 'agentic_graph_parser'))
-    ) {
-      return current
-    }
-    const parent = path.dirname(current)
-    if (parent === current) break
-    current = parent
-  }
-  return path.resolve(startDir)
-}
-
 const listMarkdownFiles = (rootPath: string): string[] => {
   if (!fs.existsSync(rootPath)) return []
   const entries = fs.readdirSync(rootPath, { withFileTypes: true })
@@ -47,37 +32,28 @@ const textMatchesResearchAgentDemo = (text: string): boolean => {
   return RESEARCH_AGENT_DEMO_SIGNATURES.every(signature => text.includes(signature))
 }
 
-const findSemanticResearchAgentDemoPath = (rootPath: string): string | null => {
+const findSemanticResearchAgentDemo = (rootPath: string): { path: string; text: string } | null => {
   for (const candidate of listMarkdownFiles(rootPath)) {
     const text = fs.readFileSync(candidate, 'utf8')
-    if (textMatchesResearchAgentDemo(text)) return candidate
+    if (textMatchesResearchAgentDemo(text)) return { path: candidate, text }
   }
   return null
 }
 
-export function resolveResearchAgentDemoPath(startDir = process.cwd()): string {
-  const explicitPath = String(process.env.AGENTIC_OS_RESEARCH_AGENT_DEMO_PATH || '').trim()
-  if (explicitPath) return path.resolve(explicitPath)
-
-  const agenticGraphRoot = findAgenticGraphRoot(startDir)
-  const publishedDocsRoot = String(process.env.AGENTIC_OS_PUBLISHED_DOCS_ROOT || '').trim()
-  const searchRoots = [
-    publishedDocsRoot ? path.resolve(publishedDocsRoot) : '',
-    path.resolve(agenticGraphRoot, '..', 'huijoohwee', 'docs'),
-    path.resolve(agenticGraphRoot, 'docs', 'documents'),
-  ].filter(Boolean)
-
-  for (const rootPath of searchRoots) {
-    const found = findSemanticResearchAgentDemoPath(rootPath)
-    if (found) return found
-  }
-
-  throw new Error(`expected a markdown demo with signatures ${RESEARCH_AGENT_DEMO_SIGNATURES.join(', ')} under ${searchRoots.join(', ') || startDir}`)
-}
-
 export function readResearchAgentDemoFixture(): ResearchAgentDemoFixture {
-  const demoPath = resolveResearchAgentDemoPath()
-  const text = fs.readFileSync(demoPath, 'utf8')
+  const explicitPath = String(process.env.AGENTIC_OS_RESEARCH_AGENT_DEMO_PATH || '').trim()
+  const publishedDocsRoot = String(process.env.AGENTIC_OS_PUBLISHED_DOCS_ROOT || '').trim()
+  const source = (() => {
+    if (!explicitPath && publishedDocsRoot) {
+      const found = findSemanticResearchAgentDemo(path.resolve(publishedDocsRoot))
+      if (!found) throw new Error(`expected a research demo with signatures ${RESEARCH_AGENT_DEMO_SIGNATURES.join(', ')} under ${publishedDocsRoot}`)
+      return found
+    }
+    // Product regression data owns the default. Published validation is explicit.
+    const demoPath = explicitPath ? path.resolve(explicitPath) : resolveRepoTestDataPath('mainpanel-superagent-integration-regression.md')
+    return { path: demoPath, text: fs.readFileSync(demoPath, 'utf8') }
+  })()
+  const { path: demoPath, text } = source
   if (!text.trim()) throw new Error(`expected research agent demo markdown at ${demoPath} to be non-empty`)
   if (!textMatchesResearchAgentDemo(text)) {
     throw new Error(`expected research agent demo markdown at ${demoPath} to expose the semantic demo signatures`)

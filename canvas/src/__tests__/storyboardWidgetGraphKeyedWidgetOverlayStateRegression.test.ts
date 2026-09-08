@@ -99,7 +99,7 @@ export function testStoryboardWidgetOverlayPrefersGraphKeyedWidgetState() {
   if (runtimeText.includes("?? state.flowWidgetWorldPosByNodeId?.[nodeId]")) {
     throw new Error('expected Storyboard Widget placement runtime to forbid global world-position fallback when an active render-graph key is available')
   }
-  if (!runtimeText.includes('const currentStoredWorldForPlacement = storyboardPinnedCardLayoutActive || floatingUsesScreenAuthority')
+  if (!runtimeText.includes('const currentStoredWorldForPlacement = floatingUsesScreenAuthority ? null : currentStoredWorld')
     || !runtimeText.includes('const storedWorld = currentStoredWorldForPlacement || (floatingUsesScreenAuthority ? null : widgetWorldPosRef.current)')) {
     throw new Error('expected Storyboard Widget placement loop to keep graph-keyed world SSOT out of floating screen-authority placement reads')
   }

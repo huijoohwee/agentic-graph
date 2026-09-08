@@ -7,11 +7,11 @@ import {
   type CityGeoZone,
   type CityGeoZoneStyle,
   type CityGeographicProfile,
-} from '../../../../gympgrph/src/cityGeoOverlay.js'
+} from 'gympgrph/testkit/cityGeoOverlay'
 import {
   REGIONAL_POI_LAYER_ORDER,
   REGIONAL_POI_SOURCE_ID,
-} from '../../../../gympgrph/src/regionalPoiMapLibre.js'
+} from 'gympgrph/testkit/regionalPoiMapLibre'
 
 export const TEST_LAYER_ANCHOR = 'test-overlay-anchor'
 

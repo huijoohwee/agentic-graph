@@ -5,7 +5,7 @@ import { projectCitySimToGeospatialOverlay } from '@/features/game-city-sim/city
 import type { CitySimSnapshot } from '@/features/game-city-sim/citySimRuntimeState'
 import {
   cityGeoPresentationStateEntries,
-} from '../../../gympgrph/src/cityGeoPresentationMapLibre'
+} from 'gympgrph/testkit/cityGeoPresentationMapLibre'
 import {
   readAuthoritativeCitySimDocument,
   readAuthoritativeCitySimSource,

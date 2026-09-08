@@ -1,4 +1,9 @@
-import storageWorkerModule from '../../../cloudflare/workers/agentic-graph-storage/index.ts'
+import assert from 'node:assert/strict'
+import {
+  createStorageWorkerFetch as createWorkerFetch,
+  createStorageWorkerRequest,
+  readStorageWorker,
+} from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
 import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import {
   __resetAgenticGraphStorageDbForTests,
@@ -15,31 +20,21 @@ import { applyPulledAgenticGraphStorageChangesToSourceFiles } from '@/features/s
 import { uploadGeneratedWorkspaceBlobToAgenticGraphStorage } from '@/features/source-files/sourceFilesBinaryStorage'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  AGENTIC_OS_STORAGE_API_VERSION,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
   hashAgenticGraphStorageContent,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
-const worker = (
-  typeof (storageWorkerModule as { fetch?: unknown }).fetch === 'function'
-    ? storageWorkerModule
-    : (storageWorkerModule as unknown as { default: typeof storageWorkerModule }).default
-) as typeof storageWorkerModule
-
-const createWorkerFetch = (env: ReturnType<typeof createFakeAgenticGraphStorageWorkerEnv>) => {
-  return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const request = input instanceof Request ? input : new Request(String(input), init)
-    return worker.fetch(request, env as never)
-  }
-}
+const worker = readStorageWorker()
 
 export async function testAgenticGraphStorageClientSyncPushesOutboxAndUpdatesCursor() {
   await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const sessionToken = 'storage-sync-session-token'
   const observedRequests: Array<{ pathname: string; authorization: string }> = []
   const workerFetch = createWorkerFetch(env)
   const fetchImpl: typeof fetch = async (input, init) => {
-    const request = input instanceof Request ? input : new Request(String(input), init)
+    const request = createStorageWorkerRequest(input, init)
     observedRequests.push({
       pathname: new URL(request.url).pathname,
       authorization: String(request.headers.get('authorization') || ''),
@@ -82,7 +77,7 @@ export async function testAgenticGraphStorageClientSyncPushesOutboxAndUpdatesCur
   const result = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_push',
     deviceId,
-    baseUrl: 'https://example.com',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
     sessionToken,
     fetchImpl,
     dbState,
@@ -102,7 +97,7 @@ export async function testAgenticGraphStorageClientSyncPushesOutboxAndUpdatesCur
 
   const exported = await exportAgenticGraphStorageWorkspace({
     workspaceId: 'wk_client_push',
-    baseUrl: 'https://example.com',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
     sessionToken,
     fetchImpl,
   })
@@ -110,7 +105,7 @@ export async function testAgenticGraphStorageClientSyncPushesOutboxAndUpdatesCur
   const blobUpload = await uploadGeneratedWorkspaceBlobToAgenticGraphStorage({
     workspacePath: 'generated/client-push.bin',
     workspaceId: 'wk_client_push',
-    baseUrl: 'https://example.com',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
     uploadNow: true,
     sessionToken,
     blob: new Blob(['bounded-blob'], { type: 'application/octet-stream' }),
@@ -127,6 +122,7 @@ export async function testAgenticGraphStorageClientSyncPushesOutboxAndUpdatesCur
 
 export async function testAgenticGraphStorageClientSyncPullsRemoteChangesIntoPersistedCache() {
   await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   const env = createFakeAgenticGraphStorageWorkerEnv()
   const fetchImpl = createWorkerFetch(env)
   const dbState = await getAgenticGraphStorageDb()
@@ -137,7 +133,7 @@ export async function testAgenticGraphStorageClientSyncPullsRemoteChangesIntoPer
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION,
         workspaceId: 'wk_client_pull',
         deviceId: 'dev_remote_writer',
         mutations: [
@@ -195,7 +191,7 @@ export async function testAgenticGraphStorageClientSyncPullsRemoteChangesIntoPer
   const result = await syncAgenticGraphStorageNow({
     workspaceId: 'wk_client_pull',
     deviceId,
-    baseUrl: 'https://example.com',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com',
     fetchImpl,
     dbState,
   })
@@ -212,125 +208,38 @@ export async function testAgenticGraphStorageClientSyncPullsRemoteChangesIntoPer
   await __resetAgenticGraphStorageDbForTests()
 }
 
-export async function testAgenticGraphStorageClientSyncSanitizesNullNumericFieldsFromPullPayloads() {
-  await __resetAgenticGraphStorageDbForTests()
-  const dbState = await getAgenticGraphStorageDb()
-  const workspaceId = 'wk_client_pull_null_numeric'
-  const deviceId = 'dev_pull_null_numeric'
-  const fetchImpl: typeof fetch = async (input: RequestInfo | URL) => {
-    const url = String(input instanceof Request ? input.url : input)
-    if (url.endsWith('/api/storage/push')) {
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-          workspaceId,
-          ackCursor: 'ack:null-numeric',
-          serverTimeMs: 1_777_300_000_000,
-          acknowledgements: [],
-        }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      )
+export async function testAgenticGraphStorageClientSyncRejectsMalformedRemoteNumericFields() {
+  for (const invalid of ['documentRevision', 'childRevision', 'graphRevision'] as const) {
+    await __resetAgenticGraphStorageDbForTests()
+    __resetAgenticGraphStorageRouteAvailabilityForTests()
+    const dbState = await getAgenticGraphStorageDb(), workspaceId = `wk_remote_numeric_${invalid}`
+    let requests = 0
+    const fetchImpl: typeof fetch = async () => {
+      requests += 1
+      return Response.json({ ok: true, apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION, workspaceId,
+        nextCursor: '2026-05-04T00:00:00.000Z', nextPageCursor: null, pageComplete: true, serverTimeMs: 1,
+        changes: { deletions: [], documents: invalid !== 'documentRevision' ? [] : [{
+          id: 'invalid-doc', workspaceId, canonicalPath: 'invalid.md', contentMd: 'keep invalid remote bytes out', revision: null,
+        }], documentChunks: invalid !== 'childRevision' ? [] : [{ id: 'invalid-chunk', workspaceId,
+          documentId: 'parent', chunkKey: 'body', syncRevision: null, updatedAtMs: 1 }],
+          graphSnapshots: invalid !== 'graphRevision' ? [] : [{ id: 'invalid-graph', workspaceId,
+            documentId: 'parent', graphRevision: null, syncRevision: 1, updatedAtMs: 1 }] },
+      })
     }
-    if (url.endsWith('/api/storage/pull')) {
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-          workspaceId,
-          nextCursor: 'pull:null-numeric',
-          serverTimeMs: 1_777_300_000_100,
-          changes: {
-            documents: [
-              {
-                id: 'doc_null_numeric',
-                workspaceId,
-                canonicalPath: 'docs/null-numeric.md',
-                title: 'Null Numeric',
-                docType: 'note',
-                lang: 'en-US',
-                graphId: 'graph_null_numeric',
-                sourceKind: 'markdown',
-                contentMd: '# Null Numeric',
-                contentHash: 'sha256:null-numeric',
-                parserVersion: '1.0.0',
-                revision: null,
-                updatedAtMs: null,
-                deleted: false,
-              },
-            ],
-            documentChunks: [
-              {
-                id: 'chunk_null_numeric',
-                documentId: 'doc_null_numeric',
-                workspaceId,
-                chunkKey: 'body',
-                chunkOrder: null,
-                heading: null,
-                markdown: 'Body',
-                tokenEstimate: null,
-                contentHash: 'sha256:null-chunk',
-                updatedAtMs: null,
-              },
-            ],
-            graphSnapshots: [
-              {
-                id: 'graph_null_numeric',
-                documentId: 'doc_null_numeric',
-                workspaceId,
-                graphRevision: null,
-                graphHash: 'sha256:null-graph',
-                graphJson: null,
-                layoutJson: [],
-                derivedFromDocumentRevision: null,
-                updatedAtMs: null,
-              },
-            ],
-          },
-        }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      )
+    await assert.rejects(syncAgenticGraphStorageNow({ workspaceId, deviceId: 'dev-numeric',
+      baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com', fetchImpl, dbState }),
+      /Invalid pulled document|Invalid child sync (state|revision|natural identity)/, 'remote revisions must never be fabricated by numeric coercion')
+    assert.ok(requests > 0, 'malformed remote fields must reach the response validation boundary')
+    for (const name of ['documents', 'documentChunks', 'graphSnapshots', 'syncCursor'] as const) {
+      assert.equal((await dbState.collections[name].find().exec()).length, 0, `${invalid} must leave ${name} unchanged`)
     }
-    return new Response('not found', { status: 404 })
+    await __resetAgenticGraphStorageDbForTests()
   }
-
-  const result = await syncAgenticGraphStorageNow({
-    workspaceId,
-    deviceId,
-    baseUrl: 'https://example.com',
-    fetchImpl,
-    dbState,
-  })
-  if (result.pulledDocumentCount !== 1 || result.pulledChunkCount !== 1 || result.pulledGraphSnapshotCount !== 1) {
-    throw new Error('expected one pulled document/chunk/graph snapshot in null-numeric sanitization regression test')
-  }
-  const docRow = await dbState.collections.documents.findOne('doc_null_numeric').exec()
-  if (!docRow) throw new Error('expected sanitized pulled document row')
-  if (docRow.get('documentRevision') !== 0) throw new Error('expected null document revision to sanitize to numeric 0')
-  if (docRow.get('updatedAtMs') !== 0) throw new Error('expected null document updatedAtMs to sanitize to numeric 0')
-
-  const chunkRow = await dbState.collections.documentChunks.findOne('chunk_null_numeric').exec()
-  if (!chunkRow) throw new Error('expected sanitized pulled document chunk row')
-  if (chunkRow.get('chunkOrder') !== 0) throw new Error('expected null chunkOrder to sanitize to numeric 0 fallback')
-  if (chunkRow.get('tokenEstimate') !== 0) throw new Error('expected null tokenEstimate to sanitize to numeric 0')
-  if (chunkRow.get('updatedAtMs') !== 0) throw new Error('expected null chunk updatedAtMs to sanitize to numeric 0')
-
-  const graphRow = await dbState.collections.graphSnapshots.findOne('graph_null_numeric').exec()
-  if (!graphRow) throw new Error('expected sanitized pulled graph snapshot row')
-  if (graphRow.get('graphRevision') !== 0) throw new Error('expected null graphRevision to sanitize to numeric 0')
-  if (graphRow.get('derivedFromDocumentRevision') !== 0) throw new Error('expected null derivedFromDocumentRevision to sanitize to numeric 0')
-  if (graphRow.get('updatedAtMs') !== 0) throw new Error('expected null graph updatedAtMs to sanitize to numeric 0')
-  const graphJson = graphRow.get('graphJson') as unknown
-  if (!graphJson || typeof graphJson !== 'object' || Array.isArray(graphJson)) {
-    throw new Error('expected invalid non-object graphJson to sanitize to object')
-  }
-  if (graphRow.get('layoutJson') !== null) throw new Error('expected invalid array layoutJson to sanitize to null')
-
-  await __resetAgenticGraphStorageDbForTests()
 }
 
 export async function testQueueAgenticGraphStorageMutationSanitizesNullNumericFieldsInOutboundRecords() {
   await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   const dbState = await getAgenticGraphStorageDb()
   const badGraphJson: Record<string, unknown> = { label: 'bad' }
   badGraphJson.fn = () => void 0
@@ -370,8 +279,9 @@ export async function testQueueAgenticGraphStorageMutationSanitizesNullNumericFi
   await __resetAgenticGraphStorageDbForTests()
 }
 
-export async function testAgenticGraphStorageClientSyncSanitizesLegacyOutboxPayloadsBeforePush() {
+export async function testAgenticGraphStorageClientSyncRetainsLegacyChildPayloadWithoutTransmission() {
   await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_legacy_outbox_sanitize'
   const deviceId = 'dev_legacy_outbox_sanitize'
@@ -412,74 +322,26 @@ export async function testAgenticGraphStorageClientSyncSanitizesLegacyOutboxPayl
     updatedAtMs: 1,
   })
 
-  let pushedMutation: Record<string, unknown> | null = null
-  const fetchImpl: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input instanceof Request ? input.url : input)
-    if (url.endsWith('/api/storage/push')) {
-      const bodyText = String(init?.body || '')
-      const body = JSON.parse(bodyText) as { mutations?: Array<Record<string, unknown>> }
-      pushedMutation = (body.mutations || [])[0] || null
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-          workspaceId,
-          ackCursor: 'ack:legacy-outbox',
-          serverTimeMs: 1_777_310_000_000,
-          acknowledgements: [
-            {
-              mutationId,
-              recordId: legacyMutation.recordId,
-              entity: 'graphSnapshot',
-              status: 'applied',
-              serverRevision: 1,
-              message: null,
-            },
-          ],
-        }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      )
-    }
-    if (url.endsWith('/api/storage/pull')) {
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-          workspaceId,
-          nextCursor: 'pull:legacy-outbox',
-          serverTimeMs: 1_777_310_000_100,
-          changes: { documents: [], documentChunks: [], graphSnapshots: [] },
-        }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      )
-    }
-    return new Response('not found', { status: 404 })
+  const before = (await dbState.collections.syncOutbox.findOne(mutationId).exec())!.toJSON()
+  let pushes = 0
+  const fetchImpl: typeof fetch = async (input) => {
+    if (String(input).endsWith('/api/storage/push')) pushes += 1
+    return Response.json({ ok: true, apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION, workspaceId,
+      nextCursor: '2026-05-04T00:00:00.000Z', nextPageCursor: null, pageComplete: true, serverTimeMs: 1,
+      changes: { documents: [], documentChunks: [], graphSnapshots: [], deletions: [] } })
   }
-
-  const result = await syncAgenticGraphStorageNow({
-    workspaceId,
-    deviceId,
-    baseUrl: 'https://example.com',
-    fetchImpl,
-    dbState,
-  })
-  if (result.pushedCount !== 1 || result.appliedCount !== 1) {
-    throw new Error('expected legacy outbox payload sync to push and apply one mutation')
-  }
-  const pushedRecord = ((pushedMutation?.record || {}) as Record<string, unknown>)
-  if (Number(pushedRecord.graphRevision) !== 0) throw new Error('expected legacy pushed graphRevision to sanitize to 0')
-  if (Number(pushedRecord.derivedFromDocumentRevision) !== 0) throw new Error('expected legacy pushed derivedFromDocumentRevision to sanitize to 0')
-  if (Number(pushedRecord.updatedAtMs) !== 0) throw new Error('expected legacy pushed updatedAtMs to sanitize to 0')
-  if (!pushedRecord.graphJson || typeof pushedRecord.graphJson !== 'object' || Array.isArray(pushedRecord.graphJson)) {
-    throw new Error('expected legacy pushed invalid graphJson to sanitize to object')
-  }
-  if (pushedRecord.layoutJson !== null) throw new Error('expected legacy pushed invalid array layoutJson to sanitize to null')
-
+  await syncAgenticGraphStorageNow({ workspaceId, deviceId,
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'https://example.com', fetchImpl, dbState })
+  assert.equal(pushes, 0, 'legacy child payloads require explicit revision migration before transmission')
+  const after = (await dbState.collections.syncOutbox.findOne(mutationId).exec())!.toJSON()
+  assert.deepEqual(after.payload, before.payload, 'legacy authored bytes must remain available for recovery')
+  assert.equal(after.payloadHash, before.payloadHash, 'retention cannot claim a reserialized payload')
   await __resetAgenticGraphStorageDbForTests()
 }
 
 export async function testAgenticGraphStorageClientSyncRepairsLegacyTopLevelNullNumericOutboxFieldsBeforeSync() {
   await __resetAgenticGraphStorageDbForTests()
+  __resetAgenticGraphStorageRouteAvailabilityForTests()
   const dbState = await getAgenticGraphStorageDb()
   const workspaceId = 'wk_legacy_top_level_numeric_null'
   const deviceId = 'dev_legacy_top_level_numeric_null'
@@ -528,7 +390,7 @@ export async function testAgenticGraphStorageClientSyncRepairsLegacyTopLevelNull
   await syncAgenticGraphStorageNow({
     workspaceId,
     deviceId,
-    baseUrl: 'http://127.0.0.1:5174',
+    baseUrl: (typeof window === 'undefined' ? '' : window.location?.origin) || 'http://127.0.0.1:5174',
     fetchImpl: async () => {
       throw new TypeError('Load failed')
     },

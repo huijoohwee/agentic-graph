@@ -12,11 +12,13 @@ export function testStoryboardWidgetFrontmatterManualPlacementAuthorityUsesShare
   const sharedText = readFileSync(sharedPath, 'utf8')
   const authorityText = readFileSync(authorityPath, 'utf8')
   const overlayText = readFileSync(overlayPath, 'utf8')
-  const overlayPlacementRuntimeText = readFileSync(overlayPlacementRuntimePath, 'utf8')
+  const overlayPlacementRuntimeText = [readFileSync(overlayPlacementRuntimePath, 'utf8'), readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidget/widgetPlacementRuntimeProjection.ts'), 'utf8'), readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidget/widgetPlacementRuntimeState.ts'), 'utf8')].join('\n')
+  if (!overlayPlacementRuntimeText.includes("from '@/components/StoryboardWidget/widgetPlacementRuntimeProjection'") || !overlayPlacementRuntimeText.includes('applyWidgetOverlayPosition(')) throw new Error('expected the placement hook to call its projection owner')
   const runtimeText = readFileSync(runtimeScenePath, 'utf8')
   const collisionText = readFileSync(collisionPath, 'utf8')
-  const graphDataCommitActionsText = readFileSync(graphDataCommitActionsPath, 'utf8')
+  const graphDataCommitActionsText = readFileSync(graphDataCommitActionsPath, 'utf8') + readFileSync(resolve(process.cwd(), 'src/hooks/store/graph-data-slice/graphDataWidgetStateCommit.ts'), 'utf8')
 
+  if (!graphDataCommitActionsText.includes("from './graphDataWidgetStateCommit'") || !graphDataCommitActionsText.includes('buildCommittedFlowWidgetState(')) throw new Error('expected graph commit actions to call the widget-state owner')
   if (!sharedText.includes('export {')) {
     throw new Error('expected Storyboard Widget canvas shared module to re-export pure widget placement authority helpers')
   }
@@ -58,7 +60,7 @@ export function testStoryboardWidgetFrontmatterManualPlacementAuthorityUsesShare
   if (!overlayText.includes("from '@/lib/storyboardWidget/widgetPlacementAuthority'")) {
     throw new Error('expected widget runtime to import placement authority directly from the shared lib owner')
   }
-  if (!overlayPlacementRuntimeText.includes('const currentStoredWorldForPlacement = storyboardPinnedCardLayoutActive || floatingUsesScreenAuthority')
+  if (!overlayPlacementRuntimeText.includes('const currentStoredWorldForPlacement = floatingUsesScreenAuthority ? null : currentStoredWorld')
     || !overlayPlacementRuntimeText.includes('const storedWorld = currentStoredWorldForPlacement || (floatingUsesScreenAuthority ? null : widgetWorldPosRef.current)')) {
     throw new Error('expected floating screen-authority mode to ignore stored world placement authority')
   }
@@ -88,7 +90,7 @@ export function testStoryboardWidgetFrontmatterManualPlacementAuthorityUsesShare
     throw new Error('expected derived world-position synchronization to run only after screen-authority widgets have been excluded')
   }
   if (!overlayPlacementRuntimeText.includes('hasAppliedPlacement: boolean')
-    || !overlayPlacementRuntimeText.includes('if (args.hasAppliedPlacement) return false')
+    || !overlayPlacementRuntimeText.includes('|| args.hasAppliedPlacement ||')
     || !overlayPlacementRuntimeText.includes('hasAppliedPlacement: Boolean(lastAppliedRef.current)')) {
     throw new Error('expected frontmatter balanced fallback to act only before the first applied screen-authority placement')
   }
@@ -97,7 +99,7 @@ export function testStoryboardWidgetFrontmatterManualPlacementAuthorityUsesShare
     || !overlayPlacementRuntimeText.includes('useFrontmatterInitialBalancedBase && frontmatterBalancedFallbackPos')) {
     throw new Error('expected screen-authority base placement to stop reapplying initial balanced fallback after measured placement owns the frame')
   }
-  if (!overlayPlacementRuntimeText.includes('const zoomK = initialFrontmatterManagedNode && floatingUsesScreenAuthority')
+  if (!overlayPlacementRuntimeText.includes('const zoomK = args.initialFrontmatterManagedNode && args.floatingUsesScreenAuthority')
     || !overlayPlacementRuntimeText.includes('const frontmatterVisibleViewportAuthority = frontmatterManagedNode')
     || !overlayPlacementRuntimeText.includes('const frontmatterPanelScaleZoomK = readScreenAuthorityFollowZoomK(zoomK, frontmatterVisibleViewportAuthority)')
     || !overlayPlacementRuntimeText.includes('zoomK: frontmatterPanelScaleZoomK')) {
@@ -135,7 +137,7 @@ export function testStoryboardWidgetFrontmatterManualPlacementAuthorityUsesShare
   }
   if (!runtimeText.includes('const skipDomCollectiveRecoveryForFrontmatterScreenAuthority =')
     || !runtimeText.includes("graphMetaKind === 'frontmatter-flow'")
-    || !runtimeText.includes('if (skipDomCollectiveRecoveryForFrontmatterScreenAuthority) return true')) {
+    || !/if \(skipDomCollectiveRecoveryForFrontmatterScreenAuthority\) \{\s*return true/.test(runtimeText)) {
     throw new Error('expected runtime scene DOM recovery to avoid rewriting frontmatter floating screen-authority collectives')
   }
   if (!collisionText.includes('shouldAutoPlaceStoryboardWidget')) {
@@ -174,7 +176,7 @@ export function testStoryboardWidgetFrontmatterManualPlacementAuthorityUsesShare
   if (!graphDataCommitActionsText.includes('preserveBalancedCollective: args.preserveStableSameSourceOverlayState')) {
     throw new Error('expected graph commit path to preserve only balanced same-source frontmatter collective screen layouts')
   }
-  if (!graphDataCommitActionsText.includes('shouldCarryForwardFlowWidgetOverlayStateOnGraphCommit')) {
-    throw new Error('expected graph commit path to reuse the shared widget overlay carry-forward helper instead of duplicating frontmatter same-source carry policy')
+  if (!graphDataCommitActionsText.includes('const carry = continuity?.stableLayout === true || preserveBalanced') || !graphDataCommitActionsText.includes('compareWidgetLayoutEvidence(previous.layout, layout)')) {
+    throw new Error('expected graph commit carry-forward policy to use shared layout continuity evidence or a verified balanced collective')
   }
 }

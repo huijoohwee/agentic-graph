@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import fsPromises from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { withFetchAndEnv, withStoreMirrorState } from './helpers/workspaceSeedMirrorHarness'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
@@ -28,6 +31,83 @@ import { MemoryStorage } from '@/tests/lib/memoryStorage'
 const findFooterButton = (container: Element, label: string): HTMLButtonElement | null => {
   return (Array.from(container.querySelectorAll('button')) as HTMLButtonElement[])
     .find(button => String(button.textContent || '').trim() === label) || null
+}
+
+const boundedChatOperation = async <T,>(operation: Promise<T>, stage = 'operation'): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try { return await Promise.race([operation, new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Owned chat fixture ${stage} did not finish within 5 seconds`)), 5000)
+  })]) } finally { clearTimeout(timer) }
+}
+const chatSignal = () => {
+  let resolve!: () => void
+  const promise = new Promise<void>(accept => { resolve = accept })
+  return { promise, resolve }
+}
+const observeChatTerminal = (container: Element, predicate: () => boolean) => {
+  const signal = chatSignal(), observer = new container.ownerDocument.defaultView!.MutationObserver(() => check())
+  const check = () => { if (predicate()) signal.resolve() }
+  const unsubscribe = useGraphStore.subscribe(check)
+  observer.observe(container, { subtree: true, childList: true, attributes: true })
+  check()
+  return { wait: () => boundedChatOperation(signal.promise, 'terminal state'), close: () => { unsubscribe(); observer.disconnect() } }
+}
+const withLocalChatWorkspace = async (run: (fixture: { prepare(): Promise<void>; drain(): Promise<void>; readChatFile(path: string): Promise<string>; log: ReturnType<typeof chatSignal> }) => Promise<void>) => {
+  const tempRoot = await fsPromises.mkdtemp(join(tmpdir(), 'graph-chat-owner-')), docsRoot = join(tempRoot, 'docs')
+  const pending = new Set<Promise<Response>>(), failures = new Set<unknown>(), unexpected: string[] = [], log = chatSignal()
+  let closed = false
+  try {
+    await fsPromises.mkdir(docsRoot)
+    await fsPromises.writeFile(join(docsRoot, 'fixture.md'), '# Owned local chat fixture\n')
+    const fetcher = (async (input, init) => {
+      if (closed) { const error = new Error('Chat fixture request arrived after terminal teardown'); failures.add(error); throw error }
+      const route = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url, 'http://localhost').pathname
+      const operation = (async () => {
+        if (route.startsWith('/@fs/')) {
+          const target = resolve(decodeURIComponent(route.slice(4)))
+          if (!target.startsWith(tempRoot + '/')) throw new Error('Chat fixture read escaped its owned temporary root')
+          try { return new Response(await fsPromises.readFile(target, 'utf8')) }
+          catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return new Response('', { status: 404 }); throw error }
+        }
+        if (route === '/__agentic_os_fs_list') {
+          if (JSON.parse(String(init?.body || '{}')).path !== docsRoot) return Response.json({ ok: false }, { status: 404 })
+          return Response.json({ ok: true, files: [{ relPath: 'fixture.md', text: await fsPromises.readFile(join(docsRoot, 'fixture.md'), 'utf8'), updatedAtMs: 1 }] })
+        }
+        if (route === '/__agentic_os_fs_write') {
+          const body = JSON.parse(String(init?.body || '{}')), target = resolve(String(body.path || ''))
+          if (!target.startsWith(tempRoot + '/')) throw new Error('Chat fixture write escaped its owned temporary root')
+          await fsPromises.mkdir(typeof body.text === 'string' ? dirname(target) : target, { recursive: true })
+          if (typeof body.text === 'string') await fsPromises.writeFile(target, body.text)
+          return Response.json({ ok: true })
+        }
+        if (route === '/__chat_log_append') {
+          await fsPromises.appendFile(join(tempRoot, 'exchange.jsonl'), String(init?.body || '') + '\n')
+          log.resolve(); return Response.json({ ok: true })
+        }
+        unexpected.push(route); throw new Error(`Unexpected chat fixture route: ${route}`)
+      })()
+      pending.add(operation)
+      try { return await operation } catch (error) { failures.add(error); throw error } finally { pending.delete(operation) }
+    }) as typeof fetch
+    const drain = async () => {
+      // Drain native local IO even after a UI deadline fails; never abandon a sibling write.
+      while (pending.size) await Promise.allSettled([...pending])
+      if (failures.size || unexpected.length) throw new AggregateError([...failures], [...failures].map(error => String((error as Error)?.message || error)).join('; ') || `Unowned chat requests: ${unexpected.join(', ')}`)
+    }
+    await withStoreMirrorState(() => withFetchAndEnv({
+      VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: docsRoot, VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT: docsRoot,
+      VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT: join(tempRoot, 'chat'), VITE_AGENTIC_OS_STORAGE_BASE_URL: '',
+      VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL: 'false', VITE_WORKSPACE_DOCS_MIRROR_STORAGE_FALLBACK_ENABLED: 'false',
+    }, fetcher, async () => {
+      try { await run({ log, drain, readChatFile: async workspacePath => {
+        if (!/^\/chat-log\/\d{8}T\d{6}Z\/agenticOs_\d{8}T\d{6}Z\.md$/.test(workspacePath)) throw new Error('Expected a canonical chat artifact path')
+        return fsPromises.readFile(join(tempRoot, 'chat', workspacePath.slice('/chat-log/'.length)), 'utf8')
+      }, prepare: async () => {
+        useGraphStore.setState({ sourceFiles: [], localMarkdownFolderHandle: null, localMarkdownFolderCacheId: null, localMarkdownSelectedFolderPath: docsRoot })
+        await boundedChatOperation(getWorkspaceFs())
+      } }) } catch (error) { failures.add(error); throw error } finally { closed = true; await drain() }
+    }))
+  } finally { await fsPromises.rm(tempRoot, { recursive: true, force: true }) }
 }
 
 export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessReceiptWithoutMcpReplay() {
@@ -208,6 +288,7 @@ export function testFloatingPanelChatStopFinalizesDurableResumeState() {
 }
 
 export async function testFloatingPanelChatStreamingPromptSurvivesGraphHistoryKeyChurn() {
+  await withLocalChatWorkspace(async fixture => {
   const { dom, restore } = initJsdomHarness()
   const doc = dom.window.document
   const container = doc.createElement('section')
@@ -215,6 +296,9 @@ export async function testFloatingPanelChatStreamingPromptSurvivesGraphHistoryKe
   const root = createRoot(container as unknown as HTMLElement)
   const originalFetch = globalThis.fetch
   let fetchStarted = false
+  const transport = chatSignal()
+  let terminal: ReturnType<typeof observeChatTerminal> | undefined
+  let removeAbortListener = () => {}
   let rejectPending: ((error: Error) => void) | null = null
   const promptText = '/prd-tad.create airvio_.JPEG'
   const findPromptBubble = () => {
@@ -223,22 +307,20 @@ export async function testFloatingPanelChatStreamingPromptSurvivesGraphHistoryKe
   }
 
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    if (String(input).includes('/__agentic_os_fs_write')) {
-      return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }))
-    }
-    if (String(init?.method || 'GET').toUpperCase() !== 'POST') {
-      const body = String(input).includes('policies') ? { policies: [] } : { memberships: [] }
-      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }))
-    }
+    const route = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url, 'http://localhost').pathname
+    if (route !== '/__chat_proxy/v1/responses' || String(init?.method || 'GET').toUpperCase() !== 'POST') return originalFetch(input, init)
     return new Promise<Response>((_resolve, reject) => {
       fetchStarted = true
+      transport.resolve()
       rejectPending = reject
       const signal = init?.signal || null
       if (signal?.aborted) {
         reject(new Error('Aborted'))
         return
       }
-      signal?.addEventListener('abort', () => reject(new Error('Aborted')), { once: true })
+      const onAbort = () => reject(new Error('Aborted'))
+      signal?.addEventListener('abort', onAbort, { once: true })
+      removeAbortListener = () => signal?.removeEventListener('abort', onAbort)
     })
   }) as typeof fetch
 
@@ -257,6 +339,7 @@ export async function testFloatingPanelChatStreamingPromptSurvivesGraphHistoryKe
   useMarkdownExplorerStore.getState().setActivePath(null)
 
   try {
+    await fixture.prepare()
     await mountReactRoot(root, React.createElement(FloatingPanelChat), {
       window: dom.window as unknown as Window,
       frames: 2,
@@ -271,14 +354,13 @@ export async function testFloatingPanelChatStreamingPromptSurvivesGraphHistoryKe
     })
     const form = input.closest('form') as HTMLFormElement | null
     if (!form) throw new Error('expected FloatingPanel chat input to be inside a form')
-    await act(async () => {
-      Simulate.submit(form)
-      for (let attempt = 0; attempt < 40; attempt += 1) {
-        if (fetchStarted && findPromptBubble()) break
-        await waitForTasks(1)
-        await waitForFrames(dom.window as unknown as Window, 1)
-      }
+    let observedSending = false
+    terminal = observeChatTerminal(container, () => {
+      const sending = Boolean(findFooterButton(container, 'Sending…')) || useGraphStore.getState().chatWorkspaceStreamingPath != null
+      observedSending ||= sending
+      return fetchStarted && observedSending && !sending
     })
+    await act(async () => { Simulate.submit(form); await boundedChatOperation(transport.promise) })
     if (!fetchStarted) throw new Error('expected chat submit to reach the streaming transport')
     if (!findPromptBubble()) throw new Error('expected optimistic user prompt bubble to render before graph churn')
 
@@ -300,134 +382,155 @@ export async function testFloatingPanelChatStreamingPromptSurvivesGraphHistoryKe
       throw new Error('expected active stream prompt bubble to survive graph-derived history key churn')
     }
   } finally {
-    rejectPending?.(new Error('test cleanup'))
-    globalThis.fetch = originalFetch
-    await unmountReactRoot(root, { window: dom.window as unknown as Window })
-    container.remove()
-    useMarkdownExplorerStore.getState().setActivePath(null)
-    useGraphStore.getState().resetAll()
-    resetWorkspaceFsForTests()
-    restore()
+    try {
+      await act(async () => {
+        rejectPending?.(new Error('test cleanup'))
+        if (fetchStarted) await boundedChatOperation(fixture.log.promise)
+      })
+      if (fetchStarted) await terminal?.wait()
+      await fixture.drain()
+    } finally {
+      terminal?.close(); removeAbortListener()
+      try {
+        try { await unmountReactRoot(root, { window: dom.window as unknown as Window }) } finally { await fixture.drain() }
+      }
+      finally {
+        globalThis.fetch = originalFetch; container.remove(); useMarkdownExplorerStore.getState().setActivePath(null)
+        useGraphStore.getState().resetAll(); resetWorkspaceFsForTests(); restore()
+      }
+    }
   }
+  })
 }
 
 export async function testFloatingPanelChatNewChatStopsSendingAndCreatesFreshSessionFolder() {
-  const { dom, restore } = initJsdomHarness()
-  const doc = dom.window.document
-  const container = doc.createElement('section')
-  doc.body.appendChild(container)
-  const root = createRoot(container as unknown as HTMLElement)
-  const originalFetch = globalThis.fetch
-  const previousChatLogAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT
-  let fetchStarted = false
-  let abortObserved = false
-  let mirroredWorkspacePath = ''
+  await withLocalChatWorkspace(async fixture => {
+  const { dom, restore } = initJsdomHarness(), doc = dom.window.document
+  const container = doc.createElement('section'); doc.body.appendChild(container)
+  const root = createRoot(container as unknown as HTMLElement), originalFetch = globalThis.fetch
+  const transport = chatSignal()
+  let fetchStarted = false, abortObserved = false
   let rejectPending: ((error: Error) => void) | null = null
-  process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = '/tmp/agentic-graph-floating-panel-chat-log'
+  let removeAbortListener = () => {}
+  let terminal: ReturnType<typeof observeChatTerminal> | undefined
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    if (String(input).includes('/__agentic_os_fs_write')) {
-      const body = String(init?.body || '')
-      const match = /"path":"([^"]+)"/.exec(body)
-      mirroredWorkspacePath = match ? match[1] || '' : body
-      return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }))
-    }
-    if (String(init?.method || 'GET').toUpperCase() !== 'POST') {
-      const body = String(input).includes('policies') ? { policies: [] } : { memberships: [] }
-      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }))
-    }
+    const route = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url, 'http://localhost').pathname
+    if (route !== '/__chat_proxy/v1/responses' || String(init?.method || 'GET').toUpperCase() !== 'POST') return originalFetch(input, init)
     return new Promise<Response>((_resolve, reject) => {
-      fetchStarted = true
-      rejectPending = reject
+      fetchStarted = true; transport.resolve(); rejectPending = reject
       const signal = init?.signal || null
-      if (signal?.aborted) {
-        abortObserved = true
-        reject(new Error('Aborted'))
-        return
-      }
-      signal?.addEventListener('abort', () => {
-        abortObserved = true
-        reject(new Error('Aborted'))
-      }, { once: true })
+      const onAbort = () => { abortObserved = true; reject(new Error('Aborted')) }
+      if (signal?.aborted) { onAbort(); return }
+      signal?.addEventListener('abort', onAbort, { once: true })
+      removeAbortListener = () => signal?.removeEventListener('abort', onAbort)
     })
   }) as typeof fetch
-  resetWorkspaceFsForTests()
-  useGraphStore.getState().resetAll()
+  resetWorkspaceFsForTests(); useGraphStore.getState().resetAll()
   useGraphStore.getState().setChatStorageTarget('chatAgenticGraph')
   useGraphStore.getState().setChatAgenticGraphWorkspacePath(null)
   useGraphStore.getState().setChatProvider('lmstudio-local')
   useGraphStore.getState().setChatModel('gpt-5-nano')
   useMarkdownExplorerStore.getState().setActivePath(null)
-
   try {
+    await fixture.prepare()
+    await mountReactRoot(root, React.createElement(FloatingPanelChat), { window: dom.window as unknown as Window, frames: 2, tasks: 1 })
+    const input = container.querySelector('[data-kg-chat-input="1"]') as HTMLElement | null
+    if (!input) throw new Error('expected FloatingPanel chat input to render')
+    await act(async () => {
+      input.textContent = '/prd-tad.create #media @operator'; Simulate.input(input)
+      await waitForFrames(dom.window as unknown as Window, 1)
+    })
+    const form = input.closest('form') as HTMLFormElement | null
+    if (!form) throw new Error('expected FloatingPanel chat input to be inside a form')
+    await act(async () => { Simulate.submit(form); await boundedChatOperation(transport.promise) })
+    if (!fetchStarted) throw new Error('expected chat submit to reach the streaming transport')
+    const streamingPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
+    if (!streamingPath) throw new Error('expected chat submit preflight to allocate the first AGENTIC_OS workspace path')
+    const newChatButton = findFooterButton(container, 'New Chat')
+    if (!newChatButton) throw new Error('expected New Chat to remain rendered while Sending')
+    if (newChatButton.disabled) throw new Error('expected New Chat to stay enabled while Sending so it can allocate a fresh chat-log session')
+    terminal = observeChatTerminal(container, () => {
+      const nextPath = useGraphStore.getState().chatAgenticGraphWorkspacePath
+      return Boolean(nextPath && nextPath !== streamingPath) && useGraphStore.getState().workspaceViewMode === 'editor' && !findFooterButton(container, 'Sending…')
+    })
+    // Let act commit the Sending-state update before waiting for its DOM projection.
+    await act(async () => { newChatButton.click() })
+    await terminal.wait()
+    if (!abortObserved) throw new Error('expected New Chat to abort the active Sending request before switching sessions')
+    await boundedChatOperation(fixture.log.promise); await fixture.drain()
+    const freshPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
+    if (!/^\/.+\/\d{8}T\d{6}Z\/agenticOs_\d{8}T\d{6}Z\.md$/.test(freshPath) || freshPath === streamingPath) {
+      throw new Error(`expected New Chat while Sending to allocate a fresh canonical AGENTIC_OS workspace path, got ${JSON.stringify(freshPath)}`)
+    }
+    const parts = freshPath.split('/').filter(Boolean), folderSession = parts[parts.length - 2]
+    const fileSession = /^agenticOs_(\d{8}T\d{6}Z)\.md$/i.exec(parts[parts.length - 1] || '')?.[1]
+    if (folderSession !== fileSession) throw new Error(`expected AGENTIC_OS folder and filename session ids to match, got ${JSON.stringify(freshPath)}`)
+    if (await fixture.readChatFile(freshPath) !== '') throw new Error('expected the completed canonical New Chat mirror file to exist with empty bytes')
+    const workspaceFileText = await (await getWorkspaceFs()).readFileText(freshPath)
+    if (workspaceFileText !== '') throw new Error(`expected fresh New Chat AGENTIC_OS file to start empty, got ${JSON.stringify(workspaceFileText)}`)
+    if (findFooterButton(container, 'Sending…')) throw new Error('expected New Chat to leave the footer out of Sending state')
+  } finally {
+    try {
+      await act(async () => { rejectPending?.(new Error('test cleanup')); if (fetchStarted) await boundedChatOperation(fixture.log.promise) })
+      await fixture.drain()
+    } finally {
+      terminal?.close(); removeAbortListener()
+      try { await unmountReactRoot(root, { window: dom.window as unknown as Window }); await fixture.drain() }
+      finally {
+        globalThis.fetch = originalFetch; container.remove(); useMarkdownExplorerStore.getState().setActivePath(null)
+        useGraphStore.getState().resetAll(); resetWorkspaceFsForTests(); restore()
+      }
+    }
+  }
+  })
+}
+
+export async function testFloatingPanelChatNewChatCreatesAndFollowsCanonicalWorkspaceFile() {
+  await withLocalChatWorkspace(async fixture => {
+  const { dom, restore } = initJsdomHarness()
+  const doc = dom.window.document
+  const container = doc.createElement('section')
+  doc.body.appendChild(container)
+  const root = createRoot(container as unknown as HTMLElement)
+  resetWorkspaceFsForTests()
+  useGraphStore.getState().resetAll()
+  useGraphStore.getState().setWorkspaceViewMode('canvas')
+  useGraphStore.getState().setEditorWorkspacePane('markdown')
+  useGraphStore.getState().setChatStorageTarget('chatAgenticGraph')
+  useGraphStore.getState().setChatAgenticGraphWorkspacePath(null)
+  useMarkdownExplorerStore.getState().setActivePath(null)
+  let terminal: ReturnType<typeof observeChatTerminal> | undefined
+  try {
+    await fixture.prepare()
     await mountReactRoot(root, React.createElement(FloatingPanelChat), {
       window: dom.window as unknown as Window,
       frames: 2,
       tasks: 1,
     })
-    const input = container.querySelector('[data-kg-chat-input="1"]') as HTMLElement | null
-    if (!input) throw new Error('expected FloatingPanel chat input to render')
-    await act(async () => {
-      input.textContent = '/prd-tad.create #media @operator'
-      Simulate.input(input)
-      await waitForFrames(dom.window as unknown as Window, 1)
-    })
-    const form = input.closest('form') as HTMLFormElement | null
-    if (!form) throw new Error('expected FloatingPanel chat input to be inside a form')
-    await act(async () => {
-      Simulate.submit(form)
-      for (let attempt = 0; attempt < 40; attempt += 1) {
-        if (fetchStarted) break
-        await waitForTasks(1)
-        await waitForFrames(dom.window as unknown as Window, 1)
-      }
-    })
-    if (!fetchStarted) throw new Error('expected chat submit to reach the streaming transport')
-    let streamingPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
-    for (let attempt = 0; attempt < 40 && !streamingPath; attempt += 1) {
-      await act(async () => {
-        await waitForTasks(1)
-        await waitForFrames(dom.window as unknown as Window, 1)
-      })
-      streamingPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
+    const newChatButton = (Array.from(container.querySelectorAll('button')) as HTMLButtonElement[])
+      .find(button => String(button.textContent || '').trim() === 'New Chat') as HTMLButtonElement | undefined
+    if (!newChatButton) throw new Error('expected FloatingPanel chat to render the New Chat command')
+    terminal = observeChatTerminal(container, () => Boolean(useGraphStore.getState().chatAgenticGraphWorkspacePath) && useGraphStore.getState().workspaceViewMode === 'editor')
+    await act(async () => { newChatButton.click(); await terminal!.wait() })
+    await fixture.drain()
+    const state = useGraphStore.getState()
+    const chatPath = String(state.chatAgenticGraphWorkspacePath || '')
+    if (state.workspaceViewMode !== 'editor') throw new Error(`expected New Chat to open editor workspace, got ${state.workspaceViewMode}`)
+    if (!/^\/.+\/\d{8}T\d{6}Z\/agenticOs_\d{8}T\d{6}Z\.md$/.test(chatPath)) {
+      throw new Error(`expected New Chat to allocate canonical AGENTIC_OS workspace path, got ${JSON.stringify(chatPath)}`)
     }
-    if (!streamingPath) throw new Error('expected chat submit preflight to allocate the first AGENTIC_OS workspace path')
-    const newChatButton = findFooterButton(container, 'New Chat')
-    if (!newChatButton) throw new Error('expected New Chat to remain rendered while Sending')
-    if (newChatButton.disabled) throw new Error('expected New Chat to stay enabled while Sending so it can allocate a fresh chat-log session')
-    await act(async () => {
-      newChatButton.click()
-      for (let attempt = 0; attempt < 40; attempt += 1) {
-        const nextPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
-        if (nextPath && nextPath !== streamingPath) break
-        await waitForTasks(1)
-        await waitForFrames(dom.window as unknown as Window, 1)
-      }
-    })
-    if (!abortObserved) throw new Error('expected New Chat to abort the active Sending request before switching sessions')
-    const freshPath = String(useGraphStore.getState().chatAgenticGraphWorkspacePath || '')
-    if (!/^\/.+\/\d{8}T\d{6}Z\/agenticOs_\d{8}T\d{6}Z\.md$/.test(freshPath) || freshPath === streamingPath) {
-      throw new Error(`expected New Chat while Sending to allocate a fresh canonical AGENTIC_OS workspace path, got ${JSON.stringify(freshPath)}`)
-    }
-    const parts = freshPath.split('/').filter(Boolean)
-    const folderSession = parts[parts.length - 2]
-    const fileSession = /^agenticOs_(\d{8}T\d{6}Z)\.md$/i.exec(parts[parts.length - 1] || '')?.[1]
-    if (folderSession !== fileSession) throw new Error(`expected AGENTIC_OS folder and filename session ids to match, got ${JSON.stringify(freshPath)}`)
-    if (!mirroredWorkspacePath.endsWith(`/${folderSession}/agenticOs_${fileSession}.md`)) {
-      throw new Error(`expected New Chat to mirror the fresh canonical AGENTIC_OS path, got ${mirroredWorkspacePath} for ${freshPath}`)
-    }
-    const workspaceFileText = await (await getWorkspaceFs()).readFileText(freshPath)
-    if (workspaceFileText !== '') throw new Error(`expected fresh New Chat AGENTIC_OS file to start empty, got ${JSON.stringify(workspaceFileText)}`)
-    if (findFooterButton(container, 'Sending…')) throw new Error('expected New Chat to leave the footer out of Sending state')
+    if (useMarkdownExplorerStore.getState().activePath !== chatPath) throw new Error('expected New Chat to select the canonical AGENTIC_OS workspace file')
+    const workspaceFileText = await (await getWorkspaceFs()).readFileText(chatPath)
+    if (workspaceFileText !== '') throw new Error(`expected New Chat to create an empty canonical AGENTIC_OS workspace file, got ${JSON.stringify(workspaceFileText)}`)
   } finally {
-    rejectPending?.(new Error('test cleanup'))
-    globalThis.fetch = originalFetch
-    if (typeof previousChatLogAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = previousChatLogAbsRoot
-    else delete process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT
-    await unmountReactRoot(root, { window: dom.window as unknown as Window })
-    container.remove()
-    useMarkdownExplorerStore.getState().setActivePath(null)
-    useGraphStore.getState().resetAll()
-    resetWorkspaceFsForTests()
-    restore()
+    terminal?.close()
+    try {
+        try { await unmountReactRoot(root, { window: dom.window as unknown as Window }) } finally { await fixture.drain() }
+      }
+    finally {
+      container.remove(); useMarkdownExplorerStore.getState().setActivePath(null)
+      useGraphStore.getState().resetAll(); resetWorkspaceFsForTests(); restore()
+    }
   }
+  })
 }

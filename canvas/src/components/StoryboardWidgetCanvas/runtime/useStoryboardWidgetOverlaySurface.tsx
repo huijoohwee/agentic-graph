@@ -1,3 +1,4 @@
+import { normalizeOverlaySurfaceCacheKey, readStableFrontmatterOverlaySurfaceCache, writeStableFrontmatterOverlaySurfaceCache, clearStableFrontmatterOverlaySurfaceCache } from './stableOverlaySurfaceCache'
 import React from 'react'
 import { deriveOpenWidgetOverlayNodeIds, deriveSelectedOverlayEditorNodeIdForDerivation, isCanonicalFrontmatterBuiltInWidgetNode, resolveDefaultFlowWidgetPinnedInCanvas } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -64,38 +65,6 @@ const EMPTY_GRAPH_NODES: GraphNode[] = []
 const EMPTY_GRAPH_EDGES: GraphEdge[] = []
 const EMPTY_GRAPH_NODE_BY_ID = new Map<string, GraphNode>()
 const EMPTY_GRAPH_ELIGIBLE_NODE_IDS = new Set<string>()
-
-type StableFrontmatterOverlaySurfaceCache = {
-  sourceKey: string
-  graphKey: string
-  ids: string[]
-  graphData: GraphData | null
-}
-
-const stableFrontmatterOverlaySurfaceCacheById = new Map<string, StableFrontmatterOverlaySurfaceCache>()
-
-function normalizeOverlaySurfaceCacheKey(surfaceId: unknown): string {
-  return String(surfaceId || '').trim() || 'surface'
-}
-
-function readStableFrontmatterOverlaySurfaceCache(surfaceId: unknown): StableFrontmatterOverlaySurfaceCache | null {
-  return stableFrontmatterOverlaySurfaceCacheById.get(normalizeOverlaySurfaceCacheKey(surfaceId)) || null
-}
-
-function writeStableFrontmatterOverlaySurfaceCache(surfaceId: unknown, cache: StableFrontmatterOverlaySurfaceCache): void {
-  const ids = normalizeStringArrayForSignature(cache.ids, { unique: true })
-  if (ids.length === 0) return
-  stableFrontmatterOverlaySurfaceCacheById.set(normalizeOverlaySurfaceCacheKey(surfaceId), {
-    sourceKey: String(cache.sourceKey || '').trim(),
-    graphKey: String(cache.graphKey || '').trim(),
-    ids,
-    graphData: cache.graphData,
-  })
-}
-
-function clearStableFrontmatterOverlaySurfaceCache(surfaceId: unknown): void {
-  stableFrontmatterOverlaySurfaceCacheById.delete(normalizeOverlaySurfaceCacheKey(surfaceId))
-}
 
 function isGraphDataLike(value: unknown): value is GraphData {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false

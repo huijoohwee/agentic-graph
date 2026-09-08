@@ -15,7 +15,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
+import { createAsyncActionTracker, installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 
 type RegisteredSettingsActions = {
   apply: () => void
@@ -24,7 +24,6 @@ type RegisteredSettingsActions = {
 
 const AGENTIC_OS_IMPORTED_URL = 'https://cloud.example/no-bridge-agentic-graph-async.md'
 const HISTORY_IMPORTED_URL = 'https://cloud.example/no-bridge-history-async.md'
-const CLOUD_FALLBACK_ASYNC_DELAY_MS = 200
 
 const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonElement => {
   const buttons = Array.from(container.querySelectorAll('button')) as HTMLButtonElement[]
@@ -33,13 +32,10 @@ const findButtonByLabel = (container: HTMLElement, label: string): HTMLButtonEle
   return match
 }
 
-const waitForMs = async (ms: number) =>
-  await new Promise<void>(resolve => {
-    setTimeout(resolve, ms)
-  })
-
 function SettingsCloudImportAsyncFallbackHarness(props: {
   actionsRef: React.MutableRefObject<RegisteredSettingsActions | null>
+  actionTracker: ReturnType<typeof createAsyncActionTracker>
+  fallbackRelease: Promise<void>
   fallbackCalls: Array<{ urlRaw: string }>
 }): React.ReactElement {
   const {
@@ -73,7 +69,7 @@ function SettingsCloudImportAsyncFallbackHarness(props: {
     chatHistoryCloudUrl: values.chatHistoryCloudUrl,
     chatAgenticGraphCloudUrl: values.chatAgenticGraphCloudUrl,
     importUrlFallbackImpl: async args => {
-      await waitForMs(CLOUD_FALLBACK_ASYNC_DELAY_MS)
+      await props.fallbackRelease
       props.fallbackCalls.push({ urlRaw: String(args.urlRaw || '').trim() })
       args.pushUiToast({
         id: `launch:import:url:${String(args.urlRaw || '').trim()}`,
@@ -104,13 +100,13 @@ function SettingsCloudImportAsyncFallbackHarness(props: {
       </button>
       <button
         type="button"
-        onClick={() => importCloudUrlForAgenticGraph()}
+        onClick={() => props.actionTracker.track(importCloudUrlForAgenticGraph())}
       >
         Async Fallback Import agentic-graph Cloud URL
       </button>
       <button
         type="button"
-        onClick={() => importCloudUrlForChatHistory()}
+        onClick={() => props.actionTracker.track(importCloudUrlForChatHistory())}
       >
         Async Fallback Import History Cloud URL
       </button>
@@ -126,8 +122,15 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
   let chatRoot: ReturnType<typeof createRoot> | null = null
   const actionsRef: { current: RegisteredSettingsActions | null } = { current: null }
   const fallbackCalls: Array<{ urlRaw: string }> = []
+  const priorUiState = { uiToasts: useGraphStore.getState().uiToasts, uiLogEntries: useGraphStore.getState().uiLogEntries }
+  const fallbackToastIds = new Set([AGENTIC_OS_IMPORTED_URL, HISTORY_IMPORTED_URL].map(url => `launch:import:url:${url}`))
+  const actionTracker = createAsyncActionTracker()
+  let releaseFallback = () => {}
+  const fallbackRelease = new Promise<void>(resolve => { releaseFallback = resolve })
 
   let cleanupAssertionError: Error | null = null
+  let bodyError: unknown
+  let bodyFailed = false
   try {
     resetBrowserLocalSurfaceSnapshotsForTests()
     const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
@@ -135,6 +138,7 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
 
     const store = useGraphStore.getState()
     store.resetAll()
+    store.pushUiToast({ id: 'settings-async-fallback-unrelated', message: 'An unrelated notification', ttlMs: null, log: false })
     store.setChatProvider(CHAT_PROVIDER_OPENAI)
     store.setChatEndpointUrl('https://api.openai.com/v1/chat/completions')
     store.setChatModel('gpt-4.1-mini')
@@ -155,7 +159,7 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
 
     await mountReactRoot(
       settingsRoot,
-      React.createElement(SettingsCloudImportAsyncFallbackHarness, { actionsRef, fallbackCalls }),
+      React.createElement(SettingsCloudImportAsyncFallbackHarness, { actionsRef, actionTracker, fallbackRelease, fallbackCalls }),
       { window: dom.window as unknown as Window, frames: 10 },
     )
     await mountReactRoot(chatRoot, React.createElement(FloatingPanelChat), {
@@ -214,7 +218,10 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
     ) {
       throw new Error(`expected async fallback cloud import path to expose importing status messages, got ${JSON.stringify({ agenticGraphStatus, historyStatus })}`)
     }
-    if (fallbackCalls.length !== 0 || useGraphStore.getState().uiToasts.length !== 0) {
+    if (!useGraphStore.getState().uiToasts.some(toast => toast.id === 'settings-async-fallback-unrelated')) {
+      throw new Error('expected the unrelated notification control before fallback completion')
+    }
+    if (fallbackCalls.length !== 0 || useGraphStore.getState().uiToasts.some(toast => fallbackToastIds.has(toast.id))) {
       throw new Error(`expected async fallback side effects to remain pending immediately after cloud import actions, got ${JSON.stringify({
         fallbackCalls,
         uiToasts: useGraphStore.getState().uiToasts,
@@ -231,7 +238,8 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
     }
 
     await act(async () => {
-      await waitForMs(CLOUD_FALLBACK_ASYNC_DELAY_MS + 50)
+      releaseFallback()
+      await actionTracker.settle()
       await waitForFrames(dom.window as unknown as Window, 2)
     })
 
@@ -280,21 +288,40 @@ export async function testSettingsCloudImportAsyncFallbackKeepsCommittedSurfaceT
         chatHistoryCloudUrl: useGraphStore.getState().chatHistoryCloudUrl,
       })}`)
     }
+  } catch (error) {
+    bodyError = error
+    bodyFailed = true
   } finally {
+    try {
+      await act(async () => {
+        releaseFallback()
+        await actionTracker.settle()
+      })
+    } catch (error) {
+      cleanupAssertionError = error instanceof Error ? error : new Error(String(error))
+    }
     if (chatRoot) {
       await unmountReactRoot(chatRoot, { window: dom.window as unknown as Window })
     }
     const clearedChatInspection = inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot())
     if (clearedChatInspection.available !== false) {
-      cleanupAssertionError = new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedChatInspection)}`)
+      const snapshotError = new Error(`expected FloatingPanel Chat pipeline snapshot cleanup after chat unmount, got ${JSON.stringify(clearedChatInspection)}`)
+      cleanupAssertionError = cleanupAssertionError
+        ? new AggregateError([cleanupAssertionError, snapshotError], 'Settings fixture cleanup failed')
+        : snapshotError
     }
     if (settingsRoot) {
       await unmountReactRoot(settingsRoot, { window: dom.window as unknown as Window })
     }
     resetBrowserLocalSurfaceSnapshotsForTests()
     useGraphStore.getState().resetAll()
+    useGraphStore.setState(priorUiState)
     restoreDom()
     restoreWindow()
+  }
+  if (bodyFailed) {
+    if (cleanupAssertionError) throw new AggregateError([bodyError, cleanupAssertionError], 'Settings fixture body and cleanup failed')
+    throw bodyError
   }
   if (cleanupAssertionError) throw cleanupAssertionError
 }

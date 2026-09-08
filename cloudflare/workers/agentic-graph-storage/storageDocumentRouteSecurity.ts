@@ -14,15 +14,13 @@ import {
 import { AGENTIC_OS_STORAGE_DOC_VIEW_HEADERS } from '../shared/publishedDoc'
 import {
   authenticateAgenticGraphStorageSyncRequest,
+  authenticateAgenticGraphStorageSnapshotRequest,
   authorizeAgenticGraphStorageWorkspace,
   isAgenticGraphStorageLocalRuntime,
 } from './storageSyncSecurity'
 import { AgenticGraphStorageDocumentReadLimitError } from './storageDocumentReadBounds'
 import { createAgenticGraphStorageDocumentStream } from './storageDocumentStream'
-import {
-  hasAgenticGraphStorageSessionCredential,
-  isAgenticGraphStorageDocumentPublished,
-} from './storagePublication'
+import { hasAgenticGraphStorageSessionCredential } from './storagePublication'
 
 const errorResponse = (
   status: number,
@@ -73,7 +71,9 @@ export const handleSecuredAgenticGraphStorageDocumentRoute = async (args: {
   const credentialed = trustedLocal || hasAgenticGraphStorageSessionCredential(args.request)
   if (credentialed) {
     if (!trustedLocal) {
-      const auth = await authenticateAgenticGraphStorageSyncRequest(args.request, args.env, args.db)
+      // Private document reads opt into browser sessions; crawlers retain bearer authentication.
+      const authenticate = documentRoute ? authenticateAgenticGraphStorageSnapshotRequest : authenticateAgenticGraphStorageSyncRequest
+      const auth = await authenticate(args.request, args.env, args.db)
       if (auth.ok === false) return auth.response
       const access = await authorizeAgenticGraphStorageWorkspace({
         db: args.db,
@@ -83,8 +83,6 @@ export const handleSecuredAgenticGraphStorageDocumentRoute = async (args: {
       })
       if (access.ok === false) return access.response
     }
-  } else if (documentRoute && !await isAgenticGraphStorageDocumentPublished(args.db, documentRoute)) {
-    return errorResponse(404, 'document not found', args.corsHeaders)
   }
   if (args.request.method !== 'GET') {
     return errorResponse(405, 'unsupported document route method', args.corsHeaders)
@@ -99,10 +97,11 @@ export const handleSecuredAgenticGraphStorageDocumentRoute = async (args: {
       throw error
     }
   }
-  const body = await createAgenticGraphStorageDocumentStream(args.db, documentRoute)
+  const body = await createAgenticGraphStorageDocumentStream(args.db, { ...documentRoute, publishedOnly: !credentialed })
   if (body === null) return errorResponse(404, 'document not found', args.corsHeaders)
   return new Response(body, {
     status: 200,
-    headers: { ...AGENTIC_OS_STORAGE_DOC_VIEW_HEADERS, ...args.corsHeaders },
+    headers: { ...AGENTIC_OS_STORAGE_DOC_VIEW_HEADERS, ...args.corsHeaders,
+      'x-robots-tag': credentialed ? AGENTIC_OS_STORAGE_DOC_VIEW_HEADERS['x-robots-tag'] : 'all' },
   })
 }

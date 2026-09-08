@@ -74,7 +74,7 @@ const readAgenticGraphAgentReadyBaseUrl = (): string => {
 const resolveControlPlaneEndpoint = (endpoint?: string): string => {
   const explicitEndpoint = normalizeString(endpoint)
   if (explicitEndpoint) return explicitEndpoint
-  return `${readAgenticGraphAgentReadyBaseUrl()}${AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH.replace(/^\/agentic-graph/, '')}`
+  return new URL(AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH, readAgenticGraphAgentReadyBaseUrl()).toString()
 }
 
 export function createAgenticOsRemoteGrammarClient(options: AgenticOsRemoteGrammarClientOptions = {}) {

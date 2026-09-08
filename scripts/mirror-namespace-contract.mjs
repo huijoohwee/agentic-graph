@@ -69,6 +69,12 @@ export const LEGACY_MIRROR_TRACKED_EXACT_PATHS = Object.freeze([
   'docs_/airvio-agenticgraph.png',
 ])
 
+// These initialization/source docs must survive namespace retirement byte-for-byte.
+export const canonicalDocumentDestinationForLegacyPath = relativePath =>
+  LEGACY_MIRROR_TRACKED_EXACT_PATHS.includes(relativePath) && relativePath.startsWith('docs/agenticgraph-')
+    ? relativePath.replace('docs/agenticgraph-', 'docs/agentic-graph-')
+    : null
+
 export const LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS = Object.freeze([
   'image/knowgrph/.DS_Store',
 ])

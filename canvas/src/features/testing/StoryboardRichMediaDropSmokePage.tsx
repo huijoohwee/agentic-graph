@@ -383,7 +383,7 @@ export function StoryboardRichMediaDropSmokePage() {
   }, [smokeState])
 
   return (
-    <div
+    <main
       data-kg-storyboard-drop-smoke-page="1"
       className="relative min-h-screen bg-[var(--kg-canvas-bg)] text-[var(--kg-text)]"
       aria-label="Storyboard rich media drop smoke"
@@ -440,6 +440,6 @@ export function StoryboardRichMediaDropSmokePage() {
       </aside>
 
       <CanvasPage bootstrapRuntimesEnabled={false} />
-    </div>
+    </main>
   )
 }

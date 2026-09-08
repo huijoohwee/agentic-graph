@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import expect, sync_playwright
 
+from lib.game_fps_shared_highlight_contract import assert_shared_npc_highlight
+
 from lib.game_mode_xr_share_scene_contract import (
     assert_game_overlay_subtree,
     assert_game_scene_delta,
@@ -168,6 +170,7 @@ def main() -> None:
     target_url = f"{BASE_URL}/"
     local_origin = urlparse(BASE_URL).netloc
     requests: list[str] = []
+    docs_scans: list[dict[str, object]] = []
     console_errors: list[str] = []
     page_errors: list[str] = []
     failed_responses: list[dict[str, object]] = []
@@ -181,6 +184,13 @@ def main() -> None:
         )
         page = browser.new_page(viewport={"width": 1280, "height": 800})
         page.on("request", lambda request: requests.append(request.url))
+        network = page.context.new_cdp_session(page)
+        network.send("Network.enable")
+        network.on("Network.requestWillBeSent", lambda event: docs_scans.append({
+            "url": event.get("request", {}).get("url"),
+            "body": str(event.get("request", {}).get("postData", ""))[:1000],
+            "initiator": event.get("initiator"),
+        }) if "/__agentic_os_fs_list" in event.get("request", {}).get("url", "") and len(docs_scans) < 21 else None)
         page.on(
             "response",
             lambda response: failed_responses.append(
@@ -198,12 +208,15 @@ def main() -> None:
         page.on("pageerror", lambda error: page_errors.append(str(error)))
         try:
             page.goto(target_url, wait_until="domcontentloaded")
+            wait_for_xr_physics_scene(page)
+            inactive_highlight = assert_shared_npc_highlight(page, game_active=False)
             activation = activate_game_mode(page)
             hud = page.locator('[data-kg-game-fps-hud="1"]').first
             expect(hud).to_be_visible(timeout=120_000)
             page.wait_for_selector('canvas[data-kg-game-fps-first-frame="1"]', timeout=120_000)
             grounded_camera_fov = assert_game_fps_grounded_camera(page)
             scene_evidence = assert_game_fps_xr_scene(page, activation["baselineScene"])
+            active_highlight = assert_shared_npc_highlight(page, game_active=True)
 
             initial_tick = numeric_attribute(hud, "data-kg-game-fps-tick")
             initial_x = numeric_attribute(hud, "data-kg-game-fps-player-x")
@@ -491,8 +504,13 @@ def main() -> None:
             )
             if non_local:
                 raise AssertionError(f"runtime made non-local requests: {non_local}")
-            if "/__agentic_os_fs_list" in local_runtime_requests:
-                raise AssertionError("Game FPS bootstrap scanned the unrelated docs mirror")
+            seed_root = Path(os.environ.get("VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT", "").strip()
+                             or OUTPUT_DIR.parents[1] / "docs" / "workspace-seeds").resolve()
+            scan_roots = [str(Path(json.loads(scan["body"])["path"]).resolve()) for scan in docs_scans]
+            if len(docs_scans) > 20 or any(root != str(seed_root) for root in scan_roots):
+                raise AssertionError(f"Game FPS scanned outside its bounded canonical seed root: {scan_roots}")
+            if "/__agentic_os_fs_list" in local_runtime_requests and not docs_scans:
+                raise AssertionError("Missing attribution for filesystem list request")
             if console_errors or page_errors or failed_responses:
                 raise AssertionError(
                     "browser errors: "
@@ -508,7 +526,9 @@ def main() -> None:
                     "invocation": "/game.mode @canvas #gameplay operation=start",
                     "automaticGameModeBeforeInvocation": False,
                 },
+                "canonicalSeedReads": {"root": str(seed_root), "requests": len(docs_scans)},
                 "renderer": scene_evidence,
+                "sharedNpcHighlight": {"inactive": inactive_highlight, "active": active_highlight},
                 "groundedCamera": {"fov": grounded_camera_fov},
                 "movement": {"from": [initial_x, initial_z], "to": [moved_x, moved_z]},
                 "desktopRelease": {
@@ -539,6 +559,13 @@ def main() -> None:
             print(f"OK game-fps-browser-smoke {target_url}")
             print(f"Evidence: {EVIDENCE_PATH}")
             print(f"Screenshot: {SCREENSHOT_PATH}")
+        except Exception as error:
+            EVIDENCE_PATH.write_text(json.dumps({
+                "passed": False, "error": str(error), "docsScans": docs_scans,
+                "consoleErrors": console_errors, "pageErrors": page_errors,
+                "failedResponses": failed_responses,
+            }, indent=2) + "\n")
+            raise
         finally:
             browser.close()
 

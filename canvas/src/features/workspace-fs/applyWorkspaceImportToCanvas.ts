@@ -158,9 +158,27 @@ export async function applyWorkspaceImportToCanvas(args: {
     ? []
     : Array.isArray(args.opts?.workspaceEntries) ? args.opts.workspaceEntries : await fs.listEntries()
   const sourcesByPath = premergedSourceFiles ? null : resolveWorkspaceSourceIndexSnapshot(args.opts?.sourcesByPath)
+  const importSourcePaths = new Set([
+    ...createdPaths.map(resolveWorkspaceSourcePathKey),
+    ...existing.map(file => String(file.source?.path || '')),
+  ])
+  const importedUrls = new Set(createdPaths.flatMap(path => {
+    const source = sourcesByPath?.[path]
+    return source?.kind === 'url' ? [source.url] : []
+  }))
+  // URL imports register companion artifacts separately from their primary landing path.
+  if (importedUrls.size > 0) {
+    for (const [path, source] of Object.entries(sourcesByPath || {})) {
+      if (source.kind === 'url' && importedUrls.has(source.url)) {
+        importSourcePaths.add(resolveWorkspaceSourcePathKey(path))
+      }
+    }
+  }
   const merged = premergedSourceFiles || mergeWorkspaceEntriesIntoSourceFiles({
     existing,
-    workspaceEntries,
+    workspaceEntries: workspaceEntries.filter(entry =>
+      importSourcePaths.has(resolveWorkspaceSourcePathKey(entry.path)),
+    ),
     sourcesByPath: sourcesByPath || undefined,
     forceIncludePaths: createdPaths,
     preserveExistingWorkspaceEntries: true,
@@ -200,7 +218,7 @@ export async function applyWorkspaceImportToCanvas(args: {
       store.setSourceFiles(next)
       return { sourceFilesUpdated: true, enabledCount, parsedCount: 0 }
     }
-    if (merged !== existing) {
+    if (merged !== existing || existing.length !== existingAll.length) {
       store.setSourceFiles(merged)
       return { sourceFilesUpdated: true, enabledCount: 0, parsedCount: 0 }
     }
@@ -360,7 +378,7 @@ export async function applyWorkspaceImportToCanvas(args: {
     await waitForCanvasFrontmatterSurfaceTransition()
     return { sourceFilesUpdated: true, enabledCount, parsedCount }
   }
-  if (merged !== existing) {
+  if (merged !== existing || existing.length !== existingAll.length) {
     store.setSourceFiles(merged)
     if (preferredInteractiveImportRawText || preferredInteractiveImportGraphData || sawFrontmatterOnlyDoc) {
       applyInteractiveImportModes({

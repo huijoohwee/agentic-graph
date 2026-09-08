@@ -62,7 +62,7 @@ export async function testFloatingPanelChatRendersSelectedTextGenerationProvider
       await waitForFrames(dom.window as unknown as Window, 1)
     })
     const keyInput = container.querySelector('[data-kg-chat-api-key-input="true"]') as HTMLInputElement | null
-    if (keyInput?.getAttribute('aria-label') !== 'BytePlus ModelArk BYOK API key') {
+    if (keyInput?.getAttribute('aria-label') !== 'BytePlus ModelArk API key') {
       throw new Error(`expected selected BytePlus card to own the credential label, got ${keyInput?.getAttribute('aria-label')}`)
     }
     const modelSelect = container.querySelector('[data-kg-chat-model-select="true"]') as HTMLSelectElement | null

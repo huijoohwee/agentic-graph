@@ -415,7 +415,7 @@ then `floatingPanelChatAgenticOsAttempt.ts` MUST accept a renderable literal MCP
 - One passive sibling workspace artifact or manifest for each completed Storyboard Widget text, transcript, image, or video run that has an active workspace document.
 - MCP-style chat structured-content records parse into declared Storyboard Widget nodes and document-scoped registry entries when form metadata is present, editable Rich Media Panel endpoint nodes otherwise, default delivery edges, authored record-to-record edges, and existing widget-bundle overlay refs through the normalized AGENTIC_OS document, not a provider-specific renderer branch.
 - Zero successful terminal publications contain a provider-declared incomplete or length-limited fragment; every non-empty provider-exposed thinking part is distinct from the complete response part.
-- Every coordinated generated collection preserves semantic Run lineage while presenting a coordinator-first, rightward, ordered top-down fan-out that fits the captured viewport without scaling or moving the source.
+- Every coordinated generated collection preserves semantic Run lineage and the fixed source/camera. It uses three stages when their widths fit the captured viewport, otherwise one coordinator-first, rightward, ordered downstream column; if even that column cannot fit, natural-size overflow preserves the topology without scaling or moving the source.
 - No direct raw-text-to-graph patch path exists outside workspace-document apply.
 
 ---

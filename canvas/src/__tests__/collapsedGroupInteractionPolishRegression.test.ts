@@ -11,7 +11,7 @@ export function testCollapsedGroupChevronKeepsDedicatedHitTargetAndClickDetailFa
   if (!groupsText.includes("selectAll<SVGCircleElement, GroupDatum>('circle[data-kg-group-chevron-hit]')")) {
     throw new Error('expected collapsed-group chevron to keep a dedicated invisible hit target')
   }
-  if (!groupsText.includes("if (((event as unknown as { detail?: unknown }).detail || 0) >= 2)")) {
+  if (!groupsText.includes("if (readMouseEventDetail(event) >= 2)") || !groupsText.includes("Number.isFinite(detail) ? detail : 0")) {
     throw new Error('expected group surface clicks to use click detail as a double-click fallback for collapse toggles')
   }
   if (!groupsText.includes("chevronHitSel.on('click', toggleOrExpandGroup)")) {

@@ -187,6 +187,7 @@ export const useGraphStore = create<GraphState>()(
   lifecycleStage: 'idle',
   setLifecycleStage: (v) => set({ lifecycleStage: v }),
   resetAll: () => {
+    get().resetFlowWidgetPersistence()
     cancelScheduledHistoryCommit()
     const schema = applyCanvasDefaultInitSchema(defaultSchema)
     const keywordSchema = buildKeywordSchemaPreset(schema)
@@ -213,6 +214,7 @@ export const useGraphStore = create<GraphState>()(
       openWidgetNodeIdsByRenderer: {},
       flowWidgetPinnedByNodeId: {},
       flowWidgetPinnedByNodeIdByGraphMetaKey: {},
+      flowWidgetLayoutEvidenceByGraphMetaKey: {},
       flowWidgetPosByNodeId: {},
       flowWidgetPosByNodeIdByGraphMetaKey: {},
       flowWidgetWorldPosByNodeId: {},
@@ -280,6 +282,7 @@ export function resetGraphStoreForTests(): void {
   clearWorkspaceGraphMutationExpiryTimer()
   useGraphStore.getState().resetAll()
   useGraphStore.setState({
+    workspaceViewMode: 'canvas',
     workspaceGraphMutationBlockUntilMs: 0,
     workspaceGraphMutationBlockKey: '',
     markdownWorkspaceIndexingInFlight: false,

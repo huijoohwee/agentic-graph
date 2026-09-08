@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { load as parseYaml } from 'js-yaml'
 
 const readRepoFile = (repoRelativePath: string): string => {
   const p = resolve(process.cwd(), '..', repoRelativePath)
@@ -25,6 +26,23 @@ export function testAgenticOsPromptContractDocsUseCanonicalImplementedNames() {
     throw new Error('Expected stale AGENTIC_OS prompt contract proposed docs to be removed')
   }
 
+  const declarations = [mainPath, companionPath].map(file => {
+    const text = readFileSync(file, 'utf8')
+    const header = text.match(/^---\n([\s\S]*?)\n---(?:\n|$)/)?.[1]
+    const meta = header ? parseYaml(header) as Record<string, unknown> : null
+    if (!meta || typeof meta !== 'object' || Array.isArray(meta)
+      || !/^\d+\.\d+\.\d+$/.test(String(meta.version || ''))) {
+      throw new Error('Expected canonical prompt documents to declare a semantic version in YAML frontmatter')
+    }
+    return meta
+  })
+  for (const key of ['version', 'schema', 'local_rung', 'delivered_rung']) {
+    if (typeof declarations[0]![key] !== 'string' || !declarations[0]![key]
+      || declarations[0]![key] !== declarations[1]![key]) {
+      throw new Error(`Expected prompt document pair to share its declared ${key}`)
+    }
+  }
+
   const technicalArchitecture = readRepoFile('docs/agentic-graph-technical-architecture.md')
   const technicalArchitectureSettings = readRepoFile('docs/agentic-graph-technical-architecture.settings.md')
   const referenceDocs = [
@@ -37,8 +55,6 @@ export function testAgenticOsPromptContractDocsUseCanonicalImplementedNames() {
 
   const required = [
     'id: agentic-graph-llm-prompt-contract-prd-tad',
-    'status: Accepted and implemented',
-    'version: 0.3.4',
     'See continuation in `agentic-graph-llm-prompt-contract-prd-tad.companion.md`',
     'canonical_doc: docs/documents/agentic-graph-llm-prompt-contract-prd-tad.md',
     'Typed AGENTIC_OS semantic graph',

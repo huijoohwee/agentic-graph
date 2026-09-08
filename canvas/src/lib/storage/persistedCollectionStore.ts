@@ -94,6 +94,21 @@ export type PersistedCollectionAtomicMutation<Collections extends PersistedRecor
       }
 }[keyof Collections]
 
+export type PersistedCollectionAtomicCondition<Collections extends PersistedRecordMap> = {
+  [CollectionName in keyof Collections]: {
+    collectionName: CollectionName
+    selector: Selector<Collections[CollectionName]>
+    records: ReadonlyArray<Collections[CollectionName]>
+  }
+}[keyof Collections]
+
+export const equalPersistedCollectionRecords = (actual: readonly unknown[], expected: readonly unknown[]): boolean => {
+  if (actual.length !== expected.length) return false
+  const sorted = (records: readonly unknown[]) => records.map(record => JSON.stringify(record)).sort()
+  const expectedValues = sorted(expected)
+  return sorted(actual).every((value, index) => value === expectedValues[index])
+}
+
 export type PersistedCollectionPersistenceState = {
   mode: 'indexeddb' | 'memory'
   status: 'active' | 'degraded'
@@ -109,6 +124,10 @@ export type PersistedCollectionDb<Collections extends PersistedRecordMap> = {
   }
   collections: PersistedCollectionMap<Collections>
   atomicWrite(mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>): Promise<void>
+  compareAndWrite(
+    mutations: ReadonlyArray<PersistedCollectionAtomicMutation<Collections>>,
+    conditions: ReadonlyArray<PersistedCollectionAtomicCondition<Collections>>,
+  ): Promise<boolean>
   persistence: {
     getState(): PersistedCollectionPersistenceState
     subscribe(listener: (state: PersistedCollectionPersistenceState) => void): { unsubscribe(): void }
@@ -405,6 +424,17 @@ export const createPersistedCollectionDb = <Collections extends PersistedRecordM
     },
     collections,
     atomicWrite,
+    async compareAndWrite(mutations, conditions) {
+      for (const condition of conditions) {
+        const records = Object.values(snapshot[condition.collectionName])
+          .filter(record => matchesSelector(record, condition.selector))
+        if (!equalPersistedCollectionRecords(records, condition.records)) return false
+      }
+      // atomicWrite commits synchronously before its promise yields, so no
+      // memory writer can interleave between the comparison and the commit.
+      await atomicWrite(mutations)
+      return true
+    },
     persistence: {
       getState() {
         return {

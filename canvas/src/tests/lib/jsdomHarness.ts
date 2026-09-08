@@ -1,5 +1,6 @@
 import { JSDOM } from 'jsdom'
 import { sanitizeNodeTestFlags } from '@/tests/lib/sanitizeNodeTestFlags'
+import { disposeReactRootsForDocument } from '@/tests/lib/reactRootLifecycle'
 
 export type JsdomHarnessEnv = {
   dom: JSDOM
@@ -37,13 +38,14 @@ export const restoreActiveJsdomGlobalsForTests = (): void => {
     Range?: typeof Range
     NodeFilter?: typeof NodeFilter
     DOMParser?: typeof DOMParser
+    XMLSerializer?: typeof XMLSerializer
     HTMLIFrameElement?: typeof HTMLIFrameElement
     requestAnimationFrame?: (cb: FrameRequestCallback) => number
     cancelAnimationFrame?: (id: number) => void
   }
   const windowConstructors = activeJsdomWindow as unknown as Pick<
     typeof globalThis,
-    'Node' | 'Element' | 'HTMLElement' | 'Range' | 'DOMParser'
+    'Node' | 'Element' | 'HTMLElement' | 'Range' | 'DOMParser' | 'XMLSerializer'
   >
   const windowEventConstructors = activeJsdomWindow as unknown as {
     Event: typeof Event
@@ -59,6 +61,7 @@ export const restoreActiveJsdomGlobalsForTests = (): void => {
   g.Range = windowConstructors.Range
   g.NodeFilter = (activeJsdomWindow as unknown as { NodeFilter?: typeof NodeFilter }).NodeFilter as typeof NodeFilter
   g.DOMParser = windowConstructors.DOMParser
+  g.XMLSerializer = windowConstructors.XMLSerializer
   g.HTMLIFrameElement =
     (activeJsdomWindow as unknown as { HTMLIFrameElement?: typeof HTMLIFrameElement }).HTMLIFrameElement as
       typeof HTMLIFrameElement
@@ -78,6 +81,9 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     pretendToBeVisual: true,
   })
 
+  // JSDOM has no layout hit-testing; individual tests can supply explicit hits.
+  if (typeof dom.window.document.elementFromPoint !== 'function') dom.window.document.elementFromPoint = () => null
+
   const g = globalThis as typeof globalThis
   const originalIsReactActEnvironment = (g as unknown as { IS_REACT_ACT_ENVIRONMENT?: unknown }).IS_REACT_ACT_ENVIRONMENT
 
@@ -91,6 +97,7 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
   const originalRange = (g as { Range?: typeof Range }).Range
   const originalNodeFilter = (g as { NodeFilter?: typeof NodeFilter }).NodeFilter
   const originalDomParser = (g as { DOMParser?: typeof DOMParser }).DOMParser
+  const originalXmlSerializerDescriptor = Object.getOwnPropertyDescriptor(g, 'XMLSerializer')
   const originalHtmlIFrameElement = (g as { HTMLIFrameElement?: typeof HTMLIFrameElement }).HTMLIFrameElement
   const originalObjectProtoHtmlIFrameElementDesc = Object.getOwnPropertyDescriptor(Object.prototype, 'HTMLIFrameElement')
   const originalDocumentProtoActiveElementDesc = Object.getOwnPropertyDescriptor(dom.window.Document.prototype, 'activeElement')
@@ -257,6 +264,7 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
   ;(g as { NodeFilter: typeof NodeFilter }).NodeFilter = polyfillNodeFilter
   ;(dom.window as unknown as { NodeFilter: typeof NodeFilter }).NodeFilter = polyfillNodeFilter
   ;(g as { DOMParser: typeof DOMParser }).DOMParser = dom.window.DOMParser as unknown as typeof DOMParser
+  Object.defineProperty(g, 'XMLSerializer', { configurable: true, writable: true, value: dom.window.XMLSerializer })
 
   try {
     const anyWindow = dom.window as unknown as { HTMLIFrameElement?: typeof HTMLIFrameElement }
@@ -398,7 +406,7 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     render: async () => ({ svg: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"></svg>' }),
   }
 
-  const restore = () => {
+  const restoreEnvironment = () => {
     for (const timeout of animationFrameTimeouts) clearTimeout(timeout)
     animationFrameTimeouts.clear()
     activeAnimationFrameTimeoutSets.delete(animationFrameTimeouts)
@@ -467,6 +475,9 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     } else {
       ;(g as { DOMParser: typeof DOMParser }).DOMParser = originalDomParser as typeof DOMParser
     }
+
+    if (originalXmlSerializerDescriptor) Object.defineProperty(g, 'XMLSerializer', originalXmlSerializerDescriptor)
+    else delete (g as { XMLSerializer?: typeof XMLSerializer }).XMLSerializer
 
     if (typeof originalHtmlIFrameElement === 'undefined') {
       delete (g as { HTMLIFrameElement?: typeof HTMLIFrameElement }).HTMLIFrameElement
@@ -542,6 +553,16 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
     }
 
     dom.window.close()
+  }
+
+  const restore = () => {
+    const errors: unknown[] = []
+    try { disposeReactRootsForDocument(dom.window.document) } catch (error) { errors.push(error) }
+    finally {
+      try { restoreEnvironment() } catch (error) { errors.push(error) }
+    }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length) throw new AggregateError(errors, errors.map(error => String((error as Error)?.message ?? error)).join('; '))
   }
 
   return { dom, restore }

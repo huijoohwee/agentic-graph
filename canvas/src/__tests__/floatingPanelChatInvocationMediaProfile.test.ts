@@ -1,3 +1,5 @@
+import { registerPinnedAgenticOsDictionaryTokensForTest } from './helpers/pinnedAgenticOsDictionary'
+import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { analyzeAgenticOsRequest } from '@/features/chat/chatAgenticOsRequestProfile'
 import { normalizeAgenticOsAssistantBodyForStorage } from '@/features/chat/chatHistoryWorkspace'
 import { buildStreamArtifactQueryRelevance } from '@/features/chat/chatStreamArtifacts'
@@ -18,21 +20,27 @@ const TRACE_ONLY_ASSISTANT_TEXT = [
 ].join('\n')
 
 export function testVisualInspectionAttachedMediaPromptsStayOutOfProductTerms() {
-  for (const prompt of [
-    'explain [attached image]',
-    'describe [attached image]',
-    'analyze [attached image]',
-    'identify [attached image]',
-    '/prd-tad.create explain [attached image]',
-  ]) {
-    const profile = analyzeAgenticOsRequest(prompt)
-    if (profile.product || profile.namedTerms.length > 0) {
-      throw new Error(`expected attached-media inspection prompt to stay out of product/named terms, got ${JSON.stringify({
-        prompt,
-        product: profile.product,
-        namedTerms: profile.namedTerms,
-      })}`)
+  resetAgenticOsRemoteGrammarCatalogForTests()
+  try {
+    registerPinnedAgenticOsDictionaryTokensForTest({ command: ['/prd-tad.create'], semantic: [], binding: [] })
+    for (const prompt of [
+      'explain [attached image]',
+      'describe [attached image]',
+      'analyze [attached image]',
+      'identify [attached image]',
+      '/prd-tad.create explain [attached image]',
+    ]) {
+      const profile = analyzeAgenticOsRequest(prompt)
+      if (profile.product || profile.namedTerms.length > 0) {
+        throw new Error(`expected attached-media inspection prompt to stay out of product/named terms, got ${JSON.stringify({
+          prompt,
+          product: profile.product,
+          namedTerms: profile.namedTerms,
+        })}`)
+      }
     }
+  } finally {
+    resetAgenticOsRemoteGrammarCatalogForTests()
   }
 }
 
@@ -75,36 +83,42 @@ export function testTraceOnlyFallbackDoesNotProjectProductOrNamedTerms() {
 }
 
 export function testLeadingInvocationVisualMediaTraceStaysQueryResponsiveNoBackfill() {
-  const profile = analyzeAgenticOsRequest('/prd-tad.create explain [attached image]')
-  if (profile.intent !== 'explain [attached image]' || profile.artifact !== 'PRD + TAD') {
-    throw new Error(`expected route metadata to keep PRD/TAD artifact while preserving visual query intent, got ${JSON.stringify(profile)}`)
-  }
-  const markdown = normalizeAgenticOsAssistantBodyForStorage({
-    timestampMs: Date.UTC(2026, 6, 8, 5, 26, 25),
-    workspacePath: '/chat-log/20260708T052625Z/agenticOs_20260708T052625Z.md',
-    requestText: '/prd-tad.create explain [attached image]',
-    assistantText: TRACE_ONLY_ASSISTANT_TEXT,
-  })
-  for (const required of [
-    '$schema: "agentic-os-response/v1"',
-    'agenticOsResponseOnly: true',
-    '# Chat Response',
-    'For the request "explain [attached image]"',
-    'no answer is backfilled',
-  ]) {
-    if (!markdown.includes(required)) throw new Error(`expected visual inspection route output to include ${required}`)
-  }
-  for (const forbidden of [
-    '$schema: "agentic-os-pipeline/v1"',
-    'AI Pipeline',
-    'Computing Flow Definition',
-    'PRD — Product Requirements',
-    'TAD — Technical Architecture',
-    'product: "explain [attached image',
-    'Product: explain [attached image',
-    'Named terms: explain [attached image',
-    'objective: "deliver PRD + TAD"',
-  ]) {
-    if (markdown.includes(forbidden)) throw new Error(`expected visual inspection route output not to backfill ${forbidden}`)
+  resetAgenticOsRemoteGrammarCatalogForTests()
+  try {
+    registerPinnedAgenticOsDictionaryTokensForTest({ command: ['/prd-tad.create'], semantic: [], binding: [] })
+    const profile = analyzeAgenticOsRequest('/prd-tad.create explain [attached image]')
+    if (profile.intent !== 'explain [attached image]' || profile.artifact !== 'PRD + TAD') {
+      throw new Error(`expected route metadata to keep PRD/TAD artifact while preserving visual query intent, got ${JSON.stringify(profile)}`)
+    }
+    const markdown = normalizeAgenticOsAssistantBodyForStorage({
+      timestampMs: Date.UTC(2026, 6, 8, 5, 26, 25),
+      workspacePath: '/chat-log/20260708T052625Z/agenticOs_20260708T052625Z.md',
+      requestText: '/prd-tad.create explain [attached image]',
+      assistantText: TRACE_ONLY_ASSISTANT_TEXT,
+    })
+    for (const required of [
+      '$schema: "agentic-os-response/v1"',
+      'agenticOsResponseOnly: true',
+      '# Chat Response',
+      'For the request "explain [attached image]"',
+      'no answer is backfilled',
+    ]) {
+      if (!markdown.includes(required)) throw new Error(`expected visual inspection route output to include ${required}`)
+    }
+    for (const forbidden of [
+      '$schema: "agentic-os-pipeline/v1"',
+      'AI Pipeline',
+      'Computing Flow Definition',
+      'PRD — Product Requirements',
+      'TAD — Technical Architecture',
+      'product: "explain [attached image',
+      'Product: explain [attached image',
+      'Named terms: explain [attached image',
+      'objective: "deliver PRD + TAD"',
+    ]) {
+      if (markdown.includes(forbidden)) throw new Error(`expected visual inspection route output not to backfill ${forbidden}`)
+    }
+  } finally {
+    resetAgenticOsRemoteGrammarCatalogForTests()
   }
 }

@@ -174,3 +174,143 @@ export async function testWorkspaceSyncSchedulerScopeKeyKeepsLatestAcrossTaskKey
     throw new Error(`expected latest scoped callback to win, got ${calls[0]}`)
   }
 }
+
+async function withSchedulerWindows(keys: string[], run: (create: () => { window: Window; close: () => void }) => Promise<void>) {
+  const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
+  const closes: Array<() => void> = [], errors: unknown[] = []
+  const create = () => {
+    const harness = initJsdomHarness()
+    let active = true
+    const close = () => { if (active) { active = false; harness.restore() } }
+    closes.push(close)
+    return { window: harness.dom.window as unknown as Window, close }
+  }
+  try { await run(create) } catch (error) { errors.push(error) }
+  finally {
+    for (const key of keys) { cancelWorkspaceSyncTask(key); cancelCoalescedTask(key) }
+    for (const close of closes.reverse()) { try { close() } catch (error) { errors.push(error) } }
+  }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length) throw Object.assign(new Error(errors.map(error => String((error as Error)?.message ?? error)).join('; ')), { errors })
+}
+
+export async function testWorkspaceSyncSchedulerRetiresClosedWindowWithoutStrandingNextOwner() {
+  const keys = ['test:owner:a', 'test:owner:b'], calls: string[] = []
+  await withSchedulerWindows(keys, async create => {
+    const a = create()
+    scheduleWorkspaceSyncTask(keys[0], () => calls.push('retired-a'), 10)
+    a.close()
+    create()
+    scheduleWorkspaceSyncTask(keys[1], () => calls.push('b'), 10)
+    await new Promise(resolve => setTimeout(resolve, 40))
+    if (calls.join(',') !== 'b') throw new Error(`Expected only the new Window batch to run, got ${calls}`)
+  })
+}
+
+export async function testCoalescedSchedulerCancelsThroughCreatingWindow() {
+  const key = 'test:owner:cancel', calls: string[] = []
+  await withSchedulerWindows([key], async create => {
+    create()
+    scheduleCoalescedTask(key, () => calls.push('canceled-a'), 10)
+    const b = create()
+    b.window.setTimeout(() => calls.push('unrelated-b'), 10)
+    b.window.setTimeout(() => calls.push('control-b'), 10)
+    cancelCoalescedTask(key)
+    await new Promise(resolve => setTimeout(resolve, 40))
+    if (calls.join(',') !== 'unrelated-b,control-b') throw new Error(`Cancellation touched another Window's timer: ${calls}`)
+  })
+}
+
+export async function testCoalescedSchedulerFencesRetiredAndSupersededMicrotasks() {
+  const keys = ['test:owner:microtask', 'test:owner:delayed', 'test:owner:reentrant'], calls: string[] = []
+  await withSchedulerWindows(keys, async create => {
+    create()
+    scheduleCoalescedTask(keys[0], () => calls.push('retired-a'), 0)
+    create()
+    scheduleCoalescedTask(keys[0], () => calls.push('old-b'), 0)
+    scheduleCoalescedTask(keys[0], () => calls.push('latest-b'), 0)
+    scheduleCoalescedTask(keys[1], () => calls.push('superseded-immediate'), 0)
+    scheduleCoalescedTask(keys[1], () => calls.push('delayed-b'), 20)
+    scheduleCoalescedTask(keys[2], () => {
+      calls.push('reentrant-first')
+      scheduleCoalescedTask(keys[2], () => calls.push('reentrant-next'), 0)
+    }, 0)
+    await Promise.resolve(); await Promise.resolve()
+    if (calls.join(',') !== 'latest-b,reentrant-first,reentrant-next') throw new Error(`Stale microtask consumed newer work or erased a reentrant schedule: ${calls}`)
+    await new Promise(resolve => setTimeout(resolve, 40))
+    if (calls.join(',') !== 'latest-b,reentrant-first,reentrant-next,delayed-b') throw new Error(`Delayed work did not retain its own callback generation: ${calls}`)
+  })
+}
+
+export async function testWorkspaceSyncSchedulerKeepsAbsoluteExistingDeadline() {
+  const keys = ['test:deadline:a', 'test:deadline:b'], calls: string[] = []
+  await withSchedulerWindows(keys, async create => {
+    create()
+    const checkpoint = new Promise(resolve => setTimeout(resolve, 65))
+    scheduleWorkspaceSyncTask(keys[0], () => calls.push('a'), 60)
+    await new Promise(resolve => setTimeout(resolve, 30))
+    scheduleWorkspaceSyncTask(keys[1], () => calls.push('b'), 40)
+    await checkpoint
+    if (calls.join(',') !== 'a,b') throw new Error(`A shorter interval joining later postponed the existing absolute deadline: ${calls}`)
+  })
+}
+
+export async function testWorkspaceSyncSchedulerFencesReentrantOwnerAndSignature() {
+  const keys = ['test:reentrant:a', 'test:reentrant:remaining-a', 'test:reentrant:b'], calls: string[] = []
+  await withSchedulerWindows(keys, async create => {
+    create()
+    const scopeKey = 'test:reentrant:shared-scope', signature = 'same'
+    scheduleWorkspaceSyncTask(keys[0], () => {
+      calls.push('a')
+      create()
+      scheduleWorkspaceSyncTask(keys[2], () => calls.push('b'), 0, { scopeKey, signature })
+    }, 0, { scopeKey, signature })
+    scheduleWorkspaceSyncTask(keys[1], () => calls.push('retired-a'), 0)
+    await Promise.resolve(); await Promise.resolve()
+    if (calls.join(',') !== 'a,b') throw new Error(`Old-owner continuation or signature contaminated the reentrant Window: ${calls}`)
+    const duplicate = scheduleWorkspaceSyncTask(keys[2], () => calls.push('duplicate-b'), 0, { scopeKey, signature })
+    if (duplicate) throw new Error('Same-owner executed signatures must still suppress duplicates')
+  })
+}
+
+export async function testWorkspaceSyncSchedulerResumesAfterTemporaryWindowRetiresTimer() {
+  const keys = ['test:temporary:a', 'test:temporary:next-a'], calls: string[] = []
+  await withSchedulerWindows(keys, async create => {
+    create()
+    scheduleWorkspaceSyncTask(keys[0], () => calls.push('retired-a'), 10)
+    const temporary = create()
+    await new Promise(resolve => setTimeout(resolve, 40))
+    temporary.close()
+    scheduleWorkspaceSyncTask(keys[1], () => calls.push('next-a'), 10)
+    await new Promise(resolve => setTimeout(resolve, 40))
+    if (calls.join(',') !== 'next-a') throw new Error(`Returning to a Window must detect its retired lower timer without replaying stale work: ${calls}`)
+  })
+}
+
+// Registry entrypoints own a real Window so timer behavior does not depend on prior tests.
+const withNativeSchedulerWindow = (fn: () => Promise<void>, keys: string[]) =>
+  withSchedulerWindows(keys, async create => { create(); await fn() })
+
+export const testCoalescedSchedulerCoalescesLatestCallbackInNativeWindow = () =>
+  withNativeSchedulerWindow(testCoalescedSchedulerCoalescesLatestCallback, ['test:coalescedScheduler:coalesce'])
+
+export const testCoalescedSchedulerCancelPreventsCallbackInNativeWindow = () =>
+  withNativeSchedulerWindow(testCoalescedSchedulerCancelPreventsCallback, ['test:coalescedScheduler:cancel'])
+
+export const testWorkspaceSyncSchedulerSuppressesRepeatedSignatureInNativeWindow = () =>
+  withNativeSchedulerWindow(testWorkspaceSyncSchedulerSuppressesRepeatedSignature, ['runtime:refresh'])
+
+export const testWorkspaceSyncSchedulerRunsLatestPerTaskUnderSharedKeyInNativeWindow = () =>
+  withNativeSchedulerWindow(testWorkspaceSyncSchedulerRunsLatestPerTaskUnderSharedKey, ['runtime:refresh', 'persistence:source-files'])
+
+export const testWorkspaceSyncSchedulerDoesNotDelayExistingFlushForLaterTaskInNativeWindow = () =>
+  withNativeSchedulerWindow(testWorkspaceSyncSchedulerDoesNotDelayExistingFlushForLaterTask, ['runtime:refresh', 'persistence:prefs'])
+
+export const testWorkspaceSyncSchedulerCancelDoesNotResetSignatureDedupeInNativeWindow = () =>
+  withNativeSchedulerWindow(testWorkspaceSyncSchedulerCancelDoesNotResetSignatureDedupe, ['runtime:refresh'])
+
+export const testWorkspaceSyncSchedulerScopeKeyKeepsLatestAcrossTaskKeysWithinSameFlushInNativeWindow = () =>
+  withNativeSchedulerWindow(testWorkspaceSyncSchedulerScopeKeyKeepsLatestAcrossTaskKeysWithinSameFlush, ['source-files:runtime', 'source-files:persistence'])
+
+export const testWorkspaceSyncSchedulerScopeKeySuppressesRepeatedSignatureAcrossTaskKeysInNativeWindow = () =>
+  withNativeSchedulerWindow(testWorkspaceSyncSchedulerScopeKeySuppressesRepeatedSignatureAcrossTaskKeys, ['source-files:runtime', 'source-files:persistence'])

@@ -7,7 +7,7 @@ import {
 import {
   readOverlayPointerTargetState,
   shouldBlockOverlayPanTarget,
-} from '../../../grph-shared/src/dom/overlayPointerGuards'
+} from 'grph-shared/dom/overlayPointerGuards'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 function readRichMediaPanelSourceBundle(): string {

@@ -39,7 +39,7 @@ export function testCloudflareDeployScriptsSeedDocsMirrorIntoD1() {
   }
   if (!seedScriptText.includes('buildReconciliationMutations')
     || !seedScriptText.includes('stale-source-files=')
-    || !seedScriptText.includes('Source Files mismatch after seed')) {
+    || !seedScriptText.includes('assertD1DocumentParity') || !seedScriptText.includes('assertNoD1GraphSnapshots') || !seedScriptText.includes('createD1ReconciliationEvidence')) {
     throw new Error('expected D1 docs seeding to reconcile stale Source Files instead of leaving an append-only Cloudflare cache')
   }
   if (!seedScriptText.includes("process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT")
@@ -82,7 +82,8 @@ export function testStorageSyncDocumentDeclaresTieredSourceAuthorityContract() {
     'fallback is visible and not called durable',
     'exactly one active room owner',
     'No Evidence Reference in this document proves a configured shared Worker',
-    'The generic blob handler has no auth/entitlement check.',
+    'Current binary authorization/overwrite semantics are owned by',
+    '`docs/documents/agentic-graph-artifact-media-storage-architecture.md`; source checks do not prove delivered security.',
     'The protected Pages release does not deploy the storage Worker.',
   ]
   for (const fragment of requiredCompanionFragments) {
@@ -122,10 +123,11 @@ export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract
   }
   const requiredCompanionFragments = [
     'Generic blobs',
-    'unauthenticated and overwriteable until hardened',
+    'active workspace session and matching read/write role; overwriteable',
     'Run media',
-    'current base64url token is not a signed entitlement',
-    'Blob/media auth gap | delivery boundary closed',
+    'signed workspace/object/operation/expiry capabilities; no payment entitlement',
+    'Legacy unsigned run tokens apply only to explicit local-runtime fallback.',
+    'Binary auth delivery evidence missing | delivery boundary closed',
   ]
   for (const fragment of requiredCompanionFragments) {
     if (!companionText.includes(fragment)) {
@@ -133,10 +135,15 @@ export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract
     }
   }
   for (const fragment of [
-    'the generic blob route is workspace/path addressed, unauthenticated in the current handler, and',
-    'overwriteable;',
-    'currently only base64url JSON and is not a signed entitlement or a Durable Object lookup.',
-    'This is the sole declaration site for these three route identities.',
+    'The public Worker dispatches through `storagePublicRouteSecurity.ts` before calling the binary',
+    'generic blobs require an active workspace session and the role appropriate to read or write;',
+    '| Authorize | secured dispatcher | session + workspace + method | read/write access | D1 session/membership read | reject before handler/body storage |',
+    'run media requires an HMAC-SHA-256 capability scoped to workspace, object key, operation,',
+    'media-asset listing requires workspace read access; mutations require write access.',
+    'Local mode cannot mint production media capabilities.',
+    'keys remain workspace/path addressed and overwriteable;',
+    'This is the sole declaration site for these binary routes and their capability issuer.',
+    'Source dispatch is not delivery evidence:',
     'The production Pages release does not deploy this Worker.',
   ]) {
     if (!binaryContractText.includes(fragment)) {
@@ -147,7 +154,7 @@ export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract
 
 export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract() {
   const contractText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'agentic-graph-storage-sync-contract.ts'), 'utf8')
-  const routePathsText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'agentic-graph-storage-route-paths.ts'), 'utf8')
+  const mediaObjectKeyText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'agentic-graph-storage-media-object-key.ts'), 'utf8'); const routePathsText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'agentic-graph-storage-route-paths.ts'), 'utf8')
   const topologyText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'cloudflareMediaAssetTopology.ts'), 'utf8')
   const uploadHelperText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'storage', 'uploadedMediaStorage.ts'), 'utf8')
   const commandMenuText = readFileSync(resolve(process.cwd(), 'src', 'features', 'command-menu', 'CommandMenuCatalogPanel.tsx'), 'utf8')
@@ -173,7 +180,7 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
     'buildAgenticGraphStorageCanvasRoomPath',
   ]
   for (const fragment of requiredContractFragments) {
-    if (!contractText.includes(fragment) && !routePathsText.includes(fragment)) {
+    if (!contractText.includes(fragment) && !routePathsText.includes(fragment) && !mediaObjectKeyText.includes(fragment)) {
       throw new Error(`expected shared storage contract to declare Cloudflare media asset fragment: ${fragment}`)
     }
   }
@@ -208,13 +215,13 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
   for (const fragment of [
     'uploadMediaFileToAgenticGraphStorage',
     'readUploadedMediaKind',
-    'AGENTIC_OS_STORAGE_R2_MEDIA_OBJECT_PREFIX',
-    '`${AGENTIC_OS_STORAGE_R2_MEDIA_OBJECT_PREFIX}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`',
+    'buildAgenticGraphStorageMediaWorkspace(workspaceId)',
+    '`${workspace.prefix}/runs/${runId}/${stageId}/${shotId}.${readFileExtension(args.file)}`',
     'buildAgenticGraphStorageMediaPath(objectKey)',
     'buildAgenticGraphStorageMediaAssetPersistPath()',
     'requestMediaCapability',
     "'x-agentic-graph-media-capability'",
-    'presignedUrl: accessUrl',
+    'presignedUrl: null',
     "source: 'floatingPanel.media.upload'",
   ]) {
     if (!uploadHelperText.includes(fragment)) {
@@ -261,11 +268,11 @@ export function testMainPanelCloudflareMediaAssetSyncUsesSharedRuntimeContract()
     throw new Error('expected Durable Object canvas room to proxy authenticated collaboration joins and persist media asset sync notifications')
   }
   if (!wranglerText.includes('AGENTIC_OS_STORAGE_BLOB_BUCKET')
-    || !wranglerText.includes('agentic-graph-storage-blobs')
+    || !wranglerText.includes('agentic-storage-blobs')
     || wranglerText.includes('AGENTIC_OS_MEDIA_BUCKET')
     || !wranglerText.includes('AGENTIC_OS_CANVAS_ROOM')
     || !wranglerText.includes('AgenticGraphCanvasSyncRoom')) {
-    throw new Error('expected agentic-graph-storage wrangler config to bind media bytes to agentic-graph-storage-blobs and the canvas sync Durable Object')
+    throw new Error('expected agentic-graph-storage wrangler config to bind media bytes to agentic-storage-blobs and the canvas sync Durable Object')
   }
   if (/id\s*=\s*"(operator|fake|placeholder|todo|test)[^"]*"/i.test(wranglerText)) {
     throw new Error('expected wrangler config to avoid fake KV namespace ids for media access cache')
@@ -372,7 +379,7 @@ export function testWorkspaceFsCacheOwnerUsesPersistedCollectionStore() {
   }
 }
 
-export function testGraphRecordCacheOwnerUsesPersistedCollectionStore() {
+export function testGraphTableCacheOwnerUsesPersistedCollectionStore() {
   const storagePath = resolve(process.cwd(), 'src', 'lib', 'graph-record-db', 'graphRecordDb.impl.ts')
   const storageText = readFileSync(storagePath, 'utf8')
   if (storageText.includes('createRxDatabase') || storageText.includes("from 'rxdb/")) {
@@ -496,8 +503,8 @@ export function testCanvasStrictPortDevBuildsLinkedPackagesBeforeVite() {
   if (rootScripts.setup !== 'npm install') {
     throw new Error('expected root setup to own npm workspace installation')
   }
-  if (rootScripts.postinstall !== 'npm run hooks:install') {
-    throw new Error('expected root postinstall to avoid nested npm installs')
+  if (rootScripts.postinstall != null) {
+    throw new Error('expected root installation to avoid implicit postinstall work; setup belongs to the shared harness')
   }
   if (rootScripts.dev !== 'npm run dev --workspace=@agentic-graph/canvas --') {
     throw new Error('expected root dev script to delegate through the canvas workspace')

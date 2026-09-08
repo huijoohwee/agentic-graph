@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { FlightGeoOverlaySnapshot } from '../../../gympgrph/src/flightGeoOverlay'
+import type { FlightGeoOverlaySnapshot } from 'gympgrph/testkit/flightGeoOverlay'
 import {
   flightGeoEnvironmentMapLibreFeatureCollection,
   FLIGHT_GEO_ENVIRONMENT_LAYER_DEFINITIONS,
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
   hasExactFlightGeoEnvironmentFeatureCollection,
-} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+} from 'gympgrph/testkit/flightGeoEnvironmentMapLibre'
 import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 import {
   SINGAPORE_MAJOR_POI_IDENTITIES,

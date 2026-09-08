@@ -1,7 +1,20 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { createRequire, Module as NodeModule } from 'node:module'
+import { createRequire, Module as NodeModule, register } from 'node:module'
 import { sanitizeNodeTestFlags } from '@/tests/lib/sanitizeNodeTestFlags'
+
+// JSDOM exercises component behavior, while browser/build checks own CSS. Cover
+// dynamic ESM imports as well as CommonJS without hiding missing asset files.
+register(`data:text/javascript,${encodeURIComponent(`
+  import { readFileSync } from 'node:fs';
+  export function load(url, context, nextLoad) {
+    if (url.startsWith('file:') && new URL(url).pathname.endsWith('.css')) {
+      readFileSync(new URL(url));
+      return { format: 'module', shortCircuit: true, source: 'export {};' };
+    }
+    return nextLoad(url, context);
+  }
+`)}`, import.meta.url)
 
 const ensurePeerSymlinks = () => {
   try {
@@ -301,33 +314,6 @@ installThreeWindowProbe()
 
 ensureLocalStorageStub()
 
-const ensureAttachEventPolyfill = () => {
-  try {
-    const anyHTMLElement = globalThis as unknown as { HTMLElement?: { prototype?: { attachEvent?: unknown; detachEvent?: unknown } } }
-    const proto = anyHTMLElement.HTMLElement?.prototype
-    if (proto && typeof proto.attachEvent !== 'function') {
-      Object.defineProperty(proto, 'attachEvent', {
-        configurable: true,
-        enumerable: false,
-        writable: true,
-        value: () => void 0,
-      })
-    }
-    if (proto && typeof proto.detachEvent !== 'function') {
-      Object.defineProperty(proto, 'detachEvent', {
-        configurable: true,
-        enumerable: false,
-        writable: true,
-        value: () => void 0,
-      })
-    }
-  } catch {
-    void 0
-  }
-}
-
-ensureAttachEventPolyfill()
-
 const ensureUrlObjectUrls = () => {
   const w = g.window as unknown as { URL?: typeof URL }
   const urlCtor = (globalThis as unknown as { URL?: typeof URL }).URL
@@ -410,11 +396,21 @@ if (!g.ResizeObserver) {
 }
 
 async function main() {
+  const { installReactRootLifecycle } = await import('@/tests/lib/reactRootLifecycle')
+  // React snapshots DOM event capabilities at module initialization. Loading it
+  // under the window stub selects the legacy input path for every later fixture.
+  const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
+  const bootstrap = initJsdomHarness()
+  try {
+    installReactRootLifecycle(appRequire('react-dom/client'), appRequire('react').act)
+  } finally {
+    bootstrap.restore()
+  }
   const { completeSourceFilesBootstrap } = await import('@/features/source-files/sourceFilesBootstrapReadiness')
   completeSourceFilesBootstrap()
   const { runAllTests } = await import('@/tests/run')
-  const { readCurrentRunningTest } = await import('@/tests/runner/execTest')
-  const startedAt = Date.now()
+  const { readCurrentRunningTest, readTestMonotonicTime } = await import('@/tests/runner/execTest')
+  const startedAt = readTestMonotonicTime()
   const timeoutMs = (() => {
     const raw = Number(process.env.AG_TEST_TIMEOUT_MS)
     if (Number.isFinite(raw) && raw > 1_000) return Math.max(30_000, Math.min(30 * 60_000, Math.floor(raw)))
@@ -432,8 +428,8 @@ async function main() {
       }, timeoutMs),
     ),
   ])
-  const finishedAt = Date.now()
-  const durationMs = finishedAt - startedAt
+  const finishedAt = readTestMonotonicTime()
+  const durationMs = Math.max(0, Math.round(finishedAt - startedAt))
   const failed = results.filter(r => !r.ok)
   results.forEach(r => {
     const tag = r.ok ? 'OK' : 'FAIL'

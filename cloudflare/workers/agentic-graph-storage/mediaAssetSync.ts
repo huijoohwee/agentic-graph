@@ -1,6 +1,7 @@
 import {
   AGENTIC_OS_STORAGE_API_VERSION,
   AGENTIC_OS_STORAGE_ROUTE_PATHS,
+  buildAgenticGraphStorageMediaPath,
   type AgenticGraphMediaAssetPersistRequest,
   type AgenticGraphMediaAssetPersistResponse,
   type AgenticGraphStorageErrorResponse,
@@ -9,6 +10,7 @@ import {
 } from './contract'
 import { normalizeNumber, normalizeString } from './db'
 import type { D1DatabaseLike } from './db'
+import { readMediaObjectKey } from './media'
 import {
   deleteMediaArtifact,
   findMediaArtifactByHash,
@@ -110,13 +112,16 @@ export const isAgenticGraphStorageMediaAssetRoute = (pathname: string): boolean 
   normalizeString(pathname) === AGENTIC_OS_STORAGE_ROUTE_PATHS.mediaAssetPersist
 
 const serializeMediaArtifact = (artifact: MediaArtifactRecord) => {
-  const objectKey =
+  const storedKey =
     normalizeString(artifact.durableR2Url).replace(/^\/?api\/storage\/media\//, '') ||
     `${artifact.runId}/${artifact.stageId}/${artifact.shotId}`
+  // Stored rows contain raw keys. Encode before parsing so legacy `%23` stays
+  // literal rather than selecting or deleting a different `#` object.
+  const objectKey = readMediaObjectKey(buildAgenticGraphStorageMediaPath(storedKey)) || storedKey
   return {
     artifactId: artifact.id,
     objectKey,
-    publicPath: `${AGENTIC_OS_STORAGE_ROUTE_PATHS.mediaPrefix}${objectKey}`,
+    publicPath: buildAgenticGraphStorageMediaPath(objectKey),
     runId: artifact.runId,
     stageId: artifact.stageId,
     shotId: artifact.shotId,
@@ -408,7 +413,7 @@ export const handleMediaAssetPersist = async (
     }, nowIso)
   }
 
-  const publicPath = `${AGENTIC_OS_STORAGE_ROUTE_PATHS.mediaPrefix}${objectKey}`
+  const publicPath = buildAgenticGraphStorageMediaPath(objectKey)
   const normalizedBody = { ...body, objectKey }
   const access = await writeAccessCache({
     env,
@@ -431,7 +436,7 @@ export const handleMediaAssetPersist = async (
     artifactId,
     objectKey,
     publicPath,
-    durableR2Url: body.durableR2Url,
+    durableR2Url: publicPath,
     contentHash: body.contentHash,
     storage: {
       r2: 'confirmed',

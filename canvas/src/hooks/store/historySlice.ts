@@ -4,6 +4,8 @@ import type { GraphFieldSettingsById } from '@/features/graph-fields/graphFields
 import type { StoreApi } from 'zustand';
 import { withGraphDataRevision } from './graphDataSliceUtils'
 import { deepClone } from '@/lib/data/deepClone'
+import { boundedJsonEqual } from '@/lib/data/boundedJsonEqual'
+import { createUniqueId } from '@/lib/ids'
 import { debounce } from '@/lib/async/debounce'
 import { persistGraphDataToLocalStorage } from './graphDataPersistence'
 import { hashArrayOfObjectsSignature, hashRecordSignature, hashSignatureParts } from '@/lib/hash/signature'
@@ -39,7 +41,7 @@ const readActiveSourceFileSnapshot = (
     const sourcePath = String(file.source?.path || '').trim().replace(/^\/+/, '')
     return sourcePath === documentName || String(file.name || '').trim() === documentName
   })
-  return match ? deepClone(match) as SourceFile : null
+  return match ?? null
 }
 
 const restoreActiveSourceFileSnapshot = (
@@ -73,6 +75,8 @@ const getHistorySnapshotSignature = (
 }
 
 const buildHistoryEntry = (args: {
+  id: string
+  contentSignature: string
   label: string
   timestamp: number
   graphData: GraphData
@@ -82,14 +86,13 @@ const buildHistoryEntry = (args: {
   activeSourceFileSnapshot: SourceFile | null
   parentId: string | null
 }): VersionHistoryEntry => {
-  const contentSignature = getHistorySnapshotSignature(args.graphData, args.graphFieldSettingsById, args.markdownDocumentName, args.markdownDocumentText, args.activeSourceFileSnapshot)
   return {
-    id: `h-${args.timestamp.toString(36)}-${contentSignature.slice(0, 8)}`,
+    id: args.id,
     parentId: args.parentId,
     label: args.label,
     timestamp: args.timestamp,
     source: inferVersionHistorySource(args.label),
-    contentSignature,
+    contentSignature: args.contentSignature,
     graphData: args.graphData,
     graphFieldSettingsById: args.graphFieldSettingsById,
     markdownDocumentName: args.markdownDocumentName,
@@ -144,9 +147,17 @@ const restoreHistoryEntry = (set: SetGraph, get: GetGraph, entry: VersionHistory
   }
 }
 
-const shouldSkipHistoryCommit = (history: VersionHistoryEntry[], nextSignature: string): boolean => {
+type HistorySnapshot = Pick<VersionHistoryEntry, 'graphData' | 'graphFieldSettingsById' | 'markdownDocumentName' | 'markdownDocumentText' | 'activeSourceFileSnapshot'>
+
+const shouldSkipHistoryCommit = (history: VersionHistoryEntry[], nextSignature: string, next: HistorySnapshot): boolean => {
   const last = history.length > 0 ? history[history.length - 1] : null
-  return !!last && last.contentSignature === nextSignature
+  return !!last && last.contentSignature === nextSignature && boundedJsonEqual({
+    graphData: last.graphData,
+    graphFieldSettingsById: last.graphFieldSettingsById,
+    markdownDocumentName: last.markdownDocumentName,
+    markdownDocumentText: last.markdownDocumentText,
+    activeSourceFileSnapshot: last.activeSourceFileSnapshot,
+  }, next)
 }
 
 const appendBoundedHistoryEntry = (
@@ -159,7 +170,31 @@ const appendBoundedHistoryEntry = (
   return bounded.map((item, index) => index === 0 ? { ...item, parentId: null } : item)
 }
 
-export const createHistorySlice = (set: SetGraph, get: GetGraph) => ({
+export const createHistorySlice = (set: SetGraph, get: GetGraph) => {
+  const commitHistory = (label: string, persist = false): void => {
+    const { graphData, graphFieldSettingsById, history, historyIndex, markdownDocumentName, markdownDocumentText, sourceFiles } = get()
+    if (!graphData) return
+    const activeSourceFileSnapshot = readActiveSourceFileSnapshot(sourceFiles || [], markdownDocumentName)
+    const snapshot: HistorySnapshot = { graphData, graphFieldSettingsById: graphFieldSettingsById || {}, markdownDocumentName, markdownDocumentText, activeSourceFileSnapshot }
+    const contentSignature = getHistorySnapshotSignature(graphData, graphFieldSettingsById, markdownDocumentName, markdownDocumentText, activeSourceFileSnapshot)
+    const trimmed = history.slice(0, historyIndex + 1)
+    if (shouldSkipHistoryCommit(trimmed, contentSignature, snapshot)) return
+    const timestamp = Date.now()
+    const entry = buildHistoryEntry({
+      ...snapshot,
+      graphData: deepClone(graphData),
+      graphFieldSettingsById: deepClone(snapshot.graphFieldSettingsById),
+      activeSourceFileSnapshot: activeSourceFileSnapshot ? deepClone(activeSourceFileSnapshot) : null,
+      id: createUniqueId(`h-${timestamp.toString(36)}-`, new Set(trimmed.map(item => item.id))),
+      contentSignature, timestamp, label, parentId: trimmed[trimmed.length - 1]?.id || null,
+    })
+    const nextHistory = appendBoundedHistoryEntry(trimmed, entry)
+    set({ history: nextHistory, historyIndex: nextHistory.length - 1 })
+    if (persist) {
+      try { persistGraphDataToLocalStorage(graphData) } catch { void 0 }
+    }
+  }
+  return ({
   
   history: [] as VersionHistoryEntry[],
   historyIndex: -1,
@@ -185,28 +220,7 @@ export const createHistorySlice = (set: SetGraph, get: GetGraph) => ({
     set({ recentFiles: [newEntry, ...filtered].slice(0, 50) })
   },
 
-  addHistory: (label: string = 'Snapshot') => {
-    const { graphData, graphFieldSettingsById, history, historyIndex, markdownDocumentName, markdownDocumentText, sourceFiles } = get();
-    if (!graphData) return;
-    const activeSourceFileSnapshot = readActiveSourceFileSnapshot(sourceFiles || [], markdownDocumentName)
-    const nextSignature = getHistorySnapshotSignature(graphData, graphFieldSettingsById, markdownDocumentName, markdownDocumentText, activeSourceFileSnapshot)
-    const trimmed = history.slice(0, historyIndex + 1);
-    if (shouldSkipHistoryCommit(trimmed, nextSignature)) return
-    const graphCopy: GraphData = deepClone(graphData)
-    const fieldSettingsCopy: GraphFieldSettingsById = deepClone(graphFieldSettingsById || {})
-    const entry = buildHistoryEntry({
-      label,
-      timestamp: Date.now(),
-      graphData: graphCopy,
-      graphFieldSettingsById: fieldSettingsCopy,
-      markdownDocumentName,
-      markdownDocumentText,
-      activeSourceFileSnapshot,
-      parentId: trimmed[trimmed.length - 1]?.id || null,
-    })
-    const nextHistory = appendBoundedHistoryEntry(trimmed, entry)
-    set({ history: nextHistory, historyIndex: nextHistory.length - 1 });
-  },
+  addHistory: (label: string = 'Snapshot') => commitHistory(label),
 
   restoreHistory: (index: number) => {
     const { history } = get();
@@ -247,33 +261,7 @@ export const createHistorySlice = (set: SetGraph, get: GetGraph) => ({
       } catch {
         void 0
       }
-      const next = debounce((l: string) => {
-        const { graphData, graphFieldSettingsById, history, historyIndex, markdownDocumentName, markdownDocumentText, sourceFiles } = get();
-        if (!graphData) return;
-        const activeSourceFileSnapshot = readActiveSourceFileSnapshot(sourceFiles || [], markdownDocumentName)
-        const nextSignature = getHistorySnapshotSignature(graphData, graphFieldSettingsById, markdownDocumentName, markdownDocumentText, activeSourceFileSnapshot)
-        const trimmed = history.slice(0, historyIndex + 1);
-        if (shouldSkipHistoryCommit(trimmed, nextSignature)) return
-        const graphCopy: GraphData = deepClone(graphData)
-        const fieldSettingsCopy: GraphFieldSettingsById = deepClone(graphFieldSettingsById || {})
-        const entry = buildHistoryEntry({
-          label: l,
-          timestamp: Date.now(),
-          graphData: graphCopy,
-          graphFieldSettingsById: fieldSettingsCopy,
-          markdownDocumentName,
-          markdownDocumentText,
-          activeSourceFileSnapshot,
-          parentId: trimmed[trimmed.length - 1]?.id || null,
-        })
-        const nextHistory = appendBoundedHistoryEntry(trimmed, entry)
-        set({ history: nextHistory, historyIndex: nextHistory.length - 1 });
-        try {
-          persistGraphDataToLocalStorage(graphData)
-        } catch {
-          void 0
-        }
-      }, waitMs) as Committer
+      const next = debounce((label: string) => commitHistory(label, true), waitMs) as Committer
       global[HISTORY_COMMITTER_KEY] = { waitMs, fn: next }
       return next
     })()
@@ -330,3 +318,4 @@ export const createHistorySlice = (set: SetGraph, get: GetGraph) => ({
     if (!graphData) set({ graphData: null })
   },
 });
+}

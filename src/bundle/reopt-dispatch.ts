@@ -26,9 +26,9 @@ export async function dispatchAffectedSet(
     })
   })
   try {
-    const results = await Promise.all(requests.map((request) => withDeadline(
-      cache.requote(request, discovery, ctx), deadlineAt,
-    )))
+    const results = await withDeadline((signal) => Promise.all(requests.map((request) =>
+      cache.requote(request, discovery, ctx, signal),
+    )), deadlineAt)
     const rejected = results.filter((result): result is Rejection => result.kind === 'rejected')
     if (rejected.length > 0) {
       return Object.freeze({
@@ -50,15 +50,23 @@ export async function dispatchAffectedSet(
   }
 }
 
-async function withDeadline<T>(promise: Promise<T>, deadlineAt: number): Promise<T> {
+async function withDeadline<T>(operation: (signal: AbortSignal) => Promise<T>, deadlineAt: number): Promise<T> {
   const remaining = deadlineAt - Date.now()
-  if (remaining <= 0) throw new Error('cascade-timeout')
+  if (!Number.isFinite(remaining) || remaining <= 0) throw new Error('cascade-timeout')
+  const controller = new AbortController()
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error('cascade-timeout')), remaining)
+    timer = setTimeout(() => {
+      const reason = new Error('cascade-timeout')
+      controller.abort(reason)
+      reject(reason)
+    }, remaining)
   })
   try {
-    return await Promise.race([promise, timeout])
+    return await Promise.race([operation(controller.signal), timeout])
+  } catch (error) {
+    controller.abort(error)
+    throw error
   } finally {
     if (timer) clearTimeout(timer)
   }

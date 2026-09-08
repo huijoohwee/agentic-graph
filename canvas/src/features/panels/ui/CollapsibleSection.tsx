@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useState } from 'react'
+import React, { useCallback, useEffect, useId, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 import IconButton from '@/components/IconButton'
@@ -54,6 +54,10 @@ export default function CollapsibleSection({
   const uncontrolled = typeof collapsed !== 'boolean'
   const [innerCollapsed, setInnerCollapsed] = useState<boolean>(defaultCollapsed)
   const isCollapsed = uncontrolled ? innerCollapsed : (collapsed as boolean)
+  const [hasExpanded, setHasExpanded] = useState(!isCollapsed)
+  useEffect(() => {
+    if (!isCollapsed) setHasExpanded(true)
+  }, [isCollapsed])
   const setCollapsed = useCallback(
     (next: boolean) => {
       if (uncontrolled) setInnerCollapsed(next)
@@ -123,7 +127,7 @@ export default function CollapsibleSection({
         </section>
       </section>
       <section id={contentId} className={clsx(isCollapsed ? 'hidden' : 'block mt-2')}>
-        {children}
+        {hasExpanded || !isCollapsed ? children : null}
       </section>
     </section>
   )

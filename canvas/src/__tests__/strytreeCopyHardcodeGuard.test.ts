@@ -169,6 +169,10 @@ const listStrytreeRuntimeFiles = (repoRoot: string): string[] => {
     path.join(repoRoot, 'cloudflare', 'workers', 'agentic-graph-payment', 'index.ts'),
     path.join(repoRoot, 'cloudflare', 'workers', 'agentic-graph-payment', 'strytreeApi.ts'),
     path.join(repoRoot, 'docs', 'documents', 'agentic-graph-strytree-prd-tad.md'),
+    path.join(repoRoot, 'docs', 'documents', 'agentic-graph-strytree-tad-architecture.md'),
+    path.join(repoRoot, 'docs', 'documents', 'agentic-graph-strytree-tad-workflows-api.md'),
+    path.join(repoRoot, 'docs', 'documents', 'agentic-graph-strytree-tad-runtime-validation.md'),
+    path.join(repoRoot, 'docs', 'documents', 'agentic-graph-strytree-adr-validation.md'),
   ]
   const out: string[] = []
   for (const candidate of candidates) {

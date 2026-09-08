@@ -9,7 +9,7 @@ import {
   type GameOsToolInput,
   type GameOsWorldLease,
   type GameOsWorldState,
-} from '../../../../grph-shared/src/game-os/index.js'
+} from 'grph-shared/game-os/index'
 import type { GameMmorpgCore } from './gameMmorpgCore'
 
 export type GameMmorpgEmbeddedTool = {

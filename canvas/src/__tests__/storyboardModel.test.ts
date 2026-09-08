@@ -499,3 +499,21 @@ export function testStoryboardBoardModelUsesSharedDataflowForRichMediaPanelCards
     throw new Error('expected Storyboard iframe card to reuse normalized Rich Media Panel srcdoc')
   }
 }
+
+export function testStoryboardBoardModelPreservesOrdinaryValueProperties() {
+  for (const value of ['ordinary', 0, false, { nested: 'metadata' }]) {
+    const properties = { value, output: 'Generated artifact', summary: 'Authored summary', stage: 'Review' }
+    const graph: GraphData = { type: 'Graph', nodes: [{ id: 'card', label: 'Card', type: 'StoryboardFrame', properties }], edges: [] }
+    const before = JSON.stringify(graph)
+    const card = buildStoryboardBoardModel({ graphData: graph, graphRevision: 1 }).lanes.flatMap(lane => lane.cards)[0]
+    if (card?.output !== properties.output || card.summary !== properties.summary || card.lane !== 'Review') {
+      throw new Error(`expected ordinary value property to preserve sibling card fields, got ${JSON.stringify(card)}`)
+    }
+    if (JSON.stringify(graph) !== before) throw new Error('expected property projection not to mutate graph')
+  }
+  const graph: GraphData = { type: 'Graph', nodes: [{ id: 'typed', label: 'Typed', type: 'StoryboardFrame', properties: {
+    type: 'object', value: { output: { type: 'string', value: 'Typed output' }, stage: 'Review' },
+  } }], edges: [] }
+  const card = buildStoryboardBoardModel({ graphData: graph, graphRevision: 1 }).lanes.flatMap(lane => lane.cards)[0]
+  if (card?.output !== 'Typed output' || card.lane !== 'Review') throw new Error('expected typed property wrapper support')
+}

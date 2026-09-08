@@ -1,11 +1,15 @@
+import { resolveAgenticGraphStorageParentChildConflict } from '@/lib/storage/agentic-graph-storage-parent-child-conflict'
 import {
   applyReviewedAgenticGraphStorageChangesToSourceFiles,
+  resolvePulledDocumentSourceFileIdentity,
+  sourceFileMatchesPulledDocumentIdentity,
   applyReviewedAgenticGraphStorageGraphRemovalToSourceFiles,
 } from '@/features/source-files/sourceFilesInboundStorageApply'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   getAgenticGraphStorageDb,
-  commitAgenticGraphStorageMutationUnit,
+  compareAndCommitAgenticGraphStorageMutationUnit,
+  type AgenticGraphStorageRecordMap,
   type KgDocumentLocalRecord,
   type KgStorageConflictCandidateRecord,
   type AgenticGraphStorageDb,
@@ -27,15 +31,18 @@ import {
   scheduleAgenticGraphStorageSync,
   type AgenticGraphStorageSyncRunResult,
 } from '@/lib/storage/agentic-graph-storage-client-sync'
-import { readRetainedOutboxStatusCounts } from '@/lib/storage/agentic-graph-storage-client-support'
+import type { PersistedCollectionAtomicCondition } from '@/lib/storage/persistedCollectionStore'
+import { recordsEqual, readRetainedOutboxStatusCounts } from '@/lib/storage/agentic-graph-storage-client-support'
 import { rebuildAgenticGraphStorageOutboxRecordForRetry } from '@/lib/storage/agentic-graph-storage-outbox-record'
-import { toCloneSafeObject, toCloneSafeObjectOrNull } from '@/lib/storage/cloneSafe'
+import { resolveAgenticGraphStorageChildConflict } from '@/lib/storage/agentic-graph-storage-child-conflict'
+import { readAgenticGraphSourceFileIdFromDocumentId } from '@/features/source-files/sourceFilesStorageSync'
 import type {
   KgDocumentChunkRecord,
   KgDocumentRecord,
   KgGraphSnapshotRecord,
   AgenticGraphStorageMutation,
   AgenticGraphStorageOutboxRecord,
+  AgenticGraphStorageChildState,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 
 const STORAGE_CONFLICT_ACTION_PREFIX = 'kg-storage-conflict-action'
@@ -50,14 +57,6 @@ const sanitizeDocumentRecord = (record: KgDocumentRecord): KgDocumentRecord => (
   revision: normalizeNonNegativeInt(record.revision, 0),
   updatedAtMs: normalizeNonNegativeInt(record.updatedAtMs, Date.now()),
   deleted: record.deleted === true,
-})
-const sanitizeGraphSnapshotRecord = (record: KgGraphSnapshotRecord): KgGraphSnapshotRecord => ({
-  ...record,
-  graphRevision: normalizeNonNegativeInt(record.graphRevision, 0),
-  derivedFromDocumentRevision: normalizeNonNegativeInt(record.derivedFromDocumentRevision, 0),
-  updatedAtMs: normalizeNonNegativeInt(record.updatedAtMs, Date.now()),
-  graphJson: toCloneSafeObject(record.graphJson, {}),
-  layoutJson: toCloneSafeObjectOrNull(record.layoutJson),
 })
 const encodeToken = (value: string): string => encodeURIComponent(normalizeString(value))
 const decodeToken = (value: string): string => {
@@ -77,18 +76,21 @@ export const buildAgenticGraphStorageConflictKeepLocalActionId = (workspaceId: s
 export const buildAgenticGraphStorageConflictAcceptRemoteActionId = (workspaceId: string, mutationId: string): string =>
   `${STORAGE_CONFLICT_ACTION_PREFIX}:accept-remote:${encodeToken(workspaceId)}:${encodeToken(mutationId)}`
 
+export const buildAgenticGraphStorageConflictFamilyActionId = (workspaceId: string, mutationId: string, choice: 'restore-family' | 'discard-family'): string =>
+  `${STORAGE_CONFLICT_ACTION_PREFIX}:${choice}:${encodeToken(workspaceId)}:${encodeToken(mutationId)}`
+
 const parseConflictActionId = (
   actionId: string,
-): { action: 'review-log' | 'keep-local' | 'accept-remote'; workspaceId: string; mutationId: string | null } | null => {
+): { action: 'review-log' | 'keep-local' | 'accept-remote' | 'restore-family' | 'discard-family'; workspaceId: string; mutationId: string | null } | null => {
   const parts = normalizeString(actionId).split(':')
   if (parts.length < 3) return null
   if (parts[0] !== STORAGE_CONFLICT_ACTION_PREFIX) return null
   const action = parts[1]
-  if (action !== 'review-log' && action !== 'keep-local' && action !== 'accept-remote') return null
+  if (!['review-log', 'keep-local', 'accept-remote', 'restore-family', 'discard-family'].includes(action!)) return null
   const workspaceId = decodeToken(parts[2] || '')
   const mutationId = parts.length > 3 ? decodeToken(parts[3] || '') : null
   if (!workspaceId) return null
-  return { action, workspaceId, mutationId: mutationId || null }
+  return { action: action as 'review-log' | 'keep-local' | 'accept-remote' | 'restore-family' | 'discard-family', workspaceId, mutationId: mutationId || null }
 }
 
 const readConflictSummary = async (
@@ -147,12 +149,18 @@ type ConflictTarget = {
   targetKeys: ReadonlySet<string>
   outboxEntries: ConflictOutboxEntry[]
   candidates: KgStorageConflictCandidateRecord[]
+  sourceSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
+  workspaceOutboxSnapshot: AgenticGraphStorageOutboxRecord[]
+  workspaceCandidateSnapshot: KgStorageConflictCandidateRecord[]
 }
 type ConflictProjection = (args: {
   storage: AgenticGraphStorageDb
   entity: AgenticGraphStorageMutation['entity']
   op: AgenticGraphStorageMutation['op']
   record: AgenticGraphStorageMutation['record']
+  childState?: AgenticGraphStorageChildState
+  assertSourceCurrent?: () => void
+  relatedChanges?: { documentChunks: KgDocumentChunkRecord[]; graphSnapshots: KgGraphSnapshotRecord[] }
 }) => Promise<void>
 
 const readRecordRevision = (entity: AgenticGraphStorageMutation['entity'], record: AgenticGraphStorageMutation['record']): number =>
@@ -171,6 +179,7 @@ const compareRecords = (
   || readRecordUpdatedAt(left) - readRecordUpdatedAt(right)
 
 const readConflictTarget = async (workspaceId: string, mutationId: string): Promise<ConflictTarget | null> => {
+  const sourceSnapshot = useGraphStore.getState().sourceFiles
   const storage = await getAgenticGraphStorageDb()
   const triggerRow = await storage.collections.syncOutbox.findOne(mutationId).exec()
   if (!triggerRow || normalizeString(triggerRow.get('workspaceId')) !== workspaceId
@@ -180,8 +189,8 @@ const readConflictTarget = async (workspaceId: string, mutationId: string): Prom
   if (!trigger || !entity || normalizeString(triggerRow.get('entity')) !== entity) return null
   const targetKeys = buildAgenticGraphStorageTargetKeys(entity, normalizeString(trigger.recordId), trigger.record)
   const outboxRows = await storage.collections.syncOutbox.find({ selector: { workspaceId } }).exec()
-  const outboxEntries = outboxRows.flatMap(row => {
-    const record = row.toJSON() as AgenticGraphStorageOutboxRecord
+  const workspaceOutboxSnapshot = outboxRows.map(row => row.toJSON() as AgenticGraphStorageOutboxRecord)
+  const outboxEntries = workspaceOutboxSnapshot.flatMap(record => {
     const mutation = record.payload as unknown as AgenticGraphStorageMutation | null
     if (!mutation || mutation.entity !== entity) return []
     const keys = buildAgenticGraphStorageTargetKeys(entity, mutation.recordId, mutation.record)
@@ -194,7 +203,9 @@ const readConflictTarget = async (workspaceId: string, mutationId: string): Prom
     const keys = buildAgenticGraphStorageTargetKeys(entity, candidate.recordId, candidate.remoteRecord)
     return outboxIds.has(candidate.mutationId) || agenticGraphStorageTargetsOverlap(targetKeys, keys)
   })
-  return { storage, workspaceId, entity, targetKeys, outboxEntries, candidates }
+  return { storage, workspaceId, entity, targetKeys, outboxEntries, candidates, sourceSnapshot,
+    workspaceOutboxSnapshot,
+    workspaceCandidateSnapshot: candidateRows.map(row => row.toJSON() as KgStorageConflictCandidateRecord) }
 }
 
 const selectLatestOutboxEntry = (target: ConflictTarget): ConflictOutboxEntry => target.outboxEntries.reduce(
@@ -252,26 +263,30 @@ const buildTargetCleanupMutations = (
   })),
 ]
 
-const defaultConflictProjection: ConflictProjection = async ({ storage, entity, op, record }) => {
+const defaultConflictProjection: ConflictProjection = async ({ storage, entity, op, record, childState, assertSourceCurrent, relatedChanges }) => {
   if (entity === 'document') {
     const document = record as KgDocumentRecord
     const graphId = normalizeString(document.graphId)
     const graph = graphId
       ? (await storage.collections.graphSnapshots.findOne(graphId).exec())?.toJSON() as KgGraphSnapshotRecord | undefined
       : undefined
+    assertSourceCurrent?.()
     await applyReviewedAgenticGraphStorageChangesToSourceFiles({
       workspaceId: document.workspaceId,
-      changes: { documents: [document], documentChunks: [], graphSnapshots: graph ? [graph] : [] },
+      changes: { documents: [document], documentChunks: relatedChanges?.documentChunks ?? [], graphSnapshots: relatedChanges?.graphSnapshots ?? (graph ? [graph] : []) },
     }).completion
   } else if (entity === 'graphSnapshot' && op === 'delete') {
     const graph = record as KgGraphSnapshotRecord
+    assertSourceCurrent?.()
     await applyReviewedAgenticGraphStorageGraphRemovalToSourceFiles({
       workspaceId: graph.workspaceId, documentId: graph.documentId,
+      graphRevisions: [graph.graphRevision, ...(childState?.entity === 'graphSnapshot' ? [childState.graphRevision] : [])],
     }).completion
   } else if (entity === 'graphSnapshot') {
     const graph = record as KgGraphSnapshotRecord
     const document = await storage.collections.documents.findOne(graph.documentId).exec()
     if (!document) return
+    assertSourceCurrent?.()
     await applyReviewedAgenticGraphStorageChangesToSourceFiles({
       workspaceId: graph.workspaceId,
       changes: {
@@ -284,12 +299,15 @@ const defaultConflictProjection: ConflictProjection = async ({ storage, entity, 
     const rows = await storage.collections.documentChunks.find({ selector: { workspaceId: chunk.workspaceId } }).exec()
     const documentChunks = rows.map(row => row.toJSON() as KgDocumentChunkRecord)
       .filter(candidate => candidate.documentId === chunk.documentId)
-    if (documentChunks.length > 0) {
-      await applyReviewedAgenticGraphStorageChangesToSourceFiles({
-        workspaceId: chunk.workspaceId,
-        changes: { documents: [], documentChunks, graphSnapshots: [] },
-      }).completion
-    }
+    assertSourceCurrent?.()
+    const sourceFileId = readAgenticGraphSourceFileIdFromDocumentId(chunk.documentId)
+    const current = useGraphStore.getState().sourceFiles.find(file => file.id === sourceFileId)
+    await applyReviewedAgenticGraphStorageChangesToSourceFiles({ workspaceId: chunk.workspaceId,
+      changes: { documents: [], documentChunks, graphSnapshots: [] },
+      projection: { previousGraphs: [], documentTexts: [{ documentId: chunk.documentId,
+        text: documentChunks.sort((a, b) => a.chunkOrder - b.chunkOrder || a.id.localeCompare(b.id)).map(row => row.markdown).join('\n\n'),
+        previousText: current?.text ?? null }] },
+    }).completion
   }
 }
 let conflictProjection = defaultConflictProjection
@@ -315,23 +333,90 @@ const projectConflictChoiceBestEffort = async (
   }
 }
 
+const resolveChildChoice = async (target: ConflictTarget, mutationId: string, choice: 'keep-local' | 'accept-remote'): Promise<void> => {
+  const sourceIds = new Set(target.outboxEntries.map(entry => readAgenticGraphSourceFileIdFromDocumentId(
+    (entry.mutation.record as KgDocumentChunkRecord).documentId)))
+  for (const candidate of target.candidates) if (candidate.childState) sourceIds.add(readAgenticGraphSourceFileIdFromDocumentId(candidate.childState.documentId))
+  const observe = () => JSON.stringify(useGraphStore.getState().sourceFiles.filter(file => sourceIds.has(file.id)))
+  const before = observe()
+  const assertSourceCurrent = () => {
+    if (observe() !== before) throw new Error('The visible source changed during conflict review; the queued edit remains retained')
+  }
+  try {
+    const completed = await resolveAgenticGraphStorageChildConflict({ target, choice,
+      project: args => projectConflictChoiceBestEffort({ ...args, assertSourceCurrent }, mutationId) })
+    if (completed) {
+      useGraphStore.getState().pushUiLog({ kind: 'success', source: 'storage:conflict:resolve',
+        message: choice === 'keep-local' ? 'Kept the reviewed local child change and queued one sync retry.' : 'Accepted the reviewed remote child state.' })
+      if (choice === 'keep-local') scheduleAgenticGraphStorageSync({ workspaceId: target.workspaceId,
+        delayMs: 0, signature: `storage-conflict:keep-local:${mutationId}` })
+    }
+  } catch (error) {
+    useGraphStore.getState().pushUiLog({ kind: 'warning', source: 'storage:conflict:resolve',
+      message: `Child conflict remains retained. ${error instanceof Error ? error.message : 'The reviewed choice could not complete.'}` })
+  }
+  notifyAgenticGraphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+}
+
+// Retain the exact reviewed workspace state across both the cache write and projection.
+// A different tab may replace a queue row without changing its identity.
+const prepareDocumentConflictCommit = async (target: ConflictTarget) => {
+  const { storage, workspaceId } = target
+  const names = ['documents', 'documentChunks', 'graphSnapshots', 'syncOutbox', 'syncConflicts', 'syncDeferred'] as const
+  const snapshots = await Promise.all(names.map(async collectionName => ({ collectionName,
+    selector: { workspaceId }, records: (await storage.collections[collectionName].find({ selector: { workspaceId } }).exec()).map(row => row.toJSON()),
+  })))
+  const pending = snapshots.find(row => row.collectionName === 'syncOutbox')!.records as AgenticGraphStorageOutboxRecord[]
+  const conflicts = snapshots.find(row => row.collectionName === 'syncConflicts')!.records as KgStorageConflictCandidateRecord[]
+  if (target.outboxEntries.some(entry => !recordsEqual(entry.record, pending.find(row => row.id === entry.record.id)))
+    || target.candidates.some(entry => !recordsEqual(entry, conflicts.find(row => row.id === entry.id)))) {
+    throw new Error('The document conflict changed before review could be applied')
+  }
+  for (const row of pending) {
+    const mutation = row.payload as unknown as AgenticGraphStorageMutation
+    if (mutation.entity === 'document' && !target.outboxEntries.some(entry => entry.record.id === row.id)
+      && agenticGraphStorageTargetsOverlap(target.targetKeys, buildAgenticGraphStorageTargetKeys('document', mutation.recordId, mutation.record))) {
+      throw new Error('A new document edit requires review')
+    }
+  }
+  const reviewedIds = new Set(target.outboxEntries.map(entry => entry.record.id))
+  const currentCandidates = conflicts.filter(row => row.entity === 'document' && (reviewedIds.has(row.mutationId)
+    || agenticGraphStorageTargetsOverlap(target.targetKeys, buildAgenticGraphStorageTargetKeys('document', row.recordId, row.remoteRecord))))
+  if (currentCandidates.length !== target.candidates.length) throw new Error('A new remote document candidate requires review')
+  const identities = [...target.outboxEntries.map(entry => entry.mutation.record), ...target.candidates.flatMap(row => row.remoteRecord ? [row.remoteRecord] : [])]
+    .map(record => resolvePulledDocumentSourceFileIdentity(record as KgDocumentRecord)).filter(identity => identity !== null)
+  const observe = (files = useGraphStore.getState().sourceFiles) => JSON.stringify(files.filter(file =>
+    identities.some(identity => sourceFileMatchesPulledDocumentIdentity(file, identity))))
+  const visible = observe(target.sourceSnapshot)
+  return {
+    assertSourceCurrent: () => { if (observe() !== visible) throw new Error('The visible document changed during conflict review') },
+    commit: async (unit: AgenticGraphStorageMutationUnit) => {
+      if (!await compareAndCommitAgenticGraphStorageMutationUnit(storage, { ...unit,
+        conditions: snapshots as PersistedCollectionAtomicCondition<AgenticGraphStorageRecordMap>[] })) {
+        throw new Error('Concurrent local changes were retained; refresh the document conflict')
+      }
+      for (const mutation of unit.mutations) {
+        const snapshot = snapshots.find(row => row.collectionName === mutation.collectionName)
+        if (!snapshot) throw new Error('Unobserved document conflict collection')
+        const id = mutation.kind === 'remove' ? mutation.id : mutation.record.id
+        snapshot.records = snapshot.records.filter(row => row.id !== id)
+        if (mutation.kind !== 'remove') snapshot.records.push(mutation.record as never)
+      }
+    },
+  }
+}
+
 const resolveKeepLocal = async (target: ConflictTarget, mutationId: string): Promise<void> => {
+  if (target.entity !== 'document') return resolveChildChoice(target, mutationId, 'keep-local')
   if (target.outboxEntries.length === 0) return
+  const review = await prepareDocumentConflictCommit(target)
   const latest = selectLatestOutboxEntry(target)
   const cacheRecords = await readTargetCacheRecords(target)
   const current = selectCurrentLocalRecord(target, latest, cacheRecords)
   const remoteRevision = readMaxRemoteRevision(target) ?? latest.mutation.baseRevision
   const nextRevision = Math.max((remoteRevision ?? 0) + 1, readRecordRevision(target.entity, current), 1)
-  const nextRecord: AgenticGraphStorageMutation['record'] = target.entity === 'document'
-    ? sanitizeDocumentRecord({
-        ...(current as KgDocumentRecord), revision: nextRevision,
-        deleted: latest.mutation.op === 'delete', updatedAtMs: Date.now(),
-      })
-    : target.entity === 'graphSnapshot'
-      ? sanitizeGraphSnapshotRecord({
-          ...(current as KgGraphSnapshotRecord), graphRevision: nextRevision, updatedAtMs: Date.now(),
-        })
-      : current
+  const nextRecord = sanitizeDocumentRecord({ ...(current as KgDocumentRecord), revision: nextRevision,
+    deleted: latest.mutation.op === 'delete', updatedAtMs: Date.now() })
   const retry = rebuildAgenticGraphStorageOutboxRecordForRetry({
     existingRecord: latest.record,
     mutation: latest.mutation,
@@ -346,37 +431,21 @@ const resolveKeepLocal = async (target: ConflictTarget, mutationId: string): Pro
   }
   const mutations: Array<AgenticGraphStorageMutationUnit['mutations'][number]> = []
   const keepId = normalizeString(nextRecord.id)
-  if (target.entity === 'document') {
-    const localRecord = toAgenticGraphLocalDocumentRecord(nextRecord as KgDocumentRecord)
-    mutations.unshift(
-      ...cacheRecords.filter(record => normalizeString(record.id) !== keepId)
-        .map(record => ({ kind: 'remove' as const, collectionName: 'documents' as const, id: normalizeString(record.id) })),
-      { kind: 'upsert', collectionName: 'documents', record: localRecord },
-    )
-    mutations.push({ kind: 'upsert', collectionName: 'syncOutbox', record: provisionalRetry })
-    await commitAgenticGraphStorageMutationUnit(target.storage, { mutations, revisionDocuments: [localRecord] })
-  } else {
-    const collectionName = target.entity === 'graphSnapshot' ? 'graphSnapshots' as const : 'documentChunks' as const
-    mutations.unshift(...cacheRecords.map(record => ({
-      kind: 'remove' as const, collectionName, id: normalizeString(record.id),
-    })))
-    if (latest.mutation.op !== 'delete') {
-      mutations.unshift(target.entity === 'graphSnapshot'
-        ? { kind: 'upsert', collectionName: 'graphSnapshots', record: nextRecord as KgGraphSnapshotRecord }
-        : { kind: 'upsert', collectionName: 'documentChunks', record: nextRecord as KgDocumentChunkRecord })
-    }
-    mutations.push({ kind: 'upsert', collectionName: 'syncOutbox', record: provisionalRetry })
-    await commitAgenticGraphStorageMutationUnit(target.storage, { mutations })
-  }
+  const localRecord = toAgenticGraphLocalDocumentRecord(nextRecord)
+  mutations.push(...cacheRecords.filter(record => normalizeString(record.id) !== keepId)
+    .map(record => ({ kind: 'remove' as const, collectionName: 'documents' as const, id: normalizeString(record.id) })),
+    { kind: 'upsert', collectionName: 'documents', record: localRecord },
+    { kind: 'upsert', collectionName: 'syncOutbox', record: provisionalRetry })
+  await review.commit( { mutations, revisionDocuments: [localRecord] })
   const projected = await projectConflictChoiceBestEffort({
-    storage: target.storage, entity: target.entity, op: latest.mutation.op, record: nextRecord,
+    storage: target.storage, entity: target.entity, op: latest.mutation.op, record: nextRecord, assertSourceCurrent: review.assertSourceCurrent,
   }, mutationId)
   if (!projected) {
     notifyAgenticGraphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
     return
   }
   try {
-    await commitAgenticGraphStorageMutationUnit(target.storage, {
+    await review.commit( {
       mutations: [
         ...buildTargetCleanupMutations(target, retry.id),
         { kind: 'upsert', collectionName: 'syncOutbox', record: retry },
@@ -415,37 +484,21 @@ const selectLatestRemoteCandidate = (target: ConflictTarget): KgStorageConflictC
 }
 
 const resolveAcceptRemote = async (target: ConflictTarget, mutationId: string): Promise<void> => {
+  if (target.entity !== 'document') return resolveChildChoice(target, mutationId, 'accept-remote')
+  const review = await prepareDocumentConflictCommit(target)
   let remoteRecord: AgenticGraphStorageMutation['record']
   let cleanupMutations: Array<AgenticGraphStorageMutationUnit['mutations'][number]>
   try {
-    remoteRecord = selectLatestRemoteCandidate(target).remoteRecord!
-    remoteRecord = target.entity === 'document'
-      ? sanitizeDocumentRecord(remoteRecord as KgDocumentRecord)
-      : target.entity === 'graphSnapshot'
-        ? sanitizeGraphSnapshotRecord(remoteRecord as KgGraphSnapshotRecord)
-        : remoteRecord
+    remoteRecord = sanitizeDocumentRecord(selectLatestRemoteCandidate(target).remoteRecord as KgDocumentRecord)
     const cacheRecords = await readTargetCacheRecords(target)
     const mutations: Array<AgenticGraphStorageMutationUnit['mutations'][number]> = []
     cleanupMutations = buildTargetCleanupMutations(target, null)
     const remoteId = normalizeString(remoteRecord.id)
-    if (target.entity === 'document') {
-      const localRecord = toAgenticGraphLocalDocumentRecord(remoteRecord as KgDocumentRecord)
-      mutations.unshift(
-        ...cacheRecords.filter(record => normalizeString(record.id) !== remoteId)
-          .map(record => ({ kind: 'remove' as const, collectionName: 'documents' as const, id: normalizeString(record.id) })),
-        { kind: 'upsert', collectionName: 'documents', record: localRecord },
-      )
-      await commitAgenticGraphStorageMutationUnit(target.storage, { mutations, revisionDocuments: [localRecord] })
-    } else {
-      const collectionName = target.entity === 'graphSnapshot' ? 'graphSnapshots' as const : 'documentChunks' as const
-      mutations.unshift(...cacheRecords.filter(record => normalizeString(record.id) !== remoteId).map(record => ({
-        kind: 'remove' as const, collectionName, id: normalizeString(record.id),
-      })))
-      mutations.unshift(target.entity === 'graphSnapshot'
-        ? { kind: 'upsert', collectionName: 'graphSnapshots', record: remoteRecord as KgGraphSnapshotRecord }
-        : { kind: 'upsert', collectionName: 'documentChunks', record: remoteRecord as KgDocumentChunkRecord })
-      await commitAgenticGraphStorageMutationUnit(target.storage, { mutations })
-    }
+    const localRecord = toAgenticGraphLocalDocumentRecord(remoteRecord as KgDocumentRecord)
+    mutations.push(...cacheRecords.filter(record => normalizeString(record.id) !== remoteId)
+      .map(record => ({ kind: 'remove' as const, collectionName: 'documents' as const, id: normalizeString(record.id) })),
+      { kind: 'upsert', collectionName: 'documents', record: localRecord })
+    await review.commit( { mutations, revisionDocuments: [localRecord] })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'The remote record could not be applied.'
     const store = useGraphStore.getState()
@@ -458,14 +511,14 @@ const resolveAcceptRemote = async (target: ConflictTarget, mutationId: string): 
     return
   }
   const projected = await projectConflictChoiceBestEffort({
-    storage: target.storage, entity: target.entity, op: 'upsert', record: remoteRecord,
+    storage: target.storage, entity: target.entity, op: 'upsert', record: remoteRecord, assertSourceCurrent: review.assertSourceCurrent,
   }, mutationId)
   if (!projected) {
     notifyAgenticGraphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
     return
   }
   try {
-    await commitAgenticGraphStorageMutationUnit(target.storage, { mutations: cleanupMutations })
+    await review.commit( { mutations: cleanupMutations })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Conflict cleanup could not be saved.'
     useGraphStore.getState().pushUiLog({
@@ -498,6 +551,25 @@ export const runAgenticGraphStorageConflictAction = async (actionId: string): Pr
   if (!parsed.mutationId) return true
   const target = await readConflictTarget(parsed.workspaceId, parsed.mutationId)
   if (!target) return true
+  if (await resolveAgenticGraphStorageParentChildConflict({ target, choice: parsed.action,
+    onRestored: () => scheduleAgenticGraphStorageSync({ workspaceId: target.workspaceId, delayMs: 0 }),
+    project: args => projectConflictChoiceBestEffort(args, parsed.mutationId!),
+    offer: (parent, childCount) => useGraphStore.getState().pushUiLog({ kind: 'warning', source: 'storage:conflict:review',
+      message: `${parent.canonicalPath} was deleted remotely and has ${childCount} retained edits. Choose how to resolve the document and edits together.`,
+      actions: ['restore-family', 'discard-family'].map(choice => ({
+        id: buildAgenticGraphStorageConflictFamilyActionId(target.workspaceId, parsed.mutationId!, choice as 'restore-family' | 'discard-family'),
+        label: choice === 'restore-family' ? 'Restore document and edits' : 'Discard retained edits', tone: 'warning' as const,
+      })),
+    }),
+  })) {
+    notifyAgenticGraphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+    return true
+  }
+  if (parsed.action === 'restore-family' || parsed.action === 'discard-family') {
+    useGraphStore.getState().pushUiLog({ kind: 'warning', source: 'storage:conflict:review', message: 'Document recovery changed; refresh the remaining conflict before choosing again.' })
+    notifyAgenticGraphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
+    return true
+  }
   const inFlightKey = buildConflictTargetInFlightKey(target)
   const existing = conflictActionInFlight.get(inFlightKey)
   if (existing) {
@@ -510,6 +582,10 @@ export const runAgenticGraphStorageConflictAction = async (actionId: string): Pr
   conflictActionInFlight.set(inFlightKey, operation)
   try {
     await operation
+  } catch (error) {
+    useGraphStore.getState().pushUiLog({ kind: 'warning', source: 'storage:conflict:resolve',
+      message: `Conflict remains retained. ${error instanceof Error ? error.message : 'Review could not complete.'}` })
+    notifyAgenticGraphStorageConflictUx(await readConflictSummary(target.workspaceId, target.storage))
   } finally {
     if (conflictActionInFlight.get(inFlightKey) === operation) conflictActionInFlight.delete(inFlightKey)
   }

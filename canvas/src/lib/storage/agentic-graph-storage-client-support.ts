@@ -2,22 +2,20 @@ import { hashStringToHex } from '@/lib/hash/stringHash'
 import { toCloneSafeObject, toCloneSafeObjectOrNull } from '@/lib/storage/cloneSafe'
 import {
   buildAgenticGraphStorageCursorId,
+  AGENTIC_OS_STORAGE_SYNC_API_VERSION,
   type KgDocumentChunkRecord,
   type KgDocumentRecord,
   type KgGraphSnapshotRecord,
   type AgenticGraphStorageCursorRecord,
   type AgenticGraphStorageMutation,
   type AgenticGraphStorageOutboxRecord,
-  type AgenticGraphStoragePullResponse,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
   getAgenticGraphStorageDb,
-  putAgenticGraphStorageDocument,
   type AgenticGraphStorageCollections,
   type AgenticGraphStorageDb,
 } from '@/lib/storage/agentic-graph-storage-db'
 import {
-  toAgenticGraphLocalDocumentRecord,
   withAgenticGraphChunkContentHash,
   withAgenticGraphDocumentContentHash,
 } from '@/lib/storage/agentic-graph-storage-record-mapping'
@@ -196,6 +194,7 @@ export const ensureAgenticGraphStorageNumericRepair = async (dbState: AgenticGra
   for (let i = 0; i < outboxRows.length; i += 1) {
     const row = outboxRows[i]!
     const raw = row.toJSON() as AgenticGraphStorageOutboxRecord
+    if (raw.entity !== 'document' && raw.syncApiVersion !== AGENTIC_OS_STORAGE_SYNC_API_VERSION) continue
     const sanitized = sanitizeOutboxRecord(raw)
     if (JSON.stringify(raw) !== JSON.stringify(sanitized)) {
       await row.incrementalPatch({
@@ -271,26 +270,6 @@ export const removeOutboxDocById = async (collections: AgenticGraphStorageCollec
   await existing.remove()
 }
 
-export const bumpOutboxAttemptCount = async (
-  collections: AgenticGraphStorageCollections,
-  id: string,
-  args: {
-    nextAttemptCount: number
-    nowMs: number
-    lastAckStatus: 'conflict' | 'rejected' | 'deferred' | ''
-    lastAckMessage: string | null
-  },
-): Promise<void> => {
-  const existing = await collections.syncOutbox.findOne(id).exec()
-  if (!existing) return
-  await existing.incrementalPatch({
-    attemptCount: args.nextAttemptCount,
-    updatedAtMs: args.nowMs,
-    lastAckStatus: args.lastAckStatus,
-    lastAckMessage: args.lastAckMessage,
-  })
-}
-
 export const readUnresolvedConflictCount = async (
   collections: AgenticGraphStorageCollections,
   workspaceId: string,
@@ -324,66 +303,3 @@ export const shouldAutoClearAgenticGraphStorageConflict = (
 
 export const recordsEqual = (left: unknown, right: unknown): boolean =>
   JSON.stringify(left) === JSON.stringify(right)
-
-export const applyPulledDocuments = async (
-  dbState: AgenticGraphStorageDb,
-  documents: KgDocumentRecord[],
-): Promise<number> => {
-  let writtenCount = 0
-  for (let i = 0; i < documents.length; i += 1) {
-    const document = sanitizeDocumentRecord(documents[i]!)
-    const localRecord = toAgenticGraphLocalDocumentRecord(document)
-    const existing = await dbState.collections.documents.findOne(localRecord.id).exec()
-    if (existing && recordsEqual(existing.toJSON(), localRecord)) continue
-    await putAgenticGraphStorageDocument(dbState, localRecord)
-    writtenCount += 1
-  }
-  return writtenCount
-}
-
-export const applyPulledDocumentChunks = async (
-  collections: AgenticGraphStorageCollections,
-  chunks: KgDocumentChunkRecord[],
-): Promise<{ writtenCount: number; reusedCount: number }> => {
-  let writtenCount = 0
-  let reusedCount = 0
-  for (let i = 0; i < chunks.length; i += 1) {
-    const pulledChunk = sanitizeDocumentChunkRecord(chunks[i]!)
-    const existing = await collections.documentChunks.findOne(pulledChunk.id).exec()
-    const existingRecord = existing?.toJSON() as KgDocumentChunkRecord | undefined
-    const chunk = pulledChunk.contentReused === true
-      ? {
-          ...pulledChunk,
-          markdown: existingRecord?.contentHash === pulledChunk.contentHash
-            ? existingRecord.markdown
-            : '',
-          contentReused: undefined,
-        }
-      : { ...pulledChunk, contentReused: undefined }
-    if (pulledChunk.contentReused === true) {
-      if (!existingRecord || existingRecord.contentHash !== pulledChunk.contentHash) {
-        throw new Error(`pulled chunk ${pulledChunk.chunkKey} referenced unavailable cached content`)
-      }
-      reusedCount += 1
-    }
-    if (existingRecord && recordsEqual(existingRecord, chunk)) continue
-    await collections.documentChunks.incrementalUpsert(chunk)
-    writtenCount += 1
-  }
-  return { writtenCount, reusedCount }
-}
-
-export const applyPulledGraphSnapshots = async (
-  collections: AgenticGraphStorageCollections,
-  snapshots: KgGraphSnapshotRecord[],
-): Promise<number> => {
-  let writtenCount = 0
-  for (let i = 0; i < snapshots.length; i += 1) {
-    const snapshot = sanitizeGraphSnapshotRecord(snapshots[i]!)
-    const existing = await collections.graphSnapshots.findOne(snapshot.id).exec()
-    if (existing && recordsEqual(existing.toJSON(), snapshot)) continue
-    await collections.graphSnapshots.incrementalUpsert(snapshot)
-    writtenCount += 1
-  }
-  return writtenCount
-}

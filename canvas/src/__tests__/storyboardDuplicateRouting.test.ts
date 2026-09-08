@@ -896,10 +896,10 @@ export function testStoryboardToolbarPropsBuildSharedToolbarConfig() {
     duplicateDisabled: false,
     primaryReferenceUrl: 'https://example.com/reference',
   })
-  if (props.ariaLabel !== 'Storyboard card actions' || props.navClassName !== 'absolute left-1/2 z-10') {
+  if (props.ariaLabel !== 'Storyboard card actions' || props.navClassName !== 'absolute inset-x-0 mx-auto z-10') {
     throw new Error(`expected storyboard toolbar props to reuse the Storyboard Widget bubble-toolbar anchor, got ${JSON.stringify(props)}`)
   }
-  if (props.navStyle?.pointerEvents !== 'auto' || props.navStyle?.transform !== 'translateX(-50%)' || props.navStyle?.top !== -WIDGET_ACTIONS_TOOLBAR_OFFSET_PX || props.iconSizeClass !== 'h-3.5 w-3.5' || props.iconStrokeWidth !== 1.8) {
+  if (props.navStyle?.pointerEvents !== 'auto' || props.navStyle?.transform !== undefined || props.navStyle?.top !== -WIDGET_ACTIONS_TOOLBAR_OFFSET_PX || props.iconSizeClass !== 'h-3.5 w-3.5' || props.iconStrokeWidth !== 1.8) {
     throw new Error(`expected storyboard toolbar props to preserve the shared Storyboard Widget nav/icon configuration, got ${JSON.stringify(props)}`)
   }
   if (!props.active || props.enableHandlesDisabled !== true || props.convertToLoopDisabled !== false || props.duplicateDisabled !== false) {

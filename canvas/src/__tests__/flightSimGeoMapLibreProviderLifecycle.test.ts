@@ -6,7 +6,7 @@ import {
   readFlightGeoOverlay,
   readFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
-} from '../../../gympgrph/src/flightGeoOverlay.js'
+} from 'gympgrph/testkit/flightGeoOverlay'
 import {
   beginMapLibreFlightBootstrap,
   canMapLibreFlightOverlayPresent,
@@ -17,10 +17,10 @@ import {
   reconcileMapLibreFlightBootstrap,
   resumeMapLibreFlightBootstrapAfterDisposal,
   suspendMapLibreFlightBootstrapForDisposal,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrap'
 import {
   readMapLibreFlightBootstrapState,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrapState.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrapState'
 import {
   applyProviderStyleImmediately,
   flushMicrotasks,
@@ -28,13 +28,13 @@ import {
 } from './helpers/flightSimGeoMapLibreLeaseHarness'
 import {
   deferFlightGeoPresentationForBootstrapRecovery,
-} from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
+} from 'gympgrph/testkit/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
   promoteMapLibreFlightProviderStyle,
-} from '../../../gympgrph/src/features/geospatial/mapLibreFlightProviderPromotion.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreFlightProviderPromotion'
 import {
   acquireMapLibreMapDisposalPreparation,
-} from '../../../gympgrph/src/features/geospatial/mapLibreHostLease.js'
+} from 'gympgrph/testkit/features/geospatial/mapLibreHostLease'
 
 test('a cold bootstrap re-arms after a failed disposal fence releases', async context => {
   const styleLoadListeners = new Set<() => void>()

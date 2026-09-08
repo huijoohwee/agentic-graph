@@ -1,116 +1,109 @@
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
-import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
+import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 
 const ACTIVE_ENTRY_CACHE_MAX_PATHS = 12
 const ACTIVE_ENTRY_CACHE_MAX_TOTAL_CHARS = 1_500_000
 const ACTIVE_ENTRY_CACHE_MAX_ENTRY_CHARS = 500_000
 
-type CachedActiveEntrySnapshot = {
-  entries: WorkspaceEntry[]
+type ActiveEntrySlot = {
+  owner: object
+  activePath: WorkspacePath
+  entry?: WorkspaceEntry
   textChars: number
   updatedAtMs: number
 }
 
-const cachedActiveEntriesByPath = new Map<WorkspacePath, CachedActiveEntrySnapshot>()
+// One bounded LRU across owners, including pending reads. Tokens removed by a
+// newer read, invalidation or eviction can never install a late response.
+const activeEntrySlots = new Map<object, ActiveEntrySlot>()
+const ownerIds = new WeakMap<WorkspaceFs, object>()
+const timestamp = (value: number | undefined): number =>
+  typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
 
-function countWorkspaceEntryTextChars(entries: ReadonlyArray<WorkspaceEntry>): number {
-  let total = 0
-  for (const entry of entries) {
-    if (!entry || entry.kind !== 'file') continue
-    if (typeof entry.text !== 'string') continue
-    total += entry.text.length
-  }
-  return total
-}
-
-function readSnapshotUpdatedAtMs(entries: ReadonlyArray<WorkspaceEntry>, activePath: WorkspacePath): number {
-  let latest = 0
-  for (const entry of entries) {
-    if (!entry || entry.kind !== 'file') continue
-    if (normalizeWorkspacePath(entry.path) !== activePath) continue
-    const updatedAtMs = typeof entry.updatedAtMs === 'number' && Number.isFinite(entry.updatedAtMs)
-      ? Math.max(0, Math.floor(entry.updatedAtMs))
-      : 0
-    latest = Math.max(latest, updatedAtMs)
-  }
-  return latest
-}
-
-function hasTextForActivePath(entries: ReadonlyArray<WorkspaceEntry>, activePath: WorkspacePath): boolean {
-  return entries.some(entry => (
-    entry?.kind === 'file' &&
-    normalizeWorkspacePath(entry.path) === activePath &&
-    typeof entry.text === 'string' &&
-    entry.text.trim().length > 0
-  ))
+function findSlot(fs: WorkspaceFs, activePath: WorkspacePath) {
+  const owner = ownerIds.get(fs)
+  return [...activeEntrySlots].find(([, slot]) => slot.owner === owner && slot.activePath === activePath)
 }
 
 function pruneActiveEntryCache(): void {
   let totalChars = 0
-  for (const entry of cachedActiveEntriesByPath.values()) {
-    totalChars += entry.textChars
-  }
-  while (
-    cachedActiveEntriesByPath.size > ACTIVE_ENTRY_CACHE_MAX_PATHS ||
-    totalChars > ACTIVE_ENTRY_CACHE_MAX_TOTAL_CHARS
-  ) {
-    const oldestKey = cachedActiveEntriesByPath.keys().next().value
-    if (typeof oldestKey !== 'string') break
-    const oldest = cachedActiveEntriesByPath.get(oldestKey)
-    cachedActiveEntriesByPath.delete(oldestKey)
-    totalChars -= oldest?.textChars || 0
+  for (const slot of activeEntrySlots.values()) totalChars += slot.textChars
+  while (activeEntrySlots.size > ACTIVE_ENTRY_CACHE_MAX_PATHS || totalChars > ACTIVE_ENTRY_CACHE_MAX_TOTAL_CHARS) {
+    const oldest = activeEntrySlots.entries().next().value
+    if (!oldest) break
+    activeEntrySlots.delete(oldest[0])
+    totalChars -= oldest[1].textChars
   }
 }
 
+export function beginWorkspaceActiveEntrySnapshotRead(args: {
+  fs: WorkspaceFs
+  activePath: WorkspacePath
+}): object | null {
+  const activePath = normalizeWorkspacePath(args.activePath)
+  if (!activePath || activePath === '/' || activePath.length > ACTIVE_ENTRY_CACHE_MAX_ENTRY_CHARS) return null
+  let owner = ownerIds.get(args.fs)
+  if (!owner) { owner = {}; ownerIds.set(args.fs, owner) }
+  const previous = findSlot(args.fs, activePath)
+  if (previous) activeEntrySlots.delete(previous[0])
+  const token = {}
+  activeEntrySlots.set(token, { owner, activePath, textChars: activePath.length, updatedAtMs: 0 })
+  pruneActiveEntryCache()
+  return token
+}
+
 export function readCachedWorkspaceActiveEntrySnapshot(args: {
+  fs: WorkspaceFs
   activePath: WorkspacePath
   minUpdatedAtMs?: number
 }): WorkspaceEntry[] | undefined {
   const activePath = normalizeWorkspacePath(args.activePath)
-  if (!activePath || activePath === '/') return undefined
-  const cached = cachedActiveEntriesByPath.get(activePath)
-  if (!cached) return undefined
-  const minUpdatedAtMs = typeof args.minUpdatedAtMs === 'number' ? Math.max(0, Math.floor(args.minUpdatedAtMs)) : 0
-  if (minUpdatedAtMs > 0 && cached.updatedAtMs > 0 && cached.updatedAtMs < minUpdatedAtMs) {
-    cachedActiveEntriesByPath.delete(activePath)
+  const found = findSlot(args.fs, activePath)
+  if (!found) return undefined
+  const [token, cached] = found
+  if (!cached.entry) return undefined
+  if (cached.updatedAtMs < timestamp(args.minUpdatedAtMs)) {
+    activeEntrySlots.delete(token)
     return undefined
   }
-  cachedActiveEntriesByPath.delete(activePath)
-  cachedActiveEntriesByPath.set(activePath, cached)
-  return cached.entries
+  activeEntrySlots.delete(token)
+  activeEntrySlots.set(token, cached)
+  return [{ ...cached.entry }]
 }
 
 export function rememberWorkspaceActiveEntrySnapshot(args: {
+  fs: WorkspaceFs
   activePath: WorkspacePath
   entries: WorkspaceEntry[]
+  token: object | null
 }): WorkspaceEntry[] | undefined {
   const activePath = normalizeWorkspacePath(args.activePath)
-  if (!activePath || activePath === '/') return undefined
-  const entries = Array.isArray(args.entries) ? args.entries : []
-  if (!hasTextForActivePath(entries, activePath)) {
-    cachedActiveEntriesByPath.delete(activePath)
+  const slot = args.token && activeEntrySlots.get(args.token)
+  if (!slot || slot.owner !== ownerIds.get(args.fs) || slot.activePath !== activePath) return undefined
+  const entry = args.entries.find(value => value?.kind === 'file' && normalizeWorkspacePath(value.path) === activePath)
+  if (!entry || typeof entry.text !== 'string') {
+    activeEntrySlots.delete(args.token!)
     return undefined
   }
-  const textChars = countWorkspaceEntryTextChars(entries)
+  const textChars = entry.text.length + entry.path.length + entry.name.length + (entry.parentPath?.length || 0)
   if (textChars > ACTIVE_ENTRY_CACHE_MAX_ENTRY_CHARS) {
-    cachedActiveEntriesByPath.delete(activePath)
+    activeEntrySlots.delete(args.token!)
     return undefined
   }
-  const snapshot = entries.slice()
-  cachedActiveEntriesByPath.set(activePath, {
-    entries: snapshot,
-    textChars,
-    updatedAtMs: readSnapshotUpdatedAtMs(snapshot, activePath),
-  })
+  slot.entry = { ...entry }
+  slot.textChars = textChars
+  slot.updatedAtMs = timestamp(entry.updatedAtMs)
   pruneActiveEntryCache()
-  return snapshot
+  return [{ ...entry }]
 }
 
 export function invalidateCachedWorkspaceActiveEntrySnapshot(path?: WorkspacePath | null): void {
   const normalizedPath = normalizeWorkspacePath(String(path || '').trim())
   if (!normalizedPath || normalizedPath === '/') {
-    cachedActiveEntriesByPath.clear()
+    activeEntrySlots.clear()
     return
   }
-  cachedActiveEntriesByPath.delete(normalizedPath)
+  for (const [token, slot] of activeEntrySlots) {
+    if (slot.activePath === normalizedPath) activeEntrySlots.delete(token)
+  }
 }

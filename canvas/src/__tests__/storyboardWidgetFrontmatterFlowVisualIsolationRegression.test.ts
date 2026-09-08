@@ -6,7 +6,7 @@ const read = (...parts: string[]) => readFileSync(resolve(process.cwd(), 'src', 
 export function testStoryboardWidgetOverlayOnlyUsesUpstreamVisualIsolation() {
   const text = read('components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetOverlaySurface.tsx')
   const visibilityText = read('components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetOverlaySurfaceVisibility.ts')
-  const sharedText = read('components', 'StoryboardWidgetCanvas', 'storyboardWidgetCanvasShared.tsx')
+  const graphFilterText = read('lib', 'graph', 'filterByNodeIds.ts')
   if (!text.includes('frontmatterOverlayVisualIsolation')) {
     throw new Error('expected StoryboardWidget overlay mode to compute frontmatter visibility safety state')
   }
@@ -45,10 +45,10 @@ export function testStoryboardWidgetOverlayOnlyUsesUpstreamVisualIsolation() {
   ) {
     throw new Error('expected frontmatter FlowCanvas graph exclusion to partition all Storyboard Widget-owned render nodes upstream before FlowCanvas rendering')
   }
-  if (!sharedText.includes('normalizeGraphFilterNodeIdSet')) {
+  if (!graphFilterText.includes("const id = String(rawId || '').trim()") || !visibilityText.includes('filterGraphByExcludedNodeIds({')) {
     throw new Error('expected shared FlowCanvas graph filtering to normalize canonical overlay ids before exclusion')
   }
-  if (!sharedText.includes('resolveGraphNodeIdByCanonicalId(graphData, id)')) {
+  if (!graphFilterText.includes('resolveGraphNodeByCanonicalId(args.graphData, id)')) {
     throw new Error('expected shared FlowCanvas graph filtering to resolve canonical overlay ids to concrete graph ids before exclusion')
   }
   if (!visibilityText.includes("if (frontmatterOverlayVisualIsolation.kind === 'frontmatter-flow') {")) {

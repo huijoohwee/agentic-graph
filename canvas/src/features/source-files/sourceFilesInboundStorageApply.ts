@@ -1,4 +1,7 @@
 import { scheduleApplyGraphOwnerComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
+import { readStorageProjectionTexts, assertStorageTextProjectionCurrent,
+  assertStorageGraphProjectionCurrent, removeStorageProjectedGraph } from '@/features/source-files/sourceFilesStorageChildProjection'
+import type { AgenticGraphStoragePullProjection, AgenticGraphStorageProjectionChanges } from '@/lib/storage/agentic-graph-storage-client-types'
 import {
   areSourceFileRecordsEqual,
   normalizeSourceFileRecord,
@@ -11,6 +14,7 @@ import { workspaceBasename } from '@/features/workspace-fs/path'
 import { resolveWorkspaceSourcePathKey } from '@/features/workspace-fs/syncToSourceFiles'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { readEnvString } from '@/lib/config.env'
+import { readWorkspaceSeedSyncEnabledSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { SourceFile } from '@/hooks/store/types'
 import type { GraphData } from '@/lib/graph/types'
@@ -19,7 +23,6 @@ import type {
   KgDocumentRecord,
   KgDocumentChunkRecord,
   KgGraphSnapshotRecord,
-  AgenticGraphStoragePullResponse,
 } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import {
@@ -222,7 +225,7 @@ const scheduleBlankPulledDocsHydration = (args: {
   }, args.signal, args.taskContext)
 }
 
-const resolvePulledDocumentSourceFileIdentity = (document: KgDocumentRecord): {
+export const resolvePulledDocumentSourceFileIdentity = (document: KgDocumentRecord): {
   id: string
   sourcePath: string
 } | null => {
@@ -242,6 +245,10 @@ const resolvePulledDocumentSourceFileIdentity = (document: KgDocumentRecord): {
     sourcePath,
   }
 }
+
+export const sourceFileMatchesPulledDocumentIdentity = (file: SourceFile, identity: { id: string; sourcePath: string }): boolean =>
+  normalizeString(file?.id) === identity.id || normalizeString(file?.source?.path) === identity.sourcePath
+  || canonicalizeInboundWorkspaceSourcePath(normalizeString(file?.source?.path)) === identity.sourcePath
 
 const readGraphSnapshotByDocumentId = (
   graphSnapshots: KgGraphSnapshotRecord[],
@@ -267,38 +274,6 @@ const readGraphSnapshotById = (
   return null
 }
 
-const readPulledDocumentMarkdownByDocumentId = (
-  documentChunks: KgDocumentChunkRecord[],
-  workspaceId: string,
-): Map<string, string> => {
-  const safeWorkspaceId = normalizeString(workspaceId)
-  const chunksByDocumentId = new Map<string, Array<{ order: number; markdown: string; id: string }>>()
-  for (let i = 0; i < documentChunks.length; i += 1) {
-    const chunk = documentChunks[i]
-    if (!chunk) continue
-    if (normalizeString(chunk.workspaceId) !== safeWorkspaceId) continue
-    const documentId = normalizeString(chunk.documentId)
-    if (!documentId) continue
-    const markdown = String(chunk.markdown || '')
-    if (!markdown.trim()) continue
-    const chunkOrderRaw = Number(chunk.chunkOrder)
-    const chunkOrder = Number.isFinite(chunkOrderRaw) ? Math.floor(chunkOrderRaw) : i
-    const list = chunksByDocumentId.get(documentId) || []
-    list.push({ order: chunkOrder, markdown, id: normalizeString(chunk.id) })
-    chunksByDocumentId.set(documentId, list)
-  }
-  const markdownByDocumentId = new Map<string, string>()
-  chunksByDocumentId.forEach((chunks, documentId) => {
-    const text = chunks
-      .slice()
-      .sort((a, b) => (a.order - b.order) || a.id.localeCompare(b.id))
-      .map(chunk => chunk.markdown)
-      .join('\n\n')
-    if (text.trim()) markdownByDocumentId.set(documentId, text)
-  })
-  return markdownByDocumentId
-}
-
 const buildSourceFileFromStorageDocument = (
   sourceFileId: string,
   sourcePath: string,
@@ -306,8 +281,9 @@ const buildSourceFileFromStorageDocument = (
   markdownText: string,
   graphSnapshot: KgGraphSnapshotRecord | null,
   existing: SourceFile | null,
+  explicitText = false,
 ): SourceFile => {
-  const nextText = String(markdownText || '').trim()
+  const nextText = explicitText || String(markdownText || '').trim()
     ? String(markdownText || '')
     : String(existing?.text || '')
   const graphData = graphSnapshot?.graphJson as unknown as GraphData | undefined
@@ -337,7 +313,8 @@ const buildSourceFileFromStorageDocument = (
 
 type InboundStorageApplyArgs = {
   workspaceId: string
-  changes: AgenticGraphStoragePullResponse['changes']
+  changes: AgenticGraphStorageProjectionChanges
+  projection?: AgenticGraphStoragePullProjection
   signal?: AbortSignal
   taskContext?: WorkspaceSeedSyncTaskContext
 }
@@ -361,7 +338,7 @@ const applyInboundStorageChanges = (
   const graphSnapshots = Array.isArray(args.changes.graphSnapshots) ? args.changes.graphSnapshots : []
   const documents = Array.isArray(args.changes.documents) ? args.changes.documents : []
   const documentChunks = Array.isArray(args.changes.documentChunks) ? args.changes.documentChunks : []
-  const pulledMarkdownByDocumentId = readPulledDocumentMarkdownByDocumentId(documentChunks, args.workspaceId)
+  const pulledMarkdownByDocumentId = readStorageProjectionTexts(documentChunks, args.workspaceId, args.projection)
   const pulledDocumentIds = new Set<string>()
   const blankPulledDocHydrationTasks: Array<{ sourceFileId: string; sourcePath: string; canonicalPathCandidates: string[] }> = []
   const descendantCompletions: Promise<void>[] = []
@@ -374,18 +351,13 @@ const applyInboundStorageChanges = (
     const identity = resolvePulledDocumentSourceFileIdentity(document)
     if (!identity) continue
     const sourceFileId = identity.id
-    const currentIndex = next.findIndex(file =>
-      normalizeString(file?.id) === sourceFileId
-      || (
-        normalizeString(file?.source?.path) === identity.sourcePath
-        || canonicalizeInboundWorkspaceSourcePath(normalizeString(file?.source?.path)) === identity.sourcePath
-      ),
-    )
+    const currentIndex = next.findIndex(file => sourceFileMatchesPulledDocumentIdentity(file, identity))
     const existing = currentIndex >= 0 ? next[currentIndex] || null : null
     if (
       !allowRepositoryOverwrite
       && isAuthoredRepositorySource(existing, identity.sourcePath, document.canonicalPath)
     ) continue
+    assertStorageTextProjectionCurrent(existing, document.id, args.projection)
     if (document.deleted) {
       if (currentIndex >= 0) {
         next.splice(currentIndex, 1)
@@ -396,12 +368,14 @@ const applyInboundStorageChanges = (
     const graphSnapshot =
       readGraphSnapshotByDocumentId(graphSnapshots, document.id)
       || readGraphSnapshotById(graphSnapshots, buildSourceFileGraphSnapshotId(sourceFileId))
+    if (graphSnapshot) assertStorageGraphProjectionCurrent(existing, document.id, graphSnapshot, args.projection)
     const markdownText = (() => {
+      if (pulledMarkdownByDocumentId.has(document.id)) return pulledMarkdownByDocumentId.get(document.id)!
       const inline = String(document.contentMd || '')
       if (inline.trim()) return inline
       return String(pulledMarkdownByDocumentId.get(normalizeString(document.id)) || '')
     })()
-    if (!markdownText.trim()) {
+    if (!markdownText.trim() && !pulledMarkdownByDocumentId.has(document.id)) {
       blankPulledDocHydrationTasks.push({
         sourceFileId,
         sourcePath: identity.sourcePath,
@@ -418,6 +392,7 @@ const applyInboundStorageChanges = (
       markdownText,
       graphSnapshot,
       existing,
+      pulledMarkdownByDocumentId.has(document.id),
     )
     if (existing) {
       if (areSourceFileRecordsEqual(existing, materialized, { includeGraphData: false, includeGraphRevision: true })) continue
@@ -439,6 +414,7 @@ const applyInboundStorageChanges = (
     const existing = currentIndex >= 0 ? next[currentIndex] || null : null
     if (!existing || (!allowRepositoryOverwrite
       && isAuthoredRepositorySource(existing, normalizeString(existing.source?.path), ''))) continue
+    assertStorageGraphProjectionCurrent(existing, documentId, graphSnapshot, args.projection)
     const materialized = normalizeSourceFileRecord({
       ...existing,
       status: 'parsed',
@@ -454,14 +430,29 @@ const applyInboundStorageChanges = (
   for (const [documentId, markdownText] of pulledMarkdownByDocumentId) {
     if (pulledDocumentIds.has(documentId)) continue
     const sourceFileId = readAgenticGraphSourceFileIdFromDocumentId(documentId)
-    if (!sourceFileId || !markdownText.trim()) continue
+    if (!sourceFileId) continue
     const currentIndex = next.findIndex(file => normalizeString(file?.id) === sourceFileId)
     const existing = currentIndex >= 0 ? next[currentIndex] || null : null
     if (!existing || (!allowRepositoryOverwrite
       && isAuthoredRepositorySource(existing, normalizeString(existing.source?.path), ''))) continue
+    assertStorageTextProjectionCurrent(existing, documentId, args.projection)
     const materialized = normalizeSourceFileRecord({ ...existing, text: markdownText })
     if (areSourceFileRecordsEqual(existing, materialized, { includeGraphData: false, includeGraphRevision: true })) continue
     next[currentIndex] = materialized
+    changed = true
+  }
+
+  for (const deletion of args.changes.deletions ?? []) {
+    if (deletion.entity !== 'graphSnapshot' || deletion.workspaceId !== args.workspaceId) continue
+    const sourceFileId = readAgenticGraphSourceFileIdFromDocumentId(deletion.documentId)
+    const index = next.findIndex(file => file.id === sourceFileId)
+    const existing = next[index]
+    if (!existing || (!allowRepositoryOverwrite && isAuthoredRepositorySource(existing, normalizeString(existing.source?.path), ''))) continue
+    if (existing.parsedGraphRevision !== deletion.graphRevision) continue
+    assertStorageGraphProjectionCurrent(existing, deletion.documentId, null, args.projection)
+    const materialized = removeStorageProjectedGraph(existing, deletion)
+    if (materialized === existing) continue
+    next[index] = materialized
     changed = true
   }
 
@@ -485,11 +476,14 @@ const applyInboundStorageChanges = (
   throwIfInboundStorageApplyAborted(args.signal)
   current.setSourceFiles(next)
   scheduleApplyGraphOwnerComposedGraphFromSourceFiles()
-  descendantCompletions.push(scheduleSourceFilesInboundStorageApplyDescendant(async () => {
+  if (readWorkspaceSeedSyncEnabledSetting()) descendantCompletions.push(scheduleSourceFilesInboundStorageApplyDescendant(async () => {
+    if (!readWorkspaceSeedSyncEnabledSetting()) return
     const mod = (await import('@/features/workspace-fs/workspaceFs')) as typeof import('@/features/workspace-fs/workspaceFs')
     throwIfInboundStorageApplyAborted(args.signal)
+    if (!readWorkspaceSeedSyncEnabledSetting()) return
     const fs = await mod.getWorkspaceFs()
     throwIfInboundStorageApplyAborted(args.signal)
+    if (!readWorkspaceSeedSyncEnabledSetting()) return
     await fs.ensureSeed()
     throwIfInboundStorageApplyAborted(args.signal)
   }, args.signal, args.taskContext))
@@ -512,13 +506,14 @@ export const applyReviewedAgenticGraphStorageChangesToSourceFiles = (
 export const applyReviewedAgenticGraphStorageGraphRemovalToSourceFiles = (args: {
   workspaceId: string
   documentId: string
+  graphRevisions?: number[]
 }): InboundStorageApplyResult => {
   const current = useGraphStore.getState()
   const currentSourceFiles = Array.isArray(current.sourceFiles) ? current.sourceFiles : []
   const sourceFileId = readAgenticGraphSourceFileIdFromDocumentId(args.documentId)
   const currentIndex = currentSourceFiles.findIndex(file => normalizeString(file?.id) === sourceFileId)
   const existing = currentIndex >= 0 ? currentSourceFiles[currentIndex] || null : null
-  if (!existing) {
+  if (!existing || (args.graphRevisions && !args.graphRevisions.includes(existing.parsedGraphRevision ?? -1))) {
     return { applied: false, completion: Promise.resolve(), nextCount: currentSourceFiles.length,
       sourceFilesSnapshot: currentSourceFiles }
   }

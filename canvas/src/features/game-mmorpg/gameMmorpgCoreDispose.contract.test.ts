@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { createGameOsAuthoringCostStatus } from '../../../../grph-shared/src/game-os/index.js'
+import { createGameOsAuthoringCostStatus } from 'grph-shared/game-os/index'
 import { createAgenticGraphStorageEnginePersistence } from '../../lib/storage/agentic-graph-storage-engine-persistence'
 import { createGameMmorpgCoreFromPersistence } from './gameMmorpgCore'
 

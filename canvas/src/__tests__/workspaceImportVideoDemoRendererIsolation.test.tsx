@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-
+import { waitForCanvasFrontmatterSurfaceTransition } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
+import { waitFor } from '@/tests/lib/flowCanvasIntegrationFixture'
 import StoryboardWidgetCanvas from '@/components/StoryboardWidgetCanvas'
 import { computeCollectiveFollowPinnedScale, computeWidgetScaledSize, WIDGET_BASE_SIZE } from '@/lib/canvas/overlayWidgetZoom'
 import { applyComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
@@ -18,6 +19,8 @@ import { readStoryboardWidgetScreenAuthorityPanSnapshot } from '@/lib/storyboard
 import { DOCS_SSOT_VALIDATION_FIXTURE_BASENAME, readDocsSsotFixtureText } from '@/tests/lib/docsSsotFixture'
 import { assertFlowWidgetStateScopedToEligibleIds } from '@/tests/lib/flowWidgetStateScopeAssert'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { waitForStoryboardWidgetViewportLayout } from '@/tests/lib/storyboardWidgetViewportFixture'
+import { __flowCanvasDebug } from '@/components/FlowCanvas/flowCanvasDebug'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 type NonStoryboardRenderer = 'd3' | 'flowchart' | 'flow' | 'design'
@@ -38,6 +41,21 @@ type StoryboardWidgetTransformEntry = {
   inlineWidth: string
   pinned: boolean
   richMedia: boolean
+}
+
+function readVideoDemoLayoutFailureSnapshot(): string {
+  const state = useGraphStore.getState()
+  return JSON.stringify({ renderer: state.canvas2dRenderer, open: state.openWidgetNodeIds,
+    workspace: { mode: state.workspaceViewMode, pane: state.workspaceCanvasPaneOpen, indexing: state.markdownWorkspaceIndexingInFlight, layoutLock: state.workspaceGraphMutationLayoutLockActive, blockRemainingMs: Number(state.workspaceGraphMutationBlockUntilMs || 0) - Date.now() },
+    zoom: state.zoomState, keyedZoom: state.zoomStateByKey, graphKind: state.graphData?.metadata?.kind,
+    nativeCanvases: Array.from(document.querySelectorAll('canvas')).map(el => ({ width: el.width, height: el.height, scene: el.getAttribute('data-kg-canvas-scene-node-count'), rect: { width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height } })),
+    runtime: { expectedFit: __flowCanvasDebug.lastExpectedFit, reason: __flowCanvasDebug.lastRecoveryReason, transform: __flowCanvasDebug.lastRuntimeTransform },
+    worldIds: Object.keys(state.flowWidgetWorldPosByNodeId || {}), screenIds: Object.keys(state.flowWidgetPosByNodeId || {}),
+    nodes: state.graphData?.nodes.slice(0, 24).map(node => ({ id: node.id, type: node.type })),
+    overlays: Array.from(document.querySelectorAll<HTMLElement>('[data-kg-widget]')).slice(0, 12).map(el => ({
+      id: el.dataset.kgWidget, mode: el.getAttribute('data-kg-storyboard-widget-mode'), style: el.getAttribute('style'),
+    })),
+  })
 }
 
 const createFile = (name: string, text: string) => {
@@ -93,6 +111,11 @@ function parseOverlayMatrixTransform(transform: string): { scale: number; left: 
   return { scale, left, top }
 }
 
+function readStyledWidgetRect(el: HTMLElement, fallback: () => DOMRect): DOMRect {
+  const matrix = el.matches('[data-kg-widget]') ? parseOverlayMatrixTransform(el.style.transform) : null
+  const width = parseFloat(el.style.width); const height = parseFloat(el.style.height)
+  return matrix && Number.isFinite(width) && Number.isFinite(height) ? new el.ownerDocument.defaultView!.DOMRect(matrix.left, matrix.top, width * matrix.scale, height * matrix.scale) : fallback()
+}
 function readStoryboardWidgetTransformEntries(doc: Document): StoryboardWidgetTransformEntry[] {
   return Array.from(doc.querySelectorAll<HTMLElement>('[data-kg-widget][data-kg-storyboard-widget-mode="1"]'))
     .map(el => {
@@ -125,10 +148,11 @@ async function waitForStoryboardWidgetTransformSpread(args: {
     const entries = readStoryboardWidgetTransformEntries(args.doc)
     const ids = new Set(entries.map(entry => entry.id))
     const bins = new Set(entries.map(entry => `${Math.round(entry.left / 20)}:${Math.round(entry.top / 20)}`))
-    const minLeft = Math.min(...entries.map(entry => entry.left))
-    const maxLeft = Math.max(...entries.map(entry => entry.left))
-    const minTop = Math.min(...entries.map(entry => entry.top))
-    const maxTop = Math.max(...entries.map(entry => entry.top))
+    const frames = Array.from(args.doc.querySelectorAll<HTMLElement>('[data-kg-widget][data-kg-storyboard-widget-mode="1"]')).map(el => el.getBoundingClientRect())
+    const minLeft = Math.min(...frames.map(frame => frame.left))
+    const maxLeft = Math.max(...frames.map(frame => frame.right))
+    const minTop = Math.min(...frames.map(frame => frame.top))
+    const maxTop = Math.max(...frames.map(frame => frame.bottom))
     const spanW = Number.isFinite(minLeft) && Number.isFinite(maxLeft) ? maxLeft - minLeft : 0
     const spanH = Number.isFinite(minTop) && Number.isFinite(maxTop) ? maxTop - minTop : 0
     lastSnapshot = JSON.stringify({
@@ -151,7 +175,7 @@ async function waitForStoryboardWidgetTransformSpread(args: {
     }
     await new Promise<void>(resolveWait => setTimeout(resolveWait, 16))
   }
-  throw new Error(`expected Storyboard Widget transforms to stay visibly spread for ${args.label}; snapshot=${lastSnapshot}`)
+  throw new Error(`expected Storyboard Widget transforms to stay visibly spread for ${args.label}; snapshot=${lastSnapshot || readVideoDemoLayoutFailureSnapshot()}`)
 }
 
 function findStoryboardWidgetEntry(entries: StoryboardWidgetTransformEntry[], id: string): StoryboardWidgetTransformEntry {
@@ -273,9 +297,9 @@ function assertStoryboardWidgetRuntimeStillScoped(args: {
   if (surfaceRoots.length !== 1) throw new Error(`expected ${args.label} to keep one active Storyboard Widget surface, got ${surfaceRoots.length}`)
 }
 
-const mountStoryboardWidgetCanvasRuntime = async (container: HTMLElement): Promise<ReturnType<typeof createRoot>> => {
+const mountStoryboardWidgetCanvasRuntime = async (container: HTMLElement, mainSurface = false): Promise<ReturnType<typeof createRoot>> => {
   const root = createRoot(container)
-  root.render(React.createElement(StoryboardWidgetCanvas, { active: true } as never))
+  if (mainSurface) useGraphStore.getState().setStrybldrStoryboardDisplayMode('widget'); root.render(React.createElement(StoryboardWidgetCanvas, { active: true, ...(mainSurface ? { storyboardCardsMode: true, storyboardWidgetSurfaceId: 'storyboard' } : {}) }))
   await waitForRuntimeTick()
   return root
 }
@@ -421,14 +445,13 @@ async function runVideoDemoRuntimeLandingRendererIsolation(args?: {
     doc.body.appendChild(container)
     root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement)
 
-    const waitForStoryboardWidgetOverlaySeed = async () => {
+    const waitForStoryboardWidgetOverlays = async () => {
       const deadline = Date.now() + 1500
       while (Date.now() < deadline) {
         const state = useGraphStore.getState() as unknown as {
           canvas2dRenderer?: string
           openWidgetNodeIds?: string[]
           openWidgetNodeIdsByRenderer?: Partial<Record<string, string[]>>
-          flowWidgetWorldPosByNodeId?: Record<string, { x: number; y: number }>
         }
         if (String(state.canvas2dRenderer || '') !== 'storyboard') {
           throw new Error(`expected mounted runtime to stay on Storyboard, got ${String(state.canvas2dRenderer || '')}`)
@@ -439,20 +462,19 @@ async function runVideoDemoRuntimeLandingRendererIsolation(args?: {
           storyboardWidgetIds: state.openWidgetNodeIdsByRenderer?.storyboard,
           context: 'mounted runtime',
         })
-        const worldById = state.flowWidgetWorldPosByNodeId || {}
-        const seededEligibleIds = eligibleWidgetIds.filter(id => {
-          const pos = worldById[id]
-          return !!pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)
-        })
-        if (seededEligibleIds.length > 0) return seededEligibleIds
+        const mounted = readStoryboardWidgetTransformEntries(doc)
+        const mountedIds = new Set(mounted.map(entry => entry.id))
+        if (mounted.some(entry => priorWidgetIds.has(entry.id))) throw new Error('expected mounted overlays to reject prior renderer widget identities')
+        if (mountedIds.size === eligibleWidgetIds.length && mounted.length === mountedIds.size
+          && eligibleWidgetIds.every(id => mountedIds.has(id)) && mounted.every(entry => entry.scale > 0)) return Array.from(mountedIds)
         await new Promise<void>(resolveWait => setTimeout(resolveWait, 5))
       }
-      throw new Error('expected mounted Storyboard Widget runtime to seed imported video-demo widget overlay world positions')
+      throw new Error('expected every imported video-demo widget to mount with a finite positive transform')
     }
 
-    const seededEligibleIds = await waitForStoryboardWidgetOverlaySeed()
-    if (seededEligibleIds.some(id => priorWidgetIds.has(id))) {
-      throw new Error(`expected seeded Storyboard Widget overlay ids to belong to imported video-demo widgets only, got ${JSON.stringify(seededEligibleIds)}`)
+    const mountedEligibleIds = await waitForStoryboardWidgetOverlays()
+    if (mountedEligibleIds.some(id => priorWidgetIds.has(id))) {
+      throw new Error(`expected mounted Storyboard Widget overlay ids to belong to imported video-demo widgets only, got ${JSON.stringify(mountedEligibleIds)}`)
     }
   } finally {
     try {
@@ -460,9 +482,9 @@ async function runVideoDemoRuntimeLandingRendererIsolation(args?: {
     } catch {
       void 0
     }
-    restoreRuntimeFrames?.()
-    restoreDom()
-    restoreWindow()
+    await waitForCanvasFrontmatterSurfaceTransition().finally(() => {
+      restoreRuntimeFrames?.(); restoreDom(); restoreWindow()
+    })
   }
 }
 
@@ -566,14 +588,14 @@ export async function testVideoDemoRuntimeWidgetUiVisibleInHideFieldsMode() {
         const videoOverlay = findWidgetOverlayById(doc, videoWidgetId)
         const richOverlay = findWidgetOverlayById(doc, richMediaWidgetId)
         const overlaysReady = !!(textOverlay && imageOverlay && videoOverlay && richOverlay)
-        const richKtvVisible = !!(
+        const richEditorVisible = !!(
           richOverlay &&
-          String(richOverlay.textContent || '').includes('Key') &&
-          String(richOverlay.textContent || '').includes('Type') &&
-          String(richOverlay.textContent || '').includes('Value')
+          richOverlay.querySelector('[data-kg-view-edit-surface-area="1"]') !== null &&
+          richOverlay.querySelector('[data-kg-card-inline-edit="1"]') !== null &&
+          richOverlay.querySelector('[data-kg-rich-media-markdown-preview="1"]') !== null
         )
         const richPortHandles = richOverlay
-          ? richOverlay.querySelectorAll('button[data-kg-port-handle="1"]').length
+          ? richOverlay.querySelectorAll('button[data-kg-port-handle="1"][data-kg-port-handle-kind="rail"]').length
           : 0
         const typedWidgetPortHandles = [textOverlay, imageOverlay, videoOverlay]
           .filter(Boolean)
@@ -590,7 +612,7 @@ export async function testVideoDemoRuntimeWidgetUiVisibleInHideFieldsMode() {
         )
         lastSnapshot = JSON.stringify({
           overlaysReady,
-          richKtvVisible,
+          richEditorVisible,
           richPortHandles,
           typedWidgetPortHandles,
           overlayEdgePaths,
@@ -602,7 +624,7 @@ export async function testVideoDemoRuntimeWidgetUiVisibleInHideFieldsMode() {
         })
         if (
           overlaysReady &&
-          richKtvVisible &&
+          richEditorVisible &&
           richPortHandles >= 2 &&
           typedWidgetPortHandles >= 6 &&
           edgeSurfacePresent &&
@@ -613,7 +635,7 @@ export async function testVideoDemoRuntimeWidgetUiVisibleInHideFieldsMode() {
         await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
       }
       throw new Error(
-        `expected agentic-graph-video-demo Storyboard Widget runtime to keep Text/Image/Video widget UI, Rich Media KTV rows, and port handles visible with mounted edge surface + linked edge contracts in hide-fields mode; snapshot=${lastSnapshot}`,
+        `expected agentic-graph-video-demo Storyboard Widget runtime to keep Text/Image/Video widget UI, the shared Rich Media editor, and port handles visible with mounted edge surface + linked edge contracts in hide-fields mode; snapshot=${lastSnapshot || readVideoDemoLayoutFailureSnapshot()}`,
       )
     }
 
@@ -732,11 +754,6 @@ export async function testVideoDemoRuntimeCollectiveBalancedFit1920x1080Viewport
         const zoomK = Number.isFinite(state.zoomState?.k) ? Math.max(0.001, Number(state.zoomState?.k)) : 1
         const zoomX = Number.isFinite(state.zoomState?.x) ? Number(state.zoomState?.x) : 0
         const zoomY = Number.isFinite(state.zoomState?.y) ? Number(state.zoomState?.y) : 0
-        const keyedZoomValues = Object.values(state.zoomStateByKey || {})
-        const keyedZoom = keyedZoomValues[0] || {}
-        const keyedZoomX = Number.isFinite(keyedZoom.x) ? Number(keyedZoom.x) : 0
-        const keyedZoomY = Number.isFinite(keyedZoom.y) ? Number(keyedZoom.y) : 0
-        const keyedZoomK = Number.isFinite(keyedZoom.k) ? Math.max(0.001, Number(keyedZoom.k)) : 1
         const graphNodes = Array.isArray(state.graphData?.nodes) ? state.graphData.nodes : []
         let graphMinX = Number.POSITIVE_INFINITY
         let graphMaxX = Number.NEGATIVE_INFINITY
@@ -809,7 +826,7 @@ export async function testVideoDemoRuntimeCollectiveBalancedFit1920x1080Viewport
         await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
       }
       throw new Error(
-        `expected collective Storyboard Widget layout to fit 1920x1080 viewport with centroid centered; snapshot=${lastSnapshot}`,
+        `expected collective Storyboard Widget layout to fit 1920x1080 viewport with centroid centered; snapshot=${lastSnapshot || readVideoDemoLayoutFailureSnapshot()}`,
       )
     }
 
@@ -847,8 +864,8 @@ export async function testVideoDemoSourceFilesRuntimeCollectiveBalancedFit1920x1
     elementProto.getBoundingClientRect = function patchedGetBoundingClientRect(this: HTMLElement): DOMRect {
       const shouldForceViewportRect =
         this.matches('[data-kg-canvas-viewport-root="1"]')
-        || this.matches('[data-kg-storyboard-widget-surface-root]')
-      if (!shouldForceViewportRect) return originalElementRect.call(this) as DOMRect
+        || this.matches('[data-kg-storyboard-widget-surface-root], canvas')
+      if (!shouldForceViewportRect) return readStyledWidgetRect(this, () => originalElementRect.call(this) as DOMRect)
       return {
         x: 0,
         y: 0,
@@ -896,7 +913,7 @@ export async function testVideoDemoSourceFilesRuntimeCollectiveBalancedFit1920x1
     explorer.setActivePath(sourcePath)
     store.setMarkdownDocument(sourcePath, sourceText)
     applyComposedGraphFromSourceFiles()
-
+    await waitFor({ ms: 1500, pollMs: TEST_RUNTIME_FRAME_MS, ok: () => useGraphStore.getState().canvas2dRenderer === 'storyboard' })
     const postCompose = useGraphStore.getState()
     if (postCompose.canvas2dRenderer !== 'storyboard') {
       throw new Error(`expected source-files video-demo landing to use storyboard renderer, got ${String(postCompose.canvas2dRenderer || '')}`)
@@ -908,7 +925,9 @@ export async function testVideoDemoSourceFilesRuntimeCollectiveBalancedFit1920x1
       throw new Error('expected source-files video-demo landing to enable frontmatter mode')
     }
 
-    const graphNodes = Array.isArray(postCompose.graphData?.nodes) ? postCompose.graphData.nodes : []
+    if (!(await store.setActiveMarkdownDocument({ name: sourcePath, text: sourceText, normalizeMermaidMmd: false, sourceUrl: null, applyViewPreset: true, applyToGraph: true }))) throw new Error('expected selected-document activation before viewport validation')
+
+    const graphNodes = parsedGraphData.nodes
     const eligibleWidgetIds = Array.from(buildFlowWidgetEligibleNodeIdSet(graphNodes as never))
       .map(id => String(id || '').trim())
       .filter(Boolean)
@@ -926,91 +945,14 @@ export async function testVideoDemoSourceFilesRuntimeCollectiveBalancedFit1920x1
 
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerWidth = targetViewport.width
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerHeight = targetViewport.height
-    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement)
+    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement, true)
 
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
 
-    const waitForBalancedFit = async () => {
-      const deadline = Date.now() + 2500
-      let lastSnapshot = ''
-      while (Date.now() < deadline) {
-        const state = useGraphStore.getState() as unknown as {
-          flowWidgetWorldPosByNodeId?: Record<string, { x: number; y: number }>
-          zoomState?: { k?: number; x?: number; y?: number }
-          zoomStateByKey?: Record<string, { k?: number; x?: number; y?: number }>
-        }
-        const worldById = state.flowWidgetWorldPosByNodeId || {}
-        const seededIds = eligibleWidgetIds.filter(id => {
-          const pos = worldById[id]
-          return !!pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)
-        })
-        const zoomK = Number.isFinite(state.zoomState?.k) ? Math.max(0.001, Number(state.zoomState?.k)) : 1
-        const zoomX = Number.isFinite(state.zoomState?.x) ? Number(state.zoomState?.x) : 0
-        const zoomY = Number.isFinite(state.zoomState?.y) ? Number(state.zoomState?.y) : 0
-        const keyedZoomValues = Object.values(state.zoomStateByKey || {})
-        const keyedZoom = keyedZoomValues[0] || {}
-        const keyedZoomX = Number.isFinite(keyedZoom.x) ? Number(keyedZoom.x) : 0
-        const keyedZoomY = Number.isFinite(keyedZoom.y) ? Number(keyedZoom.y) : 0
-        const keyedZoomK = Number.isFinite(keyedZoom.k) ? Math.max(0.001, Number(keyedZoom.k)) : 1
-        if (seededIds.length > 0) {
-          const panelScale = computeCollectiveFollowPinnedScale({
-            zoomK,
-            viewportW: targetViewport.width,
-            viewportH: targetViewport.height,
-            count: seededIds.length,
-            baseWidth: WIDGET_BASE_SIZE.width,
-            baseHeight: WIDGET_BASE_SIZE.height,
-          })
-          const panelScreen = computeWidgetScaledSize(panelScale)
-          const panelWorldW = panelScreen.width / zoomK
-          const panelWorldH = panelScreen.height / zoomK
-          let minLeft = Number.POSITIVE_INFINITY
-          let minTop = Number.POSITIVE_INFINITY
-          let maxRight = Number.NEGATIVE_INFINITY
-          let maxBottom = Number.NEGATIVE_INFINITY
-          let centroidX = 0
-          let centroidY = 0
-          for (let i = 0; i < seededIds.length; i += 1) {
-            const id = seededIds[i]!
-            const world = worldById[id]!
-            const left = world.x * zoomK + zoomX
-            const top = world.y * zoomK + zoomY
-            const right = (world.x + panelWorldW) * zoomK + zoomX
-            const bottom = (world.y + panelWorldH) * zoomK + zoomY
-            minLeft = Math.min(minLeft, left)
-            minTop = Math.min(minTop, top)
-            maxRight = Math.max(maxRight, right)
-            maxBottom = Math.max(maxBottom, bottom)
-            centroidX += left + panelScreen.width / 2
-            centroidY += top + panelScreen.height / 2
-          }
-          centroidX /= seededIds.length
-          centroidY /= seededIds.length
-          const fitsViewport =
-            minLeft >= -1 &&
-            minTop >= -1 &&
-            maxRight <= targetViewport.width + 1 &&
-            maxBottom <= targetViewport.height + 1
-          const centroidNearViewportCenter =
-            Math.abs(centroidX - targetViewport.width / 2) <= 6 &&
-            Math.abs(centroidY - targetViewport.height / 2) <= 6
-          lastSnapshot = JSON.stringify({
-            seededCount: seededIds.length,
-            zoomK,
-            zoomX,
-            zoomY,
-            bounds: { minLeft, minTop, maxRight, maxBottom },
-            centroid: { x: centroidX, y: centroidY },
-          })
-          if (fitsViewport && centroidNearViewportCenter) return
-        }
-        await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
-      }
-      throw new Error(
-        `expected source-files Storyboard Widget collective widget layout to fit 1920x1080 viewport with centroid centered; snapshot=${lastSnapshot}`,
-      )
-    }
+    const waitForBalancedFit = () => waitForStoryboardWidgetViewportLayout({
+      doc, expectedIds: eligibleWidgetIds, viewport: targetViewport, label: 'source-files-initial-fit', sourceText, readSourceText: () => useGraphStore.getState().markdownDocumentText, diagnostics: readVideoDemoLayoutFailureSnapshot,
+    })
 
     await waitForBalancedFit(); assertFlowWidgetStateScopedToEligibleIds({ eligibleWidgetIds, messagePrefix: 'expected source-files Storyboard Widget state to stay on graph-owned node ids' })
   } finally {
@@ -1046,8 +988,8 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityProjectsZoom
     elementProto.getBoundingClientRect = function patchedGetBoundingClientRect(this: HTMLElement): DOMRect {
       const shouldForceViewportRect =
         this.matches('[data-kg-canvas-viewport-root="1"]')
-        || this.matches('[data-kg-storyboard-widget-surface-root]')
-      if (!shouldForceViewportRect) return originalElementRect.call(this) as DOMRect
+        || this.matches('[data-kg-storyboard-widget-surface-root], canvas')
+      if (!shouldForceViewportRect) return readStyledWidgetRect(this, () => originalElementRect.call(this) as DOMRect)
       return {
         x: 0,
         y: 0,
@@ -1095,18 +1037,18 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityProjectsZoom
     explorer.setActivePath(sourcePath)
     store.setMarkdownDocument(sourcePath, sourceText)
     applyComposedGraphFromSourceFiles()
-
+    await waitFor({ ms: 1500, pollMs: TEST_RUNTIME_FRAME_MS, ok: () => useGraphStore.getState().canvas2dRenderer === 'storyboard' })
     const postCompose = useGraphStore.getState()
     if (postCompose.canvas2dRenderer !== 'storyboard') {
       throw new Error(`expected source-files video-demo landing to use storyboard renderer, got ${String(postCompose.canvas2dRenderer || '')}`)
     }
 
-    const graphNodes = Array.isArray(postCompose.graphData?.nodes) ? postCompose.graphData.nodes : []
+    const graphNodes = parsedGraphData.nodes
     const eligibleWidgetIds = Array.from(buildFlowWidgetEligibleNodeIdSet(graphNodes as never))
       .map(id => String(id || '').trim())
       .filter(Boolean)
-    if (eligibleWidgetIds.length < 12) {
-      throw new Error(`expected source-files video-demo screen-authority validation to include at least 12 widget-eligible nodes, got ${eligibleWidgetIds.length}`)
+    if (eligibleWidgetIds.length !== graphNodes.length || !['InputWidget', 'TextGeneration', 'ImageGeneration', 'VideoGeneration', 'RichMediaPanel'].every(type => graphNodes.some(node => node.type === type))) {
+      throw new Error(`expected source-files video-demo screen-authority validation to include every authored widget and Input/Text/Image/Video/RichMedia coverage, got ${eligibleWidgetIds.length}; ${readVideoDemoLayoutFailureSnapshot()}`)
     }
     store.setOpenWidgetNodeIds(eligibleWidgetIds)
     store.setFlowWidgetWorldPosByNodeId({})
@@ -1119,7 +1061,7 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityProjectsZoom
 
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerWidth = targetViewport.width
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerHeight = targetViewport.height
-    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement)
+    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement, true)
 
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
@@ -1190,7 +1132,7 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityDragPinUnpin
     elementProto.getBoundingClientRect = function patchedGetBoundingClientRect(this: HTMLElement): DOMRect {
       const shouldForceViewportRect =
         this.matches('[data-kg-canvas-viewport-root="1"]')
-        || this.matches('[data-kg-storyboard-widget-surface-root]')
+        || this.matches('[data-kg-storyboard-widget-surface-root], canvas')
       if (this.matches('[data-kg-workspace-left-pane="1"]')) {
         return {
           x: 0,
@@ -1204,7 +1146,7 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityDragPinUnpin
           toJSON: () => ({}),
         } as DOMRect
       }
-      if (!shouldForceViewportRect) return originalElementRect.call(this) as DOMRect
+      if (!shouldForceViewportRect) return readStyledWidgetRect(this, () => originalElementRect.call(this) as DOMRect)
       return {
         x: 0,
         y: 0,
@@ -1252,18 +1194,18 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityDragPinUnpin
     explorer.setActivePath(sourcePath)
     store.setMarkdownDocument(sourcePath, sourceText)
     applyComposedGraphFromSourceFiles()
-
+    await waitFor({ ms: 1500, pollMs: TEST_RUNTIME_FRAME_MS, ok: () => useGraphStore.getState().canvas2dRenderer === 'storyboard' })
     const postCompose = useGraphStore.getState()
     if (postCompose.canvas2dRenderer !== 'storyboard') {
       throw new Error(`expected source-files video-demo landing to use storyboard renderer, got ${String(postCompose.canvas2dRenderer || '')}`)
     }
 
-    const graphNodes = Array.isArray(postCompose.graphData?.nodes) ? postCompose.graphData.nodes : []
+    const graphNodes = parsedGraphData.nodes
     const eligibleWidgetIds = Array.from(buildFlowWidgetEligibleNodeIdSet(graphNodes as never))
       .map(id => String(id || '').trim())
       .filter(Boolean)
-    if (eligibleWidgetIds.length < 12) {
-      throw new Error(`expected source-files video-demo drag/pin validation to include at least 12 widget-eligible nodes, got ${eligibleWidgetIds.length}`)
+    if (eligibleWidgetIds.length !== graphNodes.length || !['InputWidget', 'TextGeneration', 'ImageGeneration', 'VideoGeneration', 'RichMediaPanel'].every(type => graphNodes.some(node => node.type === type))) {
+      throw new Error(`expected source-files video-demo drag/pin validation to include every authored widget and Input/Text/Image/Video/RichMedia coverage, got ${eligibleWidgetIds.length}; ${readVideoDemoLayoutFailureSnapshot()}`)
     }
     store.setOpenWidgetNodeIds(eligibleWidgetIds)
     store.setFlowWidgetWorldPosByNodeId({})
@@ -1279,7 +1221,7 @@ export async function testVideoDemoSourceFilesRuntimeScreenAuthorityDragPinUnpin
 
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerWidth = targetViewport.width
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerHeight = targetViewport.height
-    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement)
+    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement, true)
 
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
@@ -1544,7 +1486,7 @@ export async function testVideoDemoSourceFilesRuntimeOpenCloseReopenStaysInView1
     elementProto.getBoundingClientRect = function patchedGetBoundingClientRect(this: HTMLElement): DOMRect {
       const shouldForceViewportRect =
         this.matches('[data-kg-canvas-viewport-root="1"]')
-        || this.matches('[data-kg-storyboard-widget-surface-root]')
+        || this.matches('[data-kg-storyboard-widget-surface-root], canvas')
       if (this.matches('[data-kg-workspace-left-pane="1"]')) {
         return {
           x: 0,
@@ -1558,7 +1500,7 @@ export async function testVideoDemoSourceFilesRuntimeOpenCloseReopenStaysInView1
           toJSON: () => ({}),
         } as DOMRect
       }
-      if (!shouldForceViewportRect) return originalElementRect.call(this) as DOMRect
+      if (!shouldForceViewportRect) return readStyledWidgetRect(this, () => originalElementRect.call(this) as DOMRect)
       return {
         x: 0,
         y: 0,
@@ -1606,13 +1548,15 @@ export async function testVideoDemoSourceFilesRuntimeOpenCloseReopenStaysInView1
     explorer.setActivePath(sourcePath)
     store.setMarkdownDocument(sourcePath, sourceText)
     applyComposedGraphFromSourceFiles()
-
+    await waitFor({ ms: 1500, pollMs: TEST_RUNTIME_FRAME_MS, ok: () => useGraphStore.getState().canvas2dRenderer === 'storyboard' })
     const postCompose = useGraphStore.getState()
     if (postCompose.canvas2dRenderer !== 'storyboard') {
       throw new Error(`expected source-files video-demo landing to use storyboard renderer, got ${String(postCompose.canvas2dRenderer || '')}`)
     }
 
-    const graphNodes = Array.isArray(postCompose.graphData?.nodes) ? postCompose.graphData.nodes : []
+    if (!(await store.setActiveMarkdownDocument({ name: sourcePath, text: sourceText, normalizeMermaidMmd: false, sourceUrl: null, applyViewPreset: true, applyToGraph: true }))) throw new Error('expected selected-document activation before viewport validation')
+
+    const graphNodes = parsedGraphData.nodes
     const eligibleWidgetIds = Array.from(buildFlowWidgetEligibleNodeIdSet(graphNodes as never))
       .map(id => String(id || '').trim())
       .filter(Boolean)
@@ -1632,88 +1576,14 @@ export async function testVideoDemoSourceFilesRuntimeOpenCloseReopenStaysInView1
 
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerWidth = targetViewport.width
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerHeight = targetViewport.height
-    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement)
+    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement, true)
 
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
 
-    const waitForInViewCollective = async (phase: string) => {
-      const deadline = Date.now() + 3000
-      let lastSnapshot = ''
-      while (Date.now() < deadline) {
-        const state = useGraphStore.getState() as unknown as {
-          flowWidgetWorldPosByNodeId?: Record<string, { x: number; y: number }>
-          zoomState?: { k?: number; x?: number; y?: number }
-          zoomStateByKey?: Record<string, { k?: number; x?: number; y?: number }>
-        }
-        const worldById = state.flowWidgetWorldPosByNodeId || {}
-        const seededIds = eligibleWidgetIds.filter(id => {
-          const pos = worldById[id]
-          return !!pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)
-        })
-        const zoomK = Number.isFinite(state.zoomState?.k) ? Math.max(0.001, Number(state.zoomState?.k)) : 1
-        const zoomX = Number.isFinite(state.zoomState?.x) ? Number(state.zoomState?.x) : 0
-        const zoomY = Number.isFinite(state.zoomState?.y) ? Number(state.zoomState?.y) : 0
-        const keyedZoomValues = Object.values(state.zoomStateByKey || {})
-        const keyedZoom = keyedZoomValues[0] || {}
-        const keyedZoomX = Number.isFinite(keyedZoom.x) ? Number(keyedZoom.x) : 0
-        const keyedZoomY = Number.isFinite(keyedZoom.y) ? Number(keyedZoom.y) : 0
-        const keyedZoomK = Number.isFinite(keyedZoom.k) ? Math.max(0.001, Number(keyedZoom.k)) : 1
-        if (seededIds.length > 0) {
-          const panelScale = computeCollectiveFollowPinnedScale({
-            zoomK,
-            viewportW: targetViewport.width,
-            viewportH: targetViewport.height,
-            count: seededIds.length,
-            baseWidth: WIDGET_BASE_SIZE.width,
-            baseHeight: WIDGET_BASE_SIZE.height,
-          })
-          const panelScreen = computeWidgetScaledSize(panelScale)
-          const panelWorldW = panelScreen.width / zoomK
-          const panelWorldH = panelScreen.height / zoomK
-          let minLeft = Number.POSITIVE_INFINITY
-          let minTop = Number.POSITIVE_INFINITY
-          let maxRight = Number.NEGATIVE_INFINITY
-          let maxBottom = Number.NEGATIVE_INFINITY
-          let centroidX = 0
-          let centroidY = 0
-          for (let i = 0; i < seededIds.length; i += 1) {
-            const id = seededIds[i]!
-            const world = worldById[id]!
-            const left = world.x * zoomK + zoomX
-            const top = world.y * zoomK + zoomY
-            const right = (world.x + panelWorldW) * zoomK + zoomX
-            const bottom = (world.y + panelWorldH) * zoomK + zoomY
-            minLeft = Math.min(minLeft, left)
-            minTop = Math.min(minTop, top)
-            maxRight = Math.max(maxRight, right)
-            maxBottom = Math.max(maxBottom, bottom)
-            centroidX += left + panelScreen.width / 2
-            centroidY += top + panelScreen.height / 2
-          }
-          centroidX /= seededIds.length
-          centroidY /= seededIds.length
-          const fitsViewport =
-            minLeft >= -1 &&
-            minTop >= -1 &&
-            maxRight <= targetViewport.width + 1 &&
-            maxBottom <= targetViewport.height + 1
-          const centroidNearViewportCenter =
-            Math.abs(centroidX - targetViewport.width / 2) <= 6 &&
-            Math.abs(centroidY - targetViewport.height / 2) <= 6
-          lastSnapshot = JSON.stringify({
-            phase,
-            seededCount: seededIds.length,
-            zoomK,
-            bounds: { minLeft, minTop, maxRight, maxBottom },
-            centroid: { x: centroidX, y: centroidY },
-          })
-          if (fitsViewport && centroidNearViewportCenter) return
-        }
-        await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
-      }
-      throw new Error(`expected source-files Storyboard Widget collective layout to remain in-view after ${phase}; snapshot=${lastSnapshot}`)
-    }
+    const waitForInViewCollective = (phase: string) => waitForStoryboardWidgetViewportLayout({
+      doc, expectedIds: eligibleWidgetIds, viewport: targetViewport, label: phase, sourceText, readSourceText: () => useGraphStore.getState().markdownDocumentText, diagnostics: readVideoDemoLayoutFailureSnapshot,
+    })
 
     const assertOverlayToggleDoesNotMutateGeometry = (
       beforeEntries: StoryboardWidgetTransformEntry[],
@@ -1819,7 +1689,7 @@ export async function testVideoDemoSourceFilesRuntimeInitialWorkspaceOpenStaysIn
     elementProto.getBoundingClientRect = function patchedGetBoundingClientRect(this: HTMLElement): DOMRect {
       const shouldForceViewportRect =
         this.matches('[data-kg-canvas-viewport-root="1"]')
-        || this.matches('[data-kg-storyboard-widget-surface-root]')
+        || this.matches('[data-kg-storyboard-widget-surface-root], canvas')
       if (this.matches('[data-kg-workspace-left-pane="1"]')) {
         return {
           x: 0,
@@ -1833,7 +1703,7 @@ export async function testVideoDemoSourceFilesRuntimeInitialWorkspaceOpenStaysIn
           toJSON: () => ({}),
         } as DOMRect
       }
-      if (!shouldForceViewportRect) return originalElementRect.call(this) as DOMRect
+      if (!shouldForceViewportRect) return readStyledWidgetRect(this, () => originalElementRect.call(this) as DOMRect)
       return {
         x: 0,
         y: 0,
@@ -1872,7 +1742,7 @@ export async function testVideoDemoSourceFilesRuntimeInitialWorkspaceOpenStaysIn
 
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerWidth = targetViewport.width
     ;(dom.window as unknown as { innerWidth?: number; innerHeight?: number }).innerHeight = targetViewport.height
-    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement)
+    root = await mountStoryboardWidgetCanvasRuntime(container as unknown as HTMLElement, true)
 
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
@@ -1897,13 +1767,18 @@ export async function testVideoDemoSourceFilesRuntimeInitialWorkspaceOpenStaysIn
     }])
     explorer.setActivePath(sourcePath)
     store.setMarkdownDocument(sourcePath, sourceText)
+    const rendererBeforeActivation = useGraphStore.getState().canvas2dRenderer
     applyComposedGraphFromSourceFiles()
+    if (useGraphStore.getState().canvas2dRenderer !== rendererBeforeActivation) throw new Error('background composition changed the editor-owned renderer')
+    const activated = await store.setActiveMarkdownDocument({ name: sourcePath, text: sourceText, normalizeMermaidMmd: false, sourceUrl: null, applyViewPreset: true, applyToGraph: true })
+    if (!activated) throw new Error('expected explicit selected-document activation to succeed')
+    await waitFor({ ms: 1500, pollMs: TEST_RUNTIME_FRAME_MS, ok: () => useGraphStore.getState().canvas2dRenderer === 'storyboard' })
 
     const postCompose = useGraphStore.getState()
     if (postCompose.canvas2dRenderer !== 'storyboard') {
-      throw new Error(`expected source-files initial workspace-open landing to use storyboard renderer, got ${String(postCompose.canvas2dRenderer || '')}`)
+      throw new Error(`expected source-files initial workspace-open landing to use storyboard renderer, got ${String(postCompose.canvas2dRenderer || '')}; ${readVideoDemoLayoutFailureSnapshot()}`)
     }
-    const graphNodes = Array.isArray(postCompose.graphData?.nodes) ? postCompose.graphData.nodes : []
+    const graphNodes = parsedGraphData.nodes
     const eligibleWidgetIds = Array.from(buildFlowWidgetEligibleNodeIdSet(graphNodes as never))
       .map(id => String(id || '').trim())
       .filter(Boolean)
@@ -1915,89 +1790,9 @@ export async function testVideoDemoSourceFilesRuntimeInitialWorkspaceOpenStaysIn
     dom.window.dispatchEvent(new dom.window.Event('resize'))
     await waitForRuntimeTick()
 
-    const waitForInViewCollective = async () => {
-      const deadline = Date.now() + 3200
-      let lastSnapshot = ''
-      while (Date.now() < deadline) {
-        const state = useGraphStore.getState() as unknown as {
-          flowWidgetWorldPosByNodeId?: Record<string, { x: number; y: number }>
-          zoomState?: { k?: number; x?: number; y?: number }
-          zoomStateByKey?: Record<string, { k?: number; x?: number; y?: number }>
-        }
-        const worldById = state.flowWidgetWorldPosByNodeId || {}
-        const seededIds = eligibleWidgetIds.filter(id => {
-          const pos = worldById[id]
-          return !!pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)
-        })
-        const zoomK = Number.isFinite(state.zoomState?.k) ? Math.max(0.001, Number(state.zoomState?.k)) : 1
-        const zoomX = Number.isFinite(state.zoomState?.x) ? Number(state.zoomState?.x) : 0
-        const zoomY = Number.isFinite(state.zoomState?.y) ? Number(state.zoomState?.y) : 0
-        const keyedZoomValues = Object.values(state.zoomStateByKey || {})
-        const keyedZoom = keyedZoomValues[0] || {}
-        const keyedZoomX = Number.isFinite(keyedZoom.x) ? Number(keyedZoom.x) : 0
-        const keyedZoomY = Number.isFinite(keyedZoom.y) ? Number(keyedZoom.y) : 0
-        const keyedZoomK = Number.isFinite(keyedZoom.k) ? Math.max(0.001, Number(keyedZoom.k)) : 1
-        if (seededIds.length > 0) {
-          const panelScale = computeCollectiveFollowPinnedScale({
-            zoomK,
-            viewportW: targetViewport.width,
-            viewportH: targetViewport.height,
-            count: seededIds.length,
-            baseWidth: WIDGET_BASE_SIZE.width,
-            baseHeight: WIDGET_BASE_SIZE.height,
-          })
-          const panelScreen = computeWidgetScaledSize(panelScale)
-          const panelWorldW = panelScreen.width / zoomK
-          const panelWorldH = panelScreen.height / zoomK
-          let minLeft = Number.POSITIVE_INFINITY
-          let minTop = Number.POSITIVE_INFINITY
-          let maxRight = Number.NEGATIVE_INFINITY
-          let maxBottom = Number.NEGATIVE_INFINITY
-          let centroidX = 0
-          let centroidY = 0
-          for (let i = 0; i < seededIds.length; i += 1) {
-            const id = seededIds[i]!
-            const world = worldById[id]!
-            const left = world.x * zoomK + zoomX
-            const top = world.y * zoomK + zoomY
-            const right = (world.x + panelWorldW) * zoomK + zoomX
-            const bottom = (world.y + panelWorldH) * zoomK + zoomY
-            minLeft = Math.min(minLeft, left)
-            minTop = Math.min(minTop, top)
-            maxRight = Math.max(maxRight, right)
-            maxBottom = Math.max(maxBottom, bottom)
-            centroidX += left + panelScreen.width / 2
-            centroidY += top + panelScreen.height / 2
-          }
-          centroidX /= seededIds.length
-          centroidY /= seededIds.length
-          const fitsViewport =
-            minLeft >= -1 &&
-            minTop >= -1 &&
-            maxRight <= targetViewport.width + 1 &&
-            maxBottom <= targetViewport.height + 1
-          const centroidNearViewportCenter =
-            Math.abs(centroidX - targetViewport.width / 2) <= 6 &&
-            Math.abs(centroidY - targetViewport.height / 2) <= 6
-          lastSnapshot = JSON.stringify({
-            seededCount: seededIds.length,
-            zoomK,
-            zoomX,
-            zoomY,
-            keyedZoomK,
-            keyedZoomX,
-            keyedZoomY,
-            bounds: { minLeft, minTop, maxRight, maxBottom },
-            centroid: { x: centroidX, y: centroidY },
-          })
-          if (fitsViewport && centroidNearViewportCenter) return
-        }
-        await new Promise<void>(resolveWait => setTimeout(resolveWait, 12))
-      }
-      throw new Error(
-        `expected source-files initial workspace-open Storyboard Widget collective layout to stay in-view; snapshot=${lastSnapshot}`,
-      )
-    }
+    const waitForInViewCollective = () => waitForStoryboardWidgetViewportLayout({
+      doc, expectedIds: eligibleWidgetIds, viewport: targetViewport, label: 'initial-workspace-open', sourceText, readSourceText: () => useGraphStore.getState().markdownDocumentText, diagnostics: readVideoDemoLayoutFailureSnapshot,
+    })
 
     await waitForInViewCollective()
   } finally {

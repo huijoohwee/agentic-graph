@@ -1,4 +1,4 @@
-import { invalidateCachedBalance, readCachedBalance, writeCachedBalance } from '../cache/balance-cache'
+import { invalidateCachedBalance } from '../cache/balance-cache'
 import { isCurrency, isIdentifier, isMinorUnits } from '../bundle/bundle-runtime'
 import type { Rejection } from '../bundle/bundle-types'
 import {
@@ -85,7 +85,6 @@ export async function confirmAvailableBalance(
   principalId: string,
 ): Promise<AuthoritativeBalance | Rejection> {
   if (!isIdentifier(principalId)) return { kind: 'rejected', reason: 'envelope-malformed' }
-  const cached = await ignoreCacheFailure(() => readCachedBalance(env.BALANCE_CACHE, principalId), null)
   let authoritative: AuthoritativeBalance | Rejection
   try {
     authoritative = await env.ENVELOPE_LEDGER.getByName(principalId).getAvailableBalance()
@@ -96,15 +95,6 @@ export async function confirmAvailableBalance(
   if (!isAuthoritativeBalance(authoritative, principalId)) {
     return { kind: 'rejected', reason: 'envelope-malformed' }
   }
-  if (
-    cached
-    && (cached.revision !== authoritative.revision
-      || cached.availableBalanceMinor !== authoritative.availableBalanceMinor)
-  ) await ignoreCacheFailure(() => invalidateCachedBalance(env.BALANCE_CACHE, principalId), undefined)
-  await ignoreCacheFailure(
-    () => writeCachedBalance(env.BALANCE_CACHE, Object.freeze({ ...authoritative, cachedAt: Date.now() })),
-    undefined,
-  )
   return authoritative
 }
 

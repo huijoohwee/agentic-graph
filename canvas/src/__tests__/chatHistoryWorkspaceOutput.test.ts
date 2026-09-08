@@ -1,7 +1,10 @@
+import { withDurableBrowserStorage } from '@/__tests__/helpers/durable-browser-storage'
+import { exportAgenticGraphStorageWorkspace } from '@/lib/storage/agentic-graph-storage-client-export'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import storageWorker from '../../../cloudflare/workers/agentic-graph-storage/index.ts'
+import { createStorageWorkerFetch } from '@/__tests__/helpers/fake-agentic-graph-storage-worker-fetch'
+import { createFakeAgenticGraphStorageBrowserSession } from '@/__tests__/helpers/fake-agentic-graph-storage-browser-session'
 import { createFakeAgenticGraphStorageWorkerEnv } from '@/__tests__/helpers/fake-agentic-graph-storage-d1'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { writeAgenticOsCompanionOutputBlob, writeAgenticOsCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
@@ -11,16 +14,6 @@ import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemo
 import { buildAgenticGraphStorageDocPath } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { __resetAgenticGraphStorageDbForTests } from '@/lib/storage/agentic-graph-storage-db'
 import { readStoredUploadedMediaPanelItems } from '@/lib/storage/uploadedMediaPanelItems'
-
-const readStorageWorker = (): { fetch: (request: Request, env: never) => Promise<Response> } => {
-  const candidate = storageWorker as unknown as {
-    fetch?: (request: Request, env: never) => Promise<Response>
-    default?: { fetch?: (request: Request, env: never) => Promise<Response> }
-  }
-  const fetchImpl = candidate.fetch || candidate.default?.fetch
-  if (!fetchImpl) throw new Error('expected storage worker test module to expose fetch')
-  return { fetch: fetchImpl }
-}
 
 export async function testWriteAgenticOsCompanionOutputTextCreatesSiblingWorkspaceArtifact() {
   const storage = new MemoryStorage()
@@ -124,6 +117,7 @@ export async function testWriteAgenticOsCompanionOutputBlobMirrorsBinaryArtifact
 }
 
 export async function testWriteAgenticOsCompanionOutputBlobUploadsR2AndPublishesManifestWhenRuntimeSyncEnabled() {
+  return withDurableBrowserStorage(async () => {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
@@ -131,13 +125,14 @@ export async function testWriteAgenticOsCompanionOutputBlobUploadsR2AndPublishes
   const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
   const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
-  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-generated-binary-manifest'
   try {
+    const session = await createFakeAgenticGraphStorageBrowserSession(workspaceId, { origin: window.location.origin })
+    const { env, fetch: storageFetch } = session
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
     process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = window.location.origin
     process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : String(input || '')
@@ -147,10 +142,7 @@ export async function testWriteAgenticOsCompanionOutputBlobUploadsR2AndPublishes
           headers: { 'content-type': 'application/json' },
         })
       }
-      const request = input instanceof Request
-        ? input
-        : new Request(url.startsWith('/api/storage/') ? `https://example.com${url}` : String(input), init)
-      return readStorageWorker().fetch(request, env as never)
+      return storageFetch(input, init)
     }) as typeof fetch
 
     const blob = new Blob([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])], { type: 'image/png' })
@@ -171,14 +163,12 @@ export async function testWriteAgenticOsCompanionOutputBlobUploadsR2AndPublishes
     if (!manifest || !manifest.includes('kind: agentic_graph_binary_artifact') || !manifest.includes('r2_object_key:')) {
       throw new Error(`expected generated binary output to write an R2 manifest, got ${String(manifest || '')}`)
     }
-    const docResponse = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z.png.manifest.md')}`),
-      env as never,
-    )
-    if (!docResponse.ok) {
-      throw new Error(`expected generated binary manifest to publish to D1, got ${docResponse.status}`)
+    const snapshot = await exportAgenticGraphStorageWorkspace({ workspaceId, baseUrl: session.origin, fetchImpl: storageFetch })
+    const document = snapshot.documents.find(row => row.canonicalPath === 'chat-log/20260420T105432Z/agentic-os-output_20260420T105432Z.png.manifest.md')
+    if (!document || document.workspaceId !== workspaceId || document.deleted) {
+      throw new Error('expected generated binary manifest to replay from its authenticated workspace snapshot')
     }
-    const published = await docResponse.text()
+    const published = document.contentMd
     if (!published.includes('storage_url:') || !published.includes('agentic-os-output_20260420T105432Z.png')) {
       throw new Error(`expected published manifest to expose storage URL and source binary, got ${published}`)
     }
@@ -195,6 +185,7 @@ export async function testWriteAgenticOsCompanionOutputBlobUploadsR2AndPublishes
     restoreDom()
     restoreWindow()
   }
+  })
 }
 
 export async function testWriteTextWidgetRunOutputArtifactLandsInSourceFiles() {
@@ -245,6 +236,7 @@ export async function testWriteTextWidgetRunOutputArtifactLandsInSourceFiles() {
 }
 
 export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhenRuntimeSyncEnabled() {
+  return withDurableBrowserStorage(async () => {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
@@ -253,12 +245,13 @@ export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhen
   const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
   const env = createFakeAgenticGraphStorageWorkerEnv()
+  const storageFetch = createStorageWorkerFetch(env)
   const workspaceId = 'kgws:test-text-widget-replay'
   try {
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
     process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = window.location.origin
     process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     const fs = createMemoryWorkspaceFs()
     await fs.ensureSeed()
@@ -270,10 +263,7 @@ export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhen
           headers: { 'content-type': 'application/json' },
         })
       }
-      const request = input instanceof Request
-        ? input
-        : new Request(url.startsWith('/api/storage/') ? `https://example.com${url}` : String(input), init)
-      return readStorageWorker().fetch(request, env as never)
+      return storageFetch(input, init)
     }) as typeof fetch
 
     const output = '# Generated Text\n\nReplayable video-agent shot plan.'
@@ -287,10 +277,7 @@ export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhen
     if (outputPath !== '/workspace/demo-text-widget-text-output.md') {
       throw new Error(`expected stable text artifact path, got ${String(outputPath || '')}`)
     }
-    const response = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'workspace/demo-text-widget-text-output.md')}`),
-      env as never,
-    )
+    const response = await storageFetch(buildAgenticGraphStorageDocPath(workspaceId, 'workspace/demo-text-widget-text-output.md'))
     if (!response.ok || await response.text() !== output) {
       throw new Error(`expected generated text artifact to replay from D1, got ${response.status}`)
     }
@@ -307,6 +294,7 @@ export async function testWriteTextWidgetRunOutputArtifactPublishesForReplayWhen
     restoreDom()
     restoreWindow()
   }
+  })
 }
 
 export async function testWriteRichMediaWidgetRunOutputArtifactLandsManifestInSourceFiles() {
@@ -392,6 +380,7 @@ export async function testWriteRichMediaWidgetRunOutputArtifactLandsManifestInSo
 }
 
 export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPublishesManifestWhenRuntimeSyncEnabled() {
+  return withDurableBrowserStorage(async () => {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
@@ -399,13 +388,14 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
   const previousRuntimeSync = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
   const previousBaseUrl = process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL
   const previousWorkspaceId = process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID
-  const env = createFakeAgenticGraphStorageWorkerEnv()
   const workspaceId = 'kgws:test-rich-media-binary-manifest'
   try {
+    const session = await createFakeAgenticGraphStorageBrowserSession(workspaceId, { origin: window.location.origin })
+    const { env, fetch: storageFetch } = session
     resetWorkspaceFsForTests()
     await __resetAgenticGraphStorageDbForTests()
     process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = '1'
-    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = 'https://example.com'
+    process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = window.location.origin
     process.env.VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID = workspaceId
     const fs = createMemoryWorkspaceFs()
     await fs.ensureSeed()
@@ -417,10 +407,7 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
           headers: { 'content-type': 'application/json' },
         })
       }
-      const request = input instanceof Request
-        ? input
-        : new Request(url.startsWith('/api/storage/') ? `https://example.com${url}` : String(input), init)
-      return readStorageWorker().fetch(request, env as never)
+      return storageFetch(input, init)
     }) as typeof fetch
 
     const result = await writeRichMediaWidgetRunOutputArtifact({
@@ -458,18 +445,19 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
     if (env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size !== 1) {
       throw new Error(`expected rich-media output to upload one R2 object, got ${env.AGENTIC_OS_STORAGE_BLOB_BUCKET.objects.size}`)
     }
+    if (env.DB.mediaArtifacts.size !== 1 || Array.from(env.DB.mediaArtifacts.values())[0]?.workspace_id !== workspaceId) {
+      throw new Error('expected the real Worker to persist one workspace-owned media artifact in D1')
+    }
     const manifestText = await fs.readFileText('/workspace/current-image-widget-image-output.md')
     if (!manifestText || !manifestText.includes('| storageUrl | /api/storage/media/') || !manifestText.includes('| storagePublicPath | /api/storage/media/') || !manifestText.includes('| r2ObjectKey |')) {
       throw new Error(`expected rich-media manifest to include R2 storage metadata, got ${String(manifestText || '')}`)
     }
-    const docResponse = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildAgenticGraphStorageDocPath(workspaceId, 'workspace/current-image-widget-image-output.md')}`),
-      env as never,
-    )
-    if (!docResponse.ok) {
-      throw new Error(`expected rich-media manifest to publish to D1, got ${docResponse.status}`)
+    const snapshot = await exportAgenticGraphStorageWorkspace({ workspaceId, baseUrl: session.origin, fetchImpl: storageFetch })
+    const document = snapshot.documents.find(row => row.canonicalPath === 'workspace/current-image-widget-image-output.md')
+    if (!document || document.workspaceId !== workspaceId || document.deleted) {
+      throw new Error('expected rich-media manifest to replay from its authenticated workspace snapshot')
     }
-    const published = await docResponse.text()
+    const published = document.contentMd
     if (!published.includes('storageUrl') || !published.includes('current-image-widget.png')) {
       throw new Error(`expected published rich-media manifest to expose storage URL and binary path, got ${published}`)
     }
@@ -486,4 +474,5 @@ export async function testWriteRichMediaWidgetRunOutputArtifactUploadsR2AndPubli
     restoreDom()
     restoreWindow()
   }
+  })
 }

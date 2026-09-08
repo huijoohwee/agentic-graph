@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { shouldMountThreeCanvasSurface } from '@/lib/three/threeRendererLifecycle'
 import { resolveCanvasViewportHeavyRuntimeIntentSurface } from '@/components/canvasViewportHeavyRuntimeIntent'
 
 export function testCanvasViewportHeavyRuntimeIntentSurfaceResolution() {
@@ -29,14 +30,21 @@ export function testCanvasViewportHeavyRuntimeIntentSurfaceResolution() {
 }
 
 export function testCanvasViewportSourceWiresHeavyRuntimeIntentGate() {
+  for (const blocked of [true, false]) {
+    const mounted = shouldMountThreeCanvasSurface({ sourceFilesBootstrapAdmitted: true,
+      rendererPreviouslyMounted: false, geospatialOverlayOwnsViewport: false,
+      liveCanvasHeroVisible: false, canvasRenderMode: '3d', heavyRuntimeIntentBlocked: blocked })
+    if (mounted === blocked) throw new Error('expected the shared 3D lifecycle to enforce mobile runtime intent')
+  }
   const text = readFileSync(resolve(process.cwd(), 'src/components/CanvasViewport.tsx'), 'utf8')
   for (const snippet of [
     "useMediaQuery('(max-width: 768px), (pointer: coarse)')",
     'resolveCanvasViewportHeavyRuntimeIntentSurface({',
     'data-kg-canvas-heavy-runtime-intent=',
     'data-kg-canvas-heavy-runtime-intent-activate=',
-    "canvasRenderMode === '3d' && !heavyRuntimeIntentBlocked",
-    'geospatialOverlayOwnsViewport && !heavyRuntimeIntentBlocked',
+    'resolveThreeCanvasSurfaceLifecycle({',
+    'heavyRuntimeIntentBlocked, activeSurface, documentSwitchOwnsViewport,',
+    'geospatialCompositionEnabled && !heavyRuntimeIntentBlocked',
   ]) {
     if (!text.includes(snippet)) {
       throw new Error(`expected CanvasViewport to gate heavy mobile runtimes behind explicit intent: ${snippet}`)

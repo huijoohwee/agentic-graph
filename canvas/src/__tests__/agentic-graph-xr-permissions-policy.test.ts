@@ -1,3 +1,4 @@
+import { buildAgentReadyHeaders } from '../../../scripts/pages-mirror-headers.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -127,6 +128,8 @@ export async function testAgenticGraphXrPermissionsPolicyCoversEveryPagesRespons
 export function testAgenticGraphXrPermissionsPolicyMatchesStaticAndIframeDelegation(): void {
   const headersSource = readFileSync(resolve(process.cwd(), 'public/_headers'), 'utf8')
   const syncSource = readFileSync(resolve(process.cwd(), '../scripts/sync-pages-agentic-graph.mjs'), 'utf8')
+  const syncOwnerSource = readFileSync(resolve(process.cwd(), '../scripts/pages-mirror-sync.mjs'), 'utf8')
+  const generatedHeaders = buildAgentReadyHeaders({ existing: '', artifacts: {}, agentReadyHomepageLinkHeaderValue: '', productionRuntimeReadinessHeaderLines: [] })
   const sharedSource = readFileSync(resolve(process.cwd(), '../cloudflare/pages/agentic-graph-agent-ready-shared.mjs'), 'utf8')
   const pagesSource = readFileSync(resolve(process.cwd(), '../cloudflare/pages/agentic-graph-agent-ready.mjs'), 'utf8')
   const viewportSource = readFileSync(resolve(process.cwd(), 'src/components/CanvasViewport.tsx'), 'utf8')
@@ -141,8 +144,11 @@ export function testAgenticGraphXrPermissionsPolicyMatchesStaticAndIframeDelegat
       `${route} must use the canonical policy`,
     )
   }
-  assert.match(syncSource, /'\/agentic-graph\/\*', '\/content\/agentic-graph\/\*'/)
-  assert.equal(syncSource.includes(`const XR_RUNTIME_PERMISSIONS_POLICY = '${AGENTIC_OS_XR_PERMISSIONS_POLICY}'`), true)
+  assert.ok(syncSource.includes('runPagesMirrorSync({') && syncSource.includes("from './pages-mirror-sync.mjs'"))
+  assert.ok(syncOwnerSource.includes('buildAgentReadyHeaders({') && syncOwnerSource.includes("from './pages-mirror-headers.mjs'"))
+  for (const route of ['/agentic-graph/*', '/content/agentic-graph/*']) {
+    assert.ok(generatedHeaders.includes(`${route}\n  ! Permissions-Policy\n  Permissions-Policy: ${AGENTIC_OS_XR_PERMISSIONS_POLICY}`), `generated ${route} must preserve the canonical policy`)
+  }
   assert.match(sharedSource, /new Response\(response\.body, response\)/)
   assert.doesNotMatch(sharedSource, /await response\.(?:arrayBuffer|blob|formData|json|text)\(/)
   assert.match(pagesSource, /withAgenticGraphXrPermissionsPolicy\(await routeRequest\(context\)\)/)

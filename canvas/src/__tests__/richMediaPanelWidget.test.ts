@@ -956,8 +956,6 @@ export function testFlowCanvasUsesConnectedValuesForRichMediaPanelOverlays() {
   const overlayPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetOverlaySurface.tsx')
   const overlayElementsPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetOverlaySurfaceElements.tsx')
   const overlay = `${readFileSync(overlayPath, 'utf8')}\n${readFileSync(overlayElementsPath, 'utf8')}`
-  const dataflowPath = resolve(process.cwd(), 'src', 'lib', 'storyboardWidget', 'flowDataflow.ts')
-  const dataflow = readFileSync(dataflowPath, 'utf8')
   const mediaNodePath = resolve(process.cwd(), 'src', 'lib', 'render', 'effectiveMediaNode.ts')
   const mediaNode = readFileSync(mediaNodePath, 'utf8')
 
@@ -974,17 +972,7 @@ export function testFlowCanvasUsesConnectedValuesForRichMediaPanelOverlays() {
     }
   }
 
-  const requiredCacheSnippets = [
-    'connectedValuesResultCache',
-    'buildConnectedValuesTargetKey',
-    'readConnectedValuesResultCache',
-    'writeConnectedValuesResultCache',
-  ]
-  for (const snippet of requiredCacheSnippets) {
-    if (!dataflow.includes(snippet)) {
-      throw new Error(`expected flow dataflow cache snippet: ${snippet}`)
-    }
-  }
+  // Cache behavior and retention are covered through the native dataflow API in flowConnectedValuesCache.test.ts.
 
   const requiredMediaNodeSnippets = [
     'connectedRenderNodeCacheByNode',
@@ -1034,7 +1022,7 @@ export function testRichMediaPanelCanvasOverlayProxyAttrsAlignWithFlowWidget() {
   const text = readFileSync(filePath, 'utf8')
   const requiredSnippets = [
     `const storyboardWidgetRichMediaOverlayRoot = storyboardWidgetInteractionMode || canvasOverlayProxyEnabled`,
-    `'data-kg-rich-media-overlay': storyboardWidgetRichMediaOverlayRoot ? '1' : undefined`,
+    `'data-kg-rich-media-overlay': storyboardWidgetRichMediaOverlayRoot && props.placementOwner !== 'parent' ? '1' : undefined`,
     `'data-kg-canvas-overlay-pinned': canvasOverlayProxyEnabled ? (props.canvasOverlayPinned === false ? '0' : '1') : undefined`,
     `'data-kg-canvas-wheel-ignore': canvasOverlayProxyEnabled ? 'true' : undefined`,
     `'data-kg-canvas-overlay-drag-handle': installHeaderDrag ? 'true' : undefined`,
@@ -1087,8 +1075,8 @@ export function testFlowCanvasRichMediaOverlayDragHandlersAreRendererScoped() {
     'const resizeInteractionActive = mediaOverlayInteractionPolicy.resizeActive',
     'const richMediaPanelPinAllowsMovement = isFlowWidgetHeaderDragAllowedByPin({',
     'pinnedInCanvas: richMediaPanelPinned',
-    'const richMediaPanelMoveEnabled = headerDragInteractionActive && richMediaPanelPinAllowsMovement',
-    'const richMediaPanelOverlayPanEnabled = overlayInteractionEnabled && richMediaPanelPinAllowsMovement',
+    'const richMediaPanelMoveEnabled = headerDragInteractionActive && (containedByGroupPanel || richMediaPanelPinAllowsMovement)',
+    'const richMediaPanelOverlayPanEnabled = overlayInteractionEnabled && (containedByGroupPanel || richMediaPanelPinAllowsMovement) && !richMediaBodyPanOwnedByCollective',
     'onOverlayPanStart={richMediaPanelOverlayPanEnabled ?',
     'onOverlayPan={richMediaPanelOverlayPanEnabled ?',
     'onOverlayPanEnd={richMediaPanelOverlayPanEnabled ?',

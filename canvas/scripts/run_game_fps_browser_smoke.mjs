@@ -14,6 +14,7 @@ async function run() {
     verifierArgs: ['scripts/verify_game_fps_browser_smoke.py'],
     verifierFailureLabel: 'Game FPS browser smoke',
     prepareBeforeStart: false,
+    existingServerPolicy: 'forbid',
     devServerStartMode: 'vite-runner',
   })
 }
