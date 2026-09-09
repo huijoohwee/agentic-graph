@@ -6745,7 +6745,7 @@ export default defineConfig(({ command, mode }) => {
       { find: /^react-dom$/, replacement: resolvedReactDom },
       { find: /^three$/, replacement: resolvedThreeSrc },
       { find: /^d3$/, replacement: resolvedD3Entry },
-      { find: /^maplibre-gl$/, replacement: resolvedMaplibreEntry },
+      { find: /^maplibre-gl(?:\/dist\/maplibre-gl\.js)?$/, replacement: resolvedMaplibreEntry },
       { find: /^zustand$/, replacement: resolvedZustandCompatEntry },
       { find: /^gympgrph$/, replacement: resolvedGympgrphSrc },
       { find: /^gympgrph\/map-preview$/, replacement: resolvedGympgrphMapPreviewSrc },
