@@ -102,16 +102,18 @@ export const LEGACY_MIRROR_NAMED_FILE_PATHS = Object.freeze([
   '.well-known/agent-skills/agenticgraph-webmcp-readiness.md',
 ])
 
+// Refreshed for protected mirror PR #62, b7b6c39ce0b5844a43042026a910f7552477c8ff.
+// Only docs/agenticgraph-agentic-os-demo.md changed within these sealed paths.
 export const LEGACY_MIRROR_EXACT_FILE_INVENTORY = Object.freeze({
   count: 23,
-  contentDigest: '74c8327b0f202e113f18de103691d639c24b994575e2021d340574ac22c62c2f',
+  contentDigest: '6a6d199c005128666b721a983f2c733a9cba2ebb84669e42ed39ba3b9a370da1',
 })
 
 // Git inventories exclude ignored live-only files while preserving the live
 // 23-file seal above for filesystem cleanup.
 export const LEGACY_MIRROR_TRACKED_EXACT_FILE_INVENTORY = Object.freeze({
   count: 22,
-  contentDigest: '047c6fa93138261ec94020cdf032414442feaa128cdd42c3e7c25dea823945b8',
+  contentDigest: '602db438f63b1c96b6f859b3476e852696a5882dd3adfb4a6c466bf226633756',
 })
 
 export const LEGACY_MIRROR_NAMED_FILE_INVENTORY = Object.freeze({
