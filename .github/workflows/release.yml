@@ -20,35 +20,25 @@ jobs:
     outputs: { docs_repository: '${{ steps.agentic_canvas_os_docs.outputs.repository }}', docs_revision: '${{ steps.agentic_canvas_os_docs.outputs.ref }}', manifest_digest: '${{ steps.immutable_manifest.outputs.digest }}', mirror_revision: '${{ steps.mirror_revision.outputs.revision }}', candidate_digest: '${{ steps.production_candidate.outputs.candidate_digest }}', lifecycle_candidate_digest: '${{ steps.lifecycle_candidate.outputs.candidate_digest }}' }
     env: { NODE_OPTIONS: '--max-old-space-size=4096', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs' }
     steps:
-      - name: Checkout exact protected main commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 2 }
+      - { name: Checkout exact protected main commit, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 2 } }
       - name: Verify checked-out commit
         working-directory: agentic-graph
         run: |
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
-      - name: Checkout production mirror
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { repository: huijoohwee/huijoohwee, path: huijoohwee }
+      - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, path: huijoohwee } }
       - name: Capture production mirror base revision
         id: mirror_revision
         working-directory: huijoohwee
         run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Checkout schema mirror
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { repository: huijoohwee/huijoohwee.github.io, path: huijoohwee.github.io }
+      - { name: Checkout schema mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee.github.io, path: huijoohwee.github.io } }
       - name: Capture execution guideline revision
         id: guideline_revision
         working-directory: huijoohwee.github.io
         run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" }
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with: { python-version: '3.11' }
+      - { name: Setup Node, uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" } }
+      - { name: Setup Python, uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 , with: { python-version: '3.11' } }
       - name: Install dependencies
         working-directory: agentic-graph
         run: bash ./scripts/install-production-release-dependencies.sh
@@ -56,7 +46,7 @@ jobs:
         working-directory: agentic-graph
         run: |
           node ./scripts/travel-mesh-release.mjs validate
-          node --test ./scripts/__tests__/travel-mesh-release.test.mjs
+          node --test ./scripts/__tests__/core-runtime-release.test.mjs ./scripts/__tests__/travel-mesh-release.test.mjs
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
         working-directory: agentic-graph
@@ -99,9 +89,7 @@ jobs:
         run: |
           test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ steps.agentic_canvas_os_docs.outputs.ref }}"
           npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest.json" --source-sha "$RELEASE_SHA" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
-      - name: Upload immutable release manifest
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with: { name: 'immutable-release-manifest-${{ inputs.source_sha }}', path: '${{ runner.temp }}/immutable-release-manifest.json', if-no-files-found: error, retention-days: 1 }
+      - { name: Upload immutable release manifest, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'immutable-release-manifest-${{ inputs.source_sha }}', path: '${{ runner.temp }}/immutable-release-manifest.json', if-no-files-found: error, retention-days: 1 } }
       - name: Reverify exact candidate
         working-directory: agentic-graph
         run: npm run ci:integration
@@ -140,15 +128,9 @@ jobs:
             echo "- Neutral candidate receipt: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/candidate-manifest.json")\`"
             echo "- Guideline policy: \`${{ steps.guideline_revision.outputs.revision }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload production authorization evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with: { name: 'production-authorization-${{ inputs.source_sha }}', path: "${{ runner.temp }}/local-review-candidate.json\n${{ runner.temp }}/release-evidence.json\n${{ runner.temp }}/production-release-candidate.json", if-no-files-found: error, retention-days: 1 }
-      - name: Persist pre-authorization lifecycle receipts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with: { name: 'production-lifecycle-${{ inputs.source_sha }}-${{ github.run_id }}', path: '${{ runner.temp }}/production-lifecycle', if-no-files-found: error, retention-days: 90 }
-      - name: Upload verified release artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with: { name: 'production-${{ inputs.source_sha }}', path: "huijoohwee/404.html\nhuijoohwee/README.md\nhuijoohwee/content/agentic-graph\nhuijoohwee/agentic-graph\nhuijoohwee/image/agentic-graph\nhuijoohwee/functions\nhuijoohwee/canvas\nhuijoohwee/contracts\nhuijoohwee/grph-shared\nhuijoohwee/_worker.js\nhuijoohwee/_routes.json\nhuijoohwee/_headers\nhuijoohwee/_redirects\nhuijoohwee/.well-known/runtime-readiness.json\nhuijoohwee/.agentic-graph-production-artifact-manifest.json", if-no-files-found: error, include-hidden-files: true, retention-days: 1 }
+      - { name: Upload production authorization evidence, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'production-authorization-${{ inputs.source_sha }}', path: "${{ runner.temp }}/local-review-candidate.json\n${{ runner.temp }}/release-evidence.json\n${{ runner.temp }}/production-release-candidate.json", if-no-files-found: error, retention-days: 1 } }
+      - { name: Persist pre-authorization lifecycle receipts, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'production-lifecycle-${{ inputs.source_sha }}-${{ github.run_id }}', path: '${{ runner.temp }}/production-lifecycle', if-no-files-found: error, retention-days: 90 } }
+      - { name: Upload verified release artifact, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'production-${{ inputs.source_sha }}', path: "huijoohwee/404.html\nhuijoohwee/README.md\nhuijoohwee/content/agentic-graph\nhuijoohwee/agentic-graph\nhuijoohwee/image/agentic-graph\nhuijoohwee/functions\nhuijoohwee/canvas\nhuijoohwee/contracts\nhuijoohwee/grph-shared\nhuijoohwee/_worker.js\nhuijoohwee/_routes.json\nhuijoohwee/_headers\nhuijoohwee/_redirects\nhuijoohwee/.well-known/runtime-readiness.json\nhuijoohwee/.agentic-graph-production-artifact-manifest.json", if-no-files-found: error, include-hidden-files: true, retention-days: 1 } }
   deploy:
     name: Human-Authorized Deploy, Verify, And Publish Mirror
     needs: verify
@@ -159,30 +141,18 @@ jobs:
       url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
     env: { CLOUDFLARE_PAGES_PROJECT: '${{ vars.CLOUDFLARE_PAGES_PROJECT }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs', RELEASE_SHA: '${{ inputs.source_sha }}', PRODUCTION_CANDIDATE_DIGEST: '${{ needs.verify.outputs.candidate_digest }}', PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST: '${{ needs.verify.outputs.lifecycle_candidate_digest }}' }
     steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 1 }
-      - name: Checkout production mirror
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.verify.outputs.mirror_revision }}', path: huijoohwee, token: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}' }
-      - name: Checkout exact Agentic Canvas OS docs SSOT
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-canvas-os }
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" }
+      - { name: Checkout exact candidate, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 1 } }
+      - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.verify.outputs.mirror_revision }}', path: huijoohwee, token: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}' } }
+      - { name: Checkout exact Agentic Canvas OS docs SSOT, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-canvas-os } }
+      - { name: Setup Node, uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" } }
       - name: Install dependencies
         working-directory: agentic-graph
         run: bash ./scripts/install-production-release-dependencies.sh
-      - name: Download verified artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with: { name: 'production-${{ inputs.source_sha }}', path: '${{ runner.temp }}/production-mirror-artifact' }
+      - { name: Download verified artifacts, uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c , with: { name: 'production-${{ inputs.source_sha }}', path: '${{ runner.temp }}/production-mirror-artifact' } }
       - name: Reconcile verified artifact into exact mirror base
         working-directory: agentic-graph
         run: npm run --silent production:mirror-artifact:reconcile -- "$RUNNER_TEMP/production-mirror-artifact" "$GITHUB_WORKSPACE/huijoohwee"
-      - name: Download immutable manifest
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with: { name: 'immutable-release-manifest-${{ inputs.source_sha }}', path: '${{ runner.temp }}/immutable-release-manifest-proof' }
+      - { name: Download immutable manifest, uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c , with: { name: 'immutable-release-manifest-${{ inputs.source_sha }}', path: '${{ runner.temp }}/immutable-release-manifest-proof' } }
       - name: Download production authorization evidence
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with: { name: 'production-authorization-${{ inputs.source_sha }}', path: '${{ runner.temp }}/production-authorization' }
@@ -229,13 +199,19 @@ jobs:
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           npm run --silent runtime:pages:owner-enforce
+      - name: Select reviewed production runtime profile
+        id: runtime_profile
+        working-directory: agentic-graph
+        run: node ./scripts/travel-mesh-release.mjs validate --github-output
       - name: Require completed travel mesh bootstrap before Pages
+        if: steps.runtime_profile.outputs.requires_travel_bootstrap == 'true'
         env: { TRAVEL_MESH_RELEASE_ENABLED: '${{ vars.TRAVEL_MESH_RELEASE_ENABLED }}', TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON: '${{ vars.TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON }}' }
         run: test "$TRAVEL_MESH_RELEASE_ENABLED" = true && test -n "$TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON" && printf '%s' "$TRAVEL_MESH_BOOTSTRAP_RECEIPT_JSON" > "$RUNNER_TEMP/travel-mesh-bootstrap-receipt.json" && cd agentic-graph && node ./scripts/travel-mesh-bootstrap.mjs verify --receipt="$RUNNER_TEMP/travel-mesh-bootstrap-receipt.json"
       - name: Preflight protected travel mesh without mutation
         id: travel_mesh_preflight
         working-directory: agentic-graph
         env: &travel_mesh_environment {
+          AGENTIC_OS_PUBLIC_ZONE_ID: '${{ vars.AGENTIC_OS_PUBLIC_ZONE_ID }}', AGENTIC_OS_PUBLIC_ZONE_NAME: airvio.co, AGENTIC_OS_STORAGE_D1_DATABASE_NAME: '${{ vars.AGENTIC_OS_STORAGE_D1_DATABASE_NAME }}', AGENTIC_OS_STORAGE_D1_DATABASE_ID: 633355bf-1a52-4085-bd3c-eba4220ff152, AGENTIC_OS_STORAGE_R2_BUCKET: '${{ vars.AGENTIC_OS_STORAGE_R2_BUCKET }}', AGENTIC_OS_STORAGE_OWNER_ID: '${{ vars.AGENTIC_OS_STORAGE_OWNER_ID }}', AGENTIC_OS_STORAGE_OWNER_EMAIL: '${{ vars.AGENTIC_OS_STORAGE_OWNER_EMAIL }}', AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID: '${{ vars.AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID }}', AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT: '${{ vars.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT }}', AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY: '${{ secrets.AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY }}',
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', MARKETPLACE_SERVICE: agentic-marketplace-production, CHECKOUT_PROVIDER_AUTH_SECRET: '${{ secrets.CHECKOUT_PROVIDER_AUTH_SECRET }}', MARKETPLACE_PROVIDER_AUTH_SECRET: '${{ secrets.MARKETPLACE_PROVIDER_AUTH_SECRET }}', AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN: '${{ secrets.AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN }}', AGENTIC_OS_MCP_TOOL_LIST_NAME: '${{ vars.AGENTIC_OS_MCP_TOOL_LIST_NAME }}', AGENTIC_OS_MEDIA_BUCKET: '${{ vars.AGENTIC_OS_MEDIA_BUCKET }}', AGENTIC_OS_MEDIA_R2_BUCKET: '${{ vars.AGENTIC_OS_MEDIA_R2_BUCKET }}', AGENTIC_OS_STORAGE_SIGNING_SECRET: '${{ secrets.AGENTIC_OS_STORAGE_SIGNING_SECRET }}', SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON: '${{ secrets.SHARED_NODE_TRAVEL_BUNDLE_MAP_JSON }}',
           TRAVEL_ACCESS_AUDIENCE: '${{ vars.TRAVEL_ACCESS_AUDIENCE }}', TRAVEL_ACCESS_CLIENT_ID: '${{ secrets.TRAVEL_ACCESS_CLIENT_ID }}', TRAVEL_ACCESS_CLIENT_SECRET: '${{ secrets.TRAVEL_ACCESS_CLIENT_SECRET }}', TRAVEL_ACCESS_ISSUER: '${{ vars.TRAVEL_ACCESS_ISSUER }}', TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_AGENT_DEFINITION_CACHE_KV_NAMESPACE_ID }}', TRAVEL_ATLAS_API_BASE_URL: '${{ secrets.TRAVEL_ATLAS_API_BASE_URL }}', TRAVEL_ATLAS_CLIENT_ID: '${{ secrets.TRAVEL_ATLAS_CLIENT_ID }}', TRAVEL_ATLAS_CLIENT_SECRET: '${{ secrets.TRAVEL_ATLAS_CLIENT_SECRET }}', TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON: '${{ secrets.TRAVEL_ATLAS_ROUTE_CATALOGUE_JSON }}', TRAVEL_ATLAS_SEARCH_PATH: '${{ secrets.TRAVEL_ATLAS_SEARCH_PATH }}', TRAVEL_ATLAS_VERIFY_PATH: '${{ secrets.TRAVEL_ATLAS_VERIFY_PATH }}',
           TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID: '${{ vars.TRAVEL_BALANCE_CACHE_KV_NAMESPACE_ID }}', TRAVEL_COMMERCE_API_TOKEN: '${{ secrets.TRAVEL_COMMERCE_API_TOKEN }}', TRAVEL_COMMERCE_SERVICE: agentic-travel-commerce-production, TRAVEL_EXPERIENCE_DISCOVERY_SERVICE: agentic-travel-experience-discovery-production, TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN: '${{ secrets.TRAVEL_EXPERIENCE_PROVIDER_API_TOKEN }}', TRAVEL_EXPERIENCE_PROVIDER_BASE_URL: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_BASE_URL }}', TRAVEL_EXPERIENCE_PROVIDER_ID: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_ID }}', TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_SEARCH_PATH }}', TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH: '${{ vars.TRAVEL_EXPERIENCE_PROVIDER_VERIFY_PATH }}', TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON: '${{ vars.TRAVEL_EXPERIENCE_ROUTE_CATALOGUE_JSON }}',
@@ -254,11 +230,7 @@ jobs:
         id: deploy_pages
         continue-on-error: true
         working-directory: agentic-graph
-        env:
-          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
-          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
-          WRANGLER_OUTPUT_FILE_PATH: '${{ runner.temp }}/wrangler-pages-deploy.ndjson'
-          PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}'
+        env: { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', WRANGLER_OUTPUT_FILE_PATH: '${{ runner.temp }}/wrangler-pages-deploy.ndjson', PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}' }
         run: |
           printf '%s\n' deployment > "$RUNNER_TEMP/release-stage.txt"
           printf '%s\n' attempted=false mutation_possible=false >> "$GITHUB_OUTPUT"
@@ -281,12 +253,8 @@ jobs:
         id: deployment_authority
         if: always() && steps.deploy_pages.outputs.attempted == 'true'
         working-directory: agentic-graph
-        env:
-          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
-          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
-          PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}'
-        run: |
-          node ./scripts/verify-production-release-transports.mjs pages --mode candidate --evidence-dir "$RUNNER_TEMP" --previous-deployment-id "$PREVIOUS_DEPLOYMENT_ID" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --attempt "$RUNNER_TEMP/pages-deployment-attempt.json" --wrangler-output "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" --reconciliation-output "$RUNNER_TEMP/pages-mutation-reconciliation.json" --output "$RUNNER_TEMP/candidate-pages-deployment.json" --github-output
+        env: { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}' }
+        run: node ./scripts/verify-production-release-transports.mjs pages --mode candidate --evidence-dir "$RUNNER_TEMP" --previous-deployment-id "$PREVIOUS_DEPLOYMENT_ID" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --attempt "$RUNNER_TEMP/pages-deployment-attempt.json" --wrangler-output "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" --reconciliation-output "$RUNNER_TEMP/pages-mutation-reconciliation.json" --output "$RUNNER_TEMP/candidate-pages-deployment.json" --github-output
       - name: Record exact Pages deployment receipt
         id: deployment_receipt
         if: always() && steps.deployment_authority.outputs.mutation_proven == 'true'
@@ -297,11 +265,7 @@ jobs:
       - name: Require an exact successful deployment attempt
         id: deployment_gate
         if: always()
-        env:
-          DEPLOY_ATTEMPTED: '${{ steps.deploy_pages.outputs.attempted }}'
-          MUTATION_PROVEN: '${{ steps.deployment_authority.outputs.mutation_proven }}'
-          DEPLOYMENT_RECEIPT_OUTCOME: '${{ steps.deployment_receipt.outcome }}'
-          DEPLOY_PROCESS_OUTCOME: '${{ steps.deploy_pages.outcome }}'
+        env: { DEPLOY_ATTEMPTED: '${{ steps.deploy_pages.outputs.attempted }}', MUTATION_PROVEN: '${{ steps.deployment_authority.outputs.mutation_proven }}', DEPLOYMENT_RECEIPT_OUTCOME: '${{ steps.deployment_receipt.outcome }}', DEPLOY_PROCESS_OUTCOME: '${{ steps.deploy_pages.outcome }}' }
         run: |
           test "$DEPLOY_ATTEMPTED" = true
           test "$MUTATION_PROVEN" = true
@@ -331,15 +295,11 @@ jobs:
       - name: Record direct D1 state reconciliation receipt
         id: state_receipt
         working-directory: agentic-graph
-        run: |
-          npm run --silent release:lifecycle:receipts -- state --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --state-evidence "$RUNNER_TEMP/d1-reconciliation-evidence.json" --issued-at "$(jq -r .reconciledAt "$RUNNER_TEMP/d1-reconciliation-evidence.json")" --output-dir "$RUNNER_TEMP/production-lifecycle"
+        run: npm run --silent release:lifecycle:receipts -- state --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --state-evidence "$RUNNER_TEMP/d1-reconciliation-evidence.json" --issued-at "$(jq -r .reconciledAt "$RUNNER_TEMP/d1-reconciliation-evidence.json")" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Verify live runtime
         id: immutable_smoke
         working-directory: agentic-graph
         env:
-          # GitHub-hosted runners can receive a custom-domain edge challenge.
-          # The immutable Pages origin serves the same candidate while the
-          # smoke assertions continue to require canonical airvio.co metadata.
           AGENTIC_OS_AGENT_READY_BASE_URL: ${{ steps.deployment_authority.outputs.deployment_url }}
         run: |
           printf '%s\n' live-verification > "$RUNNER_TEMP/release-stage.txt"
@@ -356,8 +316,7 @@ jobs:
       - name: Verify public custom-domain runtime
         id: public_smoke
         working-directory: agentic-graph
-        env:
-          AGENTIC_OS_AGENT_READY_BASE_URL: https://airvio.co
+        env: { AGENTIC_OS_AGENT_READY_BASE_URL: https://airvio.co }
         run: |
           set -o pipefail
           ./.github/workflows/smoke-test.sh | tee "$RUNNER_TEMP/public-route-smoke.log"
@@ -393,16 +352,12 @@ jobs:
       - name: Verify immutable and public production transports
         id: production_transports
         working-directory: agentic-graph
-        env:
-          CANDIDATE_DEPLOYMENT_URL: '${{ steps.deployment_authority.outputs.deployment_url }}'
-          IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}'
-        run: |
-          node ./scripts/verify-production-release-transports.mjs --immutable-origin "$CANDIDATE_DEPLOYMENT_URL" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RELEASE_SHA" --manifest-digest "$IMMUTABLE_MANIFEST_DIGEST" --immutable-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/public-route-smoke.log" --output "$RUNNER_TEMP/production-transport-evidence.json" --github-output
+        env: { CANDIDATE_DEPLOYMENT_URL: '${{ steps.deployment_authority.outputs.deployment_url }}', IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}' }
+        run: node ./scripts/verify-production-release-transports.mjs --immutable-origin "$CANDIDATE_DEPLOYMENT_URL" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RELEASE_SHA" --manifest-digest "$IMMUTABLE_MANIFEST_DIGEST" --immutable-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/public-route-smoke.log" --output "$RUNNER_TEMP/production-transport-evidence.json" --github-output
       - name: Record live verification receipt
         id: live_receipt
         working-directory: agentic-graph
-        run: |
-          npm run --silent release:lifecycle:receipts -- live --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --source-sha "$RELEASE_SHA" --immutable-origin-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --public-route-probes "$RUNNER_TEMP/production-transport-evidence.json" --browser-fidelity "$RUNNER_TEMP/production-fidelity-evidence.json" --client-cache-convergence "$RUNNER_TEMP/production-sw-convergence-evidence.json" --marker-parity "$RUNNER_TEMP/production-transport-evidence.json" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
+        run: npm run --silent release:lifecycle:receipts -- live --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --source-sha "$RELEASE_SHA" --immutable-origin-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --public-route-probes "$RUNNER_TEMP/production-transport-evidence.json" --browser-fidelity "$RUNNER_TEMP/production-fidelity-evidence.json" --client-cache-convergence "$RUNNER_TEMP/production-sw-convergence-evidence.json" --marker-parity "$RUNNER_TEMP/production-transport-evidence.json" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Publish verified production mirror
         id: publish_mirror
         working-directory: huijoohwee
@@ -453,8 +408,7 @@ jobs:
       - name: Record publication receipt
         id: publication_receipt
         working-directory: agentic-graph
-        run: |
-          npm run --silent release:lifecycle:receipts -- publish --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --publication-revision "$(git -C ../huijoohwee rev-parse HEAD)" --publication-target "huijoohwee/huijoohwee" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
+        run: npm run --silent release:lifecycle:receipts -- publish --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --publication-revision "$(git -C ../huijoohwee rev-parse HEAD)" --publication-target "huijoohwee/huijoohwee" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Seal and validate terminal lifecycle carrier
         id: lifecycle_terminal
         working-directory: agentic-graph
@@ -471,10 +425,7 @@ jobs:
       - name: Capture successful release rollback target
         id: successful_release_recapture
         working-directory: agentic-graph
-        env:
-          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
-          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
-          DOCS_REVISION: '${{ needs.verify.outputs.docs_revision }}'
+        env: { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', DOCS_REVISION: '${{ needs.verify.outputs.docs_revision }}' }
         run: |
           round_one="$RUNNER_TEMP/production-lifecycle/successful-release-round-one"
           round_two="$RUNNER_TEMP/production-lifecycle/successful-release-round-two"
@@ -490,12 +441,7 @@ jobs:
           npm run --silent release:lifecycle:receipts -- recapture-successful-release --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "$DOCS_REVISION" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" --first-pages-observation "$round_one/pages.json" --first-state-evidence "$round_one/state.json" --first-mirror-observation "$round_one/mirror.json" --second-pages-observation "$round_two/pages.json" --second-state-evidence "$round_two/state.json" --second-mirror-observation "$round_two/mirror.json" --assembled-at "$assembled_at" --output "$RUNNER_TEMP/current-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/current-production-rollback-identity-digest.txt" --github-output
       - name: Validate successful release rollback outputs
         working-directory: agentic-graph
-        env:
-          ROLLBACK_RECAPTURE_PATH: '${{ steps.successful_release_recapture.outputs.rollback_recapture_path }}'
-          ROLLBACK_TARGET_DIGEST: '${{ steps.successful_release_recapture.outputs.rollback_target_digest }}'
-          EXPECTED_RECAPTURE_PATH: '${{ runner.temp }}/current-production-rollback-recapture.json'
-          ROLLBACK_IDENTITY_DIGEST_PATH: '${{ runner.temp }}/current-production-rollback-identity-digest.txt'
-          ASSEMBLED_AT_PATH: '${{ runner.temp }}/production-lifecycle/successful-release-assembled-at.txt'
+        env: { ROLLBACK_RECAPTURE_PATH: '${{ steps.successful_release_recapture.outputs.rollback_recapture_path }}', ROLLBACK_TARGET_DIGEST: '${{ steps.successful_release_recapture.outputs.rollback_target_digest }}', EXPECTED_RECAPTURE_PATH: '${{ runner.temp }}/current-production-rollback-recapture.json', ROLLBACK_IDENTITY_DIGEST_PATH: '${{ runner.temp }}/current-production-rollback-identity-digest.txt', ASSEMBLED_AT_PATH: '${{ runner.temp }}/production-lifecycle/successful-release-assembled-at.txt' }
         run: |
           test "$ROLLBACK_RECAPTURE_PATH" = "$EXPECTED_RECAPTURE_PATH"
           test -f "$ROLLBACK_RECAPTURE_PATH"
@@ -521,14 +467,12 @@ jobs:
         env:
           RELEASE_STEP_CONTEXT: ${{ toJSON(steps) }}
         working-directory: agentic-graph
-        run: |
-          node ./scripts/verify-production-release-transports.mjs failure --stage-file "$RUNNER_TEMP/release-stage.txt" --step-context "$RELEASE_STEP_CONTEXT" --detail-output "$RUNNER_TEMP/release-failure-detail.json" --output "$RUNNER_TEMP/release-failure-observation.json"
+        run: node ./scripts/verify-production-release-transports.mjs failure --stage-file "$RUNNER_TEMP/release-stage.txt" --step-context "$RELEASE_STEP_CONTEXT" --detail-output "$RUNNER_TEMP/release-failure-detail.json" --output "$RUNNER_TEMP/release-failure-observation.json"
       - name: Determine pre-publication rollback eligibility
         id: rollback_eligibility
         if: always() && failure() && steps.deployment_authority.outputs.mutation_proven == 'true' && steps.publish_mirror.outputs.publication_attempted != 'true' && steps.publish_mirror.outputs.publication_committed != 'true'
         working-directory: agentic-graph
-        run: |
-          node ./scripts/verify-production-release-transports.mjs mirror --repository-root "$GITHUB_WORKSPACE/huijoohwee" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --output "$RUNNER_TEMP/observed-mirror-identity.json" --github-output
+        run: node ./scripts/verify-production-release-transports.mjs mirror --repository-root "$GITHUB_WORKSPACE/huijoohwee" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --output "$RUNNER_TEMP/observed-mirror-identity.json" --github-output
       - name: Preserve deployed state after publication boundary
         if: always() && failure() && steps.deploy_pages.outputs.mutation_possible == 'true' && (steps.deployment_authority.outputs.mutation_proven != 'true' || steps.rollback_eligibility.outputs.eligible != 'true')
         run: |
@@ -572,10 +516,7 @@ jobs:
         id: rollback_pages
         if: always() && steps.checkout_rollback_docs.outcome == 'success'
         working-directory: agentic-graph
-        env:
-          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
-          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
-          PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}'
+        env: { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', PREVIOUS_DEPLOYMENT_ID: '${{ steps.previous.outputs.deployment_id }}' }
         run: npm run --silent runtime:pages:rollback -- --deployment-id "$PREVIOUS_DEPLOYMENT_ID"
       - name: Restore and reconcile last-known-good D1 state
         id: rollback_state
@@ -594,8 +535,7 @@ jobs:
         if: always() && steps.rollback_state.outcome == 'success'
         working-directory: agentic-graph
         env: *cloudflare_release_environment
-        run: |
-          node ./scripts/verify-production-release-transports.mjs pages --mode restored --evidence-dir "$RUNNER_TEMP" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --output "$RUNNER_TEMP/restored-pages-evidence.json" --github-output
+        run: node ./scripts/verify-production-release-transports.mjs pages --mode restored --evidence-dir "$RUNNER_TEMP" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --output "$RUNNER_TEMP/restored-pages-evidence.json" --github-output
       - name: Verify restored immutable Pages runtime
         id: restored_immutable_smoke
         if: always() && steps.restored_pages.outcome == 'success'
@@ -618,8 +558,7 @@ jobs:
         id: restored_public_smoke
         if: always() && steps.restored_pages.outcome == 'success'
         working-directory: rollback-agentic-graph
-        env:
-          AGENTIC_OS_AGENT_READY_BASE_URL: https://airvio.co
+        env: { AGENTIC_OS_AGENT_READY_BASE_URL: https://airvio.co }
         run: |
           set -o pipefail
           ./.github/workflows/smoke-test.sh | tee "$RUNNER_TEMP/restored-public-route-smoke.log"
@@ -627,12 +566,8 @@ jobs:
         id: restored_transports
         if: always() && steps.restored_immutable_smoke.outcome == 'success' && steps.restored_stable_smoke.outcome == 'success' && steps.restored_public_smoke.outcome == 'success'
         working-directory: agentic-graph
-        env:
-          RESTORED_DEPLOYMENT_URL: '${{ steps.restored_pages.outputs.deployment_url }}'
-          RESTORED_SOURCE_REVISION: '${{ steps.restored_pages.outputs.source_revision }}'
-          RESTORED_MANIFEST_DIGEST: '${{ steps.restored_pages.outputs.manifest_digest }}'
-        run: |
-          node ./scripts/verify-production-release-transports.mjs --immutable-origin "$RESTORED_DEPLOYMENT_URL" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RESTORED_SOURCE_REVISION" --manifest-digest "$RESTORED_MANIFEST_DIGEST" --immutable-smoke "$RUNNER_TEMP/restored-immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/restored-stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/restored-public-route-smoke.log" --output "$RUNNER_TEMP/restored-transport-evidence.json"
+        env: { RESTORED_DEPLOYMENT_URL: '${{ steps.restored_pages.outputs.deployment_url }}', RESTORED_SOURCE_REVISION: '${{ steps.restored_pages.outputs.source_revision }}', RESTORED_MANIFEST_DIGEST: '${{ steps.restored_pages.outputs.manifest_digest }}' }
+        run: node ./scripts/verify-production-release-transports.mjs --immutable-origin "$RESTORED_DEPLOYMENT_URL" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RESTORED_SOURCE_REVISION" --manifest-digest "$RESTORED_MANIFEST_DIGEST" --immutable-smoke "$RUNNER_TEMP/restored-immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/restored-stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/restored-public-route-smoke.log" --output "$RUNNER_TEMP/restored-transport-evidence.json"
       - name: Seal and validate rolled-back lifecycle carrier
         id: rollback_terminal
         if: >-

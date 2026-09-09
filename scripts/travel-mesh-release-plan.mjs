@@ -560,7 +560,7 @@ export const releaseConfigFile = (entry, configuration) => {
   const sourcePath = path.resolve(repoRoot, entry.config)
   let source = fs.readFileSync(sourcePath, 'utf8')
   for (const [, envName, expected] of entry.serviceTargets) source = replaceRequired(source, expected, configuration.variables[envName], `${entry.id} service target`)
-  if (entry.protectZone) source = replaceRequired(source, 'airvio.co', configuration.variables.TRAVEL_PUBLIC_ZONE_NAME, `${entry.id} zone`)
+  if (entry.protectZone) source = replaceRequired(source, 'airvio.co', configuration.variables[entry.zoneVariable ?? 'TRAVEL_PUBLIC_ZONE_NAME'], `${entry.id} zone`)
   if (entry.id === 'mcp') {
     source = replaceRequired(source, '[vars]', `[vars]\nAGENTIC_OS_MEDIA_BUCKET = "${configuration.variables.AGENTIC_OS_MEDIA_BUCKET}"`, 'MCP shared media bucket variable', false)
     source = replaceRequired(source, 'binding = "TRAVEL_AGENT_DEFINITION_CACHE"',
@@ -576,11 +576,12 @@ export const releaseConfigFile = (entry, configuration) => {
       `{ "binding": "PROVENANCE_ARCHIVE", "bucket_name": "${configuration.variables.TRAVEL_PROVENANCE_ARCHIVE_R2_BUCKET}" }`, 'travel provenance R2')
   }
   if (entry.id === 'storage') {
+    const [databaseName, databaseId, bucketName] = entry.storageVariables ?? ['TRAVEL_STORAGE_D1_DATABASE_NAME', 'TRAVEL_STORAGE_D1_DATABASE_ID', 'TRAVEL_STORAGE_R2_BUCKET']
     if (!/^workers_dev = false$/m.test(source) || !/^preview_urls = false$/m.test(source)
       || /^workers_dev = true$/m.test(source) || /^preview_urls = true$/m.test(source)) throw new Error('storage public subdomain policy is not fail-closed')
-    source = replaceRequired(source, 'database_name = "agentic-storage"', `database_name = "${configuration.variables.TRAVEL_STORAGE_D1_DATABASE_NAME}"`, 'storage D1 name')
-    source = replaceRequired(source, 'database_id = "633355bf-1a52-4085-bd3c-eba4220ff152"', `database_id = "${configuration.variables.TRAVEL_STORAGE_D1_DATABASE_ID}"`, 'storage D1 ID')
-    source = replaceRequired(source, 'bucket_name = "agentic-storage-blobs"', `bucket_name = "${configuration.variables.TRAVEL_STORAGE_R2_BUCKET}"`, 'storage R2')
+    source = replaceRequired(source, 'database_name = "agentic-storage"', `database_name = "${configuration.variables[databaseName]}"`, 'storage D1 name')
+    source = replaceRequired(source, 'database_id = "633355bf-1a52-4085-bd3c-eba4220ff152"', `database_id = "${configuration.variables[databaseId]}"`, 'storage D1 ID')
+    source = replaceRequired(source, 'bucket_name = "agentic-storage-blobs"', `bucket_name = "${configuration.variables[bucketName]}"`, 'storage R2')
   }
   const extension = path.extname(sourcePath)
   const file = path.join(path.dirname(sourcePath), `wrangler.release-${entry.id}-${crypto.randomUUID()}${extension}`)

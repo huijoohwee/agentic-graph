@@ -6,18 +6,18 @@ import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import {
-  DIGEST, D1_MIGRATION, HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS, SENTINEL, SHA, TRAVEL_MESH_PLAN, digest,
-  bindCommerceProviderReleaseMetadata, releaseConfigFile, removeEphemeralFile, repoRoot, requireText, seal,
-  validatePlan, validateProtectedConfiguration,
+  DIGEST, D1_MIGRATION, HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS, SENTINEL, SHA, digest,
+  releaseConfigFile, removeEphemeralFile, repoRoot, requireText, seal,
 } from './travel-mesh-release-plan.mjs'
 import {
-  assertMeshSubdomainsDisabled, assertWorkerSubdomainDisabled, isCloudflareAccessFailure, parseR2BucketNames,
-  resourceReadiness, validateRouteInventory,
+  assertWorkerSubdomainDisabled, isCloudflareAccessFailure, parseR2BucketNames,
+  validateRouteInventory,
 } from './travel-mesh-release-inventory.mjs'
 import {
   assertReleaseConfigPreservesBaseline, bindingInventory, secretBindingNames, verifyCandidateVersion,
 } from './travel-mesh-release-bindings.mjs'
 import { probeMesh } from './travel-mesh-release-probes.mjs'
+import { CORE_RUNTIME_PROFILE, TRAVEL_RUNTIME_PROFILE, readRuntimeProfile } from './runtime-release-profile.mjs'
 
 export { parseR2BucketNames, validateRouteInventory }
 export { verifyCandidateVersion } from './travel-mesh-release-bindings.mjs'
@@ -131,9 +131,9 @@ const dryRunUnit = async ({ entry, configuration, environment, run, sourceSha, c
   }
 }
 
-const remoteReadiness = async (run, environment, apiFetch = fetch) => {
+const remoteReadiness = async (run, environment, apiFetch, profile) => {
   const snapshots = new Map(), failures = [], evidence = {}
-  for (const entry of TRAVEL_MESH_PLAN) {
+  for (const entry of profile.plan) {
     try {
       const snapshot = await snapshotFor(run, entry)
       if (!snapshot) failures.push(`${entry.id}: Worker ${entry.worker} is absent; separate bootstrap is required`)
@@ -144,20 +144,21 @@ const remoteReadiness = async (run, environment, apiFetch = fetch) => {
     }
   }
 
-  const resources = await resourceReadiness({ run, runJson, environment, apiFetch })
+  const resources = await profile.resources({ run, runJson, environment, apiFetch })
   failures.push(...resources.failures)
   Object.assign(evidence, resources.evidence)
   return { snapshots, evidence, failures }
 }
 
 export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
-  environment = process.env, run = execute, apiFetch = fetch, now = () => new Date() }) => {
+  environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date(), profile = TRAVEL_RUNTIME_PROFILE }) => {
   assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
-  const configuration = bindCommerceProviderReleaseMetadata(validateProtectedConfiguration(environment), { sourceSha, candidateDigest })
-  const remote = await remoteReadiness(run, environment, apiFetch)
+  const configuration = profile.configure(environment, { sourceSha, candidateDigest })
+  profile.validateAuthority?.(authorization, configuration, now)
+  const remote = await remoteReadiness(run, environment, apiFetch, profile)
   if (remote.failures.length) throw new Error(`protected travel mesh preflight failed\n${remote.failures.join('\n')}`)
   const units = []
-  for (const entry of TRAVEL_MESH_PLAN) {
+  for (const entry of profile.plan) {
     const previous = remote.snapshots.get(entry.id)
     const versions = await versionsFor(run, entry)
     if (!versions.some(version => version.id === previous.versionId)) throw new Error(`${entry.id} active version is outside the deployable version window`)
@@ -174,7 +175,8 @@ export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
       preservedSecretNameDigest: digest(baselineSecrets), knownVersionIds: versions.map(version => version.id).sort() })
     await dryRunUnit({ entry, configuration, environment, run, sourceSha, candidateDigest, baselineVersion: previousVersion })
   }
-  return seal({ schema: 'agentic-graph-travel-mesh-preflight/v2', status: 'passed', sourceRevision: sourceSha,
+  const baselineProbes = profile.probeBaseline ? await profile.probeBaseline(configuration, { fetchFn }) : null
+  return seal({ ...(baselineProbes ? { baselineProbes } : {}), schema: profile.schema('preflight'), status: 'passed', sourceRevision: sourceSha,
     candidateDigest, configurationDigest: configuration.configurationDigest, capturedAt: now().toISOString(),
     resources: remote.evidence, units })
 }
@@ -201,8 +203,8 @@ const appliedMigrations = async (run, config) => {
     throw error
   }
 }
-const applyMigrations = async (run, configuration) => {
-  const config = releaseConfigFile(TRAVEL_MESH_PLAN.find(unit => unit.id === 'storage'), configuration)
+const applyMigrations = async (run, configuration, profile) => {
+  const config = releaseConfigFile(profile.plan.find(unit => unit.id === 'storage'), configuration)
   let appliedBefore = new Set(), pending = [], bookmark = null, applyAttempted = false
   try {
     appliedBefore = await appliedMigrations(run, config)
@@ -279,11 +281,11 @@ const activateCandidate = async ({ entry, unit, sourceSha, run }) => {
   unit.activated = true
 }
 
-const compensateUnits = async ({ units, run, sourceSha }) => {
+const compensateUnits = async ({ units, run, sourceSha, profile }) => {
   const restored = [], failures = []
-  const rank = new Map(TRAVEL_MESH_PLAN.map((entry, index) => [entry.id, index]))
+  const rank = new Map(profile.plan.map((entry, index) => [entry.id, index]))
   for (const unit of [...units].sort((left, right) => rank.get(right.id) - rank.get(left.id))) {
-    const entry = TRAVEL_MESH_PLAN.find(candidate => candidate.id === unit.id)
+    const entry = profile.plan.find(candidate => candidate.id === unit.id)
     try {
       if (digest(await viewVersion(run, entry, unit.previous.versionId)) !== unit.previousVersionDigest) {
         throw new Error('captured previous version digest drifted')
@@ -306,9 +308,9 @@ const compensateUnits = async ({ units, run, sourceSha }) => {
   return { restored, failures }
 }
 
-const servingVersions = async ({ units, run, expectedVersionId, boundary }) => {
+const servingVersions = async ({ units, run, expectedVersionId, boundary, profile }) => {
   const serving = []
-  for (const entry of TRAVEL_MESH_PLAN) {
+  for (const entry of profile.plan) {
     const unit = units.find(candidate => candidate.id === entry.id), current = await statusFor(run, entry)
     if (!unit || current.versionId !== expectedVersionId(unit)) throw new Error(`${entry.id} serving version drifted ${boundary}`)
     serving.push({ id: entry.id, deploymentId: current.deploymentId, versionId: current.versionId, percentage: 100 })
@@ -316,39 +318,40 @@ const servingVersions = async ({ units, run, expectedVersionId, boundary }) => {
   return serving
 }
 
-const proveRestoredMesh = async ({ units, run, configuration, environment, apiFetch, fetchFn, now, boundary }) => {
+const proveRestoredMesh = async ({ units, run, configuration, environment, apiFetch, fetchFn, now, boundary, profile, baselineProbes }) => {
   const expectedVersionId = unit => unit.previous.versionId
-  const exposureBefore = await assertMeshSubdomainsDisabled(apiFetch, environment)
-  const servingBefore = await servingVersions({ units, run, expectedVersionId, boundary: `before ${boundary} live probes` })
+  const exposureBefore = await profile.exposure(apiFetch, environment)
+  const servingBefore = await servingVersions({ units, run, expectedVersionId, boundary: `before ${boundary} live probes`, profile })
   let probes
-  try { probes = await probeMesh(configuration.variables.TRAVEL_MESH_PROBE_SPEC_JSON, { environment, fetchFn, now }) }
+  try { probes = await (profile.probeRestored ?? profile.probe)(configuration, { environment, fetchFn, now, baselineProbes }) }
   catch (error) { throw new Error(`${boundary} mesh probe failed: ${error.message}`) }
-  const serving = await servingVersions({ units, run, expectedVersionId, boundary: `after ${boundary} live probes` })
-  const exposure = await assertMeshSubdomainsDisabled(apiFetch, environment)
+  const serving = await servingVersions({ units, run, expectedVersionId, boundary: `after ${boundary} live probes`, profile })
+  const exposure = await profile.exposure(apiFetch, environment)
   return { status: 'proved', exposureBefore, servingBefore, probes, serving, exposure }
 }
 
 export const deployMesh = async ({ sourceSha, candidateDigest, authorization, preflight,
-  environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date() }) => {
+  environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date(), profile = TRAVEL_RUNTIME_PROFILE }) => {
   let configuration = null
   const baselineVersions = new Map()
   try {
     assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
-    verifyReceipt(preflight, 'agentic-graph-travel-mesh-preflight/v2')
-    configuration = bindCommerceProviderReleaseMetadata(validateProtectedConfiguration(environment), { sourceSha, candidateDigest })
+    verifyReceipt(preflight, profile.schema('preflight'))
+    configuration = profile.configure(environment, { sourceSha, candidateDigest })
+    profile.validateAuthority?.(authorization, configuration, now)
     const capturedAt = Date.parse(preflight.capturedAt)
-    const expectedUnitIds = TRAVEL_MESH_PLAN.map(entry => entry.id)
+    const expectedUnitIds = profile.plan.map(entry => entry.id)
     if (preflight.sourceRevision !== sourceSha || preflight.candidateDigest !== candidateDigest
       || preflight.configurationDigest !== configuration.configurationDigest
       || preflight.status !== 'passed' || JSON.stringify(preflight.units?.map(unit => unit.id)) !== JSON.stringify(expectedUnitIds)
       || !Number.isFinite(capturedAt) || capturedAt > now().getTime() + 60_000
       || now().getTime() - capturedAt > 30 * 60_000) throw new Error('travel mesh preflight drifted or expired')
-    const remote = await remoteReadiness(run, environment, apiFetch)
+    const remote = await remoteReadiness(run, environment, apiFetch, profile)
     if (remote.failures.length || digest(remote.evidence) !== digest(preflight.resources)) {
       throw new Error(`travel mesh resources changed after preflight${remote.failures.length ? `\n${remote.failures.join('\n')}` : ''}`)
     }
     for (const expected of preflight.units) {
-      const entry = TRAVEL_MESH_PLAN.find(candidate => candidate.id === expected.id)
+      const entry = profile.plan.find(candidate => candidate.id === expected.id)
       const current = remote.snapshots.get(entry.id)
       if (current.deploymentId !== expected.previous.deploymentId || current.versionId !== expected.previous.versionId) throw new Error(`${entry.id} changed after preflight`)
       const currentVersions = (await versionsFor(run, entry)).map(version => version.id).sort()
@@ -365,7 +368,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
       baselineVersions.set(entry.id, baselineVersion)
     }
   } catch (error) {
-    const failure = seal({ schema: 'agentic-graph-travel-mesh-failure-receipt/v2', status: 'not-mutated',
+    const failure = seal({ schema: profile.schema('failure-receipt'), status: 'not-mutated',
       sourceRevision: sourceSha, candidateDigest, configurationDigest: configuration?.configurationDigest ?? null,
       migrations: { pending: [], applied: false, bookmark: null, disposition: 'not-attempted' }, units: [],
       compensation: { restored: [], failures: [] }, restorationProof: { status: 'not-required', servingBefore: [], probes: [], serving: [] },
@@ -376,6 +379,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
     throw wrapped
   }
   const units = []
+  let identityProvisioning = { status: 'not-attempted' }
   let migrations = { pending: [], applied: false, bookmark: null, disposition: 'not-attempted' }
   try {
     const upload = async (entry, index) => {
@@ -392,44 +396,43 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
         throw error
       }
     }
-    const mcpIndex = TRAVEL_MESH_PLAN.findIndex(entry => entry.id === 'mcp')
-    for (const [index, entry] of TRAVEL_MESH_PLAN.entries()) if (index !== mcpIndex) await upload(entry, index)
-    migrations = await applyMigrations(run, configuration)
-    for (const entry of TRAVEL_MESH_PLAN.slice(0, mcpIndex)) {
+    const mcpIndex = profile.plan.findIndex(entry => entry.id === 'mcp')
+    for (const [index, entry] of profile.plan.entries()) if (index !== mcpIndex) await upload(entry, index)
+    migrations = await applyMigrations(run, configuration, profile)
+    if (profile.initialize) {
+      identityProvisioning = { status: 'attempted', disposition: 'retained-forward-compatible' }
+      identityProvisioning = await profile.initialize({ configuration, environment, apiFetch, now })
+    }
+    for (const [index, entry] of profile.plan.entries()) {
+      if (index === mcpIndex) await upload(entry, index)
       await activateCandidate({ entry, unit: units.find(candidate => candidate.id === entry.id), sourceSha, run })
     }
-    const mcpEntry = TRAVEL_MESH_PLAN[mcpIndex]
-    await upload(mcpEntry, mcpIndex)
-    await activateCandidate({ entry: mcpEntry, unit: units.find(candidate => candidate.id === mcpEntry.id), sourceSha, run })
-    for (const entry of TRAVEL_MESH_PLAN.slice(mcpIndex + 1)) {
-      await activateCandidate({ entry, unit: units.find(candidate => candidate.id === entry.id), sourceSha, run })
-    }
-    const exposureBefore = await assertMeshSubdomainsDisabled(apiFetch, environment)
-    const probes = await probeMesh(configuration.variables.TRAVEL_MESH_PROBE_SPEC_JSON, {
+    const exposureBefore = await profile.exposure(apiFetch, environment)
+    const probes = await profile.probe(configuration, {
       environment, fetchFn, now, providerMetadata: { sourceRevision: sourceSha, providerVersionId: candidateDigest },
     })
-    const receiptUnits = TRAVEL_MESH_PLAN.map(entry => units.find(unit => unit.id === entry.id))
+    const receiptUnits = profile.plan.map(entry => units.find(unit => unit.id === entry.id))
     const serving = await servingVersions({ units: receiptUnits, run,
-      expectedVersionId: unit => unit.candidate.versionId, boundary: 'after live probes' })
-    const exposure = await assertMeshSubdomainsDisabled(apiFetch, environment)
-    return seal({ schema: 'agentic-graph-travel-mesh-release-receipt/v2', status: 'deployed', sourceRevision: sourceSha,
-      candidateDigest, configurationDigest: configuration.configurationDigest, migrations, units: receiptUnits,
+      expectedVersionId: unit => unit.candidate.versionId, boundary: 'after live probes', profile })
+    const exposure = await profile.exposure(apiFetch, environment)
+    return seal({ ...(preflight.baselineProbes ? { baselineProbes: preflight.baselineProbes } : {}), schema: profile.schema('release-receipt'), status: 'deployed', sourceRevision: sourceSha,
+      candidateDigest, configurationDigest: configuration.configurationDigest, migrations, identityProvisioning, units: receiptUnits,
       exposureBefore, probes, serving, exposure, deployedAt: now().toISOString() })
   } catch (error) {
     if (error.migrationReceipt) migrations = error.migrationReceipt
-    const compensation = await compensateUnits({ units, run, sourceSha })
+    const compensation = await compensateUnits({ units, run, sourceSha, profile })
     let restorationProof = { status: 'not-proven', servingBefore: [], probes: [], serving: [], error: 'compensation-incomplete' }
     if (!compensation.failures.length) {
       try { restorationProof = await proveRestoredMesh({ units: preflight.units, run, configuration, environment, apiFetch, fetchFn, now,
-        boundary: 'self-compensated' }) }
+        boundary: 'self-compensated', profile, baselineProbes: preflight.baselineProbes }) }
       catch (proofError) { restorationProof = { ...restorationProof, status: 'failed', error: proofError.message.slice(0, 1_000) } }
     }
-    const mutationAmbiguous = (error.uploadAttempted === true && !error.observedCandidate) || error.migrationMutationPossible === true
+    const mutationAmbiguous = (error.uploadAttempted === true && !error.observedCandidate) || error.migrationMutationPossible === true || identityProvisioning.status === 'attempted'
     const mutationAttempted = error.uploadAttempted === true || units.length > 0 || error.migrationMutationPossible === true
     const mutationProven = units.length > 0 || migrations.applied === true
-    const failure = seal({ schema: 'agentic-graph-travel-mesh-failure-receipt/v2',
+    const failure = seal({ schema: profile.schema('failure-receipt'),
       status: compensation.failures.length || mutationAmbiguous || restorationProof.status !== 'proved' ? 'preserve-required' : 'rolled-back', sourceRevision: sourceSha,
-      candidateDigest, migrations, units: TRAVEL_MESH_PLAN.flatMap(entry => units.filter(unit => unit.id === entry.id)),
+      candidateDigest, migrations, identityProvisioning, units: profile.plan.flatMap(entry => units.filter(unit => unit.id === entry.id)),
       compensation, restorationProof, mutationAttempted, mutationProven, mutationAmbiguous,
       failedAt: now().toISOString(), error: String(error?.message ?? error).slice(0, 1_000) })
     const wrapped = new Error(`travel mesh deployment failed (${failure.status}): ${error.message}`)
@@ -439,24 +442,24 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
 }
 
 export const restoreMesh = async ({ sourceSha, candidateDigest, authorization, receipt,
-  environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date() }) => {
+  environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date(), profile = TRAVEL_RUNTIME_PROFILE }) => {
   assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
-  verifyReceipt(receipt, 'agentic-graph-travel-mesh-release-receipt/v2')
-  const configuration = bindCommerceProviderReleaseMetadata(validateProtectedConfiguration(environment), { sourceSha, candidateDigest })
+  verifyReceipt(receipt, profile.schema('release-receipt'))
+  const configuration = profile.configure(environment, { sourceSha, candidateDigest })
   if (receipt.status !== 'deployed' || receipt.sourceRevision !== sourceSha || receipt.candidateDigest !== candidateDigest
     || receipt.configurationDigest !== configuration.configurationDigest
-    || JSON.stringify(receipt.units?.map(unit => unit.id)) !== JSON.stringify(TRAVEL_MESH_PLAN.map(entry => entry.id))) throw new Error('travel mesh rollback receipt drifted from the authorized candidate')
+    || JSON.stringify(receipt.units?.map(unit => unit.id)) !== JSON.stringify(profile.plan.map(entry => entry.id))) throw new Error('travel mesh rollback receipt drifted from the authorized candidate')
   let compensation = { restored: [], failures: [] }
   try {
-    compensation = await compensateUnits({ units: receipt.units, run, sourceSha })
+    compensation = await compensateUnits({ units: receipt.units, run, sourceSha, profile })
     if (compensation.failures.length) throw new Error(`travel mesh rollback requires preservation: ${compensation.failures.map(item => item.id).join(', ')}`)
     const restorationProof = await proveRestoredMesh({ units: receipt.units, run, configuration, environment, apiFetch, fetchFn, now,
-      boundary: 'restored' })
-    return seal({ schema: 'agentic-graph-travel-mesh-rollback-receipt/v2', status: 'restored', sourceRevision: sourceSha,
-      candidateDigest, configurationDigest: configuration.configurationDigest, forwardCompatibleD1Disposition: receipt.migrations.disposition,
+      boundary: 'restored', profile, baselineProbes: receipt.baselineProbes })
+    return seal({ schema: profile.schema('rollback-receipt'), status: 'restored', sourceRevision: sourceSha,
+      candidateDigest, configurationDigest: configuration.configurationDigest, forwardCompatibleD1Disposition: receipt.migrations.disposition, identityProvisioning: receipt.identityProvisioning,
       compensation, restorationProof, probes: restorationProof.probes, serving: restorationProof.serving, restoredAt: now().toISOString() })
   } catch (error) {
-    const failure = seal({ schema: 'agentic-graph-travel-mesh-rollback-failure-receipt/v2', status: 'preserve-required',
+    const failure = seal({ schema: profile.schema('rollback-failure-receipt'), status: 'preserve-required',
       sourceRevision: sourceSha, candidateDigest, compensation, failedAt: now().toISOString(), error: error.message.slice(0, 1_000) })
     const wrapped = new Error(`travel mesh rollback failed (${failure.status}): ${error.message}`)
     wrapped.receipt = failure
@@ -476,8 +479,11 @@ const mutationIntentOutputs = Object.freeze({ attempted: true, mutation_possible
 
 export const meshOutcomeOutputs = receipt => {
   if (receipt == null) return { ...mutationIntentOutputs }
-  const release = receipt.schema === 'agentic-graph-travel-mesh-release-receipt/v2'
-  const schema = release ? receipt.schema : 'agentic-graph-travel-mesh-failure-receipt/v2'
+  const profile = [TRAVEL_RUNTIME_PROFILE, CORE_RUNTIME_PROFILE].find(candidate =>
+    [candidate.schema('release-receipt'), candidate.schema('failure-receipt')].includes(receipt.schema))
+  if (!profile) throw new Error('invalid runtime release receipt schema')
+  const release = receipt.schema === profile.schema('release-receipt')
+  const schema = release ? receipt.schema : profile.schema('failure-receipt')
   verifyReceipt(receipt, schema)
   return { attempted: release ? true : receipt.mutationAttempted === true,
     mutation_possible: release ? true : receipt.mutationAttempted === true,
@@ -499,27 +505,30 @@ const main = async () => {
     preflight: { type: 'string' }, receipt: { type: 'string' }, 'probe-spec': { type: 'string' }, output: { type: 'string' },
     'github-output': { type: 'boolean' },
   } })
+  const profile = readRuntimeProfile()
   if (command === 'validate') {
-    validatePlan()
-    process.stdout.write(`${JSON.stringify({ schema: 'agentic-graph-travel-mesh-plan/v2', status: 'passed',
-      bootstrapPolicy: 'separate-authorized-receipt-and-ten-active-baselines-required', units: TRAVEL_MESH_PLAN.map(entry => entry.id) })}\n`)
+    if (values['github-output']) fs.appendFileSync(requireText(process.env.GITHUB_OUTPUT, 'GITHUB_OUTPUT'), `requires_travel_bootstrap=${profile.requiresTravelBootstrap}\nprofile=${profile.id}\n`)
+    process.stdout.write(`${JSON.stringify({ schema: profile.schema('plan'), status: 'passed', profile: profile.id,
+      requiresTravelBootstrap: profile.requiresTravelBootstrap, units: profile.plan.map(entry => entry.id) })}\n`)
     return
   }
   if (command === 'probe') {
-    const probes = await probeMesh(requireText(values['probe-spec'] ?? process.env.TRAVEL_MESH_PROBE_SPEC_JSON, '--probe-spec'))
-    output(values, 'travel_mesh_probe_digest', seal({ schema: 'agentic-graph-travel-mesh-probe-receipt/v1', status: 'passed', probes }))
+    const probes = profile.id === 'travel'
+      ? await probeMesh(requireText(values['probe-spec'] ?? process.env.TRAVEL_MESH_PROBE_SPEC_JSON, '--probe-spec'))
+      : await profile.probe(profile.configure(process.env))
+    output(values, 'travel_mesh_probe_digest', seal({ schema: profile.schema('probe-receipt'), status: 'passed', probes }))
     return
   }
   const sourceSha = requireText(values['source-sha'], '--source-sha')
   const candidateDigest = requireText(values['candidate-digest'], '--candidate-digest')
   const authorization = readJson(requireText(values.authorization, '--authorization'))
   if (command === 'preflight') {
-    output(values, 'travel_mesh_preflight_digest', await preflightMesh({ sourceSha, candidateDigest, authorization }))
+    output(values, 'travel_mesh_preflight_digest', await preflightMesh({ sourceSha, candidateDigest, authorization, profile }))
     return
   }
   if (command === 'deploy') {
     try {
-      const receipt = await deployMesh({ sourceSha, candidateDigest, authorization,
+      const receipt = await deployMesh({ sourceSha, candidateDigest, authorization, profile,
         preflight: readJson(requireText(values.preflight, '--preflight')) })
       output(values, 'travel_mesh_receipt_digest', receipt)
       if (values['github-output']) appendOutcome(receipt)
@@ -534,7 +543,7 @@ const main = async () => {
   }
   if (command === 'rollback') {
     try {
-      output(values, 'travel_mesh_rollback_digest', await restoreMesh({ sourceSha, candidateDigest, authorization,
+      output(values, 'travel_mesh_rollback_digest', await restoreMesh({ sourceSha, candidateDigest, authorization, profile,
         receipt: readJson(requireText(values.receipt, '--receipt')) }))
     } catch (error) {
       if (error.receipt) output(values, 'travel_mesh_rollback_failure_digest', error.receipt)
