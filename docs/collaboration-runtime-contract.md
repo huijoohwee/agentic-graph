@@ -62,10 +62,10 @@ deployment:
   command_patterns: ["wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
   core_runtime_release:
-    roots: ["config/production-release-profile.json", "scripts/runtime-release-profile.mjs", "scripts/core-runtime-release-", "scripts/travel-mesh-release.mjs", "scripts/travel-mesh-release-plan.mjs", "scripts/travel-mesh-release-bindings.mjs", "scripts/__tests__/core-runtime-release.test.mjs", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness", "cloudflare/workers/agentic-graph-storage/index.ts", ".github/workflows/release.yml"]
+    roots: ["config/production-release-profile.json", "scripts/runtime-release-profile.mjs", "scripts/core-runtime-release-", "scripts/travel-mesh-release.mjs", "scripts/travel-mesh-release-plan.mjs", "scripts/travel-mesh-release-bindings.mjs", "scripts/__tests__/core-runtime-release.test.mjs", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness", "cloudflare/workers/agentic-graph-storage/storageBrowserSession", "cloudflare/workers/agentic-graph-storage/storageSessionExchange", "canvas/src/lib/storage/agentic-graph-storage-worker-env-contract.ts", "cloudflare/workers/agentic-graph-storage/index.ts", ".github/workflows/release.yml"]
     commands:
       - ["node", "--test", "scripts/__tests__/core-runtime-release.test.mjs"]
-      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness.test.ts"]
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness.test.ts", "cloudflare/workers/agentic-graph-storage/storageBrowserSession.test.ts", "cloudflare/workers/agentic-graph-storage/storageSessionExchange.test.ts"]
   dependencies:
     roots: ["package.json", "package-lock.json", "canvas/package.json", "canvas/package-lock.json", "contracts/package.json", "grph-shared/package.json", "gympgrph/package.json", "mcp/package.json", "web/package.json"]
     commands:
