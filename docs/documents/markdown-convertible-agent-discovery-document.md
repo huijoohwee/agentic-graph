@@ -153,4 +153,4 @@ curl -s https://airvio.co/agentic-graph/llms.txt
 - `agentic-graph/canvas/src/features/agentic-os/liveCanvasHeroContent.ts`
 - `agentic-graph/canvas/src/features/panels/mainPanelSectionDescriptions.ts`
 - `agentic-graph/scripts/sync-pages-agentic-graph.mjs`
-- `huijoohwee.github.io/docs/documents/hjh-topology-document.md`
+- [Composition architecture](https://github.com/huijoohwee/agentic-os/blob/main/guides/COMPOSITION-ARCHITECTURE.md)
