@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { load } from 'js-yaml'
 import {
   REQUIRED_CHECKS,
   replaceRuntimeDocsRevision,
@@ -58,7 +59,6 @@ test('docs promoter uses a low-cost sibling checkout and skips unchanged install
   )
   assert.match(workflow, /git -C \.\.\/agentic-canvas-os rev-parse HEAD/)
   assert.doesNotMatch(workflow, /cache: npm/)
-  assert.doesNotMatch(workflow, /npm --prefix (?:\.\.\/)?agentic-canvas-os ci/)
 })
 
 test('docs promoter binds its branch to the docs and base revisions and coalesces exact open retries', () => {
@@ -71,4 +71,21 @@ test('docs promoter binds its branch to the docs and base revisions and coalesce
   assert.match(workflow, /promotion branch exists without one open pull request/)
   assert.doesNotMatch(workflow, /branch="agent\/automation\/agentic-canvas-os-/)
   assert.doesNotMatch(workflow, /branch="agent\/automation\/runtime-readiness"/)
+})
+
+
+test('docs validation installs its own locked dependencies after the exact checkout', () => {
+  const steps = load(workflow).jobs.promote.steps
+  const checkout = steps.findIndex(step => step.with?.repository === 'huijoohwee/agentic-canvas-os')
+  const install = steps.findIndex(step => step['working-directory'] === 'agentic-canvas-os' && /^npm ci(?: |$)/.test(step.run || ''))
+  const validation = steps.findIndex(step => step.run?.includes('npm --prefix ../agentic-canvas-os run docs:check'))
+  assert.ok(checkout >= 0 && install > checkout && validation > install,
+    'docs checks need the dependency tree from the exact checked-out lockfile')
+  assert.equal(steps[checkout].with.ref, '${{ steps.promotion.outputs.revision }}')
+  for (const index of [checkout, install, validation]) {
+    assert.equal(steps[index].if, "steps.promotion.outputs.changed == 'true'",
+      'an unchanged pin must not install or validate a sibling checkout')
+    assert.notEqual(steps[index]['continue-on-error'], true)
+  }
+  assert.equal(steps[install].run, 'npm ci --ignore-scripts --no-audit --no-fund')
 })
