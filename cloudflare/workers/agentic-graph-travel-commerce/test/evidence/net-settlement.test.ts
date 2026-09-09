@@ -1,3 +1,4 @@
+/// <reference lib="esnext.disposable" />
 import fc from 'fast-check'
 import { reset } from 'cloudflare:test'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -18,6 +19,10 @@ describe('check:net-settlement evidence', () => {
         sequence += 1
         const generatedSeed = chainSeed(`net-property-${sequence}`, amounts.length)
         const generatedRuntime = await initialize(generatedSeed)
+        using graphInit = generatedRuntime.graphInit
+        using ledgerInit = generatedRuntime.ledgerInit
+        expect(graphInit.kind).toBe('initialized')
+        expect(ledgerInit.kind).toBe('idempotent')
         const quoteAmounts = Object.fromEntries(amounts.map((amount, index) => [`affected-${index}`, amount]))
         const harness = localDemoAdapters(quoteAmounts)
         const result = await new ReoptWorker(
@@ -29,9 +34,14 @@ describe('check:net-settlement evidence', () => {
           legId: 'changed-root',
           eventId: `net-property-${sequence}`,
         })
+        // Local pending results are plain values; DO replies own RPC lifetimes.
+        const disposeResult = Reflect.get(result, Symbol.dispose)
+        using resultLifetime = typeof disposeResult === 'function'
+          ? { [Symbol.dispose]: () => disposeResult.call(result) }
+          : undefined
         const expectedNet = amounts.reduce((sum, amount) => sum + amount, 0) - amounts.length * 100
         const expectedCalls = expectedNet === 0 ? 0 : 1
-        expect(result).toMatchObject({
+        expect(result, JSON.stringify({ sequence, amounts, result })).toMatchObject({
           kind: 'committed',
           affected: amounts.map((_, index) => `affected-${index}`),
           netAmountMinor: expectedNet,
@@ -39,7 +49,9 @@ describe('check:net-settlement evidence', () => {
         })
         expect(harness.metrics.settlementCalls).toBe(expectedCalls)
       },
-    ))
+    // Generated cases are independent. Retire their DO storage and background
+    // alarms before the next case, including failed cases and shrinking.
+    ).afterEach(() => reset()))
 
     const nonZeroSeed = demoSeed('net-non-zero')
     const nonZeroRuntime = await initialize(nonZeroSeed)
