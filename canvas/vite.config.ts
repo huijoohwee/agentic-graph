@@ -63,7 +63,7 @@ const resolvedReactJsxDevRuntime = nodeRequire.resolve('react/jsx-dev-runtime')
 const resolvedReactDom = nodeRequire.resolve('react-dom')
 const resolvedReactDomClient = nodeRequire.resolve('react-dom/client')
 const resolvedThreeSrc = nodeRequire.resolve('three/src/Three.js')
-const resolvedD3Entry = nodeRequire.resolve('d3')
+const resolvedD3Entry = nodeRequire.resolve('d3');
 const resolvedMaplibreEntry = path.join(path.dirname(nodeRequire.resolve('maplibre-gl/package.json')), 'src/index.ts')
 const resolvedZustandCompatEntry = path.resolve(__dirname, 'src/lib/vendor/zustandCompat.ts')
 const resolvedGympgrphSrc = path.resolve(__dirname, '../gympgrph/src/index.ts')
@@ -6714,7 +6714,7 @@ export default defineConfig(({ command, mode }) => {
                 if (moduleId.includes('/node_modules/@react-three/fiber/')) return 'three-fiber'
                 if (moduleId.includes('/node_modules/three/')) return 'three-core'
                 if (moduleId.includes('/node_modules/maplibre-gl/')) return 'maplibre'
-                if (moduleId.includes('/node_modules/@huggingface/transformers/')) return 'transformers'
+                if (moduleId.includes('/node_modules/onnxruntime-web/')) return 'onnx-runtime'; if (moduleId.includes('/node_modules/@huggingface/transformers/')) return 'transformers'
                 if (moduleId.includes('/src/features/panels/views/settingsMcpDocEntries.ts')) {
                   return 'settings-mcp-core'
                 }
