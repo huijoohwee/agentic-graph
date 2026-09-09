@@ -139,7 +139,6 @@ const parseAllowedChatProxyHosts = (): Set<string> => {
   if (!out.size) return new Set([...CHAT_PROXY_LOCAL_HOSTS, CHAT_PROXY_OPENAI_HOST, CHAT_PROXY_MIROMIND_HOST, CHAT_PROXY_AGNES_HOST, CHAT_PROXY_SEALION_HOST, ...CHAT_PROXY_QWEN_HOSTS, ...CHAT_PROXY_GOOGLE_CLOUD_HOSTS, ...CHAT_PROXY_GEMINI_HOSTS, ...CHAT_PROXY_BYTEPLUS_HOSTS, ...CHAT_PROXY_AI_GATEWAY_HOSTS])
   return out
 }
-
 const sanitizeAiGatewayRoute = (value: unknown): string => {
   const route = readSingleHeader(value)
   if (!/^dynamic\/[a-z0-9._/-]+$/i.test(route)) return ''
