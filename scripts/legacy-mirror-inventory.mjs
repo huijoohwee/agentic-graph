@@ -2,9 +2,11 @@ import { createHash } from 'node:crypto'
 import {
   LEGACY_MIRROR_EXACT_FILE_INVENTORY,
   LEGACY_MIRROR_EXACT_PATHS,
+  LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS,
   LEGACY_MIRROR_NAMED_FILE_INVENTORY,
   LEGACY_MIRROR_NAMED_FILE_PATHS,
   LEGACY_MIRROR_ROOT_INVENTORIES,
+  LEGACY_MIRROR_TRACKED_EXACT_FILE_INVENTORY,
 } from './mirror-namespace-contract.mjs'
 import { XR_V2_LEGACY_MIRROR_SHA256_BY_PATH } from './xr-v2/production-publish-contract.mjs'
 
@@ -167,7 +169,9 @@ export const listSealedLegacyMirrorEntries = async ({ listRelativeFiles, readRel
   const exactRecords = exactPaths.length > 0 ? await assertSealedLegacyContentInventory({
     relativePaths: exactPaths,
     readRelativeFile,
-    inventory: LEGACY_MIRROR_EXACT_FILE_INVENTORY,
+    inventory: exactPaths.some(relativePath => LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS.includes(relativePath))
+      ? LEGACY_MIRROR_EXACT_FILE_INVENTORY
+      : LEGACY_MIRROR_TRACKED_EXACT_FILE_INVENTORY,
     label: 'Legacy exact-file inventory',
   }) : []
   for (const record of exactRecords) entries.set(record.relativePath, record)
