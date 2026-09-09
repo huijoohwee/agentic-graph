@@ -27,7 +27,8 @@ const clamp01 = (value: unknown): number => {
 const getStrybldrDetrDetector = async (): Promise<DetrDetector> => {
   if (!detrDetectorPromise) {
     const mod = await import('@huggingface/transformers')
-    detrDetectorPromise = mod.pipeline('object-detection', 'Xenova/detr-resnet-50') as Promise<unknown>
+    const pipeline = mod.pipeline as unknown as (task: 'object-detection', model: string) => Promise<DetrDetector>
+    detrDetectorPromise = pipeline('object-detection', 'Xenova/detr-resnet-50')
   }
   return await detrDetectorPromise as DetrDetector
 }
