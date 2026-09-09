@@ -184,11 +184,11 @@ const handleLogin = async (args: {
   if (configuration.value.mode === 'session-exchange') {
     if (args.request.method === 'GET') return storageSessionExchangeForm(returnTo)
     const credential = await readStorageSessionExchangeCredential(args.request)
-    if (!credential.ok) return credential.response
+    if (credential.ok === false) return credential.response
     const auth = await readAuthenticatedChatContext(new Request(args.request.url, {
       headers: { authorization: `Bearer ${credential.token}` },
     }), args.db)
-    if (!auth.ok) return auth.response
+    if (auth.ok === false) return auth.response
     userId = auth.value.user.id
     ttlSeconds = Math.min(ttlSeconds, Math.floor((Date.parse(auth.value.session.expiresAt) - now.getTime()) / 1000))
     if (!Number.isFinite(ttlSeconds) || ttlSeconds < 1) return errorResponse(401, 'forbidden', 'access key has expired')
