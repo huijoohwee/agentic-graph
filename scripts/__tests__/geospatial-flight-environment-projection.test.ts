@@ -187,7 +187,7 @@ test('Singapore XR environment projects its stage, named POIs, and selected asse
   assert.equal(environment.stageFootprint.length, 5)
   assert.equal(
     environment.surfaces.filter(surface => surface.kind === 'poi').length,
-    9,
+    SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.length,
   )
   assert.equal(
     environment.surfaces.some(surface => surface.kind === 'structure'),

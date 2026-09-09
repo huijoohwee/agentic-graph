@@ -16,7 +16,9 @@ import {
   readAuthenticatedBrowserSessionContext,
   readAgenticGraphStorageBrowserSessionToken,
   readAuthorizedMembership,
+  readAuthenticatedChatContext,
 } from './chatAuth'
+import { readStorageSessionExchangeCredential, storageSessionExchangeForm } from './storageSessionExchange'
 import {
   type D1DatabaseLike,
   normalizeString,
@@ -61,10 +63,10 @@ const errorResponse = (
   code,
 } satisfies AgenticGraphStorageErrorResponse)
 
-type BrowserSessionConfiguration = {
-  access: AccessJwtConfiguration
-  ttlSeconds: number
-}
+type BrowserSessionConfiguration = { ttlSeconds: number } & (
+  | { mode: 'cloudflare-access'; access: AccessJwtConfiguration }
+  | { mode: 'session-exchange' }
+)
 
 type BrowserSessionConfigurationResult =
   | { ok: true; value: BrowserSessionConfiguration }
@@ -88,15 +90,19 @@ const readTtlSeconds = (value: unknown): number | null => {
 export const readAgenticGraphStorageBrowserSessionConfiguration = (
   env: AgenticGraphStorageWorkerEnv,
 ): BrowserSessionConfigurationResult => {
+  const ttlSeconds = readTtlSeconds(env.AGENTIC_OS_STORAGE_BROWSER_SESSION_TTL_SECONDS)
+  if (ttlSeconds === null) return { ok: false }
+  const mode = normalizeString(env.AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE) || 'cloudflare-access'
+  if (mode === 'session-exchange') return { ok: true, value: { mode, ttlSeconds } }
+  if (mode !== 'cloudflare-access') return { ok: false }
   const access = readAccessJwtConfiguration({
     ACCESS_ISSUER: env.AGENTIC_OS_STORAGE_ACCESS_ISSUER,
     ACCESS_AUDIENCE: env.AGENTIC_OS_STORAGE_ACCESS_AUDIENCE,
     ACCESS_JWKS_TIMEOUT_MS: env.AGENTIC_OS_STORAGE_ACCESS_JWKS_TIMEOUT_MS,
     ACCESS_JWKS_CACHE_TTL_MS: env.AGENTIC_OS_STORAGE_ACCESS_JWKS_CACHE_TTL_MS,
   })
-  const ttlSeconds = readTtlSeconds(env.AGENTIC_OS_STORAGE_BROWSER_SESSION_TTL_SECONDS)
-  if (access.ok === false || ttlSeconds === null) return { ok: false }
-  return { ok: true, value: { access: access.value, ttlSeconds } }
+  if (access.ok === false) return { ok: false }
+  return { ok: true, value: { mode, access: access.value, ttlSeconds } }
 }
 
 const isUnsafeMethod = (method: string): boolean =>
@@ -172,31 +178,48 @@ const handleLogin = async (args: {
   }
   const returnTo = readReturnTo(args.request)
   if (!returnTo) return errorResponse(400, 'bad_request', 'return_to must be a same-origin relative path')
-  const accessToken = normalizeString(args.request.headers.get('cf-access-jwt-assertion'))
-  if (!accessToken) return errorResponse(401, 'forbidden', 'Cloudflare Access authentication is required')
-  const verify = args.dependencies?.verifyAccessToken || verifyAccessJwt
-  const verified = await verify(accessToken, configuration.value.access)
-  if (verified.ok === false) return errorResponse(401, 'forbidden', 'Cloudflare Access authentication is invalid or expired')
-  const identity = await readAuthIdentityUser(args.db, {
-    provider: BROWSER_IDENTITY_PROVIDER,
-    issuer: configuration.value.access.issuer,
-    subject: verified.sub,
-  })
-  if (!identity || normalizeString(identity.user_status) !== 'active') {
-    return errorResponse(403, 'forbidden', 'storage access has not been provisioned for this identity')
+  const now = args.dependencies?.now?.() || new Date()
+  let userId: string
+  let ttlSeconds = configuration.value.ttlSeconds
+  if (configuration.value.mode === 'session-exchange') {
+    if (args.request.method === 'GET') return storageSessionExchangeForm(returnTo)
+    const credential = await readStorageSessionExchangeCredential(args.request)
+    if (credential.ok === false) return credential.response
+    const auth = await readAuthenticatedChatContext(new Request(args.request.url, {
+      headers: { authorization: `Bearer ${credential.token}` },
+    }), args.db)
+    if (auth.ok === false) return auth.response
+    userId = auth.value.user.id
+    ttlSeconds = Math.min(ttlSeconds, Math.floor((Date.parse(auth.value.session.expiresAt) - now.getTime()) / 1000))
+    if (!Number.isFinite(ttlSeconds) || ttlSeconds < 1) return errorResponse(401, 'forbidden', 'access key has expired')
+  } else {
+    if (args.request.method !== 'GET') return errorResponse(405, 'bad_request', 'Cloudflare Access login requires GET')
+    const accessToken = normalizeString(args.request.headers.get('cf-access-jwt-assertion'))
+    if (!accessToken) return errorResponse(401, 'forbidden', 'Cloudflare Access authentication is required')
+    const verify = args.dependencies?.verifyAccessToken || verifyAccessJwt
+    const verified = await verify(accessToken, configuration.value.access)
+    if (verified.ok === false) return errorResponse(401, 'forbidden', 'Cloudflare Access authentication is invalid or expired')
+    const identity = await readAuthIdentityUser(args.db, {
+      provider: BROWSER_IDENTITY_PROVIDER,
+      issuer: configuration.value.access.issuer,
+      subject: verified.sub,
+    })
+    if (!identity || normalizeString(identity.user_status) !== 'active') {
+      return errorResponse(403, 'forbidden', 'storage access has not been provisioned for this identity')
+    }
+    userId = identity.user_id
   }
-  if (!await activeMembershipExists(args.db, identity.user_id)) {
+  if (!await activeMembershipExists(args.db, userId)) {
     return errorResponse(403, 'forbidden', 'an active workspace membership is required')
   }
-  const now = args.dependencies?.now?.() || new Date()
   const nowIso = now.toISOString()
-  const expiresAt = new Date(now.getTime() + configuration.value.ttlSeconds * 1_000).toISOString()
+  const expiresAt = new Date(now.getTime() + ttlSeconds * 1_000).toISOString()
   const generateOpaqueToken = args.dependencies?.createOpaqueToken || createOpaqueToken
   const token = generateOpaqueToken(32)
   const sessionId = `browser:${generateOpaqueToken(16)}`
   await writeAuthSession(args.db, {
     id: sessionId,
-    userId: identity.user_id,
+    userId,
     sessionHash: await hashAgenticGraphStorageAuthSessionToken(token),
     expiresAt,
     nowIso,
@@ -206,7 +229,7 @@ const handleLogin = async (args: {
     headers: {
       location: returnTo,
       'cache-control': 'no-store',
-      'set-cookie': buildBrowserSessionCookie(token, configuration.value.ttlSeconds),
+      'set-cookie': buildBrowserSessionCookie(token, ttlSeconds),
       ...CORS_HEADERS,
     },
   })
@@ -287,7 +310,7 @@ export const handleAgenticGraphStorageBrowserSessionRoute = async (args: {
 }): Promise<Response> => {
   const pathname = new URL(args.request.url).pathname
   if (pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin) {
-    if (args.request.method !== 'GET') return errorResponse(405, 'bad_request', 'storage browser login requires GET')
+    if (!['GET', 'POST'].includes(args.request.method)) return errorResponse(405, 'bad_request', 'storage browser login requires GET or POST')
     if (!args.db) return errorResponse(500, 'server_error', 'missing Cloudflare D1 binding DB')
     return handleLogin({ ...args, db: args.db })
   }

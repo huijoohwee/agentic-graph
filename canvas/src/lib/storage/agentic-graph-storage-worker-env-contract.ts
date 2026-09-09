@@ -43,6 +43,8 @@ export type AgenticGraphStorageDurableObjectNamespaceLike = {
 export type AgenticGraphStorageWorkerEnv = {
   DB: unknown
   AGENTIC_OS_STORAGE_SIGNING_SECRET?: string
+  /** Explicit first-party bearer exchange; absent keeps Cloudflare Access. */
+  AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE?: string
   /**
    * Dedicated Cloudflare Access application configuration for browser storage
    * sessions. These are deliberately separate from every other Worker Access

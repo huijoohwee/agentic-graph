@@ -64,7 +64,6 @@ import {
   handleAgenticGraphStorageBrowserSessionRoute,
   isAgenticGraphStorageBrowserSessionRoute,
   isAgenticGraphStorageSameOriginCookieMutation,
-  readAgenticGraphStorageBrowserSessionConfiguration,
 } from './storageBrowserSession'
 import { handleSecuredAgenticGraphStorageDataRoute } from './storagePublicRouteSecurity'
 import {
@@ -73,6 +72,7 @@ import {
 } from './storageSyncReadRuntime'
 import { handleSecuredAgenticGraphStorageDocumentRoute } from './storageDocumentRouteSecurity'
 import { isStorageSyncTimestamp } from './storageSyncCursor'
+import { inspectStorageCoreBindings, probeStorageCoreReadiness } from './storageCoreReadiness'
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -384,38 +384,16 @@ const handleExport = async (
   })
 }
 
-const hasCanvasRoomBinding = (value: unknown): boolean => {
-  if (!value || typeof value !== 'object') return false
-  const binding = value as Record<string, unknown>
-  return typeof binding.idFromName === 'function' && typeof binding.get === 'function'
-}
-
 const handleReadiness = async (env: AgenticGraphStorageWorkerEnv): Promise<Response> => {
-  const d1 = readDb(env) ? 'ready' : 'missing'
-  const canvasRoom = hasCanvasRoomBinding(env.AGENTIC_OS_CANVAS_ROOM) ? 'ready' : 'missing'
-  const browserSessionAccessConfiguration = String(env.AGENTIC_OS_STORAGE_LOCAL_RUNTIME || '').trim() === 'true'
-    ? 'local-only'
-    : readAgenticGraphStorageBrowserSessionConfiguration(env).ok ? 'configured' : 'missing'
+  const core = inspectStorageCoreBindings(env)
   const travelMutationTrigger = await probeTravelMutationTriggerReadiness(
     env as AgenticGraphStorageWorkerEnv & TravelMutationTriggerEnv,
   )
-  const signingSecret = String(env.AGENTIC_OS_STORAGE_SIGNING_SECRET || '').length >= 32
-    ? 'ready'
-    : String(env.AGENTIC_OS_STORAGE_LOCAL_RUNTIME || '').trim() === 'true' ? 'local-only' : 'missing'
-  const reasons = [
-    ...(d1 === 'ready' ? [] : ['d1-binding-missing']),
-    ...(canvasRoom === 'ready' ? [] : ['canvas-room-binding-missing']),
-    ...(browserSessionAccessConfiguration === 'missing' ? ['storage-browser-session-access-configuration-missing'] : []),
-    ...(signingSecret === 'missing' ? ['storage-signing-secret-missing'] : []),
-    ...travelMutationTrigger.reasons,
-  ]
+  const reasons = [...core.reasons, ...travelMutationTrigger.reasons]
   const ok = reasons.length === 0
   return json(ok ? 200 : 503, {
-    ok,
-    service: 'agentic-storage',
-    apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
-    dependencies: { d1, canvasRoom, browserSessionAccessConfiguration, signingSecret, travelMutationTrigger },
-    reasons,
+    ok, service: 'agentic-storage', apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+    dependencies: { ...core.dependencies, travelMutationTrigger }, reasons,
   })
 }
 
@@ -426,6 +404,16 @@ export const createAgenticGraphStorageWorker = () => ({
     }
     const url = new URL(request.url)
     try {
+      if (url.pathname === '/api/storage/readyz/core' || url.pathname === '/readyz/core') {
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...CORS_HEADERS } })
+        }
+        const readiness = await probeStorageCoreReadiness(env)
+        const response = json(readiness.ok ? 200 : 503, {
+          ...readiness, service: 'agentic-storage', apiVersion: AGENTIC_OS_STORAGE_API_VERSION,
+        })
+        return request.method === 'HEAD' ? new Response(null, { status: response.status, headers: response.headers }) : response
+      }
       if (url.pathname === '/livez' || url.pathname === '/api/storage/livez') {
         if (request.method !== 'GET' && request.method !== 'HEAD') {
           return new Response(null, { status: 405, headers: { allow: 'GET, HEAD', ...CORS_HEADERS } })

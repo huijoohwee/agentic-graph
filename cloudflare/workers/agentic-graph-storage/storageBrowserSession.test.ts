@@ -9,6 +9,7 @@ import {
   authenticateAgenticGraphStorageSnapshotRequest,
   authenticateAgenticGraphStorageSyncRequest,
 } from './storageSyncSecurity'
+import { hashAgenticGraphStorageAuthSessionToken } from './chatAuth'
 import { createAgenticGraphStorageWorker } from './index'
 import type { AgenticGraphStorageWorkerEnv } from './contract'
 
@@ -366,4 +367,69 @@ test('cookie-authenticated unsafe storage requests require the exact request ori
     method: 'POST',
     headers: { authorization: 'Bearer service-token' },
   })), true)
+})
+
+
+test('first-party login exchanges only a live provisioned access key and caps the cookie to its expiry', async () => {
+  const db = createDb()
+  seedProvisionedIdentity(db)
+  const parent = 'd'.repeat(64)
+  db.sessions.set('operator:key', { id: 'operator:key', user_id: 'user:browser',
+    session_hash: await hashAgenticGraphStorageAuthSessionToken(parent),
+    expires_at: '2036-08-21T00:01:00.000Z', revoked_at: null })
+  const env = { DB: db, AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE: 'session-exchange' }
+  const login = await handleAgenticGraphStorageBrowserSessionRoute({ db, env,
+    request: new Request('https://storage.example/api/storage/auth/login?return_to=%2Fagentic-graph%2F', {
+      method: 'POST', headers: { origin: 'https://storage.example', 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'access_key=' + parent,
+    }), dependencies: browserSessionDependencies() })
+  assert.equal(login.status, 303)
+  assert.equal(login.headers.get('location'), '/agentic-graph/')
+  assert.match(login.headers.get('set-cookie') || '', /Max-Age=60; Secure; HttpOnly; SameSite=Strict/)
+  assert.equal(db.sessions.get('browser:' + 'b'.repeat(32))?.expires_at, '2036-08-21T00:01:00.000Z')
+  assert.equal(JSON.stringify([...db.sessions.values()]).includes(parent), false)
+  const cookie = '__Host-agentic_os_storage_session=' + 'a'.repeat(64)
+  const request = new Request('https://storage.example/api/storage/auth/session?workspace_id=workspace%3Abrowser', { headers: { cookie } })
+  assert.equal((await handleAgenticGraphStorageBrowserSessionRoute({ db, env, request })).status, 200)
+  assert.equal((await authenticateAgenticGraphStorageSnapshotRequest(request, env, db)).ok, true)
+  const worker = createAgenticGraphStorageWorker()
+  assert.equal((await worker.fetch(new Request('https://storage.example/api/storage/auth/logout', {
+    method: 'POST', headers: { cookie, origin: 'https://storage.example' },
+  }), env)).status, 204)
+  assert.equal((await handleAgenticGraphStorageBrowserSessionRoute({ db, env, request })).status, 401)
+  assert.equal(db.sessions.get('operator:key')?.revoked_at, null, 'logout revokes the browser session only')
+})
+
+test('first-party login rejects unknown, revoked, expired and inactive credentials without creating sessions', async () => {
+  for (const failure of ['unknown', 'revoked', 'expired', 'inactive-user', 'inactive-membership']) {
+    const db = createDb()
+    seedProvisionedIdentity(db)
+    const token = 'd'.repeat(64)
+    if (failure !== 'unknown') db.sessions.set('operator:key', { id: 'operator:key', user_id: 'user:browser',
+      session_hash: await hashAgenticGraphStorageAuthSessionToken(token),
+      expires_at: failure === 'expired' ? '2000-01-01T00:00:00.000Z' : '2036-08-21T00:15:00.000Z',
+      revoked_at: failure === 'revoked' ? '2026-01-01T00:00:00.000Z' : null })
+    if (failure === 'inactive-user') db.users.get('user:browser')!.status = 'inactive'
+    if (failure === 'inactive-membership') db.memberships.get('membership:browser')!.status = 'inactive'
+    const count = db.sessions.size
+    const result = await handleAgenticGraphStorageBrowserSessionRoute({ db,
+      env: { DB: db, AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE: 'session-exchange' },
+      request: new Request('https://storage.example/api/storage/auth/login', { method: 'POST',
+        headers: { origin: 'https://storage.example', 'content-type': 'application/x-www-form-urlencoded' },
+        body: 'access_key=' + token }), dependencies: browserSessionDependencies() })
+    assert.ok([401, 403].includes(result.status), failure)
+    assert.equal(result.headers.has('set-cookie'), false)
+    assert.equal(db.sessions.size, count)
+  }
+})
+
+test('first-party mode is explicit; missing or unknown modes never expose a login form', async () => {
+  for (const mode of [undefined, 'invalid', 'session-exchange']) {
+    const db = createDb()
+    const result = await handleAgenticGraphStorageBrowserSessionRoute({ db,
+      env: { DB: db, AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE: mode },
+      request: new Request('https://storage.example/api/storage/auth/login') })
+    assert.equal(result.status, mode === 'session-exchange' ? 200 : 503)
+    assert.equal(db.sessions.size, 0)
+  }
 })

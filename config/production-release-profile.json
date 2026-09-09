@@ -1,0 +1,5 @@
+{
+  "schema": "agentic-graph-production-release-profile/v1",
+  "profile": "core",
+  "costPolicy": "existing-free-resources-only"
+}

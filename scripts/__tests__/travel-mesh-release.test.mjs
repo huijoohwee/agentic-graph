@@ -432,7 +432,7 @@ test('authority and active deployment are exact and fail closed', () => {
   assert.throws(() => activeDeployment({ id: 'deployment', created_on: 'now', versions: [{ version_id: 'version', percentage: 50 }] }, 'worker'), /exactly one/)
   assert.deepEqual(meshOutcomeOutputs(), { attempted: true, mutation_possible: true, mutation_proven: false,
     restored: false, compensated: false, preserve_required: true, receipt_sealed: false })
-  assert.throws(() => meshOutcomeOutputs({}), /invalid agentic-graph-travel-mesh-failure-receipt/)
+  assert.throws(() => meshOutcomeOutputs({}), /invalid runtime release receipt schema/)
   assert.equal(parseR2BucketNames('name: exact-bucket-longer\n').has('exact-bucket'), false)
   const routeEnvironment = protectedEnvironment(), routeSpec = routeSpecFor(routeEnvironment)
   const domains = routeSpec.domains.map(domain => ({ hostname: domain.hostname, service: domain.service,

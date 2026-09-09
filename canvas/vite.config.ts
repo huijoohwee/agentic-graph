@@ -64,7 +64,7 @@ const resolvedReactDom = nodeRequire.resolve('react-dom')
 const resolvedReactDomClient = nodeRequire.resolve('react-dom/client')
 const resolvedThreeSrc = nodeRequire.resolve('three/src/Three.js')
 const resolvedD3Entry = nodeRequire.resolve('d3')
-const resolvedMaplibreEntry = nodeRequire.resolve('maplibre-gl/src/index.ts')
+const resolvedMaplibreEntry = path.join(path.dirname(nodeRequire.resolve('maplibre-gl/package.json')), 'src/index.ts')
 const resolvedZustandCompatEntry = path.resolve(__dirname, 'src/lib/vendor/zustandCompat.ts')
 const resolvedGympgrphSrc = path.resolve(__dirname, '../gympgrph/src/index.ts')
 const resolvedGympgrphMapPreviewSrc = path.resolve(__dirname, '../gympgrph/src/mapPreview.ts')
@@ -139,7 +139,6 @@ const parseAllowedChatProxyHosts = (): Set<string> => {
   if (!out.size) return new Set([...CHAT_PROXY_LOCAL_HOSTS, CHAT_PROXY_OPENAI_HOST, CHAT_PROXY_MIROMIND_HOST, CHAT_PROXY_AGNES_HOST, CHAT_PROXY_SEALION_HOST, ...CHAT_PROXY_QWEN_HOSTS, ...CHAT_PROXY_GOOGLE_CLOUD_HOSTS, ...CHAT_PROXY_GEMINI_HOSTS, ...CHAT_PROXY_BYTEPLUS_HOSTS, ...CHAT_PROXY_AI_GATEWAY_HOSTS])
   return out
 }
-
 const sanitizeAiGatewayRoute = (value: unknown): string => {
   const route = readSingleHeader(value)
   if (!/^dynamic\/[a-z0-9._/-]+$/i.test(route)) return ''
@@ -6714,6 +6713,7 @@ export default defineConfig(({ command, mode }) => {
                 if (moduleId.includes('/node_modules/@react-three/fiber/')) return 'three-fiber'
                 if (moduleId.includes('/node_modules/three/')) return 'three-core'
                 if (moduleId.includes('/node_modules/maplibre-gl/')) return 'maplibre'
+                if (moduleId.includes('/node_modules/onnxruntime-web/')) return 'onnx-runtime'
                 if (moduleId.includes('/node_modules/@huggingface/transformers/')) return 'transformers'
                 if (moduleId.includes('/src/features/panels/views/settingsMcpDocEntries.ts')) {
                   return 'settings-mcp-core'
@@ -6745,7 +6745,7 @@ export default defineConfig(({ command, mode }) => {
       { find: /^react-dom$/, replacement: resolvedReactDom },
       { find: /^three$/, replacement: resolvedThreeSrc },
       { find: /^d3$/, replacement: resolvedD3Entry },
-      { find: /^maplibre-gl$/, replacement: resolvedMaplibreEntry },
+      { find: /^maplibre-gl(?:\/dist\/maplibre-gl\.js)?$/, replacement: resolvedMaplibreEntry },
       { find: /^zustand$/, replacement: resolvedZustandCompatEntry },
       { find: /^gympgrph$/, replacement: resolvedGympgrphSrc },
       { find: /^gympgrph\/map-preview$/, replacement: resolvedGympgrphMapPreviewSrc },

@@ -9,7 +9,6 @@
     "mcp"
   ],
   "overrides": {
-    "adm-zip": "0.6.0",
     "browserslist": "4.28.8",
     "@esbuild-kit/core-utils": {
       "esbuild": "^0.25.12"
@@ -17,10 +16,12 @@
     "esbuild": "^0.25.12",
     "fast-uri": "3.1.6",
     "qs": "6.16.0",
-    "sharp": "0.35.3",
+    "sharp": "0.35.4",
     "tsx": {
       "esbuild": "^0.28.1"
-    }
+    },
+    "maplibre-gl": "6.4.1",
+    "onnxruntime-web": "1.26.0-dev.20260416-b7804b056c"
   },
   "scripts": {
     "setup": "npm install",
@@ -307,14 +308,14 @@
     "naming:check": "node ./scripts/check-agentic-naming.mjs"
   },
   "dependencies": {
-    "@huggingface/transformers": "4.2.0",
+    "@huggingface/transformers": "3.8.1",
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
     "@x402/hono": "^2.13.0",
     "agentic-os": "github:huijoohwee/agentic-os#8e50a7fd3e84e13403855715447e4daf2b6261da",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.23",
-    "js-yaml": "^4.1.1",
+    "hono": "^4.13.7",
+    "js-yaml": "^4.3.2",
     "jsonwebtoken": "9.0.2",
     "ripple-address-codec": "5.0.1",
     "yjs": "^13.6.31"
@@ -326,7 +327,7 @@
     "fake-indexeddb": "^6.2.5",
     "fast-check": "3.23.2",
     "typescript": "5.9.3",
-    "vitest": "4.1.0",
+    "vitest": "4.1.11",
     "wrangler": "4.124.0",
     "x402-xrpl": "0.3.2",
     "xrpl": "4.5.0",
