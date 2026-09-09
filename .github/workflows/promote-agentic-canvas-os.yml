@@ -79,6 +79,11 @@ jobs:
           path: agentic-canvas-os
           fetch-depth: 0
 
+      - name: Install exact docs dependencies
+        if: steps.promotion.outputs.changed == 'true'
+        working-directory: agentic-canvas-os
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Validate exact docs source
         if: steps.promotion.outputs.changed == 'true'
         working-directory: agentic-graph
