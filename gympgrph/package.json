@@ -159,7 +159,8 @@
     "@types/geojson": "^7946.0.16",
     "d3": "^7.9.0",
     "grph-shared": "file:../grph-shared",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "maplibre-gl": "6.4.1"
   },
   "peerDependencies": {
     "maplibre-gl": "^5.7.3",
