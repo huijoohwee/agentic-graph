@@ -65,6 +65,10 @@ ci_scopes:
     roots: ["scripts/verify-production-service-worker-upgrade.mjs", "scripts/production-service-worker-profile.mjs", "scripts/production-pages-routing.mjs", "scripts/__tests__/production-service-worker-profile.test.mjs", "scripts/__tests__/production-scope-redirects.test.mjs"]
     commands:
       - ["node", "--test", "scripts/__tests__/production-service-worker-profile.test.mjs", "scripts/__tests__/production-scope-redirects.test.mjs"]
+  production_terminal_authorization:
+    roots: ["scripts/production-terminal-authorization.mjs", "scripts/production-canonical-release-state.mjs", "scripts/__tests__/production-terminal-authorization.test.mjs"]
+    commands:
+      - ["node", "--test", "scripts/__tests__/production-terminal-authorization.test.mjs", "scripts/__tests__/production-release-authorization.test.mjs"]
   core_runtime_release:
     roots: ["scripts/production-mirror-artifact.mjs", "scripts/production-mirror-artifact-entries.mjs", "config/production-release-profile.json", "scripts/runtime-release-profile.mjs", "scripts/runtime-release-migrations.mjs", "scripts/__tests__/runtime-release-migrations.test.mjs", "scripts/core-runtime-release-", "scripts/travel-mesh-release.mjs", "scripts/travel-mesh-release-plan.mjs", "scripts/travel-mesh-release-bindings.mjs", "scripts/__tests__/core-runtime-release.test.mjs", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness", "cloudflare/workers/agentic-graph-storage/storageBrowserSession", "cloudflare/workers/agentic-graph-storage/storageSessionExchange", "canvas/src/lib/storage/agentic-graph-storage-worker-env-contract.ts", "cloudflare/workers/agentic-graph-storage/index.ts", ".github/workflows/release.yml"]
     commands:

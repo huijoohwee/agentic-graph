@@ -100,9 +100,11 @@ Before dispatch:
 - protected integration is green for that revision;
 - required repository variables/secrets and production environment reviewers are configured;
 - the operator has an authenticated GitHub CLI session;
-- the canonical agentic-graph and Agentic Canvas OS checkouts are both clean on `main`, with
-  `HEAD` and the already-fetched `origin/main` equal to their candidate-bound revisions;
-  the authorization command does not fetch or repair either checkout;
+- both canonical checkouts are clean `main` at their exact candidate-bound revisions;
+  agentic-graph must equal fetched `origin/main`. Canvas's native candidate validator
+  admits either its fetched tip or the exact consumer `docs_dependency.ref` when that
+  pin is an ancestor of fetched `origin/main`, with protected checks verified;
+  authorization refreshes observations but does not switch or repair either checkout;
 - an operator has reviewed scope, cost, data migration, and rollback impact;
 - any separately deployed Worker change has its own operator-approved runbook/evidence.
 - a repository-owned pre-dispatch evidence producer has content-addressed every preserved lane in
@@ -129,8 +131,10 @@ interactive command:
 npm run production:authorize -- --repository huijoohwee/agentic-graph --run-id <workflow-run-id>
 ```
 
-The command independently downloads and verifies the candidate artifacts, rejects either
-canonical checkout unless it is clean `main` at the exact fetched candidate revision,
+The command independently downloads and verifies the candidate artifacts and requires
+both clean canonical checkouts at their exact candidate revisions. Controller admission
+uses the existing Canvas native validator before the prompt and again before approval;
+remote documentation advancement does not replace the reviewed consumer pin. The command
 rechecks canonical runtime state, displays the exact challenge, and accepts only the
 generated candidate-bound reply. From prompt preparation through reply acceptance, the
 agentic-graph canonical release-owner checkout must remain the same clean `main` checkout at that

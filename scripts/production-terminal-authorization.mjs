@@ -7,6 +7,16 @@ import readline from 'node:readline/promises'
 import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import { deflateRawSync, inflateRawSync } from 'node:zlib'
+import {
+  readCanonicalReleaseOwnerState,
+  validateCanonicalReleaseOwnerState,
+  verifyCanonicalReleaseDependency,
+} from './production-canonical-release-state.mjs'
+export {
+  readCanonicalReleaseOwnerState,
+  validateCanonicalReleaseOwnerState,
+  verifyCanonicalReleaseDependency,
+} from './production-canonical-release-state.mjs'
 
 export const TERMINAL_AUTHORIZATION_EVIDENCE_SCHEMA = 'agentic-graph-production-terminal-authorization/v2'
 export const TERMINAL_AUTHORIZATION_RESULT_SCHEMA = 'agentic-graph-production-terminal-authorization-result/v1'
@@ -307,33 +317,6 @@ export const readAuthorizationRuntime = async ({
   })
 }
 
-export const readCanonicalReleaseOwnerState = ({
-  repositoryRoot,
-  execGit = createGitExecutor(repositoryRoot),
-}) => ({
-  branch: execGit(['branch', '--show-current']),
-  head: execGit(['rev-parse', 'HEAD']),
-  originMain: execGit(['rev-parse', 'origin/main']),
-  status: execGit(['status', '--porcelain']),
-})
-
-export const validateCanonicalReleaseOwnerState = ({
-  state,
-  expectedRevision,
-  label,
-}) => {
-  if (!shaPattern.test(String(expectedRevision || ''))) {
-    throw new Error(`${label} expected revision must be an exact commit SHA`)
-  }
-  if (state?.branch !== 'main' ||
-      state?.head !== expectedRevision ||
-      state?.originMain !== expectedRevision ||
-      state?.status !== '') {
-    throw new Error(`${label} canonical main drifted from the authorized release input`)
-  }
-  return state
-}
-
 export const assertCanonicalReleaseOwnerStable = ({
   before,
   after,
@@ -441,11 +424,9 @@ const main = async () => {
     const repositoryRoot = path.resolve(import.meta.dirname, '..')
     const agenticCanvasOsRoot = path.resolve(repositoryRoot, '..', 'agentic-canvas-os')
     requireCanonicalRevision(repositoryRoot, run.head_sha, 'agentic-graph')
-    requireCanonicalRevision(
-      agenticCanvasOsRoot,
-      releaseCandidate.agenticCanvasOs.revision,
-      'Agentic Canvas OS',
-    )
+    const dependencyOptions = { repositoryRoot, agenticCanvasOsRoot,
+      sourceRevision: run.head_sha, dependencyRevision: releaseCandidate.agenticCanvasOs.revision }
+    await verifyCanonicalReleaseDependency(dependencyOptions)
     const runtime = await readAuthorizationRuntime({ agenticCanvasOsRoot, repositoryRoot })
     const promptContract = await import(pathToFileURL(path.join(
       agenticCanvasOsRoot,
@@ -477,6 +458,7 @@ const main = async () => {
       answer,
       repositoryRoot,
     })
+    await verifyCanonicalReleaseDependency(dependencyOptions)
     const evidence = buildTerminalAuthorizationEvidence({
       repository,
       runId: String(run.id),
@@ -538,12 +520,6 @@ const runGhText = (argumentsList, input) => execFileSync('gh', argumentsList, {
 
 const runGhJson = argumentsList => JSON.parse(runGhText(argumentsList))
 const readJson = filePath => JSON.parse(fs.readFileSync(filePath, 'utf8'))
-
-const createGitExecutor = repositoryRoot => argumentsList => execFileSync('git', argumentsList, {
-  cwd: repositoryRoot,
-  encoding: 'utf8',
-  stdio: ['ignore', 'pipe', 'pipe'],
-}).trim()
 
 const requireCanonicalRevision = (repositoryRoot, expectedRevision, label) => validateCanonicalReleaseOwnerState({
   state: readCanonicalReleaseOwnerState({ repositoryRoot }),
