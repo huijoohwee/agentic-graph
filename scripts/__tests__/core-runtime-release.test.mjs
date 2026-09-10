@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import YAML from 'yaml'
 import { DatabaseSync } from 'node:sqlite'
@@ -241,4 +242,53 @@ test('a different authorizer cannot initiate operator enrollment or any candidat
   await assert.rejects(preflightMesh({ ...inputs(env), ...fixture,
     authorization: { ...authorization, humanActorId: 'another-user' } }), /protected human authorizer/)
   assert.equal(fixture.calls.some(args => args.includes('upload')), false)
+})
+
+test('publication client reaches the real Worker with bearer-only authentication and exact SQLite fences', () => {
+  const result = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module'], {
+    cwd: new URL('../../', import.meta.url), encoding: 'utf8', timeout: 30_000,
+    env: { ...process.env, TSX_TSCONFIG_PATH: 'canvas/tsconfig.json' }, input: `
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { createFixture } from './canvas/src/__tests__/helpers/native-agentic-graph-storage-fixture.ts'
+import { createD1PublicationPlan, createD1ReconciliationEvidence } from './scripts/lib/seed-storage-documents-d1.mjs'
+import { publishCanonicalDocuments } from './scripts/core-runtime-release-publications.mjs'
+import { CORE_RUNTIME_PROFILE } from './scripts/runtime-release-profile.mjs'
+const fixture = await createFixture(undefined, { workspaceId: 'kgws:canonical-docs', origin: 'https://airvio.co' })
+try {
+  const sourceSha = 'a'.repeat(40), candidateDigest = 'b'.repeat(64), workspaceId = fixture.workspaceId
+  const content = '# Canonical source', contentHash = createHash('sha256').update(content).digest('hex')
+  fixture.document('canonical', content); fixture.document('private', 'Private unrelated content')
+  fixture.sql.prepare('UPDATE documents SET content_hash=? WHERE id=?').run(contentHash, 'canonical')
+  assert.equal((await fixture.read('canonical')).status, 404)
+  const record = { id: 'canonical', workspaceId, canonicalPath: 'canonical.md', docType: 'markdown', contentMd: content, contentHash, revision: 1, deleted: false }
+  const documentSeeds = [{ documentMutation: { record }, chunkMutations: [] }]
+  const exported = { documents: [record], documentChunks: [], graphSnapshots: [] }
+  const plan = createD1PublicationPlan({ workspaceId, documentSeeds, exported })
+  const stateEvidence = createD1ReconciliationEvidence({ workspaceId, documentSeeds, exported, statements: [],
+    parity: { documentCount: 1, chunkCount: 0 }, snapshotParity: { graphSnapshotCount: 0 }, reconciledAt: new Date() })
+  const authorization = { schema: 'agentic-human-authorization-receipt/v2', status: 'consumed', candidateDigest,
+    controllerId: 'local-test-only', humanActorId: fixture.auth.userId }
+  const environment = { GITHUB_ACTIONS: 'true', GITHUB_REF: 'refs/heads/main', GITHUB_SHA: sourceSha,
+    GITHUB_WORKFLOW: 'Production Release', GITHUB_WORKFLOW_REF: 'test/repo/.github/workflows/release.yml@refs/heads/main',
+    AGENTIC_OS_STORAGE_OWNER_ID: fixture.auth.userId, AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID: workspaceId,
+    AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT: new Date(Date.now() + 3600000).toISOString(),
+    AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY: fixture.auth.sessionToken }
+  let calls = 0
+  const input = { plan, stateEvidence, sourceSha, candidateDigest, authorization, environment, profile: CORE_RUNTIME_PROFILE,
+    fetchFn: async (url, init) => { calls++; assert.equal(url, 'https://airvio.co/api/storage/publications');
+      assert.equal(new Headers(init.headers).has('cookie'), false); return fixture.request(new URL(url).pathname, init) } }
+  const receipt = await publishCanonicalDocuments(input)
+  assert.equal(receipt.status, 'published'); assert.equal(calls, 1)
+  assert.equal(await (await fixture.read('canonical')).text(), content)
+  assert.equal((await fixture.read('private')).status, 404)
+  assert.equal(fixture.sql.prepare('SELECT visibility FROM workspaces WHERE id=?').get(workspaceId).visibility, 'private')
+  fixture.sql.prepare("UPDATE documents SET revision=revision+1, content_md='changed' WHERE id='canonical'").run()
+  assert.equal((await fixture.read('canonical')).status, 404)
+  await assert.rejects(publishCanonicalDocuments(input), error => error.receipt.status === 'preserve-required')
+  assert.equal(calls, 2, 'stale publication receives one conflict response without retry')
+  assert.equal(fixture.sql.prepare('SELECT document_revision FROM document_publications').get().document_revision, 1)
+} finally { await fixture.close() }
+` })
+  assert.equal(result.status, 0, result.stderr || result.error?.message)
 })

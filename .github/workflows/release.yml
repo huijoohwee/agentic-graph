@@ -46,7 +46,7 @@ jobs:
         working-directory: agentic-graph
         run: |
           node ./scripts/travel-mesh-release.mjs validate
-          node --test ./scripts/__tests__/core-runtime-release.test.mjs ./scripts/__tests__/travel-mesh-release.test.mjs
+          node --test ./scripts/__tests__/core-runtime-release.test.mjs ./scripts/__tests__/travel-mesh-release.test.mjs ./scripts/__tests__/travel-mesh-release-provider-proof.test.mjs
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
         working-directory: agentic-graph
@@ -291,11 +291,19 @@ jobs:
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           printf '%s\n' state-reconciliation > "$RUNNER_TEMP/release-stage.txt"
-          npm run storage:d1:seed:docs -- --evidence-output "$RUNNER_TEMP/d1-reconciliation-evidence.json"
+          npm run storage:d1:seed:docs -- --evidence-output "$RUNNER_TEMP/d1-reconciliation-evidence.json" --publication-plan-output "$RUNNER_TEMP/d1-publication-plan.json"
       - name: Record direct D1 state reconciliation receipt
         id: state_receipt
         working-directory: agentic-graph
         run: npm run --silent release:lifecycle:receipts -- state --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --state-evidence "$RUNNER_TEMP/d1-reconciliation-evidence.json" --issued-at "$(jq -r .reconciledAt "$RUNNER_TEMP/d1-reconciliation-evidence.json")" --output-dir "$RUNNER_TEMP/production-lifecycle"
+      - name: Publish exact canonical documents through the storage owner
+        id: publish_docs
+        if: steps.runtime_profile.outputs.profile == 'core'
+        working-directory: agentic-graph
+        env: { AGENTIC_OS_STORAGE_OWNER_ID: '${{ vars.AGENTIC_OS_STORAGE_OWNER_ID }}', AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID: '${{ vars.AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID }}', AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT: '${{ vars.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT }}', AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY: '${{ secrets.AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY }}' }
+        run: |
+          npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
+          node ./scripts/core-runtime-release-publications.mjs --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --plan "$RUNNER_TEMP/d1-publication-plan.json" --state-evidence "$RUNNER_TEMP/d1-reconciliation-evidence.json" --output "$RUNNER_TEMP/core-document-production-evidence.json"
       - name: Verify live runtime
         id: immutable_smoke
         working-directory: agentic-graph
@@ -323,11 +331,7 @@ jobs:
       - name: Verify exact deployment markers and candidate browser fidelity
         id: fidelity
         working-directory: agentic-graph
-        env:
-          PRODUCTION_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}
-          PRODUCTION_MARKER_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}
-          PRODUCTION_IMMUTABLE_MANIFEST_DIGEST: ${{ needs.verify.outputs.manifest_digest }}
-          PRODUCTION_BROWSER_HEADLESS: 'false'
+        env: { PRODUCTION_ORIGIN: '${{ steps.deployment_authority.outputs.deployment_url }}', PRODUCTION_MARKER_ORIGIN: '${{ steps.deployment_authority.outputs.deployment_url }}', PRODUCTION_IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}', PRODUCTION_BROWSER_HEADLESS: 'false' }
         run: |
           for attempt in 1 2 3; do
             fidelity_attempt="$RUNNER_TEMP/production-fidelity-attempt-$attempt.json"

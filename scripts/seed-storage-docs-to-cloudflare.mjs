@@ -8,7 +8,7 @@ import {
   assertNoD1GraphSnapshots,
   buildDirectD1ReconciliationStatements,
   buildDirectD1DocumentStatements,
-  createD1ReconciliationEvidence, createD1StateSnapshotEvidence,
+  createD1ReconciliationEvidence, createD1StateSnapshotEvidence, createD1PublicationPlan,
   parseD1ExecuteJsonRows,
   toSqlString,
 } from './lib/seed-storage-documents-d1.mjs'
@@ -23,7 +23,7 @@ const KNOWN_ARGS = new Set([
   '--base-url',
   '--workspace-id',
   '--device-id',
-  '--evidence-output', '--capture-state',
+  '--evidence-output', '--capture-state', '--publication-plan-output',
   '--dry-run',
   '--help',
 ])
@@ -48,24 +48,19 @@ const ensureNoUnknownArgs = () => {
   }
 }
 
-const printHelp = () => {
-  console.log(`
-Seed Source Files into Cloudflare D1 through the agentic-graph storage Worker.
-
-Usage:
-  node ./scripts/seed-storage-docs-to-cloudflare.mjs [options]
-
-Options:
-  --docs-root <absolute-path>   Docs root to sync (default: ../agentic-canvas-os/docs)
-  --base-url <url>              Storage API origin (default: https://airvio.co)
-  --workspace-id <id>           Target workspace id (default: kgws:canonical-docs)
-  --device-id <id>              Device id label (default: seed:canonical-docs)
-  --evidence-output <path>      Write content-addressed D1 state evidence
-  --capture-state               Read current D1 state without mutation
-  --dry-run                     Print planned mutations without push
-  --help                        Show this help
-`.trim())
-}
+const printHelp = () => console.log([
+  'Seed Source Files through the agentic-graph storage owner.',
+  'Usage: node ./scripts/seed-storage-docs-to-cloudflare.mjs [options]',
+  '--docs-root <path>          Canonical source docs directory',
+  '--base-url <url>            Storage origin (default: https://airvio.co)',
+  '--workspace-id <id>         Workspace (default: kgws:canonical-docs)',
+  '--device-id <id>            Device (default: seed:canonical-docs)',
+  '--evidence-output <path>    Write content-addressed D1 state evidence',
+  '--publication-plan-output <path>  Write a non-authorizing canonical publication plan',
+  '--capture-state            Read current D1 state without mutation',
+  '--dry-run                  Print planned mutations without push',
+  '--help                     Show this help',
+].join('\n'))
 
 const normalizeString = (value) => String(value || '').trim()
 
@@ -544,6 +539,9 @@ const run = async () => {
     const evidence = createD1ReconciliationEvidence({ workspaceId, documentSeeds, statements,
       exported, parity, snapshotParity, reconciledAt: new Date().toISOString() })
     await emitEvidence(evidence)
+    const publicationOutput = getArgValue('--publication-plan-output')
+    if (publicationOutput) await fs.writeFile(path.resolve(publicationOutput),
+      `${JSON.stringify(createD1PublicationPlan({ workspaceId, documentSeeds, exported }))}\n`, { flag: 'wx', mode: 0o600 })
     console.log(`[agentic-graph] export verification: documents=${parity.documentCount}; chunks=${parity.chunkCount}; snapshots=${snapshotParity.graphSnapshotCount}; path-hash-parity=passed; content-parity=passed`)
     console.log('[agentic-graph] direct D1 seed complete')
     return

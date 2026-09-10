@@ -424,6 +424,25 @@ export const countDirectD1LogicalOperations = documentSeeds => {
   return 1 + documentOperations + 3
 }
 
+// This is a content-bound preparation artifact, never publication authority.
+export const createD1PublicationPlan = ({ workspaceId, documentSeeds, exported }) => {
+  assertD1DocumentParity({ expectedDocumentSeeds: documentSeeds, exportedDocuments: exported.documents,
+    exportedDocumentChunks: exported.documentChunks })
+  assertNoD1GraphSnapshots(exported.graphSnapshots)
+  const stateContract = normalizeStateContract({ workspaceId, ...exported })
+  if (digest(stateContract) !== digest(expectedStateContract({ workspaceId, documentSeeds }))) {
+    throw new Error('publication corpus differs from the reconciled canonical documents')
+  }
+  const revisions = stateContract.documents.map(document => {
+    const record = exported.documents.find(record => record.canonicalPath === document.canonicalPath && !record.deleted)
+    if (!Number.isSafeInteger(record?.revision) || record.revision < 1) throw new Error('publication revision is invalid')
+    return { documentId: record.id, revision: record.revision }
+  })
+  const plan = { schema: 'agentic-graph-canonical-document-publication-plan/v1',
+    authorizesEffects: false, stateContract, stateContractDigest: digest(stateContract), revisions }
+  return { ...plan, planDigest: digest(plan) }
+}
+
 export const createD1StateSnapshotEvidence = ({ workspaceId, exported, capturedAt }) => {
   const stateContract = normalizeStateContract({
     workspaceId,
