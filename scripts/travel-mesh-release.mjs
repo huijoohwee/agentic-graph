@@ -14,7 +14,7 @@ import {
   validateRouteInventory,
 } from './travel-mesh-release-inventory.mjs'
 import {
-  assertReleaseConfigPreservesBaseline, bindingInventory, secretBindingNames, verifyCandidateVersion,
+  assertProviderSecretInventory, assertReleaseConfigPreservesBaseline, bindingInventory, secretBindingNames, verifyCandidateVersion,
 } from './travel-mesh-release-bindings.mjs'
 import { probeMesh } from './travel-mesh-release-probes.mjs'
 import { CORE_RUNTIME_PROFILE, TRAVEL_RUNTIME_PROFILE, readRuntimeProfile } from './runtime-release-profile.mjs'
@@ -173,7 +173,7 @@ export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
     const previousVersion = await viewVersion(run, entry, previous.versionId)
     if (SENTINEL.test(JSON.stringify(previousVersion))) throw new Error(`${entry.id} active baseline contains a production sentinel`)
     const existingSecrets = await listSecrets(run, entry), baselineSecrets = secretBindingNames(previousVersion, `${entry.id} baseline`)
-    if (JSON.stringify(existingSecrets) !== JSON.stringify(baselineSecrets)) throw new Error(`${entry.id} provider and active-version secret inventories differ`)
+    assertProviderSecretInventory(existingSecrets, baselineSecrets, entry, configuration)
     const allowed = new Set(entry.secrets.map(([binding]) => binding)), inherited = baselineSecrets.filter(name => !allowed.has(name))
     if (inherited.length && !SHARED_BASELINE_SECRET_WORKERS.has(entry.id)) throw new Error(`${entry.id} has undeclared inherited secrets: ${inherited.join(', ')}`)
     units.push({ id: entry.id, worker: entry.worker, previous,
@@ -312,9 +312,9 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
       const currentVersions = (await versionsFor(run, entry)).map(version => version.id).sort()
       const baselineVersion = await viewVersion(run, entry, current.versionId)
       const currentSecrets = await listSecrets(run, entry)
+      assertProviderSecretInventory(currentSecrets, secretBindingNames(baselineVersion, `${entry.id} baseline`), entry, configuration)
       if (JSON.stringify(currentVersions) !== JSON.stringify(expected.knownVersionIds)
         || JSON.stringify(currentSecrets) !== JSON.stringify(expected.existingSecrets)
-        || digest(currentSecrets) !== expected.preservedSecretNameDigest
         || digest(secretBindingNames(baselineVersion, `${entry.id} baseline`)) !== expected.preservedSecretNameDigest
         || digest(baselineVersion) !== expected.previousVersionDigest
         || digest(bindingInventory(baselineVersion, `${entry.id} baseline`)) !== digest(expected.baselineBindingInventory)) {

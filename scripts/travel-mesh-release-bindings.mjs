@@ -19,6 +19,19 @@ export const versionBindings = (value, label) => {
 export const secretBindingNames = (value, label) => [...versionBindings(value, label).values()]
   .filter(binding => binding.type === 'secret_text').map(binding => binding.name).sort()
 
+export const assertProviderSecretInventory = (providerSecrets, baselineSecrets, entry, configuration) => {
+  // The provider inventory may include secrets from an uploaded, inactive version.
+  // Preserve every serving secret; additions must be explicitly supplied by this release.
+  const supplied = new Set(entry.secrets.map(([name]) => name)
+    .filter(name => typeof configuration.secrets[entry.id]?.[name] === 'string'
+      && configuration.secrets[entry.id][name].trim()))
+  if (new Set(providerSecrets).size !== providerSecrets.length
+    || baselineSecrets.some(name => !providerSecrets.includes(name))
+    || providerSecrets.some(name => !baselineSecrets.includes(name) && !supplied.has(name))) {
+    throw new Error(`${entry.id} provider and active-version secret inventories differ outside supplied release secrets`)
+  }
+}
+
 const managedBindingNames = (entry, configuration) => new Set([
   ...entry.secrets.map(([name]) => name),
   ...Object.keys(configuration.overrides[entry.id]),
