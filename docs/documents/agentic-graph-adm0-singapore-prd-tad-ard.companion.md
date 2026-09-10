@@ -525,7 +525,7 @@ PRD-to-TAD-to-ADR traceability covers 8 of 8 in-scope PRD requirements
 (`100%`).
 
 > **Reference implementation: conformance profile.** The
-> [selected split structural profile](./agentic-graph-prd-tad-adr-conformance-report.md#reference-implementation-2026-07-31-split-conformance)
+> [selected split structural profile](./agentic-graph-prd-tad-adr-mvp-gtm-conformance-report.md#reference-implementation-2026-07-31-split-conformance)
 > links 19 of 19 selected artifact-bearing rules (`100%`) and counts zero
 > advisories. It is not a full guideline-set alignment claim and does not
 > satisfy a VCC.

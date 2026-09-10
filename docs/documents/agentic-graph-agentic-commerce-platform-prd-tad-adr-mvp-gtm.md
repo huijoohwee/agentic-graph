@@ -15,7 +15,7 @@ clean_room_policy: "inspiration-only; no foreign commerce framework code, schema
 
 # agentic-graph Agentic Commerce Platform — Combined PRD/TAD/ADR
 
-**Conformance note**: this document authors against `prd-tad-adr-guidelines.md` v1.7.0. `universal_scope: false` for the same reason as its source document — this names real chosen dependencies, not swappable neutral examples — and each is still introduced under "reference implementation" per the Scope & Neutrality Contract. `local_rung: dev-proven` applies only to the three components this document introduces (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) plus their invocation, offline, payment-ordering, and deploy-boundary helper surfaces; every reused component below inherits whatever rung it already carries in `agentic-graph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0 — this document claims no new proof for old components, only new scope. `delivered_rung` stays `undocumented` until the protected Dev → Prod/Cloudflare release workflow publishes and verifies the integrated branch.
+**Conformance note**: this document authors against `prd-tad-adr-mvp-gtm-guidelines.md` v1.7.0. `universal_scope: false` for the same reason as its source document — this names real chosen dependencies, not swappable neutral examples — and each is still introduced under "reference implementation" per the Scope & Neutrality Contract. `local_rung: dev-proven` applies only to the three components this document introduces (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) plus their invocation, offline, payment-ordering, and deploy-boundary helper surfaces; every reused component below inherits whatever rung it already carries in `agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md` v0.6.0 — this document claims no new proof for old components, only new scope. `delivered_rung` stays `undocumented` until the protected Dev → Prod/Cloudflare release workflow publishes and verifies the integrated branch.
 
 **Revision note (v0.2.0 — implementation lane)**: the `agent/trae/agentic-graph-agentic-commerce` lane now contains the deterministic Agent Definition Validator, Agent Registry/Router, Marketplace Registry Canvas projection helpers, MCP invocation surface, revalidation gate, pending offline queue, session log, startup/deploy boundary checks, and property/process/unit/integration tests. The lane preserves the same platform generalization goal as v0.1.0 — promoting the Funding → Discovery → Issuance → Execution lifecycle already proven and spec'd for one vertical (travel) into a domain-agnostic marketplace substrate — while adding local runtime evidence before protected integration.
 
@@ -81,7 +81,7 @@ Four stages, one new: **Register** (an Agent Builder onboards a Discovery agent 
 | **Must** | Agent Registry/Router (US-1, US-2) | The one new node the entire platform pivot depends on; deterministic, $0, reuses Durable Object infra already provisioned |
 | **Must** | Guardrail/confirmation-gate parity across registered agents (US-4) | Without this the "marketplace" is just a routing table, not a protected commerce substrate — this is what makes it worth calling a platform |
 | **Should** | Marketplace Registry Canvas (US-3) | Not required for the two-agent MVP to function, but required before any third party could ever be safely onboarded |
-| **Should** | Agent Definition Validator against the ACOS Invocation Surface Contract (US-1, US-5's registration half) | Ties this document to the already-formalized `acos-agentic-runtime-ready-production-verified-prd-tad-adr.md` instead of inventing a second, divergent allowlist schema — direct FOSS-hard-gate / min-pivot-max-value application |
+| **Should** | Agent Definition Validator against the ACOS Invocation Surface Contract (US-1, US-5's registration half) | Ties this document to the already-formalized `acos-agentic-runtime-ready-production-verified-prd-tad-adr-mvp-gtm.md` instead of inventing a second, divergent allowlist schema — direct FOSS-hard-gate / min-pivot-max-value application |
 | **Could** | Runtime capability sandboxing beyond the declarative allowlist (US-1's honest gap) | Real engineering scope, not a wiring task; deferred to Platform Roadmap Phase 2 |
 | **Won't (this increment)** | Public third-party self-serve registration UI | The MVP proves the primitive with two internally-controlled agents; opening registration to strangers is a trust/abuse-surface question this document doesn't resolve yet |
 | **Won't (this increment)** | On-chain trust/reputation attestation | Logged as Platform Roadmap Phase 2 (Agent Trust & Verification Registry), not built now — see ADR-2 |
@@ -89,7 +89,7 @@ Four stages, one new: **Register** (an Agent Builder onboards a Discovery agent 
 
 ### Min-Viable Scope
 
-Register the two Discovery Harnesses already spec'd in `agentic-graph-agentic-travel-agencies-prd-tad-adr.md` (Flight, Shopping) behind one Agent Registry/Router, routed by declared category, both terminating in the same unmodified Guardrail Gate → Shared Canvas Node → Issuance Service → Settlement Verifier → Notification Dispatcher chain. No new external vendor integration is required to prove domain-agnosticism — every dependency needed is already contracted.
+Register the two Discovery Harnesses already spec'd in `agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md` (Flight, Shopping) behind one Agent Registry/Router, routed by declared category, both terminating in the same unmodified Guardrail Gate → Shared Canvas Node → Issuance Service → Settlement Verifier → Notification Dispatcher chain. No new external vendor integration is required to prove domain-agnosticism — every dependency needed is already contracted.
 
 ### Out of Scope
 
@@ -101,10 +101,10 @@ Register the two Discovery Harnesses already spec'd in `agentic-graph-agentic-tr
 
 ### Dependencies
 
-**Reused unchanged** — see `agentic-graph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0 for full specs, none re-derived here: Yjs CRDT inside Cloudflare Durable Objects; StraitsX Card MCP Gateway (`card.straitsx.ai/sandbox/sse`); Avalanche Data API + Snowtrace API; Core.app (Core Wallet); Telegram Bot API; Atlas API (aTriptech); eBay Browse API + PricesAPI.
+**Reused unchanged** — see `agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md` v0.6.0 for full specs, none re-derived here: Yjs CRDT inside Cloudflare Durable Objects; StraitsX Card MCP Gateway (`card.straitsx.ai/sandbox/sse`); Avalanche Data API + Snowtrace API; Core.app (Core Wallet); Telegram Bot API; Atlas API (aTriptech); eBay Browse API + PricesAPI.
 
 **New to this document**:
-- Invocation Surface Contract / Agent Definition schema + tool allowlist — **reference implementation**: `acos-agentic-runtime-ready-production-verified-prd-tad-adr.md`. Reused, not reinvented, per the FOSS-hard-gate / min-pivot-max-value constraint already established for `agentic-canvas-os`.
+- Invocation Surface Contract / Agent Definition schema + tool allowlist — **reference implementation**: `acos-agentic-runtime-ready-production-verified-prd-tad-adr-mvp-gtm.md`. Reused, not reinvented, per the FOSS-hard-gate / min-pivot-max-value constraint already established for `agentic-canvas-os`.
 
 ### Open Questions
 
@@ -198,7 +198,7 @@ flowchart TB
   SX -.. settlement_tx .. SNOW
 ```
 
-**Runtime diagram**: as above. **Version notes**: v0.1.0 — first appearance of the Marketplace zone (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) and the Operator Client role; every other node and edge is carried over unmodified from `agentic-graph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0's runtime diagram, re-drawn here rather than diffed against it since this is a new document, not an increment.
+**Runtime diagram**: as above. **Version notes**: v0.1.0 — first appearance of the Marketplace zone (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) and the Operator Client role; every other node and edge is carried over unmodified from `agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md` v0.6.0's runtime diagram, re-drawn here rather than diffed against it since this is a new document, not an increment.
 
 ### Orchestration/Harness Flows
 
@@ -233,7 +233,7 @@ flowchart TB
 
 **Component**: Agent Definition Validator *(new)*
 **Responsibility**: Component checks a submitted Agent Definition and tool allowlist against the Invocation Surface Contract schema before the agent can be routed to.
-**Interfaces**: **reference implementation**: schema defined in `acos-agentic-runtime-ready-production-verified-prd-tad-adr.md` — reused schema, not a new one authored here
+**Interfaces**: **reference implementation**: schema defined in `acos-agentic-runtime-ready-production-verified-prd-tad-adr-mvp-gtm.md` — reused schema, not a new one authored here
 **Dependencies**: Agent Registry/Router (consumer of its pass/reject result)
 **Configuration**: N/A — schema is externally defined and versioned by the ACOS document, not by this one
 **FOSS / Vendor**: FOSS — deterministic schema validation, no external dependency
@@ -253,7 +253,7 @@ flowchart TB
 **Evidence References**: `node --test tests/unit/commission-evaluator.test.mjs tests/props/cp-16-commission-decomposition.test.mjs tests/props/cp-24-commission-rule-round-trip.test.mjs` — exit 0, 4 tests passed including 800 property runs, surface `authoring`.
 **Readiness rung**: Local: `dev-proven` / Delivered: `undocumented`
 
-**Reused components (unchanged) — no new spec written here; see `agentic-graph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0 for full component specs, interfaces, and VCC conditions**: Shared Canvas Node Store, Guardrail Gate, Flight Discovery Harness, Shopping Discovery Harness, Issuance Service, Settlement Verifier, Self-Custody Wallet Interface, Wallet-Linking Service, Notification Dispatcher. This document introduces no changes to any of their interfaces, dependencies, or VCC conditions, and re-derives no new Evidence References for them.
+**Reused components (unchanged) — no new spec written here; see `agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md` v0.6.0 for full component specs, interfaces, and VCC conditions**: Shared Canvas Node Store, Guardrail Gate, Flight Discovery Harness, Shopping Discovery Harness, Issuance Service, Settlement Verifier, Self-Custody Wallet Interface, Wallet-Linking Service, Notification Dispatcher. This document introduces no changes to any of their interfaces, dependencies, or VCC conditions, and re-derives no new Evidence References for them.
 
 ### Component Inventory
 
@@ -823,7 +823,7 @@ Phases are dependency-ordered, not calendar-committed. Phase 2 items unlock the 
 
 This document is an implementation-lane checkpoint for Phase 1 plus an authoring-lane specification for Phase 1b — v0.3.0, authored 2026-08-22. Coverage: 10 PRD-template fields × 2 features + 7 TAD-template fields × 2 architectures + 6 ADRs — **all artifact-bearing template sections present for both features**.
 
-**Rung scoping, stated precisely so it cannot be over-read.** `local_rung: dev-proven` in the frontmatter applies to the v0.2.0 Phase 1 components and the six v0.3.0 components. Same-transaction Bundle Graph Store integration, D1-backed vendor/rule resolution, Durable Object alarm persistence, service-binding runtime wiring, payout dispatch, and reporting projection now have reproducible local Evidence References. This is production-candidate evidence, not a delivery claim. Reused components inherit whatever rung they already carry in `agentic-graph-agentic-travel-agencies-prd-tad-adr.md` v0.6.0. `delivered_rung` remains `undocumented` until the protected Dev → Prod/Cloudflare release workflow integrates, applies migration `0016`, deploys both Workers, and verifies public/runtime readback.
+**Rung scoping, stated precisely so it cannot be over-read.** `local_rung: dev-proven` in the frontmatter applies to the v0.2.0 Phase 1 components and the six v0.3.0 components. Same-transaction Bundle Graph Store integration, D1-backed vendor/rule resolution, Durable Object alarm persistence, service-binding runtime wiring, payout dispatch, and reporting projection now have reproducible local Evidence References. This is production-candidate evidence, not a delivery claim. Reused components inherit whatever rung they already carry in `agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md` v0.6.0. `delivered_rung` remains `undocumented` until the protected Dev → Prod/Cloudflare release workflow integrates, applies migration `0016`, deploys both Workers, and verifies public/runtime readback.
 
 **Clean-room conformance.** The v0.3.0 feature introduces zero new dependencies. ADR-4's directive is an enforced authoring boundary: `node --test tests/scans/no-foreign-commerce-dependency.test.mjs` exited 0 with 2 tests passed on the `authoring` surface, including a synthetic forbidden-specifier fixture proving the scan fails when the boundary is crossed.
 

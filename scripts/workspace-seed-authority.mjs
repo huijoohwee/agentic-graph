@@ -180,7 +180,7 @@ const requirePhysicsEditedMediaEvidence = source => {
   )
   requireValue('scope', evidence.scope, 'xr-authoring-edited-media-delivery')
   requireValue('projection_role', evidence.projection_role, 'downstream scoped evidence; not a second XR readiness authority')
-  requireValue('prd', evidence.prd, '/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md')
+  requireValue('prd', evidence.prd, '/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md')
   requireValue('runtime_owner', evidence.runtime_owner, 'canvas/src/components/timeline; canvas/src/features/gitgraph')
   requireValue('source_snapshot_schema', evidence.source_snapshot_schema, 'agentic-graph-xr-v2-readiness/v1')
   requireValue('source_snapshot_status', evidence.source_snapshot_status, 'source-ready')

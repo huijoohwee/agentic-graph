@@ -14,7 +14,7 @@ lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-storage-sync-document.md"
 document_lifecycle: "superseded"
-superseded_by: "docs/documents/agentic-graph-storage-sync-prd-tad-adr.md@5.0.0"
+superseded_by: "docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md@5.0.0"
 decision_archive: "docs/documents/agentic-graph-storage-sync-adrs-document.md"
 binary_contract: "docs/documents/agentic-graph-artifact-media-storage-architecture.md"
 invocation_authority: "Runtime route identities are owned by the typed route-path source module; this archive declares no invocation route."
@@ -26,7 +26,7 @@ invocation_authority: "Runtime route identities are owned by the typed route-pat
 
 **Archived contract version**: 4.1.0
 
-**Superseding contract**: `docs/documents/agentic-graph-storage-sync-prd-tad-adr.md@5.0.0`
+**Superseding contract**: `docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md@5.0.0`
 
 ## Purpose
 
@@ -72,7 +72,7 @@ Binary persistence keeps its security/overwrite gaps documented separately in th
 
 | Concern | Current owner |
 |---|---|
-| Active product, architecture, VCC, readiness, and ADR contract | `docs/documents/agentic-graph-storage-sync-prd-tad-adr.md` |
+| Active product, architecture, VCC, readiness, and ADR contract | `docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md` |
 | File-level implementation ownership and evidence gaps | `docs/documents/agentic-graph-storage-sync-document.companion.md` |
 | Superseded storage decisions | `docs/documents/agentic-graph-storage-sync-adrs-document.md` |
 | Blob/media authorization and overwrite semantics | `docs/documents/agentic-graph-artifact-media-storage-architecture.md` |

@@ -9,8 +9,8 @@ import settlementVerifier from '../../../agentic-graph-payment/travelAgency/sett
 import agentRegistry from '../../../../../src/registry/agent-registry.mjs?raw'
 import mcpSurface from '../../../../../src/registry/mcp-surface.mjs?raw'
 import registryCanvas from '../../../../../src/registry/registry-canvas.mjs?raw'
-import inheritedCommerceDocument from '../../../../../docs/documents/agentic-graph-agentic-commerce-platform-prd-tad-adr.md?raw'
-import inheritedTravelDocument from '../../../../../docs/documents/agentic-graph-agentic-travel-agencies-prd-tad-adr.md?raw'
+import inheritedCommerceDocument from '../../../../../docs/documents/agentic-graph-agentic-commerce-platform-prd-tad-adr-mvp-gtm.md?raw'
+import inheritedTravelDocument from '../../../../../docs/documents/agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md?raw'
 
 afterEach(() => reset())
 

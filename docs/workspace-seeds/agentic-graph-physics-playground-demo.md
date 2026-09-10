@@ -181,7 +181,7 @@ runtime_validation:
   xr_authoring_edited_media_delivery:
     scope: "xr-authoring-edited-media-delivery"
     projection_role: "downstream scoped evidence; not a second XR readiness authority"
-    prd: "/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md"
+    prd: "/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md"
     runtime_owner: "canvas/src/components/timeline; canvas/src/features/gitgraph"
     source_snapshot_schema: "agentic-graph-xr-v2-readiness/v1"
     source_snapshot_status: "source-ready"

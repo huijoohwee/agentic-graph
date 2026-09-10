@@ -13,7 +13,7 @@ lang: "en-US"
 frontmatter_contract: "required"
 upstream_spec: ".kiro/specs/agentic-graph-payments/requirements.md"
 upstream_owned_requirements: ["R13", "R14", "R15", "R16", "R17"]
-guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
+guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 deployment_topology: "Dev authoring only; Prod mirror and Cloudflare deployment require separate explicit authority"
 chain_evidence_sources:
   - id: "avalanche-data-api"

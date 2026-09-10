@@ -15,6 +15,8 @@ import {
 
 export const XR_V2_PIN_CONSISTENCY_SCHEMA = 'agentic-graph-xr-v2-pin-consistency/v1'
 export const XR_V2_PINNED_DOCUMENT_PATH =
+  'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'
+export const XR_V2_PINNED_DOCUMENT_REVISION_PATH =
   'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md'
 
 const SURFACE_PATHS = Object.freeze({
@@ -331,12 +333,12 @@ export function derivePinTriple(repositoryRoot, revision) {
   if (commit.objectType !== 'commit') throw new Error(`${revision} is not a commit`)
   const blob = readObjectIdentity(
     repositoryRoot,
-    `${commit.objectName}:${XR_V2_PINNED_DOCUMENT_PATH}`,
+    `${commit.objectName}:${XR_V2_PINNED_DOCUMENT_REVISION_PATH}`,
   )
-  if (blob.objectType !== 'blob') throw new Error(`${XR_V2_PINNED_DOCUMENT_PATH} is not a blob`)
+  if (blob.objectType !== 'blob') throw new Error(`${XR_V2_PINNED_DOCUMENT_REVISION_PATH} is not a blob`)
   const bytes = execFileSync('git', ['-C', repositoryRoot, 'cat-file', 'blob', blob.objectName])
   const version = readMatch(bytes.toString('utf8'), /^version:\s*["']?([0-9]+\.[0-9]+\.[0-9]+)/mu)
-  if (!version) throw new Error(`missing version in ${XR_V2_PINNED_DOCUMENT_PATH}`)
+  if (!version) throw new Error(`missing version in ${XR_V2_PINNED_DOCUMENT_REVISION_PATH}`)
   return Object.freeze({
     revision: commit.objectName,
     blob: blob.objectName,
@@ -355,7 +357,7 @@ function readExpected(repositoryRoot) {
     sha256: XR_V2_PINNED_DOCUMENT_SHA256,
     version: derived.version,
     immutableUrl:
-      `https://github.com/huijoohwee/agentic-graph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_PATH}`,
+      `https://github.com/huijoohwee/agentic-graph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_REVISION_PATH}`,
   })
 }
 
@@ -515,7 +517,7 @@ export function checkPinConsistency(repositoryRoot) {
   for (const member of ['revision', 'blob', 'bytes', 'sha256', 'version']) {
     if (derived[member] !== expected[member]) {
       disagreements.push({
-        path: `${expected.revision}:${XR_V2_PINNED_DOCUMENT_PATH}`,
+        path: `${expected.revision}:${XR_V2_PINNED_DOCUMENT_REVISION_PATH}`,
         member,
         expected: expected[member],
         observed: derived[member],

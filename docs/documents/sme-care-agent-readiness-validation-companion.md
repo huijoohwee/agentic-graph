@@ -15,7 +15,7 @@ agent_id: "codex:graph_frontmatter_and_docs"
 doc_path: "docs/documents/sme-care-agent-readiness-validation-companion.md"
 parent: "docs/documents/sme-care-agent-prd-tad.md"
 parent_version: "0.2.0"
-guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md@2.4.0"
+guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.4.0"
 production_release_authorized: false
 evidence_references:
   - check: "npm run ci:integration"

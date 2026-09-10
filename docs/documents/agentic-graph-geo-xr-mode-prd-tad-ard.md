@@ -317,7 +317,7 @@ camera, unleased publisher, or hidden semantic wrapper.
 | `PRD-GXR-06` | `TAD-GXR-GEO` + `TAD-GXR-SEMANTIC` | 06 |
 
 > **Reference implementation: conformance profile.** The
-> [selected split structural profile](./agentic-graph-prd-tad-adr-conformance-report.md#reference-implementation-2026-07-31-split-conformance)
+> [selected split structural profile](./agentic-graph-prd-tad-adr-mvp-gtm-conformance-report.md#reference-implementation-2026-07-31-split-conformance)
 > links 19 of 19 selected artifact-bearing rules (`100%`) and counts zero
 > advisories. It is not a full guideline-set alignment claim.
 

@@ -12,7 +12,7 @@ delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-storage-sync-document.companion.md"
-parent: "docs/documents/agentic-graph-storage-sync-prd-tad-adr.md"
+parent: "docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md"
 parent_version: "5.0.0"
 invocation_authority: "The typed route-path source module owns runtime route identities; this appendix declares no invocation route."
 ---
@@ -339,7 +339,7 @@ Toasts and review actions are always updated; cache eviction never changes recor
 
 ## References
 
-- Parent contract: `docs/documents/agentic-graph-storage-sync-prd-tad-adr.md`
+- Parent contract: `docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md`
 - Superseded v4.1 contract pointer: `docs/documents/agentic-graph-storage-sync-document.md`
 - Binary security contract: `docs/documents/agentic-graph-artifact-media-storage-architecture.md`
 - Superseded ADR archive: `docs/documents/agentic-graph-storage-sync-adrs-document.md`

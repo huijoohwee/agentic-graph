@@ -63,7 +63,7 @@ test("native marketplace keeps four documented boundaries closed and one outward
   }
   const specification = readFileSync(resolve(
     REPOSITORY_ROOT,
-    "docs/documents/agentic-graph-agentic-commerce-platform-prd-tad-adr.md",
+    "docs/documents/agentic-graph-agentic-commerce-platform-prd-tad-adr-mvp-gtm.md",
   ), "utf8");
   const section = specification.split("### Deploy Boundary Register — v0.3.0 additions")[1].split("\n---")[0];
   const rows = section.split("\n").filter(line => /^\| (?:Vendor lifecycle|Split projection|Payout dispatch|Marketplace settlement)/u.test(line));

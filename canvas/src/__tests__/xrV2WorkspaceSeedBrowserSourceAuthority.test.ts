@@ -50,7 +50,7 @@ test('XR v2 workspace seed is the mandatory browser-local mount authority', () =
   )
 
   const pinned = readFileSync(
-    resolve(REPOSITORY_ROOT, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md'),
+    resolve(REPOSITORY_ROOT, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'),
   )
   assert.equal(
     createHash('sha256').update(pinned).digest('hex'),

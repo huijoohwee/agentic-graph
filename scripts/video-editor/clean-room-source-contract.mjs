@@ -7,11 +7,11 @@ export const VIDEO_EDITOR_INDEPENDENCE_SCHEMA = 'agentic-graph-video-editor-inde
 export const OFFICIAL_REFERENCE_URL = 'https://github.com/opencut-app/opencut'
 export const OFFICIAL_REFERENCE_STANZA = '[OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.'
 export const ALLOWED_REFERENCE_DOCUMENTS = Object.freeze([
-  'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md',
+  'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md',
 ])
 
 const ALLOWED_REFERENCE_DOCUMENT_SET = new Set(ALLOWED_REFERENCE_DOCUMENTS)
-const PINNED_XR_AUTHORITY_PATH = 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md'
+const PINNED_XR_AUTHORITY_PATH = 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'
 const POLICY_IMPLEMENTATION_PATHS = new Set([
   'scripts/__tests__/video-editor-source-smoke.test.mjs',
   'scripts/video-editor/clean-room-source-contract.mjs',
