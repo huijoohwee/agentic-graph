@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import YAML from 'yaml'
 import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs'
 import { classifyServiceWorkerReleaseTransition } from '../service-worker-release-transition.mjs'
 import { seedReturningUserCacheProof } from '../service-worker-upgrade-cache-proof.mjs'
@@ -393,8 +394,9 @@ test('verified production mirror is published only after live smoke', () => {
   assertIncludes(publishStep, [ 'body_file="$RUNNER_TEMP/production-mirror-pr-body.md"', 'gh pr create --repo huijoohwee/huijoohwee', '--body-file "$body_file"', 'mirror_required_check_count=', 'Runtime Readiness Gate',
     'Mirror PR did not report required check: $mirror_check_name', 'timeout --foreground --kill-after=30s 25m', '--match-head-commit "$mirror_head_sha"', ])
   assertExcludes(publishStep, ['Mirror PR has no reported checks; continuing with release validation.'])
-  assertIncludes(deployJob, [ 'PRODUCTION_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}', 'PRODUCTION_MARKER_ORIGIN: ${{ steps.deployment_authority.outputs.deployment_url }}',
-    "PRODUCTION_BROWSER_HEADLESS: 'false'", 'xvfb-run --auto-servernum npm run --silent production:fidelity:check',
+  assert.deepEqual(YAML.parse(releaseWorkflow).jobs.deploy.steps.find(step => step.id === 'fidelity').env, {
+    PRODUCTION_ORIGIN: '${{ steps.deployment_authority.outputs.deployment_url }}', PRODUCTION_MARKER_ORIGIN: '${{ steps.deployment_authority.outputs.deployment_url }}', PRODUCTION_IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}', PRODUCTION_BROWSER_HEADLESS: 'false' })
+  assertIncludes(deployJob, [ 'xvfb-run --auto-servernum npm run --silent production:fidelity:check',
     'timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm',
     'timeout --foreground --kill-after=30s 12m xvfb-run --auto-servernum npm run --silent production:sw-upgrade:verify', 'PRODUCTION_SW_PROFILE_DIR: ${{ runner.temp }}/agentic-graph-production-sw-profile',
     'PRODUCTION_SW_EVIDENCE_PATH: ${{ runner.temp }}/agentic-graph-production-sw-evidence.json', ])
