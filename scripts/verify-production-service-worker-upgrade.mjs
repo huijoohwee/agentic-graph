@@ -5,26 +5,18 @@ import { chromium } from 'playwright'
 import { isAcceptedWorkerScriptUrl } from './production-service-worker-registration-proof.mjs'
 import { classifyServiceWorkerReleaseTransition } from './service-worker-release-transition.mjs'
 import { seedReturningUserCacheProof } from './service-worker-upgrade-cache-proof.mjs'
+import { CANONICAL_SCOPE_SEGMENT, classifyScopeUpgradeKind, isKnownPreviousScope,
+  readPublishedRuntimeRevision, checkPublishedWorkerSources, writeSentinels, readSentinels, normalizeOrigin, observePageFailures,
+} from './production-service-worker-profile.mjs'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const EVIDENCE_SCHEMA = 'agentic-graph-production-service-worker-transition/v3'
-const SENTINEL_KEY = 'kg:production-service-worker-upgrade-sentinel'
-const SENTINEL_DATABASE = 'kg-production-service-worker-upgrade-proof'
 const CHAT_RUNTIME_SCHEMA = 'agentic-graph-chat-stream-worker/v2'
-const CANONICAL_SCOPE_SEGMENT = 'agentic-graph'
 const WAIT_TIMEOUT_MS = 90_000
 
 const mode = String(process.argv[2] || '').trim()
 if (mode !== 'prewarm' && mode !== 'verify') {
   throw new Error('Usage: verify-production-service-worker-upgrade.mjs <prewarm|verify>')
-}
-
-const normalizeOrigin = value => {
-  const url = new URL(String(value || '').trim())
-  if (url.pathname !== '/' || url.search || url.hash) {
-    throw new Error('production service worker profile origin must be an origin')
-  }
-  return url.origin
 }
 
 const profileOriginInput = String(process.env.PRODUCTION_SW_PROFILE_ORIGIN || '').trim()
@@ -45,73 +37,10 @@ for (const [label, target] of [['profile directory', profileDirectory], ['eviden
   }
 }
 
-const readRuntimeRevision = async () => {
-  const probeReadinessMarker = async scopeSegment => {
-    const response = await fetch(`${profileOrigin}/${scopeSegment}/.well-known/runtime-readiness.json`, {
-      cache: 'no-store',
-    })
-    if (response.status === 200) return response
-    assert.equal(
-      response.status,
-      404,
-      `readiness probe for /${scopeSegment}/ must answer 200 or 404, got ${response.status}`,
-    )
-    return null
-  }
-  const scopeSegment = CANONICAL_SCOPE_SEGMENT
-  const response = await probeReadinessMarker(scopeSegment)
-  assert.ok(response, 'public runtime readiness marker must be available')
-  const marker = await response.json()
-  const revision = String(marker?.source?.revision || '').trim()
-  assert.match(revision, SHA_PATTERN, 'public runtime readiness marker must expose an exact source revision')
-  return { scopeSegment, revision }
-}
-
-const classifyScopeUpgradeKind = scopeSegment => scopeSegment === CANONICAL_SCOPE_SEGMENT
-  ? 'in-scope-upgrade'
-  : 'scope-transition'
-
-const verifyPublishedWorkerSources = async expectedRevision => {
-  const fetchMutableWorkerSource = async relativeUrl => {
-    const response = await fetch(`${profileOrigin}${relativeUrl}`, { cache: 'no-store' })
-    assert.equal(response.status, 200, `${relativeUrl} must be publicly readable`)
-    assert.match(
-      String(response.headers.get('cache-control') || ''),
-      /\bno-store\b/i,
-      `${relativeUrl} must bypass the HTTP cache`,
-    )
-    return response.text()
-  }
-  const revisionQuery = `revision=${expectedRevision}`
-  const topLevelWorker = await fetchMutableWorkerSource('/agentic-graph/sw.js')
-  const revisionAuthority = await fetchMutableWorkerSource(
-    `/agentic-graph/agentic-graph-service-worker-revision.js?${revisionQuery}`,
-  )
-  const chatRuntime = await fetchMutableWorkerSource(
-    `/agentic-graph/agentic-graph-chat-stream-sw.js?${revisionQuery}`,
-  )
-  assert.match(
-    topLevelWorker,
-    new RegExp(`agentic-graph-service-worker-revision\\.js\\?${revisionQuery}`),
-    'public service worker must revision-bind its authority import',
-  )
-  assert.match(
-    topLevelWorker,
-    new RegExp(`agentic-graph-chat-stream-sw\\.js\\?${revisionQuery}`),
-    'public service worker must revision-bind its chat runtime import',
-  )
-  assert.match(
-    revisionAuthority,
-    new RegExp(`const sourceRevision = ["']${expectedRevision}["']`),
-    'public active-worker authority must report the exact release revision',
-  )
-  assert.match(chatRuntime, new RegExp(CHAT_RUNTIME_SCHEMA))
-  assert.doesNotMatch(
-    chatRuntime,
-    /addEventListener\(["'](?:install|activate)["']/,
-    'public chat runtime must not retain legacy lifecycle listeners',
-  )
-}
+const readRuntimeRevision = () => readPublishedRuntimeRevision({ profileOrigin })
+const verifyPublishedWorkerSources = expectedRevision => checkPublishedWorkerSources({
+  profileOrigin, expectedRevision, chatRuntimeSchema: CHAT_RUNTIME_SCHEMA,
+})
 
 const waitForDocumentRevision = async (page, expectedRevision, scopeSegment = CANONICAL_SCOPE_SEGMENT) => {
   const assetsPrefix = `/${scopeSegment}/assets/`
@@ -137,47 +66,6 @@ const waitForDocumentRevision = async (page, expectedRevision, scopeSegment = CA
   )
   return scriptPaths
 }
-
-const writeSentinels = async (page, value) => page.evaluate(async ({ databaseName, key, sentinel }) => {
-  window.localStorage.setItem(key, sentinel)
-  await new Promise((resolve, reject) => {
-    const request = indexedDB.open(databaseName, 1)
-    request.onupgradeneeded = () => request.result.createObjectStore('proof')
-    request.onerror = () => reject(request.error)
-    request.onsuccess = () => {
-      const transaction = request.result.transaction('proof', 'readwrite')
-      transaction.objectStore('proof').put(sentinel, key)
-      transaction.oncomplete = () => {
-        request.result.close()
-        resolve()
-      }
-      transaction.onerror = () => reject(transaction.error)
-    }
-  })
-}, { databaseName: SENTINEL_DATABASE, key: SENTINEL_KEY, sentinel: value })
-
-const readSentinels = async page => page.evaluate(async ({ databaseName, key }) => {
-  const local = window.localStorage.getItem(key)
-  const indexed = await new Promise((resolve, reject) => {
-    const request = indexedDB.open(databaseName, 1)
-    request.onerror = () => reject(request.error)
-    request.onsuccess = () => {
-      if (!request.result.objectStoreNames.contains('proof')) {
-        request.result.close()
-        resolve(null)
-        return
-      }
-      const transaction = request.result.transaction('proof', 'readonly')
-      const read = transaction.objectStore('proof').get(key)
-      read.onsuccess = () => {
-        request.result.close()
-        resolve(read.result ?? null)
-      }
-      read.onerror = () => reject(read.error)
-    }
-  })
-  return { local, indexed }
-}, { databaseName: SENTINEL_DATABASE, key: SENTINEL_KEY })
 
 const readServiceWorkerRevisionEvidence = async (
   page,
@@ -419,24 +307,6 @@ const waitForServiceWorkerRevision = async (
   )
 }
 
-const observePageFailures = (page, scopeSegment = CANONICAL_SCOPE_SEGMENT) => {
-  const assetsPrefix = `/${scopeSegment}/assets/`
-  const pageErrors = []
-  const scriptPaths = []
-  const poisonedModules = []
-  page.on('pageerror', error => pageErrors.push(error.message))
-  page.on('response', response => {
-    const request = response.request()
-    const url = new URL(response.url())
-    if (request.resourceType() !== 'script') return
-    if (url.pathname.startsWith(assetsPrefix)) scriptPaths.push(url.pathname)
-    if (String(response.headers()['content-type'] || '').toLowerCase().includes('text/html')) {
-      poisonedModules.push(response.url())
-    }
-  })
-  return { pageErrors, scriptPaths, poisonedModules }
-}
-
 const launchProfile = () => chromium.launchPersistentContext(profileDirectory, {
   channel: 'chrome',
   headless: browserHeadless,
@@ -545,7 +415,7 @@ const verify = async () => {
   assert.equal(evidence.transitionKind, transitionKind)
   const previousScopeSegment = String(evidence.previousScope || '').trim()
   assert.ok(
-    previousScopeSegment === CANONICAL_SCOPE_SEGMENT,
+    isKnownPreviousScope(previousScopeSegment),
     'prewarm evidence must record a known previous deployment scope segment',
   )
   const upgradeKind = classifyScopeUpgradeKind(previousScopeSegment)
