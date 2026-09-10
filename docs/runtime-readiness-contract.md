@@ -208,3 +208,9 @@ FRONTEND_URL=https://example.invalid \
 MCP_ENDPOINT=https://example.invalid/mcp \
 npm run runtime:verify:deployed
 ```
+
+## Profile-bound D1 release preparation
+
+The source-selected core profile applies only its six declared storage/authentication migrations, preserving the original SQL and provider ledger filenames. Optional product migrations remain explicitly deferred. The existing release owner inspects all selected pending migrations before Pages deployment, rechecks the exact inventory before Worker upload, and checks it again before migration apply. Its receipt records selected source digests, applied names, pending names and deferred names. No environment variable can broaden this selection.
+
+The two storage trigger/index migrations are accepted only at their reviewed exact hashes. Bounded SQLite tests preserve legacy rows, exercise legacy-schema writes/deletions with the retained triggers, verify revision fences and child tombstones, and check foreign keys. Unknown destructive SQL remains rejected; incompatible travel migrations are reported together. A failed or ambiguous apply retains its bookmark and observed partial inventory and cannot claim rollback. This is source/preparation coverage, not a live migration or production-ready receipt.

@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import { TRAVEL_MESH_PLAN, bindCommerceProviderReleaseMetadata, validateProtectedConfiguration, validatePlan } from './travel-mesh-release-plan.mjs'
 import { resourceReadiness, assertMeshSubdomainsDisabled } from './travel-mesh-release-inventory.mjs'
 import { probeMesh } from './travel-mesh-release-probes.mjs'
-import { CORE_RUNTIME_PLAN, validateCoreConfiguration, validateCoreOwnerAuthority } from './core-runtime-release-plan.mjs'
+import { CORE_RUNTIME_PLAN, CORE_RUNTIME_MIGRATIONS, CORE_FORWARD_MIGRATION_DIGESTS, validateCoreConfiguration, validateCoreOwnerAuthority } from './core-runtime-release-plan.mjs'
 import { coreResourceReadiness, coreExposure, enrollCoreOwner } from './core-runtime-release-inventory.mjs'
 import { probeCoreRuntime, probeCoreBaseline, probeRestoredCore } from './core-runtime-release-probes.mjs'
 
@@ -14,7 +14,8 @@ export const TRAVEL_RUNTIME_PROFILE = Object.freeze({
   probe: (configuration, options) => probeMesh(configuration.variables.TRAVEL_MESH_PROBE_SPEC_JSON, options),
 })
 export const CORE_RUNTIME_PROFILE = Object.freeze({
-  id: 'core', plan: CORE_RUNTIME_PLAN, requiresTravelBootstrap: false,
+  id: 'core', plan: CORE_RUNTIME_PLAN, migrations: CORE_RUNTIME_MIGRATIONS,
+  forwardMigrationDigests: CORE_FORWARD_MIGRATION_DIGESTS, requiresTravelBootstrap: false,
   schema: kind => `agentic-graph-core-runtime-${kind}/v1`,
   configure: validateCoreConfiguration, validateAuthority: validateCoreOwnerAuthority, initialize: enrollCoreOwner, resources: coreResourceReadiness, exposure: coreExposure, probe: probeCoreRuntime,
   probeBaseline: probeCoreBaseline, probeRestored: probeRestoredCore,
