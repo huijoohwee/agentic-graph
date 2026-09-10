@@ -159,7 +159,8 @@ test('production release bounds transient artifacts and durably retains typed li
   }
 })
 test('production release records the terminal interaction, protected-environment human, and lifecycle carrier', () => {
-  assertAllMatch(releaseWorkflow, [ /permissions:\s*\n\s*actions: read\s*\n\s*contents: read/, /actions\/runs\/\$\{\{ github\.run_id \}\}\/approvals/, /name: Create neutral release lifecycle receipts/, /name: Record exact human authorization and claim release controller/, /name: Record live verification receipt/, /name: Record publication receipt/, /PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST/,
+  assert.deepEqual(YAML.parse(releaseWorkflow).permissions, { actions: 'read', contents: 'read' })
+  assertAllMatch(releaseWorkflow, [ /actions\/runs\/\$\{\{ github\.run_id \}\}\/approvals/, /name: Create neutral release lifecycle receipts/, /name: Record exact human authorization and claim release controller/, /name: Record live verification receipt/, /name: Record publication receipt/, /PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST/,
     /--release-candidate "\$RUNNER_TEMP\/production-authorization\/production-release-candidate\.json"/, /--local-review "\$RUNNER_TEMP\/production-authorization\/local-review-candidate\.json"/, ])
   assertAllMatch(productionLifecycleScript, [ /production-release-lifecycle-contract\.mjs/, /contracts\/production-release-lifecycle\.v1\.schema\.json/, /contracts\/production-release-lifecycle\.v2\.schema\.json/, /production release requires exactly one authenticated human approval/, /protected environment authorization drifted from the prepared candidate digest/, ])
   assertNoneMatch(productionLifecycleScript, [ /scripts\/collaborative-release-lifecycle-contract\.mjs/,
@@ -511,11 +512,10 @@ test('production artifact includes the public app-shell mirror fetched by Pages 
     releaseWorkflow.indexOf('name: Upload verified release artifact'),
     releaseWorkflow.indexOf('\n  deploy:'),
   )
-  assert.match(artifactStep, /huijoohwee\/README\.md/)
-  assert.match(artifactStep, /huijoohwee\/content\/agentic-graph/)
-  assert.match(artifactStep, /huijoohwee\/agentic-graph/)
+  assert.match(releaseWorkflow, /name: Stage complete verified release artifact/)
+  assert.match(releaseWorkflow, /production-mirror-artifact-entries\.mjs stage/)
+  assert.match(artifactStep, /path: '\$\{\{ runner.temp \}\}\/verified-production-artifact'/)
   assert.match(artifactStep, /include-hidden-files: true/)
-  assert.match(artifactStep, /\.agentic-graph-production-artifact-manifest\.json/)
 })
 test('deploy reconciles verified additions and deletions into the exact mirror base', () => {
   const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))

@@ -334,6 +334,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
     throw wrapped
   }
   const units = []
+  let routing = { status: 'not-attempted' }
   let identityProvisioning = { status: 'not-attempted' }
   let migrations = { pending: [], applied: false, bookmark: null, disposition: 'not-attempted' }
   try {
@@ -362,6 +363,10 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
       if (index === mcpIndex) await upload(entry, index)
       await activateCandidate({ entry, unit: units.find(candidate => candidate.id === entry.id), sourceSha, run })
     }
+    if (profile.configureRouting) {
+      routing = { status: 'attempted' }
+      routing = await profile.configureRouting({ configuration, environment, apiFetch, expectedDigest: preflight.resources.storageDomain })
+    }
     const exposureBefore = await profile.exposure(apiFetch, environment)
     const probes = await profile.probe(configuration, {
       environment, fetchFn, now, providerMetadata: { sourceRevision: sourceSha, providerVersionId: candidateDigest },
@@ -370,24 +375,28 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
     const serving = await servingVersions({ units: receiptUnits, run,
       expectedVersionId: unit => unit.candidate.versionId, boundary: 'after live probes', profile })
     const exposure = await profile.exposure(apiFetch, environment)
+    await profile.verifyRouting?.({ configuration, environment, apiFetch, routing })
     return seal({ ...(preflight.baselineProbes ? { baselineProbes: preflight.baselineProbes } : {}), schema: profile.schema('release-receipt'), status: 'deployed', sourceRevision: sourceSha,
-      candidateDigest, configurationDigest: configuration.configurationDigest, migrations, identityProvisioning, units: receiptUnits,
+      candidateDigest, configurationDigest: configuration.configurationDigest, migrations, identityProvisioning, routing, units: receiptUnits,
       exposureBefore, probes, serving, exposure, deployedAt: now().toISOString() })
   } catch (error) {
     if (error.migrationReceipt) migrations = error.migrationReceipt
     const compensation = await compensateUnits({ units, run, sourceSha, profile })
+    let routingCompensation = { status: 'not-required' }
+    try { routingCompensation = await profile.restoreRouting?.({ configuration, environment, apiFetch, routing }) ?? routingCompensation }
+    catch (routingError) { routingCompensation = { status: 'failed', error: routingError.message.slice(0, 1000) } }
     let restorationProof = { status: 'not-proven', servingBefore: [], probes: [], serving: [], error: 'compensation-incomplete' }
     if (!compensation.failures.length) {
       try { restorationProof = await proveRestoredMesh({ units: preflight.units, run, configuration, environment, apiFetch, fetchFn, now,
         boundary: 'self-compensated', profile, baselineProbes: preflight.baselineProbes }) }
       catch (proofError) { restorationProof = { ...restorationProof, status: 'failed', error: proofError.message.slice(0, 1_000) } }
     }
-    const mutationAmbiguous = (error.uploadAttempted === true && !error.observedCandidate) || error.migrationMutationPossible === true || identityProvisioning.status === 'attempted'
+    const mutationAmbiguous = (error.uploadAttempted === true && !error.observedCandidate) || error.migrationMutationPossible === true || identityProvisioning.status === 'attempted' || routingCompensation.status === 'failed'
     const mutationAttempted = error.uploadAttempted === true || units.length > 0 || error.migrationMutationPossible === true
     const mutationProven = units.length > 0 || migrations.applied === true
     const failure = seal({ schema: profile.schema('failure-receipt'),
       status: compensation.failures.length || mutationAmbiguous || restorationProof.status !== 'proved' ? 'preserve-required' : 'rolled-back', sourceRevision: sourceSha,
-      candidateDigest, migrations, identityProvisioning, units: profile.plan.flatMap(entry => units.filter(unit => unit.id === entry.id)),
+      candidateDigest, migrations, identityProvisioning, routing, routingCompensation, units: profile.plan.flatMap(entry => units.filter(unit => unit.id === entry.id)),
       compensation, restorationProof, mutationAttempted, mutationProven, mutationAmbiguous,
       failedAt: now().toISOString(), error: String(error?.message ?? error).slice(0, 1_000) })
     const wrapped = new Error(`travel mesh deployment failed (${failure.status}): ${error.message}`)
@@ -408,11 +417,12 @@ export const restoreMesh = async ({ sourceSha, candidateDigest, authorization, r
   try {
     compensation = await compensateUnits({ units: receipt.units, run, sourceSha, profile })
     if (compensation.failures.length) throw new Error(`travel mesh rollback requires preservation: ${compensation.failures.map(item => item.id).join(', ')}`)
+    const routingCompensation = await profile.restoreRouting?.({ configuration, environment, apiFetch, routing: receipt.routing }) ?? { status: 'not-required' }
     const restorationProof = await proveRestoredMesh({ units: receipt.units, run, configuration, environment, apiFetch, fetchFn, now,
       boundary: 'restored', profile, baselineProbes: receipt.baselineProbes })
     return seal({ schema: profile.schema('rollback-receipt'), status: 'restored', sourceRevision: sourceSha,
       candidateDigest, configurationDigest: configuration.configurationDigest, forwardCompatibleD1Disposition: receipt.migrations.disposition, identityProvisioning: receipt.identityProvisioning,
-      compensation, restorationProof, probes: restorationProof.probes, serving: restorationProof.serving, restoredAt: now().toISOString() })
+      compensation, routingCompensation, restorationProof, probes: restorationProof.probes, serving: restorationProof.serving, restoredAt: now().toISOString() })
   } catch (error) {
     const failure = seal({ schema: profile.schema('rollback-failure-receipt'), status: 'preserve-required',
       sourceRevision: sourceSha, candidateDigest, compensation, failedAt: now().toISOString(), error: error.message.slice(0, 1_000) })
