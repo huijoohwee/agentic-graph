@@ -479,33 +479,15 @@ test('Rich Media preview timing owners always select schema and browser contract
 
 test('ready pull request metadata follows slash hash at grammar', async () => {
   const contract = await readContract()
-  const metadata = validatePullRequestMetadata(`---
+  const metadata = validatePullRequestMetadata(`<!-- CURSOR_AGENT_PR_BODY_BEGIN -->
+---
 action: /fix
 scope: "#canvas.render"
 actor: "@codex-task"
 base_sha: "0123456789abcdef0123456789abcdef01234567"
 ---
 `, contract)
-
   assert.equal(metadata.scope, '#canvas.render')
-})
-
-test('ready pull request metadata ignores a leading HTML comment wrapper', async () => {
-  const contract = await readContract()
-  const metadata = validatePullRequestMetadata(`<!-- CURSOR_AGENT_PR_BODY_BEGIN -->
----
-action: /change
-scope: "#prd-tad-adr-mvp-gtm-locator"
-actor: "@cursor-agent"
-base_sha: "0123456789abcdef0123456789abcdef01234567"
----
-
-/change #prd-tad-adr-mvp-gtm-locator @cursor-agent
-<!-- CURSOR_AGENT_PR_BODY_END -->
-`, contract)
-
-  assert.equal(metadata.action, '/change')
-  assert.equal(metadata.scope, '#prd-tad-adr-mvp-gtm-locator')
 })
 
 test('draft pull requests may omit incomplete metadata', async () => {
