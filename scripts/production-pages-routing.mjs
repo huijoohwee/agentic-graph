@@ -1,4 +1,4 @@
-import { CANONICAL_MIRROR_NAMESPACE } from './mirror-namespace-contract.mjs'
+import { CANONICAL_MIRROR_NAMESPACE, LEGACY_PRODUCT_NAMESPACES } from './mirror-namespace-contract.mjs'
 import { XR_V2_CANONICAL_REDIRECT, XR_V2_ROOT_REDIRECT } from './xr-v2/production-publish-contract.mjs'
 
 const GENERATED_NAMESPACE_START = '# BEGIN agentic-graph generated namespace routes'
@@ -13,7 +13,12 @@ const obsoleteRedirectLines = new Set([
 ])
 const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const blockRegex = (start, end) => new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\n?`, 'g')
-const isManagedRoute = line => line.startsWith('/agentic-graph') || line.startsWith('/content/agentic-graph')
+const isManagedRoute = line => {
+  const source = line.split(/\s/, 1)[0]
+  return [CANONICAL_MIRROR_NAMESPACE, ...LEGACY_PRODUCT_NAMESPACES].some(namespace =>
+    [ `/${namespace}`, `/content/${namespace}` ].some(prefix =>
+      source === prefix || source.startsWith(`${prefix}/`)))
+}
 
 const stripManagedNamespaceRoutes = existing => existing
   .replace(blockRegex(GENERATED_NAMESPACE_START, GENERATED_NAMESPACE_END), '')
@@ -28,6 +33,11 @@ export const buildAgenticGraphRedirects = ({ existing, rootFiles }) => {
   const canonicalBase = `/${CANONICAL_MIRROR_NAMESPACE}`
   const namespaceLines = [
     GENERATED_NAMESPACE_START,
+    ...LEGACY_PRODUCT_NAMESPACES.flatMap(namespace => [
+      `/${namespace} ${canonicalBase} 301`, `/${namespace}/ ${canonicalBase}/ 301`,
+      `/${namespace}/* ${canonicalBase}/:splat 301`,
+      `/content/${namespace} ${canonicalBase} 301`, `/content/${namespace}/* ${canonicalBase}/:splat 301`,
+    ]),
     `${canonicalBase} /content/agentic-graph/index.html 200`,
     `${canonicalBase}/assets/* /content/agentic-graph/assets/:splat 200`,
     `${canonicalBase}/vendor/* /content/agentic-graph/vendor/:splat 200`,
