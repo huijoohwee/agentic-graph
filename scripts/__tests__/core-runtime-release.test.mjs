@@ -73,7 +73,7 @@ const provider = (env, { candidateReady = true, zoneAccount = env.CLOUDFLARE_ACC
       updated: domain ? [{ id: domain.id, modified: false }] : [], removed: [], conflicting: [],
     })
     if (url.pathname.endsWith('/domains/records') && options?.method === 'PUT') {
-      domain = { id: 'storage-domain', ...JSON.parse(options.body).origins[0], service: 'agentic-storage', environment: '' }
+      domain = { id: 'storage-domain', ...JSON.parse(options.body).origins[0], service: 'agentic-storage', environment: 'production' }
       return envelope([domain])
     }
     if (url.pathname.endsWith('/workers/domains')) {

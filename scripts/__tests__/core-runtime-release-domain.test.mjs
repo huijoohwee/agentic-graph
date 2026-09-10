@@ -6,14 +6,16 @@ import { probeCoreStorageOrigin } from '../core-runtime-release-probes.mjs'
 
 const configuration = { variables: { CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32), AGENTIC_OS_PUBLIC_ZONE_ID: 'b'.repeat(32), AGENTIC_OS_PUBLIC_ZONE_NAME: 'airvio.co' } }
 const environment = { CLOUDFLARE_API_TOKEN: 'test-only' }
-const spec = { hostname: 'storage.airvio.co', service: 'agentic-storage', zone_id: 'b'.repeat(32), zone_name: 'airvio.co', environment: '' }
+const spec = { hostname: 'storage.airvio.co', service: 'agentic-storage', zone_id: 'b'.repeat(32), zone_name: 'airvio.co', environment: 'production' }
 const fixture = ({ domain = null, dns = [], failCreate = false } = {}) => {
   const state = { domain, dns, writes: [] }
   const apiFetch = async (raw, options = {}) => {
     const url = new URL(raw), method = options.method || 'GET'
     const result = value => Response.json({ success: true, result: value })
     if (url.pathname.endsWith('/domains/changeset')) return result({
-      added: state.domain ? [] : [{ id: 'planned-domain', ...spec }],
+      // Cloudflare plans the script's default environment as empty, but lists
+      // its active domain under production (observed in run 34459215835).
+      added: state.domain ? [] : [{ id: 'planned-domain', ...spec, environment: '' }],
       updated: state.domain ? [{ id: state.domain.id, modified: false }] : [], removed: [],
       conflicting: !state.domain && state.dns.length ? [{ hostname: spec.hostname }] : [],
     })
@@ -61,6 +63,8 @@ test('an existing owned domain is reused and retained during rollback', async ()
 test('foreign ownership, DNS occupancy, and post-preflight drift cannot overwrite a hostname', async () => {
   for (const existing of [
     { domain: { id: 'foreign-domain', ...spec, service: 'someone-else' } },
+    { domain: { id: 'foreign-domain', ...spec, environment: 'staging' } },
+    { domain: { id: 'unproved-domain', ...spec, environment: '' } },
     { dns: [{ id: 'foreign-dns', name: spec.hostname, type: 'CNAME', content: 'elsewhere.example', proxied: true }] },
   ]) {
     const args = fixture(existing)
