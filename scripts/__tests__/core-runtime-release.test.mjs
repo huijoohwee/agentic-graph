@@ -25,10 +25,12 @@ const environment = () => ({
 })
 const readyBody = () => ({ ok: true, service: 'agentic-storage', scope: 'core', runtime: 'production', reasons: [],
   dependencies: { d1: 'ready', canvasRoom: 'ready', signingSecret: 'ready', browserSessionAccessConfiguration: 'configured', authSchema: 'ready', blobStorage: 'ready' } })
-const provider = (env, { candidateReady = true, zoneAccount = env.CLOUDFLARE_ACCOUNT_ID } = {}) => {
+const provider = (env, { candidateReady = true, zoneAccount = env.CLOUDFLARE_ACCOUNT_ID,
+  baselineSecrets = [], providerSecrets = baselineSecrets } = {}) => {
   const config = validateCoreConfiguration(env), calls = [], versions = new Map()
   let active = 'baseline', deployment = 1
   const baseline = { id: active, annotations: { 'workers/tag': 'baseline' }, resources: { bindings: [
+    ...baselineSecrets.map(name => ({ name, type: 'secret_text' })),
     { name: 'DB', type: 'd1', id: env.AGENTIC_OS_STORAGE_D1_DATABASE_ID },
     { name: 'AGENTIC_OS_STORAGE_BLOB_BUCKET', type: 'r2_bucket', bucket_name: env.AGENTIC_OS_STORAGE_R2_BUCKET },
     { name: 'AGENTIC_OS_CANVAS_ROOM', type: 'durable_object_namespace', namespace_id: 'preserved-namespace' },
@@ -43,7 +45,7 @@ const provider = (env, { candidateReady = true, zoneAccount = env.CLOUDFLARE_ACC
     if (args.includes('deployments') && args.includes('status')) return json({ id: String(deployment), created_on: '2026-09-10T00:00:00Z', versions: [{ version_id: active, percentage: 100 }] })
     if (args.includes('versions') && args.includes('list')) return json([...versions.values()])
     if (args.includes('versions') && args.includes('view')) return json(versions.get(args[args.indexOf('view') + 1]))
-    if (args.includes('secret') && args.includes('list')) return json([])
+    if (args.includes('secret') && args.includes('list')) return json(providerSecrets.map(name => ({ name, type: 'secret_text' })))
     if (args.includes('d1') && args.includes('list')) return json([{ uuid: env.AGENTIC_OS_STORAGE_D1_DATABASE_ID, name: env.AGENTIC_OS_STORAGE_D1_DATABASE_NAME }])
     if (args.includes('r2')) return { stdout: `name: ${env.AGENTIC_OS_STORAGE_R2_BUCKET}\n`, stderr: '' }
     if (args.includes('d1') && args.includes('execute')) return json([{ results: fs.readdirSync(new URL('../../cloudflare/d1/migrations/', import.meta.url)).filter(name => name.endsWith('.sql')).map(name => ({ name })) }])
@@ -87,7 +89,8 @@ const provider = (env, { candidateReady = true, zoneAccount = env.CLOUDFLARE_ACC
     if (url.pathname.endsWith('/readyz/core')) return Response.json(candidateReady ? readyBody() : { ok: false }, { status: candidateReady ? 200 : 503 })
     throw new Error(`unexpected public probe: ${url}`)
   }
-  return { run, apiFetch, fetchFn, calls, versions, active: () => active }
+  return { run, apiFetch, fetchFn, calls, versions, active: () => active,
+    setProviderSecrets: names => { providerSecrets = names } }
 }
 const inputs = env => ({ sourceSha, candidateDigest, authorization, environment: env, profile: CORE_RUNTIME_PROFILE })
 
@@ -164,6 +167,45 @@ test('failed core readiness restores and proves the old baseline without demandi
     return true
   })
   assert.equal(fixture.active(), 'baseline')
+})
+test('core releases a supplied inactive signing secret while preserving every serving secret', async () => {
+  for (const baselineSecrets of [[], ['GITHUB_TOKEN']]) {
+    const env = environment(), names = [...baselineSecrets, 'AGENTIC_OS_STORAGE_SIGNING_SECRET'].sort()
+    const fixture = provider(env, { baselineSecrets, providerSecrets: names }), args = { ...inputs(env), ...fixture }
+    const preflight = await preflightMesh(args)
+    assert.deepEqual(preflight.units[0].existingSecrets, names)
+    assert.equal(JSON.stringify(preflight).includes(env.AGENTIC_OS_STORAGE_SIGNING_SECRET), false)
+    const receipt = await deployMesh({ ...args, preflight })
+    assert.equal(receipt.status, 'deployed')
+    assert.equal(fixture.active(), 'candidate')
+    assert.deepEqual(fixture.versions.get('candidate').resources.bindings
+      .filter(binding => binding.type === 'secret_text').map(binding => binding.name).sort(), names)
+    assert.equal(fixture.calls.filter(command => command.includes('upload') && !command.includes('--dry-run')).length, 1)
+  }
+})
+test('core refuses missing serving secrets, undeclared inactive secrets, and duplicate provider names before upload', async () => {
+  for (const options of [
+    { baselineSecrets: ['GITHUB_TOKEN'], providerSecrets: ['AGENTIC_OS_STORAGE_SIGNING_SECRET'] },
+    { providerSecrets: ['UNDECLARED_SECRET'] },
+    { providerSecrets: ['AGENTIC_OS_STORAGE_SIGNING_SECRET', 'AGENTIC_OS_STORAGE_SIGNING_SECRET'] },
+  ]) {
+    const env = environment(), fixture = provider(env, options)
+    await assert.rejects(preflightMesh({ ...inputs(env), ...fixture }), /secret inventories differ/)
+    assert(!fixture.calls.some(command => command.includes('upload')))
+    assert.equal(fixture.active(), 'baseline')
+  }
+})
+test('core refuses a changed inactive secret inventory after preflight before any mutation', async () => {
+  const env = environment(), fixture = provider(env, { providerSecrets: ['AGENTIC_OS_STORAGE_SIGNING_SECRET'] })
+  const args = { ...inputs(env), ...fixture }, preflight = await preflightMesh(args), before = fixture.calls.length
+  fixture.setProviderSecrets([])
+  await assert.rejects(deployMesh({ ...args, preflight }), error => {
+    assert.match(error.message, /secret state changed after preflight/)
+    assert.equal(error.receipt.status, 'not-mutated')
+    assert.equal(error.receipt.mutationAttempted, false)
+    return true
+  })
+  assert(!fixture.calls.slice(before).some(command => command.includes('upload') || command.includes('deploy') || command.includes('apply')))
 })
 test('core deployment rejects a travel receipt before any mutation', async () => {
   const env = environment(), fixture = provider(env), args = { ...inputs(env), ...fixture }
