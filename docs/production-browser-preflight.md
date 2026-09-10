@@ -3,7 +3,7 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 1
+revision: 2
 owner: "agentic-graph"
 frontmatter_contract: "required"
 ---
@@ -25,6 +25,12 @@ against the existing native SQLite harness. It verifies pinned docs bytes, publi
 disposable database, and denies external network access. The asset adapter applies the generated
 redirect rules. This is bounded application behavior coverage, not Cloudflare routing or provider proof.
 Production still verifies the actual public document hash, transport, browser, and service-worker state.
+
+After dependency installation, the fresh runner fetches and verifies the protected revision, selects
+that exact canonical branch, and runs native Agentic OS setup to authenticate its committed profile.
+This establishes clone-local trust before any gate or retained history is consumed. A disposable-clone
+test must exercise the actual setup and gate entry point; a previously initialized developer clone
+cannot establish fresh-runner compatibility.
 
 Before expensive verification or build, the workflow checks protected attempt history. Before browser
 execution, GitHub retains an attempt artifact. A failed, interrupted, active, or expired prior

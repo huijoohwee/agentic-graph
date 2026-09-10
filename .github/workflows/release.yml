@@ -40,11 +40,14 @@ jobs:
       - name: Install dependencies
         working-directory: agentic-graph
         run: bash ./scripts/install-production-release-dependencies.sh
+      - name: Initialize native release gate trust
+        working-directory: agentic-graph
+        run: git fetch origin main && test "$(git rev-parse origin/main)" = "$RELEASE_SHA" && git switch main && test "$(git rev-parse HEAD)" = "$RELEASE_SHA" && npm run agentic-os:setup
       - name: Validate travel mesh release plan and local rollback simulation
         working-directory: agentic-graph
         run: |
           node ./scripts/travel-mesh-release.mjs validate
-          node --test ./scripts/__tests__/core-runtime-release.test.mjs ./scripts/__tests__/travel-mesh-release.test.mjs ./scripts/__tests__/travel-mesh-release-provider-proof.test.mjs
+          node --test ./scripts/__tests__/core-runtime-release.test.mjs ./scripts/__tests__/travel-mesh-release.test.mjs ./scripts/__tests__/travel-mesh-release-provider-proof.test.mjs ./scripts/__tests__/production-browser-preflight.test.mjs
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
         working-directory: agentic-graph
@@ -105,7 +108,7 @@ jobs:
       - { name: Create verified mirror artifact manifest, working-directory: agentic-graph, run: 'npm run --silent production:mirror-artifact:create -- ../huijoohwee' }
       - name: Prepare isolated browser candidate
         working-directory: agentic-graph
-        run: git fetch origin main && test "$(git rev-parse origin/main)" = "$RELEASE_SHA" && git update-ref refs/heads/main "$RELEASE_SHA" && node scripts/production-browser-preflight.mjs prepare
+        run: node scripts/production-browser-preflight.mjs prepare
       - { name: Retain browser attempt before execution, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: '${{ steps.browser_history.outputs.artifact_name }}', path: '${{ github.workspace }}/browser-preflight/context.json', if-no-files-found: error, retention-days: 90 } }
       - name: Run isolated browser gate before production authorization
         id: browser_gate
