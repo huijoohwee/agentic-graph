@@ -14,7 +14,7 @@ frontmatter_contract: "required"
 requirements_source: ".kiro/specs/xsgd-onchain-verification/requirements.md"
 design_source: ".kiro/specs/xsgd-onchain-verification/design.md"
 upstream_spec: ".kiro/specs/agentic-graph-payments/requirements.md"
-guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
+guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 deployment_topology: "Dev authoring only; Prod mirror and Cloudflare deployment require separate explicit authority"
 constraints: ["browser-first", "local-first", "offline-first", "mobile-first", "foss-first", "tco-zero", "token-economical", "harness-first", "zero-egress-default", "read-only-chain-access", "provider-agnostic-adapter-boundary"]
 tags: ["payments", "xsgd", "avalanche", "c-chain", "data-api", "straitsx", "reconciliation", "offline-first"]

@@ -17,7 +17,7 @@ runtime_readiness_command: "npm run payment:runtime:readiness"
 local_vcc_command: "npm run payment:local:vcc"
 runtime_readiness_manifest: "scripts/agentic-graph-payments-readiness-properties.json"
 runtime_readiness_status: "R1-R17 accepted; deterministic local contracts are executable and fail closed, while XSGD account, card-program, secure-broker, merchant/browser, protected integration, mirror, and deployment remain separate blocked gates"
-guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
+guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 deployment_topology: "Dev authoring only; Prod mirror and Cloudflare deployment require separate explicit authority"
 rails:
   - id: "stripe"

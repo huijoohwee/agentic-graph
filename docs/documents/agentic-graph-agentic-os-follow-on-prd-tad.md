@@ -16,7 +16,7 @@ parent_version: "1.0.0"
 reference_implementation: true
 guideline_title: "PRD, TAD & ADR Guidelines"
 guideline_version: "1.7.0"
-guideline_reference: "https://huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
+guideline_reference: "https://huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 related:
   - "docs/documents/agentic-graph-agentic-os-video-agent-prd-tad.companion.md"
 source_references:
@@ -31,7 +31,7 @@ source_references:
 # agentic-graph Agentic OS follow-on — Reference implementation PRD/TAD
 
 Parent authority: [Agentic OS reference implementation PRD/TAD](agentic-graph-agentic-os-prd-tad.md)
-v1.0.0. Authoring rules: [PRD, TAD & ADR Guidelines v1.7.0](https://huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md).
+v1.0.0. Authoring rules: [PRD, TAD & ADR Guidelines v1.7.0](https://huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md).
 
 This document sequences work that must remain outside the parent baseline. It
 does not declare an invocation route or tool identity, and it does not own an

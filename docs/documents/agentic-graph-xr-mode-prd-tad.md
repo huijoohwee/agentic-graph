@@ -57,7 +57,7 @@ The current product:
   immersive WebXR support.
 
 The companion capability contract is
-`docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md`. The focused acceptance
+`docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md`. The focused acceptance
 boundary is
 `docs/documents/agentic-graph-xr-spatial-capture-fallback-readiness.md`.
 
@@ -326,7 +326,7 @@ presentation artifact, not reconstructed 3D geometry.
 ### Capability and session contract
 
 The detailed schema and priority table live in
-`agentic-graph-ar-vr-xr-prd-tad-adr.md`. XR Mode consumes that contract; it does not
+`agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md`. XR Mode consumes that contract; it does not
 rename the modes or infer platform tiers.
 
 Session behavior follows current WebXR and Three.js boundaries:

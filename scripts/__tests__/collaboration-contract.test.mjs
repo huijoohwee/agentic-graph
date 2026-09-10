@@ -226,7 +226,7 @@ test('XRPL paid-resource owners require source proof without live payment or unr
     'cloudflare/d1/migrations/0018_agentic_commerce_paid_resources.sql',
     'scripts/smoke-xrpl-x402-paid-resource.mjs', 'scripts/check-xrpl-x402-pages-candidate.mjs',
     'scripts/configure-xrpl-x402-paid-resource.mjs', 'scripts/check-xrpl-x402-paid-resource.mjs',
-    'docs/documents/agentic-graph-xrpl-x402-paid-resource-prd-tad-adr.md',
+    'docs/documents/agentic-graph-xrpl-x402-paid-resource-prd-tad-adr-mvp-gtm.md',
     'grph-shared/src/payments/agenticCommercePaidResourceSsot.ts', 'grph-shared/src/payments/xrplClassicAddress.ts',
     'cloudflare/workers/agentic-graph-payment/agenticCommercePaidResourceSettlement.ts',
     'cloudflare/workers/agentic-graph-payment/agenticCommerceX402Xrpl.ts',
@@ -479,14 +479,14 @@ test('Rich Media preview timing owners always select schema and browser contract
 
 test('ready pull request metadata follows slash hash at grammar', async () => {
   const contract = await readContract()
-  const metadata = validatePullRequestMetadata(`---
+  const metadata = validatePullRequestMetadata(`<!-- CURSOR_AGENT_PR_BODY_BEGIN -->
+---
 action: /fix
 scope: "#canvas.render"
 actor: "@codex-task"
 base_sha: "0123456789abcdef0123456789abcdef01234567"
 ---
 `, contract)
-
   assert.equal(metadata.scope, '#canvas.render')
 })
 

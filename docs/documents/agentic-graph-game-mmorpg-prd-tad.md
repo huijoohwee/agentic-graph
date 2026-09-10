@@ -18,7 +18,7 @@ frontmatter_contract: "required"
 domain: "agentic-graph"
 execution_boundary: "dev-only"
 publish_scope: "local-only"
-source_contract: "huijoohwee.github.io/docs/documents/agentic-game-os-prd-tad-adr.md"
+source_contract: "huijoohwee.github.io/docs/documents/agentic-game-os-prd-tad-adr-mvp-gtm.md"
 constraints:
   - "native first-party implementation; no copied source, external game runtime, or external play-path dependency"
   - "device-local, local-first, offline-first persistence through the existing agentic-graph storage owner"

@@ -15,7 +15,7 @@ doc_path: "docs/documents/agentic-graph-storage-sync-adrs-document.md"
 document_lifecycle: "superseded"
 superseded_by:
   - "docs/documents/agentic-graph-architecture-decisions.md#adr-004--reference-implementation-use-tiered-persistence-roles"
-  - "docs/documents/agentic-graph-storage-sync-prd-tad-adr.md#architectural-decision-records"
+  - "docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md#architectural-decision-records"
   - "docs/documents/agentic-graph-artifact-media-storage-architecture.md"
 ---
 

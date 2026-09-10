@@ -21,7 +21,7 @@ generated_outputs:
   - "canvas/public/settings-flow.json"
   - "canvas/src/features/settings/settings-flow.schema.json"
 related:
-  - "../../../huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
+  - "../../../huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
   - "docs/agentic-graph-codebase-responsibility-flow.md"
   - "docs/documents/agentic-graph-modularity-prd-tad.md"
   - "docs/documents/agentic-graph-settings-document.md"

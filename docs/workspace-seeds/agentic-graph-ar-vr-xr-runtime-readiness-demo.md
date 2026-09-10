@@ -53,7 +53,7 @@ shared_xr_scene:
   second_r3f_canvas_forbidden: true
 pinned_source:
   repository: huijoohwee/agentic-graph
-  path: docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md
+  path: docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md
   version: 3.0.0
   commit: 5e27c0ea4318760aaa3b726dc3951c1957814a9b
   git_blob_sha1: c671d48794c4f17aee675b7f70aee8c2a679492e

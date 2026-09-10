@@ -20,7 +20,7 @@ universal_scope: false
 worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
 agent_id: "codex:graph_frontmatter_and_docs"
 doc_path: "docs/documents/agentic-graph-deterministic-agent-graph-runtime.md"
-guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md@2.4.0"
+guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.4.0"
 production_release_authorized: false
 evidence_references:
   - check: "npm run agent-graph:check"

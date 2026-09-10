@@ -22,7 +22,7 @@ evidence_references:
     observed_at: "2026-09-05"
 graphId: "md:sme-care-agent-prd-tad"
 schema: "agentic-os-prd-tad/v1"
-guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md@2.4.0"
+guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.4.0"
 lifecycle_status: "active"
 parent: ""
 parent_version: ""

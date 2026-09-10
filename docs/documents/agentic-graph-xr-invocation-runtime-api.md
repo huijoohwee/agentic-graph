@@ -57,7 +57,7 @@ The implementation is an active draft candidate in PR `#406`. TypeScript and foc
 ## Capability-detected capture and viewer contract
 
 The browser-native capability slice is defined in
-`docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md`. Runtime surfaces that expose XR entry,
+`docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md`. Runtime surfaces that expose XR entry,
 camera capture, or viewer promotion must resolve one capability snapshot before
 opening a viewer or recording capture state.
 

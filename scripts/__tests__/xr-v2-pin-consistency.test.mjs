@@ -18,6 +18,7 @@ import {
   derivePinTriple,
   verifyXrV2PinConsistency,
   XR_V2_PINNED_DOCUMENT_PATH,
+  XR_V2_PINNED_DOCUMENT_REVISION_PATH,
 } from '../xr-v2/pin-consistency-checker.mjs'
 import {
   XR_V2_PINNED_DOCUMENT_BLOB,
@@ -81,7 +82,7 @@ test('pin derivation fetches the pinned authority from a shallow checkout', t =>
   t.after(() => removeFixtureTree(fixtureParent))
   const origin = resolve(fixtureParent, 'origin')
   const shallow = resolve(fixtureParent, 'shallow')
-  const pinnedPath = resolve(origin, XR_V2_PINNED_DOCUMENT_PATH)
+  const pinnedPath = resolve(origin, XR_V2_PINNED_DOCUMENT_REVISION_PATH)
   execFileSync('git', ['init', '--quiet', origin])
   execFileSync('git', ['-C', origin, 'config', 'user.email', 'fixture@example.invalid'])
   execFileSync('git', ['-C', origin, 'config', 'user.name', 'XR v2 fixture'])
@@ -244,8 +245,8 @@ test('pin consistency validates the full immutable source URL', t => {
     'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
   )
   const source = readFileSync(demoPath, 'utf8')
-  const staleUrl = `https://github.com/huijoohwee/agentic-graph/blob/${'0'.repeat(40)}/${XR_V2_PINNED_DOCUMENT_PATH}`
-  const expectedUrl = `https://github.com/huijoohwee/agentic-graph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_PATH}`
+  const staleUrl = `https://github.com/huijoohwee/agentic-graph/blob/${'0'.repeat(40)}/${XR_V2_PINNED_DOCUMENT_REVISION_PATH}`
+  const expectedUrl = `https://github.com/huijoohwee/agentic-graph/blob/${XR_V2_PINNED_DOCUMENT_REVISION}/${XR_V2_PINNED_DOCUMENT_REVISION_PATH}`
   assert.ok(source.includes(expectedUrl))
   writeFileSync(demoPath, source.replace(expectedUrl, staleUrl))
 

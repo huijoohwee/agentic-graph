@@ -88,7 +88,7 @@ function copyFixtureFile(fixtureRoot, relativePath) {
 function createDocumentationFixture(t) {
   const fixtureRoot = createFixtureRoot(t)
   for (const relativePath of [
-    'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md',
+    'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md',
     'docs/documents/agentic-graph-xr-v2-runtime-readiness.md',
     'docs/TESTING.md',
     'docs/runtime-api.md',
@@ -431,7 +431,7 @@ test('XR v2 hosted gate produces the browser observation before upload', () => {
 
 test('XR v2 readiness docs fail closed when pinned authority is tampered', t => {
   const fixtureRoot = createDocumentationFixture(t)
-  const target = resolve(fixtureRoot, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md')
+  const target = resolve(fixtureRoot, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md')
   writeFileSync(target, `${readFileSync(target, 'utf8')}\n`)
   assert.throws(
     () => verifyXrV2ReadinessDocumentation(fixtureRoot),
@@ -441,7 +441,7 @@ test('XR v2 readiness docs fail closed when pinned authority is tampered', t => 
 
 test('XR v2 readiness docs fail closed when an acceptance criterion disappears', t => {
   const fixtureRoot = createDocumentationFixture(t)
-  const target = resolve(fixtureRoot, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md')
+  const target = resolve(fixtureRoot, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md')
   writeFileSync(target, readFileSync(target, 'utf8').replaceAll('AC-12', 'AC-XII'))
   assert.throws(
     () => verifyXrV2ReadinessDocumentation(fixtureRoot),

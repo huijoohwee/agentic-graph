@@ -80,7 +80,7 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
     ['shared_xr_scene.surface_owner', sharedXrScene.surface_owner, XR_V2_SHARED_SCENE_AUTHORITY.surfaceOwner],
     ['shared_xr_scene.renderer_owner', sharedXrScene.renderer_owner, XR_V2_SHARED_SCENE_AUTHORITY.rendererOwner],
     ['shared_xr_scene.second_r3f_canvas_forbidden', readBooleanPreset(sharedXrScene.second_r3f_canvas_forbidden), XR_V2_SHARED_SCENE_AUTHORITY.secondR3fCanvasForbidden],
-    ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md'],
+    ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'],
     ['pinned_source.commit', pinned.commit, XR_V2_PINNED_DOCUMENT_REVISION], ['pinned_source.git_blob_sha1', pinned.git_blob_sha1, XR_V2_PINNED_DOCUMENT_BLOB],
     ['pinned_source.content_sha256', pinned.content_sha256, XR_V2_PINNED_DOCUMENT_SHA256], ['runtime_readiness.focused_gate', readiness.focused_gate, 'npm run xr-v2:review-ready'],
     ['runtime_readiness.browser_demo_status', readiness.browser_demo_status, 'runtime-ready'], ['runtime_readiness.browser_local_mount_status', readiness.browser_local_mount_status, 'mounted'],

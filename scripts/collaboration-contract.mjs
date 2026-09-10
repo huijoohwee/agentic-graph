@@ -283,15 +283,20 @@ export const resolveCiCommandTimeoutMs = (command, contract) => {
   return timeout ?? contract?.ci_command_timeout_ms
 }
 
+const unwrapPullRequestBody = (source) => String(source || '')
+  .replace(/^\uFEFF/, '')
+  .replace(/^(?:\s*<!--[\s\S]*?-->\s*)+/, '')
+
 export const validatePullRequestMetadata = (body, contract, { allowIncomplete = false } = {}) => {
-  if (!String(body || '').trim()) {
+  const normalized = unwrapPullRequestBody(body)
+  if (!normalized.trim()) {
     if (allowIncomplete) return null
     throw new Error('ready pull request must declare collaboration frontmatter')
   }
 
   let metadata
   try {
-    metadata = parseFrontmatter(body, 'pull request body')
+    metadata = parseFrontmatter(normalized, 'pull request body')
   } catch (error) {
     if (allowIncomplete) return null
     throw error

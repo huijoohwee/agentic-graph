@@ -379,7 +379,7 @@ companion records current satisfying evidence. A protected source merge,
 browser observation, mirror, and public delivery are distinct surfaces.
 The evidence companion traces all 8 of 8 current PRD requirements to current
 components and VCCs. The
-[split conformance inventory](./agentic-graph-prd-tad-adr-conformance-report.md#reference-implementation-2026-07-31-split-conformance)
+[split conformance inventory](./agentic-graph-prd-tad-adr-mvp-gtm-conformance-report.md#reference-implementation-2026-07-31-split-conformance)
 links 18 of 18 artifact-bearing guideline rules (`100%`) and counts four
 advisories separately.
 

@@ -11,7 +11,7 @@ export const XR_V2_PINNED_DOCUMENT_SHA256 =
 
 const PINNED_DOCUMENT = Object.freeze({
   name: 'immutable pinned PRD/TAD/ADR',
-  parts: ['docs', 'documents', 'agentic-graph-ar-vr-xr-prd-tad-adr.md'],
+  parts: ['docs', 'documents', 'agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'],
 })
 
 const EVIDENCE_DOCUMENTS = Object.freeze([

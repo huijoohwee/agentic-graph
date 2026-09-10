@@ -16,7 +16,7 @@ const forbidden = [
 ]
 
 const allowedLegacyTokensByPath = new Map([
-  ['docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md', [
+  ['docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md', [
     { token: 'kgc-behavior-graph/v1', count: 1 },
     { token: '@kgc-behavior-graph-contract', count: 1 },
   ]],

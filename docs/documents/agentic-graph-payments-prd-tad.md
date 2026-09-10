@@ -33,7 +33,7 @@ spec_alignment: "reconciled with the normative requirements source; deterministi
 runtime_readiness_command: "npm run payment:runtime:readiness"
 local_vcc_command: "npm run payment:local:vcc"
 local_vcc_attestation: "repository-owned execution bound to the inspected source-evidence digest"
-guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
+guidelines: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 execution_guidelines: "huijoohwee.github.io/guidelines/adlc-guidelines.md"
 topology_version: "3"
 deployment_authority: "Dev authoring only. Production mirror publication and Cloudflare deployment require a separate explicit operator instruction."
@@ -127,7 +127,7 @@ The requirements and PRD/TAD were updated atomically. This table records the ver
 
 | Requirements area | Source-current contract | Version 0.4.0 disposition |
 |---|---|---|
-| Frontmatter and companion state | Canonical guideline is `prd-tad-adr-guidelines.md`; this companion is populated and uses separate local/delivered rungs | Reconciled |
+| Frontmatter and companion state | Canonical guideline is `prd-tad-adr-mvp-gtm-guidelines.md`; this companion is populated and uses separate local/delivered rungs | Reconciled |
 | R1 | Separate least-privilege credentials per adapter/agent/environment; independently pin request and webhook versions; bind exact signed-request contract | Reconciled |
 | R2 | `admissionRails` permits only fully configured sandbox attempts while proof-complete `rails` remains false until paid evidence; exactly one server-owned buyer product is defined by the three `PAYMENT_BUYER_PRODUCT_*` variables | Reconciled |
 | R4 | XSGD has separate capability readiness; `STRAITSX_FUND_FLOW` must match the configured integration model before authentication or egress; transactional retries reuse a stable provider key | Reconciled |

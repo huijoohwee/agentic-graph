@@ -44,7 +44,7 @@ the 18-rule denominator a second time.
 
 | Measure | Recorded value |
 |---|---|
-| Guideline | `prd-tad-adr-guidelines.md` v1.7.0 |
+| Guideline | `prd-tad-adr-mvp-gtm-guidelines.md` v1.7.0 |
 | SHA-256 | `f45d8eb27b7aa9166a4f3e89a66d8cf96720acc06e025655256307e6b2d9c816` |
 | Size | 122,302 bytes; 1,570 lines |
 | Initial load | One full canonical-file load because the task crossed discovery, PRD, TAD, ADR, cleanup, and alignment phases |
@@ -128,7 +128,7 @@ profile is **0**. This ratio does not claim full-guideline coverage.
 | `missing-economics-metric` | major | `validation-checklist#34` | regional companion §3.6 | `Measure | Target` | Documentation change: add baseline and timeline to every measure. |
 | `incomplete-topology-node` | major | `validation-checklist#38` | regional companion §5.4 | `Topology and lane boundaries` without a version note | Documentation change: add the explicit v1.0 topology note. |
 | `status-conflict` | major | `validation-checklist#51` | City parent §10 and VCC companion §15 | `spec-complete` and `dev-proven` for the same current capability | Specification change: derive current v2 component rungs only from current evidence. |
-| `vendor-coupling` | major | `validation-checklist#53` | generic and regional coverage citations | `./agentic-graph-prd-tad-adr-conformance-report.md` outside a labelled block | Documentation change: move each citation into a labelled reference-implementation block and remove regional frontmatter paths. |
+| `vendor-coupling` | major | `validation-checklist#53` | generic and regional coverage citations | `./agentic-graph-prd-tad-adr-mvp-gtm-conformance-report.md` outside a labelled block | Documentation change: move each citation into a labelled reference-implementation block and remove regional frontmatter paths. |
 
 The distinct read-only evaluator's final pass recorded zero remaining blocker,
 major, or minor findings in this selected profile. The prior canonical-core

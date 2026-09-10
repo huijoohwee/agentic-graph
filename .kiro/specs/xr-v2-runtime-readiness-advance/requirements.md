@@ -3,7 +3,7 @@
 ## Authority
 
 This repository-tracked Kiro package is the normative plan for correcting
-`docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md` and implementing one bounded
+`docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md` and implementing one bounded
 runtime increment: AC-14 collision-to-behavior dispatch.
 
 Task declaration:

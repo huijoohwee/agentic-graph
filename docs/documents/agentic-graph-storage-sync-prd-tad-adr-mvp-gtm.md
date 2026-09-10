@@ -11,7 +11,7 @@ local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-doc_path: "docs/documents/agentic-graph-storage-sync-prd-tad-adr.md"
+doc_path: "docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md"
 companion: "docs/documents/agentic-graph-storage-sync-document.companion.md"
 supersedes: "docs/documents/agentic-graph-storage-sync-document.md@4.1.0"
 decision_archive: "ADRs now embedded in this document (see Architectural Decision Records); prior docs/documents/agentic-graph-storage-sync-adrs-document.md is archived per Phase 4 rule, not deleted, and no longer the ADR owner"
@@ -33,7 +33,7 @@ The source contains working adapters, but no satisfying Evidence Reference is at
 Therefore local readiness is `spec-complete` and delivered readiness is `undocumented`.
 
 **Version note (v5.0.0)**: this revision restructures the document to close template gaps against
-`prd-tad-adr-guidelines.md` v1.7.0 — User Stories, Component Specifications, Integration Contracts,
+`prd-tad-adr-mvp-gtm-guidelines.md` v1.7.0 — User Stories, Component Specifications, Integration Contracts,
 Quality Attributes, Deployment Strategy, a Readiness Gap Matrix, and three embedded Architectural
 Decision Records are added. `doc_type` changes from Combined PRD/TAD to Combined PRD/TAD/ADR because
 ADR ownership moves from the external `decision_archive` document into this document; the prior
@@ -565,7 +565,7 @@ to drop it without data loss, since it owns no canonical state.
 
 This revision adds Component Specifications, Integration Contracts, Quality Attributes, Deployment
 Strategy, a Readiness Gap Matrix, and three embedded ADRs to close template gaps against
-`prd-tad-adr-guidelines.md` v1.7.0. No VCC in this revision is marked above `spec-complete`/
+`prd-tad-adr-mvp-gtm-guidelines.md` v1.7.0. No VCC in this revision is marked above `spec-complete`/
 `undocumented` without a newly recorded Evidence Reference; ADR-2 and S4a add a decision and a VCC
 respectively but do not themselves raise any readiness rung, consistent with the Readiness Ladder's
 evidence-only derivation rule. Remaining gaps after this revision are evidence gaps — named checks

@@ -42,7 +42,7 @@ export function requireXrV2RuntimeIdentity({ source, seedBasename, seedRelativeP
     ['run_ready_demo.canonical_source_file', runReady.canonical_source_file, `/${seedRelativePath}`], ['run_ready_demo.source_root', runReady.source_root, 'agentic-graph/docs'],
     ['run_ready_demo.source_backed', readBooleanPreset(runReady.source_backed), true], ['run_ready_demo.native_runtime', readBooleanPreset(runReady.native_runtime), true],
     ['run_ready_demo.canonical_xr_world_owner', runReady.canonical_xr_world_owner, 'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'],
-    ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md'],
+    ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'],
     ['pinned_source.commit', pinned.commit, XR_V2_PINNED_DOCUMENT_REVISION], ['pinned_source.git_blob_sha1', pinned.git_blob_sha1, XR_V2_PINNED_DOCUMENT_BLOB],
     ['pinned_source.content_sha256', pinned.content_sha256, XR_V2_PINNED_DOCUMENT_SHA256], ['runtime_readiness.focused_gate', readiness.focused_gate, 'npm run xr-v2:review-ready'],
     ['runtime_readiness.browser_demo_status', readiness.browser_demo_status, 'runtime-ready'], ['runtime_readiness.pinned_contract_status', readiness.pinned_contract_status, 'partial'],
