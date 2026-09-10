@@ -3,7 +3,7 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 2
+revision: 3
 owner: "agentic-graph"
 frontmatter_contract: "required"
 ---
@@ -25,6 +25,12 @@ against the existing native SQLite harness. It verifies pinned docs bytes, publi
 disposable database, and denies external network access. The asset adapter applies the generated
 redirect rules. This is bounded application behavior coverage, not Cloudflare routing or provider proof.
 Production still verifies the actual public document hash, transport, browser, and service-worker state.
+
+The asset adapter supplies content-bound ETags. Before browser execution, the gate loads the Graph
+entry script through the compiled Pages handler and checks conditional GET and HEAD responses.
+Both must preserve the asset's 304 response and validator. This explicit check is necessary because
+Playwright request interception disables the browser HTTP cache; a cold-load pass cannot prove
+that Home and its iframe can revalidate shared bundles. HTML fallbacks and missing assets still fail.
 
 After dependency installation, the fresh runner fetches and verifies the protected revision, selects
 that exact canonical branch, and runs native Agentic OS setup to authenticate its committed profile.

@@ -100,3 +100,33 @@ test('app readiness route rejects an HTML asset fallback', async () => {
   assert.equal(response.status, 503)
   assert.doesNotMatch(await response.text(), /fallback/)
 })
+
+test('static assets preserve conditional cache responses for an iframe reuse', async () => {
+  for (const method of ['GET', 'HEAD']) {
+    for (const condition of [{ 'if-none-match': 'W/"candidate"' }, { 'if-modified-since': 'Thu, 10 Sep 2026 00:00:00 GMT' }]) {
+      const cached = new Response(null, { status: 304, headers: { etag: 'W/"candidate"', 'cache-control': 'public, max-age=0, must-revalidate' } })
+      const response = await fetchAgenticGraphStaticAsset({
+        request: new Request('https://preview.pages.dev/agentic-graph/assets/candidate/main.js', { method, headers: condition }),
+        env: { ASSETS: { fetch: async request => {
+          for (const [key, value] of Object.entries(condition)) assert.equal(request.headers.get(key), value)
+          return cached
+        } } },
+      })
+      assert.equal(response, cached)
+      assert.equal(response.status, 304)
+      assert.equal(await response.text(), '')
+    }
+  }
+})
+
+test('static assets still reject HTML fallbacks, HTML revalidation, and missing assets', async () => {
+  for (const upstream of [new Response('<html>fallback</html>', { headers: { 'content-type': 'text/html' } }),
+    new Response(null, { status: 304, headers: { 'content-type': 'text/html' } }), new Response('missing', { status: 404 })]) {
+    const response = await fetchAgenticGraphStaticAsset({
+      request: new Request('https://airvio.co/agentic-graph/assets/missing.js', { headers: { 'if-none-match': '"old"' } }),
+      env: { ASSETS: { fetch: async () => upstream } },
+    })
+    assert.equal(response.status, 503)
+    assert.equal(response.headers.get('cache-control'), 'no-store, max-age=0')
+  }
+})

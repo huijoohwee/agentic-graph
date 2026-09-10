@@ -50,6 +50,8 @@ export const fetchAgenticGraphStaticAsset = async (context) => {
     : typeof context.env?.ASSETS?.fetch === "function"
       ? await context.env.ASSETS.fetch(assetRequest)
       : await context.next(assetRequest);
-  if (response.ok && !isHtmlAssetFallback(response)) return response;
+  // Home and its iframe reuse bundles. A conditional cache hit has no body and
+  // Response.ok is false, but must reach the browser as 304, not an asset error.
+  if ((response.ok || response.status === 304) && !isHtmlAssetFallback(response)) return response;
   return unavailableStaticAssetResponse(context.request);
 };
