@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 43
+contract_version: 44
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -191,7 +191,8 @@ first-parent `main` delta.
 
 ## Invocation Grammar
 
-Every non-draft pull request starts with a YAML frontmatter declaration:
+Every non-draft pull request starts with a YAML frontmatter declaration.
+Leading HTML comment wrappers around that declaration are ignored:
 
 ```yaml
 ---

@@ -490,6 +490,24 @@ base_sha: "0123456789abcdef0123456789abcdef01234567"
   assert.equal(metadata.scope, '#canvas.render')
 })
 
+test('ready pull request metadata ignores a leading HTML comment wrapper', async () => {
+  const contract = await readContract()
+  const metadata = validatePullRequestMetadata(`<!-- CURSOR_AGENT_PR_BODY_BEGIN -->
+---
+action: /change
+scope: "#prd-tad-adr-mvp-gtm-locator"
+actor: "@cursor-agent"
+base_sha: "0123456789abcdef0123456789abcdef01234567"
+---
+
+/change #prd-tad-adr-mvp-gtm-locator @cursor-agent
+<!-- CURSOR_AGENT_PR_BODY_END -->
+`, contract)
+
+  assert.equal(metadata.action, '/change')
+  assert.equal(metadata.scope, '#prd-tad-adr-mvp-gtm-locator')
+})
+
 test('draft pull requests may omit incomplete metadata', async () => {
   const contract = await readContract()
   assert.equal(validatePullRequestMetadata('', contract, { allowIncomplete: true }), null)
