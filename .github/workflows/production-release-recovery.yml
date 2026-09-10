@@ -1,0 +1,71 @@
+name: Retained Core Release Recovery
+on:
+  workflow_call:
+    inputs:
+      source_sha: { required: true, type: string }
+      original_run_id: { required: true, type: string }
+      local_review_candidate: { required: true, type: string }
+      release_evidence: { required: true, type: string }
+permissions: { actions: read, contents: read }
+env:
+  GH_TOKEN: ${{ github.token }}
+  RECOVERY_ORIGINAL_RUN_ID: ${{ inputs.original_run_id }}
+  RECOVERY_LOCAL_REVIEW: ${{ inputs.local_review_candidate }}
+  RECOVERY_RELEASE_EVIDENCE: ${{ inputs.release_evidence }}
+jobs:
+  prepare:
+    name: Prepare retained core recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs: { plan_digest: '${{ steps.plan.outputs.plan_digest }}', docs_revision: '${{ steps.plan.outputs.docs_revision }}', mirror_revision: '${{ steps.plan.outputs.mirror_revision }}' }
+    steps:
+      - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 0 } }
+      - { uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22 } }
+      - { name: Install and test locked recovery controller, working-directory: agentic-graph, run: 'npm ci --ignore-scripts && node --test scripts/__tests__/production-release-recovery.test.mjs' }
+      - name: Bind actual runner temporary directory
+        run: echo "RECOVERY_ROOT=$RUNNER_TEMP/core-release-recovery" >> "$GITHUB_ENV"
+      - name: Prepare exact recovery plan without provider mutation
+        id: plan
+        working-directory: agentic-graph
+        run: node scripts/production-release-recovery.mjs prepare
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with: { name: 'core-recovery-plan-${{ github.run_id }}', path: '${{ runner.temp }}/core-release-recovery', if-no-files-found: error, retention-days: 90 }
+  apply:
+    name: Restore and verify retained core version
+    needs: prepare
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RECOVERY_PLAN_DIGEST: ${{ needs.prepare.outputs.plan_digest }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+      AGENTIC_OS_PUBLIC_ZONE_ID: ${{ vars.AGENTIC_OS_PUBLIC_ZONE_ID }}
+      AGENTIC_OS_PUBLIC_ZONE_NAME: airvio.co
+      AGENTIC_OS_STORAGE_D1_DATABASE_NAME: ${{ vars.AGENTIC_OS_STORAGE_D1_DATABASE_NAME }}
+      AGENTIC_OS_STORAGE_D1_DATABASE_ID: 633355bf-1a52-4085-bd3c-eba4220ff152
+      AGENTIC_OS_STORAGE_R2_BUCKET: ${{ vars.AGENTIC_OS_STORAGE_R2_BUCKET }}
+      AGENTIC_OS_STORAGE_OWNER_ID: ${{ vars.AGENTIC_OS_STORAGE_OWNER_ID }}
+      AGENTIC_OS_STORAGE_OWNER_EMAIL: ${{ vars.AGENTIC_OS_STORAGE_OWNER_EMAIL }}
+      AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID: ${{ vars.AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID }}
+      AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT: ${{ vars.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT }}
+      AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY: ${{ secrets.AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY }}
+      AGENTIC_OS_STORAGE_SIGNING_SECRET: ${{ secrets.AGENTIC_OS_STORAGE_SIGNING_SECRET }}
+    steps:
+      - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 0 } }
+      - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.prepare.outputs.mirror_revision }}', path: huijoohwee, fetch-depth: 0 } }
+      - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/agentic-canvas-os, ref: '${{ needs.prepare.outputs.docs_revision }}', path: agentic-canvas-os } }
+      - { uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22 } }
+      - { name: Install locked controller dependencies, working-directory: agentic-graph, run: 'npm ci --ignore-scripts' }
+      - name: Bind actual runner temporary directory
+        run: echo "RECOVERY_ROOT=$RUNNER_TEMP/core-release-recovery" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with: { name: 'core-recovery-plan-${{ github.run_id }}', path: '${{ runner.temp }}/core-release-recovery' }
+      - name: Recover existing core version and seal completion
+        working-directory: agentic-graph
+        run: node scripts/production-release-recovery.mjs apply
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with: { name: 'core-recovery-result-${{ github.run_id }}', path: '${{ runner.temp }}/core-release-recovery', if-no-files-found: error, retention-days: 90 }
