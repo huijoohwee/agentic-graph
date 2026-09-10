@@ -39,15 +39,50 @@ export const probeRestoredCore = async (configuration, options) => {
   return observed
 }
 
-export const probeCoreRuntime = async (configuration, { fetchFn = fetch, now = () => new Date() } = {}) => {
+const coreReady = (status, body) => status === 200 && body?.ok === true && body.service === 'agentic-storage'
+    && body.scope === 'core' && body.runtime === 'production' && Array.isArray(body.reasons) && !body.reasons.length
+    && body.dependencies?.authSchema === 'ready' && body.dependencies?.browserSessionAccessConfiguration === 'configured'
+    && body.dependencies?.signingSecret === 'ready' && body.dependencies?.blobStorage === 'ready'
+    && body.dependencies?.d1 === 'ready' && body.dependencies?.canvasRoom === 'ready'
+
+const transientCoreResponse = (status, body) => status === null || status === 429
+  || [502, 504].includes(status)
+  || status === 404 && body?.ok === false && body.code === 'not_found'
+  || status === 503 && body?.service === 'agentic-storage' && body.scope === 'core'
+    && body.runtime === 'production' && Array.isArray(body.reasons) && body.reasons.length > 0
+    && body.reasons.every(reason => reason === 'storage-auth-schema-unavailable')
+
+// Provider activation and a public readiness response are separate observations.
+// Retry only recognized temporary states; configuration or identity failures stop.
+const awaitCoreReadiness = async (url, fetchFn, wait) => {
+  const observations = []
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    let status = null, body = null, failure = null
+    try {
+      const response = await fetchFn(url, { redirect: 'manual', headers: { accept: 'application/json' }, signal: AbortSignal.timeout(5000) })
+      status = response.status
+      body = JSON.parse(await readBoundedProbeBody(response))
+    } catch { failure = status === null ? 'request-unavailable' : 'unreadable-response' }
+    if (coreReady(status, body)) return { status, body }
+    // Only fixed reason labels and a body digest enter retained diagnostics.
+    // Arbitrary provider response text must not become release-log content.
+    const reasons = Array.isArray(body?.reasons) ? body.reasons.filter(reason => [
+      'd1-binding-missing', 'canvas-room-binding-missing', 'storage-browser-session-access-configuration-missing',
+      'storage-signing-secret-missing', 'storage-auth-schema-unavailable', 'storage-blob-binding-missing',
+    ].includes(reason)) : []
+    observations.push({ attempt, status, failure, reasons: [...new Set(reasons)], bodyDigest: body === null ? null : digest(body) })
+    if (attempt === 6 || !transientCoreResponse(status, body)) {
+      throw new Error(`core storage readiness failed: ${JSON.stringify({ url, observations })}`)
+    }
+    await wait(10000)
+  }
+}
+
+export const probeCoreRuntime = async (configuration, {
+  fetchFn = fetch, now = () => new Date(), wait = ms => new Promise(resolve => setTimeout(resolve, ms)),
+} = {}) => {
   const url = `https://${configuration.variables.AGENTIC_OS_PUBLIC_ZONE_NAME}/api/storage/readyz/core`
-  const response = await fetchFn(url, { redirect: 'manual', headers: { accept: 'application/json' }, signal: AbortSignal.timeout(5000) })
-  const body = JSON.parse(await readBoundedProbeBody(response))
-  if (response.status !== 200 || body.ok !== true || body.service !== 'agentic-storage'
-    || body.scope !== 'core' || body.runtime !== 'production' || !Array.isArray(body.reasons) || body.reasons.length
-    || body.dependencies?.authSchema !== 'ready' || body.dependencies?.browserSessionAccessConfiguration !== 'configured'
-    || body.dependencies?.signingSecret !== 'ready' || body.dependencies?.blobStorage !== 'ready'
-    || body.dependencies?.d1 !== 'ready' || body.dependencies?.canvasRoom !== 'ready') throw new Error('core storage readiness failed')
+  const { status, body } = await awaitCoreReadiness(url, fetchFn, wait)
   const denied = await fetchFn(`https://${configuration.variables.AGENTIC_OS_PUBLIC_ZONE_NAME}/api/storage/export/kgws%3Acanonical-docs`, {
     redirect: 'manual', headers: { accept: 'application/json' }, signal: AbortSignal.timeout(5000),
   })
@@ -55,7 +90,7 @@ export const probeCoreRuntime = async (configuration, { fetchFn = fetch, now = (
   if (denied.status !== 401) throw new Error('core unauthenticated storage request was not denied')
   const storageOrigin = await probeCoreStorageOrigin({ fetchFn })
   const browserSession = await probeCoreBrowserSession(configuration, { fetchFn, now })
-  return [{ browserSession, storageOrigin, id: 'storage', service: 'agentic-storage', scope: 'core', url, status: response.status,
+  return [{ browserSession, storageOrigin, id: 'storage', service: 'agentic-storage', scope: 'core', url, status,
     anonymousStatus: denied.status, observedAt: now().toISOString(), bodyDigest: digest(body) }]
 }
 
