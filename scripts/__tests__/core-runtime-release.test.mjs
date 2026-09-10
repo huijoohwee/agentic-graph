@@ -252,6 +252,74 @@ test('production probe rejects local-only readiness and anonymously readable sna
   await assert.rejects(probeCoreRuntime(config, { fetchFn: async () => Response.json({ ...readyBody(), runtime: 'local' }) }), /readiness failed/)
   await assert.rejects(probeCoreRuntime(config, { fetchFn: async () => Response.json(readyBody()) }), /not denied/)
 })
+test('core readiness waits for a stale route and temporary auth-schema response before checking sessions', async () => {
+  const env = environment(), fixture = provider(env), waits = [], paths = []
+  let attempts = 0
+  const fetchFn = async (url, options) => {
+    paths.push(new URL(url).pathname)
+    if (new URL(url).pathname.endsWith('/readyz/core')) {
+      attempts++
+      if (attempts === 1) return Response.json({ ok: false, code: 'not_found' }, { status: 404 })
+      if (attempts === 2) return Response.json({ ...readyBody(), ok: false,
+        reasons: ['storage-auth-schema-unavailable'], dependencies: { ...readyBody().dependencies, authSchema: 'unavailable' } }, { status: 503 })
+    }
+    return fixture.fetchFn(url, options)
+  }
+  const probes = await probeCoreRuntime(validateCoreConfiguration(env), { fetchFn, wait: async ms => waits.push(ms) })
+  assert.equal(attempts, 3)
+  assert.deepEqual(waits, [10000, 10000])
+  assert.equal(paths.findIndex(path => path.endsWith('/auth/login')) > 2, true)
+  assert.equal(probes[0].browserSession.revokedStatus, 401)
+})
+test('core readiness exhausts six transient observations without starting authenticated probes', async () => {
+  const waits = [], urls = [], config = validateCoreConfiguration(environment())
+  await assert.rejects(probeCoreRuntime(config, { wait: async ms => waits.push(ms), fetchFn: async url => {
+    urls.push(url)
+    return Response.json({ ok: false, code: 'not_found' }, { status: 404 })
+  } }), error => {
+    const detail = JSON.parse(error.message.slice(error.message.indexOf('{')))
+    assert.equal(detail.observations.length, 6)
+    assert(detail.observations.every(item => item.status === 404 && item.bodyDigest.length === 64))
+    return true
+  })
+  assert.equal(urls.length, 6)
+  assert(urls.every(url => url.endsWith('/readyz/core')))
+  assert.deepEqual(waits, Array(5).fill(10000))
+})
+test('core readiness rejects configuration drift immediately and keeps arbitrary response text out of logs', async () => {
+  let calls = 0
+  const unexpected = 'private-provider-text-that-must-not-reach-logs'
+  for (const body of [
+    { ...readyBody(), runtime: 'local' }, { ...readyBody(), service: 'unexpected' },
+    { ...readyBody(), ok: false, reasons: ['storage-signing-secret-missing', unexpected] },
+  ]) {
+    await assert.rejects(probeCoreRuntime(validateCoreConfiguration(environment()), {
+      wait: async () => assert.fail('configuration failures must not retry'),
+      fetchFn: async () => { calls++; return Response.json({ ...body, detail: unexpected }, { status: body.ok ? 200 : 503 }) },
+    }), error => {
+      assert.match(error.message, /core storage readiness failed/)
+      assert(!error.message.includes(unexpected))
+      assert.equal(JSON.parse(error.message.slice(error.message.indexOf('{'))).observations.length, 1)
+      return true
+    })
+  }
+  assert.equal(calls, 3)
+})
+test('core readiness recovers bounded request failures and gateway responses', async () => {
+  const env = environment(), fixture = provider(env), waits = []
+  let attempts = 0
+  const fetchFn = async (url, options) => {
+    if (url.endsWith('/readyz/core')) {
+      attempts++
+      if (attempts === 1) throw new Error('private network failure detail')
+      if (attempts === 2) return new Response('temporary gateway response', { status: 502 })
+    }
+    return fixture.fetchFn(url, options)
+  }
+  assert.equal((await probeCoreRuntime(validateCoreConfiguration(env), { fetchFn, wait: async ms => waits.push(ms) }))[0].status, 200)
+  assert.equal(attempts, 3)
+  assert.deepEqual(waits, [10000, 10000])
+})
 test('bootstrap selection cannot skip core preflight, version transaction, authorization, or rollback', () => {
   const workflow = YAML.parse(fs.readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8'))
   const steps = workflow.jobs.deploy.steps
