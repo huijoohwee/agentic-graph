@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { createHash } from 'node:crypto'
 import { chromium } from 'playwright'
 import {
   encodePublishedDocShareToken,
@@ -273,6 +276,17 @@ assert.match(siblingWorkerResponse.headers.get('content-type') || '', /javascrip
 
 await verifyXrV2DepthConfigRoutes()
 
+const catalogPath = 'agentic-canvas-os/docs/PROMPT-PRESETS.md'
+const catalogResponse = await fetch(`https://airvio.co/api/storage/doc/kgws%3Acanonical-docs/${encodeURIComponent(catalogPath)}`, {
+  signal: AbortSignal.timeout(10_000), cache: 'no-store', headers: { accept: 'text/markdown' },
+})
+assert.equal(catalogResponse.status, 200, 'published prompt catalog must return 200 before browser startup')
+const catalogBytes = Buffer.from(await catalogResponse.arrayBuffer())
+const catalogSource = await fs.readFile(path.join(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT
+  || path.resolve(import.meta.dirname, '../../agentic-canvas-os/docs'), 'PROMPT-PRESETS.md'))
+assert.equal(createHash('sha256').update(catalogBytes).digest('hex'), createHash('sha256').update(catalogSource).digest('hex'),
+  'published prompt catalog differs from the exact reviewed docs source')
+
 const browser = await chromium.launch({
   channel: 'chrome',
   headless: browserHeadless,
@@ -280,6 +294,8 @@ const browser = await chromium.launch({
   args: WEBGL_SOFTWARE_RENDERING_ARGS,
 })
 const context = await browser.newContext({ serviceWorkers: 'block' })
+const { attachBrowserPreflightIsolation } = await import('./production-browser-preflight.mjs')
+await attachBrowserPreflightIsolation(context)
 const installHomeSourceAuthorityEvidence = targetContext => targetContext.addInitScript(() => {
   const prematureSceneMounts = []
   const sceneAuthorityMounts = []
@@ -355,7 +371,11 @@ try {
   for (const phrase of ['Map intent', 'Run agents', 'Get results']) assert.ok(heading.includes(phrase))
   const promptPresetFieldset = home.locator('[data-kg-live-canvas-hero-prompt-presets="true"]')
   const promptPresetSelect = promptPresetFieldset.locator('[data-kg-live-canvas-hero-prompt-preset-select="true"]')
-  await promptPresetSelect.waitFor({ state: 'visible', timeout: 30_000 })
+  await Promise.race([
+    promptPresetSelect.waitFor({ state: 'visible', timeout: 30_000 }),
+    promptPresetFieldset.locator('[role="alert"]').waitFor({ state: 'visible', timeout: 30_000 })
+      .then(async () => { throw new Error(`Home prompt catalog failed: ${await promptPresetFieldset.locator('[role="alert"]').innerText()}`) }),
+  ])
   assert.equal(
     await promptPresetFieldset.locator('[role="alert"]').count(),
     0,
@@ -399,6 +419,7 @@ try {
     canonicalPath: `${canonicalHomeIdentity.canonicalPath}.conflicting`,
   })
   staleSelectionContext = await browser.newContext({ serviceWorkers: 'block' })
+  await attachBrowserPreflightIsolation(staleSelectionContext)
   await staleSelectionContext.addInitScript(({ key, selection }) => {
     if (window.location.pathname === '/') {
       window.sessionStorage.setItem(key, JSON.stringify(selection))
