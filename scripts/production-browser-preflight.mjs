@@ -62,6 +62,21 @@ export async function inspectBrowserInput(input) {
 }
 
 let isolatedDispatch = null
+export async function verifyStaticAssetRevalidation(dispatch, url) {
+  const first = await dispatch(new Request(url))
+  assert.equal(first.status, 200, 'candidate script must load before cache revalidation')
+  assert.match(first.headers.get('content-type') || '', /javascript/)
+  const etag = first.headers.get('etag')
+  assert.ok(etag, 'candidate script must provide a cache validator')
+  await first.arrayBuffer()
+  for (const method of ['GET', 'HEAD']) {
+    const cached = await dispatch(new Request(url, { method, headers: { 'if-none-match': etag } }))
+    assert.equal(cached.status, 304, 'candidate script cache revalidation must preserve 304')
+    assert.equal(cached.headers.get('etag'), etag, 'cache response must preserve the validator')
+    assert.equal(await cached.text(), '', 'cache response must have no body')
+  }
+}
+
 export async function attachBrowserPreflightIsolation(context) {
   if (!isolatedDispatch) return
   await context.route('**/*', async route => {
@@ -124,7 +139,10 @@ async function isolate(input) {
       try {
         const stat = await fs.stat(file)
         if (!stat.isFile()) throw new Error('not a file')
-        return new Response(request.method === 'HEAD' ? null : await fs.readFile(file), { headers: { 'content-type': types[path.extname(file)] || 'application/octet-stream' } })
+        const bytes = await fs.readFile(file), etag = `"${hash(bytes)}"`
+        const headers = { etag, 'content-type': types[path.extname(file)] || 'application/octet-stream' }
+        if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers })
+        return new Response(request.method === 'HEAD' ? null : bytes, { headers })
       } catch {
         return new Response(await fs.readFile(path.join(input.artifactRoot, '404.html')), { status: 404, headers: { 'content-type': 'text/html' } })
       }
@@ -140,6 +158,12 @@ async function isolate(input) {
       return pages.fetch(request, { ASSETS: { fetch: asset } }, { waitUntil: promise => pending.push(promise), passThroughOnException() {} })
     }
     globalThis.fetch = (request, init) => isolatedDispatch(new Request(request, init))
+    // Playwright routing disables browser HTTP caching. Explicitly exercise the
+    // real Pages handler's conditional path before opening Home and its iframe.
+    const shell = await fs.readFile(path.join(input.artifactRoot, 'content/agentic-graph/index.html'), 'utf8')
+    const entry = /<script\b[^>]*\bsrc="([^"]+\/assets\/[^"?]+\.js)"/.exec(shell)?.[1]
+    assert.ok(entry, 'candidate Graph shell must name its entry script')
+    await verifyStaticAssetRevalidation(isolatedDispatch, new URL(entry, 'https://airvio.co/agentic-graph/').href)
     const marker = await readJson(path.join(input.artifactRoot, '.well-known/runtime-readiness.json'))
     Object.assign(process.env, { PRODUCTION_ORIGIN: 'https://airvio.co', PRODUCTION_MARKER_ORIGIN: 'https://airvio.co',
       RELEASE_SHA: marker.source.revision, PRODUCTION_IMMUTABLE_MANIFEST_DIGEST: marker.immutableManifest.digest, PRODUCTION_BROWSER_HEADLESS: 'true' })

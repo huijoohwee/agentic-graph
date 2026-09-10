@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { canonicalJson, createRepositoryProfile } from 'agentic-os'
 import YAML from 'yaml'
 import { historyArtifactName, assertPriorBrowserRun } from '../production-browser-history.mjs'
-import { browserArtifactDigest, inspectBrowserInput } from '../production-browser-preflight.mjs'
+import { browserArtifactDigest, inspectBrowserInput, verifyStaticAssetRevalidation } from '../production-browser-preflight.mjs'
 import { productionMirrorArtifactEntries } from '../production-mirror-artifact-entries.mjs'
 
 test('browser history refuses failed, interrupted, active, self, and unprotected attempts', () => {
@@ -53,6 +53,21 @@ test('artifact identity detects changed browser bytes and rejects symlink substi
 test('preflight refuses an unbound or relative candidate before reading its artifacts', async () => {
   await assert.rejects(inspectBrowserInput({ schema: 'wrong', artifactRoot: '/tmp', docsRoot: '/tmp' }))
   await assert.rejects(inspectBrowserInput({ schema: 'agentic-graph/browser-preflight-input/v1', artifactRoot: 'relative', docsRoot: '/tmp' }), /absolute/)
+})
+
+test('preflight rejects the production 304-to-503 regression before browser execution', async () => {
+  const url = 'https://airvio.co/agentic-graph/assets/candidate/main.js'
+  const calls = []
+  const dispatch = async request => {
+    calls.push({ method: request.method, validator: request.headers.get('if-none-match') })
+    return request.headers.has('if-none-match')
+      ? new Response(null, { status: 304, headers: { etag: '"candidate"' } })
+      : new Response('export default 1', { headers: { etag: '"candidate"', 'content-type': 'application/javascript' } })
+  }
+  await verifyStaticAssetRevalidation(dispatch, url)
+  assert.deepEqual(calls, [{ method: 'GET', validator: null }, { method: 'GET', validator: '"candidate"' }, { method: 'HEAD', validator: '"candidate"' }])
+  await assert.rejects(verifyStaticAssetRevalidation(async request => request.headers.has('if-none-match')
+    ? new Response('unavailable', { status: 503 }) : dispatch(request), url), /must preserve 304/)
 })
 
 test('a fresh runner authenticates native setup before the real gate can execute a check', async () => {
