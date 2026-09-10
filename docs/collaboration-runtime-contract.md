@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 44
+contract_version: 45
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
