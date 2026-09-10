@@ -23,13 +23,13 @@ export function assertPriorBrowserRun(run, currentRun) {
 }
 
 async function restore() {
-  const file = process.env.AGENTIC_OS_BROWSER_PREFLIGHT_INPUT
-  assert.ok(file && path.isAbsolute(file), 'browser preflight input is required')
+  const docsRoot = process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT
+  assert.ok(docsRoot && path.isAbsolute(docsRoot), 'absolute pinned docs root is required')
+  assert.equal(await fs.realpath(docsRoot), docsRoot, 'docs root must be a real path')
   assert.equal(process.env.GITHUB_REPOSITORY, repository)
   assert.equal(process.env.GITHUB_REF, 'refs/heads/main')
-  const input = JSON.parse(await fs.readFile(file, 'utf8'))
   const binding = { sourceTree: git('rev-parse', 'HEAD^{tree}'),
-    docsTree: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { cwd: path.dirname(input.docsRoot), encoding: 'utf8' }).trim(),
+    docsTree: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { cwd: path.dirname(docsRoot), encoding: 'utf8' }).trim(),
     runtime: { node: process.version, platform: process.platform, arch: process.arch },
     check: 'isolated-browser-v1' }
   const name = historyArtifactName(binding)

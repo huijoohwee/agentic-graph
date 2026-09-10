@@ -26,7 +26,8 @@ disposable database, and denies external network access. The asset adapter appli
 redirect rules. This is bounded application behavior coverage, not Cloudflare routing or provider proof.
 Production still verifies the actual public document hash, transport, browser, and service-worker state.
 
-Before execution, GitHub retains an attempt artifact. A failed, interrupted, active, or expired prior
+Before expensive verification or build, the workflow checks protected attempt history. Before browser
+execution, GitHub retains an attempt artifact. A failed, interrupted, active, or expired prior
 release with the same source/docs/runtime identity blocks another attempt. An explicit rerun cannot
 overwrite its own history. Successful prior ledgers are restored into the fresh clone and revalidated
 by Agentic OS. No success cache, force option, or automatic browser retry is provided. Observation is

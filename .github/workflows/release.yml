@@ -56,6 +56,11 @@ jobs:
           ref: ${{ steps.agentic_canvas_os_docs.outputs.ref }}
           path: agentic-canvas-os
           fetch-depth: 0
+      - name: Restore protected browser attempt history
+        id: browser_history
+        working-directory: agentic-graph
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: node scripts/production-browser-history.mjs
       - name: Materialize and verify release evidence
         working-directory: agentic-graph
         env: { LOCAL_REVIEW_CANDIDATE_JSON: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_JSON: '${{ inputs.release_evidence }}' }
@@ -101,16 +106,12 @@ jobs:
       - name: Prepare isolated browser candidate
         working-directory: agentic-graph
         run: git fetch origin main && test "$(git rev-parse origin/main)" = "$RELEASE_SHA" && git update-ref refs/heads/main "$RELEASE_SHA" && node scripts/production-browser-preflight.mjs prepare
-      - name: Restore protected browser attempt history
-        id: browser_history
-        working-directory: agentic-graph
-        env: { GH_TOKEN: '${{ github.token }}' }
-        run: node scripts/production-browser-history.mjs
       - { name: Retain browser attempt before execution, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: '${{ steps.browser_history.outputs.artifact_name }}', path: '${{ github.workspace }}/browser-preflight/context.json', if-no-files-found: error, retention-days: 90 } }
       - name: Run isolated browser gate before production authorization
+        id: browser_gate
         working-directory: agentic-graph
         run: node node_modules/agentic-os/bin/agentic-os.mjs flight gate --operation=production-activation --context="$GITHUB_WORKSPACE/browser-preflight/context.json"
-      - { name: Retain browser ledger and bounded diagnostics, if: "always() && steps.browser_history.outputs.may_execute == 'true'", uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: '${{ steps.browser_history.outputs.artifact_name }}-ledger', path: '${{ github.workspace }}/agentic-graph/.git/agentic-os/flight-checks', if-no-files-found: error, include-hidden-files: true, retention-days: 90 } }
+      - { name: Retain browser ledger and bounded diagnostics, if: "always() && (steps.browser_gate.outcome == 'success' || steps.browser_gate.outcome == 'failure' || steps.browser_gate.outcome == 'cancelled')", uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: '${{ steps.browser_history.outputs.artifact_name }}-ledger', path: '${{ github.workspace }}/agentic-graph/.git/agentic-os/flight-checks', if-no-files-found: error, include-hidden-files: true, retention-days: 90 } }
       - name: Bind immutable production candidate
         id: production_candidate
         working-directory: agentic-graph

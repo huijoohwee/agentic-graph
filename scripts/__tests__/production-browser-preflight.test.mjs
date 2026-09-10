@@ -55,12 +55,13 @@ test('preflight refuses an unbound or relative candidate before reading its arti
 test('release retains an attempt before running the gate and cannot authorize a failed gate', async () => {
   const workflow = YAML.parse(await fs.readFile(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8'))
   const steps = workflow.jobs.verify.steps, names = steps.map(step => step.name)
-  const order = ['Prepare isolated browser candidate', 'Restore protected browser attempt history',
+  const order = ['Restore protected browser attempt history', 'Reverify exact candidate',
+    'Build and sync verified candidate', 'Prepare isolated browser candidate',
     'Retain browser attempt before execution', 'Run isolated browser gate before production authorization',
     'Retain browser ledger and bounded diagnostics', 'Bind immutable production candidate']
   const indices = order.map(name => { const index = names.indexOf(name); assert.ok(index >= 0, name); return index })
   assert.deepEqual(indices, [...indices].sort((a, b) => a - b))
-  const gate = steps[indices[3]]
+  const gate = steps[indices[5]]
   assert.equal(gate['continue-on-error'], undefined)
   assert.equal(gate.if, undefined)
   assert.match(gate.run, /flight gate --operation=production-activation/)
