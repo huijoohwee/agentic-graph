@@ -20,6 +20,8 @@ import {
 import { assertSealedLegacyNamedFileInventory } from '../legacy-mirror-inventory.mjs'
 import { LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS } from '../mirror-namespace-contract.mjs'
 import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS } from '../xr-v2/production-publish-contract.mjs'
+import { buildAgentReadyStaticFiles } from '../../cloudflare/pages/agentic-graph-agent-ready.mjs'
+import { stageProductionMirrorArtifact } from '../production-mirror-artifact-entries.mjs'
 
 const isolatedGitEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')),
@@ -46,6 +48,7 @@ const initializeRepository = root => {
 
 const createBaseMirror = async root => {
   const marker = '{"status":"old"}\n'
+  for (const relativePath of Object.keys(await buildAgentReadyStaticFiles())) await writeFile(root, relativePath, 'old discovery\n')
   await Promise.all([
     writeFile(root, 'README.md', 'unrelated mirror content\n'),
     writeFile(root, '404.html', '<h1>old not found</h1>\n'),
@@ -66,6 +69,26 @@ const createBaseMirror = async root => {
     writeFile(root, 'content/knowgrph/xr-v2/unrelated.txt', 'preserve sibling\n'),
   ])
 }
+
+test('the uploaded and reconciled artifact carries generated discovery aliases and preserves unrelated metadata', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-discovery-artifact-'))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  const mirror = path.join(root, 'mirror'), target = path.join(root, 'target'), artifact = path.join(root, 'artifact')
+  await fs.mkdir(mirror)
+  await createBaseMirror(mirror)
+  await writeFile(mirror, '.well-known/unrelated.json', '{"preserve":true}\n')
+  initializeRepository(mirror)
+  runGit(root, ['clone', '--quiet', mirror, target])
+  const generated = await buildAgentReadyStaticFiles()
+  for (const [name, value] of Object.entries(generated)) await writeFile(mirror, name, value.body)
+  await createProductionMirrorArtifactManifest({ mirrorRoot: mirror })
+  await stageProductionMirrorArtifact({ mirrorRoot: mirror, artifactRoot: artifact })
+  await assert.rejects(fs.stat(path.join(artifact, '.well-known/unrelated.json')), { code: 'ENOENT' })
+  await reconcileProductionMirrorArtifact({ artifactRoot: artifact, mirrorRoot: target })
+  for (const [name, value] of Object.entries(generated)) assert.equal(await fs.readFile(path.join(target, name), 'utf8'), value.body, name)
+  assert.equal(await fs.readFile(path.join(target, '.well-known/unrelated.json'), 'utf8'), '{"preserve":true}\n')
+  await assert.rejects(stageProductionMirrorArtifact({ mirrorRoot: mirror, artifactRoot: artifact }), { code: 'EEXIST' })
+})
 
 const copyArtifactEntries = async (mirrorRoot, artifactRoot) => {
   for (const relativePath of productionMirrorArtifactEntries) {

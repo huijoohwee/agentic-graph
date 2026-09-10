@@ -4,6 +4,7 @@ import {
   assertWorkerSubdomainDisabled, cloudflareApiAllPages, cloudflareApiEnvelope, parseR2BucketNames,
 } from './travel-mesh-release-inventory.mjs'
 import { validateCoreConfiguration } from './core-runtime-release-plan.mjs'
+import { inspectCoreStorageDomain } from './core-runtime-release-domain.mjs'
 
 export const coreExposure = async (apiFetch, environment) => [
   await assertWorkerSubdomainDisabled(apiFetch, environment, 'agentic-storage'),
@@ -36,6 +37,7 @@ export const coreResourceReadiness = async ({ run, runJson, environment, apiFetc
       if (owned.length !== 1 || owned[0].pattern !== `${v.AGENTIC_OS_PUBLIC_ZONE_NAME}/api/storage/*`) throw new Error('core storage route differs')
       return { zone, pattern: owned[0].pattern, script: owned[0].script }
     }],
+    ['storageDomain', async () => inspectCoreStorageDomain({ configuration: { variables: v }, environment, apiFetch })],
     ['browserSessionAuthority', async () => inspectCoreOwner({ configuration: { variables: v }, environment, apiFetch })],
     ['exposure', async () => coreExposure(apiFetch, environment)],
   ]

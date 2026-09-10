@@ -5,7 +5,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
-import { CANONICAL_IMAGE_ROOT, LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS,
+import { LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS,
   LEGACY_MIRROR_NAMED_FILE_INVENTORY, LEGACY_MIRROR_ROOT_INVENTORIES,
   LEGACY_MIRROR_TRACKED_EXACT_FILE_INVENTORY, LEGACY_MIRROR_TRACKED_EXACT_PATHS,
   isExplicitLegacyMirrorRemovalPath, isLegacyMirrorInventoryPath } from './mirror-namespace-contract.mjs'
@@ -18,12 +18,8 @@ import { assertSafeRoot, normalizeGitRelativePath, normalizeRelativePath,
 import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS,
   XR_V2_LEGACY_MIRROR_SHA256_BY_PATH } from './xr-v2/production-publish-contract.mjs'
 
-export const productionMirrorArtifactManifestName = '.agentic-graph-production-artifact-manifest.json'
-export const productionMirrorArtifactEntries = [
-  '404.html', 'README.md', 'content/agentic-graph', 'agentic-graph', CANONICAL_IMAGE_ROOT, 'functions', 'canvas',
-  'contracts', 'grph-shared', '_worker.js', '_routes.json', '_headers', '_redirects',
-  '.well-known/runtime-readiness.json',
-]
+import { productionMirrorArtifactEntries, productionMirrorArtifactManifestName } from './production-mirror-artifact-entries.mjs'
+export { productionMirrorArtifactEntries, productionMirrorArtifactManifestName }
 const productionMirrorArtifactDeletionEntries = new Set(['index.html', ...XR_V2_LEGACY_MIRROR_RELATIVE_PATHS])
 const manifestSchema = 'agentic-graph-production-mirror-artifact/v1'
 export const CANONICAL_DESCENDANT_MIRROR_PROOF_SCHEMA = 'agentic-graph-canonical-descendant-mirror-proof/v1'

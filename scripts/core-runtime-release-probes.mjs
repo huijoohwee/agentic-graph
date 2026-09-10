@@ -1,5 +1,21 @@
 import { digest } from './travel-mesh-release-plan.mjs'
 import { readBoundedProbeBody } from './travel-mesh-release-probes.mjs'
+import { STORAGE_FETCH_ORIGIN } from '../cloudflare/pages/agentic-graph-agent-ready-shared.mjs'
+
+export const probeCoreStorageOrigin = async ({ fetchFn = fetch, wait = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) => {
+  const url = `${STORAGE_FETCH_ORIGIN}/api/storage/livez`
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    try {
+      const response = await fetchFn(url, { redirect: 'manual', headers: { accept: 'application/json' }, signal: AbortSignal.timeout(5000) })
+      const body = JSON.parse(await readBoundedProbeBody(response))
+      if (response.status !== 200 || body.ok !== true || body.service !== 'agentic-storage') throw new Error('Unexpected storage origin response')
+      return { url, status: 200, bodyDigest: digest(body) }
+    } catch (error) {
+      if (attempt === 6) throw new Error(`Core MCP storage origin is unavailable: ${error.message}`)
+      await wait(10000)
+    }
+  }
+}
 
 export const probeCoreBaseline = async (configuration, { fetchFn = fetch } = {}) => {
   const origin = `https://${configuration.variables.AGENTIC_OS_PUBLIC_ZONE_NAME}`
@@ -37,8 +53,9 @@ export const probeCoreRuntime = async (configuration, { fetchFn = fetch, now = (
   })
   await denied.body?.cancel()
   if (denied.status !== 401) throw new Error('core unauthenticated storage request was not denied')
+  const storageOrigin = await probeCoreStorageOrigin({ fetchFn })
   const browserSession = await probeCoreBrowserSession(configuration, { fetchFn, now })
-  return [{ browserSession, id: 'storage', service: 'agentic-storage', scope: 'core', url, status: response.status,
+  return [{ browserSession, storageOrigin, id: 'storage', service: 'agentic-storage', scope: 'core', url, status: response.status,
     anonymousStatus: denied.status, observedAt: now().toISOString(), bodyDigest: digest(body) }]
 }
 

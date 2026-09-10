@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 42
+contract_version: 43
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -66,10 +66,10 @@ ci_scopes:
     commands:
       - ["node", "--test", "scripts/__tests__/production-service-worker-profile.test.mjs", "scripts/__tests__/production-scope-redirects.test.mjs"]
   core_runtime_release:
-    roots: ["config/production-release-profile.json", "scripts/runtime-release-profile.mjs", "scripts/runtime-release-migrations.mjs", "scripts/__tests__/runtime-release-migrations.test.mjs", "scripts/core-runtime-release-", "scripts/travel-mesh-release.mjs", "scripts/travel-mesh-release-plan.mjs", "scripts/travel-mesh-release-bindings.mjs", "scripts/__tests__/core-runtime-release.test.mjs", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness", "cloudflare/workers/agentic-graph-storage/storageBrowserSession", "cloudflare/workers/agentic-graph-storage/storageSessionExchange", "canvas/src/lib/storage/agentic-graph-storage-worker-env-contract.ts", "cloudflare/workers/agentic-graph-storage/index.ts", ".github/workflows/release.yml"]
+    roots: ["scripts/production-mirror-artifact.mjs", "scripts/production-mirror-artifact-entries.mjs", "config/production-release-profile.json", "scripts/runtime-release-profile.mjs", "scripts/runtime-release-migrations.mjs", "scripts/__tests__/runtime-release-migrations.test.mjs", "scripts/core-runtime-release-", "scripts/travel-mesh-release.mjs", "scripts/travel-mesh-release-plan.mjs", "scripts/travel-mesh-release-bindings.mjs", "scripts/__tests__/core-runtime-release.test.mjs", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness", "cloudflare/workers/agentic-graph-storage/storageBrowserSession", "cloudflare/workers/agentic-graph-storage/storageSessionExchange", "canvas/src/lib/storage/agentic-graph-storage-worker-env-contract.ts", "cloudflare/workers/agentic-graph-storage/index.ts", ".github/workflows/release.yml"]
     commands:
       - ["npm", "run", "smoke:prepare"]
-      - ["node", "--test", "scripts/__tests__/core-runtime-release.test.mjs", "scripts/__tests__/runtime-release-migrations.test.mjs"]
+      - ["node", "--test", "scripts/__tests__/core-runtime-release.test.mjs", "scripts/__tests__/core-runtime-release-domain.test.mjs", "scripts/__tests__/production-mirror-artifact.test.mjs", "scripts/__tests__/runtime-release-migrations.test.mjs"]
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness.test.ts", "cloudflare/workers/agentic-graph-storage/storageBrowserSession.test.ts", "cloudflare/workers/agentic-graph-storage/storageSessionExchange.test.ts"]
   dependencies:
     roots: ["package.json", "package-lock.json", "canvas/package.json", "canvas/package-lock.json", "contracts/package.json", "grph-shared/package.json", "gympgrph/package.json", "mcp/package.json", "web/package.json"]

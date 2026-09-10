@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { productionMirrorArtifactEntries } from '../production-mirror-artifact-entries.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const read = (...parts) => fs.readFileSync(path.resolve(repoRoot, ...parts), 'utf8')
@@ -23,10 +24,11 @@ test('apex Home has one canonical shell and a real Pages not-found boundary', ()
     /\/singabldr\/manifest\.webmanifest/,
     /\/singabldr\/sw\.js/,
   ]) assert.match(productionFidelityScript, pattern)
-  for (const pattern of [/'404\.html'/, /productionMirrorArtifactDeletionEntries/, /XR_V2_LEGACY_MIRROR_RELATIVE_PATHS/]) {
+  assert.ok(productionMirrorArtifactEntries.includes('404.html'))
+  for (const pattern of [/productionMirrorArtifactDeletionEntries/, /XR_V2_LEGACY_MIRROR_RELATIVE_PATHS/]) {
     assert.match(productionMirrorArtifactScript, pattern)
   }
-  assert.match(releaseWorkflow, /huijoohwee\/404\.html/)
+  assert.match(releaseWorkflow, /production-mirror-artifact-entries\.mjs stage/)
 })
 
 test('production fidelity smokes both XR v2 config routes before browser launch', () => {
