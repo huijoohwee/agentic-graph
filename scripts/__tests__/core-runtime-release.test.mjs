@@ -65,8 +65,22 @@ const provider = (env, { candidateReady = true, zoneAccount = env.CLOUDFLARE_ACC
     throw new Error(`unexpected command: ${args.join(' ')}`)
   }
   const envelope = (result, paged = false) => Response.json({ success: true, result, ...(paged ? { result_info: { total_pages: 1 } } : {}) })
+  let domain = null
   const apiFetch = async (rawUrl, options) => {
     const url = new URL(rawUrl)
+    if (url.pathname.endsWith('/domains/changeset')) return envelope({
+      added: domain ? [] : [{ id: 'planned-domain', hostname: 'storage.airvio.co', service: 'agentic-storage', zone_id: env.AGENTIC_OS_PUBLIC_ZONE_ID, zone_name: 'airvio.co', environment: '' }],
+      updated: domain ? [{ id: domain.id, modified: false }] : [], removed: [], conflicting: [],
+    })
+    if (url.pathname.endsWith('/domains/records') && options?.method === 'PUT') {
+      domain = { id: 'storage-domain', ...JSON.parse(options.body).origins[0], service: 'agentic-storage', environment: '' }
+      return envelope([domain])
+    }
+    if (url.pathname.endsWith('/workers/domains')) {
+      return envelope(domain ? [domain] : [])
+    }
+    if (url.pathname.endsWith('/workers/domains/storage-domain') && options?.method === 'DELETE') { domain = null; return envelope({}) }
+    if (url.pathname.endsWith('/dns_records')) return envelope([])
     if (url.pathname.endsWith('/subdomain')) return envelope({ enabled: false, previews_enabled: false })
     if (url.pathname.endsWith(`/zones/${env.AGENTIC_OS_PUBLIC_ZONE_ID}`)) return envelope({ id: env.AGENTIC_OS_PUBLIC_ZONE_ID, name: 'airvio.co', account: { id: zoneAccount } })
     if (url.pathname.endsWith('/workers/routes')) return envelope([{ pattern: 'airvio.co/api/storage/*', script: 'agentic-storage' }])
@@ -148,6 +162,7 @@ test('core release uses the shared version transaction without attempting the ab
   const receipt = await deployMesh({ ...args, preflight })
   assert.equal(fixture.active(), 'candidate')
   assert.equal(receipt.identityProvisioning.status, 'proved')
+  assert.equal(receipt.routing.disposition, 'created')
   assert.equal(JSON.stringify(receipt).includes(env.AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY), false)
   assert.deepEqual(receipt.units.map(unit => unit.id), ['storage'])
   assert.equal(receipt.schema, 'agentic-graph-core-runtime-release-receipt/v1')
@@ -156,7 +171,26 @@ test('core release uses the shared version transaction without attempting the ab
   const restored = await restoreMesh({ ...args, receipt, now: () => new Date(Date.parse(env.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT) + 3600_000) })
   assert.equal(fixture.active(), 'baseline')
   assert.equal(restored.restorationProof.status, 'proved')
+  assert.equal(restored.routingCompensation.disposition, 'removed-created-domain')
   assert.deepEqual(restored.probes, preflight.baselineProbes)
+})
+test('a lost domain-creation response preserves ambiguity even when Worker compensation succeeds', async () => {
+  const env = environment(), fixture = provider(env), args = { ...inputs(env), ...fixture }
+  const preflight = await preflightMesh(args)
+  const apiFetch = async (url, options) => {
+    const response = await fixture.apiFetch(url, options)
+    if (new URL(url).pathname.endsWith('/domains/records') && options.method === 'PUT') throw new Error('domain response lost')
+    return response
+  }
+  await assert.rejects(deployMesh({ ...args, apiFetch, preflight }), error => {
+    assert.equal(error.receipt.status, 'preserve-required')
+    assert.equal(error.receipt.routing.status, 'attempted')
+    assert.equal(error.receipt.routingCompensation.status, 'failed')
+    assert.equal(error.receipt.mutationAmbiguous, true)
+    assert.equal(meshOutcomeOutputs(error.receipt).preserve_required, true)
+    return true
+  })
+  assert.equal(fixture.active(), 'baseline')
 })
 test('failed core readiness restores and proves the old baseline without demanding the new endpoint there', async () => {
   const env = environment(), fixture = provider(env, { candidateReady: false }), args = { ...inputs(env), ...fixture }

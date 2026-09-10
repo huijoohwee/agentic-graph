@@ -5,6 +5,7 @@ import { probeMesh } from './travel-mesh-release-probes.mjs'
 import { CORE_RUNTIME_PLAN, CORE_RUNTIME_MIGRATIONS, CORE_FORWARD_MIGRATION_DIGESTS, validateCoreConfiguration, validateCoreOwnerAuthority } from './core-runtime-release-plan.mjs'
 import { coreResourceReadiness, coreExposure, enrollCoreOwner } from './core-runtime-release-inventory.mjs'
 import { probeCoreRuntime, probeCoreBaseline, probeRestoredCore } from './core-runtime-release-probes.mjs'
+import { configureCoreStorageDomain, verifyCoreStorageDomain, restoreCoreStorageDomain } from './core-runtime-release-domain.mjs'
 
 export const TRAVEL_RUNTIME_PROFILE = Object.freeze({
   id: 'travel', plan: TRAVEL_MESH_PLAN, requiresTravelBootstrap: true,
@@ -19,6 +20,7 @@ export const CORE_RUNTIME_PROFILE = Object.freeze({
   schema: kind => `agentic-graph-core-runtime-${kind}/v1`,
   configure: validateCoreConfiguration, validateAuthority: validateCoreOwnerAuthority, initialize: enrollCoreOwner, resources: coreResourceReadiness, exposure: coreExposure, probe: probeCoreRuntime,
   probeBaseline: probeCoreBaseline, probeRestored: probeRestoredCore,
+  configureRouting: configureCoreStorageDomain, verifyRouting: verifyCoreStorageDomain, restoreRouting: restoreCoreStorageDomain,
 })
 
 export const selectRuntimeProfile = value => {

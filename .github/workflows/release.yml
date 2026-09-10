@@ -6,9 +6,7 @@ on:
       source_sha: { description: 'Exact protected main commit reviewed on localhost', required: true, type: string }
       local_review_candidate: { description: 'Exact agentic-local-review-candidate/v1 JSON from turn:end', required: true, type: string }
       release_evidence: { description: 'Exact release-frontier evidence JSON with the last-known-good rollback identity', required: true, type: string }
-permissions:
-  actions: read
-  contents: read
+permissions: { actions: read, contents: read }
 concurrency:
   group: production-release
   cancel-in-progress: false
@@ -130,7 +128,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - { name: Upload production authorization evidence, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'production-authorization-${{ inputs.source_sha }}', path: "${{ runner.temp }}/local-review-candidate.json\n${{ runner.temp }}/release-evidence.json\n${{ runner.temp }}/production-release-candidate.json", if-no-files-found: error, retention-days: 1 } }
       - { name: Persist pre-authorization lifecycle receipts, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'production-lifecycle-${{ inputs.source_sha }}-${{ github.run_id }}', path: '${{ runner.temp }}/production-lifecycle', if-no-files-found: error, retention-days: 90 } }
-      - { name: Upload verified release artifact, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'production-${{ inputs.source_sha }}', path: "huijoohwee/404.html\nhuijoohwee/README.md\nhuijoohwee/content/agentic-graph\nhuijoohwee/agentic-graph\nhuijoohwee/image/agentic-graph\nhuijoohwee/functions\nhuijoohwee/canvas\nhuijoohwee/contracts\nhuijoohwee/grph-shared\nhuijoohwee/_worker.js\nhuijoohwee/_routes.json\nhuijoohwee/_headers\nhuijoohwee/_redirects\nhuijoohwee/.well-known/runtime-readiness.json\nhuijoohwee/.agentic-graph-production-artifact-manifest.json", if-no-files-found: error, include-hidden-files: true, retention-days: 1 } }
+      - { name: Stage complete verified release artifact, working-directory: agentic-graph, run: 'node scripts/production-mirror-artifact-entries.mjs stage "$GITHUB_WORKSPACE/huijoohwee" "$RUNNER_TEMP/verified-production-artifact"' }
+      - { name: Upload verified release artifact, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'production-${{ inputs.source_sha }}', path: '${{ runner.temp }}/verified-production-artifact', if-no-files-found: error, include-hidden-files: true, retention-days: 1 } }
   deploy:
     name: Human-Authorized Deploy, Verify, And Publish Mirror
     needs: verify
