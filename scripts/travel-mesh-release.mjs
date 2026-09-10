@@ -6,7 +6,7 @@ import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import {
-  DIGEST, D1_MIGRATION, HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS, SENTINEL, SHA, digest,
+  DIGEST, SENTINEL, SHA, digest,
   releaseConfigFile, removeEphemeralFile, repoRoot, requireText, seal,
 } from './travel-mesh-release-plan.mjs'
 import {
@@ -18,6 +18,7 @@ import {
 } from './travel-mesh-release-bindings.mjs'
 import { probeMesh } from './travel-mesh-release-probes.mjs'
 import { CORE_RUNTIME_PROFILE, TRAVEL_RUNTIME_PROFILE, readRuntimeProfile } from './runtime-release-profile.mjs'
+import { inspectMigrations, applyMigrations } from './runtime-release-migrations.mjs'
 
 export { parseR2BucketNames, validateRouteInventory }
 export { verifyCandidateVersion } from './travel-mesh-release-bindings.mjs'
@@ -140,7 +141,7 @@ const remoteReadiness = async (run, environment, apiFetch, profile) => {
       else snapshots.set(entry.id, snapshot)
     } catch (error) {
       failures.push(`${entry.id}: ${error.message}`)
-      if (isCloudflareAccessFailure(error)) return { snapshots, evidence, failures }
+      if (isCloudflareAccessFailure(error)) return { snapshots, evidence, failures, accessDenied: true }
     }
   }
 
@@ -156,6 +157,11 @@ export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
   const configuration = profile.configure(environment, { sourceSha, candidateDigest })
   profile.validateAuthority?.(authorization, configuration, now)
   const remote = await remoteReadiness(run, environment, apiFetch, profile)
+  let migrations
+  if (!remote.accessDenied) {
+    try { migrations = await inspectMigrations({ run, runJson, configuration, profile }) }
+    catch (error) { remote.failures.push(`migrations: ${error.message}`) }
+  }
   if (remote.failures.length) throw new Error(`protected travel mesh preflight failed\n${remote.failures.join('\n')}`)
   const units = []
   for (const entry of profile.plan) {
@@ -178,60 +184,7 @@ export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
   const baselineProbes = profile.probeBaseline ? await profile.probeBaseline(configuration, { fetchFn }) : null
   return seal({ ...(baselineProbes ? { baselineProbes } : {}), schema: profile.schema('preflight'), status: 'passed', sourceRevision: sourceSha,
     candidateDigest, configurationDigest: configuration.configurationDigest, capturedAt: now().toISOString(),
-    resources: remote.evidence, units })
-}
-
-const readAppliedMigrations = value => new Set((Array.isArray(value) ? value : [value])
-  .flatMap(item => Array.isArray(item?.results) ? item.results : []).map(row => row?.name).filter(name => typeof name === 'string'))
-const migrationNames = () => fs.readdirSync(path.resolve(repoRoot, D1_MIGRATION.directory)).filter(name => name.endsWith('.sql')).sort()
-const assertAdditiveMigration = name => {
-  const rawSource = fs.readFileSync(path.resolve(repoRoot, D1_MIGRATION.directory, name), 'utf8')
-  if (HASH_PINNED_FORWARD_DATA_CONVERGENCE_MIGRATIONS[name] === digest(rawSource)) return
-  const source = rawSource
-    .replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
-  if (/(?:^|;)\s*(?:DROP\s|TRUNCATE\s|DELETE\s|UPDATE\s|ALTER\s+TABLE\s+\S+\s+RENAME\s)/im.test(source)) {
-    throw new Error(`pending D1 migration is not forward-compatible with Worker rollback: ${name}`)
-  }
-}
-const d1Args = (config, ...args) => ['--no-install', 'wrangler', 'd1', ...args, '--config', config]
-const appliedMigrations = async (run, config) => {
-  try {
-    return readAppliedMigrations(await runJson(run, d1Args(config, 'execute', D1_MIGRATION.database, '--remote',
-      '--command', 'SELECT name FROM d1_migrations ORDER BY name', '--json'), 'D1 migration inventory'))
-  } catch (error) {
-    if (/no such table:\s*d1_migrations/i.test(error.message)) return new Set()
-    throw error
-  }
-}
-const applyMigrations = async (run, configuration, profile) => {
-  const config = releaseConfigFile(profile.plan.find(unit => unit.id === 'storage'), configuration)
-  let appliedBefore = new Set(), pending = [], bookmark = null, applyAttempted = false
-  try {
-    appliedBefore = await appliedMigrations(run, config)
-    pending = migrationNames().filter(name => !appliedBefore.has(name))
-    pending.forEach(assertAdditiveMigration)
-    if (!pending.length) return { pending, applied: false, bookmark: null, disposition: 'unchanged' }
-    const bookmarkResult = await runJson(run, d1Args(config, 'time-travel', 'info', D1_MIGRATION.database, '--json'), 'D1 time-travel bookmark')
-    bookmark = requireText(bookmarkResult?.bookmark ?? bookmarkResult?.result?.bookmark, 'D1 time-travel bookmark')
-    applyAttempted = true
-    await run(d1Args(config, 'migrations', 'apply', D1_MIGRATION.database, '--remote'))
-    const after = await appliedMigrations(run, config)
-    for (const name of pending) if (!after.has(name)) throw new Error(`D1 migration did not converge: ${name}`)
-    return { pending, applied: true, bookmark, disposition: 'retained-forward-compatible-on-worker-rollback' }
-  } catch (error) {
-    let observedAfter = null, observationError = null
-    if (applyAttempted) {
-      try { observedAfter = await appliedMigrations(run, config) } catch (inventoryError) { observationError = inventoryError.message.slice(0, 500) }
-    }
-    const actuallyApplied = observedAfter ? pending.filter(name => !appliedBefore.has(name) && observedAfter.has(name)) : []
-    error.migrationReceipt = {
-      pending, applied: actuallyApplied.length > 0, actuallyApplied, appliedBefore: [...appliedBefore].sort(), bookmark,
-      applyAttempted, observationError,
-      disposition: applyAttempted ? 'preserve-required-partial-migration-possible' : 'not-mutated',
-    }
-    error.migrationMutationPossible = applyAttempted
-    throw error
-  } finally { removeEphemeralFile(config) }
+    resources: remote.evidence, migrations, units })
 }
 
 const discoverCandidate = async ({ entry, knownVersionIds, run, sourceSha, candidateDigest, configuration, baselineVersion,
@@ -350,6 +303,8 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
     if (remote.failures.length || digest(remote.evidence) !== digest(preflight.resources)) {
       throw new Error(`travel mesh resources changed after preflight${remote.failures.length ? `\n${remote.failures.join('\n')}` : ''}`)
     }
+    const currentMigrations = await inspectMigrations({ run, runJson, configuration, profile })
+    if (digest(currentMigrations) !== digest(preflight.migrations)) throw new Error('D1 migration inventory changed after preflight')
     for (const expected of preflight.units) {
       const entry = profile.plan.find(candidate => candidate.id === expected.id)
       const current = remote.snapshots.get(entry.id)
@@ -398,7 +353,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
     }
     const mcpIndex = profile.plan.findIndex(entry => entry.id === 'mcp')
     for (const [index, entry] of profile.plan.entries()) if (index !== mcpIndex) await upload(entry, index)
-    migrations = await applyMigrations(run, configuration, profile)
+    migrations = await applyMigrations({ run, runJson, configuration, profile, expected: preflight.migrations })
     if (profile.initialize) {
       identityProvisioning = { status: 'attempted', disposition: 'retained-forward-compatible' }
       identityProvisioning = await profile.initialize({ configuration, environment, apiFetch, now })

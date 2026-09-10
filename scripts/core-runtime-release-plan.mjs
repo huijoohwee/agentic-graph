@@ -16,6 +16,19 @@ export const CORE_RUNTIME_PLAN = Object.freeze([Object.freeze({
   ],
 })])
 
+// Storage dependencies only. Original SQL and ledger filenames remain unchanged.
+export const CORE_RUNTIME_MIGRATIONS = Object.freeze([
+  '0001_agentic-graph_storage.sql', '0008_chat_auth_and_audit.sql',
+  '0015_storage_publication_contract.sql', '0016_storage_browser_identity.sql',
+  '0019_storage_chunk_document_identity.sql', '0020_storage_child_sync_state.sql',
+])
+// Audited trigger/index changes preserve the prior storage schema and data.
+// Compatibility tests exercise prior writes with these exact migrations retained.
+export const CORE_FORWARD_MIGRATION_DIGESTS = Object.freeze({
+  '0019_storage_chunk_document_identity.sql': '30be8ef3558b82bf1fcc830fbaf0d0e880ccbfdcc72303f008e65e09b09a53e6',
+  '0020_storage_child_sync_state.sql': 'd16a3dcd4317b1c23bb9b862640ec2c6b850c159481698b7f7a3c829db8b0c0b',
+})
+
 export const validateCoreConfiguration = environment => {
   const variables = Object.fromEntries([
     'CLOUDFLARE_ACCOUNT_ID', 'AGENTIC_OS_PUBLIC_ZONE_ID', 'AGENTIC_OS_PUBLIC_ZONE_NAME',

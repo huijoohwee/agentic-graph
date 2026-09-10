@@ -566,8 +566,8 @@ test('pre-upload drift seals an exact not-mutated receipt and permits terminal r
 test('a partial D1 migration failure is re-inventoried and never reported as rolled back', async () => {
   const environment = protectedEnvironment(), cloudflare = fakeCloudflare(environment)
   const now = () => new Date('2026-08-20T00:10:00.000Z')
-  const preflight = await preflightMesh({ sourceSha, candidateDigest, authorization, environment, run: cloudflare.run, apiFetch: cloudflare.apiFetch, now })
   cloudflare.setFailMigration('0018_agentic_commerce_paid_resources.sql')
+  const preflight = await preflightMesh({ sourceSha, candidateDigest, authorization, environment, run: cloudflare.run, apiFetch: cloudflare.apiFetch, now })
   await assert.rejects(() => deployMesh({ sourceSha, candidateDigest, authorization, preflight, environment,
     run: cloudflare.run, apiFetch: cloudflare.apiFetch, fetchFn: fetchReadiness, now }), error => {
     assert.equal(error.receipt.status, 'preserve-required')

@@ -112,6 +112,31 @@ test('core resource preflight verifies account ownership before any upload', asy
   await assert.rejects(preflightMesh({ ...inputs(env), ...fixture }), /zone ownership/)
   assert.equal(fixture.calls.some(args => args.includes('upload')), false)
 })
+
+test('core refuses an unavailable migration inventory before any Worker upload', async () => {
+  const env = environment(), fixture = provider(env)
+  const run = async args => {
+    if (args.includes('d1') && args.includes('execute')) throw new Error('migration inventory unavailable')
+    return fixture.run(args)
+  }
+  await assert.rejects(preflightMesh({ ...inputs(env), ...fixture, run }), /migration inventory unavailable/)
+  assert(!fixture.calls.some(args => args.includes('upload')))
+})
+
+test('core rechecks migration inventory before any mutable Worker operation', async () => {
+  const env = environment(), fixture = provider(env), args = { ...inputs(env), ...fixture }
+  const preflight = await preflightMesh(args)
+  const before = fixture.calls.length
+  const run = async command => command.includes('d1') && command.includes('execute')
+    ? { stdout: JSON.stringify([{ results: [] }]) } : fixture.run(command)
+  await assert.rejects(deployMesh({ ...args, run, preflight }), error => {
+    assert.match(error.message, /migration inventory changed after preflight/)
+    assert.equal(error.receipt.status, 'not-mutated')
+    assert.equal(error.receipt.mutationAttempted, false)
+    return true
+  })
+  assert(!fixture.calls.slice(before).some(command => command.includes('upload') || command.includes('apply')))
+})
 test('core release uses the shared version transaction without attempting the absent MCP seam', async () => {
   const env = environment(), fixture = provider(env), args = { ...inputs(env), ...fixture }
   const preflight = await preflightMesh(args)
