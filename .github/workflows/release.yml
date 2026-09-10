@@ -1,17 +1,20 @@
 name: Production Release
-run-name: Production candidate ${{ inputs.source_sha }}
+run-name: ${{ inputs.recovery_run_id && format('Production recovery {0}', inputs.recovery_run_id) || format('Production candidate {0}', inputs.source_sha) }}
 on:
   workflow_dispatch:
     inputs:
       source_sha: { description: 'Exact protected main commit reviewed on localhost', required: true, type: string }
-      local_review_candidate: { description: 'Exact agentic-local-review-candidate/v1 JSON from turn:end', required: true, type: string }
-      release_evidence: { description: 'Exact release-frontier evidence JSON with the last-known-good rollback identity', required: true, type: string }
+      local_review_candidate: { description: 'Reviewed candidate JSON; use the retained original for recovery', required: true, type: string }
+      release_evidence: { description: 'Release evidence JSON; use the retained original for recovery', required: true, type: string }
+      recovery_run_id: { description: 'Retained release to recover after verified mirror publication; leaves Pages and data unchanged', required: false, type: string }
 permissions: { actions: read, contents: read }
 concurrency:
   group: production-release
   cancel-in-progress: false
 jobs:
+  recover: { if: "inputs.recovery_run_id != ''", uses: './.github/workflows/production-release-recovery.yml', with: { source_sha: '${{ inputs.source_sha }}', original_run_id: '${{ inputs.recovery_run_id }}', local_review_candidate: '${{ inputs.local_review_candidate }}', release_evidence: '${{ inputs.release_evidence }}' }, secrets: inherit }
   verify:
+    if: inputs.recovery_run_id == ''
     name: Verify Release Candidate
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -21,15 +24,13 @@ jobs:
       - { name: Checkout exact protected main commit, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 2 } }
       - name: Verify checked-out commit
         working-directory: agentic-graph
+        env: { LOCAL_REVIEW_INPUT: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_INPUT: '${{ inputs.release_evidence }}' }
         run: |
-          test "$GITHUB_REF" = "refs/heads/main"
+          test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, path: huijoohwee } }
-      - name: Capture production mirror base revision
-        id: mirror_revision
-        working-directory: huijoohwee
-        run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - { name: Capture production mirror base revision, id: mirror_revision, working-directory: huijoohwee, run: 'echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"' }
       - { name: Checkout schema mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee.github.io, path: huijoohwee.github.io } }
       - name: Capture execution guideline revision
         id: guideline_revision
@@ -40,9 +41,7 @@ jobs:
       - name: Install dependencies
         working-directory: agentic-graph
         run: bash ./scripts/install-production-release-dependencies.sh
-      - name: Initialize native release gate trust
-        working-directory: agentic-graph
-        run: git fetch origin main && test "$(git rev-parse origin/main)" = "$RELEASE_SHA" && git switch main && test "$(git rev-parse HEAD)" = "$RELEASE_SHA" && npm run agentic-os:setup
+      - { name: Initialize native release gate trust, working-directory: agentic-graph, run: 'git fetch origin main && test "$(git rev-parse origin/main)" = "$RELEASE_SHA" && git switch main && test "$(git rev-parse HEAD)" = "$RELEASE_SHA" && npm run agentic-os:setup' }
       - name: Validate travel mesh release plan and local rollback simulation
         working-directory: agentic-graph
         run: |
@@ -105,6 +104,7 @@ jobs:
         run: npm run pages:build-sync
       - { name: Verify source-to-mirror parity, working-directory: agentic-graph, run: 'npm run conflict:mirror:check' }
       - { name: Build Pages functions, working-directory: agentic-graph, run: 'npm run pages:functions:build' }
+      - { name: Verify complete mirror runtime seal before activation, working-directory: huijoohwee, run: 'npm run runtime:check' }
       - { name: Create verified mirror artifact manifest, working-directory: agentic-graph, run: 'npm run --silent production:mirror-artifact:create -- ../huijoohwee' }
       - name: Prepare isolated browser candidate
         working-directory: agentic-graph
@@ -489,7 +489,7 @@ jobs:
           exit 1
       - name: Restore exact prior travel mesh versions
         id: rollback_travel_mesh
-        if: always() && failure() && steps.deploy_travel_mesh.outputs.receipt_sealed == 'true' && steps.deploy_travel_mesh.outputs.mutation_proven == 'true' && steps.deploy_travel_mesh.outputs.preserve_required != 'true' && steps.deploy_travel_mesh.outputs.compensated != 'true' && steps.publish_mirror.outputs.publication_attempted != 'true' && steps.publish_mirror.outputs.publication_committed != 'true'
+        if: always() && failure() && steps.rollback_eligibility.outputs.eligible == 'true' && steps.deploy_travel_mesh.outputs.receipt_sealed == 'true' && steps.deploy_travel_mesh.outputs.mutation_proven == 'true' && steps.deploy_travel_mesh.outputs.preserve_required != 'true' && steps.deploy_travel_mesh.outputs.compensated != 'true' && steps.publish_mirror.outputs.publication_attempted != 'true' && steps.publish_mirror.outputs.publication_committed != 'true'
         working-directory: agentic-graph
         env: *travel_mesh_environment
         run: |

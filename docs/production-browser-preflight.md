@@ -3,7 +3,7 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 3
+revision: 4
 owner: "agentic-graph"
 frontmatter_contract: "required"
 ---
@@ -51,8 +51,26 @@ Attempt and ledger artifacts remain for 90 days. Expired evidence requires recon
 silently resetting the budget. The live browser check executes once and retains its original stderr.
 The workflow cannot bind a production authorization candidate unless the isolated gate passes.
 
+The generated mirror's own runtime seal check also runs before activation. It verifies the full
+source-owned artifact, including XR model bytes and migrated images. Pages and storage compensation
+share the same rollback-eligibility decision, so preserving Pages also preserves its storage version.
+
+For a retained release whose live checks passed, mirror publication is now verified, and storage
+alone was restored, `release.yml` accepts `recovery_run_id`. The normal build/deploy job is skipped.
+The required review/evidence inputs identify the retained original release; they do not authorize
+another activation. The recovery controller validates them against the original run and sealed
+evidence, unchanged runtime inputs,
+published mirror checks, public markers, storage/D1 state, and the exact retained Worker version.
+Its credentialless plan names the only permitted activation and expires after one hour. The protected
+production approval must carry `authorize recovery <planDigest>` from the configured storage owner.
+The controller activates that existing version once, verifies core authentication/browser-session
+behavior, and retains a joined completion receipt plus two authoritative rollback-target readbacks.
+It never uploads a Worker, deploys Pages, edits routes/secrets, or applies migrations. An ambiguous
+activation or failed verification preserves evidence and cannot automatically retry the mutation.
+
 Validation: the focused preflight tests cover failed/interrupted history, source/configuration keys,
 artifact byte changes, symlink rejection, and malformed inputs. The full isolated browser validator
 exercises the candidate. Required protected Integration and XR checks still govern source integration.
-This change adds two on-demand release modules, no dependency package, no service, and no always-load
-prompt text. The Agentic OS dependency revision changes to adopt its existing gate implementation.
+The recovery extension adds two on-demand release modules, no dependency package, no service, and
+no always-load prompt text. It retains the existing Agentic OS dependency revision. Recovery guards
+also run in the credentialless preparation job before production approval.
