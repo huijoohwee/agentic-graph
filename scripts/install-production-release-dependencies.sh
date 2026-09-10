@@ -12,4 +12,7 @@ for attempt in 1 2 3; do
   sleep "$((attempt * 10))"
 done
 
+# Each release job starts without the linked packages' generated exports.
+npm run smoke:prepare
+
 npx playwright install --with-deps chromium
