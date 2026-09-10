@@ -21,7 +21,13 @@ jobs:
     steps:
       - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 0 } }
       - { uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22 } }
-      - { name: Install and test locked recovery controller, working-directory: agentic-graph, run: 'npm ci --ignore-scripts && node --test scripts/__tests__/production-release-recovery.test.mjs' }
+      - name: Prepare and test locked recovery controller
+        working-directory: agentic-graph
+        run: |
+          npm ci --ignore-scripts
+          npm run smoke:prepare
+          node --input-type=module -e "await import('./scripts/production-release-recovery.mjs')"
+          node --test scripts/__tests__/production-release-recovery.test.mjs
       - name: Bind actual runner temporary directory
         run: echo "RECOVERY_ROOT=$RUNNER_TEMP/core-release-recovery" >> "$GITHUB_ENV"
       - name: Prepare exact recovery plan without provider mutation
@@ -58,7 +64,12 @@ jobs:
       - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.prepare.outputs.mirror_revision }}', path: huijoohwee, fetch-depth: 0 } }
       - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/agentic-canvas-os, ref: '${{ needs.prepare.outputs.docs_revision }}', path: agentic-canvas-os } }
       - { uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22 } }
-      - { name: Install locked controller dependencies, working-directory: agentic-graph, run: 'npm ci --ignore-scripts' }
+      - name: Prepare locked recovery controller
+        working-directory: agentic-graph
+        run: |
+          npm ci --ignore-scripts
+          npm run smoke:prepare
+          node --input-type=module -e "await import('./scripts/production-release-recovery.mjs')"
       - name: Bind actual runner temporary directory
         run: echo "RECOVERY_ROOT=$RUNNER_TEMP/core-release-recovery" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
