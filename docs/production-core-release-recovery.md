@@ -2,7 +2,7 @@
 title: "Core production discovery and storage release"
 doc_type: "Runtime Contract"
 status: "active"
-version: "1.0.0"
+version: "1.0.1"
 date: "2026-09-10"
 owner: "agentic-graph"
 frontmatter_contract: "required"
@@ -32,6 +32,15 @@ Run 34448248298 exposed missing storage DNS and omitted discovery artifact paths
 Its prior Worker, Pages, and D1 resources were restored, but restored MCP checks
 failed, so it did not produce a verified rollback terminal carrier. Source fixes,
 local tests, and PR integration do not retroactively change that release outcome.
+
+Run 34459215835 created the intended storage domain, then rejected its readback:
+Cloudflare's script-domain changeset reports the default environment as empty,
+while its active-domain inventory reports `production`. The adapter now validates
+those two endpoint contracts separately. Other environments remain rejected.
+The original Worker version was restored and the created domain was preserved
+for inspection. Its exact service, zone, hostname, and domain ID were subsequently
+observed through read-only provider APIs. A later protected release may reuse
+that proved existing domain and must retain it during its own rollback.
 
 Validation includes artifact staging and reconciliation against stale root aliases,
 preservation of unrelated metadata, domain reuse and exact rollback, conflict and

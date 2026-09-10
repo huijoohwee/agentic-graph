@@ -8,7 +8,7 @@ const domainSpec = configuration => {
   const hostname = new URL(STORAGE_FETCH_ORIGIN).hostname
   if (hostname !== `storage.${v.AGENTIC_OS_PUBLIC_ZONE_NAME}`) throw new Error('Core storage fetch origin differs from the owned zone')
   return { hostname, service: 'agentic-storage', zone_id: v.AGENTIC_OS_PUBLIC_ZONE_ID,
-    zone_name: v.AGENTIC_OS_PUBLIC_ZONE_NAME, environment: '' }
+    zone_name: v.AGENTIC_OS_PUBLIC_ZONE_NAME, environment: 'production' }
 }
 const domainUrl = configuration => `${root}/accounts/${configuration.variables.CLOUDFLARE_ACCOUNT_ID}/workers/domains`
 const scriptDomainUrl = configuration => `${root}/accounts/${configuration.variables.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/agentic-storage/domains`
@@ -39,8 +39,12 @@ export const inspectCoreStorageDomain = async ({ configuration, environment, api
   if (changes.removed.length || changes.conflicting.length || changes.updated.some(item => item.modified !== undefined && item.modified !== false)) {
     throw new Error('Core storage domain plan conflicts with existing DNS or domain ownership')
   }
+  // The script changeset uses an empty default environment; the account's
+  // active-domain inventory names that same environment production. Validate
+  // each endpoint strictly rather than accepting any environment on readback.
+  const plannedSpec = { ...spec, environment: '' }
   if (changes.added.length !== (domain ? 0 : 1)
-    || changes.added.some(item => normalizeDomain(item, spec).hostname !== spec.hostname)
+    || changes.added.some(item => normalizeDomain(item, plannedSpec).hostname !== spec.hostname)
     || changes.updated.length > 1 || changes.updated.some(item => item.id !== domain?.id)) {
     throw new Error('Core storage domain plan differs from the exact intended addition')
   }
