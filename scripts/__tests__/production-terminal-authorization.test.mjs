@@ -14,6 +14,7 @@ import {
   readAuthorizationRuntime,
   readCanonicalReleaseOwnerState,
   validateCanonicalReleaseOwnerState,
+  verifyCanonicalReleaseDependency,
   responseFor,
   selectLifecycleCandidateArtifact,
   selectPendingProductionDeployment,
@@ -209,6 +210,74 @@ test('canonical release owner state requires clean exact main at the reviewed re
     }),
     /canonical main drifted/,
   )
+})
+
+const dependencyFixture = () => {
+  const repositoryRoot = '/workspace/agentic-graph', agenticCanvasOsRoot = '/workspace/agentic-canvas-os'
+  const sourceRevision = 'a'.repeat(40), dependencyRevision = 'b'.repeat(40), remote = 'c'.repeat(40)
+  const source = { branch: 'main', head: sourceRevision, originMain: sourceRevision, status: '' }
+  const dependency = { branch: 'main', head: dependencyRevision, originMain: remote, status: '' }
+  const candidate = { agenticCanvasOsRoot,
+    agenticGraph: { root: repositoryRoot, headSha: sourceRevision, remoteSha: sourceRevision },
+    agenticCanvasOs: { headSha: dependencyRevision, remoteSha: remote,
+      protectedChecksVerified: true, revisionBinding: 'consumer-pin' } }
+  const observed = [], deps = { nativeOwner: true }
+  const options = { repositoryRoot, agenticCanvasOsRoot, sourceRevision, dependencyRevision,
+    readState: ({ repositoryRoot: root }) => root === repositoryRoot ? { ...source } : { ...dependency },
+    loadNativeModule: async specifier => {
+      observed.push(specifier)
+      if (specifier.endsWith('/local-runtime-supervisor-lib.mjs')) return {
+        normalizeOptions: value => { assert.deepEqual(value, { repository: repositoryRoot, agenticCanvasOsRoot }); return value },
+        createDependencies: overrides => { assert.deepEqual(overrides, {}); return deps },
+      }
+      assert.ok(specifier.endsWith('/local-runtime-candidate-lib.mjs'))
+      return { resolveCanonicalCandidate: (value, nativeDeps, settings) => {
+        assert.equal(nativeDeps, deps); assert.deepEqual(settings, { verifyProtected: true })
+        if (candidate.error) throw new Error(candidate.error)
+        return candidate
+      } }
+    } }
+  return { options, source, dependency, candidate, observed }
+}
+
+test('controller admission reuses the native verified consumer pin without following remote main', async () => {
+  const fixture = dependencyFixture()
+  const result = await verifyCanonicalReleaseDependency(fixture.options)
+  assert.equal(result.revisionBinding, 'consumer-pin')
+  assert.equal(result.dependency.head, fixture.options.dependencyRevision)
+  assert.notEqual(result.dependency.originMain, result.dependency.head)
+  assert.equal(fixture.observed.length, 2)
+  // A later native check can admit another descendant while the reviewed code stays fixed.
+  fixture.dependency.originMain = fixture.candidate.agenticCanvasOs.remoteSha = 'd'.repeat(40)
+  assert.equal((await verifyCanonicalReleaseDependency(fixture.options)).dependency.head, result.dependency.head)
+  fixture.dependency.originMain = fixture.candidate.agenticCanvasOs.remoteSha = fixture.options.dependencyRevision
+  fixture.candidate.agenticCanvasOs.revisionBinding = 'fetched-tip'
+  assert.equal((await verifyCanonicalReleaseDependency(fixture.options)).revisionBinding, 'fetched-tip')
+})
+
+test('unverified ancestry or checks, checkout drift, and stale Graph main cannot authorize a pin', async () => {
+  for (const mutate of [
+    f => { f.candidate.error = 'native controller rejected non-ancestor consumer pin' },
+    f => { f.candidate.agenticCanvasOs.protectedChecksVerified = false },
+    f => { f.candidate.agenticCanvasOs.revisionBinding = 'unverified' },
+    f => { f.dependency.head = 'd'.repeat(40) },
+    f => { f.dependency.branch = 'agent/device/unreviewed' },
+    f => { f.dependency.status = ' M unrelated.md' },
+    f => { f.dependency.originMain = 'd'.repeat(40) },
+    f => { f.source.originMain = 'd'.repeat(40) },
+    f => { f.source.status = ' M scripts/changed.mjs' },
+    f => { f.candidate.agenticCanvasOsRoot = '/workspace/other-controller' },
+  ]) {
+    const fixture = dependencyFixture(); mutate(fixture)
+    await assert.rejects(verifyCanonicalReleaseDependency(fixture.options), /rejected|drifted|different checkout/)
+  }
+})
+
+test('unreviewed controller bytes are rejected before any controller module executes', async () => {
+  const fixture = dependencyFixture()
+  fixture.dependency.status = ' M scripts/local-runtime-candidate-lib.mjs'
+  await assert.rejects(verifyCanonicalReleaseDependency(fixture.options), /checkout drifted/)
+  assert.deepEqual(fixture.observed, [])
 })
 
 test('authorization prompt interaction captures the printed exact reply and requires prompt stability', () => {
