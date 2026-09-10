@@ -152,7 +152,7 @@ test('transport capture normalizes provider timestamps with extra fractional pre
 test('production release bounds transient artifacts and durably retains typed lifecycle receipts', () => {
   const retentionDays = [...releaseWorkflow.matchAll(/retention-days:\s*(\d+)/g)]
     .map(([, days]) => Number(days))
-  assert.deepEqual(retentionDays, [1, 1, 90, 1, 90, 90, 90, 90])
+  assert.deepEqual(retentionDays, [1, 90, 90, 1, 90, 1, 90, 90, 90, 90])
   assertAllMatch(releaseWorkflow, [/name: ['"]?production-\$\{\{ inputs\.source_sha \}\}/])
   for (const name of ['immutable-release-manifest', 'production-authorization', 'production-lifecycle', 'production-lifecycle-complete', 'production-release-evidence', 'production-lifecycle-rolled-back', 'production-release-raw']) {
     assert.match(releaseWorkflow, new RegExp(`name: ['"]?${name}-\\$\\{\\{ inputs\\.source_sha \\}\\}`))

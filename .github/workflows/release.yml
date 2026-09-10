@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs: { docs_repository: '${{ steps.agentic_canvas_os_docs.outputs.repository }}', docs_revision: '${{ steps.agentic_canvas_os_docs.outputs.ref }}', manifest_digest: '${{ steps.immutable_manifest.outputs.digest }}', mirror_revision: '${{ steps.mirror_revision.outputs.revision }}', candidate_digest: '${{ steps.production_candidate.outputs.candidate_digest }}', lifecycle_candidate_digest: '${{ steps.lifecycle_candidate.outputs.candidate_digest }}' }
-    env: { NODE_OPTIONS: '--max-old-space-size=4096', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs' }
+    env: { NODE_OPTIONS: '--max-old-space-size=4096', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs', AGENTIC_OS_BROWSER_PREFLIGHT_INPUT: '${{ github.workspace }}/browser-preflight/input.json', AGENTIC_OS_PUBLISH_REPOSITORY_ROOT: '${{ github.workspace }}/huijoohwee' }
     steps:
       - { name: Checkout exact protected main commit, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 2 } }
       - name: Verify checked-out commit
@@ -56,6 +56,11 @@ jobs:
           ref: ${{ steps.agentic_canvas_os_docs.outputs.ref }}
           path: agentic-canvas-os
           fetch-depth: 0
+      - name: Restore protected browser attempt history
+        id: browser_history
+        working-directory: agentic-graph
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: node scripts/production-browser-history.mjs
       - name: Materialize and verify release evidence
         working-directory: agentic-graph
         env: { LOCAL_REVIEW_CANDIDATE_JSON: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_JSON: '${{ inputs.release_evidence }}' }
@@ -95,15 +100,18 @@ jobs:
         working-directory: agentic-graph
         env: { AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://airvio.co' }
         run: npm run pages:build-sync
-      - name: Verify source-to-mirror parity
+      - { name: Verify source-to-mirror parity, working-directory: agentic-graph, run: 'npm run conflict:mirror:check' }
+      - { name: Build Pages functions, working-directory: agentic-graph, run: 'npm run pages:functions:build' }
+      - { name: Create verified mirror artifact manifest, working-directory: agentic-graph, run: 'npm run --silent production:mirror-artifact:create -- ../huijoohwee' }
+      - name: Prepare isolated browser candidate
         working-directory: agentic-graph
-        run: npm run conflict:mirror:check
-      - name: Build Pages functions
+        run: git fetch origin main && test "$(git rev-parse origin/main)" = "$RELEASE_SHA" && git update-ref refs/heads/main "$RELEASE_SHA" && node scripts/production-browser-preflight.mjs prepare
+      - { name: Retain browser attempt before execution, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: '${{ steps.browser_history.outputs.artifact_name }}', path: '${{ github.workspace }}/browser-preflight/context.json', if-no-files-found: error, retention-days: 90 } }
+      - name: Run isolated browser gate before production authorization
+        id: browser_gate
         working-directory: agentic-graph
-        run: npm run pages:functions:build
-      - name: Create verified mirror artifact manifest
-        working-directory: agentic-graph
-        run: npm run --silent production:mirror-artifact:create -- ../huijoohwee
+        run: node node_modules/agentic-os/bin/agentic-os.mjs flight gate --operation=production-activation --context="$GITHUB_WORKSPACE/browser-preflight/context.json"
+      - { name: Retain browser ledger and bounded diagnostics, if: "always() && (steps.browser_gate.outcome == 'success' || steps.browser_gate.outcome == 'failure' || steps.browser_gate.outcome == 'cancelled')", uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: '${{ steps.browser_history.outputs.artifact_name }}-ledger', path: '${{ github.workspace }}/agentic-graph/.git/agentic-os/flight-checks', if-no-files-found: error, include-hidden-files: true, retention-days: 90 } }
       - name: Bind immutable production candidate
         id: production_candidate
         working-directory: agentic-graph
@@ -332,17 +340,7 @@ jobs:
         working-directory: agentic-graph
         env: { PRODUCTION_ORIGIN: '${{ steps.deployment_authority.outputs.deployment_url }}', PRODUCTION_MARKER_ORIGIN: '${{ steps.deployment_authority.outputs.deployment_url }}', PRODUCTION_IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}', PRODUCTION_BROWSER_HEADLESS: 'false' }
         run: |
-          for attempt in 1 2 3; do
-            fidelity_attempt="$RUNNER_TEMP/production-fidelity-attempt-$attempt.json"
-            if xvfb-run --auto-servernum npm run --silent production:fidelity:check > "$fidelity_attempt"; then
-              mv "$fidelity_attempt" "$RUNNER_TEMP/production-fidelity-evidence.json"
-              exit 0
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              exit 1
-            fi
-            sleep 15
-          done
+          timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run --silent production:fidelity:check > "$RUNNER_TEMP/production-fidelity-evidence.json" 2> "$RUNNER_TEMP/production-fidelity-diagnostics.log"
       - name: Verify returning-user service worker revision convergence
         id: service_worker
         working-directory: agentic-graph
@@ -463,7 +461,7 @@ jobs:
       - name: Persist production release evidence
         id: persist_evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with: { name: 'production-release-evidence-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*production*evidence.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/wrangler*.ndjson", if-no-files-found: error, retention-days: 90 }
+        with: { name: 'production-release-evidence-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*production*evidence.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/production-fidelity-diagnostics.log\n${{ runner.temp }}/wrangler*.ndjson", if-no-files-found: error, retention-days: 90 }
       - name: Record normalized release failure observation
         id: failure_observation
         if: always() && failure()
@@ -595,4 +593,4 @@ jobs:
       - name: Persist raw production release observations
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with: { name: 'production-release-raw-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/release-stage.txt\n${{ runner.temp }}/*failure*.json\n${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*evidence.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/wrangler*.ndjson\n${{ runner.temp }}/production-lifecycle", if-no-files-found: warn, retention-days: 90 }
+        with: { name: 'production-release-raw-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/release-stage.txt\n${{ runner.temp }}/*failure*.json\n${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*evidence.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/production-fidelity-diagnostics.log\n${{ runner.temp }}/wrangler*.ndjson\n${{ runner.temp }}/production-lifecycle", if-no-files-found: warn, retention-days: 90 }
