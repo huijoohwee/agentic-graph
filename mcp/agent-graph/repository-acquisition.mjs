@@ -14,6 +14,9 @@ import {
 const REPOSITORY_PATH_SEGMENT = /^[A-Za-z0-9](?:[A-Za-z0-9._~-]{0,199})$/;
 const COMMIT_SHA = /^[a-f0-9]{40}$/;
 const MAX_REPOSITORY_PATH_SEGMENTS = 32;
+// Retained candidates are bounded; existing offline copies are never evicted implicitly.
+const MAX_CACHE_ENTRIES = 16;
+const MAX_CANDIDATE_BYTES = 256 * 1024 * 1024;
 
 function pathIsInside(candidatePath, rootPath) {
   const relative = path.relative(rootPath, candidatePath);
@@ -250,6 +253,7 @@ function runGit(args, {
       ...args,
     ], {
       cwd,
+      detached: process.platform !== 'win32',
       stdio: ["ignore", "pipe", "pipe"],
       env: {
         PATH: String(process.env.PATH || ""),
@@ -266,6 +270,7 @@ function runGit(args, {
     let stdout = "";
     let stderr = "";
     let settled = false;
+    let stopped = null;
     const finish = (error) => {
       if (settled) return;
       settled = true;
@@ -274,13 +279,16 @@ function runGit(args, {
       if (error) reject(error);
       else resolve(stdout);
     };
-    const onAbort = () => {
-      child.kill("SIGKILL");
-      finish(new AgentGraphError("aborted", "Repository acquisition was aborted."));
+    const terminate = error => {
+      stopped ||= error;
+      try {
+        if (process.platform !== 'win32' && child.pid) process.kill(-child.pid, 'SIGKILL');
+        else child.kill('SIGKILL');
+      } catch (caught) { if (caught.code !== 'ESRCH') finish(caught); }
     };
+    const onAbort = () => terminate(new AgentGraphError("aborted", "Repository acquisition was aborted."));
     const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      finish(new AgentGraphError("repository_acquisition_timeout", `Repository acquisition exceeded ${timeoutMs}ms.`));
+      terminate(new AgentGraphError("repository_acquisition_timeout", `Repository acquisition exceeded ${timeoutMs}ms.`));
     }, Math.max(1000, Math.min(600_000, Number(timeoutMs) || 120_000)));
     abortSignal?.addEventListener("abort", onAbort, { once: true });
     child.on("error", (error) => finish(new AgentGraphError("repository_acquisition_unavailable", "Local git is unavailable.", {
@@ -289,13 +297,13 @@ function runGit(args, {
     child.stdout.on("data", (chunk) => {
       stdout += String(chunk);
       if (stdout.length > 32 * 1024 * 1024) {
-        child.kill("SIGKILL");
-        finish(new AgentGraphError("repository_acquisition_output_limit", "Repository acquisition output exceeded its bound."));
+        terminate(new AgentGraphError("repository_acquisition_output_limit", "Repository acquisition output exceeded its bound."));
       }
     });
-    child.stderr.on("data", (chunk) => { stderr += String(chunk).slice(0, 8192); });
+    child.stderr.on("data", (chunk) => { stderr += String(chunk).slice(0, Math.max(0, 8192 - stderr.length)); });
     child.on("close", (code) => {
-      if (code === 0) finish();
+      if (stopped) finish(stopped);
+      else if (code === 0) finish();
       else finish(new AgentGraphError("repository_acquisition_failed", `Local git exited ${code}.`, {
         stderr: stderr.trim().slice(0, 1000),
       }));
@@ -381,6 +389,13 @@ export async function verifyRepositoryCacheEntry(target, expectedSha, allowedRoo
   return true;
 }
 
+export async function assertRepositoryCacheCapacity(root) {
+  const directory = await fs.opendir(root); let entries = 0;
+  for await (const entry of directory) if (entry.name !== '.acquire.lock' && ++entries >= MAX_CACHE_ENTRIES) {
+    throw new AgentGraphError('repository_cache_capacity', 'Repository cache is full; retain or explicitly retire an existing copy before acquiring another.');
+  }
+}
+
 async function verifiedCacheRoot(cacheRoot, identity, allowedRoot) {
   const canonicalCacheRoot = await ensureRepositoryCacheRoot(cacheRoot, allowedRoot);
   const target = path.join(canonicalCacheRoot, repositoryCacheEntryName(identity));
@@ -396,8 +411,16 @@ async function verifiedCacheRoot(cacheRoot, identity, allowedRoot) {
     if (error instanceof AgentGraphError) throw error;
     throw new AgentGraphError("repository_cache_invalid", "Repository acquisition cache entry could not be verified.");
   }
-  const temporary = await fs.mkdtemp(path.join(canonicalCacheRoot, ".acquire-"));
+  const lock = path.join(canonicalCacheRoot, '.acquire.lock');
+  try { await fs.mkdir(lock); } catch (error) {
+    if (error.code === 'EEXIST') throw new AgentGraphError('repository_cache_busy', 'Repository cache admission is busy.');
+    throw error;
+  }
+  const lockIdentity = await fs.lstat(lock);
+  let temporary;
   try {
+    await assertRepositoryCacheCapacity(canonicalCacheRoot);
+    temporary = await fs.mkdtemp(path.join(canonicalCacheRoot, ".acquire-"));
     await runGit(["init", "--quiet"], { cwd: temporary, abortSignal: identity.abortSignal });
     await runGit(["remote", "add", "origin", identity.remoteUrl], { cwd: temporary, abortSignal: identity.abortSignal });
     await runGit(["fetch", "--quiet", "--depth=1", "origin", identity.sha], {
@@ -410,6 +433,10 @@ async function verifiedCacheRoot(cacheRoot, identity, allowedRoot) {
     if (!(await verifyRepositoryCacheEntry(temporary, identity.sha, canonicalCacheRoot, verificationOptions))) {
       throw new AgentGraphError("repository_commit_mismatch", "Acquired repository did not match the resolved commit.");
     }
+    // This bounds retained data, not transient Git download size; the command deadline also applies.
+    const { generationManifest } = await import('agentic-os/generation');
+    generationManifest(await fs.realpath(temporary), { maxEntries: 100000,
+      maxBytes: MAX_CANDIDATE_BYTES, maxFileBytes: MAX_CANDIDATE_BYTES, timeoutMs: 30000 });
     try { await fs.rename(temporary, target); } catch (error) {
       if (error?.code !== "EEXIST" && error?.code !== "ENOTEMPTY") throw error;
       if (!(await verifyRepositoryCacheEntry(target, identity.sha, canonicalCacheRoot, verificationOptions))) {
@@ -417,7 +444,11 @@ async function verifiedCacheRoot(cacheRoot, identity, allowedRoot) {
       }
     }
   } finally {
-    await fs.rm(temporary, { recursive: true, force: true }).catch(() => {});
+    if (temporary) await fs.rm(temporary, { recursive: true, force: true });
+    const currentLock = await fs.lstat(lock);
+    if (!currentLock.isDirectory() || currentLock.isSymbolicLink() || !sameFileIdentity(lockIdentity, currentLock))
+      throw new AgentGraphError('repository_cache_invalid', 'Repository cache admission lock changed.');
+    await fs.rmdir(lock);
   }
   return { target, reused: false };
 }
@@ -434,22 +465,27 @@ export async function acquireRepositoryUrl({
   lookupHost,
 }) {
   const networkPolicy = { allowedHosts, allowPrivateNetwork };
+  throwIfAborted(abortSignal);
   const parsed = parseRepositoryUrl(repositoryUrl, networkPolicy);
-  const networkPin = await resolveRepositoryNetworkPin(parsed, {
-    ...networkPolicy,
-    lookupHost,
-  });
-  const remoteOutput = await runGit(["ls-remote", "--symref", parsed.remoteUrl], {
-    abortSignal,
-    timeoutMs,
-    networkPin,
-  });
-  const resolved = resolveRepositoryIdentity(parseRemoteRefs(remoteOutput), repositoryRef);
-  const cache = await verifiedCacheRoot(
-    cacheRoot,
-    { ...parsed, ...resolved, abortSignal, timeoutMs, networkPin },
-    allowedRoot,
-  );
+  let resolved = COMMIT_SHA.test(String(repositoryRef || ''))
+    ? { sha: repositoryRef, ref: repositoryRef, subpath: '' } : null;
+  let cache = null, networkRequests = 0;
+  if (resolved) {
+    const canonical = await ensureRepositoryCacheRoot(cacheRoot, allowedRoot);
+    const target = path.join(canonical, repositoryCacheEntryName({ ...parsed, ...resolved }));
+    if (await verifyRepositoryCacheEntry(target, resolved.sha, canonical, { abortSignal, timeoutMs }))
+      cache = { target, reused: true };
+  }
+  if (!cache) {
+    const networkPin = await resolveRepositoryNetworkPin(parsed, { ...networkPolicy, lookupHost });
+    if (!resolved) {
+      const output = await runGit(["ls-remote", "--symref", parsed.remoteUrl], { abortSignal, timeoutMs, networkPin });
+      networkRequests++;
+      resolved = resolveRepositoryIdentity(parseRemoteRefs(output), repositoryRef);
+    }
+    cache = await verifiedCacheRoot(cacheRoot, { ...parsed, ...resolved, abortSignal, timeoutMs, networkPin }, allowedRoot);
+    if (!cache.reused) networkRequests++;
+  }
   const candidate = resolved.subpath ? path.resolve(cache.target, resolved.subpath) : cache.target;
   const real = await fs.realpath(candidate).catch(() => null);
   const relative = real ? path.relative(cache.target, real) : "..";
@@ -465,7 +501,7 @@ export async function acquireRepositoryUrl({
       ref: resolved.ref,
       subpath: resolved.subpath,
       acquisitionId: `kg:acquisition:${sha256(`${parsed.displayUrl}\0${resolved.sha}\0${resolved.subpath}`).slice(0, 24)}`,
-      networkRequests: 1 + (cache.reused ? 0 : 1),
+      networkRequests,
       cacheReused: cache.reused,
       complete: true,
     },

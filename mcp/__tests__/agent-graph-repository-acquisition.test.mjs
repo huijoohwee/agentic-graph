@@ -3,14 +3,56 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { execFileSync } from 'node:child_process';
 
 import { runAgentGraphTool } from "../agent-graph-host.js";
 import {
   parseRepositoryUrl,
   repositoryCacheEntryName,
   resolveRepositoryNetworkPin,
+  acquireRepositoryUrl,
+  assertRepositoryCacheCapacity,
 } from "../agent-graph/repository-acquisition.mjs";
 import { AGENT_GRAPH_TOOL_NAMES } from "../agent-graph/runtime.mjs";
+
+test('verified immutable acquisitions reuse offline while mutable refs and dirty copies stay fresh', async t => {
+  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'graph-offline-cache-')));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const cacheRoot = path.join(root, 'acquisitions'), seed = path.join(root, 'seed');
+  await fs.mkdir(cacheRoot, { mode: 0o700 }); await fs.mkdir(seed);
+  const git = (...args) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], { cwd: seed, encoding: 'utf8' }).trim();
+  git('init', '--quiet'); git('config', 'user.name', 'Fixture'); git('config', 'user.email', 'fixture@example.invalid');
+  await fs.writeFile(path.join(seed, 'source.txt'), 'source');
+  git('add', '.'); git('commit', '--quiet', '-m', 'source');
+  const sha = git('rev-parse', 'HEAD'), repositoryUrl = 'https://code.example.test/team/repository';
+  const target = path.join(cacheRoot, repositoryCacheEntryName({ ...parseRepositoryUrl(repositoryUrl), sha }));
+  await fs.rename(seed, target);
+  // Full cache still permits reuse; it cannot silently evict an offline copy to admit growth.
+  for (let n = 0; n < 15; n++) await fs.mkdir(path.join(cacheRoot, `retained-${n}`));
+  await assert.rejects(assertRepositoryCacheCapacity(cacheRoot), error => error.code === 'repository_cache_capacity');
+  let lookups = 0;
+  const options = { repositoryUrl, repositoryRef: sha, cacheRoot, allowedRoot: root,
+    lookupHost: async () => { lookups++; throw new Error('offline fixture'); } };
+  const result = await acquireRepositoryUrl(options);
+  assert.equal(result.rootPath, target); assert.equal(result.identity.networkRequests, 0);
+  assert.equal(result.identity.cacheReused, true); assert.equal(lookups, 0);
+  await assert.rejects(acquireRepositoryUrl({ ...options, repositoryRef: 'main' }));
+  assert.equal(lookups, 1);
+  await fs.writeFile(path.join(target, 'source.txt'), 'tampered');
+  await assert.rejects(acquireRepositoryUrl(options), error => error.code === 'repository_cache_dirty');
+  assert.equal(lookups, 1);
+});
+
+test('cache admission counts retained and incomplete entries without deleting them', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'graph-cache-capacity-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.mkdir(path.join(root, '.acquire.lock'));
+  for (let n = 0; n < 15; n++) await fs.mkdir(path.join(root, `retained-${n}`));
+  await assertRepositoryCacheCapacity(root);
+  await fs.mkdir(path.join(root, '.acquire-interrupted'));
+  await assert.rejects(assertRepositoryCacheCapacity(root), error => error.code === 'repository_cache_capacity');
+  assert.equal((await fs.readdir(root)).length, 17);
+});
 
 test("repository identity is host-neutral, canonical, and digest stable", () => {
   const first = parseRepositoryUrl("https://code.example.test/group/project");
