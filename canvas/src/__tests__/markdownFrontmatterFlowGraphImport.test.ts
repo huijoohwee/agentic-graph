@@ -121,7 +121,7 @@ export function testMarkdownFlowBlockInBodyParsesNodesEdgesAndWidgetFields() {
     '## Body',
   ].join('\n')
 
-  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-ai-pipeline-prd-tad.md', md)
+  const res = tryParseMarkdownFrontmatterFlowGraph('agentic-os-ai-pipeline-prd-tad-adr-mvp-gtm.md', md)
   if (!res) throw new Error('expected a flow graph parse result from markdown body')
   const g = res.graphData
   if (g.context !== 'frontmatter-flow') throw new Error('expected frontmatter-flow context')
@@ -1557,7 +1557,7 @@ function readPitchdeckTemplatePath(): string {
     : ''
   if (envPath) return envPath
   const cwd = process.cwd()
-  const fallback = path.resolve(cwd, '..', '..', 'huijoohwee.github.io', 'template', 'pitchdeck-prd-tad-template-lite.md')
+  const fallback = path.resolve(cwd, '..', '..', 'huijoohwee.github.io', 'template', 'pitchdeck-prd-tad-adr-mvp-gtm-template-lite.md')
   return fallback
 }
 
@@ -1641,7 +1641,7 @@ function readAgenticOsAiPipelinePrdTadPath(): string {
     : ''
   if (envPath) return envPath
   const cwd = process.cwd()
-  return path.resolve(cwd, '..', '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad.md')
+  return path.resolve(cwd, '..', '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad-adr-mvp-gtm.md')
 }
 
 export function testMarkdownFrontmatterFlowGraphFidelityMarkdownSyntaxComputingFlowSample() {

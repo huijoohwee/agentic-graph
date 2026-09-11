@@ -17,7 +17,7 @@ import { isIntegrationsOwnedSetting } from '@/features/panels/views/useSettingsV
 import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
 
 const repoRoot = resolve(process.cwd(), '..')
-const prdTadPath = resolve(repoRoot, 'docs/documents/agentic-graph-mcp/agentic-graph-sensenova-api-prd-tad.md')
+const prdTadPath = resolve(repoRoot, 'docs/documents/agentic-graph-mcp/agentic-graph-sensenova-api-prd-tad-adr-mvp-gtm.md')
 const demoPath = resolve(repoRoot, '../huijoohwee/docs/agentic-graph-strybldr-demo.md')
 
 const assert = (condition: unknown, message: string) => {

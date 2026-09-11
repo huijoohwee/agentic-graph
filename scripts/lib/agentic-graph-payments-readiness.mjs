@@ -44,7 +44,7 @@ export const AGENTIC_OS_PAYMENTS_MANIFEST_SCHEMA_ID =
   'agentic-graph-payments-readiness-properties/v1'
 
 const REQUIREMENTS_PATH = '.kiro/specs/agentic-graph-payments/requirements.md'
-const PRD_PATH = 'docs/documents/agentic-graph-payments-prd-tad.md'
+const PRD_PATH = 'docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md'
 const MANIFEST_PATH = 'scripts/agentic-graph-payments-readiness-properties.json'
 const WRANGLER_CONFIG_PATH = 'cloudflare/workers/agentic-graph-payment/wrangler.toml'
 const SOURCE_EVIDENCE_HELPER_PATH =

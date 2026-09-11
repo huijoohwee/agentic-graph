@@ -37,13 +37,13 @@ export const AGENTIC_OS_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/ag
 export const AGENTIC_GRAPH_DOCS_GITHUB_ROOT_URL = 'https://github.com/huijoohwee/agentic-graph/blob/main/docs/documents'
 export const AGENTIC_GRAPH_PROBE_TREE_DOC_INVOCATION = {
   id: 'agentic-graph-probe-tree',
-  fileName: 'agentic-graph-probe-tree-prd-tad.md',
+  fileName: 'agentic-graph-probe-tree-prd-tad-adr-mvp-gtm.md',
   label: 'agentic-graph Probe-Tree',
   summary: 'Bounded local probe branching that produces user-selectable next-step cards and preserves Markdown graph state as the SSOT.',
   slashCommand: '/agentic-graph.probe-tree',
   hashToken: '#agentic-graph.probe-tree',
   atToken: '@agentic-graph.probe-tree',
-  sourcePath: `${AGENTIC_GRAPH_DOCS_GITHUB_ROOT_URL}/agentic-graph-probe-tree-prd-tad.md`,
+  sourcePath: `${AGENTIC_GRAPH_DOCS_GITHUB_ROOT_URL}/agentic-graph-probe-tree-prd-tad-adr-mvp-gtm.md`,
   keywords: ['probe tree', 'branching', 'clarification', 'candidate options', 'markdown graph'],
 } as const satisfies AgenticOsDocInvocation
 

@@ -77,7 +77,7 @@ city_poi_zoning_projection:
   duplicate_source_or_layer_ids_forbidden: true
 regional_geographic_poi_projection:
   profile_identity_source: "city_initial.regional_poi_profile_id"
-  profile_fact_authority: "/docs/documents/agentic-graph-adm0-singapore-prd-tad-ard.companion.md"
+  profile_fact_authority: "/docs/documents/agentic-graph-adm0-singapore-prd-tad-adr-mvp-gtm.companion.md"
   source_id: "kg-geo-xr:regional-poi"
   layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:locator", "kg-geo-xr:regional-poi:label"]
   feature_contract: "companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus one topology-aware representative Point locator per POI"

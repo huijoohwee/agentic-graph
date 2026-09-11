@@ -35,9 +35,9 @@ constraints:
   - "no duplicate export stack"
   - "no legacy alias remap"
 related:
-  - "huijoohwee.github.io/guidelines/prd-tad-guidelines.md"
+  - "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
   - "docs/documents/agentic-graph-workspace-export-reference.md"
-  - "docs/documents/agentic-graph-query-prd-tad.md"
+  - "docs/documents/agentic-graph-query-prd-tad-adr-mvp-gtm.md"
 ---
 
 # agentic-graph Single-File HTML Workspace Export PRD/TAD

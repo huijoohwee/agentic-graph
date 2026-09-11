@@ -64,7 +64,7 @@ tags:
   - "provenance"
   - "runtime-contract"
 related:
-  - "docs/documents/agentic-graph-query-prd-tad.md"
+  - "docs/documents/agentic-graph-query-prd-tad-adr-mvp-gtm.md"
   - "mcp/README.md"
   - "README.md"
 ---
@@ -73,7 +73,7 @@ related:
 
 ## Authority and Scope
 
-This document is the focused contract for agentic-graph's deterministic local agent-graph runtime. The earlier [Queryable Corpus Graph PRD/TAD](agentic-graph-query-prd-tad.md) remains authoritative for the 2026-05-29 browser, Source Files, Canvas, and FloatingPanel Chat implementation history.
+This document is the focused contract for agentic-graph's deterministic local agent-graph runtime. The earlier [Queryable Corpus Graph PRD/TAD](agentic-graph-query-prd-tad-adr-mvp-gtm.md) remains authoritative for the 2026-05-29 browser, Source Files, Canvas, and FloatingPanel Chat implementation history.
 
 The 2026-07-22 runtime extension narrowly supersedes that PRD's Phase 1 no-CLI/MCP non-goal. The 2026-07-31 extension adds independently invocable parser generation and provider-neutral repository acquisition to the same local owner. It does not authorize a remote service, hosted graph API, second graph store, MCP-only materialization pipeline, model-backed retrieval path, or deployment.
 

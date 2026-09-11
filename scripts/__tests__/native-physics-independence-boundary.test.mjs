@@ -77,7 +77,7 @@ test('native physics check prepares linked packages before canvas runtime tests'
 
 test('native physics document records the independent scope without compatibility claims', () => {
   const source = fs.readFileSync(
-    path.join(repositoryRoot, 'docs/documents/agentic-graph-native-physics-engines-prd-tad.md'),
+    path.join(repositoryRoot, 'docs/documents/agentic-graph-native-physics-engines-prd-tad-adr-mvp-gtm.md'),
     'utf8',
   )
   assert.match(source, /source_copy: "forbidden"/)

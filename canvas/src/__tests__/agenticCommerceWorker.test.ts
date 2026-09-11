@@ -1853,7 +1853,7 @@ export function testAgenticCommerceWorkerUsesSharedSemanticKeyHelper() {
 export function testAgenticCommerceDocsPinStripeWebhookIdempotencyContract() {
   const repoRoot = resolve(process.cwd(), '..')
   const docs = [
-    'docs/documents/agentic-graph-agentic-commerce-prd-tad.md',
+    'docs/documents/agentic-graph-agentic-commerce-prd-tad-adr-mvp-gtm.md',
     'docs/documents/agentic-graph-api-document.md',
     'docs/documents/agentic-graph-backend-document.md',
   ].map(path => readFileSync(resolve(repoRoot, path), 'utf8')).join('\n')

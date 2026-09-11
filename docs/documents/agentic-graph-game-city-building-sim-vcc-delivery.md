@@ -11,13 +11,13 @@ delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 frontmatter_contract: "required"
-parent_document: "/docs/documents/agentic-graph-game-city-building-sim-prd-tad-ard.md"
+parent_document: "/docs/documents/agentic-graph-game-city-building-sim-prd-tad-adr-mvp-gtm.md"
 ---
 
 # Reference implementation: agentic-graph City Simulation VCC and delivery register
 
 This companion owns the evidence, traceability, readiness-gap, and delivery
-registers for the [City Simulation PRD/TAD/ADR](./agentic-graph-game-city-building-sim-prd-tad-ard.md).
+registers for the [City Simulation PRD/TAD/ADR](./agentic-graph-game-city-building-sim-prd-tad-adr-mvp-gtm.md).
 The parent remains the product and technical architecture document; neither
 document may claim proof without candidate-bound evidence.
 

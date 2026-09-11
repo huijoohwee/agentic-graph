@@ -5,7 +5,7 @@ const readRepoFile = (repoRelativePath: string): string =>
   readFileSync(resolve(process.cwd(), '..', repoRelativePath), 'utf8')
 
 export function testDesignEditorBaselinePrdTadUsesImplementedDesignOwners(): void {
-  const docs = readRepoFile('docs/documents/agentic-graph-design-editor-baseline-prd-tad.md')
+  const docs = readRepoFile('docs/documents/agentic-graph-design-editor-baseline-prd-tad-adr-mvp-gtm.md')
   const owners = [
     'canvas/src/features/panels/mainPanelTabs.ts',
     'canvas/src/features/panels/MainPanel.tsx',

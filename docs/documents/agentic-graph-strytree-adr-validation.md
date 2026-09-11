@@ -4,10 +4,10 @@ doc_type: "ADR Companion"
 status: "implementation-contract"
 lang: "en-US"
 frontmatter_contract: "required"
-source_contract: "./agentic-graph-strytree-prd-tad.md"
+source_contract: "./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md"
 ---
 
-[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad.md).
+[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md).
 
 # Part D - Architectural Decisions
 
@@ -391,7 +391,7 @@ The checkboxes above retain the original design/implementation inventory; they a
 ## References
 
 - Observed prototype: external static storytree prototype snapshot; URL intentionally omitted by hardcode policy.
-- PRD/TAD guideline: `guidelines/prd-tad-guidelines.md` (repo root of `huijoohwee.github.io`)
+- PRD/TAD guideline: `guidelines/prd-tad-adr-mvp-gtm-guidelines.md` (repo root of `huijoohwee.github.io`)
 - Cloudflare Workers storage options: https://developers.cloudflare.com/workers/platform/storage-options/
 - Cloudflare D1: https://developers.cloudflare.com/d1/
 - Cloudflare R2: https://developers.cloudflare.com/r2/

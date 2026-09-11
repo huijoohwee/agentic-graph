@@ -13,7 +13,7 @@ universal_scope: false
 doc_path: "docs/documents/agentic-graph-mcp/agentic-graph-mcp.md"
 guideline_version: "1.7.0"
 reference_implementation_label: "reference implementation"
-service_contract: "agentic-graph-mcp-service-prd-tad.md"
+service_contract: "agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md"
 install_contract: "../agentic-graph-mcp-install-contract.md"
 ---
 
@@ -90,10 +90,10 @@ reference that register and do not redefine it.
 
 | Concern | Owner |
 |---|---|
-| Product and architecture contract | [MCP service PRD/TAD](agentic-graph-mcp-service-prd-tad.md) |
-| Detailed capability and security supplement | [MCP service companion](agentic-graph-mcp-service-prd-tad.companion.md) |
+| Product and architecture contract | [MCP service PRD/TAD](agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md) |
+| Detailed capability and security supplement | [MCP service companion](agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.companion.md) |
 | Endpoint invocation, trust, session, and token-cost register | [MCP install contract](../agentic-graph-mcp-install-contract.md) |
-| Agent-ready retrieval and browser context | [Agent-ready PRD/TAD](../agentic-graph-agent-ready-prd-tad.md) |
+| Agent-ready retrieval and browser context | [Agent-ready PRD/TAD](../agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md) |
 | Operator verification | [Post-delivery verification checklist](../../agentic-graph-post-deploy-verification-checklist.md) |
 
 ### Verification condition contract

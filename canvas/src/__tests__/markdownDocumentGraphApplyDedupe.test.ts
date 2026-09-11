@@ -1,4 +1,4 @@
-import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
+import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
@@ -76,8 +76,8 @@ export const testMarkdownDocumentGraphApplyDedupeUsesSharedSemanticKey = () => {
 
 export const testMarkdownDocumentGraphApplyRejectsStaleStrybldrSourceGraph = async () => {
   useGraphStore.getState().resetAll()
-  const name = 'agenticgraph-strybldr-starter-template.md'
-  const demoPath = resolveSiblingFixturePath('huijoohwee', `docs/${name}`)
+  const name = 'agentic-graph-strybldr-starter-template.md'
+  const demoPath = resolveRepoSourcePath(`docs/workspace-seeds/${name}`)
   const text = readFileSync(demoPath, 'utf8')
   const staleGraph = {
     type: 'Graph',
@@ -125,8 +125,8 @@ export const testMarkdownDocumentGraphApplyRejectsStaleStrybldrSourceGraph = asy
 
 export const testMarkdownDocumentGraphApplyRejectsEmptyCachedStrybldrSourceGraph = async () => {
   useGraphStore.getState().resetAll()
-  const name = 'agenticgraph-strybldr-starter-template.md'
-  const demoPath = resolveSiblingFixturePath('huijoohwee', `docs/${name}`)
+  const name = 'agentic-graph-strybldr-starter-template.md'
+  const demoPath = resolveRepoSourcePath(`docs/workspace-seeds/${name}`)
   const text = readFileSync(demoPath, 'utf8')
   const staleGraph = {
     type: 'Graph',

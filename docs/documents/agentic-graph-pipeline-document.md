@@ -474,7 +474,7 @@ provenance_tracking: {track_lineage, versioning_strategy}
 | `agentic-graph-renderer-document.md`      | Canvas rendering and visualization                       | docs:update, doc:lint, tests | Component Documenter |
 | `agentic-graph-semantic-document.md`      | Semantic extraction and neutrality constraints           | docs:update, doc:lint, tests | Component Documenter |
 | `agentic-graph-mermaid-frontmatter-document.md` | Mermaid frontmatter parsing                        | docs:update, doc:lint, tests | Component Documenter |
-| `agentic-graph-yaml-mermaid-gitgraph-frontmatter-prd-tad.md` | YAML Mermaid GitGraph frontmatter renderer contract | docs:update, doc:lint, tests | Component Documenter |
+| `agentic-graph-yaml-mermaid-gitgraph-frontmatter-prd-tad-adr-mvp-gtm.md` | YAML Mermaid GitGraph frontmatter renderer contract | docs:update, doc:lint, tests | Component Documenter |
 | `agentic-graph-ui-ux-design-document.md`  | UI/UX flows and interaction models                       | docs:update, doc:lint, tests | Technical Writer     |
 | `agentic-graph-codebase-semantics-document.md` | Codebase semantics and traversal                   | docs:update, doc:lint, tests | Component Documenter |
 | `agentic-graph-fields-document.md`        | Graph field definitions                                  | docs:update, doc:lint, tests | Schema Documenter    |

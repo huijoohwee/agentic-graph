@@ -36,7 +36,7 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   regionalPoi: Object.freeze({
     profileId: 'adm0:SGP:major-pois/v1',
     profileIdentitySource: 'city_initial.regional_poi_profile_id',
-    profileFactAuthority: '/docs/documents/agentic-graph-adm0-singapore-prd-tad-ard.companion.md',
+    profileFactAuthority: '/docs/documents/agentic-graph-adm0-singapore-prd-tad-adr-mvp-gtm.companion.md',
     sourceId: 'kg-geo-xr:regional-poi',
     layers: Object.freeze([
       'kg-geo-xr:regional-poi:fill',

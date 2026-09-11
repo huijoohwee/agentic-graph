@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const MCP_DOCUMENT_PATHS = {
-  service: 'docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.md',
-  serviceCompanion: 'docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.companion.md',
+  service: 'docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md',
+  serviceCompanion: 'docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.companion.md',
   overview: 'docs/documents/agentic-graph-mcp/agentic-graph-mcp.md',
-  agentReady: 'docs/documents/agentic-graph-agent-ready-prd-tad.md',
-  agentReadyCompanion: 'docs/documents/agentic-graph-agent-ready-prd-tad.companion.md',
+  agentReady: 'docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md',
+  agentReadyCompanion: 'docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.companion.md',
 } as const
 
 function readRepoDocument(filePath: string): string {

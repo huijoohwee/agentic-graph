@@ -27,8 +27,8 @@ Keep template structure, widget fields, panel writeback, and parser expectations
 
 | Artifact | Role | Directive |
 | --- | --- | --- |
-| `huijoohwee.github.io/template/pitchdeck-prd-tad-template-lite.md` | Minimal reusable template | Keep it frontmatter-first, generic, and parser-safe. |
-| `huijoohwee.github.io/template/pitchdeck-prd-tad-template.md` | Full reusable template | Keep it frontmatter-first, generic, and parser-safe. |
+| `huijoohwee.github.io/template/pitchdeck-prd-tad-adr-mvp-gtm-template-lite.md` | Minimal reusable template | Keep it frontmatter-first, generic, and parser-safe. |
+| `huijoohwee.github.io/template/pitchdeck-prd-tad-adr-mvp-gtm-template.md` | Full reusable template | Keep it frontmatter-first, generic, and parser-safe. |
 | Operator-provided validation Markdown | Validation fixture | Pass it explicitly through the local test or CLI contract; do not hardcode sibling sandbox demo paths in repo-owned sources. |
 | `canvas/src/features/storyboard-widget-manager/registryTemplates.ts` | Widget registry SSOT | Reuse canonical widget fields, ports, and `flow:widgetFormId` values. |
 | `canvas/src/features/integrations/*Ssot*.ts` | Integration field SSOT | Reuse canonical integration field keys and row semantics. |

@@ -437,14 +437,14 @@ export async function testStrybldrStoryboardParsesStrytreeStorytreeSnapshot() {
       sources: [
         {
           sourceUnitId: 'strytree-contract',
-          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad.md',
-          relativePath: 'agentic-graph-strytree-prd-tad.md',
+          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
+          relativePath: 'agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
           originalName: 'Strytree contract',
           mediaKind: 'doc',
           mimeHint: 'text/markdown',
           byteSize: 0,
           textHash: 'contract',
-          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad.md',
+          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
         },
       ],
       elements: [
@@ -590,14 +590,14 @@ export async function testStrybldrStorytreeWorkflowActionsMutateGraphState() {
       sources: [
         {
           sourceUnitId: 'workflow-source',
-          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad.md',
-          relativePath: 'agentic-graph-strytree-prd-tad.md',
+          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
+          relativePath: 'agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
           originalName: 'Strytree workflow source',
           mediaKind: 'doc',
           mimeHint: 'text/markdown',
           byteSize: 0,
           textHash: 'workflow',
-          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad.md',
+          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
         },
       ],
       elements: [],
@@ -683,14 +683,14 @@ export async function testStrybldrForkCompareCandidateWorkflowActions() {
       sources: [
         {
           sourceUnitId: 'forkcompare-source',
-          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad.md',
-          relativePath: 'agentic-graph-strytree-prd-tad.md',
+          workspacePath: 'docs/documents/agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
+          relativePath: 'agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
           originalName: 'Strytree ForkCompare source',
           mediaKind: 'doc',
           mimeHint: 'text/markdown',
           byteSize: 0,
           textHash: 'forkcompare',
-          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad.md',
+          mediaUrl: 'docs/documents/agentic-graph-strytree-prd-tad-adr-mvp-gtm.md',
         },
       ],
       elements: [],
@@ -749,7 +749,7 @@ export function testStrybldrRendererModeUsesSharedSurfaceRegistry() {
   const strybldrStoryboardText = readSource('features', 'strybldr', 'strybldrStoryboard.ts')
   const importPresetsText = readSource('features', 'markdown-workspace', 'workspaceImport', 'canvasPresets.ts')
   const rendererDocText = fs.readFileSync(path.resolve(process.cwd(), '..', 'docs/documents/agentic-graph-renderer-document.md'), 'utf8')
-  const strybldrDocText = fs.readFileSync(path.resolve(process.cwd(), '..', 'docs/documents/agentic-graph-strybldr-prd-tad.md'), 'utf8')
+  const strybldrDocText = fs.readFileSync(path.resolve(process.cwd(), '..', 'docs/documents/agentic-graph-strybldr-prd-tad-adr-mvp-gtm.md'), 'utf8')
   const floatingPanelText = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
   const timelineVisibilityText = readSource('lib', 'timeline', 'timelineVisibility.ts')
   const timelineBottomPanelText = readSource('features', 'strybldr', 'StrybldrTimelineBottomPanel.tsx')

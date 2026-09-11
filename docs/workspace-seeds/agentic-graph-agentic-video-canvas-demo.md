@@ -9,7 +9,7 @@ demo_schema: "agentic-os-agentic-video-canvas/v1"
 runtime_status: "runtime-ready-in-dev"
 publish_scope: "local-only"
 live_provider_run_proven: false
-implementation_contract: "../../agentic-graph/docs/documents/agentic-graph-agentic-os-video-agent-prd-tad.companion.md"
+implementation_contract: "../../agentic-graph/docs/documents/agentic-graph-agentic-os-video-agent-prd-tad-adr-mvp-gtm.companion.md"
 template_policy: "Default source-backed video-agent launcher. The referenced Markdown owns creative context; runtime providers own generated text and media; no generated URL, job id, transcript, credential, or fixture is authored here."
 validation_input_forbid_hardcode_in_repo: true
 kgCanvasSurfaceMode: "2d"

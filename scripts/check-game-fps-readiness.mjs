@@ -67,9 +67,9 @@ const requiredPaths = [
   'canvas/src/__tests__/canvasSurfaceGameDeparture.test.ts',
   'canvas/src/__tests__/canvasXrSharedSurfaceOwnership.test.ts',
   'docs/workspace-seeds/agentic-graph-physics-playground-demo.md',
-  'docs/documents/agentic-graph-game-fps-prd-tad.md',
+  'docs/documents/agentic-graph-game-fps-prd-tad-adr-mvp-gtm.md',
   'docs/documents/agentic-graph-game-fps-runtime-readiness.md',
-  'docs/documents/agentic-graph-native-physics-engines-prd-tad.md',
+  'docs/documents/agentic-graph-native-physics-engines-prd-tad-adr-mvp-gtm.md',
   'ecs/decisionDocument.js',
 ]
 const forbiddenDependencies = [

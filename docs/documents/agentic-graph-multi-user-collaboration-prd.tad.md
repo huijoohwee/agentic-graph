@@ -6,7 +6,7 @@ date: "2026-07-11"
 status: "Accepted and implemented authenticated room transport"
 scope: "MainPanel Collaboration, authenticated storage-room transport, fallback no-server WebRTC invite/answer flow, peer roster, presence, document sync, targeted follow mode, planned Cloudflare media-room extension"
 lang: "en-US"
-guideline: "$GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-guidelines.md"
+guideline: "$GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 source_root: "$GITHUB_ROOT/agentic-graph"
 deployment_boundary: "Dev only until explicit Prod or Cloudflare instruction"
 ---

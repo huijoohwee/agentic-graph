@@ -21,7 +21,7 @@ function assert(condition: unknown, message: string): asserts condition {
 function readQueryableCorpusPrdTad(): string {
   const cwd = process.cwd()
   const repoRoot = path.basename(cwd) === 'canvas' ? path.resolve(cwd, '..') : cwd
-  return fs.readFileSync(path.join(repoRoot, 'docs/documents/agentic-graph-query-prd-tad.md'), 'utf8')
+  return fs.readFileSync(path.join(repoRoot, 'docs/documents/agentic-graph-query-prd-tad-adr-mvp-gtm.md'), 'utf8')
 }
 
 function buildSubmitArgsFixture(overrides: Partial<FloatingPanelChatSubmitArgs> = {}): FloatingPanelChatSubmitArgs {
