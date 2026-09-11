@@ -13,7 +13,7 @@ import {
 import type { XrV2SavedSpatialAssetResource } from './xrV2SavedAssetCatalog'
 
 export const XR_V2_PINNED_SOURCE_ID =
-  'https://github.com/huijoohwee/agentic-graph/blob/5e27c0ea4318760aaa3b726dc3951c1957814a9b/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md' as const
+  'https://github.com/huijoohwee/agentic-graph/blob/1272bae345edf0d132e6fc750d5c5c7eade00b29/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md' as const
 
 type Phase = 'idle' | 'publishing' | 'listing' | 'reading' | 'ready' | 'deferred' | 'error'
 

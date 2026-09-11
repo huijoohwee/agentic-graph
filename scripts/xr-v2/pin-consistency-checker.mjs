@@ -17,7 +17,7 @@ export const XR_V2_PIN_CONSISTENCY_SCHEMA = 'agentic-graph-xr-v2-pin-consistency
 export const XR_V2_PINNED_DOCUMENT_PATH =
   'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'
 export const XR_V2_PINNED_DOCUMENT_REVISION_PATH =
-  'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md'
+  'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'
 
 const SURFACE_PATHS = Object.freeze({
   canvasAuthority: 'canvas/src/features/xr-v2/pinnedSourceAuthority.ts',

@@ -55,10 +55,10 @@ pinned_source:
   repository: huijoohwee/agentic-graph
   path: docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md
   version: 3.0.0
-  commit: 5e27c0ea4318760aaa3b726dc3951c1957814a9b
-  git_blob_sha1: c671d48794c4f17aee675b7f70aee8c2a679492e
-  content_sha256: bd0028938b50cee04ffad99b06b334badc7991ecd1c81495efb7d8f556cf55ce
-  immutable_url: https://github.com/huijoohwee/agentic-graph/blob/5e27c0ea4318760aaa3b726dc3951c1957814a9b/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr.md
+  commit: 1272bae345edf0d132e6fc750d5c5c7eade00b29
+  git_blob_sha1: ff41649ac8562b62c7c539baed2d226402fdfe51
+  content_sha256: 5067f019a099a94ec02d3f7581963cf2c514ab46bf5a853020df8dfe85d5ef45
+  immutable_url: https://github.com/huijoohwee/agentic-graph/blob/1272bae345edf0d132e6fc750d5c5c7eade00b29/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md
 runtime_readiness:
   schema: agentic-graph-xr-v2-pinned-contract-conformance/v1
   scope: pinned-ac1-ac12-conformance
@@ -742,9 +742,9 @@ flow:
 
 This Source Files document is the dedicated workspace demo for the immutable
 v3.0.0 AR/VR/XR authority. Its source identity is commit
-`5e27c0ea4318760aaa3b726dc3951c1957814a9b`, Git blob
-`c671d48794c4f17aee675b7f70aee8c2a679492e`, and SHA-256
-`bd0028938b50cee04ffad99b06b334badc7991ecd1c81495efb7d8f556cf55ce`.
+`1272bae345edf0d132e6fc750d5c5c7eade00b29`, Git blob
+`ff41649ac8562b62c7c539baed2d226402fdfe51`, and SHA-256
+`5067f019a099a94ec02d3f7581963cf2c514ab46bf5a853020df8dfe85d5ef45`.
 The mounted browser ledger remains AC-1–AC-12; the authority's AC-14 bridge is
 a separate implementation candidate until its exact-revision proof passes,
 and later revisions cannot silently expand the demo's evidence claim.
