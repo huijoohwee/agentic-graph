@@ -94,13 +94,13 @@ describe('check:reused-interfaces evidence', () => {
 const REUSED_INTERFACE_BASELINES = Object.freeze([
   baseline('Shared Canvas Node Store', sharedCanvasNodeStore, 'c1b72b0706e19b716d47fd07ccc0eace435431d9c23f0d59ca36f6f8043770ab'),
   baseline('Agent Registry/Router', `${agentRegistry}\n${mcpSurface}`, 'f03156f18f01ef656156d5d2c0dccd7393ffa3079028fe1112ac9f8464669fd8'),
-  baseline('Discovery Harnesses', inheritedTravelDocument, 'e67f750f084c4b5c5a23c597a65df67d64717abfa3cb3c91a43dd94c719da187'),
+  baseline('Discovery Harnesses', inheritedTravelDocument, '3a8542ec4869ab0dd66ce25cc10cca49003c701591a06912192e00de4b5f1f92'),
   baseline('Issuance Service', issuanceService, '2bf501e3f8cb39b2f21d9671deb49c3777a7e4cb0c6119a36f3a2abecd3891af'),
   baseline('Settlement Verifier', settlementVerifier, '3ea799c2c95523709618a3c1a53ac160c211e251c9dbc91417075d4ddfd09a71'),
-  baseline('Notification Dispatcher', inheritedTravelDocument, 'e67f750f084c4b5c5a23c597a65df67d64717abfa3cb3c91a43dd94c719da187'),
+  baseline('Notification Dispatcher', inheritedTravelDocument, '3a8542ec4869ab0dd66ce25cc10cca49003c701591a06912192e00de4b5f1f92'),
   baseline('Marketplace Registry Canvas', registryCanvas, '0c3c6454b1cef06daa0cbf5f80ae5e4cdb515bf9f8b526a90dc570bc3eaaf84e'),
   baseline('Guardrail Gate', guardrailGate, '1f431a285735039e8e0e83d4f5e0d62b60a383f21df47174487aeead653cd329'),
-  baseline('Inherited Component Inventory', inheritedCommerceDocument, 'f63e565d8a4489238c6706e376ac522307c58a0d06c02a101cbb40453f7d7ba1'),
+  baseline('Inherited Component Inventory', inheritedCommerceDocument, '4688da5b3d6e26e6e7f4089b04123304bd50783923ec8181782d850f9970e85f'),
 ])
 
 const INHERITED_COMPONENTS = Object.freeze([

@@ -224,7 +224,7 @@ browser cache while preserving immutable caching for verified asset bytes.
 
 ## Companion
 
-- Canonical storage & sync index: `agentic-graph-storage-sync-document.md`
+- Canonical storage & sync index: `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md`
 - Storage schema appendix: `agentic-graph-storage-schemas-document.md`
 - Markdown discovery companion: `markdown-convertible-agent-discovery-document.md`
 - Shared sibling doc: `singabldr/docs/documents/singabldr-cross-repo-publish-topology.md`

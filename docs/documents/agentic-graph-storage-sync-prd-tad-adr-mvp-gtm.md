@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: agentic-graph Storage and Synchronization"
 id: "md:agentic-graph-storage-sync-prd-tad-adr"
-doc_type: "Combined PRD/TAD/ADR"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "5.0.0"
 date: "2026-08-06"
 lang: "en-US"
@@ -13,8 +13,8 @@ lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md"
 companion: "docs/documents/agentic-graph-storage-sync-document.companion.md"
-supersedes: "docs/documents/agentic-graph-storage-sync-document.md@4.1.0"
-decision_archive: "ADRs now embedded in this document (see Architectural Decision Records); prior docs/documents/agentic-graph-storage-sync-adrs-document.md is archived per Phase 4 rule, not deleted, and no longer the ADR owner"
+supersedes: "joohwee:prd-tad-adr-mvp-gtm-archive/2026-09-11/agentic-graph/docs/documents/agentic-graph-storage-sync-document.md@4.1.0"
+decision_archive: "joohwee:prd-tad-adr-mvp-gtm-archive/2026-09-11/agentic-graph/docs/documents/agentic-graph-storage-sync-adrs-document.md"
 binary_contract: "docs/documents/agentic-graph-artifact-media-storage-architecture.md"
 invocation_authority: "Runtime route identities are owned by the typed route-path source module; this document declares no invocation route."
 ---
@@ -28,6 +28,7 @@ shared projections. Authored Markdown remains canonical. The portable authority 
 Markdown plus YAML frontmatter; GitHub is the current protected forge, not an irreplaceable content
 database. Browser records, Lark resources, shared D1 rows, R2 objects, collaboration rooms, and
 generated mirrors are supporting stores with explicit roles.
+The protected Pages release does not deploy storage Worker code.
 
 The source contains working adapters, but no satisfying Evidence Reference is attached here.
 Therefore local readiness is `spec-complete` and delivered readiness is `undocumented`.
@@ -35,7 +36,7 @@ Therefore local readiness is `spec-complete` and delivered readiness is `undocum
 **Version note (v5.0.0)**: this revision restructures the document to close template gaps against
 `prd-tad-adr-mvp-gtm-guidelines.md` v1.7.0 — User Stories, Component Specifications, Integration Contracts,
 Quality Attributes, Deployment Strategy, a Readiness Gap Matrix, and three embedded Architectural
-Decision Records are added. `doc_type` changes from Combined PRD/TAD to Combined PRD/TAD/ADR because
+Decision Records are added. The joined artifact uses `doc_type: "PRD-TAD-ADR-MVP-GTM"` because
 ADR ownership moves from the external `decision_archive` document into this document; the prior
 decision archive file is archived, not deleted, per the Phase 4 archival rule. No readiness rung is
 raised by this revision: structural gaps are closed, evidence gaps are not, and every new or changed VCC is
@@ -133,7 +134,7 @@ authoring source.
 | S4a Collaboration CRDT engine | Given the Room provider is enabled for a document, when concurrent edits arrive, then updates merge via a CRDT engine without last-write-wins and the merged state squashes to a Markdown/frontmatter candidate through the existing S9 review path. | End: CRDT-merge fixtures pass and squash-to-candidate fixtures pass; Check: a future named CRDT suite exits 0; Constraint: CRDT room state is never treated as durable authoring authority; only the squashed Markdown candidate may enter Git review. Engine selection: ADR-2. |
 | S5 Binary separation | Given generated/uploaded bytes, when stored or replayed, then binary-route auth/overwrite behavior matches the dedicated contract. | End: media/blob suites pass; Check: named binary tests exit 0; Constraint: no entitlement, immutability, or delivery claim beyond actual handlers. |
 | S6 Protected delivery | Given a shared Worker or mirror candidate, when promotion is requested, then Source→Mirror→Delivery boundaries remain closed without evidence and instruction. | End: exact candidate/live/rollback receipt exists; Check: protected workflow reports it; Constraint: the Pages release does not implicitly deploy storage Workers. |
-| S7 Shared authorization | Given a shared structured route, when authorization is missing or invalid, then the request is rejected before any read or write. | End: negative auth tests pass for push, pull, and export; Check: a future named security suite exits 0; Constraint: current source has no satisfying auth enforcement, so shared delivery remains closed. |
+| S7 Shared authorization | Given a shared structured route, when authorization is missing or invalid, then the request is rejected before any read or write. | End: negative auth tests pass for push, pull, and export; Check: `storage-relay/storagePublicationBrowserSession.test.ts` and adjacent security suites pass; Constraint: source authorization does not prove deployed authorization, so shared delivery remains closed. |
 | S8 Projection provenance | Given any Lark or Cloudflare projection, when it is read, then its accepted source revision and content digest are explicit and verifiable. | End: projection-envelope fixtures pass; Check: a future named projection suite exits 0; Constraint: provider timestamps, titles, and row IDs cannot substitute for source identity. |
 | S9 External edit review | Given a Lark or interchange edit, when synchronization runs, then it produces a bounded candidate and never overwrites authored source directly. | End: candidate/conflict/idempotency fixtures pass; Check: a future named provider-adapter suite exits 0; Constraint: remote acquisition and write-back remain unimplemented and delivery-closed today. |
 
@@ -161,7 +162,7 @@ Score is `(impact × monthly reach) / (build hours + 12-month cash TCO/100 + ris
 | Must | source-authority labels | 3.8 | $0 | minimum viable | cheapest highest-leverage fix: stops any store from being mistaken for SSOT |
 | Should | optional shared structured sync | 0.9 | $0–540 | evidence-gated | real value, but only past S2/S7 evidence; not worth Must-tier risk yet |
 | Should | one collaboration room provider (CRDT: Yjs, ADR-2) | 0.6 | $120–1,200 | evidence-gated | closes S4/S4a; ROI depends on real concurrent-editing demand materializing |
-| Could | shared binary replay | 0.5 | $0–420 | blocked on security VCCs | S5's known unauthenticated-overwrite gap must close first (see Readiness Gap Matrix) |
+| Could | shared binary replay | 0.5 | $0–420 | blocked on security VCCs | S5's exact-candidate security evidence must be recorded first (see Readiness Gap Matrix) |
 | Won't | hidden cloud authority or unbounded auto-sync | <0.1 | unbounded | excluded | violates source-authority (S3) and lane-closure defaults outright |
 
 ### Min-Viable Scope
@@ -294,7 +295,7 @@ move until the CRDT-merge and squash-to-candidate fixtures named in S4a exist an
 | Working store | Persists typed document/chunk/snapshot/outbox records in a committed local transaction before optional transport; exposes the Dexie/IndexedDB transactional API and an explicit memory-fallback adapter implementing the same typed contract. | `canvas/src/lib/storage/agentic-graph-storage-sync-contract.ts`; IndexedDB-versus-memory adapter selection and per-record retention policy. | FOSS: Dexie, MIT (reference implementation). | S1; no Evidence Reference recorded this revision; Local `spec-complete`, Delivered `undocumented`. |
 | Sync client | Dispatches queued outbox mutations to the shared Worker source and records applied/conflict/rejected/deferred results against a cursor through the bounded HTTPS contract below. | Working store outbox and Shared Worker source; retry/backoff policy; request-scoped memory only. | FOSS: project-owned client module. | S2; no Evidence Reference recorded this revision; Local `spec-complete`, Delivered `undocumented`. |
 | Room provider (CRDT) | Merges concurrent edits for exactly one open document through WebSocket/Durable Object and the Yjs sync protocol, then squashes merged state to a Markdown/frontmatter candidate; `y-indexeddb`-equivalent local persistence stays alongside, not in place of, the working store. | One Durable Object per document and the existing S9 review path; exactly one active provider per document; idle hibernation. | FOSS: Yjs, MIT (reference implementation; ADR-2 owns alternatives). | S4/S4a; no evidence recorded and the remote/live adapter is unimplemented; Local `spec-complete`, Delivered `undocumented`. |
-| Lark configuration/import adapter | A host-owned adapter discovers scoped Base/Wiki/Docs resources and produces an immutable provider snapshot for the deterministic mapper through host-mediated OpenAPI; the browser receives no reusable credential. | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad.md`; scope allowlist and snapshot retention window. | Proprietary Lark platform, project-owned adapter; ADR-3 owns the TCO/FOSS comparison. | S9; remote fetch/write-back is not evidenced; Local and Delivered `undocumented`. |
+| Lark configuration/import adapter | A host-owned adapter discovers scoped Base/Wiki/Docs resources and produces an immutable provider snapshot for the deterministic mapper through host-mediated OpenAPI; the browser receives no reusable credential. | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad-adr-mvp-gtm.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad-adr-mvp-gtm.md`; scope allowlist and snapshot retention window. | Proprietary Lark platform, project-owned adapter; ADR-3 owns the TCO/FOSS comparison. | S9; remote fetch/write-back is not evidenced; Local and Delivered `undocumented`. |
 
 Current source authenticates snapshot push/pull/export and workspace blob/media requests, then checks
 workspace membership. Browser sessions use same-origin HttpOnly cookies and require configured Access
@@ -302,6 +303,9 @@ settings. Private document reads use the same session and membership checks; ano
 require an explicit publication matching the current revision. Chat, relay, room and crawler routes retain
 their existing credential contracts. Native coverage lives in `storage-relay/storagePublicationBrowserSession.test.ts`
 and adjacent storage security tests. Source checks do not establish deployed S7 readiness or live KV bindings.
+Binary route security is owned by `agentic-graph-artifact-media-storage-architecture.md`: public generic
+blobs require workspace authorization; run media requires signed capabilities. Unsigned run tokens are
+restricted to explicit local-runtime fallback. Authorized objects remain overwriteable at their scoped key.
 
 ## Integration Contracts
 
@@ -351,7 +355,7 @@ mechanism.
 | Structured persistence | D1 modules/migrations | Worker D1 modules | `spec-complete` | `undocumented` |
 | Binary persistence | R2 blob/media handlers | `cloudflare/workers/agentic-graph-storage/blob.ts`, `media.ts` | `spec-complete` | `undocumented` |
 | Collaboration | Room provider (CRDT: Yjs, ADR-2) | Source Files room adapters + Durable Object source | `spec-complete` | `undocumented` |
-| Lark configuration/import | Lark adapter (config + supplied-snapshot only) | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad.md` | `undocumented` | `undocumented` |
+| Lark configuration/import | Lark adapter (config + supplied-snapshot only) | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad-adr-mvp-gtm.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad-adr-mvp-gtm.md` | `undocumented` | `undocumented` |
 | Git/file relay | Authenticated source transport | `agentic-graph-storage-git-file-sync-runtime-api.md` | `spec-complete` | `undocumented` |
 | Release | Documentation/Pages release seed | `.github/workflows/release.yml` | `spec-complete` | `undocumented` |
 
@@ -379,9 +383,9 @@ is the highest severity among the findings linked to that workstream, or `none`.
 | Typed synchronization | `spec-complete` | `undocumented` | Runtime suite exists but has no recorded result this revision | major | S2 |
 | Source authority | `spec-complete` | `undocumented` | Same evidence gap as S1 (shared check) | major | S3 |
 | Collaboration room (CRDT) | `spec-complete` | `undocumented` | Engine chosen (ADR-2) but merge/squash fixtures not yet built | minor | S4, S4a |
-| Binary separation | `spec-complete` | `undocumented` | Known unauthenticated overwrite path on blob/media routes | blocker | S5 |
+| Binary separation | `spec-complete` | `undocumented` | Source authorization exists; exact deployed binary security evidence is absent | blocker | S5 |
 | Protected delivery | `undocumented` | `undocumented` | No exact live storage/auth/rollback check exists yet | blocker | S6 |
-| Shared authorization | `undocumented` | `undocumented` | Structured push/pull/export have no auth gate at all | blocker | S7 |
+| Shared authorization | `undocumented` | `undocumented` | Session and membership gates exist in source; exact deployed authorization evidence is absent | blocker | S7 |
 | Projection provenance | `spec-complete` | `undocumented` | Envelope fixtures not built | major | S8 |
 | External edit review (Lark) | `undocumented` | `undocumented` | Remote adapter unimplemented; no fetch or write-back evidenced | minor | S9 |
 
@@ -576,7 +580,7 @@ that must close before any claim of `runtime-ready` on this document's Must-tier
 ## Open questions
 
 - Which shared adapter, region, retention, and deletion policy is authorized per workspace?
-- Which cryptographic authorization replaces the current unsigned run-media token?
+- Which exact candidate and live readback prove the signed media capabilities outside local-runtime fallback?
 - What clean-environment save/reopen and conflict-recovery TTV is observed?
 - What document/blob limits and cost ceilings are acceptable?
 - Which separately approved runbook owns Worker migration and rollback?

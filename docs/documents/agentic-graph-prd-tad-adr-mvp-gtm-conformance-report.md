@@ -1,5 +1,5 @@
 ---
-title: "Reference implementation: PRD/TAD/ADR Conformance Report"
+title: "Reference implementation: PRD-TAD-ADR-MVP-GTM Conformance Report"
 doc_type: "Conformance Report"
 version: "1.1.0"
 date: "2026-07-31"
@@ -12,7 +12,7 @@ lane: "authoring"
 universal_scope: false
 ---
 
-# Reference implementation: PRD/TAD/ADR Conformance Report
+# Reference implementation: PRD-TAD-ADR-MVP-GTM Conformance Report
 
 ## Reference implementation: Authority, verdict, and scope
 
@@ -28,7 +28,7 @@ that ratio.
 
 | Included | Boundary |
 |---|---|
-| Canonical core | `agentic-graph-prd.md`, `agentic-graph-tad.md`, and `agentic-graph-architecture-decisions.md` |
+| Canonical core | `agentic-graph-prd-tad-adr-mvp-gtm-requirements.md`, `agentic-graph-prd-tad-adr-mvp-gtm-architecture.md`, and `agentic-graph-prd-tad-adr-mvp-gtm-decisions.md` |
 | Supporting docs change set | 51 additional active changed Markdown artifacts under `docs/`, including this report and the generated settings companion |
 | Root index projection | One active changed `README.md`, outside the `docs/` count |
 | Cleanup | Six deleted legacy, duplicate, or superseded active-path artifacts |
@@ -146,40 +146,40 @@ unchanged.
 | Finding Type | Severity | Rule anchor | Artifact reference | Evidence excerpt | Remediation |
 |---|---|---|---|---|---|
 | `missing-lane` | blocker | `validation-checklist#57` | City Simulation predecessor, original line 9 | `lane: "authoring"` with no Mirror or Delivery register | Documentation change: add three lanes and two complete named closed boundaries. |
-| `missing-lane` | blocker | `validation-checklist#57` | `agentic-graph-game-mmorpg-prd-tad.md:350` | `## Release Boundary` without lane topology | Documentation change: add three lanes and two complete named closed boundaries. |
-| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-codebase-responsibility-flow-prd-tad.md:553` | `requires separate owner authority` | Documentation change: add stable boundary names, evidence, instruction, rollback, and state. |
-| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-exa-mcp-prd-tad.md:244` | `authorizes no publication` without a complete register | Documentation change: add both complete named closed boundaries. |
-| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-feishu-base-mcp-prd-tad.md:247` | `closed` without all boundary fields | Documentation change: add both complete named closed boundaries. |
-| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-lark-app-mcp-prd-tad.md:245` | `closed` without all boundary fields | Documentation change: add both complete named closed boundaries. |
-| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-sensenova-api-prd-tad.md:251` | `closed` without evidence and rollback | Documentation change: add both complete named closed boundaries. |
+| `missing-lane` | blocker | `validation-checklist#57` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:350` | `## Release Boundary` without lane topology | Documentation change: add three lanes and two complete named closed boundaries. |
+| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-codebase-responsibility-flow-prd-tad-adr-mvp-gtm.md:553` | `requires separate owner authority` | Documentation change: add stable boundary names, evidence, instruction, rollback, and state. |
+| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-exa-mcp-prd-tad-adr-mvp-gtm.md:244` | `authorizes no publication` without a complete register | Documentation change: add both complete named closed boundaries. |
+| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-feishu-base-mcp-prd-tad-adr-mvp-gtm.md:247` | `closed` without all boundary fields | Documentation change: add both complete named closed boundaries. |
+| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-lark-app-mcp-prd-tad-adr-mvp-gtm.md:245` | `closed` without all boundary fields | Documentation change: add both complete named closed boundaries. |
+| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-sensenova-api-prd-tad-adr-mvp-gtm.md:251` | `closed` without evidence and rollback | Documentation change: add both complete named closed boundaries. |
 | `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-stripe-mcp-service.md:267` | `closed` without provider evidence and rollback | Documentation change: add both complete named closed boundaries. |
-| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-videodb-mcp-prd-tad.md:248` | `closed` without provider evidence and rollback | Documentation change: add both complete named closed boundaries. |
-| `vendor-coupling` | major | `validation-checklist#53` | `agentic-graph-agent-ready-prd-tad.runtime.md:47` | `MCP/WebMCP-capable client` before the labelled block | Documentation change: replace early concrete protocol names with functional terms. |
-| `vendor-coupling` | major | `validation-checklist#53` | `agentic-graph-game-mmorpg-prd-tad.md:2` | `Reference design` | Documentation change: use the exact reference-implementation label. |
+| `incomplete-lane-transition` | major | `validation-checklist#57` | `agentic-graph-videodb-mcp-prd-tad-adr-mvp-gtm.md:248` | `closed` without provider evidence and rollback | Documentation change: add both complete named closed boundaries. |
+| `vendor-coupling` | major | `validation-checklist#53` | `agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.runtime.md:47` | `MCP/WebMCP-capable client` before the labelled block | Documentation change: replace early concrete protocol names with functional terms. |
+| `vendor-coupling` | major | `validation-checklist#53` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:2` | `Reference design` | Documentation change: use the exact reference-implementation label. |
 | `orphan-route` | major | `validation-checklist#60` | City Simulation predecessor, original line 89 | `/game.city @canvas #civic` | Documentation change: add a sole Invocation Register with schema, trust, and cost. |
-| `orphan-route` | major | `validation-checklist#60` | `agentic-graph-game-mmorpg-prd-tad.md:76` | `/mmorpg @canvas #world` | Documentation change: add a planned Invocation Register and absence disposition. |
+| `orphan-route` | major | `validation-checklist#60` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:76` | `/mmorpg @canvas #world` | Documentation change: add a planned Invocation Register and absence disposition. |
 | `unfederated-tool` | major | `validation-checklist#56` | City Simulation predecessor, original line 275 | `agentic-graph.inspect_local_city_sim` | Specification change: record both embedded tools in the federation disposition. |
-| `unfederated-tool` | major | `validation-checklist#56` | `agentic-graph-game-mmorpg-prd-tad.md:348` | planned tools are not registered | Specification change: keep identities explicitly planned and non-federated until implemented. |
-| `uncatalogued-tool` | major | `validation-checklist#56` | `agentic-graph-game-mmorpg-prd-tad.md:348` | planned tools are not registered | Specification change: record non-catalogued disposition and promotion VCC. |
+| `unfederated-tool` | major | `validation-checklist#56` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:348` | planned tools are not registered | Specification change: keep identities explicitly planned and non-federated until implemented. |
+| `uncatalogued-tool` | major | `validation-checklist#56` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:348` | planned tools are not registered | Specification change: record non-catalogued disposition and promotion VCC. |
 | `unimplemented-guideline` | major | `validation-checklist#24` | City Simulation predecessor, original line 362 | numeric requirements mapped only to a design owner | Documentation change: add stable requirement-to-component/interface trace rows. |
 | `unimplemented-guideline` | major | `validation-checklist#25` | City Simulation predecessor, original line 341 | VCCs lacked component mapping | Documentation change: bind each VCC to a component and interface. |
-| `unimplemented-guideline` | major | `validation-checklist#24` | `agentic-graph-game-mmorpg-prd-tad.md:129` | criteria and ownership lacked a trace register | Documentation change: add bidirectional requirement-to-component/interface trace rows. |
-| `unimplemented-guideline` | major | `validation-checklist#25` | `agentic-graph-game-mmorpg-prd-tad.md:210` | components lacked VCC mappings | Documentation change: bind component specifications to VCCs. |
+| `unimplemented-guideline` | major | `validation-checklist#24` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:129` | criteria and ownership lacked a trace register | Documentation change: add bidirectional requirement-to-component/interface trace rows. |
+| `unimplemented-guideline` | major | `validation-checklist#25` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:210` | components lacked VCC mappings | Documentation change: bind component specifications to VCCs. |
 | `unimplemented-guideline` | major | `validation-checklist#42` | City Simulation predecessor, original line 9 | readiness below runtime-ready without a gap matrix | Documentation change: add separate-rung gaps, priorities, and exit VCCs. |
-| `unimplemented-guideline` | major | `validation-checklist#42` | `agentic-graph-game-mmorpg-prd-tad.md:342` | readiness dimensions lacked a gap matrix | Documentation change: add separate-rung gaps, priorities, and exit VCCs. |
+| `unimplemented-guideline` | major | `validation-checklist#42` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:342` | readiness dimensions lacked a gap matrix | Documentation change: add separate-rung gaps, priorities, and exit VCCs. |
 | `incomplete-topology-node` | major | `validation-checklist#17` | City Simulation predecessor, original line 240 | topology lacked boundary and residency fields | Documentation change: add versioned lane subgraphs, connections, roles, and residency. |
-| `incomplete-topology-node` | major | `validation-checklist#17` | `agentic-graph-game-mmorpg-prd-tad.md:227` | topology lacked boundary and residency fields | Documentation change: add versioned lane subgraphs, connections, roles, and residency. |
+| `incomplete-topology-node` | major | `validation-checklist#17` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:227` | topology lacked boundary and residency fields | Documentation change: add versioned lane subgraphs, connections, roles, and residency. |
 | `missing-economics-metric` | major | `validation-checklist#54` | City Simulation predecessor, original line 105 | no quantified ROI or twelve-month TCO | Documentation change: add ROI, TTV, and deployment-model TCO. |
-| `missing-economics-metric` | major | `validation-checklist#54` | `agentic-graph-game-mmorpg-prd-tad.md:184` | TCO-zero was narrative only | Documentation change: add ROI, TTV, and deployment-model TCO. |
+| `missing-economics-metric` | major | `validation-checklist#54` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:184` | TCO-zero was narrative only | Documentation change: add ROI, TTV, and deployment-model TCO. |
 | `missing-foss-comparison` | major | `validation-checklist#21` | City Simulation predecessor, original line 284 | ADRs had decision and reason only | Documentation change: add per-decision FOSS alternatives and TCO. |
-| `missing-foss-comparison` | major | `validation-checklist#21` | `agentic-graph-game-mmorpg-prd-tad.md:287` | ADRs lacked FOSS and TCO comparison | Documentation change: add per-decision FOSS alternatives and TCO. |
-| `unknown-status` | minor | `validation-checklist#44` | `agentic-graph-game-mmorpg-prd-tad.md:21` | `pending`; `not authorized` | Documentation change: remove the redundant non-ladder readiness block. |
+| `missing-foss-comparison` | major | `validation-checklist#21` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:287` | ADRs lacked FOSS and TCO comparison | Documentation change: add per-decision FOSS alternatives and TCO. |
+| `unknown-status` | minor | `validation-checklist#44` | `agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md:21` | `pending`; `not authorized` | Documentation change: remove the redundant non-ladder readiness block. |
 | `unknown-status` | minor | `validation-checklist#44` | `agentic-graph-pipeline-document.md:508` | `Status` values were `unverified` | Documentation change: rename them as non-readiness evidence results. |
-| `blended-status` | minor | `validation-checklist#45` | `agentic-graph-agent-ready-prd-tad.md:262` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered columns and prose. |
+| `blended-status` | minor | `validation-checklist#45` | `agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md:262` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered columns and prose. |
 | `blended-status` | minor | `validation-checklist#45` | `agentic-graph-artifact-media-storage-architecture.md:35` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered columns and prose. |
 | `blended-status` | minor | `validation-checklist#45` | `agentic-graph-cloudflare-document.md:115` | evidence, local, and delivered values shared one cell | Documentation change: split evidence and both readiness fields. |
-| `blended-status` | minor | `validation-checklist#45` | `agentic-graph-mcp-service-prd-tad.md:278` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered columns. |
-| `blended-status` | minor | `validation-checklist#45` | `agentic-graph-storage-sync-document.md:73` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered metric rows. |
+| `blended-status` | minor | `validation-checklist#45` | `agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md:278` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered columns. |
+| `blended-status` | minor | `validation-checklist#45` | `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md:73` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered metric rows. |
 
 Six provider specifications were conservatively upgraded with explicit
 requirement-to-component/interface-to-VCC closure even though their declared

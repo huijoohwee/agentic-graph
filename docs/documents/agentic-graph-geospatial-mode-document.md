@@ -22,7 +22,7 @@
   selected simulation or operator camera. Both 2D variants consume that
   companion's north-up planar policy. Regional values and their non-boundary
   semantics live in the
-  [ADM0 environment companion](./agentic-graph-adm0-singapore-prd-tad-ard.companion.md).
+  [ADM0 environment companion](./agentic-graph-adm0-singapore-prd-tad-adr-mvp-gtm.companion.md).
 - Enhanced layers are additive and configuration-driven: polygon datasets may
   opt into native MapLibre `fill-extrusion`, while source-authored bounded mesh
   descriptors may opt into the MapLibre custom-layer path. With no enhanced
@@ -147,7 +147,7 @@ imports the MapLibre runtime. The custom-mesh path is Mercator-only and fails
 closed outside the supported latitude range or while MapLibre reports a
 non-zero globe projection transition. Geo+XR environment, domain, and
 dynamic-subject composition follows the
-[Geo+XR Mode PRD/TAD/ADR](./agentic-graph-geo-xr-mode-prd-tad-ard.md). The selected
+[Geo+XR Mode PRD/TAD/ADR](./agentic-graph-geo-xr-mode-prd-tad-adr-mvp-gtm.md). The selected
 authored environment remains visible without a parallel rendered world; this
 plain-Geospatial document does not own composed-surface arbitration.
 
@@ -254,7 +254,7 @@ source readiness does not claim deployment or physical-device proof.
 - “Fit to data” computes a bounded bbox and updates the overlay camera (optional animation).
 - Regional camera, anchor, local-metre projection, and presentation-framing
   values are owned by the selected
-  [ADM0 environment companion](./agentic-graph-adm0-singapore-prd-tad-ard.companion.md).
+  [ADM0 environment companion](./agentic-graph-adm0-singapore-prd-tad-adr-mvp-gtm.companion.md).
   Presentation bounds are never inferred as an administrative or legal
   boundary. Planar and volumetric views consume the companion's respective
   camera policies without moving camera ownership into the regional profile.

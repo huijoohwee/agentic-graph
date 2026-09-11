@@ -12,7 +12,7 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
   const testingDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-testing-document.md')
   const readinessDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-xr-spatial-capture-fallback-readiness.md')
   const runtimeApiDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-xr-invocation-runtime-api.md')
-  const xrModeDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-xr-mode-prd-tad.md')
+  const xrModeDocumentation = readSource('..', 'docs', 'documents', 'agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md')
   // The historical XR v2 design is immutable, not the mutable fallback runtime guide.
   execFileSync(process.execPath, [resolve(process.cwd(), '..', 'scripts', 'xr-v2', 'pin-consistency-checker.mjs'), '--json'], { timeout: 30_000, maxBuffer: 128 * 1024 })
 

@@ -1,6 +1,6 @@
 ---
 title: "Markdown-Convertible Agent Discovery Document"
-doc_type: "PRD + TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.0.0"
 status: "implemented"
 date: "2026-07-11"

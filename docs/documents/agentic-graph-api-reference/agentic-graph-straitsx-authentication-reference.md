@@ -19,7 +19,7 @@ sandbox_base_url: "https://api-sandbox.straitsx.com/v1"
 connectivity_probe: "GET /v1/authorize/hello"
 attribution: "Summarized and paraphrased from the StraitsX API reference. Content was rephrased for compliance with licensing restrictions."
 consumers:
-  - "docs/documents/agentic-graph-payments-prd-tad.md"
+  - "docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md"
   - ".kiro/specs/agentic-graph-payments/requirements.md"
 companion_reference: "docs/documents/agentic-graph-api-reference/agentic-graph-straitsx-api-reference.md"
 tags:

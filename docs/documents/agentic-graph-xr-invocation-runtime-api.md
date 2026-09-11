@@ -150,4 +150,4 @@ If a native host detaches, its AbortSignal-backed registrations are released, th
 - Workspace mutation diagnostics stay in the shared in-memory runtime trace; XR Media persistence performs no hardcoded localhost debug-collector requests.
 - Published projection owner: `cloudflare/pages/agentic-graph-agent-ready.mjs`.
 
-The native 2D/3D physics contract is documented in `docs/documents/agentic-graph-native-physics-engines-prd-tad.md`. Rapier remains a principles-only reference, not a dependency; this runtime copies no external implementation, schema, prose, algorithm, example, fixture, or test and introduces no external renderer, physics runtime, storage, deployment, or mutation owner.
+The native 2D/3D physics contract is documented in `docs/documents/agentic-graph-native-physics-engines-prd-tad-adr-mvp-gtm.md`. Rapier remains a principles-only reference, not a dependency; this runtime copies no external implementation, schema, prose, algorithm, example, fixture, or test and introduces no external renderer, physics runtime, storage, deployment, or mutation owner.

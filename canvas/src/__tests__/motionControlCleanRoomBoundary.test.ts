@@ -18,7 +18,7 @@ const REFERENCE_ALLOWLIST = new Set([
   'canvas/scripts/__tests__/motion-control-assets-and-docs.test.mjs',
   'canvas/src/__tests__/motionControlCleanRoomBoundary.test.ts',
   'docs/documents/agentic-graph-motion-capture-platform-api.md',
-  'docs/documents/agentic-graph-motion-control-prd-tad.md',
+  'docs/documents/agentic-graph-motion-control-prd-tad-adr-mvp-gtm.md',
 ])
 
 function repositoryFiles(root: string, repositoryRoot = root): readonly string[] {

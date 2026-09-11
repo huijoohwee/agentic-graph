@@ -14,8 +14,8 @@ const extractGeneratedSettingKeys = (document: string): string[] =>
     .filter((key): key is string => Boolean(key))
 
 export function testAgenticOsPromptContractDocsUseCanonicalImplementedNames() {
-  const mainPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-llm-prompt-contract-prd-tad.md')
-  const companionPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-llm-prompt-contract-prd-tad.companion.md')
+  const mainPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.md')
+  const companionPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.companion.md')
   const staleBaseName = 'agentic-graph-llm-prompt-contract-prd-tad-' + 'proposed'
   const staleMainPath = resolve(process.cwd(), '..', `docs/documents/${staleBaseName}.md`)
   const staleCompanionPath = resolve(process.cwd(), '..', `docs/documents/${staleBaseName}.companion.md`)
@@ -50,13 +50,13 @@ export function testAgenticOsPromptContractDocsUseCanonicalImplementedNames() {
     readFileSync(companionPath, 'utf8'),
     technicalArchitecture,
     technicalArchitectureSettings,
-    readRepoFile('docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.md'),
+    readRepoFile('docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md'),
   ].join('\n')
 
   const required = [
     'id: agentic-graph-llm-prompt-contract-prd-tad',
-    'See continuation in `agentic-graph-llm-prompt-contract-prd-tad.companion.md`',
-    'canonical_doc: docs/documents/agentic-graph-llm-prompt-contract-prd-tad.md',
+    'See continuation in `agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.companion.md`',
+    'canonical_doc: docs/documents/agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.md',
     'Typed AGENTIC_OS semantic graph',
     'canvas/src/features/parsers/agenticOsSemanticGraph.ts',
     'canvas/src/lib/graph/agenticOsSemanticQuery.ts',

@@ -2,7 +2,7 @@
 title: agentic-graph WeChat Mini Program And WeChat Pay Reference
 graphId: md:agentic-graph-wechat-mini-program
 product: "agentic-graph Canvas"
-doc_type: "Reference PRD/TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.2.0"
 owner: "joohwee"
 status: "reference-only-not-implemented"

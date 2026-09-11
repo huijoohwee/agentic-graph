@@ -495,6 +495,10 @@ const inferInvocationArtifact = (
   return ''
 }
 
+// Planning document identity is independent of the requested artifact's display label.
+export const resolveAgenticOsDocumentType = (artifact: string): string =>
+  /\b(?:PRD|TAD|ADR|MVP|GTM)\b/i.test(artifact) ? 'PRD-TAD-ADR-MVP-GTM' : artifact
+
 export const analyzeAgenticOsRequest = (requestText: string): AgenticOsRequestProfile => {
   const runtimeInvocation = resolveChatRuntimeInvocationQuery(requestText)
   const rawIntent = sanitizeRequestIntent(resolveChatRuntimeInvocationResponsiveQueryText(requestText), 900)

@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Agentic Travel Agencies — Flight Booking, Comparison Shopping & Shared-Canvas Primitive"
-doc_type: "Combined PRD/TAD/ADR"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.6.0"
 date: "2026-08-18"
 lang: "en-US"
@@ -11,7 +11,7 @@ lane: "main-integrated-awaiting-production-dispatch"
 universal_scope: false
 ---
 
-# agentic-graph Agentic Travel Agencies — Combined PRD/TAD/ADR
+# agentic-graph Agentic Travel Agencies — Combined PRD-TAD-ADR-MVP-GTM
 
 **Conformance note**: this document authors against `prd-tad-adr-mvp-gtm-guidelines.md` v1.7.0. `universal_scope: false` because this is a concrete product spec naming its actual chosen dependencies, not a reusable neutral guideline — the vendor names below are real integration targets, not swappable examples, and each is still introduced under a block whose text says "reference implementation" per the Scope & Neutrality Contract, since the rule applies regardless of surrounding intent. `local_rung` is raised only for locally implemented and focused-test-proven slices recorded below; `delivered_rung` remains `undocumented` because protected integration, production authorization, Cloudflare deployment, and live verification receipts do not yet exist. Raising either rung further requires re-deriving it from recorded Evidence References per Phase 4 — not editing this frontmatter by hand.
 

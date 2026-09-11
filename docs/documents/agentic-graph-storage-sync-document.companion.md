@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: agentic-graph Storage and Synchronization Owner Appendix"
 id: "md:agentic-graph-storage-sync-document.companion"
-doc_type: "TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "5.0.0"
 date: "2026-08-06"
 lang: "en-US"
@@ -340,9 +340,9 @@ Toasts and review actions are always updated; cache eviction never changes recor
 ## References
 
 - Parent contract: `docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md`
-- Superseded v4.1 contract pointer: `docs/documents/agentic-graph-storage-sync-document.md`
+- Superseded v4.1 contract pointer: `docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md`
 - Binary security contract: `docs/documents/agentic-graph-artifact-media-storage-architecture.md`
-- Superseded ADR archive: `docs/documents/agentic-graph-storage-sync-adrs-document.md`
-- Feishu Base contract: `docs/documents/agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad.md`
-- Lark App contract: `docs/documents/agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad.md`
+- Superseded ADR archive: `docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md`
+- Feishu Base contract: `docs/documents/agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad-adr-mvp-gtm.md`
+- Lark App contract: `docs/documents/agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad-adr-mvp-gtm.md`
 - Lark Docs API overview: https://open.larksuite.com/document/ukTMukTMukTM/uczNzUjL3czM14yN3MTN

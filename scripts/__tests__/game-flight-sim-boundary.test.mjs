@@ -21,11 +21,11 @@ test('accepts tracked content outside the Flight-owned boundary', () => {
 
 test('accepts canonical policy only while the generic clean-room markers remain', () => {
   assert.doesNotThrow(() => assertFlightSimBoundary([{
-    relativePath: 'docs/documents/agentic-graph-game-flight-sim-prd-tad.md',
+    relativePath: 'docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md',
     source: completePolicy,
   }]))
   assert.equal(findFlightSimBoundaryViolations([{
-    relativePath: 'docs/documents/agentic-graph-game-flight-sim-prd-tad.md',
+    relativePath: 'docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md',
     source: 'conceptual principles only',
   }]).length, 1)
 })

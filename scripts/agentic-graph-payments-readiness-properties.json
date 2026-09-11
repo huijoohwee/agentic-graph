@@ -534,7 +534,7 @@
           "contains": "refunded remains distinct from paid in the public status projection"
         },
         {
-          "file": "docs/documents/agentic-graph-payments-prd-tad.md",
+          "file": "docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md",
           "contains": "Production mirror publication and Cloudflare deployment require a separate explicit operator instruction"
         }
       ]

@@ -406,17 +406,17 @@ Feature contracts belong in canonical docs. Live task planning belongs only in t
 | Feature | Docs |
 | --- | --- |
 | Agentic Canvas OS control surface | `../agentic-canvas-os/docs/` |
-| Product and architecture | `docs/documents/agentic-graph-prd.md`, `docs/documents/agentic-graph-tad.md`, `docs/documents/agentic-graph-architecture-decisions.md` |
+| Product and architecture | `docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-requirements.md`, `docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-architecture.md`, `docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md` |
 | Live task planning | `../agentic-canvas-os/docs/TODO.md` and its active monthly shard |
 | 2D Renderer Storyboard template | `../huijoohwee.github.io/template/agentic-graph-2d-renderer-storyboard-template.md` |
-| Agentic Canvas OS PRD/TAD | `docs/documents/agentic-graph-mcp/agentic-graph-mcp-agentic-os-prd-tad.md` |
-| AI provider layer (MiroMindAI) | `docs/documents/agentic-graph-api-reference/agentic-graph-miromind-api-prd-tad.md` |
+| Agentic Canvas OS PRD/TAD | `docs/documents/agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md` |
+| AI provider layer (MiroMindAI) | `docs/documents/agentic-graph-api-reference/agentic-graph-miromind-api-prd-tad-adr-mvp-gtm.md` |
 | MCP | `docs/documents/agentic-graph-mcp/` and `mcp/README.md` |
 | Storage sync | `docs/documents/agentic-graph-storage-sync-document.companion.md` |
-| Strybldr | `docs/documents/agentic-graph-strybldr-prd-tad.md` |
-| Strytree | `docs/documents/agentic-graph-strytree-prd-tad.md` |
+| Strybldr | `docs/documents/agentic-graph-strybldr-prd-tad-adr-mvp-gtm.md` |
+| Strytree | `docs/documents/agentic-graph-strytree-prd-tad-adr-mvp-gtm.md` |
 | Repo hygiene | `docs/documents/agentic-graph-repo-hygiene-document.md` |
-| Payment readiness | `docs/documents/agentic-graph-mainpanel-commerce-prd-tad.md` |
+| Payment readiness | `docs/documents/agentic-graph-mainpanel-commerce-prd-tad-adr-mvp-gtm.md` |
 
 ## Hygiene rules
 

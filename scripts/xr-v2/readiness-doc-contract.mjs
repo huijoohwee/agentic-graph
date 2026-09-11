@@ -3,11 +3,11 @@ import { existsSync, readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 
 export const XR_V2_PINNED_DOCUMENT_REVISION =
-  '5e27c0ea4318760aaa3b726dc3951c1957814a9b'
-export const XR_V2_PINNED_DOCUMENT_BLOB = 'c671d48794c4f17aee675b7f70aee8c2a679492e'
-export const XR_V2_PINNED_DOCUMENT_BYTES = 101_934
+  '1272bae345edf0d132e6fc750d5c5c7eade00b29'
+export const XR_V2_PINNED_DOCUMENT_BLOB = 'ff41649ac8562b62c7c539baed2d226402fdfe51'
+export const XR_V2_PINNED_DOCUMENT_BYTES = 101_956
 export const XR_V2_PINNED_DOCUMENT_SHA256 =
-  'bd0028938b50cee04ffad99b06b334badc7991ecd1c81495efb7d8f556cf55ce'
+  '5067f019a099a94ec02d3f7581963cf2c514ab46bf5a853020df8dfe85d5ef45'
 
 const PINNED_DOCUMENT = Object.freeze({
   name: 'immutable pinned PRD/TAD/ADR',

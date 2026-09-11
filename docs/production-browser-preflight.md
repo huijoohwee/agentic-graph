@@ -1,6 +1,6 @@
 ---
 title: "Production browser preflight"
-doc_type: "PRD-TAD-ADR"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
 revision: 4

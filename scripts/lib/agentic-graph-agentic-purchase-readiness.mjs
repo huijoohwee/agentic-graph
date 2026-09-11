@@ -4,7 +4,7 @@ const blocker = (id, gate, detail) => Object.freeze({
   detail,
   evidence: Object.freeze([
     '.kiro/specs/agentic-graph-payments/requirements.md',
-    'docs/documents/agentic-graph-payments-prd-tad.md',
+    'docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md',
   ]),
 })
 

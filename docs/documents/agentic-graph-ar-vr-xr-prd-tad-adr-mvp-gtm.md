@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph AR/VR/XR — Device-Agnostic Capture, Viewing, Native In-Repo Spatial Authoring & Game Simulation"
-doc_type: "PRD/TAD/ADR"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "3.0.0"
 date: "2026-08-06"
 lang: "en-US"
@@ -669,7 +669,7 @@ flowchart TB
 **Component**: Behavior Graph Compiler
 **Responsibility**: Behavior Graph Compiler evaluates a node-based trigger/action graph into typed event-dispatch bindings against ECS Core, now receiving triggers from both the Collision Event Bridge and the Interaction Component in addition to authoring-time-defined triggers.
 **Interfaces**: `compileBehaviorGraph(graphDef): CompiledBehavior`
-**Dependencies**: ECS Core, shared Node Graph Engine, the `kgc-behavior-graph/v1` contract (see Integration Contracts), *Collision Event Bridge and Interaction Component (new upstream sources)*
+**Dependencies**: ECS Core, shared Node Graph Engine, the `agentic-os-behavior-graph/v1` contract (see Integration Contracts), *Collision Event Bridge and Interaction Component (new upstream sources)*
 **Configuration**: Trigger/action node-type registry, externalized
 **FOSS / Vendor**: FOSS — see **Reference implementation** in ADR-5
 **VCC Conditions**: AC-8, AC-14, AC-17
@@ -1308,7 +1308,7 @@ Rationale: all three features in this document are client-side capture/authoring
 | `#node-graph` | Tag | Material/Behavior Graph Compiler owners | — | read | 0 |
 | `#world` / `#body` / `#impulse` / `#controller` | Tag | Existing XR scene physics owner | — | read | 0 |
 | `@xr-capture-contract` | Binding | Asset Contract Writer owner | — | read | 0 |
-| `@kgc-behavior-graph-contract` | Binding | Behavior Graph Compiler owner | — | read | 0 |
+| `@agentic-os-behavior-graph-contract` | Binding | Behavior Graph Compiler owner | — | read | 0 |
 | `@xr-authoring-runtime` | Binding | ECS Core owner | — | read | 0 |
 | `@canvas` | Binding | Existing XR scene physics owner | — | read | 0 |
 

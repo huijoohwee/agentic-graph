@@ -3,7 +3,7 @@
 ## XR v2 pinned runtime-readiness contract
 
 The XR v2 gates trace the v3.0.0 authority pinned at
-`5e27c0ea4318760aaa3b726dc3951c1957814a9b`. The mounted demo contains the
+`1272bae345edf0d132e6fc750d5c5c7eade00b29`. The mounted demo contains the
 AC-1 through AC-12 deterministic, source, clean-room, and browser evidence
 paths; the exact-candidate reviewer gate proves the current local observation.
 The AC-14 collision bridge has separate focused source/unit proof and is not

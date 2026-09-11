@@ -310,17 +310,17 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeExcludesNonDocsWor
   const next = mergeWorkspaceEntriesIntoSourceFiles({
     existing: [],
     workspaceEntries: [
-      { kind: 'file', path: '/docs/documents/agentic-graph-storage-sync-document.md', parentPath: '/docs/documents', name: 'agentic-graph-storage-sync-document.md', text: '# docs', updatedAtMs: 1 },
+      { kind: 'file', path: '/docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md', parentPath: '/docs/documents', name: 'agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md', text: '# docs', updatedAtMs: 1 },
       { kind: 'file', path: nonDocsPath, parentPath: '/scratch', name: 'places-demo.md', text: '# demo', updatedAtMs: 1 },
     ],
     sourcesByPath: {
-      '/docs/documents/agentic-graph-storage-sync-document.md': { kind: 'local', originalName: 'agentic-graph-storage-sync-document.md' },
+      '/docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md': { kind: 'local', originalName: 'agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md' },
       [nonDocsPath]: { kind: 'local', originalName: 'places-demo.md' },
     },
     workspaceDocsOnly: true,
   })
 
-  const docs = next.find(f => f.source?.path === 'workspace:/docs/documents/agentic-graph-storage-sync-document.md')
+  const docs = next.find(f => f.source?.path === 'workspace:/docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md')
   if (!docs) throw new Error('expected docs mirror entry to remain in docs-only mode')
   const nonDocs = next.find(f => f.source?.path === `workspace:${nonDocsPath}`)
   if (nonDocs) throw new Error('expected non-docs workspace entries to be excluded in docs-only mode')
@@ -334,9 +334,9 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
     workspaceEntries: [
       {
         kind: 'file',
-        path: '/docs/documents/agentic-graph-storage-sync-document.md',
+        path: '/docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md',
         parentPath: '/docs/documents',
-        name: 'agentic-graph-storage-sync-document.md',
+        name: 'agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md',
         text: '# docs',
         updatedAtMs: 1,
       },
@@ -358,7 +358,7 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
       },
     ],
     sourcesByPath: {
-      '/docs/documents/agentic-graph-storage-sync-document.md': { kind: 'local', originalName: 'agentic-graph-storage-sync-document.md' },
+      '/docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md': { kind: 'local', originalName: 'agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md' },
       [chatRootPath]: { kind: 'local', originalName: 'agentic-os-trace_20260527T150000Z.md' },
       [nonCanonicalPath]: { kind: 'local', originalName: 'places-demo.md' },
     },
@@ -366,7 +366,7 @@ export async function testWorkspaceSourceFilesSyncDocsOnlyModeKeepsCanonicalChat
     workspaceSourceRootPaths: ['/docs', '/chat-log'],
   })
 
-  const docs = next.find(f => f.source?.path === 'workspace:/docs/documents/agentic-graph-storage-sync-document.md')
+  const docs = next.find(f => f.source?.path === 'workspace:/docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md')
   if (!docs) throw new Error('expected docs canonical workspace source file to remain visible')
   const chatLog = next.find(f => f.source?.path === `workspace:${chatRootPath}`)
   if (!chatLog) throw new Error('expected canonical chat workspace source file to remain visible in Source Files')
@@ -487,7 +487,7 @@ export async function testWorkspaceSeedSourceFilesResolveCurrentSeedsToCanonical
   if (resolveWorkspaceSeedSourcePath(GEOSPATIAL_WORKSPACE_SEED_PATH) !== GEOSPATIAL_WORKSPACE_SOURCE_PATH) {
     throw new Error('expected geospatial workspace seed path to resolve onto the canonical geospatial source-file path')
   }
-  if (resolveWorkspaceSeedSourcePath('/docs/documents/agentic-graph-storage-sync-document.md') !== 'workspace:/docs/documents/agentic-graph-storage-sync-document.md') {
+  if (resolveWorkspaceSeedSourcePath('/docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md') !== 'workspace:/docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md') {
     throw new Error('expected docs-mirrored workspace paths to resolve into canonical workspace source-file paths')
   }
   if (

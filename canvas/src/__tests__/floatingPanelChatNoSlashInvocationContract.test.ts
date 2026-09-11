@@ -213,7 +213,7 @@ export function testAgenticOsPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
     'PRD — Product Requirements',
     'TAD — Technical Architecture',
     'title: "PRD/TAD create',
-    'doc_type: "PRD + TAD"',
+    'doc_type: "PRD-TAD-ADR-MVP-GTM"',
     'artifact: "PRD + TAD"',
     'product: "/prd-tad.create',
     'Product: /prd-tad.create',
@@ -249,7 +249,7 @@ export function testAgenticOsPrdTadSlashTraceUsesResponseOnlyNoBackfill() {
     'PRD — Product Requirements',
     'TAD — Technical Architecture',
     'title: "PRD/TAD create',
-    'doc_type: "PRD + TAD"',
+    'doc_type: "PRD-TAD-ADR-MVP-GTM"',
     'artifact: "PRD + TAD"',
     'objective: "deliver PRD + TAD"',
   ]) {

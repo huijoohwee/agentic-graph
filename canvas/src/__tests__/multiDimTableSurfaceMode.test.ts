@@ -11,7 +11,7 @@ import {
   readStructuredSourceFieldLineMode,
   readStructuredSourceRowHeightPreset,
 } from '@/features/markdown-workspace/main/viewer/workspaceStructuredSourceDataViewPresentation'
-import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
+import { resolveRepoSourcePath, resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 
 const readQuotedYamlValue = (line: string): string =>
   String(line || '')
@@ -319,7 +319,7 @@ export function testMultiDimTableStructuredSourceMetadataBuildsVisibleTable() {
 
 export function testMultiDimTableYamlFrontmatterReflectsStrybldrValidationSource() {
   const externalValidationInput = String(process.env.AG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO || '').trim()
-  const sourcePath = externalValidationInput || resolveSiblingFixturePath('huijoohwee', 'docs/agenticgraph-strybldr-starter-template.md')
+  const sourcePath = externalValidationInput || resolveRepoSourcePath('docs/workspace-seeds/agentic-graph-strybldr-starter-template.md')
   const sourceText = fs.readFileSync(sourcePath, { encoding: 'utf8' })
   const validationKey = 'validation_input_forbid_hardcode_in_repo'
   const storyboardKey = 'strybldr_storyboard'

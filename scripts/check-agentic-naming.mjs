@@ -7,7 +7,7 @@ const checkerPath = 'scripts/check-agentic-naming.mjs'
 const forbidden = [
   { label: 'retired product namespace', expression: /knowgrph/i },
   { label: 'collapsed product namespace', expression: /agenticgraph/ },
-  { label: 'retired canvas protocol token', expression: /\bkgc\b/i },
+  { label: 'retired canvas protocol token', expression: /\b(?:kgc(?=[_:\/-]|\b|[A-Z])|KGC(?=[_:\/-]|\b)|Kgc(?=[A-Z_]))/ },
   { label: 'retired canvas environment prefix', expression: /\b(?:KG|kg)_/ },
   { label: 'retired compact graph namespace', expression: /knowledgegraph/i },
   { label: 'retired hyphenated graph namespace', expression: /knowledge-graph/i },
@@ -16,10 +16,8 @@ const forbidden = [
 ]
 
 const allowedLegacyTokensByPath = new Map([
-  ['docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md', [
-    { token: 'kgc-behavior-graph/v1', count: 1 },
-    { token: '@kgc-behavior-graph-contract', count: 1 },
-  ]],
+  // Exact negative fixture; never exempt its containing test directory.
+  ['scripts/__tests__/planning-naming.test.mjs', [{ token: 'kgc-computing-flow/v1', count: 1 }]],
   ['cloudflare/workers/agentic-graph-mcp/wrangler.toml', [
     { token: 'v1_knowgrph_mcp_agent', count: 3 },
     { token: 'v3_rename_knowgrph_mcp_agent', count: 3 },
@@ -36,13 +34,14 @@ const allowedLegacyTokensByPath = new Map([
     { token: 'v1_knowgrph_canvas_sync_room', count: 1 },
     { token: 'v2_rename_knowgrph_canvas_sync_room', count: 1 },
   ]],
+  ['scripts/__tests__/runtime-release-migrations.test.mjs', [{ token: '0001_knowgrph_storage.sql', count: 2 }]],
   ['scripts/legacy-mirror-inventory.mjs', [{ token: 'agenticgraph', count: 1 }, { token: 'knowgrph', count: 1 }]],
-  ['scripts/mirror-namespace-contract.mjs', [{ token: 'agenticgraph', count: 52 }, { token: 'knowgrph', count: 4 }]],
-  ['scripts/pages-mirror-headers.mjs', [{ token: 'agenticgraph', count: 3 }, { token: 'knowgrph', count: 3 }]],
+  ['scripts/mirror-namespace-contract.mjs', [{ token: 'agenticgraph', count: 55 }, { token: 'knowgrph', count: 4 }]],
+  ['scripts/pages-mirror-headers.mjs', [{ token: 'agenticgraph', count: 4 }, { token: 'knowgrph', count: 4 }]],
   ['scripts/pages-mirror-sync.mjs', [{ token: 'agenticgraph', count: 2 }, { token: 'knowgrph', count: 2 }]],
   ['scripts/pages-mirror-legacy-cleanup.mjs', [{ token: 'agenticgraph', count: 3 }, { token: 'knowgrph', count: 3 }]],
   ['scripts/__tests__/production-mirror-artifact.test.mjs', [{ token: 'agenticgraph', count: 9 }, { token: 'knowgrph', count: 9 }]],
-  ['scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs', [{ token: 'agenticgraph', count: 3 }, { token: 'knowgrph', count: 10 }]],
+  ['scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs', [{ token: 'agenticgraph', count: 11 }, { token: 'knowgrph', count: 14 }]],
   ['scripts/xr-v2/production-publish-contract.mjs', [{ token: 'knowgrph', count: 6 }]],
   ['canvas/src/__tests__/agentGraphProjectionCompatibility.test.ts', [
     { token: 'knowledgeGraphProjection', count: 3 },
@@ -84,17 +83,27 @@ const allowedLegacyTokensByPath = new Map([
   ]],
 ])
 
-const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+const trackedFiles = execFileSync('git', ['ls-files', '-co', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' })
   .split('\0')
+  .filter((value, index, values) => values.indexOf(value) === index)
   .filter(Boolean)
   .filter(relativePath => relativePath !== checkerPath)
 
 const violations = []
 for (const relativePath of trackedFiles) {
   const absolutePath = path.resolve(root, relativePath)
+  if (!fs.existsSync(absolutePath)) continue
   const content = fs.readFileSync(absolutePath)
   if (content.includes(0)) continue
   const text = content.toString('utf8')
+  if (relativePath.startsWith('docs/') && relativePath.endsWith('.md')
+    && relativePath.includes('prd-tad-adr-mvp-gtm')
+    && !relativePath.endsWith('-conformance-report.md')) {
+    const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1] ?? ''
+    if (!/^doc_type: "PRD-TAD-ADR-MVP-GTM"$/m.test(frontmatter)) {
+      violations.push(`${relativePath}: planning frontmatter must declare the canonical doc_type`)
+    }
+  }
   let scanText = text
   for (const { token, count } of allowedLegacyTokensByPath.get(relativePath) ?? []) {
     const actual = text.split(token).length - 1

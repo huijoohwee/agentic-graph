@@ -11,7 +11,7 @@ author: "airvio / joohwee"
 domain: "agentic-graph"
 lang: "en-US"
 frontmatter_contract: "required"
-companion_document: "docs/documents/agentic-graph-payments-prd-tad.md"
+companion_document: "docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md"
 companion_document_state: "populated"
 runtime_readiness_command: "npm run payment:runtime:readiness"
 local_vcc_command: "npm run payment:local:vcc"
@@ -52,8 +52,8 @@ tags:
   - "offline-first"
   - "mcp"
 related:
-  - "docs/documents/agentic-graph-agentic-commerce-prd-tad.md"
-  - "docs/documents/agentic-graph-mainpanel-commerce-prd-tad.md"
+  - "docs/documents/agentic-graph-agentic-commerce-prd-tad-adr-mvp-gtm.md"
+  - "docs/documents/agentic-graph-mainpanel-commerce-prd-tad-adr-mvp-gtm.md"
   - "docs/documents/agentic-graph-api-reference/agentic-graph-stripe-api-reference.md"
   - "grph-shared/src/payments/stripePaymentSsot.ts"
   - "grph-shared/src/payments/stripeMcpSsot.ts"
@@ -78,8 +78,8 @@ This increment consolidates and extends existing repository owners. Stripe hoste
 Checkout, Agentic Commerce Protocol checkout sessions, x402 probes, Solana Pay
 settlement, D1 webhook processing state, and the MainPanel Commerce surface are
 already accepted and implemented under
-`docs/documents/agentic-graph-agentic-commerce-prd-tad.md` and
-`docs/documents/agentic-graph-mainpanel-commerce-prd-tad.md`. The genuinely new surface
+`docs/documents/agentic-graph-agentic-commerce-prd-tad-adr-mvp-gtm.md` and
+`docs/documents/agentic-graph-mainpanel-commerce-prd-tad-adr-mvp-gtm.md`. The genuinely new surface
 area in this spec is: an explicit rail-selection contract, the StraitsX rail, an
 offline intent queue with reconnect reconciliation, a serialized payment record and
 receipt projection with a round-trip guarantee, and a stated agent-platform
@@ -101,7 +101,7 @@ documentation, it is recorded under Open Questions rather than assumed.
 
 ### Authority and Scope
 
-This file is the normative requirements source of truth for agentic-graph Payments. The populated companion PRD/TAD at `docs/documents/agentic-graph-payments-prd-tad.md` carries architecture, topology, ADRs, harness contracts, the implementation gap matrix, and delivery order. No separate `design.md` or `tasks.md` is authoritative for this increment; `payment:runtime:readiness` maps each requirement to repository evidence and reports incomplete owners without relabelling them ready.
+This file is the normative requirements source of truth for agentic-graph Payments. The populated companion PRD/TAD at `docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md` carries architecture, topology, ADRs, harness contracts, the implementation gap matrix, and delivery order. No separate `design.md` or `tasks.md` is authoritative for this increment; `payment:runtime:readiness` maps each requirement to repository evidence and reports incomplete owners without relabelling them ready.
 
 This increment carries development authority only; production mirror publication and Cloudflare deployment require a separate explicit instruction.
 
@@ -1314,7 +1314,7 @@ second card or order.
 | Existing `agentic-graph-payment` Cloudflare Worker and its D1 binding | Zero-TCO (existing free-tier binding) | Already the payment trust boundary; reuse avoids a new tier. |
 | Existing shared payment SSOT modules (`stripePaymentSsot`, `stripeMcpSsot`, `straitsxPaymentSsot`, `paymentBuyerProductSsot`, `agenticCommerceSsot`) | FOSS / repository-owned | Route, credential-name, provider-contract, fund-flow, buyer-product, and MCP configuration authority already exists; duplicating it would split ownership. |
 | Existing external-tool Approval_Gate owner | FOSS / repository-owned | Spend authorization must not be reimplemented per rail. |
-| Existing MainPanel Commerce surface | FOSS / repository-owned | Payments remains a Commerce subsection, per `agentic-graph-mainpanel-commerce-prd-tad.md`. |
+| Existing MainPanel Commerce surface | FOSS / repository-owned | Payments remains a Commerce subsection, per `agentic-graph-mainpanel-commerce-prd-tad-adr-mvp-gtm.md`. |
 | Stripe API and hosted Checkout | Proprietary, justified inline | No FOSS alternative provides global card acquiring. Cost is per-transaction and variable; fixed monthly TCO stays $0. Chosen because Stripe recommends Checkout Sessions for most integrations and documents idempotency and signed webhooks ([Stripe API](https://docs.stripe.com/api)). |
 | Stripe MCP hosted server (`https://mcp.stripe.com`) | Proprietary, justified inline | Only first-party MCP surface for the Stripe account. Federated as an optional transport behind human confirmation; excluding it would require a bespoke tool layer. The Public Preview `get_balance_summary` Treasury tool is excluded ([Stripe MCP](https://docs.stripe.com/mcp)). |
 | StraitsX API (sandbox first) | Proprietary, justified inline | Regulated SGD rails, PayNow, and XSGD issuance have no FOSS substitute. Access depends on an approved use case and integration model ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). |
@@ -1325,7 +1325,7 @@ second card or order.
 ## Open Questions
 
 Open questions use one shared `OQ-N` identifier space with the companion PRD/TAD at
-`docs/documents/agentic-graph-payments-prd-tad.md`. An id means the same question in both
+`docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md`. An id means the same question in both
 documents, so a resolution recorded against `OQ-7` here closes `OQ-7` there. Ids are
 never reused or renumbered once assigned; a withdrawn question keeps its id and is
 marked resolved.
@@ -1408,7 +1408,7 @@ expected rather than defects.
 1. The existing `agentic-graph-payment` Worker remains the only server-side payment trust
    boundary; this increment extends it rather than replacing it.
 2. Stripe hosted Checkout, ACP checkout sessions, x402 probes, and Solana Pay
-   settlement remain owned by `agentic-graph-agentic-commerce-prd-tad.md`; this spec adds
+   settlement remain owned by `agentic-graph-agentic-commerce-prd-tad-adr-mvp-gtm.md`; this spec adds
    rail selection, the StraitsX rail, offline queueing, and record serialization on
    top of them.
 3. A Stripe account with sandbox access is available; a StraitsX sandbox account is

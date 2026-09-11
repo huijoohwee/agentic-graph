@@ -4,7 +4,7 @@ const KIRO_POLICY_DOCUMENT_PATHS = Object.freeze([
 ])
 
 const POLICY_DOCUMENT_PATHS = new Set([
-  'docs/documents/agentic-graph-game-flight-sim-prd-tad.md',
+  'docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md',
   'docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md',
   ...KIRO_POLICY_DOCUMENT_PATHS,
 ])

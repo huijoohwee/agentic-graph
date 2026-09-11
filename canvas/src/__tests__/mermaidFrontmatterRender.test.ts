@@ -150,7 +150,7 @@ const resolveMermaidDocCandidates = (): string[] => {
   const cwd = process.cwd()
   return [
     resolveRepoTestDataPath('md-demo-00.md'),
-    path.resolve(cwd, '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad.md'),
+    path.resolve(cwd, '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad-adr-mvp-gtm.md'),
   ]
 }
 

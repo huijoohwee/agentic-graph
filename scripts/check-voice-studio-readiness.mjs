@@ -45,7 +45,7 @@ const requiredPaths = [
   "canvas/src/features/voice-studio/VoiceStudioPanel.tsx",
   "canvas/src/__tests__/voiceStudioPanelLifecycle.test.tsx",
   "canvas/src/__tests__/voiceStudioRuntime.test.ts",
-  "docs/documents/agentic-graph-ai-voice-studio-prd-tad.md",
+  "docs/documents/agentic-graph-ai-voice-studio-prd-tad-adr-mvp-gtm.md",
 ];
 
 for (const relativePath of requiredPaths) {
@@ -69,7 +69,7 @@ if (implementationSources.some(source => /github\.com\/jamiepine|docs\.voicebox\
   fail("Voice Studio implementation must not contain a Voicebox runtime or source reference");
 }
 
-const prd = await read("docs/documents/agentic-graph-ai-voice-studio-prd-tad.md");
+const prd = await read("docs/documents/agentic-graph-ai-voice-studio-prd-tad-adr-mvp-gtm.md");
 const prdNormalized = prd.replace(/\s+/g, " ");
 for (const required of [
   `https://github.com/jamiepine/voicebox/tree/${VOICEBOX_REVIEWED_REVISION}`,

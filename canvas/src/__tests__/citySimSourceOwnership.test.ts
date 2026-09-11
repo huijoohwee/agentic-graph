@@ -348,7 +348,7 @@ export function testCitySimOwnedFilesRetainCleanRoomIdentityBoundary() {
       repositoryRoot,
       'docs',
       'documents',
-      'agentic-graph-game-city-building-sim-prd-tad-ard.md',
+      'agentic-graph-game-city-building-sim-prd-tad-adr-mvp-gtm.md',
     ),
     resolve(
       repositoryRoot,

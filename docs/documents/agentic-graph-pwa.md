@@ -10,13 +10,13 @@
 **Date**: 2026-07-23
 **Status**: Deployed (manifest, revision refresh, asset cache, install button, share target, release proof)
 **Owner**: agentic-graph canonical docs
-**Cross-references**: `agentic-graph-storage-sync-document.md` (deployment topology), `agentic-canvas-os/todo/2026-05.md` (migrated 2026-05-08 planning history)
+**Cross-references**: `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md` (deployment topology), `agentic-canvas-os/todo/2026-05.md` (migrated 2026-05-08 planning history)
 
 ## Companion Files
 
 | File | Scope |
 |---|---|
-| `agentic-graph-storage-sync-document.md` | Cloudflare Pages deployment, D1 sync, publish topology |
+| `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md` | Cloudflare Pages deployment, D1 sync, publish topology |
 
 ---
 

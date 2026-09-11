@@ -120,7 +120,7 @@ Export HTML Canvas specifics: `agentic-graph/docs/documents/agentic-graph-html-c
 - Market report nodes must keep claim ids tied to source-card ids and evidence levels. Canvas can visualize confidence, gaps, and next-test recommendations, but it must not upgrade weak evidence into strong claims or mutate product-roadmap graph state without a separate approved apply step.
 - Starter repo nodes must remain dry-run blueprint state until approval; Canvas may visualize file manifests and preflight gaps, but it must not imply copied scaffolds, generated secrets, or deployed infrastructure.
 - Learning nodes must keep source trace ids, confidence, scope, expiry/review state, redaction status, and approval state visible. Canvas can visualize candidate skills and identity facets, but it must not auto-promote skills, hide identity drift, learn from draft/aborted turns, or send private memory to deployed public MCP surfaces.
-- Detailed lane payloads live in `agentic-graph-mcp-agentic-os-prd-tad.companion.md`; this Canvas document owns renderer/path invariants only.
+- Detailed lane payloads live in `agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md`; this Canvas document owns renderer/path invariants only.
 - The dashboard runtime state machine is bounded to `draft -> profiled -> planned -> dry_run_ready -> approval_required -> approved -> executing -> verified/failed/blocked -> archived`; loops must honor the Agentic Canvas OS max-iteration and token/TCO budget contract.
 
 ### Preview Contract (SSOT)

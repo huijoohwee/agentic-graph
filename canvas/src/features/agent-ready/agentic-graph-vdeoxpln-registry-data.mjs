@@ -211,7 +211,7 @@ export const buildRawAgenticGraphVdeoxplnRegistry = ({
       "canvas/src/components/StoryboardCanvas/storyboardModel.ts",
       "canvas/src/lib/config.render.ts",
       "canvas/src/lib/graph/semanticKey.ts",
-      "docs/documents/agentic-graph-strybldr-prd-tad.md",
+      "docs/documents/agentic-graph-strybldr-prd-tad-adr-mvp-gtm.md",
     ],
     tools: {
       published: [],
@@ -259,7 +259,7 @@ export const buildRawAgenticGraphVdeoxplnRegistry = ({
       "canvas/src/components/StoryboardCanvas/storyboardModel.ts",
       "canvas/src/lib/config.render.ts",
       "canvas/src/lib/graph/semanticKey.ts",
-      "docs/documents/agentic-graph-vdeoxpln-prd-tad.md",
+      "docs/documents/agentic-graph-vdeoxpln-prd-tad-adr-mvp-gtm.md",
     ],
     tools: {
       published: [],
@@ -311,7 +311,7 @@ export const buildRawAgenticGraphVdeoxplnRegistry = ({
       "mcp/persistent-memory-invocation-runtime.js",
       "mcp/local-tool-contract.js",
       "mcp/server.js",
-      "docs/documents/agentic-graph-ai-agents-memory-layer-prd-tad.md",
+      "docs/documents/agentic-graph-ai-agents-memory-layer-prd-tad-adr-mvp-gtm.md",
     ],
     tools: {
       published: [],
@@ -366,7 +366,7 @@ export const buildRawAgenticGraphVdeoxplnRegistry = ({
     triggers: ["ai voice studio", "voice clone", "dictation", "speech to text", "text to speech", "/voice.studio", "#voice-clone", "#speech-to-text", "#text-to-speech", "@voice-profile", "@audio", "@text", "@approval-gate", "@cost-log", "@runtime-proof"],
     inputs: ["digest-bound audio artifact reference", "voice rights manifest", "recording consent", "text", "locale", "paid-call approval"],
     outputs: ["voice profile manifest", "editable transcript", "disclosed system-voice preview", "digest-bound audio artifact receipt"],
-    owners: ["contracts/voice-studio.schema.js", "mcp/voice-studio-tool-contract.js", "mcp/voice-studio-runtime.js", "canvas/src/features/voice-studio", "docs/documents/agentic-graph-ai-voice-studio-prd-tad.md"],
+    owners: ["contracts/voice-studio.schema.js", "mcp/voice-studio-tool-contract.js", "mcp/voice-studio-runtime.js", "canvas/src/features/voice-studio", "docs/documents/agentic-graph-ai-voice-studio-prd-tad-adr-mvp-gtm.md"],
     tools: { published: [], browserLocal: [], local: [AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.voiceStudio, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.vdeoxplnList] },
     workflow: ["Resolve one exact /voice.studio # @ route.", "Keep original audio and the browser profile manifest session-local; durable artifacts remain with existing media/workspace or host owners.", "Use rights-gated visible, stoppable browser capture or disclosed system-voice preview.", "Dispatch live provider work only through a host-injected adapter after exact rights and paid-call approval.", "Return sanitized evidence without raw audio, embeddings, credentials, or filesystem paths."],
     aiPolicy: { mode: "optional-host-adapter", maxAttempts: 1, tokenBudget: "operator-approved", fallback: "Return deterministic zero-call planning evidence or a typed adapter-unavailable result." },

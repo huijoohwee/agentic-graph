@@ -11,7 +11,7 @@ kgFrontmatterModeEnabled: true
 kgMultiDimTableModeEnabled: true
 kgDocumentStructureBaselineLock: false
 kgSharedRendererContract: {"version": "shared-renderer-contract/v1", "semanticIdentity": "buildScopedGraphSemanticKey", "cardPreview": "CardMediaPreview + CardMarkdownPreview", "widgetCard": "canvas:widgetCard", "richMediaPanel": "RichMediaPanel", "storyboardDisplay": "2D Renderer: Storyboard Card (default) and Widget variants", "storyboardSurfaces": ["Cards", "Widgets", "Rich Media Panels"], "edgeModel": "active graph edges from the selected source graph", "timelineSurface": "TimelineTransportControls + shared bottom-panel surface", "rendererPolicy": "frontmatter and source payloads own data; renderers project view state only"}
-source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/knowgrph-maps-places.md", "sha256": "9e867949c5b0579c9b7a66499f1487e5b6c45c6b7e71a31ba48fcd6828839f91", "restoration": "Source recovery; historical readiness claims require current validation."}
+source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/agentic-graph-maps-places.md", "sha256": "9e867949c5b0579c9b7a66499f1487e5b6c45c6b7e71a31ba48fcd6828839f91", "restoration": "Source recovery; historical readiness claims require current validation."}
 ---
 
 # GrabMaps Place — New Cafe Site Selection v1.1 (Singapore)

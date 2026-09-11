@@ -8,7 +8,7 @@ kgFrontmatterModeEnabled: true
 kgMultiDimTableModeEnabled: false
 kgDocumentStructureBaselineLock: false
 kgSharedRendererContract: {"version": "shared-renderer-contract/v1", "semanticIdentity": "buildScopedGraphSemanticKey", "cardPreview": "CardMediaPreview + CardMarkdownPreview", "widgetCard": "canvas:widgetCard", "richMediaPanel": "RichMediaPanel", "storyboardDisplay": "2D Renderer: Storyboard Card (default) and Widget variants", "storyboardSurfaces": ["Cards", "Widgets", "Rich Media Panels"], "edgeModel": "active graph edges from the selected source graph", "timelineSurface": "TimelineTransportControls + shared bottom-panel surface", "rendererPolicy": "frontmatter and source payloads own data; renderers project view state only"}
-source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/knowgrph-storyboard-demo-index.md", "sha256": "80e1b7d3dd28667519e7287a1484596d6dd57a9c77aec8f036a934c2d4c87174", "restoration": "Source recovery; historical readiness claims require current validation."}
+source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/agentic-graph-storyboard-demo-index.md", "sha256": "80e1b7d3dd28667519e7287a1484596d6dd57a9c77aec8f036a934c2d4c87174", "restoration": "Source recovery; historical readiness claims require current validation."}
 ---
 
 # Agentic Graph Storyboard Demo

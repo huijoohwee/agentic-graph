@@ -22,17 +22,17 @@ const AGENTIC_OS_ROOT = path.resolve(HERE, '..', '..')
 const GITHUB_ROOT = path.resolve(HERE, '..', '..', '..')
 
 // The two fix-target documents (observation-first: read the REAL files).
-export const PRD_TAD_PATH = path.join(AGENTIC_OS_ROOT, 'docs', 'documents', 'agentic-graph-strytree-prd-tad.md')
+export const PRD_TAD_PATH = path.join(AGENTIC_OS_ROOT, 'docs', 'documents', 'agentic-graph-strytree-prd-tad-adr-mvp-gtm.md')
 export const DEMO_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agentic-graph-agentic-canvas-os-demo.md')
 
 // The renderer-agnostic 2D renderer set (design glossary `rendererAgnostic`).
 export const RENDERER_SET = ['storyboard']
 
 const STRYTREE_COMPANIONS = [
-  ['agentic-graph-strytree-tad-architecture.md', '# Part C -'],
-  ['agentic-graph-strytree-tad-workflows-api.md', '## C6.'],
-  ['agentic-graph-strytree-tad-runtime-validation.md', '## C8.'],
-  ['agentic-graph-strytree-adr-validation.md', '# Part D -'],
+  ['agentic-graph-strytree-prd-tad-adr-mvp-gtm-architecture.md', '# Part C -'],
+  ['agentic-graph-strytree-prd-tad-adr-mvp-gtm-workflows-api.md', '## C6.'],
+  ['agentic-graph-strytree-prd-tad-adr-mvp-gtm-runtime-validation.md', '## C8.'],
+  ['agentic-graph-strytree-prd-tad-adr-mvp-gtm-validation.md', '# Part D -'],
 ]
 
 // Exact ordered owners only: bounded fresh reads, no recursive discovery.
@@ -62,8 +62,8 @@ export function readDoc(p) {
   for (const [name, heading] of STRYTREE_COMPANIONS) {
     const file = path.join(path.dirname(p), name)
     const { frontmatter, body } = splitFrontmatter(readPart(file))
-    const prefix = '\n[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad.md).\n\n'
-    if (!frontmatter.includes('source_contract: "./agentic-graph-strytree-prd-tad.md"') ||
+    const prefix = '\n[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md).\n\n'
+    if (!frontmatter.includes('source_contract: "./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md"') ||
         !body.startsWith(prefix + heading)) throw new Error(`Invalid Strytree companion: ${file}`)
     const content = body.slice(prefix.length)
     combinedBytes += 1 + Buffer.byteLength(content)

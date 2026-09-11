@@ -39,7 +39,8 @@ const writeFile = async (root, relativePath, body) => {
 }
 
 const initializeRepository = root => {
-  runGit(root, ['init', '--quiet'])
+  runGit(root, ['init', '--quiet', '--initial-branch=main'])
+  runGit(root, ['config', 'core.excludesFile', '/dev/null'])
   runGit(root, ['config', 'user.name', 'Runtime Test'])
   runGit(root, ['config', 'user.email', 'runtime-test@example.com'])
   runGit(root, ['add', '-A'])

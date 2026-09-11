@@ -5,7 +5,7 @@ const readRepoFile = (repoRelativePath: string): string =>
   readFileSync(resolve(process.cwd(), '..', repoRelativePath), 'utf8')
 
 export function testManusPrdTadStaysReferenceOnlyUntilSourceOwnersExist(): void {
-  const docs = readRepoFile('docs/documents/agentic-graph-manus-prd-tad.md')
+  const docs = readRepoFile('docs/documents/agentic-graph-manus-prd-tad-adr-mvp-gtm.md')
 
   const requiredDocTokens = [
     '**Status**: Reference-only, not implemented',

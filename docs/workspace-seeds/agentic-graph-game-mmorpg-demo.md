@@ -184,7 +184,7 @@ flow:
 
 This Source Files document is the design record for a planned browser-local, **offline single-player MMO-style RPG world**. It opens as a neutral 2D Flow Canvas with operator panels closed; it does not activate XR, mount an MMORPG panel, register MCP tools, or start a runtime.
 
-A **networked massively-multiplayer** shared world conflicts with the zero-infra, local-first, offline-first, and no-Supabase constraints and is **out of scope**. The target design is an offline, single-player, "MMO-flavored" world (zones, NPCs, quests, inventory, progression). See `docs/documents/agentic-graph-game-mmorpg-prd-tad.md`.
+A **networked massively-multiplayer** shared world conflicts with the zero-infra, local-first, offline-first, and no-Supabase constraints and is **out of scope**. The target design is an offline, single-player, "MMO-flavored" world (zones, NPCs, quests, inventory, progression). See `docs/documents/agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md`.
 
 ## Inspect the draft
 

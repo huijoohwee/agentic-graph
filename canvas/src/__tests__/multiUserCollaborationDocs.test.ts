@@ -6,8 +6,8 @@ const readRepoFile = (repoRelativePath: string): string =>
 
 export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(): void {
   const docs = [
-    'docs/documents/agentic-graph-multi-user-collaboration-prd.tad.md',
-    'docs/documents/agentic-graph-multi-user-collaboration-prd.tad.companion.md',
+    'docs/documents/agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md',
+    'docs/documents/agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.companion.md',
   ].map(readRepoFile).join('\n')
   const owners = [
     'canvas/src/features/panels/mainPanelTabs.ts',

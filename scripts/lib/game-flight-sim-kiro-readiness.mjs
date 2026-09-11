@@ -14,8 +14,8 @@ export const FLIGHT_SIM_KIRO_INVENTORY = Object.freeze([
   'tasks.md',
 ])
 export const FLIGHT_SIM_KIRO_TRACKED_REFERENCES = Object.freeze([
-  'docs/documents/agentic-graph-agentic-entity-component-system-prd-tad.md',
-  'docs/documents/agentic-graph-game-flight-sim-prd-tad.md',
+  'docs/documents/agentic-graph-agentic-entity-component-system-prd-tad-adr-mvp-gtm.md',
+  'docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md',
   'docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md',
 ])
 
@@ -38,8 +38,8 @@ const REQUIRED_SOURCE_MARKERS = Object.freeze({
     'repository-tracked design is part of the normative `.kiro/specs/agentic-graph-game-flight-sim` source of truth',
     'are derived implementation/proof projections',
     'workspace-root Kiro copy is a byte-identical local projection only',
-    '`docs/documents/agentic-graph-agentic-entity-component-system-prd-tad.md`',
-    '`docs/documents/agentic-graph-game-flight-sim-prd-tad.md`',
+    '`docs/documents/agentic-graph-agentic-entity-component-system-prd-tad-adr-mvp-gtm.md`',
+    '`docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md`',
     '`docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md`',
     'Exact fixed `1 / 60` second (approximately 16.667 ms, 60 Hz) timestep',
     '| 1 | `InputIntegrationSystem` |',

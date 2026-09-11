@@ -1,4 +1,4 @@
-import { analyzeAgenticOsRequest, sanitizeRequestIntent, sanitizeScalar } from './chatAgenticOsRequestProfile'
+import { analyzeAgenticOsRequest, resolveAgenticOsDocumentType, sanitizeRequestIntent, sanitizeScalar } from './chatAgenticOsRequestProfile'
 import {
   buildNamedTermSummary,
   fallbackActor,
@@ -82,7 +82,7 @@ const buildResponseOnlyFrontmatter = (args: {
   return [
     `title: ${JSON.stringify(title)}`,
     `graphId: ${JSON.stringify(graphId)}`,
-    `doc_type: ${JSON.stringify(artifact)}`,
+    `doc_type: ${JSON.stringify(resolveAgenticOsDocumentType(artifact))}`,
     'date: "{{date}}"',
     'ai_model: "model-unknown"',
     'lang: "en-US"',
@@ -170,7 +170,7 @@ export const buildFrontmatter = (args: {
   return [
     `title: ${JSON.stringify(title)}`,
     `graphId: ${JSON.stringify(graphId)}`,
-    `doc_type: ${JSON.stringify(artifact)}`,
+    `doc_type: ${JSON.stringify(resolveAgenticOsDocumentType(artifact))}`,
     'date: "{{date}}"',
     'ai_model: "model-unknown"',
     'lang: "en-US"',

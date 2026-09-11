@@ -164,7 +164,7 @@ export const CHAT_BASE_AGENTIC_OS_RESPONSE_CONTRACT_PROMPT = [
   '   graphId, doc_type, date, ai_model, and lang MUST be concrete resolved strings.',
   '   title SHOULD resolve when product context is known; otherwise use the canonical',
   '   {{product}}-projected title without fabricating a product.',
-  '   doc_type: resolved from request context (e.g. "PRD + TAD", "Chat Response").',
+  '   doc_type: resolved from request context (planning: "PRD-TAD-ADR-MVP-GTM"; otherwise e.g. "Chat Response").',
   '   title: "<product slug> · AI Pipeline — <doc_type>" using resolved values.',
   '',
   '2. $schema: "agentic-os-pipeline/v1"  [LOCKED]',

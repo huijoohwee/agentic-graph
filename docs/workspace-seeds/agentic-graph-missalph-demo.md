@@ -22,7 +22,7 @@ kgFloatingPanelOpen: true
 kgFloatingPanelView: "gitGraph"
 kgSharedRendererContract: {"semanticIdentity": "buildScopedGraphSemanticKey", "cardPreview": "CardMediaPreview + CardMarkdownPreview", "widgetCard": "canvas:widgetCard", "richMediaPanel": "RichMediaPanel", "storyboardDisplay": "2D Renderer: Storyboard Card (default) and Widget variants", "storyboardSurfaces": ["Cards", "Widgets", "Rich Media Panels"], "edgeModel": "active graph edges with typed sourceHandle and targetHandle", "timelineSurface": "TimelineTransportControls + shared bottom-panel surface", "rendererPolicy": "frontmatter and source payloads own data; renderers project view state only"}
 socket_types: {"template_text_signal": {"color": "#14b8a6", "edgeWidthPx": 2, "handleStrokeWidthPx": 2, "accepts": ["template_text_signal"]}, "template_number_signal": {"color": "#84cc16", "edgeWidthPx": 2, "handleStrokeWidthPx": 2, "accepts": ["template_number_signal"]}, "template_image_signal": {"color": "#38bdf8", "edgeWidthPx": 2, "handleStrokeWidthPx": 2, "accepts": ["template_image_signal"]}, "template_chart_html": {"color": "#f59e0b", "edgeWidthPx": 3, "handleStrokeWidthPx": 3, "accepts": ["template_chart_html"]}}
-flow_diagrams: {"key": "flow_diagrams", "type": "object", "value": {"missalpha_graph": {"key": "missalpha_graph", "type": "mermaid_flowchart", "floatingPanelView": "flowchart", "floatingPanelOpen": true, "bottomPanelTab": "flowchart", "bottomPanelOpen": true, "value": "flowchart LR\n  source_input[Alpha discovery source]\n  compute_summary[Synthesises alpha signals]\n  panel_alpha_map[knowledge-graph canvas]\n  source_input --> compute_summary --> panel_alpha_map"}}}
+flow_diagrams: {"key": "flow_diagrams", "type": "object", "value": {"missalpha_graph": {"key": "missalpha_graph", "type": "mermaid_flowchart", "floatingPanelView": "flowchart", "floatingPanelOpen": true, "bottomPanelTab": "flowchart", "bottomPanelOpen": true, "value": "flowchart LR\n  source_input[Alpha discovery source]\n  compute_summary[Synthesises alpha signals]\n  panel_alpha_map[agentic-graph canvas]\n  source_input --> compute_summary --> panel_alpha_map"}}}
 flow:
   direction: {"key": "direction", "type": "string", "value": "LR"}
   edgeType: {"key": "edgeType", "type": "string", "value": "smoothstep"}
@@ -77,7 +77,7 @@ kgParserRoutingContract:
   surfaces: ["2D Renderer: Storyboard", "2D Renderer: Storyboard", "BottomPanel/FloatingPanel Mermaid panels"]
   edgePolicy: "explicit graphData.edges, flow.edges, workflow.edges, and diagram edges are source-owned SSOT; renderers project visible connectors only"
   forkPolicy: "fork, branch, candidate, and publish metadata remain authored source fields and surface through parsed graph edges without downstream remapping"
-source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/knowgrph-missalph-demo.md", "sha256": "974bfff1e614b52b101649c07d4b18b4bbe69078d130d980714153171aec6afc", "restoration": "Source recovery; historical readiness claims require current validation."}
+source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/agentic-graph-missalph-demo.md", "sha256": "974bfff1e614b52b101649c07d4b18b4bbe69078d130d980714153171aec6afc", "restoration": "Source recovery; historical readiness claims require current validation."}
 ---
 
 ## Response

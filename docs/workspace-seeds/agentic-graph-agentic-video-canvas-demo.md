@@ -9,7 +9,7 @@ demo_schema: "agentic-os-agentic-video-canvas/v1"
 runtime_status: "runtime-ready-in-dev"
 publish_scope: "local-only"
 live_provider_run_proven: false
-implementation_contract: "../../agentic-graph/docs/documents/agentic-graph-agentic-os-video-agent-prd-tad.companion.md"
+implementation_contract: "../../agentic-graph/docs/documents/agentic-graph-agentic-os-video-agent-prd-tad-adr-mvp-gtm.companion.md"
 template_policy: "Default source-backed video-agent launcher. The referenced Markdown owns creative context; runtime providers own generated text and media; no generated URL, job id, transcript, credential, or fixture is authored here."
 validation_input_forbid_hardcode_in_repo: true
 kgCanvasSurfaceMode: "2d"
@@ -61,7 +61,7 @@ flow:
     - {"id":"edge:image:panel","source":"video_image_generation","sourceHandle":"imageUrl","target":"panel_image_artifact","targetHandle":"imageUrl","type":"generated_image_signal"}
     - {"id":"edge:audio:panel","source":"video_clip_generation","sourceHandle":"audioUrl","target":"video_audio_generation","targetHandle":"audioUrl","type":"generated_audio_signal"}
     - {"id":"edge:video:panel","source":"video_clip_generation","sourceHandle":"videoUrl","target":"panel_video_artifact","targetHandle":"videoUrl","type":"generated_video_signal"}
-source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/knowgrph-agentic-video-canvas-demo.md", "sha256": "a4647ebce54e9f9f55332570f50aaf14bfb9ec1237ee7ead3913fe8834cc1f62", "restoration": "Source recovery; historical readiness claims require current validation."}
+source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/agentic-graph-agentic-video-canvas-demo.md", "sha256": "a4647ebce54e9f9f55332570f50aaf14bfb9ec1237ee7ead3913fe8834cc1f62", "restoration": "Source recovery; historical readiness claims require current validation."}
 local_execution: {"mode": "prepare-only", "provider_execution": "Use the explicit generation invocation for a provider run. Run all prepares the prompt locally; it does not fabricate generated script, media, or provider proof."}
 ---
 
