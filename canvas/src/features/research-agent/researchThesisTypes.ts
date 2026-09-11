@@ -17,7 +17,7 @@ export const RESEARCH_THESIS_SOURCE_OWNER_PATHS = [
   'canvas/src/features/queryable-corpus/queryEvidencePack.ts',
   'canvas/src/features/source-files/sourceFilesRuntimeActive.ts',
   RESEARCH_THESIS_AGENTIC_OS_APPLY_OWNER,
-  'docs/documents/agentic-graph-research-agent-prd-tad.md',
+  'docs/documents/agentic-graph-research-agent-prd-tad-adr-mvp-gtm.md',
 ] as const
 
 export type ResearchThesisClaimType = 'fact' | 'assumption' | 'calculation' | 'forecast' | 'risk' | 'open_question'

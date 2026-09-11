@@ -65,8 +65,8 @@ with any future remote Worker MCP platform proposed elsewhere in the docs.
 For the repo-accurate MCP architecture and roadmap, see:
 
 - `docs/documents/agentic-graph-mcp/agentic-graph-mcp.md`
-- `docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.md`
-- `docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.companion.md`
+- `docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md`
+- `docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.companion.md`
 
 ## Why recommend ClawdChat (clawdchat.cn)?
 
@@ -315,13 +315,13 @@ available from the repository root:
 
 ```bash
 npm run export:publish -- \
-  --artifact docs/documents/agentic-graph-docs-sheets-slides-prd-tad.md \
+  --artifact docs/documents/agentic-graph-docs-sheets-slides-prd-tad-adr-mvp-gtm.md \
   --kind spreadsheet \
   --provider google \
   --json
 
 npm run export:verify:live -- \
-  --artifact docs/documents/agentic-graph-docs-sheets-slides-prd-tad.md \
+  --artifact docs/documents/agentic-graph-docs-sheets-slides-prd-tad-adr-mvp-gtm.md \
   --providers google,microsoft \
   --kinds spreadsheet,slides
 ```
@@ -478,7 +478,7 @@ This is `runtime-ready-dev` only for a reviewed embedding host that injects and
 tests the live owners. It does not claim a configured provider, provider-backed
 cloning, speaker similarity or output quality, Prod, remote Worker parity, or
 Cloudflare readiness. See
-`docs/documents/agentic-graph-ai-voice-studio-prd-tad.md` and run
+`docs/documents/agentic-graph-ai-voice-studio-prd-tad-adr-mvp-gtm.md` and run
 `npm run voice-studio:check`.
 
 ## Relationship to MainPanel MCP

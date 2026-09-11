@@ -59,7 +59,7 @@ const readAgenticOsPipelinePrdTadPath = (): string => {
     ? process.env.AG_TEST_AGENTIC_OS_PIPELINE_PRD_TAD_PATH.trim()
     : ''
   if (envPath) return envPath
-  return path.resolve(process.cwd(), '..', '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad.md')
+  return path.resolve(process.cwd(), '..', '..', '..', 'huijoohwee.github.io', 'docs', 'agentic-os-ai-pipeline-prd-tad-adr-mvp-gtm.md')
 }
 
 const readAgenticGraphVideoDemoPath = (): string => {

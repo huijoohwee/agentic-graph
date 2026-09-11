@@ -47,7 +47,7 @@ test('bounded response reader cancels an undeclared-length stream as soon as it 
 test('Motion Control asset and capture-platform docs retain bounded strict contracts', async () => {
   const [assetScript, productDocument, apiDocument, captureApiDocument] = await Promise.all([
     readFile(path.resolve(canvasRoot, 'scripts/prepare-litert-assets.mjs'), 'utf8'),
-    readFile(path.resolve(repositoryRoot, 'docs/documents/agentic-graph-motion-control-prd-tad.md'), 'utf8'),
+    readFile(path.resolve(repositoryRoot, 'docs/documents/agentic-graph-motion-control-prd-tad-adr-mvp-gtm.md'), 'utf8'),
     readFile(path.resolve(repositoryRoot, 'docs/documents/agentic-graph-api-document.md'), 'utf8'),
     readFile(path.resolve(repositoryRoot, 'docs/documents/agentic-graph-motion-capture-platform-api.md'), 'utf8'),
   ])

@@ -100,9 +100,9 @@ Expected result:
 - Agent-ready smoke owner:
   `scripts/check-agent-ready.mjs`
 - Canonical implementation-accurate PRD/TAD:
-  `docs/documents/agentic-graph-agent-ready-prd-tad.md`
+  `docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md`
 - Canonical MCP PRD/TAD:
-  `docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.md`
+  `docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md`
 
 ## Guardrails
 

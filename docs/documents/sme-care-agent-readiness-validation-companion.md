@@ -13,7 +13,7 @@ universal_scope: false
 worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
 agent_id: "codex:graph_frontmatter_and_docs"
 doc_path: "docs/documents/sme-care-agent-readiness-validation-companion.md"
-parent: "docs/documents/sme-care-agent-prd-tad.md"
+parent: "docs/documents/sme-care-agent-prd-tad-adr-mvp-gtm.md"
 parent_version: "0.2.0"
 guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.4.0"
 production_release_authorized: false

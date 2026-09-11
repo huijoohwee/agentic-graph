@@ -11,7 +11,7 @@ delivered_rung: "spec-complete"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-docs-sheets-slides-runtime-readiness.md"
-parent: "docs/documents/agentic-graph-docs-sheets-slides-prd-tad.md"
+parent: "docs/documents/agentic-graph-docs-sheets-slides-prd-tad-adr-mvp-gtm.md"
 live_provider_run_proven: false
 production_release_authorized: false
 ---
@@ -144,7 +144,7 @@ provider/kind pair with a private ledger path:
 ```bash
 AGENTIC_OS_EXPORT_FLEET_PATH=/ABS/PRIVATE/PATH/agentic-graph-export-proof.md \
   npm run export:publish -- \
-  --artifact docs/documents/agentic-graph-docs-sheets-slides-prd-tad.md \
+  --artifact docs/documents/agentic-graph-docs-sheets-slides-prd-tad-adr-mvp-gtm.md \
   --kind spreadsheet \
   --provider google \
   --json
@@ -165,7 +165,7 @@ eight publication calls. The second call for each pair must return the same
 
 ```bash
 npm run export:verify:live -- \
-  --artifact docs/documents/agentic-graph-docs-sheets-slides-prd-tad.md \
+  --artifact docs/documents/agentic-graph-docs-sheets-slides-prd-tad-adr-mvp-gtm.md \
   --providers google,microsoft \
   --kinds spreadsheet,slides
 ```
@@ -251,7 +251,7 @@ Stop and keep `live_provider_run_proven: false` when:
 
 ## Related contracts
 
-- `agentic-graph-docs-sheets-slides-prd-tad.md`
+- `agentic-graph-docs-sheets-slides-prd-tad-adr-mvp-gtm.md`
 - `agentic-graph-api-document.md`
 - `../../mcp/README.md`
 - `../../mcp/export-publish-contract.js`

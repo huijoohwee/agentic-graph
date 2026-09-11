@@ -3,7 +3,7 @@
 **Document Version**: 4.0.0
 **Date**: 2026-05-09
 **Status**: Active
-**Companion To**: `agentic-graph-deerflow-prd-tad.md`, `agentic-graph-deerflow-prd-tad-integration-contracts-and-patterns.md`, `agentic-graph-deerflow-prd-tad-delivery-validation.md`
+**Companion To**: `agentic-graph-deerflow-prd-tad-adr-mvp-gtm.md`, `agentic-graph-deerflow-prd-tad-adr-mvp-gtm-integration-contracts-and-patterns.md`, `agentic-graph-deerflow-prd-tad-adr-mvp-gtm-delivery-validation.md`
 
 ---
 

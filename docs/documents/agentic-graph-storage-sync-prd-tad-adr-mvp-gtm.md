@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: agentic-graph Storage and Synchronization"
 id: "md:agentic-graph-storage-sync-prd-tad-adr"
-doc_type: "Combined PRD/TAD/ADR"
+doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
 version: "5.0.0"
 date: "2026-08-06"
 lang: "en-US"
@@ -294,7 +294,7 @@ move until the CRDT-merge and squash-to-candidate fixtures named in S4a exist an
 | Working store | Persists typed document/chunk/snapshot/outbox records in a committed local transaction before optional transport; exposes the Dexie/IndexedDB transactional API and an explicit memory-fallback adapter implementing the same typed contract. | `canvas/src/lib/storage/agentic-graph-storage-sync-contract.ts`; IndexedDB-versus-memory adapter selection and per-record retention policy. | FOSS: Dexie, MIT (reference implementation). | S1; no Evidence Reference recorded this revision; Local `spec-complete`, Delivered `undocumented`. |
 | Sync client | Dispatches queued outbox mutations to the shared Worker source and records applied/conflict/rejected/deferred results against a cursor through the bounded HTTPS contract below. | Working store outbox and Shared Worker source; retry/backoff policy; request-scoped memory only. | FOSS: project-owned client module. | S2; no Evidence Reference recorded this revision; Local `spec-complete`, Delivered `undocumented`. |
 | Room provider (CRDT) | Merges concurrent edits for exactly one open document through WebSocket/Durable Object and the Yjs sync protocol, then squashes merged state to a Markdown/frontmatter candidate; `y-indexeddb`-equivalent local persistence stays alongside, not in place of, the working store. | One Durable Object per document and the existing S9 review path; exactly one active provider per document; idle hibernation. | FOSS: Yjs, MIT (reference implementation; ADR-2 owns alternatives). | S4/S4a; no evidence recorded and the remote/live adapter is unimplemented; Local `spec-complete`, Delivered `undocumented`. |
-| Lark configuration/import adapter | A host-owned adapter discovers scoped Base/Wiki/Docs resources and produces an immutable provider snapshot for the deterministic mapper through host-mediated OpenAPI; the browser receives no reusable credential. | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad.md`; scope allowlist and snapshot retention window. | Proprietary Lark platform, project-owned adapter; ADR-3 owns the TCO/FOSS comparison. | S9; remote fetch/write-back is not evidenced; Local and Delivered `undocumented`. |
+| Lark configuration/import adapter | A host-owned adapter discovers scoped Base/Wiki/Docs resources and produces an immutable provider snapshot for the deterministic mapper through host-mediated OpenAPI; the browser receives no reusable credential. | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad-adr-mvp-gtm.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad-adr-mvp-gtm.md`; scope allowlist and snapshot retention window. | Proprietary Lark platform, project-owned adapter; ADR-3 owns the TCO/FOSS comparison. | S9; remote fetch/write-back is not evidenced; Local and Delivered `undocumented`. |
 
 Current source authenticates snapshot push/pull/export and workspace blob/media requests, then checks
 workspace membership. Browser sessions use same-origin HttpOnly cookies and require configured Access
@@ -351,7 +351,7 @@ mechanism.
 | Structured persistence | D1 modules/migrations | Worker D1 modules | `spec-complete` | `undocumented` |
 | Binary persistence | R2 blob/media handlers | `cloudflare/workers/agentic-graph-storage/blob.ts`, `media.ts` | `spec-complete` | `undocumented` |
 | Collaboration | Room provider (CRDT: Yjs, ADR-2) | Source Files room adapters + Durable Object source | `spec-complete` | `undocumented` |
-| Lark configuration/import | Lark adapter (config + supplied-snapshot only) | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad.md` | `undocumented` | `undocumented` |
+| Lark configuration/import | Lark adapter (config + supplied-snapshot only) | `agentic-graph-mcp/agentic-graph-feishu-base-mcp-prd-tad-adr-mvp-gtm.md`, `agentic-graph-mcp/agentic-graph-lark-app-mcp-prd-tad-adr-mvp-gtm.md` | `undocumented` | `undocumented` |
 | Git/file relay | Authenticated source transport | `agentic-graph-storage-git-file-sync-runtime-api.md` | `spec-complete` | `undocumented` |
 | Release | Documentation/Pages release seed | `.github/workflows/release.yml` | `spec-complete` | `undocumented` |
 

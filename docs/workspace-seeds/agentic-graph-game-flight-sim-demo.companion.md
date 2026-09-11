@@ -50,7 +50,7 @@ This is a **documentation note**, not a workspace seed. It has no `run_ready_dem
 
 ## Asset-pipeline and invocation guarantees carried into the projection
 
-Any future projection must preserve the authored seed's runtime guarantees verbatim (see the source seed and `docs/documents/agentic-graph-game-flight-sim-prd-tad.md`):
+Any future projection must preserve the authored seed's runtime guarantees verbatim (see the source seed and `docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md`):
 
 - **Assets:** the required aircraft uses the exact img2threejs-style, diffable TypeScript + JSON scene spec and has GLB fallback count zero. The optional beacon alone uses one committed-local, opaque, CC0-1.0 GLB pinned to SHA-256 `be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd`; remote or unavailable fallbacks fail closed without fetch. No runtime image-to-3D model, network fetch, or Cloudflare resource obtains an asset.
 - **Invocation:** strict native `/flight.sim @canvas #flight` and browser-local WebMCP `agentic-graph.inspect_local_flight_sim` / `agentic-graph.control_local_flight_sim`; no stdio, HTTP, gateway, or deployment surface is added.

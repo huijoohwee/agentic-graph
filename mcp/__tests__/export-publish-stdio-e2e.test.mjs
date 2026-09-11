@@ -55,7 +55,7 @@ test("local stdio MCP lists export.publish and fails closed before egress withou
     const result = await client.callTool({
       name: "export.publish",
       arguments: {
-        artifact_id: "docs/documents/agentic-graph-docs-sheets-slides-prd-tad.md",
+        artifact_id: "docs/documents/agentic-graph-docs-sheets-slides-prd-tad-adr-mvp-gtm.md",
         kind: "spreadsheet",
       },
     }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });

@@ -89,10 +89,10 @@ missing prerequisites fail closed.
 |---|---|
 | Endpoint values, trust, auth/session sequence, token cost | [MCP install contract](agentic-graph-mcp-install-contract.md) |
 | Four-surface overview | [MCP surface overview](agentic-graph-mcp/agentic-graph-mcp.md) |
-| Product, architecture, five flows, and readiness gaps | [MCP service PRD/TAD](agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.md) |
-| Exact tool names and source owners | [MCP service companion](agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.companion.md) |
-| Pages/browser agent-ready contract | [Agent-ready PRD/TAD](agentic-graph-agent-ready-prd-tad.md) |
-| File-level agent-ready invariants | [Agent-ready companion](agentic-graph-agent-ready-prd-tad.companion.md) |
+| Product, architecture, five flows, and readiness gaps | [MCP service PRD/TAD](agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md) |
+| Exact tool names and source owners | [MCP service companion](agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.companion.md) |
+| Pages/browser agent-ready contract | [Agent-ready PRD/TAD](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md) |
+| File-level agent-ready invariants | [Agent-ready companion](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.companion.md) |
 | Conditional delivery verification | [Post-delivery verification checklist](../agentic-graph-post-deploy-verification-checklist.md) |
 
 ### Surface decision table

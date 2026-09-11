@@ -4,10 +4,10 @@ doc_type: "TAD Companion"
 status: "implementation-contract"
 lang: "en-US"
 frontmatter_contract: "required"
-source_contract: "./agentic-graph-strytree-prd-tad.md"
+source_contract: "./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md"
 ---
 
-[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad.md).
+[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md).
 
 ## C8. AI Harness Contract
 
@@ -378,7 +378,7 @@ Rollback:
 
 ## C13. Traceability Matrix
 
-The matrix states acceptance targets; a row is not an execution receipt. CID `commerce.request-efficiency.unlock`, E05, C6 and ADR-006 share the [MainPanel RAO/SVO join](./agentic-graph-mainpanel-commerce-prd-tad.md#paid-unlock-recovery-status). Current paid-boundary controls run via `npm run travel-commerce:strytree-ledger:test` (native Worker/D1/DO contracts); source receipts, full-suite failures, deployment, provider collection, and creator payout remain distinct evidence.
+The matrix states acceptance targets; a row is not an execution receipt. CID `commerce.request-efficiency.unlock`, E05, C6 and ADR-006 share the [MainPanel RAO/SVO join](./agentic-graph-mainpanel-commerce-prd-tad-adr-mvp-gtm.md#paid-unlock-recovery-status). Current paid-boundary controls run via `npm run travel-commerce:strytree-ledger:test` (native Worker/D1/DO contracts); source receipts, full-suite failures, deployment, provider collection, and creator payout remain distinct evidence.
 
 | PRD Requirement | TAD Component | Interface | `/goal` Condition |
 |---|---|---|---|

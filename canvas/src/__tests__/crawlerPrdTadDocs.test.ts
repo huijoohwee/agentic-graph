@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 function readCrawlerPrdTad(): string {
-  return readFileSync(resolve(process.cwd(), '..', 'docs/documents/agentic-graph-crawler-prd-tad.md'), 'utf8')
+  return readFileSync(resolve(process.cwd(), '..', 'docs/documents/agentic-graph-crawler-prd-tad-adr-mvp-gtm.md'), 'utf8')
 }
 
 export function testCrawlerPrdTadNamesImplementedCommerceHandoff(): void {
