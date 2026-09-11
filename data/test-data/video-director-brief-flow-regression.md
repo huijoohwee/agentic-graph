@@ -1,6 +1,6 @@
 ---
-title: "Knowgrph · Video Demo — Three Skies (RoboDrone X1 · Frontier · Tempest · RoboTown)"
-graphId: "md:knowgrph-video-robodrone-demo-v1"
+title: "Agentic Graph · Video Demo — Three Skies (RoboDrone X1 · Frontier · Tempest · RoboTown)"
+graphId: "md:agentic-graph-video-robodrone-demo-v1"
 doc_type: "Video Script — Director Brief"
 date: "2026-05-01"
 lang: en-US
@@ -29,7 +29,7 @@ inputs:
     SG — Dusk. A girl on the Marina Bay promenade launches before Marina Bay Sands. The Merlion morphs — stone to chrome, 100 metres, AI sentinel. Singapore becomes RoboTown — sensor arrays, drone corridors, neural grid bay. The girl ascends to the command position. She pilots the city.
     Cut back: three parents, three phones, three proud faces. Three worlds. One drone.
     Text fades in: "One brief. Three multiverses. The drone opens the portal."
-    "airvio.co/knowgrph — Write it. See it. Ship it."
+    "airvio.co/agentic-graph — Write it. See it. Ship it."
   location:
     name: "US Wild West mesa → Caribbean turquoise island → Singapore Marina Bay Sands / RoboTown"
     short_label: "3-locale-frontier-tempest-robotown"
@@ -367,7 +367,7 @@ director_brief:
       epoch: "CTA — Canvas Hold"
       frame_label: "HOLD — Text Materialises"
       description: "Canvas holds. Subtle parallax drift across three nodes. Two lines of text fade in over one second. Held for one second. Warm resolution chord sounds."
-      prompt: "Write the Text Widget output for S05. Produce a concise markdown scene brief with sections: CTA Copy, Video Prompt, Canvas Hold Beat, Rich Media Panel Summary. Use the final text materialisation, warm resolution chord, three glowing locale nodes, and airvio.co/knowgrph call to action."
+      prompt: "Write the Text Widget output for S05. Produce a concise markdown scene brief with sections: CTA Copy, Video Prompt, Canvas Hold Beat, Rich Media Panel Summary. Use the final text materialisation, warm resolution chord, three glowing locale nodes, and airvio.co/agentic-graph call to action."
       camera:
         shot_type: "Static Hold (CG)"
         lens: "N/A"
@@ -377,7 +377,7 @@ director_brief:
         vfx: "text fade-in; parallax depth pass; warm chord audio"
       cta:
         line_1: "One brief. Three multiverses. The drone opens the portal."
-        line_2: "airvio.co/knowgrph — Write it. See it. Ship it."
+        line_2: "airvio.co/agentic-graph — Write it. See it. Ship it."
         font: "Cormorant Garamond · Light · tracked +80"
         colour: "#FFFFFF"
         fade_in: "1s"
@@ -388,7 +388,7 @@ director_brief:
 # Director brief flow regression input
 
 Source: `huijoohwee` commit `b7e57d8fac04452824aa4be61ff3e4cd9c52b288`,
-`docs/knowgrph-video-demo.md`. Original SHA-256: `efedabbd09206f5867590f3c2fc3dccc655a56ff35308f8acc5a38d517ba66e6`.
+`docs/agentic-graph-video-demo.md`. Original SHA-256: `efedabbd09206f5867590f3c2fc3dccc655a56ff35308f8acc5a38d517ba66e6`.
 
 Complete parsed frontmatter is preserved; historical body prose is omitted.
 This source-owned fixture tests shot geometry and import behavior, not published or runtime readiness.

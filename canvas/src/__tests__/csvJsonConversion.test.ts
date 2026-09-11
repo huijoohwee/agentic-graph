@@ -1045,7 +1045,7 @@ export function testCsvJsonConversionNoCopyAndNativeOwnerGuards() {
     const scanFiles = Array.from(new Set([
       ...collectTextFilesForHardcodeGuard(resolve(root, 'src')),
       resolve(root, 'package.json'),
-      resolve(repoRoot, 'docs', 'documents', 'agentic-graph-csv-json-prd-tad.md'),
+      resolve(repoRoot, 'docs', 'documents', 'agentic-graph-csv-json-prd-tad-adr-mvp-gtm.md'),
     ].filter(path => existsSync(path))))
     const offenders: string[] = []
     for (const path of scanFiles) {

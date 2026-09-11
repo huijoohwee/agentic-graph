@@ -9,9 +9,9 @@ sequences delivery, and the workspace seed is a derived activation and proof
 projection.
 
 The product contract is
-`docs/documents/agentic-graph-game-city-building-sim-prd-tad-ard.md`. Generic
+`docs/documents/agentic-graph-game-city-building-sim-prd-tad-adr-mvp-gtm.md`. Generic
 surface composition belongs to
-`docs/documents/agentic-graph-geo-xr-mode-prd-tad-ard.md`; regional values belong
+`docs/documents/agentic-graph-geo-xr-mode-prd-tad-adr-mvp-gtm.md`; regional values belong
 only to the selected ADM0 companion. City consumes the companion by exact
 profile identity and shall not copy its geographic rings, real-metre heights,
 accuracy, provenance, or landmark facts into this generic contract.

@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: agentic-graph XRPL x402 paid travel requote"
 id: "md:agentic-graph-xrpl-x402-paid-resource-prd-tad-adr"
-doc_type: "Combined PRD/TAD/ADR"
+doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
 version: "1.0.0"
 date: "2026-09-05"
 lang: "en-US"

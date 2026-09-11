@@ -11,7 +11,7 @@ export function testResearchAgentPrdTadUsesImplementedDevSourceOwners(): void {
     throw new Error('Expected research-agent PRD/TAD to remove the proposed document path')
   }
 
-  const docs = readRepoFile('docs/documents/agentic-graph-research-agent-prd-tad.md')
+  const docs = readRepoFile('docs/documents/agentic-graph-research-agent-prd-tad-adr-mvp-gtm.md')
 
   const requiredDocTokens = [
     'doc_id: agentic-graph-research-agent-prd-tad',

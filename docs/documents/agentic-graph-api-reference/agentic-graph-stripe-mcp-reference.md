@@ -19,7 +19,7 @@ remote_transport_url: "https://mcp.stripe.com"
 local_transport_package: "@stripe/mcp@latest"
 attribution: "Summarized and paraphrased from Stripe MCP documentation. Content was rephrased for compliance with licensing restrictions."
 consumers:
-  - "docs/documents/agentic-graph-payments-prd-tad.md"
+  - "docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md"
   - "docs/documents/agentic-graph-mcp/agentic-graph-stripe-mcp-service.md"
   - ".kiro/specs/agentic-graph-payments/requirements.md"
 acos_invocation:
@@ -50,7 +50,7 @@ upstream` rather than inferred.
 |---|---|
 | Upstream MCP capability capture (this file) | `docs/documents/agentic-graph-api-reference/agentic-graph-stripe-mcp-reference.md` |
 | agentic-graph MCP readiness, secret custody, MainPanel wiring | `docs/documents/agentic-graph-mcp/agentic-graph-stripe-mcp-service.md` |
-| Payment rail architecture and harness contracts | `docs/documents/agentic-graph-payments-prd-tad.md` |
+| Payment rail architecture and harness contracts | `docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md` |
 | Invocation surface and gateway federation contract | `agentic-canvas-os/docs/MCP-GATEWAY.md` |
 | Normative acceptance criteria | `.kiro/specs/agentic-graph-payments/requirements.md` |
 

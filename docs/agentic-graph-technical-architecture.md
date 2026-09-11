@@ -18,7 +18,7 @@ generator_owner: "canvas/src/cli/lint-doc.ts"
 # Reference implementation: agentic-graph Technical Architecture
 
 ## Generated Registry Contract
-The opening YAML frontmatter block remains the machine SSOT for this generated registry surface. Canonical architecture prose and behavior ownership live under `docs/documents/`; update source docs or generator inputs there, keep registry rows generator-owned from `canvas/src/cli/lint-doc.ts`, and use `docs/documents/agentic-graph-settings-document.md`, `docs/documents/agentic-graph-chat-ai-markdown-pipeline-document.md`, and `docs/documents/agentic-graph-llm-prompt-contract-prd-tad.md` as canonical owner maps instead of inferring runtime decisions from stale generated rows.
+The opening YAML frontmatter block remains the machine SSOT for this generated registry surface. Canonical architecture prose and behavior ownership live under `docs/documents/`; update source docs or generator inputs there, keep registry rows generator-owned from `canvas/src/cli/lint-doc.ts`, and use `docs/documents/agentic-graph-settings-document.md`, `docs/documents/agentic-graph-chat-ai-markdown-pipeline-document.md`, and `docs/documents/agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.md` as canonical owner maps instead of inferring runtime decisions from stale generated rows.
 
 ## Settings Registry — Part 1
 

@@ -18,7 +18,7 @@ upstream_last_updated: "about 1 year before capture, per the upstream page foote
 sandbox_base_url: "https://api-sandbox.straitsx.com/v1"
 attribution: "Summarized and paraphrased from the StraitsX API Guides. Content was rephrased for compliance with licensing restrictions."
 consumers:
-  - "docs/documents/agentic-graph-payments-prd-tad.md"
+  - "docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md"
   - ".kiro/specs/agentic-graph-payments/requirements.md"
 companion_reference: "docs/documents/agentic-graph-api-reference/agentic-graph-straitsx-authentication-reference.md"
 acos_invocation:
@@ -79,7 +79,7 @@ A solo operator collecting payment for its own product, with no end-user custody
 disbursement to third parties, most closely matches **Regular Transfer**. This stays an open
 question until confirmed with the provider, because the model is granted against the approved
 use case rather than self-selected. Tracked as OQ-2 in
-`docs/documents/agentic-graph-payments-prd-tad.md`.
+`docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md`.
 
 ## Product API Families
 

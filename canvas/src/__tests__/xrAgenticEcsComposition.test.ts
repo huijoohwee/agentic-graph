@@ -120,7 +120,7 @@ function assertEcsOwnersDoNotImportXrOrPhysics(repositoryRoot: string): void {
 export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
   const repositoryRoot = resolve(process.cwd(), '..')
   const ecsDocument = readFileSync(
-    resolve(repositoryRoot, 'docs', 'documents', 'agentic-graph-agentic-entity-component-system-prd-tad.md'),
+    resolve(repositoryRoot, 'docs', 'documents', 'agentic-graph-agentic-entity-component-system-prd-tad-adr-mvp-gtm.md'),
     'utf8',
   )
   if (!/The ECS is not a game engine[^.]*renderer[^.]*\./.test(ecsDocument)

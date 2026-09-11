@@ -36,7 +36,7 @@ The current implementation provides:
 - a `agentic-os-computing-flow/v1` Storyboard Canvas evidence document;
 - fail-closed approval gates for purchase, bind, apply, third-party contact, and paid-model actions.
 
-The broader living protection graph in `docs/documents/agentic-graph-sme-protection-gap-prd-tad.md` is a product and technical specification. Policy wording extraction, jurisdiction packs, adviser review workflows, accepted graph deltas, and continuous reassessment described there are not all implemented or deployed.
+The broader living protection graph in `docs/documents/agentic-graph-sme-protection-gap-prd-tad-adr-mvp-gtm.md` is a product and technical specification. Policy wording extraction, jurisdiction packs, adviser review workflows, accepted graph deltas, and continuous reassessment described there are not all implemented or deployed.
 
 ## Repository
 
@@ -301,7 +301,7 @@ The full gate verifies runtime/property tests, pinned invocation dictionaries, d
 | Synthetic fixtures | `sme-agent/fixtures/` |
 | Checked-in Canvas demo | `sme-agent/demo/sme-care-agent-canvas-evidence.md` |
 | Runtime readiness contract | `docs/runtime-readiness-contract.md` |
-| Broader product specification | `docs/documents/agentic-graph-sme-protection-gap-prd-tad.md` |
+| Broader product specification | `docs/documents/agentic-graph-sme-protection-gap-prd-tad-adr-mvp-gtm.md` |
 
 ## Troubleshooting
 

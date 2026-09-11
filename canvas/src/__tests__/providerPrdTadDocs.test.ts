@@ -5,7 +5,7 @@ const readRepoFile = (repoRelativePath: string): string =>
   readFileSync(resolve(process.cwd(), '..', repoRelativePath), 'utf8')
 
 export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
-  const miromindDocs = readRepoFile('docs/documents/agentic-graph-api-reference/agentic-graph-miromind-api-prd-tad.md')
+  const miromindDocs = readRepoFile('docs/documents/agentic-graph-api-reference/agentic-graph-miromind-api-prd-tad-adr-mvp-gtm.md')
   const stripeDocs = readRepoFile('docs/documents/agentic-graph-mcp/agentic-graph-stripe-mcp-service.md')
   const wechatDocs = readRepoFile('docs/documents/agentic-graph-wechat-mini-program.md')
   const miromindOwners = [

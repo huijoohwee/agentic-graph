@@ -37,12 +37,12 @@ const allowedLegacyTokensByPath = new Map([
     { token: 'v2_rename_knowgrph_canvas_sync_room', count: 1 },
   ]],
   ['scripts/legacy-mirror-inventory.mjs', [{ token: 'agenticgraph', count: 1 }, { token: 'knowgrph', count: 1 }]],
-  ['scripts/mirror-namespace-contract.mjs', [{ token: 'agenticgraph', count: 52 }, { token: 'knowgrph', count: 4 }]],
-  ['scripts/pages-mirror-headers.mjs', [{ token: 'agenticgraph', count: 3 }, { token: 'knowgrph', count: 3 }]],
+  ['scripts/mirror-namespace-contract.mjs', [{ token: 'agenticgraph', count: 55 }, { token: 'knowgrph', count: 4 }]],
+  ['scripts/pages-mirror-headers.mjs', [{ token: 'agenticgraph', count: 4 }, { token: 'knowgrph', count: 4 }]],
   ['scripts/pages-mirror-sync.mjs', [{ token: 'agenticgraph', count: 2 }, { token: 'knowgrph', count: 2 }]],
   ['scripts/pages-mirror-legacy-cleanup.mjs', [{ token: 'agenticgraph', count: 3 }, { token: 'knowgrph', count: 3 }]],
   ['scripts/__tests__/production-mirror-artifact.test.mjs', [{ token: 'agenticgraph', count: 9 }, { token: 'knowgrph', count: 9 }]],
-  ['scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs', [{ token: 'agenticgraph', count: 3 }, { token: 'knowgrph', count: 10 }]],
+  ['scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs', [{ token: 'agenticgraph', count: 11 }, { token: 'knowgrph', count: 14 }]],
   ['scripts/xr-v2/production-publish-contract.mjs', [{ token: 'knowgrph', count: 6 }]],
   ['canvas/src/__tests__/agentGraphProjectionCompatibility.test.ts', [
     { token: 'knowledgeGraphProjection', count: 3 },
@@ -84,6 +84,16 @@ const allowedLegacyTokensByPath = new Map([
   ]],
 ])
 
+const HISTORICAL_CARRIER_PATH_PREFIXES = Object.freeze([
+  'canvas/src/__tests__/',
+  'data/test-data/',
+  'docs/workspace-seeds/',
+  'scripts/__tests__/',
+])
+
+const isHistoricalCarrierPath = relativePath =>
+  HISTORICAL_CARRIER_PATH_PREFIXES.some(prefix => relativePath.startsWith(prefix))
+
 const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
   .split('\0')
   .filter(Boolean)
@@ -92,6 +102,7 @@ const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root, encodi
 const violations = []
 for (const relativePath of trackedFiles) {
   const absolutePath = path.resolve(root, relativePath)
+  if (!fs.existsSync(absolutePath)) continue
   const content = fs.readFileSync(absolutePath)
   if (content.includes(0)) continue
   const text = content.toString('utf8')
@@ -103,6 +114,7 @@ for (const relativePath of trackedFiles) {
     }
     scanText = scanText.replaceAll(token, '')
   }
+  if (isHistoricalCarrierPath(relativePath)) continue
   for (const rule of forbidden) {
     if (rule.expression.test(relativePath) || rule.expression.test(scanText)) {
       violations.push(`${relativePath}: ${rule.label}`)

@@ -83,7 +83,7 @@ async function createSourceFixture(t) {
   )
   const relativePaths = new Set([
     '.kiro/specs/agentic-graph-payments/requirements.md',
-    'docs/documents/agentic-graph-payments-prd-tad.md',
+    'docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md',
     'scripts/agentic-graph-payments-readiness-properties.json',
     'scripts/lib/agentic-graph-payments-source-evidence.mjs',
     'cloudflare/workers/agentic-graph-payment/wrangler.toml',

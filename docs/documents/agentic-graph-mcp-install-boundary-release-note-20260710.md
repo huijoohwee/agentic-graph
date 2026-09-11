@@ -94,7 +94,7 @@ Current live examples:
 - Canonical Markdown discovery contract:
   `docs/documents/markdown-convertible-agent-discovery-document.md`
 - Canonical agent-ready landing doc:
-  `docs/documents/agentic-graph-agent-ready-prd-tad.md`
+  `docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md`
 - Canonical MCP overview:
   `docs/documents/agentic-graph-mcp/agentic-graph-mcp.md`
 - Planning ledger:

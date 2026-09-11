@@ -114,7 +114,7 @@ const waitForImportedDemoFile = async (page, demoBasename, importUrl = '') => {
       for (const [path, entry] of Object.entries(entries)) {
         const text = String(entry?.text || '')
         if (!String(path).includes(stem) && !(importUrl && text.includes(importUrl))) continue
-        if (!text.includes('docs/documents/agentic-graph-strytree-prd-tad.md')) continue
+        if (!text.includes('docs/documents/agentic-graph-strytree-prd-tad-adr-mvp-gtm.md')) continue
         if (!/kgCanvas2dRenderer:\s*"?strybldr"?/.test(text)) continue
         if (!/kgStrybldrStoryboard:\s*true/.test(text)) continue
         if (!/strybldr_storyboard:\s*(?:\n|$)/.test(text)) continue

@@ -65,7 +65,7 @@ Invocation surface: `/payment.intent.create`, `/payment.event.settle`, and `/pay
 `@payment-provider` and `#payment-idempotency`, owned by
 `agentic-canvas-os/docs/MCP-GATEWAY.md`.
 
-Consumers: `docs/documents/agentic-graph-payments-prd-tad.md`,
+Consumers: `docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md`,
 `.kiro/specs/agentic-graph-payments/requirements.md`,
 `docs/documents/agentic-graph-api-reference/agentic-graph-stripe-mcp-reference.md`.
 

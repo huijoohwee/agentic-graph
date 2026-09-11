@@ -74,8 +74,8 @@ export function testAgenticGraphProbeTreeInvocationGrammarUsesDocAliasesAndToolI
     throw new Error(`expected assistant card parent metadata to create no authoritative candidateOption edges, got ${JSON.stringify(surface?.edges || [])}`)
   }
 
-  const docMarkdown = readFileSync(resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-probe-tree-prd-tad.md'), 'utf8')
-  const parsedDoc = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-probe-tree-prd-tad.md', docMarkdown)
+  const docMarkdown = readFileSync(resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-probe-tree-prd-tad-adr-mvp-gtm.md'), 'utf8')
+  const parsedDoc = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-probe-tree-prd-tad-adr-mvp-gtm.md', docMarkdown)
   const frontmatterMeta = (parsedDoc?.graphData.metadata || {}).frontmatterMeta as Record<string, unknown> | undefined
   if (!parsedDoc || frontmatterMeta?.kgCanvas2dRenderer !== 'storyboard' || frontmatterMeta?.kgCanvasRenderMode !== '2d') {
     throw new Error(`expected Probe-Tree PRD/TAD frontmatter to select 2D Renderer: Storyboard, got ${JSON.stringify(frontmatterMeta)}`)
@@ -149,7 +149,7 @@ export function testStoryboardProbeTreeInvocationChipDoesNotNavigateAwayFromCanv
   if (!html.includes('data-kg-agentic-os-invocation-token="/agentic-graph.probe-tree"')) {
     throw new Error(`expected Storyboard Probe-Tree chip to retain the shared invocation token marker, got ${html}`)
   }
-  if (!html.includes('agentic-graph-probe-tree-prd-tad.md')) {
+  if (!html.includes('agentic-graph-probe-tree-prd-tad-adr-mvp-gtm.md')) {
     throw new Error(`expected non-navigating Storyboard Probe-Tree chip to retain source provenance in its title, got ${html}`)
   }
 }

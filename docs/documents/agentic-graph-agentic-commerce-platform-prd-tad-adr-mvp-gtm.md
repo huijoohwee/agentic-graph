@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Agentic Commerce Platform — Agent Marketplace & Orchestration Hub plus Clean-Room Native Vendor Settlement Layer, with Platform Roadmap"
-doc_type: "Combined PRD/TAD/ADR"
+doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
 version: "0.3.0"
 date: "2026-08-22"
 lang: "en-US"
@@ -13,7 +13,7 @@ deploy_boundary: "closed"
 clean_room_policy: "inspiration-only; no foreign commerce framework code, schema, or dependency"
 ---
 
-# agentic-graph Agentic Commerce Platform — Combined PRD/TAD/ADR
+# agentic-graph Agentic Commerce Platform — Combined PRD-TAD-ADR-MVP-GTM
 
 **Conformance note**: this document authors against `prd-tad-adr-mvp-gtm-guidelines.md` v1.7.0. `universal_scope: false` for the same reason as its source document — this names real chosen dependencies, not swappable neutral examples — and each is still introduced under "reference implementation" per the Scope & Neutrality Contract. `local_rung: dev-proven` applies only to the three components this document introduces (Agent Registry/Router, Agent Definition Validator, Marketplace Registry Canvas) plus their invocation, offline, payment-ordering, and deploy-boundary helper surfaces; every reused component below inherits whatever rung it already carries in `agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md` v0.6.0 — this document claims no new proof for old components, only new scope. `delivered_rung` stays `undocumented` until the protected Dev → Prod/Cloudflare release workflow publishes and verifies the integrated branch.
 

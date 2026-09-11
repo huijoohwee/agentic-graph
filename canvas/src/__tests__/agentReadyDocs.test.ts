@@ -5,9 +5,9 @@ const readRepoFile = (repoRelativePath: string): string =>
   readFileSync(resolve(process.cwd(), '..', repoRelativePath), 'utf8')
 
 export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
-  const mainPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-agent-ready-prd-tad.md')
-  const companionPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-agent-ready-prd-tad.companion.md')
-  const runtimePath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-agent-ready-prd-tad.runtime.md')
+  const mainPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md')
+  const companionPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.companion.md')
+  const runtimePath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.runtime.md')
   if (!existsSync(mainPath) || !existsSync(companionPath) || !existsSync(runtimePath)) {
     throw new Error('Expected canonical agent-ready PRD/TAD and companion files to exist')
   }
@@ -17,7 +17,7 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
     readFileSync(companionPath, 'utf8'),
     readFileSync(runtimePath, 'utf8'),
     readRepoFile('docs/documents/agentic-graph-agent-ready-webmcp-release-note-20260522.md'),
-    readRepoFile('docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad.md'),
+    readRepoFile('docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md'),
   ].join('\n')
 
   const required = [
@@ -26,12 +26,12 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
     'owner: "cloudflare.pages.agent-ready.surface"',
     'local_rung: "spec-complete"',
     'delivered_rung: "undocumented"',
-    'companion: "docs/documents/agentic-graph-agent-ready-prd-tad.companion.md"',
-    'runtime_companion: "docs/documents/agentic-graph-agent-ready-prd-tad.runtime.md"',
-    'parent: "docs/documents/agentic-graph-agent-ready-prd-tad.md"',
+    'companion: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.companion.md"',
+    'runtime_companion: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.runtime.md"',
+    'parent: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md"',
     'owner: "docs.contract.evidence"',
     'owner: "docs.agent-ready.runtime-companion"',
-    '[the parent contract](agentic-graph-agent-ready-prd-tad.md)',
+    '[the parent contract](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md)',
     'Exactly 42 tools: 30 read-only, 12 guarded controls.',
     'Exactly 7 read-only tools; no guarded control.',
   ]

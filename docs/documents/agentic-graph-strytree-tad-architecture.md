@@ -4,10 +4,10 @@ doc_type: "TAD Companion"
 status: "implementation-contract"
 lang: "en-US"
 frontmatter_contract: "required"
-source_contract: "./agentic-graph-strytree-prd-tad.md"
+source_contract: "./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md"
 ---
 
-[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad.md).
+[Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md).
 
 # Part C - Technical Architecture Document
 

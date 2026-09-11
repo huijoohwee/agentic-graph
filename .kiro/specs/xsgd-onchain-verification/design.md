@@ -24,7 +24,7 @@ related:
   - "grph-shared/src/payments/paymentRecordDocument.ts"
   - "canvas/src/lib/storage/agentic-graph-storage-db.ts"
   - "scripts/check-agentic-graph-payments-readiness.mjs"
-  - "docs/documents/agentic-graph-payments-prd-tad.md"
+  - "docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md"
 ---
 
 # Design Document

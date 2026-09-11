@@ -223,7 +223,7 @@ Based on current repo state:
   - report/chart rendering: `canvas/src/features/swarm-prediction/swarmPredictionRender.ts`
   - Storyboard Widget contract: `canvas/src/features/swarm-prediction/swarmPredictionWidget.ts`
   - validation: `canvas/src/__tests__/swarmPredictionEngine.test.ts`
-  - PRD/TAD: `docs/documents/agentic-graph-swarm-prediction-engine-prd-tad.md`
+  - PRD/TAD: `docs/documents/agentic-graph-swarm-prediction-engine-prd-tad-adr-mvp-gtm.md`
 
 So: **it meets Level 2 local SuperAgent harness for repo-owned runs and has a
 Dev-source Level 3 swarm prediction simulation baseline, but it still does not

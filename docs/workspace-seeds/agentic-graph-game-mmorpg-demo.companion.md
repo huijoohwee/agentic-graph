@@ -51,7 +51,7 @@ This is a **documentation note**, not a workspace seed. It has no `run_ready_dem
 
 ## Scope and asset guarantees carried into the projection
 
-Any future projection must preserve the authored seed's planned guarantees verbatim (see the source seed and `docs/documents/agentic-graph-game-mmorpg-prd-tad.md`):
+Any future projection must preserve the authored seed's planned guarantees verbatim (see the source seed and `docs/documents/agentic-graph-game-mmorpg-prd-tad-adr-mvp-gtm.md`):
 
 - **Planned scope:** an **offline, single-player, MMO-style RPG world** — networked massively-multiplayer play is deferred and out of scope. **Supabase and any remote realtime/state backend are forbidden.**
 - **Planned assets:** a governed three-track mix — Track A procedural/programmatic TypeScript+JSON generators (preferred, diffable), Track B AI-generated img2threejs specs with a TRELLIS.2 opaque GLB fallback, Track C internet-sourced FOSS/redistributable assets — all must be committed local, each carrying a provenance + license record, license-gated, with no runtime generation, fetch, or model call.
