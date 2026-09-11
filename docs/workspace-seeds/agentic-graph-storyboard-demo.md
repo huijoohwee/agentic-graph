@@ -69,7 +69,7 @@ flow:
     - {"id":"edge:strybord:run-publish-gate","source":"run-001","sourceHandle":"output","target":"publish-gate-001","targetHandle":"input","label":"records_gate"}
     - {"id":"edge:strybord:publish-payout","source":"publish-asset-001","sourceHandle":"output","target":"payout-001","targetHandle":"input","label":"settles_payout"}
     - {"id":{"key":"id","type":"string","value":"local-review-request"},"source":{"key":"source","type":"string","value":"local_brief_input"},"sourceHandle":{"key":"sourceHandle","type":"string","value":"request"},"target":{"key":"target","type":"string","value":"local_brief_compute"},"targetHandle":{"key":"targetHandle","type":"string","value":"request"},"type":{"key":"type","type":"string","value":"local_draft_text"}}
-source_provenance: {"repository": "huijoohwee/huijoohwee", "revision": "77bf935472ef9706c5fc6e8634f6abf7d76b6070", "path": "docs/knowgrph-storyboard-demo.md", "sha256": "4d942d0e3ae0aabbb141bc4a8d23ed396cb132491fc8f1391530a9a201a77007", "restoration": "Recovered last scene-based authored storyboard before unrelated investment template replacement; live provider and payment metadata are historical, unverified configuration."}
+source_provenance: {"repository": "huijoohwee/huijoohwee", "revision": "77bf935472ef9706c5fc6e8634f6abf7d76b6070", "path": "docs/agentic-graph-storyboard-demo.md", "sha256": "4d942d0e3ae0aabbb141bc4a8d23ed396cb132491fc8f1391530a9a201a77007", "restoration": "Recovered last scene-based authored storyboard before unrelated investment template replacement; live provider and payment metadata are historical, unverified configuration."}
 schema: "agentic-os-computing-flow/v1"
 kgWorkflowManagerModeEnabled: true
 kgAutoSaveEnabled: true

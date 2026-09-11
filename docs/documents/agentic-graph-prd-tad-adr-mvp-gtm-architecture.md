@@ -1,6 +1,6 @@
 ---
 title: "Source-Native Graph Workspace Technical Architecture"
-doc_type: "Technical Architecture Document"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "3.1.0"
 date: "2026-07-30"
 lang: "en-US"
@@ -446,6 +446,6 @@ VCC-T7 therefore remains unsatisfied until an exact check proves the full contra
 
 ### Reference documents
 
-- Product requirements: `docs/documents/agentic-graph-prd.md`
-- Decision companion: `docs/documents/agentic-graph-architecture-decisions.md`
+- Product requirements: `docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-requirements.md`
+- Decision companion: `docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md`
 - Protected release runbook: `docs/agentic-graph-acos-deploy-runbook.md`

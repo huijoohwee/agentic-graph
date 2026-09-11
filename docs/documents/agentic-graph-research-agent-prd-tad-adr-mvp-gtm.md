@@ -1,7 +1,7 @@
 ---
 schema: agentic-os-computing-flow/v1
 doc_id: agentic-graph-research-agent-
-doc_type: prd-tad-adr-mvp-gtm
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: 0.5.0
 status: dev-source-implemented-no-deploy
 updated: 2026-06-05

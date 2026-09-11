@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Token Economics Model — TAD Companion"
-doc_type: "TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "TEM-001-COMPANION"
 version: "0.2.0"
 status: "Accepted implemented baseline; ingestion and NLQ extensions planned"

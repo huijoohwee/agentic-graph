@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Vdeoxpln PRD-TAD-ADR-MVP-GTM"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 id: "agentic-graph-vdeoxpln-prd-tad"
 version: "0.3.0"
 status: "implemented-e2e-contract"

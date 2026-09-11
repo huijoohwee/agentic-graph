@@ -1,18 +1,18 @@
 ---
 title: "agentic-graph Multi-User Collaboration TAD Companion"
-doc_type: "TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.3.0"
 date: "2026-07-16"
 status: "Accepted and implemented authenticated room transport"
 scope: "Technical continuation for authenticated document collaboration and global runtime-identity attestation rooms with fallback P2P"
 lang: "en-US"
-parent: "agentic-graph-multi-user-collaboration-prd.tad.md"
+parent: "agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md"
 deployment_boundary: "Dev only until explicit Prod or Cloudflare instruction"
 ---
 
 # agentic-graph Multi-User Collaboration - TAD Companion
 
-Continuation of [agentic-graph-multi-user-collaboration-prd.tad.md](agentic-graph-multi-user-collaboration-prd.tad.md). Contains the detailed architecture inventory for the shipped authenticated collaboration room baseline plus the retained fallback P2P path.
+Continuation of [agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md](agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md). Contains the detailed architecture inventory for the shipped authenticated collaboration room baseline plus the retained fallback P2P path.
 
 **Document Version**: 1.3.0
 **Date**: 2026-07-16

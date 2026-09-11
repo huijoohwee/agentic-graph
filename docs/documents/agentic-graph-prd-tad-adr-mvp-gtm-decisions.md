@@ -1,6 +1,6 @@
 ---
 title: "Source-Native Graph Workspace Architecture Decisions"
-doc_type: "Architecture Decision Record Set"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.2.0"
 date: "2026-08-05"
 lang: "en-US"
@@ -72,7 +72,7 @@ for humans and tools.
 
 This ADR accepts only the portable authority principle. The detailed provider-role matrix,
 proposed projection envelope, current evidence gaps, and Lark candidate flow are owned by the
-[storage and synchronization contract](agentic-graph-storage-sync-document.md); they are not repeated as
+[storage and synchronization contract](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md); they are not repeated as
 a second normative source here.
 
 External collaboration edits must become reviewed source candidates rather than last-write-wins
@@ -389,8 +389,8 @@ finding; `none` records an evidence gap with no separate defect.
 
 ## Reference implementation: agentic-graph source mapping
 
-- PRD owner: `docs/documents/agentic-graph-prd.md`
-- TAD owner: `docs/documents/agentic-graph-tad.md`
+- PRD owner: `docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-requirements.md`
+- TAD owner: `docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-architecture.md`
 - Generated GrabMaps reference owner: `canvas/src/cli/generate-grabmaps-reference.ts`
 - Protected controllers: `.github/workflows/integration.yml` and `.github/workflows/release.yml`
 - Superseded topology archive: `docs/agentic-graph-acos-topology-decision.md`

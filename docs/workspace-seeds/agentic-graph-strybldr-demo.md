@@ -143,7 +143,7 @@ strybldr_storyboard:
     - {"nodeId": "workflow-fork-rest-mcp-card", "action": "Expose the fork as one operator approval decision; do not run both live branches unless the operator explicitly selects both."}
     - {"nodeId": "strybldr:source:3449270236", "action": "Review the source evidence into editable storyboard elements."}
     - {"nodeId": "strybldr:source:4137906559", "summary": "Imported document source unit: SenseNova AI API PRD/TAD implementation contract.", "action": "Review the source evidence into editable storyboard elements."}
-source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/knowgrph-strybldr-demo.md", "sha256": "11d28b772282fddd171b3928726baf8104408530ba4166ba1a6ad60e01adaa1a", "restoration": "Source recovery; historical readiness claims require current validation."}
+source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/agentic-graph-strybldr-demo.md", "sha256": "11d28b772282fddd171b3928726baf8104408530ba4166ba1a6ad60e01adaa1a", "restoration": "Source recovery; historical readiness claims require current validation."}
 socket_types: {"local_draft_text": {"dataType": "string"}}
 local_execution: {"mode": "prepare-only", "paid_calls": 0, "provider_execution": "Separate explicit operator action; generated media and live evidence stay blank."}
 videodb_inputs:
@@ -269,7 +269,7 @@ Opening this file directly renders through Strybldr from the `strybldr_storyboar
 ## Validation Commands
 
 ```bash
-KNOWGRPH_FORBID_HARDCODE_INPUT="/path/to/agentic-graph-strybldr-demo.md" npm --prefix canvas run test:ci:unit -- policy.forbidHardcodedYouTubeUrlLiteral
+AGENTIC_GRAPH_FORBID_HARDCODE_INPUT="/path/to/agentic-graph-strybldr-demo.md" npm --prefix canvas run test:ci:unit -- policy.forbidHardcodedYouTubeUrlLiteral
 node --preserve-symlinks --preserve-symlinks-main ../node_modules/tsx/dist/cli.cjs src/__tests__/videodbMainPanelIntegrations.test.ts
 node --preserve-symlinks --preserve-symlinks-main ../node_modules/tsx/dist/cli.cjs src/__tests__/mainPanelMcpVideodb.test.tsx
 node --preserve-symlinks --preserve-symlinks-main ../node_modules/tsx/dist/cli.cjs src/__tests__/strybldrConsolidatedWorkflow.test.ts

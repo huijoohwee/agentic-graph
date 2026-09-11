@@ -1,6 +1,6 @@
 ---
 title: "Strytree C8-C13"
-doc_type: "TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "implementation-contract"
 lang: "en-US"
 frontmatter_contract: "required"

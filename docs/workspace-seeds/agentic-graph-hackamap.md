@@ -103,7 +103,7 @@ index:
       D -->|built_by| T
       D -->|addresses| P[PainPoint]:::painpoint
       D -->|produces| R[Product]:::product
-source_provenance: {"repository":"huijoohwee/joohwee","revision":"59e920337b5591943f10461d45af6b76ea24e1c5","path":"huijoohwee-docs/knowgrph-hackamap.md","sha256":"a77d7f13439212bb5ad2bfbd2d8c8f3ff745567b4f299184331109153ff53d31","restoration":"Source recovery; historical readiness claims require current validation."}
+source_provenance: {"repository":"huijoohwee/joohwee","revision":"59e920337b5591943f10461d45af6b76ea24e1c5","path":"huijoohwee-docs/agentic-graph-hackamap.md","sha256":"a77d7f13439212bb5ad2bfbd2d8c8f3ff745567b4f299184331109153ff53d31","restoration":"Source recovery; historical readiness claims require current validation."}
 ---
 
 # HackaMap — Knowledge Graph

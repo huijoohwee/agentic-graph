@@ -1,6 +1,6 @@
 ---
 title: "SME Care-Agent — Readiness, Validation, and Traceability Companion"
-doc_type: "PRD/TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.1.0"
 date: "2026-09-05"
 lang: "en-SG"

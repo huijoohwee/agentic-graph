@@ -28,7 +28,7 @@ that ratio.
 
 | Included | Boundary |
 |---|---|
-| Canonical core | `agentic-graph-prd.md`, `agentic-graph-tad.md`, and `agentic-graph-architecture-decisions.md` |
+| Canonical core | `agentic-graph-prd-tad-adr-mvp-gtm-requirements.md`, `agentic-graph-prd-tad-adr-mvp-gtm-architecture.md`, and `agentic-graph-prd-tad-adr-mvp-gtm-decisions.md` |
 | Supporting docs change set | 51 additional active changed Markdown artifacts under `docs/`, including this report and the generated settings companion |
 | Root index projection | One active changed `README.md`, outside the `docs/` count |
 | Cleanup | Six deleted legacy, duplicate, or superseded active-path artifacts |
@@ -179,7 +179,7 @@ unchanged.
 | `blended-status` | minor | `validation-checklist#45` | `agentic-graph-artifact-media-storage-architecture.md:35` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered columns and prose. |
 | `blended-status` | minor | `validation-checklist#45` | `agentic-graph-cloudflare-document.md:115` | evidence, local, and delivered values shared one cell | Documentation change: split evidence and both readiness fields. |
 | `blended-status` | minor | `validation-checklist#45` | `agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md:278` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered columns. |
-| `blended-status` | minor | `validation-checklist#45` | `agentic-graph-storage-sync-document.md:73` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered metric rows. |
+| `blended-status` | minor | `validation-checklist#45` | `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md:73` | `local_rung: spec-complete`; `delivered_rung: undocumented` | Documentation change: split local and delivered metric rows. |
 
 Six provider specifications were conservatively upgraded with explicit
 requirement-to-component/interface-to-VCC closure even though their declared

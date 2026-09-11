@@ -1,3 +1,18 @@
+---
+title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "0.3.0"
+date: "2026-05-29"
+lang: "en-US"
+owner: "Documentation maintainers"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "prd-tad-adr-mvp-gtm-alignment"
+agent_id: "codex"
+---
+
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
 **Document Version**: 0.3.0  

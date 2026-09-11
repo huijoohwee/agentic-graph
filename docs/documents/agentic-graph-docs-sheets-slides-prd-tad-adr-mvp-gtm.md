@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Docs/Sheets/Slides Export"
 id: "md:agentic-graph-docs-sheets-slides-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.1.0"
 date: "2026-07-30"
 lang: "en-US"

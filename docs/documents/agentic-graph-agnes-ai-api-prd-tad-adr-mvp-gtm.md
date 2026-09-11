@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph - Agnes AI API Integration: MainPanel -> FloatingPanel Chat"
-doc_type: "PRD/TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 schema: "agentic-os-computing-flow/v1"
 version: "2.0.0"
 status: "implemented-incremental"

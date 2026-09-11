@@ -289,7 +289,7 @@ export function testAgenticOsDeterministicFallbackShapesLatestRecommendationQuer
     'artifact: "Pitch Deck + PRD + TAD + TCO"',
     'owner: "solo founder"',
     'status: "recommended"',
-    'doc_type: "Pitch Deck + PRD + TAD + TCO"',
+    'doc_type: "PRD-TAD-ADR-MVP-GTM"',
     'title: "Knowledge Graph Canvas · AI Pipeline — Pitch Deck + PRD + TAD + TCO"',
     '## Pitch Deck + PRD + TAD + TCO',
     'label: "trigger / input"',

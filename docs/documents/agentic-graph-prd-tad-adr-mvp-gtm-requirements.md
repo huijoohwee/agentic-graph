@@ -1,6 +1,6 @@
 ---
 title: "Source-Native Graph Workspace Product Requirements"
-doc_type: "Product Requirements Document"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "3.1.0"
 date: "2026-07-30"
 lang: "en-US"
@@ -274,5 +274,5 @@ The current reference repository maps this neutral contract as follows:
 | canonical runtime contract validation host | `npm run runtime:test` plus `npm run superagent:test` where the bounded harness is in scope |
 
 The companion architecture and decision owners are
-`docs/documents/agentic-graph-tad.md` and
-`docs/documents/agentic-graph-architecture-decisions.md`.
+`docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-architecture.md` and
+`docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md`.

@@ -1,3 +1,18 @@
+---
+title: "agentic-graph Mapping Stack PRD-TAD-ADR-MVP-GTM: Integration Contracts and Patterns"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "1.0.0"
+date: "2026-01-21"
+lang: "en-US"
+owner: "Documentation maintainers"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "prd-tad-adr-mvp-gtm-alignment"
+agent_id: "codex"
+---
+
 # agentic-graph Mapping Stack PRD-TAD-ADR-MVP-GTM: Integration Contracts and Patterns
 
 Continuation of agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md covering integration contracts, ADRs, and API integration patterns.

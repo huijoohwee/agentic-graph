@@ -1,18 +1,30 @@
+---
+title: "Knowledge Graph Geospatial Integration: PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "1.0.2"
+date: "2026-01-23"
+lang: "en-US"
+owner: "Documentation maintainers"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "prd-tad-adr-mvp-gtm-alignment"
+agent_id: "codex"
+---
+
 # Knowledge Graph Geospatial Integration: PRD-TAD-ADR-MVP-GTM
 
 **Document Version**: 1.0.2  
 **Date**: 2026-01-23  
 **Status**: Active (reference implementation extracted to `gympgrph`; agentic-graph hosts it via a plugin bridge)
 > Canonical index document. Keep this file sub-600; continue integration contracts plus extension/delivery/validation detail in the companion documents linked below.
----
 
 ## Document Purpose
 
 **Context**: Knowledge Graph systems with Agentic GraphRAG capabilities lack native geospatial visualization and spatial analysis  
 **Intent**: Enable location-aware knowledge discovery through integrated mapping capabilities  
 **Directive**: This document describes MapLibre GL + configurable vector-tile map styles (OpenFreeMap Liberty by default) + Turf.js integration layered on top of the infinite canvas. The reference runtime (in `gympgrph`) implements an interactive basemap overlay (pan/drag + smooth zoom), dataset URL layers (GeoJSON + records→points), and bounded fit-to-data; spatial query and selection synchronization features remain future work unless explicitly implemented.
-
----
 
 # PART I: PRODUCT REQUIREMENTS DOCUMENTATION (PRD)
 
@@ -36,8 +48,6 @@ Existing system provides graph visualization (d3.js), 3D knowledge structures (t
 - **Context Switching**: 67% of users report using external mapping tools alongside knowledge graph
 - **Spatial Queries**: Zero spatial analysis capabilities despite 45% of queries containing location intent
 
----
-
 ## User Personas
 
 ### Persona 1: Research Analyst
@@ -57,8 +67,6 @@ Existing system provides graph visualization (d3.js), 3D knowledge structures (t
 **Goals**: Visualize project locations, analyze impact zones, map community feedback  
 **Pain Points**: Cannot overlay project boundaries, no buffer zone analysis, missing distance measurements  
 **Technical Proficiency**: Medium-Low (primarily domain tools)
-
----
 
 ## Epic 1: Geospatial Knowledge Entity Visualization
 
@@ -118,8 +126,6 @@ Users need to visualize knowledge graph entities with location attributes on int
 **Complexity**: Medium  
 **Dependencies**: [PRD-1.1], styling configuration system
 
----
-
 ## Epic 2: Spatial Query and Analysis
 
 ### Epic Problem Statement
@@ -178,8 +184,6 @@ Users need client-side spatial analysis capabilities to discover knowledge patte
 **Priority**: COULD HAVE  
 **Complexity**: High  
 **Dependencies**: [PRD-2.1], graph relationship creation API
-
----
 
 ## Epic 3: Multi-Layer Integration
 
@@ -241,8 +245,6 @@ Users need to combine knowledge graph visualizations with geographic context lay
 **Complexity**: High  
 **Dependencies**: [PRD-1.1], existing infinite canvas system
 
----
-
 ## Epic 4: Knowledge Enrichment via Location
 
 ### Epic Problem Statement
@@ -301,8 +303,6 @@ Users need to enrich knowledge entities with geographic context and create locat
 **Priority**: COULD HAVE  
 **Complexity**: Medium  
 **Dependencies**: [PRD-2.2], entity metadata schema
-
----
 
 ## Success Metrics
 

@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph and MiroMind API PRD-TAD-ADR-MVP-GTM"
 schema: agentic-os-computing-flow/v1
 id: "md:agentic-graph-miromind-api-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.3.0"
 date: "2026-07-30"
 lang: "en-US"

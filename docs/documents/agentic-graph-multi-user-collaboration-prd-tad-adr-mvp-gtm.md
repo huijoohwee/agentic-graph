@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Multi-User Collaboration PRD and TAD"
-doc_type: "PRD/TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.3.1"
 date: "2026-07-11"
 status: "Accepted and implemented authenticated room transport"
@@ -310,7 +310,7 @@ This document is Dev-scoped. Do not deploy, publish to the Prod mirror, or push 
 
 ## Continuation
 
-Technical architecture continues in [agentic-graph-multi-user-collaboration-prd.tad.companion.md](agentic-graph-multi-user-collaboration-prd.tad.companion.md).
+Technical architecture continues in [agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.companion.md](agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.companion.md).
 
 ---
 

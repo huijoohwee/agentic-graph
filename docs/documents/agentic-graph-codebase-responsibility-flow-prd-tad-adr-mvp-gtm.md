@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: agentic-graph Codebase Responsibility Flow PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-codebase-responsibility-flow-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.4.0"
 date: "2026-07-30"
 lang: "en-US"

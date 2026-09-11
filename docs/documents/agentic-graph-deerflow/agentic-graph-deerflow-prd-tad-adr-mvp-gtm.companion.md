@@ -1,3 +1,18 @@
+---
+title: "agentic-graph DeerFlow Integration - TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "1.2.0"
+date: "2026-05-29"
+lang: "en-US"
+owner: "Documentation maintainers"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "prd-tad-adr-mvp-gtm-alignment"
+agent_id: "codex"
+---
+
 # agentic-graph DeerFlow Integration - TAD Companion
 
 Continuation of [agentic-graph-deerflow-prd-tad-adr-mvp-gtm.md](agentic-graph-deerflow-prd-tad-adr-mvp-gtm.md). Contains Part II: Technical Architecture Documentation.

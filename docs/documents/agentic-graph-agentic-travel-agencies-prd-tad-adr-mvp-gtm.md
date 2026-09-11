@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Agentic Travel Agencies — Flight Booking, Comparison Shopping & Shared-Canvas Primitive"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.6.0"
 date: "2026-08-18"
 lang: "en-US"

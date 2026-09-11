@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph MainPanel Commerce - PRD-TAD-ADR-MVP-GTM"
-doc_type: "PRD+TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AGENTIC_OS-MP-COMMERCE-001"
 version: "1.0.4"
 status: "Accepted and implemented"
@@ -295,8 +295,8 @@ RAO: the credit-ledger actor applies or replays the buyer's frozen debit, produc
 one financial effect; the unlock owner commits entitlement, count, and audit,
 producing one completed purchase. SVO: the unlock owner finalizes the original
 paid entitlement. These joins describe the current source and its local evidence.
-The source-owned [C6 unlock workflow](./agentic-graph-strytree-tad-workflows-api.md#workflow-unlock-protected-branch)
-and [ADR-006](./agentic-graph-strytree-adr-validation.md#adr-006-atomic-credit-debit--durable-object-vs-d1-row-lock)
+The source-owned [C6 unlock workflow](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-workflows-api.md#workflow-unlock-protected-branch)
+and [ADR-006](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-validation.md#adr-006-atomic-credit-debit--durable-object-vs-d1-row-lock)
 record these separate commits; the canonical PRD retains the original E05 IDs.
 
 The existing per-buyer ledger actor owns the debit, amount, creator allocation,

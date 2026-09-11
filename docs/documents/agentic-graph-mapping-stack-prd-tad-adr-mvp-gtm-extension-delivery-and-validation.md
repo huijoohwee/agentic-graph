@@ -1,3 +1,18 @@
+---
+title: "agentic-graph Mapping Stack PRD-TAD-ADR-MVP-GTM: Extension, Delivery, and Validation"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "1.0.0"
+date: "2026-09-11"
+lang: "en-US"
+owner: "Documentation maintainers"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "prd-tad-adr-mvp-gtm-alignment"
+agent_id: "codex"
+---
+
 # agentic-graph Mapping Stack PRD-TAD-ADR-MVP-GTM: Extension, Delivery, and Validation
 
 Continuation of agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md covering extension points, quality attributes, deployment, migration, validation, and appendix material.

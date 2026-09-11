@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: Feishu Base Contract Companion"
 id: "md:agentic-graph-feishu-base-mcp-prd-tad.companion"
-doc_type: "Technical Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.4.0"
 date: "2026-08-06"
 lang: "en-US"

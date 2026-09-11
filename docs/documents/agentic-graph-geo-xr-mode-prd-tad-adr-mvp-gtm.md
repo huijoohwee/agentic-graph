@@ -1,7 +1,7 @@
 ---
 title: "Geo+XR Mode Product, Technical Architecture, and Decision Contract"
 id: "md:geo-xr-mode-prd-tad-adr"
-doc_type: "PRD/TAD/ADR"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.2.0"
 date: "2026-07-31"
 lang: "en-US"

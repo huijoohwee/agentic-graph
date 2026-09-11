@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Agentic Commerce — PRD-TAD-ADR-MVP-GTM"
-doc_type: "PRD+TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AGENTIC_OS-AC-001"
 version: "0.2.0"
 status: "Accepted and implemented"

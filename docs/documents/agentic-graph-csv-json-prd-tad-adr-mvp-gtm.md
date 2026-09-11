@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph CSV JSON Import Conversion - PRD and TAD"
-doc_type: "PRD/TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 feature_id: "agentic-graph-csv-json-import-conversion"
 project: "agentic-graph"
 version: "0.2.0"

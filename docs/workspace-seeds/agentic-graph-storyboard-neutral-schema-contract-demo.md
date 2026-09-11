@@ -40,7 +40,7 @@ kgParserRoutingContract:
   surfaces: ["2D Renderer: Storyboard", "2D Renderer: Storyboard", "BottomPanel/FloatingPanel Mermaid panels"]
   edgePolicy: "explicit graphData.edges, flow.edges, workflow.edges, and diagram edges are source-owned SSOT; renderers project visible connectors only"
   forkPolicy: "fork, branch, candidate, and publish metadata remain authored source fields and surface through parsed graph edges without downstream remapping"
-source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/knowgrph-storyboard-neutral-schema-contract-demo.md", "sha256": "9a04f1b27812134c8e13a337348c9811655884b40af5f2716747831ba5535c8b", "restoration": "Source recovery; historical readiness claims require current validation."}
+source_provenance: {"repository": "huijoohwee/joohwee", "revision": "59e920337b5591943f10461d45af6b76ea24e1c5", "path": "huijoohwee-docs/agentic-graph-storyboard-neutral-schema-contract-demo.md", "sha256": "9a04f1b27812134c8e13a337348c9811655884b40af5f2716747831ba5535c8b", "restoration": "Source recovery; historical readiness claims require current validation."}
 socket_types: {"local_draft_text": {"dataType": "string"}}
 local_execution: {"mode": "prepare-only", "paid_calls": 0, "provider_execution": "Separate explicit operator action; generated media and live evidence stay blank."}
 ---

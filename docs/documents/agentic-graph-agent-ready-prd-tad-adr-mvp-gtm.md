@@ -1,7 +1,7 @@
 ---
 title: "Agent-Ready Surface Contract"
 id: "md:agentic-graph-agent-ready-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.28.0"
 date: "2026-07-30"
 lang: "en-US"

@@ -46,7 +46,7 @@ These middleware endpoints exist for local development and preview builds. The s
 
 ## Production Worker API (Cloudflare)
 
-The Cloudflare Worker at `airvio.co/api/storage/*` provides storage sync and document access endpoints. The separate `agentic-payment` Worker owns `airvio.co/api/payments/*` for Stripe checkout and webhook handling. See `agentic-graph-storage-sync-document.md` for full storage specification.
+The Cloudflare Worker at `airvio.co/api/storage/*` provides storage sync and document access endpoints. The separate `agentic-payment` Worker owns `airvio.co/api/payments/*` for Stripe checkout and webhook handling. See `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md` for full storage specification.
 
 ### Public document view
 

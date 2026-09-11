@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Strybldr - PRD and TAD"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 id: "agentic-graph-strybldr-prd-tad"
 version: "0.2.1"
 status: "implementation-contract"

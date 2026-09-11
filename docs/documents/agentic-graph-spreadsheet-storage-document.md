@@ -34,7 +34,7 @@ invocation:
 | Filters | `canvas/src/features/graph-data-table/graphDataTableFilters.ts` | Active |
 | Sorts | `canvas/src/features/graph-data-table/graphDataTableSorts.ts` | Active |
 | Workspace editor/canvas transition guard | `canvas/src/features/workspace-table/workspaceTableSsot.ts` | Active |
-| Document and graph persistence | `agentic-graph-storage-sync-document.md` | Shared owner |
+| Document and graph persistence | `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md` | Shared owner |
 | Storage schemas and routes | `agentic-graph-storage-schemas-document.md` | Shared owner |
 
 There is no dedicated spreadsheet database, route, or independent sync loop. Browser continuity, GitHub save, D1 read-cache publication, collaboration, and offline fallback follow the shared storage contract.

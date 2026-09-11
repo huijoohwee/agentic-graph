@@ -1,5 +1,6 @@
 import {
   analyzeAgenticOsRequest,
+  resolveAgenticOsDocumentType,
   AGENTIC_OS_TIER_B_KEYS,
   sanitizeRequestIntent,
 } from './chatAgenticOsRequestProfile'
@@ -370,6 +371,7 @@ export const enforceAgenticOsQueryResponsiveContent = (args: {
   }
   const existingProduct = stripYamlScalarDecorators(extractTopLevelScalar(nextFrontmatter, 'product'))
   const existingDocType = stripYamlScalarDecorators(extractTopLevelScalar(nextFrontmatter, 'doc_type'))
+  if (existingDocType) nextFrontmatter = replaceTopLevelScalarOrBlock(nextFrontmatter, 'doc_type', resolveAgenticOsDocumentType(existingDocType))
   for (const key of AGENTIC_OS_TIER_B_KEYS) {
     const inferred = String(profile[key] || '').trim()
     if (!inferred) continue
@@ -380,7 +382,7 @@ export const enforceAgenticOsQueryResponsiveContent = (args: {
   const artifactDocType = String(profile.artifact || '').trim()
   const resolvedProduct = String(profile.product || existingProduct || '').trim()
   if (artifactDocType && (!existingDocType || existingDocType === 'Chat Response' || existingDocType === '{{doc_type}}')) {
-    nextFrontmatter = replaceTopLevelScalarOrBlock(nextFrontmatter, 'doc_type', artifactDocType)
+    nextFrontmatter = replaceTopLevelScalarOrBlock(nextFrontmatter, 'doc_type', resolveAgenticOsDocumentType(artifactDocType))
     if (resolvedProduct && resolvedProduct !== '{{product}}') {
       nextFrontmatter = replaceTopLevelScalarOrBlock(nextFrontmatter, 'title', `${resolvedProduct} · AI Pipeline — ${artifactDocType}`)
     }

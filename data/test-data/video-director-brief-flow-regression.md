@@ -10,7 +10,7 @@ kgCanvas2dRenderer: "flowEditor"
 kgDocumentSemanticMode: "document"
 kgFrontmatterModeEnabled: true
 
-$schema: "kgc-pipeline/v1"
+$schema: "agentic-os-pipeline/v1"
 
 inputs:
   text_provider_id: "deerflow"
@@ -36,7 +36,7 @@ inputs:
     label: "Three-locale traversal: US Wild West canyon mesa · Caribbean island tempest · Singapore MBS / RoboTown"
 
 spec:
-  format: kgc-pipeline
+  format: agentic-os-pipeline
   version: "1.0.0"
   parser: yaml-frontmatter
   execution: computing-flow
@@ -83,7 +83,7 @@ runner:
       action: ingest
       input: "raw file bytes"
       output: "parsed YAML object"
-      description: "Parse YAML frontmatter; validate $schema == kgc-pipeline/v1; expose __doc."
+      description: "Parse YAML frontmatter; validate $schema == agentic-os-pipeline/v1; expose __doc."
     - seq: R02
       action: resolve
       input: "__doc"

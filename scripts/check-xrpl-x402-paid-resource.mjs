@@ -227,7 +227,7 @@ export const inspectXrplX402PaidResource = ({
   try {
     frontmatter = parseFrontmatter(read(root, DOC_PATH), DOC_PATH)
     const expected = {
-      doc_type: 'Combined PRD/TAD/ADR',
+      doc_type: 'PRD-TAD-ADR-MVP-GTM',
       frontmatter_contract: 'required',
       delivered_rung: 'undocumented',
       lane: 'authoring',

@@ -23,14 +23,14 @@ invocation:
 
 **Context**: Schema appendix for the agentic-graph storage and sync system.
 **Intent**: Single reference for all record shapes, D1 tables, browser-local cache collections, and API route contracts.
-**Directive**: Keep this file as a pure reference; architectural decisions and runtime wiring live in `agentic-graph-storage-sync-document.md`.
+**Directive**: Keep this file as a pure reference; architectural decisions and runtime wiring live in `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md`.
 
 ---
 
 **Version**: 2.5.0
 **Date**: 2026-07-23
-**Canonical index**: `agentic-graph-storage-sync-document.md`
-**See also**: `agentic-graph-storage-schemas-extensions-document.md` (deferred auth relay and PostgreSQL extensions), `agentic-graph-multi-user-collaboration-prd.tad.md` (auth tables, role-based access extension)
+**Canonical index**: `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md`
+**See also**: `agentic-graph-storage-schemas-extensions-document.md` (deferred auth relay and PostgreSQL extensions), `agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md` (auth tables, role-based access extension)
 
 ## Schema Principles
 
@@ -595,4 +595,4 @@ Deferred PostgreSQL adoption gates and shape deltas live in `agentic-graph-stora
 
 ## Continuation
 
-Return to `agentic-graph-storage-sync-document.md` for the canonical architecture, PRD, TAD, and conflict resolution flow.
+Return to `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md` for the canonical architecture, PRD, TAD, and conflict resolution flow.

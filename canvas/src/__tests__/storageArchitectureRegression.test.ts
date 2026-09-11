@@ -53,16 +53,16 @@ export function testCloudflareDeployScriptsSeedDocsMirrorIntoD1() {
 }
 
 export function testStorageSyncDocumentDeclaresTieredSourceAuthorityContract() {
-  const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.md')
+  const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md')
   const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.companion.md')
   const storageDocText = readFileSync(storageDocPath, 'utf8')
   const companionText = readFileSync(companionPath, 'utf8')
   const requiredStorageDocFragments = [
     'Authored Markdown remains canonical.',
-    'Browser records, shared D1 rows, R2',
-    'objects, collaboration rooms, and generated mirrors are supporting stores with explicit roles.',
-    'exactly one room provider owns updates and recovery',
-    'no dual-write between room providers',
+    'Browser records, Lark resources, shared D1 rows, R2',
+    'generated mirrors are supporting stores with explicit roles.',
+    'exactly one room provider to own concurrent edits',
+    'two providers never dual-write',
     '| Working store | Store | IndexedDB/Dexie or explicit memory adapter',
     'memory fallback is not called durable',
     'Route identity source',
@@ -104,7 +104,7 @@ export function testStorageSyncDocumentDeclaresTieredSourceAuthorityContract() {
 }
 
 export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract() {
-  const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.md')
+  const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md')
   const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.companion.md')
   const binaryContractPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-artifact-media-storage-architecture.md')
   const storageDocText = readFileSync(storageDocPath, 'utf8')
@@ -112,9 +112,9 @@ export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract
   const binaryContractText = readFileSync(binaryContractPath, 'utf8')
   const requiredStorageDocFragments = [
     'binary_contract: "docs/documents/agentic-graph-artifact-media-storage-architecture.md"',
-    'The generic blob handler currently has no auth and permits overwrite at a workspace/path key.',
-    'run-media token checks expiry and run id but is not signed.',
-    'security/overwrite gaps documented separately',
+    'blobs require workspace authorization; run media requires signed capabilities.',
+    'restricted to explicit local-runtime fallback.',
+    'Authorized objects remain overwriteable at their scoped key.',
   ]
   for (const fragment of requiredStorageDocFragments) {
     if (!storageDocText.includes(fragment)) {

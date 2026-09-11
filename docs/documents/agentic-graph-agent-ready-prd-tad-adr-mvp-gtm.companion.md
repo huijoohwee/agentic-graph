@@ -1,7 +1,7 @@
 ---
 title: "Agent-Ready Source Contract Companion"
 id: "md:agentic-graph-agent-ready-prd-tad.companion"
-doc_type: "Technical Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.28.0"
 date: "2026-07-30"
 lang: "en-US"

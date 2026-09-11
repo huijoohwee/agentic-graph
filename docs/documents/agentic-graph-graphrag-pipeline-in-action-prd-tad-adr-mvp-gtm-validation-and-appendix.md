@@ -1,3 +1,18 @@
+---
+title: "agentic-graph GraphRAG Pipeline In Action PRD-TAD-ADR-MVP-GTM: Validation and Appendix"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "2.0.0"
+date: "2026-09-11"
+lang: "en-US"
+owner: "Documentation maintainers"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "prd-tad-adr-mvp-gtm-alignment"
+agent_id: "codex"
+---
+
 # agentic-graph GraphRAG Pipeline In Action PRD-TAD-ADR-MVP-GTM: Validation and Appendix
 
 Continuation of agentic-graph-graphrag-pipeline-in-action-prd-tad-adr-mvp-gtm.md covering quality attributes, deployment, validation, analytics, glossary, and implementation notes.

@@ -15,11 +15,11 @@ guideline_version: "1.7.0"
 frontmatter_contract: "required"
 invocation_authority: "This document declares no command, tag, binding, HTTP route, or tool identity; canonical source and linked contract owners retain invocation authority."
 related:
-  - "docs/documents/agentic-graph-architecture-decisions.md"
+  - "docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md"
   - "docs/agentic-graph-acos-deploy-runbook.md"
   - "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md"
   - "docs/documents/agentic-graph-mcp/agentic-graph-mcp.md"
-  - "docs/documents/agentic-graph-storage-sync-document.md"
+  - "docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md"
   - "docs/documents/agentic-graph-artifact-media-storage-architecture.md"
   - "docs/documents/agentic-graph-payments-prd-tad-adr-mvp-gtm.md"
 ---
@@ -53,12 +53,12 @@ This document deliberately contains no duplicate Invocation Register.
 
 | Contract | Canonical owner |
 |---|---|
-| Cross-cutting source, persistence, transport, and promotion decisions | [Core architecture decisions](agentic-graph-architecture-decisions.md) |
+| Cross-cutting source, persistence, transport, and promotion decisions | [Core architecture decisions](agentic-graph-prd-tad-adr-mvp-gtm-decisions.md) |
 | Protected Pages release, receipt, verification, and rollback | [Deployment runbook](../agentic-graph-acos-deploy-runbook.md) |
 | Source-to-publish artifact relationship | [Cross-repository publish topology](agentic-graph-cross-repo-publish-topology.md) |
 | Public discovery, browser, local, and control-plane MCP separation | [MCP overview](agentic-graph-mcp/agentic-graph-mcp.md) and [MCP install contract](agentic-graph-mcp-install-contract.md) |
 | Agent discovery requirements and surface counts | [Agent-ready PRD/TAD](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md) |
-| Structured persistence, reconciliation, and room ownership | [Storage and synchronization owner](agentic-graph-storage-sync-document.md) |
+| Structured persistence, reconciliation, and room ownership | [Storage and synchronization owner](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md) |
 | Generic blob and run-media byte contracts | [Artifact and media storage owner](agentic-graph-artifact-media-storage-architecture.md) |
 | Checkout, settlement, and payment-worker behavior | [Payments PRD/TAD](agentic-graph-payments-prd-tad-adr-mvp-gtm.md) |
 | Draft AI routing work | [AI Gateway enhancement plan](agentic-graph-ai-gateway-enhancement-plan.md) |
@@ -390,7 +390,7 @@ promotion and enters the scoped failure path
 | ADR-CF-004 | accepted in this source specification | DNS mutation uses a scoped, separate credential | infer DNS authority from unrelated deploy login | additional setup with smaller blast radius |
 
 The global source, persistence, transport, promotion, and generated-owner decisions remain in the
-[core ADR set](agentic-graph-architecture-decisions.md).
+[core ADR set](agentic-graph-prd-tad-adr-mvp-gtm-decisions.md).
 
 ### Deployment-model TCO and FOSS comparison
 

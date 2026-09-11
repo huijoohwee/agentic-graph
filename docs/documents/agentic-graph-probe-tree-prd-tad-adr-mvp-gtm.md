@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Probe-Tree — Combined PRD-TAD-ADR-MVP-GTM"
-doc_type: "PRD/TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.3.0"
 date: "2026-07-30"
 lang: "en-US"

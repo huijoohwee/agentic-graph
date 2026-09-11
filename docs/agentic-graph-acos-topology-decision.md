@@ -1,6 +1,6 @@
 ---
 title: "Reference implementation: Superseded Multi-Provider Topology Decision"
-doc_type: "Architecture Decision Record Archive"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "2.0.0"
 date: "2026-07-30"
 lang: "en-US"
@@ -12,9 +12,9 @@ lane: "authoring"
 universal_scope: false
 document_lifecycle: "superseded"
 superseded_by:
-  - "docs/documents/agentic-graph-architecture-decisions.md#adr-002--reference-implementation-compose-one-client-before-adding-service-tiers"
-  - "docs/documents/agentic-graph-architecture-decisions.md#adr-003--reference-implementation-separate-discovery-local-embedded-and-control-transports"
-  - "docs/documents/agentic-graph-architecture-decisions.md#adr-006--reference-implementation-protect-exact-state-promotion"
+  - "docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md#adr-002--reference-implementation-compose-one-client-before-adding-service-tiers"
+  - "docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md#adr-003--reference-implementation-separate-discovery-local-embedded-and-control-transports"
+  - "docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md#adr-006--reference-implementation-protect-exact-state-promotion"
 ---
 
 # Reference implementation: Superseded Multi-Provider Topology Decision

@@ -2,7 +2,7 @@
 title: agentic-graph LLM Prompt Contract PRD-TAD-ADR-MVP-GTM (Implemented E2E)
 id: agentic-graph-llm-prompt-contract-prd-tad
 schema: agentic-os-computing-flow/v1
-doc_type: prd-tad-adr-mvp-gtm
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: 0.5.0
 date: 2026-07-30
 lang: en-US

@@ -1,7 +1,7 @@
 ---
 title: "Agent-Ready Runtime and Validation Companion"
 id: "md:agentic-graph-agent-ready-prd-tad.runtime"
-doc_type: "TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "2.1.0"
 date: "2026-07-30"
 lang: "en-US"

@@ -23,14 +23,14 @@ not duplicate component registries or release evidence.
 
 ## Canonical reading order
 
-1. Product requirements: `agentic-graph-prd.md`
-2. Technical architecture: `agentic-graph-tad.md`
-3. Core decisions: `agentic-graph-architecture-decisions.md`
+1. Product requirements: `agentic-graph-prd-tad-adr-mvp-gtm-requirements.md`
+2. Technical architecture: `agentic-graph-prd-tad-adr-mvp-gtm-architecture.md`
+3. Core decisions: `agentic-graph-prd-tad-adr-mvp-gtm-decisions.md`
 4. Pipeline overview: `agentic-graph-pipeline-document.md`
 5. Parser: `agentic-graph-parser-document.md`
 6. Renderer and Canvas UX: `agentic-graph-renderer-document.md` and
    `agentic-graph-ui-ux-design-document.md`
-7. Storage and synchronization: `agentic-graph-storage-sync-document.md`
+7. Storage and synchronization: `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md`
 8. MCP topology: `agentic-graph-mcp/agentic-graph-mcp.md`
 9. Cross-repository publication: `agentic-graph-cross-repo-publish-topology.md`
 

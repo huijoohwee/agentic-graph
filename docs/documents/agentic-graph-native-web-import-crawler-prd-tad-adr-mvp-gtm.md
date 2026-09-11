@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.2.0"
 date: "2026-07-30"
 lang: "en-US"

@@ -24,7 +24,7 @@ tags:
 related:
   - "README.md"
   - "docs/documents/agentic-graph-cloudflare-document.md"
-  - "docs/documents/agentic-graph-prd.md"
+  - "docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-requirements.md"
   - "canvas/src/features/panels/views/cloudflareAiGatewayMcpApiDocs.ts"
   - "web/src/lib/ai-gateway.js"
 ---

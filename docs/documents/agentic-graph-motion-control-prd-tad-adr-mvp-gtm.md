@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Motion Control PRD-TAD-ADR-MVP-GTM"
-doc_type: "Runtime Design and Clean-Room Boundary"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "runtime-ready"
 lang: "en-US"
 frontmatter_contract: "required"

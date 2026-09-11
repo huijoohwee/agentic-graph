@@ -1,6 +1,6 @@
 ---
 title: "Strytree C6-C7"
-doc_type: "TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "implementation-contract"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -205,7 +205,7 @@ sequenceDiagram
 **Postconditions**:
 - Debit and delivery have separate durable commits; retry must recover both without another charge.
 - The unique buyer/node entitlement and exact audit prove this POST's completion. Creator/platform amounts are allocation metadata, not creator wallet credit or payout.
-- Snapshot reads still trust existing entitlement rows directly; universal legacy-row remediation and deployed media delivery remain unproved ([C5](./agentic-graph-strytree-tad-architecture.md#entitlement-decision)).
+- Snapshot reads still trust existing entitlement rows directly; universal legacy-row remediation and deployed media delivery remain unproved ([C5](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-architecture.md#entitlement-decision)).
 
 ## C7. API Contracts
 

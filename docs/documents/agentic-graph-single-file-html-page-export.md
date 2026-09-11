@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Single-File HTML Workspace Export PRD/TAD"
-doc_type: "Combined PRD/TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 id: "agentic-graph-single-file-html-page-export"
 version: "1.1.2"
 status: "implementation-contract"

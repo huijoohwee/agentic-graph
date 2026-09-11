@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph SME Protection Graph — PRD-TAD-ADR-MVP-GTM"
 graphId: "md:agentic-graph-sme-protection-gap-prd-tad"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 date: "2026-07-13"
 lang: "en-US"
 schema: "agentic-graph-prd-tad/v1"

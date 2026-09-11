@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: agentic-graph City-Building Simulation PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-game-city-building-sim-prd-tad-ard"
-doc_type: "PRD/TAD/ADR"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "2.1.0"
 date: "2026-07-31"
 lang: "en-US"

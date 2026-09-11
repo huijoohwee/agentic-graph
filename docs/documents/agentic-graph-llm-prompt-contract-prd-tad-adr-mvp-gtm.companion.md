@@ -2,7 +2,7 @@
 title: agentic-graph LLM Prompt Contract PRD-TAD-ADR-MVP-GTM Companion (Runtime, Validation, Implementation)
 id: agentic-graph-llm-prompt-contract-prd-tad-companion
 schema: agentic-os-computing-flow/v1
-doc_type: prd-tad-companion
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: 0.5.0
 date: 2026-07-30
 lang: en-US

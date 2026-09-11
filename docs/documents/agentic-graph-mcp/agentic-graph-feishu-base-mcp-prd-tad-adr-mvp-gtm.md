@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: Feishu Base Read-only Knowledge Ingestion Contract"
 id: "md:agentic-graph-feishu-base-mcp-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.5.0"
 date: "2026-08-06"
 lang: "en-US"

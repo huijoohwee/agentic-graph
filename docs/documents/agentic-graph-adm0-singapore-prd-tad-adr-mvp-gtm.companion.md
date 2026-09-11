@@ -1,7 +1,7 @@
 ---
 title: "Singapore ADM0 Environment Companion PRD-TAD-ADR-MVP-GTM"
 id: "md:adm0-singapore-environment-companion"
-doc_type: "PRD/TAD/ADR Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.5.0"
 date: "2026-07-31"
 lang: "en-US"

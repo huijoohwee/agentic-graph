@@ -1,11 +1,24 @@
+---
+title: "agentic-graph Crawler Access - PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "1.0.1"
+date: "2026-05-29"
+lang: "en-US"
+owner: "Documentation maintainers"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "prd-tad-adr-mvp-gtm-alignment"
+agent_id: "codex"
+---
+
 # agentic-graph Crawler Access - PRD-TAD-ADR-MVP-GTM
 
 **Document Version**: 1.0.1
 **Date**: 2026-05-29
 **Status**: Implemented crawler-access contract
 **Scope**: AI crawler and non-JavaScript access to Editor Workspace Source Files through storage-owned read-only routes, Cloudflare AI Crawl Control Pay Per Crawl compatibility, and Dev -> Prod -> Cloudflare publication parity
-
----
 
 ## Document Purpose
 
@@ -17,19 +30,15 @@
 
 **Current deployment context**: Dev is `$GITHUB_ROOT/agentic-graph`; the static production mirror is `$GITHUB_ROOT/huijoohwee/content/agentic-graph`; Cloudflare serves the app at `airvio.co/agentic-graph`, the storage Worker at `airvio.co/api/storage/*`, and the separate payment Worker at `airvio.co/api/payments/*`.
 
----
-
 ## Companion Files
 
 | File | Scope |
 |---|---|
 | `goal` | Source Files crawler contract, Pay Per Crawl boundary, and acceptance proof requirements |
-| `agentic-graph-storage-sync-document.md` | Storage ladder, Worker + D1 sync, public doc-view route, Dev -> Prod -> Cloudflare topology |
+| `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md` | Storage ladder, Worker + D1 sync, public doc-view route, Dev -> Prod -> Cloudflare topology |
 | `agentic-graph-storage-schemas-document.md` | D1 document tables, browser-local cache shapes, and storage route schemas |
 | `agentic-graph-source-files-import-document.md` | Source Files ingestion, canonical path policy, provenance, and import boundaries |
-| `agentic-graph-multi-user-collaboration-prd.tad.md` | Future identity, membership, authorization, and shared-workspace constraints |
-
----
+| `agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md` | Future identity, membership, authorization, and shared-workspace constraints |
 
 # PART I: PRODUCT REQUIREMENTS DOCUMENTATION (PRD)
 
@@ -59,7 +68,6 @@ The same crawl surface must survive the Dev -> Prod -> Cloudflare path so produc
 - Duplicating Pay Per Crawl semantics in app code risks conflicting with Cloudflare's own HTTP 402 and HTTP 200 header behavior.
 - A production deploy is incomplete unless both static discovery and Worker-backed storage routes are present.
 
----
 
 ## Personas
 

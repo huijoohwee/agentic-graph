@@ -1,7 +1,7 @@
 ---
 title: "MCP Service Contract"
 id: "md:agentic-graph-mcp-service-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.5.0"
 date: "2026-07-30"
 lang: "en-US"

@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Queryable Corpus Graph - PRD and TAD"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 id: "agentic-graph-query-prd-tad"
 version: "0.3.0"
 status: "implemented-finetune-contract"

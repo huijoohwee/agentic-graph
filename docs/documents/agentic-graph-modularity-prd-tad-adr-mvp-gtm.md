@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Modularity PRD-TAD-ADR-MVP-GTM"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 id: "agentic-graph-modularity-prd-tad"
 version: "1.0.2"
 status: "implemented"

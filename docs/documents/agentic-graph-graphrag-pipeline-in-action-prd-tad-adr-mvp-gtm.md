@@ -139,6 +139,7 @@ mermaid: |
     class NLTK_Tokens,NLTK_Clean,NLTK_Lemma,HF_Subwords,HF_Count,spaCy_Entities,spaCy_Tags,spaCy_Dep,Triple_Pattern,Triple_Extract,Graph_NodeList,Graph_EdgeList,Metrics_Output,Node_Output,Complete_Metrics,Visualization dataStyle
     class Entity_Analytics,TFIDF,TFIDF_Output,Centrality,Centrality_Output,Causality_Analytics,Causal_Detect,Causal_Output,Strength_Calc,Strength_Output,Metadata_Analytics,Graph_Metrics,Node_Metrics,Community_Analytics,Dbscan,Community_Output,Topic_Model,Topic_Output analyticsStyle
     class NLTK_Lib,HF_Lib,spaCy_Lib,Triple_Lib,TFIDF_Lib,Centrality_Lib,Causal_Lib,Strength_Lib,Graph_Lib,Metrics_Lib,Community_Lib,Topic_Lib libStyle
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 ---
 
 # Knowledge Graph GraphRAG Pipeline with Analytics - PRD-TAD-ADR-MVP-GTM

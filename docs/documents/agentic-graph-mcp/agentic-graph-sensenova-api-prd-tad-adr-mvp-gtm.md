@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: SenseNova API Documentation Contract"
 id: "md:agentic-graph-sensenova-api-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.3.0"
 date: "2026-07-30"
 lang: "en-US"

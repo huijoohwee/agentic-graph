@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Agentic OS follow-on — Reference implementation PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-agentic-os-follow-on-prd-tad"
-doc_type: "Follow-On Combined PRD/TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.1.0"
 date: "2026-07-30"
 lang: "en-US"

@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: Exa Search API and MCP Contract"
 id: "md:agentic-graph-exa-mcp-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.4.0"
 date: "2026-08-13"
 lang: "en-US"

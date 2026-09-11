@@ -29,10 +29,10 @@ export const DEMO_PATH = path.join(GITHUB_ROOT, 'huijoohwee', 'docs', 'agentic-g
 export const RENDERER_SET = ['storyboard']
 
 const STRYTREE_COMPANIONS = [
-  ['agentic-graph-strytree-tad-architecture.md', '# Part C -'],
-  ['agentic-graph-strytree-tad-workflows-api.md', '## C6.'],
-  ['agentic-graph-strytree-tad-runtime-validation.md', '## C8.'],
-  ['agentic-graph-strytree-adr-validation.md', '# Part D -'],
+  ['agentic-graph-strytree-prd-tad-adr-mvp-gtm-architecture.md', '# Part C -'],
+  ['agentic-graph-strytree-prd-tad-adr-mvp-gtm-workflows-api.md', '## C6.'],
+  ['agentic-graph-strytree-prd-tad-adr-mvp-gtm-runtime-validation.md', '## C8.'],
+  ['agentic-graph-strytree-prd-tad-adr-mvp-gtm-validation.md', '# Part D -'],
 ]
 
 // Exact ordered owners only: bounded fresh reads, no recursive discovery.

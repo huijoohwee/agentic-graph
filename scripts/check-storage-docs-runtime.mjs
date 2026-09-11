@@ -19,19 +19,19 @@ import { buildAgenticGraphLocalMcpToolDefinitions } from '../mcp/local-tool-cont
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const documentPaths = Object.freeze([
-  'docs/documents/agentic-graph-storage-sync-document.md',
+  'docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md',
   'docs/documents/agentic-graph-storage-git-file-sync-runtime-api.md',
   'docs/documents/agentic-graph-storage-sync-document.companion.md',
-  'docs/documents/agentic-graph-storage-sync-adrs-document.md',
+  'docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md',
   'docs/documents/agentic-graph-storage-schemas-extensions-document.md',
   'docs/documents/agentic-graph-storage-schemas-document.md',
   'docs/documents/agentic-graph-spreadsheet-storage-document.md',
   'docs/documents/agentic-graph-source-files-import-document.md',
 ])
 const conformanceDocumentPaths = new Set([
-  'docs/documents/agentic-graph-storage-sync-document.md',
+  'docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md',
   'docs/documents/agentic-graph-storage-sync-document.companion.md',
-  'docs/documents/agentic-graph-storage-sync-adrs-document.md',
+  'docs/documents/agentic-graph-prd-tad-adr-mvp-gtm-decisions.md',
 ])
 const conformanceKeys = Object.freeze([
   'title',

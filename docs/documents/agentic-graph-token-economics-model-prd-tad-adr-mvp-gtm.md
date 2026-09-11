@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Token Economics Model — PRD-TAD-ADR-MVP-GTM"
-doc_type: "PRD+TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "TEM-001"
 version: "0.2.0"
 status: "Accepted implemented baseline; ingestion and NLQ extensions planned"

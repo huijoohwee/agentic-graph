@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Agentic Commerce Platform — Agent Marketplace & Orchestration Hub plus Clean-Room Native Vendor Settlement Layer, with Platform Roadmap"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.3.0"
 date: "2026-08-22"
 lang: "en-US"

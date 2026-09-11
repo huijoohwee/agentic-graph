@@ -1,6 +1,6 @@
 ---
 title: "Reference implementation - agentic-graph Payments - PRD-TAD-ADR-MVP-GTM"
-doc_type: "PRD+TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KGP-PAYMENTS-001"
 version: "1.3.0"
 date: "2026-07-29"

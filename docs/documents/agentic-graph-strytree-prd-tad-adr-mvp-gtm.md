@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph Strytree Storytree - PRD and TAD"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 id: "agentic-graph-strytree-prd-tad"
 version: "0.2.2"
 status: "implementation-contract"
@@ -106,10 +106,10 @@ edgeContractPrinciples: ["universality", "neutrality", "agnosticity", "modularit
 
 This index retains the PRD and historical source analysis. Its source-owned companions are:
 
-- [C1-C5: architecture, components, data model and access policy](./agentic-graph-strytree-tad-architecture.md).
-- [C6-C7: payment and delivery workflows and API contracts](./agentic-graph-strytree-tad-workflows-api.md).
-- [C8-C13: harnesses, runtime flows, quality and traceability](./agentic-graph-strytree-tad-runtime-validation.md).
-- [ADR-001-008 and validation plan](./agentic-graph-strytree-adr-validation.md).
+- [C1-C5: architecture, components, data model and access policy](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-architecture.md).
+- [C6-C7: payment and delivery workflows and API contracts](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-workflows-api.md).
+- [C8-C13: harnesses, runtime flows, quality and traceability](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-runtime-validation.md).
+- [ADR-001-008 and validation plan](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-validation.md).
 
 This combined PRD/TAD follows `guidelines/prd-tad-adr-mvp-gtm-guidelines.md` (repo root of `huijoohwee.github.io`).
 
@@ -434,7 +434,7 @@ Given insufficient balance and no prior matching paid effect, when a new unlock 
 
 > **`/goal` translation**: `insufficient-balance tests pass: unlock request when balance < unlock_price_credits returns 402 with error code insufficient_balance and no strytree_unlocks or ledger row is written`
 
-CID `commerce.request-efficiency.unlock` connects E05 to [C6 recovery](./agentic-graph-strytree-tad-workflows-api.md#workflow-unlock-protected-branch), [ADR-006](./agentic-graph-strytree-adr-validation.md#adr-006-atomic-credit-debit--durable-object-vs-d1-row-lock), and [the current RAO/SVO and evidence boundary](./agentic-graph-mainpanel-commerce-prd-tad-adr-mvp-gtm.md#paid-unlock-recovery-status).
+CID `commerce.request-efficiency.unlock` connects E05 to [C6 recovery](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-workflows-api.md#workflow-unlock-protected-branch), [ADR-006](./agentic-graph-strytree-prd-tad-adr-mvp-gtm-validation.md#adr-006-atomic-credit-debit--durable-object-vs-d1-row-lock), and [the current RAO/SVO and evidence boundary](./agentic-graph-mainpanel-commerce-prd-tad-adr-mvp-gtm.md#paid-unlock-recovery-status).
 
 ### PRD-STR-E06 - external video provider Generation Harness
 

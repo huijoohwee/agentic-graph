@@ -1,6 +1,6 @@
 ---
 title: "Strytree Part D ADR-001 through ADR-008 and Part E validation plan/references"
-doc_type: "ADR Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "implementation-contract"
 lang: "en-US"
 frontmatter_contract: "required"

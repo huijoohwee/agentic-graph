@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Agentic OS — Reference implementation PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-agentic-os-prd-tad"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.0.0"
 date: "2026-07-30"
 lang: "en-US"
@@ -481,5 +481,5 @@ verdict and does not raise readiness.
 
 - Follow-on sequencing: [Agentic OS follow-on reference implementation](agentic-graph-agentic-os-follow-on-prd-tad-adr-mvp-gtm.md)
 - Video target contract: [Agentic video workflow reference implementation companion](agentic-graph-agentic-os-video-agent-prd-tad-adr-mvp-gtm.companion.md)
-- Superseded nested path: [MCP compatibility record](agentic-graph-mcp/agentic-graph-mcp-agentic-os-prd-tad-adr-mvp-gtm.md)
-- Superseded nested companion path: [MCP companion compatibility record](agentic-graph-mcp/agentic-graph-mcp-agentic-os-prd-tad-adr-mvp-gtm.companion.md)
+- Superseded nested path: [MCP compatibility record](agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md)
+- Superseded nested companion path: [MCP companion compatibility record](agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md)

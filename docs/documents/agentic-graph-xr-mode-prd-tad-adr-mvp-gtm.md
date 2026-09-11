@@ -1,6 +1,6 @@
 ---
 title: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
-doc_type: "PRD+TAD"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KXR-001"
 version: "0.6.1"
 status: "Harmonized with current Dev implementation"

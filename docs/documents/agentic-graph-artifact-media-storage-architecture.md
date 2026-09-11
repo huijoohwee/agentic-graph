@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: agentic-graph Artifact and Media Storage Architecture"
 id: "md:agentic-graph-artifact-media-storage-architecture"
-doc_type: "Technical Architecture Document"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "2.2.0"
 date: "2026-09-06"
 lang: "en-US"
@@ -279,4 +279,4 @@ operator instruction, evidence set, and rollback record.
 - Public dispatch tests: `cloudflare/workers/agentic-graph-storage/storage-relay/storagePublicRouteSecurity.test.ts`
 - Handler tests: `cloudflare/workers/agentic-graph-storage/__tests__/mediaArtifacts.test.mjs` and
   `cloudflare/workers/agentic-graph-storage/__tests__/media.test.mjs`
-- Wider storage contract: `docs/documents/agentic-graph-storage-sync-document.md`
+- Wider storage contract: `docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md`

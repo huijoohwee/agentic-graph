@@ -1,7 +1,7 @@
 ---
 title: "Reference implementation: Lark Read-only Knowledge Source-to-Canvas Contract"
 id: "md:agentic-graph-lark-app-mcp-prd-tad"
-doc_type: "Product and Technical Specification"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.5.0"
 date: "2026-08-06"
 lang: "en-US"

@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Agentic Video Workflow — Reference implementation companion"
 id: "md:agentic-graph-agentic-os-video-agent-prd-tad-companion"
-doc_type: "TAD Companion"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.4.0"
 date: "2026-07-30"
 lang: "en-US"

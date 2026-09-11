@@ -1,6 +1,6 @@
 ---
 title: "SME Care-Agent — Growth-Stage Risk & Coverage Copilot"
-doc_type: "Combined PRD-TAD-ADR-MVP-GTM"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.2.0"
 date: "2026-07-14"
 updated: "2026-09-05"

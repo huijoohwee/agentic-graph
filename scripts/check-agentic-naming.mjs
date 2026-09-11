@@ -7,7 +7,7 @@ const checkerPath = 'scripts/check-agentic-naming.mjs'
 const forbidden = [
   { label: 'retired product namespace', expression: /knowgrph/i },
   { label: 'collapsed product namespace', expression: /agenticgraph/ },
-  { label: 'retired canvas protocol token', expression: /\bkgc\b/i },
+  { label: 'retired canvas protocol token', expression: /\b(?:kgc(?=[_:\/-]|\b|[A-Z])|KGC(?=[_:\/-]|\b)|Kgc(?=[A-Z_]))/ },
   { label: 'retired canvas environment prefix', expression: /\b(?:KG|kg)_/ },
   { label: 'retired compact graph namespace', expression: /knowledgegraph/i },
   { label: 'retired hyphenated graph namespace', expression: /knowledge-graph/i },
@@ -16,10 +16,8 @@ const forbidden = [
 ]
 
 const allowedLegacyTokensByPath = new Map([
-  ['docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md', [
-    { token: 'kgc-behavior-graph/v1', count: 1 },
-    { token: '@kgc-behavior-graph-contract', count: 1 },
-  ]],
+  // Exact negative fixture; never exempt its containing test directory.
+  ['scripts/__tests__/planning-naming.test.mjs', [{ token: 'kgc-computing-flow/v1', count: 1 }]],
   ['cloudflare/workers/agentic-graph-mcp/wrangler.toml', [
     { token: 'v1_knowgrph_mcp_agent', count: 3 },
     { token: 'v3_rename_knowgrph_mcp_agent', count: 3 },
@@ -36,6 +34,7 @@ const allowedLegacyTokensByPath = new Map([
     { token: 'v1_knowgrph_canvas_sync_room', count: 1 },
     { token: 'v2_rename_knowgrph_canvas_sync_room', count: 1 },
   ]],
+  ['scripts/__tests__/runtime-release-migrations.test.mjs', [{ token: '0001_knowgrph_storage.sql', count: 2 }]],
   ['scripts/legacy-mirror-inventory.mjs', [{ token: 'agenticgraph', count: 1 }, { token: 'knowgrph', count: 1 }]],
   ['scripts/mirror-namespace-contract.mjs', [{ token: 'agenticgraph', count: 55 }, { token: 'knowgrph', count: 4 }]],
   ['scripts/pages-mirror-headers.mjs', [{ token: 'agenticgraph', count: 4 }, { token: 'knowgrph', count: 4 }]],
@@ -84,18 +83,9 @@ const allowedLegacyTokensByPath = new Map([
   ]],
 ])
 
-const HISTORICAL_CARRIER_PATH_PREFIXES = Object.freeze([
-  'canvas/src/__tests__/',
-  'data/test-data/',
-  'docs/workspace-seeds/',
-  'scripts/__tests__/',
-])
-
-const isHistoricalCarrierPath = relativePath =>
-  HISTORICAL_CARRIER_PATH_PREFIXES.some(prefix => relativePath.startsWith(prefix))
-
-const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+const trackedFiles = execFileSync('git', ['ls-files', '-co', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' })
   .split('\0')
+  .filter((value, index, values) => values.indexOf(value) === index)
   .filter(Boolean)
   .filter(relativePath => relativePath !== checkerPath)
 
@@ -106,6 +96,14 @@ for (const relativePath of trackedFiles) {
   const content = fs.readFileSync(absolutePath)
   if (content.includes(0)) continue
   const text = content.toString('utf8')
+  if (relativePath.startsWith('docs/') && relativePath.endsWith('.md')
+    && relativePath.includes('prd-tad-adr-mvp-gtm')
+    && !relativePath.endsWith('-conformance-report.md')) {
+    const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1] ?? ''
+    if (!/^doc_type: "PRD-TAD-ADR-MVP-GTM"$/m.test(frontmatter)) {
+      violations.push(`${relativePath}: planning frontmatter must declare the canonical doc_type`)
+    }
+  }
   let scanText = text
   for (const { token, count } of allowedLegacyTokensByPath.get(relativePath) ?? []) {
     const actual = text.split(token).length - 1
@@ -114,7 +112,6 @@ for (const relativePath of trackedFiles) {
     }
     scanText = scanText.replaceAll(token, '')
   }
-  if (isHistoricalCarrierPath(relativePath)) continue
   for (const rule of forbidden) {
     if (rule.expression.test(relativePath) || rule.expression.test(scanText)) {
       violations.push(`${relativePath}: ${rule.label}`)
