@@ -1,5 +1,5 @@
 ---
-title: "Reference implementation: agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm section 2"
+title: "Reference implementation: agentic-graph-agentic-travel-agencies-planning-prd-tad-adr-mvp-gtm section 2"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.6.1"
 date: "2026-09-12"
@@ -17,12 +17,12 @@ lane: "authoring"
 universal_scope: false
 worktree_id: "device-cba000d3779d--planning-v27"
 agent_id: "codex-01a0940a"
-parent: "agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md"
+parent: "agentic-graph-agentic-travel-agencies-planning-prd-tad-adr-mvp-gtm.md"
 guideline_revision: "2.7.0"
 source_section_lines: "481-741"
 ---
 
-[Combined planning owner](agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-AGENTIC-TRAVEL-AGENCIES-PRD-TAD-ADR-MVP-GTM@0.6.1`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
+[Combined planning owner](agentic-graph-agentic-travel-agencies-planning-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-AGENTIC-TRAVEL-AGENCIES-PRD-TAD-ADR-MVP-GTM@0.6.1`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
 
 ### TCO Impact
 
@@ -265,11 +265,11 @@ All five roles below consume `PLAN-AGENTIC-GRAPH-AGENTIC-TRAVEL-AGENCIES-PRD-TAD
 
 | Role | Owning content at this revision |
 |---|---|
-| PRD | [Feature: Agentic Travel Agency — Flagship Flows & Shared-Canvas Primitive](agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.part-01.md#feature-agentic-travel-agency--flagship-flows--shared-canvas-primitive) |
-| TAD | [Architecture: Flight Booking, Comparison Shopping & Shared-Canvas Primitive](agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.part-01.md#architecture-flight-booking-comparison-shopping--shared-canvas-primitive) |
-| ADR | [Architectural Decisions](agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.part-01.md#architectural-decisions) |
-| MVP | [MVP — reference implementation](agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.part-02.md#mvp--reference-implementation) |
-| GTM | [GTM — reference implementation](agentic-graph-agentic-travel-agencies-prd-tad-adr-mvp-gtm.part-02.md#gtm--reference-implementation) |
+| PRD | [Feature: Agentic Travel Agency — Flagship Flows & Shared-Canvas Primitive](agentic-graph-agentic-travel-agencies-planning-prd-tad-adr-mvp-gtm.part-01.md#feature-agentic-travel-agency--flagship-flows--shared-canvas-primitive) |
+| TAD | [Architecture: Flight Booking, Comparison Shopping & Shared-Canvas Primitive](agentic-graph-agentic-travel-agencies-planning-prd-tad-adr-mvp-gtm.part-01.md#architecture-flight-booking-comparison-shopping--shared-canvas-primitive) |
+| ADR | [Architectural Decisions](agentic-graph-agentic-travel-agencies-planning-prd-tad-adr-mvp-gtm.part-01.md#architectural-decisions) |
+| MVP | [MVP — reference implementation](agentic-graph-agentic-travel-agencies-planning-prd-tad-adr-mvp-gtm.part-02.md#mvp--reference-implementation) |
+| GTM | [GTM — reference implementation](agentic-graph-agentic-travel-agencies-planning-prd-tad-adr-mvp-gtm.part-02.md#gtm--reference-implementation) |
 
 ## MVP — reference implementation
 
