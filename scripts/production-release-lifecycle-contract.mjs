@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { NATIVE_PRESERVATION_IDENTITY, validateNativePreservationIdentity, nativePreservationKey } from "./native-release-preservation.mjs";
 
 export {
   DEPLOYMENT_RECEIPT_SCHEMA,
@@ -473,6 +474,11 @@ function requireCollaboration(value) {
   }
 }
 
+function requirePreservationCollaboration(value) {
+  if (value?.schema === NATIVE_PRESERVATION_IDENTITY) validateNativePreservationIdentity(value);
+  else requireCollaboration(value);
+}
+
 function normalizePreservationEntries(entries) {
   if (!Array.isArray(entries)) throw new Error("Preservation entries must be an array.");
   const normalized = entries.map(entry => {
@@ -484,7 +490,7 @@ function normalizePreservationEntries(entries) {
       "preservationMode",
       "overlapClass",
     ], "preservation entry");
-    requireCollaboration(entry.collaboration);
+    requirePreservationCollaboration(entry.collaboration);
     requireDigest(entry.writeSetDigest, "writeSetDigest");
     requireDigest(entry.stateDigest, "stateDigest");
     requireText(entry.recoveryHandle, "recoveryHandle");
@@ -505,7 +511,7 @@ function normalizeDispositionObservations(observations) {
       "recoveryHandle",
       "disposition",
     ], "disposition observation");
-    requireCollaboration(observation.collaboration);
+    requirePreservationCollaboration(observation.collaboration);
     requireDigest(observation.stateDigest, "stateDigest");
     requireText(observation.recoveryHandle, "recoveryHandle");
     requireEnum(observation.disposition, ["retained", "restored"], "disposition");
@@ -524,6 +530,7 @@ function dispositionObservationKey(observation) {
 }
 
 function collaborationKey(collaboration) {
+  if (collaboration?.schema === NATIVE_PRESERVATION_IDENTITY) return nativePreservationKey(collaboration);
   return COLLABORATION_FIELDS.map(field => String(collaboration[field])).join("\u0000");
 }
 
