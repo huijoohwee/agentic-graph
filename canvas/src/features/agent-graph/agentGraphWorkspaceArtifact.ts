@@ -3,10 +3,15 @@ import type {
   WorkspaceAgentGraphArtifactResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
-import { WORKSPACE_DOCS_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
+import { WORKSPACE_DOCS_SOURCE_ROOT_PATH, WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
 import { formatWorkspaceUtcSessionTimestamp } from '@/features/workspace-fs/workspaceTimestamp'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { upsertWorkspaceMarkdownSourceFile } from '@/features/source-files/upsertWorkspaceMarkdownSourceFile'
+import type { GraphData } from '@/lib/graph/types'
+import { isReadOnlyAgentGraphProjection } from './agentGraphProjectionPolicy'
+import { prepareAgentGraphCanvasView, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 
 const CODEBASE_GRAPH_DIRECTORY_NAME = 'codebase-graph'
 const CODEBASE_GRAPH_DOCUMENT_PREFIX = 'codebase-graph'
@@ -15,6 +20,7 @@ const MANIFEST_LIST_MAX_ITEMS = 64
 
 export const AGENT_GRAPH_WORKSPACE_ARTIFACT_DIRECTORY =
   `${WORKSPACE_DOCS_SOURCE_ROOT_PATH}/${CODEBASE_GRAPH_DIRECTORY_NAME}` as const
+const PROJECTION_CACHE_DIRECTORY = `${WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH}/${CODEBASE_GRAPH_DIRECTORY_NAME}`
 
 export function buildAgentGraphWorkspaceArtifactFileName(timestampMs: number): string {
   return `${CODEBASE_GRAPH_DOCUMENT_PREFIX}_${formatWorkspaceUtcSessionTimestamp(timestampMs)}.md`
@@ -131,4 +137,29 @@ export async function materializeAgentGraphWorkspaceArtifact(
     },
   })
   return { path }
+}
+
+/** Cache the native read-only projection in the existing workspace, independent of any proposal. */
+export async function retainAgentGraphWorkspaceProjection(graph: GraphData): Promise<string> {
+  const identity = graph.metadata?.agentGraphProjection as Record<string, unknown>
+  if (!isReadOnlyAgentGraphProjection(graph) || !/^kg:graph:[a-f0-9]{32}$/.test(String(identity?.graphId)) || !/^[a-f0-9]{64}$/.test(String(identity?.snapshotDigest))) throw new Error('A completed source projection is required')
+  const text = JSON.stringify(graph)
+  if (new TextEncoder().encode(text).length > AGENT_GRAPH_CANVAS_MAX_BYTES) throw new Error('Native source projection exceeds its workspace budget')
+  const name = `${String(identity.graphId).slice(9)}-${identity.snapshotDigest}.json`
+  const fs = await getWorkspaceFs()
+  await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: PROJECTION_CACHE_DIRECTORY })
+  const target = `${PROJECTION_CACHE_DIRECTORY}/${name}`
+  if (await fs.readFileText(target) === null) await fs.createFile({ parentPath: PROJECTION_CACHE_DIRECTORY, name, text, mirrorToHost: false })
+  return target
+}
+
+export async function reopenAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<void> {
+  if (!target.startsWith(`${PROJECTION_CACHE_DIRECTORY}/`) || !/^[a-f0-9]{32}-[a-f0-9]{64}\.json$/.test(target.slice(PROJECTION_CACHE_DIRECTORY.length + 1))) throw new Error('Invalid retained source path')
+  const text = await (await getWorkspaceFs()).readFileText(target)
+  if (!text || new TextEncoder().encode(text).length > AGENT_GRAPH_CANVAS_MAX_BYTES) throw new Error('Retained source projection unavailable')
+  const graph = JSON.parse(text) as GraphData
+  const identity = graph.metadata?.agentGraphProjection as Record<string, unknown>
+  if (!isReadOnlyAgentGraphProjection(graph) || identity.graphId !== expected.graphId || identity.snapshotDigest !== expected.snapshotDigest) throw new Error('Retained source identity mismatch')
+  prepareAgentGraphCanvasView({ activateSource: true })
+  useGraphStore.getState().setGraphData(graph)
 }

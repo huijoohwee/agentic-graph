@@ -73,7 +73,7 @@ type BridgeOptions = {
   onInternalError?: (diagnostic: HostBridgeInternalErrorDiagnostic) => void
 }
 
-class HostBridgeError extends Error {
+export class HostBridgeError extends Error {
   readonly code: string
   readonly status: number
 
@@ -231,8 +231,8 @@ async function readBody(request: IncomingMessage, limit: number): Promise<Uint8A
   return Buffer.concat(chunks, bytes)
 }
 
-async function readJson(request: IncomingMessage): Promise<Record<string, unknown>> {
-  const body = await readBody(request, MAX_JSON_BYTES)
+async function readJson(request: IncomingMessage, maxBytes = MAX_JSON_BYTES): Promise<Record<string, unknown>> {
+  const body = await readBody(request, maxBytes)
   if (!body.byteLength) return {}
   try {
     const parsed = JSON.parse(Buffer.from(body).toString('utf8'))
@@ -442,6 +442,12 @@ export function createAgentGraphBridgeRequestHandler(options: BridgeOptions) {
       stage = 'grant-expiration'
       await expireGrants()
       const route = url.pathname.slice(AGENT_GRAPH_HOST_ROUTE.length) || '/'
+      if (request.method === 'POST' && route === '/proposal') {
+        const { serveAgentGraphProposal } = await import('./viteAgentGraphProposal')
+        const result = await serveAgentGraphProposal(await readJson(request, 64_000), response, { rootDir: repoRoot, env: runtimeEnv, outputRoot })
+        sendJson(response, 200, result)
+        return true
+      }
       if (request.method === 'GET' && route === '/capability') {
         stage = 'host-capability'
         sendJson(response, 200, {
@@ -576,9 +582,11 @@ export function createAgentGraphBridgePlugin(options: BridgeOptions): Plugin {
     name: 'agentic-graph-agent-graph-host-bridge',
     apply: 'serve',
     configureServer(server) {
-      const handler = createAgentGraphBridgeRequestHandler(options)
+      let handler: Promise<ReturnType<typeof createAgentGraphBridgeRequestHandler>> | undefined
       server.middlewares.use((request, response, next) => {
-        void handler(request, response)
+        if (!request.url?.startsWith(AGENT_GRAPH_HOST_ROUTE)) return next()
+        handler ??= server.ssrLoadModule('/viteAgentGraphBridge.ts').then(module => module.createAgentGraphBridgeRequestHandler(options))
+        void handler.then(handle => handle(request, response))
           .then(handled => {
             if (!handled) next()
           })

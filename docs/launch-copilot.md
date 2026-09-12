@@ -1,0 +1,94 @@
+# Launch Copilot 0.3.0 (r3)
+
+Launch Copilot is a lazy feature of Graph's native workspace. Canvas OS owns the
+five-role proposal contract at accepted revision
+`c2c61a35aa6da17e034cdd429c787442ec562573` (PR #922). There is no separate LC
+server, provider proxy, importer, parser, graph store, renderer or runtime package.
+
+## Use
+
+1. Run the usual Graph Dev workspace. Use **Launch → Import URL → Codebase graph**
+   with an owned GitHub repository, or the existing folder import.
+2. Select native nodes, edges or a saved cluster. In **Chat**, enter
+   `/launch-copilot outline owned <business requirement>` for a local editable
+   outline, or `/launch-copilot draft owned <business requirement>` to use the
+   current authorized OpenAI Chat connection. Use `reference` for an inspection-only
+   repository; it cannot substantiate an existing implementation claim.
+3. Review the five native RichMediaPanels. The canvas focuses the bounded evidence
+   slice while the full source graph stays read-only in its existing store. Solid
+   evidence edges contrast with the separate `lc:` NEW nodes and dashed relations.
+4. Edit panel text. Use `/launch-copilot reopen <CID>` to reopen native workspace
+   files and `/launch-copilot export <CID>` to download the exact five-file ZIP.
+   Markdown lives in the existing authored workspace under `/notes/proposals/<CID>/`;
+   exported paths are `docs/proposals/<CID>/{prd,tad,adr,mvp,gtm}.md`.
+   On phones, open **Workspace View → Editor Workspace → Source Files → notes →
+   proposals → CID** for a full-width editor/viewer. Hide Explorer and Canvas
+   using the native pane controls while reviewing a document.
+
+Native workspace persistence also retains one proposal sidecar for evidence and
+layout. It is not a sixth exported document. Graph's workspace artifact owner
+retains the existing bounded source projection under `/notes/codebase-graph/` so
+reopening needs no fresh import. The native document version control preserves
+the prior text and edited draft; export uses the selected document version.
+Editing invalidates the prior review digest. Fresh composition rechecks source
+identity through Graph's native host. Offline review does not establish source
+freshness or grant publication authority. Authored notes use existing IndexedDB
+persistence; host-mirrored `/docs` and `/docs_` are intentionally not used for these
+local drafts because the default workspace policy excludes them from snapshots.
+
+## Boundaries
+
+- The Canvas validating client checks query/explain results; source membership
+  does not prove semantic entailment. Read excerpts and review each claim.
+- At most 12 evidence nodes and 20 explained edges; depth is one. Search starts
+  with six hits and a bounded neighborhood. Truncation is visible.
+- One Chat transport attempt, no automatic model fallback or repair. The prompt
+  is conservatively capped at 8,000 UTF-8 bytes; output at 6,000 tokens and 24,000
+  structured bytes. Failed drafting retains a labelled outline. No live OpenAI
+  verification has been performed; the operator explicitly deferred it.
+  A local stub exercises the existing OpenAI Responses streaming transport,
+  usage receipt, exact selected model, one-call limit and invalid-output fallback.
+- The native snapshot proves file/parser/snapshot hashes. Its current host
+  contract does not retain the acquisition commit; documents state it as unknown.
+  Do not present these receipts as commit-qualified source links.
+- Protected proposal publication is **not admitted**. The initial output
+  repository `81rv10` has no accepted OS output profile in this implementation.
+  Export neither opens nor merges a PR. Exact review, target/base binding, owner
+  checks, handoff and provider readback remain required for LC-04.
+- Dev integration does not prove deployment, live payment, demand or production
+  readiness. The former standalone `81rv10` implementation is superseded.
+
+## Verification and budget
+
+Run `npm run check`, `npm run ci:integration`, `npm run agent-graph:check`, and:
+
+```sh
+TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/launchCopilot.test.ts
+npm -C canvas run test:ci:unit -- workspace.import.agentGraph workspace.importUrl.native workspace.importUrl.agentGraph agentReady.webMcpRuntime.importUrl
+```
+
+The dedicated test uses an actual temporary source corpus, Graph runtime, Canvas
+client and native workspace filesystem; it checks source immutability, exact
+roles, panel recognition, retained edits/positions/versions, default persistence
+admission, duplicate CID refusal, forged claims, stale snapshots and cancellation.
+It is an explicit Node test command,
+not registered in the older Canvas UI test-case catalog.
+
+The Dev browser walkthrough imported the owned Commerce repository through
+Import URL, queried seven real nodes and one explained checkout edge, displayed
+five native panels, edited PRD, then reloaded and reopened the same graph and
+proposal without another import. At 390 × 844, the native workspace editor/viewer
+read and edited the retained Markdown offline; native Chat exported the five-file
+ZIP offline. The test unpacks the ZIP and compares every path, text and digest.
+The native import-command resolver intermittently exceeded its existing eight-
+second deadline during cold loading; retry after the workspace settled succeeded.
+Canvas cards retain desktop positions across viewport changes: use the native
+workspace editor/viewer for phone document review.
+
+Four new product modules and 693 added implementation/test lines across Graph and
+Canvas OS; zero new dependencies. Every changed code file remains under 600 lines.
+Full LC browser modules load only on invocation or retained-proposal reopening.
+Existing browser entry/state/render changes add 1,485 minified bytes (513-byte
+concatenated gzip estimate, measured with installed esbuild against the Graph
+base). This is a loader/integration delta, not a production bundle measurement
+or a claim of zero total always-loaded bytes.

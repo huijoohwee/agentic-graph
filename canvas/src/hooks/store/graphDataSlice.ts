@@ -9,8 +9,13 @@ import { createGraphDataSubgraphActions } from './graph-data-slice/graphDataSubg
 
 export type { GetGraph } from './graph-data-slice/graphDataSliceAccess'
 
+declare module './store-types/graph-state' {
+  interface GraphState { launchProposalOverlay: GraphData | null }
+}
+
 export const createGraphDataSlice = (set: SetGraph, get: GetGraph) => ({
   graphData: null as GraphData | null,
+  launchProposalOverlay: null as GraphData | null,
   graphDataRevision: 0,
   graphContentRevision: 0,
   docLocationRevision: 0,
