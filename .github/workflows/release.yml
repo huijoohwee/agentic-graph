@@ -526,13 +526,13 @@ jobs:
         id: rollback_state
         if: always() && steps.rollback_pages.outcome == 'success'
         working-directory: agentic-graph
-        env: *cloudflare_release_environment
+        env: { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', AGENTIC_OS_STORAGE_OWNER_ID: '${{ vars.AGENTIC_OS_STORAGE_OWNER_ID }}', AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID: '${{ vars.AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID }}', AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT: '${{ vars.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT }}', AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY: '${{ secrets.AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY }}' }
         run: |
-          failed_stage="$(jq -er .failedStage "$RUNNER_TEMP/release-failure-observation.json")"
-          if test "$failed_stage" = deployment; then
+          if test "$(jq -er .failedStage "$RUNNER_TEMP/release-failure-observation.json")" = deployment; then
             npm run --silent storage:d1:seed:docs -- --capture-state --evidence-output "$RUNNER_TEMP/restored-d1-state-evidence.json"
           else
-            npm run --silent storage:d1:seed:docs -- --docs-root "$GITHUB_WORKSPACE/rollback-agentic-canvas-os/docs" --evidence-output "$RUNNER_TEMP/restored-d1-state-evidence.json"
+            npm run --silent storage:d1:seed:docs -- --docs-root "$GITHUB_WORKSPACE/rollback-agentic-canvas-os/docs" --evidence-output "$RUNNER_TEMP/restored-d1-state-evidence.json" --publication-plan-output "$RUNNER_TEMP/restored-d1-publication-plan.json"
+            if test "${{ steps.runtime_profile.outputs.profile }}" = core; then node ./scripts/core-runtime-release-publications.mjs --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --plan "$RUNNER_TEMP/restored-d1-publication-plan.json" --state-evidence "$RUNNER_TEMP/restored-d1-state-evidence.json" --output "$RUNNER_TEMP/core-document-rollback-evidence.json"; fi
           fi
       - name: Capture authoritative restored Pages deployment
         id: restored_pages

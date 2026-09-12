@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import YAML from 'yaml'
@@ -432,7 +434,80 @@ try {
   await assert.rejects(publishCanonicalDocuments(input), error => error.receipt.status === 'preserve-required')
   assert.equal(calls, 2, 'stale publication receives one conflict response without retry')
   assert.equal(fixture.sql.prepare('SELECT document_revision FROM document_publications').get().document_revision, 1)
+  // Restoring the same content advances the document revision. Publication must
+  // consume a fresh plan from that restored readback, or anonymous reads stay 404.
+  fixture.sql.prepare('UPDATE documents SET content_md=?, revision=revision+1 WHERE id=?').run(content, 'canonical')
+  record.revision = 3
+  const restored = { ...input,
+    plan: createD1PublicationPlan({ workspaceId, documentSeeds, exported }),
+    stateEvidence: createD1ReconciliationEvidence({ workspaceId, documentSeeds, exported, statements: [],
+      parity: { documentCount: 1, chunkCount: 0 }, snapshotParity: { graphSnapshotCount: 0 }, reconciledAt: new Date() }) }
+  assert.equal((await fixture.read('canonical')).status, 404)
+  assert.equal((await publishCanonicalDocuments(restored)).status, 'published')
+  assert.equal(await (await fixture.read('canonical')).text(), content)
+  assert.equal(fixture.sql.prepare('SELECT document_revision FROM document_publications').get().document_revision, 3)
+  for (const [failure, reason] of [
+    [() => { throw new DOMException('private provider detail', 'TimeoutError') }, 'request-timeout'],
+    [() => { throw new Error('private provider detail') }, 'request-failed'],
+    [() => new Response(null, { status: 503 }), 'http-503'],
+  ]) {
+    let attempts = 0
+    await assert.rejects(publishCanonicalDocuments({ ...restored, fetchFn: () => { attempts++; return failure() } }), error => {
+      assert.equal(error.message, 'canonical document publication requires reconciliation: ' + reason)
+      assert.equal(error.receipt.pending.documentId, 'canonical')
+      assert.equal(error.receipt.published.length, 0)
+      assert.equal(JSON.stringify(error.receipt).includes('private provider detail'), false)
+      return true
+    })
+    assert.equal(attempts, 1, 'an ambiguous publication is never retried automatically')
+  }
 } finally { await fixture.close() }
 ` })
   assert.equal(result.status, 0, result.stderr || result.error?.message)
+})
+
+test('rollback shell republishes only successfully restored core documents before restored-site checks', () => {
+  const workflow = YAML.parse(fs.readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8'))
+  const steps = workflow.jobs.deploy.steps, restore = steps.find(step => step.id === 'rollback_state')
+  assert.ok(steps.indexOf(restore) < steps.findIndex(step => step.id === 'restored_pages'))
+  assert.equal(restore.env.AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY, '${{ secrets.AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY }}')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core-rollback-publications-'))
+  try {
+    const bin = path.join(directory, 'bin'), history = path.join(directory, 'calls.txt')
+    fs.mkdirSync(bin)
+    for (const command of ['npm', 'node']) fs.writeFileSync(path.join(bin, command),
+      '#!/bin/sh\nprintf "%s\\n" "' + command + ' $*" >> "$LC_ROLLBACK_CALLS"\n'
+      + (command === 'npm' ? 'exit "$LC_ROLLBACK_SEED_STATUS"\n' : ''), { mode: 0o755 })
+    for (const [stage, profile, seedStatus, expectedCalls] of [
+      ['deployment', 'core', 0, 1], ['state-reconciliation', 'core', 0, 2],
+      ['live-verification', 'core', 0, 2], ['state-reconciliation', 'travel', 0, 1],
+      ['state-reconciliation', 'core', 1, 1],
+    ]) {
+      fs.writeFileSync(path.join(directory, 'release-failure-observation.json'), JSON.stringify({ failedStage: stage }))
+      fs.writeFileSync(history, '')
+      const script = restore.run.replaceAll('${{ steps.runtime_profile.outputs.profile }}', profile)
+      const result = spawnSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script], {
+        cwd: directory, encoding: 'utf8', env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH,
+          RUNNER_TEMP: directory, GITHUB_WORKSPACE: directory, RELEASE_SHA: sourceSha,
+          PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST: candidateDigest,
+          LC_ROLLBACK_CALLS: history, LC_ROLLBACK_SEED_STATUS: String(seedStatus) },
+      })
+      assert.equal(result.status, seedStatus, result.stderr)
+      const calls = fs.readFileSync(history, 'utf8').trim().split('\n')
+      assert.equal(calls.length, expectedCalls)
+      if (stage === 'deployment') assert.match(calls[0], /--capture-state/)
+      else {
+        assert.ok(calls[0].includes('--docs-root ' + path.join(directory, 'rollback-agentic-canvas-os/docs')))
+        assert.ok(calls[0].includes('--publication-plan-output ' + path.join(directory, 'restored-d1-publication-plan.json')))
+      }
+      if (expectedCalls === 2) {
+        assert.match(calls[1], /^node \.\/scripts\/core-runtime-release-publications\.mjs /)
+        for (const [flag, file] of [['--plan', 'restored-d1-publication-plan.json'],
+          ['--state-evidence', 'restored-d1-state-evidence.json'],
+          ['--authorization', 'production-lifecycle/consumed-human-authorization-receipt.json']])
+          assert.ok(calls[1].includes(flag + ' ' + path.join(directory, file)))
+        assert.ok(calls[1].includes('--candidate-digest ' + candidateDigest))
+      }
+    }
+  } finally { fs.rmSync(directory, { recursive: true }) }
 })
