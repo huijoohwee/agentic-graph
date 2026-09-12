@@ -7,6 +7,9 @@ import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import { unzipSync, strFromU8 } from 'fflate'
 import { createAgentGraphRuntime } from '../../../mcp/agent-graph/runtime.mjs'
+import { readAgentGraphSnapshot, writeAgentGraphSnapshotAtomic, listAgentGraphSourceEntries } from '../../../mcp/agent-graph/store.mjs'
+import { sanitizeAgentGraphImportResult } from '../../viteAgentGraphIngestSanitizer'
+import { validateAgentGraphHostResult } from '@/features/agent-graph/agentGraphHostAdapter'
 import { resolveAgenticCanvasOsDocsRoot } from '../../../mcp/agentic-canvas-os-docs-runtime.js'
 import { executeAgentGraphProposal } from '../../viteAgentGraphProposal'
 import { buildLaunchOverlay, publishLaunchWorkspace, reopenLaunchWorkspace, updateLaunchNode, exportLaunchWorkspace, type LaunchRecord } from '@/features/agent-graph/launchCopilotWorkspace'
@@ -133,5 +136,23 @@ test('native graph → validating Canvas client → five roles, source fence and
     await assert.rejects(() => executeAgentGraphProposal({ ...input, action: 'validate', proposal: forged }, context, contract, createAgenticGraphClient, 'a'.repeat(40)), /unknown/)
     const cancelled = new AbortController(); cancelled.abort()
     await assert.rejects(() => executeAgentGraphProposal(input, { ...context, abortSignal: cancelled.signal }, contract, createAgenticGraphClient, 'a'.repeat(40)))
+    const pointer = path.join(outputRoot, 'graphs', `${ingest.graphId.slice(9)}.json`), options = { allowedRoot: outputRoot }
+    const snapshot = await readAgentGraphSnapshot(pointer, options)
+    const acquisition = { mode: 'repository-url', repositoryUrl: 'https://github.com/example/fixture', commitSha: 'b'.repeat(40), subpath: '' }
+    const payload = { ...snapshot.manifest, sourceEntries: await listAgentGraphSourceEntries(snapshot), derivedEdgesByRepository: new Map(), acquisition }
+    const first = await writeAgentGraphSnapshotAtomic(pointer, payload, options)
+    const cached = await writeAgentGraphSnapshotAtomic(pointer, { ...payload, acquisition: { ...acquisition, cacheReused: true, networkRequests: 0 } }, options)
+    assert.equal(first.pointer.snapshotDigest, cached.pointer.snapshotDigest, 'cache counters do not change source identity')
+    assert.deepEqual((await readAgentGraphSnapshot(pointer, options)).manifest.acquisition, acquisition)
+    const retained = validateAgentGraphHostResult(sanitizeAgentGraphImportResult({ ...ingest, acquisition }, { fail: (_code, message) => { throw new Error(message) } }))
+    assert.deepEqual(retained.acquisition, acquisition, 'native sanitizer and browser retain the resolved identity')
+    const committed = await executeAgentGraphProposal({ ...input, snapshotDigest: first.pointer.snapshotDigest }, context, contract, createAgenticGraphClient, 'a'.repeat(40))
+    assert.equal(committed.evidence.sourceCommit, acquisition.commitSha)
+    assert.ok(committed.files.every(file => file.text.includes(`Acquisition commit: ${acquisition.commitSha}`)))
+    const changed = await writeAgentGraphSnapshotAtomic(pointer, { ...payload, acquisition: { ...acquisition, commitSha: 'c'.repeat(40) } }, options)
+    assert.notEqual(changed.pointer.snapshotDigest, first.pointer.snapshotDigest, 'a different acquired commit invalidates the snapshot even with equal source bytes')
+    await assert.rejects(() => executeAgentGraphProposal({ ...input, snapshotDigest: first.pointer.snapshotDigest }, context, contract, createAgenticGraphClient, 'a'.repeat(40)), /snapshot changed/)
+    await assert.rejects(() => writeAgentGraphSnapshotAtomic(pointer, { ...payload, acquisition: { ...acquisition, repositoryUrl: 'https://secret@example.com/repo' } }, options), /Invalid retained/)
+    assert.equal((await readAgentGraphSnapshot(pointer, options)).pointer.snapshotDigest, changed.pointer.snapshotDigest, 'invalid acquisition preserves the previous pointer')
   } finally { await fs.rm(temporary, { recursive: true, force: true }) }
 })

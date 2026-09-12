@@ -2,6 +2,7 @@ import path from "node:path";
 import {
   AgentGraphError, AGENT_GRAPH_CONTRACT_VERSION, AGENT_GRAPH_SCHEMA_VERSION,
   compareStableStrings, stableStringify,
+  retainedAgentGraphAcquisition,
 } from "./contract.mjs";
 import { MAX_RESOLUTION_SHARD_BYTES, partitionResolutionEdges } from "./resolution-sharding.mjs";
 import {
@@ -333,6 +334,7 @@ function retainSnapshotArtifact(budget, { bytes = 0, records = 0 }, stage) {
 }
 export async function writeAgentGraphSnapshotAtomic(pointerPath, {
   graphId,
+  acquisition,
   sourceEntries,
   derivedEdgesByRepository,
   diagnostics,
@@ -426,6 +428,7 @@ export async function writeAgentGraphSnapshotAtomic(pointerPath, {
     graphId,
     rootContentHash,
     parserRegistryDigest,
+    ...(retainedAgentGraphAcquisition(acquisition) ? { acquisition: retainedAgentGraphAcquisition(acquisition) } : {}),
     repositories,
     graph: { nodes: nodeCount, edges: edgeCount, nodeTypes, edgeLabels },
     sourceCount: sourceEntries.length,

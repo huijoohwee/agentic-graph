@@ -134,6 +134,7 @@ export function validateAgentGraphHostResult(value: unknown): WorkspaceAgentGrap
   const result = value as Partial<WorkspaceAgentGraphImportResult> | null
   const counts = result?.counts
   const projection = result?.projection
+  const acquisition = result?.acquisition
   if (
     result?.handled !== true
     || result.kind !== 'agent-graph'
@@ -141,6 +142,7 @@ export function validateAgentGraphHostResult(value: unknown): WorkspaceAgentGrap
     || !/^[0-9a-f]{64}$/.test(String(result.snapshotDigest || ''))
     || !/^[0-9a-f]{64}$/.test(String(result.parserRegistryDigest || ''))
     || typeof result.complete !== 'boolean'
+    || (acquisition !== undefined && (acquisition.mode !== 'repository-url' || !/^[a-f0-9]{40}$/.test(acquisition.commitSha) || !/^https:\/\//.test(acquisition.repositoryUrl) || typeof acquisition.subpath !== 'string'))
     || !counts
     || !isNonNegativeInteger(counts.sources)
     || !isNonNegativeInteger(counts.nodes)
@@ -161,6 +163,7 @@ export function validateAgentGraphHostResult(value: unknown): WorkspaceAgentGrap
     graphId: result.graphId as string,
     snapshotDigest: result.snapshotDigest as string,
     parserRegistryDigest: result.parserRegistryDigest as string,
+    ...(acquisition ? { acquisition } : {}),
     complete: result.complete,
     counts: {
       sources: counts.sources,

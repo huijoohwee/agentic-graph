@@ -84,6 +84,7 @@ export type WorkspaceAgentGraphImportProgress = {
 }
 
 export type WorkspaceAgentGraphImportResult = {
+  acquisition?: { mode: 'repository-url'; repositoryUrl: string; commitSha: string; subpath: string }
   handled: true
   kind: 'agent-graph'
   graphId: string

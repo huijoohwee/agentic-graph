@@ -62,6 +62,8 @@ title: "Codebase graph"
 document_type: "agent-graph-manifest"
 kgCanvasGraphApply: false
 source_remote: ${manifestYamlString(repositoryUrl)}
+source_commit: ${manifestYamlString(result.acquisition?.commitSha || 'unavailable')}
+source_subpath: ${manifestYamlString(result.acquisition?.subpath || '')}
 graph_id: ${manifestYamlString(result.graphId)}
 snapshot_digest: ${manifestYamlString(result.snapshotDigest)}
 parser_registry_digest: ${manifestYamlString(result.parserRegistryDigest)}
@@ -86,6 +88,7 @@ invocation:
 This source-backed record identifies the completed local, deterministic codebase graph import. The graph snapshot remains the canonical query surface; its edges retain their source explanations in the graph data.
 
 - Source remote: ${manifestYamlString(repositoryUrl)}
+- Acquisition commit: ${manifestYamlString(result.acquisition?.commitSha || 'unavailable for local files or older imports')}
 - Graph ID: ${manifestYamlString(result.graphId)}
 - Snapshot digest: ${manifestYamlString(result.snapshotDigest)}
 - Parser registry digest: ${manifestYamlString(result.parserRegistryDigest)}
