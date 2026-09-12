@@ -58,23 +58,28 @@ export const publishCanonicalDocuments = async ({ plan, stateEvidence, sourceSha
   if (!/^[a-f0-9]{64}$/.test(accessKey)) throw new Error('core publication access key is invalid')
   const documents = validateCanonicalPublicationPlan(plan, stateEvidence, variables.AGENTIC_OS_STORAGE_OWNER_WORKSPACE_ID)
   const published = [], startedAt = now().toISOString()
-  let pending = null
+  let pending = null, failureKind = 'request-failed'
   try {
     for (const document of documents) {
       pending = { documentId: document.documentId, requestDigest: digest(document) }
+      failureKind = 'request-failed'
       const response = await fetchFn(`${ORIGIN}/api/storage/publications`, {
-        method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(10_000),
+        method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(30_000),
         headers: { authorization: `Bearer ${accessKey}`, 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify(document),
       })
-      if (response.status !== 200) { await response.body?.cancel(); throw new Error(`publication provider returned ${response.status}`) }
+      if (response.status !== 200) {
+        failureKind = `http-${response.status}`
+        await response.body?.cancel(); throw new Error('publication provider rejected the request')
+      }
+      failureKind = 'response-invalid'
       let result
       try { result = JSON.parse(await readBoundedProbeBody(response)) }
       catch { throw new Error('publication provider response is invalid') }
       if (result?.ok !== true || result.status !== 'published' || result.workspaceId !== document.workspaceId
         || result.documentId !== document.documentId || result.canonicalPath !== document.canonicalPath
         || result.revision !== document.expectedRevision || result.contentHash !== document.expectedContentHash) {
-        throw new Error('publication provider identity differs')
+        failureKind = 'identity-mismatch'; throw new Error('publication provider identity differs')
       }
       published.push({ ...pending, responseDigest: digest(result), revision: result.revision, contentHash: result.contentHash })
       pending = null
@@ -88,7 +93,8 @@ export const publishCanonicalDocuments = async ({ plan, stateEvidence, sourceSha
     const receipt = seal({ schema: RECEIPT_SCHEMA, status: 'preserve-required', sourceRevision: sourceSha, candidateDigest,
       actorId: authorization.humanActorId, planDigest: plan.planDigest, stateContractDigest: plan.stateContractDigest,
       published, pending, mutationAttempted: true, startedAt, failedAt: now().toISOString() })
-    throw Object.assign(new Error('canonical document publication requires reconciliation'), { receipt })
+    if (error?.name === 'TimeoutError') failureKind = 'request-timeout'
+    throw Object.assign(new Error(`canonical document publication requires reconciliation: ${failureKind}`), { receipt })
   }
 }
 
