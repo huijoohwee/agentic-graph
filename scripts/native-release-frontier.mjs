@@ -129,9 +129,16 @@ const snapshotLane = (registration, root, common, records, budget) => {
     contentScope: 'tracked-and-visible-untracked', identity }
   assert.deepEqual(directoryIdentity(location), identity, 'worktree replaced during capture')
   if (location === root) return { ...state, content }
-  const matches = records.filter(record => record.worktree === location)
+  const history = records.filter(record => record.worktree === location)
+  const matches = branchRef ? history.filter(record => `refs/heads/${record.ref}` === branchRef) : history
   assert.equal(matches.length, 1, `native lane metadata is missing or ambiguous: ${location}`)
   const record = matches[0]
+  for (const predecessor of history.filter(entry => entry !== record)) {
+    assert.ok(['published', 'integrated'].includes(predecessor.state), 'historical lane metadata must be retained publication')
+    assert.match(predecessor.head || '', SHA, 'historical lane metadata must bind exact head')
+    assert.equal(line(location, ['merge-base', predecessor.head, headRevision]), predecessor.head,
+      'historical lane metadata must precede the current branch')
+  }
   assert.ok(text(record.device) && text(record.scope), 'native lane attribution is missing')
   if (branchRef) assert.equal(`refs/heads/${record.ref}`, branchRef, 'native lane metadata branch is stale')
   else assert.equal(record.head, headRevision, 'detached lane metadata must bind exact head')

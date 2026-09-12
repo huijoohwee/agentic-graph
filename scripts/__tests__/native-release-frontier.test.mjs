@@ -91,6 +91,32 @@ test('missing, ambiguous, stale and mismatched metadata fail closed', t => {
   }
 })
 
+test('attached successor uses its exact branch while retaining verified predecessor metadata', t => {
+  const f = fixture(t), predecessor = f.records[0]
+  command(f.attached, 'switch', '-c', 'agent/device/successor')
+  fs.writeFileSync(path.join(f.attached, 'source.txt'), 'successor source\n')
+  command(f.attached, 'commit', '-am', 'successor')
+  const head = command(f.attached, 'rev-parse', 'HEAD')
+  f.records.push({ ...predecessor, ref: 'agent/device/successor', scope: 'successor', head })
+  const before = structuredClone(f.records)
+  const frontier = collectNativeReleaseFrontier(f.options)
+  const attached = frontier.lanes.find(lane => lane.path === f.attached)
+  assert.equal(attached.collaboration.laneRef, 'agent/device/successor')
+  assert.equal(attached.collaboration.headRevision, head)
+  assert.equal(frontier.lanes.length, 3)
+  assert.deepEqual(f.records, before)
+  assert.equal(command(f.attached, 'rev-parse', 'agent/device/attached'), predecessor.head)
+  predecessor.state = 'active'
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata/)
+  predecessor.state = 'published'
+  command(f.detached, 'switch', '-c', 'agent/device/unrelated')
+  fs.writeFileSync(path.join(f.detached, 'unrelated.md'), 'unrelated source')
+  command(f.detached, 'add', 'unrelated.md')
+  command(f.detached, 'commit', '-m', 'unrelated')
+  predecessor.head = command(f.detached, 'rev-parse', 'HEAD')
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata must precede/)
+})
+
 test('content, index, metadata and registered worktree movement invalidate capture', t => {
   const changes = [
     f => fs.writeFileSync(path.join(f.attached, 'source.txt'), 'moved bytes'),

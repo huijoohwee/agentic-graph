@@ -26,8 +26,11 @@ The collector requires the primary canonical checkout on clean, remote-exact
 HEAD/index-tracked and visible untracked file bytes, symlink text, and descriptive
 Agentic OS metadata through its exported observation API. Ignored runtime files
 outside HEAD and the index, including installed dependencies, are excluded.
-Detached worktrees remain retained and require metadata bound to their exact
-head. Missing, ambiguous, stale, hidden, unmerged, unsupported, or moving source
+Attached successors select the metadata bound to their actual Git branch. Older
+records at the same path remain in the captured metadata digest and must name
+published or integrated ancestor revisions. Detached worktrees remain retained
+and require unambiguous metadata bound to their exact head. Missing, ambiguous,
+stale, hidden, unmerged, unsupported, or moving source
 state stops preparation. Symlink targets are never followed. Source parents and
 opened files are checked for replacement during reading. Capture is bounded to
 64 worktrees, 50,000 paths per worktree, 64 MiB per file and 512 MiB per round.
