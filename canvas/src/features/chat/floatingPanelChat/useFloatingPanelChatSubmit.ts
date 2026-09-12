@@ -34,6 +34,10 @@ export const useFloatingPanelChatSubmit = (
     ev.preventDefault()
     const trimmed = normalizeInvocationTokenSpacing(args.input.trim())
     if (!trimmed || args.isLoading) return
+    if (/^\/launch-copilot(?:\s|$)/.test(trimmed)) {
+      await (await import('@/features/agent-graph/launchCopilotInvocation')).invokeLaunchCopilot(args)
+      return
+    }
     if (await activateGeospatialInvocation({ input: trimmed, submitArgs: args })) return
     if (await tryActivateVideoAgentDemoPreset({ input: trimmed, submitArgs: args })) return
     if (await tryActivateVoiceStudioInvocation({ input: trimmed, submitArgs: args })) return

@@ -60,6 +60,10 @@ function isStoryboardMarkdownText(text: unknown): boolean {
 export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
   return ({
   updateNode: (id: string, updates: Partial<GraphNode>) => {
+    if (get().launchProposalOverlay?.nodes.some(node => node.id === id)) {
+      void import('@/features/agent-graph/launchCopilotWorkspace').then(module => module.updateLaunchNode(id, updates))
+      return
+    }
     if (isWorkspaceGraphMutationBlocked(get())) return
     const { graphData, schema } = get();
     if (!graphData) return;
