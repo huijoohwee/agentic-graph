@@ -1,8 +1,8 @@
 # Launch Copilot 0.3.0 (r3)
 
 Launch Copilot is a lazy feature of Graph's native workspace. Canvas OS owns the
-five-role proposal contract at accepted revision
-`c2c61a35aa6da17e034cdd429c787442ec562573` (PR #922). There is no separate LC
+five-role proposal contract introduced in PR #922, consumed through the current
+accepted Canvas revision in `docs/runtime-readiness-contract.md`. There is no separate LC
 server, provider proxy, importer, parser, graph store, renderer or runtime package.
 
 ## Use
@@ -24,6 +24,15 @@ server, provider proxy, importer, parser, graph store, renderer or runtime packa
    On phones, open **Workspace View → Editor Workspace → Source Files → notes →
    proposals → CID** for a full-width editor/viewer. Hide Explorer and Canvas
    using the native pane controls while reviewing a document.
+5. On the enrolled canonical Graph host, enter `/launch-copilot review <CID>`.
+   Read the five panels and the returned hashes, source identity and output base.
+   Submit the prepared `/launch-copilot approve <CID> <signature>` command only
+   after reviewing those exact bytes. The target is the already-enrolled
+   `github.com/huijoohwee/agentic-graph` repository. Approval opens one protected
+   proposal PR through Agentic OS; it does not merge the PR.
+6. Use `/launch-copilot status <CID>` to observe the provider and compare the five
+   files against their committed hashes. `integrated` additionally requires the
+   existing OS integration proof and matching content at the provider's merge SHA.
 
 Native workspace persistence also retains one proposal sidecar for evidence and
 layout. It is not a sixth exported document. Graph's workspace artifact owner
@@ -54,10 +63,27 @@ local drafts because the default workspace policy excludes them from snapshots.
   identity. A different commit invalidates the snapshot even when file bytes are
   equal. Local-folder and older imports still report the commit as unavailable;
   re-import a repository URL to obtain a commit-bound receipt.
-- Protected proposal publication is **not admitted**. The initial output
-  repository `81rv10` has no accepted OS output profile in this implementation.
-  Export neither opens nor merges a PR. Exact review, target/base binding, owner
-  checks, handoff and provider readback remain required for LC-04.
+- Publication requires complete commit-bound acquisition, unchanged source/revision
+  headers, a clean canonical Graph output checkout, fresh source/contract/base
+  identity and five unused output paths. The review token expires after 15 minutes
+  and is consumed before lane creation. File bytes, the full evidence digest,
+  target and base are bound to approval. Edited prose still needs human review.
+- Publication reuses OS admission, guarded generation, the existing locked npm
+  toolchain and protected `land`; it never writes proposal files to canonical.
+  The whole request must fit the existing 64,000-byte host limit, with at most
+  24,000 UTF-8 bytes per document. An interrupted operation retains its lane.
+  Repeated requests inspect that lane; they never retry a partial publication or
+  create a second PR. Another proposal waits until the existing lane is completed
+  through its responsible OS lifecycle owner. Recovery does not infer approval.
+- Cancelling before approval writes no proposal files. After approval, a browser
+  timeout or disconnect stops waiting while the bounded host operation continues;
+  use `status` before any recovery. Host restart invalidates outstanding review
+  tokens. Retained Git content and provider observations remain the readback source.
+- The shared `/81rv10/` route is published, but the public-to-local authenticated
+  host connection and source-bound Probe-Tree overlay remain unimplemented.
+  These local native commands do not establish the full single-surface product
+  acceptance criterion. Live model, real proposal publication/integration and the
+  public browser walkthrough still require separate execution evidence.
 - Dev integration does not prove deployment, live payment, demand or production
   readiness. The former standalone `81rv10` implementation is superseded.
 
@@ -94,9 +120,26 @@ A warm cache import retained snapshot digest
 `05859ea4b3c5c93cca0425a6749c040cf19321ed11b52b91be536ad7929709ca`.
 The eight acquisition checks and the extended native proposal test passed.
 
+The handoff test extends the same native suite with exact-file submission from
+the workspace, explicit review before approval, path/header/byte rejection,
+content/source/contract/base drift, token expiry/replay and stale/cancelled host
+requests. The provider response in the browser handoff test is a stub; it is not
+evidence of a real proposal PR or merged content. The existing OS remains the
+owner of publication and integration checks.
+
+A read-only host smoke imported the actual `huijoohwee/81rv10` repository at
+`2edb9b2aa1db1a355bd0bad0539485688b03da8e`, grounded its README and obtained
+`review-required` for five files targeting the enrolled Graph profile. Changing
+PRD after review rejected the approval; subsequent status remained `not-started`.
+No proposal lane, provider publication or live model call was attempted. This
+proves native review admission and refusal, not successful publication.
+
 The prototype used four new product modules and 693 added implementation/test
-lines across Graph and Canvas OS. Acquisition retention adds 54 lines, bringing
-this task to 747 of the original 900-line cap; zero new dependencies or modules.
+lines across Graph and Canvas OS. Acquisition retention adds 54 lines. This
+handoff increment adds 152 implementation/test lines and one lazy host module:
+899 of the original 900-line cap, five new product modules overall, zero new
+dependencies. The public host transport and grounded Probe-Tree cannot be claimed
+complete within the one remaining line; neither is replaced by a local demo.
 Every changed code file remains under 600 lines.
 Full LC browser modules load only on invocation or retained-proposal reopening.
 Existing browser entry/state/render changes add 1,485 minified bytes (513-byte

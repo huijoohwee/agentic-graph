@@ -12,6 +12,9 @@ import { sanitizeAgentGraphImportResult } from '../../viteAgentGraphIngestSaniti
 import { validateAgentGraphHostResult } from '@/features/agent-graph/agentGraphHostAdapter'
 import { resolveAgenticCanvasOsDocsRoot } from '../../../mcp/agentic-canvas-os-docs-runtime.js'
 import { executeAgentGraphProposal } from '../../viteAgentGraphProposal'
+import { launchHandoffBinding, launchHandoffCommitMessage, runLaunchHandoff } from '../../viteAgentGraphHandoff'
+import { createExternalToolApprovalToken, authorizeExternalToolAction } from '../../../mcp/external-tool-approval.js'
+import { worktrees } from 'agentic-os/compat/git'
 import { buildLaunchOverlay, publishLaunchWorkspace, reopenLaunchWorkspace, updateLaunchNode, exportLaunchWorkspace, type LaunchRecord } from '@/features/agent-graph/launchCopilotWorkspace'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { listMediaOverlayNodes } from '@/lib/render/mediaOverlayPool'
@@ -123,6 +126,19 @@ test('native graph → validating Canvas client → five roles, source fence and
           assert.equal(modelCalls, 1, 'no automatic retry or alternate provider')
           assert.match(messages.at(-1)?.content || '', malformed ? /AI drafting unverified.*labelled editable outline/s : /Drafted with the current Chat connection/)
         }
+        const posted: any[] = [], approval = '1'.repeat(64)
+        let nextInput = '', handoffError: string | null = null
+        globalThis.fetch = (async (_url, init) => {
+          assert.equal(init?.signal?.aborted, false, 'native reopen does not cancel its own handoff')
+          const body = JSON.parse(String(init?.body)); posted.push(body)
+          assert.deepEqual(body.files, (await reopenLaunchWorkspace(input.cid)).files)
+          return Response.json(body.action === 'handoff-review' ? { status: 'review-required', approval, reason: 'Inspect five files' } : { status: 'pr-open', reason: 'Provider stub only' })
+        }) as typeof fetch
+        const invoke = (command: string) => invokeLaunchCopilot({ input: command, abortRef: { current: null }, setErrorText: (value: any) => { handoffError = value }, setIsLoading: () => {}, setInput: (value: string) => { nextInput = value }, setMessages: () => {} } as any)
+        await invoke(`/launch-copilot review ${input.cid}`)
+        assert.equal(posted.length, 1, 'review never auto-approves'); assert.equal(nextInput, `/launch-copilot approve ${input.cid} ${approval}`)
+        await invoke(nextInput)
+        assert.equal(handoffError, null); assert.equal(posted[1].approval, approval); assert.equal(posted[1].action, 'handoff-approve')
       } finally {
         globalThis.fetch = previousFetch
         if (previousNavigator) Object.defineProperty(globalThis, 'navigator', previousNavigator)
@@ -149,6 +165,25 @@ test('native graph → validating Canvas client → five roles, source fence and
     const committed = await executeAgentGraphProposal({ ...input, snapshotDigest: first.pointer.snapshotDigest }, context, contract, createAgenticGraphClient, 'a'.repeat(40))
     assert.equal(committed.evidence.sourceCommit, acquisition.commitSha)
     assert.ok(committed.files.every(file => file.text.includes(`Acquisition commit: ${acquisition.commitSha}`)))
+    const bind = (files = committed.files, evidence = committed.evidence, base = 'd'.repeat(40)) => launchHandoffBinding(files, { ...committed, evidence }, 'github.com/huijoohwee/agentic-graph', base)
+    const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
+    const reviewed = digest(bind()), secret = 'test-only-approval-secret-not-used-by-the-host'
+    assert.ok(launchHandoffCommitMessage('x'.repeat(80), bind(), reviewed).length <= 500, 'receipt fits the pinned OS land message limit at maximum CID length')
+    const token = createExternalToolApprovalToken({ secret, actionDigest: reviewed, now: 1000 }), consumedTokenIds = new Set<string>()
+    const edited = structuredClone(committed.files); edited[0].text += '\nA revised paid-pilot hypothesis.\n'
+    for (const candidate of [bind(edited), bind(committed.files, { ...committed.evidence, snapshotDigest: 'e'.repeat(64) }), bind(committed.files, { ...committed.evidence, contractRevision: 'f'.repeat(40) }), bind(committed.files, committed.evidence, 'f'.repeat(40))]) {
+      assert.throws(() => authorizeExternalToolAction({ secret, token, actionDigest: digest(candidate), consumedTokenIds, now: 1001 }), /does not match/)
+    }
+    assert.equal(consumedTokenIds.size, 0, 'rejected content, source, contract and target drift consume no authority')
+    assert.throws(() => authorizeExternalToolAction({ secret, token, actionDigest: reviewed, consumedTokenIds, now: token.expiresAt }), /expired/)
+    authorizeExternalToolAction({ secret, token, actionDigest: reviewed, consumedTokenIds, now: 1001 })
+    assert.throws(() => authorizeExternalToolAction({ secret, token, actionDigest: reviewed, consumedTokenIds, now: 1002 }), /already been consumed/)
+    for (const files of [committed.files.slice(1), [...committed.files].reverse(), committed.files.map((file, i) => i ? file : { ...file, path: '../escape.md' }), committed.files.map((file, i) => i ? file : { ...file, text: file.text.replace('snapshot_digest:', 'forged_snapshot:') }), committed.files.map(file => ({ ...file, text: file.text + '界'.repeat(24000) }))]) assert.throws(() => bind(files), /Five bounded documents/)
+    const canonical = worktrees(rootDir)[0], handoffContext = { ...context, rootDir: canonical.path }
+    const requiresCanonical = canonical.branch !== 'main'
+    for (const files of [[], committed.files.map((file, i) => i ? file : { ...file, path: '../escape.md' })]) await assert.rejects(() => runLaunchHandoff({ action: 'handoff-approve', request: input, files }, handoffContext, contract.LAUNCH_COPILOT_ROLES), requiresCanonical ? /enrolled canonical/ : /invalid five-file/)
+    await assert.rejects(() => runLaunchHandoff({ action: 'handoff-review', request: { ...input, snapshotDigest: '0'.repeat(64) }, files: committed.files }, handoffContext, contract.LAUNCH_COPILOT_ROLES), requiresCanonical ? /enrolled canonical/ : /snapshot changed/)
+    await assert.rejects(() => runLaunchHandoff({ action: 'handoff-review', request: input, files: committed.files }, { ...handoffContext, abortSignal: cancelled.signal }, contract.LAUNCH_COPILOT_ROLES))
     const changed = await writeAgentGraphSnapshotAtomic(pointer, { ...payload, acquisition: { ...acquisition, commitSha: 'c'.repeat(40) } }, options)
     assert.notEqual(changed.pointer.snapshotDigest, first.pointer.snapshotDigest, 'a different acquired commit invalidates the snapshot even with equal source bytes')
     await assert.rejects(() => executeAgentGraphProposal({ ...input, snapshotDigest: first.pointer.snapshotDigest }, context, contract, createAgenticGraphClient, 'a'.repeat(40)), /snapshot changed/)
