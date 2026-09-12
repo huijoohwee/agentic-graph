@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import './production-release-dependency-install.test.mjs'
 import YAML from 'yaml'
 import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs'
 import { classifyServiceWorkerReleaseTransition } from '../service-worker-release-transition.mjs'
@@ -36,7 +37,7 @@ const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scr
 const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
 const productionLifecycleScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-lifecycle.mjs'), 'utf8')
 const productionTerminalAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-terminal-authorization.mjs'), 'utf8')
-const productionReleaseTransportScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-release-transports.mjs'), 'utf8'); const productionReleaseDependencyInstall = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'install-production-release-dependencies.sh'), 'utf8')
+const productionReleaseTransportScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-release-transports.mjs'), 'utf8')
 const packageScripts = JSON.parse(fs.readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')).scripts
 const assertAllMatch = (source, patterns) => patterns.forEach(pattern => assert.match(source, pattern))
 const assertNoneMatch = (source, patterns) => patterns.forEach(pattern => assert.doesNotMatch(source, pattern))
@@ -470,12 +471,6 @@ test('returning-user cache proof forwards the requested stale revision', async (
     revision: '',
     scope: 'agentic-graph',
   })
-})
-test('deploy dependency bootstrap retries bounded transient registry failures', () => {
-  const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
-  assert.match(deployJob, /bash \.\/scripts\/install-production-release-dependencies\.sh/)
-  assertAllMatch(productionReleaseDependencyInstall, [ /for attempt in 1 2 3; do/, /if npm ci; then/,
-    /if \[ "\$attempt" -eq 3 \]; then/, /sleep "\$\(\(attempt \* 10\)\)"/, /npx playwright install --with-deps chromium/, ])
 })
 test('mirror publication waits for its required check to appear before merge', () => {
   const deployJob = releaseWorkflow.slice(releaseWorkflow.indexOf('\n  deploy:'))
