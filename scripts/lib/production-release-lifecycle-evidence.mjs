@@ -7,7 +7,8 @@ import {
   normalizeCloudflarePagesDeploymentId,
   validateTransportEvidence,
 } from '../verify-production-release-transports.mjs'
-import { NATIVE_PRESERVATION_IDENTITY, NATIVE_FRONTIER_ADAPTER, validateNativePreservationIdentity, nativePreservationKey } from '../native-release-preservation.mjs'
+import { NATIVE_FRONTIER_ADAPTER, normalizePreservationCollaboration as normalizeCollaboration,
+  preservationCollaborationKey as collaborationKey, validateNativeFrontierAdapter } from '../native-release-preservation.mjs'
 import { assertSuccessfulReleaseMirrorIdentity } from '../production-mirror-artifact.mjs'
 
 export const RELEASE_EVIDENCE_SCHEMA = 'agentic-graph-production-release-evidence/v1'
@@ -30,7 +31,6 @@ const ROLLBACK_STAGES = ['deployment', 'state-reconciliation', 'live-verificatio
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const DIGEST_PATTERN = /^[0-9a-f]{64}$/
-const COLLABORATION_FIELDS = ['actorId', 'deviceId', 'sessionId', 'worktreeId', 'branchId', 'scopeId', 'leaseEpoch', 'fenceRevision']
 const PRESERVATION_FIELDS = ['collaboration', 'writeSetDigest', 'stateDigest', 'recoveryHandle', 'preservationMode', 'overlapClass']
 const OBSERVATION_FIELDS = ['collaboration', 'stateDigest', 'recoveryHandle', 'disposition']
 const STATE_COUNT_FIELDS = ['documentCount', 'chunkCount', 'graphCount']
@@ -64,15 +64,6 @@ const normalizeCounts = (value, label) => {
   for (const field of STATE_COUNT_FIELDS) if (!Number.isSafeInteger(value[field]) || value[field] < 0) throw new Error(`${label}.${field} must be a non-negative integer`)
   return Object.fromEntries(STATE_COUNT_FIELDS.map(field => [field, value[field]]))
 }
-const normalizeCollaboration = (value, label) => {
-  if (value?.schema === NATIVE_PRESERVATION_IDENTITY) return { ...validateNativePreservationIdentity(value) }
-  requireExact(value, COLLABORATION_FIELDS, label)
-  for (const field of COLLABORATION_FIELDS.filter(field => field !== 'leaseEpoch')) requireText(value[field], `${label}.${field}`)
-  if (!Number.isSafeInteger(value.leaseEpoch) || value.leaseEpoch < 1) throw new Error(`${label}.leaseEpoch must be a positive integer`)
-  return { ...value }
-}
-const collaborationKey = collaboration => collaboration?.schema === NATIVE_PRESERVATION_IDENTITY
-  ? nativePreservationKey(collaboration) : COLLABORATION_FIELDS.map(field => String(collaboration[field])).join('\u0000')
 const normalizePreservationEntry = (value, index) => {
   const label = `release evidence entries[${index}]`
   requireExact(value, PRESERVATION_FIELDS, label)
@@ -149,13 +140,7 @@ export const normalizeReleaseEvidence = (value, expected = {}) => {
       throw new Error('dormant production release evidence must contain exactly 19 preserved entries')
     }
   }
-  if (value.captureAdapterId === NATIVE_FRONTIER_ADAPTER) {
-    if (value.entries.some(entry => entry.collaboration?.schema !== NATIVE_PRESERVATION_IDENTITY)) {
-      throw new Error('native frontier requires native preservation identities')
-    }
-  } else if (value.entries.some(entry => entry.collaboration?.schema === NATIVE_PRESERVATION_IDENTITY)) {
-    throw new Error('native preservation identity requires its native capture adapter')
-  }
+  validateNativeFrontierAdapter(value)
   const entries = value.entries.map(normalizePreservationEntry)
     .sort((left, right) => collaborationKey(left.collaboration).localeCompare(collaborationKey(right.collaboration)))
   const observations = value.observations.map(normalizeObservation)

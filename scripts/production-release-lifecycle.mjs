@@ -30,7 +30,7 @@ import {
   parseTerminalAuthorizationComment,
   validateProductionCandidateLink,
 } from './production-terminal-authorization.mjs'
-import { materializeNativeFrontierReleaseEvidence } from './native-release-frontier.mjs'
+import { writeNativeFrontierEvidence, sourceEvidenceRefsFrom } from './native-release-frontier.mjs'
 import * as releaseLifecycleContract from './production-release-lifecycle-contract.mjs'
 
 const [V1_SCHEMA, V2_SCHEMA] = ['contracts/production-release-lifecycle.v1.schema.json', 'contracts/production-release-lifecycle.v2.schema.json']
@@ -335,18 +335,7 @@ const main = async () => {
     strict: true,
   })
   if (command === 'materialize-native-frontier-evidence') {
-    const output = path.resolve(required(values.output, '--output'))
-    const { evidence, frontier } = await materializeNativeFrontierReleaseEvidence({
-      repository: required(values['repository-root'], '--repository-root'),
-      rollbackBytes: readEvidenceBytes(required(values['rollback-recapture'], '--rollback-recapture')),
-      sourceRevision: required(values['source-sha'], '--source-sha'),
-      sourceTree: required(values['source-tree'], '--source-tree'),
-      sourceEvidenceRefs: sourceEvidenceRefsFrom(values['source-evidence-ref']),
-    })
-    writeJson(`${output}.frontier.json`, frontier)
-    writeJson(output, evidence)
-    writeGitHubOutput(values['github-output'], 'release_evidence_digest', digest(evidence))
-    return
+    return writeNativeFrontierEvidence(values, { required, readEvidenceBytes, writeJson, writeGitHubOutput })
   }
   if (command === 'materialize-evidence') {
     const output = path.resolve(required(values.output, '--output'))
@@ -714,13 +703,6 @@ const publishPreparedGitHubOutput = prepared => {
 const writeGitHubOutput = (enabled, name, value) => {
   publishPreparedGitHubOutput(prepareGitHubOutput(enabled, { [name]: value }))
 }
-const sourceEvidenceRefsFrom = values => (values || []).map(value => {
-  const separator = value.indexOf('=')
-  if (separator < 1) throw new Error('--source-evidence-ref must be kind=/absolute/path')
-  const kind = value.slice(0, separator), filePath = path.resolve(value.slice(separator + 1))
-  requireText(kind, 'source evidence kind')
-  return { kind, digest: digest(fs.readFileSync(filePath)) }
-})
 const requireOutputDir = value => { if (!value) throw new Error('--output-dir is required') }
 const required = (value, label) => {
   const normalized = String(value || '').trim()

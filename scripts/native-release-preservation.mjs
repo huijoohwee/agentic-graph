@@ -33,3 +33,28 @@ export const nativePreservationKey = value => {
   return `${NATIVE_PRESERVATION_IDENTITY}\0${JSON.stringify(fields.map(field => value[field]))}`
 }
 
+const collaborationFields = ['actorId', 'deviceId', 'sessionId', 'worktreeId', 'branchId', 'scopeId', 'leaseEpoch', 'fenceRevision']
+export const normalizePreservationCollaboration = (value, label) => {
+  if (value?.schema === NATIVE_PRESERVATION_IDENTITY) return { ...validateNativePreservationIdentity(value) }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be an object`)
+  const actual = Object.keys(value).sort(), expected = [...collaborationFields].sort()
+  if (actual.length !== expected.length || actual.some((field, index) => field !== expected[index])) {
+    throw new Error(`${label} contains missing or unknown fields`)
+  }
+  for (const field of collaborationFields.filter(field => field !== 'leaseEpoch')) {
+    if (typeof value[field] !== 'string' || !value[field].trim()) throw new Error(`${label}.${field} must be non-empty`)
+  }
+  if (!Number.isSafeInteger(value.leaseEpoch) || value.leaseEpoch < 1) throw new Error(`${label}.leaseEpoch must be a positive integer`)
+  return { ...value }
+}
+export const preservationCollaborationKey = value => value?.schema === NATIVE_PRESERVATION_IDENTITY
+  ? nativePreservationKey(value) : collaborationFields.map(field => String(value[field])).join('\u0000')
+export const validateNativeFrontierAdapter = ({ entries, captureAdapterId }) => {
+  if (captureAdapterId === NATIVE_FRONTIER_ADAPTER) {
+    if (entries.some(entry => entry.collaboration?.schema !== NATIVE_PRESERVATION_IDENTITY)) {
+      throw new Error('native frontier requires native preservation identities')
+    }
+  } else if (entries.some(entry => entry.collaboration?.schema === NATIVE_PRESERVATION_IDENTITY)) {
+    throw new Error('native preservation identity requires its native capture adapter')
+  }
+}

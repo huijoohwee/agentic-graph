@@ -203,3 +203,25 @@ export const materializeNativeFrontierReleaseEvidence = async options => {
   evidence.inventoryDigest = releaseInventoryDigest(evidence)
   return { evidence: normalizeReleaseEvidence(evidence), frontier }
 }
+
+export const sourceEvidenceRefsFrom = values => (values || []).map(value => {
+  const separator = value.indexOf('=')
+  if (separator < 1) throw new Error('--source-evidence-ref must be kind=/absolute/path')
+  const kind = value.slice(0, separator), filePath = path.resolve(value.slice(separator + 1))
+  if (typeof kind !== 'string' || !kind.trim()) throw new Error('source evidence kind must be non-empty')
+  return { kind, digest: digest(fs.readFileSync(filePath)) }
+})
+
+export const writeNativeFrontierEvidence = async (values, { required, readEvidenceBytes, writeJson, writeGitHubOutput }) => {
+  const output = path.resolve(required(values.output, '--output'))
+  const { evidence, frontier } = await materializeNativeFrontierReleaseEvidence({
+    repository: required(values['repository-root'], '--repository-root'),
+    rollbackBytes: readEvidenceBytes(required(values['rollback-recapture'], '--rollback-recapture')),
+    sourceRevision: required(values['source-sha'], '--source-sha'),
+    sourceTree: required(values['source-tree'], '--source-tree'),
+    sourceEvidenceRefs: sourceEvidenceRefsFrom(values['source-evidence-ref']),
+  })
+  writeJson(`${output}.frontier.json`, frontier)
+  writeJson(output, evidence)
+  writeGitHubOutput(values['github-output'], 'release_evidence_digest', digest(evidence))
+}
