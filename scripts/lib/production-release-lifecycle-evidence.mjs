@@ -7,6 +7,7 @@ import {
   normalizeCloudflarePagesDeploymentId,
   validateTransportEvidence,
 } from '../verify-production-release-transports.mjs'
+import { NATIVE_PRESERVATION_IDENTITY, NATIVE_FRONTIER_ADAPTER, validateNativePreservationIdentity, nativePreservationKey } from '../native-release-preservation.mjs'
 import { assertSuccessfulReleaseMirrorIdentity } from '../production-mirror-artifact.mjs'
 
 export const RELEASE_EVIDENCE_SCHEMA = 'agentic-graph-production-release-evidence/v1'
@@ -64,12 +65,14 @@ const normalizeCounts = (value, label) => {
   return Object.fromEntries(STATE_COUNT_FIELDS.map(field => [field, value[field]]))
 }
 const normalizeCollaboration = (value, label) => {
+  if (value?.schema === NATIVE_PRESERVATION_IDENTITY) return { ...validateNativePreservationIdentity(value) }
   requireExact(value, COLLABORATION_FIELDS, label)
   for (const field of COLLABORATION_FIELDS.filter(field => field !== 'leaseEpoch')) requireText(value[field], `${label}.${field}`)
   if (!Number.isSafeInteger(value.leaseEpoch) || value.leaseEpoch < 1) throw new Error(`${label}.leaseEpoch must be a positive integer`)
   return { ...value }
 }
-const collaborationKey = collaboration => COLLABORATION_FIELDS.map(field => String(collaboration[field])).join('\u0000')
+const collaborationKey = collaboration => collaboration?.schema === NATIVE_PRESERVATION_IDENTITY
+  ? nativePreservationKey(collaboration) : COLLABORATION_FIELDS.map(field => String(collaboration[field])).join('\u0000')
 const normalizePreservationEntry = (value, index) => {
   const label = `release evidence entries[${index}]`
   requireExact(value, PRESERVATION_FIELDS, label)
@@ -137,7 +140,7 @@ export const normalizeReleaseEvidence = (value, expected = {}) => {
   if (!Array.isArray(value.observations)) throw new Error('production release evidence observations must be an array')
   if (value.captureAdapterId === CLEAN_FRONTIER_CAPTURE_ADAPTER) {
     if (value.entries.length !== 0 || value.observations.length !== 0) throw new Error('clean release evidence must contain zero preservation entries')
-  } else if (value.captureAdapterId === CURRENT_FRONTIER_CAPTURE_ADAPTER) {
+  } else if ([CURRENT_FRONTIER_CAPTURE_ADAPTER, NATIVE_FRONTIER_ADAPTER].includes(value.captureAdapterId)) {
     if (value.entries.length === 0 || value.entries.length !== value.observations.length) {
       throw new Error('current release evidence must preserve one observation per attributed lane')
     }
@@ -145,6 +148,13 @@ export const normalizeReleaseEvidence = (value, expected = {}) => {
     if (value.entries.length !== 19 || value.observations.length !== 19) {
       throw new Error('dormant production release evidence must contain exactly 19 preserved entries')
     }
+  }
+  if (value.captureAdapterId === NATIVE_FRONTIER_ADAPTER) {
+    if (value.entries.some(entry => entry.collaboration?.schema !== NATIVE_PRESERVATION_IDENTITY)) {
+      throw new Error('native frontier requires native preservation identities')
+    }
+  } else if (value.entries.some(entry => entry.collaboration?.schema === NATIVE_PRESERVATION_IDENTITY)) {
+    throw new Error('native preservation identity requires its native capture adapter')
   }
   const entries = value.entries.map(normalizePreservationEntry)
     .sort((left, right) => collaborationKey(left.collaboration).localeCompare(collaborationKey(right.collaboration)))

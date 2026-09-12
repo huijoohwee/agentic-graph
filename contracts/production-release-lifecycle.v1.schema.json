@@ -56,6 +56,25 @@
         "fenceRevision": {"$ref": "#/$defs/nonempty"}
       }
     },
+    "nativePreservationIdentity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "repository", "worktreePath", "branchRef", "headRevision", "laneRef", "deviceId", "scopeId", "metadataDigest", "authorizesEffects"],
+      "properties": {
+        "schema": {"const": "agentic-graph-native-preservation-identity/v1"},
+        "repository": {"const": "huijoohwee/agentic-graph"},
+        "worktreePath": {"type": "string", "pattern": "^/"},
+        "branchRef": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^refs/heads/"}]},
+        "headRevision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "laneRef": {"type": "string", "pattern": "^agent/"},
+        "deviceId": {"$ref": "#/$defs/nonempty"},
+        "scopeId": {"$ref": "#/$defs/nonempty"},
+        "metadataDigest": {"$ref": "#/$defs/sha256"},
+        "authorizesEffects": {"const": false}
+      }
+    },
+    "preservationCollaboration": {
+      "oneOf": [{"$ref": "#/$defs/collaboration"}, {"$ref": "#/$defs/nativePreservationIdentity"}]
+    },
     "preservationEntry": {
       "type": "object",
       "additionalProperties": false,
@@ -68,7 +87,7 @@
         "overlapClass"
       ],
       "properties": {
-        "collaboration": {"$ref": "#/$defs/collaboration"},
+        "collaboration": {"$ref": "#/$defs/preservationCollaboration"},
         "writeSetDigest": {"$ref": "#/$defs/sha256"},
         "stateDigest": {"$ref": "#/$defs/sha256"},
         "recoveryHandle": {"$ref": "#/$defs/nonempty"},
@@ -81,7 +100,7 @@
       "additionalProperties": false,
       "required": ["collaboration", "stateDigest", "recoveryHandle", "disposition"],
       "properties": {
-        "collaboration": {"$ref": "#/$defs/collaboration"},
+        "collaboration": {"$ref": "#/$defs/preservationCollaboration"},
         "stateDigest": {"$ref": "#/$defs/sha256"},
         "recoveryHandle": {"$ref": "#/$defs/nonempty"},
         "disposition": {"enum": ["retained", "restored"]}

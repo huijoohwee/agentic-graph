@@ -940,3 +940,27 @@ test('canonical descendant mirror proof is remote-exact, GameXR-complete, and pr
     await assert.rejects(() => createCanonicalDescendantMirrorRollbackProof(proofInput), /must be clean/)
   } finally { fs.rmSync(root, { recursive: true, force: true }) }
 })
+
+test('native preservation passes candidate and carrier schemas without becoming integration authority', () => {
+  const native = { schema: 'agentic-graph-native-preservation-identity/v1', repository: 'huijoohwee/agentic-graph',
+    worktreePath: '/workspace/retained', branchRef: null, headRevision: sourceRevision,
+    laneRef: 'agent/device/retained', deviceId: 'device', scopeId: 'retained',
+    metadataDigest: '7'.repeat(64), authorizesEffects: false }
+  const entry = { collaboration: native, writeSetDigest: '1'.repeat(64), stateDigest: '2'.repeat(64),
+    recoveryHandle: 'retained-git-worktree:v1:fixture', preservationMode: 'active-lane', overlapClass: 'overlapping' }
+  const frontier = buildCleanReleaseEvidence({ captureAdapterId: 'agentic-graph-native-release-frontier/v1',
+    entries: [entry], observations: [{ collaboration: native, stateDigest: entry.stateDigest,
+      recoveryHandle: entry.recoveryHandle, disposition: 'retained' }] })
+  const result = buildCandidate({ releaseEvidence: frontier })
+  assert.deepEqual(result.preservation.entries[0].collaboration, native)
+  assert.deepEqual(result.integration.collaboration, collaboration)
+  const ajv = new Ajv2020({ strict: false, validateFormats: false })
+  ajv.addSchema(schemas.v1)
+  const validate = ajv.compile({ $ref: `${schemas.v1.$id}#/$defs/overlapPreservationReceipt` })
+  assert.equal(validate(result.preservation), true, JSON.stringify(validate.errors))
+  const validateIntegration = ajv.compile({ $ref: `${schemas.v1.$id}#/$defs/integrationReceipt` })
+  assert.equal(validateIntegration({ ...result.integration, collaboration: native }), false)
+  assert.throws(() => buildCandidate({ releaseEvidence: frontier, collaboration: native }), /collaboration identity/)
+  assert.equal(validate({ ...result.preservation,
+    entries: [{ ...entry, collaboration: { ...native, authorizesEffects: true } }] }), false)
+})

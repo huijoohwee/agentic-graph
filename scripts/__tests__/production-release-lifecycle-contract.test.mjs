@@ -597,3 +597,36 @@ test("receipt chains reject mismatched integration ancestry", () => {
     /unjoined/,
   );
 });
+
+test("native preservation identity cannot become integration or deployment authority", () => {
+  const native = {
+    schema: "agentic-graph-native-preservation-identity/v1", repository: "huijoohwee/agentic-graph",
+    worktreePath: "/repo/retained", branchRef: null, headRevision: "a".repeat(40),
+    laneRef: "agent/device/retained", deviceId: "device", scopeId: "retained",
+    metadataDigest: digest("b"), authorizesEffects: false,
+  };
+  const chain = buildChain();
+  const nativeEntry = { ...chain.preservation.entries[0], collaboration: native };
+  const preservation = createOverlapPreservationReceipt({
+    convergenceBaseDigest: digest("8"), protectedTipDigest: digest("9"),
+    captureAdapterId: "agentic-graph-native-release-frontier/v1",
+    entries: [nativeEntry, chain.preservation.entries[1]], capturedAt: clock.preserved,
+  });
+  const disposition = createOverlapDispositionReceipt(preservation, {
+    preservationReceiptDigest: preservation.receiptDigest,
+    convergenceBaseDigest: preservation.convergenceBaseDigest, protectedTipDigest: preservation.protectedTipDigest,
+    observations: preservation.entries.map(({ collaboration, stateDigest, recoveryHandle }) =>
+      ({ collaboration, stateDigest, recoveryHandle, disposition: "retained" })), observedAt: clock.dispositioned,
+  });
+  const integrationInput = Object.fromEntries([
+    "sourceRevision", "sourceDigest", "dependencyClosureDigest", "checksDigest", "evaluatorId",
+    "collaboration", "integrationTargetDigest", "integratedAt",
+  ].map(key => [key, chain.integration[key]]));
+  assert.throws(() => createIntegrationReceipt(preservation, disposition,
+    { ...integrationInput, collaboration: native }), /collaboration identity/);
+  assert.doesNotThrow(() => createIntegrationReceipt(preservation, disposition, integrationInput));
+  const terminal = buildTerminalChain();
+  assert.throws(() => createDeploymentReceipt(terminal.chain.candidate, native, terminal.deploymentInput));
+  assert.throws(() => createDeploymentReceipt(native, terminal.consumed, terminal.deploymentInput));
+  assert.throws(() => createHumanAuthorizationReceipt(chain.candidate, native, {}));
+});

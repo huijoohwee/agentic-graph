@@ -30,6 +30,7 @@ import {
   parseTerminalAuthorizationComment,
   validateProductionCandidateLink,
 } from './production-terminal-authorization.mjs'
+import { materializeNativeFrontierReleaseEvidence } from './native-release-frontier.mjs'
 import * as releaseLifecycleContract from './production-release-lifecycle-contract.mjs'
 
 const [V1_SCHEMA, V2_SCHEMA] = ['contracts/production-release-lifecycle.v1.schema.json', 'contracts/production-release-lifecycle.v2.schema.json']
@@ -333,6 +334,20 @@ const main = async () => {
     },
     strict: true,
   })
+  if (command === 'materialize-native-frontier-evidence') {
+    const output = path.resolve(required(values.output, '--output'))
+    const { evidence, frontier } = await materializeNativeFrontierReleaseEvidence({
+      repository: required(values['repository-root'], '--repository-root'),
+      rollbackBytes: readEvidenceBytes(required(values['rollback-recapture'], '--rollback-recapture')),
+      sourceRevision: required(values['source-sha'], '--source-sha'),
+      sourceTree: required(values['source-tree'], '--source-tree'),
+      sourceEvidenceRefs: sourceEvidenceRefsFrom(values['source-evidence-ref']),
+    })
+    writeJson(`${output}.frontier.json`, frontier)
+    writeJson(output, evidence)
+    writeGitHubOutput(values['github-output'], 'release_evidence_digest', digest(evidence))
+    return
+  }
   if (command === 'materialize-evidence') {
     const output = path.resolve(required(values.output, '--output'))
     const evidence = await materializeReleaseEvidence({
