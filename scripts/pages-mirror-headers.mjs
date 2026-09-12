@@ -80,6 +80,11 @@ export const buildAgentReadyHeaders = ({
   const appShellHeaderBlock = [
     GENERATED_APP_SHELL_HEADERS_START,
     ...productionRuntimeReadinessHeaderLines,
+    ...['/81rv10', '/81rv10/', '/81rv10/index.html'].flatMap(route => [
+      route,
+      '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
+      '  X-Agentic-Graph-Product-Entry: 81rv10',
+    ]),
     '/content/agentic-graph/index.html',
     '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
     '/content/agentic-graph/manifest.webmanifest',
@@ -107,7 +112,7 @@ export const buildAgentReadyHeaders = ({
   ].join('\n')
   const xrRuntimeHeaderBlock = [
     GENERATED_XR_RUNTIME_HEADERS_START,
-    ...['/agentic-graph/*', '/content/agentic-graph/*'].flatMap(route => [
+    ...['/agentic-graph/*', '/content/agentic-graph/*', '/81rv10/*'].flatMap(route => [
       route,
       '  ! Permissions-Policy',
       `  Permissions-Policy: ${XR_RUNTIME_PERMISSIONS_POLICY}`,

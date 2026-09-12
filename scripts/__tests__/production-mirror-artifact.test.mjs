@@ -58,6 +58,7 @@ const createBaseMirror = async root => {
     writeFile(root, 'content/agentic-graph/.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/agentic-graph/assets/old/entry.js', 'old content asset\n'),
     writeFile(root, 'agentic-graph/assets/old/entry.js', 'old public asset\n'),
+    writeFile(root, '81rv10/index.html', '<main id="root"></main>\n'),
     writeFile(root, 'image/agentic-graph/video-frame/old.png', 'old canonical image\n'),
     writeFile(root, 'functions/health.js', 'export const health = true\n'),
     writeFile(root, 'canvas/runtime.mjs', 'export const canvas = true\n'),
@@ -78,15 +79,22 @@ test('the uploaded and reconciled artifact carries generated discovery aliases a
   await fs.mkdir(mirror)
   await createBaseMirror(mirror)
   await writeFile(mirror, '.well-known/unrelated.json', '{"preserve":true}\n')
+  await writeFile(mirror, '81rv10/proposals/keep.md', 'authored proposal\n')
   initializeRepository(mirror)
   runGit(root, ['clone', '--quiet', mirror, target])
   const generated = await buildAgentReadyStaticFiles()
   for (const [name, value] of Object.entries(generated)) await writeFile(mirror, name, value.body)
+  const productEntry = '<main id="root"></main><script type="module" src="/agentic-graph/assets/current.js"></script>\n'
+  await writeFile(mirror, '81rv10/index.html', productEntry)
   await createProductionMirrorArtifactManifest({ mirrorRoot: mirror })
   await stageProductionMirrorArtifact({ mirrorRoot: mirror, artifactRoot: artifact })
+  assert.equal(await fs.readFile(path.join(artifact, '81rv10/index.html'), 'utf8'), productEntry)
+  await assert.rejects(fs.stat(path.join(artifact, '81rv10/proposals/keep.md')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.join(artifact, '.well-known/unrelated.json')), { code: 'ENOENT' })
   await reconcileProductionMirrorArtifact({ artifactRoot: artifact, mirrorRoot: target })
   for (const [name, value] of Object.entries(generated)) assert.equal(await fs.readFile(path.join(target, name), 'utf8'), value.body, name)
+  assert.equal(await fs.readFile(path.join(target, '81rv10/index.html'), 'utf8'), productEntry)
+  assert.equal(await fs.readFile(path.join(target, '81rv10/proposals/keep.md'), 'utf8'), 'authored proposal\n')
   assert.equal(await fs.readFile(path.join(target, '.well-known/unrelated.json'), 'utf8'), '{"preserve":true}\n')
   await assert.rejects(stageProductionMirrorArtifact({ mirrorRoot: mirror, artifactRoot: artifact }), { code: 'EEXIST' })
 })

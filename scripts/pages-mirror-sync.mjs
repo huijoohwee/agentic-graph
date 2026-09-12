@@ -162,6 +162,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   const nextRedirects = buildAgenticGraphRedirects({ existing: existingRedirects, rootFiles, redirectsPath })
   const redirectsNeedUpdate = nextRedirects !== existingRedirects
   const plainCopyEntries = [
+    ['81rv10 native workspace entry', path.resolve(distDir, 'index.html'), path.resolve(mirrorRoot, '81rv10', 'index.html')],
     ['agent-ready Pages Function', agentReadyFunctionSource, agentReadyFunctionTarget],
     ['YouTube transcript Pages Function', youtubeTranscriptFunctionSource, youtubeTranscriptFunctionTarget],
     ['video frame Pages Function', videoFrameFunctionSource, videoFrameFunctionTarget],

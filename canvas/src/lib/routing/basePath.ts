@@ -4,6 +4,7 @@ export type RouterBasenameRuntime = {
 }
 
 const ROOT_ALIAS_META_NAME = 'x-agentic-graph-root-alias'
+const PRODUCT_ENTRY_BASE_PATH = '/81rv10'
 
 function normalizeBasePath(value: unknown): string | undefined {
   const raw = String(value || '').trim() || '/'
@@ -47,7 +48,17 @@ export function isRouterRootAliasRuntime(baseUrl: unknown, runtime?: RouterBasen
   return !basename || rootAliasBasePath === basename
 }
 
+function resolveProductEntryBasename(baseUrl: unknown, runtime?: RouterBasenameRuntime): string | undefined {
+  const basename = normalizeBasePath(baseUrl)
+  if (basename && basename !== '/agentic-graph') return undefined
+  const pathname = readRuntimePathname(runtime)
+  return pathname === PRODUCT_ENTRY_BASE_PATH || pathname?.startsWith(`${PRODUCT_ENTRY_BASE_PATH}/`)
+    ? PRODUCT_ENTRY_BASE_PATH : undefined
+}
+
 export function resolveRouterBasename(baseUrl: unknown, runtime?: RouterBasenameRuntime): string | undefined {
+  const productEntry = resolveProductEntryBasename(baseUrl, runtime)
+  if (productEntry) return productEntry
   const basename = normalizeBasePath(baseUrl)
   if (!basename) return undefined
 
@@ -56,7 +67,8 @@ export function resolveRouterBasename(baseUrl: unknown, runtime?: RouterBasename
   return basename
 }
 
-export function resolveLiveCanvasHeroEnterHref(baseUrl: unknown): string {
-  const basename = normalizeBasePath(baseUrl) || readRuntimeRootAliasBasePath()
+export function resolveLiveCanvasHeroEnterHref(baseUrl: unknown, runtime?: RouterBasenameRuntime): string {
+  const basename = resolveProductEntryBasename(baseUrl, runtime)
+    || normalizeBasePath(baseUrl) || readRuntimeRootAliasBasePath(runtime)
   return `${basename || ''}/`
 }

@@ -9,7 +9,7 @@ export const productionMirrorArtifactManifestName = '.agentic-graph-production-a
 // The generator owns discovery paths. Transfer the same files it produces,
 // including root aliases, without adopting unrelated files in .well-known.
 export const productionMirrorArtifactEntries = Object.freeze([
-  '404.html', 'README.md', 'content/agentic-graph', 'agentic-graph', CANONICAL_IMAGE_ROOT, 'functions', 'canvas',
+  '404.html', 'README.md', 'content/agentic-graph', 'agentic-graph', '81rv10/index.html', CANONICAL_IMAGE_ROOT, 'functions', 'canvas',
   'contracts', 'grph-shared', '_worker.js', '_routes.json', '_headers', '_redirects',
   '.well-known/runtime-readiness.json', ...Object.keys(await buildAgentReadyStaticFiles()),
 ])

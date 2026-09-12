@@ -33,6 +33,7 @@ export const buildAgenticGraphRedirects = ({ existing, rootFiles }) => {
   const canonicalBase = `/${CANONICAL_MIRROR_NAMESPACE}`
   const namespaceLines = [
     GENERATED_NAMESPACE_START,
+    '/81rv10 /81rv10/ 308',
     ...LEGACY_PRODUCT_NAMESPACES.flatMap(namespace => [
       `/${namespace} ${canonicalBase} 301`, `/${namespace}/ ${canonicalBase}/ 301`,
       `/${namespace}/* ${canonicalBase}/:splat 301`,
