@@ -39,7 +39,19 @@ const INACTIVE_RENDER_SLICE = {
 const EMPTY_STRING_ARRAY: string[] = []
 
 export function useActiveGraphRenderData(enabled: boolean = true): GraphData | null {
-  const graphData = useActiveGraphData(enabled)
+  const activeDocumentGraph = useActiveGraphData(enabled)
+  const sourceGraph = useGraphStore(s => s.graphData)
+  const sourceIsReadOnly = (sourceGraph?.metadata?.agentGraphProjection as Record<string, unknown>)?.readOnly === true
+  const graphData = sourceIsReadOnly ? sourceGraph : activeDocumentGraph
+  const proposalOverlay = useGraphStore(s => s.launchProposalOverlay)
+  const proposalPath = useGraphStore(s => s.sourceFiles.find(file => file.name === 'launch-copilot.json')?.source?.path)
+  React.useEffect(() => {
+    if (!enabled || proposalOverlay || !proposalPath || !graphData?.metadata?.agentGraphProjection) return
+    const cid = proposalPath.split('/').at(-2)
+    if (cid) void import('@/features/agent-graph/launchCopilotWorkspace').then(module => module.reopenLaunchWorkspace(cid)).catch(error => {
+      useGraphStore.getState().pushUiLog({ kind: 'error', message: String(error), source: 'launch-copilot' })
+    })
+  }, [enabled, graphData, proposalOverlay, proposalPath])
 
   const selector = React.useMemo(
     () =>
@@ -85,7 +97,7 @@ export function useActiveGraphRenderData(enabled: boolean = true): GraphData | n
   const applyMermaidGeometryAttemptKeyRef = React.useRef<string>('')
   const applyMermaidGeometryInFlightRef = React.useRef(false)
   React.useEffect(() => {
-    if (!enabled) return
+    if (!enabled || sourceIsReadOnly) return
     if (!effectiveFrontmatterModeEnabled) return
     if (String(effectiveDocumentSemanticMode || 'document') !== 'document') return
     const base = graphData
@@ -125,11 +137,12 @@ export function useActiveGraphRenderData(enabled: boolean = true): GraphData | n
     return () => {
       cancelled = true
     }
-  }, [effectiveDocumentSemanticMode, effectiveFrontmatterModeEnabled, enabled, graphData])
+  }, [effectiveDocumentSemanticMode, effectiveFrontmatterModeEnabled, enabled, graphData, sourceIsReadOnly])
 
   const lastRef = React.useRef<GraphData | null>(null)
 
   const computed = React.useMemo(() => {
+    if (sourceIsReadOnly) return graphData
     const sourceTableBaseGraph: GraphData | null =
       !graphData && effectiveMultiDimTableModeEnabled && (String(jsonSourceText || '').trim() || String(markdownText || '').trim())
         ? {
@@ -175,6 +188,7 @@ export function useActiveGraphRenderData(enabled: boolean = true): GraphData | n
     markdownName,
     markdownText,
     documentStructureBaselineLock,
+    sourceIsReadOnly,
   ])
 
   const budgetSurface = React.useMemo(
@@ -207,13 +221,28 @@ export function useActiveGraphRenderData(enabled: boolean = true): GraphData | n
   }, [budgetedComputed, graphDataRevision])
 
   const renderComputed = React.useMemo(() => {
+    const identity = graphData?.metadata?.agentGraphProjection as Record<string, unknown> | undefined
+    const overlay = proposalOverlay?.metadata
+    let combined = highlightedComputed
+    if (combined && proposalOverlay && identity?.snapshotDigest && identity.snapshotDigest === overlay?.snapshotDigest && identity.graphId === overlay.graphId) {
+      const evidence = overlay.evidenceProjection as unknown as GraphData | undefined
+      const existingNodes = new Set(combined.nodes.map(node => node.id))
+      const existingEdges = new Set(combined.edges.map(edge => edge.id))
+      const evidenceNodes = new Set(evidence?.nodes.map(node => node.id)), evidenceEdges = new Set(evidence?.edges.map(edge => edge.id))
+      const sourceEdges = [...combined.edges.filter(edge => evidenceEdges.has(edge.id)), ...(evidence?.edges || []).filter(edge => !existingEdges.has(edge.id))]
+      combined = {
+        ...combined,
+        nodes: [...combined.nodes.filter(node => evidenceNodes.has(node.id)), ...(evidence?.nodes || []).filter(node => !existingNodes.has(node.id)), ...proposalOverlay.nodes],
+        edges: [...sourceEdges.map(edge => ({ ...edge, properties: { ...edge.properties, 'visual:dash': 'none' } })), ...proposalOverlay.edges],
+      }
+    }
     return withGraphTopologyMetadata({
-      graphData: highlightedComputed,
+      graphData: combined,
       graphRevision: graphDataRevision,
       stage: 'render',
       annotate: true,
     })
-  }, [graphDataRevision, highlightedComputed])
+  }, [graphDataRevision, highlightedComputed, graphData, proposalOverlay])
 
   React.useEffect(() => {
     if (!enabled) return

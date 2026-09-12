@@ -408,7 +408,7 @@ function isAgentGraphPreview(graphData: GraphData | null | undefined, sessionId:
     && preview.sessionId === sessionId
 }
 
-export function prepareAgentGraphCanvasView(): void {
+export function prepareAgentGraphCanvasView(options: { activateSource?: boolean } = {}): void {
   const initialState = useGraphStore.getState()
   if (
     initialState.documentStructureBaselineLock === true
@@ -428,6 +428,10 @@ export function prepareAgentGraphCanvasView(): void {
       'graph-view-unavailable',
       'Knowledge graph import could not open the required 2D Graph view.',
     )
+  }
+  if (options.activateSource) {
+    graphViewState.setMarkdownDocument(null, null, { autoEnableFrontmatter: false, applyViewPreset: false })
+    graphViewState.setMarkdownDocumentSourceUrl(null)
   }
 }
 
@@ -574,7 +578,7 @@ export function createAgentGraphCanvasPreviewSession(): AgentGraphCanvasPreviewS
 export function applyAgentGraphCanvasProjection(
   result: WorkspaceAgentGraphImportResult,
   setGraphData: (graphData: GraphData) => void = graphData => {
-    prepareAgentGraphCanvasView()
+    prepareAgentGraphCanvasView({ activateSource: true })
     useGraphStore.getState().setGraphData(graphData)
   },
 ): GraphData {

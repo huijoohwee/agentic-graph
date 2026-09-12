@@ -296,7 +296,7 @@ export const createNodesLayer = (args: {
       const seconds = (4 - 3.3 * t).toFixed(2)
       return `${seconds}s`
     })
-    .attr('stroke-dasharray', () => null)
+    .attr('stroke-dasharray', (node: GraphNode) => node.properties?.proposed === true ? '6,4' : null)
     .style('user-select', 'none')
     .style('cursor', 'pointer');
 
