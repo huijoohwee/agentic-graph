@@ -99,4 +99,4 @@ Avoid:
 - Local MCP contract: `mcp/README.md`
 - MainPanel implementation owners: `canvas/src/features/panels/views/*`
 - Browser-published readiness owners: `canvas/src/features/agent-ready/*`
-- Planning ledger: `agentic-canvas-os/docs/TODO.md` plus the active `agentic-canvas-os/todo/YYYY-MM.md` shard
+- Planning ledger: private `huijoohwee/.workspace/.todo/docs/TODO.md` plus immutable `todo/YYYY-MM/<context>.md` records; the board is generated

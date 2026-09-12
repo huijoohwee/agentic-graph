@@ -82,7 +82,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 | Surface | Owner | Typical Files | Conflict Rule |
 |---|---|---|---|
 | Runtime source | Upstream application code | `agentic-graph/canvas/src/**` | Merge source logic first, then validate runtime behavior |
-| Canonical docs | Upstream documentation | `agentic-canvas-os/docs/TODO.md`, `agentic-canvas-os/todo/**`, `agentic-graph/docs/**`, `agentic-graph/README.md` | Merge canonical wording first, append the planning row, then update any mirrors or generated derivatives |
+| Canonical docs | Upstream documentation | `huijoohwee/.workspace/.todo/docs/TODO.md`, `huijoohwee/.workspace/.todo/todo/**`, `agentic-graph/docs/**`, `agentic-graph/README.md` | Merge canonical wording first, record an immutable Context at the private owner, then regenerate derived views |
 | Generators and sync logic | Upstream automation | `agentic-graph/scripts/**`, `agentic-graph/canvas/src/cli/**`, generator inputs | Fix the generator or its input, then rerun the workflow |
 | Schema mirrors | Downstream documentation mirror | `huijoohwee.github.io/schema/AgenticRAG/**` | Update only after the canonical owner is aligned |
 | Publish mirrors | Downstream deploy surface | `huijoohwee/content/agentic-graph/**`, managed route files in `huijoohwee/agentic-graph/**` | Never hand-merge; rebuild and resync from `agentic-graph` |
@@ -113,7 +113,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 
 ### Canonical Docs
 
-- Resolve planning conflicts in `agentic-canvas-os/docs/TODO.md` and the active `agentic-canvas-os/todo/YYYY-MM.md` shard; resolve agentic-graph documentation conflicts in `agentic-graph/docs/**` or other explicitly named canonical files.
+- Resolve planning conflicts through private `huijoohwee/.workspace/.todo/docs/TODO.md` and a new immutable `todo/YYYY-MM/<context>.md` record; preserve earlier records and regenerate the Kanban view; resolve agentic-graph documentation conflicts in `agentic-graph/docs/**` or other explicitly named canonical files.
 - Treat downstream schema and publish copies as mirrors unless a directive row explicitly assigns ownership elsewhere.
 - Preserve one canonical statement of a contract, then propagate it.
 

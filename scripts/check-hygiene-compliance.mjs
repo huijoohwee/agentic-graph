@@ -44,9 +44,9 @@ const disallowedRepoEntries = [
   { rel: 'docs/reports/prd-codebase-gap-report_202601052150.md', reason: 'dated gap reports are stale generated reports' },
   { rel: 'docs/reports/prd-codebase-gap-report_202601052215.md', reason: 'dated gap reports are stale generated reports' },
   { rel: 'test-report', reason: 'dated test reports are stale generated reports' },
-  { rel: 'todo-log_202602.md', reason: 'cross-repository planning lives only in agentic-canvas-os/docs/TODO.md and agentic-canvas-os/todo/YYYY-MM.md' },
-  { rel: 'todo-log_202603.md', reason: 'cross-repository planning lives only in agentic-canvas-os/docs/TODO.md and agentic-canvas-os/todo/YYYY-MM.md' },
-  { rel: 'todo-log_202604.md', reason: 'cross-repository planning lives only in agentic-canvas-os/docs/TODO.md and agentic-canvas-os/todo/YYYY-MM.md' },
+  { rel: 'todo-log_202602.md', reason: 'cross-repository planning belongs to the private workspace Context owner; see agentic-canvas-os/docs/TODO.md' },
+  { rel: 'todo-log_202603.md', reason: 'cross-repository planning belongs to the private workspace Context owner; see agentic-canvas-os/docs/TODO.md' },
+  { rel: 'todo-log_202604.md', reason: 'cross-repository planning belongs to the private workspace Context owner; see agentic-canvas-os/docs/TODO.md' },
 ]
 
 const ignoredDirNames = new Set([
