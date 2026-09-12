@@ -41,3 +41,15 @@ test('scope migration preserves sibling routes, including names with the same pr
   assert.ok(routes.startsWith(existing))
   assert.deepEqual(destination(routes, `${canonical}-tools`), { target: '/tool-app', status: '302' })
 })
+
+test('81rv10 serves its own mirrored entry without swallowing output documents or sibling products', () => {
+  const existing = '/81rv10/proposals/example.md /published/example.md 200\n/81rv10-tools /tools 302\n'
+  const routes = buildAgenticGraphRedirects({ existing, rootFiles: ['sw.js'] })
+  assert.deepEqual(destination(routes, '/81rv10'), { target: '/81rv10/', status: '308' })
+  assert.equal(destination(routes, '/81rv10/'), null, 'Pages serves the directory index directly')
+  assert.deepEqual(destination(routes, '/81rv10/proposals/example.md'), { target: '/published/example.md', status: '200' })
+  assert.deepEqual(destination(routes, '/81rv10-tools'), { target: '/tools', status: '302' })
+  assert.equal(destination(routes, '/81rv10/missing.js'), null)
+  assert.equal(destination(routes, '/81rv10/proposals/missing.md'), null)
+  assert.equal(buildAgenticGraphRedirects({ existing: routes, rootFiles: ['sw.js'] }), routes)
+})

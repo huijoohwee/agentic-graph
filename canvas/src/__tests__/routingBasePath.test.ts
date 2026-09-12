@@ -52,4 +52,24 @@ export const testResolveRouterBasenameFromBaseUrl = () => {
   if (enterHref !== '/agentic-graph/') {
     throw new Error(`Expected live canvas hero enter CTA to target /agentic-graph/, got ${JSON.stringify(enterHref)}`)
   }
+
+  for (const base of ['/', '/agentic-graph/']) {
+    for (const pathname of ['/81rv10', '/81rv10/', '/81rv10/doc/example']) {
+      const runtime = { pathname, rootAliasBasePath: undefined }
+      if (resolveRouterBasename(base, runtime) !== '/81rv10') {
+        throw new Error(`Expected native product basename at ${base} + ${pathname}`)
+      }
+      if (resolveLiveCanvasHeroEnterHref(base, runtime) !== '/81rv10/') {
+        throw new Error('Product entry CTA must retain the product URL')
+      }
+    }
+  }
+  for (const pathname of ['/81rv10-tools/', '/81rv100/', '/agentic-graph/']) {
+    if (resolveRouterBasename('/agentic-graph/', { pathname }) !== '/agentic-graph') {
+      throw new Error(`Product mount must not capture sibling path ${pathname}`)
+    }
+  }
+  if (resolveRouterBasename('/custom/', { pathname: '/81rv10/' }) !== '/custom') {
+    throw new Error('Product entry must not override a custom deployment base')
+  }
 }
