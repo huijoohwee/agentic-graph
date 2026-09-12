@@ -2,6 +2,7 @@ import path from "node:path";
 import {
   AgentGraphError, AGENT_GRAPH_SCHEMA_VERSION, LEGACY_AGENT_GRAPH_SCHEMA_VERSION,
   compareStableStrings,
+  retainedAgentGraphAcquisition, stableStringify,
 } from "./contract.mjs";
 import { MAX_RESOLUTION_SHARD_BYTES } from "./resolution-sharding.mjs";
 import {
@@ -75,6 +76,7 @@ export async function readAgentGraphSnapshot(pointerPath, options = {}) {
     || manifest.graphId !== pointer.graphId) {
     throw new AgentGraphError("snapshot_manifest_invalid", "Knowledge graph snapshot manifest is invalid.");
   }
+  if (manifest.acquisition !== undefined && stableStringify(retainedAgentGraphAcquisition(manifest.acquisition)) !== stableStringify(manifest.acquisition)) throw new AgentGraphError("snapshot_manifest_invalid", "Retained acquisition identity is not canonical.");
   return attachReadBudget({ ...provisional, manifest }, options);
 }
 export async function readAgentGraphSnapshotIfPresent(pointerPath, options = {}) {

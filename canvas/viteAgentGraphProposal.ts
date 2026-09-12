@@ -84,7 +84,8 @@ export async function executeAgentGraphProposal(input: RecordValue, context: {
     graphId: input.graphId, snapshotDigest: input.snapshotDigest,
     parserRegistryDigest: snapshot.manifest.parserRegistryDigest, sourceRole: input.sourceRole,
     contractRevision: sourceRevision, repositories: snapshot.manifest.repositories,
-    sourceCommit: null, sourceCommitStatus: 'Native snapshot retains file hashes; acquisition commit is not retained by this host contract.',
+    sourceCommit: snapshot.manifest.acquisition?.commitSha || null, acquisition: snapshot.manifest.acquisition,
+    sourceCommitStatus: snapshot.manifest.acquisition ? 'Acquisition identity retained in the content-addressed snapshot.' : 'Local files or older import; re-import a repository URL to retain its acquisition commit.',
     complete: search.completeness.corpusComplete, truncated,
     nodes: [...nodes.values()].map(node => ({ id: node.id, label: node.label || node.id, type: node.type,
       sourcePath: node.properties?.['corpus:sourcePath'], line: node.properties?.['corpus:lineStart'],
@@ -102,7 +103,7 @@ export async function executeAgentGraphProposal(input: RecordValue, context: {
     `Reopen in Chat: /launch-copilot reopen ${evidence.cid}`, '',
     ...evidence.nodes.map(node => `- ${node.label} — ${node.id}; file: ${node.sourcePath || 'unavailable'}; line: ${node.line || 'unavailable'}; content hash: ${node.sourceDigest || 'unavailable'}`), '',
     ...evidence.edges.map(edge => `- Edge ${edge.id}: ${edge.source} → ${edge.target}; ${JSON.stringify(edge.evidence)}`), '',
-    'Acquisition commit: unavailable in native snapshot.',
+    `Acquisition commit: ${evidence.sourceCommit || 'unavailable'}; repository: ${evidence.acquisition?.repositoryUrl || 'local or unavailable'}; subpath: ${evidence.acquisition?.subpath || '.'}.`,
     'RAO/SVO: R1 retrieve evidence; R2 compose proposal; R3 render review; R4 publish reviewed files (not admitted); R5 verify integration (not observed).', '',
   ].join('\n')
   const files = contract.serializeLaunchDocuments(proposal, evidence).map((file: RecordValue) => ({ ...file, text: file.text + receipt }))

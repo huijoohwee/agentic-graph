@@ -1,4 +1,5 @@
 import { SOURCE_PARSER_REGISTRY } from '../mcp/agent-graph/source-parser-registry.mjs'
+import { retainedAgentGraphAcquisition } from '../mcp/agent-graph/contract.mjs'
 import {
   fitAgentGraphProjectionRecords,
   AGENT_GRAPH_PROJECTION_GRAPH_DATA_MAX_BYTES,
@@ -121,6 +122,7 @@ export function sanitizeAgentGraphImportResult(
     graphId,
     snapshotDigest,
     parserRegistryDigest,
+    ...(retainedAgentGraphAcquisition(result.acquisition) ? { acquisition: retainedAgentGraphAcquisition(result.acquisition) } : {}),
     complete: result.complete,
     counts: { sources: sourceCount, nodes: nodeCount, edges: edgeCount },
     projection: safeProjection,

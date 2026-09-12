@@ -48,9 +48,12 @@ local drafts because the default workspace policy excludes them from snapshots.
   verification has been performed; the operator explicitly deferred it.
   A local stub exercises the existing OpenAI Responses streaming transport,
   usage receipt, exact selected model, one-call limit and invalid-output fallback.
-- The native snapshot proves file/parser/snapshot hashes. Its current host
-  contract does not retain the acquisition commit; documents state it as unknown.
-  Do not present these receipts as commit-qualified source links.
+- New repository-URL imports retain the resolved acquisition commit, repository
+  URL and subpath in the content-addressed snapshot, browser projection, Source
+  Files receipt and proposal documents. Cache-hit counters do not change that
+  identity. A different commit invalidates the snapshot even when file bytes are
+  equal. Local-folder and older imports still report the commit as unavailable;
+  re-import a repository URL to obtain a commit-bound receipt.
 - Protected proposal publication is **not admitted**. The initial output
   repository `81rv10` has no accepted OS output profile in this implementation.
   Export neither opens nor merges a PR. Exact review, target/base binding, owner
@@ -85,8 +88,16 @@ second deadline during cold loading; retry after the workspace settled succeeded
 Canvas cards retain desktop positions across viewport changes: use the native
 workspace editor/viewer for phone document review.
 
-Four new product modules and 693 added implementation/test lines across Graph and
-Canvas OS; zero new dependencies. Every changed code file remains under 600 lines.
+The retention follow-up also ingested the real `huijoohwee/81rv10` repository URL:
+commit `2edb9b2aa1db1a355bd0bad0539485688b03da8e` survived the snapshot round trip.
+A warm cache import retained snapshot digest
+`05859ea4b3c5c93cca0425a6749c040cf19321ed11b52b91be536ad7929709ca`.
+The eight acquisition checks and the extended native proposal test passed.
+
+The prototype used four new product modules and 693 added implementation/test
+lines across Graph and Canvas OS. Acquisition retention adds 54 lines, bringing
+this task to 747 of the original 900-line cap; zero new dependencies or modules.
+Every changed code file remains under 600 lines.
 Full LC browser modules load only on invocation or retained-proposal reopening.
 Existing browser entry/state/render changes add 1,485 minified bytes (513-byte
 concatenated gzip estimate, measured with installed esbuild against the Graph

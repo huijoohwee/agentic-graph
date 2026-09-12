@@ -1,5 +1,19 @@
 import crypto from "node:crypto";
 
+// Stable acquisition identity only: cache hits and network counters are not source identity.
+export function retainedAgentGraphAcquisition(value) {
+  if (value == null || value.mode === "local-directory") return undefined;
+  const url = new URL(value.repositoryUrl);
+  if (value.mode !== "repository-url" || !/^[a-f0-9]{40}$/.test(value.commitSha)
+    || url.protocol !== "https:" || url.username || url.password || url.port || url.search || url.hash
+    || typeof value.subpath !== "string" || value.subpath.length > 1024
+    || /[\\\u0000-\u001f]/u.test(value.subpath) || value.subpath.startsWith("/")
+    || value.subpath.split("/").some(part => part === ".." || part === ".")) {
+    throw new Error("Invalid retained repository acquisition");
+  }
+  return { mode: "repository-url", repositoryUrl: url.href, commitSha: value.commitSha, subpath: value.subpath };
+}
+
 export const AGENT_GRAPH_SCHEMA_VERSION = "agentic-graph-agent-graph/v1";
 export const LEGACY_AGENT_GRAPH_SCHEMA_VERSION = "agentic-graph-knowledge-graph/v1";
 export const AGENT_GRAPH_CONTRACT_VERSION = "1.0.0";

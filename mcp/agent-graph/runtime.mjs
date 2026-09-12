@@ -387,6 +387,7 @@ async function ingestResolvedTransaction(
   const unsupported = discovered.sources.filter((source) => source.status === "unsupported").length;
   const snapshot = await writeAgentGraphSnapshotAtomic(pointerPath, {
     graphId: resolved.graphId,
+    acquisition: resolved.acquisition,
     sourceEntries,
     derivedEdgesByRepository,
     diagnostics: discovered.diagnostics,

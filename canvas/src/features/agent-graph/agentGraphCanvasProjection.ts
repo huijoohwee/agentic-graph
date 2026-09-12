@@ -349,6 +349,7 @@ export function buildAgentGraphCanvasProjection(
         graphId,
         snapshotDigest: snapshotDigest.toLowerCase(),
         parserRegistryDigest: parserRegistryDigest.toLowerCase(),
+        ...(result.acquisition ? { acquisition: result.acquisition } : {}),
         projectionToken,
         complete: result.complete,
         projectionComplete: result.projection.complete,
