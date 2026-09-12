@@ -28,6 +28,7 @@ export async function runAgentGraphProposal(input: RecordValue, context: {
   const [contract, { createAgenticGraphClient }] = await Promise.all([
     load('launch-copilot-contract.js'), load('agentic-graph-mcp-contract.js'),
   ])
+  if (['handoff-review', 'handoff-approve', 'handoff-status'].includes(input.action)) return (await import('./viteAgentGraphHandoff')).runLaunchHandoff(input, context, contract.LAUNCH_COPILOT_ROLES)
   return executeAgentGraphProposal(input, context, contract, createAgenticGraphClient, sourceRevision)
 }
 
@@ -104,9 +105,9 @@ export async function executeAgentGraphProposal(input: RecordValue, context: {
     ...evidence.nodes.map(node => `- ${node.label} — ${node.id}; file: ${node.sourcePath || 'unavailable'}; line: ${node.line || 'unavailable'}; content hash: ${node.sourceDigest || 'unavailable'}`), '',
     ...evidence.edges.map(edge => `- Edge ${edge.id}: ${edge.source} → ${edge.target}; ${JSON.stringify(edge.evidence)}`), '',
     `Acquisition commit: ${evidence.sourceCommit || 'unavailable'}; repository: ${evidence.acquisition?.repositoryUrl || 'local or unavailable'}; subpath: ${evidence.acquisition?.subpath || '.'}.`,
-    'RAO/SVO: R1 retrieve evidence; R2 compose proposal; R3 render review; R4 publish reviewed files (not admitted); R5 verify integration (not observed).', '',
+    'RAO/SVO: R1 retrieve evidence; R2 compose proposal; R3 render review; R4 publish exact approved files (review required); R5 verify integration (not observed).', '',
   ].join('\n')
   const files = contract.serializeLaunchDocuments(proposal, evidence).map((file: RecordValue) => ({ ...file, text: file.text + receipt }))
   const digest = createHash('sha256').update(JSON.stringify(files)).digest('hex')
-  return { evidence, prompt, proposal, files, digest, publication: { status: 'not-admitted', reason: 'Output repository needs an admitted OS lane and exact protected provider proof. Export does not publish or merge.' } }
+  return { evidence, prompt, proposal, files, digest, publication: { status: 'not-admitted', reason: `Review all five files with /launch-copilot review ${evidence.cid} on the enrolled canonical Graph host. Approval publishes to Graph through Agentic OS; export does not publish or merge.` } }
 }

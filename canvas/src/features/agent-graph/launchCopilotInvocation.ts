@@ -12,16 +12,31 @@ export async function invokeLaunchCopilot(args: FloatingPanelChatSubmitArgs) {
   const input = args.input.trim()
   const action = input.match(/^\/launch-copilot\s+(outline|draft)\s+(owned|reference)\s+([\s\S]+)$/)
   const existing = input.match(/^\/launch-copilot\s+(reopen|export)\s+([a-z0-9-]+)$/)
+  const handoff = input.match(/^\/launch-copilot\s+(review|approve|status)\s+([a-z0-9-]+)(?:\s+([a-f0-9]{64}))?$/)
   args.setErrorText(null)
   args.setIsLoading(true)
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 180_000)
   args.abortRef.current = controller
   const initialGraph = useGraphStore.getState().graphData, selectedKey = selectionKey()
-  const unsubscribe = useGraphStore.subscribe(state => {
+  let unsubscribe = useGraphStore.subscribe(state => {
     if (state.graphData !== initialGraph || selectionKey() !== selectedKey) controller.abort()
   })
   const report = (text: string) => args.setMessages(messages => [...messages, { id: crypto.randomUUID(), role: 'assistant', content: text } as any])
   try {
+    if (handoff) {
+      if (!navigator.onLine) throw new Error('Reconnect before proposal review, approval or provider readback')
+      unsubscribe()
+      const record = await reopenLaunchWorkspace(handoff[2]), graph = useGraphStore.getState().graphData
+      unsubscribe = useGraphStore.subscribe(state => { if (state.graphData !== graph) controller.abort() })
+      const body = JSON.stringify({ action: `handoff-${handoff[1]}`, request: record.request, files: record.files, approval: handoff[3] })
+      if (new TextEncoder().encode(body).length > 64000) throw new Error('The five documents exceed the native host’s 64,000-byte request limit; shorten them and review again')
+      const response = await fetch(`${AGENT_GRAPH_HOST_ROUTE}/proposal`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal, body })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error?.message || 'Handoff response unavailable; use status before retrying')
+      report(`${result.status}: ${result.reason}\n\n${JSON.stringify(result, null, 2)}\n\n${result.approval ? 'Review every native document and hash, then submit the prepared approval command. A disconnect after approval does not cancel publication.' : 'Use status for provider readback; no automatic merge or retry.'}`)
+      args.setInput(result.approval ? `/launch-copilot approve ${handoff[2]} ${result.approval}` : `/launch-copilot status ${handoff[2]}`)
+      return
+    }
     if (existing) {
       if (existing[1] === 'export') report(`Exact five-file ZIP exported. SHA-256: ${await exportLaunchWorkspace(existing[2])}. Publication and integration are not admitted; export does not open a PR.`)
       else { await reopenLaunchWorkspace(existing[2]); report(`Reopened ${existing[2]}. Retained evidence may be stale until the native host rechecks it.`) }
@@ -74,7 +89,7 @@ export async function invokeLaunchCopilot(args: FloatingPanelChatSubmitArgs) {
     report(`${drafting}\n\n${record.evidence.nodes.length} real nodes; ${record.evidence.edges.length} explained edges; truncated: ${record.evidence.truncated}. Five native document panels and a separate NEW overlay are on the source canvas.\n\nCID: ${record.evidence.cid}\nClick a document's text to edit, then /launch-copilot export ${record.evidence.cid} for the exact five files. Reopen with /launch-copilot reopen ${record.evidence.cid}.\n\n${record.publication.reason}`)
     args.setInput(`/launch-copilot reopen ${record.evidence.cid}`)
   } catch (error) {
-    args.setErrorText(controller.signal.aborted ? 'Launch Copilot cancelled; previous canvas retained.' : String(error))
+    args.setErrorText(handoff ? `${String(error)}. Use /launch-copilot status ${handoff[2]} before retrying; approved effects may be retained.` : controller.signal.aborted ? 'Launch Copilot cancelled; previous canvas retained.' : String(error))
   } finally {
     unsubscribe(); clearTimeout(timer); args.abortRef.current = null; args.setIsLoading(false)
   }
