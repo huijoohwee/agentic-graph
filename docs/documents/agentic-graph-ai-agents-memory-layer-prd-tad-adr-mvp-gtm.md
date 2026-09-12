@@ -2,9 +2,9 @@
 title: "agentic-graph — AI Agents Universal Memory Layer PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-ai-agents-memory-layer-prd-tad"
 author: "airvio / joohwee"
-date: "2026-06-13"
+date: "2026-09-12"
 updated: "2026-07-24"
-version: "0.5.0"
+version: "0.5.1"
 status: "implemented-dev-runtime"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 lang: "en-US"
@@ -38,6 +38,23 @@ source_references:
   mem0_node_sdk: "npm install mem0ai"
   mem0_platform_client: "MemoryClient"
   mem0_oss_client: "Memory"
+owner: "Product maintainers"
+continuity_id: "PLAN-AGENTIC-GRAPH-AI-AGENTS-MEMORY-LAYER-PRD-TAD-ADR-MVP-GTM"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.5.0"
+prd_revision: "0.5.1"
+tad_revision: "0.5.1"
+adr_revision: "0.5.1"
+mvp_revision: "0.5.1"
+gtm_revision: "0.5.1"
 ---
 
 # agentic-graph — AI Agents Universal Memory Layer PRD-TAD-ADR-MVP-GTM
@@ -225,3 +242,30 @@ Known wider check status on 2026-06-13: `npm -C canvas run check` currently fail
 | No deploy side effects | Dev-only implementation; no Prod/Cloudflare deploy |
 
 *Legacy provider-mode notes were synthesized from the cited provider documentation. The persistent-memory store, policy, lifecycle, invocation, and test design are independently authored agentic-graph runtime work.*
+
+## Planning revision — reference implementation
+
+All five roles below consume `PLAN-AGENTIC-GRAPH-AI-AGENTS-MEMORY-LAYER-PRD-TAD-ADR-MVP-GTM@0.5.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+
+| Role | Owning content at this revision |
+|---|---|
+| PRD | [PRD](agentic-graph-ai-agents-memory-layer-prd-tad-adr-mvp-gtm.md#prd) |
+| TAD | [TAD](agentic-graph-ai-agents-memory-layer-prd-tad-adr-mvp-gtm.md#tad) |
+| ADR | [ADR-MEM-01: Provider Mode](agentic-graph-ai-agents-memory-layer-prd-tad-adr-mvp-gtm.md#adr-mem-01-provider-mode) |
+| MVP | [MVP — reference implementation](agentic-graph-ai-agents-memory-layer-prd-tad-adr-mvp-gtm.md#mvp--reference-implementation) |
+| GTM | [GTM — reference implementation](agentic-graph-ai-agents-memory-layer-prd-tad-adr-mvp-gtm.md#gtm--reference-implementation) |
+
+## MVP — reference implementation
+
+Reuse the minimum scope, acceptance conditions and component owners identified above. The demonstration must follow the documented entry, permitted action, durable outcome and readback, including its stated failure/recovery path. Use `npm run check` for its actual coverage and the named feature checks in the specification; attach exact source, command, result and authoring/mirror/delivery surface to each VCC before advancing readiness. A source locator or structural check alone proves no user outcome.
+
+Record the observed steps and elapsed time against the existing TTV target. If no target or invocation is stated, the demonstration remains unverified until the document owner supplies it. All four experience criteria are **unassessed** in this authoring review: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience. No scored user observation is attached to this revision; the document owner must capture a timed pilot and criterion-specific evidence.
+
+## GTM — reference implementation
+
+Use the stated persona and pain hypothesis to test one priced pilot in the existing user environment. Keep the documented free/self-serve workflow as the comparison; additional hosting, channels or agent roles require an evidenced constraint or buyer need. Record the buyer’s workaround, frequency, accepted outcome, offered price, observed response and support minutes before ranking a commercial winner. Demand, collected payment and repeat use remain unvalidated by this documentation review; mechanism evidence keeps its narrower original scope. Measure tokens, cash expense and maintenance separately for each proposed deployment model. Feed actual pilot outcomes into a successor Context using the shared four-column planning record.
+
+## Planning gaps — reference implementation
+
+Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs), [`mcp/memory-layer-runtime.js`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/mcp/memory-layer-runtime.js), [`mcp/persistent-memory-contract.mjs`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/mcp/persistent-memory-contract.mjs). Their existence does not confirm every behavior asserted by the specification.
+Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.

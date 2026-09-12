@@ -2,7 +2,7 @@
 title: "Knowledge Graph GraphRAG Pipeline - PRD-TAD-ADR-MVP-GTM"
 author: "joohwee"
 tags: [EDA, MLP, Test]
-date: 2026-01-13
+date: "2026-09-12"
 mermaidAnchorsOnly: true
 mermaid: |
   graph TD
@@ -140,6 +140,26 @@ mermaid: |
     class Entity_Analytics,TFIDF,TFIDF_Output,Centrality,Centrality_Output,Causality_Analytics,Causal_Detect,Causal_Output,Strength_Calc,Strength_Output,Metadata_Analytics,Graph_Metrics,Node_Metrics,Community_Analytics,Dbscan,Community_Output,Topic_Model,Topic_Output analyticsStyle
     class NLTK_Lib,HF_Lib,spaCy_Lib,Triple_Lib,TFIDF_Lib,Centrality_Lib,Causal_Lib,Strength_Lib,Graph_Lib,Metrics_Lib,Community_Lib,Topic_Lib libStyle
 doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "0.1.1"
+lang: "en-US"
+owner: "Product maintainers"
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-GRAPHRAG-PIPELINE-IN-ACTION-PRD-TAD-ADR-MVP-GTM"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.1.0"
+prd_revision: "0.1.1"
+tad_revision: "0.1.1"
+adr_revision: "0.1.1"
+mvp_revision: "0.1.1"
+gtm_revision: "0.1.1"
 ---
 
 # Knowledge Graph GraphRAG Pipeline with Analytics - PRD-TAD-ADR-MVP-GTM
@@ -476,3 +496,30 @@ Data analysts, researchers, and knowledge workers struggle to extract structured
 ## Continued In Companion Documents
 - agentic-graph-graphrag-pipeline-in-action-prd-tad-adr-mvp-gtm-tad-core.md
 - agentic-graph-graphrag-pipeline-in-action-prd-tad-adr-mvp-gtm-validation-and-appendix.md
+
+## Planning revision — reference implementation
+
+All five roles below consume `PLAN-AGENTIC-GRAPH-GRAPHRAG-PIPELINE-IN-ACTION-PRD-TAD-ADR-MVP-GTM@0.1.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+
+| Role | Owning content at this revision |
+|---|---|
+| PRD | [PART I: PRODUCT REQUIREMENTS DOCUMENT (PRD)](agentic-graph-graphrag-pipeline-in-action-prd-tad-adr-mvp-gtm.md#part-i-product-requirements-document-prd) |
+| TAD | [PART II: TECHNICAL ARCHITECTURE DOCUMENT (TAD)](agentic-graph-graphrag-pipeline-in-action-prd-tad-adr-mvp-gtm-tad-core.md#part-ii-technical-architecture-document-tad) |
+| ADR | [Architectural Decisions](agentic-graph-graphrag-pipeline-in-action-prd-tad-adr-mvp-gtm-tad-core.md#architectural-decisions) |
+| MVP | [MVP — reference implementation](agentic-graph-graphrag-pipeline-in-action-prd-tad-adr-mvp-gtm.md#mvp--reference-implementation) |
+| GTM | [GTM — reference implementation](agentic-graph-graphrag-pipeline-in-action-prd-tad-adr-mvp-gtm.md#gtm--reference-implementation) |
+
+## MVP — reference implementation
+
+Reuse the minimum scope, acceptance conditions and component owners identified above. The demonstration must follow the documented entry, permitted action, durable outcome and readback, including its stated failure/recovery path. Use `npm run check` for its actual coverage and the named feature checks in the specification; attach exact source, command, result and authoring/mirror/delivery surface to each VCC before advancing readiness. A source locator or structural check alone proves no user outcome.
+
+Record the observed steps and elapsed time against the existing TTV target. If no target or invocation is stated, the demonstration remains unverified until the document owner supplies it. All four experience criteria are **unassessed** in this authoring review: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience. No scored user observation is attached to this revision; the document owner must capture a timed pilot and criterion-specific evidence.
+
+## GTM — reference implementation
+
+Use the stated persona and pain hypothesis to test one priced pilot in the existing user environment. Keep the documented free/self-serve workflow as the comparison; additional hosting, channels or agent roles require an evidenced constraint or buyer need. Record the buyer’s workaround, frequency, accepted outcome, offered price, observed response and support minutes before ranking a commercial winner. Demand, collected payment and repeat use remain unvalidated by this documentation review; mechanism evidence keeps its narrower original scope. Measure tokens, cash expense and maintenance separately for each proposed deployment model. Feed actual pilot outcomes into a successor Context using the shared four-column planning record.
+
+## Planning gaps — reference implementation
+
+Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/lib/graph/graphragTextPipeline.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/graph/graphragTextPipeline.ts), [`canvas/src/features/parsers/default.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/parsers/default.ts), [`canvas/src/features/panels/views/GraphRagTextPipelineSection.tsx`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/panels/views/GraphRagTextPipelineSection.tsx). Their existence does not confirm every behavior asserted by the specification.
+Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.

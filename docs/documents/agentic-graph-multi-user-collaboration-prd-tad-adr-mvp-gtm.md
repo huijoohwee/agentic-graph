@@ -1,14 +1,32 @@
 ---
 title: "agentic-graph Multi-User Collaboration PRD and TAD"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.1"
-date: "2026-07-11"
+version: "1.3.2"
+date: "2026-09-12"
 status: "Accepted and implemented authenticated room transport"
 scope: "MainPanel Collaboration, authenticated storage-room transport, fallback no-server WebRTC invite/answer flow, peer roster, presence, document sync, targeted follow mode, planned Cloudflare media-room extension"
 lang: "en-US"
 guideline: "$GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 source_root: "$GITHUB_ROOT/agentic-graph"
 deployment_boundary: "Dev only until explicit Prod or Cloudflare instruction"
+owner: "Product maintainers"
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-MULTI-USER-COLLABORATION-PRD-TAD-ADR-MVP-GTM"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "1.3.1"
+prd_revision: "1.3.2"
+tad_revision: "1.3.2"
+adr_revision: "1.3.2"
+mvp_revision: "1.3.2"
+gtm_revision: "1.3.2"
 ---
 
 # agentic-graph Multi-User Collaboration - PRD & TAD
@@ -358,3 +376,30 @@ Technical architecture continues in [agentic-graph-multi-user-collaboration-prd-
 | 1.3.1 | 2026-07-11 | Codex | Added `npm run collaboration:readiness:check` as the canonical readiness gate for docs, focused collaboration suites, and authenticated room smoke |
 | 1.3.2 | 2026-07-11 | Codex | Upgraded the canonical readiness gate to auto-start and reuse the default local collaboration stack for the browser smoke |
 | 1.3.3 | 2026-07-11 | Codex | Added self-contained local D1 migration and auth-fixture seeding so the canonical readiness gate can prove the authenticated room path from a clean checkout |
+
+## Planning revision — reference implementation
+
+All five roles below consume `PLAN-AGENTIC-GRAPH-MULTI-USER-COLLABORATION-PRD-TAD-ADR-MVP-GTM@1.3.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+
+| Role | Owning content at this revision |
+|---|---|
+| PRD | [Problem Statement](agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md#problem-statement) |
+| TAD | [agentic-graph Multi-User Collaboration - TAD Companion](agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.companion.md#agentic-graph-multi-user-collaboration---tad-companion) |
+| ADR | [Architectural Decisions](agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.companion.md#architectural-decisions) |
+| MVP | [MVP — reference implementation](agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md#mvp--reference-implementation) |
+| GTM | [GTM — reference implementation](agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md#gtm--reference-implementation) |
+
+## MVP — reference implementation
+
+Reuse the minimum scope, acceptance conditions and component owners identified above. The demonstration must follow the documented entry, permitted action, durable outcome and readback, including its stated failure/recovery path. Use `npm run collaboration:readiness:check` for its actual coverage and the named feature checks in the specification; attach exact source, command, result and authoring/mirror/delivery surface to each VCC before advancing readiness. A source locator or structural check alone proves no user outcome.
+
+Record the observed steps and elapsed time against the existing TTV target. If no target or invocation is stated, the demonstration remains unverified until the document owner supplies it. All four experience criteria are **unassessed** in this authoring review: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience. No scored user observation is attached to this revision; the document owner must capture a timed pilot and criterion-specific evidence.
+
+## GTM — reference implementation
+
+Use the stated persona and pain hypothesis to test one priced pilot in the existing user environment. Keep the documented free/self-serve workflow as the comparison; additional hosting, channels or agent roles require an evidenced constraint or buyer need. Record the buyer’s workaround, frequency, accepted outcome, offered price, observed response and support minutes before ranking a commercial winner. Demand, collected payment and repeat use remain unvalidated by this documentation review; mechanism evidence keeps its narrower original scope. Measure tokens, cash expense and maintenance separately for each proposed deployment model. Feed actual pilot outcomes into a successor Context using the shared four-column planning record.
+
+## Planning gaps — reference implementation
+
+Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/features/panels/mainPanelTabs.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/panels/mainPanelTabs.ts), [`canvas/src/features/panels/views/CollaborationView.tsx`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/panels/views/CollaborationView.tsx), [`canvas/src/features/collaboration/use-agentic-graph-storage-collaboration-runtime.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/collaboration/use-agentic-graph-storage-collaboration-runtime.ts). Their existence does not confirm every behavior asserted by the specification.
+Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.

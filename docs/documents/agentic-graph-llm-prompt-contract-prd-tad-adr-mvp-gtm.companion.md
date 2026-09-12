@@ -3,18 +3,31 @@ title: agentic-graph LLM Prompt Contract PRD-TAD-ADR-MVP-GTM Companion (Runtime,
 id: agentic-graph-llm-prompt-contract-prd-tad-companion
 schema: agentic-os-computing-flow/v1
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: 0.5.0
-date: 2026-07-30
-lang: en-US
-owner: llm-response-architecture
-local_rung: dev-proven
-delivered_rung: undocumented
-lane: authoring
-universal_scope: true
+version: "0.5.1"
+date: "2026-09-12"
+lang: "en-US"
+owner: "llm-response-architecture"
+local_rung: "dev-proven"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
 created: 2026-05-27
 updated: 2026-07-30
 canonical_doc: docs/documents/agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.md
 continuation_note: Maintains TAD, validation, and implementation detail moved out of the canonical sub-600-line source index.
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-LLM-PROMPT-CONTRACT-PRD-TAD-ADR-MVP-GTM"
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.5.0"
+prd_revision: "0.5.1"
+tad_revision: "0.5.1"
+adr_revision: "0.5.1"
+mvp_revision: "0.5.1"
+gtm_revision: "0.5.1"
 ---
 
 # agentic-graph LLM Prompt Contract PRD-TAD-ADR-MVP-GTM Companion
@@ -440,3 +453,7 @@ Everything stale, speculative, duplicate, conflicting, downstream-patched, or se
 *Companion ID: `agentic-graph-llm-prompt-contract-prd-tad-companion`*
 *Version: `0.5.0`*
 *Updated: `2026-07-30`*
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-LLM-PROMPT-CONTRACT-PRD-TAD-ADR-MVP-GTM@0.5.1` with [the five-role owner](agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

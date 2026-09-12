@@ -1,16 +1,27 @@
 ---
 title: "agentic-graph DeerFlow Integration Contracts and Patterns"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.2.0"
-date: "2026-05-29"
+version: "1.2.1"
+date: "2026-09-12"
 lang: "en-US"
 owner: "Documentation maintainers"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "prd-tad-adr-mvp-gtm-alignment"
-agent_id: "codex"
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-DEERFLOW-PRD-TAD-ADR-MVP-GTM"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "1.2.0"
+prd_revision: "1.2.1"
+tad_revision: "1.2.1"
+adr_revision: "1.2.1"
+mvp_revision: "1.2.1"
+gtm_revision: "1.2.1"
 ---
 
 # agentic-graph DeerFlow Integration Contracts and Patterns
@@ -255,3 +266,7 @@ sequenceDiagram
 | 1.0.0 | 2026-05-07 | joohwee | Initial integration contracts and architecture patterns |
 | 1.1.0 | 2026-05-07 | joohwee | Added Mermaid sequence diagrams |
 | 1.2.0 | 2026-05-29 | joohwee | Replaced unshipped mode contracts with implemented gateway contracts |
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-DEERFLOW-PRD-TAD-ADR-MVP-GTM@1.2.1` with [the five-role owner](agentic-graph-deerflow-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

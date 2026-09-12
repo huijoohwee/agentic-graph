@@ -2,9 +2,9 @@
 title: "agentic-graph Game FPS PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-game-fps-prd-tad"
 author: "airvio / joohwee"
-date: "2026-07-21"
+date: "2026-09-12"
 updated: "2026-07-22"
-version: "2.6.0"
+version: "2.6.1"
 status: "runtime-ready"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 lang: "en-US"
@@ -57,6 +57,23 @@ source_references:
   ar_broadcast_runtime: "canvas/src/features/game-fps/arBroadcastRuntime.ts"
   ar_broadcast_validation_seed: "docs/workspace-seeds/agentic-graph-physics-playground-demo.md"
   ar_inspiration_reference_only: "github.co (inspiration only; no source copy, no dependency; Supabase forbidden)"
+owner: "Product maintainers"
+continuity_id: "PLAN-AGENTIC-GRAPH-GAME-FPS-PRD-TAD-ADR-MVP-GTM"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "2.6.0"
+prd_revision: "2.6.1"
+tad_revision: "2.6.1"
+adr_revision: "2.6.1"
+mvp_revision: "2.6.1"
+gtm_revision: "2.6.1"
 ---
 
 # agentic-graph Game FPS PRD-TAD-ADR-MVP-GTM
@@ -395,3 +412,30 @@ The first two commands are finite and local apart from ordinary build/test artif
 ## Release Boundary
 
 The historical baseline and XR visual-fidelity follow-up are protected and exact-main ready for Dev/local runtime use. The current scene-authority cleanup remains a local candidate until its dedicated protected and exact-main rows pass. No Pages build upload, Worker deployment, D1/R2/KV/DO mutation, production route change, or release claim belongs to this scope. The opt-in acceptance reads exact operator-supplied public Markdown bytes and exercises them against the local candidate runtime; it does not prove the public document contains the new Game Mode metadata or that the runtime is publicly deployed. A future release must begin from a protected integrated SHA and explicit operator authorization.
+
+## Planning revision — reference implementation
+
+All five roles below consume `PLAN-AGENTIC-GRAPH-GAME-FPS-PRD-TAD-ADR-MVP-GTM@2.6.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+
+| Role | Owning content at this revision |
+|---|---|
+| PRD | [Product Requirements](agentic-graph-game-fps-prd-tad-adr-mvp-gtm.md#product-requirements) |
+| TAD | [Technical Architecture](agentic-graph-game-fps-prd-tad-adr-mvp-gtm.md#technical-architecture) |
+| ADR | [Architecture Decisions](agentic-graph-game-fps-prd-tad-adr-mvp-gtm.md#architecture-decisions) |
+| MVP | [MVP — reference implementation](agentic-graph-game-fps-prd-tad-adr-mvp-gtm.md#mvp--reference-implementation) |
+| GTM | [GTM — reference implementation](agentic-graph-game-fps-prd-tad-adr-mvp-gtm.md#gtm--reference-implementation) |
+
+## MVP — reference implementation
+
+Reuse the minimum scope, acceptance conditions and component owners identified above. The demonstration must follow the documented entry, permitted action, durable outcome and readback, including its stated failure/recovery path. Use `npm run game-fps:runtime-ready` for its actual coverage and the named feature checks in the specification; attach exact source, command, result and authoring/mirror/delivery surface to each VCC before advancing readiness. A source locator or structural check alone proves no user outcome.
+
+Record the observed steps and elapsed time against the existing TTV target. If no target or invocation is stated, the demonstration remains unverified until the document owner supplies it. All four experience criteria are **unassessed** in this authoring review: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience. No scored user observation is attached to this revision; the document owner must capture a timed pilot and criterion-specific evidence.
+
+## GTM — reference implementation
+
+Use the stated persona and pain hypothesis to test one priced pilot in the existing user environment. Keep the documented free/self-serve workflow as the comparison; additional hosting, channels or agent roles require an evidenced constraint or buyer need. Record the buyer’s workaround, frequency, accepted outcome, offered price, observed response and support minutes before ranking a commercial winner. Demand, collected payment and repeat use remain unvalidated by this documentation review; mechanism evidence keeps its narrower original scope. Measure tokens, cash expense and maintenance separately for each proposed deployment model. Feed actual pilot outcomes into a successor Context using the shared four-column planning record.
+
+## Planning gaps — reference implementation
+
+Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/features/game-fps/gameModeRuntime.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/game-fps/gameModeRuntime.ts), [`canvas/src/lib/canvas/canvasSurfaceOwnershipRuntime.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/canvas/canvasSurfaceOwnershipRuntime.ts), [`canvas/src/features/game-fps/GameModeFloatingPanelView.tsx`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/game-fps/GameModeFloatingPanelView.tsx). Their existence does not confirm every behavior asserted by the specification.
+Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.

@@ -1,8 +1,8 @@
 ---
 title: "SME Care-Agent — Readiness, Validation, and Traceability Companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.0"
-date: "2026-09-05"
+version: "0.2.1"
+date: "2026-09-12"
 lang: "en-SG"
 frontmatter_contract: "required"
 owner: "SME care-agent readiness evidence"
@@ -10,8 +10,8 @@ local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
-agent_id: "codex:graph_frontmatter_and_docs"
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
 doc_path: "docs/documents/sme-care-agent-readiness-validation-companion.md"
 parent: "docs/documents/sme-care-agent-prd-tad-adr-mvp-gtm.md"
 parent_version: "0.2.0"
@@ -22,6 +22,16 @@ evidence_references:
     result: "passed: affected integration gate including repository runtime tests"
     surface: "authoring"
     observed_at: "2026-09-05"
+continuity_id: "PLAN-SME-CARE-AGENT-PRD-TAD-ADR-MVP-GTM"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.1.0"
+prd_revision: "0.2.1"
+tad_revision: "0.2.1"
+adr_revision: "0.2.1"
+mvp_revision: "0.2.1"
+gtm_revision: "0.2.1"
 ---
 
 # SME Care-Agent — Readiness, Validation, and Traceability Companion
@@ -110,3 +120,7 @@ PRD-EpicF-Multilingual       ↔ TAD-MultilingualAdapter-Interface
 **"CID frames PRD/TAD standards · Flow patterns anchor stories to reality · Agent-platform readiness sequences Must before Follow-on · RAO aligns team responsibilities · SVO clarifies requirement semantics · VCC closes the loop from criterion to verified implementation"**
 
 Applied here: the Scope & Neutrality Contract and CID-style acceptance criteria frame this document; the five flow patterns (journey, workflow, data, orchestration/harness, topology) trace every epic from the SME owner's growth-stage trigger to a rendered REG edge; Agentic OS/AI Agent readiness, spend safety, bounded Dev-local orchestration proof, and shared Canvas projection are verified through the aggregate VCC, while deployed and regulated actions remain deliberately gated; the Role—Action—Outcome table keeps the solo-dev accountability explicit even with one person in every role; every acceptance criterion above is written so its VCC translation is directly evaluable from the harness's own surfaced output — not a narrative claim of completeness.
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-SME-CARE-AGENT-PRD-TAD-ADR-MVP-GTM@0.2.1` with [the five-role owner](sme-care-agent-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

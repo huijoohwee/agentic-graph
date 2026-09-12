@@ -5,6 +5,25 @@ status: "implementation-contract"
 lang: "en-US"
 frontmatter_contract: "required"
 source_contract: "./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md"
+version: "0.2.3"
+date: "2026-09-12"
+owner: "Product maintainers"
+continuity_id: "PLAN-AGENTIC-GRAPH-STRYTREE-PRD-TAD-ADR-MVP-GTM"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.2.2"
+prd_revision: "0.2.3"
+tad_revision: "0.2.3"
+adr_revision: "0.2.3"
+mvp_revision: "0.2.3"
+gtm_revision: "0.2.3"
 ---
 
 [Canonical PRD/TAD and section index](./agentic-graph-strytree-prd-tad-adr-mvp-gtm.md).
@@ -400,3 +419,7 @@ The checkboxes above retain the original design/implementation inventory; they a
 - Cloudflare Durable Objects: https://developers.cloudflare.com/durable-objects/
 - Stripe webhooks and Checkout flow: https://docs.stripe.com/webhooks
 - Stripe Checkout: https://docs.stripe.com/payments/checkout
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-STRYTREE-PRD-TAD-ADR-MVP-GTM@0.2.3` with [the five-role owner](agentic-graph-strytree-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

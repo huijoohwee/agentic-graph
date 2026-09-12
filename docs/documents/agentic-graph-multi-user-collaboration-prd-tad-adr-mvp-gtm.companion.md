@@ -1,13 +1,31 @@
 ---
 title: "agentic-graph Multi-User Collaboration TAD Companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.0"
-date: "2026-07-16"
+version: "1.3.2"
+date: "2026-09-12"
 status: "Accepted and implemented authenticated room transport"
 scope: "Technical continuation for authenticated document collaboration and global runtime-identity attestation rooms with fallback P2P"
 lang: "en-US"
 parent: "agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md"
 deployment_boundary: "Dev only until explicit Prod or Cloudflare instruction"
+owner: "Product maintainers"
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-MULTI-USER-COLLABORATION-PRD-TAD-ADR-MVP-GTM"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "1.3.0"
+prd_revision: "1.3.2"
+tad_revision: "1.3.2"
+adr_revision: "1.3.2"
+mvp_revision: "1.3.2"
+gtm_revision: "1.3.2"
 ---
 
 # agentic-graph Multi-User Collaboration - TAD Companion
@@ -203,3 +221,7 @@ npm --prefix canvas exec tsc -- -p canvas/tsconfig.json --noEmit --pretty false
 | 1.2.2 | 2026-07-11 | Codex | Added collaboration browser-smoke preflight guidance with exact local startup commands and env overrides |
 | 1.2.3 | 2026-07-11 | Codex | Upgraded the collaboration readiness gate to auto-start and tear down the default local owner app, guest app, and storage worker when absent |
 | 1.2.4 | 2026-07-11 | Codex | Added self-contained local D1 migration and auth-fixture seeding so the canonical gate can prove the authenticated room flow from a clean checkout |
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-MULTI-USER-COLLABORATION-PRD-TAD-ADR-MVP-GTM@1.3.2` with [the five-role owner](agentic-graph-multi-user-collaboration-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

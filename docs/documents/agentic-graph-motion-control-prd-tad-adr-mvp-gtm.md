@@ -6,6 +6,25 @@ lang: "en-US"
 frontmatter_contract: "required"
 runtime_scope: "XR Mode with FloatingPanel Motion Control, Skills & Commands, and Media"
 deploy_boundary: "Dev-only"
+version: "0.1.1"
+date: "2026-09-12"
+owner: "Product maintainers"
+continuity_id: "PLAN-AGENTIC-GRAPH-MOTION-CONTROL-PRD-TAD-ADR-MVP-GTM"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.1.0"
+prd_revision: "0.1.1"
+tad_revision: "0.1.1"
+adr_revision: "0.1.1"
+mvp_revision: "0.1.1"
+gtm_revision: "0.1.1"
 ---
 
 # agentic-graph Motion Control PRD-TAD-ADR-MVP-GTM
@@ -101,3 +120,34 @@ No invocation accepts an arbitrary model/source URL, Wasm URL, camera-frame payl
 - Source/build proof does not by itself prove camera permission, live pose quality, effective WebGPU execution, calibrated metric reconstruction, multi-device clock quality, Prod, or Cloudflare deployment. Dev browser observations must state hardware, permission, peer, and calibration limitations explicitly.
 
 VCC: Given a source-backed XR document, when the operator connects one or more local/provider/peer-derived sources, then the panel reports only evidence earned by finite capture-time and a validated `agentic-graph.motion-capture-research-evidence/v1` manifest. One monocular, unmanifested, or manually flagged source remains below research-ready; `researchReady=true` requires at least two synchronized metric sources whose content-derived manifest binds SI transforms, projection/clock/calibration coverage, scale, and triangulation, plus bounded quality and at least 30 disjoint synchronized groups spanning 1,000 ms inside one stable manifest/reconstruction/source cohort. Unrelated self-declared metric streams, pre-recording quality, and groups accumulated across changed cohorts never qualify. Motion Control, Skills & Commands, and Media project the same session, tool pair, and `/motion.control @canvas #pose` owner; switching among approved XR views retains capture, while XR exit, panel close, an unrelated view, page/camera loss, or explicit Stop releases capture and peer transport. Record/Finish/Stop preserve only a bounded derived-landmark artifact with canonical evidence manifests, Media downloads deterministic JSON/CSV locally, Clear releases it and invalidates an in-flight export, and WebMCP exposes aggregate/digest/manifest-count metadata without frames, tensors, landmark arrays, stable identities, endpoints, reconstruction evidence content, or content bytes.
+
+## ADR: retain one capture session and ECS composition boundary
+
+Use the existing motion session, runtime owners and ECS composition boundary for all UI and physics projections. A second capture store or independent player would create competing source, clock and lifecycle state. Keep capture explicit, scheduling bounded and model admission under the existing model contract. This consolidates the decisions already expressed above; it supplies no new device calibration or research-ready evidence.
+
+## Planning revision — reference implementation
+
+All five roles below consume `PLAN-AGENTIC-GRAPH-MOTION-CONTROL-PRD-TAD-ADR-MVP-GTM@0.1.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+
+| Role | Owning content at this revision |
+|---|---|
+| PRD | [Product contract](agentic-graph-motion-control-prd-tad-adr-mvp-gtm.md#product-contract) |
+| TAD | [Runtime owners](agentic-graph-motion-control-prd-tad-adr-mvp-gtm.md#runtime-owners) |
+| ADR | [ADR: retain one capture session and ECS composition boundary](agentic-graph-motion-control-prd-tad-adr-mvp-gtm.md#adr-retain-one-capture-session-and-ecs-composition-boundary) |
+| MVP | [MVP — reference implementation](agentic-graph-motion-control-prd-tad-adr-mvp-gtm.md#mvp--reference-implementation) |
+| GTM | [GTM — reference implementation](agentic-graph-motion-control-prd-tad-adr-mvp-gtm.md#gtm--reference-implementation) |
+
+## MVP — reference implementation
+
+Reuse the minimum scope, acceptance conditions and component owners identified above. The demonstration must follow the documented entry, permitted action, durable outcome and readback, including its stated failure/recovery path. Use `npm run check` for its actual coverage and the named feature checks in the specification; attach exact source, command, result and authoring/mirror/delivery surface to each VCC before advancing readiness. A source locator or structural check alone proves no user outcome.
+
+Record the observed steps and elapsed time against the existing TTV target. If no target or invocation is stated, the demonstration remains unverified until the document owner supplies it. All four experience criteria are **unassessed** in this authoring review: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience. No scored user observation is attached to this revision; the document owner must capture a timed pilot and criterion-specific evidence.
+
+## GTM — reference implementation
+
+Use the stated persona and pain hypothesis to test one priced pilot in the existing user environment. Keep the documented free/self-serve workflow as the comparison; additional hosting, channels or agent roles require an evidenced constraint or buyer need. Record the buyer’s workaround, frequency, accepted outcome, offered price, observed response and support minutes before ranking a commercial winner. Demand, collected payment and repeat use remain unvalidated by this documentation review; mechanism evidence keeps its narrower original scope. Measure tokens, cash expense and maintenance separately for each proposed deployment model. Feed actual pilot outcomes into a successor Context using the shared four-column planning record.
+
+## Planning gaps — reference implementation
+
+Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. No feature implementation artifact was independently bound by this document review; implementation disposition remains **unverified** pending the document owner’s source-to-VCC check.
+Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
