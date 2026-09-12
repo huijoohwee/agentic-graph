@@ -2,9 +2,9 @@
 title: "agentic-graph Token Economics Model — TAD Companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "TEM-001-COMPANION"
-version: "0.2.0"
+version: "0.2.1"
 status: "Accepted implemented baseline; ingestion and NLQ extensions planned"
-date: "2026-05-29"
+date: "2026-09-12"
 authors:
   - "airvio"
 schema: "agentic-os-computing-flow/v1"
@@ -17,6 +17,23 @@ tags:
   - "agenticOs"
   - "harness"
   - "queryable"
+owner: "Product maintainers"
+continuity_id: "PLAN-AGENTIC-GRAPH-TOKEN-ECONOMICS-MODEL-PRD-TAD-ADR-MVP-GTM"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.2.0"
+prd_revision: "0.2.1"
+tad_revision: "0.2.1"
+adr_revision: "0.2.1"
+mvp_revision: "0.2.1"
+gtm_revision: "0.2.1"
 ---
 
 # agentic-graph Token Economics Model — TAD Companion
@@ -547,3 +564,7 @@ flowchart TB
 | OQ-6 | Sprint actuals retention: 12 sprints (3 months). Sufficient, or should it follow Git history as the audit trail? | airvio | Sprint 3 |
 | OQ-7 | NLQ harness: Haiku vs local Ollama `qwen2.5:14b` for zero token cost? Proposed: Haiku with CF Worker (latency predictable); Ollama blocked by Worker runtime constraint. | airvio | Sprint 4 |
 | OQ-8 | Renderer extension: portable static artifact vs embedded in agentic-graph React app? Proposed: embed first when it can reuse existing graph surfaces; export a portable artifact only through the same canonical renderer. | airvio | Sprint 4 |
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-TOKEN-ECONOMICS-MODEL-PRD-TAD-ADR-MVP-GTM@0.2.1` with [the five-role owner](agentic-graph-token-economics-model-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

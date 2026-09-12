@@ -2,8 +2,8 @@
 title: "Reference implementation: Lark Read-only Knowledge Source-to-Canvas Companion"
 id: "md:agentic-graph-lark-app-mcp-prd-tad.companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.0"
-date: "2026-08-06"
+version: "0.5.1"
+date: "2026-09-12"
 lang: "en-US"
 owner: "docs.mcp.lark-app.companion"
 local_rung: "spec-complete"
@@ -15,6 +15,19 @@ guideline_version: "1.7.0"
 reference_implementation_label: "reference implementation"
 parent: "agentic-graph-lark-app-mcp-prd-tad-adr-mvp-gtm.md"
 parent_version: "0.5.0"
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-LARK-APP-MCP-PRD-TAD-ADR-MVP-GTM"
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.4.0"
+prd_revision: "0.5.1"
+tad_revision: "0.5.1"
+adr_revision: "0.5.1"
+mvp_revision: "0.5.1"
+gtm_revision: "0.5.1"
 ---
 
 # Reference implementation: Lark Read-only Knowledge Source-to-Canvas Companion
@@ -262,3 +275,7 @@ trusted Production issuer/caller, concrete identity/resources/Base
 fields/minimum, selected scopes/permissions, and live VCCs; they grant no
 Production deploy authority. Production is forbidden until exact
 candidate-digest authorization.
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-LARK-APP-MCP-PRD-TAD-ADR-MVP-GTM@0.5.1` with [the five-role owner](agentic-graph-lark-app-mcp-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

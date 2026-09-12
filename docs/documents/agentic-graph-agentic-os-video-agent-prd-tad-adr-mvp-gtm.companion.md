@@ -2,8 +2,8 @@
 title: "agentic-graph Agentic Video Workflow — Reference implementation companion"
 id: "md:agentic-graph-agentic-os-video-agent-prd-tad-companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.0"
-date: "2026-07-30"
+version: "1.0.1"
+date: "2026-09-12"
 lang: "en-US"
 owner: "docs.agentic-os.video-agent.companion"
 local_rung: "spec-complete"
@@ -48,6 +48,19 @@ source_references:
   public_runtime: "../../mcp/video-remix-runtime.js"
 external_pattern_reference: "https://github.com/HKUDS/ViMax"
 external_reference_policy: "architecture inspiration only; no code, prompt, fixture, provider config, or runtime dependency copied"
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM"
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.4.0"
+prd_revision: "1.0.1"
+tad_revision: "1.0.1"
+adr_revision: "1.0.1"
+mvp_revision: "1.0.1"
+gtm_revision: "1.0.1"
 ---
 
 # agentic-graph Agentic Video Workflow — Reference implementation companion
@@ -385,3 +398,7 @@ reference implementation specifies those capabilities against its own Director,
 schemas, harnesses, gates, ledgers, and candidate tests; it does not infer
 runtime or delivery proof. It does not copy ViMax code, prompts, repository
 layout, provider configuration, tests, fixtures, or runtime dependencies.
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM@1.0.1` with [the five-role owner](agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

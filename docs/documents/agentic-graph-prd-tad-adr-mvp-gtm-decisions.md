@@ -1,8 +1,8 @@
 ---
 title: "Source-Native Graph Workspace Architecture Decisions"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.2.0"
-date: "2026-08-05"
+version: "3.1.1"
+date: "2026-09-12"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "architecture.decisions"
@@ -10,6 +10,19 @@ local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-PRD-TAD-ADR-MVP-GTM-REQUIREMENTS"
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "1.2.0"
+prd_revision: "3.1.1"
+tad_revision: "3.1.1"
+adr_revision: "3.1.1"
+mvp_revision: "3.1.1"
+gtm_revision: "3.1.1"
 ---
 
 # Source-Native Graph Workspace Architecture Decisions
@@ -346,7 +359,7 @@ decision history.
 
 ## Decision traceability
 
-| ADR | PRD requirement | TAD component ↔ interface | VCC chain | Evidence state |
+| ADR | [Source-Native Graph Workspace Architecture Decisions](agentic-graph-prd-tad-adr-mvp-gtm-decisions.md#source-native-graph-workspace-architecture-decisions) |
 |---|---|---|---|---|
 | ADR-001 | `PRD-CORE-R1`, `PRD-CORE-R2`, `PRD-CORE-R3`, `PRD-CORE-R6` | `TAD-CORE-C03` ↔ `I-PARSE`; `TAD-CORE-C05` ↔ `I-SOURCE` | `VCC-PRD-R1` ↔ `VCC-T3`, `VCC-T5` | no satisfying evidence |
 | ADR-002 | `PRD-CORE-R2`, `PRD-CORE-R3`, `PRD-CORE-R8` | `TAD-CORE-C01` ↔ `I-WORKSPACE`; `TAD-CORE-C04` ↔ `I-PROJECTION` | `VCC-PRD-R2` ↔ `VCC-T1`, `VCC-T4` | no satisfying evidence |
@@ -400,3 +413,7 @@ finding; `none` records an evidence gap with no separate defect.
 | canonical client/runtime validation host | `npm run check && npm test && npm run runtime:test` |
 | canonical offline parser validation host | `python3 -m unittest discover -s agentic_graph_parser -p '*_test.py'` |
 | canonical documentation validation host | `npm --prefix canvas run doc:lint && npm --prefix canvas run doc:sanity` |
+
+## Planning continuity — reference implementation
+
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-PRD-TAD-ADR-MVP-GTM-REQUIREMENTS@3.1.1` with [the five-role owner](agentic-graph-prd-tad-adr-mvp-gtm-requirements.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

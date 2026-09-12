@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph XRPL x402 paid travel requote"
 id: "md:agentic-graph-xrpl-x402-paid-resource-prd-tad-adr"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.0"
-date: "2026-09-05"
+version: "1.0.1"
+date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Agentic commerce paid-resource capability"
@@ -11,8 +11,8 @@ local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "agent/huis-macbook-pro-3.local/xrpl-x402-paid-resource"
-agent_id: "codex-xrpl-doc-contract-20260905"
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
 continuity_id: "PRD-TAD-ADR-TOLLGATE-X402-XRPL"
 continuity_revision: "1.0.0"
 governed_by: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
@@ -40,6 +40,15 @@ agent_platform_readiness:
     scope: "reuse"
     local_rung: "dev-proven"
     delivered_rung: "undocumented"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "1.0.0"
+prd_revision: "1.0.1"
+tad_revision: "1.0.1"
+adr_revision: "1.0.1"
+mvp_revision: "1.0.1"
+gtm_revision: "1.0.1"
 ---
 
 # Reference implementation: agentic-graph XRPL x402 Paid Travel Requote
@@ -423,3 +432,30 @@ than hidden in a readiness claim.
 
 `payment:x402:xrpl:check` remains the fail-closed runtime-readiness command. It validates the actual
 operator configuration and therefore stays red while the committed payee placeholder is blank.
+
+## Planning revision — reference implementation
+
+All five roles below consume `PRD-TAD-ADR-TOLLGATE-X402-XRPL@1.0.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+
+| Role | Owning content at this revision |
+|---|---|
+| PRD | [PRD](agentic-graph-xrpl-x402-paid-resource-prd-tad-adr-mvp-gtm.md#prd) |
+| TAD | [TAD](agentic-graph-xrpl-x402-paid-resource-prd-tad-adr-mvp-gtm.md#tad) |
+| ADR | [ADR](agentic-graph-xrpl-x402-paid-resource-prd-tad-adr-mvp-gtm.md#adr) |
+| MVP | [MVP — reference implementation](agentic-graph-xrpl-x402-paid-resource-prd-tad-adr-mvp-gtm.md#mvp--reference-implementation) |
+| GTM | [GTM — reference implementation](agentic-graph-xrpl-x402-paid-resource-prd-tad-adr-mvp-gtm.md#gtm--reference-implementation) |
+
+## MVP — reference implementation
+
+Reuse the minimum scope, acceptance conditions and component owners identified above. The demonstration must follow the documented entry, permitted action, durable outcome and readback, including its stated failure/recovery path. Use `npm run payment:x402:xrpl:smoke` for its actual coverage and the named feature checks in the specification; attach exact source, command, result and authoring/mirror/delivery surface to each VCC before advancing readiness. A source locator or structural check alone proves no user outcome.
+
+Record the observed steps and elapsed time against the existing TTV target. If no target or invocation is stated, the demonstration remains unverified until the document owner supplies it. All four experience criteria are **unassessed** in this authoring review: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience. No scored user observation is attached to this revision; the document owner must capture a timed pilot and criterion-specific evidence.
+
+## GTM — reference implementation
+
+Use the stated persona and pain hypothesis to test one priced pilot in the existing user environment. Keep the documented free/self-serve workflow as the comparison; additional hosting, channels or agent roles require an evidenced constraint or buyer need. Record the buyer’s workaround, frequency, accepted outcome, offered price, observed response and support minutes before ranking a commercial winner. Demand, collected payment and repeat use remain unvalidated by this documentation review; mechanism evidence keeps its narrower original scope. Measure tokens, cash expense and maintenance separately for each proposed deployment model. Feed actual pilot outcomes into a successor Context using the shared four-column planning record.
+
+## Planning gaps — reference implementation
+
+Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`cloudflare/workers/agentic-graph-payment/index.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/cloudflare/workers/agentic-graph-payment/index.ts). Their existence does not confirm every behavior asserted by the specification.
+Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.

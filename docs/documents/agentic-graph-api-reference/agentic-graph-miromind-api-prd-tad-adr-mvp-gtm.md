@@ -3,8 +3,8 @@ title: "Reference implementation: agentic-graph and MiroMind API PRD-TAD-ADR-MVP
 schema: agentic-os-computing-flow/v1
 id: "md:agentic-graph-miromind-api-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.0"
-date: "2026-07-30"
+version: "0.3.1"
+date: "2026-09-12"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.api-reference.miromind"
@@ -20,6 +20,19 @@ reference_lane_topology:
   mirror: "protected candidate; no Evidence Reference attached"
   delivery: "configured published surface; no Evidence Reference attached"
 tags: [prd, tad, miromind, integrations, mcp, chat, markdown, frontmatter, canvas]
+frontmatter_contract: "required"
+continuity_id: "PLAN-AGENTIC-GRAPH-MIROMIND-API-PRD-TAD-ADR-MVP-GTM"
+worktree_id: "device-cba000d3779d--planning-v27"
+agent_id: "codex-01a0940a"
+guideline_revision: "2.7.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+previous_document_version: "0.3.0"
+prd_revision: "0.3.1"
+tad_revision: "0.3.1"
+adr_revision: "0.3.1"
+mvp_revision: "0.3.1"
+gtm_revision: "0.3.1"
 ---
 
 # Reference implementation: agentic-graph and MiroMind API PRD-TAD-ADR-MVP-GTM
@@ -528,3 +541,30 @@ References until their exit result and lane are recorded.
 ---
 
 *v0.3.0 · 2026-07-30 · source baseline; delivery remains undocumented*
+
+## Planning revision — reference implementation
+
+All five roles below consume `PLAN-AGENTIC-GRAPH-MIROMIND-API-PRD-TAD-ADR-MVP-GTM@0.3.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+
+| Role | Owning content at this revision |
+|---|---|
+| PRD | [Reference implementation: Part A - PRD](agentic-graph-miromind-api-prd-tad-adr-mvp-gtm.md#reference-implementation-part-a---prd) |
+| TAD | [Reference implementation: Part B - TAD](agentic-graph-miromind-api-prd-tad-adr-mvp-gtm.md#reference-implementation-part-b---tad) |
+| ADR | [ADR-01 - One markdown artifact over direct graph mutation](agentic-graph-miromind-api-prd-tad-adr-mvp-gtm.md#adr-01---one-markdown-artifact-over-direct-graph-mutation) |
+| MVP | [MVP — reference implementation](agentic-graph-miromind-api-prd-tad-adr-mvp-gtm.md#mvp--reference-implementation) |
+| GTM | [GTM — reference implementation](agentic-graph-miromind-api-prd-tad-adr-mvp-gtm.md#gtm--reference-implementation) |
+
+## MVP — reference implementation
+
+Reuse the minimum scope, acceptance conditions and component owners identified above. The demonstration must follow the documented entry, permitted action, durable outcome and readback, including its stated failure/recovery path. Use `npm run miromind:readiness:check` for its actual coverage and the named feature checks in the specification; attach exact source, command, result and authoring/mirror/delivery surface to each VCC before advancing readiness. A source locator or structural check alone proves no user outcome.
+
+Record the observed steps and elapsed time against the existing TTV target. If no target or invocation is stated, the demonstration remains unverified until the document owner supplies it. All four experience criteria are **unassessed** in this authoring review: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience. No scored user observation is attached to this revision; the document owner must capture a timed pilot and criterion-specific evidence.
+
+## GTM — reference implementation
+
+Use the stated persona and pain hypothesis to test one priced pilot in the existing user environment. Keep the documented free/self-serve workflow as the comparison; additional hosting, channels or agent roles require an evidenced constraint or buyer need. Record the buyer’s workaround, frequency, accepted outcome, offered price, observed response and support minutes before ranking a commercial winner. Demand, collected payment and repeat use remain unvalidated by this documentation review; mechanism evidence keeps its narrower original scope. Measure tokens, cash expense and maintenance separately for each proposed deployment model. Feed actual pilot outcomes into a successor Context using the shared four-column planning record.
+
+## Planning gaps — reference implementation
+
+Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. No feature implementation artifact was independently bound by this document review; implementation disposition remains **unverified** pending the document owner’s source-to-VCC check.
+Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
