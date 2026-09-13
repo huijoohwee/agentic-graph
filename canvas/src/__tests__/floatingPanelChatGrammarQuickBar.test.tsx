@@ -10,11 +10,12 @@ export async function testFloatingPanelChatComposerGrammarQuickBarSeedsSigilsAnd
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container as unknown as HTMLElement)
+  let submissions = 0
 
   function Harness() {
     const [input, setInput] = React.useState('')
     return (
-      <FloatingPanelChatComposer
+      <form onSubmit={event => { event.preventDefault(); submissions += 1 }}><FloatingPanelChatComposer
         input={input}
         setInput={setInput}
         markdownText={'---\nproject: agentic-graph\n---\n# Brief'}
@@ -22,7 +23,7 @@ export async function testFloatingPanelChatComposerGrammarQuickBarSeedsSigilsAnd
         isSubmitDisabled={false}
         uiPanelTextFontClass="text-sm"
         placeholder="Ask a question"
-      />
+      /></form>
     )
   }
 
@@ -73,6 +74,22 @@ export async function testFloatingPanelChatComposerGrammarQuickBarSeedsSigilsAnd
     }
     const keywordMenu = dom.window.document.querySelector('section[aria-label="Chat runtime invocations"]')
     if (!keywordMenu) throw new Error('expected keyword quick bar token to mount the runtime invocation menu')
+
+    await act(async () => {
+      editor.textContent = 'Use'
+      Simulate.input(editor)
+      await waitForFrames(dom.window as unknown as Window, 2)
+    })
+    const bindingButton = container.querySelector<HTMLButtonElement>('[data-kg-chat-grammar-quick-bar-token="@"]')
+    if (!bindingButton) throw new Error('expected the context invocation control')
+    await act(async () => {
+      bindingButton.click()
+      await waitForFrames(dom.window as unknown as Window, 2)
+    })
+    if (String(commandProxy.value) !== 'Use @') throw new Error('expected @ to preserve the preceding draft')
+    const bindingMenu = dom.window.document.querySelector('section[aria-label="Chat variable commands"]')
+    if (!bindingMenu) throw new Error('expected @ to open bindings and workspace variables')
+    if (submissions !== 0) throw new Error('invocation controls must edit the draft without submitting it')
   } finally {
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
     container.remove()
