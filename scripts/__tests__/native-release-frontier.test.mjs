@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { collectNativeReleaseFrontier, materializeNativeFrontierReleaseEvidence,
+import { collectNativeReleaseFrontier, createNativeFrontierByteBudget, materializeNativeFrontierReleaseEvidence,
   NATIVE_FRONTIER_ADAPTER, NATIVE_PRESERVATION_IDENTITY, validateNativePreservationIdentity } from '../native-release-frontier.mjs'
 import { normalizeReleaseEvidence, releaseInventoryDigest } from '../lib/production-release-lifecycle-evidence.mjs'
 import { createLifecycleCandidate, digest } from '../production-release-lifecycle.mjs'
@@ -47,6 +47,27 @@ const rollbackBytes = Buffer.from(JSON.stringify({
     d1: { stateContractDigest: 'c'.repeat(64), readbackDigest: 'd'.repeat(64),
       counts: { documentCount: 2, chunkCount: 0, graphCount: 0 } } },
 }))
+
+test('aggregate capture supports retained full worktrees and still rejects over 1 GiB', () => {
+  const consume = createNativeFrontierByteBudget(), MiB = 1024 * 1024
+  // Nine roughly 70 MiB worktrees exceeded the former 512 MiB ceiling.
+  for (let worktree = 0; worktree < 9; worktree += 1) {
+    for (let chunk = 0; chunk < 70; chunk += 1) consume(MiB)
+  }
+  for (let chunk = 630; chunk < 1024; chunk += 1) consume(MiB)
+  assert.throws(() => consume(1), /source frontier exceeds capture byte limit/)
+  assert.throws(() => consume(-1), /invalid source capture byte count/)
+  for (const invalid of [NaN, Infinity, 0.5, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => createNativeFrontierByteBudget()(invalid), /invalid source capture byte count/)
+  }
+})
+
+test('larger aggregate capacity retains the 64 MiB individual file limit', t => {
+  const f = fixture(t), oversized = path.join(f.attached, 'oversized.bin')
+  fs.writeFileSync(oversized, '')
+  fs.truncateSync(oversized, 64 * 1024 * 1024 + 1)
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /source file exceeds capture limit/)
+})
 
 test('native frontier retains exact dirty, untracked and symlink bytes including detached worktrees', async t => {
   const f = fixture(t)

@@ -10,7 +10,17 @@ export { NATIVE_PRESERVATION_IDENTITY, NATIVE_FRONTIER_ADAPTER, validateNativePr
 const readLaneRecords = root => Object.values(loadLaneRecords(root).lanes)
 const REPOSITORY = 'huijoohwee/agentic-graph'
 const SHA = /^[0-9a-f]{40}$/
-const LIMITS = { worktrees: 64, paths: 50_000, fileBytes: 64 * 1024 * 1024, totalBytes: 512 * 1024 * 1024 }
+// Retained worktrees each include the full source tree. Bound each observation
+// at 1 GiB so normal multi-lane captures fit without omitting any source bytes.
+const LIMITS = { worktrees: 64, paths: 50_000, fileBytes: 64 * 1024 * 1024, totalBytes: 1024 * 1024 * 1024 }
+export const createNativeFrontierByteBudget = () => {
+  let bytes = 0
+  return count => {
+    assert.ok(Number.isSafeInteger(count) && count >= 0, 'invalid source capture byte count')
+    bytes += count
+    assert.ok(bytes <= LIMITS.totalBytes, 'source frontier exceeds capture byte limit')
+  }
+}
 const canonical = value => Array.isArray(value) ? `[${value.map(canonical).join(',')}]`
   : value && typeof value === 'object'
     ? `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`
@@ -63,8 +73,8 @@ const readContent = (root, relative, budget) => {
   let byteLength = 0, contentDigest
   const hash = createHash('sha256')
   const consume = bytes => {
-    byteLength += bytes.length; budget.bytes += bytes.length
-    assert.ok(byteLength <= LIMITS.fileBytes && budget.bytes <= LIMITS.totalBytes,
+    byteLength += bytes.length; budget(bytes.length)
+    assert.ok(byteLength <= LIMITS.fileBytes,
       'source frontier exceeds capture byte limit')
     hash.update(bytes)
   }
@@ -168,7 +178,7 @@ export const collectNativeReleaseFrontier = ({ repository, sourceRevision, sourc
     assert.equal(remote, sourceRevision, 'remote protected source drift')
     const records = readMetadata(root)
     assert.ok(Array.isArray(records) && records.length <= 1024, 'native metadata inventory exceeds limit')
-    const registrations = registeredWorktrees(root), budget = { bytes: 0 }
+    const registrations = registeredWorktrees(root), budget = createNativeFrontierByteBudget()
     assert.ok(registrations.some(entry => entry.path === root), 'canonical owner is not registered')
     const lanes = registrations.map(entry => snapshotLane(entry, root, common, records, budget))
     assert.equal(lanes.find(lane => lane.path === root).dirty, false, 'canonical source must be clean')
