@@ -1,4 +1,7 @@
-# Launch Copilot public-flow implementation (r3.2)
+# Launch Copilot operations
+
+The canonical [product plan](documents/launch-copilot-prd-tad-adr-mvp-gtm.md) owns
+`launch-copilot@0.3.3`; this runbook consumes its criteria and retains operational evidence.
 
 Launch Copilot is a lazy feature of Graph's native workspace. Canvas OS owns the
 five-role proposal contract introduced in PR #922, consumed through the current
