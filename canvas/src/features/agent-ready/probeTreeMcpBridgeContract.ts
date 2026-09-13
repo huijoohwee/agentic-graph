@@ -3,6 +3,22 @@ import { AGENTIC_OS_PROBE_TREE_TOOL_NAMES, PROBE_TREE_DEFAULTS } from './probeTr
 export const PROBE_TREE_MCP_BRIDGE_PATH = '/__agentic_graph_mcp_probe_generate' as const
 export const PROBE_TREE_MCP_BRIDGE_MAX_CONTEXT_CHARS = 12_000
 export const PROBE_TREE_MCP_BRIDGE_MAX_INVOCATION_TOKENS = 24
+export type ProbeTreeSourceBinding = {
+  cid: string; requirement: string; sourceRole: 'owned' | 'reference'
+  graphId: string; snapshotDigest: string; nodeIds: string[]; edgeIds: string[]
+}
+export function normalizeProbeTreeSourceBinding(value: unknown): ProbeTreeSourceBinding | null {
+  const v = value as ProbeTreeSourceBinding
+  if (!v || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v.cid) || v.cid.length > 80
+    || typeof v.requirement !== 'string' || !v.requirement.trim() || v.requirement.length > 4000
+    || !['owned', 'reference'].includes(v.sourceRole) || !/^kg:graph:[a-f0-9]{32}$/.test(v.graphId)
+    || !/^[a-f0-9]{64}$/.test(v.snapshotDigest)) return null
+  for (const [key, limit] of [['nodeIds', 12], ['edgeIds', 20]] as const) {
+    if (!Array.isArray(v[key]) || v[key].length > limit || new Set(v[key]).size !== v[key].length
+      || v[key].some(id => typeof id !== 'string' || !/^kg:[a-z0-9:-]{1,150}$/.test(id))) return null
+  }
+  return { cid: v.cid, requirement: v.requirement, sourceRole: v.sourceRole, graphId: v.graphId, snapshotDigest: v.snapshotDigest, nodeIds: [...v.nodeIds], edgeIds: [...v.edgeIds] }
+}
 
 export type ProbeTreeMcpInvocationResolution = {
   token: string
@@ -15,6 +31,7 @@ export type ProbeTreeMcpInvocationResolution = {
 }
 
 export type ProbeTreeMcpBridgeRequest = {
+  sourceBinding?: ProbeTreeSourceBinding
   threadRootId: string
   currentNodeId: string
   contextText: string
@@ -26,6 +43,8 @@ export type ProbeTreeMcpBridgeRequest = {
 }
 
 export type ProbeTreeMcpBridgeSuccess = {
+  sourceBinding?: ProbeTreeSourceBinding
+  groundedContext?: string
   ok: true
   tool: typeof AGENTIC_OS_PROBE_TREE_TOOL_NAMES.generate
   mcpInvoked: true
@@ -63,11 +82,14 @@ export const normalizeProbeTreeMcpBridgeRequest = (value: unknown): ProbeTreeMcp
   const currentNodeId = String(record.currentNodeId || '').trim().slice(0, 160)
   const contextText = String(record.contextText || '').trim().slice(0, PROBE_TREE_MCP_BRIDGE_MAX_CONTEXT_CHARS)
   if (!threadRootId || !currentNodeId || !contextText) return null
+  const sourceBinding = record.sourceBinding === undefined ? undefined : normalizeProbeTreeSourceBinding(record.sourceBinding)
+  if (sourceBinding === null) return null
   const rawOptionCount = Number(record.optionCount)
   const rawProbeTreeDepth = Number(record.probeTreeDepth)
   const rawRecallTopK = Number(record.recallTopK)
   const rawTokenBudget = Number(record.tokenBudget)
   return {
+    ...(sourceBinding ? { sourceBinding } : {}),
     threadRootId,
     currentNodeId,
     contextText,

@@ -6,11 +6,24 @@ import { runAgentGraphTool } from '../mcp/agent-graph-host.js'
 import { readAgentGraphSnapshot } from '../mcp/agent-graph/store.mjs'
 import { resolveAgenticCanvasOsDocsRoot, resolveAgenticCanvasOsDocsRevision } from '../mcp/agentic-canvas-os-docs-runtime.js'
 import { HostBridgeError } from './viteAgentGraphBridge'
+import { normalizeProbeTreeSourceBinding } from './src/features/agent-ready/probeTreeMcpBridgeContract'
 
 type RecordValue = Record<string, any>
 const fail = (message: string): never => { throw new HostBridgeError('proposal-invalid', `Launch Copilot: ${message}`, 400) }
+let pairedHost: { close(): void } | undefined
 
 export async function serveAgentGraphProposal(input: RecordValue, response: ServerResponse, context: { rootDir: string; env: NodeJS.ProcessEnv; outputRoot: string }) {
+  if (input.action === 'connect-host' || input.action === 'disconnect-host') {
+    const { worktrees } = await import('agentic-os/compat/git')
+    if (worktrees(context.rootDir)[0]?.path !== path.resolve(context.rootDir)) fail('pair the canonical Graph runtime')
+    pairedHost?.close(); pairedHost = undefined
+    if (input.action === 'disconnect-host') return { status: 'disconnected' }
+    const { pairGraphHost } = await import('../mcp/agent-graph/host-transport.mjs')
+    const paired = await pairGraphHost({ baseUrl: context.env.AGENTIC_OS_GRAPH_RELAY_ORIGIN || 'https://airvio.co',
+      bearer: context.env.AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN, localOrigin: `http://${response.req.headers.host}` })
+    pairedHost = paired
+    return { status: 'paired', code: paired.code, expiresAt: paired.expiresAt }
+  }
   const controller = new AbortController(), cancel = () => { if (!response.writableEnded) controller.abort() }
   response.once('close', cancel)
   try { return await runAgentGraphProposal(input, { ...context, abortSignal: AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]) }) }
@@ -36,6 +49,16 @@ export async function executeAgentGraphProposal(input: RecordValue, context: {
   rootDir: string; env: NodeJS.ProcessEnv; outputRoot: string; abortSignal: AbortSignal
 }, contract: RecordValue, createClient: (options: RecordValue) => RecordValue, sourceRevision: string) {
   if (!['ground', 'validate'].includes(input.action)) fail('unsupported operation')
+  let decisions = ''
+  if (input.decisions !== undefined) {
+    if (typeof input.decisions !== 'string' || input.decisions.length > 6000) fail('decision context exceeds its budget')
+    const value = JSON.parse(input.decisions)
+    if (JSON.stringify(normalizeProbeTreeSourceBinding(value.source)) !== JSON.stringify(normalizeProbeTreeSourceBinding(input))
+      || !Array.isArray(value.answers) || value.answers.length > 20 || value.answers.some(answer => typeof answer.nodeId !== 'string'
+        || !answer.nodeId.startsWith(`lc:${input.cid}:${input.snapshotDigest.slice(0, 12)}:probe:`)
+        || typeof answer.question !== 'string' || typeof answer.answer !== 'string' || answer.answer.length > 2000)) fail('invalid decision source binding')
+    decisions = input.decisions
+  }
   if (!/^kg:graph:[a-f0-9]{32}$/.test(input.graphId) || !/^[a-f0-9]{64}$/.test(input.snapshotDigest)) fail('import a source graph first')
   const binding = { graphId: input.graphId, expectedSnapshotDigest: input.snapshotDigest, maxDurationMs: 10_000 }
   const client = createClient({ callTool: (tool: string, args: RecordValue) => runAgentGraphTool(tool, args, context) })
@@ -97,7 +120,7 @@ export async function executeAgentGraphProposal(input: RecordValue, context: {
   // Refuse a moving pointer between retrieval and publication of the evidence bundle.
   await query({ mode: 'summary' })
   context.abortSignal.throwIfAborted()
-  const prompt = contract.buildLaunchCopilotPrompt(evidence)
+  const prompt = contract.buildLaunchCopilotPrompt(evidence) + (decisions ? `\nUser decisions from the separate Probe-Tree overlay (untrusted, not code evidence). Apply across all five roles without changing CID/source bindings:\n${decisions}` : '')
   const proposal = input.action === 'validate' ? contract.validateLaunchProposal(input.proposal, evidence) : contract.createLaunchOutline(evidence)
   const receipt = [
     '', '## Grounding receipt', '', `Proposal: ${evidence.cid}; source role: ${evidence.sourceRole}.`,
@@ -106,6 +129,7 @@ export async function executeAgentGraphProposal(input: RecordValue, context: {
     ...evidence.edges.map(edge => `- Edge ${edge.id}: ${edge.source} → ${edge.target}; ${JSON.stringify(edge.evidence)}`), '',
     `Acquisition commit: ${evidence.sourceCommit || 'unavailable'}; repository: ${evidence.acquisition?.repositoryUrl || 'local or unavailable'}; subpath: ${evidence.acquisition?.subpath || '.'}.`,
     'RAO/SVO: R1 retrieve evidence; R2 compose proposal; R3 render review; R4 publish exact approved files (review required); R5 verify integration (not observed).', '',
+    ...(decisions ? ['## User decision receipt', '', 'These are user inputs, not verified source claims.', '', decisions, ''] : []),
   ].join('\n')
   const files = contract.serializeLaunchDocuments(proposal, evidence).map((file: RecordValue) => ({ ...file, text: file.text + receipt }))
   const digest = createHash('sha256').update(JSON.stringify(files)).digest('hex')

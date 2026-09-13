@@ -26,7 +26,12 @@ is published after live verification. Never repair the generated directory by
 hand or publish the superseded standalone `81rv10` worktree.
 
 This entry does not establish Launch Copilot feature readiness. Native proposal
-capability must first integrate through its separate source change (PR #964).
+and protected handoff code are integrated through PR #974. The public-flow
+increment adds explicit host pairing and source-bound Probe-Tree in the existing
+Graph owners; see [Launch Copilot](launch-copilot.md). The MCP Worker carries the
+bounded paired transport through isolated objects in its existing namespace.
+Public feature readiness requires the exact source candidate to pass the protected
+release and a paired browser walkthrough; entry HTML alone is insufficient.
 Existing readiness markers and canonical Graph/PWA identity retain their current
 scope; product entry routing is not a new independent PWA or paid-loop proof.
 

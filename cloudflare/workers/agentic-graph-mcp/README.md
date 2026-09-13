@@ -16,6 +16,15 @@ R14.1; Properties 1, 26).
 
 ## Layout
 
+Launch Copilot public host pairing reuses this Worker and `RUN_MANIFEST_STORE`.
+The shared `mcp/agent-graph/host-transport.mjs` owner admits authenticated pairing
+at `/agentic-os/control-plane/mcp/host-relay`, then brokers bounded WebSocket
+requests between the public workspace and the explicitly paired Graph host.
+Disjoint `graph-host-relay/<UUID>` objects retain session hashes and execution
+fences. Original manifest/run-note objects retain their existing fetch owner.
+There is no new DO class migration, resource, secret, importer or model runtime.
+See [pairing, limits and recovery](../../../docs/launch-copilot.md#pair-the-existing-host).
+
 | File | Responsibility |
 |---|---|
 | `index.ts` | Worker entry. Defines `AgenticGraphMcpAgent` (Agents SDK `McpAgent`), registers 10 tools with Streamable HTTP, routes `/agentic-os/control-plane/mcp[*]`, and forwards request metadata and the idempotency header to the durable dispatcher. |

@@ -29,6 +29,22 @@ const DEFAULT_IGNORED_DIRECTORY_NAMES = new Set([
 ])
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+let pairedPeer: { close(): void; fetch: FetchLike } | undefined
+export const agentGraphHostFetch: typeof fetch = (input, init) => {
+  if (!pairedPeer) return globalThis.fetch(input, init)
+  const url = new URL(String(input), globalThis.location.origin)
+  if (url.origin !== globalThis.location.origin || url.search || url.hash) return Promise.reject(new Error('Paired Graph requires a same-origin native endpoint'))
+  return pairedPeer.fetch(url.pathname, init)
+}
+export function disconnectAgentGraphRelay() { pairedPeer?.close(); pairedPeer = undefined }
+export async function connectAgentGraphRelay(code: string) {
+  const [id, key, expires, extra] = code.split('.')
+  if (extra !== undefined) throw new Error('Invalid Graph pairing code')
+  const { connectGraphRelayPeer } = await import('../../../../mcp/agent-graph/host-transport.mjs')
+  disconnectAgentGraphRelay()
+  pairedPeer = await connectGraphRelayPeer({ baseUrl: globalThis.location.origin, id, key, expiresAt: Number(expires), role: 'client' })
+  return Number(expires)
+}
 type DirectoryPicker = () => Promise<FileSystemDirectoryHandle>
 
 export type AgentGraphHostAdapterOptions = {
@@ -425,7 +441,7 @@ async function uploadFile(args: {
 }
 
 export function createAgentGraphHostAdapter({
-  fetchImpl = globalThis.fetch.bind(globalThis),
+  fetchImpl = agentGraphHostFetch,
   pickDirectory = defaultDirectoryPicker,
 }: AgentGraphHostAdapterOptions = {}): WorkspaceAgentGraphBridge {
   const capability = async () => validateCapability(await requestJson(fetchImpl, '/capability'))
@@ -473,7 +489,9 @@ export function createAgentGraphHostAdapter({
     importRepositoryUrl: async (url, _opts, invocation, onProgress) => {
       await capability()
       const repositoryUrl = normalizeAgentGraphRepositoryRemoteUrl(url)
-      if (onProgress) {
+      // The paired transport uses the native bounded final projection; replaying
+      // every intermediate preview can exceed its response budget on large repos.
+      if (onProgress && !(fetchImpl === agentGraphHostFetch && pairedPeer)) {
         return requestRepositoryProgressStream({
           fetchImpl,
           repositoryUrl,

@@ -36,7 +36,7 @@ export const runtimeJsonResponse = (
     },
   });
 
-async function timingSafeTokenMatch(
+export async function timingSafeTokenMatch(
   actual: string,
   expected: string,
 ): Promise<boolean> {

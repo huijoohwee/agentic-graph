@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import React from 'react'
+import { createRoot } from 'react-dom/client'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
@@ -15,12 +17,19 @@ import { executeAgentGraphProposal } from '../../viteAgentGraphProposal'
 import { launchHandoffBinding, launchHandoffCommitMessage, runLaunchHandoff } from '../../viteAgentGraphHandoff'
 import { createExternalToolApprovalToken, authorizeExternalToolAction } from '../../../mcp/external-tool-approval.js'
 import { worktrees } from 'agentic-os/compat/git'
-import { buildLaunchOverlay, publishLaunchWorkspace, reopenLaunchWorkspace, updateLaunchNode, exportLaunchWorkspace, type LaunchRecord } from '@/features/agent-graph/launchCopilotWorkspace'
+import { buildLaunchOverlay, publishLaunchWorkspace, reopenLaunchWorkspace, updateLaunchNode, exportLaunchWorkspace, launchProbeBinding, launchProbeDecisions, retainLaunchProbeResponse, type LaunchRecord } from '@/features/agent-graph/launchCopilotWorkspace'
+import { groundProbeTreeRequest } from '../../viteProbeTreeMcpBridge'
+import { generateProbeOptions } from '../../../mcp/probe-tree-runtime.js'
+import { normalizeProbeTreeMcpBridgeRequest } from '@/features/agent-ready/probeTreeMcpBridgeContract'
+import { PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
+import { canonicalLaunchRepositoryUrl } from '@/lib/toolbar/launchImportDispatch'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { listMediaOverlayNodes } from '@/lib/render/mediaOverlayPool'
 import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { mountReactRoot, unmountReactRoot, waitForFrames, waitForTasks } from '@/tests/lib/reactRootHarness'
+import { RichMediaOverlayLayer2d } from '@/components/GraphCanvasRoot/components/RichMediaOverlayLayer2d'
 import { invokeLaunchCopilot } from '@/features/agent-graph/launchCopilotInvocation'
 import { shouldPersistWorkspaceEntryInLocalSnapshot } from '@/features/workspace-fs/workspaceFsPersisted'
 
@@ -37,7 +46,7 @@ test('native graph → validating Canvas client → five roles, source fence and
     const runtime = createAgentGraphRuntime({ agenticGraphRoot: rootDir, allowedRoots: [source], outputRoot })
     const ingest = await runtime.ingest({ rootPath: source, include: ['*.ts'], strict: true })
     assert.equal(ingest.ok, true, JSON.stringify(ingest))
-    const input = { action: 'ground', cid: 'checkout-offer', requirement: 'checkout receipt', sourceRole: 'owned', graphId: ingest.graphId, snapshotDigest: ingest.snapshotDigest, nodeIds: [], edgeIds: [] }
+    const input = { action: 'ground', cid: 'checkout-offer', requirement: 'checkout receipt for a paid pilot: identify the buyer, price and delivery before building', sourceRole: 'owned', graphId: ingest.graphId, snapshotDigest: ingest.snapshotDigest, nodeIds: [], edgeIds: [] }
     const context = { rootDir, outputRoot, env: { ...process.env, AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT: outputRoot, AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS: source }, abortSignal: new AbortController().signal }
     const result = await executeAgentGraphProposal(input, context, contract, createAgenticGraphClient, 'a'.repeat(40))
     assert.equal(result.files.length, 5)
@@ -52,7 +61,7 @@ test('native graph → validating Canvas client → five roles, source fence and
     assert.ok(overlay.nodes.every(node => node.id.startsWith('lc:')))
     assert.ok(overlay.edges.every(edge => edge.properties?.['visual:dash']))
     const original = JSON.stringify(ingest.projection.graphData)
-    const { restore } = initJsdomHarness()
+    const { dom, restore } = initJsdomHarness()
     try {
       const projection = { ...ingest.projection.graphData, metadata: { kind: 'agent-graph', agentGraphProjection: { owner: 'agent-graph-runtime', readOnly: true, graphId: ingest.graphId, snapshotDigest: ingest.snapshotDigest } } }
       useGraphStore.setState({ graphData: projection, launchProposalOverlay: overlay })
@@ -63,6 +72,29 @@ test('native graph → validating Canvas client → five roles, source fence and
       useGraphStore.setState({ sourceFiles: [] })
       assert.equal(listMediaOverlayNodes({ enabled: true, nodes: overlay.nodes, poolMax: 10 }).length, 5, 'native media owner recognizes five panels')
       await publishLaunchWorkspace(record)
+      const container = dom.window.document.createElement('section')
+      dom.window.document.body.appendChild(container)
+      const reactRoot = createRoot(container), noop = () => {}
+      try {
+        await mountReactRoot(reactRoot, React.createElement(RichMediaOverlayLayer2d, {
+          active: true, mediaOverlayNodes: listMediaOverlayNodes({ enabled: true, nodes: record.overlay!.nodes, poolMax: 10 }),
+          getOverlayRefForId: () => noop, svgRef: { current: null }, renderMediaAsNodes: false,
+          stopEvent: event => event.stopPropagation(), onOverlayPanStart: noop, onOverlayPan: noop, onOverlayPanEnd: noop,
+          onHeaderDragStart: noop, onHeaderDrag: noop, onHeaderDragEnd: noop,
+        }), { window: dom.window, frames: 24 })
+        const paragraph = [...container.querySelectorAll<HTMLElement>('p[data-start-line]')].find(element => element.textContent?.includes('Editable outline'))!
+        assert.ok(paragraph, 'native canvas renders the grounded document')
+        paragraph.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
+        await waitForTasks(2); await waitForFrames(dom.window, 2)
+        const editor = paragraph.querySelector<HTMLElement>('[contenteditable="true"]')!
+        assert.ok(editor, 'canvas selection must let clicks reach the native document editor')
+        editor.textContent = 'Reviewed buyer pain before technical scope.'
+        editor.dispatchEvent(new dom.window.InputEvent('input', { bubbles: true, inputType: 'insertText', data: editor.textContent }))
+        await waitForTasks(4)
+        editor.dispatchEvent(new dom.window.KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter', ctrlKey: true }))
+        await waitForTasks(8); await waitForFrames(dom.window, 4)
+        assert.match((await reopenLaunchWorkspace(input.cid)).files[0].text, /Reviewed buyer pain before technical scope/)
+      } finally { await unmountReactRoot(reactRoot, { window: dom.window }); container.remove() }
       const ids = record.overlay!.nodes.map(node => node.id)
       updateLaunchNode(ids[0], { properties: { output: 'Reviewed PRD edit' }, x: 345 })
       const reopened = await reopenLaunchWorkspace(input.cid)
@@ -97,6 +129,41 @@ test('native graph → validating Canvas client → five roles, source fence and
         for (const file of files) assert.equal(strFromU8(unpacked[file.path]), file.text)
         assert.equal(digest, createHash('sha256').update(JSON.stringify(files)).digest('hex'))
       } finally { URL.createObjectURL = createObjectURL; window.HTMLAnchorElement.prototype.click = click }
+      assert.equal(canonicalLaunchRepositoryUrl('https://github.com/anthropics/commerce-agents'), 'https://github.com/anthropics/commerce-agents')
+      for (const url of ['https://github.com/owner/repo/blob/main/README.md', 'https://secret@github.com/owner/repo', 'https://github.com/owner/repo?token=secret']) assert.equal(canonicalLaunchRepositoryUrl(url), null)
+      let probeRecord = await reopenLaunchWorkspace(input.cid)
+      const probeSource = useGraphStore.getState().graphData
+      let anchorId = probeRecord.overlay!.nodes[0].id
+      const { buildStoryboardWidgetProbeTreeContextText } = await import('@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeContext')
+      for (const depth of [1, 2]) {
+        const request = { sourceBinding: launchProbeBinding(probeRecord), threadRootId: probeRecord.overlay!.nodes[0].id, currentNodeId: anchorId,
+          contextText: buildStoryboardWidgetProbeTreeContextText({ graphData: probeRecord.overlay!, node: probeRecord.overlay!.nodes.find(node => node.id === anchorId)!, prompt: probeRecord.evidence.requirement }), invocationTokens: [], optionCount: 3, probeTreeDepth: depth, recallTopK: 0, tokenBudget: 1200 }
+        assert.equal(normalizeProbeTreeMcpBridgeRequest({ ...request, sourceBinding: { ...request.sourceBinding, snapshotDigest: 'forged' } }), null)
+        const groundedContext = await groundProbeTreeRequest(request, rootDir, context.abortSignal, context.env)
+        assert.ok(groundedContext.includes('checkout.ts') && groundedContext.includes(input.snapshotDigest))
+        if (depth === 2) assert.match(groundedContext, /Selected continuation answer:.*paid checkout pilot/)
+        await assert.rejects(() => groundProbeTreeRequest({ ...request, sourceBinding: { ...request.sourceBinding, snapshotDigest: '0'.repeat(64) } }, rootDir, context.abortSignal, context.env), /snapshot changed/)
+        const generated = await generateProbeOptions({ thread_root_id: request.threadRootId, current_node_id: request.currentNodeId, context_text: groundedContext, k: 3, probe_tree_depth: depth, recall_top_k: 0, token_budget: 1200 }, { rootDir: temporary, env: {}, fetchImpl: () => { throw new Error('Live model verification is deferred') } })
+        const response = { ok: true, tool: 'agentic-graph.probe.generate', mcpInvoked: true, invocationResolutions: [], sourceBinding: request.sourceBinding, groundedContext, result: { structuredContent: generated, content: [{ type: 'text', text: JSON.stringify(generated) }] } } as const
+        await assert.rejects(() => retainLaunchProbeResponse(probeRecord, { ...response, sourceBinding: { ...request.sourceBinding, cid: 'another-proposal' } } as any, anchorId), /not bound/)
+        await assert.rejects(() => retainLaunchProbeResponse(probeRecord, response as any, anchorId), /exactly 2-4/)
+        const provider = { model: 'test-only-openai-fixture', text: JSON.stringify({ response: { structuredContent: { contractVersion: PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION,
+          cards: [
+            { id: 'checkout-buyer', question: 'Who will purchase the checkout pilot?', selectionOptions: ['Solo service founders', 'Small software teams'] },
+            { id: 'receipt-channel', question: 'How should the checkout receipt reach the buyer?', selectionOptions: ['Email after purchase', 'Download from the account'] },
+            { id: 'checkout-price', question: 'How should the checkout pilot be priced?', selectionOptions: ['Charge an upfront fee', 'Require a recurring subscription'] },
+          ].map(card => ({ ...card, probeTreeCardVariant: 'probe-tree-type-2', rationale: 'Confirm the missing pilot decision.', evidenceNeeded: 'A buyer interview.' })),
+        } } }) }
+        probeRecord = await retainLaunchProbeResponse(probeRecord, response as any, anchorId, provider)
+        const question = probeRecord.overlay!.nodes.find(node => node.properties.launchProbe && Number(node.properties.probeTreeDepth) === depth)!
+        assert.ok(question, 'native source-bound question materialized')
+        updateLaunchNode(question.id, { properties: { output: 'Validate willingness to pay with a paid checkout pilot before building.' } })
+        probeRecord = await reopenLaunchWorkspace(input.cid)
+        assert.match(launchProbeDecisions(probeRecord), /paid checkout pilot/)
+        anchorId = question.id
+        assert.equal(useGraphStore.getState().graphData, probeSource, 'Probe-Tree never mutates source')
+        assert.equal(probeRecord.overlay!.nodes.filter(node => node.type === 'RichMediaPanel').length, 5)
+      }
       // Exercise Graph's real Chat sender/response parser with a local provider stub only.
       const previousFetch = globalThis.fetch
       const previousNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
@@ -125,6 +192,14 @@ test('native graph → validating Canvas client → five roles, source fence and
           assert.equal(error, null)
           assert.equal(modelCalls, 1, 'no automatic retry or alternate provider')
           assert.match(messages.at(-1)?.content || '', malformed ? /AI drafting unverified.*labelled editable outline/s : /Drafted with the current Chat connection/)
+          const retainedBefore = await reopenLaunchWorkspace(input.cid)
+          const priorFiles = JSON.stringify(retainedBefore.files)
+          await invokeLaunchCopilot({ input: `/launch-copilot refine ${input.cid}`, chatProvider: 'openai', chatModel: 'gpt-test', chatEndpointUrl: 'https://api.openai.com/v1/responses', chatAuthMode: 'serverManaged', chatApiKey: null, chatStorageTarget: 'chat', abortRef: { current: null }, setErrorText: (value: any) => { error = value }, setIsLoading: () => {}, setInput: () => {}, setConnectivity: () => {}, setConnectivityDetail: () => {}, setMessages: (update: any) => { messages = update(messages) } } as any)
+          const refined = await reopenLaunchWorkspace(input.cid)
+          if (malformed) { assert.ok(error); assert.equal(JSON.stringify(refined.files), priorFiles, 'failed refinement preserves reviewed files'); }
+          else { assert.equal(error, null); assert.ok(refined.files.every(file => file.text.includes('paid checkout pilot'))); assert.match(grounded.prompt, /User decisions from the separate Probe-Tree overlay/); }
+          assert.equal(modelCalls, 2, 'each explicit refinement makes only one provider attempt')
+          assert.match(launchProbeDecisions(refined), /paid checkout pilot/)
         }
         const posted: any[] = [], approval = '1'.repeat(64)
         let nextInput = '', handoffError: string | null = null

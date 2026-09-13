@@ -1,3 +1,4 @@
+import { agentGraphHostFetch } from '../agent-graph/agentGraphHostAdapter'
 import {
   AGENTIC_OS_DOCS_MCP_BRIDGE_PATH,
   isAgenticOsDocsMcpBridgeSuccessBoundToProof,
@@ -18,7 +19,7 @@ const readFailureMessage = async (response: Response): Promise<string> => {
 
 export async function invokeAgenticOsDocsMcpBridge(
   request: AgenticOsDocsMcpBridgeRequest,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: typeof fetch = agentGraphHostFetch,
 ): Promise<AgenticOsDocsMcpBridgeSuccess> {
   const boundedRequest = normalizeAgenticOsDocsMcpBridgeRequest(request)
   if (!boundedRequest) throw new Error('Agentic OS docs MCP request requires at least one valid invocation token.')
