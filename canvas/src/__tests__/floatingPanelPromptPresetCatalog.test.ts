@@ -17,6 +17,11 @@ import {
   resolveChatInvocationCatalogEntryInsertionText,
 } from '@/features/chat/chatInvocationRegistry'
 import { FloatingPanelPromptPresetsView } from '@/features/toolbar/FloatingPanelPromptPresetsView'
+import { FloatingPanelSkillsCommandsView } from '@/features/toolbar/FloatingPanelSkillsCommandsView'
+import { loadPromptPresetForCommand } from '@/features/chat/promptPresetSelectionRuntime'
+import { registerPinnedAgenticOsDictionaryCatalogForTest } from '@/__tests__/helpers/pinnedAgenticOsDictionary'
+import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
+import { clearSkillsCommandsMcpTarget, readSkillsCommandsMcpTarget } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { resetWorkspaceSeedProviderStorageCacheForTests } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
@@ -205,6 +210,7 @@ export async function testFloatingPanelPromptPresetsViewRendersAndInvokesAgentCh
   const workspace = await createPresetWorkspace()
   const catalog = await loadPromptPresetCatalog(workspace)
   if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
+  await verifySkillsCommandPresetRouting(catalog)
   const { dom, restore } = initJsdomHarness()
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
@@ -228,6 +234,66 @@ export async function testFloatingPanelPromptPresetsViewRendersAndInvokesAgentCh
     for (const [index, preset] of catalog.presets.entries()) if (!invokedPrompts[index]?.startsWith(preset.runtimeCommand)) throw new Error(`expected ${preset.id} to invoke its complete centralized prompt, got ${invokedPrompts[index]}`)
   } finally {
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
+    restore()
+  }
+}
+
+async function verifySkillsCommandPresetRouting(catalog: Exclude<Awaited<ReturnType<typeof loadPromptPresetCatalog>>, { ok: false }>) {
+  const preset = catalog.presets.find(entry => entry.id === 'launch-copilot')!
+  const runtime = { loadCatalog: async () => catalog, loadPrompt: async () => ({ ok: true as const, prompt: preset.prompt }) }
+  const resolved = await loadPromptPresetForCommand('/launch-copilot', runtime)
+  if (!resolved || 'error' in resolved || !resolved.prompt.startsWith('/launch-copilot outline reference')) {
+    throw new Error('Expected the authored reference-only outline for Launch Copilot')
+  }
+  if (await loadPromptPresetForCommand('/not-a-preset', runtime) !== null) throw new Error('Unrelated commands must retain their existing route')
+  const ambiguous = await loadPromptPresetForCommand('/launch-copilot', {
+    ...runtime, loadCatalog: async () => ({ ...catalog, presets: [...catalog.presets, { ...preset, id: 'another-choice' }] }),
+  })
+  if (!ambiguous || !('error' in ambiguous)) throw new Error('Ambiguous presets require an explicit choice')
+  const missing = await loadPromptPresetForCommand('/launch-copilot', {
+    ...runtime, loadCatalog: async () => ({ ok: false, error: 'Catalog unavailable' }),
+  })
+  if (!missing || !('error' in missing)) throw new Error('Missing source must fail closed')
+
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  const opened: string[] = [], pending: Array<() => void> = []
+  let deferred = false, mounted = true, executionCalls = 0
+  resetAgenticOsRemoteGrammarCatalogForTests()
+  registerPinnedAgenticOsDictionaryCatalogForTest()
+  clearSkillsCommandsMcpTarget()
+  try {
+    await mountReactRoot(root, React.createElement(FloatingPanelSkillsCommandsView, {
+      promptRuntime: { ...runtime, loadPrompt: () => deferred
+        ? new Promise<Awaited<ReturnType<typeof runtime.loadPrompt>>>(resolve => pending.push(() => resolve({ ok: true, prompt: preset.prompt })))
+        : runtime.loadPrompt() },
+      openPrompt: prompt => { opened.push(prompt); return true },
+      executeTarget: async () => { executionCalls += 1; throw new Error('Selection cannot execute') },
+    }), { window: dom.window as unknown as Window, frames: 3 })
+    const row = container.querySelector<HTMLElement>('[data-kg-skill-command-token="/launch-copilot"]')
+    if (!row) throw new Error('Launch Copilot must be discoverable in the pinned source catalog')
+    await act(async () => { row.click() })
+    if (opened.length !== 1 || opened[0] !== preset.prompt || readSkillsCommandsMcpTarget().status !== 'idle') {
+      throw new Error('A native Chat command must seed the shared preset without entering MCP execution')
+    }
+    opened.length = 0
+    deferred = true
+    await act(async () => { row.click(); row.click() })
+    if (pending.length !== 2) throw new Error('Expected two bounded selections')
+    await act(async () => { pending[1]!(); pending[0]!() })
+    if (Number(opened.length) !== 1) throw new Error('A stale selection must not overwrite the latest prompt')
+    await act(async () => { row.click() })
+    await unmountReactRoot(root, { window: dom.window as unknown as Window })
+    mounted = false
+    pending[2]!()
+    await Promise.resolve()
+    if (Number(opened.length) !== 1 || executionCalls !== 0) throw new Error('Closed panels must not open or execute delayed selections')
+  } finally {
+    if (mounted) await unmountReactRoot(root, { window: dom.window as unknown as Window })
+    clearSkillsCommandsMcpTarget()
+    resetAgenticOsRemoteGrammarCatalogForTests()
     restore()
   }
 }
