@@ -1,11 +1,11 @@
 name: Integration
-run-name: ${{ github.event_name == 'workflow_dispatch' && format('Protected head refresh {0} {1}', inputs.operation_id, inputs.expected_head_sha) || 'Integration' }}
+run-name: ${{ github.event_name == 'workflow_dispatch' && (inputs.operation == 'protected-main-recheck' && format('Protected main recheck {0} {1}', inputs.operation_id, inputs.expected_head_sha) || format('Protected head refresh {0} {1}', inputs.operation_id, inputs.expected_head_sha)) || 'Integration' }}
 
 on:
   workflow_dispatch:
     inputs:
       operation: { description: Exact trusted controller operation, required: true, type: string }
-      pull_request_number: { description: Exact pull request number, required: true, type: number }
+      pull_request_number: { description: Exact pull request number (zero for main recheck), required: false, default: 0, type: number }
       branch: { description: Exact protected refresh branch, required: true, type: string }
       expected_head_sha: { description: Exact protected refresh candidate, required: true, type: string }
       operation_id: { description: Exact protected refresh operation digest, required: true, type: string }
@@ -48,21 +48,33 @@ jobs:
           path: agentic-graph
           fetch-depth: 0
 
-      - name: Authorize exact protected refresh dispatch
+      - name: Authorize exact protected integration dispatch
         if: ${{ github.event_name == 'workflow_dispatch' }}
         working-directory: agentic-graph
         env:
           EXPECTED_OPERATION: ${{ inputs.operation }}
+          EXPECTED_PR_NUMBER: ${{ inputs.pull_request_number }}
           EXPECTED_BRANCH: ${{ inputs.branch }}
           EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
         run: |
-          test "$EXPECTED_OPERATION" = "protected-head-refresh"
+          [[ "$EXPECTED_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$GITHUB_REF" = "refs/heads/$EXPECTED_BRANCH"
           test "$GITHUB_SHA" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
+          case "$EXPECTED_OPERATION" in
+            protected-head-refresh)
+              test "$EXPECTED_PR_NUMBER" -gt 0
+              ;;
+            protected-main-recheck)
+              test "$EXPECTED_BRANCH" = "main"
+              test "$EXPECTED_PR_NUMBER" = "0"
+              test "$(git ls-remote --exit-code origin refs/heads/main)" = "$EXPECTED_HEAD_SHA"$'\trefs/heads/main'
+              ;;
+            *) exit 1 ;;
+          esac
 
       - name: Load exact protected refresh pull request metadata
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'protected-head-refresh' }}
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_PR_NUMBER: ${{ inputs.pull_request_number }}

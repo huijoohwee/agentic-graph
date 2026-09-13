@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { load } from 'js-yaml'
 
-const REQUIRED_NODE_OPTIONS = 'NODE_OPTIONS: --max-old-space-size=4096'
+const REQUIRED_NODE_OPTIONS = '--max-old-space-size=4096'
 
 for (const workflow of ['integration.yml', 'promote-agentic-canvas-os.yml', 'release.yml']) {
   test(`${workflow} gives production builds an explicit Node heap`, () => {
     const source = readFileSync(new URL(`../../.github/workflows/${workflow}`, import.meta.url), 'utf8')
 
-    assert.match(
-      source,
-      new RegExp(`^      ${REQUIRED_NODE_OPTIONS}$`, 'm'),
+    assert.ok(
+      Object.values(load(source).jobs).some(job => job.env?.NODE_OPTIONS === REQUIRED_NODE_OPTIONS),
       `${workflow} must retain the protected build heap policy`,
     )
   })
