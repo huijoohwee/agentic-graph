@@ -5,6 +5,7 @@ export type LiveCanvasHeroDemo = {
   id: string
   title: string
   background?: 'xr-physics'
+  repository?: string
   reply: string
   outputs: { title: string; text: string }[]
 }
@@ -23,6 +24,8 @@ export function parseLiveCanvasHeroDemos(text: string): LiveCanvasHeroDemo[] {
     if (!demo || !string(demo.id) || !/^[a-z0-9-]+$/.test(demo.id) || ids.has(demo.id)
       || !string(demo.title) || !string(demo.reply)
       || (demo.background !== undefined && (demo.background !== 'xr-physics' || demo.id !== 'xr-physics'))
+      || (demo.repository !== undefined && (demo.id !== 'launch-copilot'
+        || !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(demo.repository)))
       || !Array.isArray(demo.outputs) || demo.outputs.length < 1 || demo.outputs.length > 6
       || demo.outputs.some(output => !output || !string(output.title) || !string(output.text))) {
       throw new Error('The demo document contains an invalid or duplicate preset.')

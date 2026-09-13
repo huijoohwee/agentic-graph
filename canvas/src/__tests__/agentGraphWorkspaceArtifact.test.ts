@@ -22,6 +22,7 @@ import {
 import { buildMarkdownWorkspaceActionBridge } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.composition'
 import { runLaunchImportUrl } from '@/lib/toolbar/launchImportDispatch'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
 
 const SNAPSHOT_DIGEST = 'a'.repeat(64)
 const PARSER_REGISTRY_DIGEST = 'f'.repeat(64)
@@ -29,7 +30,7 @@ const GRAPH_ID = `kg:graph:${'1'.repeat(32)}`
 const PROJECTION_TOKEN = `kg:projection:${'2'.repeat(24)}`
 const ARTIFACT_TIMESTAMP_MS = Date.UTC(2026, 6, 31, 12, 53, 37)
 const ARTIFACT_FILE_NAME = 'codebase-graph_20260731T125337Z.md'
-const SOURCE_BACKED_INVOCATION = Object.freeze({
+export const SOURCE_BACKED_INVOCATION = Object.freeze({
   schema: 'agentic-graph-agent-graph-invocation/v1' as const,
   tool: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest,
   action: '/source.ingest',
@@ -41,7 +42,7 @@ const SOURCE_BACKED_INVOCATION = Object.freeze({
   routingDigest: 'e'.repeat(64),
 })
 
-function agentGraphResult(): WorkspaceAgentGraphImportResult {
+export function agentGraphResult(): WorkspaceAgentGraphImportResult {
   return {
     handled: true,
     kind: 'agent-graph',
@@ -59,8 +60,8 @@ function agentGraphResult(): WorkspaceAgentGraphImportResult {
       graphData: {
         type: 'Graph',
         nodes: [
-          { id: 'repo:alpha', label: 'Alpha', type: 'Symbol', properties: {} },
-          { id: 'repo:beta', label: 'Beta', type: 'Symbol', properties: {} },
+          { id: 'repo:alpha', label: 'Alpha', type: 'Symbol', properties: { 'corpus:sourcePath': 'src/alpha.ts' } },
+          { id: 'repo:beta', label: 'Beta', type: 'Symbol', properties: { 'corpus:sourcePath': 'src/beta.ts' } },
         ],
         edges: [{
           id: 'edge:alpha-beta',
@@ -194,6 +195,21 @@ export async function testAgentGraphRepositoryImportMaterializesSourceFilesArtif
       throw new Error(`expected the canonical codebase graph to remain on Canvas, got ${JSON.stringify(canonicalGraph)}`)
     }
     const artifactDocumentKey = workspaceDocumentKey(artifactPath as WorkspacePath)
+    const groups = deriveGraphGroups(canonicalGraph)
+    if (!groups.some(group => group.label === 'src' && group.memberNodeIds.length === 2)) {
+      throw new Error('Native source paths must produce selectable D3 directory clusters')
+    }
+    await useGraphStore.getState().setActiveMarkdownDocument({ name: artifactDocumentKey, text: text!, applyToGraph: true, applyViewPreset: true })
+    await useGraphStore.getState().applyMarkdownDocumentToGraph(artifactDocumentKey, text!, { force: true })
+    if (useGraphStore.getState().graphData?.metadata?.source !== GRAPH_ID) {
+      throw new Error('A forced Markdown apply must not replace the native codebase graph with its receipt')
+    }
+    useGraphStore.getState().setGraphData({ type: 'Graph', nodes: [], edges: [], metadata: { source: 'another-document' } })
+    useGraphStore.getState().setCanvas2dRenderer('storyboard')
+    await useGraphStore.getState().setActiveMarkdownDocument({ name: artifactDocumentKey, text: text!, applyToGraph: false, applyViewPreset: false })
+    if (useGraphStore.getState().canvas2dRenderer !== 'd3' || useGraphStore.getState().graphData?.nodes[0]?.id !== 'repo:alpha') {
+      throw new Error('Reopening an import document must restore its retained native D3 projection')
+    }
     const renderedGraph = resolveActiveMarkdownBaseGraph({
       baseGraphDataRaw: canonicalGraph,
       markdownName: artifactDocumentKey,

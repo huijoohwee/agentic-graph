@@ -336,7 +336,7 @@ export function buildAgentGraphCanvasProjection(
   }
   const graphData = validateGraphData(result.projection.graphData, counts)
   const metadata = cloneJsonRecord(graphData.metadata, 'graph.metadata')
-  return {
+  const projected: GraphData = {
     ...graphData,
     metadata: {
       ...metadata,
@@ -363,9 +363,18 @@ export function buildAgentGraphCanvasProjection(
         },
       },
     },
-    nodes: graphData.nodes.map(cloneNode),
+    nodes: graphData.nodes.map(cloneAgentGraphNodeWithDirectory),
     edges: graphData.edges.map(cloneEdge),
   }
+  return validateGraphData(projected, counts, AGENT_GRAPH_CANVAS_MAX_BYTES)
+}
+
+/** Source grouping is view metadata, derived equally for new and retained projections. */
+export function cloneAgentGraphNodeWithDirectory(node: GraphNode): GraphNode {
+  const cloned = cloneNode(node)
+  const path = String(cloned.properties['corpus:sourcePath'] || '')
+  if (path) cloned.properties['visual:layer'] = path.includes('/') ? path.split('/')[0] : '(repository root)'
+  return cloned
 }
 
 type ValidatedAgentGraphProgress = Omit<WorkspaceAgentGraphImportProgress, 'graphData'> & { graphData: GraphData }

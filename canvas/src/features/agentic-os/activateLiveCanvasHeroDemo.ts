@@ -54,6 +54,10 @@ export function buildLiveCanvasHeroDemoDocument(selection: LiveCanvasHeroPresetS
 export async function activateLiveCanvasHeroDemo(selection: LiveCanvasHeroPresetSelection): Promise<void> {
   if (!selection.prompt.trim()) throw new Error('Choose or enter a prompt before opening Demo.')
   const demo = await loadLiveCanvasHeroDemo(selection.id)
+  if (demo.repository) {
+    const { activateLiveCanvasHeroRepositoryDemo } = await import('./activateLiveCanvasHeroRepositoryDemo')
+    return activateLiveCanvasHeroRepositoryDemo(selection, demo)
+  }
   const id = `preset-demo-${selection.id}-${crypto.randomUUID()}`
   const { text, messages } = buildLiveCanvasHeroDemoDocument(selection, demo, id)
   const fs = await getWorkspaceFs()

@@ -8,6 +8,22 @@ five-role proposal contract introduced in PR #922, consumed through the current
 accepted Canvas revision in `docs/runtime-readiness-contract.md`. There is no separate LC
 server, provider proxy, importer, parser, graph store, renderer or runtime package.
 
+## Codebase Demo
+
+At `/81rv10/`, **Demo** reads the repository URL from
+[`demo.md`](workspace-seeds/demo.md) and invokes the native Import URL pipeline.
+For `anthropics/commerce-agents`, it parses the acquired codebase and opens
+**2D Renderer: D3** with original source nodes and explained edges. Source-directory
+clusters use the existing canvas group selection. The full parsed snapshot stays
+queryable; the bounded D3 projection reports its own node and edge counts.
+
+The local `notes/demos/launch-copilot/<session>/demo.md` records the acquired commit,
+parser identity, snapshot, prompt and import conversation. Its native projection
+reference restores the same graph on reopening without another import. Chat uses
+that document's own history. The PRD–TAD–ADR–MVP–GTM planning examples remain
+hypotheses until the user selects real evidence and submits the outline prompt.
+No model call or proposal publication occurs on Demo.
+
 ## Use
 
 1. Keep the canonical Graph host running with its existing server-managed OpenAI
