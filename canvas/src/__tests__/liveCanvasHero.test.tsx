@@ -298,15 +298,15 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
   const flowGraphStateSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'useFlowCanvasGraphState.ts'), 'utf8')
   const flowZoomSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'applyZoomRequestNative.ts'), 'utf8')
   for (const contract of [
-    'data-kg-live-canvas-hero-background={embedUrl ? \'shared-embed\' : \'prompt-preset\'}',
-    "aria-label={embedUrl ? 'Shared interactive canvas background' : 'Prompt preset demo'}",
+    'data-kg-live-canvas-hero-background={backgroundUrl ? \'shared-embed\' : \'prompt-preset\'}',
+    "aria-label={backgroundUrl ? 'Shared interactive canvas background' : 'Prompt preset demo'}",
     'data-kg-live-canvas-hero-selected-embed="true"',
-    'src={embedUrl}',
+    'src={backgroundUrl}',
     'deriveLiveCanvasHeroCommandRouteGraph(safeGraphData) || safeGraphData',
     '<LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource}',
     'data-kg-live-canvas-hero-enter="true"',
-    'openFloatingPanelChatWithSeedWhenReady({ text: query, mode: \'replace\', delivery: \'queuedHandoff\', submit: false })',
-    'Open prompt preset in Chat',
+    'await activate({ id: selectedPromptPresetId, prompt: query })',
+    'Open demo.md and its example conversation',
     'authoredOwnershipReady && !isRootAlias',
     'resolveWorkspaceReadmeTextLiveCanvasHeroSource',
     'WORKSPACE_README_PUBLIC_SOURCE_PATH',
