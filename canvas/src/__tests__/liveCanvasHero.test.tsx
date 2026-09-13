@@ -260,7 +260,7 @@ export function testLiveCanvasHeroVisibilityFailsClosedOutsideHydratedApex(): vo
   if (heroHookSource.includes('isRootAlias: isRootAlias || selectedEmbedSource != null')) {
     throw new Error('expected a selected iframe to remain a Home background choice, not promote /agentic-graph into Home')
   }
-  if (!heroHookSource.includes('isRootAlias,\n    // The apex root owns Home')) {
+  if (!heroHookSource.includes('isRootAlias,\n    // Home owns its source-backed preset preview')) {
     throw new Error('expected Live Canvas Hero visibility to remain apex-route-owned')
   }
   if (!heroHookSource.includes('dismissed: landingExited || (!isRootAlias && defaultSeedContentChanged)')) {
@@ -289,6 +289,7 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
   }
 
   const viewportSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx'), 'utf8')
+  const stageSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'agentic-os', 'LiveCanvasHeroPresetStage.tsx'), 'utf8')
   const canvasPageSource = readFileSync(resolve(process.cwd(), 'src', 'pages', 'Canvas.tsx'), 'utf8')
   const heroSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'LiveCanvasHero.tsx'), 'utf8')
   const heroHookSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'canvas', 'use-agentic-graph-live-canvas-hero.ts'), 'utf8')
@@ -297,35 +298,35 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
   const flowGraphStateSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'useFlowCanvasGraphState.ts'), 'utf8')
   const flowZoomSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'applyZoomRequestNative.ts'), 'utf8')
   for (const contract of [
-    'data-kg-live-canvas-hero-background={liveCanvasHeroSource.embedUrl ? \'shared-embed\' : \'unavailable\'}',
-    "aria-label={liveCanvasHeroSource.embedUrl ? 'Shared interactive canvas background' : 'Home background unavailable'}",
+    'data-kg-live-canvas-hero-background={embedUrl ? \'shared-embed\' : \'prompt-preset\'}',
+    "aria-label={embedUrl ? 'Shared interactive canvas background' : 'Prompt preset demo'}",
     'data-kg-live-canvas-hero-selected-embed="true"',
-    'src={liveCanvasHeroSource.embedUrl}',
+    'src={embedUrl}',
     'deriveLiveCanvasHeroCommandRouteGraph(safeGraphData) || safeGraphData',
-    '<LiveCanvasHeroLazy source={liveCanvasHeroSource}',
+    '<LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource}',
     'data-kg-live-canvas-hero-enter="true"',
-    'onClick={props.onEnter}',
-    'Enter agentic-graph',
+    'openFloatingPanelChatWithSeedWhenReady({ text: query, mode: \'replace\', delivery: \'queuedHandoff\', submit: false })',
+    'Open prompt preset in Chat',
     'authoredOwnershipReady && !isRootAlias',
     'resolveWorkspaceReadmeTextLiveCanvasHeroSource',
     'WORKSPACE_README_PUBLIC_SOURCE_PATH',
-    '|| (isRootAlias ? CANONICAL_STARTUP_DOCUMENT_PATH : source?.sourcePath)',
+    '|| (isRootAlias ? PROMPT_PRESET_CATALOG_WORKSPACE_PATH : source?.sourcePath)',
     'sourceFilesBootstrapReady: isRootAlias || args.sourceFilesBootstrapReady',
     'workspaceDocumentSwitchPending: isRootAlias ? false : args.workspaceDocumentSwitchPending',
     'hasSearchParams,\n    isEmbeddedPreview:',
-    'data-kg-live-canvas-hero-viewport-owner="true"',
-    '&& !liveCanvasHeroVisible\n    && workspaceEditorOverlayOpen',
+    'data-kg-live-canvas-hero-viewport-owner={props.visible',
+    '&& !homePreviewVisible\n    && workspaceEditorOverlayOpen',
     'resolveThreeCanvasSurfaceLifecycle({',
-    'geospatialOverlayOwnsViewport, liveCanvasHeroVisible, canvasRenderMode,',
-    'xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible',
+    'geospatialOverlayOwnsViewport, liveCanvasHeroVisible: homePreviewVisible, canvasRenderMode,',
+    'xrPhysicsRunReadyDemo && !gameplayOverlayActive && !homePreviewVisible',
   ]) {
-    if (!`${viewportSource}\n${heroSource}\n${heroHookSource}`.includes(contract)) throw new Error(`expected interactive workspace canvas contract ${contract}`)
+    if (!`${viewportSource}\n${heroSource}\n${heroHookSource}\n${stageSource}`.includes(contract)) throw new Error(`expected interactive workspace canvas contract ${contract}`)
   }
   if (viewportSource.includes('graphDataOverride={liveCanvasHeroSource.canvasGraphData}')
     || viewportSource.includes('flowWidgetStateGraphKeyOverride={`live-hero:${liveCanvasHeroSource.sourceLayerHash}`}')) {
     throw new Error('expected Home to avoid mounting a default workspace FlowCanvas background')
   }
-  if (!viewportSource.includes('<iframe') || !viewportSource.includes('sandbox="allow-forms allow-popups allow-same-origin allow-scripts"')) {
+  if (!stageSource.includes('<iframe') || !stageSource.includes('sandbox="allow-forms allow-popups allow-same-origin allow-scripts"')) {
     throw new Error('expected Explorer Share canvas embed selection to mount the resolved interactive canvas in the hero background')
   }
   for (const shellIsolationContract of [
@@ -339,14 +340,14 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
       throw new Error(`expected Live Canvas Hero to isolate page shell contract ${shellIsolationContract}`)
     }
   }
-  if (!viewportSource.includes('!liveCanvasHeroVisible && MARKDOWN_METRICS_DEV_ENABLED')
+  if (!viewportSource.includes('!homePreviewVisible && MARKDOWN_METRICS_DEV_ENABLED')
     || !viewportSource.includes('!liveCanvasHeroVisible && paywallOverlayActive')) {
     throw new Error('expected Live Canvas Hero ownership to suppress ancillary viewport overlays')
   }
-  if (!heroHookSource.includes('|| (isRootAlias ? CANONICAL_STARTUP_DOCUMENT_PATH : source?.sourcePath)')
+  if (!heroHookSource.includes('|| (isRootAlias ? PROMPT_PRESET_CATALOG_WORKSPACE_PATH : source?.sourcePath)')
     || !heroHookSource.includes('selectedEmbedSource?.embedUrl')
-    || !heroHookSource.includes('resolveCanonicalStartupCanvasEmbedRuntimeUrl()')) {
-    throw new Error('expected Home to resolve either the selected embed or the canonical Share canvas embed URL')
+    || heroHookSource.includes('resolveCanonicalStartupCanvasEmbedRuntimeUrl()')) {
+    throw new Error('expected Home to use the catalog and reserve embeds for explicit imports')
   }
   if (!heroHookSource.includes('readPersistedLiveCanvasHeroSourceSelection')) {
     throw new Error('expected Home to restore an explicit Share canvas embed selection for the current session')

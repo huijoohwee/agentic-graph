@@ -20,10 +20,7 @@ import {
 } from './liveCanvasHeroSourceSelection'
 import { resolveLiveCanvasHeroEmbedUrl } from './liveCanvasHeroEmbed'
 import { deriveLiveCanvasHeroCommandRouteGraph } from './liveCanvasHeroProjection'
-import {
-  CANONICAL_STARTUP_DOCUMENT_PATH,
-  resolveCanonicalStartupCanvasEmbedRuntimeUrl,
-} from './canvasEmbedPresets'
+import { PROMPT_PRESET_CATALOG_WORKSPACE_PATH } from '@/features/chat/promptPresetCatalog'
 
 export type LiveCanvasHeroWorkspaceSourceState = {
   defaultSeedOnly: boolean
@@ -263,15 +260,15 @@ export function useAgenticGraphLiveCanvasHero(args: {
   const effectiveLiveCanvasHeroSource = React.useMemo(() => {
     const source = liveCanvasHeroSource || rootAliasFallbackSource
     const sourcePath = selectedEmbedSource?.sourcePath
-      || (isRootAlias ? CANONICAL_STARTUP_DOCUMENT_PATH : source?.sourcePath)
+      || (isRootAlias ? PROMPT_PRESET_CATALOG_WORKSPACE_PATH : source?.sourcePath)
       || ''
     const embedUrl = selectedEmbedSource?.embedUrl
-      || (isRootAlias ? resolveCanonicalStartupCanvasEmbedRuntimeUrl() : resolveLiveCanvasHeroEmbedUrl({
+      || (isRootAlias ? undefined : resolveLiveCanvasHeroEmbedUrl({
         sourcePath,
         baseUrl: import.meta.env.BASE_URL,
       }))
       || undefined
-    if (!selectedEmbedSource && !embedUrl) return source
+    if (!isRootAlias && !selectedEmbedSource && !embedUrl) return source
     return {
       ...(source || {
         sourceFileId: `embed:${sourcePath}`,
@@ -303,8 +300,7 @@ export function useAgenticGraphLiveCanvasHero(args: {
   )
   const visible = shouldShowLiveCanvasHero({
     isRootAlias,
-    // The apex root owns Home from the first React render. Its canonical Share
-    // Canvas Embed URL is source-addressable before workspace hydration.
+    // Home owns its source-backed preset preview before workspace hydration.
     sourceFilesBootstrapReady: isRootAlias || args.sourceFilesBootstrapReady,
     liveWorkspaceSourceReady: effectiveLiveCanvasHeroSource != null,
     dismissed: landingExited || (!isRootAlias && defaultSeedContentChanged),

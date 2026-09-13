@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowRight, Play, Upload } from 'lucide-react'
+import { ArrowRight, Upload } from 'lucide-react'
 import {
   buildAgenticOsInvocationChipAttrs,
   buildAgenticOsInvocationChipTitle,
@@ -17,12 +17,12 @@ import {
 } from '@/features/canvas/canvasEmbedImportContract'
 import { CanvasEmbedImportPanel } from '@/features/canvas/CanvasEmbedImportPanel'
 import { selectLiveCanvasHeroSource } from '@/features/canvas/liveCanvasHeroSourceSelection'
-import { submitToEmbeddedCanvasChat } from '@/features/canvas/embeddedCanvasChatCommand'
+import { openFloatingPanelChatWithSeedWhenReady } from '@/features/chat/floatingPanelChat/floatingPanelChatOpenSeed'
+import type { LiveCanvasHeroPresetSelection } from '@/features/agentic-os/liveCanvasHeroPresetDemo'
 import type { LiveCanvasHeroSource } from '@/features/canvas/use-agentic-graph-live-canvas-hero'
 import type { SourceFile } from '@/hooks/store/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { normalizeInvocationTokenSpacing } from '@/lib/markdown/invocationTokens'
-import { resolveLiveCanvasHeroEnterHref } from '@/lib/routing/basePath'
 import {
   GENERATION_KIND_INVOCATIONS,
   GENERATION_PROVIDER_INVOCATIONS,
@@ -44,6 +44,7 @@ import type { PromptPresetSelectionRuntime } from '@/features/chat/promptPresetS
 
 export type LiveCanvasHeroProps = {
   onEnter?: () => void
+  onPresetChange?: (selection: LiveCanvasHeroPresetSelection) => void
   sourceFiles?: readonly SourceFile[]
 }
 
@@ -83,6 +84,9 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
   } = useLiveCanvasHeroPromptPreset(model.defaultQuery, props.promptPresetsRuntime)
   const [errorText, setErrorText] = React.useState('')
   const [importPanelOpen, setImportPanelOpen] = React.useState(false)
+  React.useEffect(() => {
+    props.onPresetChange?.({ id: selectedPromptPresetId, prompt: draft })
+  }, [draft, selectedPromptPresetId, props.onPresetChange])
   const invocation = React.useMemo(() => parseGenerationInvocation(draft), [draft])
   const selectedKinds = invocation?.kinds || []
   const promptParameters = React.useMemo(
@@ -103,15 +107,16 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const query = normalizeInvocationTokenSpacing(draft.trim())
-    if (!query) {
-      setErrorText('Enter an agent-ready query before running the canvas.')
+    if (presetLoading || !query) {
+      setErrorText('Choose or enter a prompt before opening Chat.')
       return
     }
     setErrorText('')
-    if (!submitToEmbeddedCanvasChat(query)) {
+    if (!openFloatingPanelChatWithSeedWhenReady({ text: query, mode: 'replace', delivery: 'queuedHandoff', submit: false })) {
       setErrorText('The canvas Chat surface is not ready. Keep the query here and try again.')
       return
     }
+    props.onEnter?.()
   }
 
   return (
@@ -242,25 +247,15 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
           </section>
 
           <section className="mt-auto flex shrink-0 flex-wrap items-center gap-2">
-            <a
-              href={resolveLiveCanvasHeroEnterHref(import.meta.env?.BASE_URL)}
-              onClick={props.onEnter}
-              className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--kg-canvas-accent)] bg-[var(--kg-canvas-accent)] p-2.5 text-slate-950 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)]"
-              aria-label="Enter agentic-graph"
-              title="Enter agentic-graph"
-              data-kg-live-canvas-hero-enter="true"
-            >
-              <ArrowRight className="h-4 w-4" aria-label="Enter agentic-graph icon" data-kg-live-canvas-hero-action-icon="enter" />
-            </a>
             <button
               type="submit"
-              className={heroActionControlClassName}
-              aria-label="Run all"
-              title="Run all"
-              data-kg-live-canvas-hero-start="true"
               disabled={presetLoading || !draft.trim()}
+              className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--kg-canvas-accent)] bg-[var(--kg-canvas-accent)] p-2.5 text-slate-950 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)]"
+              aria-label="Open prompt preset in Chat"
+              title="Open prompt preset in Chat"
+              data-kg-live-canvas-hero-enter="true"
             >
-              <Play className="h-4 w-4" aria-label="Run icon" data-kg-live-canvas-hero-action-icon="run" />
+              <ArrowRight className="h-4 w-4" aria-label="Open Chat icon" data-kg-live-canvas-hero-action-icon="enter" />
             </button>
             <button
               type="button"
@@ -272,7 +267,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
             >
               <Upload className="h-4 w-4" aria-label="Import canvas embed icon" data-kg-live-canvas-hero-action-icon="import" />
             </button>
-            <kbd className="rounded-md border border-[color:var(--kg-border)] px-2 py-1 font-mono text-[10px] text-[var(--kg-text-secondary)]" title="Start locally shortcut">Ctrl/⌘↵</kbd>
+            <kbd className="rounded-md border border-[color:var(--kg-border)] px-2 py-1 font-mono text-[10px] text-[var(--kg-text-secondary)]" title="Open prompt preset in Chat shortcut">Ctrl/⌘↵</kbd>
           </section>
           {errorText || presetError ? <p className="mt-2 text-xs text-red-500" role="alert">{errorText || presetError}</p> : null}
         </form>

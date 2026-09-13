@@ -9,7 +9,9 @@ import {
   LIVE_CANVAS_HERO_SOURCE_SELECT_EVENT,
   readLiveCanvasHeroSourceSelection,
 } from '@/features/canvas/liveCanvasHeroSourceSelection'
-import { installEmbeddedCanvasChatCommandBridge } from '@/features/canvas/embeddedCanvasChatCommand'
+import { installFloatingPanelBridge } from '@/features/toolbar/floatingPanelBridge'
+import { consumeFloatingPanelChatInputHandoff } from '@/features/chat/floatingPanelChat/floatingPanelChatInputHandoff'
+import { buildLiveCanvasHeroPresetDemo } from '@/features/agentic-os/liveCanvasHeroPresetDemo'
 import {
   PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE,
   PROMPT_PRESET_CATALOG_WORKSPACE_PATH,
@@ -41,7 +43,11 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
     const pendingPrompt = new Promise<PromptPresetInvocationResult>(resolve => { resolvePrompt = resolve })
     const requested: string[] = []
     const submissions: string[] = []
-    const cleanup = installEmbeddedCanvasChatCommandBridge({ submit: query => { submissions.push(query); return true } })
+    const cleanup = installFloatingPanelBridge({ openPropsPanel: () => {}, openRendererPanel: () => {}, openFloatingPanel: detail => {
+      const handoff = consumeFloatingPanelChatInputHandoff()
+      if (detail?.tab !== 'chat' || !handoff || handoff.submit) throw new Error('Entry must open Chat with an unsubmitted draft')
+      submissions.push(handoff.text)
+    } })
     const runtime = {
       loadCatalog: async () => ({ ok: true as const, presets, sourcePath: PROMPT_PRESET_CATALOG_WORKSPACE_PATH }),
       loadPrompt: async (id: string) => {
@@ -54,12 +60,12 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
         { window: dom.window as unknown as Window, frames: 3 })
       const selector = container.querySelector('select') as HTMLSelectElement
       const proxy = container.querySelector('[data-kg-card-inline-viewer-edit-command-proxy="1"]') as HTMLTextAreaElement
-      const run = container.querySelector('[data-kg-live-canvas-hero-start="true"]') as HTMLButtonElement
+      const run = container.querySelector('[data-kg-live-canvas-hero-enter="true"]') as HTMLButtonElement
       if (selector.value !== 'launch-copilot' || proxy.value || !run.disabled || requested.join(',') !== 'launch-copilot') {
         throw new Error('81rv10 must initially select Launch Copilot and wait for its shared prompt without a video fallback')
       }
-      if (container.querySelector('[data-kg-live-canvas-hero-enter]')?.getAttribute('href') !== '/agentic-graph/') {
-        throw new Error('81rv10 Enter must navigate to the workspace')
+      if (run.tagName !== 'BUTTON' || run.hasAttribute('href') || container.querySelector('[aria-label="Run all"]')) {
+        throw new Error('81rv10 must have one in-place Chat action and no Run all')
       }
       await act(async () => {
         if (scenario === 'edited') {
@@ -85,7 +91,7 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
       }
       if (scenario === 'ready') {
         await act(async () => { run.click(); await waitForFrames(dom.window as unknown as Window, 1) })
-        if (Number(submissions.length) !== 1 || submissions[0] !== launchPrompt) throw new Error('Run must submit the loaded Launch Copilot prompt once')
+        if (Number(submissions.length) !== 1 || submissions[0] !== launchPrompt) throw new Error('Entry must seed the loaded Launch Copilot prompt once')
       }
     } finally {
       cleanup()
@@ -96,18 +102,21 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
   }
 }
 
-export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Promise<void> {
+export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<void> {
   const { dom, restore } = initJsdomHarness()
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container as unknown as HTMLElement)
   const submittedQueries: string[] = []
-  const cleanupChatBridge = installEmbeddedCanvasChatCommandBridge({
-    submit: query => {
-      submittedQueries.push(query)
-      return true
+  const cleanupChatBridge = installFloatingPanelBridge({
+    openPropsPanel: () => {}, openRendererPanel: () => {},
+    openFloatingPanel: detail => {
+      const handoff = consumeFloatingPanelChatInputHandoff()
+      if (detail?.tab !== 'chat' || !handoff || handoff.submit) throw new Error('Entry must open Chat with a draft, never execute')
+      submittedQueries.push(handoff.text)
     },
   })
+  let demoSelection = { id: '', prompt: '' }
   let importedSelection: ReturnType<typeof readLiveCanvasHeroSourceSelection> = null
   const importListener = (event: Event) => { importedSelection = readLiveCanvasHeroSourceSelection(event) }
   dom.window.addEventListener(LIVE_CANVAS_HERO_SOURCE_SELECT_EVENT, importListener as EventListener)
@@ -165,6 +174,7 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
       <LiveCanvasHeroEditorial
         model={model}
         onEnter={() => { completedCount += 1 }}
+        onPresetChange={selection => { demoSelection = selection }}
         promptPresetsRuntime={promptPresetsRuntime}
       />
     ), { window: dom.window as unknown as Window, frames: 4 })
@@ -242,6 +252,9 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
       Simulate.change(presetSelect)
       await waitForFrames(dom.window as unknown as Window, 3)
     })
+    const demo = buildLiveCanvasHeroPresetDemo(demoSelection)
+    if (demo.metadata?.presetId !== 'investment-research-agent' || demo.nodes[0]?.properties?.output !== investmentPrompt
+      || demo.nodes.some(node => String(node.properties?.output).includes('/video-agent'))) throw new Error('The preview must follow the selected catalog prompt')
     if (commandProxy.value !== investmentPrompt || submittedQueries.length !== 0) {
       throw new Error(`expected preset selection to load without submitting, got ${JSON.stringify({ value: commandProxy.value, submittedQueries })}`)
     }
@@ -285,14 +298,14 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
     if (commandProxy.value !== expectedOpenAiQuery) {
       throw new Error(`expected raw provider replacement, got ${JSON.stringify(commandProxy.value)}`)
     }
-    const startButton = container.querySelector('[data-kg-live-canvas-hero-start="true"]') as HTMLButtonElement | null
-    if (!startButton) throw new Error('expected explicit Run action')
+    const startButton = container.querySelector('[data-kg-live-canvas-hero-enter="true"]') as HTMLButtonElement | null
+    if (!startButton || container.querySelector('[aria-label="Run all"]')) throw new Error('expected one Chat entry action')
     if (container.querySelector('[data-kg-live-canvas-hero-share-embed="true"]') || container.textContent?.includes('Share canvas embed')) {
       throw new Error('expected Home to omit the Share canvas embed action entirely')
     }
     const actionIcons = Array.from(container.querySelectorAll('[data-kg-live-canvas-hero-action-icon]')) as HTMLElement[],
       iconNames = actionIcons.map(icon => icon.getAttribute('data-kg-live-canvas-hero-action-icon')).join(',')
-    if (iconNames !== 'enter,run,import' || actionIcons.some(icon => icon.getAttribute('aria-hidden') === 'true')) {
+    if (iconNames !== 'enter,import' || actionIcons.some(icon => icon.getAttribute('aria-hidden') === 'true')) {
       throw new Error(`expected visible, queryable Home action icons, got ${iconNames}`)
     }
     const importButton = container.querySelector('[data-kg-live-canvas-hero-import-embed="true"]') as HTMLButtonElement | null
@@ -332,8 +345,8 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
       startButton.click()
       await waitForFrames(dom.window as unknown as Window, 1)
     })
-    if (Number(submittedQueries.length) !== 1 || submittedQueries[0] !== commandProxy.value || Number(completedCount) !== 0) {
-      throw new Error(`expected the Hero action to submit the exact query to embedded Chat once, got ${JSON.stringify({ submittedQueries, completedCount })}`)
+    if (Number(submittedQueries.length) !== 1 || submittedQueries[0] !== commandProxy.value || Number(completedCount) !== 1) {
+      throw new Error(`expected the Hero action to seed Chat once and dismiss Home, got ${JSON.stringify({ submittedQueries, completedCount })}`)
     }
   } finally {
     cleanupChatBridge()
@@ -341,5 +354,23 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
     container.remove()
     restore()
+  }
+}
+
+export function testLiveCanvasHeroPresetDemoReflectsDraft(): void {
+  for (const selection of [
+    { id: 'launch-copilot', prompt: '/launch-copilot outline reference\nInvestigate the selected checkout.' },
+    { id: 'video-agent', prompt: '/video-agent @script @video #spec.low Create a film.' },
+    { id: 'edited', prompt: 'My edited requirement without invocation tokens.' },
+    { id: 'empty', prompt: '' },
+  ]) {
+    const before = JSON.stringify(selection)
+    const graph = buildLiveCanvasHeroPresetDemo(selection)
+    if (JSON.stringify(selection) !== before || graph.metadata?.presetId !== selection.id || graph.metadata?.transient !== true) throw new Error('Demo must preserve its source and be transient')
+    if (selection.prompt && graph.nodes[0]?.properties.output !== selection.prompt) throw new Error('Demo must show the exact current draft')
+    if (!selection.prompt && graph.nodes.length) throw new Error('An empty draft must not fall back to another preset')
+    const ids = new Set(graph.nodes.map(node => node.id))
+    if (graph.edges.some(edge => !ids.has(edge.source) || !ids.has(edge.target))) throw new Error('Demo edges must stay within the selected prompt')
+    if (graph.nodes.some(node => node.properties.command || !node.properties.freezeConnectedOutput)) throw new Error('Preview nodes must not expose executable commands')
   }
 }

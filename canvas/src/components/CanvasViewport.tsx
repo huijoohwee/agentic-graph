@@ -26,7 +26,6 @@ import { resolvePreferredEnabledComposedSourceFile } from '@/features/source-fil
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import { isStrybldrStoryboardGraphData } from '@/features/strybldr/strybldrStoryboard'
 import { useAgenticGraphLiveCanvasHero } from '@/features/canvas/use-agentic-graph-live-canvas-hero'
-import { AGENTIC_OS_XR_IFRAME_ALLOW } from '@/features/canvas/canvasEmbedIframeMarkup'
 import { shouldDocumentSwitchOwnCanvasViewport } from '@/features/canvas/liveCanvasHeroVisibility'
 import { deriveLiveCanvasHeroCommandRouteGraph } from '@/features/canvas/liveCanvasHeroProjection'
 import { useSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
@@ -47,15 +46,9 @@ import {
   MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
 } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanticMediaSurface'
-import {
-  createEmbeddedCanvasChatSubmitMessage,
-  deliverEmbeddedCanvasChatSubmit,
-  isEmbeddedCanvasChatReadyMessage,
-  installEmbeddedCanvasChatCommandBridge,
-} from '@/features/canvas/embeddedCanvasChatCommand'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
-const LiveCanvasHeroLazy = React.lazy(() => import('@/components/LiveCanvasHero').then(mod => ({ default: mod.LiveCanvasHero })))
+const LiveCanvasHeroPresetStageLazy = React.lazy(() => import('@/features/agentic-os/LiveCanvasHeroPresetStage').then(mod => ({ default: mod.LiveCanvasHeroPresetStage })))
 const SharedGraphCanvasLazy = React.lazy(() => import('@/components/GraphCanvas'))
 const DashboardCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/DashboardCanvas'), { retries: 2, retryDelayMs: 50 }))
 const GalleryCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/GalleryCanvas'), { retries: 2, retryDelayMs: 50 }))
@@ -249,46 +242,12 @@ export function CanvasViewport(props: CanvasViewportProps) {
     floatingPanelOpen,
     alternateCanvasSurfaceActive: geospatialCompositionEnabled || canvasRenderMode !== '2d',
   })
+  const [presetDemoVisible, setPresetDemoVisible] = React.useState(false)
+  const homePreviewVisible = liveCanvasHeroVisible || presetDemoVisible
   const documentSwitchOwnsViewport = shouldDocumentSwitchOwnCanvasViewport({
     documentSwitchBlocksCanvas,
     liveCanvasHeroVisible,
   })
-  const liveCanvasHeroEmbedRef = React.useRef<HTMLIFrameElement | null>(null)
-  const liveCanvasHeroEmbedReadyRef = React.useRef(false)
-  const pendingLiveCanvasHeroChatMessageRef = React.useRef<ReturnType<typeof createEmbeddedCanvasChatSubmitMessage>>(null)
-  React.useEffect(() => {
-    if (!liveCanvasHeroVisible || !liveCanvasHeroSource?.embedUrl) return
-    liveCanvasHeroEmbedReadyRef.current = false
-    pendingLiveCanvasHeroChatMessageRef.current = null
-    return installEmbeddedCanvasChatCommandBridge({
-      submit: text => {
-        const target = liveCanvasHeroEmbedRef.current?.contentWindow
-        const message = createEmbeddedCanvasChatSubmitMessage(text)
-        if (!target || !message) return false
-        if (!liveCanvasHeroEmbedReadyRef.current) {
-          pendingLiveCanvasHeroChatMessageRef.current = message
-          return true
-        }
-        return deliverEmbeddedCanvasChatSubmit(target, message, window.location.origin)
-      },
-    })
-  }, [liveCanvasHeroSource?.embedUrl, liveCanvasHeroVisible])
-  React.useEffect(() => {
-    if (!liveCanvasHeroVisible || !liveCanvasHeroSource?.embedUrl) return
-    const handleEmbeddedChatReady = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return
-      if (event.source !== liveCanvasHeroEmbedRef.current?.contentWindow) return
-      if (!isEmbeddedCanvasChatReadyMessage(event.data)) return
-      liveCanvasHeroEmbedReadyRef.current = true
-      const pendingMessage = pendingLiveCanvasHeroChatMessageRef.current
-      const target = liveCanvasHeroEmbedRef.current?.contentWindow
-      if (!pendingMessage || !target) return
-      pendingLiveCanvasHeroChatMessageRef.current = null
-      deliverEmbeddedCanvasChatSubmit(target, pendingMessage, window.location.origin)
-    }
-    window.addEventListener('message', handleEmbeddedChatReady)
-    return () => window.removeEventListener('message', handleEmbeddedChatReady)
-  }, [liveCanvasHeroSource?.embedUrl, liveCanvasHeroVisible])
   React.useEffect(() => {
     onLiveCanvasHeroVisibilityChange?.(liveCanvasHeroVisible)
     return () => onLiveCanvasHeroVisibilityChange?.(false)
@@ -308,7 +267,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const threeCanvasSurface = resolveThreeCanvasSurfaceLifecycle({
     sourceFilesBootstrapAdmitted: threeCanvasSourceAdmissionRef.current, sourceFilesBootstrapReady,
     rendererPreviouslyMounted: threeCanvasSurfaceMountedRef.current,
-    geospatialOverlayOwnsViewport, liveCanvasHeroVisible, canvasRenderMode,
+    geospatialOverlayOwnsViewport, liveCanvasHeroVisible: homePreviewVisible, canvasRenderMode,
     heavyRuntimeIntentBlocked, activeSurface, documentSwitchOwnsViewport,
   })
   threeCanvasSurfaceMountedRef.current = threeCanvasSurface.mounted
@@ -321,7 +280,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   }, [heavyRuntimeIntentSurface])
   const minimapOverlayVisible = !documentSwitchOwnsViewport
     && !geospatialOverlayOwnsViewport
-    && !liveCanvasHeroVisible
+    && !homePreviewVisible
     && !liveCanvasHeroEmbedPreview
     && !heavyRuntimeIntentBlocked
     && !isNarrowViewport
@@ -333,7 +292,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const minimapOverlaySurface = activeSurface === '3d' ? '3d' : '2d'
   const bridgeOnlyWidgetDropActive = !documentSwitchOwnsViewport
     && !geospatialOverlayOwnsViewport
-    && !liveCanvasHeroVisible
+    && !homePreviewVisible
     && !liveCanvasHeroEmbedPreview
     && canvasRenderMode === '2d'
     && active2dSurface !== 'storyboard'
@@ -341,7 +300,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   useForbidBrowserZoomWheel(rootRef, true, { stopPropagation: false })
   const workspaceXrViewportInset = xrPhysicsRuntimeRunReadyDemo
     && !gameplayOverlayActive
-    && !liveCanvasHeroVisible
+    && !homePreviewVisible
     && workspaceEditorOverlayOpen
     && String(workspaceVisibleCanvasLeft || '').trim()
       ? String(workspaceVisibleCanvasLeft).trim()
@@ -362,7 +321,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
           width: `calc(100% - ${workspaceXrViewportInset})`,
         } : {}),
       }}
-      aria-label={sourceFilesBootstrap.phase === 'error'
+      aria-label={homePreviewVisible ? 'Prompt preset canvas' : sourceFilesBootstrap.phase === 'error'
         ? 'Canvas source initialization error'
         : citySimActive ? 'Deterministic City Simulation'
           : gameFpsActive ? 'Deterministic Game Mode'
@@ -375,36 +334,11 @@ export function CanvasViewport(props: CanvasViewportProps) {
                   : 'Canvas viewport'}
     >
       <React.Suspense fallback={null}>
-        {liveCanvasHeroVisible && liveCanvasHeroSource ? (
-          <section
-            className="absolute inset-0 z-[40]"
-            data-kg-live-canvas-hero-viewport-owner="true"
-          >
-            <section
-              className={`absolute inset-0 opacity-100 ${liveCanvasHeroSource.embedUrl ? 'pointer-events-auto' : 'pointer-events-none bg-[var(--kg-canvas-bg)]'}`}
-              aria-label={liveCanvasHeroSource.embedUrl ? 'Shared interactive canvas background' : 'Home background unavailable'}
-              data-kg-live-canvas-hero-background={liveCanvasHeroSource.embedUrl ? 'shared-embed' : 'unavailable'}
-              data-kg-live-canvas-hero-source={liveCanvasHeroSource.sourcePath}
-              data-kg-live-canvas-hero-source-graph-id={liveCanvasHeroSource.graphId || undefined}
-            >
-              {liveCanvasHeroSource.embedUrl ? (
-                <iframe
-                  ref={liveCanvasHeroEmbedRef}
-                  key={liveCanvasHeroSource.embedUrl}
-                  src={liveCanvasHeroSource.embedUrl}
-                  title={`Interactive canvas embed for ${liveCanvasHeroSource.sourcePath}`}
-                  className="absolute inset-0 h-full w-full border-0 bg-transparent"
-                  sandbox="allow-forms allow-popups allow-same-origin allow-scripts"
-                  allow={AGENTIC_OS_XR_IFRAME_ALLOW}
-                  allowFullScreen
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  data-kg-live-canvas-hero-selected-embed="true"
-                  data-kg-live-canvas-hero-embed-url={liveCanvasHeroSource.embedUrl}
-                />
-              ) : null}
-            </section>
-            <LiveCanvasHeroLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles} onEnter={dismissLiveCanvasHero} />
-          </section>
+        {(liveCanvasHeroVisible || presetDemoVisible) && liveCanvasHeroSource ? (
+          <LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles}
+            visible={liveCanvasHeroVisible} demoVisible={presetDemoVisible} chatOpen={floatingPanelOpen && floatingPanelView === 'chat'}
+            onCloseDemo={() => setPresetDemoVisible(false)}
+            onEnter={() => { setPresetDemoVisible(true); dismissLiveCanvasHero() }} />
         ) : null}
         {!documentSwitchOwnsViewport && !geospatialOverlayOwnsViewport && canvasRenderMode === '2d' && (
           <section className="absolute inset-0 z-[10]">
@@ -431,7 +365,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
                     />
                   )}
                 </section>
-            ) : !liveCanvasHeroVisible ? (
+            ) : !homePreviewVisible ? (
               <>
                 <section
                   className={`absolute inset-0 ${sharedGraphCanvasSurfaceActive ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
@@ -556,13 +490,13 @@ export function CanvasViewport(props: CanvasViewportProps) {
             </section>
           </section>
         ) : null}
-        {sourceFilesBootstrap.phase === 'error' && !liveCanvasHeroVisible
+        {sourceFilesBootstrap.phase === 'error' && !homePreviewVisible
           ? <CanvasSourceInitializationError error={sourceFilesBootstrap.error} />
           : null}
 
         {variant === 'workspace' ? (
           <>
-            {layout === 'full' && !documentSwitchOwnsViewport && !liveCanvasHeroVisible ? (
+            {layout === 'full' && !documentSwitchOwnsViewport && !homePreviewVisible ? (
               <React.Suspense fallback={null}>
                 <LaunchSpotlightLazy />
               </React.Suspense>
@@ -579,7 +513,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
                 <MinimapLazy />
               </aside>
             ) : null}
-            {timelineBottomPanelVisible && !liveCanvasHeroVisible ? (
+            {timelineBottomPanelVisible && !homePreviewVisible ? (
               <StrybldrTimelineBottomPanelLazy
                 active={strybldrTimelineBottomPanelVisible}
                 initialView={
@@ -604,7 +538,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
                 workspaceEditorOverlayOpen={workspaceEditorOverlayOpen}
               />
             ) : null}
-            {!documentSwitchOwnsViewport && !liveCanvasHeroVisible && MARKDOWN_METRICS_DEV_ENABLED ? <MarkdownMetricsDevOverlayLazy layout={layout} /> : null}
+            {!documentSwitchOwnsViewport && !homePreviewVisible && MARKDOWN_METRICS_DEV_ENABLED ? <MarkdownMetricsDevOverlayLazy layout={layout} /> : null}
             {!documentSwitchOwnsViewport && !liveCanvasHeroVisible && paywallOverlayActive ? <PaywallOverlayLazy portalTarget={rootRef.current} /> : null}
             {documentSwitchOwnsViewport ? (
               <section
@@ -620,7 +554,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
           </>
         ) : null}
       </React.Suspense>
-      {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible ? <XrNativeControllerDemoHud /> : null}
+      {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !homePreviewVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
       {flightSimHudVisible ? (
         <FlightSimHud />
