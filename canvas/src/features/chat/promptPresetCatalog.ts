@@ -145,6 +145,10 @@ const parsePreset = (value: unknown): PromptPreset | null => {
       || activation !== 'card-inline'
       || !isAgenticGraphProbeTreePromptPreset(prompt)
     ) return null
+  } else if (runtimeCommand === '/launch-copilot') {
+    if (id !== 'launch-copilot' || activation !== 'chat-agent'
+      || responseMode !== 'native-chat-response'
+      || !/^\/launch-copilot\s+outline\s+reference\s+\S[\s\S]*$/.test(prompt)) return null
   } else if (runtimeCommand === '/video-agent') {
     const invocation = parseGenerationInvocation(prompt)
     if (!invocation || !prompt.includes('@video-generation-demo-script') || activation !== 'source-backed-canvas') return null
