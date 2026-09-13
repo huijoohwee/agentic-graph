@@ -9,7 +9,7 @@ import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { upsertWorkspaceMarkdownSourceFile } from '@/features/source-files/upsertWorkspaceMarkdownSourceFile'
 import type { GraphData } from '@/lib/graph/types'
 import { isReadOnlyAgentGraphProjection } from './agentGraphProjectionPolicy'
-import { prepareAgentGraphCanvasView, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
+import { buildAgentGraphCanvasProjection, cloneAgentGraphNodeWithDirectory, prepareAgentGraphCanvasView, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 
@@ -54,6 +54,7 @@ function manifestCount(value: unknown): number {
 
 export function buildAgentGraphWorkspaceArtifactMarkdown(
   args: WorkspaceAgentGraphArtifactRequest,
+  options?: { projectionPath?: string },
 ): string {
   const { invocation, repositoryUrl, result } = args
   const counts = result.counts
@@ -61,7 +62,7 @@ export function buildAgentGraphWorkspaceArtifactMarkdown(
 title: "Codebase graph"
 document_type: "agent-graph-manifest"
 kgCanvasGraphApply: false
-source_remote: ${manifestYamlString(repositoryUrl)}
+${options?.projectionPath ? `source_projection: ${manifestYamlString(options.projectionPath)}\nkgCanvasRenderMode: 2d\nkgCanvas2dRenderer: d3\n` : ''}source_remote: ${manifestYamlString(repositoryUrl)}
 source_commit: ${manifestYamlString(result.acquisition?.commitSha || 'unavailable')}
 source_subpath: ${manifestYamlString(result.acquisition?.subpath || '')}
 graph_id: ${manifestYamlString(result.graphId)}
@@ -122,11 +123,12 @@ export async function materializeAgentGraphWorkspaceArtifact(
   const timestampMs = Number.isFinite(options?.timestampMs)
     ? Number(options?.timestampMs)
     : Date.now()
+  const projectionPath = await retainAgentGraphWorkspaceProjection(buildAgentGraphCanvasProjection(args.result))
   const path = await upsertWorkspaceMarkdownSourceFile({
     fs,
     parentPath: AGENT_GRAPH_WORKSPACE_ARTIFACT_DIRECTORY,
     name: buildAgentGraphWorkspaceArtifactFileName(timestampMs),
-    text: buildAgentGraphWorkspaceArtifactMarkdown(args),
+    text: buildAgentGraphWorkspaceArtifactMarkdown(args, { projectionPath }),
     source: { kind: 'local', originalName: null },
     sourcePersistence: 'sync',
   })
@@ -156,13 +158,18 @@ export async function retainAgentGraphWorkspaceProjection(graph: GraphData): Pro
   return target
 }
 
-export async function reopenAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<void> {
+export async function readAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<GraphData> {
   if (!target.startsWith(`${PROJECTION_CACHE_DIRECTORY}/`) || !/^[a-f0-9]{32}-[a-f0-9]{64}\.json$/.test(target.slice(PROJECTION_CACHE_DIRECTORY.length + 1))) throw new Error('Invalid retained source path')
   const text = await (await getWorkspaceFs()).readFileText(target)
   if (!text || new TextEncoder().encode(text).length > AGENT_GRAPH_CANVAS_MAX_BYTES) throw new Error('Retained source projection unavailable')
   const graph = JSON.parse(text) as GraphData
   const identity = graph.metadata?.agentGraphProjection as Record<string, unknown>
   if (!isReadOnlyAgentGraphProjection(graph) || identity.graphId !== expected.graphId || identity.snapshotDigest !== expected.snapshotDigest) throw new Error('Retained source identity mismatch')
+  return { ...graph, nodes: graph.nodes.map(cloneAgentGraphNodeWithDirectory) }
+}
+
+export async function reopenAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<void> {
+  const graph = await readAgentGraphWorkspaceProjection(target, expected)
   prepareAgentGraphCanvasView({ activateSource: true })
   useGraphStore.getState().setGraphData(graph)
 }

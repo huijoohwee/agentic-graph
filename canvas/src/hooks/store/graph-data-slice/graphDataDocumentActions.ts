@@ -18,6 +18,7 @@ import {
   waitForCanvasFrontmatterSurfaceTransition,
 } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { isStrybldrStoryboardMarkdown } from '@/features/strybldr/strybldrStoryboard'
+import { isWorkspaceDocumentCanvasGraphApplyDisabled } from '@/lib/markdown/workspaceDocumentCanvasApplyPolicy'
 import {
   createGraphActivationFitRequest,
   createGraphActivationTransformRequest,
@@ -273,6 +274,12 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           canonicalText,
         })
       : normalizedText
+    if (isWorkspaceDocumentCanvasGraphApplyDisabled(text)) {
+      get().setMarkdownDocument(name, text, { autoEnableFrontmatter: false, applyViewPreset: false })
+      if ('sourceUrl' in args) get().setMarkdownDocumentSourceUrl(args.sourceUrl ?? null)
+      const { restoreAgentGraphWorkspaceDocument } = await import('@/features/agent-graph/agentGraphWorkspaceDocument')
+      return restoreAgentGraphWorkspaceDocument(name, text)
+    }
     // A same-document publication can reapply the canonical Markdown after it
     // commits generated graph nodes. Keep the view-local Widget/Rich Media
     // identities in that case; the graph commit sanitizes identities whose
@@ -420,6 +427,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
       const nextName = String(request.name || '').trim()
       const nextText = String(request.text || '')
       if (!nextName || !nextText.trim()) return false
+      if (isWorkspaceDocumentCanvasGraphApplyDisabled(nextText)) return true
 
       const lower = nextName.toLowerCase()
       const isMarkdown = isMarkdownLikeFileName(lower)

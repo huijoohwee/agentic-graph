@@ -17,51 +17,46 @@ demos:
         text: "Source: docs/workspace-seeds/agentic-graph-physics-playground-demo.md. This demo reuses the canonical interactive scene and its native physics runtime."
   - id: launch-copilot
     title: Launch Copilot (81rv10)
+    repository: https://github.com/anthropics/commerce-agents
     reply: >-
-      This example uses [anthropics/commerce-agents](https://github.com/anthropics/commerce-agents)
-      as an inspection-only reference, reviewed at commit
-      fd4d59224ab96b43c6dc6888207c67b3bd5a24cf. It proposes a listing-review assistant
-      for a solo retailer using the merchant agent's read, stage, review and approve flow.
-      The shopping agent is a separate customer-facing flow; checkout hands off to the host.
-      Demo does not import the repository or generate a proposal. Use the Import URL
-      walkthrough below to work from your own acquired graph and source revision.
-      Buyer pain, willingness to pay and pilot results remain hypotheses; NEW marks proposed work.
-      CID: solo-retailer listing review / reduce correction effort / never invent product facts or bypass approval.
-      The example identifier commerce-listing-review is not an executable proposal ID.
-      RAO: solo merchant / review a staged correction / accurate listing.
-      SVO: merchant approves listing correction. The same chain connects all five documents.
+      Demo imports anthropics/commerce-agents through the native repository parser
+      and opens its knowledge graph in 2D Renderer: D3. Nodes retain source paths;
+      clusters group source directories; edges retain parser explanations.
+      The acquired commit, complete snapshot counts and bounded canvas counts
+      appear in the local demo.md and its matching Chat thread.
+      Select source evidence, then submit the Launch Copilot prompt to produce
+      PRD, TAD, ADR, MVP and GTM. The planning examples below are hypotheses.
     outputs:
-      - title: Import URL · commerce-agents
-        text: |-
-          1. Open Launch → Import URL, paste https://github.com/anthropics/commerce-agents and choose Import. The repository root URL selects the native Codebase graph importer. A connected Graph host is required; public sessions use the existing host pairing.
-          2. Wait for a complete acquisition. Inspect its source remote, commit and snapshot; this example was reviewed at fd4d59224ab96b43c6dc6888207c67b3bd5a24cf. A later import can differ. The Demo cards are examples, not selectable repository evidence.
-          3. Select real nodes or explained edges around merchant-agent/core/merchant_agent/backend.py, merchant-agent/core/merchant_agent/gates.py and examples/retail/api/mock_merchant.py in the imported graph.
-          4. In FloatingPanel Chat, submit: /launch-copilot outline reference Help a solo retailer review one incomplete product listing, ask for missing facts, stage a correction, approve it and verify the result. Ground PRD, TAD, ADR, MVP and GTM in the selected commerce-agents source; label the business assumptions and all proposed implementation NEW.
-          Outline creates five editable native documents without a model call. Use the returned CID to reopen or export those documents. Drafting with a model is a separate explicit Chat action. No import, generated files or live store changes are claimed by this example.
-      - title: PRD · Listing review
-        text: |-
-          Buyer hypothesis: a solo retailer loses time reviewing incomplete listings across a spreadsheet and a store dashboard. Value hypothesis: fewer review minutes per listing without adding unsupported product facts.
-          Smallest loop: read one listing → ask for missing facts → stage one correction → merchant reviews and approves → verify the resulting listing. NEW: adapt this loop to one retailer's systems; the reference is not an implementation owned by the retailer.
-          Reference: the [retail walkthrough](https://github.com/anthropics/commerce-agents/blob/fd4d59224ab96b43c6dc6888207c67b3bd5a24cf/examples/retail/README.md) demonstrates listing corrections and asks for missing material or coverage rather than inventing them. The demo companies and data are fictional.
-      - title: TAD · Backend and approval
-        text: |-
-          Reference: [MerchantBackend](https://github.com/anthropics/commerce-agents/blob/fd4d59224ab96b43c6dc6888207c67b3bd5a24cf/merchant-agent/core/merchant_agent/backend.py) defines get_listing, stage_listing_update, get_pending_changes and apply_change. Staging records a proposal; apply_change performs the backend write. [MockRetailMerchant](https://github.com/anthropics/commerce-agents/blob/fd4d59224ab96b43c6dc6888207c67b3bd5a24cf/examples/retail/api/mock_merchant.py) supplies the retail example backend.
-          Trace those symbols and their explained edges in the imported graph. NEW: implement the retailer's adapter, authenticated merchant session and result readback around the existing interface. Keep credentials server-side and preserve the host approval surface. These adaptations are proposed dependencies, not existing source edges or completed integrations.
-      - title: ADR · One merchant workflow
-        text: |-
-          Decision: begin with one listing correction in the retail merchant flow. Reuse the backend interface and staged-change boundary; defer shopping, campaigns and additional verticals until this loop is validated.
-          Reference: [merchant gates](https://github.com/anthropics/commerce-agents/blob/fd4d59224ab96b43c6dc6888207c67b3bd5a24cf/merchant-agent/core/merchant_agent/gates.py) and the [safety contract](https://github.com/anthropics/commerce-agents/blob/fd4d59224ab96b43c6dc6888207c67b3bd5a24cf/docs/safety.md) distinguish tool provenance, host approval and deployment-owned controls. Keep host approval enabled; a typed chat approval is not a substitute for the default approval card.
-          Tradeoff: a narrower pilot provides less automation but makes one review decision observable. NEW: document the retailer's authorization and field-validation rules before connecting a real store. Reference-role inspection does not prove ownership, payment support or production readiness.
-      - title: MVP · Verify the review loop
-        text: |-
-          NEW acceptance plan: use a test catalog with one incomplete listing. Read it, request the missing fact, stage the supplied correction and verify the catalog stays unchanged before approval. Approve through the host surface, read back the correction and confirm a rejected change stays unapplied. An unknown field must remain unknown rather than becoming generated product copy.
-          Record the acquired source commit, selected node IDs, explained edge references and actual test results alongside the five generated documents. Keep retailer adapter tasks in the separate NEW overlay. No passing test, provider receipt or live listing write is supplied by Demo.
-          Reference checks: [retail merchant backend tests](https://github.com/anthropics/commerce-agents/blob/fd4d59224ab96b43c6dc6888207c67b3bd5a24cf/examples/retail/api/tests/test_retail_merchant_backend.py).
-      - title: GTM · Retailer pilot
-        text: |-
-          NEW experiment: interview five solo retailers about their most recent listing correction, current workaround, time spent and cost of an inaccurate description. Invite three to review the same bounded workflow with their own test data.
-          Hypotheses to validate: reduce median review time by 30% against each retailer's baseline, introduce no unsupported product facts, and have two retailers agree to a paid pilot at a price discussed in the interviews. These numbers are proposed criteria, not observed outcomes or a pricing recommendation.
-          Keep commerce-listing-review as the example's shared CID. Attach interview notes and measured outcomes to the actual generated proposal's CID before expanding the workflow. The reference repository provides technical examples, not customer-demand or revenue evidence.
+      - title: PRD · Shopping pilot
+        text: >-
+          NEW hypothesis: a solo merchant needs product discovery and cart review
+          that reduce abandoned shopping sessions. Confirm the target buyer,
+          current workaround, willingness to pay and measurable value. Inspect
+          shopping-agent/core/shopping_agent/backend.py in the acquired graph.
+      - title: TAD · Host checkout boundary
+        text: >-
+          Inspect StorefrontBackend and checkout_handoff, their source paths and
+          explained edges. Declaration containment proves an interface relation;
+          it does not prove a completed checkout or payment. Keep retailer
+          adapters and host checkout integration in the separate NEW overlay.
+      - title: ADR · One bounded loop
+        text: >-
+          Proposed decision: product discovery → cart review → existing host
+          checkout. Compare alternatives against selected repository evidence;
+          defer merchant listing changes and additional verticals for this pilot.
+          The imported repository is a reference, not an owned implementation.
+      - title: MVP · Acceptance evidence
+        text: >-
+          NEW acceptance plan: use test products, review one cart and verify the
+          host handoff. Record actual results, selected source node IDs, explained
+          edge IDs, acquisition commit and snapshot digest. No passing test or
+          completed purchase is implied by parsing the repository.
+      - title: GTM · Paid pilot hypothesis
+        text: >-
+          Interview the target merchants about their last abandoned shopping
+          session, existing workaround and cost. Agree one measurable paid-pilot
+          acceptance criterion. Keep demand, pricing and conversion assumptions
+          explicitly unverified until customer evidence supports them.
   - id: video-agent
     title: Video Agent
     reply: "This example shows the planned outputs of a multilingual video package. Media generation still requires your script, configured provider and an explicit Run."
@@ -156,20 +151,26 @@ demos:
 
 # Catalog prompt preset demos
 
-This is the authored source for Home's example outputs and FloatingPanel Chat
-conversation. The active prompt comes from the shared catalog or the user's
-edited preset. Demo creates a local, selection-specific `demo.md` containing
-that prompt, the corresponding example reply and these same output cards.
+This is the Graph-owned source for Home's catalog previews and Demo behavior.
+The prompt comes from the shared Canvas OS catalog or the user's edited preset.
 
-Examples are illustrative, not provider-generated results or execution evidence.
-Demo makes no model call. The physics background reuses the canonical Physics
-Playground; other selections render the matching example output graph.
+Launch Copilot declares its Import URL above. Explicit **Demo** uses the existing
+repository acquisition and parser, opens **2D Renderer: D3**, and creates a local
+`notes/demos/launch-copilot/<session>/demo.md`. Its frontmatter identifies the
+acquired source commit, parser and snapshot, and references the retained native
+projection under `notes/codebase-graph/`. Opening that file restores the source
+graph with node, source-directory cluster and edge selection. Markdown content
+never substitutes for the parsed codebase. The canvas reports its bounded view
+separately from full snapshot counts; native queries use the full snapshot.
+The matching Chat thread records the actual import and the selected prompt.
+Submit that prompt after selecting evidence to create the five editable proposal
+documents through the existing Launch Copilot outline action. Demo makes no model
+call and does not claim generated proposals, payment or test execution.
 
-The 81rv10 Launch Copilot example uses `anthropics/commerce-agents` at the pinned
-revision cited in its reply and cards. Its Import URL walkthrough and five
-document examples are projected into the same local `demo.md`, background and
-Chat thread. Importing the URL is a separate explicit native action that acquires
-the current repository revision; generating a source-bound outline then uses
-the selected real nodes and explained edges. Recheck the acquired source before
-using this authored example as a reference. Existing local demo copies retain
-their original content; choose Demo again to create the updated example.
+A connected Graph host is required for acquisition. Public sessions use the
+existing host pairing described in [Launch Copilot](../launch-copilot.md).
+Import errors remain visible; there is no silent Markdown or example fallback.
+
+Other presets retain their authored example output cards and local demo
+conversations. Physics Playground retains the canonical interactive physics
+background. Merely selecting a catalog entry does not import or call a model.
