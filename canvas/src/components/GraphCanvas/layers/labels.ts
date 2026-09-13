@@ -70,6 +70,9 @@ export const createLabelsLayer = (args: {
     .append('text')
     .attr('class', 'node-label')
     .attr('data-node-id', (d: GraphNode) => String(d.id))
+    // A presentation-only rebuild may happen after the simulation has stopped.
+    .attr('x', (d: GraphNode) => Number.isFinite(d.x) ? d.x! : 0)
+    .attr('y', (d: GraphNode) => Number.isFinite(d.y) ? d.y! : 0)
     .attr('data-kg-word-cloud', (d: GraphNode) => (isWordCloudNode(d) ? '1' : '0'))
     .attr('font-size', (d: GraphNode) => getLabelFontSizeForNode(d))
     .attr('font-family', labelFontFamily)
