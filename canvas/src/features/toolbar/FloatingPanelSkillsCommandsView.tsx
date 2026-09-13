@@ -21,12 +21,19 @@ import { cn } from '@/lib/utils'
 import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
 import { ExaSearchSkillsCommandsProjection } from '@/features/integrations/ExaSearchSkillsCommandsProjection'
 import {
+  clearSkillsCommandsMcpTarget,
   executeSkillsCommandsMcpTarget,
   readSkillsCommandsMcpTarget,
   targetSkillsCommandsCommandInvocation,
   useSkillsCommandsMcpTarget,
 } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import type { AgenticOsInvocationConfirmation } from '@/features/agentic-os/agenticOsInvocationExecutor'
+import { defaultPromptPresetSelectionRuntime, loadPromptPresetForCommand, type PromptPresetSelectionRuntime } from '@/features/chat/promptPresetSelectionRuntime'
+import { openFloatingPanelChatWithSeedWhenReady } from '@/features/chat/floatingPanelChat/floatingPanelChatOpenSeed'
+
+const openCommandPrompt = (text: string) => openFloatingPanelChatWithSeedWhenReady({
+  text, mode: 'replace', delivery: 'queuedHandoff', submit: false,
+})
 
 const SKILLS_COMMANDS_PREFIX_FILTERS: Array<{ filter: SkillsCommandsPrefixFilter; label: string; Icon: typeof Slash }> = [
   { filter: 'slash', label: 'Slash commands', Icon: Slash },
@@ -95,10 +102,14 @@ const formatExecutionReceipt = (value: unknown): string => {
 
 type FloatingPanelSkillsCommandsViewProps = Readonly<{
   executeTarget?: typeof executeSkillsCommandsMcpTarget
+  promptRuntime?: PromptPresetSelectionRuntime
+  openPrompt?: typeof openCommandPrompt
 }>
 
 export function FloatingPanelSkillsCommandsView({
   executeTarget = executeSkillsCommandsMcpTarget,
+  promptRuntime = defaultPromptPresetSelectionRuntime,
+  openPrompt = openCommandPrompt,
 }: FloatingPanelSkillsCommandsViewProps = {}) {
   const panelTypography = usePanelTypography()
   const search = useFloatingPanelCatalogSearch()
@@ -106,6 +117,9 @@ export function FloatingPanelSkillsCommandsView({
   const [executionFeedback, setExecutionFeedback] = React.useState<InvocationExecutionFeedback>(EMPTY_EXECUTION_FEEDBACK)
   const [structuredInputText, setStructuredInputText] = React.useState('{}')
   const executionInFlight = React.useRef(false)
+  const selectionEpoch = React.useRef(0)
+  const [selectionError, setSelectionError] = React.useState('')
+  React.useEffect(() => () => { selectionEpoch.current += 1 }, [])
   const selectionChangedDuringExecution = React.useRef(false)
   const retainTerminalAcrossSelection = React.useRef(false)
   const targetingMcpInvocation = mcpTarget.status !== 'idle'
@@ -128,13 +142,29 @@ export function FloatingPanelSkillsCommandsView({
     setExecutionFeedback(EMPTY_EXECUTION_FEEDBACK)
     setStructuredInputText('{}')
   }, [mcpTarget.resolution])
-  const selectCommand = React.useCallback((entry: { token: string }) => {
+  const selectCommand = React.useCallback(async (entry: { token: string; mcpTool?: string; mcpTools?: readonly string[] }) => {
     if (executionInFlight.current) return Promise.resolve(undefined)
+    const epoch = ++selectionEpoch.current
+    setSelectionError('')
+    clearSkillsCommandsMcpTarget()
     retainTerminalAcrossSelection.current = false
     setExecutionFeedback(EMPTY_EXECUTION_FEEDBACK)
     setStructuredInputText('{}')
-    return targetSkillsCommandsCommandInvocation(entry.token).catch(() => undefined)
-  }, [])
+    try {
+      if (!entry.mcpTool && !entry.mcpTools?.length) {
+        const preset = await loadPromptPresetForCommand(entry.token, promptRuntime)
+        if (epoch !== selectionEpoch.current) return
+        if (preset) {
+          if ('error' in preset) throw new Error(preset.error)
+          if (!openPrompt(preset.prompt)) throw new Error('Unable to open the selected prompt in Chat.')
+          return
+        }
+      }
+      return await targetSkillsCommandsCommandInvocation(entry.token).catch(() => undefined)
+    } catch (error) {
+      if (epoch === selectionEpoch.current) setSelectionError(error instanceof Error ? error.message : 'Prompt selection failed.')
+    }
+  }, [openPrompt, promptRuntime])
   const executeSelectedCommand = React.useCallback(async (confirmationChallenge?: string) => {
     if (executionInFlight.current) return
     if (mcpTarget.status !== 'ready' || !mcpTarget.resolution) return
@@ -351,6 +381,7 @@ export function FloatingPanelSkillsCommandsView({
         ) : null}
       />
       <section className={floatingPanelCatalogBodyClassName()} tabIndex={-1} data-kg-floating-panel-catalog-body="skills-commands" data-kg-floating-panel-skills-commands-list="1" aria-label="Skills & Commands catalog">
+        {selectionError ? <p role="alert">{selectionError}</p> : null}
         {mcpTarget.status === 'loading' ? (
           <p role="status" data-kg-floating-panel-skills-commands-mcp-feedback="loading">
             Resolving source-backed invocation…

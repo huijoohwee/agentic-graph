@@ -86,6 +86,7 @@ export async function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes(
     if (slashCommand === '/image.to-threejs') valid = isImageToThreeJsPromptPreset(prompt)
     else if (slashCommand === '/image.to-glb') valid = isImageToGlbPromptPreset(prompt)
     else if (runtimeCommand === '/agentic-graph.probe-tree') valid = isAgenticGraphProbeTreePromptPreset(prompt)
+    else if (runtimeCommand === '/launch-copilot') valid = /^\/launch-copilot\s+outline\s+reference\s+\S[\s\S]*$/.test(prompt)
     else if (runtimeCommand === '/video-agent') valid = Boolean(parseGenerationInvocation(prompt))
     else if (runtimeCommand === '/crawler-agent') valid = parseNativeCrawlerInvocation(prompt)?.command === '/crawler-agent'
     else valid = parseChatSkillSlashInvocation(prompt)?.skill.slashCommand === runtimeCommand
