@@ -109,6 +109,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["chat.responseContract.errors.byteplusKeyFormatRegionDiagnosis","@/__tests__/byokProviderContext.test","testResolveSubmitRuntimeFriendlyMessageMapsBytePlusKeyFormatMismatchWithRegionAndRequestId"],
   ["ui.floatingPanelChat.apiKey.modelIconAlignment","@/__tests__/floatingPanelChatFooterSelect.test","testFloatingPanelChatFooterByokApiKeyToggleStaysAtModelIconAndAlignsInput"],
   ["ui.floatingPanelChat.newChat.workspaceFile","@/__tests__/floatingPanelChatDurableResume.test","testFloatingPanelChatNewChatCreatesAndFollowsCanonicalWorkspaceFile"],
+  ["ui.floatingPanelChat.history.effectReplay","@/__tests__/floatingPanelChatHistoryHydration.test","testFloatingPanelChatHydrationSurvivesEffectReplay"],
   ["ui.floatingPanelChat.videoPreset.loadsSourceBackedInvocation","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatVideoPresetLoadsSourceBackedInvocation"],
   ["ui.floatingPanelChat.videoPreset.prefersCanonicalDocsMirror","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatVideoPresetPrefersCanonicalDocsMirrorAtRuntime"],
   ["ui.floatingPanelChat.videoPreset.repairsDriftedRuntimeMirror","@/__tests__/videoAgentDemoPresetSourceReconciliation.test","testFloatingPanelChatVideoPresetRepairsDriftedRuntimeMirrorFromCanonicalSource"],
