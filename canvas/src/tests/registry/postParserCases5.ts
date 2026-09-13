@@ -316,6 +316,7 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["ui.canvas.liveHero.canvasEmbedMediaRuntime","@/__tests__/canvasEmbedMediaRuntime.test","testCanvasEmbedMediaRebindsAndExposesSelectableSurfaces"],
   ["ui.mainPanel.settings.canvasEmbedImportWorkflow","@/__tests__/mainPanelCanvasEmbedSettings.test","testMainPanelCanvasEmbedSettingsReuseSharedImportPanel"],
   ["ui.canvas.liveHero.embeddedChatSubmitInteraction","@/__tests__/liveCanvasHeroInteraction.test","testLiveCanvasHeroInteractionSubmitsToEmbeddedChat"],
+  ["ui.canvas.liveHero.productEntryPreset","@/__tests__/liveCanvasHeroInteraction.test","testLiveCanvasHeroProductEntryPreset"],
   ["workspace.mirrorReadRoots.taskCanonicalDocs","@/__tests__/workspaceMirrorReadRoots.test","testWorkspaceMirrorReadRootsAdmitConfiguredCanonicalDocsFromTaskWorktree"],
   ["workspace.initializationDocsRoot.taskCanonicalDocs","@/__tests__/workspaceInitializationDocsRoot.test","testWorkspaceInitializationDocsRootFindsCanonicalSiblingFromTaskWorktree"],
   ["workspace.initializationDocsRoot.prefersDirectSibling","@/__tests__/workspaceInitializationDocsRoot.test","testWorkspaceInitializationDocsRootPrefersDirectSibling"],

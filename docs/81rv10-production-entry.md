@@ -5,7 +5,12 @@ The generated `huijoohwee/81rv10/index.html` is an exact copy of the same built
 Graph entry document. Its absolute `/agentic-graph/` asset URLs share the existing
 runtime bundle; it does not introduce a separate application or server.
 The existing browser router accepts the product basename at `/81rv10` and its
-descendants, and the entry CTA stays on `/81rv10/`. Other deployment bases and
+descendants. The product root reuses the Apex Home hero and its canonical canvas
+embed, with **Launch Copilot (81rv10)** selected from the shared catalog. The
+existing preset loader fills the prompt without submitting it or making a model
+call. Loading failures remain visible; delayed loading cannot replace user edits.
+The entry CTA opens `/agentic-graph/` so entering the workspace does not reload the
+product landing page. Descendant document routes stay in the workspace. Other deployment bases and
 similarly prefixed sibling paths retain their original routing.
 
 Pages serves `/81rv10/index.html` at `/81rv10/` using its directory-index routing.

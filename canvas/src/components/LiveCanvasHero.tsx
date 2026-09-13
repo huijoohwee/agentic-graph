@@ -34,6 +34,7 @@ import {
 } from '@/features/chat/generationInvocation'
 import { LiveCanvasHeroQueryEditor } from '@/features/agentic-os/LiveCanvasHeroQueryEditor'
 import { LiveCanvasHeroPromptPresetPicker } from '@/features/agentic-os/LiveCanvasHeroPromptPresetPicker'
+import { useLiveCanvasHeroPromptPreset } from '@/features/agentic-os/useLiveCanvasHeroPromptPreset'
 import {
   liveCanvasHeroPromptHasParameter,
   readLiveCanvasHeroPromptParameters,
@@ -75,10 +76,11 @@ function renderHeroInlineCodeText(text: string): React.ReactNode {
 export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
   const { model } = props
   const content = React.useMemo(readLiveCanvasHeroContent, [])
-  const [draft, setDraft] = React.useState(model.defaultQuery)
-  const [selectedPromptPresetId, setSelectedPromptPresetId] = React.useState('video-agent')
-  const [selectedPromptPresetPrompt, setSelectedPromptPresetPrompt] = React.useState(model.defaultQuery)
-  const previousDefaultQueryRef = React.useRef(model.defaultQuery)
+  const {
+    draft, setDraft, selectedPresetId: selectedPromptPresetId,
+    selectedPrompt: selectedPromptPresetPrompt, selectPreset,
+    loading: presetLoading, error: presetError,
+  } = useLiveCanvasHeroPromptPreset(model.defaultQuery, props.promptPresetsRuntime)
   const [errorText, setErrorText] = React.useState('')
   const [importPanelOpen, setImportPanelOpen] = React.useState(false)
   const invocation = React.useMemo(() => parseGenerationInvocation(draft), [draft])
@@ -87,13 +89,6 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
     () => readLiveCanvasHeroPromptParameters(selectedPromptPresetPrompt),
     [selectedPromptPresetPrompt],
   )
-
-  React.useEffect(() => {
-    const previous = previousDefaultQueryRef.current
-    previousDefaultQueryRef.current = model.defaultQuery
-    setDraft(current => current === previous ? model.defaultQuery : current)
-    setSelectedPromptPresetPrompt(current => current === previous ? model.defaultQuery : current)
-  }, [model.defaultQuery])
 
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -171,9 +166,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
             activePresetId={selectedPromptPresetId}
             runtime={props.promptPresetsRuntime}
             onSelect={selection => {
-              setSelectedPromptPresetId(selection.id)
-              setSelectedPromptPresetPrompt(selection.prompt)
-              setDraft(selection.prompt)
+              selectPreset(selection)
               setErrorText('')
             }}
           />
@@ -181,6 +174,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
             Prompt Presets
           </label>
           <LiveCanvasHeroQueryEditor value={draft} onChange={setDraft} />
+          {presetLoading ? <p className="mt-2 text-xs text-[var(--kg-text-secondary)]" role="status">Loading 81rv10 prompt preset…</p> : null}
           {selectedPromptPresetId === 'video-agent' && model.sourceLabel ? <p className="mt-2 truncate text-[10px] text-[var(--kg-text-secondary)]" title={model.sourceWorkspacePath || model.sourceLabel}>Script: {model.sourceLabel}</p> : null}
           <section className="mt-3 h-24 shrink-0 overflow-y-auto overscroll-contain pr-1" aria-label="Prompt preset controls" data-kg-live-canvas-hero-prompt-controls-scroll="fixed">
             <section className="grid gap-2">
@@ -264,6 +258,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
               aria-label="Run all"
               title="Run all"
               data-kg-live-canvas-hero-start="true"
+              disabled={presetLoading || !draft.trim()}
             >
               <Play className="h-4 w-4" aria-label="Run icon" data-kg-live-canvas-hero-action-icon="run" />
             </button>
@@ -279,7 +274,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
             </button>
             <kbd className="rounded-md border border-[color:var(--kg-border)] px-2 py-1 font-mono text-[10px] text-[var(--kg-text-secondary)]" title="Start locally shortcut">Ctrl/⌘↵</kbd>
           </section>
-          {errorText ? <p className="mt-2 text-xs text-red-500" role="alert">{errorText}</p> : null}
+          {errorText || presetError ? <p className="mt-2 text-xs text-red-500" role="alert">{errorText || presetError}</p> : null}
         </form>
 
         <ul className="mt-3 hidden flex-wrap gap-2 text-[10px] text-[var(--kg-text-secondary)] md:flex" aria-label="Agent-ready execution posture">
