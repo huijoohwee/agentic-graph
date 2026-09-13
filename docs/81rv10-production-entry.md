@@ -1,6 +1,6 @@
 # 81rv10 production entry
 
-`agentic-graph` owns the runtime and publisher for Launch Copilot (`launch-copilot@r3`).
+`agentic-graph` owns the runtime and publisher for Launch Copilot ([plan](documents/launch-copilot-prd-tad-adr-mvp-gtm.md), `launch-copilot@0.3.3`).
 The generated `huijoohwee/81rv10/index.html` is an exact copy of the same built
 Graph entry document. Its absolute `/agentic-graph/` asset URLs share the existing
 runtime bundle; it does not introduce a separate application or server.
