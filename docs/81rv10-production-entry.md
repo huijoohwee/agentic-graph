@@ -5,13 +5,24 @@ The generated `huijoohwee/81rv10/index.html` is an exact copy of the same built
 Graph entry document. Its absolute `/agentic-graph/` asset URLs share the existing
 runtime bundle; it does not introduce a separate application or server.
 The existing browser router accepts the product basename at `/81rv10` and its
-descendants. The product root reuses the Apex Home hero and its canonical canvas
-embed, with **Launch Copilot (81rv10)** selected from the shared catalog. The
-existing preset loader fills the prompt without submitting it or making a model
-call. Loading failures remain visible; delayed loading cannot replace user edits.
-The entry CTA opens `/agentic-graph/` so entering the workspace does not reload the
-product landing page. Descendant document routes stay in the workspace. Other deployment bases and
-similarly prefixed sibling paths retain their original routing.
+descendants. The product root reuses the Apex Home hero, with **Launch Copilot
+(81rv10)** selected from the shared catalog. The existing preset loader fills the
+prompt without submitting it or making a model call. Loading failures remain
+visible; delayed loading cannot replace user edits.
+
+The background uses the shared Flow canvas to preview the selected prompt and its
+actual route, context and parameter tokens. It updates with catalog changes and
+edits. This transient demo is neither generated output nor repository evidence;
+it does not replace or persist workspace documents. An explicitly imported embed
+can replace it until the next prompt selection or edit. There is no default
+physics scene.
+
+The single entry button (or Ctrl/Command+Enter) opens FloatingPanel Chat in place
+with the edited prompt as an unsubmitted draft. The demo stays visible beside
+Chat until **Back to workspace** is chosen or Chat closes. There is no separate
+Home **Run all** action. Execution remains an explicit Chat action. Descendant
+document routes stay in the workspace; other deployment bases and similarly
+prefixed sibling paths retain their original routing.
 
 Pages serves `/81rv10/index.html` at `/81rv10/` using its directory-index routing.
 The publisher normalizes `/81rv10` to `/81rv10/` with a 308 response; it never

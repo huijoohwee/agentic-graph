@@ -19,13 +19,13 @@ export function testCanvasEmbedStartupPresetUsesPhysicsPlaygroundSource(): void 
   if (CANONICAL_STARTUP_DOCUMENT_PATH !== XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH) {
     throw new Error(`expected the canonical startup identity to resolve the Physics Playground, got ${CANONICAL_STARTUP_DOCUMENT_PATH}`)
   }
-  if (!heroRuntime.includes('isRootAlias ? resolveCanonicalStartupCanvasEmbedRuntimeUrl()')) {
-    throw new Error('expected every apex Dev origin to initialize the canonical same-runtime Physics Playground')
+  if (heroRuntime.includes('resolveCanonicalStartupCanvasEmbedRuntimeUrl()')) {
+    throw new Error('Home must use the selected prompt demo, not automatically select Physics Playground')
   }
   if (!presets.includes("url.searchParams.set('kgPreview', '1')")) {
     throw new Error('expected the canonical Home background to isolate its shell without overriding source-owned XR startup')
   }
-  if (!heroRuntime.includes('isRootAlias ? CANONICAL_STARTUP_DOCUMENT_PATH : source?.sourcePath')) {
-    throw new Error('expected the apex source identity and embedded document to share one canonical owner')
+  if (!heroRuntime.includes('isRootAlias ? PROMPT_PRESET_CATALOG_WORKSPACE_PATH : source?.sourcePath')) {
+    throw new Error('expected the Home source identity to reference the shared preset catalog')
   }
 }
