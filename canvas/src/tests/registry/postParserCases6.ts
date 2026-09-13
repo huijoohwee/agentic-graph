@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
+  ["ui.graphCanvas.frozenNodes.presentationRefresh","@/__tests__/graphCanvasFrozenNodesPresentation.test","testFrozenCircleNodesKeepPositionsOnPresentationRefresh"],
   ["groupBoxNoStickRegression.clearanceX","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseX"],
   ["groupBoxNoStickRegression.clearanceY","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseY"],
   ["groupBoxNoStickRegression.clearanceZ","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseZ"],
