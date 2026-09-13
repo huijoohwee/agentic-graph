@@ -182,6 +182,9 @@ export const createNodesLayer = (args: {
     .enter()
     .append('circle')
     .attr('fill', 'transparent')
+    // Presentation refreshes also run after the simulation has stopped.
+    .attr('cx', (d: GraphNode) => Number.isFinite(d.x) ? d.x! : 0)
+    .attr('cy', (d: GraphNode) => Number.isFinite(d.y) ? d.y! : 0)
     .attr('r', (d: GraphNode) => getRenderNodeRadius2d(d, schema))
 
   nodeLayer

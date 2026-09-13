@@ -51,9 +51,9 @@ const REMOTE_GRAMMAR_GROUP_BY_KIND = {
 } as const
 
 const FLOATING_PANEL_CHAT_GRAMMAR_QUICK_BAR_TOKENS = [
-  { id: 'slash', label: '/', description: 'Open slash commands' },
-  { id: 'keyword', label: '#', description: 'Open runtime invocations' },
-  { id: 'binding', label: '@', description: 'Open bindings and variables' },
+  { id: 'slash', label: '/', name: 'Commands', description: 'Open slash commands' },
+  { id: 'binding', label: '@', name: 'Context', description: 'Open bindings and variables' },
+  { id: 'keyword', label: '#', name: 'Meaning', description: 'Open runtime invocations' },
 ] as const
 
 const mergeMenuItems = (
@@ -265,10 +265,10 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
   }, [focusComposerSelection, props.input, props.setInput])
 
   return (
-    <section ref={anchorRef} className={`relative border rounded overflow-hidden ${props.responsiveEditorClassName || UI_RESPONSIVE_MULTILINE_TEXT_INPUT_EDITOR_CLASSNAME} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg}`}>
+    <section ref={anchorRef} className={`relative flex flex-col border rounded overflow-hidden ${props.responsiveEditorClassName || UI_RESPONSIVE_MULTILINE_TEXT_INPUT_EDITOR_CLASSNAME} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg}`}>
       <section
-        className={`flex items-center gap-1 border-b px-2 py-1 sm:hidden ${UI_THEME_TOKENS.panel.border}`}
-        aria-label="Mobile grammar quick bar"
+        className={`flex shrink-0 items-center gap-1 border-b px-2 py-1 ${UI_THEME_TOKENS.panel.border}`}
+        aria-label="Chat invocation controls"
         data-kg-chat-grammar-quick-bar="true"
       >
         {FLOATING_PANEL_CHAT_GRAMMAR_QUICK_BAR_TOKENS.map(entry => (
@@ -283,7 +283,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
             onPointerDown={event => event.preventDefault()}
             onClick={() => insertGrammarQuickBarToken(entry.label)}
           >
-            {entry.label}
+            {entry.label} {entry.name}
           </button>
         ))}
       </section>
@@ -295,7 +295,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
         ariaLabel={props.placeholder}
         placeholder={props.placeholder}
         disabled={props.isLoading}
-        className={`h-full overflow-auto bg-transparent px-2 py-1 ${props.uiPanelTextFontClass}`}
+        className={`min-h-0 flex-1 overflow-auto bg-transparent px-2 py-1 ${props.uiPanelTextFontClass}`}
         commandMode={trigger}
         onSelectionChange={(selection, value) => {
           if (pendingSelectionRef.current) return
