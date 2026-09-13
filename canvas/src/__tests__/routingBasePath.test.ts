@@ -1,5 +1,6 @@
 import {
   isRouterRootAliasRuntime,
+  isProductEntryLandingRuntime,
   resolveLiveCanvasHeroEnterHref,
   resolveRouterBasename,
 } from '@/lib/routing/basePath'
@@ -59,17 +60,24 @@ export const testResolveRouterBasenameFromBaseUrl = () => {
       if (resolveRouterBasename(base, runtime) !== '/81rv10') {
         throw new Error(`Expected native product basename at ${base} + ${pathname}`)
       }
-      if (resolveLiveCanvasHeroEnterHref(base, runtime) !== '/81rv10/') {
-        throw new Error('Product entry CTA must retain the product URL')
+      const landing = pathname !== '/81rv10/doc/example'
+      if (isProductEntryLandingRuntime(base, runtime) !== landing
+        || isRouterRootAliasRuntime(base, runtime) !== landing) {
+        throw new Error('Only the product root must reuse the Apex landing surface')
+      }
+      if (resolveLiveCanvasHeroEnterHref(base, runtime) !== (landing ? '/agentic-graph/' : '/81rv10/')) {
+        throw new Error('Product landing CTA must enter the workspace without reopening Home')
       }
     }
   }
   for (const pathname of ['/81rv10-tools/', '/81rv100/', '/agentic-graph/']) {
-    if (resolveRouterBasename('/agentic-graph/', { pathname }) !== '/agentic-graph') {
+    if (resolveRouterBasename('/agentic-graph/', { pathname }) !== '/agentic-graph'
+      || isProductEntryLandingRuntime('/agentic-graph/', { pathname })) {
       throw new Error(`Product mount must not capture sibling path ${pathname}`)
     }
   }
-  if (resolveRouterBasename('/custom/', { pathname: '/81rv10/' }) !== '/custom') {
+  if (resolveRouterBasename('/custom/', { pathname: '/81rv10/' }) !== '/custom'
+    || isRouterRootAliasRuntime('/custom/', { pathname: '/81rv10/' })) {
     throw new Error('Product entry must not override a custom deployment base')
   }
 }

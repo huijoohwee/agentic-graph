@@ -42,10 +42,16 @@ function readRuntimeRootAliasBasePath(runtime?: RouterBasenameRuntime): string |
 }
 
 export function isRouterRootAliasRuntime(baseUrl: unknown, runtime?: RouterBasenameRuntime): boolean {
+  if (isProductEntryLandingRuntime(baseUrl, runtime)) return true
   const basename = normalizeBasePath(baseUrl)
   const rootAliasBasePath = readRuntimeRootAliasBasePath(runtime)
   if (!rootAliasBasePath || readRuntimePathname(runtime) !== '/') return false
   return !basename || rootAliasBasePath === basename
+}
+
+export function isProductEntryLandingRuntime(baseUrl: unknown, runtime?: RouterBasenameRuntime): boolean {
+  return readRuntimePathname(runtime) === PRODUCT_ENTRY_BASE_PATH
+    && resolveProductEntryBasename(baseUrl, runtime) === PRODUCT_ENTRY_BASE_PATH
 }
 
 function resolveProductEntryBasename(baseUrl: unknown, runtime?: RouterBasenameRuntime): string | undefined {
@@ -68,6 +74,7 @@ export function resolveRouterBasename(baseUrl: unknown, runtime?: RouterBasename
 }
 
 export function resolveLiveCanvasHeroEnterHref(baseUrl: unknown, runtime?: RouterBasenameRuntime): string {
+  if (isProductEntryLandingRuntime(baseUrl, runtime)) return '/agentic-graph/'
   const basename = resolveProductEntryBasename(baseUrl, runtime)
     || normalizeBasePath(baseUrl) || readRuntimeRootAliasBasePath(runtime)
   return `${basename || ''}/`

@@ -18,6 +18,83 @@ import {
 import { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME } from '../../../mcp/agentic-canvas-os-docs-contract.mjs'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
+import type { PromptPresetInvocationResult } from '@/features/chat/promptPresetInvocation'
+
+export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
+  for (const scenario of ['ready', 'error', 'edited', 'switched'] as const) {
+    const { dom, restore } = initJsdomHarness()
+    dom.reconfigure({ url: 'http://localhost/81rv10/' })
+    const container = dom.window.document.createElement('section')
+    dom.window.document.body.appendChild(container)
+    const root = createRoot(container)
+    const model = buildLiveCanvasHeroModel()
+    const launchPrompt = '/launch-copilot outline reference Build a source-grounded proposal.'
+    const presets: PromptPreset[] = ['launch-copilot', 'video-agent'].map(id => ({
+      id, label: id === 'launch-copilot' ? 'Launch Copilot (81rv10)' : 'Video Agent',
+      slashCommand: `/${id}-prompt-preset`, runtimeCommand: `/${id}`,
+      description: 'Shared catalog preset.', activation: 'chat-agent',
+      invocationModes: ['native-chat-response', 'mcp-invocation'],
+      chatRoute: 'active native shared runtime', mcpTool: AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
+      mcpToken: `/${id}`, prompt: id === 'launch-copilot' ? launchPrompt : model.defaultQuery,
+    }))
+    let resolvePrompt!: (result: PromptPresetInvocationResult) => void
+    const pendingPrompt = new Promise<PromptPresetInvocationResult>(resolve => { resolvePrompt = resolve })
+    const requested: string[] = []
+    const submissions: string[] = []
+    const cleanup = installEmbeddedCanvasChatCommandBridge({ submit: query => { submissions.push(query); return true } })
+    const runtime = {
+      loadCatalog: async () => ({ ok: true as const, presets, sourcePath: PROMPT_PRESET_CATALOG_WORKSPACE_PATH }),
+      loadPrompt: async (id: string) => {
+        requested.push(id)
+        return id === 'launch-copilot' ? pendingPrompt : { ok: true as const, prompt: model.defaultQuery }
+      },
+    }
+    try {
+      await mountReactRoot(root, <LiveCanvasHeroEditorial model={model} promptPresetsRuntime={runtime} />,
+        { window: dom.window as unknown as Window, frames: 3 })
+      const selector = container.querySelector('select') as HTMLSelectElement
+      const proxy = container.querySelector('[data-kg-card-inline-viewer-edit-command-proxy="1"]') as HTMLTextAreaElement
+      const run = container.querySelector('[data-kg-live-canvas-hero-start="true"]') as HTMLButtonElement
+      if (selector.value !== 'launch-copilot' || proxy.value || !run.disabled || requested.join(',') !== 'launch-copilot') {
+        throw new Error('81rv10 must initially select Launch Copilot and wait for its shared prompt without a video fallback')
+      }
+      if (container.querySelector('[data-kg-live-canvas-hero-enter]')?.getAttribute('href') !== '/agentic-graph/') {
+        throw new Error('81rv10 Enter must navigate to the workspace')
+      }
+      await act(async () => {
+        if (scenario === 'edited') {
+          const editor = container.querySelector('[data-kg-live-canvas-hero-query="1"]') as HTMLElement
+          editor.textContent = 'My revised requirement'
+          Simulate.input(editor)
+        }
+        if (scenario === 'switched') {
+          selector.value = 'video-agent'
+          Simulate.change(selector)
+        }
+        await waitForFrames(dom.window as unknown as Window, 2)
+        resolvePrompt(scenario === 'error' ? { ok: false, error: 'Preset source unavailable.' } : { ok: true, prompt: launchPrompt })
+        await waitForFrames(dom.window as unknown as Window, 3)
+      })
+      const expected = scenario === 'error' ? '' : scenario === 'edited' ? 'My revised requirement'
+        : scenario === 'switched' ? model.defaultQuery : launchPrompt
+      if (String(proxy.value) !== expected || submissions.length) {
+        throw new Error(`81rv10 ${scenario} must preserve exact prompt bytes without execution: ${proxy.value}`)
+      }
+      if (scenario === 'error' && (!run.disabled || !container.textContent?.includes('Preset source unavailable.'))) {
+        throw new Error('81rv10 must expose failed preset loading and keep empty Run disabled')
+      }
+      if (scenario === 'ready') {
+        await act(async () => { run.click(); await waitForFrames(dom.window as unknown as Window, 1) })
+        if (Number(submissions.length) !== 1 || submissions[0] !== launchPrompt) throw new Error('Run must submit the loaded Launch Copilot prompt once')
+      }
+    } finally {
+      cleanup()
+      await unmountReactRoot(root, { window: dom.window as unknown as Window })
+      container.remove()
+      restore()
+    }
+  }
+}
 
 export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Promise<void> {
   const { dom, restore } = initJsdomHarness()
