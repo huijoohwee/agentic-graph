@@ -276,6 +276,7 @@ export function RichMediaOverlayLayer2d(props: {
             data-kg-rich-media-overlay-shell="1"
             data-kg-rich-media-overlay-shell-id={n.id}
             data-kg-rich-media-overlay-pinned={richMediaPanelPinned ? '1' : '0'}
+            onContextMenu={stopEvent}
           >
             <WidgetEditorActionsToolbar
               visible={selected}
@@ -346,10 +347,9 @@ export function RichMediaOverlayLayer2d(props: {
               onResizeEnd={({ pointerId }) => endResize(n.id, pointerId)}
               onClickCapture={(event) => {
                 selectPanel(n.id, event.shiftKey)
-                stopEvent(event)
               }}
-              onDoubleClickCapture={stopEvent}
-              onContextMenuCapture={stopEvent}
+              onClick={stopEvent}
+              onDoubleClick={stopEvent}
             />
           </section>
         )

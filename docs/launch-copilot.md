@@ -1,4 +1,4 @@
-# Launch Copilot 0.3.0 (r3)
+# Launch Copilot public-flow implementation (r3.2)
 
 Launch Copilot is a lazy feature of Graph's native workspace. Canvas OS owns the
 five-role proposal contract introduced in PR #922, consumed through the current
@@ -7,8 +7,11 @@ server, provider proxy, importer, parser, graph store, renderer or runtime packa
 
 ## Use
 
-1. Run the usual Graph Dev workspace. Use **Launch → Import URL → Codebase graph**
-   with an owned GitHub repository, or the existing folder import.
+1. Keep the canonical Graph host running with its existing server-managed OpenAI
+   connection. For public use, pair it as described below, then work at
+   **https://airvio.co/81rv10/**. Use **Launch → Import URL** with a permitted
+   GitHub repository. Bare `https://github.com/owner/repo` URLs select the native
+   repository importer. Folder grants remain available only in local Graph.
 2. Select native nodes, edges or a saved cluster. In **Chat**, enter
    `/launch-copilot outline owned <business requirement>` for a local editable
    outline, or `/launch-copilot draft owned <business requirement>` to use the
@@ -24,6 +27,13 @@ server, provider proxy, importer, parser, graph store, renderer or runtime packa
    On phones, open **Workspace View → Editor Workspace → Source Files → notes →
    proposals → CID** for a full-width editor/viewer. Hide Explorer and Canvas
    using the native pane controls while reviewing a document.
+   Use `/launch-copilot probe <CID>` to generate native clarification cards bound
+   to the original requirement, source snapshot and selected evidence. Answer on
+   a card, select it and invoke `probe` again to continue that branch. Questions
+   and answers stay in the separate proposal overlay; they never become code
+   evidence. `/launch-copilot refine <CID>` applies the retained answers to the
+   five documents after fresh source validation. A failed refinement preserves
+   the reviewed text. Probe and refinement reuse the selected OpenAI connection.
 5. On the enrolled canonical Graph host, enter `/launch-copilot review <CID>`.
    Read the five panels and the returned hashes, source identity and output base.
    Submit the prepared `/launch-copilot approve <CID> <signature>` command only
@@ -33,6 +43,38 @@ server, provider proxy, importer, parser, graph store, renderer or runtime packa
 6. Use `/launch-copilot status <CID>` to observe the provider and compare the five
    files against their committed hashes. `integrated` additionally requires the
    existing OS integration proof and matching content at the provider's merge SHA.
+
+## Pair the existing host
+
+The operator starts the enrolled canonical Graph runtime normally. It needs the
+existing control-plane `AGENTIC_OS_AGENT_RUNTIME_BEARER_TOKEN` in server
+configuration; never place that token or an OpenAI key in browser settings.
+From that machine, POST JSON `{"action":"connect-host"}` to the canonical
+loopback runtime's `/__agentic_graph_agent_graph/proposal` route, with a matching
+loopback Origin and JSON content type. The response returns a short-lived code.
+In public Chat submit `/launch-copilot connect <code>`. That command clears the
+code before chat persistence. `/launch-copilot disconnect` closes the browser
+connection; the corresponding host action `disconnect-host` closes the host.
+
+Pairing is an operator setup step. Import, source inspection, composition,
+questions, editing, export, exact approval and status use the single public page.
+The shared MCP Worker brokers the explicitly paired connection; it does not run
+a second importer, parser, model proxy or Git runtime. Isolated objects named
+`graph-host-relay/<session UUID>` reuse its existing `RUN_MANIFEST_STORE`
+namespace. Existing manifest and run-note routes delegate to their original
+owner. No new Worker, Durable Object migration, secret or package is required.
+
+Sessions expire after 30 minutes and allow one active operation and 128 admitted
+request IDs. SHA-256 key hashes, operation identity and expiry survive broker
+hibernation. Credentials are role-specific, carried in WebSocket protocols and
+held in memory, with exact public Origin checks and no credentials in URLs.
+Only the native repository, proposal, docs/Probe MCP and OpenAI paths are allowed.
+The broker cannot forward arbitrary URLs, headers, folder grants or pairing
+actions. Frames are bounded to 96 kB, chunks to 24 kB, requests to 64 kB and
+responses to 8 MB, with consumer backpressure and cancellation. Public repository
+imports use the native bounded final projection, avoiding repeated intermediate
+previews. Reconnect explicitly after expiry or reload; inspect publication status
+before recovering an interrupted approved operation.
 
 Native workspace persistence also retains one proposal sidecar for evidence and
 layout. It is not a sixth exported document. Graph's workspace artifact owner
@@ -79,11 +121,16 @@ local drafts because the default workspace policy excludes them from snapshots.
   timeout or disconnect stops waiting while the bounded host operation continues;
   use `status` before any recovery. Host restart invalidates outstanding review
   tokens. Retained Git content and provider observations remain the readback source.
-- The shared `/81rv10/` route is published, but the public-to-local authenticated
-  host connection and source-bound Probe-Tree overlay remain unimplemented.
-  These local native commands do not establish the full single-surface product
-  acceptance criterion. Live model, real proposal publication/integration and the
-  public browser walkthrough still require separate execution evidence.
+- The public host transport and source-bound Probe-Tree are implemented in the
+  existing owners. Deployment remains subject to protected candidate approval;
+  source implementation does not establish live public readiness. Live OpenAI
+  verification is explicitly deferred. Real proposal publication requires a
+  separate human review of the exact five documents.
+- Probe-Tree is bounded to 20 retained questions and depth five. Native provider
+  validation rejects generic or malformed questions; there is no canned question
+  fallback. Selected continuation question, answer and lineage use the native
+  context builder. Refinement admits at most 6,000 characters of source-bound
+  decisions. Native workspace snapshots retain their 160,000-byte limit.
 - Dev integration does not prove deployment, live payment, demand or production
   readiness. The former standalone `81rv10` implementation is superseded.
 
@@ -134,15 +181,45 @@ PRD after review rejected the approval; subsequent status remained `not-started`
 No proposal lane, provider publication or live model call was attempted. This
 proves native review admission and refusal, not successful publication.
 
-The prototype used four new product modules and 693 added implementation/test
-lines across Graph and Canvas OS. Acquisition retention adds 54 lines. This
-handoff increment adds 152 implementation/test lines and one lazy host module:
-899 of the original 900-line cap, five new product modules overall, zero new
-dependencies. The public host transport and grounded Probe-Tree cannot be claimed
-complete within the one remaining line; neither is replaced by a local demo.
+The prototype, acquisition retention and protected handoff used 899 added
+implementation/test lines and five new product modules across Graph and Canvas
+OS. The user subsequently selected full public completion in place of the
+900-line experiment limit. The shared host transport is the sixth product module;
+all other changes extend existing owners. No new dependencies were added.
 Every changed code file remains under 600 lines.
 Full LC browser modules load only on invocation or retained-proposal reopening.
 Existing browser entry/state/render changes add 1,485 minified bytes (513-byte
 concatenated gzip estimate, measured with installed esbuild against the Graph
 base). This is a loader/integration delta, not a production bundle measurement
 or a claim of zero total always-loaded bytes.
+
+The public-flow tests exercise the actual broker under local workerd, role and
+Origin refusal, streamed UTF-8 bytes, cancellation, replay refusal, hibernation
+and expiry, plus existing manifest-owner delegation. The extended native proposal
+test exercises two source-bound question levels, answer editing, retained versions,
+reopen/export, one-pass refinement and failure preservation using provider fixtures.
+Those fixtures are explicitly not live OpenAI evidence.
+
+The r3.2 source increment adds 749 implementation/test lines (1,648 including
+the prior 899), with six product modules overall. Its production build emits
+6,104-byte transport, 18,204-byte workspace and 23,844-byte invocation chunks.
+Per-module minification of the changed integration modules adds 1,894 bytes
+against the handoff baseline; some are themselves lazy. This is separate from
+the historical 1,485-byte entry/state/render delta and is not a production entry
+closure measurement. The original zero always-loaded-byte criterion is still
+not established.
+
+The r3.2 static-build browser rehearsal ran at `/81rv10/` behind the actual local
+workerd broker, with native host routes absent from the static server. Pairing
+and the native Chat Import URL command imported `anthropics/commerce-agents` at
+`fd4d59224ab96b43c6dc6888207c67b3bd5a24cf`: 571 sources, 39,235 nodes and
+38,921 edges, with the 1,000-node display limit explicitly reported. The
+reference-role outline selected seven real nodes and one explained structural
+edge; this lexical result does not establish checkout semantics. Five native
+panels reopened after page reload. A PRD edit made through the actual canvas
+editor persisted on reopen, and offline export returned exact-files digest
+`d3f44fc72d0debfdf7e1d0035ed867956c49191ca245170d323f91fefffef59a`.
+The shared canvas click handler now lets document editing receive the event
+before stopping its propagation; the dedicated native test mounts this parent
+component and verifies that the edit reaches workspace Markdown. This is local
+production-build evidence, not evidence of a deployed public host connection.

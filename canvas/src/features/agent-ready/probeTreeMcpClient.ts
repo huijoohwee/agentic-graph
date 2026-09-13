@@ -1,3 +1,4 @@
+import { agentGraphHostFetch } from '../agent-graph/agentGraphHostAdapter'
 import {
   PROBE_TREE_MCP_BRIDGE_PATH,
   normalizeProbeTreeMcpBridgeRequest,
@@ -16,7 +17,7 @@ const readFailureMessage = async (response: Response): Promise<string> => {
 
 export async function invokeProbeTreeMcpBridge(
   request: ProbeTreeMcpBridgeRequest,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: typeof fetch = agentGraphHostFetch,
 ): Promise<ProbeTreeMcpBridgeSuccess> {
   const boundedRequest = normalizeProbeTreeMcpBridgeRequest(request)
   if (!boundedRequest) throw new Error('Probe-Tree MCP request is incomplete.')
@@ -32,6 +33,7 @@ export async function invokeProbeTreeMcpBridge(
   if (payload.ok !== true || payload.mcpInvoked !== true || !payload.result || typeof payload.result !== 'object') {
     throw new Error(String(payload.error || '').trim() || 'Probe-Tree MCP bridge returned an invalid response.')
   }
+  if (boundedRequest.sourceBinding && (JSON.stringify(payload.sourceBinding) !== JSON.stringify(boundedRequest.sourceBinding)
+    || typeof payload.groundedContext !== 'string' || payload.groundedContext.length > 12000)) throw new Error('Probe-Tree source binding changed during generation.')
   return payload as ProbeTreeMcpBridgeSuccess
 }
-

@@ -73,19 +73,14 @@ export function canonicalLaunchRepositoryUrl(
   value: string,
   options: { forceRepository?: boolean } = {},
 ): string | null {
-  if (!options.forceRepository) {
-    try {
-      if (!/\.git\/?$/i.test(new URL(value).pathname)) return null
-    } catch {
-      return null
-    }
-  }
+  if (!options.forceRepository && !isLaunchAgentGraphRepositoryUrl(value)) return null
   return normalizeAgentGraphRepositoryRemoteUrl(value)
 }
 
 export function isLaunchAgentGraphRepositoryUrl(value: string): boolean {
   try {
-    return parseAgentGraphRepositoryUrl(value).explicitGitSuffix
+    const parsed = parseAgentGraphRepositoryUrl(value)
+    return parsed.explicitGitSuffix || parsed.hostname === 'github.com' && parsed.repositoryPath.split('/').length === 2
   } catch {
     return false
   }

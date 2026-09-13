@@ -1,4 +1,6 @@
 import { McpAgent } from "agents/mcp";
+import { createGraphHostRelayClass, routeGraphHostRelay } from "../../../mcp/agent-graph/host-transport.mjs";
+import { timingSafeTokenMatch } from "./agent-runtime-http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
@@ -33,7 +35,7 @@ import {
   dispatchAgenticGraphMcpToolCall,
   RUN_MANIFEST_PERSISTENCE_DEADLINE_MS,
   RUN_NOTE_EXECUTION_META_KEY,
-  RunManifestStore,
+  RunManifestStore as DurableControlPlaneStore,
 } from "./run-manifest-store.mjs";
 import { resolveStageClients, createLiveArgsResolver } from "../../../mcp/video-remix/live-clients.js";
 
@@ -65,7 +67,7 @@ export interface AgenticGraphMcpEnv extends Env {
   emitStageTransitionDiagnostic?: (diagnostic: object) => void;
 }
 
-export { RunManifestStore };
+export class RunManifestStore extends createGraphHostRelayClass(DurableControlPlaneStore, timingSafeTokenMatch) {}
 
 const MCP_PATH = "/agentic-os/control-plane/mcp";
 const RUNS_PATH_PREFIX = `${MCP_PATH}/runs/`;
@@ -523,6 +525,8 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/+$/, "") || "/";
+    const relayResponse = await routeGraphHostRelay(request, env, authorizeRuntimeRequest);
+    if (relayResponse) return relayResponse;
 
     const commerceDiscoveryHttpResponse = await commerceDiscoveryHttpRoute(request, env);
     if (commerceDiscoveryHttpResponse) return commerceDiscoveryHttpResponse;
@@ -576,12 +580,6 @@ export default {
           { status: authorization.status, headers: authorization.status === 401 ? { "www-authenticate": "Bearer" } : undefined },
         );
       }
-      // Streamable HTTP transport handled by the Agents SDK McpAgent.
-      // `serve` returns a Worker-compatible fetch handler bound to MCP_PATH.
-      // The Agents SDK defaults its Durable Object lookup to a binding named
-      // `MCP_OBJECT`; this Worker declares the McpAgent DO as `MCP_AGENT` in
-      // wrangler.toml (matching `AgenticGraphMcpEnv.MCP_AGENT`), so the binding
-      // name must be passed explicitly or `serve` throws at request time.
       return dispatchCommerceDiscoveryMcp(request, env, (boundRequest) =>
         AgenticGraphMcpAgent.serve(MCP_PATH, { binding: "MCP_AGENT" }).fetch(boundRequest, env, ctx));
     }
