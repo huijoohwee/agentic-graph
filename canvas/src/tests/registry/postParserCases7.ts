@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["ui.graphCanvas.frozenLabels.presentationRefresh", "@/__tests__/graphCanvasFrozenLabelsPresentation.test", "testFrozenNodeLabelsKeepPositionsOnPresentationRefresh"],
   ["flow.dataflow.cache.completeInputs", "@/__tests__/flowConnectedValuesCache.test", "testFlowConnectedValuesCachePreservesCompleteInputs"],
   ["flow.dataflow.cache.retentionBounds", "@/__tests__/flowConnectedValuesCache.test", "testFlowConnectedValuesCacheBoundsAndOpaqueInputs"],
   ["validation.runner.monotonicElapsed", "@/__tests__/testRunnerMonotonicClock.test", "testRunnerElapsedTimeIgnoresWallClockChanges"],
