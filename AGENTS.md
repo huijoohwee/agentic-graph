@@ -1,4 +1,6 @@
-# agentic-graph Codex Routing
+# agentic-graph Contributor and Agent Routing
+
+Applies to human contributors and all agents, models, providers, editors and devices. Use available repository-owned contracts; keep provider setup in adapters and report unsupported capabilities.
 
 Before changing this repository, read and follow `docs/collaboration-runtime-contract.md` and `docs/conflict-resolution.md`.
 

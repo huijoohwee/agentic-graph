@@ -38,7 +38,15 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
   const model = buildLiveCanvasHeroModel()
   const expectedDefaultQuery = model.defaultQuery
   const investmentPrompt = '/investment-research-agent @source.body #runtime-ready Assess the active workspace sources.'
+  const launchPrompt = '/launch-copilot outline reference Assess a solopreneur checkout pain point.'
   const promptPresets: PromptPreset[] = [
+    {
+      id: 'launch-copilot', label: 'Launch Copilot (81rv10)', slashCommand: '/launch-copilot-prompt-preset',
+      runtimeCommand: '/launch-copilot', description: 'Ground an MVP and GTM proposal in the selected source.',
+      activation: 'chat-agent', invocationModes: ['native-chat-response', 'mcp-invocation'],
+      chatRoute: 'active native shared runtime', mcpTool: AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
+      mcpToken: '/launch-copilot', prompt: launchPrompt,
+    },
     {
       id: 'video-agent',
       label: 'Video Agent',
@@ -144,6 +152,14 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
       throw new Error('expected the Catalog selector to precede Prompt Presets in semantic and visual order')
     }
     if (submittedQueries.length !== 0 || completedCount !== 0) throw new Error('expected zero embedded Chat submissions on mount')
+    await act(async () => {
+      presetSelect.value = 'launch-copilot'
+      Simulate.change(presetSelect)
+      await waitForFrames(dom.window as unknown as Window, 3)
+    })
+    if (String(commandProxy.value) !== launchPrompt || submittedQueries.length !== 0) {
+      throw new Error('Launch Copilot selection must seed the shared prompt without execution')
+    }
     await act(async () => {
       presetSelect.value = 'investment-research-agent'
       Simulate.change(presetSelect)

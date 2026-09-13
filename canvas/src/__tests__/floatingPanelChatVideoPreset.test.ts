@@ -106,6 +106,16 @@ export async function testFloatingPanelChatVideoPresetFailsClosedWithoutSource()
 
 export async function testFloatingPanelChatPromptPresetCatalogFailsClosedOnMissingEntry() {
   const workspace = await createPresetWorkspace()
+  const valid = await loadPromptPresetCatalog(workspace)
+  if (isPromptPresetCatalogError(valid) || !valid.presets.some(preset => preset.id === 'launch-copilot')) {
+    throw new Error('expected the native Launch Copilot outline preset to be available')
+  }
+  for (const action of ['draft', 'approve']) {
+    await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH, promptCatalogMarkdown.replace('/launch-copilot outline reference', `/launch-copilot ${action} reference`))
+    if (!isPromptPresetCatalogError(await loadPromptPresetCatalog(workspace))) {
+      throw new Error('Launch Copilot preset selection must retain a model-free reference outline')
+    }
+  }
   await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH, promptCatalogMarkdown.replace('  - id: "investment-research-agent"', '  - id: "sme-care-agent"'))
   const catalog = await loadPromptPresetCatalog(workspace)
   if (!isPromptPresetCatalogError(catalog) || !catalog.error.includes('duplicate ids')) {
