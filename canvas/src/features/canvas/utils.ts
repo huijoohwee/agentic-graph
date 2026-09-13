@@ -158,6 +158,9 @@ export function isNodePointerTarget(target: EventTarget | null): boolean {
     return tag === 'circle' || tag === 'rect' || tag === 'path' || tag === 'line' || tag === 'text' || tag === 'tspan' || tag === 'foreignobject'
   }
 
+  // The full-canvas hit surface is a rect, but it must allow background pan.
+  if (el.getAttribute('data-kg-layer') === 'interaction-background') return false
+
   const tag = String(el.tagName || '').toLowerCase()
   if (tag === 'circle' || tag === 'rect' || tag === 'path') return true
 

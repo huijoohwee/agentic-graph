@@ -7,6 +7,7 @@ import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { isNodePointerTarget } from '@/features/canvas/utils'
 import type { PendingLink, TempLinkSelection } from '@/features/edge-creation'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 export function testNodesLayerRendersDiamondAndHexPaths() {
   const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'http://localhost' })
@@ -131,17 +132,31 @@ export function testNodesLayerHonorsVisualShapeOverrides() {
 }
 
 export function testIsNodePointerTargetAcceptsPathNodes() {
-  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'http://localhost' })
-  const g = globalThis as unknown as { window?: unknown; document?: unknown }
-  const prevWindow = g.window
-  const prevDocument = g.document
-  g.window = dom.window
-  g.document = dom.window.document
+  const { dom, restore } = initJsdomHarness()
   try {
-    const path = dom.window.document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    if (!isNodePointerTarget(path)) throw new Error('expected path to be a node pointer target')
+    const svg = dom.window.document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    dom.window.document.body.append(svg)
+    const create = (tag: string, layer?: string) => {
+      const el = dom.window.document.createElementNS('http://www.w3.org/2000/svg', tag)
+      if (layer) el.setAttribute('data-kg-layer', layer)
+      svg.append(el)
+      return el
+    }
+    const background = create('rect', 'interaction-background')
+    if (isNodePointerTarget(background)) throw new Error('empty canvas must allow background panning')
+    if (isNodePointerTarget(svg) || isNodePointerTarget(null)) throw new Error('canvas root and null are not nodes')
+    for (const tag of ['circle', 'rect', 'path']) {
+      if (!isNodePointerTarget(create(tag))) throw new Error(`expected ${tag} to remain a node pointer target`)
+    }
+    const groups = create('g', 'groups')
+    const groupLabel = create('text')
+    groups.append(groupLabel)
+    if (!isNodePointerTarget(groupLabel)) throw new Error('group content must preserve its own drag handling')
+    const links = create('g', 'links-hit')
+    const edge = create('line')
+    links.append(edge)
+    if (!isNodePointerTarget(edge)) throw new Error('edge hit targets must preserve selection handling')
   } finally {
-    g.window = prevWindow
-    g.document = prevDocument
+    restore()
   }
 }
