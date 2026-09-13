@@ -64,16 +64,19 @@ export const useFloatingPanelChatHistory = (args: {
   } = args
   const lastLoadedHistoryKeyRef = React.useRef<string | null>(null)
   const pendingHydrationPersistenceSkipKeyRef = React.useRef<string | null>(null)
+  const pendingHydrationRenderRef = React.useRef<{ key: string; beforeMessages: ChatMessage[] } | null>(null)
   const messagesRef = React.useRef(messages)
   messagesRef.current = messages
   const streamingAssistantId = streamingAssistant?.id || ''
 
   React.useEffect(() => subscribeToChatHistoryCache(historyKey, cached => {
+    pendingHydrationRenderRef.current = { key: historyKey, beforeMessages: messagesRef.current }
     setMessages(cached)
   }), [historyKey, setMessages])
 
   React.useEffect(() => subscribeToChatHistoryTransition(historyKey, nextMessages => {
     const trimmed = nextMessages.slice(-80)
+    pendingHydrationRenderRef.current = { key: historyKey, beforeMessages: messagesRef.current }
     putChatHistoryCache(historyKey, trimmed)
     setMessages(trimmed)
   }), [historyKey, setMessages])
@@ -94,6 +97,7 @@ export const useFloatingPanelChatHistory = (args: {
     })
     if (transitionedMessages) {
       pendingHydrationPersistenceSkipKeyRef.current = historyKey
+      pendingHydrationRenderRef.current = { key: historyKey, beforeMessages: messagesRef.current }
       setMessages(transitionedMessages)
       return
     }
@@ -107,6 +111,7 @@ export const useFloatingPanelChatHistory = (args: {
     pendingHydrationPersistenceSkipKeyRef.current = historyKey
     const cached = getCachedChatHistory(historyKey)
     if (cached) {
+      pendingHydrationRenderRef.current = { key: historyKey, beforeMessages: messagesRef.current }
       setMessages(cached)
       return
     }
@@ -117,11 +122,17 @@ export const useFloatingPanelChatHistory = (args: {
     }
     const next = readJsonFromStorage(storage, historyKey, [] as ChatMessage[], parseChatHistory)
     const trimmed = next.slice(-80)
+    pendingHydrationRenderRef.current = { key: historyKey, beforeMessages: messagesRef.current }
     putChatHistoryCache(historyKey, trimmed)
     setMessages(trimmed)
   }, [historyKey, isLoading, setMessages])
 
   React.useEffect(() => {
+    // Effect replay can run persistence twice before React commits hydrated state.
+    // Ignore that pre-hydration render; a later hydrated or locally edited render may persist.
+    const hydration = pendingHydrationRenderRef.current
+    if (hydration?.key === historyKey && messages === hydration.beforeMessages) return
+    pendingHydrationRenderRef.current = null
     const persistenceAction = resolveChatHistoryPersistenceAction({
       historyKey,
       pendingHydrationHistoryKey: pendingHydrationPersistenceSkipKeyRef.current,
