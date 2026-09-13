@@ -9,8 +9,6 @@ import {
   LIVE_CANVAS_HERO_SOURCE_SELECT_EVENT,
   readLiveCanvasHeroSourceSelection,
 } from '@/features/canvas/liveCanvasHeroSourceSelection'
-import { installFloatingPanelBridge } from '@/features/toolbar/floatingPanelBridge'
-import { consumeFloatingPanelChatInputHandoff } from '@/features/chat/floatingPanelChat/floatingPanelChatInputHandoff'
 import { buildLiveCanvasHeroPresetDemo } from '@/features/agentic-os/liveCanvasHeroPresetDemo'
 import {
   PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE,
@@ -43,11 +41,6 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
     const pendingPrompt = new Promise<PromptPresetInvocationResult>(resolve => { resolvePrompt = resolve })
     const requested: string[] = []
     const submissions: string[] = []
-    const cleanup = installFloatingPanelBridge({ openPropsPanel: () => {}, openRendererPanel: () => {}, openFloatingPanel: detail => {
-      const handoff = consumeFloatingPanelChatInputHandoff()
-      if (detail?.tab !== 'chat' || !handoff || handoff.submit) throw new Error('Entry must open Chat with an unsubmitted draft')
-      submissions.push(handoff.text)
-    } })
     const runtime = {
       loadCatalog: async () => ({ ok: true as const, presets, sourcePath: PROMPT_PRESET_CATALOG_WORKSPACE_PATH }),
       loadPrompt: async (id: string) => {
@@ -56,7 +49,7 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
       },
     }
     try {
-      await mountReactRoot(root, <LiveCanvasHeroEditorial model={model} promptPresetsRuntime={runtime} />,
+      await mountReactRoot(root, <LiveCanvasHeroEditorial model={model} promptPresetsRuntime={runtime} activateDemo={async selection => { submissions.push(selection.prompt) }} />,
         { window: dom.window as unknown as Window, frames: 3 })
       const selector = container.querySelector('select') as HTMLSelectElement
       const proxy = container.querySelector('[data-kg-card-inline-viewer-edit-command-proxy="1"]') as HTMLTextAreaElement
@@ -94,7 +87,6 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
         if (Number(submissions.length) !== 1 || submissions[0] !== launchPrompt) throw new Error('Entry must seed the loaded Launch Copilot prompt once')
       }
     } finally {
-      cleanup()
       await unmountReactRoot(root, { window: dom.window as unknown as Window })
       container.remove()
       restore()
@@ -108,14 +100,6 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
   dom.window.document.body.appendChild(container)
   const root = createRoot(container as unknown as HTMLElement)
   const submittedQueries: string[] = []
-  const cleanupChatBridge = installFloatingPanelBridge({
-    openPropsPanel: () => {}, openRendererPanel: () => {},
-    openFloatingPanel: detail => {
-      const handoff = consumeFloatingPanelChatInputHandoff()
-      if (detail?.tab !== 'chat' || !handoff || handoff.submit) throw new Error('Entry must open Chat with a draft, never execute')
-      submittedQueries.push(handoff.text)
-    },
-  })
   let demoSelection = { id: '', prompt: '' }
   let importedSelection: ReturnType<typeof readLiveCanvasHeroSourceSelection> = null
   const importListener = (event: Event) => { importedSelection = readLiveCanvasHeroSourceSelection(event) }
@@ -125,7 +109,14 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
   const expectedDefaultQuery = model.defaultQuery
   const investmentPrompt = '/investment-research-agent @source.body #runtime-ready Assess the active workspace sources.'
   const launchPrompt = '/launch-copilot outline reference Assess a solopreneur checkout pain point.'
+  const physicsPrompt = '/xr.physics @canvas #controller operation=develop-run mode=ball'
   const promptPresets: PromptPreset[] = [
+    {
+      id: 'xr-physics', label: 'Physics Playground', slashCommand: '/xr-physics-prompt-preset',
+      runtimeCommand: '/xr.physics', description: 'Shared physics controller.', activation: 'source-backed-canvas',
+      invocationModes: ['native-chat-response', 'mcp-invocation'], chatRoute: 'active native shared runtime',
+      mcpTool: AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME, mcpToken: '/xr.physics', prompt: physicsPrompt,
+    },
     {
       id: 'launch-copilot', label: 'Launch Copilot (81rv10)', slashCommand: '/launch-copilot-prompt-preset',
       runtimeCommand: '/launch-copilot', description: 'Ground an MVP and GTM proposal in the selected source.',
@@ -176,8 +167,18 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
         onEnter={() => { completedCount += 1 }}
         onPresetChange={selection => { demoSelection = selection }}
         promptPresetsRuntime={promptPresetsRuntime}
+        activateDemo={async selection => { submittedQueries.push(selection.prompt) }}
       />
     ), { window: dom.window as unknown as Window, frames: 4 })
+
+    const initialSelect = container.querySelector('select') as HTMLSelectElement
+    const initialProxy = container.querySelector('textarea') as HTMLTextAreaElement
+    if (initialSelect.value !== 'xr-physics' || initialProxy.value !== physicsPrompt) throw new Error('Apex must load the shared Physics Playground prompt')
+    await act(async () => {
+      initialSelect.value = 'video-agent'
+      Simulate.change(initialSelect)
+      await waitForFrames(dom.window as unknown as Window, 3)
+    })
 
     const editor = container.querySelector('[data-kg-live-canvas-hero-query="1"][data-kg-card-inline-viewer-edit-surface="1"][data-kg-markdown-contenteditable-core="1"]') as HTMLElement | null
     const commandProxy = container.querySelector('[data-kg-card-inline-viewer-edit-command-proxy="1"]') as HTMLTextAreaElement | null
@@ -299,7 +300,7 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
       throw new Error(`expected raw provider replacement, got ${JSON.stringify(commandProxy.value)}`)
     }
     const startButton = container.querySelector('[data-kg-live-canvas-hero-enter="true"]') as HTMLButtonElement | null
-    if (!startButton || container.querySelector('[aria-label="Run all"]')) throw new Error('expected one Chat entry action')
+    if (!startButton || startButton.textContent?.trim() !== 'Demo' || container.querySelector('[aria-label="Run all"]')) throw new Error('expected one Chat entry action')
     if (container.querySelector('[data-kg-live-canvas-hero-share-embed="true"]') || container.textContent?.includes('Share canvas embed')) {
       throw new Error('expected Home to omit the Share canvas embed action entirely')
     }
@@ -349,7 +350,6 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
       throw new Error(`expected the Hero action to seed Chat once and dismiss Home, got ${JSON.stringify({ submittedQueries, completedCount })}`)
     }
   } finally {
-    cleanupChatBridge()
     dom.window.removeEventListener(LIVE_CANVAS_HERO_SOURCE_SELECT_EVENT, importListener as EventListener)
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
     container.remove()
