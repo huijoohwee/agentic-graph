@@ -16,6 +16,7 @@ import {
   isImageToGlbPromptPreset,
 } from '@/features/image-to-glb/imageToGlbPromptPreset'
 import { parseNativeCrawlerInvocation } from './nativeCrawlerInvocation'
+import { parseXrInteractiveInvocation } from '@/features/three/xrSceneInteractiveInvocation'
 import {
   isAgenticGraphProbeTreePromptPreset,
   AGENTIC_GRAPH_PROBE_TREE_DOC_INVOCATION,
@@ -35,6 +36,7 @@ export type PromptPresetInvocationMode = PromptPresetResponseMode | 'mcp-invocat
 export const PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE = 'active Chat provider, endpoint, and model' as const
 export const PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE = 'active native shared runtime' as const
 export const PROMPT_PRESET_REQUIRED_IDS = [
+  'xr-physics',
   'video-agent',
   IMAGE_TO_THREEJS_PROMPT_PRESET_ID,
   IMAGE_TO_GLB_PROMPT_PRESET_ID,
@@ -127,7 +129,12 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     || mcpTool !== AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME
     || mcpToken !== runtimeCommand
   ) return null
-  if (id === IMAGE_TO_THREEJS_PROMPT_PRESET_ID) {
+  if (id === 'xr-physics') {
+    const invocation = parseXrInteractiveInvocation(prompt)
+    if (runtimeCommand !== '/xr.physics' || activation !== 'source-backed-canvas'
+      || responseMode !== 'native-chat-response' || invocation?.action !== 'physics'
+      || invocation.physics.scope !== 'controller') return null
+  } else if (id === IMAGE_TO_THREEJS_PROMPT_PRESET_ID) {
     if (
       slashCommand !== '/image.to-threejs'
       || activation !== 'card-inline'

@@ -318,6 +318,8 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["ui.canvas.liveHero.presetChatInteraction","@/__tests__/liveCanvasHeroInteraction.test","testLiveCanvasHeroInteractionOpensPresetChat"],
   ["ui.canvas.liveHero.presetDemoDraft","@/__tests__/liveCanvasHeroInteraction.test","testLiveCanvasHeroPresetDemoReflectsDraft"],
   ["ui.canvas.liveHero.productEntryPreset","@/__tests__/liveCanvasHeroInteraction.test","testLiveCanvasHeroProductEntryPreset"],
+  ["ui.canvas.liveHero.demoDocumentConversation","@/__tests__/liveCanvasHeroDemo.test","testLiveCanvasHeroDemoDocumentMatchesConversation"],
+  ["ui.canvas.liveHero.demoSourceValidation","@/__tests__/liveCanvasHeroDemo.test","testLiveCanvasHeroDemoSourceRejectsInvalidRecords"],
   ["workspace.mirrorReadRoots.taskCanonicalDocs","@/__tests__/workspaceMirrorReadRoots.test","testWorkspaceMirrorReadRootsAdmitConfiguredCanonicalDocsFromTaskWorktree"],
   ["workspace.initializationDocsRoot.taskCanonicalDocs","@/__tests__/workspaceInitializationDocsRoot.test","testWorkspaceInitializationDocsRootFindsCanonicalSiblingFromTaskWorktree"],
   ["workspace.initializationDocsRoot.prefersDirectSibling","@/__tests__/workspaceInitializationDocsRoot.test","testWorkspaceInitializationDocsRootPrefersDirectSibling"],

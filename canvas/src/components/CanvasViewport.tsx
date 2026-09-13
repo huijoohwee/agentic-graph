@@ -242,8 +242,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
     floatingPanelOpen,
     alternateCanvasSurfaceActive: geospatialCompositionEnabled || canvasRenderMode !== '2d',
   })
-  const [presetDemoVisible, setPresetDemoVisible] = React.useState(false)
-  const homePreviewVisible = liveCanvasHeroVisible || presetDemoVisible
+  const homePreviewVisible = liveCanvasHeroVisible
   const documentSwitchOwnsViewport = shouldDocumentSwitchOwnCanvasViewport({
     documentSwitchBlocksCanvas,
     liveCanvasHeroVisible,
@@ -334,11 +333,9 @@ export function CanvasViewport(props: CanvasViewportProps) {
                   : 'Canvas viewport'}
     >
       <React.Suspense fallback={null}>
-        {(liveCanvasHeroVisible || presetDemoVisible) && liveCanvasHeroSource ? (
+        {liveCanvasHeroVisible && liveCanvasHeroSource ? (
           <LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles}
-            visible={liveCanvasHeroVisible} demoVisible={presetDemoVisible} chatOpen={floatingPanelOpen && floatingPanelView === 'chat'}
-            onCloseDemo={() => setPresetDemoVisible(false)}
-            onEnter={() => { setPresetDemoVisible(true); dismissLiveCanvasHero() }} />
+            visible={liveCanvasHeroVisible} onEnter={dismissLiveCanvasHero} />
         ) : null}
         {!documentSwitchOwnsViewport && !geospatialOverlayOwnsViewport && canvasRenderMode === '2d' && (
           <section className="absolute inset-0 z-[10]">

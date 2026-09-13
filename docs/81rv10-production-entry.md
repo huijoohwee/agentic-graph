@@ -10,17 +10,23 @@ descendants. The product root reuses the Apex Home hero, with **Launch Copilot
 prompt without submitting it or making a model call. Loading failures remain
 visible; delayed loading cannot replace user edits.
 
-The background uses the shared Flow canvas to preview the selected prompt and its
-actual route, context and parameter tokens. It updates with catalog changes and
-edits. This transient demo is neither generated output nor repository evidence;
-it does not replace or persist workspace documents. An explicitly imported embed
-can replace it until the next prompt selection or edit. There is no default
-physics scene.
+The Apex default is **Physics Playground** from the shared catalog, with the
+canonical physics scene as its interactive background. `/81rv10/` defaults to
+Launch Copilot. Other selections preview their matching example output cards
+through the existing Flow canvas. The examples are authored once in
+[`demo.md`](workspace-seeds/demo.md), loaded lazily as a bounded source projection.
+An explicitly imported embed can replace the background until the next edit or
+selection. Catalog selection and prompt edits make no model call.
 
-The single entry button (or Ctrl/Command+Enter) opens FloatingPanel Chat in place
-with the edited prompt as an unsubmitted draft. The demo stays visible beside
-Chat until **Back to workspace** is chosen or Chat closes. There is no separate
-Home **Run all** action. Execution remains an explicit Chat action. Descendant
+The single **Demo** button (or Ctrl/Command+Enter) creates a new local
+`docs/demos/<preset>/<unique-session>/demo.md` containing the selected prompt, example
+response and the same output graph. Native workspace activation selects that
+file in Explorer and the editor, then opens FloatingPanel Chat with its two-message
+example conversation. Each demo has its own history; existing files and chats
+are preserved. The source declares `demo_only: true`, and visible examples do
+not claim provider-generated artifacts, receipts or current research.
+
+There is no separate Home **Run all** action. Execution remains an explicit Chat action. Descendant
 document routes stay in the workspace; other deployment bases and similarly
 prefixed sibling paths retain their original routing.
 
