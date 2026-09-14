@@ -1,23 +1,22 @@
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
-import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { resolveInitializedWorkspaceFs } from '@/features/workspace-fs/workspaceFsInitialization'
+import type { WorkspaceFs } from '@/features/workspace-fs/types'
 
 export const ensureWorkspaceFolderPathExists = async (folderPath: string): Promise<string> => {
   const normalized = normalizeWorkspacePath(folderPath)
-  const fs = await getWorkspaceFs()
-  await fs.ensureSeed()
+  const fs = await resolveInitializedWorkspaceFs()
   await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: normalized })
   return normalized
 }
 
 export const writeWorkspaceFileTextEnsuringFile = async (args: {
-  fs?: Awaited<ReturnType<typeof getWorkspaceFs>>
+  fs?: WorkspaceFs
   path: string
   text: string
 }): Promise<void> => {
   const normalized = normalizeWorkspacePath(args.path)
-  const fs = args.fs || await getWorkspaceFs()
-  await fs.ensureSeed()
+  const fs = await resolveInitializedWorkspaceFs(args.fs)
   const existing = await fs.readFileText(normalized)
   const idx = normalized.lastIndexOf('/')
   const parentPath = normalizeWorkspacePath(idx > 0 ? normalized.slice(0, idx) : '/')

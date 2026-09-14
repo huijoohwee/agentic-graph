@@ -1,4 +1,4 @@
-import { getWorkspaceFs } from './workspaceFs'
+import { resolveInitializedWorkspaceFs } from './workspaceFsInitialization'
 import { normalizeWorkspacePath } from './path'
 import type { WorkspaceFs, WorkspacePath } from './types'
 
@@ -9,8 +9,7 @@ export async function ensureWorkspaceFolderTreeIfMissing(args: {
   const normalized = normalizeWorkspacePath(args.folderPath)
   const segments = normalized.split('/').filter(Boolean)
   if (segments.length === 0) return
-  const fs = args.fs ?? (await getWorkspaceFs())
-  await fs.ensureSeed()
+  const fs = await resolveInitializedWorkspaceFs(args.fs)
   const list = await fs.listEntries()
   const folders = new Set(
     list
