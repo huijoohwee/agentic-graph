@@ -260,15 +260,15 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
           <button
             type="button"
             className="timeline-rate-button"
-            aria-label={`Playback rate ${playbackRate.toFixed(1)}x. Click for ${nextPlaybackRate.toFixed(1)}x.`}
-            title={`Playback rate ${playbackRate.toFixed(1)}x. Click for ${nextPlaybackRate.toFixed(1)}x.`}
+            aria-label={`Playback rate ${playbackRate}x. Click for ${nextPlaybackRate}x.`}
+            title={`Playback rate ${playbackRate}x. Click for ${nextPlaybackRate}x.`}
             disabled={disabled || playbackRates.length <= 1}
             onClick={() => {
               onPlaybackRateChange(resolveTimelineTransportPlaybackRate(String(nextPlaybackRate), playbackRate))
             }}
           >
             <span className="timeline-rate-button-value">
-              {playbackRate.toFixed(1)}x
+              {playbackRate}x
             </span>
           </button>
         </section>
