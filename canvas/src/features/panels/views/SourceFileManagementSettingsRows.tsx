@@ -1,4 +1,5 @@
 import React from 'react'
+import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { requestMarkdownExplorerSourceFilesOpen } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
@@ -32,7 +33,7 @@ const SOURCE_FILE_MANAGEMENT_SEARCH_INDEX = [
   'automatic sync',
   'manual sync',
   'docs mirror contract',
-  'storage defaults',
+  'storage defaults cloud connection',
   'source mix',
   'workspace sync source files docs only',
   'workspace sync source files debounce ms',
@@ -176,6 +177,7 @@ export function SourceFileManagementSettingsRows({
 
   const syncSelectedFolder = React.useCallback(async () => {
     try {
+      if (!folderName || !folderAccessMode) throw new Error('Select a Source Files folder first.')
       await syncLocalMarkdownFolderToSourceFiles()
       pushUiToast({
         id: `source-files-folder-refresh-${Date.now().toString(36)}`,
@@ -193,7 +195,7 @@ export function SourceFileManagementSettingsRows({
         dismissible: true,
       })
     }
-  }, [pushUiToast])
+  }, [folderName, folderAccessMode, pushUiToast])
 
   const selectSourceFilesFolder = React.useCallback(async () => {
     const opened = await openLocalMarkdownFolder()
@@ -337,6 +339,9 @@ export function SourceFileManagementSettingsRows({
               <SourceFileSettingsActionButton primary onClick={openSourceFiles}>
                 Open Source Files
               </SourceFileSettingsActionButton>
+              <SourceFileSettingsActionButton onClick={() => emitMainPanelOpen({ tab: 'settings', searchQuery: 'cloud' })}>
+                Configure cloud sync
+              </SourceFileSettingsActionButton>
               <SourceFileSettingsActionButton onClick={() => { void recomposeSourceFiles() }}>
                 Recompose now
               </SourceFileSettingsActionButton>
@@ -376,7 +381,7 @@ export function SourceFileManagementSettingsRows({
               <SourceFileSettingsActionButton onClick={selectSourceFiles}>
                 Select files
               </SourceFileSettingsActionButton>
-              <SourceFileSettingsActionButton onClick={() => { void syncSelectedFolder() }}>
+              <SourceFileSettingsActionButton disabled={!folderName || !folderAccessMode} onClick={() => { void syncSelectedFolder() }}>
                 Refresh selected
               </SourceFileSettingsActionButton>
               <input
@@ -402,7 +407,7 @@ export function SourceFileManagementSettingsRows({
         <KeyTypeValueRow
           id={SOURCE_FILE_MANAGEMENT_ROW_ANCHORS.sync}
           dataKgAnchor={SOURCE_FILE_MANAGEMENT_ROW_ANCHORS.sync}
-          keyNode="Sync mode"
+          keyNode="Local refresh mode"
           typeNode={<span className={UI_THEME_TOKENS.text.secondary}>control</span>}
           valueNode={(
             <section className={SOURCE_FILE_ROW_VALUE_CLASS_NAME}>

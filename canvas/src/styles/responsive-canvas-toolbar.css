@@ -74,6 +74,11 @@
 }
 
 @media (pointer: coarse), (max-width: 768px) {
+  /* Mobile floating panels use safe-area edge insets instead of centering. */
+  .kg-canvas-bottom-panel--pinned {
+    transform: none;
+  }
+
   .kg-canvas-toolbar-dock,
   .kg-workspace-overlay-canvas-toolbar {
     inset-block-start: auto;

@@ -239,6 +239,13 @@ mcp_control:
   launch: "/xr.physics @canvas #controller operation=develop-run mode=ball"
   switch: "/xr.physics @canvas #controller operation=select mode=rocket"
   reset: "/xr.physics @canvas #controller operation=reset"
+animation_rehearsal:
+  control_tool: "agentic-graph.control_local_animation"
+  quarter_speed: "/animation.control @canvas operation=play rate=0.25"
+  next_frame: "/animation.control @canvas operation=scrub frame=next"
+  previous_frame: "/animation.control @canvas operation=scrub frame=previous"
+  scope: "authored animation and camera tracks; interactive physics and Game Mode are not rewound"
+  load_policy: "open Animation and BottomPanel Timeline on demand"
 flow:
   direction: "LR"
   edgeType: "smoothstep"
@@ -311,6 +318,18 @@ This Source Files document activates a playable XR physics playground inside the
 ## Run
 
 From the repository root, run `npm run dev`. In agentic-graph, open **Explorer → Source Files → docs → workspace-seeds → agentic-graph-physics-playground-demo.md**. Applying this document starts the Beach Ball, playground, camera, and bottom vehicle switcher automatically while Explorer remains available.
+
+Home Apex (`npm run dev:apex`) consumes this same source through **Demo → Physics Playground**. Open **FloatingPanel → Animation** and **BottomPanel → Timeline** when rehearsing; the default keeps Timeline closed to preserve canvas space. Apply a compatible authored motion, choose **0.25x**, then use the previous/next frame controls to pause on consecutive authored frames. The shared frame/FPS readout follows the authored document and disables stepping at its bounds. This samples authored animation and camera tracks; it does not rewind the live physics simulation or a Game Mode mission.
+
+The native objective HUD shows the key-to-treasure objective and provides **Pause / Resume**, **Reset**, and **Replay** after completion. **Motion Control → Start** enables optional local camera input; **Stop** releases it. Camera frames are neither stored nor synchronized. Game Mode keeps its existing explicit **Save** action for terminal Decisions.
+
+## Source Files storage and refresh
+
+This Git-backed file is the canonical Physics Playground seed. After changing it in Dev, restart the serving dev process, reload the page, and use **Source Files → Refresh**; generated demo instances are local working documents. Verify the expected heading or frontmatter change in the editor because Refresh alone may retain an earlier loaded seed. Preserve or export a customized seed before refreshing because canonical seed reconciliation replaces its working copy. A local save, a workspace snapshot upload, and a GitHub commit are distinct results.
+
+The Source Files **Offline: Browser storage** row describes the local layer, not a cloud acknowledgement. Source Files uses IndexedDB for offline working files and retains Git-backed Markdown as the canonical source. The first successful open imports the legacy localStorage snapshot once, preserving its original bytes as a backup. The separate sync engine retains its own IndexedDB database. Browser stores are scoped to the browser origin and app base path and can be removed by clearing site data. A degraded-storage warning means new edits may be held only in memory; export them before closing or reloading. Export important local edits before changing browser, device, or origin. A storage indicator that says **Cloud sync is unavailable** means that no remote acknowledgement is available; it must not be read as synchronized.
+
+For this free-tier MVP, retain local operation without a provider. Configure a real workspace and authenticated transport only when cross-device sync is needed, then require upload/readback agreement and conflict handling before claiming success. The [storage contract](../documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md) owns storage architecture; the [rehearsal plan](../documents/agentic-graph-xr-frame-transport-prd-tad-adr-mvp-gtm.md) records the free-tier recommendation and validation boundaries. This seed adds no provider, database, background polling, or storage schema.
 
 ## Scoped XR edited-media evidence
 

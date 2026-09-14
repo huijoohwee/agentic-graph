@@ -30,6 +30,8 @@ export const inspectStorageCoreBindings = (env: AgenticGraphStorageWorkerEnv) =>
 
 const AUTH_TABLES = ['auth_identities', 'auth_sessions', 'users', 'workspace_memberships']
 export const probeStorageCoreReadiness = async (env: AgenticGraphStorageWorkerEnv) => {
+  const tables = [...AUTH_TABLES, ...(env.AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE === 'oauth'
+    ? ['storage_oauth_budget', 'storage_oauth_challenges'] : [])].sort()
   const core = inspectStorageCoreBindings(env)
   const reasons = [...core.reasons]
   const db = readDb(env)
@@ -38,12 +40,12 @@ export const probeStorageCoreReadiness = async (env: AgenticGraphStorageWorkerEn
     let timer: ReturnType<typeof setTimeout> | undefined
     try {
       const result = await Promise.race([
-        db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN (?, ?, ?, ?)")
-          .bind(...AUTH_TABLES).all<{ name: string }>(),
+        db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name IN (${tables.map(() => '?').join(', ')})`)
+          .bind(...tables).all<{ name: string }>(),
         new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 3000) }),
       ])
       const names = result.results?.map(row => row.name).sort()
-      authSchema = JSON.stringify(names) === JSON.stringify(AUTH_TABLES) ? 'ready' : 'missing'
+      authSchema = JSON.stringify(names) === JSON.stringify(tables) ? 'ready' : 'missing'
     } catch { authSchema = 'unavailable' }
     finally { clearTimeout(timer) }
     if (authSchema !== 'ready') reasons.push('storage-auth-schema-unavailable')

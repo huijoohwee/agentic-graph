@@ -105,11 +105,19 @@ export const coreOwnerEnrollmentBatch = (configuration, nowIso) => {
           AND m.status = 'active' AND m.role = 'owner' AND NOT EXISTS (SELECT 1 FROM auth_sessions WHERE session_hash = ?)`,
       params: [`operator:${sessionHash}`, sessionHash, v.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT,
         nowIso, nowIso, owner, email, workspace, sessionHash] },
+    { sql: `INSERT INTO auth_identities (id, user_id, provider, issuer, subject, created_at, updated_at)
+        SELECT ?, u.id, 'github', 'https://github.com', ?, ?, ? FROM users u
+        JOIN workspace_memberships m ON m.user_id = u.id
+        WHERE u.id = ? AND u.status = 'active' AND m.workspace_id = ? AND m.role = 'owner' AND m.status = 'active'
+        ON CONFLICT(provider, issuer, subject) DO NOTHING`,
+      params: [`github:${owner.split(':')[1]}`, owner.split(':')[1], nowIso, nowIso, owner, workspace] },
     { sql: `SELECT s.id, s.expires_at, s.revoked_at FROM auth_sessions s
         JOIN users u ON u.id = s.user_id JOIN workspace_memberships m ON m.user_id = u.id
         WHERE s.session_hash = ? AND u.id = ? AND u.email = ? AND u.status = 'active'
-          AND m.workspace_id = ? AND m.status = 'active' AND m.role = 'owner'`,
-      params: [sessionHash, owner, email, workspace] },
+          AND m.workspace_id = ? AND m.status = 'active' AND m.role = 'owner'
+          AND EXISTS (SELECT 1 FROM auth_identities i WHERE i.user_id = u.id AND i.provider = 'github'
+            AND i.issuer = 'https://github.com' AND i.subject = ?)`,
+      params: [sessionHash, owner, email, workspace, owner.split(':')[1]] },
   ]
 }
 export const enrollCoreOwner = async ({ configuration, environment, apiFetch = fetch, now = () => new Date() }) => {
@@ -117,7 +125,7 @@ export const enrollCoreOwner = async ({ configuration, environment, apiFetch = f
   const result = await queryCoreD1(configuration, environment, apiFetch,
     { batch: coreOwnerEnrollmentBatch(configuration, now().toISOString()) })
   const sessions = result.at(-1).results
-  if (result.length !== 4 || sessions.length !== 1 || sessions[0].revoked_at !== null
+  if (result.length !== 5 || sessions.length !== 1 || sessions[0].revoked_at !== null
     || sessions[0].expires_at !== configuration.variables.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT) {
     throw new Error('core operator session enrollment was not proved')
   }

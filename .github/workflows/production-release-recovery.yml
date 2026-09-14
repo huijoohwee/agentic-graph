@@ -59,6 +59,10 @@ jobs:
       AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT: ${{ vars.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT }}
       AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY: ${{ secrets.AGENTIC_OS_STORAGE_OWNER_ACCESS_KEY }}
       AGENTIC_OS_STORAGE_SIGNING_SECRET: ${{ secrets.AGENTIC_OS_STORAGE_SIGNING_SECRET }}
+      AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_ID: ${{ vars.AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_ID }}
+      AGENTIC_OS_STORAGE_GOOGLE_CLIENT_ID: ${{ vars.AGENTIC_OS_STORAGE_GOOGLE_CLIENT_ID }}
+      AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET: ${{ secrets.AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET }}
+      AGENTIC_OS_STORAGE_GOOGLE_CLIENT_SECRET: ${{ secrets.AGENTIC_OS_STORAGE_GOOGLE_CLIENT_SECRET }}
     steps:
       - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 0 } }
       - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.prepare.outputs.mirror_revision }}', path: huijoohwee, fetch-depth: 0 } }

@@ -52,3 +52,20 @@ test('core readiness is read-only, supports HEAD, and identifies local runtime e
   const local = await worker.fetch(request(), { ...env(), AGENTIC_OS_STORAGE_LOCAL_RUNTIME: 'true' })
   assert.equal((await local.json()).runtime, 'local')
 })
+
+
+test('OAuth readiness requires both budget and one-use challenge tables', async () => {
+  const value = { ...env(), AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE: 'oauth',
+    AGENTIC_OS_STORAGE_OAUTH_ORIGINS: '["https://airvio.co"]',
+    AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_ID: 'Iv1.testclient',
+    AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET: 'test-client-secret' }
+  const worker = createAgenticGraphStorageWorker()
+  assert.equal((await worker.fetch(request(), value)).status, 503)
+  value.DB = { prepare: () => {
+    const statement: D1StatementLike = { bind: (...names: unknown[]) => ({ ...statement,
+      all: async <T>() => ({ results: names.map(name => ({ name }) as T) }),
+    }), run: async () => ({}), all: async () => ({ results: [] }) }
+    return statement
+  } }
+  assert.equal((await worker.fetch(request(), value)).status, 200)
+})

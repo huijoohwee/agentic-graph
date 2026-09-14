@@ -1,7 +1,7 @@
 # Local/Dev only. Copy to .dev.vars beside wrangler.toml and provide operator-owned values.
 AGENTIC_OS_STORAGE_DEV_REMOTE_RELAY_ENABLED=true
 AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID=kgws:canonical-docs
-AGENTIC_OS_STORAGE_SIGNING_SECRET=replace-with-at-least-16-random-characters
+AGENTIC_OS_STORAGE_SIGNING_SECRET=replace-with-at-least-32-random-characters
 
 # Shared Canvas accepted travel mutation -> travel-commerce service binding.
 # The caller token must exactly match TRAVEL_COMMERCE_API_TOKEN on the bound Worker.
@@ -38,3 +38,12 @@ AGENTIC_OS_STORAGE_ONEDRIVE_CLIENT_SECRET=replace-with-microsoft-oauth-client-se
 AGENTIC_OS_STORAGE_ONEDRIVE_REFRESH_TOKEN=replace-with-microsoft-refresh-token
 AGENTIC_OS_STORAGE_ONEDRIVE_DRIVE_ID=replace-with-onedrive-drive-id
 AGENTIC_OS_STORAGE_ONEDRIVE_ROOT_ID=replace-with-onedrive-root-id
+
+# Optional browser sign-in. No repository/Drive/email scopes; never commit real secrets.
+# Choose oauth only after registration, identity enrollment and migration 0021.
+# AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE=oauth
+# AGENTIC_OS_STORAGE_OAUTH_ORIGINS=["https://airvio.co","http://127.0.0.1:4188","http://localhost:4188"]
+# AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_ID=<GitHub-App-client-ID>
+# AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET=<Worker-secret>
+# AGENTIC_OS_STORAGE_GOOGLE_CLIENT_ID=<Google-web-client-ID>
+# AGENTIC_OS_STORAGE_GOOGLE_CLIENT_SECRET=<Worker-secret>

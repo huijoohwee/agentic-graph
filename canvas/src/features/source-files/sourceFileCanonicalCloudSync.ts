@@ -320,83 +320,67 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
  * endpoint is a local, explicit GitHub publishing bridge and must not turn a
  * routine cross-device sync into a write to a canonical repository branch.
  */
-export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: {
-  entry: WorkspaceEntry
+export const SOURCE_FILE_CLOUD_TRANSFER_LIMITS = { files: 50, bytes: 5 * 1024 * 1024 } as const
+export const SOURCE_FILE_CLOUD_SNAPSHOT_VERIFIED_EVENT = 'kg:source-file-cloud-snapshot-verified'
+
+type CloudSnapshotUploadArgs = {
   workspaceId?: string | null
   baseUrl?: string | null
   deviceId?: string | null
   fetchImpl?: FetchLike
-}): Promise<SourceFileCloudWorkspaceSnapshotResult> => {
-  if (args.entry.kind !== 'file') throw new Error('Only files can be uploaded to cloud storage.')
-  const target = resolveSourceFileCanonicalCloudTarget(args.entry.path)
-  if (!target) throw new Error('Cloud upload supports Markdown files outside chat-log.')
+}
+
+export const syncWorkspaceEntriesToCloudWorkspaceSnapshot = async (args: CloudSnapshotUploadArgs & {
+  entries: WorkspaceEntry[]
+}): Promise<SourceFileCloudWorkspaceSnapshotResult[]> => {
+  if (!args.entries.length) throw new Error('Select at least one Markdown file.')
   const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   if (!workspaceId) throw new Error('Cloud workspace is unavailable.')
   const baseUrl = resolveCloudWorkspaceSnapshotBaseUrl(args.baseUrl)
   const fetchImpl = getFetch(args.fetchImpl)
   const fs = await getWorkspaceFs()
-  const text = String((await fs.readFileText(target.workspacePath)) ?? args.entry.text ?? '')
-  const sourceFile = buildCloudWorkspaceSnapshotSourceFile({
-    entry: args.entry,
-    workspaceId,
-    canonicalPath: target.canonicalPath,
-    text,
-  })
+  const selected = []
+  const canonicalPaths = new Set<string>()
+  for (const entry of args.entries) {
+    const target = entry.kind === 'file' ? resolveSourceFileCanonicalCloudTarget(entry.path) : null
+    if (!target) throw new Error('Cloud upload supports Markdown files outside chat-log.')
+    if (canonicalPaths.has(target.canonicalPath)) throw new Error(`Multiple local files map to ${target.canonicalPath}. Select one copy.`)
+    canonicalPaths.add(target.canonicalPath)
+    const text = String((await fs.readFileText(target.workspacePath)) ?? entry.text ?? '')
+    selected.push({ target, text, sourceFile: buildCloudWorkspaceSnapshotSourceFile({ entry, workspaceId, canonicalPath: target.canonicalPath, text }) })
+  }
+  if (selected.length > SOURCE_FILE_CLOUD_TRANSFER_LIMITS.files || selected.reduce((bytes, item) => bytes + new TextEncoder().encode(item.text).byteLength, 0) > SOURCE_FILE_CLOUD_TRANSFER_LIMITS.bytes) throw new Error('Choose a smaller folder: each transfer allows 50 Markdown files and 5 MiB.')
   await syncSourceFilesToAgenticGraphStorage({
     workspaceId,
-    sourceFiles: [sourceFile],
-    // The selection is an upsert-only action, not an authoritative workspace
-    // inventory reconciliation. This protects every other Source File.
+    sourceFiles: selected.map(item => item.sourceFile),
+    // A selection is upsert-only, never a deletion inventory.
     reconcileMissingDocuments: false,
-    // An explicit click is also a recovery intent: requeue the selected
-    // snapshot even when its local text is unchanged, without touching peers.
     forceDocumentUpsert: true,
   })
-  const syncResult = await syncAgenticGraphStorageNow({
-    workspaceId,
-    baseUrl,
-    deviceId: args.deviceId,
-    fetchImpl,
-  })
+  const syncArgs = { workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl }
+  const syncResult = await syncAgenticGraphStorageNow(syncArgs)
   if (syncResult.transportStatus !== 'synced') {
     const detail = normalizeString(syncResult.transportError)
-    throw new Error(
-      `Cloud workspace snapshot was not confirmed. Your local copy remains saved.${detail ? ` ${detail}` : ''}`,
-    )
+    throw new Error(`Cloud workspace snapshot was not confirmed. Your local copy remains saved.${detail ? ` ${detail}` : ''}`)
   }
-
-  let readBackText: string | null = null
-  let readBackAttempts = 0
-  for (
-    let attempt = 0;
-    attempt < AGENTIC_OS_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts;
-    attempt += 1
-  ) {
-    readBackAttempts = attempt + 1
-    const snapshot = await readCanonicalCloudDocumentSnapshot({
-      workspaceId,
-      baseUrl,
-      fetchImpl,
-    })
-    readBackText = snapshot.get(target.canonicalPath) ?? null
-    if (readBackText === text) break
-    if (attempt + 1 < AGENTIC_OS_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) {
-      await syncAgenticGraphStorageNow({ workspaceId, baseUrl, deviceId: args.deviceId, fetchImpl })
+  for (let attempt = 0; attempt < AGENTIC_OS_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts; attempt += 1) {
+    const snapshot = await readCanonicalCloudDocumentSnapshot({ workspaceId, baseUrl, fetchImpl })
+    if (selected.every(item => snapshot.get(item.target.canonicalPath) === item.text)) {
+      const results: SourceFileCloudWorkspaceSnapshotResult[] = selected.map(item => ({ workspacePath: item.target.workspacePath, canonicalPath: item.target.canonicalPath, documentKind: item.target.documentKind, workspaceId, syncedText: item.text,
+        readBackAttempts: attempt + 1, readBackVerified: true }))
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(SOURCE_FILE_CLOUD_SNAPSHOT_VERIFIED_EVENT, { detail: results }))
+      return results
     }
+    if (attempt + 1 < AGENTIC_OS_STORAGE_SYNC_BOUNDS.cloudReadBackMaxAttempts) await syncAgenticGraphStorageNow(syncArgs)
   }
-  if (readBackText !== text) {
-    throw new Error('Cloud workspace snapshot read-back did not match. Your local copy remains saved.')
-  }
+  throw new Error('Cloud workspace snapshot read-back did not match. Your local copy remains saved.')
+}
 
-  return {
-    workspaceId,
-    workspacePath: target.workspacePath,
-    canonicalPath: target.canonicalPath,
-    documentKind: target.documentKind,
-    syncedText: text,
-    readBackAttempts,
-    readBackVerified: true,
-  }
+export const syncWorkspaceEntryToCloudWorkspaceSnapshot = async (args: CloudSnapshotUploadArgs & {
+  entry: WorkspaceEntry
+}): Promise<SourceFileCloudWorkspaceSnapshotResult> => {
+  const results = await syncWorkspaceEntriesToCloudWorkspaceSnapshot({ ...args, entries: [args.entry] })
+  return results[0]!
 }
 
 export const readCanonicalCloudDocumentSnapshot = async (args: {

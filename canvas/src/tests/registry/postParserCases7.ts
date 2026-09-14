@@ -1,6 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["sourceFiles.cloudSync.downloadPreservesLocalAndDirectoryScope", "@/__tests__/sourceFileCloudTransfer.test", "testSourceFileCloudDownloadPreservesLocalBytesAndDirectoryScope"],
+  ["sourceFiles.cloudSync.configurationAndProxyBoundary", "@/__tests__/sourceFileCloudTransfer.test", "testSourceFileCloudConfigurationAndProxyOriginBoundaries"],
+  ["canvas.xrMode.timeline.rehearsalControls", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrTimelineRehearsalControlsPreserveSharedTransport"],
+  ["canvas.xrMode.physics.nativeController.hud", "@/__tests__/xrNativeControllerDemoHud.test.tsx", "testXrNativeControllerDemoHudPreservesPausedReset"],
   ["ui.graphCanvas.frozenLabels.presentationRefresh", "@/__tests__/graphCanvasFrozenLabelsPresentation.test", "testFrozenNodeLabelsKeepPositionsOnPresentationRefresh"],
   ["flow.dataflow.cache.completeInputs", "@/__tests__/flowConnectedValuesCache.test", "testFlowConnectedValuesCachePreservesCompleteInputs"],
   ["flow.dataflow.cache.retentionBounds", "@/__tests__/flowConnectedValuesCache.test", "testFlowConnectedValuesCacheBoundsAndOpaqueInputs"],
@@ -256,6 +260,10 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["sourceFiles.cloudSync.authRequired","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudUploadRejectsMissingSessionBeforeNetwork"],
   ["sourceFiles.cloudSync.localCloudIndicatorClick","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUploadsOnClick"],
   ["sourceFiles.cloudSync.repositoryAuthority","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudTargetsRespectDocumentRepositoryAuthority"],
+  ["workspaceFs.indexedDb.reopen","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceFileTextPersistsAcrossFsReinit"],
+  ["workspaceFs.indexedDb.concurrentMigration","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbConcurrentMigrationAndStaleRows"],
+  ["workspaceFs.indexedDb.invalidLegacy","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbMigrationPreservesExistingAndInvalidBytes"],
+  ["workspaceFs.indexedDb.writeFailure","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbWriteFailureAndMigrationRetry"],
   ["sourceFiles.ownership.summary.canonicalRoots","@/__tests__/sourceFilesOwnershipProjection.test","testSourceFilesOwnershipSummaryRendersCanonicalRoots"],
   ["sourceFiles.ownership.tree.workspaceSeeds","@/__tests__/sourceFilesOwnershipProjection.test","testSourceFilesTreeMarksAgenticGraphWorkspaceSeedAuthority"],
   ["sourceFiles.collaboration.repositoryAuthorityMismatch","@/__tests__/sourceFilesPocketBaseYjsCollaboration.test","testCollaborationSaveBridgeRejectsRepositoryTargetMismatch"],

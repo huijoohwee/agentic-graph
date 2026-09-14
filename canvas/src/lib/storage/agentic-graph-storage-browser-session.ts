@@ -135,6 +135,7 @@ export const beginAgenticGraphStorageBrowserSignIn = (args: {
     'return_to',
     resolveAgenticGraphStorageBrowserLoginReturnTo(args.returnTo),
   )
+  if (typeof window !== 'undefined' && window.location?.origin) loginUrl.searchParams.set('return_origin', window.location.origin)
   const destination = loginUrl.toString()
   if (args.navigate) {
     args.navigate(destination)

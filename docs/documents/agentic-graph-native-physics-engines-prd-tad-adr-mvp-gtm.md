@@ -4,7 +4,7 @@ id: "md:agentic-graph-native-physics-engines-prd-tad"
 author: "airvio / joohwee"
 date: "2026-09-12"
 updated: "2026-07-22"
-version: "1.1.1"
+version: "1.1.2"
 status: "runtime-ready"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 lang: "en-US"
@@ -44,11 +44,11 @@ guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
 previous_document_version: "1.1.0"
-prd_revision: "1.1.1"
-tad_revision: "1.1.1"
-adr_revision: "1.1.1"
-mvp_revision: "1.1.1"
-gtm_revision: "1.1.1"
+prd_revision: "1.1.2"
+tad_revision: "1.1.2"
+adr_revision: "1.1.2"
+mvp_revision: "1.1.2"
+gtm_revision: "1.1.2"
 ---
 
 # agentic-graph Independent Native 2D And 3D Physics Engines PRD-TAD-ADR-MVP-GTM
@@ -186,7 +186,7 @@ Retain the independent fixed-step 2D and 3D cores and adapt the existing XR pers
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-NATIVE-PHYSICS-ENGINES-PRD-TAD-ADR-MVP-GTM@1.1.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-NATIVE-PHYSICS-ENGINES-PRD-TAD-ADR-MVP-GTM@1.1.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -210,3 +210,40 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. No feature implementation artifact was independently bound by this document review; implementation disposition remains **unverified** pending the document owner’s source-to-VCC check.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+## Adapter usability acceptance — 2026-09-14
+
+This successor consumes criteria 6 and 8 at
+`PLAN-AGENTIC-GRAPH-NATIVE-PHYSICS-ENGINES-PRD-TAD-ADR-MVP-GTM@1.1.2`.
+Context: at Graph `68dc87ee3e42aaa6e09dfeda8c8cd8742737f757`, the native objective
+already advances key → treasure → replay, but its initial HUD instruction is
+transparent and pause/reset require keyboard or another panel before completion.
+Intent: let a solo builder demonstrate the existing objective without guessing
+controls. Role/Subject: builder. Action/Verb: rehearse. Object: the native objective.
+Outcome: visible first guidance and reachable pause, resume and reset controls.
+The user's all-outcomes e2e instruction authorizes this adapter enhancement.
+
+PRD/VCC HUD-01: from the running first frame, the objective is visible; Pause
+stops fixed steps, Resume preserves state, and Reset returns to find-key while
+preserving paused/running phase. Treasure completion still exposes Replay.
+TAD: `XrNativeControllerDemoHud.tsx` projects existing lifecycle functions and
+objective snapshots. ADR: keep this in presentation; introduce no physics,
+scoring, economy, saved currency, renderer or input authority. The existing
+key/chest distance and height gates remain unchanged.
+
+MVP: mount the real HUD and exercise buttons, then run existing objective,
+controller, Motion Control, shared Game Mode and browser checks. The mounted
+`xrNativeControllerDemoHud.test.tsx` passes pause/fixed-step/reset/resume behavior;
+full scene/browser and protected delivery evidence remain separately required.
+GTM: pair this reproducible demo with the existing sandbox Commerce rehearsal;
+no game reward represents money and no test payment validates buyer demand.
+Initial increment budget is in the frame-transport handover; dependency and
+always-load deltas are zero. A real timed prospect walkthrough remains unmeasured.
+
+Observed adapter evidence: 66 focused XR cases pass with the pinned Canvas docs,
+including HUD-01 and the native objective/reset contracts. The shared Game Mode
+mobile browser loop passes through mission completion, save and reload; Motion
+Control's virtual-camera browser check releases all tracks on Stop. The first
+objective and controls were visually checked on the live local stage. Full-suite
+failures and recovered live sandbox delivery are recorded once in the
+[frame-transport handover](agentic-graph-xr-frame-transport-prd-tad-adr-mvp-gtm.md#rehearsal-integration-handover--2026-09-14).

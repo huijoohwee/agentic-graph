@@ -1,5 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+
+const readStoragePlan = (path: string): string => [
+  readFileSync(path, 'utf8'),
+  ...['01', '02'].map(part => readFileSync(resolve(dirname(path),
+    `agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.part-${part}.md`), 'utf8')),
+].join('\n')
 
 export function testRootPackageDeclaresDrizzleForAgenticGraphStorageWorker() {
   const packagePath = resolve(process.cwd(), '..', 'package.json')
@@ -55,7 +61,7 @@ export function testCloudflareDeployScriptsSeedDocsMirrorIntoD1() {
 export function testStorageSyncDocumentDeclaresTieredSourceAuthorityContract() {
   const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md')
   const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.companion.md')
-  const storageDocText = readFileSync(storageDocPath, 'utf8')
+  const storageDocText = readStoragePlan(storageDocPath)
   const companionText = readFileSync(companionPath, 'utf8')
   const requiredStorageDocFragments = [
     'Authored Markdown remains canonical.',
@@ -107,7 +113,7 @@ export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract
   const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md')
   const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-storage-sync-document.companion.md')
   const binaryContractPath = resolve(process.cwd(), '..', 'docs', 'documents', 'agentic-graph-artifact-media-storage-architecture.md')
-  const storageDocText = readFileSync(storageDocPath, 'utf8')
+  const storageDocText = readStoragePlan(storageDocPath)
   const companionText = readFileSync(companionPath, 'utf8')
   const binaryContractText = readFileSync(binaryContractPath, 'utf8')
   const requiredStorageDocFragments = [
@@ -369,13 +375,17 @@ export function testMarkdownFsCacheUsesPersistedCollectionStore() {
 }
 
 export function testWorkspaceFsCacheOwnerUsesPersistedCollectionStore() {
-  const storagePath = resolve(process.cwd(), 'src', 'features', 'workspace-fs', 'workspaceFsPersisted.ts')
-  const storageText = readFileSync(storagePath, 'utf8')
-  if (storageText.includes('createRxDatabase') || storageText.includes("from 'rxdb/")) {
-    throw new Error('expected workspaceFs cache owner to avoid legacy runtime seams once the cache layer is minimal')
+  const root = resolve(process.cwd(), 'src', 'features', 'workspace-fs')
+  const owner = readFileSync(resolve(root, 'workspaceFsPersisted.ts'), 'utf8')
+  const adapter = readFileSync(resolve(root, 'workspaceFsIndexedDb.ts'), 'utf8')
+  if (!owner.includes('createWorkspaceFsDb') || owner.includes('createPersistedCollectionDb')) {
+    throw new Error('expected WorkspaceFs to delegate storage selection and migration to its adapter')
   }
-  if (!storageText.includes('createPersistedCollectionDb')) {
-    throw new Error('expected workspaceFs cache owner to use the minimal persisted collection store')
+  if (!adapter.includes("await import('@/lib/storage/indexedDbCollectionStore')") || adapter.includes('new IndexedCollectionDexie')) {
+    throw new Error('expected WorkspaceFs to lazy-load the shared IndexedDB adapter without owning another schema')
+  }
+  if (adapter.includes('createRxDatabase') || adapter.includes("from 'rxdb/")) {
+    throw new Error('expected WorkspaceFs to avoid retired storage dependencies')
   }
 }
 

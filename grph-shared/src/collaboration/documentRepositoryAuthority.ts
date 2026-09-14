@@ -7,7 +7,7 @@ export const DOCUMENT_REPOSITORY_DISPLAY_ROOTS = {
   agenticGraphDocs: 'GitHub/agentic-graph/docs',
   workspaceDocs: 'GitHub/huijoohwee/docs',
   workspaceSeeds: 'GitHub/agentic-graph/docs/workspace-seeds',
-  offlineFallback: 'IndexedDB',
+  offlineFallback: 'Browser storage',
 } as const
 
 export const AGENTIC_OS_WORKSPACE_SEEDS_REPOSITORY_PATH = 'docs/workspace-seeds'
