@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { digest } from './travel-mesh-release-plan.mjs'
 
-export const RECOVERY_SCHEMA = 'agentic-graph-core-publication-recovery/v1'
+export const RECOVERY_SCHEMA = 'agentic-graph-core-publication-recovery/v2'
 export const RECOVERY_REQUIRED_STEPS = Object.freeze([
   'Upload and activate exact-candidate travel mesh versions',
   'Reconcile canonical docs into D1',
@@ -17,6 +17,16 @@ export const verifySealedRecoveryInput = (value, schema) => {
   assert.equal(digest(body), receiptDigest, `${schema} seal differs`)
   return value
 }
+export function recoveryMode(jobs) {
+  const deployments = jobs.filter(job => job.name === 'Human-Authorized Deploy, Verify, And Publish Mirror')
+  assert.equal(deployments.length, 1)
+  const conclusion = name => deployments[0].steps.find(step => step.name === name)?.conclusion
+  if (conclusion('Restore exact prior travel mesh versions') === 'success') return 'restore-core'
+  for (const name of ['Restore exact prior travel mesh versions', 'Roll back Pages to exact last-known-good deployment',
+    'Restore and reconcile last-known-good D1 state']) assert.equal(conclusion(name), 'skipped', name)
+  assert.equal(conclusion('Preserve deployed state after publication boundary'), 'failure')
+  return 'retain-live-core'
+}
 export function validateRecoveryRun(run, jobs, repository, runId) {
   assert.equal(run.repository?.full_name, repository)
   assert.equal(String(run.id), String(runId))
@@ -30,20 +40,16 @@ export function validateRecoveryRun(run, jobs, repository, runId) {
   const conclusion = name => deployment.steps.find(step => step.name === name)?.conclusion
   for (const name of RECOVERY_REQUIRED_STEPS) assert.equal(conclusion(name), 'success', name)
   assert.equal(conclusion('Publish verified production mirror'), 'failure')
-  assert.equal(conclusion('Restore exact prior travel mesh versions'), 'success')
+  recoveryMode(jobs)
   assert.equal(conclusion('Roll back Pages to exact last-known-good deployment'), 'skipped')
   return run.head_sha
 }
 export function createRecoveryPlan({ controllerRevision, recoveryRunId, originalRun, originalArtifact,
-  core, rollback, pages, live, mirrorRevision, issuedAt }) {
+  core, rollback, pages, live, mirrorRevision, issuedAt, mode = 'restore-core' }) {
+  assert(['restore-core', 'retain-live-core'].includes(mode))
   verifySealedRecoveryInput(core, 'agentic-graph-core-runtime-release-receipt/v1')
-  verifySealedRecoveryInput(rollback, 'agentic-graph-core-runtime-rollback-receipt/v1')
   assert.equal(core.status, 'deployed')
-  assert.equal(rollback.status, 'restored')
   assert.equal(core.sourceRevision, originalRun.head_sha)
-  assert.equal(rollback.sourceRevision, core.sourceRevision)
-  assert.equal(rollback.candidateDigest, core.candidateDigest)
-  assert.equal(rollback.configurationDigest, core.configurationDigest)
   assert.equal(pages.sourceRevision, core.sourceRevision)
   assert.equal(live.candidateDigest, core.candidateDigest)
   assert.equal(core.units.length, 1)
@@ -52,24 +58,37 @@ export function createRecoveryPlan({ controllerRevision, recoveryRunId, original
   assert.equal(unit.worker, 'agentic-storage')
   assert.equal(unit.activated, true)
   assert.equal(unit.deployed.versionId, unit.candidate.versionId)
-  assert.equal(rollback.compensation.failures.length, 0)
-  assert.equal(rollback.serving.length, 1)
-  assert.equal(rollback.serving[0].versionId, unit.previous.versionId)
-  assert.equal(rollback.serving[0].percentage, 100)
+  if (mode === 'restore-core') {
+    verifySealedRecoveryInput(rollback, 'agentic-graph-core-runtime-rollback-receipt/v1')
+    assert.equal(rollback.status, 'restored')
+    assert.equal(rollback.sourceRevision, core.sourceRevision)
+    assert.equal(rollback.candidateDigest, core.candidateDigest)
+    assert.equal(rollback.configurationDigest, core.configurationDigest)
+    assert.equal(rollback.compensation.failures.length, 0)
+    assert.equal(rollback.serving.length, 1)
+    assert.equal(rollback.serving[0].versionId, unit.previous.versionId)
+    assert.equal(rollback.serving[0].percentage, 100)
+  } else {
+    assert.equal(rollback, null, 'retained completion cannot ignore rollback evidence')
+    assert.equal(core.serving.length, 1)
+    assert.equal(core.serving[0].versionId, unit.candidate.versionId)
+    assert.equal(core.serving[0].deploymentId, unit.deployed.deploymentId)
+    assert.equal(core.serving[0].percentage, 100)
+  }
   for (const revision of [controllerRevision, mirrorRevision, core.sourceRevision]) assert.match(revision, /^[a-f0-9]{40}$/)
   const body = {
-    schema: RECOVERY_SCHEMA, controllerRevision, recoveryRunId: String(recoveryRunId),
+    schema: RECOVERY_SCHEMA, mode, controllerRevision, recoveryRunId: String(recoveryRunId),
     originalRunId: String(originalRun.id), originalSourceRevision: core.sourceRevision,
     originalArtifactId: originalArtifact.id, originalArtifactDigest: originalArtifact.digest,
-    originalCoreReceiptDigest: core.receiptDigest, originalRollbackReceiptDigest: rollback.receiptDigest,
+    originalCoreReceiptDigest: core.receiptDigest, originalRollbackReceiptDigest: rollback?.receiptDigest ?? null,
     lifecycleCandidateDigest: core.candidateDigest, configurationDigest: core.configurationDigest,
     worker: unit.worker, versionId: unit.candidate.versionId, versionDigest: unit.candidate.versionDigest,
-    expectedCurrentDeploymentId: rollback.serving[0].deploymentId,
-    expectedCurrentVersionId: unit.previous.versionId,
+    expectedCurrentDeploymentId: mode === 'restore-core' ? rollback.serving[0].deploymentId : unit.deployed.deploymentId,
+    expectedCurrentVersionId: mode === 'restore-core' ? unit.previous.versionId : unit.candidate.versionId,
     pagesDeploymentId: pages.deploymentId, pagesOrigin: pages.deploymentOrigin,
     mirrorRevision, liveVerificationReceiptDigest: live.receiptDigest,
     issuedAt, expiresAt: new Date(Date.parse(issuedAt) + 60 * 60_000).toISOString(),
-    allowedEffects: ['activate-existing-storage-version', 'verify-core-browser-session'],
+    allowedEffects: mode === 'restore-core' ? ['activate-existing-storage-version', 'verify-core-browser-session'] : ['verify-retained-core'],
   }
   return { ...body, planDigest: digest(body) }
 }
@@ -78,7 +97,13 @@ export function validateRecoveryPlan(plan) {
   const { planDigest, ...body } = plan
   assert.equal(digest(body), planDigest, 'recovery plan seal differs')
   assert.equal(plan.worker, 'agentic-storage')
-  assert.deepEqual(plan.allowedEffects, ['activate-existing-storage-version', 'verify-core-browser-session'])
+  assert(['restore-core', 'retain-live-core'].includes(plan.mode))
+  assert.deepEqual(plan.allowedEffects, plan.mode === 'restore-core'
+    ? ['activate-existing-storage-version', 'verify-core-browser-session'] : ['verify-retained-core'])
+  if (plan.mode === 'retain-live-core') {
+    assert.equal(plan.originalRollbackReceiptDigest, null)
+    assert.equal(plan.expectedCurrentVersionId, plan.versionId)
+  }
   return plan
 }
 export function assertRecoveryAuthority({ plan, environment, approvals, ownerId, now = new Date() }) {

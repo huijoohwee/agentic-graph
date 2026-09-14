@@ -37,7 +37,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with: { name: 'core-recovery-plan-${{ github.run_id }}', path: '${{ runner.temp }}/core-release-recovery', if-no-files-found: error, retention-days: 90 }
   apply:
-    name: Restore and verify retained core version
+    name: Verify and complete retained core release
     needs: prepare
     environment: production
     runs-on: ubuntu-latest

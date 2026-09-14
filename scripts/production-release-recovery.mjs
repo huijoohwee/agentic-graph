@@ -11,7 +11,7 @@ import { createLifecycleLive } from './production-release-lifecycle.mjs'
 import { verifyLocalReviewIdentity } from './production-release-authorization.mjs'
 import * as contract from './production-release-lifecycle-contract.mjs'
 import { assertRecoveryAuthority, assertRecoveryProviderState, createRecoveryPlan,
-  validateRecoveryPlan, validateRecoveryRun } from './production-release-recovery-proof.mjs'
+  recoveryMode, validateRecoveryPlan, validateRecoveryRun } from './production-release-recovery-proof.mjs'
 
 const repository = 'huijoohwee/agentic-graph'
 const mirrorRepository = 'huijoohwee/huijoohwee'
@@ -81,6 +81,7 @@ async function prepare(root) {
   const run = gh('api', `repos/${repository}/actions/runs/${originalRunId}`)
   const jobs = gh('api', `repos/${repository}/actions/runs/${originalRunId}/jobs?per_page=100`).jobs
   validateRecoveryRun(run, jobs, repository, originalRunId)
+  const mode = recoveryMode(jobs)
   // Recovery may extend the controller, but cannot silently change the runtime
   // being restored. Existing product and configuration source must still match.
   const changed = git('diff', '--name-only', run.head_sha, 'HEAD', '--',
@@ -98,6 +99,8 @@ async function prepare(root) {
   assert(!fs.existsSync(raw), 'original evidence must be restored into a fresh directory')
   command('gh', ['run', 'download', originalRunId, '--repo', repository, '--name', artifactName, '--dir', raw])
   const live = verifyOriginalEvidence(raw)
+  if (mode === 'retain-live-core') assert(!fs.existsSync(path.join(raw, 'travel-mesh-rollback-receipt.json')),
+    'retained completion cannot ignore a rollback receipt')
   const marker = await publicMarkers(raw)
   const localReview = JSON.parse(process.env.RECOVERY_LOCAL_REVIEW)
   const releaseEvidence = JSON.parse(process.env.RECOVERY_RELEASE_EVIDENCE)
@@ -125,9 +128,9 @@ async function prepare(root) {
   assert.equal(checks.length, 1)
   assert.equal(checks[0].conclusion, 'SUCCESS')
   const plan = createRecoveryPlan({ controllerRevision: process.env.GITHUB_SHA,
-    recoveryRunId: process.env.GITHUB_RUN_ID, originalRun: run, originalArtifact: artifact,
+    recoveryRunId: process.env.GITHUB_RUN_ID, originalRun: run, originalArtifact: artifact, mode,
     core: read(path.join(raw, 'travel-mesh-release-receipt.json')),
-    rollback: read(path.join(raw, 'travel-mesh-rollback-receipt.json')),
+    rollback: mode === 'restore-core' ? read(path.join(raw, 'travel-mesh-rollback-receipt.json')) : null,
     pages: read(path.join(raw, 'candidate-pages-deployment.json')), live, mirrorRevision,
     issuedAt: new Date().toISOString() })
   write(path.join(root, 'plan.json'), plan)
@@ -135,7 +138,7 @@ async function prepare(root) {
   write(path.join(root, 'original-run.json'), { ...run, jobs })
   fs.appendFileSync(process.env.GITHUB_OUTPUT, `plan_digest=${plan.planDigest}\ndocs_revision=${marker.agenticCanvasOs.revision}\nmirror_revision=${mirrorRevision}\n`)
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-    `Restore existing storage version \`${plan.versionId}\` for retained source \`${plan.originalSourceRevision}\`.\n\nExact approval comment: \`authorize recovery ${plan.planDigest}\`\n`)
+    `${mode === 'restore-core' ? 'Restore' : 'Verify retained'} storage version \`${plan.versionId}\` for source \`${plan.originalSourceRevision}\`.\n\nExact approval comment: \`authorize recovery ${plan.planDigest}\`\n`)
 }
 
 async function apply(root) {
@@ -147,6 +150,7 @@ async function apply(root) {
   assert.equal(live.receiptDigest, plan.liveVerificationReceiptDigest)
   const original = read(path.join(root, 'original-run.json'))
   validateRecoveryRun(original, original.jobs, repository, plan.originalRunId)
+  assert.equal(recoveryMode(original.jobs), plan.mode)
   const originalCore = read(path.join(raw, 'travel-mesh-release-receipt.json'))
   assert.equal(originalCore.receiptDigest, plan.originalCoreReceiptDigest)
   const profile = CORE_RUNTIME_PROFILE
@@ -180,14 +184,16 @@ async function apply(root) {
     mirrorRevision: git('ls-remote', `https://github.com/${mirrorRepository}.git`, 'refs/heads/main').split(/\s+/)[0] })
   assertRecoveryAuthority({ plan, environment: process.env, approvals,
     ownerId: configuration.variables.AGENTIC_OS_STORAGE_OWNER_ID })
-  write(path.join(root, 'activation-attempt.json'), { planDigest: plan.planDigest,
-    authority, previous: current, versionId: plan.versionId, attemptedAt: new Date().toISOString(),
-    automaticRetry: false, uploads: false, migrations: false, routeChanges: false })
-  // This is the only provider mutation. Its arguments come from the existing
-  // release owner; no upload, migration, secret, route or Pages operation exists.
-  await execute(activationArguments(entry, plan.versionId, `agentic-graph recovery ${plan.planDigest}`))
+  if (plan.mode === 'restore-core') {
+    write(path.join(root, 'activation-attempt.json'), { planDigest: plan.planDigest,
+      authority, previous: current, versionId: plan.versionId, attemptedAt: new Date().toISOString(),
+      automaticRetry: false, uploads: false, migrations: false, routeChanges: false })
+    // Only the observed rollback mode may reactivate an existing version.
+    await execute(activationArguments(entry, plan.versionId, `agentic-graph recovery ${plan.planDigest}`))
+  }
   const serving = await deployment()
   assert.equal(serving.versionId, plan.versionId)
+  if (plan.mode === 'retain-live-core') assert.deepEqual(serving, current)
   const probes = await profile.probe(configuration)
   const exposure = await profile.exposure(fetch, process.env)
   await publicMarkers(raw)
@@ -196,6 +202,7 @@ async function apply(root) {
     sourceRevision: plan.originalSourceRevision, controllerRevision: plan.controllerRevision,
     recoveryRunId: plan.recoveryRunId, planDigest: plan.planDigest,
     originalCoreReceiptDigest: plan.originalCoreReceiptDigest, authority,
+    activationPerformed: plan.mode === 'restore-core',
     previous: current, serving, versionDigest: digest(version), probes, exposure,
     recoveredAt: new Date().toISOString(),
   }))
