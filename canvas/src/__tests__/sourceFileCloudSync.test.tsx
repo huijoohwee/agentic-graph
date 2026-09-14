@@ -8,7 +8,7 @@ import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { __resetAgenticGraphStorageDbForTests, getAgenticGraphStorageDb } from '@/lib/storage/agentic-graph-storage-db'
-import { readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, syncWorkspaceEntryToCloudWorkspaceSnapshot, syncWorkspaceEntryToCanonicalCloud } from '@/features/source-files/sourceFileCanonicalCloudSync'
+import { readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, syncWorkspaceEntriesToCloudWorkspaceSnapshot, syncWorkspaceEntryToCloudWorkspaceSnapshot, syncWorkspaceEntryToCanonicalCloud } from '@/features/source-files/sourceFileCanonicalCloudSync'
 import { syncSourceFilesToAgenticGraphStorage } from '@/features/source-files/sourceFilesStorageSync'
 import { SourceFileCloudSyncIndicator, resolveSourceFileCloudSyncStatus } from '@/features/markdown-workspace/SourceFileCloudSyncIndicator'
 import { beginAgenticGraphStorageBrowserSignIn, readAgenticGraphStorageBrowserSession } from '@/lib/storage/agentic-graph-storage-browser-session'
@@ -146,6 +146,14 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     try { await syncWorkspaceEntryToCloudWorkspaceSnapshot({ entry: snapshotEntry, workspaceId, fetchImpl: cookieFetch }) } catch (error) { conflict = String(error).includes('read-back did not match') }
     const afterConflict = readRemoteTarget()?.[1]
     if (!conflict || String(afterConflict?.content_md || '') !== newerRemoteText || !pushedMutations.some(mutation => mutation.op === 'upsert' && mutation.record?.canonicalPath === sharedSnapshot.canonicalPath) || events.includes('POST:/api/storage/collab/save') || touchesSibling()) throw new Error('expected a newer remote revision to remain non-overwriting for an explicit target snapshot')
+    await __resetAgenticGraphStorageDbForTests()
+    const batchPaths = await Promise.all(['batch-a.md', 'batch-b.md'].map(name => fs.createFile({ parentPath: '/', name, text: `# ${name}` })))
+    const batchEntries = (await fs.listEntries()).filter(candidate => batchPaths.includes(candidate.path))
+    events.length = 0
+    const batch = await syncWorkspaceEntriesToCloudWorkspaceSnapshot({ entries: batchEntries, workspaceId, fetchImpl: cookieFetch })
+    if (batch.length !== 2 || batch.some(item => !item.readBackVerified)
+      || events.filter(event => event === 'POST:/api/storage/push').length !== 1
+      || events.filter(event => event.startsWith('GET:/api/storage/export/')).length !== 1) throw new Error('Batch upload must verify two documents with one push and one export')
     await __resetAgenticGraphStorageDbForTests()
     events.length = 0
     const result = await syncWorkspaceEntryToCanonicalCloud({ entry, workspaceId, baseUrl: '', sessionToken: SESSION_TOKEN, fetchImpl })
@@ -537,9 +545,20 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
       await tick()
     })
     const accessRequiredButton = container.querySelector('button[data-source-file-cloud-status="access-required"]') as HTMLButtonElement | null
-    if (!accessRequiredButton || !accessRequiredButton.disabled || !String(accessRequiredButton.getAttribute('aria-label')).includes('access is required')) {
-      throw new Error('expected membership denial to disable retry and preserve the local copy')
+    if (!accessRequiredButton || accessRequiredButton.disabled || !String(accessRequiredButton.getAttribute('aria-label')).includes('access is required')) {
+      throw new Error('expected membership denial to offer configuration while preserving the local copy')
     }
+    let opened = 0
+    const onOpen = () => { opened += 1 }
+    harness.dom.window.addEventListener('kg:mainPanelOpen', onOpen)
+    for (const status of ['unavailable', 'access-required'] as const) {
+      await act(async () => { root.render(<SourceFileCloudSyncIndicator entry={entry} status={status} onUpload={() => { uploadCount += 1 }} />); await tick() })
+      const button = container.querySelector('button')!
+      if (button.disabled) throw new Error('Cloud setup must remain actionable')
+      await act(async () => { button.click(); await tick() })
+    }
+    harness.dom.window.removeEventListener('kg:mainPanelOpen', onOpen)
+    if (opened !== 2 || Number(uploadCount) !== 2) throw new Error('Setup icons must open Settings without uploading')
   } finally {
     await act(async () => {
       root.unmount()

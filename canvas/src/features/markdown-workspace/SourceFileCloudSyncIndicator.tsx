@@ -1,10 +1,13 @@
 import React from 'react'
+import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
 import { Cloud, CloudOff, HardDrive, LoaderCircle } from 'lucide-react'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import {
   readCanonicalCloudDocumentSnapshot,
   resolveSourceFileCanonicalCloudTarget,
   syncWorkspaceEntryToCloudWorkspaceSnapshot,
+  SOURCE_FILE_CLOUD_SNAPSHOT_VERIFIED_EVENT,
+  type SourceFileCloudWorkspaceSnapshotResult,
 } from '@/features/source-files/sourceFileCanonicalCloudSync'
 import {
   readActiveAgenticGraphStorageWorkspaceId,
@@ -139,6 +142,23 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
   ), [])
 
   React.useEffect(() => {
+    if (typeof window === 'undefined' || !cloudSyncEnabled) return
+    const verified = (event: Event) => {
+      const results = (event as CustomEvent<SourceFileCloudWorkspaceSnapshotResult[]>).detail
+        .filter(result => result.workspaceId === readActiveAgenticGraphStorageWorkspaceId())
+      if (!results.length) return
+      setRemoteContentByCanonicalPath(previous => {
+        const next = new Map(previous)
+        for (const result of results) next.set(result.canonicalPath, result.syncedText)
+        return next
+      })
+      setSnapshotStatus('ready')
+    }
+    window.addEventListener(SOURCE_FILE_CLOUD_SNAPSHOT_VERIFIED_EVENT, verified)
+    return () => window.removeEventListener(SOURCE_FILE_CLOUD_SNAPSHOT_VERIFIED_EVENT, verified)
+  }, [cloudSyncEnabled])
+
+  React.useEffect(() => {
     if (!cloudSyncEnabled || !pathSignature) {
       setRemoteContentByCanonicalPath(new Map())
       setSnapshotStatus('unavailable')
@@ -227,7 +247,7 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
             ? 'Cloud sync requires sign-in. Your local copy remains saved.'
             : currentSession.status === 'access-denied'
               ? 'Cloud sync access is required for this workspace. Your local copy remains saved.'
-              : currentSession.message || 'Cloud sync is unavailable. Your local copy remains saved.',
+              : currentSession.message || 'Configure cloud sync in Settings. Your local copy remains saved.',
         })
         return
       }
@@ -265,7 +285,7 @@ const buildIndicatorLabel = (entry: WorkspaceEntry, status: SourceFileCloudSyncS
   if (status === 'error') return `Cloud sync failed for ${name}. Retry shared cloud upload${error ? `: ${error}` : ''}`
   if (status === 'auth-required') return `Cloud sync requires sign-in for ${name}. This file remains saved locally.`
   if (status === 'access-required') return `Cloud sync access is required for ${name}. This file remains saved locally.`
-  if (status === 'unavailable') return `Local saved copy: ${name}. Cloud sync is unavailable.`
+  if (status === 'unavailable') return `Local saved copy: ${name}. Configure cloud sync in Settings.`
   if (status === 'checking') return `Checking cloud sync for ${name}`
   if (status === 'unsupported') return `Local file: ${name}. Cloud upload supports Markdown`
   return `Local saved copy: ${name}. Upload a shared cloud snapshot`
@@ -282,8 +302,6 @@ export function SourceFileCloudSyncIndicator(props: {
   const disabled = status === 'checking'
     || status === 'uploading'
     || status === 'unsupported'
-    || status === 'access-required'
-    || status === 'unavailable'
   const tone = status === 'cloud'
     ? 'text-green-600 dark:text-green-400'
     : status === 'error'
@@ -312,7 +330,11 @@ export function SourceFileCloudSyncIndicator(props: {
       title={label}
       data-source-file-cloud-status={status}
       disabled={disabled}
-      onClick={() => void props.onUpload(entry)}
+      onClick={() => {
+        if (status === 'unavailable' || status === 'access-required') {
+          emitMainPanelOpen({ tab: 'settings', searchQuery: 'storage' })
+        } else void props.onUpload(entry)
+      }}
     >
       {icon}
     </button>

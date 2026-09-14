@@ -34,7 +34,7 @@ export const testMainPanelSettingsSurfacesDocumentStorageSyncContract = () => {
     'GitHub/agentic-graph/docs',
     'GitHub/huijoohwee/docs',
     'GitHub/agentic-graph/docs/workspace-seeds',
-    'IndexedDB',
+    'Browser storage',
   ]) {
     if (!authorityText.includes(token)) throw new Error(`Expected shared document authority to include ${JSON.stringify(token)}`)
   }

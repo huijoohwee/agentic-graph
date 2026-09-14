@@ -363,3 +363,51 @@ Toasts and review actions are always updated; cache eviction never changes recor
 ## Planning continuity — reference implementation
 
 This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-ADR-MVP-GTM@5.0.1` with [the five-role owner](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.
+
+
+## Source Files connection and transfer
+
+Owner: `canvas/src/features/panels/views/DocumentStorageSyncSettingsRows.tsx`.
+The Source Files cloud indicator and Source File Management action open this
+existing Settings section. Online explicitly opts into the same-origin storage
+service when no deployment switch is supplied; an explicit disabled deployment
+switch stays disabled. The workspace comes from the existing storage contract
+or its configured environment override. Connection readiness requires an active
+browser session and workspace membership, independently of network availability.
+
+`sourceFileCanonicalCloudSync.ts` batches selected Markdown upserts through the
+existing durable outbox and verifies remote text after transfer. No canonical
+Git commit or missing-file deletion is implied. `sourceFileCloudTransfer.ts`
+selects a file or recursive folder boundary, limits each action to 50 files and
+5 MiB, and lazily loads from Settings. Downloads rebuild directories in the
+browser working copy; differing local text remains intact while cloud text is
+saved under a deterministic `.cloud-<digest>` sibling. Repeating a matching
+download is a no-op. Download writes do not mutate the Git-backed host mirror.
+Binary files and empty directory metadata are not part of the Markdown snapshot
+contract. No additional provider, dependency, paid resource, or billing change
+is required by this path.
+
+Validation: the registered `sourceFiles.cloudSync` cases cover authentication,
+CSRF, read-back, remote conflict retention, directory scope, empty Markdown,
+Unicode, repeat downloads, traversal rejection, bounds and actionable setup.
+Local and fixture validation does not substitute for a signed-in cloud transfer
+receipt or protected production deployment.
+
+This implementation consumes S1/S2/S3/S7 and ADR-1 of the five-role
+`PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-ADR-MVP-GTM@5.0.1` owner: the solo author
+can discover setup, retain offline bytes, and request a bounded shared copy.
+The existing outbox, authorization, repository mapping and IndexedDB owners are
+reused; the new lazy transfer module owns selection and preservation only.
+The registered tests above evaluate those source criteria; authenticated
+cross-device readback and S6 protected delivery remain open. MVP scope is
+Markdown working copies. Buyer demand, WTP, and measured GTM conversion remain
+unknown; these checks establish no paid-loop or production claim.
+
+Authentication inventory on 2026-09-14 found the live storage Worker in
+`session-exchange` mode, with no Cloudflare Access app or identity provider.
+The existing workspace is `kgws:canonical-docs`; membership exists but does not
+supply a browser credential. Google sign-in is a proposed user flow without a
+workspace access key, using an OAuth client on the existing Worker. It needs
+an authorized callback, verified identity-to-membership binding and protected
+deployment; it is not configured by the Online switch. No OAuth client, identity
+grant, paid plan or provider resource was created by this change.
