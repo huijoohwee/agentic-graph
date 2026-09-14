@@ -26,6 +26,15 @@ workflow run while its `production` deployment is pending. That command submits 
 protected-environment approval with digest-bound terminal evidence; there is no second
 browser-approval step, and a browser-only approval is invalid.
 
+If mirror publication fails after every live gate passes, retain the original run's
+raw receipts. Repair the owning validation code and complete the existing protected
+mirror PR without changing its generated runtime. The existing `recovery_run_id`
+path can then seal completion for that exact retained source. Its plan distinguishes
+an observed Worker rollback from a fully retained live deployment: the former may
+reactivate the recorded version; the latter only verifies current state. Both require
+an already-published exact mirror, matching Pages/D1/Worker identities and protected
+approval of the recovery plan. Neither mode uploads assets or rewrites D1.
+
 This runbook does not authorize a release. It replaces the obsolete AWS Agent API,
 AgentCore, and Vercel instructions formerly at this path; those source trees and commands do
 not exist in the current product topology.

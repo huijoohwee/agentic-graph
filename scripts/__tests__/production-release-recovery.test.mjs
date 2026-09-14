@@ -3,7 +3,7 @@ import test from 'node:test'
 import fs from 'node:fs'
 import { digest, seal } from '../travel-mesh-release-plan.mjs'
 import { assertRecoveryAuthority, assertRecoveryProviderState, createRecoveryPlan,
-  RECOVERY_REQUIRED_STEPS, validateRecoveryPlan, validateRecoveryRun } from '../production-release-recovery-proof.mjs'
+  RECOVERY_REQUIRED_STEPS, recoveryMode, validateRecoveryPlan, validateRecoveryRun } from '../production-release-recovery-proof.mjs'
 
 const source = 'a'.repeat(40), controller = 'b'.repeat(40), mirror = 'c'.repeat(40)
 const candidate = 'd'.repeat(64), config = 'e'.repeat(64)
@@ -86,6 +86,39 @@ test('only current protected-run approval of the exact plan permits recovery', (
     { ...request, ownerId: 'github-user:2:unrelated' },
     { ...request, now: new Date(plan.expiresAt) },
   ]) assert.throws(() => assertRecoveryAuthority(changed))
+})
+
+test('fully retained live releases can finish without activation or an invented rollback receipt', () => {
+  const f = fixture()
+  f.jobs[0].steps.find(step => step.name === 'Restore exact prior travel mesh versions').conclusion = 'skipped'
+  f.jobs[0].steps.push({ name: 'Restore and reconcile last-known-good D1 state', conclusion: 'skipped' },
+    { name: 'Preserve deployed state after publication boundary', conclusion: 'failure' })
+  assert.equal(validateRecoveryRun(f.run, f.jobs, 'huijoohwee/agentic-graph', 12), source)
+  assert.equal(recoveryMode(f.jobs), 'retain-live-core')
+  const { receiptDigest, ...body } = f.core
+  body.units[0].deployed.deploymentId = 'retained-deployment'
+  body.serving = [{ ...body.units[0].deployed, percentage: 100 }]
+  const input = { controllerRevision: controller, recoveryRunId: 13, originalRun: f.run,
+    originalArtifact: { id: 22, digest: 'sha256:' + 'f'.repeat(64) }, core: seal(body), rollback: null,
+    pages: f.pages, live: { candidateDigest: candidate, receiptDigest: '1'.repeat(64) },
+    mirrorRevision: mirror, issuedAt, mode: 'retain-live-core' }
+  const plan = createRecoveryPlan(input)
+  assert.equal(validateRecoveryPlan(plan), plan)
+  assert.deepEqual(plan.allowedEffects, ['verify-retained-core'])
+  assert.equal(plan.originalRollbackReceiptDigest, null)
+  assert.doesNotThrow(() => assertRecoveryProviderState(plan, {
+    deployment: body.units[0].deployed, version, pages: f.pages, mirrorRevision: mirror }))
+  assert.throws(() => createRecoveryPlan({ ...input, rollback: f.rollback }))
+  body.serving[0].percentage = 50
+  assert.throws(() => createRecoveryPlan({ ...input, core: seal(body) }))
+  for (const name of ['Restore exact prior travel mesh versions', 'Restore and reconcile last-known-good D1 state']) {
+    const changed = structuredClone(f.jobs)
+    changed[0].steps.find(step => step.name === name).conclusion = 'failure'
+    assert.throws(() => validateRecoveryRun(f.run, changed, 'huijoohwee/agentic-graph', 12))
+  }
+  const changed = { ...plan, allowedEffects: ['activate-existing-storage-version', 'verify-core-browser-session'] }
+  const { planDigest, ...changedBody } = changed
+  assert.throws(() => validateRecoveryPlan({ ...changedBody, planDigest: digest(changedBody) }))
 })
 
 test('release checks mirror bytes before activation and preserves all resources together', () => {
