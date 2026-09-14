@@ -44,7 +44,6 @@ import {
 import { LS_KEYS } from '@/lib/config'
 import { lsBool, lsJson, lsRemove, lsSetBool } from '@/lib/persistence'
 import {
-  createPersistedCollectionDb,
   type PersistedCollectionDb,
   type PersistedCollectionMap,
 } from '@/lib/storage/persistedCollectionStore'
@@ -58,7 +57,7 @@ import {
 } from './workspaceDocsMirrorTextUpsertQueue'
 import { isCanonicalWorkspaceSeedAuthority } from './workspaceSeedInventoryAuthority'
 
-const DB_NAME = 'kg:workspace-fs'
+import { createWorkspaceFsDb } from './workspaceFsIndexedDb'
 const docsMirrorFolderFlushTimers = new Map<WorkspacePath, number>()
 
 type WorkspaceRecordMap = { entries: WorkspaceEntry }
@@ -139,28 +138,18 @@ const cancelWorkspaceDocsMirrorMutationsUnderPath = (workspacePath: WorkspacePat
 
 const getDb = async () => {
   if (dbSingleton) return dbSingleton
-  dbSingleton = (async () => {
-    return createPersistedCollectionDb<WorkspaceRecordMap>({
-      storageKey: DB_NAME,
-      collectionNames: ['entries'],
-      recordKeyByCollection: {
-        entries: row => normalizeWorkspacePath(String(row.path || '')),
-      },
-      shouldPersistRecordByCollection: {
-        entries: shouldPersistWorkspaceEntryInLocalSnapshot,
-      },
-    })
-  })()
+  dbSingleton = createWorkspaceFsDb({ legacyRecordFilter: shouldPersistWorkspaceEntryInLocalSnapshot })
   return dbSingleton.catch(err => {
     dbSingleton = null
     throw err
   })
 }
 
-export function createWorkspacePersistedFs(): WorkspaceFs {
+export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
   resetWorkspaceDocsMirrorSyncForPersistedFs()
   const ensureRoot = async () => {
-    const { collections } = await getDb()
+    const db = await resolveDb()
+    const { collections } = db
     const existing = await collections.entries.findOne(WORKSPACE_ROOT_PATH).exec()
     if (existing) {
       const updatedAtMs = normalizeUpdatedAtMs(existing.get('updatedAtMs'))
@@ -173,17 +162,17 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
       }
       return
     }
-    await collections.entries.incrementalUpsert({
+    await db.compareAndWrite([{ kind: 'upsert', collectionName: 'entries', record: {
       path: WORKSPACE_ROOT_PATH,
       parentPath: '',
       kind: 'folder',
       name: '',
       updatedAtMs: normalizeUpdatedAtMs(Date.now()),
-    })
+    } }], [{ collectionName: 'entries', selector: { path: WORKSPACE_ROOT_PATH }, records: [] }])
   }
 
   const ensureSeed = async (): Promise<boolean> => {
-    const { collections } = await getDb()
+    const { collections } = await resolveDb()
     await ensureRoot()
     let changed = false
     if (await removeLegacyWorkspaceSourceEntries(collections)) changed = true
@@ -425,7 +414,7 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
 
   const listEntries = async () => {
     await ensureRoot()
-    const { collections } = await getDb()
+    const { collections } = await resolveDb()
     const rows = await collections.entries.find().exec()
     return rows
       .map(r => {
@@ -444,7 +433,7 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
   }
 
   const readFileText = async (path: WorkspacePath) => {
-    const { collections } = await getDb()
+    const { collections } = await resolveDb()
     const p = normalizeWorkspacePath(path)
     const row = await collections.entries.findOne(p).exec()
     if (!row || row.get('kind') !== 'file') return null
@@ -452,7 +441,7 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
   }
 
   const writeFileText = async (path: WorkspacePath, text: string, options?: WorkspaceFsMutationOptions) => {
-    const { collections } = await getDb()
+    const { collections } = await resolveDb()
     const p = normalizeWorkspacePath(path)
     const row = await collections.entries.findOne(p).exec()
     if (!row || row.get('kind') !== 'file') return
@@ -480,25 +469,26 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
     notifyWorkspaceFsChanged({ op: 'writeFileText', path: p })
   }
 
+  const createEntry = async (entry: WorkspaceEntry): Promise<WorkspaceEntry> => {
+    const db = await resolveDb()
+    const extIndex = entry.kind === 'file' ? entry.name.lastIndexOf('.') : -1
+    const stem = extIndex > 0 ? entry.name.slice(0, extIndex) : entry.name
+    const ext = extIndex > 0 ? entry.name.slice(extIndex) : ''
+    for (let attempt = 1; attempt <= 999; attempt += 1) {
+      const name = attempt === 1 ? entry.name : `${stem}-${attempt}${ext}`
+      const path = joinWorkspacePath(entry.parentPath || WORKSPACE_ROOT_PATH, name)
+      const record = { ...entry, name, path }
+      if (await db.compareAndWrite([{ kind: 'upsert', collectionName: 'entries', record }],
+        [{ collectionName: 'entries', selector: { path }, records: [] }])) return record
+    }
+    throw new Error('No available workspace name after 999 attempts; existing files were retained.')
+  }
+
   const createFolder = async (args: { parentPath: WorkspacePath; name: string; mirrorToHost?: boolean }) => {
     await ensureRoot()
-    const { collections } = await getDb()
-    const parent = normalizeWorkspacePath(args.parentPath)
-    const desired = String(args.name ?? '').trim() || 'folder'
-    let name = desired
-    let path = joinWorkspacePath(parent, name)
-    for (let i = 2; i <= 999; i += 1) {
-      const exists = await collections.entries.findOne(path).exec()
-      if (!exists) break
-      name = `${desired}-${i}`
-      path = joinWorkspacePath(parent, name)
-    }
-    await collections.entries.incrementalUpsert({
-      path,
-      parentPath: parent,
-      kind: 'folder',
-      name,
-      updatedAtMs: Date.now(),
+    const { path } = await createEntry({
+      path: '', parentPath: normalizeWorkspacePath(args.parentPath), kind: 'folder',
+      name: String(args.name ?? '').trim() || 'folder', updatedAtMs: Date.now(),
     })
     if (args.mirrorToHost !== false && isWorkspaceDocsBackedMirrorPath(path)) {
       scheduleWorkspaceDocsMirrorFolderEnsure(path)
@@ -511,27 +501,10 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
 
   const createFile = async (args: { parentPath: WorkspacePath; name: string; text: string; mirrorToHost?: boolean }) => {
     await ensureRoot()
-    const { collections } = await getDb()
     const parent = normalizeWorkspacePath(args.parentPath)
-    const desired = String(args.name ?? '').trim() || 'file.md'
-    let name = desired
-    let path = joinWorkspacePath(parent, name)
-    for (let i = 2; i <= 999; i += 1) {
-      const exists = await collections.entries.findOne(path).exec()
-      if (!exists) break
-      const extIndex = desired.lastIndexOf('.')
-      const stem = extIndex > 0 ? desired.slice(0, extIndex) : desired
-      const ext = extIndex > 0 ? desired.slice(extIndex) : ''
-      name = `${stem}-${i}${ext}`
-      path = joinWorkspacePath(parent, name)
-    }
-    await collections.entries.incrementalUpsert({
-      path,
-      parentPath: parent,
-      kind: 'file',
-      name,
-      text: String(args.text ?? ''),
-      updatedAtMs: Date.now(),
+    const { path } = await createEntry({
+      path: '', parentPath: parent, kind: 'file', name: String(args.name ?? '').trim() || 'file.md',
+      text: String(args.text ?? ''), updatedAtMs: Date.now(),
     })
     if (args.mirrorToHost !== false && isWorkspaceDocsBackedMirrorPath(parent)) {
       scheduleWorkspaceDocsMirrorFolderEnsure(parent)
@@ -553,7 +526,7 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
 
   const deleteEntry = async (path: WorkspacePath, options?: WorkspaceFsMutationOptions) => {
     await ensureRoot()
-    const { collections } = await getDb()
+    const { collections } = await resolveDb()
     const p = normalizeWorkspacePath(path)
     if (p === WORKSPACE_ROOT_PATH || isInitializationWorkspacePath(p)) return
     const row = await collections.entries.findOne(p).exec()

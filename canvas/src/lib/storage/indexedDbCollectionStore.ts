@@ -16,8 +16,7 @@ import {
   type PersistedCollectionRow,
 } from '@/lib/storage/persistedCollectionStore'
 
-type StoredRecord = Record<string, unknown>
-type StoredRecordMap = Record<string, StoredRecord>
+type StoredRecord = Record<string, unknown>; type StoredRecordMap = Record<string, StoredRecord>
 type Selector<T> = Partial<{ [K in keyof T]: T[K] }>
 type SortSpec<T> = Partial<Record<Extract<keyof T, string>, 'asc' | 'desc'>>
 
@@ -72,6 +71,7 @@ const revisionRecordKey = (workspaceId: string, documentId: string, revision: nu
 export const createIndexedDbCollectionDb = async <Collections extends StoredRecordMap>(args: {
   databaseName: string
   collectionNames: Array<keyof Collections>
+  recordKeyByCollection?: Partial<{ [Name in keyof Collections]: (record: Collections[Name]) => string }>
   onPersistenceStateChanged?: ((state: PersistedCollectionPersistenceState) => void) | null
 }): Promise<IndexedDbCollectionDb<Collections>> => {
   const raw = new IndexedCollectionDexie(args.databaseName)
@@ -79,6 +79,7 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
     storageKey: `${args.databaseName}:memory`,
     persistent: false,
     collectionNames: args.collectionNames,
+    recordKeyByCollection: args.recordKeyByCollection,
   })
   const stateListeners = new Set<(state: PersistedCollectionPersistenceState) => void>()
   const collectionListeners = new Map<
@@ -181,14 +182,15 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
     })
   }
 
-  const readId = (record: StoredRecord): string => String(record.id || '').trim()
+  const readId = <Name extends keyof Collections>(name: Name, record: Collections[Name]): string =>
+    String(args.recordKeyByCollection?.[name]?.(record) ?? record.id ?? '').trim()
 
   const writeRecord = async <CollectionName extends keyof Collections>(
     collectionName: CollectionName,
     record: Collections[CollectionName],
   ): Promise<void> => {
     const safeRecord = cloneValue(record)
-    const id = readId(safeRecord)
+    const id = readId(collectionName, safeRecord)
     if (!id) throw new Error(`${String(collectionName)} record id is required`)
     const memoryRow = await memory.collections[collectionName].findOne(id).exec()
     const operation: PersistedCollectionChangeEvent<Collections[CollectionName]>['operation'] =
@@ -237,7 +239,7 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
     initialRecord: Collections[CollectionName],
   ): PersistedCollectionRow<Collections[CollectionName]> => {
     let current = cloneValue(initialRecord)
-    const id = readId(current)
+    const id = readId(collectionName, current)
     return {
       get(key) {
         return current[key]
@@ -384,7 +386,7 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
         continue
       }
       const record = cloneValue(mutation.record)
-      const id = readId(record)
+      const id = readId(mutation.collectionName, record)
       if (!id) throw new Error(`${String(collectionName)} record id is required`)
       const current = await memory.collections[collectionName].findOne(id).exec()
       changes.push({
@@ -421,8 +423,8 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
         for (const condition of conditions) {
           if (!collections[condition.collectionName]) throw new Error('Unknown conditional storage collection.')
           const collectionName = String(condition.collectionName)
-          const id = condition.selector.id
-          const rows = typeof id === 'string'
+          const id = readId(condition.collectionName, condition.selector as Collections[keyof Collections])
+          const rows = id
             ? [await raw.records.get(collectionRecordKey(collectionName, id.trim()))]
             : await raw.records.where('collection').equals(collectionName).toArray()
           const actual = rows.flatMap(row => row && matchesSelector<StoredRecord>(row.value, condition.selector) ? [row.value] : [])
@@ -441,7 +443,7 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
             continue
           }
           const record = cloneValue(mutation.record)
-          const id = readId(record)
+          const id = readId(mutation.collectionName, record)
           if (!id) throw new Error(`${collectionName} record id is required`)
           const previous = await raw.records.get(collectionRecordKey(collectionName, id))
           await raw.records.put({

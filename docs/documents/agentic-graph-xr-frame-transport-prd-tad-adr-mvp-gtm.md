@@ -1,16 +1,16 @@
 ---
 title: "XR Frame Transport PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.2.0"
+version: "1.3.0"
 date: "2026-09-14"
 lang: "en-US"
 frontmatter_contract: "required"
 continuity_id: "XR-FRAME-TRANSPORT-001"
-prd_revision: "1.2.0"
-tad_revision: "1.2.0"
-adr_revision: "1.2.0"
-mvp_revision: "1.2.0"
-gtm_revision: "1.2.0"
+prd_revision: "1.3.0"
+tad_revision: "1.3.0"
+adr_revision: "1.3.0"
+mvp_revision: "1.3.0"
+gtm_revision: "1.3.0"
 owner: "agentic-graph"
 status: "implementation"
 load_policy: "on-demand"
@@ -21,7 +21,7 @@ source_revision: "68dc87ee3e42aaa6e09dfeda8c8cd8742737f757"
 
 ## PRD
 
-`XR-FRAME-TRANSPORT-001@1.2.0`: a solo builder rehearses an authored XR product
+`XR-FRAME-TRANSPORT-001@1.3.0`: a solo builder rehearses an authored XR product
 demonstration at quarter speed, pauses on consecutive frames, and reads the same
 position through BottomPanel Timeline and the existing local animation tool.
 The prior shared-store tolerance was 0.001 timeline units: in fractional minutes
@@ -44,10 +44,11 @@ authored scene frames. Outcome: repeatable frame and speed readback.
 | F07 | The pinned Timeline stays inside the mobile safe-area insets and desktop centering remains intact. | `responsive-canvas-toolbar.css`; real-browser geometry at 390 x 844 |
 | F08 | Home Apex loads the explicitly configured canonical Canvas catalog and opens Physics Playground through Demo. | `config.env.ts`; local Apex browser activation |
 | F09 | The canonical Physics Playground seed describes frame controls, local save and canonical refresh; the ownership row does not imply every local store uses IndexedDB or that cloud sync succeeded. | `agentic-graph-physics-playground-demo.md`, `documentRepositoryAuthority.ts`; source authority, ownership projection and browser refresh/readback |
+| F10 | Source Files saves path-keyed records in IndexedDB, imports legacy localStorage atomically once without deleting its bytes, survives database close/reopen, and rejects stale or failed durable writes. Git-backed Markdown remains canonical. | `workspaceFsIndexedDb.ts`, shared `indexedDbCollectionStore.ts`; `workspaceFs.indexedDb` registered migration, reopen, conflict and write-failure cases |
 
 ## TAD and ADR
 
-TAD `1.2.0` consumes PRD `1.2.0`; ADR `1.2.0` binds that design. F01–F09 share
+TAD `1.3.0` consumes PRD `1.3.0`; ADR `1.3.0` binds that design. F01–F10 share
 the continuity ID above. Keep the existing transport store and panel; extract its
 animation adapter into one helper loaded with the existing XR animation feature.
 Use authored FPS for frame targeting and the shared rate list for validation.
@@ -99,9 +100,15 @@ Increment: one helper, no dependencies, no added always-load instructions.
 
 ## Source Files storage decision — 2026-09-14
 
-F09 follows the existing [storage architecture owner](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md). Keep Git-backed Markdown canonical and reuse the current browser stores. The sync database uses `indexedDbCollectionStore.ts`; Source Files currently uses the localStorage-backed `workspaceFsPersisted.ts`. The shared ownership label therefore says **Browser storage**, without asserting an engine or durability guarantee. The local sync inspector's active IndexedDB result describes the sync database, not the WorkspaceFs cache or a remote acknowledgement.
+F09–F10 follow the existing [storage architecture owner](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md). Git-backed Markdown remains canonical. Source Files now delegates its browser working store to `workspaceFsIndexedDb.ts`, which lazy-loads the existing `indexedDbCollectionStore.ts` adapter with workspace paths as record keys. Each save updates the affected record. The sync engine retains its separate database and transport owner; local persistence does not constitute remote acknowledgement. The shared ownership row remains **Browser storage** because unavailable browser storage can enter the existing visible memory fallback.
 
-Recommend IndexedDB for a future WorkspaceFs working-store migration: asynchronous transactions and record updates fit offline edits without serializing the complete workspace on every save. Preserve existing bytes, validate migration/reopen/conflict/quota failure behavior, and reuse the current adapter before switching the owner. This increment does not implement that migration. Browser persistence requests can reduce automatic eviction but cannot prevent user deletion; export and verified sync remain separate safeguards. [Browser storage behavior](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria).
+The first successful open validates and atomically imports the legacy `kg:workspace-fs` snapshot together with a migration marker. Existing IndexedDB records win path conflicts; the original localStorage bytes remain untouched as a migration backup. The marker prevents deleted files from being reimported. Concurrent migration uses conditional transactions; stale rows cannot overwrite a newer stored record. File and folder creation conditionally reserve a free path, retrying bounded suffixes so concurrent creates retain both entries. Malformed backups, failed initialization and failed durable writes raise an error into the existing degraded-storage warning. Edits made after degradation may exist only in memory: export them before closing or reloading. Older app tabs writing the legacy snapshot after migration do not join the new store; reload those tabs before editing.
+
+The database is browser-origin and base-path scoped. Clearing site data can remove it; export and verified sync remain separate safeguards. No browser persistence guarantee, automatic Git commit, cross-device synchronization, cloud resource or paid service is added. [Browser storage behavior](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria).
+
+Validation for F10: `npm -C canvas run test:ci:unit -- workspaceFs.indexedDb` uses actual database close/reopen with the existing fake IndexedDB harness. It checks Unicode/CRLF preservation, source-document caching, CRUD, simultaneous migration, existing-record precedence, stale writes/deletes, malformed legacy bytes and injected quota failures. The unchanged legacy backup is asserted after both successful and failed writes. The storage/workspace regression selection passes 284 cases. A real browser reopened a saved local note after reload and committed a second edit while its network was disabled; the IndexedDB record matched and the retained legacy snapshot hash stayed unchanged. This establishes local working-store behavior, not remote or production synchronization. Candidate-wide results and exact revisions belong in the delivery handoff.
+
+The repository-owned promotion command validates the protected Canvas checks and advances the runtime docs pin to `67229b2886d238838139de403d17ecd30e604dc7`. This repairs the stale pin behind the preceding manifest mismatch; the separate Physics Playground source/projection byte-parity gate still fails.
 
 Use Cloudflare D1 only when shared structured metadata is required. Its Workers Free allowance is 5 million rows read/day, 100,000 rows written/day and 5 GB total storage; queries fail at the daily limit. Keep it a rebuildable projection, enforce bounded reads and writes, retain offline edits when unavailable, and prohibit paid-plan upgrades. [D1 pricing and limits](https://developers.cloudflare.com/d1/platform/pricing/).
 
@@ -109,7 +116,7 @@ Defer R2 for this strict no-overage scope: its included allowance does not preve
 
 Validation must distinguish local source refresh, browser reload, remote snapshot acknowledgement, protected integration, and production publication. The inspected preview had no unsaved active editor draft, no workspace ID and no configured sync provider. Remote synchronization is therefore unverified; the unavailable state is the expected result. Do not assign a synthetic workspace ID to manufacture a successful sync indicator.
 
-Local validation passed 68 XR/ownership cases, 103 workspace cases, 103 seed-authority fixture cases, and `npm run check`. The browser adopted the new `animation_rehearsal` frontmatter and storage heading after the dev server was restarted and the page reloaded; Refresh alone initially retained the old text. This does not establish hot-refresh correctness. The source-only seed validator passed, while cross-repository parity failed because the pinned Canvas projection still contains the previous seed. Preserve that failed receipt until the source-to-consumer delivery chain reconciles it; these results do not establish production or cloud synchronization.
+Prior candidate `3784b01d2b281538066e8c435f0de32e302dd42d`: local validation passed 68 XR/ownership cases, 103 workspace cases, 103 seed-authority fixture cases, and `npm run check`. The browser adopted the new `animation_rehearsal` frontmatter and storage heading after the dev server was restarted and the page reloaded; Refresh alone initially retained the old text. This does not establish hot-refresh correctness. The source-only seed validator passed, while cross-repository parity failed because the pinned Canvas projection still contains the previous seed. Preserve that failed receipt until the source-to-consumer delivery chain reconciles it; these results do not establish production or cloud synchronization.
 
 ## Rehearsal integration handover — 2026-09-14
 
