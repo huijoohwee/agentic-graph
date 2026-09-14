@@ -165,11 +165,12 @@ export const createUiInitialState = (
         const next = { timelineTransportDocumentKey: documentKey, timelineTransportPosition: positionRaw, timelineTransportPlaying: typeof update?.playing === 'boolean' ? update.playing : (documentChanged ? false : state.timelineTransportPlaying), timelineTransportPlaybackRate: playbackRateRaw }
         if (
           state.timelineTransportDocumentKey === next.timelineTransportDocumentKey &&
-          Math.abs((state.timelineTransportPosition || 0) - next.timelineTransportPosition) < 0.001 &&
+          // Positions may be fractional minutes: 0.001 would discard a 30 fps frame.
+          Math.abs((state.timelineTransportPosition || 0) - next.timelineTransportPosition) < 1e-9 &&
           state.timelineTransportPlaying === next.timelineTransportPlaying &&
           Math.abs((state.timelineTransportPlaybackRate || 1) - next.timelineTransportPlaybackRate) < 0.001
         ) {
-          return {}
+          return state
         }
         return next as Partial<GraphState>
       }),
