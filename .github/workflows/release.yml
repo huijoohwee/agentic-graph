@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs: { docs_repository: '${{ steps.agentic_canvas_os_docs.outputs.repository }}', docs_revision: '${{ steps.agentic_canvas_os_docs.outputs.ref }}', manifest_digest: '${{ steps.immutable_manifest.outputs.digest }}', mirror_revision: '${{ steps.mirror_revision.outputs.revision }}', candidate_digest: '${{ steps.production_candidate.outputs.candidate_digest }}', lifecycle_candidate_digest: '${{ steps.lifecycle_candidate.outputs.candidate_digest }}' }
-    env: { NODE_OPTIONS: '--max-old-space-size=4096', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs', AGENTIC_OS_BROWSER_PREFLIGHT_INPUT: '${{ github.workspace }}/browser-preflight/input.json', AGENTIC_OS_PUBLISH_REPOSITORY_ROOT: '${{ github.workspace }}/huijoohwee' }
+    env: { NODE_OPTIONS: '--max-old-space-size=4096', AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs', AGENTIC_OS_BROWSER_PREFLIGHT_INPUT: '${{ github.workspace }}/browser-preflight/input.json', AGENTIC_OS_PUBLISH_REPOSITORY_ROOT: '${{ github.workspace }}/huijoohwee' }
     steps:
       - { name: Checkout exact protected main commit, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 2 } }
       - name: Verify checked-out commit
@@ -95,9 +95,9 @@ jobs:
           test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ steps.agentic_canvas_os_docs.outputs.ref }}"
           npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest.json" --source-sha "$RELEASE_SHA" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
       - { name: Upload immutable release manifest, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'immutable-release-manifest-${{ inputs.source_sha }}', path: '${{ runner.temp }}/immutable-release-manifest.json', if-no-files-found: error, retention-days: 1 } }
-      - name: Reverify exact candidate
-        working-directory: agentic-graph
-        run: npm run ci:integration
+      - { name: Recheck current source ownership, working-directory: agentic-graph, run: 'npm run worktree:check && npm run collaboration:contract:check' }
+      - { name: Reuse protected CI source evidence, id: ci_evidence, continue-on-error: true, uses: './agentic-graph/.github/actions/protected-ci-evidence', with: { token: '${{ github.token }}' } }
+      - { name: Reverify exact candidate, if: "steps.ci_evidence.outcome != 'success' || steps.ci_evidence.outputs.reused != 'true'", working-directory: agentic-graph, run: 'npm run ci:integration' }
       - name: Build and sync verified candidate
         working-directory: agentic-graph
         env: { AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://airvio.co' }
