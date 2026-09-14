@@ -327,7 +327,7 @@ const main = async () => {
         'restored-transports', 'observed-mirror', 'completion', 'carrier', 'output', 'digest-output',
         'first-pages-observation', 'first-state-evidence', 'first-mirror-observation',
         'second-pages-observation', 'second-state-evidence', 'second-mirror-observation', 'assembled-at',
-        ...canonicalDescendantMirrorOptionNames,
+        ...canonicalDescendantMirrorOptionNames, 'mirror-maintenance',
       ]),
       'source-evidence-ref': { type: 'string', multiple: true },
       'github-output': { type: 'boolean' },
@@ -453,7 +453,7 @@ const main = async () => {
     publishPreparedGitHubOutput(preparedGitHubOutput)
     process.stdout.write(`${JSON.stringify({
       status: 'materialized', effect: 'evidence-only', carrierDigest: digest(readEvidenceBytes(carrierPath)),
-      rollbackTargetDigest, outputWrite, digestWrite,
+      rollbackTargetDigest, outputWrite, digestWrite, mirrorDescendantProof: descendantInputs.mirrorDescendantProof,
     })}\n`)
     return
   }

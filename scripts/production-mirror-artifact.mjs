@@ -1,3 +1,4 @@
+import { MIRROR_MAINTENANCE_PROOF_SCHEMA, createMirrorMaintenanceProof, normalizeMirrorMaintenanceProof } from './production-mirror-maintenance-proof.mjs'
 import { createHash } from 'node:crypto'
 import { execFile, execFileSync, spawn } from 'node:child_process'
 import { createReadStream } from 'node:fs'
@@ -52,7 +53,7 @@ const readGitText = (root, args) => execFileSync('git', args, {
 }).trim()
 const readGitBuffer = (root, args) => execFileSync('git', args, {
   cwd: root,
-  encoding: 'buffer',
+  encoding: 'buffer', maxBuffer: treeInventoryBytes,
   env: isolatedGitEnvironment,
   stdio: ['ignore', 'pipe', 'pipe'],
 })
@@ -264,11 +265,12 @@ export const assertSuccessfulReleaseMirrorIdentity = ({
   }
   if (previousRollbackRecapture === null || mirrorDescendantProof === null) throw new Error('successful-release mirror identity drifted from the publication receipt')
   const previous = normalizePriorRollbackRecapture(previousRollbackRecapture)
-  const proof = normalizeCanonicalDescendantMirrorProof(mirrorDescendantProof)
-  if (proof.baseRevision !== canonicalDescendantIdentity.baseRevision || proof.descendantRevision !== canonicalDescendantIdentity.descendantRevision
+  const maintenance = mirrorDescendantProof?.schema === MIRROR_MAINTENANCE_PROOF_SCHEMA
+  const proof = maintenance ? normalizeMirrorMaintenanceProof(mirrorDescendantProof, { digestValue, isExcluded: isManagedDescendantExclusionPath }) : normalizeCanonicalDescendantMirrorProof(mirrorDescendantProof)
+  if (!maintenance && (proof.baseRevision !== canonicalDescendantIdentity.baseRevision || proof.descendantRevision !== canonicalDescendantIdentity.descendantRevision
       || proof.protectedPullRequest.number !== canonicalDescendantIdentity.protectedPullRequestNumber
       || proof.gamexrArtifact.sourceRevision !== canonicalDescendantIdentity.gamexrSourceRevision
-      || proof.gamexrArtifact.artifactDigest !== canonicalDescendantIdentity.gamexrArtifactDigest) {
+      || proof.gamexrArtifact.artifactDigest !== canonicalDescendantIdentity.gamexrArtifactDigest)) {
     throw new Error('canonical descendant mirror proof is outside the closed PR54 GameXR transition')
   }
   const expectedPages = { deploymentId: deployment.immutableDeploymentId, deploymentOrigin: deployment.immutableDeploymentOrigin,
@@ -457,6 +459,15 @@ export const createCanonicalDescendantMirrorRollbackProof = async ({ mirrorRoot,
 }
 
 export const prepareCanonicalDescendantMirrorRollbackInputs = async ({ options, readJson, currentMirror }) => {
+  if (options['mirror-maintenance'] !== undefined) {
+    if (options['mirror-maintenance'] !== 'repository-metadata-only' || options['gamexr-source-sha'] !== undefined || options['gamexr-artifact-digest'] !== undefined) throw new Error('mirror maintenance requires its exclusive repository-metadata-only mode')
+    const option = name => requireText(options[name], `--${name}`), previousRollbackRecapture = readJson(option('previous-rollback-recapture'))
+    const mirrorDescendantProof = await createMirrorMaintenanceProof({ mirrorRoot: option('mirror-repository-root'), repository: currentMirror.repository,
+      baseRevision: previousRollbackRecapture.rollbackIdentity?.mirror?.revision, descendantRevision: currentMirror.revision,
+      remoteRef: option('mirror-remote-ref'), protectedPullRequest: readJson(option('mirror-protected-pr')) },
+    { readGitText, readGitBuffer, normalizeProtectedPullRequest, digestValue, isExcluded: isManagedDescendantExclusionPath })
+    return { previousRollbackRecapture, mirrorDescendantProof }
+  }
   const supplied = canonicalDescendantMirrorOptionNames.filter(name => options[name] !== undefined)
   if (supplied.length === 0) return { previousRollbackRecapture: null, mirrorDescendantProof: null }
   if (supplied.length !== canonicalDescendantMirrorOptionNames.length) {
