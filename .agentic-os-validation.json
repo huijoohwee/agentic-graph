@@ -1,0 +1,25 @@
+{
+  "schema": "agentic-os/repository-validation-policy/v1",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "broadInputs": [],
+  "always": [],
+  "fallback": [
+    "graph-owner-plan"
+  ],
+  "checks": [
+    {
+      "id": "graph-owner-plan",
+      "command": [
+        "npm",
+        "run",
+        "ci:affected:source"
+      ],
+      "inputs": [
+        "*"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    }
+  ]
+}

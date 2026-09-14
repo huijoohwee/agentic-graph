@@ -31,6 +31,7 @@ const addGitPaths = (set, value) => {
 export const readChangedPaths = ({
   environment = process.env,
   gitText = runGit,
+  baseRevision,
 } = {}) => {
   const paths = new Set()
   const githubBaseRef = String(environment.GITHUB_BASE_REF || '').trim()
@@ -45,12 +46,16 @@ export const readChangedPaths = ({
   const baseRef = githubBaseRef || protectedRefreshBaseRef
   const before = String(environment.GITHUB_EVENT_BEFORE || '').trim()
 
-  if (baseRef) addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `origin/${baseRef}...HEAD`]))
+  if (baseRevision !== undefined) {
+    if (!/^[0-9a-f]{40}$/u.test(baseRevision) || /^0+$/u.test(baseRevision)) throw new Error('invalid validation base revision')
+    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `${baseRevision}...HEAD`]))
+  } else if (baseRef) addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `origin/${baseRef}...HEAD`]))
   else if (/^[0-9a-f]{40}$/.test(before) && !/^0+$/.test(before)) {
     addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `${before}...HEAD`]))
   } else if (environment.GITHUB_ACTIONS === 'true') {
     addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']))
   } else {
+    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', 'origin/main...HEAD']))
     addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', 'HEAD']))
     addGitPaths(paths, gitText(['ls-files', '-z', '--others', '--exclude-standard']))
   }
@@ -80,7 +85,12 @@ const runCommand = (command, timeoutMs) => new Promise((resolve, reject) => {
 
 export const main = async () => {
   const contract = await readContract()
-  const changedPaths = readChangedPaths()
+  let baseRevision
+  if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') {
+    const { resolveValidationCi } = await import('../node_modules/agentic-os/bin/agentic-os-validation.mjs')
+    baseRevision = resolveValidationCi(repoRoot).base
+  }
+  const changedPaths = readChangedPaths({ baseRevision })
   const plan = selectAffectedCommands(changedPaths, contract)
 
   console.log(`[agentic-graph] affected paths: ${changedPaths.length}`)
