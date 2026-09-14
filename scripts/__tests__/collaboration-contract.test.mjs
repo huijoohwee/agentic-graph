@@ -286,7 +286,7 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
   const pullRequest = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'release/current', AGENTIC_OS_PR_BASE_REF: 'release/current', GITHUB_EVENT_BEFORE: 'a'.repeat(40) }); assert.deepEqual(pullRequest.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/release/current...HEAD']])
   let conflictingBaseGitCalls = 0; assert.throws(() => readChangedPaths({ environment: { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main', AGENTIC_OS_PR_BASE_REF: 'release/current' }, gitText: () => { conflictingBaseGitCalls += 1; return inventory(mapped) } }), /base ref conflicts/); assert.equal(conflictingBaseGitCalls, 0)
   assert.deepEqual(inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', AGENTIC_OS_PR_BASE_REF: 'main' }).calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']])
-  assert.deepEqual(inventoryRun({ AGENTIC_OS_PR_BASE_REF: 'main' }, args => args[0] === 'diff' ? inventory(mapped) : '').calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD'], ['ls-files', '-z', '--others', '--exclude-standard']])
+  assert.deepEqual(inventoryRun({ AGENTIC_OS_PR_BASE_REF: 'main' }, args => args[0] === 'diff' ? inventory(mapped) : '').calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/main...HEAD'], ['diff', '--no-renames', '--name-only', '-z', 'HEAD'], ['ls-files', '-z', '--others', '--exclude-standard']])
   for (const unusual of [` ${mapped}`, `${mapped} `, '   ']) {
     const changed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(unusual) })
     assert.deepEqual(changed, [unusual])
