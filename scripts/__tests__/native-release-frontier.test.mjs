@@ -138,6 +138,32 @@ test('attached successor uses its exact branch while retaining verified predeces
   assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata must precede/)
 })
 
+test('detached successor selects its exact head and retains predecessor history without ambiguity', t => {
+  const f = fixture(t), predecessor = f.records[1]
+  fs.writeFileSync(path.join(f.detached, 'source.txt'), 'detached successor source\n')
+  command(f.detached, 'commit', '-am', 'detached successor')
+  const head = command(f.detached, 'rev-parse', 'HEAD')
+  const successor = { ...predecessor, ref: 'agent/device/successor', scope: 'successor', head, state: 'integrated' }
+  f.records.push(successor)
+  const before = structuredClone(f.records)
+  const frontier = collectNativeReleaseFrontier(f.options)
+  const detached = frontier.lanes.find(lane => lane.path === f.detached)
+  assert.equal(detached.collaboration.branchRef, null)
+  assert.equal(detached.collaboration.laneRef, successor.ref)
+  assert.equal(detached.collaboration.headRevision, head)
+  assert.equal(detached.collaboration.authorizesEffects, false)
+  assert.deepEqual(f.records, before)
+  assert.equal(command(f.detached, 'rev-parse', 'HEAD'), head)
+  f.records.push({ ...successor, ref: 'agent/device/ambiguous' })
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /metadata is missing or ambiguous/)
+  f.records.pop()
+  successor.head = predecessor.head
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /metadata is missing or ambiguous/)
+  successor.head = head
+  predecessor.state = 'active'
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata/)
+})
+
 test('content, index, metadata and registered worktree movement invalidate capture', t => {
   const changes = [
     f => fs.writeFileSync(path.join(f.attached, 'source.txt'), 'moved bytes'),

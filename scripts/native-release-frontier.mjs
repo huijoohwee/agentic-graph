@@ -140,7 +140,8 @@ const snapshotLane = (registration, root, common, records, budget) => {
   assert.deepEqual(directoryIdentity(location), identity, 'worktree replaced during capture')
   if (location === root) return { ...state, content }
   const history = records.filter(record => record.worktree === location)
-  const matches = branchRef ? history.filter(record => `refs/heads/${record.ref}` === branchRef) : history
+  const matches = history.filter(record => branchRef
+    ? `refs/heads/${record.ref}` === branchRef : record.head === headRevision)
   assert.equal(matches.length, 1, `native lane metadata is missing or ambiguous: ${location}`)
   const record = matches[0]
   for (const predecessor of history.filter(entry => entry !== record)) {
