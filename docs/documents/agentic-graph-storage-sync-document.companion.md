@@ -406,8 +406,47 @@ unknown; these checks establish no paid-loop or production claim.
 Authentication inventory on 2026-09-14 found the live storage Worker in
 `session-exchange` mode, with no Cloudflare Access app or identity provider.
 The existing workspace is `kgws:canonical-docs`; membership exists but does not
-supply a browser credential. Google sign-in is a proposed user flow without a
-workspace access key, using an OAuth client on the existing Worker. It needs
-an authorized callback, verified identity-to-membership binding and protected
-deployment; it is not configured by the Online switch. No OAuth client, identity
-grant, paid plan or provider resource was created by this change.
+supply a browser credential. The OAuth implementation below replaces the access-key
+prompt with provider sign-in after protected deployment; the Online switch alone
+does not configure authentication. GitHub App and Google OAuth clients were created
+with owner approval, and their credentials stored in the protected production
+environment. Provider setup does not establish deployed runtime readiness.
+
+## Browser sign-in and free quota
+
+The optional `oauth` browser-auth mode uses the existing storage session, identity,
+and workspace-membership owners. `storageOAuthProviders.ts` owns GitHub App and
+Google adapters; `storageOAuthState.ts` seals five-minute browser state and PKCE;
+`storageOAuthQuota.ts` owns atomic D1 admission and one-use challenges;
+`storageOAuthFlow.ts` composes them; `storageOAuthPages.ts` owns the sign-in and
+public `/api/storage/auth/privacy` notice. No browser SDK or provider token persistence
+is added. GitHub requests no repository, organization, or email permissions;
+Google requests only `openid`. Email addresses never establish identity ownership.
+
+Enable only after configuring exact callback origins, storing client secrets in
+Worker secrets, applying migration `0021_storage_oauth_budget.sql`, and enrolling
+the owner's verified stable provider ID in `auth_identities`. A connected account
+may explicitly link another provider from the sign-in page, using an active
+same-origin session. Linking cannot change users or workspace memberships, overwrite
+another identity owner, or survive session revocation. First-time identities have
+no automatic workspace access. Git-backed Markdown remains canonical; cloud copies
+and IndexedDB remain synchronized projections with existing conflict preservation.
+The protected release controller enrolls the existing human owner's stable GitHub
+ID without matching email. Its bounded operator POST exchange remains available for
+automated release probes; provider sign-in pages do not request that credential.
+
+The native sign-in budget is 500 admitted starts/callbacks per UTC day and 20 per
+minute per keyed client bucket. At most 65 quota rows exist; expired challenges are
+removed at the next admitted start. Atomic SQL prevents concurrent over-admission.
+Provider requests have a five-second timeout and 64 KiB response limit; rate-limit
+responses stop without retries. Provider tokens are used only for sign-in and discarded.
+These are application sub-budgets, not account-wide billing controls. Production must
+remain on Workers Free and D1 Free, which reject operations at their limits. Never
+upgrade a plan, enable paid overflow, or treat an application counter as evidence of
+the provider account plan. No new vector database or paid identity service is needed.
+
+Validation: `cloudflare/workers/agentic-graph-storage/storageOAuth.test.ts` exercises
+native SQLite admission, replay rejection, membership checks, signed Google claims,
+provider errors and account linking. `storageCoreReadiness.ts` requires both OAuth
+tables when this mode is selected. Passing source tests is not live provider or
+cloud-transfer proof; those receipts belong to the protected deployment workflow.

@@ -1,3 +1,7 @@
+import { oauthPrivacyPage } from './storageOAuthPages'
+import { readOAuthConfiguration, type OAuthConfiguration, type OAuthFetch } from './storageOAuthProviders'
+import { runOAuthFlow } from './storageOAuthFlow'
+import { oauthCookie } from './storageOAuthState'
 import {
   readAccessJwtConfiguration,
   verifyAccessJwt,
@@ -66,6 +70,7 @@ const errorResponse = (
 type BrowserSessionConfiguration = { ttlSeconds: number } & (
   | { mode: 'cloudflare-access'; access: AccessJwtConfiguration }
   | { mode: 'session-exchange' }
+  | { mode: 'oauth'; oauth: OAuthConfiguration }
 )
 
 type BrowserSessionConfigurationResult =
@@ -93,6 +98,10 @@ export const readAgenticGraphStorageBrowserSessionConfiguration = (
   const ttlSeconds = readTtlSeconds(env.AGENTIC_OS_STORAGE_BROWSER_SESSION_TTL_SECONDS)
   if (ttlSeconds === null) return { ok: false }
   const mode = normalizeString(env.AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE) || 'cloudflare-access'
+  if (mode === 'oauth') {
+    const oauth = readOAuthConfiguration(env)
+    return oauth ? { ok: true, value: { mode, oauth, ttlSeconds } } : { ok: false }
+  }
   if (mode === 'session-exchange') return { ok: true, value: { mode, ttlSeconds } }
   if (mode !== 'cloudflare-access') return { ok: false }
   const access = readAccessJwtConfiguration({
@@ -157,6 +166,7 @@ type AccessJwtVerifier = (
 
 type BrowserSessionDependencies = {
   now?: () => Date
+  oauthFetch?: OAuthFetch
   verifyAccessToken?: AccessJwtVerifier
   createOpaqueToken?: (byteLength: number) => string
 }
@@ -176,12 +186,25 @@ const handleLogin = async (args: {
   if (configuration.ok === false) {
     return errorResponse(503, 'server_error', 'storage browser session access configuration is unavailable')
   }
-  const returnTo = readReturnTo(args.request)
+  let returnTo = readReturnTo(args.request)
   if (!returnTo) return errorResponse(400, 'bad_request', 'return_to must be a same-origin relative path')
   const now = args.dependencies?.now?.() || new Date()
   let userId: string
   let ttlSeconds = configuration.value.ttlSeconds
-  if (configuration.value.mode === 'session-exchange') {
+  // Keep the existing bounded operator exchange for protected release probes.
+  // OAuth browser pages never ask the user for that operator credential.
+  const operatorExchange = configuration.value.mode === 'oauth' && args.request.method === 'POST'
+    && new URL(args.request.url).pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin
+    && !new URL(args.request.url).searchParams.has('provider')
+  if (configuration.value.mode === 'oauth' && !operatorExchange) {
+    const outcome = await runOAuthFlow({ request: args.request, db: args.db, config: configuration.value.oauth,
+      now: now.getTime(), fetcher: args.dependencies?.oauthFetch })
+    if (outcome instanceof Response) return outcome
+    userId = outcome.userId
+    returnTo = outcome.returnTo
+  } else if (new URL(args.request.url).pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserCallback) {
+    return errorResponse(404, 'not_found', 'OAuth sign-in is not configured')
+  } else if (configuration.value.mode === 'session-exchange' || operatorExchange) {
     if (args.request.method === 'GET') return storageSessionExchangeForm(returnTo)
     const credential = await readStorageSessionExchangeCredential(args.request)
     if (credential.ok === false) return credential.response
@@ -192,7 +215,7 @@ const handleLogin = async (args: {
     userId = auth.value.user.id
     ttlSeconds = Math.min(ttlSeconds, Math.floor((Date.parse(auth.value.session.expiresAt) - now.getTime()) / 1000))
     if (!Number.isFinite(ttlSeconds) || ttlSeconds < 1) return errorResponse(401, 'forbidden', 'access key has expired')
-  } else {
+  } else if (configuration.value.mode === 'cloudflare-access') {
     if (args.request.method !== 'GET') return errorResponse(405, 'bad_request', 'Cloudflare Access login requires GET')
     const accessToken = normalizeString(args.request.headers.get('cf-access-jwt-assertion'))
     if (!accessToken) return errorResponse(401, 'forbidden', 'Cloudflare Access authentication is required')
@@ -208,7 +231,7 @@ const handleLogin = async (args: {
       return errorResponse(403, 'forbidden', 'storage access has not been provisioned for this identity')
     }
     userId = identity.user_id
-  }
+  } else { return errorResponse(400, 'bad_request', 'invalid sign-in mode') }
   if (!await activeMembershipExists(args.db, userId)) {
     return errorResponse(403, 'forbidden', 'an active workspace membership is required')
   }
@@ -224,7 +247,7 @@ const handleLogin = async (args: {
     expiresAt,
     nowIso,
   })
-  return new Response(null, {
+  const response = new Response(null, {
     status: 303,
     headers: {
       location: returnTo,
@@ -233,6 +256,8 @@ const handleLogin = async (args: {
       ...CORS_HEADERS,
     },
   })
+  if (configuration.value.mode === 'oauth' && !operatorExchange) response.headers.append('set-cookie', oauthCookie(''))
+  return response
 }
 
 const handleSession = async (args: {
@@ -299,6 +324,8 @@ const handleLogout = async (args: {
 
 export const isAgenticGraphStorageBrowserSessionRoute = (pathname: string): boolean =>
   pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin
+  || pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserPrivacy
+  || pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserCallback
   || pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserSession
   || pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogout
 
@@ -309,7 +336,11 @@ export const handleAgenticGraphStorageBrowserSessionRoute = async (args: {
   dependencies?: BrowserSessionDependencies
 }): Promise<Response> => {
   const pathname = new URL(args.request.url).pathname
-  if (pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin) {
+  if (pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserPrivacy) {
+    if (!['GET', 'HEAD'].includes(args.request.method)) return errorResponse(405, 'bad_request', 'privacy page requires GET or HEAD')
+    return oauthPrivacyPage(args.request.method)
+  }
+  if (pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin || pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserCallback) {
     if (!['GET', 'POST'].includes(args.request.method)) return errorResponse(405, 'bad_request', 'storage browser login requires GET or POST')
     if (!args.db) return errorResponse(500, 'server_error', 'missing Cloudflare D1 binding DB')
     return handleLogin({ ...args, db: args.db })

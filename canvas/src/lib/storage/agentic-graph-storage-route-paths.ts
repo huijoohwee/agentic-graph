@@ -6,6 +6,8 @@ export const AGENTIC_OS_STORAGE_ROUTE_PATHS = {
   collabSave: '/api/storage/collab/save',
   browserSession: '/api/storage/auth/session',
   browserLogin: '/api/storage/auth/login',
+  browserCallback: '/api/storage/auth/callback',
+  browserPrivacy: '/api/storage/auth/privacy',
   browserLogout: '/api/storage/auth/logout',
   canvasRoomPrefix: '/api/storage/canvas-room/',
   chatSession: '/api/storage/chat/session',

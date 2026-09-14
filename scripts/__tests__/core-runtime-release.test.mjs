@@ -15,6 +15,8 @@ import { preflightMesh, deployMesh, restoreMesh, meshOutcomeOutputs } from '../t
 const sourceSha = 'a'.repeat(40), candidateDigest = 'b'.repeat(64)
 const authorization = { schema: 'agentic-human-authorization-receipt/v2', status: 'consumed', candidateDigest, controllerId: 'test-release', humanActorId: 'github-user:1234:operator' }
 const environment = () => ({
+  AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_ID: 'Iv23testclient', AGENTIC_OS_STORAGE_GOOGLE_CLIENT_ID: 'test.apps.googleusercontent.com',
+  AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET: 'github-client-secret', AGENTIC_OS_STORAGE_GOOGLE_CLIENT_SECRET: 'google-client-secret',
   CLOUDFLARE_API_TOKEN: 'test-api-token', CLOUDFLARE_ACCOUNT_ID: '1'.repeat(32),
   AGENTIC_OS_PUBLIC_ZONE_ID: '2'.repeat(32), AGENTIC_OS_PUBLIC_ZONE_NAME: 'airvio.co',
   AGENTIC_OS_STORAGE_D1_DATABASE_NAME: 'airvio', AGENTIC_OS_STORAGE_D1_DATABASE_ID: '633355bf-1a52-4085-bd3c-eba4220ff152',
@@ -88,7 +90,7 @@ const provider = (env, { candidateReady = true, zoneAccount = env.CLOUDFLARE_ACC
     if (url.pathname.endsWith('/workers/routes')) return envelope([{ pattern: 'airvio.co/api/storage/*', script: 'agentic-storage' }])
     if (url.pathname.endsWith('/query')) {
       const input = JSON.parse(options.body)
-      return envelope(input.batch ? input.batch.map((_, i) => ({ success: true, results: i === 3 ? [{ id: 'operator:hashed', expires_at: env.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT, revoked_at: null }] : [] }))
+      return envelope(input.batch ? input.batch.map((_, i) => ({ success: true, results: i === 4 ? [{ id: 'operator:hashed', expires_at: env.AGENTIC_OS_STORAGE_OWNER_KEY_EXPIRES_AT, revoked_at: null }] : [] }))
         : [{ success: true, results: [{ workspace_count: 1, user_count: 0, session_count: 0, membership_count: 0, owner_count: 0 }] }])
     }
     throw new Error(`unexpected provider read: ${url}`)
@@ -206,7 +208,8 @@ test('failed core readiness restores and proves the old baseline without demandi
 })
 test('core releases a supplied inactive signing secret while preserving every serving secret', async () => {
   for (const baselineSecrets of [[], ['GITHUB_TOKEN']]) {
-    const env = environment(), names = [...baselineSecrets, 'AGENTIC_OS_STORAGE_SIGNING_SECRET'].sort()
+    const env = environment(), names = [...baselineSecrets, 'AGENTIC_OS_STORAGE_SIGNING_SECRET',
+      'AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET', 'AGENTIC_OS_STORAGE_GOOGLE_CLIENT_SECRET'].sort()
     const fixture = provider(env, { baselineSecrets, providerSecrets: names }), args = { ...inputs(env), ...fixture }
     const preflight = await preflightMesh(args)
     assert.deepEqual(preflight.units[0].existingSecrets, names)
@@ -338,6 +341,7 @@ test('core owner enrollment is idempotent and cannot take over a competing or re
     const db = new DatabaseSync(':memory:')
     db.exec("PRAGMA foreign_keys=ON; CREATE TABLE workspaces(id TEXT PRIMARY KEY); INSERT INTO workspaces VALUES('kgws:canonical-docs');")
     db.exec(fs.readFileSync(new URL('../../cloudflare/d1/migrations/0008_chat_auth_and_audit.sql', import.meta.url), 'utf8'))
+    db.exec(fs.readFileSync(new URL('../../cloudflare/d1/migrations/0016_storage_browser_identity.sql', import.meta.url), 'utf8'))
     return db
   }
   const enroll = (db, config = configuration) => {
@@ -354,7 +358,8 @@ test('core owner enrollment is idempotent and cannot take over a competing or re
     assert.equal(enroll(db).length, 1)
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users').get().n, 1)
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM auth_sessions').get().n, 1)
-    const rival = { ...configuration, variables: { ...configuration.variables, AGENTIC_OS_STORAGE_OWNER_ID: 'rival', AGENTIC_OS_STORAGE_OWNER_EMAIL: 'rival@airvio.co' } }
+    assert.equal(db.prepare("SELECT subject FROM auth_identities WHERE provider='github'").get().subject, '1234')
+    const rival = { ...configuration, variables: { ...configuration.variables, AGENTIC_OS_STORAGE_OWNER_ID: 'github-user:5678:rival', AGENTIC_OS_STORAGE_OWNER_EMAIL: 'rival@airvio.co' } }
     assert.equal(enroll(db, rival).length, 0)
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM users').get().n, 1)
     db.exec("UPDATE auth_sessions SET revoked_at='2026-09-10T00:00:00.000Z'")
