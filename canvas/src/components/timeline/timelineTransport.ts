@@ -2,7 +2,7 @@ import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
-export const TIMELINE_TRANSPORT_PLAYBACK_RATES = [0.5, 1, 1.5, 2] as const
+export const TIMELINE_TRANSPORT_PLAYBACK_RATES = [0.25, 0.5, 1, 1.5, 2] as const
 export const TIMELINE_TRANSPORT_ZOOM_LEVELS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6] as const
 export const TIMELINE_TRANSPORT_GESTURE_ZOOM_DELTA = 24
 export const TIMELINE_TRANSPORT_GESTURE_MAX_STEPS = 3

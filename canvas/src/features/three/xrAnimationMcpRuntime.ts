@@ -1,4 +1,6 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { TIMELINE_TRANSPORT_PLAYBACK_RATES, type TimelineTransportPlaybackRate } from '@/components/timeline/timelineTransport'
+import { parseXrAnimationFrameTarget, readXrAnimationTransport, updateXrAnimationTransport, type XrAnimationFrameTarget } from './xrAnimationTransportRuntime'
 import {
   XR_ANIMATION_PRESETS,
   resolveXrAnimationPreset,
@@ -22,13 +24,10 @@ import {
   selectXrMotionReferenceCameraMark,
   selectXrMotionReferenceCastMark,
   setXrMotionReferenceCameraMarkChoreography,
-  setXrMotionReferencePlayhead,
 } from './xrMotionReferenceRuntime'
 import { readBoundXrSelectedActorId, selectBoundXrActor } from './xrSelectedActorBinding'
-import { requestXrMotionReferenceCameraPlaybackReapply } from './xrCameraPlaybackControlsRuntime'
 import { hydrateCanonicalXrMotionReferenceRuntime, hydrateCanonicalXrPhysicsRuntime } from './XrMotionReferenceRuntimeBridge'
 import { buildXrMotionReferencePackage } from './xrMotionReferencePackage'
-import { xrMotionReferenceTimelineDocumentKey } from './xrMotionReferenceTimeline'
 import {
   XR_ANIMATION_INVOCATION_BINDINGS,
   XR_ANIMATION_INVOCATION_COMMANDS,
@@ -123,6 +122,8 @@ type NormalizedAnimationControl = Readonly<{
   presetId: string
   targetId: string
   timeSeconds: number
+  playbackRate?: TimelineTransportPlaybackRate
+  frame?: XrAnimationFrameTarget
   invocation: string
   markKind: 'cast' | 'camera'
   markId: string
@@ -187,7 +188,7 @@ function parsePairs(tokens: readonly string[]): Readonly<Record<string, string>>
     if (separator <= 0 || separator === token.length - 1) return null
     const key = token.slice(0, separator)
     const value = token.slice(separator + 1)
-    if (!['operation', 'preset', 'time', 'keys', 'distance', 'fine', 'markKind', 'markId', 'easing', 'gait', 'position'].includes(key) || seen.has(key)) return null
+    if (!['operation', 'preset', 'time', 'rate', 'frame', 'keys', 'distance', 'fine', 'markKind', 'markId', 'easing', 'gait', 'position'].includes(key) || seen.has(key)) return null
     seen.add(key)
     entries.push([key, value])
   }
@@ -227,7 +228,8 @@ function parseInvocation(value: unknown): Partial<NormalizedAnimationControl> | 
         : ['operation']
     : operation === 'configure-mark'
       ? ['operation', 'markKind', 'markId', 'easing', 'gait', 'position']
-      : operation === 'scrub' ? ['operation', 'time'] : ['operation']
+      : operation === 'scrub' ? ['operation', 'time', 'frame']
+        : operation === 'play' ? ['operation', 'rate'] : ['operation']
   if (Object.keys(pairs).some(key => !allowedPairKeys.includes(key))) return null
   if (operation === 'apply' && !pairs.preset) return null
   const movementKeys = operation === 'move-object'
@@ -260,7 +262,12 @@ function parseInvocation(value: unknown): Partial<NormalizedAnimationControl> | 
     if (!pairs.markId || (!easing && !gait && !position)) return null
     if (configureCameraMark && (!easing || gait || position)) return null
   }
-  if (operation === 'scrub' && (!Object.hasOwn(pairs, 'time') || !Number.isFinite(Number(pairs.time)) || Number(pairs.time) < 0)) return null
+  const frame = pairs.frame === undefined ? undefined : parseXrAnimationFrameTarget(pairs.frame)
+  if (frame === null) return null
+  if (operation === 'scrub' && (Object.hasOwn(pairs, 'time') === (frame !== undefined)
+    || (frame === undefined && (!Number.isFinite(Number(pairs.time)) || Number(pairs.time) < 0)))) return null
+  const playbackRate = pairs.rate === undefined ? undefined : Number(pairs.rate) as TimelineTransportPlaybackRate
+  if (playbackRate !== undefined && !TIMELINE_TRANSPORT_PLAYBACK_RATES.includes(playbackRate)) return null
   const semantic = actorOperation || configureCastMark ? semantics[0]! : ''
   const binding = bindings[0]!
   return {
@@ -269,6 +276,8 @@ function parseInvocation(value: unknown): Partial<NormalizedAnimationControl> | 
     presetId: String(pairs.preset || '').trim(),
     targetId: binding === canonical.selectedActor ? 'selected-actor' : binding === canonical.canvas ? 'canvas' : '',
     timeSeconds: Number(pairs.time || 0),
+    ...(frame !== undefined ? { frame } : {}),
+    ...(playbackRate !== undefined ? { playbackRate } : {}),
     keys: movementKeys || Object.freeze([]),
     distanceMeters: movementDistance ?? (fine ? THREE_OBJECT_KEYBOARD_FINE_STEP_METERS : THREE_OBJECT_KEYBOARD_STEP_METERS),
     fine,
@@ -351,6 +360,8 @@ function normalizeControl(input: XrAnimationControlInput): NormalizedAnimationCo
     presetId: String(parsed?.presetId || input.presetId || '').trim(),
     targetId: String(parsed?.targetId || input.targetId || '').trim().replace(/^@+/, ''),
     timeSeconds: Number.isFinite(timeSeconds) ? Number(timeSeconds) : 0,
+    ...(parsed?.frame !== undefined ? { frame: parsed.frame } : {}),
+    ...(parsed?.playbackRate !== undefined ? { playbackRate: parsed.playbackRate } : {}),
     invocation: String(parsed?.invocation || input.invocation || '').trim(),
     markKind,
     markId: String(parsed?.markId || input.markId || '').trim(),
@@ -388,21 +399,6 @@ function activateAnimationSurface(): boolean {
   return activateXrSceneSurface({ panelView: 'animation', openPanel: true, timeline: true })
 }
 
-function updateTransport(operation: 'play' | 'pause' | 'scrub', timeSeconds: number): void {
-  const state = useGraphStore.getState()
-  const documentKey = xrMotionReferenceTimelineDocumentKey(state.markdownDocumentName)
-  if (operation === 'scrub') {
-    const duration = readXrMotionReferenceRuntime().plan.durationSeconds
-    const bounded = Math.min(duration, Math.max(0, Number(timeSeconds) || 0))
-    setXrMotionReferencePlayhead(bounded)
-    state.setTimelineTransportState({ documentKey, position: bounded / 60 })
-    requestXrMotionReferenceCameraPlaybackReapply()
-    return
-  }
-  state.setTimelineTransportState({ documentKey, playing: operation === 'play' })
-  if (operation === 'play') requestXrMotionReferenceCameraPlaybackReapply()
-}
-
 export function inspectLocalAnimation() {
   const runtime = readXrMotionReferenceRuntime()
   const speedWarnings = resolveXrChoreographySpeedWarnings(runtime.plan)
@@ -426,6 +422,8 @@ export function inspectLocalAnimation() {
       configureCastMark: `${canonical.command} ${canonical.actionPath} ${canonical.selectedActor} operation=configure-mark markKind=cast markId=<typed-id> easing=<typed-easing> gait=<typed-gait> position=<x,y,z>`,
       configureCameraMark: `${canonical.command} ${canonical.canvas} operation=configure-mark markKind=camera markId=<typed-id> easing=<typed-easing>`,
       transport: `${canonical.command} ${canonical.canvas} operation=play|pause|scrub|export`,
+      slowMotion: `${canonical.command} ${canonical.canvas} operation=play rate=<0.25|0.5|1|1.5|2>`,
+      frameStep: `${canonical.command} ${canonical.canvas} operation=scrub frame=<next|previous|integer>`,
     },
     presets: XR_ANIMATION_PRESETS.map(preset => ({
       ...preset,
@@ -437,6 +435,7 @@ export function inspectLocalAnimation() {
       fps: runtime.plan.fps,
       selectedActorId: readBoundXrSelectedActorId(),
       playheadSeconds: runtime.playheadSeconds,
+      transport: readXrAnimationTransport(),
       cast: runtime.plan.cast.map(track => ({ actorId: track.actorId, label: track.label, animation: track.animation, marks: track.marks })),
       cameraMarks: runtime.plan.camera,
       speedWarnings,
@@ -539,7 +538,7 @@ export function controlLocalAnimation(input: XrAnimationControlInput): XrAnimati
   }
 
   if (control.operation === 'play' || control.operation === 'pause' || control.operation === 'scrub') {
-    updateTransport(control.operation, control.timeSeconds)
+    updateXrAnimationTransport({ ...control, operation: control.operation })
     return { ok: true, message: control.operation === 'scrub' ? `Animation playhead moved to ${readXrMotionReferenceRuntime().playheadSeconds.toFixed(2)}s.` : `Animation playback ${control.operation === 'play' ? 'started' : 'paused'}.`, operation: control.operation, scene: inspectLocalAnimation() }
   }
 

@@ -67,6 +67,7 @@ import { hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMot
 import { selectBoundXrActor } from '@/features/three/xrSelectedActorBinding'
 import { buildXrMotionReferenceTimelineCode } from '@/features/three/xrMotionReferenceTimeline'
 import { applyXrConstrainedCastActionPath } from '@/features/three/xrConstrainedCastMarkRuntime'
+import { testXrAnimationFrameTransport } from './timelineTransportEditModeStore.test'
 
 function readSource(...parts: string[]): string {
   return readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8')
@@ -489,6 +490,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
     if (invalidPositionConfig.ok) throw new Error('expected structured MCP to reject a malformed cast mark position')
     const unboundedPositionConfig = controlLocalAnimation({ operation: 'configure-mark', markKind: 'cast', markId: configuredMarkId, targetId: 'actor-a', position: [1001, 0, 0] })
     if (unboundedPositionConfig.ok) throw new Error('expected structured MCP to reject an out-of-bounds cast mark position')
+    testXrAnimationFrameTransport()
     const scrubbed = controlLocalAnimation({ invocation: '/animation.control @canvas operation=scrub time=1.250' })
     const exported = controlLocalAnimation({ operation: 'export' })
     const inspection = inspectLocalAnimation()
@@ -575,6 +577,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
       timelineTransportDocumentKey: priorState.timelineTransportDocumentKey,
       timelineTransportPosition: priorState.timelineTransportPosition,
       timelineTransportPlaying: priorState.timelineTransportPlaying,
+      timelineTransportPlaybackRate: priorState.timelineTransportPlaybackRate,
     } as never)
     hydrateCanonicalXrMotionReferenceRuntime()
   }
