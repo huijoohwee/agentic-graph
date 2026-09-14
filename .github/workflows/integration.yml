@@ -250,6 +250,16 @@ jobs:
         working-directory: agentic-graph
         run: npm run --silent collaboration:report:check-result -- collaboration-validation-result-proof/collaboration-validation-result.json --report collaboration-contract-report-proof/collaboration-contract-report.json --source-revision "$AGENTIC_OS_SOURCE_REVISION"
 
+      - name: Capture protected CI source inputs
+        id: ci_evidence_capture
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        working-directory: agentic-graph
+        run: |
+          owner_inputs="$(node scripts/ci-evidence-inputs.mjs)"
+          export "$owner_inputs"
+          node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs capture --policy=.agentic-os-ci-evidence.json --output="$RUNNER_TEMP/ci-evidence-before.json"
+
       - name: Run canonical integration gate
         working-directory: agentic-graph
         env:
@@ -269,3 +279,23 @@ jobs:
           path: agentic-graph/data/outputs/xr-v2-browser-smoke.json
           if-no-files-found: error
           retention-days: 7
+
+      - name: Seal protected CI source evidence
+        id: ci_evidence_seal
+        if: steps.ci_evidence_capture.outcome == 'success'
+        continue-on-error: true
+        working-directory: agentic-graph
+        run: |
+          owner_inputs="$(node scripts/ci-evidence-inputs.mjs)"
+          export "$owner_inputs"
+          node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs seal --policy=.agentic-os-ci-evidence.json --before="$RUNNER_TEMP/ci-evidence-before.json" --output="$RUNNER_TEMP/evidence.json"
+
+      - name: Retain protected CI source evidence
+        if: steps.ci_evidence_seal.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: agentic-os-ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/evidence.json
+          if-no-files-found: error
+          retention-days: 1

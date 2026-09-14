@@ -1,0 +1,52 @@
+name: Protected CI source evidence
+description: Verify source checks through the pinned Agentic OS owner
+inputs:
+  token:
+    description: Read-only Actions token
+    required: true
+outputs:
+  reused:
+    description: True only after current provider and exact source verification
+    value: ${{ steps.verify.outputs.reused }}
+runs:
+  using: composite
+  steps:
+    - name: Find exact protected source evidence
+      id: lookup
+      shell: bash
+      working-directory: agentic-graph
+      env: { GH_TOKEN: '${{ inputs.token }}' }
+      run: |
+        owner_inputs="$(node scripts/ci-evidence-inputs.mjs)"
+        export "$owner_inputs"
+        node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs lookup --policy=.agentic-os-ci-evidence.json --output="$RUNNER_TEMP/ci-evidence-lookup.json"
+    - name: Download protected source evidence
+      id: download
+      if: steps.lookup.outputs.available == 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: ${{ steps.lookup.outputs.artifact-name }}
+        run-id: ${{ steps.lookup.outputs.run-id }}
+        github-token: ${{ inputs.token }}
+        path: ${{ runner.temp }}/protected-ci-evidence
+    - name: Verify current provider and source inputs
+      id: verify
+      shell: bash
+      working-directory: agentic-graph
+      env: { GH_TOKEN: '${{ inputs.token }}' }
+      run: |
+        owner_inputs="$(node scripts/ci-evidence-inputs.mjs)"
+        export "$owner_inputs"
+        node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs verify --policy=.agentic-os-ci-evidence.json --lookup="$RUNNER_TEMP/ci-evidence-lookup.json" --evidence="$RUNNER_TEMP/protected-ci-evidence/evidence.json" --output="$RUNNER_TEMP/ci-evidence-reuse.json"
+    - name: Report source validation disposition
+      shell: bash
+      env: { REUSED: '${{ steps.verify.outputs.reused }}' }
+      run: echo "Protected source check reused=${REUSED:-false}; current ownership, build, browser and authorization gates remain fresh." >> "$GITHUB_STEP_SUMMARY"
+    - name: Retain CI reuse observation
+      continue-on-error: true
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: ci-evidence-reuse-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/ci-evidence-reuse.json
+        if-no-files-found: error
+        retention-days: 1
