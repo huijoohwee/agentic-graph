@@ -1,16 +1,16 @@
 ---
 title: "XR Frame Transport PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.1.0"
+version: "1.2.0"
 date: "2026-09-14"
 lang: "en-US"
 frontmatter_contract: "required"
 continuity_id: "XR-FRAME-TRANSPORT-001"
-prd_revision: "1.1.0"
-tad_revision: "1.1.0"
-adr_revision: "1.1.0"
-mvp_revision: "1.1.0"
-gtm_revision: "1.1.0"
+prd_revision: "1.2.0"
+tad_revision: "1.2.0"
+adr_revision: "1.2.0"
+mvp_revision: "1.2.0"
+gtm_revision: "1.2.0"
 owner: "agentic-graph"
 status: "implementation"
 load_policy: "on-demand"
@@ -21,7 +21,7 @@ source_revision: "68dc87ee3e42aaa6e09dfeda8c8cd8742737f757"
 
 ## PRD
 
-`XR-FRAME-TRANSPORT-001@1.1.0`: a solo builder rehearses an authored XR product
+`XR-FRAME-TRANSPORT-001@1.2.0`: a solo builder rehearses an authored XR product
 demonstration at quarter speed, pauses on consecutive frames, and reads the same
 position through BottomPanel Timeline and the existing local animation tool.
 The prior shared-store tolerance was 0.001 timeline units: in fractional minutes
@@ -43,10 +43,11 @@ authored scene frames. Outcome: repeatable frame and speed readback.
 | F06 | Given an open document, previous/next Timeline buttons pause on the exact adjacent authored frame, preserve playback rate, show the shared frame and disable at its bounds; absent documents disable stepping. | `XrTimelineRehearsalControls.tsx`; mounted component test plus existing animation runtime |
 | F07 | The pinned Timeline stays inside the mobile safe-area insets and desktop centering remains intact. | `responsive-canvas-toolbar.css`; real-browser geometry at 390 x 844 |
 | F08 | Home Apex loads the explicitly configured canonical Canvas catalog and opens Physics Playground through Demo. | `config.env.ts`; local Apex browser activation |
+| F09 | The canonical Physics Playground seed describes frame controls, local save and canonical refresh; the ownership row does not imply every local store uses IndexedDB or that cloud sync succeeded. | `agentic-graph-physics-playground-demo.md`, `documentRepositoryAuthority.ts`; source authority, ownership projection and browser refresh/readback |
 
 ## TAD and ADR
 
-TAD `1.1.0` consumes PRD `1.1.0`; ADR `1.1.0` binds that design. F01–F08 share
+TAD `1.2.0` consumes PRD `1.2.0`; ADR `1.2.0` binds that design. F01–F09 share
 the continuity ID above. Keep the existing transport store and panel; extract its
 animation adapter into one helper loaded with the existing XR animation feature.
 Use authored FPS for frame targeting and the shared rate list for validation.
@@ -95,6 +96,20 @@ Graph owns executable code and this contract. Canvas consumes the existing
 source seed; the website's AgenticRAG map is regenerated after source integration.
 Production mirrors are emitted only by the protected release workflow.
 Increment: one helper, no dependencies, no added always-load instructions.
+
+## Source Files storage decision — 2026-09-14
+
+F09 follows the existing [storage architecture owner](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md). Keep Git-backed Markdown canonical and reuse the current browser stores. The sync database uses `indexedDbCollectionStore.ts`; Source Files currently uses the localStorage-backed `workspaceFsPersisted.ts`. The shared ownership label therefore says **Browser storage**, without asserting an engine or durability guarantee. The local sync inspector's active IndexedDB result describes the sync database, not the WorkspaceFs cache or a remote acknowledgement.
+
+Recommend IndexedDB for a future WorkspaceFs working-store migration: asynchronous transactions and record updates fit offline edits without serializing the complete workspace on every save. Preserve existing bytes, validate migration/reopen/conflict/quota failure behavior, and reuse the current adapter before switching the owner. This increment does not implement that migration. Browser persistence requests can reduce automatic eviction but cannot prevent user deletion; export and verified sync remain separate safeguards. [Browser storage behavior](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria).
+
+Use Cloudflare D1 only when shared structured metadata is required. Its Workers Free allowance is 5 million rows read/day, 100,000 rows written/day and 5 GB total storage; queries fail at the daily limit. Keep it a rebuildable projection, enforce bounded reads and writes, retain offline edits when unavailable, and prohibit paid-plan upgrades. [D1 pricing and limits](https://developers.cloudflare.com/d1/platform/pricing/).
+
+Defer R2 for this strict no-overage scope: its included allowance does not prevent billable excess usage. Defer PostgreSQL/pgvector until measured semantic retrieval needs justify operating PostgreSQL; it is a FOSS vector-search extension, not a browser working store. Cloudflare is a managed service, not a FOSS database deployment. No cloud resource or paid service is provisioned by this increment. [R2 pricing](https://developers.cloudflare.com/r2/pricing/), [pgvector source](https://github.com/pgvector/pgvector).
+
+Validation must distinguish local source refresh, browser reload, remote snapshot acknowledgement, protected integration, and production publication. The inspected preview had no unsaved active editor draft, no workspace ID and no configured sync provider. Remote synchronization is therefore unverified; the unavailable state is the expected result. Do not assign a synthetic workspace ID to manufacture a successful sync indicator.
+
+Local validation passed 68 XR/ownership cases, 103 workspace cases, 103 seed-authority fixture cases, and `npm run check`. The browser adopted the new `animation_rehearsal` frontmatter and storage heading after the dev server was restarted and the page reloaded; Refresh alone initially retained the old text. This does not establish hot-refresh correctness. The source-only seed validator passed, while cross-repository parity failed because the pinned Canvas projection still contains the previous seed. Preserve that failed receipt until the source-to-consumer delivery chain reconciles it; these results do not establish production or cloud synchronization.
 
 ## Rehearsal integration handover — 2026-09-14
 
