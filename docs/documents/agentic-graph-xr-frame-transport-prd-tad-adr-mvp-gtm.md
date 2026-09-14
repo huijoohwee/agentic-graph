@@ -42,10 +42,11 @@ authored scene frames. Outcome: repeatable frame and speed readback.
 | F05 | Repeating an unchanged store update publishes no new state. | `uiSliceInitialState.ts`; animation runtime regression |
 | F06 | Given an open document, previous/next Timeline buttons pause on the exact adjacent authored frame, preserve playback rate, show the shared frame and disable at its bounds; absent documents disable stepping. | `XrTimelineRehearsalControls.tsx`; mounted component test plus existing animation runtime |
 | F07 | The pinned Timeline stays inside the mobile safe-area insets and desktop centering remains intact. | `responsive-canvas-toolbar.css`; real-browser geometry at 390 x 844 |
+| F08 | Home Apex loads the explicitly configured canonical Canvas catalog and opens Physics Playground through Demo. | `config.env.ts`; local Apex browser activation |
 
 ## TAD and ADR
 
-TAD `1.1.0` consumes PRD `1.1.0`; ADR `1.1.0` binds that design. F01–F07 share
+TAD `1.1.0` consumes PRD `1.1.0`; ADR `1.1.0` binds that design. F01–F08 share
 the continuity ID above. Keep the existing transport store and panel; extract its
 animation adapter into one helper loaded with the existing XR animation feature.
 Use authored FPS for frame targeting and the shared rate list for validation.
@@ -98,7 +99,7 @@ Increment: one helper, no dependencies, no added always-load instructions.
 ## Rehearsal integration handover — 2026-09-14
 
 The user requested all three rehearsal, gameplay and Commerce outcomes end to end.
-This authoring lane implements F06–F07 under that grant. The new on-demand component
+This authoring lane implements F06–F08 under that grant. The new on-demand component
 projects the existing local command and store; it adds no clock, dependency,
 provider, persistence, payment authority or always-loaded content. Existing
 Timeline duration/FPS controls retain their owner. Native objective controls are
@@ -117,7 +118,7 @@ A separate browser recovered an existing successful sandbox session: a fresh
 provider status check and both receipt/sample downloads succeeded. This was a
 recovered order, not a new hosted payment submission or actual collection.
 
-Graph change budget: four runtime files (including CSS, one new component), two
+Graph change budget: five runtime files (including CSS and environment projection, one new component), two
 component tests, two registry entries and two existing plans, under 20 kB added
 source. The oversized Timeline file shrinks. Dependencies and always-load deltas
 are zero. The shared responsive CSS owns the mobile centering correction, so
@@ -149,3 +150,11 @@ full-suite parity is not established. Logs are retained locally under
 No passing subset, sandbox result or URL establishes new production readiness.
 Protected integration, candidate authorization, production delivery, and real
 buyer willingness to pay remain separate evidence boundaries.
+
+Home Apex initially could not load the catalog because the browser environment
+reader omitted the configured Canvas docs root even though the local server
+allowed it. F08 adds that existing setting to the explicit browser projection.
+Apex now lists Physics Playground; Demo opens its canonical source and example
+conversation, and the same animation command accepts quarter-speed playback.
+No copied catalog or fallback source is introduced. The predecessor commit is
+retained while this same-worktree successor supplies the complete source change.
