@@ -242,3 +242,20 @@ The shared canvas click handler now lets document editing receive the event
 before stopping its propagation; the dedicated native test mounts this parent
 component and verifies that the edit reaches workspace Markdown. This is local
 production-build evidence, not evidence of a deployed public host connection.
+
+Historical release-prep observations from the private owner archive remain
+relevant to the public-flow status. Graph `d003fc2663a5d842c9865a1e6fdceb5063e2368c`
+passed the main Integration Gate in run
+[`34733324598`](https://github.com/huijoohwee/agentic-graph/actions/runs/34733324598).
+Production candidate run
+[`34734306773`](https://github.com/huijoohwee/agentic-graph/actions/runs/34734306773)
+then stopped at schema-map parity with 49 missing document nodes, so no
+production approval or deployment occurred from that candidate. The schema owner
+repair landed in `huijoohwee.github.io` PR
+[`#227`](https://github.com/huijoohwee/huijoohwee.github.io/pull/227) as
+`204afd42933899a9e3676f459abc8359ae948531`; the generator then reported 289
+nodes and zero differences. A fresh release run
+[`34735549245`](https://github.com/huijoohwee/agentic-graph/actions/runs/34735549245)
+subsequently passed integration, build, schema parity and the isolated browser
+gate for the same Graph revision with that repaired dependency. That run still
+awaited explicit human production authorization and is not deployment proof.
