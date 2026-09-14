@@ -1,4 +1,5 @@
 import {
+  materializeActiveWorkspaceEntryIntoSourceFiles,
   buildActiveWorkspaceRuntimeSourceFilesSnapshot,
   buildMaterializedWorkspaceActivePathKey,
   reapplyActiveWorkspaceMarkdownDocument,
@@ -9,6 +10,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
+import type { SourceFile } from '@/hooks/store/types'
 
 const createMinimalFs = (textByPath: Record<string, string>): WorkspaceFs => ({
   ensureSeed: async () => false,
@@ -226,5 +228,88 @@ export function testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshE
   }
   if (preservedSidecar.enabled !== false) {
     throw new Error(`expected preserved canonical chat sidecar file to remain disabled, got ${String(preservedSidecar.enabled)}`)
+  }
+}
+
+
+export async function testActiveWorkspaceRefreshPreservesConcurrentSourceChanges() {
+  const { restore } = initJsdomHarness()
+  const previousGraph = useGraphStore.getState()
+  const previousExplorer = useMarkdownExplorerStore.getState()
+  try {
+    for (const change of ['unchanged', 'selection', 'selection-only', 'source-addition', 'active-edit', 'stale-queued'] as const) {
+      const oldPath = '/docs/old.md'
+      const nextPath = '/docs/new.md'
+      const old: SourceFile = { id: 'refresh-old', name: 'old.md', text: '# Old', enabled: true, status: 'idle',
+        source: { kind: 'local' as const, path: `workspace:${oldPath}` } }
+      const added: SourceFile = { id: 'refresh-new', name: 'new.md', text: '# New', enabled: true, status: 'idle',
+        source: { kind: 'local' as const, path: `workspace:${nextPath}` } }
+      useGraphStore.setState({ sourceFiles: [old], markdownDocumentName: 'docs/old.md',
+        markdownDocumentText: '# Old', setActiveMarkdownDocument: async () => true })
+      useMarkdownExplorerStore.getState().setActivePath(oldPath as never)
+      const snapshot = useGraphStore.getState().sourceFiles
+      if (change === 'stale-queued') {
+        const current = [old, added]
+        useGraphStore.setState({ sourceFiles: current })
+        await materializeActiveWorkspaceEntryIntoSourceFiles({
+          activePathOverride: oldPath as never, sourceFilesSnapshot: snapshot,
+          fs: createMinimalFs({ [oldPath]: '# Stale refresh' }), refreshActiveText: true,
+        })
+        if (useGraphStore.getState().sourceFiles !== current) throw new Error('queued snapshot removed a newer source')
+        continue
+      }
+      let finishRead!: (text: string) => void
+      let beginRead!: () => void
+      const started = new Promise<void>(resolve => { beginRead = resolve })
+      let reads = 0
+      const fs = { ...createMinimalFs({}), readFileText: async () => {
+        if (++reads > 1) return '# Refreshed old text'
+        beginRead()
+        return new Promise<string>(resolve => { finishRead = resolve })
+      } }
+      const pending = materializeActiveWorkspaceEntryIntoSourceFiles({
+        activePathOverride: oldPath as never, sourceFilesSnapshot: snapshot,
+        fs, refreshActiveText: true,
+      })
+      await started
+      const expectedFiles = change === 'active-edit' ? [{ ...old, text: '# Newer edit' }]
+        : change === 'unchanged' || change === 'selection-only' ? snapshot : [old, added]
+      if (expectedFiles !== snapshot) useGraphStore.setState({ sourceFiles: expectedFiles })
+      if (change === 'selection' || change === 'selection-only') {
+        useGraphStore.setState({ markdownDocumentName: 'docs/new.md', markdownDocumentText: '# New' })
+        useMarkdownExplorerStore.getState().setActivePath(nextPath as never)
+      }
+      finishRead('# Refreshed old text')
+      await pending
+      if (change === 'unchanged') {
+        if (useGraphStore.getState().sourceFiles[0]?.text !== '# Refreshed old text') {
+          throw new Error('current active source did not refresh')
+        }
+        continue
+      }
+      if (useGraphStore.getState().sourceFiles !== expectedFiles) {
+        throw new Error(`delayed active refresh overwrote concurrent ${change}`)
+      }
+      if ((change === 'selection' || change === 'selection-only')
+        && useGraphStore.getState().markdownDocumentName !== 'docs/new.md') {
+        throw new Error('delayed active refresh changed the selected document')
+      }
+    }
+    let resolveText!: (text: string) => void
+    let applied = false
+    useMarkdownExplorerStore.getState().setActivePath('/docs/edit.md' as never)
+    useGraphStore.setState({ markdownDocumentName: 'docs/edit.md', markdownDocumentText: '# Before',
+      setActiveMarkdownDocument: async () => { applied = true; return true } })
+    const reapply = reapplyActiveWorkspaceMarkdownDocument({
+      fs: { ...createMinimalFs({}), readFileText: () => new Promise(resolve => { resolveText = resolve }) },
+    })
+    await Promise.resolve()
+    useGraphStore.setState({ markdownDocumentText: '# Newer unsaved edit' })
+    resolveText('# Stale disk text')
+    if (await reapply || applied) throw new Error('delayed disk read replaced an in-flight editor change')
+  } finally {
+    useGraphStore.setState(previousGraph, true)
+    useMarkdownExplorerStore.setState(previousExplorer, true)
+    restore()
   }
 }

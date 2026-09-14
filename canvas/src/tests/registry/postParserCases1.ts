@@ -215,6 +215,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["sourceFiles.bootstrap.safariStorageSync.guarded","@/__tests__/sourceFilesIngestStaleGuard.test","testSourceFilesBootstrapGuardsSafariStorageSyncHotPath"],
   ["workspace.activeMaterialization.skipsImportWhenGraphApplyDisabled","@/__tests__/sourceFilesIngestStaleGuard.test","testWorkspaceActiveMaterializationSkipsImportWhenGraphApplyDisabled"],
   ["workspace.activeMaterialization.preservesCanonicalChatSidecars","@/__tests__/sourceFilesRuntimeMaterialization.test","testBuildActiveWorkspaceRuntimeSourceFilesSnapshotIncludesFreshEmptyActiveWorkspaceFile"],
+  ["workspace.activeMaterialization.concurrentSourceRefresh", "@/__tests__/sourceFilesRuntimeMaterialization.test", "testActiveWorkspaceRefreshPreservesConcurrentSourceChanges"],
   ["workspace.markdownDocumentSetter.decouplesWorkspaceViewMode","@/__tests__/sourceFilesIngestStaleGuard.test","testMarkdownDocumentSettersStayDecoupledFromWorkspaceViewMode"],
   ["store.hydration.reusesSharedLocalStorageSnapshot","@/__tests__/localStorageHydrationPerfRegression.test","testUiSlicesReuseSharedStartupStorageSnapshot"],
   ["graphData.localStoragePersistence.coalescesWrites","@/__tests__/localStorageHydrationPerfRegression.test","testGraphDataPersistenceUsesCoalescedLocalStorageWrites"],
