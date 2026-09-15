@@ -1,3 +1,4 @@
+import { readAgenticGraphStorageWorkspaceOverride } from '@/lib/storage/agentic-graph-storage-workspace-selection'
 import {
   buildAgenticGraphStorageAbsoluteUrl,
 } from '@/lib/storage/agentic-graph-storage-chat-client'
@@ -59,7 +60,7 @@ const isValidHandoff = (handoff: KnowledgeSourceReadHandoff): boolean => {
 
 const readKnowledgeSourceConfig = (): KnowledgeSourceReadConfig | null => {
   const baseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', ''))
-  const workspaceId = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
+  const workspaceId = readAgenticGraphStorageWorkspaceOverride()
   return baseUrl && workspaceId ? { baseUrl, workspaceId } : null
 }
 

@@ -1,8 +1,8 @@
+import { readAgenticGraphStorageWorkspaceOverride } from '@/lib/storage/agentic-graph-storage-workspace-selection'
 import type { SourceFile } from '@/hooks/store/types'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { hashSignatureParts } from '@/lib/hash/signature'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
-import { readEnvString } from '@/lib/config.env'
 import { toCloneSafeObject } from '@/lib/storage/cloneSafe'
 import {
   commitAgenticGraphStorageMutationUnit,
@@ -28,7 +28,7 @@ const sourceFileGraphDataHashCache = new WeakMap<object, string>()
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 const readAgenticGraphStorageWorkspaceIdOverride = (): string =>
-  normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
+  readAgenticGraphStorageWorkspaceOverride()
 
 const normalizeSourceFileCanonicalPath = (file: SourceFile): string => {
   const sourcePath = normalizeString(file.source?.path)

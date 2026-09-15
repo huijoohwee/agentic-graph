@@ -1,3 +1,4 @@
+import { readAgenticGraphStorageWorkspaceOverride } from '@/lib/storage/agentic-graph-storage-workspace-selection'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
@@ -225,7 +226,7 @@ const readWorkspaceStorageDocFallbackText = async (
   canonicalCandidates.unshift(`workspace:${normalizedPath}`)
   try {
     const workspaceIdCandidates = new Set<string>()
-    const workspaceIdOverride = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
+    const workspaceIdOverride = readAgenticGraphStorageWorkspaceOverride()
     if (workspaceIdOverride) workspaceIdCandidates.add(workspaceIdOverride)
     const runtimeWorkspaceId = normalizeString(buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({
       folderName: useGraphStore.getState().localMarkdownFolderName,

@@ -78,6 +78,8 @@ const validateCommandExpansions = (contract, declaredCommands) => {
     }
     requireCommands([expansion.command], `${label}.command`)
     requireCommands(expansion.steps, `${label}.steps`)
+    if (expansion.verify_script !== undefined && expansion.verify_script !== true)
+      throw new Error(`${label}.verify_script must be true when provided`)
     const key = commandKey(expansion.command)
     if (!declaredCommands.has(key)) throw new Error(`${label}.command must be declared by a CI scope or fallback`)
     if (expansionKeys.has(key)) throw new Error(`${label}.command is duplicated`)
@@ -273,9 +275,26 @@ export const validateContract = contract => {
   return contract
 }
 
+export const validateExpansionScripts = (contract, scripts) => {
+  for (const expansion of contract.ci_command_expansions || []) {
+    if (!expansion.verify_script) continue
+    const [executable, operation, name, ...rest] = expansion.command
+    if (executable !== 'npm' || operation !== 'run' || !name || rest.length)
+      throw new Error('Verified expansion requires one root npm script')
+    if (scripts['pre' + name] || scripts['post' + name])
+      throw new Error(`Verified expansion cannot omit lifecycle hooks: ${name}`)
+    if (expansion.steps.some(step => step.some(arg => !/^[A-Za-z0-9_./:=@-]+$/u.test(arg))))
+      throw new Error(`Verified expansion requires literal arguments: ${name}`)
+    if (scripts[name] !== expansion.steps.map(step => step.join(' ')).join(' && '))
+      throw new Error(`CI expansion drift: ${name}; update the package script and contract together`)
+  }
+  return contract
+}
+
 export const readContract = async () => {
   const source = await fs.readFile(contractPath, 'utf8')
-  return validateContract(parseFrontmatter(source, path.relative(repoRoot, contractPath)))
+  const pkg = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'))
+  return validateExpansionScripts(validateContract(parseFrontmatter(source, path.relative(repoRoot, contractPath))), pkg.scripts || {})
 }
 
 export const resolveCiCommandTimeoutMs = (command, contract) => {

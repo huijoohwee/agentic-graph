@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 47
+contract_version: 48
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -89,9 +89,10 @@ ci_scopes:
     commands:
       - ["npm", "run", "check"]
   storage_parent_child_browser:
-    roots: ["package.json", "package-lock.json", "canvas/package.json", "canvas/package-lock.json", "canvas/src/lib/storage/", "canvas/src/features/source-files/sourceFilesInboundStorageApply", "canvas/scripts/run_storage_parent_child_browser_smoke.mjs", "canvas/scripts/verify_storage_parent_child_browser_smoke.mjs", "canvas/scripts/lib/run-local-vite-browser-smoke.mjs", "canvas/scripts/lib/local-chromium-executable.mjs", "docs/documents/agentic-graph-storage-sync-document.companion.md"]
+    roots: ["package.json", "package-lock.json", "canvas/package.json", "canvas/package-lock.json", "canvas/src/lib/storage/", "canvas/src/features/source-files/sourceFilesInboundStorageApply", "canvas/scripts/run_storage_auth_browser_smoke.mjs", "canvas/scripts/verify_storage_auth_browser_smoke.mjs", "cloudflare/workers/agentic-graph-storage/storageOAuth", "cloudflare/workers/agentic-graph-storage/storageBrowserSession", "canvas/src/features/panels/views/preview-panel/ui/PreviewOverlay.tsx", "canvas/scripts/run_storage_parent_child_browser_smoke.mjs", "canvas/scripts/verify_storage_parent_child_browser_smoke.mjs", "canvas/scripts/lib/run-local-vite-browser-smoke.mjs", "canvas/scripts/lib/local-chromium-executable.mjs", "docs/documents/agentic-graph-storage-sync-document.companion.md"]
     commands:
       - ["npm", "--prefix", "canvas", "run", "test:storage-parent-child-browser-smoke"]
+      - ["node", "canvas/scripts/run_storage_auth_browser_smoke.mjs"]
   rich_media_preview_timing:
     roots: ["canvas/schemas/rich-media-catalog-preview-timing.v1.schema.json", "canvas/scripts/lib/rich-media-catalog-preview-timing-schema.mjs", "canvas/scripts/validate_rich_media_catalog_preview_timing.mjs", "canvas/scripts/__tests__/rich-media-catalog-preview-timing-schema.test.mjs", "canvas/scripts/run_rich_media_browser_smoke.mjs", "canvas/scripts/verify_rich_media_browser_smoke.py", "canvas/src/features/testing/RichMediaBrowserSmokePage.tsx", "canvas/src/features/testing/richMediaBrowserSmokeFixtures.json", "canvas/src/__tests__/richMediaBrowserSmokeContract.test.ts"]
     commands:
@@ -168,6 +169,66 @@ ci_command_expansions:
       - ["npm", "run", "video-editor:source-ready"]
       - ["npm", "run", "xr-v2:source-ready"]
       - ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
+  - command: ["npm", "run", "check"]
+    verify_script: true
+    steps:
+      - ["npm", "run", "check", "--workspace=@agentic-graph/canvas"]
+  - command: ["npm", "run", "runtime:check"]
+    verify_script: true
+    steps:
+      - ["npm", "run", "runtime:test"]
+      - ["npm", "run", "repository-pack:check"]
+      - ["npm", "run", "sme-care-agent:canvas-demo:check"]
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "smeCareAgent.canvasEvidence.runtimeReady"]
+      - ["node", "./scripts/check-runtime-ready.mjs"]
+  - command: ["npm", "run", "runtime:test"]
+    verify_script: true
+    steps:
+      - ["npm", "run", "runtime:test:core"]
+      - ["npm", "run", "storage:relay:test"]
+  - command: ["npm", "run", "check:agentic-travel-commerce-platform"]
+    verify_script: true
+    steps:
+      - ["npm", "run", "travel-commerce:supply-chain:check"]
+      - ["npm", "run", "collaboration:contract:check"]
+      - ["npm", "run", "test:collaboration-contract"]
+      - ["npm", "run", "hygiene:check"]
+      - ["npm", "run", "marketplace:worker:types:check"]
+      - ["npm", "run", "travel-commerce:worker:types:check"]
+      - ["npm", "run", "travel-commerce:mcp:types:check"]
+      - ["npm", "run", "travel-commerce:experience-discovery:types:check"]
+      - ["npm", "run", "travel-commerce:shared-canvas:types:check"]
+      - ["npm", "run", "travel-commerce:settlement-executor:types:check"]
+      - ["npm", "run", "travel-commerce:operator-gateway:types:check"]
+      - ["npm", "run", "marketplace:typecheck"]
+      - ["npm", "run", "travel-commerce:shared-canvas:typecheck"]
+      - ["npm", "run", "travel-commerce:typecheck"]
+      - ["npm", "run", "travel-commerce:mcp:typecheck"]
+      - ["npm", "run", "travel-commerce:experience-discovery:typecheck"]
+      - ["npm", "run", "travel-commerce:overflow:typecheck"]
+      - ["npm", "run", "travel-commerce:settlement-executor:typecheck"]
+      - ["npm", "run", "travel-commerce:operator-gateway:typecheck"]
+      - ["npm", "run", "marketplace:test"]
+      - ["npm", "run", "travel-commerce:overflow:test"]
+      - ["npm", "run", "travel-commerce:settlement-executor:test"]
+      - ["npm", "run", "travel-commerce:operator-gateway:test"]
+      - ["npm", "run", "travel-commerce:overflow:workers-ai:check"]
+      - ["npm", "run", "travel-commerce:shared-canvas:test"]
+      - ["npm", "run", "storage:relay:test"]
+      - ["npm", "run", "travel-commerce:storage-client:test"]
+      - ["npm", "run", "storage:shared-node:pbt"]
+      - ["npm", "run", "check", "--workspace=@agentic-graph/canvas"]
+      - ["npm", "run", "travel-commerce:test"]
+      - ["npm", "run", "travel-commerce:services:test"]
+      - ["npm", "run", "travel-commerce:demo:browser"]
+      - ["npm", "run", "marketplace:dry-run"]
+      - ["npm", "run", "travel-commerce:dry-run"]
+      - ["npm", "run", "travel-commerce:services:dry-run"]
+      - ["npm", "run", "travel-commerce:settlement-executor:dry-run"]
+      - ["npm", "run", "travel-commerce:net-settlement:dry-run"]
+      - ["npm", "run", "travel-commerce:operator-gateway:dry-run"]
+      - ["npm", "run", "travel-commerce:overflow:dry-run"]
+      - ["npm", "run", "travel-commerce:shared-canvas:dry-run"]
 fallback_commands:
   - ["npm", "run", "check"]
 ---
@@ -236,7 +297,7 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 - The gate validates this contract, runs source/build conflict compliance, and selects additional commands from `ci_scopes` based on changed paths.
 - Dev CI never writes a Prod mirror. After protected `main` integration and exact localhost review, the release workflow may create one ephemeral production candidate; it cannot deploy or publish before exact-candidate human authorization.
 - Commands are arrays rather than shell strings, preventing shell interpolation and keeping execution provider-neutral.
-- Affected CI expands declared composite commands through `ci_command_expansions` before exact-argv deduplication. The manual focused command remains unchanged, while shared prerequisites such as `npm run check` execute once and each expanded component retains the canonical per-command timeout.
+- Affected CI expands declared composite commands through `ci_command_expansions` before exact-argv deduplication. Verified expansions must exactly match the root package script and cannot omit npm lifecycle hooks; drift blocks selection. The manual focused command remains unchanged, while shared prerequisites such as `npm run check` execute once and each expanded component retains the canonical per-command timeout. The pinned agentic-os process runner bounds output, cancels process groups, and emits numeric progress every 30 seconds; progress never grants passing or release authority.
 - `ci_command_timeout_overrides` carries the rare longer-running commands that need a stricter per-command bound than the global default. XR browser smoke uses a 15-minute cap because first-run Playwright downloads can consume a material slice of CI time on fresh GitHub runners.
 - Every affected-scope command has the canonical bounded timeout; non-terminating checks fail closed instead of freezing the gate.
 - Unknown changed paths fail safe through `fallback_commands`.

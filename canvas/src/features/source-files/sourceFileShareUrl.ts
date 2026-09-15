@@ -1,3 +1,4 @@
+import { readAgenticGraphStorageWorkspaceOverride } from '@/lib/storage/agentic-graph-storage-workspace-selection'
 import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import type { SourceFile } from '@/hooks/store/types'
@@ -35,7 +36,7 @@ export type ResolveWorkspaceEntryCanonicalPathForStoragePublish = (
 ) => string | null | undefined
 
 export const readActiveAgenticGraphStorageWorkspaceId = (): string => {
-  const override = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
+  const override = readAgenticGraphStorageWorkspaceOverride()
   if (override) return override
   const state = useGraphStore.getState()
   return buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState({

@@ -5,6 +5,7 @@ export type OAuthProvider = 'github' | 'google'
 export type OAuthState = {
   provider: OAuthProvider; clientId: string; origin: string; returnTo: string
   linkSessionHash?: string
+  signup?: true
   state: string; verifier: string; nonce: string; issuedAt: number
 }
 const encode = (bytes: Uint8Array): string => btoa(String.fromCharCode(...bytes))
@@ -30,7 +31,8 @@ export const openOAuthState = async (sealed: string, secret: string, now: number
     const [iv, body] = sealed.split('.')
     const clear = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decode(iv) }, await key(secret), decode(body))
     const value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(clear)) as OAuthState
-    if ((value.linkSessionHash !== undefined && !/^[a-f0-9]{64}$/.test(value.linkSessionHash))
+    if ((value.signup !== undefined && value.signup !== true) || (value.signup && value.linkSessionHash)
+      || (value.linkSessionHash !== undefined && !/^[a-f0-9]{64}$/.test(value.linkSessionHash))
       || !['github', 'google'].includes(value.provider) || !Number.isSafeInteger(value.issuedAt)
       || value.issuedAt > now || now - value.issuedAt >= OAUTH_TTL_SECONDS * 1000
       || ![value.state, value.verifier, value.nonce].every(x => typeof x === 'string' && /^[\w-]{43}$/.test(x))

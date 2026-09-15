@@ -10,6 +10,8 @@ const normalizeString = (value: unknown): string => String(value || '').trim()
 export type AgenticGraphStorageBrowserSessionState = {
   status: 'authenticated' | 'unauthenticated' | 'access-denied' | 'unavailable'
   message?: string
+  userId?: string
+  workspaces?: { id: string; title: string; role: string }[]
 }
 
 export class AgenticGraphStorageBrowserSessionOriginError extends Error {
@@ -77,7 +79,9 @@ export const readAgenticGraphStorageBrowserSession = async (args: {
   baseUrl?: string | null
   workspaceId?: string | null
   fetchImpl?: AgenticGraphStorageFetchLike
+  signal?: AbortSignal
 } = {}): Promise<AgenticGraphStorageBrowserSessionState> => {
+  resumeAgenticGraphStorageBrowserSignIn()
   try {
     const sessionUrl = resolveAgenticGraphStorageBrowserSessionUrl({
       path: buildAgenticGraphStorageBrowserSessionPath(),
@@ -91,12 +95,18 @@ export const readAgenticGraphStorageBrowserSession = async (args: {
         method: 'GET',
         headers: { accept: 'application/json' },
         credentials: 'same-origin',
+        signal: args.signal,
       },
     )
     if (response.status === 401) return { status: 'unauthenticated' }
     if (response.status === 403) return { status: 'access-denied' }
     const payload = await parseJson(response)
     if (response.ok && payload?.ok === true && payload.authenticated === true) {
+      if (!workspaceId && typeof payload.userId === 'string' && Array.isArray(payload.workspaces)
+        && payload.workspaces.length <= 50 && payload.workspaces.every(value => value && typeof value === 'object'
+          && typeof value.id === 'string' && typeof value.title === 'string' && typeof value.role === 'string')) {
+        return { status: 'authenticated', userId: payload.userId, workspaces: payload.workspaces }
+      }
       return { status: 'authenticated' }
     }
     return {
@@ -135,12 +145,34 @@ export const beginAgenticGraphStorageBrowserSignIn = (args: {
     'return_to',
     resolveAgenticGraphStorageBrowserLoginReturnTo(args.returnTo),
   )
+  if (!args.navigate) {
+    const returnUrl = new URL(loginUrl.searchParams.get('return_to')!, loginUrl.origin)
+    returnUrl.searchParams.set('kgAuth', 'complete')
+    loginUrl.searchParams.set('return_to', returnUrl.pathname + returnUrl.search)
+  }
   if (typeof window !== 'undefined' && window.location?.origin) loginUrl.searchParams.set('return_origin', window.location.origin)
   const destination = loginUrl.toString()
   if (args.navigate) {
     args.navigate(destination)
   } else if (typeof window !== 'undefined') {
-    window.location.assign(destination)
+    void import('./StorageAuthLightbox').then(module => module.openStorageAuthLightbox(destination))
+      .catch(() => window.location.assign(destination))
   }
   return destination
 }
+
+/** Consume a non-secret return marker once; provider state and credentials stay server-side. */
+export const resumeAgenticGraphStorageBrowserSignIn = (): void => {
+  if (typeof window === 'undefined') return
+  const href = normalizeString(window.location?.href)
+  if (!href) return
+  const url = new URL(href)
+  if (url.searchParams.get('kgAuth') !== 'complete') return
+  url.searchParams.delete('kgAuth')
+  window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+  if (typeof HTMLDialogElement === 'undefined' || typeof HTMLDialogElement.prototype.showModal !== 'function') return
+  beginAgenticGraphStorageBrowserSignIn()
+}
+
+// This small client is already used by Source Files; load the panel only for an OAuth return.
+if (typeof window !== 'undefined') queueMicrotask(resumeAgenticGraphStorageBrowserSignIn)

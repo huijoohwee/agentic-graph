@@ -26,6 +26,7 @@ import { readStorageSessionExchangeCredential, storageSessionExchangeForm } from
 import {
   type D1DatabaseLike,
   normalizeString,
+  queryAll,
   readAuthIdentityUser,
   readWorkspaceMembershipRowsByUser,
   revokeAuthSessionByHash,
@@ -274,7 +275,18 @@ const handleSession = async (args: {
     return errorResponse(401, 'forbidden', 'storage browser session cookie is required')
   }
   const workspaceId = normalizeString(new URL(args.request.url).searchParams.get('workspace_id'))
-  if (!workspaceId) return errorResponse(400, 'bad_request', 'workspace_id is required')
+  if (!workspaceId) {
+    const rows = await queryAll<{ id: string; title: string; role: string }>(args.db,
+      `SELECT w.id, w.title, m.role FROM workspace_memberships m JOIN workspaces w ON w.id = m.workspace_id
+       WHERE m.user_id = ? AND m.status = 'active' AND m.role IN ('owner', 'editor', 'provider-admin')
+       ORDER BY w.id LIMIT 50`, [auth.value.user.id])
+    return json(200, {
+      ok: true, apiVersion: AGENTIC_OS_STORAGE_API_VERSION, authenticated: true,
+      userId: auth.value.user.id,
+      workspaces: rows.map(row => ({ id: row.id, title: String(row.title).slice(0, 120), role: row.role })),
+      session: { expiresAt: auth.value.session.expiresAt },
+    })
+  }
   const membership = await readAuthorizedMembership({
     db: args.db,
     workspaceId,

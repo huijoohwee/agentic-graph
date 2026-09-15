@@ -148,7 +148,7 @@
     "game-flight-sim:negative-gates:test": "node --test ./scripts/__tests__/game-flight-sim-negative-gates.test.mjs ./scripts/__tests__/game-flight-sim-readiness-contract.test.mjs",
     "game-flight-sim:browser-smoke": "npm -C canvas run test:smoke:game-flight-sim:browser",
     "runtime:ci": "node --test --test-concurrency=1 ecs/__tests__/*.test.mjs cloudflare/workers/agentic-graph-mcp/__tests__/*.test.mjs web/__tests__/*.test.mjs contracts/__tests__/*.test.mjs",
-    "runtime:test": "node --test --test-concurrency=1 ecs/__tests__/*.test.mjs ecs/__pbt__/*.pbt.test.mjs cloudflare/workers/agentic-graph-mcp/__tests__/*.test.mjs cloudflare/workers/agentic-graph-mcp/__pbt__/*.test.mjs mcp/__tests__/*.test.mjs mcp/__pbt__/*.test.mjs web/__tests__/*.test.mjs web/__pbt__/*.test.mjs contracts/__tests__/*.test.mjs contracts/__pbt__/*.test.mjs && npm run storage:relay:test",
+    "runtime:test": "npm run runtime:test:core && npm run storage:relay:test",
     "storage:relay:test": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/agentic-graph-storage/storage-relay/*.test.ts cloudflare/workers/agentic-graph-storage/storageRelayRuntime.test.ts cloudflare/workers/agentic-graph-storage/storageOAuth.test.ts",
     "storage:shared-node:pbt": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/agentic-graph-storage/__pbt__/*.pbt.test.mjs",
     "storage:relay:env:check": "node scripts/check-storage-relay-env.mjs",
@@ -309,14 +309,15 @@
     "test:all": "npm run test:ci --workspace=@agentic-graph/canvas",
     "ci:affected:source": "node ./scripts/run-affected-ci.mjs",
     "check:plan": "node node_modules/agentic-os/bin/agentic-os-validation.mjs plan",
-    "check:ci": "node node_modules/agentic-os/bin/agentic-os-validation.mjs ci"
+    "check:ci": "node node_modules/agentic-os/bin/agentic-os-validation.mjs ci",
+    "runtime:test:core": "node --test --test-concurrency=1 ecs/__tests__/*.test.mjs ecs/__pbt__/*.pbt.test.mjs cloudflare/workers/agentic-graph-mcp/__tests__/*.test.mjs cloudflare/workers/agentic-graph-mcp/__pbt__/*.test.mjs mcp/__tests__/*.test.mjs mcp/__pbt__/*.test.mjs web/__tests__/*.test.mjs web/__pbt__/*.test.mjs contracts/__tests__/*.test.mjs contracts/__pbt__/*.test.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
     "@x402/hono": "^2.13.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/4a8aaa70174a4892612b1d219518db37a287cf75",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/a3706c891e88b61996d4c79291fb96bae6922018",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.7",
     "js-yaml": "^4.3.2",

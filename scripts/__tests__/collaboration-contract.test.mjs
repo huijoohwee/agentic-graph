@@ -7,6 +7,7 @@ import {
   resolveCiCommandTimeoutMs,
   selectAffectedCommands,
   validateContract,
+  validateExpansionScripts,
   validatePullRequestMetadata,
   validateTaskBranch,
 } from '../collaboration-contract.mjs'
@@ -23,7 +24,15 @@ import {
   buildLocalCollaborationWorkerEnv,
   resolveLocalCollaborationStackConfig,
 } from '../lib/collaboration-local-stack.js'
-
+const rootScripts = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).scripts
+const canvasCheck = ['npm', 'run', 'check', '--workspace=@agentic-graph/canvas']
+const runtimeCommands = [
+  ['npm', 'run', 'runtime:test:core'], ['npm', 'run', 'storage:relay:test'],
+  ['npm', 'run', 'repository-pack:check'], ['npm', 'run', 'sme-care-agent:canvas-demo:check'],
+  ['npm', '-C', 'canvas', 'run', 'test:ci:unit', '--', 'smeCareAgent.canvasEvidence.runtimeReady'],
+  ['node', './scripts/check-runtime-ready.mjs'],
+]
+const uniqueCommands = commands => [...new Map(commands.map(command => [JSON.stringify(command), command])).values()]
 test('repository lifecycle delegates to the pinned agentic-os harness', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
   for (const [name, command] of Object.entries({
@@ -38,7 +47,6 @@ test('repository lifecycle delegates to the pinned agentic-os harness', () => {
   for (const name of ['device:complete', 'device:end', 'device:park', 'worktree:lifecycle:check',
     'worktree:lifecycle:classify', 'worktree:lifecycle:cleanup']) assert.equal(pkg.scripts?.[name], undefined)
 })
-
 test('collaboration browser gate edits through the canonical active editor owner', () => {
   const smoke = fs.readFileSync(new URL('../../canvas/scripts/verify-multi-user-collaboration-e2e.ts', import.meta.url), 'utf8')
   const queryParams = fs.readFileSync(new URL('../../canvas/src/lib/routing/queryParams.ts', import.meta.url), 'utf8')
@@ -54,7 +62,6 @@ test('collaboration browser gate edits through the canonical active editor owner
   const mainRuntime = smoke.slice(mainStart, mainEnd)
   const mainConnection = mainRuntime.indexOf('connectAuthenticatedRoom(ownerPage)')
   const mainBeforeConnection = mainRuntime.slice(0, mainConnection)
-
   assert.match(queryParams, /QUERY_PARAM_RUNTIME_IDENTITY_PROOF = 'kgRuntimeIdentityProof'/)
   assert.match(smoke, /QUERY_PARAM_RUNTIME_IDENTITY_PROOF/)
   assert.match(smoke, /url\.searchParams\.set\(QUERY_PARAM_RUNTIME_IDENTITY_PROOF, '1'\)/)
@@ -90,14 +97,12 @@ test('collaboration browser gate edits through the canonical active editor owner
   assert.doesNotMatch(smoke, /graphState\.setActiveMarkdownDocument/)
   assert.match(smoke, /restoreLocalDocumentSnapshot\(localDocumentSnapshot\)/)
 })
-
 test('local collaboration browser identities remain stable across repeated gate runs', () => {
   const config = resolveLocalCollaborationStackConfig({ repoRoot: '/tmp/agentic-graph-test', env: {} })
   const browserEnv = buildLocalCollaborationBrowserEnv(config, {})
   const workerEnv = buildLocalCollaborationWorkerEnv(config, {})
   const workerArgs = buildLocalCollaborationWorkerArgs(config, 8877)
   const persistenceArgs = buildLocalCollaborationPersistenceArgs(config)
-
   assert.equal(config.ownerAppUrl, 'http://127.0.0.1:5175/')
   assert.equal(config.guestAppUrl, 'http://127.0.0.1:5174/')
   assert.notEqual(config.ownerAppUrl, 'http://127.0.0.1:5173/')
@@ -140,7 +145,6 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.equal(workerArgs.includes(config.storagePersistencePath), true)
   assert.notEqual(config.ownerClientDeviceId, config.guestClientDeviceId)
 })
-
 test('local collaboration stack accepts run-scoped ports and persistence outside the repository', () => {
   const config = resolveLocalCollaborationStackConfig({
     repoRoot: '/tmp/agentic-graph-test',
@@ -152,7 +156,6 @@ test('local collaboration stack accepts run-scoped ports and persistence outside
       AG_COLLABORATION_E2E_PERSISTENCE_PATH: '/tmp/agentic-gates/run-1/wrangler',
     },
   })
-
   assert.equal(config.storagePersistencePath, '/tmp/agentic-gates/run-1/wrangler')
   assert.deepEqual(config.services.map(service => service.local?.port), [15177, 15174, 15175, 15176])
   assert.match(config.services[0].startupCommand, /--port 15177$/)
@@ -164,14 +167,12 @@ test('local collaboration stack accepts run-scoped ports and persistence outside
     '/tmp/agentic-gates/run-1/wrangler',
   ])
 })
-
 test('collaboration smoke preparation builds linked packages before readiness checks', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
   const readiness = fs.readFileSync(new URL('../check-collaboration-readiness.mjs', import.meta.url), 'utf8')
   const viteConfig = fs.readFileSync(new URL('../../canvas/vite.config.ts', import.meta.url), 'utf8')
   const preparationIndex = readiness.indexOf("args: ['run', 'smoke:prepare']")
   const docsGuardIndex = readiness.indexOf("name: 'docs guard'")
-
   assert.equal(pkg.scripts?.['smoke:prepare'], 'npm -C canvas run prepare:linked-packages')
   assert.ok(preparationIndex >= 0)
   assert.ok(preparationIndex < docsGuardIndex)
@@ -181,12 +182,10 @@ test('collaboration smoke preparation builds linked packages before readiness ch
   assert.match(readiness, /VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT/)
   assert.match(viteConfig, /optimizeDeps:[\s\S]*include:[\s\S]*'yjs'/)
 })
-
 test('release smoke prepares shared modules and defers only the x402 wallet gate', () => {
   const smoke = fs.readFileSync(new URL('../../.github/workflows/smoke-test.sh', import.meta.url), 'utf8')
   const preparationIndex = smoke.indexOf('npm run smoke:prepare')
   const readinessIndex = smoke.indexOf('npm run agent-ready:check')
-
   assert.ok(preparationIndex >= 0)
   assert.ok(preparationIndex < readinessIndex)
   assert.match(smoke, /AGENTIC_OS_AGENT_READY_INCLUDE_X402=false/)
@@ -198,7 +197,6 @@ test('release smoke prepares shared modules and defers only the x402 wallet gate
   assert.match(smoke, /for attempt in 1 2 3 4 5/)
   assert.match(smoke, /sleep 15/)
 })
-
 test('canonical contract is valid and selects deduplicated affected checks', async () => {
   const contract = await readContract()
   const plan = selectAffectedCommands([
@@ -208,17 +206,16 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
     'package.json',
     'README.md',
   ], contract)
-
   assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.deepEqual(plan.commands, [
-    ['npm', 'run', 'check'],
-    ['npm', 'run', 'runtime:check'],
+    canvasCheck,
+    ...runtimeCommands,
     ['npm', '--prefix', 'canvas', 'run', 'test:storage-parent-child-browser-smoke'],
+    ['node', 'canvas/scripts/run_storage_auth_browser_smoke.mjs'],
     ['npm', 'run', 'payment:x402:xrpl:source-check'],
   ])
 })
-
 test('XRPL paid-resource owners require source proof without live payment or unrelated expansion', async () => {
   const contract = await readContract()
   const sourceCommand = 'npm run payment:x402:xrpl:source-check'
@@ -247,26 +244,24 @@ test('XRPL paid-resource owners require source proof without live payment or unr
     assert.ok(!selectAffectedCommands([unrelated], contract).commands.some(command => command.join(' ') === sourceCommand), unrelated)
   }
 })
-
 test('exact generated Worker CI is whole-diff, deletion-safe, and contract-validated', async () => {
   const contract = await readContract()
   const entries = contract.ci_exact_path_scopes.travel_commerce.entries
-  const runtime = ['npm', 'run', 'runtime:check']
-  const full = [runtime, ['npm', 'run', 'check:agentic-travel-commerce-platform']]
+  const runtime = runtimeCommands
+  const full = uniqueCommands([...runtime, ...rootScripts['check:agentic-travel-commerce-platform'].split(' && ').map(command => command.split(' '))])
   const exactPlan = commands => ({ commands, scopes: ['runtime', 'travel_commerce'], unmatchedPaths: [] })
   assert.equal(entries.length, 7)
   for (const entry of entries) {
-    assert.deepEqual(selectAffectedCommands([entry.path], contract), exactPlan([runtime, ...entry.commands]), entry.path)
+    assert.deepEqual(selectAffectedCommands([entry.path], contract), exactPlan([...runtime, ...entry.commands]), entry.path)
   }
-  assert.deepEqual(selectAffectedCommands(entries.map(entry => entry.path), contract).commands, [runtime, ...entries.flatMap(entry => entry.commands)])
+  assert.deepEqual(selectAffectedCommands(entries.map(entry => entry.path), contract).commands, [...runtime, ...entries.flatMap(entry => entry.commands)])
   const mcp = entries[1]
   const operator = entries[5]
-  assert.deepEqual(selectAffectedCommands([operator.path, mcp.path, mcp.path.replaceAll('/', '\\')], contract).commands, [runtime, ...mcp.commands, ...operator.commands])
+  assert.deepEqual(selectAffectedCommands([operator.path, mcp.path, mcp.path.replaceAll('/', '\\')], contract).commands, [...runtime, ...mcp.commands, ...operator.commands])
   for (const paths of [[mcp.path, 'cloudflare/workers/agentic-graph-mcp/wrangler.toml'], [`${mcp.path}.bak`], ['cloudflare/workers/agentic-graph-storage/src/index.ts']]) {
     assert.deepEqual(selectAffectedCommands(paths, contract), exactPlan(full), paths.join(','))
   }
   assert.deepEqual(selectAffectedCommands([], contract), { commands: [], scopes: [], unmatchedPaths: [] })
-
   const mapped = entries[0].path; const broader = 'cloudflare/workers/agentic-graph-travel-commerce/src/index.ts'; const inventory = (...paths) => `${paths.join('\0')}\0`
   for (const environment of [{ GITHUB_BASE_REF: 'main' }, { GITHUB_EVENT_BEFORE: 'a'.repeat(40) }, { GITHUB_ACTIONS: 'true' }, {}]) {
     const calls = []
@@ -279,10 +274,9 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
     assert.deepEqual(selectAffectedCommands(changed, contract).commands, full)
   }
   const renamed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(broader, mapped) }); assert.deepEqual(selectAffectedCommands(renamed, contract).commands, full)
-  const deleted = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(mapped) }); assert.deepEqual(selectAffectedCommands(deleted, contract).commands, [runtime, ...entries[0].commands])
-
+  const deleted = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(mapped) }); assert.deepEqual(selectAffectedCommands(deleted, contract).commands, [...runtime, ...entries[0].commands])
   const inventoryRun = (environment, response = inventory(mapped)) => { const calls = []; const changed = readChangedPaths({ environment, gitText: args => { calls.push(args); return typeof response === 'function' ? response(args) : response } }); return { calls, changed } }
-  const dispatch = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'workflow_dispatch', AGENTIC_OS_PR_BASE_REF: 'main' }, args => args.at(-1) === 'origin/main...HEAD' ? inventory(mapped) : inventory(mapped, broader)); assert.deepEqual(dispatch.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/main...HEAD']]); assert.deepEqual(dispatch.changed, [mapped]); assert.deepEqual(selectAffectedCommands(dispatch.changed, contract).commands, [runtime, ...entries[0].commands])
+  const dispatch = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'workflow_dispatch', AGENTIC_OS_PR_BASE_REF: 'main' }, args => args.at(-1) === 'origin/main...HEAD' ? inventory(mapped) : inventory(mapped, broader)); assert.deepEqual(dispatch.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/main...HEAD']]); assert.deepEqual(dispatch.changed, [mapped]); assert.deepEqual(selectAffectedCommands(dispatch.changed, contract).commands, [...runtime, ...entries[0].commands])
   const pullRequest = inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'release/current', AGENTIC_OS_PR_BASE_REF: 'release/current', GITHUB_EVENT_BEFORE: 'a'.repeat(40) }); assert.deepEqual(pullRequest.calls, [['diff', '--no-renames', '--name-only', '-z', 'origin/release/current...HEAD']])
   let conflictingBaseGitCalls = 0; assert.throws(() => readChangedPaths({ environment: { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main', AGENTIC_OS_PR_BASE_REF: 'release/current' }, gitText: () => { conflictingBaseGitCalls += 1; return inventory(mapped) } }), /base ref conflicts/); assert.equal(conflictingBaseGitCalls, 0)
   assert.deepEqual(inventoryRun({ GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', AGENTIC_OS_PR_BASE_REF: 'main' }).calls, [['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']])
@@ -290,14 +284,13 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
   for (const unusual of [` ${mapped}`, `${mapped} `, '   ']) {
     const changed = readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(unusual) })
     assert.deepEqual(changed, [unusual])
-    assert.notDeepEqual(selectAffectedCommands(changed, contract).commands, [runtime, ...entries[0].commands])
+    assert.notDeepEqual(selectAffectedCommands(changed, contract).commands, [...runtime, ...entries[0].commands])
   }
   for (const unsafe of [mapped.replaceAll('/', '\\'), `${mapped}\nrenamed`]) assert.throws(() => readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => inventory(unsafe) }), /noncanonical path/)
   assert.throws(() => readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => mapped }), /not NUL-terminated/)
   assert.throws(() => readChangedPaths({ environment: { GITHUB_BASE_REF: 'main' }, gitText: () => { throw new Error('inventory failed') } }), /inventory failed/)
   assert.throws(() => readGitText(['diff'], { spawnGit: () => ({ status: 128, stdout: '' }) }), /git diff exited with 128/)
   assert.equal(readGitText(['diff'], { spawnGit: () => ({ status: 0, stdout: ' path with spaces \0' }) }), ' path with spaces \0')
-
   const invalids = [
     [value => { value.ci_exact_path_scopes.unknown = structuredClone(value.ci_exact_path_scopes.travel_commerce) }, /must name a declared CI scope/],
     [value => { value.ci_exact_path_scopes.travel_commerce.entries.push(structuredClone(value.ci_exact_path_scopes.travel_commerce.entries[0])) }, /path is duplicated/],
@@ -314,7 +307,6 @@ test('exact generated Worker CI is whole-diff, deletion-safe, and contract-valid
     assert.ok(index >= 0 && index < affectedIndex, command)
   }
 })
-
 test('affected XR review expands the composite gate and runs the shared check once', async () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
   const contract = await readContract()
@@ -322,7 +314,6 @@ test('affected XR review expands the composite gate and runs the shared check on
     'package.json',
     'canvas/src/features/xr-v2/XrV2Renderer.ts',
   ], contract)
-
   assert.equal(
     pkg.scripts?.['xr-v2:review-ready'],
     'npm run xr-v2:source-runner:test && npm run video-editor:source-runner:test && npm run xr-v2:review-candidate',
@@ -334,14 +325,15 @@ test('affected XR review expands the composite gate and runs the shared check on
   assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'storage_parent_child_browser', 'xr_v2_video_editor', 'xrpl_paid_resource'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.equal(
-    plan.commands.filter(command => command.join(' ') === 'npm run check').length,
+    plan.commands.filter(command => command.join(' ') === canvasCheck.join(' ')).length,
     1,
   )
   assert.ok(!plan.commands.some(command => command.join(' ') === 'npm run xr-v2:review-ready'))
   assert.deepEqual(plan.commands, [
-    ['npm', 'run', 'check'],
-    ['npm', 'run', 'runtime:check'],
+    canvasCheck,
+    ...runtimeCommands,
     ['npm', '--prefix', 'canvas', 'run', 'test:storage-parent-child-browser-smoke'],
+    ['node', 'canvas/scripts/run_storage_auth_browser_smoke.mjs'],
     ['npm', 'run', 'xr-v2:source-runner:test'],
     ['npm', 'run', 'video-editor:source-runner:test'],
     ['npm', 'run', 'xr-v2:unit'],
@@ -362,25 +354,21 @@ test('affected XR review expands the composite gate and runs the shared check on
     900000,
   )
 })
-
 test('CI command expansions reject duplicate, self-referential, and cyclic definitions', async () => {
   const contract = await readContract()
   const expansion = contract.ci_command_expansions[0]
-
   const duplicate = structuredClone(contract)
   duplicate.ci_command_expansions.push(structuredClone(expansion))
   assert.throws(
     () => validateContract(duplicate),
-    /ci_command_expansions\[1\]\.command is duplicated/,
+    /ci_command_expansions\[\d+\]\.command is duplicated/,
   )
-
   const selfReferential = structuredClone(contract)
   selfReferential.ci_command_expansions[0].steps = [structuredClone(expansion.command)]
   assert.throws(
     () => validateContract(selfReferential),
     /ci_command_expansions\[0\]\.steps cannot include its own command/,
   )
-
   const cyclic = structuredClone(contract)
   const checkCommand = ['npm', 'run', 'check']
   cyclic.ci_command_expansions = [
@@ -392,25 +380,21 @@ test('CI command expansions reject duplicate, self-referential, and cyclic defin
     /ci_command_expansions must not contain a cycle/,
   )
 })
-
 test('CI command timeout overrides reject duplicate, undeclared, and invalid definitions', async () => {
   const contract = await readContract()
   const override = contract.ci_command_timeout_overrides[0]
-
   const duplicate = structuredClone(contract)
   duplicate.ci_command_timeout_overrides.push(structuredClone(override))
   assert.throws(
     () => validateContract(duplicate),
     new RegExp(`ci_command_timeout_overrides\\[${contract.ci_command_timeout_overrides.length}\\]\\.command is duplicated`),
   )
-
   const undeclared = structuredClone(contract)
   undeclared.ci_command_timeout_overrides[0].command = ['npm', 'run', 'does-not-exist']
   assert.throws(
     () => validateContract(undeclared),
     /ci_command_timeout_overrides\[0\]\.command must be declared by a CI scope or fallback/,
   )
-
   const invalidTimeout = structuredClone(contract)
   invalidTimeout.ci_command_timeout_overrides[0].timeout_ms = 999
   assert.throws(
@@ -418,16 +402,13 @@ test('CI command timeout overrides reject duplicate, undeclared, and invalid def
     /ci_command_timeout_overrides\[0\]\.timeout_ms must be an integer of at least 1000/,
   )
 })
-
 test('Agentic ECS source always selects the runtime gate', async () => {
   const contract = await readContract()
   const plan = selectAffectedCommands(['ecs/worldTick.js'], contract)
-
   assert.deepEqual(plan.scopes, ['runtime'])
   assert.deepEqual(plan.unmatchedPaths, [])
-  assert.deepEqual(plan.commands, [['npm', 'run', 'runtime:check']])
+  assert.deepEqual(plan.commands, runtimeCommands)
 })
-
 test('surface policy owners always select the focused readiness gate', async () => {
   const contract = await readContract()
   const ownerPaths = [
@@ -438,7 +419,6 @@ test('surface policy owners always select the focused readiness gate', async () 
     'data/surface/ledger/README.md',
     'docs/discoverability-ip-protection-runtime.md',
   ]
-
   for (const ownerPath of ownerPaths) {
     const plan = selectAffectedCommands([ownerPath], contract)
     assert.ok(plan.scopes.includes('surface_policy'), ownerPath)
@@ -449,7 +429,6 @@ test('surface policy owners always select the focused readiness gate', async () 
     )
   }
 })
-
 test('Rich Media preview timing owners always select schema and browser contract gates', async () => {
   const contract = await readContract()
   const timingOwnerPaths = [
@@ -463,7 +442,6 @@ test('Rich Media preview timing owners always select schema and browser contract
     'canvas/src/features/testing/richMediaBrowserSmokeFixtures.json',
     'canvas/src/__tests__/richMediaBrowserSmokeContract.test.ts',
   ]
-
   for (const ownerPath of timingOwnerPaths) {
     const plan = selectAffectedCommands([ownerPath], contract)
     assert.ok(plan.scopes.includes('rich_media_preview_timing'), ownerPath)
@@ -476,7 +454,6 @@ test('Rich Media preview timing owners always select schema and browser contract
     )), ownerPath)
   }
 })
-
 test('ready pull request metadata follows slash hash at grammar', async () => {
   const contract = await readContract()
   const metadata = validatePullRequestMetadata(`<!-- CURSOR_AGENT_PR_BODY_BEGIN -->
@@ -489,7 +466,6 @@ base_sha: "0123456789abcdef0123456789abcdef01234567"
 `, contract)
   assert.equal(metadata.scope, '#canvas.render')
 })
-
 test('draft pull requests may omit incomplete metadata', async () => {
   const contract = await readContract()
   assert.equal(validatePullRequestMetadata('', contract, { allowIncomplete: true }), null)
@@ -502,7 +478,6 @@ base_sha: "replace-with-40-character-origin-main-sha"
 `, contract, { allowIncomplete: true }), null)
   assert.throws(() => validatePullRequestMetadata('', contract), /must declare collaboration frontmatter/)
 })
-
 test('task branches encode one device and semantic scope', async () => {
   const contract = await readContract()
   assert.equal(validateTaskBranch('agent/macbook/canvas-render', contract, '#canvas.render'), 'agent/macbook/canvas-render')
@@ -519,7 +494,6 @@ test('task branches encode one device and semantic scope', async () => {
   assert.throws(() => validateTaskBranch('agent/.local/canvas-render', contract), /branch must satisfy/)
   assert.throws(() => validateTaskBranch('agent/macbook/runtime-contract', contract, '#canvas.render'), /branch scope must be/)
 })
-
 test('active pull requests cannot claim the same semantic scope', async () => {
   const contract = await readContract()
   const body = (scope, actor) => `---
@@ -534,7 +508,6 @@ base_sha: "0123456789abcdef0123456789abcdef01234567"
     { number: 12, body: body('#canvas.render', '@desktop-codex'), head: { ref: 'agent/desktop/canvas-render' } },
     { number: 13, body: body('#runtime.contract', '@laptop-codex'), head: { ref: 'agent/laptop/runtime-contract' } },
   ]
-
   assert.deepEqual(findActiveScopeConflicts(pullRequests, 11, contract), [{
     actor: '@desktop-codex',
     branch: 'agent/desktop/canvas-render',
@@ -544,7 +517,6 @@ base_sha: "0123456789abcdef0123456789abcdef01234567"
   }])
   assert.deepEqual(findActiveScopeConflicts(pullRequests, 13, contract), [])
 })
-
 test('pre-push protection is derived from canonical refs', async () => {
   const contract = await readContract()
   const input = [
@@ -565,7 +537,6 @@ test('pre-push protection is derived from canonical refs', async () => {
     headRef: 'refs/heads/agent/macbook/canvas-render',
   }), 'object')
 })
-
 test('pre-push integration children cannot inherit repository-local Git routing', () => {
   const original = {
     GIT_DIR: '/repo/.git/worktrees/task',
@@ -585,7 +556,6 @@ test('pre-push integration children cannot inherit repository-local Git routing'
     PATH: '/usr/bin',
   })
 })
-
 test('storage recovery owners select genuine browser proof', async () => {
   const contract = await readContract()
   for (const path of ['canvas/src/lib/storage/agentic-graph-storage-parent-child-conflict.ts',
@@ -596,4 +566,20 @@ test('storage recovery owners select genuine browser proof', async () => {
     assert.ok(plan.commands.some(command => command.join(' ') === 'npm --prefix canvas run test:storage-parent-child-browser-smoke'), path)
   }
   assert.ok(!selectAffectedCommands(['README.md'], contract).commands.some(command => command.includes('test:storage-parent-child-browser-smoke')))
+})
+test('verified CI expansions preserve script coverage and reject drift, hooks and shell syntax', async () => {
+  const contract = await readContract()
+  assert.equal(validateExpansionScripts(contract, rootScripts), contract)
+  for (const name of ['check', 'runtime:check', 'runtime:test', 'check:agentic-travel-commerce-platform']) {
+    assert.throws(() => validateExpansionScripts(contract, { ...rootScripts, [name]: rootScripts[name] + ' && npm run surprise' }), /CI expansion drift/)
+    assert.throws(() => validateExpansionScripts(contract, { ...rootScripts, ['pre' + name]: 'node setup.js' }), /lifecycle hooks/)
+  }
+  const unsafe = structuredClone(contract)
+  unsafe.ci_command_expansions.find(value => value.verify_script).steps[0].push('$(unsafe)')
+  assert.throws(() => validateExpansionScripts(unsafe, rootScripts), /literal arguments/)
+  const plan = selectAffectedCommands(['canvas/src/app/main.ts', 'cloudflare/workers/agentic-graph-storage/storageOAuthFlow.ts'], contract)
+  for (const command of [canvasCheck, ['npm', 'run', 'storage:relay:test']])
+    assert.equal(plan.commands.filter(value => JSON.stringify(value) === JSON.stringify(command)).length, 1)
+  for (const command of rootScripts['check:agentic-travel-commerce-platform'].split(' && '))
+    assert.ok(plan.commands.some(value => value.join(' ') === command), command)
 })

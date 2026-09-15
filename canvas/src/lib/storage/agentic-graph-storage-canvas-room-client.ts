@@ -1,3 +1,4 @@
+import { readAgenticGraphStorageWorkspaceOverride } from '@/lib/storage/agentic-graph-storage-workspace-selection'
 import { readEnvString } from '@/lib/config.env'
 import { buildAgenticGraphStorageAbsoluteUrl } from '@/lib/storage/agentic-graph-storage-chat-client'
 import { getAgenticGraphStorageDeviceId } from '@/lib/storage/agentic-graph-storage-device-identity'
@@ -14,7 +15,7 @@ export type AgenticGraphStorageCanvasRoomConfig = {
 
 export const readAgenticGraphStorageCanvasRoomConfig = (): AgenticGraphStorageCanvasRoomConfig | null => {
   const baseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', ''))
-  const workspaceId = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID', ''))
+  const workspaceId = readAgenticGraphStorageWorkspaceOverride()
   const sessionToken = normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN', ''))
   if (!baseUrl || !workspaceId || !sessionToken) return null
   return { baseUrl, workspaceId, sessionToken, deviceId: getAgenticGraphStorageDeviceId() }

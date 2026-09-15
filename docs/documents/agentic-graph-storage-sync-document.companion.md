@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Storage and Synchronization Owner Appendix"
 id: "md:agentic-graph-storage-sync-document.companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "5.0.2"
+version: "5.1.0"
 date: "2026-09-15"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -22,12 +22,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "5.0.1"
-prd_revision: "5.0.2"
-tad_revision: "5.0.2"
-adr_revision: "5.0.2"
-mvp_revision: "5.0.2"
-gtm_revision: "5.0.2"
+previous_document_version: "5.0.2"
+prd_revision: "5.1.0"
+tad_revision: "5.1.0"
+adr_revision: "5.1.0"
+mvp_revision: "5.1.0"
+gtm_revision: "5.1.0"
 ---
 
 # Reference implementation: agentic-graph Storage and Synchronization Owner Appendix
@@ -414,6 +414,45 @@ environment. Provider setup does not establish deployed runtime readiness.
 
 ## Browser sign-in and free quota
 
+### Native account lightbox and private workspace
+
+CID `storage.account-lightbox` continues `storage.browser-signin-presentation`.
+The 2026-09-15 user request authorizes native lightbox, account flow and sync
+implementation from Graph `5552f031e4eabc938dadbecec77112770f7721ea`.
+The buyer need is to sign in and save work without losing the local editor context.
+
+PRD/MVP: offer local use, existing-account sign-in, and explicit creation of a
+private workspace through the configured GitHub/Google providers. Never infer
+shared-workspace membership from sign-up or an email address. An authenticated
+user selects an authorized workspace before continuing the existing sync flow.
+Git Markdown stays canonical; IndexedDB and cloud snapshots retain their owners.
+
+TAD/ADR: reuse `PreviewOverlay.tsx` and shared theme tokens. Load the account panel
+only on request or a sign-in return; use the browser's modal focus/inert behavior.
+The storage Worker provides bounded same-origin provider metadata and authenticated
+workspace choices. Provider credentials remain server-only; authorization code,
+PKCE, nonce, one-use challenge and HttpOnly cookies retain their current owners.
+Explicit sign-up uses one D1 batch for a stable identity, private workspace and
+owner membership. A non-contact `identity.invalid` value satisfies the legacy
+required email column; it is never an email claim or identity-matching input.
+A fixed lifetime reservation admits at most 100 new accounts; failures consume
+capacity conservatively. Existing sign-in budgets and Workers/D1 Free remain
+required. Browser workspace selection is a routing choice, never an access grant.
+
+Acceptance: keyboard focus stays in the open lightbox and returns on close;
+320px and dark/light layouts remain usable; provider failures preserve local work;
+sign-up is explicit and same-origin; replays, revoked accounts, concurrent creation,
+quota exhaustion and foreign workspace access fail closed. Verify sign-in,
+workspace selection and push/pull with real storage handlers and native SQLite;
+simulated provider/browser evidence must remain distinct from live OAuth evidence.
+
+GTM: reduce the steps from local draft to first verified cloud save. Activation
+and willingness to pay remain unmeasured. Bounds: 26 changed files including
+tests/docs, no added dependency, under 600 lines per new module, a lazy auth panel
+under 30 kB and the existing 500 kB chunk ceiling. Production still requires a
+separate exact-candidate receipt. Roll back the source candidate through the
+protected owner workflow; preserve accounts, memberships and local/cloud files.
+
 ### Native sign-in presentation
 
 CID `storage.browser-signin-presentation` joins PRD, TAD, ADR, MVP and GTM at
@@ -455,14 +494,14 @@ the owner's verified stable provider ID in `auth_identities`. A connected accoun
 may explicitly link another provider from the sign-in page, using an active
 same-origin session. Linking cannot change users or workspace memberships, overwrite
 another identity owner, or survive session revocation. First-time identities have
-no automatic workspace access. Git-backed Markdown remains canonical; cloud copies
+no shared workspace access; explicit signup creates only their private workspace. Git-backed Markdown remains canonical; cloud copies
 and IndexedDB remain synchronized projections with existing conflict preservation.
 The protected release controller enrolls the existing human owner's stable GitHub
 ID without matching email. Its bounded operator POST exchange remains available for
 automated release probes; provider sign-in pages do not request that credential.
 
 The native sign-in budget is 500 admitted starts/callbacks per UTC day and 20 per
-minute per keyed client bucket. At most 65 quota rows exist; expired challenges are
+minute per keyed client bucket. At most 66 quota rows exist including the lifetime signup counter; expired challenges are
 removed at the next admitted start. Atomic SQL prevents concurrent over-admission.
 Provider requests have a five-second timeout and 64 KiB response limit; rate-limit
 responses stop without retries. Provider tokens are used only for sign-in and discarded.
