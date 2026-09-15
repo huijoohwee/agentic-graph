@@ -1,6 +1,6 @@
 const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/
 const AGENTIC_CANVAS_OS_GITHUB_ORIGIN = 'https://github.com'
-const AGENTIC_CANVAS_OS_BLOB_PATH_PATTERN = /^\/huijoohwee\/agentic-canvas-os\/blob\/(?:main|[0-9a-f]{40})\/docs\/(DICTIONARY-(?:COMMAND|SEMANTIC|BINDING)\.md)$/i
+const AGENTIC_CANVAS_OS_BLOB_PATH_PATTERN = /^\/huijoohwee\/agentic-os\/blob\/(?:main|[0-9a-f]{40})\/catalog\/dictionaries\/(DICTIONARY-(?:COMMAND|SEMANTIC|BINDING)\.md)$/i
 const DICTIONARY_REFERENCE_PATTERN = /^(DICTIONARY-(?:COMMAND|SEMANTIC|BINDING)\.md)(#.*)$/
 
 type RemoteGrammarProvenanceEntry = {
@@ -65,7 +65,7 @@ export function normalizeAgenticOsRemoteGrammarCatalogProvenance<T extends Remot
   if (!SOURCE_REVISION_PATTERN.test(sourceRevision)) {
     throw new Error('Agentic OS remote grammar catalog provenance requires an exact source revision')
   }
-  const sourceRootUrl = `${AGENTIC_CANVAS_OS_GITHUB_ORIGIN}/huijoohwee/agentic-canvas-os/blob/${sourceRevision}/docs`
+  const sourceRootUrl = `${AGENTIC_CANVAS_OS_GITHUB_ORIGIN}/huijoohwee/agentic-os/blob/${sourceRevision}/catalog/dictionaries`
 
   return entries.map(entry => {
     const token = normalizeString(entry.token)

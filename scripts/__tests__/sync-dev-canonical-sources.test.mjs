@@ -21,7 +21,7 @@ const sourceStates = ({ application = {}, docs = {} } = {}) => [
   },
   {
     id: 'agentic-canvas-os-docs',
-    sourceRoot: path.resolve(repoRoot, '../agentic-canvas-os'),
+    sourceRoot: path.resolve(repoRoot, '../agentic-os'),
     branch: 'main',
     headSha: SHA_A,
     canonicalSha: SHA_B,
@@ -64,7 +64,7 @@ test('dev latest rejects dirt, task branches, divergence, and unsafe worktree re
 })
 
 test('dev latest inspects every source before applying any fast-forward', async () => {
-  const docsRoot = path.resolve(repoRoot, '../agentic-canvas-os')
+  const docsRoot = path.resolve(repoRoot, '../agentic-os')
   const calls = []
   const git = (args, cwd) => {
     calls.push({ args, cwd })
@@ -72,7 +72,7 @@ test('dev latest inspects every source before applying any fast-forward', async 
     if (args[0] === 'rev-parse') return SHA_B
     if (args[0] === 'merge-base') return SHA_A
     if (args[0] === 'branch') return 'main'
-    if (args[0] === 'status') return cwd === docsRoot ? ' M docs/FACTS.md' : ''
+    if (args[0] === 'status') return cwd === docsRoot ? ' M catalog/dictionaries/DICTIONARY-COMMAND.md' : ''
     if (args[0] === 'worktree') return `worktree ${cwd}\nHEAD ${SHA_A}\nbranch refs/heads/main`
     return ''
   }
@@ -82,7 +82,7 @@ test('dev latest inspects every source before applying any fast-forward', async 
 })
 
 test('dev latest fetches both sources and fast-forwards each planned checkout', async () => {
-  const docsRoot = path.resolve(repoRoot, '../agentic-canvas-os')
+  const docsRoot = path.resolve(repoRoot, '../agentic-os')
   const calls = []
   const git = (args, cwd) => {
     calls.push({ args, cwd })

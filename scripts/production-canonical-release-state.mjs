@@ -44,9 +44,8 @@ const validateDependencyCheckout = (state, revision) => {
   }
 }
 
-// Canvas owns admission of its declared consumer pin and verifies ancestry,
-// protected checks, canonical roots and runtime residue. Reuse that owner; the
-// release adapter additionally requires both exact checkouts to be fully clean.
+// Graph owns its Apex runtime supervisor; OS owns the pinned catalog/runtime.
+// Verify both reviewed checkouts before importing executable controller modules.
 export const verifyCanonicalReleaseDependency = async ({
   repositoryRoot, agenticCanvasOsRoot, sourceRevision, dependencyRevision,
   loadNativeModule = specifier => import(specifier),
@@ -54,7 +53,8 @@ export const verifyCanonicalReleaseDependency = async ({
 }) => {
   // Verify the reviewed bytes before importing executable controller modules.
   validateDependencyCheckout(readState({ repositoryRoot: agenticCanvasOsRoot }), dependencyRevision)
-  const moduleAt = name => loadNativeModule(pathToFileURL(path.join(agenticCanvasOsRoot, 'scripts', name)).href)
+  validateCanonicalReleaseOwnerState({ state: readState({ repositoryRoot }), expectedRevision: sourceRevision, label: 'agentic-graph' })
+  const moduleAt = name => loadNativeModule(pathToFileURL(path.join(repositoryRoot, 'scripts', name)).href)
   const [candidateOwner, supervisor] = await Promise.all([
     moduleAt('local-runtime-candidate-lib.mjs'), moduleAt('local-runtime-supervisor-lib.mjs'),
   ])

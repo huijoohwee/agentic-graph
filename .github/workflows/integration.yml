@@ -39,7 +39,7 @@ jobs:
       AGENTIC_OS_REPOSITORY: ${{ github.repository }}
       AGENTIC_OS_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || inputs.expected_head_sha || github.sha }}
       AGENTIC_OS_TARGET_REF: ${{ github.event_name == 'merge_group' && 'refs/heads/main' || format('refs/heads/{0}', github.event.pull_request.head.ref || inputs.branch || github.ref_name) }}
-      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-os/catalog/dictionaries
 
     steps:
       - name: Checkout agentic-graph
@@ -177,7 +177,7 @@ jobs:
         with:
           repository: ${{ steps.agentic_canvas_os_docs.outputs.repository }}
           ref: ${{ steps.agentic_canvas_os_docs.outputs.ref }}
-          path: agentic-canvas-os
+          path: agentic-os
           fetch-depth: 0
 
       - name: Create immutable app docs catalog manifest
@@ -187,7 +187,7 @@ jobs:
 
       - name: Validate checked-out Agentic Canvas OS revision
         working-directory: agentic-graph
-        run: test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ steps.agentic_canvas_os_docs.outputs.ref }}"
+        run: test "$(git -C ../agentic-os rev-parse HEAD)" = "${{ steps.agentic_canvas_os_docs.outputs.ref }}"
 
       - name: Upload immutable release manifest
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

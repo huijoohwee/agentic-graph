@@ -9,26 +9,26 @@ import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOs
 
 const SOURCE_REVISION = 'b'.repeat(40)
 const STALE_REVISION = 'a'.repeat(40)
-const SOURCE_ROOT_URL = `https://github.com/huijoohwee/agentic-canvas-os/blob/${SOURCE_REVISION}/docs`
+const SOURCE_ROOT_URL = `https://github.com/huijoohwee/agentic-os/blob/${SOURCE_REVISION}/catalog/dictionaries`
 
 const sourceBackedEntries = () => ([
   {
     token: '/camera.select',
     kind: 'command',
     sourcePath: 'DICTIONARY-COMMAND.md#/camera.select',
-    sourceUrl: `https://github.com/huijoohwee/agentic-canvas-os/blob/${STALE_REVISION}/docs/DICTIONARY-COMMAND.md#/camera.select`,
+    sourceUrl: `https://github.com/huijoohwee/agentic-os/blob/${STALE_REVISION}/catalog/dictionaries/DICTIONARY-COMMAND.md#/camera.select`,
   },
   {
     token: '#transform',
     kind: 'semantic',
-    sourcePath: 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-SEMANTIC.md##transform',
-    sourceUrl: `https://github.com/huijoohwee/agentic-canvas-os/blob/${STALE_REVISION}/docs/DICTIONARY-SEMANTIC.md##transform`,
+    sourcePath: 'https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries/DICTIONARY-SEMANTIC.md##transform',
+    sourceUrl: `https://github.com/huijoohwee/agentic-os/blob/${STALE_REVISION}/catalog/dictionaries/DICTIONARY-SEMANTIC.md##transform`,
   },
   {
     token: '@scene',
     kind: 'binding',
     sourcePath: 'DICTIONARY-BINDING.md#@scene',
-    sourceUrl: 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-BINDING.md#@scene',
+    sourceUrl: 'https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries/DICTIONARY-BINDING.md#@scene',
   },
 ])
 

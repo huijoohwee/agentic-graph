@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { resolveWorkspaceRoot } from '../../../../scripts/surface/workspace-paths.mjs'
 import { parseFrontmatter } from '../../../../scripts/collaboration-contract.mjs'
 import { resolveRuntimeDocsDependency } from '../../../../scripts/runtime-readiness-contract.mjs'
-import { resolveAgenticCanvasOsDocsRoot, resolveAgenticCanvasOsDocsRevision } from '../../../../mcp/agentic-canvas-os-docs-runtime.js'
+import { resolveAgenticCanvasOsDocsRoot, resolveAgenticCanvasOsDocsRevision, resolveAgenticOsDocPath } from '../../../../mcp/agentic-canvas-os-docs-runtime.js'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..')
 
@@ -51,3 +51,6 @@ export const resolvePinnedAgenticDocsRoot = async ({
   }
   return docsRoot
 }
+
+export const resolvePinnedAgenticDocPath = async (fileName: string): Promise<string> =>
+  resolveAgenticOsDocPath({ absoluteDocsRoot: await resolvePinnedAgenticDocsRoot(), fileName, graphRoot: repoRoot })

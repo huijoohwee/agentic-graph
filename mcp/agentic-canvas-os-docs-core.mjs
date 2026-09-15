@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import runtimePackage from "../package.json" with { type: "json" };
+import { AGENT_DOCS_REPOSITORY, AGENT_HISTORY_MANIFEST, agentDocSourcePath } from "./agentic-os-doc-sources.mjs";
 
 import {
   AGENTIC_CANVAS_OS_DOCS_KIND_FILES,
@@ -155,9 +157,9 @@ export const buildProgressiveAgentsReadinessSummary = ({
     schema: "progressive-agents-readiness-summary/v1",
     status: ready ? "runtime-ready-dev" : "unavailable",
     sourceRevision: normalizedSourceRevision,
-    sourcePath: `docs/${AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE}`,
+    sourcePath: `runtime/agents/docs/${AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE}`,
     sourceUrl: SHA_PATTERN.test(normalizedSourceRevision)
-      ? `https://github.com/huijoohwee/agentic-canvas-os/blob/${normalizedSourceRevision}/docs/${AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE}`
+      ? `https://github.com/huijoohwee/agentic-os/blob/${normalizedSourceRevision}/runtime/agents/docs/${AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE}`
       : "",
     contractSchema,
     runtimeScope,
@@ -172,33 +174,6 @@ export const buildProgressiveAgentsReadinessSummary = ({
     defaultWorkerConfigured: ready ? false : null,
     deployPolicy,
   };
-};
-
-export const resolveAgentLiveProviderProofRevisionFromGitHub = async ({
-  sourceRevision = "",
-  fetchImpl = globalThis.fetch,
-  token = "",
-  requestInit = {},
-} = {}) => {
-  const normalizedSourceRevision = normalizeText(sourceRevision);
-  if (!SHA_PATTERN.test(normalizedSourceRevision) || typeof fetchImpl !== "function") return "";
-  const response = await fetchImpl(
-    `https://api.github.com/repos/huijoohwee/agentic-canvas-os/commits?sha=${normalizedSourceRevision}&path=docs/${AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE}&per_page=100`,
-    {
-      ...requestInit,
-      headers: {
-        accept: "application/vnd.github+json",
-        "user-agent": "agentic-graph-agentic-canvas-os-docs-runtime",
-        ...(normalizeText(token) ? { authorization: `Bearer ${normalizeText(token)}` } : {}),
-        ...(requestInit.headers || {}),
-      },
-    },
-  );
-  if (!response.ok) return "";
-  const proofCommits = await response.json();
-  return Array.isArray(proofCommits) && proofCommits.length > 0 && proofCommits.length < 100
-    ? normalizeText(proofCommits.at(-1)?.sha)
-    : "";
 };
 
 const parseDictionaryEntriesFromFrontmatter = (frontmatter) => {
@@ -496,59 +471,46 @@ export const buildAgenticCanvasOsDocsDynamicResolutionPayload = async (
   if (typeof fetchImpl !== "function") {
     throw new Error("Agentic Canvas OS docs resolution requires a fetch implementation");
   }
-  const revisionResponse = await fetchImpl("https://api.github.com/repos/huijoohwee/agentic-canvas-os/commits/main", {
-    headers: {
-      accept: "application/vnd.github+json",
-      "user-agent": "agentic-graph-agentic-canvas-os-docs-runtime",
-    },
-    cf: { cacheTtl: 0, cacheEverything: false },
-  });
-  if (!revisionResponse.ok) {
-    throw new Error(`Agentic Canvas OS revision lookup failed with status ${revisionResponse.status}`);
-  }
-  const revisionPayload = await revisionResponse.json();
-  const sourceRevision = normalizeText(revisionPayload?.sha);
-  if (!/^[0-9a-f]{40}$/.test(sourceRevision)) {
-    throw new Error("Agentic Canvas OS revision lookup returned an invalid SHA");
-  }
-  const fetchDoc = async (fileName) => {
+  const sourceRevision = runtimePackage.dependencies["agentic-os"].match(/\/([0-9a-f]{40})$/)?.[1];
+  if (!SHA_PATTERN.test(sourceRevision || "")) throw new Error("Agentic OS source requires an exact package pin");
+  const fetchSource = async (sourcePath) => {
+    const url = `https://raw.githubusercontent.com/${AGENT_DOCS_REPOSITORY}/${sourceRevision}/${sourcePath}`;
+    const response = await fetchImpl(url, { signal: AbortSignal.timeout(10_000), cf: { cacheTtl: 86400, cacheEverything: true } });
+    if (!response.ok) throw new Error(`Agentic OS source unavailable: ${sourcePath}`);
+    if (!response.body) throw new Error("Agentic OS source has no response body");
+    const reader = response.body.getReader(), chunks = [];
+    let size = 0;
     try {
-      const url = `https://raw.githubusercontent.com/huijoohwee/agentic-canvas-os/${sourceRevision}/docs/${fileName}`;
-      const res = await fetchImpl(url, {
-        cf: { cacheTtl: 86400, cacheEverything: true }
-      });
-      if (!res.ok) return "";
-      return await res.text();
-    } catch {
-      return "";
-    }
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > 500_000) throw new Error("Agentic OS document exceeds its source bound");
+        chunks.push(value);
+      }
+    } finally { await reader.cancel(); }
+    if (!size) throw new Error("Agentic OS source is empty");
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   };
-
-  const [facts, command, semantic, binding, liveAgentProviderProof, progressiveAgents, liveAgentProviderProofRevision] = await Promise.all([
-    fetchDoc("FACTS.md"),
-    fetchDoc("DICTIONARY-COMMAND.md"),
-    fetchDoc("DICTIONARY-SEMANTIC.md"),
-    fetchDoc("DICTIONARY-BINDING.md"),
-    fetchDoc(AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE),
-    fetchDoc(AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE),
-    resolveAgentLiveProviderProofRevisionFromGitHub({
-      sourceRevision,
-      fetchImpl,
-      requestInit: { cf: { cacheTtl: 86400, cacheEverything: true } },
-    }),
+  const files = [...Object.values(AGENTIC_CANVAS_OS_DOCS_KIND_FILES),
+    AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE, AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE];
+  const [manifestSource, ...contents] = await Promise.all([
+    fetchSource(AGENT_HISTORY_MANIFEST), ...files.map(name => fetchSource(agentDocSourcePath(name))),
   ]);
-
-  return buildAgenticCanvasOsDocsInvokePayload({
-    ...args,
-    sourceRevision,
-    liveAgentProviderProofRevision,
-    docsContentByFileName: {
-      "FACTS.md": facts,
-      "DICTIONARY-COMMAND.md": command,
-      "DICTIONARY-SEMANTIC.md": semantic,
-      "DICTIONARY-BINDING.md": binding,
-      [AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE]: liveAgentProviderProof,
-      [AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE]: progressiveAgents,
-    },
-  });
+  const manifest = JSON.parse(manifestSource);
+  const history = manifest.history?.find(entry => entry.source === `docs/${AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE}`);
+  if (!history || history.editable !== false || history.currentRuntimeProof !== false
+      || !SHA_PATTERN.test(history.sourceRevision)) throw new Error("Historical proof manifest is invalid");
+  const docsContentByFileName = Object.fromEntries(files.map((file, index) => [file, contents[index]]));
+  for (const file of [AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE, AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE]) {
+    const entry = [...manifest.files, ...manifest.history].find(item => item.destination === agentDocSourcePath(file));
+    if (!entry || createHash("sha256").update(docsContentByFileName[file]).digest("hex") !== entry.sha256) {
+      throw new Error("Agentic OS document does not match its source manifest");
+    }
+  }
+  return buildAgenticCanvasOsDocsInvokePayload({ ...args, sourceRevision,
+    liveAgentProviderProofRevision: history.sourceRevision, docsContentByFileName });
 };

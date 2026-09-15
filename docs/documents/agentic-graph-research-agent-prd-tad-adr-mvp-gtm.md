@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Research Agent Reference PRD-TAD-ADR-MVP-GTM"
 schema: agentic-os-computing-flow/v1
-doc_id: agentic-graph-research-agent-
+doc_id: agentic-graph-research-agent-prd-tad
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "0.5.1"
 status: dev-source-implemented-no-deploy

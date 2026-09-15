@@ -113,12 +113,11 @@ function readPinnedSources(): Readonly<{
   const revision = contract.match(/docs_dependency:\s*\n[\s\S]*?^\s{2}ref:\s*"([0-9a-f]{40})"/m)?.[1] || ''
   assert(revision, 'expected runtime-readiness contract to pin one exact Agentic Canvas OS revision')
   const docsRoot = resolveAgenticOsDocsRoot(repositoryRoot)
-  const siblingRevision = execFileSync('git', ['-C', resolve(docsRoot, '..'), 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+  const siblingRevision = execFileSync('git', ['-C', docsRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
   assert(siblingRevision === revision, `expected sibling Agentic Canvas OS ${revision}, got ${siblingRevision}`)
   return {
     revision,
     docsContentByFileName: Object.fromEntries([
-      'FACTS.md',
       ...dictionaryTokens(AGENTIC_CANVAS_OS_DOCS_KIND_FILES),
     ].map(fileName => [fileName, readFileSync(resolve(docsRoot, fileName), 'utf8')])),
   }
@@ -136,7 +135,7 @@ function readPinnedCatalog() {
     sourceRootUrl: string
   }
   assert(payload.sourceRevision === revision, `expected production catalog payload revision ${revision}`)
-  assert(payload.sourceRootUrl.includes(`/blob/${revision}/docs`), `expected production catalog root to bind ${revision}`)
+  assert(payload.sourceRootUrl.includes(`/blob/${revision}/catalog/dictionaries`), `expected production catalog root to bind ${revision}`)
   return { catalog: payload.catalog, docsContentByFileName, revision }
 }
 
@@ -187,7 +186,7 @@ export function assertPinnedAgenticOsDictionaryTokensForTest(spec: PinnedAgentic
       const resolved = findAgenticOsInvocationByToken(token)
       assert(resolved?.kind === kind, `expected pinned ${kind} catalog metadata for ${token}`)
       assert(
-        resolved.sourcePath.includes(`/blob/${revision}/docs/${AGENTIC_CANVAS_OS_DOCS_KIND_FILES[kind]}`),
+        resolved.sourcePath.includes(`/blob/${revision}/catalog/dictionaries/${AGENTIC_CANVAS_OS_DOCS_KIND_FILES[kind]}`),
         `expected exact-revision source metadata for ${token}, got ${resolved.sourcePath}`,
       )
     }

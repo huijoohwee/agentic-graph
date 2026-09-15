@@ -502,6 +502,11 @@
       "types": "./dist/payments/chainEvidenceContract.d.ts",
       "import": "./dist/payments/chainEvidenceContract.js",
       "default": "./dist/payments/chainEvidenceContract.js"
+    },
+    "./ui/agenticGraphMark": {
+      "types": "./dist/ui/agenticGraphMark.d.ts",
+      "import": "./dist/ui/agenticGraphMark.js",
+      "default": "./dist/ui/agenticGraphMark.js"
     }
   },
   "files": [

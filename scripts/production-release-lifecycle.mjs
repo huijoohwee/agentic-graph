@@ -578,7 +578,7 @@ const loadContract = async (docsRootValue, expectedRevisionValue) => {
   const docsRoot = path.resolve(required(docsRootValue, '--docs-root'))
   const expectedRevision = required(expectedRevisionValue, '--docs-sha')
   requireSha(expectedRevision, 'Agentic Canvas OS revision')
-  const repositoryRoot = path.dirname(docsRoot)
+  const repositoryRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: docsRoot, encoding: 'utf8' }).trim()
   const actualRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
     cwd: repositoryRoot,
     encoding: 'utf8',

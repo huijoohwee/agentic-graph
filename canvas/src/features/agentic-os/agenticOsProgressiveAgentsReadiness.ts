@@ -1,5 +1,5 @@
 const SHA_PATTERN = /^[0-9a-f]{40}$/
-const SOURCE_PATH = 'docs/PROGRESSIVE-AGENTS.md'
+const SOURCE_PATH = 'runtime/agents/docs/PROGRESSIVE-AGENTS.md'
 const GROWTH_STAGES = ['single-agent', 'tool-enabled-agent', 'specialist-workflow'] as const
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
@@ -32,7 +32,7 @@ export const emptyProgressiveAgentsReadiness = (
   sourceRevision,
   sourcePath: SOURCE_PATH,
   sourceUrl: SHA_PATTERN.test(sourceRevision)
-    ? `https://github.com/huijoohwee/agentic-canvas-os/blob/${sourceRevision}/${SOURCE_PATH}`
+    ? `https://github.com/huijoohwee/agentic-os/blob/${sourceRevision}/${SOURCE_PATH}`
     : '',
   contractSchema: '',
   runtimeScope: '',
@@ -65,11 +65,11 @@ export const normalizeProgressiveAgentsReadiness = (
     && readiness.status === 'runtime-ready-dev'
     && normalizedSourceRevision === sourceRevision
     && readiness.sourcePath === SOURCE_PATH
-    && sourceUrl === `https://github.com/huijoohwee/agentic-canvas-os/blob/${sourceRevision}/${SOURCE_PATH}`
+    && sourceUrl === `https://github.com/huijoohwee/agentic-os/blob/${sourceRevision}/${SOURCE_PATH}`
     && readiness.contractSchema === 'progressive-agents-runtime-contract/v1'
     && Boolean(normalizeString(readiness.runtimeScope))
-    && readiness.runtimeOwner === '../agent-api/src/progressive-agents.js'
-    && readiness.runtimeProof === '../__tests__/progressive-agents.test.mjs'
+    && readiness.runtimeOwner === '../../adapters/progressive-agents.js'
+    && readiness.runtimeProof === '../../../__tests__/progressive-agents.test.mjs'
     && readiness.contractReady === true
     && readiness.configured === false
     && readiness.progressionPolicy === 'single-agent-then-tools-then-specialists'
@@ -88,8 +88,8 @@ export const normalizeProgressiveAgentsReadiness = (
     sourceUrl,
     contractSchema: 'progressive-agents-runtime-contract/v1',
     runtimeScope: normalizeString(readiness.runtimeScope),
-    runtimeOwner: '../agent-api/src/progressive-agents.js',
-    runtimeProof: '../__tests__/progressive-agents.test.mjs',
+    runtimeOwner: '../../adapters/progressive-agents.js',
+    runtimeProof: '../../../__tests__/progressive-agents.test.mjs',
     contractReady: true,
     configured: false,
     progressionPolicy: 'single-agent-then-tools-then-specialists',

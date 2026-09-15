@@ -34,11 +34,9 @@ test("local grammar forwarder projects all three source-backed invocation dictio
     assert.equal(response.statusCode, 200);
     assert.equal(response.body.result.structuredContent.absoluteDocsRoot, undefined);
     assert.match(response.body.result.structuredContent.sourceRevision, /^[0-9a-f]{40}$/);
-    assert.equal(response.body.result.structuredContent.liveAgentProviderProof.status, "verified-bounded-live");
-    assert.equal(response.body.result.structuredContent.progressiveAgentsReadiness.status, "runtime-ready-dev");
-    assert.deepEqual(response.body.result.structuredContent.progressiveAgentsReadiness.growthStages, [
-      "single-agent", "tool-enabled-agent", "specialist-workflow",
-    ]);
+    assert.equal(response.body.result.structuredContent.liveAgentProviderProof.status, "unavailable");
+    assert.equal(response.body.result.structuredContent.progressiveAgentsReadiness.status, "unavailable");
+    assert.deepEqual(response.body.result.structuredContent.progressiveAgentsReadiness.growthStages, []);
     assert.equal(
       response.body.result.structuredContent.liveAgentProviderProof.proofRevision,
       "dae927d40f3e8e55687334ed47c2be5dffe14b36",

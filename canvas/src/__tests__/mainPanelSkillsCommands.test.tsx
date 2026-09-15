@@ -186,7 +186,7 @@ export async function testSkillsCommandsViewHydratesRemoteGrammarCatalogEntries(
           label: 'Remote display',
           summary: 'Remote-only semantic entry surfaced in Skills & Commands',
           sourcePath: 'DICTIONARY-SEMANTIC.md#remote-display',
-          sourceUrl: 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-SEMANTIC.md#remote-display',
+          sourceUrl: 'https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries/DICTIONARY-SEMANTIC.md#remote-display',
           keywords: ['remote', 'display'],
         },
         {
@@ -195,7 +195,7 @@ export async function testSkillsCommandsViewHydratesRemoteGrammarCatalogEntries(
           label: 'Remote display binding',
           summary: 'Remote-only binding entry surfaced in Skills & Commands',
           sourcePath: 'DICTIONARY-BINDING.md#remote-display',
-          sourceUrl: 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-BINDING.md#remote-display',
+          sourceUrl: 'https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries/DICTIONARY-BINDING.md#remote-display',
           keywords: ['remote', 'display'],
         },
       ])

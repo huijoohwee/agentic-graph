@@ -332,7 +332,7 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!canvasViewportText.includes('const MARKDOWN_METRICS_DEV_ENABLED = Boolean')) {
     throw new Error('expected CanvasViewport to gate markdown metrics overlay imports behind a cheap DEV constant')
   }
-  if (!canvasViewportText.includes('{!documentSwitchOwnsViewport && !liveCanvasHeroVisible && MARKDOWN_METRICS_DEV_ENABLED ? <MarkdownMetricsDevOverlayLazy layout={layout} /> : null}')) {
+  if (!canvasViewportText.includes('{!documentSwitchOwnsViewport && !homePreviewVisible && MARKDOWN_METRICS_DEV_ENABLED ? <MarkdownMetricsDevOverlayLazy layout={layout} /> : null}')) {
     throw new Error('expected CanvasViewport to mount the dev metrics overlay only through the DEV-gated lazy boundary')
   }
 
@@ -1057,7 +1057,7 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!viteConfigText.includes("nodeRequire.resolve('three/src/Three.js')")) {
     throw new Error('expected vite config to resolve three through its source barrel so coarse subchunks can split cleanly')
   }
-  if (!viteConfigText.includes("nodeRequire.resolve('maplibre-gl/src/index.ts')")) {
+  if (!viteConfigText.includes("path.dirname(nodeRequire.resolve('maplibre-gl/package.json')), 'src/index.ts'")) {
     throw new Error('expected vite config to resolve maplibre through its source entry so subchunks can split cleanly')
   }
   if (!viteConfigText.includes("if (moduleId.includes('/node_modules/three/examples/')) return 'three-examples'")) {

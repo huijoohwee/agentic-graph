@@ -3,6 +3,8 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
+import { AGENT_DOCS_REPOSITORY, AGENT_DICTIONARY_ROOT, AGENT_HISTORY_MANIFEST, GRAPH_DOC_PATHS, agentDocSourcePath } from "./agentic-os-doc-sources.mjs";
 
 import {
   AGENTIC_CANVAS_OS_DOCS_KIND_FILES,
@@ -11,11 +13,9 @@ import {
 } from "./agentic-canvas-os-docs-contract.mjs";
 import {
   buildAgenticCanvasOsDocsInvokePayload,
-  resolveAgentLiveProviderProofRevisionFromGitHub,
 } from "./agentic-canvas-os-docs-core.mjs";
 
 const REQUIRED_DOC_FILE_NAMES = Object.freeze([
-  "FACTS.md",
   ...Object.values(AGENTIC_CANVAS_OS_DOCS_KIND_FILES),
   AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE,
   AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE,
@@ -24,9 +24,9 @@ const REQUIRED_DOC_FILE_NAMES = Object.freeze([
 const normalizeText = (value) => String(value || "").trim();
 const execFileAsync = promisify(execFile);
 const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/;
-const CANONICAL_DOCS_REPOSITORY = "huijoohwee/agentic-canvas-os";
+const CANONICAL_DOCS_REPOSITORY = AGENT_DOCS_REPOSITORY;
 const DOCS_SOURCE_AUTHORITY_ERROR_MESSAGE =
-  "Agentic Canvas OS docs source authority could not be verified.";
+  "Agentic OS docs source authority could not be verified.";
 
 const sourceAuthorityError = (message) => Object.assign(new Error(message), {
   code: "docs_source_authority_unverified",
@@ -65,14 +65,14 @@ export const resolveAgenticCanvasOsDocsRevision = async ({ absoluteDocsRoot, env
     repositoryRoot = path.resolve(normalizeText(stdout));
     const [resolvedDocsRoot, expectedDocsRoot] = await Promise.all([
       fs.realpath(path.resolve(absoluteDocsRoot)),
-      fs.realpath(path.join(repositoryRoot, "docs")),
+      fs.realpath(path.join(repositoryRoot, AGENT_DICTIONARY_ROOT)),
     ]);
     if (resolvedDocsRoot !== expectedDocsRoot) {
-      throw sourceAuthorityError("Agentic Canvas OS docs root is not the repository docs root");
+      throw sourceAuthorityError("Agentic OS docs root is not the repository docs root");
     }
   } catch (error) {
     if (error?.code === "docs_source_authority_unverified") throw error;
-    throw sourceAuthorityError("Agentic Canvas OS docs root is not a Git checkout");
+    throw sourceAuthorityError("Agentic OS docs root is not a Git checkout");
   }
 
   const { stdout: dirtyOutput } = await execFileAsync("git", [
@@ -80,7 +80,7 @@ export const resolveAgenticCanvasOsDocsRevision = async ({ absoluteDocsRoot, env
   ]);
   if (normalizeText(dirtyOutput)) {
     throw sourceAuthorityError(
-      "Agentic Canvas OS docs checkout has uncommitted content and cannot provide an exact source revision",
+      "Agentic OS docs checkout has uncommitted content and cannot provide an exact source revision",
     );
   }
 
@@ -91,7 +91,7 @@ export const resolveAgenticCanvasOsDocsRevision = async ({ absoluteDocsRoot, env
     ]);
     remoteUrls = String(stdout || "").split(/\r?\n/).map(normalizeText).filter(Boolean);
   } catch {
-    throw sourceAuthorityError("Agentic Canvas OS docs checkout has no canonical origin");
+    throw sourceAuthorityError("Agentic OS docs checkout has no canonical origin");
   }
   if (
     remoteUrls.length === 0
@@ -99,13 +99,13 @@ export const resolveAgenticCanvasOsDocsRevision = async ({ absoluteDocsRoot, env
       normalizeGitHubRepositoryIdentity(remoteUrl) !== CANONICAL_DOCS_REPOSITORY
     ))
   ) {
-    throw sourceAuthorityError("Agentic Canvas OS docs checkout origin is not canonical");
+    throw sourceAuthorityError("Agentic OS docs checkout origin is not canonical");
   }
 
   const { stdout } = await execFileAsync("git", ["-C", repositoryRoot, "rev-parse", "HEAD"]);
   const revision = normalizeText(stdout);
   if (!SOURCE_REVISION_PATTERN.test(revision)) {
-    throw sourceAuthorityError("Agentic Canvas OS docs checkout did not resolve to an exact Git SHA");
+    throw sourceAuthorityError("Agentic OS docs checkout did not resolve to an exact Git SHA");
   }
 
   let originMainRevision;
@@ -120,7 +120,7 @@ export const resolveAgenticCanvasOsDocsRevision = async ({ absoluteDocsRoot, env
     ]);
   } catch {
     throw sourceAuthorityError(
-      "Agentic Canvas OS docs checkout HEAD is not contained in fetched origin/main",
+      "Agentic OS docs checkout HEAD is not contained in fetched origin/main",
     );
   }
 
@@ -130,40 +130,21 @@ export const resolveAgenticCanvasOsDocsRevision = async ({ absoluteDocsRoot, env
   return revision;
 };
 
-export const resolveAgenticCanvasOsLiveProofRevision = async ({
-  absoluteDocsRoot,
-  sourceRevision,
-  env = process.env,
-}) => {
-  const configuredRevision = normalizeText(env.AGENTIC_OS_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION);
-  if (configuredRevision) {
-    if (!SOURCE_REVISION_PATTERN.test(configuredRevision)) {
-      throw new Error("AGENTIC_OS_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION must be an exact 40-character SHA");
-    }
-    return configuredRevision;
+export const resolveAgenticCanvasOsLiveProofRevision = async ({ absoluteDocsRoot }) => {
+  const repositoryRoot = path.resolve(absoluteDocsRoot, "../..");
+  const manifest = JSON.parse(await fs.readFile(path.join(repositoryRoot, AGENT_HISTORY_MANIFEST), "utf8"));
+  const entry = manifest.history?.find(item => item.source === "docs/LIVE-AGENT-PROVIDER-PROOF.md");
+  if (!entry || !SOURCE_REVISION_PATTERN.test(entry.sourceRevision)
+      || entry.editable !== false || entry.currentRuntimeProof !== false) {
+    throw sourceAuthorityError("Historical provider proof identity is missing");
   }
-  const repositoryRoot = path.resolve(absoluteDocsRoot, "..");
-  const proofPath = path.relative(repositoryRoot, path.join(absoluteDocsRoot, AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE));
-  const { stdout: shallowOutput } = await execFileAsync("git", [
-    "-C", repositoryRoot, "rev-parse", "--is-shallow-repository",
-  ]);
-  const isShallowRepository = normalizeText(shallowOutput) === "true";
-  let localRevision = "";
-  if (!isShallowRepository) {
-    const { stdout } = await execFileAsync("git", [
-      "-C", repositoryRoot, "log", "--follow", "--diff-filter=A", "--format=%H", "--", proofPath,
-    ]);
-    localRevision = normalizeText(stdout).split(/\r?\n/).filter(Boolean).at(-1) || "";
-  }
-  if (SOURCE_REVISION_PATTERN.test(localRevision)) return localRevision;
-  const revision = await resolveAgentLiveProviderProofRevisionFromGitHub({
-    sourceRevision,
-    token: env.AGENTIC_OS_GITHUB_TOKEN,
-  });
-  if (!SOURCE_REVISION_PATTERN.test(revision)) {
-    throw new Error("Agentic Canvas OS live proof did not resolve to an exact introduction SHA from local or remote history");
-  }
-  return revision;
+  return entry.sourceRevision;
+};
+
+export const resolveAgenticOsDocPath = ({ absoluteDocsRoot, fileName,
+  graphRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..") }) => {
+  if (Object.hasOwn(GRAPH_DOC_PATHS, fileName)) return path.join(graphRoot, GRAPH_DOC_PATHS[fileName]);
+  return path.join(path.resolve(absoluteDocsRoot, "../.."), agentDocSourcePath(fileName));
 };
 
 export const resolveAgenticCanvasOsDocsRoot = ({
@@ -173,16 +154,16 @@ export const resolveAgenticCanvasOsDocsRoot = ({
   const explicitRoot = normalizeText(env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT);
   if (explicitRoot) {
     const resolved = path.resolve(explicitRoot);
-    if (!existsSync(path.join(resolved, "FACTS.md"))) {
-      throw new Error(`AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT is not a readable Agentic Canvas OS docs root: ${resolved}`);
+    if (!existsSync(path.join(resolved, "DICTIONARY-COMMAND.md"))) {
+      throw new Error(`AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT is not a readable Agentic OS docs root: ${resolved}`);
     }
     return resolved;
   }
   const findMarkerBackedAncestorRoot = (startDir) => {
     let cursor = path.resolve(startDir);
     while (true) {
-      const candidate = path.join(cursor, "agentic-canvas-os", "docs");
-      if (existsSync(path.join(candidate, "FACTS.md"))) return candidate;
+      const candidate = path.join(cursor, "agentic-os", AGENT_DICTIONARY_ROOT);
+      if (existsSync(path.join(candidate, "DICTIONARY-COMMAND.md"))) return candidate;
       const parent = path.dirname(cursor);
       if (parent === cursor) return "";
       cursor = parent;
@@ -204,7 +185,7 @@ export const resolveAgenticCanvasOsDocsRoot = ({
   } catch {
     // Non-Git callers still receive the marker-backed resolution error below.
   }
-  throw new Error(`Could not resolve agentic-canvas-os/docs from ${path.resolve(rootDir)}`);
+  throw new Error(`Could not resolve agentic-os/catalog/dictionaries from ${path.resolve(rootDir)}`);
 };
 
 export async function runAgenticCanvasOsDocsInvokeTool(args = {}, {
@@ -224,7 +205,7 @@ export async function runAgenticCanvasOsDocsInvokeTool(args = {}, {
 
     for (const fileName of REQUIRED_DOC_FILE_NAMES) {
       try {
-        docsContentByFileName[fileName] = await fs.readFile(path.join(absoluteDocsRoot, fileName), "utf8");
+        docsContentByFileName[fileName] = await fs.readFile(resolveAgenticOsDocPath({ absoluteDocsRoot, fileName }), "utf8");
       } catch {
         missing.push(fileName);
         docsContentByFileName[fileName] = "";
@@ -248,7 +229,7 @@ export async function runAgenticCanvasOsDocsInvokeTool(args = {}, {
         ok: false,
         error: {
           code: "docs_root_unreadable",
-          message: `Missing required Agentic Canvas OS docs files: ${missing.join(", ")}`,
+          message: `Missing required Agentic OS docs files: ${missing.join(", ")}`,
         },
       };
     }

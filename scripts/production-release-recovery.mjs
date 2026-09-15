@@ -104,7 +104,8 @@ async function prepare(root) {
   const marker = await publicMarkers(raw)
   const localReview = JSON.parse(process.env.RECOVERY_LOCAL_REVIEW)
   const releaseEvidence = JSON.parse(process.env.RECOVERY_RELEASE_EVIDENCE)
-  const docsCommit = gh('api', `repos/huijoohwee/agentic-canvas-os/git/commits/${marker.agenticCanvasOs.revision}`)
+  assert(['huijoohwee/agentic-os', 'huijoohwee/agentic-canvas-os'].includes(marker.agenticCanvasOs.repository), 'unsupported recovery docs owner')
+  const docsCommit = gh('api', `repos/${marker.agenticCanvasOs.repository}/git/commits/${marker.agenticCanvasOs.revision}`)
   verifyLocalReviewIdentity({ localReview, sourceRevision: run.head_sha,
     sourceTree: git('rev-parse', `${run.head_sha}^{tree}`),
     agenticCanvasOsRevision: marker.agenticCanvasOs.revision,
@@ -136,7 +137,7 @@ async function prepare(root) {
   write(path.join(root, 'plan.json'), plan)
   write(path.join(root, 'publication.json'), publication)
   write(path.join(root, 'original-run.json'), { ...run, jobs })
-  fs.appendFileSync(process.env.GITHUB_OUTPUT, `plan_digest=${plan.planDigest}\ndocs_revision=${marker.agenticCanvasOs.revision}\nmirror_revision=${mirrorRevision}\n`)
+  fs.appendFileSync(process.env.GITHUB_OUTPUT, `plan_digest=${plan.planDigest}\ndocs_repository=${marker.agenticCanvasOs.repository}\ndocs_directory=${marker.agenticCanvasOs.repository === 'huijoohwee/agentic-os' ? 'catalog/dictionaries' : 'docs'}\ndocs_revision=${marker.agenticCanvasOs.revision}\nmirror_revision=${mirrorRevision}\n`)
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     `${mode === 'restore-core' ? 'Restore' : 'Verify retained'} storage version \`${plan.versionId}\` for source \`${plan.originalSourceRevision}\`.\n\nExact approval comment: \`authorize recovery ${plan.planDigest}\`\n`)
 }

@@ -32,10 +32,8 @@ test('docs promotion fails closed when the ref is missing or duplicated', () => 
 
 test('docs promotion requires the exact protected Agentic Canvas OS checks', () => {
   assert.deepEqual(REQUIRED_CHECKS, [
-    'build',
-    'collaboration-integration',
-    'docs-contract',
     'test',
+    'budgets',
   ])
 })
 
@@ -57,7 +55,7 @@ test('docs promoter uses a low-cost sibling checkout and skips unchanged install
     workflow,
     /name: Install dependencies[\s\S]*?if: steps\.pending\.outputs\.changed == 'true'[\s\S]*?working-directory: agentic-graph/,
   )
-  assert.match(workflow, /git -C \.\.\/agentic-canvas-os rev-parse HEAD/)
+  assert.match(workflow, /git -C \.\.\/agentic-os rev-parse HEAD/)
   assert.doesNotMatch(workflow, /cache: npm/)
 })
 
@@ -76,9 +74,9 @@ test('docs promoter binds its branch to the docs and base revisions and coalesce
 
 test('docs validation installs its own locked dependencies after the exact checkout', () => {
   const steps = load(workflow).jobs.promote.steps
-  const checkout = steps.findIndex(step => step.with?.repository === 'huijoohwee/agentic-canvas-os')
-  const install = steps.findIndex(step => step['working-directory'] === 'agentic-canvas-os' && /^npm ci(?: |$)/.test(step.run || ''))
-  const validation = steps.findIndex(step => step.run?.includes('npm --prefix ../agentic-canvas-os run docs:check'))
+  const checkout = steps.findIndex(step => step.with?.repository === 'huijoohwee/agentic-os')
+  const install = steps.findIndex(step => step['working-directory'] === 'agentic-os' && /^npm ci(?: |$)/.test(step.run || ''))
+  const validation = steps.findIndex(step => step.run?.includes('npm --prefix ../agentic-os run evals'))
   assert.ok(checkout >= 0 && install > checkout && validation > install,
     'docs checks need the dependency tree from the exact checked-out lockfile')
   assert.equal(steps[checkout].with.ref, '${{ steps.promotion.outputs.revision }}')

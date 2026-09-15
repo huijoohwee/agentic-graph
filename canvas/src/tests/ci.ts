@@ -3,6 +3,9 @@ import path from 'node:path'
 import { createRequire, Module as NodeModule, register } from 'node:module'
 import { sanitizeNodeTestFlags } from '@/tests/lib/sanitizeNodeTestFlags'
 
+// Select the explicit compatibility backend used by legacy-storage fixtures.
+process.env.NODE_ENV = 'test'
+
 // JSDOM exercises component behavior, while browser/build checks own CSS. Cover
 // dynamic ESM imports as well as CommonJS without hiding missing asset files.
 register(`data:text/javascript,${encodeURIComponent(`

@@ -18,16 +18,17 @@ export const countRegisteredWorktrees = porcelain => String(porcelain || '')
 
 export const parseRegisteredWorktrees = porcelain => String(porcelain || '')
   .trim()
-  .split(/\r?\n\r?\n/)
+  .split(/(?:\r?\n\r?\n|\0\0)/)
   .filter(Boolean)
   .map(block => {
     const record = { path: '', head: '', branch: '', detached: false, bare: false, prunable: false }
-    for (const line of block.split(/\r?\n/)) {
+    for (const line of block.split(/\r?\n|\0/)) {
       if (line.startsWith('worktree ')) record.path = line.slice('worktree '.length)
       else if (line.startsWith('HEAD ')) record.head = line.slice('HEAD '.length)
       else if (line.startsWith('branch ')) record.branch = line.slice('branch '.length)
       else if (line === 'detached') record.detached = true
       else if (line === 'bare') record.bare = true
+      else if (line === 'locked' || line.startsWith('locked ')) record.locked = true
       else if (line.startsWith('prunable')) record.prunable = true
     }
     return record

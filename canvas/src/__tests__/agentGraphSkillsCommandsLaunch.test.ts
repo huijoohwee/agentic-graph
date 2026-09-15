@@ -230,7 +230,7 @@ export async function testAgentGraphSkillsCommandsResolverUsesSharedSourceBacked
       SOURCE_BINDING,
     ]])
     assert.ok(resolution.entries.every(entry => (
-      String(entry.sourcePath).includes(`/blob/${SOURCE_REVISION}/docs/DICTIONARY-`)
+      String(entry.sourcePath).includes(`/blob/${SOURCE_REVISION}/catalog/dictionaries/DICTIONARY-`)
     )))
   } finally {
     fetchMock.restore()

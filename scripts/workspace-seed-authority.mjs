@@ -1,4 +1,5 @@
 import { readFile, readdir, stat } from 'node:fs/promises'
+import { readRuntimeDocsSources } from './runtime-docs-sources.mjs'
 import path from 'node:path'
 import { requireCitySimRuntimeIdentity } from './workspace-seed-city-authority.mjs'
 import { requireXrV2RuntimeIdentity } from './workspace-seed-xr-v2-authority.mjs'
@@ -83,7 +84,7 @@ export const resolveWorkspaceSeedSiblingRootsFromGitCommonDir = gitCommonDirRaw 
   }
   const githubRoot = path.dirname(path.dirname(gitCommonDir))
   return {
-    agenticDocsRoot: path.join(githubRoot, 'agentic-canvas-os/docs'),
+    agenticDocsRoot: path.join(githubRoot, 'agentic-os/catalog/dictionaries'),
     publishRoot: path.join(githubRoot, 'huijoohwee'),
   }
 }
@@ -540,7 +541,13 @@ export async function verifyWorkspaceSeedAuthority({
   }
 
   let agenticInventory = null
-  if (agenticDocsRoot) {
+  if (agenticDocsRoot && path.basename(agenticDocsRoot) === 'dictionaries') {
+    const published = (await readRuntimeDocsSources({ docsRoot: agenticDocsRoot, graphRoot: agenticGraphRoot }))
+      .filter(entry => entry.fileName.startsWith('workspace-seeds/'));
+    agenticInventory = published.map(entry => path.basename(entry.fileName));
+    if (JSON.stringify(agenticInventory) !== JSON.stringify(AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY)
+        || published[0]?.bytes.toString('utf8') !== source) throw new Error('Native published workspace seed differs from its Graph source');
+  } else if (agenticDocsRoot) {
     const projectionDirectory = path.resolve(agenticDocsRoot, 'workspace-seeds')
     agenticInventory = await requireExactFileInventory({
       directoryPath: projectionDirectory,

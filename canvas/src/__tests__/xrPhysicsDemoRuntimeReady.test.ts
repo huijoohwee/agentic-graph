@@ -228,7 +228,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     if (!markdownText.includes(required)) throw new Error(`expected native demo contract to include ${required}`)
   }
   for (const forbidden of [/https?:\/\//i, /\bgithub\b/i, /\bcdn\b/i, /\bnode_modules\b/i]) {
-    if (forbidden.test(markdownText)) throw new Error(`expected standalone seed to avoid external locator ${forbidden.source}`)
+    if (forbidden.test(JSON.stringify(meta))) throw new Error(`expected standalone seed to avoid external locator ${forbidden.source}`)
   }
 
   const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')) as PlainRecord

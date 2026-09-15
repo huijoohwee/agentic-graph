@@ -114,7 +114,7 @@ const runtimeResult = {
     truncated: false,
     limit: 1_000,
   },
-  acquisition: { rootPath: '/must-not-reach-browser' },
+  acquisition: { mode: 'local-directory', rootPath: '/must-not-reach-browser' },
   diagnostics: [{ artifactPath: '/must-not-reach-browser' }],
 }
 

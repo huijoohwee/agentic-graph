@@ -38,7 +38,7 @@ export const readWorkspaceInitializationDocsAbsRoot = (): string => {
   return normalizeAbsRoot(readWorkspaceDocsMirrorRootPathSetting())
 }
 
-export const AGENTIC_CANVAS_OS_DOCS_REPOSITORY_FOLDER_NAME = 'docs'
+export const AGENTIC_CANVAS_OS_DOCS_REPOSITORY_FOLDER_NAME = 'catalog/dictionaries'
 
 export const readAbsParentRoot = (absRoot: string): string => {
   const normalized = normalizeAbsRoot(absRoot)
@@ -52,7 +52,7 @@ export const readWorkspaceInitializationAgenticOsDocsAbsRoot = (): string => {
   if (explicit) return explicit
   const docsMirrorBaseRoot = readWorkspaceMirrorBaseAbsRoot()
   const repositoryParentRoot = readAbsParentRoot(docsMirrorBaseRoot)
-  return repositoryParentRoot ? `${repositoryParentRoot}/agentic-canvas-os/${AGENTIC_CANVAS_OS_DOCS_REPOSITORY_FOLDER_NAME}` : ''
+  return repositoryParentRoot ? `${repositoryParentRoot}/agentic-os/${AGENTIC_CANVAS_OS_DOCS_REPOSITORY_FOLDER_NAME}` : ''
 }
 
 export const readWorkspaceInitializationOutputDocsAbsRoot = (): string => {

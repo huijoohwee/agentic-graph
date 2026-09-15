@@ -1,4 +1,4 @@
-name: Promote Agentic Canvas OS Docs
+name: Promote Agentic OS Source Pin
 # runtime-docs-workflow: promoter
 
 on:
@@ -74,25 +74,25 @@ jobs:
         if: steps.promotion.outputs.changed == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          repository: huijoohwee/agentic-canvas-os
+          repository: huijoohwee/agentic-os
           ref: ${{ steps.promotion.outputs.revision }}
-          path: agentic-canvas-os
+          path: agentic-os
           fetch-depth: 0
 
       - name: Install exact docs dependencies
         if: steps.promotion.outputs.changed == 'true'
-        working-directory: agentic-canvas-os
+        working-directory: agentic-os
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Validate exact docs source
         if: steps.promotion.outputs.changed == 'true'
         working-directory: agentic-graph
         run: |
-          test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ steps.promotion.outputs.revision }}"
-          npm --prefix ../agentic-canvas-os run docs:check
+          test "$(git -C ../agentic-os rev-parse HEAD)" = "${{ steps.promotion.outputs.revision }}"
+          npm --prefix ../agentic-os run evals
           node --test scripts/__tests__/runtime-readiness-contract.test.mjs scripts/__tests__/promote-agentic-canvas-os-revision.test.mjs
         env:
-          AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+          AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-os/catalog/dictionaries
 
       - name: Open protected promotion pull request
         if: steps.promotion.outputs.changed == 'true'
@@ -117,7 +117,7 @@ jobs:
             exit 0
           fi
           git switch -c "$branch"
-          git add docs/runtime-readiness-contract.md
+          git add docs/runtime-readiness-contract.md package.json package-lock.json
           git commit -m "Promote Agentic Canvas OS ${DOCS_REVISION:0:12}"
           git push --set-upstream origin "$branch"
           body=$'---\naction: /change\nscope: "#runtime.readiness"\nactor: "@agentic-docs-promoter"\nbase_sha: "'"$base_sha"$'"\n---\n\nAutomatically promotes the latest protected, green Agentic Canvas OS docs revision.\n'

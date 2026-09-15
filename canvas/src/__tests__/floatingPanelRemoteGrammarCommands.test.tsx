@@ -31,7 +31,7 @@ export async function testCameraInvocationSurfaceReactsToRemoteGrammarHydration(
     kind: 'command',
     label: 'Camera hydration proof',
     summary: 'Source-backed Camera metadata registered before the surface mounted.',
-    sourcePath: 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-COMMAND.md#camera-hydration',
+    sourcePath: 'https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries/DICTIONARY-COMMAND.md#camera-hydration',
     keywords: ['camera', 'hydration'],
   }])
   const partialSnapshot = getAgenticOsRemoteGrammarCatalogSnapshot()
@@ -236,7 +236,7 @@ export async function testFloatingPanelChatComposerWiresRemoteAgenticOsGrammar()
       throw new Error(`expected remote grammar tools/call to query the live token text, got ${JSON.stringify(toolsCall.body)}`)
     }
     const hydratedEntry = getAgenticOsRemoteGrammarCatalogEntries().find(entry => entry.token === '/remote.only')
-    if (hydratedEntry?.sourceUrl !== `https://github.com/huijoohwee/agentic-canvas-os/blob/${'a'.repeat(40)}/docs/DICTIONARY-COMMAND.md#/remote.only`) {
+    if (hydratedEntry?.sourceUrl !== `https://github.com/huijoohwee/agentic-os/blob/${'a'.repeat(40)}/catalog/dictionaries/DICTIONARY-COMMAND.md#/remote.only`) {
       throw new Error(`expected remote grammar provenance to bind the exact docs revision, got ${String(hydratedEntry?.sourceUrl || '')}`)
     }
   } finally {
@@ -259,7 +259,7 @@ export function testRemoteAgenticOsGrammarHydratesSharedInvocationLookups() {
         kind: 'semantic',
         label: 'Remote runtime',
         summary: 'Live remote semantic directive',
-        sourcePath: 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-SEMANTIC.md#remote-runtime',
+        sourcePath: 'https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries/DICTIONARY-SEMANTIC.md#remote-runtime',
         keywords: ['remote', 'runtime'],
       },
       {
@@ -267,7 +267,7 @@ export function testRemoteAgenticOsGrammarHydratesSharedInvocationLookups() {
         kind: 'binding',
         label: 'Remote binding',
         summary: 'Live remote binding directive',
-        sourcePath: 'https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/DICTIONARY-BINDING.md#remote-binding',
+        sourcePath: 'https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries/DICTIONARY-BINDING.md#remote-binding',
         keywords: ['remote', 'binding'],
       },
     ])
@@ -508,7 +508,7 @@ export async function testRemoteAgenticOsGrammarHydrationIsRevisionKeyedAndBound
         kind: entryKind,
         label: `Revision ${sourceRevision[0]}`,
         sourcePath: entrySourcePath,
-        sourceUrl: `https://github.com/huijoohwee/agentic-canvas-os/blob/${sourceRevision}/docs/${entrySourcePath}`,
+        sourceUrl: `https://github.com/huijoohwee/agentic-os/blob/${sourceRevision}/catalog/dictionaries/${entrySourcePath}`,
       }
     })
     return new Response(JSON.stringify({
@@ -541,12 +541,12 @@ export async function testRemoteAgenticOsGrammarHydrationIsRevisionKeyedAndBound
             schema: 'progressive-agents-readiness-summary/v1',
             status: 'runtime-ready-dev',
             sourceRevision,
-            sourcePath: 'docs/PROGRESSIVE-AGENTS.md',
-            sourceUrl: `https://github.com/huijoohwee/agentic-canvas-os/blob/${sourceRevision}/docs/PROGRESSIVE-AGENTS.md`,
+            sourcePath: 'runtime/agents/docs/PROGRESSIVE-AGENTS.md',
+            sourceUrl: `https://github.com/huijoohwee/agentic-os/blob/${sourceRevision}/runtime/agents/docs/PROGRESSIVE-AGENTS.md`,
             contractSchema: 'progressive-agents-runtime-contract/v1',
             runtimeScope: 'single-agent execution, tool-bearing agent execution, and explicit specialist workflow delegation',
-            runtimeOwner: '../agent-api/src/progressive-agents.js',
-            runtimeProof: '../__tests__/progressive-agents.test.mjs',
+            runtimeOwner: '../../adapters/progressive-agents.js',
+            runtimeProof: '../../../__tests__/progressive-agents.test.mjs',
             contractReady: true,
             configured: false,
             progressionPolicy: 'single-agent-then-tools-then-specialists',
@@ -561,7 +561,7 @@ export async function testRemoteAgenticOsGrammarHydrationIsRevisionKeyedAndBound
             kind,
             label: `Revision ${sourceRevision[0]}`,
             sourcePath,
-            sourceUrl: `https://github.com/huijoohwee/agentic-canvas-os/blob/${sourceRevision}/docs/${sourcePath}`,
+            sourceUrl: `https://github.com/huijoohwee/agentic-os/blob/${sourceRevision}/catalog/dictionaries/${sourcePath}`,
           }],
         },
       },

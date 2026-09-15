@@ -46,7 +46,7 @@ env:
   MCP_ENDPOINT: ${{ github.event.inputs.mcp_endpoint || vars.MCP_ENDPOINT }}
   FRONTEND_URL: ${{ github.event.inputs.frontend_url || vars.FRONTEND_URL }}
   STORAGE_WORKER_URL: ${{ github.event.inputs.storage_worker_url || vars.STORAGE_WORKER_URL }}
-  AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+  AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-os/catalog/dictionaries
 
 jobs:
   runtime-gate:
@@ -80,7 +80,7 @@ jobs:
         with:
           repository: ${{ steps.agentic_canvas_os_docs.outputs.repository }}
           ref: ${{ steps.agentic_canvas_os_docs.outputs.ref }}
-          path: agentic-canvas-os
+          path: agentic-os
           fetch-depth: 0
 
       # Deterministic network-free gate — must pass before reachability checks.

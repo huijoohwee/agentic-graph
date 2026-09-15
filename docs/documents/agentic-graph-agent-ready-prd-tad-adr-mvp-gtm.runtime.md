@@ -2,8 +2,8 @@
 title: "Agent-Ready Runtime and Validation Companion"
 id: "md:agentic-graph-agent-ready-prd-tad.runtime"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.28.1"
-date: "2026-09-12"
+version: "1.28.2"
+date: "2026-09-16"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.agent-ready.runtime-companion"
@@ -13,7 +13,7 @@ lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.runtime.md"
 parent: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md"
-parent_version: "1.28.0"
+parent_version: "1.28.2"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM"
 worktree_id: "device-cba000d3779d--planning-v27"
@@ -22,11 +22,11 @@ guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
 previous_document_version: "2.1.0"
-prd_revision: "1.28.1"
-tad_revision: "1.28.1"
-adr_revision: "1.28.1"
-mvp_revision: "1.28.1"
-gtm_revision: "1.28.1"
+prd_revision: "1.28.2"
+tad_revision: "1.28.2"
+adr_revision: "1.28.2"
+mvp_revision: "1.28.2"
+gtm_revision: "1.28.2"
 ---
 
 # Agent-Ready Runtime and Validation Companion
@@ -96,7 +96,7 @@ belong to the install contract's sole endpoint Invocation Register and a non-own
 | Surface | Source owner | Contract | Local rung | Delivered rung |
 |---|---|---|---|---|
 | Pages HTTP MCP | `cloudflare/pages/agentic-graph-agent-ready.mjs` | exactly 7 read-only tools | `spec-complete` | `undocumented` |
-| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` plus shared contract | exactly 42 tools: 30 read-only and 12 guarded controls | `spec-complete` | `undocumented` |
+| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` plus shared contract | exactly 50 tools: 31 read-only and 19 guarded controls | `spec-complete` | `undocumented` |
 | Local stdio MCP | `mcp/server.js`, `mcp/local-tool-contract.js` | broad descriptor/executor catalog; configuration-gated per tool | `spec-complete` | `undocumented` |
 | Control-plane MCP | `cloudflare/workers/agentic-graph-mcp/tool-registry.mjs` | separate 10-tool registry | `spec-complete` | `undocumented` |
 | Source materialization | `canvas/src/features/source-files/` and parser owners | source-backed workspace/canvas path | `spec-complete` | `undocumented` |
@@ -110,7 +110,7 @@ control-plane Worker.
 | Contract | End state | Failure behavior |
 |---|---|---|
 | Public-read | only the seven owned read tools are described and invoked | unsupported/mutating request rejected |
-| Embedded | current 42-tool contract is registered page-locally | unsupported page capability returns typed unavailable state |
+| Embedded | current 50-tool contract is registered page-locally | unsupported page capability returns typed unavailable state |
 | Local stdio | descriptor and executor availability are reported separately | missing adapter/credential fails closed |
 | Control-plane | ten-tool registry is protected by bearer authorization and MCP session semantics | missing runtime secret yields unavailable; invalid bearer yields unauthorized |
 | Structured content | validated content reaches the existing source/workspace/canvas owner | invalid content never bypasses parsing/validation |
@@ -120,7 +120,7 @@ control-plane Worker.
 | VCC | End state | Named check | Constraint | Recorded result | Local rung | Delivered rung |
 |---|---|---|---|---|---|---|
 | VCC-AR-1 | Pages contract reports exactly seven read-only tools | `npm run agent-ready:check` | zero spend-bearing public-read tools | not recorded for this revision | `spec-complete` | `undocumented` |
-| VCC-AR-2 | browser contract reports exactly 42 tools split 30/12 | `npm test` | controls remain page-local and guarded | not recorded | `spec-complete` | `undocumented` |
+| VCC-AR-2 | browser contract reports exactly 50 tools split 31/19 | `npm test` | controls remain page-local and guarded | not recorded | `spec-complete` | `undocumented` |
 | VCC-AR-3 | Worker registry reports exactly ten tools and bearer/session tests pass | `npm run runtime:test` | no delivery inference | not recorded | `spec-complete` | `undocumented` |
 | VCC-AR-4 | valid structured content uses the existing workspace/canvas apply path | `npm test` | no second graph pipeline | not recorded | `spec-complete` | `undocumented` |
 | VCC-AR-5 | exact delivered revision and surface pass live verification | protected release receipt | source checks cannot satisfy it | not recorded | `spec-complete` | `undocumented` |
@@ -150,4 +150,4 @@ control-plane Worker.
 
 ## Planning continuity — reference implementation
 
-This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.28.1` with [the five-role owner](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.28.2` with [the five-role owner](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

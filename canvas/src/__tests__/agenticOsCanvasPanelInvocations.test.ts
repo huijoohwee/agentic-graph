@@ -125,7 +125,7 @@ const registerCanvasGrammar = () => {
     token,
     kind,
     sourcePath: `${fileName}#${token}`,
-    sourceUrl: `https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs/${fileName}#${token}`,
+    sourceUrl: `https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries/${fileName}#${token}`,
     keywords: [AGENTIC_OS_CANVAS_INTERACTION_PANEL_KEYWORD],
   })))
   registerAgenticOsRemoteGrammarCatalogEntries(entries)

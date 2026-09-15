@@ -139,6 +139,7 @@ export function isAgentLiveProviderProofVerified(
     && proof.defaultWorkerConfigured === false
 }
 
+// Source/catalog freshness grants no provider, execution, payment or deployment readiness.
 export function isAgenticGraphRuntimeIdentityFresh(identity: AgenticGraphRuntimeIdentity): boolean {
   return SHA_PATTERN.test(identity.agenticGraphRevision)
     && SHA_PATTERN.test(identity.agenticCanvasOsRevision)
@@ -147,24 +148,23 @@ export function isAgenticGraphRuntimeIdentityFresh(identity: AgenticGraphRuntime
     && identity.catalogHydration.status === 'fresh'
     && identity.catalogHydration.attempts >= 0
     && identity.catalogHydration.attempts <= 2
-    && isAgentLiveProviderProofVerified(identity.agentLiveProviderProof, identity.agenticCanvasOsRevision)
-    && isProgressiveAgentsReadinessVerified(identity.progressiveAgentsReadiness, identity.agenticCanvasOsRevision)
+    && (['slash', 'hash', 'at'] as const).every(key => Number.isInteger(identity.catalogCounts[key]) && identity.catalogCounts[key] > 0)
 }
 
 export function isProgressiveAgentsReadinessVerified(
   readiness: AgenticGraphRuntimeIdentity['progressiveAgentsReadiness'],
   agenticCanvasOsRevision: string,
 ): boolean {
-  const expectedSourceUrl = `https://github.com/huijoohwee/agentic-canvas-os/blob/${agenticCanvasOsRevision}/docs/PROGRESSIVE-AGENTS.md`
+  const expectedSourceUrl = `https://github.com/huijoohwee/agentic-os/blob/${agenticCanvasOsRevision}/runtime/agents/docs/PROGRESSIVE-AGENTS.md`
   return readiness.schema === 'progressive-agents-readiness-summary/v1'
     && readiness.status === 'runtime-ready-dev'
     && readiness.sourceRevision === agenticCanvasOsRevision
-    && readiness.sourcePath === 'docs/PROGRESSIVE-AGENTS.md'
+    && readiness.sourcePath === 'runtime/agents/docs/PROGRESSIVE-AGENTS.md'
     && readiness.sourceUrl === expectedSourceUrl
     && readiness.contractSchema === 'progressive-agents-runtime-contract/v1'
     && Boolean(readiness.runtimeScope)
-    && readiness.runtimeOwner === '../agent-api/src/progressive-agents.js'
-    && readiness.runtimeProof === '../__tests__/progressive-agents.test.mjs'
+    && readiness.runtimeOwner === '../../adapters/progressive-agents.js'
+    && readiness.runtimeProof === '../../../__tests__/progressive-agents.test.mjs'
     && readiness.contractReady
     && readiness.configured === false
     && readiness.progressionPolicy === 'single-agent-then-tools-then-specialists'

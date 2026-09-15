@@ -271,6 +271,8 @@ const canonicalJson = value => {
   return JSON.stringify(value)
 }
 
+export { digest as digestProductionEvidence, assertShaTree as assertReleaseSourceIdentity }
+
 const digest = value => createHash('sha256').update(canonicalJson(value)).digest('hex')
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {

@@ -1,5 +1,5 @@
 import type { SVGProps } from 'react'
-import { agenticGraphMark as mark } from '../../../grph-shared/src/ui/agenticGraphMark'
+import { agenticGraphMark as mark } from 'grph-shared/ui/agenticGraphMark'
 
 /** Decorative product identity; the adjacent text supplies the accessible name. */
 export default function AgenticGraphIcon(props: SVGProps<SVGSVGElement>) {

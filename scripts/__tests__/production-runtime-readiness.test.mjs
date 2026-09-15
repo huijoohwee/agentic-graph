@@ -40,7 +40,7 @@ test('production readiness validates exact runtime identities and rejects drift'
   assert.match(serializeProductionRuntimeReadiness(validReadiness), /"surfaces": \[/)
 })
 
-test('production readiness resolves Agentic Canvas OS schemas from a linked agentic-graph worktree', async () => {
+test('production readiness resolves its Graph-owned schema in the selected source worktree', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-readiness-root-'))
   const docsRoot = path.join(root, 'agentic-canvas-os', 'docs')
   const taskRoot = path.join(root, '.worktrees', 'agentic-graph', 'xr-runtime')
@@ -50,7 +50,7 @@ test('production readiness resolves Agentic Canvas OS schemas from a linked agen
     await fs.writeFile(path.join(docsRoot, 'FACTS.md'), '# Source marker\n', 'utf8')
     assert.equal(
       resolveProductionRuntimeReadinessSchemaPath({ rootDir: taskRoot, env: {} }),
-      path.join(docsRoot, 'schemas', 'production-runtime-readiness.v2.schema.json'),
+      path.join(taskRoot, 'schemas', 'production-runtime-readiness.v2.schema.json'),
     )
   } finally {
     await fs.rm(root, { recursive: true, force: true })

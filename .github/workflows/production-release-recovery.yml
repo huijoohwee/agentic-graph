@@ -17,7 +17,7 @@ jobs:
     name: Prepare retained core recovery
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs: { plan_digest: '${{ steps.plan.outputs.plan_digest }}', docs_revision: '${{ steps.plan.outputs.docs_revision }}', mirror_revision: '${{ steps.plan.outputs.mirror_revision }}' }
+    outputs: { plan_digest: '${{ steps.plan.outputs.plan_digest }}', docs_revision: '${{ steps.plan.outputs.docs_revision }}', docs_repository: '${{ steps.plan.outputs.docs_repository }}', docs_directory: '${{ steps.plan.outputs.docs_directory }}', mirror_revision: '${{ steps.plan.outputs.mirror_revision }}' }
     steps:
       - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 0 } }
       - { uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22 } }
@@ -47,7 +47,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
-      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/recovery-runtime-docs/${{ needs.prepare.outputs.docs_directory }}
       AGENTIC_OS_PUBLIC_ZONE_ID: ${{ vars.AGENTIC_OS_PUBLIC_ZONE_ID }}
       AGENTIC_OS_PUBLIC_ZONE_NAME: airvio.co
       AGENTIC_OS_STORAGE_D1_DATABASE_NAME: ${{ vars.AGENTIC_OS_STORAGE_D1_DATABASE_NAME }}
@@ -66,7 +66,7 @@ jobs:
     steps:
       - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 0 } }
       - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.prepare.outputs.mirror_revision }}', path: huijoohwee, fetch-depth: 0 } }
-      - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/agentic-canvas-os, ref: '${{ needs.prepare.outputs.docs_revision }}', path: agentic-canvas-os } }
+      - { uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: '${{ needs.prepare.outputs.docs_repository }}', ref: '${{ needs.prepare.outputs.docs_revision }}', path: recovery-runtime-docs } }
       - { uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22 } }
       - name: Prepare locked recovery controller
         working-directory: agentic-graph

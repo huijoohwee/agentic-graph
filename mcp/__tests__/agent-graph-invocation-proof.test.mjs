@@ -1,3 +1,4 @@
+import { writeNativeProofFixture } from "./fixtures/native-agent-docs.mjs";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
@@ -26,8 +27,8 @@ const dictionary = (token, row) => (
 );
 
 async function createCanonicalDocsFixture(root) {
-  const repositoryRoot = path.join(root, "agentic-canvas-os");
-  const docsRoot = path.join(repositoryRoot, "docs");
+  const repositoryRoot = path.join(root, "agentic-os");
+  const docsRoot = path.join(repositoryRoot, "catalog", "dictionaries");
   await fs.mkdir(docsRoot, { recursive: true });
   await Promise.all([
     fs.writeFile(path.join(docsRoot, "FACTS.md"), "---\ntitle: Fixture\n---\n"),
@@ -46,8 +47,9 @@ async function createCanonicalDocsFixture(root) {
     fs.writeFile(path.join(docsRoot, "LIVE-AGENT-PROVIDER-PROOF.md"), "---\nschema: unavailable\nstatus: unavailable\n---\n"),
     fs.writeFile(path.join(docsRoot, "PROGRESSIVE-AGENTS.md"), "---\nschema: unavailable\nstatus: unavailable\n---\n"),
   ]);
+  await writeNativeProofFixture(repositoryRoot);
   execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
-  execFileSync("git", ["add", "docs"], { cwd: repositoryRoot });
+  execFileSync("git", ["add", "catalog", "runtime"], { cwd: repositoryRoot });
   execFileSync("git", [
     "-c", "user.name=agentic-graph Test",
     "-c", "user.email=test@agentic-graph.local",
@@ -58,7 +60,7 @@ async function createCanonicalDocsFixture(root) {
     encoding: "utf8",
   }).trim();
   execFileSync("git", [
-    "remote", "add", "origin", "https://github.com/huijoohwee/agentic-canvas-os.git",
+    "remote", "add", "origin", "https://github.com/huijoohwee/agentic-os.git",
   ], { cwd: repositoryRoot });
   execFileSync("git", ["update-ref", "refs/remotes/origin/main", revision], {
     cwd: repositoryRoot,

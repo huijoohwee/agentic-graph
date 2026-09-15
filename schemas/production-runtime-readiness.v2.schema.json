@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-canvas-os.dev/schemas/production-runtime-readiness/v2",
+  "title": "agentic-graph Production Runtime Readiness v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "source",
+    "agenticCanvasOs",
+    "catalogRevision",
+    "artifact",
+    "immutableManifest",
+    "mirror",
+    "surfaces"
+  ],
+  "properties": {
+    "schema": { "const": "agentic-os-production-runtime-readiness/v2" },
+    "status": { "const": "verified-build" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "revision", "tree"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/repository" },
+        "revision": { "$ref": "#/$defs/gitSha" },
+        "tree": { "$ref": "#/$defs/gitSha" }
+      }
+    },
+    "agenticCanvasOs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "revision"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/repository" },
+        "revision": { "$ref": "#/$defs/gitSha" }
+      }
+    },
+    "catalogRevision": { "$ref": "#/$defs/gitSha" },
+    "artifact": { "$ref": "#/$defs/digest" },
+    "immutableManifest": { "$ref": "#/$defs/digest" },
+    "mirror": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/repository" }
+      }
+    },
+    "surfaces": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["/", "/agentic-graph"] },
+      "allOf": [
+        { "contains": { "const": "/" } },
+        { "contains": { "const": "/agentic-graph" } }
+      ]
+    }
+  },
+  "$defs": {
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "digest"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

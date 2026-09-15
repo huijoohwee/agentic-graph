@@ -346,49 +346,11 @@ if (xrPhysicsThreeOwners.length > 0) {
   throw new Error(`XR Physics identity must not create another Three world owner, received ${xrPhysicsThreeOwners.join(', ')}`)
 }
 
-async function resolveAgenticCanvasOsDocsRoot() {
-  const configured = String(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
-  if (configured) {
-    const resolved = path.resolve(configured)
-    try {
-      if ((await stat(resolved)).isDirectory()) return resolved
-    } catch {
-      // The configured source is mandatory when provided.
-    }
-    throw new Error(`AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT is not a readable directory: ${resolved}`)
-  }
-  const visited = new Set()
-  let cursor = root
-  while (true) {
-    for (const candidate of [
-      path.join(cursor, 'agentic-canvas-os', 'docs'),
-      path.join(path.dirname(cursor), 'agentic-canvas-os', 'docs'),
-    ]) {
-      if (visited.has(candidate)) continue
-      visited.add(candidate)
-      try {
-        if ((await stat(candidate)).isDirectory()) return candidate
-      } catch {
-        // Keep walking toward a shared workspace root.
-      }
-    }
-    const parent = path.dirname(cursor)
-    if (parent === cursor) return null
-    cursor = parent
-  }
-}
-
-const agenticCanvasOsDocsRoot = await resolveAgenticCanvasOsDocsRoot()
-if (agenticCanvasOsDocsRoot) {
-  const projectedPhysicsSeedPath = path.join(
-    agenticCanvasOsDocsRoot,
-    'workspace-seeds',
-    'agentic-graph-physics-playground-demo.md',
-  )
-  const projectedPhysicsSeedSource = await readFile(projectedPhysicsSeedPath, 'utf8')
-  if (projectedPhysicsSeedSource !== physicsSeedSource) {
-    throw new Error(`Physics source bytes differ from the Agentic Canvas OS projection: ${projectedPhysicsSeedPath}`)
-  }
+const { readRuntimeDocsSources } = await import('./runtime-docs-sources.mjs')
+const publishedPhysics = (await readRuntimeDocsSources({ graphRoot: root }))
+  .find(entry => entry.fileName === 'workspace-seeds/agentic-graph-physics-playground-demo.md')
+if (!publishedPhysics || publishedPhysics.bytes.toString('utf8') !== physicsSeedSource) {
+  throw new Error('Published Physics seed differs from its Graph source owner')
 }
 
 const threeGraph = await text('canvas/src/lib/three/ThreeGraph.impl.tsx')

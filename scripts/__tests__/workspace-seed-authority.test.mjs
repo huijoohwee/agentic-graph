@@ -224,7 +224,7 @@ test('derives sibling roots from the canonical git common directory', () => {
   assert.deepEqual(
     resolveWorkspaceSeedSiblingRootsFromGitCommonDir('/workspace/GitHub/agentic-graph/.git'),
     {
-      agenticDocsRoot: path.resolve('/workspace/GitHub/agentic-canvas-os/docs'),
+      agenticDocsRoot: path.resolve('/workspace/GitHub/agentic-os/catalog/dictionaries'),
       publishRoot: path.resolve('/workspace/GitHub/huijoohwee'),
     },
   )

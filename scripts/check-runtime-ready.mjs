@@ -10,6 +10,7 @@ import { repoRoot } from "./collaboration-contract.mjs";
 import { readRuntimeReadinessContract } from "./runtime-readiness-contract.mjs";
 import {
   resolveAgenticCanvasOsDocsRoot,
+  resolveAgenticOsDocPath,
   runAgenticCanvasOsDocsInvokeTool,
 } from "../mcp/agentic-canvas-os-docs-runtime.js";
 import { runVideoRemix } from "../mcp/video-remix-runtime.js";
@@ -60,7 +61,7 @@ async function verifyDocs(contract) {
     : resolveAgenticCanvasOsDocsRoot({ rootDir: repoRoot, env: process.env });
 
   for (const fileName of dependency.required_files) {
-    await fs.access(path.join(docsRoot, fileName)).catch(() => fail(`missing docs dependency: ${path.join(docsRoot, fileName)}`));
+    await fs.access(resolveAgenticOsDocPath({ absoluteDocsRoot: docsRoot, fileName })).catch(() => fail(`missing docs dependency: ${resolveAgenticOsDocPath({ absoluteDocsRoot: docsRoot, fileName })}`));
   }
   const { stdout: docsCommit } = await execFileAsync("git", ["-C", docsRoot, "rev-parse", "HEAD"])
     .catch(() => fail(`docs dependency is not a Git checkout: ${docsRoot}`));
@@ -75,7 +76,7 @@ async function verifyDocs(contract) {
       fail(`docs SSOT did not resolve ${token}`);
     }
   }
-  const skillsSource = await fs.readFile(path.join(docsRoot, "SKILLS.md"), "utf8");
+  const skillsSource = await fs.readFile(resolveAgenticOsDocPath({ absoluteDocsRoot: docsRoot, fileName: "SKILLS.md" }), "utf8");
   const skillsFrontmatter = skillsSource.match(/^---\n([\s\S]*?)\n---/)?.[1] || "";
   let catalogVariants = [];
   try {

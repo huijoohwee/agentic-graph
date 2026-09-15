@@ -2,8 +2,8 @@
 title: "MCP Service Contract"
 id: "md:agentic-graph-mcp-service-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.5.1"
-date: "2026-09-12"
+version: "0.5.2"
+date: "2026-09-16"
 lang: "en-US"
 owner: "docs.mcp.service"
 local_rung: "spec-complete"
@@ -26,11 +26,11 @@ guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
 previous_document_version: "0.5.0"
-prd_revision: "0.5.1"
-tad_revision: "0.5.1"
-adr_revision: "0.5.1"
-mvp_revision: "0.5.1"
-gtm_revision: "0.5.1"
+prd_revision: "0.5.2"
+tad_revision: "0.5.2"
+adr_revision: "0.5.2"
+mvp_revision: "0.5.2"
+gtm_revision: "0.5.2"
 ---
 
 # MCP Service Contract
@@ -97,7 +97,7 @@ requiring a model call. Control execution is a distinct, guarded outcome.
 |---|---|---|
 | `PRD-MCP-01` | Keep local stdio broad, configuration-gated, and fail-closed. | Must |
 | `PRD-MCP-02` | Keep Pages HTTP at exactly 7 read-only source tools. | Must |
-| `PRD-MCP-03` | Keep app WebMCP at exactly 42 source tools: 30 read-only and 12 guarded controls. | Must |
+| `PRD-MCP-03` | Keep app WebMCP at exactly 50 source tools: 31 read-only and 19 guarded controls. | Must |
 | `PRD-MCP-04` | Keep the remote Worker registry at exactly 10 source tools and treat the Worker as a separate delivery unit. | Must |
 | `PRD-MCP-05` | Require bearer `Authorization` for remote Worker MCP requests and preserve `mcp-session-id` after initialization. | Must |
 | `PRD-MCP-06` | Treat source presence, runtime readiness, and production verification as separate facts. | Must |
@@ -121,7 +121,7 @@ Scores use `(impact × reach) / (build + TCO + token cost)` with normalized
 | Requirement | Given / When / Then | VCC |
 |---|---|---|
 | `PRD-MCP-02` | Given Pages discovery, when tools are listed, then only the seven read-only names are returned. | `VCC-MCP-01` |
-| `PRD-MCP-03` | Given app initialization, when annotations are classified, then 42 tools split into 30 read-only and 12 guarded controls. | `VCC-MCP-02` |
+| `PRD-MCP-03` | Given app initialization, when annotations are classified, then 50 tools split into 31 read-only and 19 guarded controls. | `VCC-MCP-02` |
 | `PRD-MCP-04` | Given Worker registry construction, when tools are listed, then 10 unique names are returned. | `VCC-MCP-03` |
 | `PRD-MCP-05` | Given a remote Worker session, when initialization and a subsequent call occur, then bearer authorization is present and the returned session id is reused. | `VCC-MCP-04` |
 | `PRD-MCP-06` | Given this document set, when readiness is derived, then no delivery rung exceeds its attached evidence. | `VCC-MCP-05` |
@@ -290,7 +290,7 @@ Worker boundaries.
 |---|---|---|---|---|---|
 | Local adapter | Adapter dispatches configured local tools. | stdio JSON-RPC; `mcp/server.js`; local env/config. | Open protocol; local dependencies owner-selected. | `spec-complete` | `undocumented` |
 | Pages adapter | Adapter serves seven read-only tools. | HTTP JSON-RPC; `cloudflare/pages/agentic-graph-agent-ready.mjs`. | Open protocol; current edge adapter is a replaceable reference implementation. | `spec-complete` | `undocumented` |
-| Browser adapter | Runtime registers 42 app tools. | WebMCP; `webMcpRuntime.ts`; browser feature owners. | Emerging browser protocol; app runtime is replaceable. | `spec-complete` | `undocumented` |
+| Browser adapter | Runtime registers 50 app tools. | WebMCP; `webMcpRuntime.ts`; browser feature owners. | Emerging browser protocol; app runtime is replaceable. | `spec-complete` | `undocumented` |
 | Worker adapter | Adapter authenticates and correlates remote MCP requests. | HTTP JSON-RPC; `index.ts`; bearer secret + transport session config. | Open protocol; current worker runtime is replaceable. | `spec-complete` | `undocumented` |
 | Worker registry | Registry catalogs 10 control-plane tools. | Typed discovery; `tool-registry.mjs`; tool-owner gates. | Tool owners may have separate cost/licensing decisions. | `spec-complete` | `undocumented` |
 
@@ -305,7 +305,7 @@ invocation, trust, and token-cost ownership remains in
 |---|---|---|---|
 | Local client ↔ stdio adapter | MCP JSON-RPC over stdio | Local catalog source | Typed unavailable/validation/tool error |
 | Reader client ↔ Pages adapter | MCP JSON-RPC over HTTP | Seven-name companion catalog | Typed protocol/read error |
-| Browser client ↔ app runtime | WebMCP typed descriptors | 42-name shared source contract | Typed unavailable/denied error |
+| Browser client ↔ app runtime | WebMCP typed descriptors | 50-name shared source contract | Typed unavailable/denied error |
 | Remote client ↔ Worker adapter | MCP JSON-RPC over HTTP + bearer + session id | Ten-name companion catalog | Unauthorized/session/approval/tool error |
 
 This is the federation contract; it points to the companion capability catalogs
@@ -325,7 +325,7 @@ endpoint ownership.
 | Security | Missing Worker auth/session or control approval produces no dispatch. | Validate before registry/tool owner. | Negative auth/session/approval VCC. |
 | Performance | Tool discovery responds within 1 second p95 at the selected runtime target. | Static registry; no model call. | Bounded runtime measurement. |
 | Determinism | Equal registry source yields equal ordered identity set after canonical sorting. | Source-owned definitions and uniqueness checks. | Repeat count/name check twice. |
-| Browser reach | Pages reads work in an MCP client; 42-tool WebMCP is app-local. | Separate adapters. | Pages and browser VCCs. |
+| Browser reach | Pages reads work in an MCP client; 50-tool WebMCP is app-local. | Separate adapters. | Pages and browser VCCs. |
 | Mobile reach | HTTP reads depend on a mobile MCP-capable client; app controls depend on browser capability. | Graceful capability boundary. | Supported-client inventory plus clean-client VCC. |
 | Offline behavior | Local stdio and already-loaded app state may remain usable; HTTP surfaces return explicit unavailable. | No hidden network fallback. | Network-off negative-path check. |
 | Token cost | Discovery/read is exactly 0 model tokens. | No model executor on reads. | Cost-spy assertion. |
@@ -345,7 +345,7 @@ endpoint ownership.
 | ID | End state | Stated check | Constraint / bound | Evidence Reference |
 |---|---|---|---|---|
 | `VCC-MCP-01` | Pages discovery returns exactly 7 read-only tools. | Run the focused Pages parity test and surface its count and names. | No guarded control is present; one run. | None recorded |
-| `VCC-MCP-02` | App WebMCP exposes exactly 42 tools split 30/12. | Run the focused WebMCP runtime test and surface annotation counts. | No duplicate name; one run. | None recorded |
+| `VCC-MCP-02` | App WebMCP exposes exactly 50 tools split 31/19. | Run the focused WebMCP runtime test and surface annotation counts. | No duplicate name; one run. | None recorded |
 | `VCC-MCP-03` | Worker registry exposes exactly 10 tools. | Run the Worker registry test and surface count and names. | No duplicate name; one run. | None recorded |
 | `VCC-MCP-04` | Worker transport rejects missing bearer auth and preserves the initialized session id. | Run the focused remote grammar/session test and surface auth and header assertions. | No unauthenticated control execution; one run. | None recorded |
 | `VCC-MCP-05` | All eight linked contracts use ladder-only local and delivered rungs. | Run frontmatter/schema validation and surface every derived rung. | Only the permitted document set changes; stop on the first schema error. | None recorded |
@@ -394,7 +394,7 @@ completion from narrative.
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-MCP-SERVICE-PRD-TAD-ADR-MVP-GTM@0.5.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-MCP-SERVICE-PRD-TAD-ADR-MVP-GTM@0.5.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|

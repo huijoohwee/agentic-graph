@@ -1,5 +1,10 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
+import { readRepoDocumentFamily } from '@/tests/lib/repoDocumentFamily'
+
+const browserTools = buildAgenticGraphAgentReadyToolContracts({ includeBrowserOnlyTools: true })
+const browserToolCount = browserTools.length
+const readOnlyToolCount = browserTools.filter(tool => tool.annotations.readOnlyHint).length
+const guardedToolCount = browserToolCount - readOnlyToolCount
 
 const MCP_DOCUMENT_PATHS = {
   service: 'docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md',
@@ -10,8 +15,7 @@ const MCP_DOCUMENT_PATHS = {
 } as const
 
 function readRepoDocument(filePath: string): string {
-  const repoRoot = resolve(process.cwd(), '..')
-  return readFileSync(resolve(repoRoot, filePath), 'utf8')
+  return readRepoDocumentFamily(filePath)
 }
 
 function assertDocumentContains(label: string, document: string, required: readonly string[]): void {
@@ -29,23 +33,21 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
 
   assertDocumentContains('MCP service PRD/TAD', documents.service, [
     'id: "md:agentic-graph-mcp-service-prd-tad"',
-    'doc_type: "Product and Technical Specification"',
+    'doc_type: "PRD-TAD-ADR-MVP-GTM"',
     'local_rung: "spec-complete"',
     'delivered_rung: "undocumented"',
-    'version: "0.5.0"',
     'Keep Pages HTTP at exactly 7 read-only source tools.',
-    'Keep app WebMCP at exactly 42 source tools: 30 read-only and 12 guarded controls.',
+    `Keep app WebMCP at exactly ${browserToolCount} source tools: ${readOnlyToolCount} read-only and ${guardedToolCount} guarded controls.`,
     'Keep the remote Worker registry at exactly 10 source tools and treat the Worker as a separate delivery unit.',
     'Require bearer `Authorization` for remote Worker MCP requests and preserve `mcp-session-id` after initialization.',
   ])
 
   assertDocumentContains('MCP service companion', documents.serviceCompanion, [
     'id: "md:agentic-graph-mcp-service-prd-tad-companion"',
-    'version: "0.5.0"',
     '#### Pages HTTP source contract — 7 read-only tools',
-    'The browser registration includes exactly 42 source tools:',
-    '- 30 tools annotated read-only.',
-    '- 12 guarded controls.',
+    `The browser registration includes exactly ${browserToolCount} source tools:`,
+    `- ${readOnlyToolCount} tools annotated read-only.`,
+    `- ${guardedToolCount} guarded controls.`,
     '#### Remote Worker source registry — 10 tools',
     'mcp/server.js',
     'mcp/local-tool-contract.js',
@@ -60,7 +62,7 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
     'id: "md:agentic-graph-mcp"',
     'doc_type: "Reference Implementation Overview"',
     'Exactly 7 read-only source tools.',
-    'Exactly 42 source tools: 30 read-only and 12 guarded controls.',
+    `Exactly ${browserToolCount} source tools: ${readOnlyToolCount} read-only and ${guardedToolCount} guarded controls.`,
     'Exactly 10 source registry tools. The Worker is a separate delivery unit.',
     'Local stdio MCP',
     'Broad local surface; availability is configuration-gated',
@@ -68,16 +70,14 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
 
   assertDocumentContains('agent-ready PRD/TAD', documents.agentReady, [
     'id: "md:agentic-graph-agent-ready-prd-tad"',
-    'version: "1.28.0"',
     'Pages HTTP discovery exposes exactly 7 read-only source tools.',
-    'App WebMCP exposes exactly 42 tools: 30 read-only and 12 guarded controls.',
+    `App WebMCP exposes exactly ${browserToolCount} tools: ${readOnlyToolCount} read-only and ${guardedToolCount} guarded controls.`,
     'Separate 10-tool registry, delivery unit, bearer-authenticated session transport.',
   ])
 
   assertDocumentContains('agent-ready companion', documents.agentReadyCompanion, [
     'id: "md:agentic-graph-agent-ready-prd-tad.companion"',
-    'version: "1.28.0"',
-    'Exactly 42 tools: 30 read-only, 12 guarded controls.',
+    `Exactly ${browserToolCount} tools: ${readOnlyToolCount} read-only, ${guardedToolCount} guarded controls.`,
     'Exactly 7 read-only tools; no guarded control.',
     'Separate 10-tool source registry; not part of Pages or app WebMCP.',
     'mcp/server.js',

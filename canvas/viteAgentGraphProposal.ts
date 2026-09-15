@@ -1,5 +1,4 @@
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import type { ServerResponse } from 'node:http'
 import { runAgentGraphTool } from '../mcp/agent-graph-host.js'
@@ -37,9 +36,8 @@ export async function runAgentGraphProposal(input: RecordValue, context: {
 }) {
   const absoluteDocsRoot = resolveAgenticCanvasOsDocsRoot(context)
   const sourceRevision = await resolveAgenticCanvasOsDocsRevision({ absoluteDocsRoot, env: context.env })
-  const load = (name: string) => import(/* @vite-ignore */ pathToFileURL(path.join(absoluteDocsRoot, '../src', name)).href)
   const [contract, { createAgenticGraphClient }] = await Promise.all([
-    load('launch-copilot-contract.js'), load('agentic-graph-mcp-contract.js'),
+    import('../mcp/agent-graph/launch-copilot-contract.js'), import('agentic-os/agents/agentic-graph-mcp-contract'),
   ])
   if (['handoff-review', 'handoff-approve', 'handoff-status'].includes(input.action)) return (await import('./viteAgentGraphHandoff')).runLaunchHandoff(input, context, contract.LAUNCH_COPILOT_ROLES)
   return executeAgentGraphProposal(input, context, contract, createAgenticGraphClient, sourceRevision)

@@ -303,7 +303,7 @@ export const readAuthorizationRuntime = async ({
   loadRuntimeModule = specifier => import(specifier),
 }) => {
   const runtimeModuleUrl = pathToFileURL(path.join(
-    agenticCanvasOsRoot,
+    repositoryRoot,
     'scripts',
     'local-runtime-lib.mjs',
   )).href
@@ -422,16 +422,16 @@ const main = async () => {
       lifecycleCandidate,
     })
     const repositoryRoot = path.resolve(import.meta.dirname, '..')
-    const agenticCanvasOsRoot = path.resolve(repositoryRoot, '..', 'agentic-canvas-os')
+    const agenticCanvasOsRoot = path.resolve(repositoryRoot, '..', 'agentic-os')
     requireCanonicalRevision(repositoryRoot, run.head_sha, 'agentic-graph')
     const dependencyOptions = { repositoryRoot, agenticCanvasOsRoot,
       sourceRevision: run.head_sha, dependencyRevision: releaseCandidate.agenticCanvasOs.revision }
     await verifyCanonicalReleaseDependency(dependencyOptions)
     const runtime = await readAuthorizationRuntime({ agenticCanvasOsRoot, repositoryRoot })
     const promptContract = await import(pathToFileURL(path.join(
-      agenticCanvasOsRoot,
+      repositoryRoot,
       'scripts',
-      'production-release-authorization-contract.mjs',
+      'local-review-contract.mjs',
     )).href)
     promptContract.validateProductionReleaseCandidate(releaseCandidate)
     const prompt = promptContract.createProductionAuthorizationPrompt(

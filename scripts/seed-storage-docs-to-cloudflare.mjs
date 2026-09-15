@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises'
+import { readRuntimeDocsSources, readDocsSourceFileContent } from './runtime-docs-sources.mjs'
+import { resolveAgenticCanvasOsDocsRoot } from '../mcp/agentic-canvas-os-docs-runtime.js'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
@@ -66,7 +68,7 @@ const normalizeString = (value) => String(value || '').trim()
 
 const docsRoot = normalizeString(getArgValue('--docs-root'))
   || normalizeString(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT)
-  || path.resolve(githubRoot, 'agentic-canvas-os', 'docs')
+  || resolveAgenticCanvasOsDocsRoot({ rootDir: agenticGraphRoot })
 const baseUrl = normalizeString(getArgValue('--base-url')) || 'https://airvio.co'
 const isCanonicalProductionOrigin = new URL(baseUrl).origin === 'https://airvio.co'
 const workspaceId = normalizeString(getArgValue('--workspace-id')) || 'kgws:canonical-docs'
@@ -121,28 +123,11 @@ const walkDocsSourceFiles = async (rootDir) => {
 const toPosixRel = (rootDir, filePath) =>
   path.relative(rootDir, filePath).split(path.sep).filter(Boolean).join('/')
 
-const readDocsSourceFileContent = async (filePath) => {
-  const ext = path.extname(filePath).toLowerCase()
-  if (ext === '.glb') {
-    const bytes = await fs.readFile(filePath)
-    return {
-      contentMd: bytes.toString('base64'),
-      contentHash: contentHash(bytes),
-      docType: 'glb',
-    }
-  }
-  const text = await fs.readFile(filePath, 'utf8')
-  return {
-    contentMd: String(text || ''),
-    contentHash: contentHash(String(text || '')),
-    docType: ext === '.gltf' ? 'gltf' : 'markdown',
-  }
-}
 
 const buildDocumentSeed = async (args) => {
   const stats = await fs.stat(args.filePath)
-  const fileContent = await readDocsSourceFileContent(args.filePath)
-  const relPath = toPosixRel(args.docsRoot, args.filePath)
+  const fileContent = await readDocsSourceFileContent(args.filePath, args.sourceBytes)
+  const relPath = args.logicalPath || toPosixRel(args.docsRoot, args.filePath)
   const canonicalPath = `${DEFAULT_CANONICAL_DOCS_ROOT}/${relPath}`
   const revision = Math.max(1, Math.floor(stats.mtimeMs))
   const documentId = `docs:${contentHash(canonicalPath).slice(0, 24)}`
@@ -491,7 +476,10 @@ const run = async () => {
     await emitEvidence(evidence)
     return
   }
-  const docsSourceFiles = await walkDocsSourceFiles(docsRoot)
+  const nativeSource = path.basename(docsRoot) === 'dictionaries' && path.basename(path.dirname(docsRoot)) === 'catalog'
+  const sources = nativeSource ? await readRuntimeDocsSources({ docsRoot, graphRoot: agenticGraphRoot }) : null
+  // Historical rollback restores its exact original flat checkout.
+  const docsSourceFiles = sources ? sources.map(entry => entry.filePath) : await walkDocsSourceFiles(docsRoot)
   if (docsSourceFiles.length === 0) {
     throw new Error(`No supported source files found under docs root: ${docsRoot}`)
   }
@@ -500,6 +488,8 @@ const run = async () => {
   for (let i = 0; i < docsSourceFiles.length; i += 1) {
     const seed = await buildDocumentSeed({
       filePath: docsSourceFiles[i],
+      logicalPath: sources?.[i].fileName,
+      sourceBytes: sources?.[i].bytes,
       docsRoot,
       workspaceId,
     })
