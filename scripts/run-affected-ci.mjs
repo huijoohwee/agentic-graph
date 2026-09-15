@@ -64,6 +64,7 @@ export const readChangedPaths = ({
 }
 
 const runCommand = (command, timeoutMs) => new Promise((resolve, reject) => {
+  const started = performance.now()
   const [executable, ...args] = command
   const child = spawn(executable, args, { cwd: repoRoot, env: process.env, stdio: 'inherit' })
   let timedOut = false
@@ -76,6 +77,7 @@ const runCommand = (command, timeoutMs) => new Promise((resolve, reject) => {
   }, timeoutMs)
   child.on('error', reject)
   child.on('close', code => {
+    console.log(`[agentic-graph] ${command.join(' ')}: ${((performance.now() - started) / 1000).toFixed(2)}s, exit ${code}`)
     clearTimeout(timeout)
     clearTimeout(forceKillTimer)
     if (code === 0 && !timedOut) resolve()

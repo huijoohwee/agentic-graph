@@ -7,6 +7,7 @@ import { oauthRandom, openOAuthState, sealOAuthState, OAUTH_COOKIE, safeOAuthRet
 import { admitOAuthRequest, OAUTH_DAILY_REQUESTS } from './storageOAuthQuota'
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS, AGENTIC_OS_STORAGE_SYNC_API_VERSION, hashAgenticGraphStorageContent } from './contract'
 import { resetAccessJwksCacheForTest } from '../agentic-graph-travel-operator-gateway/access-jwt'
+import { registerOAuthPersonalWorkspace, OAUTH_SIGNUP_ACCOUNT_LIMIT } from './storageOAuthSignup'
 
 const origin = 'https://storage.example.test', now = Date.now(), secret = 'test-secret-'.repeat(4)
 const env = { DB: null, AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE: 'oauth', AGENTIC_OS_STORAGE_SIGNING_SECRET: secret,
@@ -74,6 +75,11 @@ test('public privacy page works without storage credentials and login does not a
   try {
     const login = await invoke(f, AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin)
     assert.equal(login.status, 200)
+    assert.match(login.headers.get('content-security-policy')!, /form-action 'self' https:\/\/github.com https:\/\/accounts.google.com;/)
+    assert.equal(login.headers.get('referrer-policy'), 'same-origin')
+    const githubOnly = await route({ request: new Request(origin + AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin), db: f.d1,
+      env: { ...env, DB: f.d1, AGENTIC_OS_STORAGE_GOOGLE_CLIENT_ID: '', AGENTIC_OS_STORAGE_GOOGLE_CLIENT_SECRET: '' } })
+    assert.doesNotMatch(githubOnly.headers.get('content-security-policy')!, /accounts.google.com|\*/)
     const body = await login.text()
     assert.match(body, /Continue with GitHub/); assert.match(body, /Continue with Google/)
     assert.match(body, /Privacy and storage/); assert.doesNotMatch(body, /access_key/)
@@ -245,5 +251,98 @@ test('revocation during account linking is checked atomically before identity in
       { headers: { cookie: cookieOf(response) } })
     assert.equal(result.status, 403)
     assert.equal(Number(f.sql.prepare('SELECT count(*) AS n FROM auth_identities').get()!.n), 0)
+  } finally { await f.close() }
+})
+
+test('login metadata exposes only configured same-origin actions; signup requires an explicit same-origin POST', async () => {
+  const f = await fixture()
+  try {
+    const response = await invoke(f, '/api/storage/auth/login?format=json')
+    assert.equal(response.headers.get('cache-control'), 'no-store')
+    const metadata = await response.json()
+    assert.equal(metadata.schema, 'agentic-graph/storage-login-options/v1')
+    assert.deepEqual(metadata.providers.map((p: { id: string; method: string }) => [p.id, p.method]), [['github', 'GET'], ['google', 'GET']])
+    assert.doesNotMatch(JSON.stringify(metadata), /test-client-secret|test-google-secret|test-secret|clientId|linkHref/)
+    const signupMetadata = await (await invoke(f, '/api/storage/auth/login?format=json&intent=signup')).json()
+    assert.ok(signupMetadata.providers.every((p: { method: string }) => p.method === 'POST'))
+    const path = '/api/storage/auth/login?provider=github&intent=signup'
+    assert.equal((await invoke(f, path)).status, 403)
+    assert.equal((await invoke(f, path, { method: 'POST', headers: { origin: 'https://foreign.test' } })).status, 403)
+    assert.equal((await invoke(f, path, { method: 'POST' })).status, 403)
+    assert.equal(Number(f.sql.prepare('SELECT count(*) n FROM auth_identities').get()!.n), 0)
+  } finally { await f.close() }
+})
+
+test('explicit signup completes private upload/readback while foreign workspace access and replay are denied', async () => {
+  const f = await fixture()
+  try {
+    const begin = await invoke(f, '/api/storage/auth/login?provider=github&intent=signup&return_to=%2Feditor',
+      { method: 'POST', headers: { origin } })
+    assert.equal(begin.status, 303)
+    const state = new URL(begin.headers.get('location')!).searchParams.get('state')
+    const callback = '/api/storage/auth/callback?state=' + state + '&code=valid-code'
+    const login = await invoke(f, callback, { headers: { cookie: cookieOf(begin) } })
+    assert.equal(login.status, 303, await login.clone().text())
+    assert.equal(login.headers.get('location'), '/editor')
+    const cookie = cookieOf(login)
+    const account = await (await invoke(f, '/api/storage/auth/session', { headers: { cookie } })).json()
+    assert.equal(account.authenticated, true); assert.equal(account.workspaces.length, 1)
+    const workspaceId = account.workspaces[0].id
+    assert.match(workspaceId, /^kgws:personal:/)
+    assert.notEqual(workspaceId, f.workspaceId)
+    assert.equal(f.sql.prepare('SELECT visibility FROM workspaces WHERE id=?').get(workspaceId)!.visibility, 'private')
+    assert.equal((await invoke(f, '/api/storage/auth/session?workspace_id=' + f.workspaceId, { headers: { cookie } })).status, 403)
+    const content = '# Private signup draft\n'
+    const record = { id: 'signup-document', workspaceId, canonicalPath: 'draft.md', title: null, docType: null,
+      lang: null, graphId: null, sourceKind: 'markdown', contentMd: content, contentHash: hashAgenticGraphStorageContent(content),
+      parserVersion: 'fixture-v1', revision: 1, deleted: false, updatedAtMs: now }
+    const request = { method: 'POST', headers: { cookie, origin, 'content-type': 'application/json' },
+      body: JSON.stringify({ apiVersion: AGENTIC_OS_STORAGE_SYNC_API_VERSION, workspaceId, deviceId: 'signup:test',
+        mutations: [{ mutationId: 'signup:upload', workspaceId, entity: 'document', op: 'upsert',
+          recordId: record.id, baseRevision: null, record }] }) }
+    const pushed = await f.request(AGENTIC_OS_STORAGE_ROUTE_PATHS.push, request)
+    assert.equal(pushed.status, 200, await pushed.clone().text())
+    assert.equal((await pushed.json()).acknowledgements[0].status, 'applied')
+    const read = await f.request('/api/storage/doc/' + encodeURIComponent(workspaceId) + '/draft.md', { headers: { cookie } })
+    assert.equal(read.status, 200); assert.equal(await read.text(), content)
+    assert.equal((await invoke(f, callback, { headers: { cookie: cookieOf(begin) } })).status, 401)
+    assert.equal((await invoke(f, '/api/storage/auth/logout', { method: 'POST', headers: { cookie, origin } })).status, 204)
+    assert.equal((await f.request(AGENTIC_OS_STORAGE_ROUTE_PATHS.push, request)).status, 401)
+  } finally { await f.close() }
+})
+
+test('concurrent signup is idempotent and cannot revive a revoked user or membership', async () => {
+  const f = await fixture()
+  try {
+    const register = () => registerOAuthPersonalWorkspace({ db: f.d1, provider: 'github', subject: 'new-user', now })
+    const users = await Promise.all([register(), register()])
+    assert.equal(users[0], users[1])
+    assert.equal(Number(f.sql.prepare('SELECT count(*) n FROM users').get()!.n), 2)
+    assert.equal(Number(f.sql.prepare('SELECT count(*) n FROM workspace_memberships').get()!.n), 2)
+    f.sql.prepare("UPDATE workspace_memberships SET status='revoked' WHERE user_id=?").run(users[0])
+    await register()
+    assert.equal(f.sql.prepare('SELECT status FROM workspace_memberships WHERE user_id=?').get(users[0])!.status, 'revoked')
+    f.sql.prepare("UPDATE users SET status='disabled' WHERE id=?").run(users[0])
+    await assert.rejects(register, /account is unavailable/)
+    assert.equal(f.sql.prepare('SELECT status FROM users WHERE id=?').get(users[0])!.status, 'disabled')
+  } finally { await f.close() }
+})
+
+test('signup capacity never rolls over and failed D1 batches leave no partial account', async () => {
+  const f = await fixture()
+  try {
+    f.sql.prepare("INSERT INTO storage_oauth_budget VALUES ('signup-total',0,?)").run(OAUTH_SIGNUP_ACCOUNT_LIMIT - 1)
+    const outcomes = await Promise.allSettled(['one', 'two'].map(subject =>
+      registerOAuthPersonalWorkspace({ db: f.d1, provider: 'github', subject, now })))
+    assert.equal(outcomes.filter(result => result.status === 'fulfilled').length, 1)
+    await assert.rejects(registerOAuthPersonalWorkspace({ db: f.d1, provider: 'github', subject: 'later', now: now + 86400000 }), /capacity is full/)
+    assert.equal(Number(f.sql.prepare("SELECT used FROM storage_oauth_budget WHERE bucket='signup-total'").get()!.used), OAUTH_SIGNUP_ACCOUNT_LIMIT)
+    f.sql.prepare("DELETE FROM storage_oauth_budget WHERE bucket='signup-total'").run()
+    const counts = () => ['users', 'workspaces', 'auth_identities', 'workspace_memberships'].map(table => f.sql.prepare('SELECT count(*) n FROM ' + table).get()!.n)
+    const before = counts()
+    f.sql.exec("CREATE TRIGGER fail_signup BEFORE INSERT ON workspaces BEGIN SELECT RAISE(ABORT, 'fixture batch failure'); END")
+    await assert.rejects(registerOAuthPersonalWorkspace({ db: f.d1, provider: 'google', subject: 'batch-fails', now }), /fixture batch failure/)
+    assert.deepEqual(counts(), before)
+    assert.equal(Number(f.sql.prepare("SELECT used FROM storage_oauth_budget WHERE bucket='signup-total'").get()!.used), 1)
   } finally { await f.close() }
 })

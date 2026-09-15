@@ -1,4 +1,5 @@
-import { oauthPageHeaders as headers, oauthLoginPage } from './storageOAuthPages'
+import { oauthPageHeaders as headers, oauthLoginPage, oauthLoginOptions, oauthErrorBody } from './storageOAuthPages'
+import { registerOAuthPersonalWorkspace } from './storageOAuthSignup'
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from './contract'
 import { hashAgenticGraphStorageAuthSessionToken, readAgenticGraphStorageBrowserSessionToken } from './chatAuth'
 import { queryFirst, readActiveAuthSessionByHash, readAuthIdentityUser, type D1DatabaseLike } from './db'
@@ -6,20 +7,22 @@ import { admitOAuthRequest, consumeOAuthChallenge, saveOAuthChallenge } from './
 import { exchangeOAuthIdentity, oauthAuthorizationUrl, OAuthFailure, OAUTH_ISSUERS, type OAuthConfiguration, type OAuthFetch } from './storageOAuthProviders'
 import { oauthCookie, oauthRandom, openOAuthState, readOAuthCookie, safeOAuthReturnTo, sealOAuthState, type OAuthProvider, type OAuthState } from './storageOAuthState'
 
-export const oauthFailureResponse = (status: number, message: string, clear = false): Response => new Response(message, {
-  status, headers: { ...headers, 'content-type': 'text/plain; charset=utf-8',
+export const oauthFailureResponse = (status: number, message: string, clear = false, returnTo = '/', origin = ''): Response => new Response(oauthErrorBody(message, returnTo, origin), {
+  status, headers: { ...headers, 'content-type': 'text/html; charset=utf-8',
     ...(status === 429 ? { 'retry-after': '86400' } : {}), ...(clear ? { 'set-cookie': oauthCookie('') } : {}) },
 })
 export const runOAuthFlow = async (args: { request: Request; db: D1DatabaseLike; config: OAuthConfiguration;
   now: number; fetcher?: OAuthFetch }): Promise<Response | { userId: string; returnTo: string }> => {
   const { request, db, config, now } = args, url = new URL(request.url)
   const callback = url.pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.browserCallback
+  let failureReturnTo = '/', retryOrigin = url.origin
   try {
     if (callback) {
       if (request.method !== 'GET') throw new OAuthFailure(405, 'Sign-in callback requires GET.')
       const state = await openOAuthState(readOAuthCookie(request), config.secret, now)
       if (!state || !config.origins.includes(state.origin) || url.searchParams.getAll('state').length !== 1
         || url.searchParams.get('state') !== state.state) throw new OAuthFailure(401, 'Sign-in expired or browser state is invalid. Start again.')
+      failureReturnTo = state.returnTo; retryOrigin = state.origin
       if (!await admitOAuthRequest(db, request, config.secret, now)) throw new OAuthFailure(429, 'Sign-in budget reached. Local files remain available.')
       if (!await consumeOAuthChallenge(db, state.state, now)) throw new OAuthFailure(401, 'This sign-in was already used or expired. Start again.')
       const code = url.searchParams.get('code') || ''
@@ -46,6 +49,7 @@ export const runOAuthFlow = async (args: { request: Request; db: D1DatabaseLike;
         if (linked.user_id !== session.user_id) throw new OAuthFailure(409, 'This identity is already connected to another account.')
         return new Response(null, { status: 303, headers: { ...headers, location: state.returnTo, 'set-cookie': oauthCookie('') } })
       }
+      if (state.signup) return { userId: await registerOAuthPersonalWorkspace({ db, provider: state.provider, subject, now }), returnTo: state.returnTo }
       const identity = await readAuthIdentityUser(db, identityKey)
       if (!identity || identity.user_status !== 'active') throw new OAuthFailure(403,
         'This identity has no workspace access. Sign in with a connected account, then connect this provider from the sign-in page.')
@@ -54,29 +58,37 @@ export const runOAuthFlow = async (args: { request: Request; db: D1DatabaseLike;
     const origin = url.searchParams.get('return_origin') || url.origin
     const returnTo = safeOAuthReturnTo(url.searchParams.get('return_to') || '/')
     if (!returnTo || !config.origins.includes(origin)) throw new OAuthFailure(400, 'Sign-in origin or return path is not allowed.')
+    failureReturnTo = returnTo; retryOrigin = origin
     const token = readAgenticGraphStorageBrowserSessionToken(request)
     const sessionHash = token ? await hashAgenticGraphStorageAuthSessionToken(token) : ''
     const session = sessionHash ? await readActiveAuthSessionByHash(db, sessionHash, new Date(now).toISOString()) : null
     const canLink = session?.user_status === 'active'
     const provider = url.searchParams.get('provider') as OAuthProvider | null
-    if (!provider && request.method === 'GET') return oauthLoginPage(config, origin, returnTo, canLink)
+    const signup = url.searchParams.get('intent') === 'signup'
+    if (!provider && request.method === 'GET') {
+      if (url.searchParams.get('format') === 'json') return Response.json(oauthLoginOptions(config, origin, returnTo, canLink, signup), { headers })
+      return oauthLoginPage(config, origin, returnTo, canLink, signup)
+    }
     if (!provider || !Object.hasOwn(config.clients, provider)) throw new OAuthFailure(400, 'Choose a configured sign-in provider.')
     const linking = url.searchParams.get('intent') === 'link'
     if (linking && (request.method !== 'POST' || request.headers.get('origin') !== url.origin || !canLink)) {
       throw new OAuthFailure(403, 'Connecting an account requires an active same-origin session.')
     }
-    if (!linking && request.method !== 'GET') throw new OAuthFailure(405, 'Sign in requires GET.')
+    if (signup && (request.method !== 'POST' || request.headers.get('origin') !== url.origin))
+      throw new OAuthFailure(403, 'Creating an account requires an explicit same-origin request.')
+    if (!linking && !signup && request.method !== 'GET') throw new OAuthFailure(405, 'Sign in requires GET.')
     if (!await admitOAuthRequest(db, request, config.secret, now)) throw new OAuthFailure(429, 'Sign-in budget reached. Local files remain available.')
     const state: OAuthState = { provider, origin, returnTo, clientId: config.clients[provider]!.id,
       state: oauthRandom(), verifier: oauthRandom(), nonce: oauthRandom(), issuedAt: now,
       ...(linking ? { linkSessionHash: sessionHash } : {}),
+      ...(signup ? { signup: true as const } : {}),
     }
     const sealed = await sealOAuthState(state, config.secret)
     await saveOAuthChallenge(db, state.state, now)
     return new Response(null, { status: 303, headers: { ...headers,
       location: await oauthAuthorizationUrl(state), 'set-cookie': oauthCookie(sealed) } })
   } catch (error) {
-    return error instanceof OAuthFailure ? oauthFailureResponse(error.status, error.message, callback)
-      : oauthFailureResponse(503, 'Sign-in storage is unavailable. Your local files remain available.', callback)
+    return error instanceof OAuthFailure ? oauthFailureResponse(error.status, error.message, callback, failureReturnTo, retryOrigin)
+      : oauthFailureResponse(503, 'Sign-in storage is unavailable. Your local files remain available.', callback, failureReturnTo, retryOrigin)
   }
 }
