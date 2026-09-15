@@ -53,3 +53,16 @@ test('81rv10 serves its own mirrored entry without swallowing output documents o
   assert.equal(destination(routes, '/81rv10/proposals/missing.md'), null)
   assert.equal(buildAgenticGraphRedirects({ existing: routes, rootFiles: ['sw.js'] }), routes)
 })
+
+test('requested GameXR casing reaches its existing application without changing sibling routes', () => {
+  const existing = '/GameXR /stale 302\n/GameXR/* /stale/:splat 302\n/gamexr/* /content/gamexr/:splat 200\n/GameXR-tools /tools 302\n'
+  const routes = buildAgenticGraphRedirects({ existing, rootFiles: [] })
+  for (const suffix of ['', '/', '/assets/model.js']) {
+    assert.deepEqual(destination(routes, '/GameXR' + suffix), {
+      target: '/gamexr' + (suffix || '/'), status: '301',
+    })
+  }
+  assert.deepEqual(destination(routes, '/gamexr/assets/model.js'), { target: '/content/gamexr/assets/model.js', status: '200' })
+  assert.deepEqual(destination(routes, '/GameXR-tools'), { target: '/tools', status: '302' })
+  assert.equal(buildAgenticGraphRedirects({ existing: routes, rootFiles: [] }), routes)
+})

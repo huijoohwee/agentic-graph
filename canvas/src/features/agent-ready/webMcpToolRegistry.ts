@@ -50,15 +50,14 @@ import { buildCanvasViewWebMcpToolBuilders } from './canvasViewWebMcpTools'
 import { buildCanvasInteractionWebMcpToolBuilders } from './canvasInteractionWebMcpTools'
 import { buildWorkspaceLaunchWebMcpToolBuilders } from './workspaceLaunchWebMcpTools'
 import { buildToolbarActionWebMcpToolBuilders } from './toolbarActionWebMcpTools'
+import { buildDurableRunWebMcpToolBuilders } from './durableRunWebMcpTools'
 import type { AgentReadyToolContract, WebMcpTool, WebMcpToolInput } from './webMcpRuntimeTypes'
 import type { ErrorObject, ValidateFunction } from 'ajv'
-
 export type WebMcpToolRegistry = {
   tools: readonly WebMcpTool[]
   get(name: string): WebMcpTool | null
   execute(name: string, input?: WebMcpToolInput): Promise<unknown>
 }
-
 export class WebMcpToolInputValidationError extends Error {
   readonly toolName: string
   readonly missingFields: readonly string[]
@@ -566,6 +565,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...CANVAS_INTERACTION_WEB_MCP_TOOL_BUILDERS,
   ...WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS,
   ...TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS,
+  ...buildDurableRunWebMcpToolBuilders(findWebToolContract),
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,

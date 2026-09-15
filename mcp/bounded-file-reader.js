@@ -9,7 +9,9 @@ const sameSnapshot = (left, right) =>
   sameFile(left, right)
   && left.size === right.size
   && left.mtimeMs === right.mtimeMs
-  && left.ctimeMs === right.ctimeMs;
+  && left.ctimeMs === right.ctimeMs
+  && left.mode === right.mode && left.uid === right.uid && left.nlink === right.nlink;
+const privateFile = stat => stat.uid === process.getuid() && stat.nlink === 1 && (stat.mode & 0o077) === 0;
 const within = (parent, candidate) => {
   const relative = path.relative(parent, candidate);
   return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);
@@ -40,6 +42,7 @@ export async function readStableBoundedFile({
   minimumBytes = 0,
   maximumBytes,
   afterOpen,
+  requirePrivate = false,
 }) {
   if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1
     || !Number.isSafeInteger(minimumBytes) || minimumBytes < 0
@@ -54,6 +57,7 @@ export async function readStableBoundedFile({
   const pathStat = await fs.lstat(filePath);
   const fileReal = await fs.realpath(filePath);
   if (!pathStat.isFile() || pathStat.isSymbolicLink()
+    || requirePrivate && !privateFile(pathStat)
     || !within(directoryReal, fileReal)) {
     throw fail("BOUNDED_FILE_UNSAFE", "File is not a contained non-symlink regular file.");
   }
@@ -68,10 +72,10 @@ export async function readStableBoundedFile({
   try {
     handle = await fs.open(
       filePath,
-      constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0),
+      constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0),
     );
     const opened = await handle.stat();
-    if (!opened.isFile() || !sameFile(pathStat, opened)) {
+    if (!opened.isFile() || !sameFile(pathStat, opened) || requirePrivate && !privateFile(opened)) {
       throw fail("BOUNDED_FILE_CHANGED", "File identity changed before the bounded read.");
     }
     if (afterOpen) await afterOpen();
@@ -89,6 +93,7 @@ export async function readStableBoundedFile({
       fs.realpath(containingDirectory),
     ]);
     if (!sameSnapshot(opened, closedSnapshot)
+      || requirePrivate && !privateFile(finalPathStat)
       || !sameFile(closedSnapshot, finalPathStat)
       || finalPathStat.isSymbolicLink()
       || !sameFile(directoryStat, finalDirectoryStat)
