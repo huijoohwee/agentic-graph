@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Storage and Synchronization Owner Appendix"
 id: "md:agentic-graph-storage-sync-document.companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "5.0.1"
-date: "2026-09-12"
+version: "5.0.2"
+date: "2026-09-15"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.storage.sync.companion"
@@ -22,12 +22,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "5.0.0"
-prd_revision: "5.0.1"
-tad_revision: "5.0.1"
-adr_revision: "5.0.1"
-mvp_revision: "5.0.1"
-gtm_revision: "5.0.1"
+previous_document_version: "5.0.1"
+prd_revision: "5.0.2"
+tad_revision: "5.0.2"
+adr_revision: "5.0.2"
+mvp_revision: "5.0.2"
+gtm_revision: "5.0.2"
 ---
 
 # Reference implementation: agentic-graph Storage and Synchronization Owner Appendix
@@ -413,6 +413,32 @@ with owner approval, and their credentials stored in the protected production
 environment. Provider setup does not establish deployed runtime readiness.
 
 ## Browser sign-in and free quota
+
+### Native sign-in presentation
+
+CID `storage.browser-signin-presentation` joins PRD, TAD, ADR, MVP and GTM at
+appendix revision `5.0.2`. The user authorized the native design enhancement on
+2026-09-15 against source `ae70f31b4499e474c7a0eb306674eae17209dfb7`.
+PRD: a returning solo operator can identify a configured provider, continue to
+their workspace, or return to local files without confusing sign-in with account linking.
+TAD/SVO: `storageOAuthPages.ts` renders the configured authentication choices;
+`storageAuthPageStyles.ts` projects the existing shared `kgTokens.ts` palette into
+a responsive server-rendered surface. The flow owner still validates return origins,
+sessions and linking; presentation introduces no identity or persistence owner.
+ADR: reuse the [design guidelines](https://github.com/huijoohwee/huijoohwee.github.io/blob/e9675f27d1eb1e30ae6b8f82669ff7e546d85c65/guidelines/design-guidelines.md),
+semantic tokens, native links/forms and system typography. Separate provider sign-in
+from authenticated linking. Keep privacy secondary and the offline return explicit.
+No email field, signup promise, new provider, client script, external asset or dependency
+is introduced. The enhancement replaces the existing login styles only; privacy copy,
+permissions, quotas and operator exchange remain owned by their current contracts.
+MVP acceptance: desktop and 320px mobile layouts, light/dark themes, visible keyboard
+focus, minimum 44px action height, escaped return parameters and same-origin linking
+POSTs. The rendered login is capped at 16 KiB; the scope is four files and zero
+always-loaded browser bytes. Validate through existing OAuth tests and local browser
+review. Recovery is a source revert through protected integration.
+GTM: remove sign-in friction before Source Files sync; conversion and willingness to
+pay remain unmeasured. Local UI review does not establish callback or cloud-transfer
+success, and production deployment requires its own exact-candidate authorization.
 
 The optional `oauth` browser-auth mode uses the existing storage session, identity,
 and workspace-membership owners. `storageOAuthProviders.ts` owns GitHub App and

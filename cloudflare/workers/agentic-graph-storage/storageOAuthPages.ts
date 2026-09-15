@@ -1,19 +1,29 @@
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from './contract'
 import type { OAuthConfiguration } from './storageOAuthProviders'
+import { storageAuthPageStyles } from './storageAuthPageStyles'
 
 export const oauthPageHeaders = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff',
   'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'" }
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 export const oauthLoginPage = (config: OAuthConfiguration, origin: string, returnTo: string, canLink: boolean): Response => {
-  const buttons = Object.keys(config.clients).map(provider => {
+  const providers = Object.keys(config.clients).map(provider => {
     const query = new URLSearchParams({ provider, return_origin: origin, return_to: returnTo })
     const label = provider === 'github' ? 'GitHub' : 'Google'
-    return `<p><a href="${AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin}?${escape(query.toString())}">Sign in with ${label}</a></p>`
-      + (canLink ? `<form method="post" action="${AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin}?${escape(query.toString())}&intent=link"><button>Connect ${label} to this account</button></form>` : '')
-  }).join('')
-  return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in to Agentic Graph</title><style>body{font:1rem system-ui;margin:2rem auto;padding:1rem;max-width:30rem;line-height:1.6}a,button{display:block;padding:1rem;border:1px solid;border-radius:.5rem;font:inherit}button{width:100%;cursor:pointer}</style>
-<h1>Sign in to Agentic Graph</h1><p>Use a connected account to sync your files. Workspace access is managed separately.</p>${buttons}<p><a href="${AGENTIC_OS_STORAGE_ROUTE_PATHS.browserPrivacy}">Privacy and storage</a></p><p>Your local files remain available offline.</p></html>`,
+    return { label, href: `${AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin}?${escape(query.toString())}` }
+  })
+  const buttons = providers.map(({ label, href }) => `<a class="kg-auth-action" href="${href}">Continue with ${label}</a>`).join('')
+  const linking = canLink ? `<section class="kg-auth-linking" aria-labelledby="link-heading">
+<h2 id="link-heading">Connect another sign-in method</h2><p class="kg-auth-note">Add a provider to your current account.</p>
+<div class="kg-auth-providers">${providers.map(({ label, href }) => `<form method="post" action="${href}&amp;intent=link"><button class="kg-auth-action" type="submit">Connect ${label} to this account</button></form>`).join('')}</div></section>` : ''
+  return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in to Agentic Graph</title><style>${storageAuthPageStyles}</style></head><body>
+<main class="kg-auth" aria-labelledby="signin-heading"><div class="kg-auth-brand">
+<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="m8 9 16 7-16 7V9Z"/><circle cx="8" cy="9" r="3"/><circle cx="24" cy="16" r="3"/><circle cx="8" cy="23" r="3"/></svg><span>airvio</span></div>
+<h1 id="signin-heading">Sign in to Agentic Graph</h1><p class="kg-auth-intro">Continue to your workspace and sync your files.</p>
+<nav class="kg-auth-providers" aria-label="Sign-in providers">${buttons}</nav>
+<p class="kg-auth-note">Use an account connected to your workspace. <a href="${AGENTIC_OS_STORAGE_ROUTE_PATHS.browserPrivacy}">Privacy and storage</a></p>
+${linking}<footer class="kg-auth-footer"><p class="kg-auth-note">Your local files remain available offline.</p>
+<a class="kg-auth-return" href="${escape(returnTo)}">Return to local workspace</a></footer></main></body></html>`,
     { headers: { ...oauthPageHeaders, 'content-type': 'text/html; charset=utf-8' } })
 }
 export const oauthPrivacyPage = (method: string): Response => new Response(method === 'HEAD' ? null : `<!doctype html>
