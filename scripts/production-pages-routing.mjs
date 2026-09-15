@@ -15,6 +15,7 @@ const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const blockRegex = (start, end) => new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}\\n?`, 'g')
 const isManagedRoute = line => {
   const source = line.split(/\s/, 1)[0]
+  if (source === '/GameXR' || source === '/GameXR/*') return true
   return [CANONICAL_MIRROR_NAMESPACE, ...LEGACY_PRODUCT_NAMESPACES].some(namespace =>
     [ `/${namespace}`, `/content/${namespace}` ].some(prefix =>
       source === prefix || source.startsWith(`${prefix}/`)))
@@ -34,6 +35,8 @@ export const buildAgenticGraphRedirects = ({ existing, rootFiles }) => {
   const namespaceLines = [
     GENERATED_NAMESPACE_START,
     '/81rv10 /81rv10/ 308',
+    // Root-owner projection of GameXR/deployment/cloudflare/redirects.fragment.
+    '/GameXR /gamexr/ 301', '/GameXR/* /gamexr/:splat 301',
     ...LEGACY_PRODUCT_NAMESPACES.flatMap(namespace => [
       `/${namespace} ${canonicalBase} 301`, `/${namespace}/ ${canonicalBase}/ 301`,
       `/${namespace}/* ${canonicalBase}/:splat 301`,

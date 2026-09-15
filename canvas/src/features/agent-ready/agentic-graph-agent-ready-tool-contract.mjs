@@ -3,62 +3,23 @@ import {
   buildAgenticGraphMcpNoauthSecuritySchemes,
   buildAgenticGraphMcpAppsToolMeta,
 } from './mcpAppsReadyContract.mjs'
-import { XR_SCENE_WEB_MCP_TOOL_IDS } from '../three/xrSceneMcpContract.mjs'
-import { CAMERA_WEB_MCP_TOOL_IDS } from '../strybldr/cameraMcpContract.mjs'
-import { XR_ANIMATION_WEB_MCP_TOOL_IDS } from '../three/xrAnimationMcpContract.mjs'
-import { buildMotionControlAgentReadyToolContracts, MOTION_CONTROL_AGENT_READY_TOOL_IDS } from './motionControlAgentReadyContract.mjs'
-import { buildGameModeAgentReadyToolContracts, GAME_MODE_AGENT_READY_TOOL_IDS } from './gameModeAgentReadyContract.mjs'
-import { buildFlightSimAgentReadyToolContracts, FLIGHT_SIM_AGENT_READY_TOOL_IDS } from './flightSimAgentReadyContract.mjs'
-import { buildImmersiveMediaAgentReadyToolContracts, IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS } from './immersiveMediaAgentReadyContract.mjs'
-import { buildCitySimAgentReadyToolContracts, CITY_SIM_AGENT_READY_TOOL_IDS } from './citySimAgentReadyContract.mjs'
-import { buildStorageSyncAgentReadyToolContracts, STORAGE_SYNC_AGENT_READY_TOOL_IDS } from './storageSyncAgentReadyContract.mjs'
-import { buildGroupPanelAgentReadyToolContracts, GROUP_PANEL_AGENT_READY_TOOL_IDS } from '../group-panel/groupPanelContract.mjs'
-import { buildImportUrlAgentReadyToolContracts, IMPORT_URL_AGENT_READY_TOOL_IDS } from './importUrlAgentReadyContract.mjs'
-import { buildCanvasViewAgentReadyToolContracts, CANVAS_VIEW_AGENT_READY_TOOL_IDS } from './canvasViewAgentReadyContract.mjs'
-import { buildCanvasInteractionAgentReadyToolContracts, CANVAS_INTERACTION_AGENT_READY_TOOL_IDS } from './canvasInteractionAgentReadyContract.mjs'
-import { buildWorkspaceLaunchAgentReadyToolContracts, WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS } from './workspaceLaunchAgentReadyContract.mjs'
-import { buildToolbarActionAgentReadyToolContracts, TOOLBAR_ACTION_AGENT_READY_TOOL_IDS } from './toolbarActionAgentReadyContract.mjs'
+import { buildMotionControlAgentReadyToolContracts, } from './motionControlAgentReadyContract.mjs'
+import { buildGameModeAgentReadyToolContracts, } from './gameModeAgentReadyContract.mjs'
+import { buildFlightSimAgentReadyToolContracts, } from './flightSimAgentReadyContract.mjs'
+import { buildImmersiveMediaAgentReadyToolContracts, } from './immersiveMediaAgentReadyContract.mjs'
+import { buildCitySimAgentReadyToolContracts, } from './citySimAgentReadyContract.mjs'
+import { buildStorageSyncAgentReadyToolContracts, } from './storageSyncAgentReadyContract.mjs'
+import { buildGroupPanelAgentReadyToolContracts, } from '../group-panel/groupPanelContract.mjs'
+import { buildImportUrlAgentReadyToolContracts, } from './importUrlAgentReadyContract.mjs'
+import { buildCanvasViewAgentReadyToolContracts, } from './canvasViewAgentReadyContract.mjs'
+import { buildCanvasInteractionAgentReadyToolContracts, } from './canvasInteractionAgentReadyContract.mjs'
+import { buildWorkspaceLaunchAgentReadyToolContracts, } from './workspaceLaunchAgentReadyContract.mjs'
+import { buildToolbarActionAgentReadyToolContracts, } from './toolbarActionAgentReadyContract.mjs'
+import { buildDurableRunAgentReadyToolContracts, } from './durableRunAgentReadyContract.mjs'
 import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './agentic-graph-agent-ready-output-schemas.mjs'
-export const AGENTIC_OS_AGENT_READY_TOOL_IDS = Object.freeze({
-  search: 'search',
-  fetch: 'fetch',
-  listSourceFiles: 'list_source_files',
-  readSourceFile: 'read_source_file',
-  readSharedDocument: 'read_shared_document',
-  inspectSharedDocumentStructure: 'inspect_shared_document_structure',
-  inspectLocalSettingsChatReadiness: 'inspect_local_settings_chat_readiness',
-  inspectLocalMainPanelState: 'inspect_local_mainpanel_state',
-  inspectLocalEditorWorkspaceState: 'inspect_local_editor_workspace_state',
-  inspectLocalChatPipelineState: 'inspect_local_chat_pipeline_state',
-  inspectLocalMainPanelChatCanvasPipeline: 'inspect_local_mainpanel_chat_canvas_pipeline',
-  inspectLocalWorkspaceDocument: 'inspect_local_workspace_document',
-  inspectLocalCanvasTopology: 'inspect_local_canvas_topology',
-  inspectLocalCanvasSnapshot: 'inspect_local_canvas_snapshot',
-  inspectLocal3dCameraPose: 'inspect_local_3d_camera_pose',
-  inspectLocalCamera: CAMERA_WEB_MCP_TOOL_IDS.inspect,
-  controlLocalCamera: CAMERA_WEB_MCP_TOOL_IDS.control,
-  inspectLocalAnimation: XR_ANIMATION_WEB_MCP_TOOL_IDS.inspect,
-  controlLocalAnimation: XR_ANIMATION_WEB_MCP_TOOL_IDS.control,
-  ...MOTION_CONTROL_AGENT_READY_TOOL_IDS,
-  ...GAME_MODE_AGENT_READY_TOOL_IDS,
-  ...FLIGHT_SIM_AGENT_READY_TOOL_IDS,
-  ...IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS,
-  ...CITY_SIM_AGENT_READY_TOOL_IDS,
-  ...STORAGE_SYNC_AGENT_READY_TOOL_IDS,
-  ...GROUP_PANEL_AGENT_READY_TOOL_IDS,
-  ...IMPORT_URL_AGENT_READY_TOOL_IDS,
-  ...CANVAS_VIEW_AGENT_READY_TOOL_IDS,
-  ...CANVAS_INTERACTION_AGENT_READY_TOOL_IDS,
-  ...WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS,
-  ...TOOLBAR_ACTION_AGENT_READY_TOOL_IDS,
-  inspectLocal3dLayoutPositions: 'inspect_local_3d_layout_positions',
-  inspectLocalXrSceneAssets: XR_SCENE_WEB_MCP_TOOL_IDS.inspect,
-  controlLocalXrScene: XR_SCENE_WEB_MCP_TOOL_IDS.control,
-  inspectLocal2dZoomViewport: 'inspect_local_2d_zoom_viewport',
-  inspectLocalSourceFilesSnapshot: 'inspect_local_source_files_snapshot',
-  readLocalRuntimeIdentity: 'read_local_runtime_identity',
-  inspectAgentSurface: 'inspect_agent_surface',
-})
+import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agenticGraphAgentReadyToolIds.mjs'
+export { AGENTIC_OS_AGENT_READY_TOOL_IDS }
+
 export const AGENTIC_OS_AGENT_READY_WEB_MCP_NAMESPACE = 'agentic-graph'
 export const AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
 const buildReadOnlyToolAnnotations = () => Object.freeze({
@@ -454,7 +415,7 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
           description: 'Inspect the active browser-local agentic-graph workspace markdown document structure without reading published storage routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
-        }, ...buildImportUrlAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildCanvasViewAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildCanvasInteractionAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildWorkspaceLaunchAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildToolbarActionAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), {
+        }, ...buildImportUrlAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildCanvasViewAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildCanvasInteractionAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildWorkspaceLaunchAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildToolbarActionAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), ...buildDurableRunAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology),
           title: 'Inspect Local Canvas Topology',

@@ -33,7 +33,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-canvas-os.git"
-  ref: "c6c9b84a67f1b1aadc09adca4c1b2322274a538f"
+  ref: "697c47a1508fbf7184f11d41e77575b316fed768"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-canvas-os/docs"
   required_files: ["FACTS.md", "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]
@@ -45,6 +45,17 @@ local_proof:
   paid_call_count: 0
   actual_cost_usd: 0
   deterministic_replays: 2
+durable_workflow_proof:
+  continuity_id: "DURABLE-AGENT-WORKFLOWS-001"
+  status: "browser-contract-and-local-bridge-implemented"
+  operations: ["run.start", "run.status", "run.cancel", "run.retry"]
+  schema_owner: "agentic-os/catalog/invocation.json"
+  command: "npm -C canvas run test:ci:unit -- agentReady.webMcpRuntime.durableRun"
+  transport: "lazy authenticated same-origin HTTP"
+  local_bridge_command: "node --test mcp/__tests__/durable-run-bridge.test.mjs"
+  host_configuration: "private AGENTIC_OS_DURABLE_RUN_HOST_CONFIG"
+  runtime_ready: false
+  production_ready: false
 voice_studio_proof:
   status: "runtime-ready-dev"
   readiness_scope: "injected-adapter Dev runtime only"
@@ -214,3 +225,25 @@ npm run runtime:verify:deployed
 The source-selected core profile applies only its six declared storage/authentication migrations, preserving the original SQL and provider ledger filenames. Optional product migrations remain explicitly deferred. The existing release owner inspects all selected pending migrations before Pages deployment, rechecks the exact inventory before Worker upload, and checks it again before migration apply. Its receipt records selected source digests, applied names, pending names and deferred names. No environment variable can broaden this selection.
 
 The two storage trigger/index migrations are accepted only at their reviewed exact hashes. Bounded SQLite tests preserve legacy rows, exercise legacy-schema writes/deletions with the retained triggers, verify revision fences and child tombstones, and check foreign keys. Unknown destructive SQL remains rejected; incompatible travel migrations are reported together. A failed or ambiguous apply retains its bookmark and observed partial inventory and cannot claim rollback. This is source/preparation coverage, not a live migration or production-ready receipt.
+
+## Optional durable run host
+
+Both `npm run dev` and `npm run dev:apex` expose the same local `/api/agent-swarm/`
+bridge. Set `AGENTIC_OS_DURABLE_RUN_HOST_CONFIG` to an absolute private JSON file
+containing exactly `endpoint` and `authorization`. The endpoint is a host-selected
+loopback OS run API; authorization is its separately issued bearer credential.
+The file must be owned by the running user, mode 0600, single-link, regular and at
+most 8 KiB. The bridge re-reads it on demand and starts no executor.
+
+Only same-origin requests from a loopback browser reach the selected host. Tool
+JSON cannot supply a destination or principal. The OS client owns operation
+validation and response bounds; the remote runtime owns identity, authorization,
+durable state and retries. Missing configuration fails explicitly. The browser
+never receives the bridge credential.
+
+The mobile local observation on 2026-09-15 executed the actual `run.status` tool
+builder through Vite against a retained model-backed Commerce job, returned its
+completed state and rejected a forged principal. It used real HTTP without
+request interception and recorded no browser errors. This proves the local
+connection; protected package updates and public route/host deployment remain
+separate release evidence.
