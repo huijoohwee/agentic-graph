@@ -349,6 +349,8 @@ test('affected XR review expands the composite gate and runs the shared check on
     resolveCiCommandTimeoutMs(['npm', 'run', 'check:agentic-travel-commerce-platform'], contract),
     900000,
   )
+  assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'travel-commerce:test'], contract), 900000)
+  assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'travel-commerce:services:test'], contract), 300000)
   assert.equal(
     resolveCiCommandTimeoutMs(['npm', '-C', 'canvas', 'run', 'test:smoke:xr-v2:browser'], contract),
     900000,

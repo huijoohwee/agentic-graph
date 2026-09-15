@@ -2,13 +2,15 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 48
+contract_version: 49
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
   - command: ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
     timeout_ms: 900000
   - command: ["npm", "run", "check:agentic-travel-commerce-platform"]
+    timeout_ms: 900000
+  - command: ["npm", "run", "travel-commerce:test"]
     timeout_ms: 900000
 invocation:
   actions: ["/change", "/fix", "/refactor", "/verify", "/release"]
