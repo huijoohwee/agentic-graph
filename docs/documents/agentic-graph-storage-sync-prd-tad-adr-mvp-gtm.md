@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Storage and Synchronization"
 id: "md:agentic-graph-storage-sync-prd-tad-adr"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "5.0.1"
-date: "2026-09-12"
+version: "5.1.0"
+date: "2026-09-15"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.storage.sync"
@@ -24,17 +24,19 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "5.0.0"
-prd_revision: "5.0.1"
-tad_revision: "5.0.1"
-adr_revision: "5.0.1"
-mvp_revision: "5.0.1"
-gtm_revision: "5.0.1"
+previous_document_version: "5.0.1"
+prd_revision: "5.1.0"
+tad_revision: "5.1.0"
+adr_revision: "5.1.0"
+mvp_revision: "5.1.0"
+gtm_revision: "5.1.0"
 ---
 
-# Reference implementation: Reference implementation: agentic-graph Storage and Synchronization
+# Reference implementation: agentic-graph Storage and Synchronization
 
-This combined planning artifact joins `PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-ADR-MVP-GTM@5.0.1`. Sections are split solely to keep each authored file below 600 lines. Existing source observations retain their recorded scope and revision. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
+This combined planning artifact joins `PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-ADR-MVP-GTM@5.1.0`. Sections are split solely to keep each authored file below 600 lines. Existing source observations retain their recorded scope and revision. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
+
+The [owner appendix](agentic-graph-storage-sync-document.companion.md) records the native account lightbox, explicit private-workspace signup, and browser authentication/sync validation for this revision. Its local provider simulation does not establish production authentication or deployment proof.
 
 <a id="authority-and-readiness"></a>
 - [Authority and readiness](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.part-01.md#authority-and-readiness)

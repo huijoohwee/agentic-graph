@@ -13,7 +13,7 @@ lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-storage-sync-document.companion.md"
 parent: "docs/documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md"
-parent_version: "5.0.0"
+parent_version: "5.1.0"
 invocation_authority: "The typed route-path source module owns runtime route identities; this appendix declares no invocation route."
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-ADR-MVP-GTM"
