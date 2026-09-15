@@ -155,7 +155,7 @@ export const beginAgenticGraphStorageBrowserSignIn = (args: {
   if (args.navigate) {
     args.navigate(destination)
   } else if (typeof window !== 'undefined') {
-    void import('./StorageAuthLightbox').then(module => module.openStorageAuthLightbox(destination))
+    void import('./StorageAuthLightbox').then(module => module.openStorageAuthLightbox(destination, readAgenticGraphStorageBrowserSession))
       .catch(() => window.location.assign(destination))
   }
   return destination

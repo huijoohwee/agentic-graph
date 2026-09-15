@@ -4,7 +4,7 @@ import { Github, Globe, Network, X } from 'lucide-react'
 import PreviewOverlay from '@/features/panels/views/preview-panel/ui/PreviewOverlay'
 import { UI_THEME_TOKENS as theme } from '@/lib/ui/theme-tokens'
 import { fetchWithTimeout, readResponseTextWithDeadline } from './agentic-graph-storage-client-transport'
-import { readAgenticGraphStorageBrowserSession, type AgenticGraphStorageBrowserSessionState } from './agentic-graph-storage-browser-session'
+import type { readAgenticGraphStorageBrowserSession, AgenticGraphStorageBrowserSessionState } from './agentic-graph-storage-browser-session'
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS as paths } from './agentic-graph-storage-route-paths'
 import { clearOtherStorageAccountSelection, readAgenticGraphStorageWorkspaceOverride, selectAgenticGraphStorageWorkspace } from './agentic-graph-storage-workspace-selection'
 import { writeWorkspaceCloudSyncEnabledSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
@@ -44,7 +44,7 @@ const parseOptions = (value: unknown, origin: string): Options => {
   return { mode: data.mode as Options['mode'], providers, privacyHref: paths.browserPrivacy }
 }
 
-function StorageAuthLightbox({ loginUrl, onClose }: { loginUrl: string; onClose: () => void }) {
+function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: string; onClose: () => void; readSession: typeof readAgenticGraphStorageBrowserSession }) {
   const workspaceFieldId = React.useId()
   const [signup, setSignup] = React.useState(false)
   const [revision, setRevision] = React.useState(0)
@@ -64,7 +64,7 @@ function StorageAuthLightbox({ loginUrl, onClose }: { loginUrl: string; onClose:
       if (signup) url.searchParams.set('intent', 'signup'); else url.searchParams.delete('intent')
       const [response, account] = await Promise.all([
         fetch(url, { credentials: 'same-origin', headers: { accept: 'application/json' }, signal: controller.signal }),
-        readAgenticGraphStorageBrowserSession({ signal: controller.signal }),
+        readSession({ signal: controller.signal }),
       ])
       if (!response.ok) throw new Error('Sign-in is unavailable (' + response.status + '). Your local files remain available.')
       const text = await readResponseTextWithDeadline(response, { maxBytes: 16_384, timeoutMs: 5000, fatalUtf8: true })
@@ -78,7 +78,7 @@ function StorageAuthLightbox({ loginUrl, onClose }: { loginUrl: string; onClose:
     void load().catch(error => { if (current) setError(error instanceof Error ? error.message : 'Sign-in is unavailable.') })
       .finally(() => clearTimeout(deadline))
     return () => { current = false; clearTimeout(deadline); controller.abort() }
-  }, [loginUrl, signup, revision])
+  }, [loginUrl, signup, revision, readSession])
 
   const authenticated = session?.status === 'authenticated' && !!session.userId
   const title = authenticated ? 'Your cloud workspace' : signup ? 'Create your Airvio account' : 'Sign in to Airvio'
@@ -181,7 +181,7 @@ function StorageAuthLightbox({ loginUrl, onClose }: { loginUrl: string; onClose:
 }
 
 let active: { root: Root; host: HTMLElement } | null = null
-export const openStorageAuthLightbox = (loginUrl: string): void => {
+export const openStorageAuthLightbox = (loginUrl: string, readSession: typeof readAgenticGraphStorageBrowserSession): void => {
   const url = new URL(loginHref(loginUrl, window.location.origin))
   if (typeof HTMLDialogElement === 'undefined' || typeof HTMLDialogElement.prototype.showModal !== 'function') {
     window.location.assign(url.href)
@@ -196,5 +196,5 @@ export const openStorageAuthLightbox = (loginUrl: string): void => {
     if (active?.root !== root) return
     active = null; root.unmount(); host.remove()
   }
-  root.render(<StorageAuthLightbox loginUrl={url.href} onClose={close} />)
+  root.render(<StorageAuthLightbox loginUrl={url.href} onClose={close} readSession={readSession} />)
 }
