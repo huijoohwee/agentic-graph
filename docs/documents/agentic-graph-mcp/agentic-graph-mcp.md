@@ -41,7 +41,7 @@ environment.
 |---|---|---|---|---|
 | Local stdio MCP | `mcp/server.js`, `mcp/local-tool-contract.js` | Broad local surface; availability is configuration-gated and operations fail closed when their owners or credentials are absent. | `spec-complete` | `undocumented` |
 | Pages HTTP MCP | `cloudflare/pages/agentic-graph-agent-ready.mjs` | Exactly 7 read-only source tools. | `spec-complete` | `undocumented` |
-| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` and the shared contract | Exactly 42 source tools: 30 read-only and 12 guarded controls. | `spec-complete` | `undocumented` |
+| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` and the shared contract | Exactly 50 source tools: 31 read-only and 19 guarded controls. | `spec-complete` | `undocumented` |
 | Remote Worker MCP | `cloudflare/workers/agentic-graph-mcp/tool-registry.mjs` | Exactly 10 source registry tools. The Worker is a separate delivery unit. | `spec-complete` | `undocumented` |
 
 Source presence is not runtime availability, and runtime availability is not
@@ -101,7 +101,7 @@ reference that register and do not redefine it.
 | ID | End state | Stated check | Constraint |
 |---|---|---|---|
 | `VCC-MCP-OV-01` | Pages source registry has 7 read-only tools. | Run the focused Pages parity test and inspect the returned names. | Exactly the seven names above; no controls. |
-| `VCC-MCP-OV-02` | App WebMCP has 42 tools. | Run the focused browser runtime contract test and classify annotations. | Exactly 30 read-only and 12 guarded controls. |
+| `VCC-MCP-OV-02` | App WebMCP has 42 tools. | Run the focused browser runtime contract test and classify annotations. | Exactly 31 read-only and 19 guarded controls. |
 | `VCC-MCP-OV-03` | Worker source registry has 10 tools. | Run the Worker registry test and inspect discovery output. | Exactly 10 unique names. |
 | `VCC-MCP-OV-04` | Remote session requests are authenticated and correlated. | Initialize with bearer authorization, retain the returned session id, then list tools with both headers. | Missing or invalid authorization fails closed; the session id is preserved. |
 

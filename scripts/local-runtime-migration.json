@@ -1,0 +1,64 @@
+{
+  "schema": "agentic-graph/native-source-transfer/v1",
+  "continuityId": "DURABLE-AGENT-WORKFLOWS-001",
+  "sourceRepository": "huijoohwee/agentic-canvas-os",
+  "sourceRevision": "8460fc01c7dbd8af6880d346a71829e20887c44e",
+  "phase": "source-transfer-before-retirement",
+  "records": [
+    {
+      "source": "scripts/local-runtime-candidate-lib.mjs",
+      "sourceSha256": "1aa98bdf4dd17eb69b201eae168a64473953fc62d9115e16acfa9a5f718348bc",
+      "destination": "scripts/local-runtime-candidate-lib.mjs",
+      "destinationSha256": "f386e0ea037222ec39bb8d7293f47a63e76c77514efeb45ee8139b2dec81ae4b"
+    },
+    {
+      "source": "scripts/local-runtime-lib.mjs",
+      "sourceSha256": "b1075d9e42d2fe49d4f7e3fc8bc882d6f3ee6f824b34eed8040eaf4d3bec2434",
+      "destination": "scripts/local-runtime-lib.mjs",
+      "destinationSha256": "27ac475a62fbf6edee94dbbd7818ed9049d730d97e88fe5a29119e35c4a17ad8"
+    },
+    {
+      "source": "scripts/local-runtime-session-lib.mjs",
+      "sourceSha256": "00cddfaaa1c58b0f8560051b4f953944eb3d9656df9be6e85b0e5b45dd0adbe2",
+      "destination": "scripts/local-runtime-session-lib.mjs",
+      "destinationSha256": "626c4d9a158b4f1ba2037982be88061bcc48d7b90684f473aabd506c7ed1af33"
+    },
+    {
+      "source": "scripts/local-runtime-supervisor-lib.mjs",
+      "sourceSha256": "d3bfb93ababf3dc2d8bc5481a4ddcf58a6feb8848263549e769131f45ff4f02d",
+      "destination": "scripts/local-runtime-supervisor-lib.mjs",
+      "destinationSha256": "b6da7940d8d94fe1aee6ebf1e61ecc182849f5a2fffb7e3e91c879dfddbc4714"
+    },
+    {
+      "source": "scripts/local-runtime.mjs",
+      "sourceSha256": "9fb1f265ece2b705ed735f5eeb986a2a28008c915734289fa87f69159856cfbc",
+      "destination": "scripts/local-runtime.mjs",
+      "destinationSha256": "1791984d35ae62ee068ebfc2ff2b33a400b1d3f2607b37f5b6a5028fd73fcd1f"
+    },
+    {
+      "source": "scripts/production-release-authorization-contract.mjs",
+      "sourceSha256": "8f4d4c1d76523d6fadc009484f9a12bfb3b755c20a6ba5d06046f53c5a704f83",
+      "destination": "scripts/local-review-contract.mjs",
+      "destinationSha256": "f9fa5a794bbaf44026e944c96d5886eebd88fd6ae617abb6fd59395227241713"
+    },
+    {
+      "source": "__tests__/local-runtime.test.mjs",
+      "sourceSha256": "b3b49dea61a9067e65196a036e22bf555663b90205124e2a7e87f390fc175741",
+      "destination": "scripts/__tests__/local-runtime.test.mjs",
+      "destinationSha256": "086efde21d5e3bb5fc394c82f7f66b4c45a4f9f1ef3225b4185879fbc3c8a398"
+    },
+    {
+      "source": "__tests__/production-release-authorization-contract.test.mjs",
+      "sourceSha256": "c262d7d9d5210188af25db7e609d582273e38e707ecf190933ed867b91b343ff",
+      "destination": "scripts/__tests__/local-review-contract.test.mjs",
+      "destinationSha256": "ea38b37e869bdaa16cc0c7a346d293819cb575ab3ea7e6ee175ab473d7ae790f",
+      "partition": "Local review/prompt cases; candidate creation and authorization remain tested by the existing Graph release owner."
+    }
+  ],
+  "transformations": [
+    "Graph owns the Apex/storage supervisor and OS remains the catalog/runtime dependency.",
+    "Committed repository profiles supply required check names.",
+    "Existing Graph release validators and shared bounded JSON canonicalization are reused.",
+    "Historical state paths and ownership-token verification are preserved."
+  ]
+}

@@ -2,8 +2,8 @@
 title: "Agent-Ready Source Contract Companion"
 id: "md:agentic-graph-agent-ready-prd-tad.companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.28.1"
-date: "2026-09-12"
+version: "1.28.2"
+date: "2026-09-16"
 lang: "en-US"
 owner: "docs.contract.evidence"
 local_rung: "spec-complete"
@@ -14,7 +14,7 @@ doc_path: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.companio
 guideline_version: "1.7.0"
 reference_implementation_label: "reference implementation"
 parent: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md"
-parent_version: "1.28.0"
+parent_version: "1.28.2"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM"
 worktree_id: "device-cba000d3779d--planning-v27"
@@ -23,11 +23,11 @@ guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
 previous_document_version: "1.28.0"
-prd_revision: "1.28.1"
-tad_revision: "1.28.1"
-adr_revision: "1.28.1"
-mvp_revision: "1.28.1"
-gtm_revision: "1.28.1"
+prd_revision: "1.28.2"
+tad_revision: "1.28.2"
+adr_revision: "1.28.2"
+mvp_revision: "1.28.2"
+gtm_revision: "1.28.2"
 ---
 
 # Agent-Ready Source Contract Companion
@@ -49,7 +49,7 @@ endpoint invocation.
 | Concern | Canonical source owner | Required invariant |
 |---|---|---|
 | Shared MCP tool definitions | `canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs` | One typed definition source supports the Pages subset and app registry. |
-| Browser WebMCP registration | `canvas/src/features/agent-ready/webMcpRuntime.ts` | Exactly 42 tools: 30 read-only, 12 guarded controls. |
+| Browser WebMCP registration | `canvas/src/features/agent-ready/webMcpRuntime.ts` | Exactly 50 tools: 31 read-only, 19 guarded controls. |
 | Browser startup | `canvas/src/main.tsx` | Registration occurs through the canonical runtime owner. |
 | Pages HTTP MCP | `cloudflare/pages/agentic-graph-agent-ready.mjs` | Exactly 7 read-only tools; no guarded control. |
 | Agent-ready resources/prompts | Agent-ready prompt/resource contracts consumed by the adapters | Resource or prompt discovery does not enlarge the tool count. |
@@ -77,14 +77,14 @@ All seven are read-only and require zero model calls.
 
 ### Browser capability boundary
 
-The app WebMCP registry contains exactly 42 tools. Annotation classification is
+The app WebMCP registry contains exactly 50 tools. Annotation classification is
 part of the contract:
 
 | Class | Count | Boundary |
 |---|---:|---|
-| Read-only | 30 | Inspection or context retrieval; zero implicit model calls. |
-| Guarded control | 12 | Browser-local runtime owner and approval determine availability. |
-| Total | 42 | No duplicate name. |
+| Read-only | 31 | Inspection or context retrieval; zero implicit model calls. |
+| Guarded control | 19 | Browser-local runtime owner and approval determine availability. |
+| Total | 50 | No duplicate name. |
 
 The browser total must not replace the Pages count in discovery metadata,
 onboarding, tests, or status narratives.
@@ -115,7 +115,7 @@ specific surface:
 
 - Source files establish public reachability.
 - The seven-tool Pages surface exposes browser-local guarded controls.
-- The 42-tool browser registry is the local stdio or remote Worker registry.
+- The 50-tool browser registry is the local stdio or remote Worker registry.
 - The broader local stdio catalog is executable without its configuration.
 - The 10-tool Worker source registry establishes a delivered Worker.
 - A session id replaces Worker bearer authorization.
@@ -141,7 +141,7 @@ The sole endpoint Invocation Register and detailed remote client sequence are in
 | ID | End state | Stated check | Constraint | Evidence Reference |
 |---|---|---|---|---|
 | `VCC-AR-C-01` | Pages exposes the seven exact names above. | Run the focused Pages parity test and surface name/annotation output. | Read-only only. | None recorded |
-| `VCC-AR-C-02` | Browser exposes 42 unique tools split 30/12. | Run the focused WebMCP runtime test and surface counts. | No duplicate; no Pages mutation. | None recorded |
+| `VCC-AR-C-02` | Browser exposes 50 unique tools split 31/19. | Run the focused WebMCP runtime test and surface counts. | No duplicate; no Pages mutation. | None recorded |
 | `VCC-AR-C-03` | Valid content uses one workspace/parser/canvas path. | Run the focused structured-content and canvas-apply tests and surface ownership assertions. | No second persistence or parser path. | None recorded |
 | `VCC-AR-C-04` | Negative paths cause no unintended mutation or spend. | Run invalid-input, unavailable-owner, and denied-control tests and surface unchanged-state assertions. | Stop on first unexpected side effect. | None recorded |
 
@@ -165,4 +165,4 @@ and count validation.
 
 ## Planning continuity — reference implementation
 
-This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.28.1` with [the five-role owner](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.28.2` with [the five-role owner](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

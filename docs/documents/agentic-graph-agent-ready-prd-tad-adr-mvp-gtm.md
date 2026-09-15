@@ -2,8 +2,8 @@
 title: "Agent-Ready Surface Contract"
 id: "md:agentic-graph-agent-ready-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.28.1"
-date: "2026-09-12"
+version: "1.28.2"
+date: "2026-09-16"
 lang: "en-US"
 owner: "cloudflare.pages.agent-ready.surface"
 local_rung: "spec-complete"
@@ -23,11 +23,11 @@ guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
 previous_document_version: "1.28.0"
-prd_revision: "1.28.1"
-tad_revision: "1.28.1"
-adr_revision: "1.28.1"
-mvp_revision: "1.28.1"
-gtm_revision: "1.28.1"
+prd_revision: "1.28.2"
+tad_revision: "1.28.2"
+adr_revision: "1.28.2"
+mvp_revision: "1.28.2"
+gtm_revision: "1.28.2"
 ---
 
 # Agent-Ready Surface Contract
@@ -63,7 +63,7 @@ read-only transport.
 |---|---|---|---|
 | Trigger | Needs repository context. | Needs contextual inspection or an approved action. | Similar transports have different capabilities. |
 | Discover | Selects the Pages read surface. | Loads the app WebMCP registry. | Exact counts and trust are made explicit. |
-| Engage | Calls one of 7 read-only tools. | Uses one of 30 reads or chooses one of 12 guarded controls. | Invalid or unavailable operations fail closed. |
+| Engage | Calls one of 7 read-only tools. | Uses one of 31 reads or chooses one of 19 guarded controls. | Invalid or unavailable operations fail closed. |
 | Complete | Receives a typed source result. | Receives a typed result or denial. | Partial failure remains visible. |
 | Return | Reuses the authoritative install guidance. | Reuses browser-local context and app state. | No duplicate endpoint recipe. |
 
@@ -71,7 +71,7 @@ read-only transport.
 
 - **As a** reader host **I want** seven stable read tools **so that** I can
   acquire source context with zero model spend.
-- **As a** browser operator **I want** 30 reads separated from 12 guarded
+- **As a** browser operator **I want** 31 reads separated from 19 guarded
   controls **so that** I can approve side effects intentionally.
 - **As a** document author **I want** one validated workspace-to-canvas path
   **so that** MCP input cannot create a parallel graph authority.
@@ -81,7 +81,7 @@ read-only transport.
 | ID | Requirement | Priority |
 |---|---|---|
 | `PRD-AR-01` | Pages HTTP discovery exposes exactly 7 read-only source tools. | Must |
-| `PRD-AR-02` | App WebMCP exposes exactly 42 tools: 30 read-only and 12 guarded controls. | Must |
+| `PRD-AR-02` | App WebMCP exposes exactly 50 tools: 31 read-only and 19 guarded controls. | Must |
 | `PRD-AR-03` | Browser-local controls never appear in the Pages read-only contract. | Must |
 | `PRD-AR-04` | Source reads and inspection require zero model calls. | Must |
 | `PRD-AR-05` | Validated structured content follows one Editor Workspace → parser → Canvas path. | Must |
@@ -106,7 +106,7 @@ Scores use `(impact × reach) / (build + TCO + token cost)` with normalized
 | Requirement | Given / When / Then | VCC |
 |---|---|---|
 | `PRD-AR-01` | Given Pages tool discovery, when the registry is read, then the seven exact read-only names are returned. | `VCC-AR-01` |
-| `PRD-AR-02` | Given app registration, when tool annotations are classified, then 42 names split 30/12. | `VCC-AR-02` |
+| `PRD-AR-02` | Given app registration, when tool annotations are classified, then 50 names split 31/19. | `VCC-AR-02` |
 | `PRD-AR-03` | Given both registries, when names and annotations are compared, then no guarded browser control is present on Pages. | `VCC-AR-03` |
 | `PRD-AR-05` | Given valid structured content, when it is accepted, then one canonical editor/parser/canvas path receives it. | `VCC-AR-04` |
 | `PRD-AR-06` | Given invalid input or absent approval, when an operation is requested, then no side effect occurs and a typed denial is surfaced. | `VCC-AR-05` |
@@ -130,7 +130,7 @@ gateway requires a later ADR with managed, self-managed, and hybrid TCO.
 
 | Kind | Contract |
 |---|---|
-| Minimum scope | Seven Pages reads, 42 browser tools split 30/12, zero-token reads, and one validated canvas path. |
+| Minimum scope | Seven Pages reads, 50 browser tools split 31/19, zero-token reads, and one validated canvas path. |
 | Out of scope | Public guarded controls, a unified proxy, a second workspace/parser/store, and a delivery claim. |
 | Dependencies | Shared tool contract, Pages/browser adapters, source readers, Editor Workspace, parser, and Canvas owners. |
 | Open measurement | Clean-client TTV, p95 discovery latency, and environment-specific delivery TCO; close through VCC evidence. |
@@ -142,7 +142,7 @@ gateway requires a later ADR with managed, self-managed, and hybrid TCO.
 | Surface | Source truth | Local rung | Delivered rung |
 |---|---|---|---|
 | Pages HTTP MCP | Exactly 7 read-only tools. | `spec-complete` | `undocumented` |
-| App WebMCP | Exactly 42 tools: 30 read-only, 12 guarded controls. | `spec-complete` | `undocumented` |
+| App WebMCP | Exactly 50 tools: 31 read-only, 19 guarded controls. | `spec-complete` | `undocumented` |
 | Local stdio MCP | Broader and configuration-gated. | `spec-complete` | `undocumented` |
 | Remote Worker MCP | Separate 10-tool registry, delivery unit, bearer-authenticated session transport. | `spec-complete` | `undocumented` |
 
@@ -273,7 +273,7 @@ delivery state is inferred from this authoring document.
 | Concern | SVO responsibility | Interface/configuration | Local rung | Delivered rung |
 |---|---|---|---|---|
 | Shared definitions | Contract defines names, schemas, and annotations. | Module import; `agentic-graph-agent-ready-tool-contract.mjs` | `spec-complete` | `undocumented` |
-| Browser registration | Runtime registers 42 browser tools. | WebMCP; `webMcpRuntime.ts` and app startup | `spec-complete` | `undocumented` |
+| Browser registration | Runtime registers 50 browser tools. | WebMCP; `webMcpRuntime.ts` and app startup | `spec-complete` | `undocumented` |
 | Pages adapter | Adapter serves seven reads. | HTTP JSON-RPC; `agentic-graph-agent-ready.mjs` | `spec-complete` | `undocumented` |
 | Structured validation | Validator accepts or rejects structured response content. | Typed/AGENTIC_OS document; chat validation owners | `spec-complete` | `undocumented` |
 | Editor/canvas bridge | Bridge persists then projects the canonical document. | Workspace/parser/canvas interfaces | `spec-complete` | `undocumented` |
@@ -293,7 +293,7 @@ document does not redeclare it.
 |---|---|---|
 | Security | Invalid or unapproved work produces no side effect. | Negative-path VCC. |
 | Performance | Discovery is at most 1 second p95 on the selected runtime target. | Bounded runtime measurement. |
-| Browser reach | App registry is 42 tools; Pages is 7 reads. | Separate registry checks. |
+| Browser reach | App registry is 50 tools; Pages is 7 reads. | Separate registry checks. |
 | Mobile reach | HTTP reads require an MCP-capable mobile client; browser controls require capability support. | Supported-client clean run. |
 | Offline behavior | Existing local/app state may work; HTTP reports unavailable and never silently falls back. | Network-off negative check. |
 | Token/TCO | Reads use 0 model tokens; no new store/license. | Cost spy and quarterly review. |
@@ -312,7 +312,7 @@ document does not redeclare it.
 | ID | End state | Stated check | Constraint | Evidence Reference |
 |---|---|---|---|---|
 | `VCC-AR-01` | Pages exposes exactly the seven names above, all read-only. | Run the focused Pages parity test and surface count, names, and annotations. | No guarded control; one run. | None recorded |
-| `VCC-AR-02` | App WebMCP exposes 42 unique names split 30/12. | Run the focused WebMCP runtime test and surface classification counts. | No duplicate name; one run. | None recorded |
+| `VCC-AR-02` | App WebMCP exposes 50 unique names split 31/19. | Run the focused WebMCP runtime test and surface classification counts. | No duplicate name; one run. | None recorded |
 | `VCC-AR-03` | Pages is a strict read-only subset boundary. | Compare the two surfaced registries. | Do not change tool implementations. | None recorded |
 | `VCC-AR-04` | Valid structured content reaches the canonical Canvas path. | Run the focused structured-response/canvas bridge test and surface the asserted owner path. | No second parser or persistence path. | None recorded |
 | `VCC-AR-05` | Invalid or unapproved operations cause no side effect. | Run focused negative-path tests and surface denial plus unchanged-state assertions. | Stop on first unexpected mutation. | None recorded |
@@ -334,7 +334,7 @@ restore the previously recorded delivery revision.
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.28.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.28.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|

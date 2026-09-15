@@ -3,7 +3,6 @@ import path from 'node:path'
 import { repoRoot } from './collaboration-contract.mjs'
 
 const workflowFilePattern = /\.ya?ml$/i
-const agenticCanvasOsMarker = 'agentic-canvas-os'
 const runtimeDocsResolverMarker = 'runtime:docs-dependency:resolve'
 const promoterMarker = 'runtime-docs-workflow: promoter'
 const orderedStepChecks = [
@@ -113,8 +112,7 @@ export const validateRuntimeDocsWorkflowPromoter = ({ workflowPath, source }) =>
 export const validateRuntimeDocsWorkflowPolicy = workflowSources => {
   const promoters = workflowSources.filter(workflow => workflow.source.includes(promoterMarker))
   const consumers = workflowSources.filter(workflow => (
-    workflow.source.includes(agenticCanvasOsMarker)
-    && workflow.source.includes(runtimeDocsResolverMarker)
+    workflow.source.includes(runtimeDocsResolverMarker)
     && !workflow.source.includes(promoterMarker)
   ))
   if (consumers.length === 0) {

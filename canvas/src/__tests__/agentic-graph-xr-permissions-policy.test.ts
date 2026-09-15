@@ -133,6 +133,7 @@ export function testAgenticGraphXrPermissionsPolicyMatchesStaticAndIframeDelegat
   const sharedSource = readFileSync(resolve(process.cwd(), '../cloudflare/pages/agentic-graph-agent-ready-shared.mjs'), 'utf8')
   const pagesSource = readFileSync(resolve(process.cwd(), '../cloudflare/pages/agentic-graph-agent-ready.mjs'), 'utf8')
   const viewportSource = readFileSync(resolve(process.cwd(), 'src/components/CanvasViewport.tsx'), 'utf8')
+  const heroStageSource = readFileSync(resolve(process.cwd(), 'src/features/agentic-os/LiveCanvasHeroPresetStage.tsx'), 'utf8')
   const panelSource = readFileSync(resolve(process.cwd(), 'src/features/three/MotionControlFloatingPanelView.tsx'), 'utf8')
 
   for (const route of ['/agentic-graph/*', '/content/agentic-graph/*']) {
@@ -161,7 +162,8 @@ export function testAgenticGraphXrPermissionsPolicyMatchesStaticAndIframeDelegat
     assert.equal(AGENTIC_OS_XR_IFRAME_ALLOW.split('; ').includes(feature), true, `iframe allow must delegate ${feature}`)
   }
   assert.equal(AGENTIC_OS_XR_IFRAME_ALLOW.includes('microphone'), false, 'iframes must not receive unrelated microphone access')
-  assert.match(viewportSource, /allow=\{AGENTIC_OS_XR_IFRAME_ALLOW\}/)
+  assert.match(viewportSource, /<LiveCanvasHeroPresetStageLazy/)
+  assert.match(heroStageSource, /allow=\{AGENTIC_OS_XR_IFRAME_ALLOW\}/)
   assert.match(panelSource, /data-kg-motion-control-start="1"/)
   assert.match(panelSource, /data-kg-motion-control-stop="1"/)
   assert.match(panelSource, /data-kg-motion-control-enable-sensors="1"/)

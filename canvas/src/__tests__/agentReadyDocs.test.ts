@@ -1,8 +1,15 @@
+import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
+import { readRepoDocumentFamily } from '@/tests/lib/repoDocumentFamily'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+const browserTools = buildAgenticGraphAgentReadyToolContracts({ includeBrowserOnlyTools: true })
+const browserToolCount = browserTools.length
+const readOnlyToolCount = browserTools.filter(tool => tool.annotations.readOnlyHint).length
+const guardedToolCount = browserToolCount - readOnlyToolCount
+
 const readRepoFile = (repoRelativePath: string): string =>
-  readFileSync(resolve(process.cwd(), '..', repoRelativePath), 'utf8')
+  readRepoDocumentFamily(repoRelativePath)
 
 export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
   const mainPath = resolve(process.cwd(), '..', 'docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md')
@@ -22,7 +29,7 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
 
   const required = [
     'id: "md:agentic-graph-agent-ready-prd-tad"',
-    'doc_type: "Product and Technical Specification"',
+    'doc_type: "PRD-TAD-ADR-MVP-GTM"',
     'owner: "cloudflare.pages.agent-ready.surface"',
     'local_rung: "spec-complete"',
     'delivered_rung: "undocumented"',
@@ -32,7 +39,7 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
     'owner: "docs.contract.evidence"',
     'owner: "docs.agent-ready.runtime-companion"',
     '[the parent contract](agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md)',
-    'Exactly 42 tools: 30 read-only, 12 guarded controls.',
+    `Exactly ${browserToolCount} tools: ${readOnlyToolCount} read-only, ${guardedToolCount} guarded controls.`,
     'Exactly 7 read-only tools; no guarded control.',
   ]
   required.forEach(snippet => {
@@ -50,7 +57,7 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
     'status: implemented',
     'created: 2026-05-21',
     'updated: 2026-05-29',
-    'updated: 2026-05-30',
+    `updated: 2026-05-${readOnlyToolCount}`,
     'delivered_rung: "runtime-ready"',
   ]
   forbidden.forEach(snippet => {

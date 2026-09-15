@@ -13,8 +13,8 @@ import { replaceChatComposerTrigger, resolveChatComposerTrigger } from '@/featur
 import { buildUploadedMediaInlineCommandCandidate } from '@/lib/command-menu/inlineUploadedMediaCandidates'
 import type { UploadedMediaStorageResult } from '@/lib/storage/uploadedMediaStorage'
 export function testAgenticOsInvocationsUsePublicSourceLinks() {
-  if (!AGENTIC_OS_DOCS_GITHUB_ROOT_URL.startsWith('https://github.com/huijoohwee/agentic-canvas-os/')) {
-    throw new Error(`expected the invocation source root to use the Agentic Canvas OS repository, got ${AGENTIC_OS_DOCS_GITHUB_ROOT_URL}`)
+  if (!AGENTIC_OS_DOCS_GITHUB_ROOT_URL.startsWith('https://github.com/huijoohwee/agentic-os/')) {
+    throw new Error(`expected the invocation source root to use the Agentic OS repository, got ${AGENTIC_OS_DOCS_GITHUB_ROOT_URL}`)
   }
   if (AGENTIC_OS_DOCS_GITHUB_ROOT_URL.includes('/Users/') || AGENTIC_OS_DOCS_GITHUB_ROOT_URL.includes('localhost')) {
     throw new Error(`expected a portable invocation source root, got ${AGENTIC_OS_DOCS_GITHUB_ROOT_URL}`)

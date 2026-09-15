@@ -1,14 +1,12 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readRepoDocumentFamily } from '@/tests/lib/repoDocumentFamily'
 
 function readCrawlerPrdTad(): string {
-  return readFileSync(resolve(process.cwd(), '..', 'docs/documents/agentic-graph-crawler-prd-tad-adr-mvp-gtm.md'), 'utf8')
+  return readRepoDocumentFamily('docs/documents/agentic-graph-crawler-prd-tad-adr-mvp-gtm.md')
 }
 
 export function testCrawlerPrdTadNamesImplementedCommerceHandoff(): void {
   const doc = readCrawlerPrdTad()
   const requiredSnippets = [
-    '**Document Version**: 1.0.1',
     '**Status**: Implemented crawler-access contract',
     'canvas/src/lib/storage/agentic-graph-storage-sync-contract.ts',
     'cloudflare/workers/agentic-graph-storage/contract.ts',

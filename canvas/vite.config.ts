@@ -32,7 +32,7 @@ import { createWebpageMetaHandler } from './src/lib/websites/webpageMetaServer'
 import { createLocalFileRangeHandler } from './src/lib/assets/server/localFileRangeServer'
 import { createRemoteVideoFrameHandler, createRemoteVideoFramePublicAssetHandler, REMOTE_VIDEO_FRAME_PUBLIC_PREFIX } from './src/lib/rich-media/server/videoFrameServer'
 import { createKgFsPathPolicy, createWorkspaceArtifactBridgePlugin, decodeStrictBase64, decodeXlsxArtifactBase64, enforceCanonicalWorkspaceMutation, parseKgFsMutationRequest, resolveKgFsMutationTarget } from './viteWorkspaceArtifactBridge'; import { buildVersionedAssetFileNames } from './viteBuildAssetNamespace.mjs'
-import { isWorkspaceMirrorReadPathAllowed, resolveWorkspaceMirrorReadRoots } from './viteWorkspaceMirrorReadRoots'
+import { isWorkspaceMirrorReadPathAllowed, resolveWorkspaceMirrorReadRoots, readNativeWorkspaceDocs } from './viteWorkspaceMirrorReadRoots'
 import { buildWebpageProxyRuntimePlan } from './src/lib/websites/webpageProxyRuntimePolicy'; import { createServiceWorkerRevisionAuthorityPlugin } from './viteServiceWorkerRevisionAuthority.mjs'
 import {
   buildWebpageSandboxCsp,
@@ -5079,8 +5079,8 @@ function createKgFsListHandler(): import('vite').Connect.NextHandleFunction {
         res.end(JSON.stringify({ ok: false, error: 'Path is not a directory' }))
         return
       }
-      const files = await walkSourceMirrorFiles(rootAbsPath, maxFiles)
-      const payload: Array<{ relPath: string; text: string; updatedAtMs: number }> = []
+      const nativeDocs = await readNativeWorkspaceDocs(rootAbsPath, repoRoot, maxFiles), files = nativeDocs ? [] : await walkSourceMirrorFiles(rootAbsPath, maxFiles)
+      const payload: Array<{ relPath: string; text: string; updatedAtMs: number }> = nativeDocs || []
       for (const file of files) {
         try {
           const fileStat = await fs.stat(file.absPath)

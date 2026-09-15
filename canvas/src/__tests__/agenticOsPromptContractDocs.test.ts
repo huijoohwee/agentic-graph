@@ -1,3 +1,4 @@
+import { readRepoDocumentFamily } from '@/tests/lib/repoDocumentFamily'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { load as parseYaml } from 'js-yaml'
@@ -46,7 +47,7 @@ export function testAgenticOsPromptContractDocsUseCanonicalImplementedNames() {
   const technicalArchitecture = readRepoFile('docs/agentic-graph-technical-architecture.md')
   const technicalArchitectureSettings = readRepoFile('docs/agentic-graph-technical-architecture.settings.md')
   const referenceDocs = [
-    readFileSync(mainPath, 'utf8'),
+    readRepoDocumentFamily('docs/documents/agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.md'),
     readFileSync(companionPath, 'utf8'),
     technicalArchitecture,
     technicalArchitectureSettings,
@@ -55,7 +56,7 @@ export function testAgenticOsPromptContractDocsUseCanonicalImplementedNames() {
 
   const required = [
     'id: agentic-graph-llm-prompt-contract-prd-tad',
-    'See continuation in `agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.companion.md`',
+    'agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.companion.md',
     'canonical_doc: docs/documents/agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.md',
     'Typed AGENTIC_OS semantic graph',
     'canvas/src/features/parsers/agenticOsSemanticGraph.ts',

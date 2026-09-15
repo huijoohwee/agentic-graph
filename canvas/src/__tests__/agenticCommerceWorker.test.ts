@@ -1850,26 +1850,7 @@ export function testAgenticCommerceWorkerUsesSharedSemanticKeyHelper() {
   }
 }
 
-export function testAgenticCommerceDocsPinStripeWebhookIdempotencyContract() {
-  const repoRoot = resolve(process.cwd(), '..')
-  const docs = [
-    'docs/documents/agentic-graph-agentic-commerce-prd-tad-adr-mvp-gtm.md',
-    'docs/documents/agentic-graph-api-document.md',
-    'docs/documents/agentic-graph-backend-document.md',
-  ].map(path => readFileSync(resolve(repoRoot, path), 'utf8')).join('\n')
-  const requiredSnippets = [
-    'same-payload',
-    'conflicting payloads',
-    'stale `processing`',
-    'worker.payments.stripe.webhook.duplicatePayloadConflict',
-    'worker.payments.stripe.webhook.reclaimsStaleProcessingClaim',
-  ]
-  requiredSnippets.forEach(snippet => {
-    if (!docs.includes(snippet)) {
-      throw new Error(`expected Stripe webhook idempotency docs to include ${JSON.stringify(snippet)}`)
-    }
-  })
-}
+export { testAgenticCommerceDocsPinStripeWebhookIdempotencyContract } from './agenticCommerceDocs.test'
 
 export function testAgenticCommerceSharedSsotUsesCurrentCapabilityNames() {
   const sharedText = readFileSync(resolve(process.cwd(), '../grph-shared/src/payments/agenticCommerceSsot.ts'), 'utf8')

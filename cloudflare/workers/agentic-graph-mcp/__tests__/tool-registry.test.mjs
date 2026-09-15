@@ -1,3 +1,5 @@
+import { pinnedAgentDocsFetch } from "../../../../mcp/__tests__/fixtures/native-agent-docs.mjs";
+import packageJson from "../../../../package.json" with { type: "json" };
 // Unit tests for the agentic-graph control-plane McpAgent tool registry
 // (agentic-graph-acos-mcp-connector spec, task 1.1).
 //
@@ -230,45 +232,9 @@ test("Agentic Canvas OS docs invocation is cataloged remotely as read-only", () 
 });
 
 test("Agentic Canvas OS docs invocation resolves prefixed tokens remotely", async () => {
-  const sourceRevision = "a".repeat(40);
+  const sourceRevision = packageJson.dependencies["agentic-os"].split("/").at(-1);
   const requestedUrls = [];
-  const dictionaryCommand = [
-    "---",
-    "dictionary_entries:",
-    "  - /query",
-    "---",
-    "",
-    "| Token | Purpose |",
-    "| --- | --- |",
-    "| `/query` | Resolve one query through the docs invocation boundary. |",
-  ].join("\n");
-  const fetchImpl = async (input) => {
-    const requestUrl = String(input);
-    requestedUrls.push(requestUrl);
-    if (requestUrl === "https://api.github.com/repos/huijoohwee/agentic-canvas-os/commits/main") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ sha: sourceRevision }),
-      };
-    }
-    if (requestUrl.startsWith("https://api.github.com/repos/huijoohwee/agentic-canvas-os/commits?")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-      };
-    }
-    const rawDocsPrefix = `https://raw.githubusercontent.com/huijoohwee/agentic-canvas-os/${sourceRevision}/docs/`;
-    if (requestUrl.startsWith(rawDocsPrefix)) {
-      return {
-        ok: true,
-        status: 200,
-        text: async () => requestUrl.endsWith("/DICTIONARY-COMMAND.md") ? dictionaryCommand : "",
-      };
-    }
-    throw new Error(`Unexpected Agentic Canvas OS docs request: ${requestUrl}`);
-  };
+  const fetchImpl = pinnedAgentDocsFetch(requestedUrls);
   const result = await executeAgenticGraphMcpToolAsync(
     AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
     { token: "/query" },
@@ -279,14 +245,10 @@ test("Agentic Canvas OS docs invocation resolves prefixed tokens remotely", asyn
   assert.equal(result.structuredContent?.sourceRevision, sourceRevision);
   assert.equal(result.structuredContent?.invocation?.token, "/query");
   assert.equal(result.structuredContent?.invocation?.sourcePath, "DICTIONARY-COMMAND.md#/query");
-  assert.equal(requestedUrls[0], "https://api.github.com/repos/huijoohwee/agentic-canvas-os/commits/main");
-  assert.equal(requestedUrls.length, 8);
-  assert.ok(requestedUrls.includes(
-    `https://raw.githubusercontent.com/huijoohwee/agentic-canvas-os/${sourceRevision}/docs/DICTIONARY-COMMAND.md`,
-  ));
-  assert.ok(requestedUrls.includes(
-    `https://api.github.com/repos/huijoohwee/agentic-canvas-os/commits?sha=${sourceRevision}&path=docs/LIVE-AGENT-PROVIDER-PROOF.md&per_page=100`,
-  ));
+  assert.equal(requestedUrls.length, 6);
+  assert.ok(requestedUrls.every(url => url.startsWith(`https://raw.githubusercontent.com/huijoohwee/agentic-os/${sourceRevision}/`)));
+  assert.ok(requestedUrls.includes(`https://raw.githubusercontent.com/huijoohwee/agentic-os/${sourceRevision}/catalog/dictionaries/DICTIONARY-COMMAND.md`));
+
 });
 
 test("Director tool: live mode without approvals halts with zero paid calls (Property 2 / R2.3 sanity check)", () => {

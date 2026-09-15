@@ -390,8 +390,17 @@ export function testMultiDimTableYamlFrontmatterReflectsStrybldrValidationSource
   if (!nextValidation?.includes(`${validationKey}: "false"`)) {
     throw new Error(`expected starter validation guard edit to write back through the source-line map, got:\n${nextValidation}`)
   }
-  if (projection.markdownText.includes('| strybldr_storyboard | workflow | stages | stages |') || projection.markdownText.includes('| strybldr_storyboard | workflow | fork | branches | branches |')) {
-    throw new Error('expected YAML Frontmatter list paths to avoid duplicated parent keys')
+  // Key is a separate editable column. Compare hierarchy columns only, so
+  // compact source arrays do not make the deepest level look duplicated.
+  const tableRows = projection.markdownText.split('\n').filter(line => line.startsWith('|'))
+    .map(line => line.split('|').slice(1, -1).map(cell => cell.trim()))
+  const hierarchyColumns = (tableRows[0] || []).flatMap((name, index) => /^L[0-9]+$/.test(name) ? [index] : [])
+  if (hierarchyColumns.length < 1) throw new Error('expected YAML Frontmatter hierarchy columns')
+  for (const row of tableRows.slice(2)) {
+    const hierarchy = hierarchyColumns.map(index => row[index]).filter(Boolean)
+    if (hierarchy[0] === storyboardKey && hierarchy.some((key, index) => index > 0 && key === hierarchy[index - 1])) {
+      throw new Error('expected YAML Frontmatter list paths to avoid duplicated parent keys')
+    }
   }
   if (projection.replacements.length !== 2 || projection.replacements.some(replacement => replacement.kind !== 'metadata' && replacement.kind !== 'body')) {
     throw new Error(`expected only Markdown YAML Frontmatter and Markdown Body replacement maps, got ${projection.replacements.map(replacement => replacement.kind).join(', ')}`)

@@ -24,9 +24,9 @@ const sourceStates = ({ application = {}, docs = {} } = {}) => [
   },
   {
     id: 'agentic-canvas-os-docs',
-    root: '/workspace/agentic-canvas-os',
-    canonicalRoot: '/workspace/agentic-canvas-os',
-    canonicalOwnerPath: '/workspace/agentic-canvas-os',
+    root: '/workspace/agentic-os',
+    canonicalRoot: '/workspace/agentic-os',
+    canonicalOwnerPath: '/workspace/agentic-os',
     branch: 'main',
     headSha: SHA_A,
     canonicalSha: SHA_A,
@@ -197,9 +197,9 @@ test('source collection fetches and identifies both repositories from the shared
     pathCheck: async targetPath => checkedPaths.push(targetPath),
   })
 
-  const docsRoot = path.resolve(repoRoot, '../agentic-canvas-os')
+  const docsRoot = path.resolve(repoRoot, '../agentic-os')
   assert.equal(result.canonical, true)
-  assert.deepEqual(checkedPaths, [repoRoot, path.join(docsRoot, 'docs')])
+  assert.deepEqual(checkedPaths, [repoRoot, path.join(docsRoot, 'catalog/dictionaries')])
   assert.deepEqual(calls.filter(call => call.args[0] === 'fetch'), [
     { args: ['fetch', '--quiet', 'origin', 'main'], cwd: repoRoot },
     { args: ['fetch', '--quiet', 'origin', 'main'], cwd: docsRoot },

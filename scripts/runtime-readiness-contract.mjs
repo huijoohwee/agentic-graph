@@ -53,7 +53,11 @@ export const validateRuntimeReadinessContract = contract => {
 export const readRuntimeReadinessContract = async () => {
   const source = await fs.readFile(runtimeReadinessContractPath, 'utf8')
   const label = path.relative(repoRoot, runtimeReadinessContractPath)
-  return validateRuntimeReadinessContract(parseFrontmatter(source, label))
+  const contract = validateRuntimeReadinessContract(parseFrontmatter(source, label))
+  const pkg = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'))
+  const expected = `https://codeload.github.com/${resolveRuntimeDocsDependency(contract).repository}/tar.gz/${contract.docs_dependency.ref}`
+  if (pkg.dependencies?.['agentic-os'] !== expected) throw new Error('docs and runtime package pins must identify the same OS source revision')
+  return contract
 }
 
 export const formatGitHubOutput = dependency => (

@@ -160,7 +160,7 @@ export async function testRemoteGrammarReconcilesRevisionRolloverWithinBoundedRe
       throw new Error(`expected only the old-revision sigil to reconcile once, got ${JSON.stringify(Object.fromEntries(callsBySigil))}`)
     }
     if (refreshed.counts.slash !== 1 || refreshed.counts.hash !== 1 || refreshed.counts.at !== 1
-      || refreshed.entries.some(entry => !entry.sourceUrl.includes(`/blob/${currentRevision}/docs/`))) {
+      || refreshed.entries.some(entry => !entry.sourceUrl.includes(`/blob/${currentRevision}/catalog/dictionaries/`))) {
       throw new Error(`expected one exact-revision entry per sigil, got ${JSON.stringify(refreshed)}`)
     }
   } finally {

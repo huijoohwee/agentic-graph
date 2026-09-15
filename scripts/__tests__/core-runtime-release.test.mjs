@@ -483,7 +483,7 @@ test('rollback shell republishes only successfully restored core documents befor
     for (const command of ['npm', 'node']) fs.writeFileSync(path.join(bin, command),
       '#!/bin/sh\nprintf "%s\\n" "' + command + ' $*" >> "$LC_ROLLBACK_CALLS"\n'
       + (command === 'npm' ? 'exit "$LC_ROLLBACK_SEED_STATUS"\n' : ''), { mode: 0o755 })
-    for (const [stage, profile, seedStatus, expectedCalls] of [
+    for (const repository of ['huijoohwee/agentic-canvas-os', 'huijoohwee/agentic-os']) for (const [stage, profile, seedStatus, expectedCalls] of [
       ['deployment', 'core', 0, 1], ['state-reconciliation', 'core', 0, 2],
       ['live-verification', 'core', 0, 2], ['state-reconciliation', 'travel', 0, 1],
       ['state-reconciliation', 'core', 1, 1],
@@ -491,6 +491,7 @@ test('rollback shell republishes only successfully restored core documents befor
       fs.writeFileSync(path.join(directory, 'release-failure-observation.json'), JSON.stringify({ failedStage: stage }))
       fs.writeFileSync(history, '')
       const script = restore.run.replaceAll('${{ steps.runtime_profile.outputs.profile }}', profile)
+        .replaceAll('${{ steps.rollback_docs.outputs.repository }}', repository)
       const result = spawnSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script], {
         cwd: directory, encoding: 'utf8', env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH,
           RUNNER_TEMP: directory, GITHUB_WORKSPACE: directory, RELEASE_SHA: sourceSha,
@@ -502,7 +503,8 @@ test('rollback shell republishes only successfully restored core documents befor
       assert.equal(calls.length, expectedCalls)
       if (stage === 'deployment') assert.match(calls[0], /--capture-state/)
       else {
-        assert.ok(calls[0].includes('--docs-root ' + path.join(directory, 'rollback-agentic-canvas-os/docs')))
+        assert.ok(calls[0].startsWith('npm --prefix ../rollback-agentic-graph run '))
+        assert.ok(calls[0].includes('--docs-root ' + path.join(directory, 'rollback-agentic-canvas-os', repository === 'huijoohwee/agentic-os' ? 'catalog/dictionaries' : 'docs')))
         assert.ok(calls[0].includes('--publication-plan-output ' + path.join(directory, 'restored-d1-publication-plan.json')))
       }
       if (expectedCalls === 2) {

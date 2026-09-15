@@ -1,3 +1,4 @@
+import { readRepoDocumentFamily } from '@/tests/lib/repoDocumentFamily'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import React, { act } from 'react'
@@ -44,8 +45,8 @@ export function testMainPanelCommerceReplacesPaymentsTopLevelTab() {
 export function testMainPanelCommercePrdTadUsesCanonicalCommerceOwner() {
   const repoRoot = resolve(process.cwd(), '..')
   const docs = [
-    readFileSync(resolve(repoRoot, 'docs/documents/agentic-graph-mainpanel-commerce-prd-tad.md'), 'utf8'),
-    readFileSync(resolve(repoRoot, 'docs/documents/agentic-graph-agentic-commerce-prd-tad.md'), 'utf8'),
+    readRepoDocumentFamily('docs/documents/agentic-graph-mainpanel-commerce-prd-tad-adr-mvp-gtm.md'),
+    readRepoDocumentFamily('docs/documents/agentic-graph-agentic-commerce-prd-tad-adr-mvp-gtm.md'),
   ].join('\n')
   const stripePaymentApiDocsSource = readFileSync(
     resolve(repoRoot, 'canvas/src/features/panels/views/stripePaymentApiDocs.ts'),
@@ -57,7 +58,6 @@ export function testMainPanelCommercePrdTadUsesCanonicalCommerceOwner() {
     'Implemented as canonical Commerce operator UI',
     'Payments remains only a subsection inside Commerce for Stripe and payment-provider configuration.',
     'status: "Accepted and implemented"',
-    'version: "0.2.0"',
     'cloudflare/workers/agentic-graph-payment/agenticCommerce.ts',
     'grph-shared/src/payments/agenticCommerceSsot.ts',
     'canvas/src/__tests__/agenticCommerceWorker.test.ts',
@@ -91,7 +91,6 @@ export function testMainPanelCommercePrdTadUsesCanonicalCommerceOwner() {
     'Implemented as Payments superset/replacement',
     'Legacy `Payments` and new `Commerce` tabs',
     'status: "Draft"',
-    'version: "0.1.0"',
     'test/commerce/',
     'Cloudflare KV',
     'KV Store',

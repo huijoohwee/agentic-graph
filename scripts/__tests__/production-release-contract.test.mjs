@@ -105,17 +105,18 @@ test('integration forbids alternate standalone Game Mode and XR Physics source o
 })
 test('GitHub workflows pin Node 24 actions to immutable revisions', () => {
   const workflowRoot = path.resolve(repoRoot, '.github', 'workflows')
-  const workflowSource = fs.readdirSync(workflowRoot)
+  const actionUses = fs.readdirSync(workflowRoot)
     .filter(fileName => fileName.endsWith('.yml') || fileName.endsWith('.yaml'))
-    .map(fileName => fs.readFileSync(path.resolve(workflowRoot, fileName), 'utf8'))
-    .join('\n')
-  const actionUses = [...workflowSource.matchAll(/uses:\s*(actions\/[A-Za-z0-9_.-]+)@([^\s#]+)/g)]
+    .flatMap(fileName => Object.values(YAML.parse(fs.readFileSync(path.resolve(workflowRoot, fileName), 'utf8')).jobs || {}))
+    .flatMap(job => [job, ...(job.steps || [])]).map(step => String(step.uses || ''))
+    .filter(uses => uses.startsWith('actions/'))
   assert.ok(actionUses.length > 0)
-  for (const [, action, revision] of actionUses) {
+  for (const uses of actionUses) {
+    const [action, revision = ''] = uses.split('@')
     assert.match(revision, /^[0-9a-f]{40}$/, `${action} must use an immutable commit SHA`)
   }
   for (const action of ['checkout', 'setup-node', 'setup-python', 'upload-artifact', 'download-artifact']) {
-    assert.match(workflowSource, new RegExp(`actions/${action}@[0-9a-f]{40}`))
+    assert.ok(actionUses.some(uses => uses.startsWith(`actions/${action}@`)), `${action} workflow action must be present`)
   }
 })
 test('production release builds the exact localhost-reviewed candidate once before authorization', () => {
@@ -535,7 +536,7 @@ test('production release reconciles the exact canonical docs revision before liv
   const checkoutIndex = deployJob.indexOf('Checkout exact Agentic Canvas OS docs SSOT')
   const seedIndex = deployJob.indexOf('Reconcile canonical docs into D1')
   const smokeIndex = deployJob.indexOf('Verify live runtime')
-  assert.match(deployJob, /AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ['"]?\$\{\{ github\.workspace \}\}\/agentic-canvas-os\/docs/)
+  assert.match(deployJob, /AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ['"]?\$\{\{ github\.workspace \}\}\/agentic-os\/catalog\/dictionaries/)
   assert.match(releaseWorkflow, /docs_repository: ['"]?\$\{\{ steps\.agentic_canvas_os_docs\.outputs\.repository \}\}/)
   assert.match(deployJob, /repository: ['"]?\$\{\{ needs\.verify\.outputs\.docs_repository \}\}/)
   assert.match(deployJob, /ref: ['"]?\$\{\{ needs\.verify\.outputs\.docs_revision \}\}/)

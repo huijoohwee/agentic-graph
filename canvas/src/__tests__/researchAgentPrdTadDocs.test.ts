@@ -1,9 +1,10 @@
+import { readRepoDocumentFamily } from '@/tests/lib/repoDocumentFamily'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const repoRoot = resolve(process.cwd(), '..')
 const readRepoFile = (repoRelativePath: string): string =>
-  readFileSync(resolve(repoRoot, repoRelativePath), 'utf8')
+  readRepoDocumentFamily(repoRelativePath)
 
 export function testResearchAgentPrdTadUsesImplementedDevSourceOwners(): void {
   const oldPath = resolve(repoRoot, 'docs/documents/agentic-graph-research-agent-prd-tad-proposed.md')

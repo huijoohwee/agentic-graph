@@ -1,4 +1,5 @@
-import { resolvePinnedAgenticDocsRoot, resolveRepoSourcePath, resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
+import { parseXrInteractiveInvocation } from '@/features/three/xrSceneInteractiveInvocation'
+import { resolvePinnedAgenticDocPath, resolveRepoSourcePath, resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -58,7 +59,7 @@ const nodeById = (nodes: PlainRecord[], id: string): PlainRecord => {
 const property = (node: PlainRecord, key: string): unknown => unwrap(node[key])
 
 export async function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes() {
-  const catalogText = fs.readFileSync(path.join(await resolvePinnedAgenticDocsRoot(), 'PROMPT-PRESETS.md'), 'utf8')
+  const catalogText = fs.readFileSync(await resolvePinnedAgenticDocPath('PROMPT-PRESETS.md'), 'utf8')
   const catalog = readFrontmatter(catalogText)
   const presets = Array.isArray(catalog.prompt_presets) ? catalog.prompt_presets.filter(isRecord) : []
   if (catalog.schema !== 'agentic-os-prompt-preset-catalog/v1') {
@@ -83,7 +84,8 @@ export async function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes(
     const mcpToken = String(preset.mcp_token || '')
     const isCardInline = slashCommand === '/image.to-threejs' || slashCommand === '/image.to-glb' || runtimeCommand === '/agentic-graph.probe-tree'
     let valid = false
-    if (slashCommand === '/image.to-threejs') valid = isImageToThreeJsPromptPreset(prompt)
+    if (runtimeCommand === '/xr.physics') valid = parseXrInteractiveInvocation(prompt)?.action === 'physics'
+    else if (slashCommand === '/image.to-threejs') valid = isImageToThreeJsPromptPreset(prompt)
     else if (slashCommand === '/image.to-glb') valid = isImageToGlbPromptPreset(prompt)
     else if (runtimeCommand === '/agentic-graph.probe-tree') valid = isAgenticGraphProbeTreePromptPreset(prompt)
     else if (runtimeCommand === '/launch-copilot') valid = /^\/launch-copilot\s+outline\s+reference\s+\S[\s\S]*$/.test(prompt)
@@ -124,7 +126,7 @@ export async function testAgenticVideoCanvasDemoIsExecutableAndReplayable() {
     throw new Error('expected the authored source binding to preserve the canonical workspace docs path')
   }
   if (inputs.prompt_preset_id !== 'video-agent') throw new Error('expected the Video Canvas to bind the centralized video-agent prompt preset')
-  const promptCatalog = readFrontmatter(fs.readFileSync(path.join(await resolvePinnedAgenticDocsRoot(), 'PROMPT-PRESETS.md'), 'utf8'))
+  const promptCatalog = readFrontmatter(fs.readFileSync(await resolvePinnedAgenticDocPath('PROMPT-PRESETS.md'), 'utf8'))
   const promptPresets = Array.isArray(promptCatalog.prompt_presets) ? promptCatalog.prompt_presets.filter(isRecord) : []
   const videoPromptPreset = promptPresets.find(preset => preset.id === 'video-agent')
   if (!videoPromptPreset || videoPromptPreset.slash_command !== '/video-prompt-preset' || videoPromptPreset.runtime_command !== '/video-agent') {

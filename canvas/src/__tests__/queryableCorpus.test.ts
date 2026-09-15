@@ -1,3 +1,4 @@
+import { readRepoDocumentFamily } from '@/tests/lib/repoDocumentFamily'
 import fs from 'node:fs'
 import path from 'node:path'
 import { SOURCE_FILES_FORMATS } from '@/lib/config-copy/importExportCopy'
@@ -19,9 +20,7 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 function readQueryableCorpusPrdTad(): string {
-  const cwd = process.cwd()
-  const repoRoot = path.basename(cwd) === 'canvas' ? path.resolve(cwd, '..') : cwd
-  return fs.readFileSync(path.join(repoRoot, 'docs/documents/agentic-graph-query-prd-tad-adr-mvp-gtm.md'), 'utf8')
+  return readRepoDocumentFamily('docs/documents/agentic-graph-query-prd-tad-adr-mvp-gtm.md')
 }
 
 function buildSubmitArgsFixture(overrides: Partial<FloatingPanelChatSubmitArgs> = {}): FloatingPanelChatSubmitArgs {

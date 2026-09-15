@@ -1,3 +1,4 @@
+import { writeNativeProofFixture } from "./fixtures/native-agent-docs.mjs";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
@@ -19,8 +20,8 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 async function createDocsFixture(rootDir) {
-  const repositoryRoot = path.join(rootDir, "agentic-canvas-os");
-  const docsRoot = path.join(repositoryRoot, "docs");
+  const repositoryRoot = path.join(rootDir, "agentic-os");
+  const docsRoot = path.join(repositoryRoot, "catalog", "dictionaries");
   await fs.mkdir(docsRoot, { recursive: true });
   const dictionary = (token) => `---\ndictionary_entries:\n  - ${token}\n---\n\n| Token | Meaning |\n|---|---|\n| \`${token}\` | Agent team fixture. |\n`;
   await Promise.all([
@@ -31,8 +32,9 @@ async function createDocsFixture(rootDir) {
     fs.writeFile(path.join(docsRoot, "LIVE-AGENT-PROVIDER-PROOF.md"), "---\nschema: unavailable\nstatus: unavailable\n---\n"),
     fs.writeFile(path.join(docsRoot, "PROGRESSIVE-AGENTS.md"), "---\nschema: unavailable\nstatus: unavailable\n---\n"),
   ]);
+  await writeNativeProofFixture(repositoryRoot);
   execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
-  execFileSync("git", ["add", "docs"], { cwd: repositoryRoot });
+  execFileSync("git", ["add", "catalog", "runtime"], { cwd: repositoryRoot });
   execFileSync("git", [
     "-c", "user.name=agentic-graph Test",
     "-c", "user.email=test@agentic-graph.local",
@@ -40,7 +42,7 @@ async function createDocsFixture(rootDir) {
   ], { cwd: repositoryRoot });
   const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
   execFileSync("git", [
-    "remote", "add", "origin", "https://github.com/huijoohwee/agentic-canvas-os.git",
+    "remote", "add", "origin", "https://github.com/huijoohwee/agentic-os.git",
   ], { cwd: repositoryRoot });
   execFileSync("git", ["update-ref", "refs/remotes/origin/main", revision], { cwd: repositoryRoot });
   return { docsRoot, revision };

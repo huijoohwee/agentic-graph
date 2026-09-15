@@ -1,4 +1,4 @@
-import { importNodeFsPromises, importNodePath } from './workspaceSeedNodeModules'
+import { importNativeDocsReader, importNodeFsPromises, importNodePath } from './workspaceSeedNodeModules'
 import {
   isWorkspaceSourceMirrorFileName,
   shouldEncodeWorkspaceSourceMirrorAsBase64,
@@ -22,6 +22,13 @@ export async function readWorkspaceDocsMirrorEntriesViaNodeFs(
     const path = await importNodePath()
     const root = normalizeAbsoluteRoot(docsAbsRoot)
     if (!root) return []
+    if (root.endsWith('/agentic-os/catalog/dictionaries')) {
+      const { readRuntimeDocsSources } = await importNativeDocsReader()
+      return Promise.all((await readRuntimeDocsSources({ docsRoot: root })).map(async entry => ({
+        relPath: entry.fileName, text: new TextDecoder().decode(entry.bytes),
+        updatedAtMs: Math.floor((await fs.stat(entry.filePath)).mtimeMs),
+      })))
+    }
     const out: WorkspaceDocsMirrorEntry[] = []
     const queue = [root]
     while (queue.length > 0 && out.length < WORKSPACE_DOCS_MIRROR_MAX_FILES) {

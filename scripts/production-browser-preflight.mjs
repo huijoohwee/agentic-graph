@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
+import { readRuntimeDocsSources } from './runtime-docs-sources.mjs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { execFileSync, spawn } from 'node:child_process'
@@ -46,7 +47,7 @@ export async function inspectBrowserInput(input) {
     assert.ok(path.isAbsolute(input[key]), `${key} must be absolute`)
     assert.equal(await fs.realpath(input[key]), input[key], `${key} must be a real path`)
   }
-  const docsRepository = path.dirname(input.docsRoot)
+  const docsRepository = git(input.docsRoot, 'rev-parse', '--show-toplevel')
   const sourceRevision = git(root, 'rev-parse', 'HEAD')
   const marker = await readJson(path.join(input.artifactRoot, '.well-known/runtime-readiness.json'))
   await validateProductionRuntimeReadiness(marker, { sourceRevision,
@@ -104,15 +105,10 @@ async function isolate(input) {
     return new Response('External network denied by browser preflight', { status: 502 })
   }
   try {
-    const docsRepository = path.dirname(input.docsRoot)
-    const records = git(docsRepository, 'ls-tree', '-r', 'HEAD', '--', 'docs').split('\n')
-    for (const record of records) {
-      const match = /^100644 blob ([0-9a-f]{40})\t(docs\/.*\.(?:md|gltf|glb))$/.exec(record)
-      if (!match) continue
-      const bytes = await fs.readFile(path.join(docsRepository, match[2]))
-      assert.equal(createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'), match[1], 'docs bytes changed')
-      const content = bytes.toString(match[2].endsWith('.glb') ? 'base64' : 'utf8')
-      const canonicalPath = `agentic-canvas-os/${match[2]}`, id = `docs:${hash(canonicalPath).slice(0, 24)}`
+    for (const source of await readRuntimeDocsSources({ docsRoot: input.docsRoot, graphRoot: root })) {
+      const { bytes, canonicalPath } = source;
+      const content = bytes.toString('utf8');
+      const id = `docs:${hash(canonicalPath).slice(0, 24)}`;
       fixture.document(id, content)
       fixture.sql.prepare('update documents set canonical_path=?,content_hash=? where id=?').run(canonicalPath, hash(bytes), id)
       const identity = fixture.identity(id)

@@ -32,7 +32,7 @@ export function testDocsDocumentsForbidDraftAndProposedPrdTadMarkers(): void {
   const matches: string[] = []
   for (const filePath of listMarkdownFiles(docsRoot)) {
     const text = readFileSync(filePath, 'utf8')
-    const firstSectionIndex = text.search(/^##\s/m)
+    const firstSectionIndex = text.search(/^#{2,6}\s/m)
     const preamble = firstSectionIndex === -1 ? text : text.slice(0, firstSectionIndex)
     for (const item of forbidden) {
       const target = item.preambleOnly ? preamble : text

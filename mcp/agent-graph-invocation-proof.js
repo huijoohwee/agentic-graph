@@ -21,7 +21,7 @@ const isPinnedDictionaryEntry = (entry, sourceRevision, kind) => {
     && typeof entry.sourcePath === "string"
     && entry.sourcePath.startsWith(`${fileName}#`)
     && typeof entry.sourceUrl === "string"
-    && entry.sourceUrl.includes(`/blob/${sourceRevision}/docs/${fileName}#`);
+    && entry.sourceUrl === `https://github.com/huijoohwee/agentic-os/blob/${sourceRevision}/catalog/dictionaries/${fileName}#${entry.token}`;
 };
 
 const proofFromPayload = (payload) => ({

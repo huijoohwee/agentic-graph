@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs: { docs_repository: '${{ steps.agentic_canvas_os_docs.outputs.repository }}', docs_revision: '${{ steps.agentic_canvas_os_docs.outputs.ref }}', manifest_digest: '${{ steps.immutable_manifest.outputs.digest }}', mirror_revision: '${{ steps.mirror_revision.outputs.revision }}', candidate_digest: '${{ steps.production_candidate.outputs.candidate_digest }}', lifecycle_candidate_digest: '${{ steps.lifecycle_candidate.outputs.candidate_digest }}' }
-    env: { NODE_OPTIONS: '--max-old-space-size=4096', AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs', AGENTIC_OS_BROWSER_PREFLIGHT_INPUT: '${{ github.workspace }}/browser-preflight/input.json', AGENTIC_OS_PUBLISH_REPOSITORY_ROOT: '${{ github.workspace }}/huijoohwee' }
+    env: { NODE_OPTIONS: '--max-old-space-size=4096', AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', RELEASE_SHA: '${{ inputs.source_sha }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-os/catalog/dictionaries', AGENTIC_OS_BROWSER_PREFLIGHT_INPUT: '${{ github.workspace }}/browser-preflight/input.json', AGENTIC_OS_PUBLISH_REPOSITORY_ROOT: '${{ github.workspace }}/huijoohwee' }
     steps:
       - { name: Checkout exact protected main commit, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 2 } }
       - name: Verify checked-out commit
@@ -56,7 +56,7 @@ jobs:
         with:
           repository: ${{ steps.agentic_canvas_os_docs.outputs.repository }}
           ref: ${{ steps.agentic_canvas_os_docs.outputs.ref }}
-          path: agentic-canvas-os
+          path: agentic-os
           fetch-depth: 0
       - name: Restore protected browser attempt history
         id: browser_history
@@ -84,7 +84,7 @@ jobs:
             and (.rollbackTargetDigest | test("^[0-9a-f]{64}$"))
             ) then . else error("release evidence preflight failed") end
           ' <<< "$RELEASE_EVIDENCE_JSON" > "$RUNNER_TEMP/release-evidence.json"
-          npm run --silent release:candidate:authorization -- verify-local-review --local-review "$RUNNER_TEMP/local-review-candidate.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os"
+          npm run --silent release:candidate:authorization -- verify-local-review --local-review "$RUNNER_TEMP/local-review-candidate.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --docs-root "$GITHUB_WORKSPACE/agentic-os"
       - name: Create immutable release manifest
         id: immutable_manifest
         working-directory: agentic-graph
@@ -92,7 +92,7 @@ jobs:
       - name: Validate dependency and immutable manifest
         working-directory: agentic-graph
         run: |
-          test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ steps.agentic_canvas_os_docs.outputs.ref }}"
+          test "$(git -C ../agentic-os rev-parse HEAD)" = "${{ steps.agentic_canvas_os_docs.outputs.ref }}"
           npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest.json" --source-sha "$RELEASE_SHA" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
       - { name: Upload immutable release manifest, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: 'immutable-release-manifest-${{ inputs.source_sha }}', path: '${{ runner.temp }}/immutable-release-manifest.json', if-no-files-found: error, retention-days: 1 } }
       - { name: Recheck current source ownership, working-directory: agentic-graph, run: 'npm run worktree:check && npm run collaboration:contract:check' }
@@ -119,7 +119,7 @@ jobs:
         id: production_candidate
         working-directory: agentic-graph
         run: |
-          npm run --silent release:candidate:authorization -- create --local-review "$RUNNER_TEMP/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --output "$RUNNER_TEMP/production-release-candidate.json" --github-output >> "$GITHUB_OUTPUT"
+          npm run --silent release:candidate:authorization -- create --local-review "$RUNNER_TEMP/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --output "$RUNNER_TEMP/production-release-candidate.json" --github-output >> "$GITHUB_OUTPUT"
           {
             echo "## Production candidate awaiting human authorization"
             echo "- Source: \`$RELEASE_SHA\`"
@@ -132,7 +132,7 @@ jobs:
         id: lifecycle_candidate
         working-directory: agentic-graph
         run: |
-          npm run --silent release:lifecycle:receipts -- create --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --local-review "$RUNNER_TEMP/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-tree "$(git -C ../agentic-canvas-os rev-parse HEAD^{tree})" --guideline-sha "${{ steps.guideline_revision.outputs.revision }}" --mirror-revision "${{ steps.mirror_revision.outputs.revision }}" --actor-id "github:${{ github.actor }}" --device-id "github-hosted:${{ runner.os }}" --session-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}" --worktree-id "github-workspace:${{ github.run_id }}:verify" --branch-id "refs/heads/main" --scope-id "production-release:$RELEASE_SHA" --lease-epoch "${{ github.run_attempt }}" --fence-revision "$RELEASE_SHA" --release-evidence "$RUNNER_TEMP/release-evidence.json" --integrated-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --target-id "airvio.co/agentic-graph" --output-dir "$RUNNER_TEMP/production-lifecycle" --github-output >> "$GITHUB_OUTPUT"
+          npm run --silent release:lifecycle:receipts -- create --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --local-review "$RUNNER_TEMP/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-tree "$(git -C ../agentic-os rev-parse HEAD^{tree})" --guideline-sha "${{ steps.guideline_revision.outputs.revision }}" --mirror-revision "${{ steps.mirror_revision.outputs.revision }}" --actor-id "github:${{ github.actor }}" --device-id "github-hosted:${{ runner.os }}" --session-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}" --worktree-id "github-workspace:${{ github.run_id }}:verify" --branch-id "refs/heads/main" --scope-id "production-release:$RELEASE_SHA" --lease-epoch "${{ github.run_attempt }}" --fence-revision "$RELEASE_SHA" --release-evidence "$RUNNER_TEMP/release-evidence.json" --integrated-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --target-id "airvio.co/agentic-graph" --output-dir "$RUNNER_TEMP/production-lifecycle" --github-output >> "$GITHUB_OUTPUT"
           {
             echo "- Neutral candidate receipt: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/candidate-manifest.json")\`"
             echo "- Guideline policy: \`${{ steps.guideline_revision.outputs.revision }}\`"
@@ -149,11 +149,11 @@ jobs:
     environment:
       name: production
       url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-    env: { CLOUDFLARE_PAGES_PROJECT: '${{ vars.CLOUDFLARE_PAGES_PROJECT }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-canvas-os/docs', RELEASE_SHA: '${{ inputs.source_sha }}', PRODUCTION_CANDIDATE_DIGEST: '${{ needs.verify.outputs.candidate_digest }}', PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST: '${{ needs.verify.outputs.lifecycle_candidate_digest }}' }
+    env: { CLOUDFLARE_PAGES_PROJECT: '${{ vars.CLOUDFLARE_PAGES_PROJECT }}', AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: '${{ github.workspace }}/agentic-os/catalog/dictionaries', RELEASE_SHA: '${{ inputs.source_sha }}', PRODUCTION_CANDIDATE_DIGEST: '${{ needs.verify.outputs.candidate_digest }}', PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST: '${{ needs.verify.outputs.lifecycle_candidate_digest }}' }
     steps:
       - { name: Checkout exact candidate, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 1 } }
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.verify.outputs.mirror_revision }}', path: huijoohwee, token: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}' } }
-      - { name: Checkout exact Agentic Canvas OS docs SSOT, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-canvas-os } }
+      - { name: Checkout exact Agentic Canvas OS docs SSOT, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-os } }
       - { name: Setup Node, uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" } }
       - name: Install dependencies
         working-directory: agentic-graph
@@ -175,7 +175,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/approvals" > "$RUNNER_TEMP/production-approvals.json"
-          npm run --silent release:lifecycle:receipts -- authorize --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --release-candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --approvals "$RUNNER_TEMP/production-approvals.json" --repository "${{ github.repository }}" --run-id "${{ github.run_id }}" --server-url "${{ github.server_url }}" --controller-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}:deploy" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
+          npm run --silent release:lifecycle:receipts -- authorize --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --release-candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --approvals "$RUNNER_TEMP/production-approvals.json" --repository "${{ github.repository }}" --run-id "${{ github.run_id }}" --server-url "${{ github.server_url }}" --controller-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}:deploy" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
           {
             echo "## Human-authorized Production release"
             echo "- Candidate: \`$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST\`"
@@ -186,11 +186,11 @@ jobs:
       - name: Revalidate immutable manifest and configuration
         working-directory: agentic-graph
         run: |
-          test "$(git -C ../agentic-canvas-os rev-parse HEAD)" = "${{ needs.verify.outputs.docs_revision }}"
+          test "$(git -C ../agentic-os rev-parse HEAD)" = "${{ needs.verify.outputs.docs_revision }}"
           test -n "$CLOUDFLARE_PAGES_PROJECT"
           test -n "${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}"
           npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest-proof/immutable-release-manifest.json" --source-sha "$RELEASE_SHA" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --digest "${{ needs.verify.outputs.manifest_digest }}"
-          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
       - name: Capture current production rollback target
         id: previous
         working-directory: agentic-graph
@@ -207,7 +207,7 @@ jobs:
         env: *cloudflare_release_environment
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           npm run --silent runtime:pages:owner-enforce
       - name: Select reviewed production runtime profile
         id: runtime_profile
@@ -230,7 +230,7 @@ jobs:
         }
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           node ./scripts/travel-mesh-release.mjs preflight --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --output "$RUNNER_TEMP/travel-mesh-preflight.json" --github-output
       - name: Prewarm returning-user service worker profile
         working-directory: agentic-graph
@@ -246,7 +246,7 @@ jobs:
           printf '%s\n' attempted=false mutation_possible=false >> "$GITHUB_OUTPUT"
           exec > >(tee "$RUNNER_TEMP/pages-deploy-attempt.log") 2>&1
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           node ./scripts/verify-production-release-transports.mjs pages --mode predeploy --evidence-dir "$RUNNER_TEMP" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --output "$RUNNER_TEMP/predeploy-pages-observation.json" --github-output
           npm run --silent storage:d1:seed:docs -- --capture-state --evidence-output "$RUNNER_TEMP/predeploy-d1-state-evidence.json"
           node ./scripts/verify-production-release-transports.mjs recapture-rollback --pages-observation "$RUNNER_TEMP/predeploy-pages-observation.json" --state-evidence "$RUNNER_TEMP/predeploy-d1-state-evidence.json" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --mirror-revision "$(git -C ../huijoohwee ls-remote origin refs/heads/main | cut -f1)" --output "$RUNNER_TEMP/previous-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/previous-production-rollback-digest.txt"
@@ -271,7 +271,7 @@ jobs:
         working-directory: agentic-graph
         run: |
           test -f "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" || : > "$RUNNER_TEMP/wrangler-pages-deploy.ndjson"
-          npm run --silent release:lifecycle:receipts -- deploy --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --wrangler-output "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" --deployment-capture "$RUNNER_TEMP/candidate-pages-deployment.json" --previous-deployment "$RUNNER_TEMP/previous-production-rollback-recapture.json" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
+          npm run --silent release:lifecycle:receipts -- deploy --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --wrangler-output "$RUNNER_TEMP/wrangler-pages-deploy.ndjson" --deployment-capture "$RUNNER_TEMP/candidate-pages-deployment.json" --previous-deployment "$RUNNER_TEMP/previous-production-rollback-recapture.json" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Require an exact successful deployment attempt
         id: deployment_gate
         if: always()
@@ -299,13 +299,13 @@ jobs:
         env: *cloudflare_release_environment
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           printf '%s\n' state-reconciliation > "$RUNNER_TEMP/release-stage.txt"
           npm run storage:d1:seed:docs -- --evidence-output "$RUNNER_TEMP/d1-reconciliation-evidence.json" --publication-plan-output "$RUNNER_TEMP/d1-publication-plan.json"
       - name: Record direct D1 state reconciliation receipt
         id: state_receipt
         working-directory: agentic-graph
-        run: npm run --silent release:lifecycle:receipts -- state --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --state-evidence "$RUNNER_TEMP/d1-reconciliation-evidence.json" --issued-at "$(jq -r .reconciledAt "$RUNNER_TEMP/d1-reconciliation-evidence.json")" --output-dir "$RUNNER_TEMP/production-lifecycle"
+        run: npm run --silent release:lifecycle:receipts -- state --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --state-evidence "$RUNNER_TEMP/d1-reconciliation-evidence.json" --issued-at "$(jq -r .reconciledAt "$RUNNER_TEMP/d1-reconciliation-evidence.json")" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Publish exact canonical documents through the storage owner
         id: publish_docs
         if: steps.runtime_profile.outputs.profile == 'core'
@@ -361,7 +361,7 @@ jobs:
       - name: Record live verification receipt
         id: live_receipt
         working-directory: agentic-graph
-        run: npm run --silent release:lifecycle:receipts -- live --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --source-sha "$RELEASE_SHA" --immutable-origin-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --public-route-probes "$RUNNER_TEMP/production-transport-evidence.json" --browser-fidelity "$RUNNER_TEMP/production-fidelity-evidence.json" --client-cache-convergence "$RUNNER_TEMP/production-sw-convergence-evidence.json" --marker-parity "$RUNNER_TEMP/production-transport-evidence.json" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
+        run: npm run --silent release:lifecycle:receipts -- live --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --source-sha "$RELEASE_SHA" --immutable-origin-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --public-route-probes "$RUNNER_TEMP/production-transport-evidence.json" --browser-fidelity "$RUNNER_TEMP/production-fidelity-evidence.json" --client-cache-convergence "$RUNNER_TEMP/production-sw-convergence-evidence.json" --marker-parity "$RUNNER_TEMP/production-transport-evidence.json" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Publish verified production mirror
         id: publish_mirror
         working-directory: huijoohwee
@@ -396,7 +396,7 @@ jobs:
             done
             timeout --foreground --kill-after=30s 25m gh pr checks "$url" --repo huijoohwee/huijoohwee --required --watch --interval 5
             npm --prefix ../agentic-graph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-            npm --prefix ../agentic-graph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../agentic-graph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+            npm --prefix ../agentic-graph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../agentic-graph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
             echo "publication_attempted=true" >> "$GITHUB_OUTPUT"
             gh pr merge "$url" --repo huijoohwee/huijoohwee --squash --delete-branch --match-head-commit "$mirror_head_sha"
             echo "publication_committed=true" >> "$GITHUB_OUTPUT"
@@ -412,13 +412,13 @@ jobs:
       - name: Record publication receipt
         id: publication_receipt
         working-directory: agentic-graph
-        run: npm run --silent release:lifecycle:receipts -- publish --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --publication-revision "$(git -C ../huijoohwee rev-parse HEAD)" --publication-target "huijoohwee/huijoohwee" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
+        run: npm run --silent release:lifecycle:receipts -- publish --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --publication-revision "$(git -C ../huijoohwee rev-parse HEAD)" --publication-target "huijoohwee/huijoohwee" --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" --output-dir "$RUNNER_TEMP/production-lifecycle"
       - name: Seal and validate terminal lifecycle carrier
         id: lifecycle_terminal
         working-directory: agentic-graph
         run: |
-          npm run --silent release:lifecycle:receipts -- carrier --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --output "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" --github-output
-          npm run --silent release:lifecycle:receipts -- validate --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json"
+          npm run --silent release:lifecycle:receipts -- carrier --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --output "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" --github-output
+          npm run --silent release:lifecycle:receipts -- validate --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json"
           {
             echo "- Deployment: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/deployment-receipt.json")\`"
             echo "- State reconciliation: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/state-reconciliation-receipt.json")\`"
@@ -442,7 +442,7 @@ jobs:
           node ./scripts/verify-production-release-transports.mjs mirror --repository-root "$GITHUB_WORKSPACE/huijoohwee" --repository huijoohwee/huijoohwee --output "$round_two/mirror.json"
           assembled_at="$(node -e 'process.stdout.write(new Date().toISOString())')"
           printf '%s\n' "$assembled_at" > "$RUNNER_TEMP/production-lifecycle/successful-release-assembled-at.txt"
-          npm run --silent release:lifecycle:receipts -- recapture-successful-release --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "$DOCS_REVISION" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" --first-pages-observation "$round_one/pages.json" --first-state-evidence "$round_one/state.json" --first-mirror-observation "$round_one/mirror.json" --second-pages-observation "$round_two/pages.json" --second-state-evidence "$round_two/state.json" --second-mirror-observation "$round_two/mirror.json" --assembled-at "$assembled_at" --output "$RUNNER_TEMP/current-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/current-production-rollback-identity-digest.txt" --github-output
+          npm run --silent release:lifecycle:receipts -- recapture-successful-release --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "$DOCS_REVISION" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-v2.json" --first-pages-observation "$round_one/pages.json" --first-state-evidence "$round_one/state.json" --first-mirror-observation "$round_one/mirror.json" --second-pages-observation "$round_two/pages.json" --second-state-evidence "$round_two/state.json" --second-mirror-observation "$round_two/mirror.json" --assembled-at "$assembled_at" --output "$RUNNER_TEMP/current-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/current-production-rollback-identity-digest.txt" --github-output
       - name: Validate successful release rollback outputs
         working-directory: agentic-graph
         env: { ROLLBACK_RECAPTURE_PATH: '${{ steps.successful_release_recapture.outputs.rollback_recapture_path }}', ROLLBACK_TARGET_DIGEST: '${{ steps.successful_release_recapture.outputs.rollback_target_digest }}', EXPECTED_RECAPTURE_PATH: '${{ runner.temp }}/current-production-rollback-recapture.json', ROLLBACK_IDENTITY_DIGEST_PATH: '${{ runner.temp }}/current-production-rollback-identity-digest.txt', ASSEMBLED_AT_PATH: '${{ runner.temp }}/production-lifecycle/successful-release-assembled-at.txt' }
@@ -494,28 +494,20 @@ jobs:
         env: *travel_mesh_environment
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
-          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           node ./scripts/travel-mesh-release.mjs rollback --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --receipt "$RUNNER_TEMP/travel-mesh-release-receipt.json" --output "$RUNNER_TEMP/travel-mesh-rollback-receipt.json" --github-output
       - name: Checkout rollback agentic-graph source
         id: checkout_rollback_source
         if: always() && steps.rollback_eligibility.outputs.eligible == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: '${{ fromJSON(inputs.release_evidence).rollbackIdentity.pages.sourceRevision }}', path: rollback-agentic-graph }
-      - name: Install rollback dependencies
-        if: always() && steps.checkout_rollback_source.outcome == 'success'
-        id: install_rollback_dependencies
-        working-directory: rollback-agentic-graph
-        run: npm ci
+      - { name: Install rollback dependencies, if: always() && steps.checkout_rollback_source.outcome == 'success', id: install_rollback_dependencies, working-directory: rollback-agentic-graph, run: npm ci }
       - name: Resolve rollback docs dependency
         if: always() && steps.install_rollback_dependencies.outcome == 'success'
         id: rollback_docs
         working-directory: rollback-agentic-graph
         run: npm run --silent runtime:docs-dependency:resolve -- --github-output >> "$GITHUB_OUTPUT"
-      - name: Checkout rollback Agentic Canvas OS docs
-        if: always() && steps.rollback_docs.outcome == 'success'
-        id: checkout_rollback_docs
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { repository: '${{ steps.rollback_docs.outputs.repository }}', ref: '${{ steps.rollback_docs.outputs.ref }}', path: rollback-agentic-canvas-os }
+      - { name: Checkout rollback Agentic Canvas OS docs, if: always() && steps.rollback_docs.outcome == 'success', id: checkout_rollback_docs, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: '${{ steps.rollback_docs.outputs.repository }}', ref: '${{ steps.rollback_docs.outputs.ref }}', path: rollback-agentic-canvas-os } }
       - name: Roll back Pages to exact last-known-good deployment
         id: rollback_pages
         if: always() && steps.checkout_rollback_docs.outcome == 'success'
@@ -531,7 +523,12 @@ jobs:
           if test "$(jq -er .failedStage "$RUNNER_TEMP/release-failure-observation.json")" = deployment; then
             npm run --silent storage:d1:seed:docs -- --capture-state --evidence-output "$RUNNER_TEMP/restored-d1-state-evidence.json"
           else
-            npm run --silent storage:d1:seed:docs -- --docs-root "$GITHUB_WORKSPACE/rollback-agentic-canvas-os/docs" --evidence-output "$RUNNER_TEMP/restored-d1-state-evidence.json" --publication-plan-output "$RUNNER_TEMP/restored-d1-publication-plan.json"
+            case "${{ steps.rollback_docs.outputs.repository }}" in
+              huijoohwee/agentic-os) rollback_docs_root="$GITHUB_WORKSPACE/rollback-agentic-canvas-os/catalog/dictionaries" ;;
+              huijoohwee/agentic-canvas-os) rollback_docs_root="$GITHUB_WORKSPACE/rollback-agentic-canvas-os/docs" ;;
+              *) exit 1 ;;
+            esac
+            npm --prefix ../rollback-agentic-graph run --silent storage:d1:seed:docs -- --docs-root "$rollback_docs_root" --evidence-output "$RUNNER_TEMP/restored-d1-state-evidence.json" --publication-plan-output "$RUNNER_TEMP/restored-d1-publication-plan.json"
             if test "${{ steps.runtime_profile.outputs.profile }}" = core; then node ./scripts/core-runtime-release-publications.mjs --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --plan "$RUNNER_TEMP/restored-d1-publication-plan.json" --state-evidence "$RUNNER_TEMP/restored-d1-state-evidence.json" --output "$RUNNER_TEMP/core-document-rollback-evidence.json"; fi
           fi
       - name: Capture authoritative restored Pages deployment
@@ -582,9 +579,9 @@ jobs:
         working-directory: agentic-graph
         run: |
           rolled_back_at="$(node -e 'process.stdout.write(new Date().toISOString())')"
-          npm run --silent release:lifecycle:receipts -- rollback --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --failure-observation "$RUNNER_TEMP/release-failure-observation.json" --restored-pages "$RUNNER_TEMP/restored-pages-evidence.json" --restored-state "$RUNNER_TEMP/restored-d1-state-evidence.json" --restored-transports "$RUNNER_TEMP/restored-transport-evidence.json" --observed-mirror "$RUNNER_TEMP/observed-mirror-identity.json" --issued-at "$rolled_back_at" --output-dir "$RUNNER_TEMP/production-lifecycle"
-          npm run --silent release:lifecycle:receipts -- carrier --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --completion rolled-back --output "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-rollback-v2.json"
-          npm run --silent release:lifecycle:receipts -- validate --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-rollback-v2.json"
+          npm run --silent release:lifecycle:receipts -- rollback --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --failure-observation "$RUNNER_TEMP/release-failure-observation.json" --restored-pages "$RUNNER_TEMP/restored-pages-evidence.json" --restored-state "$RUNNER_TEMP/restored-d1-state-evidence.json" --restored-transports "$RUNNER_TEMP/restored-transport-evidence.json" --observed-mirror "$RUNNER_TEMP/observed-mirror-identity.json" --issued-at "$rolled_back_at" --output-dir "$RUNNER_TEMP/production-lifecycle"
+          npm run --silent release:lifecycle:receipts -- carrier --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --receipt-dir "$RUNNER_TEMP/production-lifecycle" --completion rolled-back --output "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-rollback-v2.json"
+          npm run --silent release:lifecycle:receipts -- validate --docs-root "$GITHUB_WORKSPACE/agentic-os/catalog/dictionaries" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --carrier "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-rollback-v2.json"
           {
             echo "- Rollback: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/rollback-receipt.json")\`"
             echo "- Rolled-back carrier file digest: \`$(sha256sum "$RUNNER_TEMP/production-lifecycle/collaborative-release-lifecycle-rollback-v2.json" | cut -d' ' -f1)\`"

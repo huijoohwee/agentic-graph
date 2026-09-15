@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readRepoDocumentFamily } from '@/tests/lib/repoDocumentFamily'
 
 const readRepoFile = (repoRelativePath: string): string =>
-  readFileSync(resolve(process.cwd(), '..', repoRelativePath), 'utf8')
+  readRepoDocumentFamily(repoRelativePath)
 
 export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
   const miromindDocs = readRepoFile('docs/documents/agentic-graph-api-reference/agentic-graph-miromind-api-prd-tad-adr-mvp-gtm.md')
@@ -26,7 +25,7 @@ export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
   ].map(readRepoFile).join('\n')
 
   const requiredMiroMindDocTokens = [
-    'doc_type: "Product and Technical Specification"',
+    'doc_type: "PRD-TAD-ADR-MVP-GTM"',
     'local_rung: "spec-complete"',
     'delivered_rung: "undocumented"',
     'agentic-graph has a repository-accurate MiroMind source baseline; no delivery result is attached.',

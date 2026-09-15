@@ -129,8 +129,8 @@ const validateAttestedResolution = (resolution: AgenticOsInvocationResolution): 
   ) {
     return 'Invocation tokens changed after source-backed resolution.'
   }
-  const pinnedSource = `/blob/${resolution.sourceRevision}/docs/DICTIONARY-`
-  if (resolution.entries.some(entry => !String(entry.sourcePath || '').includes(pinnedSource))) {
+  const pinnedSource = `https://github.com/huijoohwee/agentic-os/blob/${resolution.sourceRevision}/catalog/dictionaries/DICTIONARY-`
+  if (resolution.entries.some(entry => String(entry.sourcePath || '') !== `${pinnedSource}${entry.kind.toUpperCase()}.md#${entry.token}`)) {
     return 'Invocation entries are not pinned to the attested dictionary revision.'
   }
   return null

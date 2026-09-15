@@ -1,3 +1,4 @@
+import { flushPendingWorkspaceDocsMirrorTextUpserts } from '@/features/workspace-fs/workspaceDocsMirrorTextUpsertQueue'
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import fsPromises from 'node:fs/promises'
@@ -90,6 +91,7 @@ const withLocalChatWorkspace = async (run: (fixture: { prepare(): Promise<void>;
       try { return await operation } catch (error) { failures.add(error); throw error } finally { pending.delete(operation) }
     }) as typeof fetch
     const drain = async () => {
+      await flushPendingWorkspaceDocsMirrorTextUpserts()
       // Drain native local IO even after a UI deadline fails; never abandon a sibling write.
       while (pending.size) await Promise.allSettled([...pending])
       if (failures.size || unexpected.length) throw new AggregateError([...failures], [...failures].map(error => String((error as Error)?.message || error)).join('; ') || `Unowned chat requests: ${unexpected.join(', ')}`)
@@ -105,7 +107,7 @@ const withLocalChatWorkspace = async (run: (fixture: { prepare(): Promise<void>;
       }, prepare: async () => {
         useGraphStore.setState({ sourceFiles: [], localMarkdownFolderHandle: null, localMarkdownFolderCacheId: null, localMarkdownSelectedFolderPath: docsRoot })
         await boundedChatOperation(getWorkspaceFs())
-      } }) } catch (error) { failures.add(error); throw error } finally { closed = true; await drain() }
+      } }) } catch (error) { failures.add(error); throw error } finally { await drain(); closed = true }
     }))
   } finally { await fsPromises.rm(tempRoot, { recursive: true, force: true }) }
 }

@@ -28,7 +28,7 @@ test('authorization runtime retains the ownership digest from the in-process run
   let requestedModuleUrl = ''
   let requestedOptions = null
   const runtime = await readAuthorizationRuntime({
-    agenticCanvasOsRoot: '/workspace/agentic-canvas-os',
+    agenticCanvasOsRoot: '/workspace/agentic-os',
     repositoryRoot: '/workspace/agentic-graph',
     loadRuntimeModule: async moduleUrl => {
       requestedModuleUrl = moduleUrl
@@ -42,10 +42,10 @@ test('authorization runtime retains the ownership digest from the in-process run
   })
 
   assert.equal(runtime, expectedRuntime)
-  assert.match(requestedModuleUrl, /agentic-canvas-os\/scripts\/local-runtime-lib\.mjs$/)
+  assert.match(requestedModuleUrl, /agentic-graph\/scripts\/local-runtime-lib\.mjs$/)
   assert.deepEqual(requestedOptions, {
     repository: '/workspace/agentic-graph',
-    agenticCanvasOsRoot: '/workspace/agentic-canvas-os',
+    agenticCanvasOsRoot: '/workspace/agentic-os',
   })
 })
 
@@ -213,7 +213,7 @@ test('canonical release owner state requires clean exact main at the reviewed re
 })
 
 const dependencyFixture = () => {
-  const repositoryRoot = '/workspace/agentic-graph', agenticCanvasOsRoot = '/workspace/agentic-canvas-os'
+  const repositoryRoot = '/workspace/agentic-graph', agenticCanvasOsRoot = '/workspace/agentic-os'
   const sourceRevision = 'a'.repeat(40), dependencyRevision = 'b'.repeat(40), remote = 'c'.repeat(40)
   const source = { branch: 'main', head: sourceRevision, originMain: sourceRevision, status: '' }
   const dependency = { branch: 'main', head: dependencyRevision, originMain: remote, status: '' }

@@ -8,9 +8,9 @@ export const AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME = "agentic-graph.agentic_canva
 export const AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH = "/agentic-os/control-plane/mcp";
 export const AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA = "agentic-canvas-os-docs-routing/v1";
 
-export const AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT = "agentic-canvas-os/docs";
+export const AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT = "agentic-os/catalog/dictionaries";
 export const AGENTIC_CANVAS_OS_DOCS_SOURCE_ROOT_URL =
-  "https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs";
+  "https://github.com/huijoohwee/agentic-os/blob/main/catalog/dictionaries";
 export const AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE = "LIVE-AGENT-PROVIDER-PROOF.md";
 export const AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE = "PROGRESSIVE-AGENTS.md";
 export const AGENTIC_CANVAS_OS_DOCS_CATALOG_DIGEST_PATTERN = "^[0-9a-f]{64}$";
@@ -61,7 +61,7 @@ const PROGRESSIVE_AGENTS_READINESS_OUTPUT_SCHEMA = Object.freeze({
     schema: { const: "progressive-agents-readiness-summary/v1" },
     status: { enum: ["runtime-ready-dev", "unavailable"] },
     sourceRevision: { type: "string", pattern: "^[0-9a-f]{40}$" },
-    sourcePath: { const: "docs/PROGRESSIVE-AGENTS.md" },
+    sourcePath: { const: "runtime/agents/docs/PROGRESSIVE-AGENTS.md" },
     sourceUrl: { type: "string" },
     contractSchema: { type: "string" },
     runtimeScope: { type: "string" },

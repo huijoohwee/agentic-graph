@@ -1,3 +1,4 @@
+import { resolveAgenticCanvasOsDocsRoot, resolveAgenticOsDocPath } from '../mcp/agentic-canvas-os-docs-runtime.js'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -282,8 +283,7 @@ const catalogResponse = await fetch(`https://airvio.co/api/storage/doc/kgws%3Aca
 })
 assert.equal(catalogResponse.status, 200, 'published prompt catalog must return 200 before browser startup')
 const catalogBytes = Buffer.from(await catalogResponse.arrayBuffer())
-const catalogSource = await fs.readFile(path.join(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT
-  || path.resolve(import.meta.dirname, '../../agentic-canvas-os/docs'), 'PROMPT-PRESETS.md'))
+const catalogSource = await fs.readFile(resolveAgenticOsDocPath({ absoluteDocsRoot: resolveAgenticCanvasOsDocsRoot(), fileName: 'PROMPT-PRESETS.md' }))
 assert.equal(createHash('sha256').update(catalogBytes).digest('hex'), createHash('sha256').update(catalogSource).digest('hex'),
   'published prompt catalog differs from the exact reviewed docs source')
 

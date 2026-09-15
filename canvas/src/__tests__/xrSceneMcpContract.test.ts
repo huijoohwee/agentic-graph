@@ -110,7 +110,7 @@ function assertCanonicalCatalogAndRuntimeDedupe(): void {
         const resolved = findAgenticOsInvocationByToken(token)
         assert(resolved?.kind === kind && resolved.token === token, `expected pinned canonical lookup for ${token}`)
         assert(
-          resolved.sourcePath.includes(`/blob/${revision}/docs/${AGENTIC_CANVAS_OS_DOCS_KIND_FILES[kind]}`),
+          resolved.sourcePath.includes(`/blob/${revision}/catalog/dictionaries/${AGENTIC_CANVAS_OS_DOCS_KIND_FILES[kind]}`),
           `expected exact-revision source metadata for ${token}, got ${resolved.sourcePath}`,
         )
         const route = resolveChatRuntimeInvocationQuery(`${token} active XR scene`)

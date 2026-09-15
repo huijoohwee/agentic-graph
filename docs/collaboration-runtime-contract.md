@@ -46,8 +46,8 @@ local_development:
       clean_required: true
       task_divergence_allowed: true
     - id: "agentic-canvas-os-docs"
-      repository_path: "../agentic-canvas-os"
-      required_path: "docs"
+      repository_path: "../agentic-os"
+      required_path: "catalog/dictionaries"
       canonical_remote: "origin"
       canonical_branch: "main"
       fetch_required: true
@@ -63,6 +63,14 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  local_runtime_review:
+    roots: ["scripts/local-runtime", "scripts/local-review-contract.mjs", "scripts/worktree-policy.mjs", "scripts/production-release-authorization.mjs", "scripts/__tests__/local-runtime.test.mjs", "scripts/__tests__/local-review-contract.test.mjs"]
+    commands:
+      - ["npm", "run", "test:local-review"]
+  native_runtime_docs:
+    roots: ["mcp/agentic-os-doc-sources.mjs", "mcp/agentic-canvas-os-docs-", "schemas/production-runtime-readiness.v2.schema.json", "scripts/runtime-docs-sources.mjs", "scripts/seed-storage-docs-to-cloudflare.mjs", "scripts/production-browser-preflight.mjs", "scripts/production-runtime-readiness.mjs", "scripts/promote-agentic-canvas-os-revision.mjs"]
+    commands:
+      - ["node", "--test", "mcp/__tests__/agentic-os-doc-sources.test.mjs", "scripts/__tests__/production-runtime-readiness.test.mjs", "scripts/__tests__/production-release-contract.test.mjs", "scripts/__tests__/workspace-seed-authority.test.mjs", "scripts/__tests__/promote-agentic-canvas-os-revision.test.mjs"]
   protected_ci_evidence:
     roots: [".agentic-os-ci-evidence.json", ".github/actions/protected-ci-evidence/", "scripts/ci-evidence-inputs.mjs", "scripts/__tests__/ci-evidence-inputs.test.mjs"]
     commands:

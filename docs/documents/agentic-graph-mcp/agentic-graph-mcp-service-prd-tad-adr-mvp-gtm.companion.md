@@ -2,8 +2,8 @@
 title: "MCP Service Contract Companion"
 id: "md:agentic-graph-mcp-service-prd-tad-companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.5.1"
-date: "2026-09-12"
+version: "0.5.2"
+date: "2026-09-16"
 lang: "en-US"
 owner: "docs.mcp.service.companion"
 local_rung: "spec-complete"
@@ -14,7 +14,7 @@ doc_path: "docs/documents/agentic-graph-mcp/agentic-graph-mcp-service-prd-tad-ad
 guideline_version: "1.7.0"
 reference_implementation_label: "reference implementation"
 parent: "agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md"
-parent_version: "0.5.0"
+parent_version: "0.5.2"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-MCP-SERVICE-PRD-TAD-ADR-MVP-GTM"
 worktree_id: "device-cba000d3779d--planning-v27"
@@ -23,11 +23,11 @@ guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
 previous_document_version: "0.5.0"
-prd_revision: "0.5.1"
-tad_revision: "0.5.1"
-adr_revision: "0.5.1"
-mvp_revision: "0.5.1"
-gtm_revision: "0.5.1"
+prd_revision: "0.5.2"
+tad_revision: "0.5.2"
+adr_revision: "0.5.2"
+mvp_revision: "0.5.2"
+gtm_revision: "0.5.2"
 ---
 
 # MCP Service Contract Companion
@@ -63,18 +63,21 @@ The canonical definition is
 adapter consumes the read-only subset through
 `cloudflare/pages/agentic-graph-agent-ready.mjs`.
 
-#### App WebMCP source contract — 42 tools
+#### App WebMCP source contract — 50 tools
 
-The browser registration includes exactly 42 source tools:
+The browser registration includes exactly 50 source tools:
 
-- 30 tools annotated read-only.
-- 12 guarded controls.
+- 31 tools annotated read-only.
+- 19 guarded controls.
 
 The count and split are the contract. Browser-local controls are not part of the
 seven-tool Pages surface. Registration is owned by
 `canvas/src/features/agent-ready/webMcpRuntime.ts` and the shared tool contract.
 A guarded tool remains unavailable until its runtime owner and approval
-conditions are satisfied.
+conditions are satisfied. `/run.start`, `/run.status`, `/run.cancel` and
+`/run.retry` resolve through the pinned OS catalog. Their WebMCP names are the
+same tokens without `/`; `@input:` supplies their contract input and `#` retains
+the catalog semantic. Registration does not prove that a durable host is configured.
 
 #### Local stdio source contract — broad and configuration-gated
 
@@ -138,8 +141,8 @@ the harness owns its token budget, loop bound, cost log, and circuit breaker.
 
 | Concern | Canonical source owner | Invariant |
 |---|---|---|
-| Shared tool definitions | `canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs` | Pages remains the seven-tool read subset; browser totals remain 42. |
-| Browser registration | `canvas/src/features/agent-ready/webMcpRuntime.ts` | 30 read-only annotations and 12 guarded controls. |
+| Shared tool definitions | `canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs` | Pages remains the seven-tool read subset; browser totals remain 50. |
+| Browser registration | `canvas/src/features/agent-ready/webMcpRuntime.ts` | 31 read-only annotations and 19 guarded controls. |
 | Pages adapter | `cloudflare/pages/agentic-graph-agent-ready.mjs` | No guarded controls in Pages tool discovery. |
 | Local adapter | `mcp/server.js` | Configuration gates are explicit and fail closed. |
 | Local tool catalog | `mcp/local-tool-contract.js` | Source discovery does not promise executability. |
@@ -163,7 +166,7 @@ the harness owns its token budget, loop bound, cost log, and circuit breaker.
 | VCC | Stated check | End state | Constraint | Evidence Reference |
 |---|---|---|---|---|
 | `VCC-MCP-C-01` | Focused Pages parity test | Seven exact read-only names are surfaced. | No browser/local/Worker controls. | None recorded |
-| `VCC-MCP-C-02` | Focused WebMCP runtime test | 42 exact names classify as 30 read-only and 12 guarded. | No duplicate name. | None recorded |
+| `VCC-MCP-C-02` | Focused WebMCP runtime test | 50 exact names classify as 31 read-only and 19 guarded. | No duplicate name. | None recorded |
 | `VCC-MCP-C-03` | Worker registry test | Ten exact names above are surfaced. | No duplicate name. | None recorded |
 | `VCC-MCP-C-04` | Focused Worker client/session test | Bearer auth is required and the initialized session id is reused. | No unauthenticated dispatch. | None recorded |
 | `VCC-MCP-C-05` | Local tool contract test with missing configuration | Configuration-gated tools fail closed. | No alternate transport fallback. | None recorded |
@@ -180,4 +183,4 @@ contract validation.
 
 ## Planning continuity — reference implementation
 
-This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-MCP-SERVICE-PRD-TAD-ADR-MVP-GTM@0.5.1` with [the five-role owner](agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.
+This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-MCP-SERVICE-PRD-TAD-ADR-MVP-GTM@0.5.2` with [the five-role owner](agentic-graph-mcp-service-prd-tad-adr-mvp-gtm.md#planning-revision--reference-implementation). Requirements, architecture and decisions remain in their linked owners; MVP and GTM consume them. Historical source checks retain their recorded revision, environment and coverage; this documentation revision renews no readiness, experience rating or paid-demand evidence.

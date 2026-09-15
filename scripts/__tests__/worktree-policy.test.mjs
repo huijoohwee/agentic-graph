@@ -88,7 +88,7 @@ test('linked task worktrees resolve sibling sources beside the registered main w
       ].join('\n'),
   })
   assert.equal(result.roots.get('agentic-graph'), taskRoot)
-  assert.equal(result.roots.get('agentic-canvas-os-docs'), '/workspace/agentic-canvas-os')
+  assert.equal(result.roots.get('agentic-canvas-os-docs'), '/workspace/agentic-os')
   assert.equal(result.canonicalApplicationRoot, primaryRoot)
   assert.equal(result.canonicalOwnerPath, primaryRoot)
   assert.equal(parseRegisteredWorktrees(result.applicationPorcelain).length, 2)
@@ -121,7 +121,7 @@ test('primary repository root stays canonical when main is registered in a linke
 
   assert.equal(result.canonicalApplicationRoot, primaryRoot)
   assert.equal(result.canonicalOwnerPath, releaseRoot)
-  assert.equal(result.roots.get('agentic-canvas-os-docs'), '/workspace/agentic-canvas-os')
+  assert.equal(result.roots.get('agentic-canvas-os-docs'), '/workspace/agentic-os')
 })
 
 test('task-only CI checkout resolves without a locally checked-out main branch', async () => {
@@ -171,7 +171,7 @@ test('standalone preflight checks every canonical source without fetching or sta
     },
     {
       args: ['worktree', 'list', '--porcelain'],
-      cwd: path.resolve(repoRoot, '../agentic-canvas-os'),
+      cwd: path.resolve(repoRoot, '../agentic-os'),
     },
   ])
 })

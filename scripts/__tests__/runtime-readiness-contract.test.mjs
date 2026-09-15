@@ -61,24 +61,24 @@ test('runtime docs dependency resolves one checkout repository and immutable ref
     [true, true, true],
   )
   assert.deepEqual(dependency, {
-    repository: 'huijoohwee/agentic-canvas-os',
+    repository: 'huijoohwee/agentic-os',
     ref: contract.docs_dependency.ref,
   })
   assert.equal(formatGitHubOutput(dependency), (
-    `repository=huijoohwee/agentic-canvas-os\nref=${contract.docs_dependency.ref}\n`
+    `repository=huijoohwee/agentic-os\nref=${contract.docs_dependency.ref}\n`
   ))
 })
 
 test('runtime docs dependency rejects mutable or non-GitHub sources', () => {
   assert.throws(() => resolveRuntimeDocsDependency({
     docs_dependency: {
-      repository: 'https://github.com/huijoohwee/agentic-canvas-os.git',
+      repository: 'https://github.com/huijoohwee/agentic-os.git',
       ref: 'main',
     },
   }), /exact lowercase 40-character Git commit SHA/)
   assert.throws(() => resolveRuntimeDocsDependency({
     docs_dependency: {
-      repository: 'https://example.com/huijoohwee/agentic-canvas-os.git',
+      repository: 'https://example.com/huijoohwee/agentic-os.git',
       ref: 'a'.repeat(40),
     },
   }), /HTTPS GitHub repository URL/)
@@ -113,7 +113,7 @@ test('runtime docs workflow policy fails closed for missing consumers and copied
     ref: \${{ steps.agentic_canvas_os_docs.outputs.ref }}
     fetch-depth: 0
     fallback_ref: ${'a'.repeat(40)}
-  note: agentic-canvas-os
+  note: agentic-os
 `,
     }]),
     /must not copy an immutable checkout ref/,
@@ -133,7 +133,7 @@ test('runtime docs workflow policy ignores pinned controller checkouts without t
     repository: \${{ steps.agentic_canvas_os_docs.outputs.repository }}
     ref: \${{ steps.agentic_canvas_os_docs.outputs.ref }}
     fetch-depth: 0
-  note: agentic-canvas-os
+  note: agentic-os
 `,
   }
   const controllerCheckout = {
@@ -142,7 +142,7 @@ test('runtime docs workflow policy ignores pinned controller checkouts without t
 - name: Checkout pinned delivery controller
   uses: actions/checkout@v4
   with:
-    repository: huijoohwee/agentic-canvas-os
+    repository: huijoohwee/agentic-os
     ref: ${'a'.repeat(40)}
 `,
   }
@@ -165,7 +165,7 @@ test('runtime docs workflow policy requires full local history for proof provena
   with:
     repository: \${{ steps.agentic_canvas_os_docs.outputs.repository }}
     ref: \${{ steps.agentic_canvas_os_docs.outputs.ref }}
-  note: agentic-canvas-os
+  note: agentic-os
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0

@@ -29,7 +29,7 @@ const commit = (root: string): string => {
 
 const contract = (revision: string): string => `---
 docs_dependency:
-  repository: "https://github.com/huijoohwee/agentic-canvas-os.git"
+  repository: "https://github.com/huijoohwee/agentic-os.git"
   ref: "${revision}"
 ---
 `
@@ -47,11 +47,11 @@ const withFixture = async (run: (fixture: {
     const canonical = path.join(workspace, 'agentic-graph')
     const candidate = path.join(workspace, '.worktrees', 'agentic-graph', 'candidate')
     const docsRepository = path.join(temporaryRoot, 'declared-docs')
-    const docsRoot = path.join(docsRepository, 'docs')
+    const docsRoot = path.join(docsRepository, 'catalog/dictionaries')
     initialize(docsRepository)
-    write(path.join(docsRoot, 'FACTS.md'), '# Pinned docs fixture\n')
+    write(path.join(docsRoot, 'DICTIONARY-COMMAND.md'), '# Pinned docs fixture\n')
     const revision = commit(docsRepository)
-    git(docsRepository, 'remote', 'add', 'origin', 'https://github.com/huijoohwee/agentic-canvas-os.git')
+    git(docsRepository, 'remote', 'add', 'origin', 'https://github.com/huijoohwee/agentic-os.git')
     git(docsRepository, 'update-ref', 'refs/remotes/origin/main', revision)
     initialize(canonical)
     write(path.join(canonical, 'canvas/source.txt'), 'canonical')
@@ -59,7 +59,7 @@ const withFixture = async (run: (fixture: {
     commit(canonical)
     git(canonical, 'worktree', 'add', '--detach', candidate, 'HEAD')
     write(path.join(candidate, 'canvas/source.txt'), 'candidate')
-    write(path.join(workspace, 'agentic-canvas-os/docs/FACTS.md'), '# Unverified sibling must not replace explicit docs\n')
+    write(path.join(workspace, 'agentic-os/catalog/dictionaries/DICTIONARY-COMMAND.md'), '# Unverified sibling must not replace explicit docs\n')
     write(path.join(workspace, 'huijoohwee/_headers'), 'published headers')
     write(path.join(workspace, 'huijoohwee.github.io/template/contract.md'), 'declared template')
     await run({ workspace, canonical, candidate, docsRoot, revision })
@@ -100,7 +100,7 @@ export async function testRepositoryFixturesRequireExactPinnedDocs(): Promise<vo
     await assert.rejects(resolvePinnedAgenticDocsRoot({ repositoryRoot: candidate, env: {
       AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: missingRoot,
     } }), (error: Error) => error.message.includes(missingRoot) && error.message.includes('not a readable'))
-    write(path.join(docsRoot, 'FACTS.md'), '# Dirty docs must not reuse prior validation\n')
+    write(path.join(docsRoot, 'DICTIONARY-COMMAND.md'), '# Dirty docs must not reuse prior validation\n')
     await assert.rejects(resolvePinnedAgenticDocsRoot({ repositoryRoot: candidate, env }), /uncommitted content/)
   })
 }

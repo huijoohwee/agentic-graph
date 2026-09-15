@@ -39,7 +39,7 @@ export type AgenticOsCommandInvocationResolution = AgenticOsSourceInvocationReso
 
 const MCP_TOOL = /^agentic-graph\.[A-Za-z0-9_.-]+$/
 const COMMAND_TOKEN = /^\/[A-Za-z0-9_.-]{1,96}$/
-const PINNED_DICTIONARY_SOURCE = /\/blob\/[0-9a-f]{40}\/docs\/DICTIONARY-(?:COMMAND|SEMANTIC|BINDING)\.md#/i
+const PINNED_DICTIONARY_SOURCE = /^https:\/\/github\.com\/huijoohwee\/agentic-os\/blob\/[0-9a-f]{40}\/catalog\/dictionaries\/DICTIONARY-(?:COMMAND|SEMANTIC|BINDING)\.md#/i
 const DICTIONARY_KINDS = new Set(['command', 'semantic', 'binding'])
 
 const toCatalogEntry = (entry: AgenticOsRemoteGrammarCatalogEntry): ChatInvocationCatalogEntry | null => {

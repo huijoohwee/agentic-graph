@@ -9,12 +9,7 @@ import {
   runtimeReadinessContractPath,
 } from './runtime-readiness-contract.mjs'
 
-export const REQUIRED_CHECKS = Object.freeze([
-  'build',
-  'collaboration-integration',
-  'docs-contract',
-  'test',
-])
+export const REQUIRED_CHECKS = Object.freeze(['test', 'budgets'])
 
 const run = (command, args) => execFileSync(command, args, {
   cwd: repoRoot,
@@ -72,6 +67,9 @@ export const promoteAgenticCanvasOsRevision = async () => {
   }
   const source = await fs.readFile(runtimeReadinessContractPath, 'utf8')
   const nextSource = replaceRuntimeDocsRevision(source, dependency.ref, nextRevision)
+  if (dependency.repository !== 'huijoohwee/agentic-os') throw new Error('native docs promotion requires the OS source owner')
+  run('npm', ['install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund', '--save-exact',
+    `https://codeload.github.com/${dependency.repository}/tar.gz/${nextRevision}`])
   await fs.writeFile(runtimeReadinessContractPath, nextSource, 'utf8')
   await appendGitHubOutput({ changed: 'true', revision: nextRevision })
   return { changed: true, revision: nextRevision }

@@ -1,3 +1,4 @@
+import { isAgenticGraphRuntimeIdentityFresh } from '@/features/runtime-identity/agentic-graph-runtime-identity'
 import type { AgenticGraphRuntimeIdentity } from '@/features/runtime-identity/agentic-graph-runtime-identity'
 import {
   createAgenticGraphRuntimeIdentityAttestation,
@@ -47,12 +48,12 @@ const buildIdentity = (
     schema: 'progressive-agents-readiness-summary/v1',
     status: 'runtime-ready-dev',
     sourceRevision: 'a'.repeat(40),
-    sourcePath: 'docs/PROGRESSIVE-AGENTS.md',
+    sourcePath: 'runtime/agents/docs/PROGRESSIVE-AGENTS.md',
     sourceUrl: `https://github.com/huijoohwee/agentic-canvas-os/blob/${'a'.repeat(40)}/docs/PROGRESSIVE-AGENTS.md`,
     contractSchema: 'progressive-agents-runtime-contract/v1',
     runtimeScope: 'single-agent execution, tool-bearing agent execution, and explicit specialist workflow delegation',
-    runtimeOwner: '../agent-api/src/progressive-agents.js',
-    runtimeProof: '../__tests__/progressive-agents.test.mjs',
+    runtimeOwner: '../../adapters/progressive-agents.js',
+    runtimeProof: '../../../__tests__/progressive-agents.test.mjs',
     contractReady: true,
     configured: false,
     progressionPolicy: 'single-agent-then-tools-then-specialists',
@@ -85,6 +86,15 @@ const buildEnvelope = async (args: {
 })
 
 export async function testRuntimeIdentityAttestationPassesExactParity(): Promise<void> {
+  const sourceOnly = buildIdentity('source-only')
+  sourceOnly.agentLiveProviderProof.status = 'unavailable'
+  sourceOnly.progressiveAgentsReadiness.status = 'unavailable'
+  sourceOnly.progressiveAgentsReadiness.contractReady = false
+  if (!isAgenticGraphRuntimeIdentityFresh(sourceOnly)) throw new Error('source freshness must not claim or require provider execution')
+  if (isAgenticGraphRuntimeIdentityFresh({ ...sourceOnly, catalogCounts: { slash: 1, hash: 1, at: 0 } })) {
+    throw new Error('source freshness requires every dictionary slice')
+  }
+
   const mutableIdentity = buildIdentity('device-a')
   const attestations = await Promise.all([
     buildEnvelope({ device: 'device-a', runtimeInstanceId: 'runtime-a', identity: mutableIdentity }),
