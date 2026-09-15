@@ -75,7 +75,7 @@ test('public privacy page works without storage credentials and login does not a
     const login = await invoke(f, AGENTIC_OS_STORAGE_ROUTE_PATHS.browserLogin)
     assert.equal(login.status, 200)
     const body = await login.text()
-    assert.match(body, /Sign in with GitHub/); assert.match(body, /Sign in with Google/)
+    assert.match(body, /Continue with GitHub/); assert.match(body, /Continue with Google/)
     assert.match(body, /Privacy and storage/); assert.doesNotMatch(body, /access_key/)
   } finally { await f.close() }
 })
