@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { Github, Globe, Network, X } from 'lucide-react'
+import { Github, Globe, X } from 'lucide-react'
+import AgenticGraphIcon from '@/components/AgenticGraphIcon'
 import PreviewOverlay from '@/features/panels/views/preview-panel/ui/PreviewOverlay'
 import { UI_THEME_TOKENS as theme } from '@/lib/ui/theme-tokens'
 import { fetchWithTimeout, readResponseTextWithDeadline } from './agentic-graph-storage-client-transport'
@@ -115,7 +116,7 @@ function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: str
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
         <header className="mb-7 pr-7">
-          <p className="mb-4 flex items-center gap-2 text-sm font-semibold"><Network className="h-6 w-6" aria-hidden="true" />airvio</p>
+          <p className="mb-4 flex items-center gap-2 text-sm font-semibold"><AgenticGraphIcon className="h-6 w-6" />airvio</p>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className={'mt-2 text-sm leading-relaxed ' + theme.text.secondary}>
             {authenticated ? 'Choose where to sync your files. Your local copies stay available.'

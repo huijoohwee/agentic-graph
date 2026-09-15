@@ -1,16 +1,16 @@
 ---
 title: "Reference implementation: agentic-graph-storage-sync-prd-tad-adr-mvp-gtm section 1"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "5.0.1"
-date: "2026-09-12"
+version: "5.1.0"
+date: "2026-09-15"
 lang: "en-US"
 owner: "docs.storage.sync"
 continuity_id: "PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "5.0.1"
-tad_revision: "5.0.1"
-adr_revision: "5.0.1"
-mvp_revision: "5.0.1"
-gtm_revision: "5.0.1"
+prd_revision: "5.1.0"
+tad_revision: "5.1.0"
+adr_revision: "5.1.0"
+mvp_revision: "5.1.0"
+gtm_revision: "5.1.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -22,7 +22,7 @@ guideline_revision: "2.7.0"
 source_section_lines: "1-443"
 ---
 
-[Combined planning owner](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-ADR-MVP-GTM@5.0.1`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
+[Combined planning owner](agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-ADR-MVP-GTM@5.1.0`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
 
 
 

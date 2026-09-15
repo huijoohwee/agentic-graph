@@ -1,3 +1,4 @@
+import { agenticGraphMarkSvg } from '../../../grph-shared/src/ui/agenticGraphMark'
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from './contract'
 import type { OAuthConfiguration } from './storageOAuthProviders'
 import { storageAuthPageStyles } from './storageAuthPageStyles'
@@ -42,7 +43,7 @@ export const oauthLoginPage = (config: OAuthConfiguration, origin: string, retur
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title><style>${storageAuthPageStyles}</style></head><body>
 <main class="kg-auth" aria-labelledby="signin-heading"><div class="kg-auth-brand">
-<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="m8 9 16 7-16 7V9Z"/><circle cx="8" cy="9" r="3"/><circle cx="24" cy="16" r="3"/><circle cx="8" cy="23" r="3"/></svg><span>airvio</span></div>
+${agenticGraphMarkSvg}<span>airvio</span></div>
 <h1 id="signin-heading">${title}</h1><p class="kg-auth-intro">${signup ? 'Create a private workspace for your files.' : 'Continue to your workspace and sync your files.'}</p>
 <nav class="kg-auth-providers" aria-label="Sign-in providers">${buttons}</nav>
 <p class="kg-auth-note">${signup ? 'Shared workspaces still require an invitation.' : 'Use an account connected to your workspace.'} <a href="${AGENTIC_OS_STORAGE_ROUTE_PATHS.browserPrivacy}">Privacy and storage</a></p>
