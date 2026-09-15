@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { readChangedPaths } from '../run-affected-ci.mjs'
+import { readContract, selectAffectedCommands, validateContract } from '../collaboration-contract.mjs'
 
 test('local affected inventory joins committed, working and untracked paths', () => {
   const paths = readChangedPaths({ environment: {}, gitText: args => {
@@ -38,4 +39,42 @@ test('default and protected affected validation share one owner command map', ()
   assert.equal(policy.checks.length, 1)
   assert.deepEqual(policy.checks[0].command, ['npm', 'run', 'ci:affected:source'])
   assert.equal(policy.checks[0].reuse, 'never')
+})
+
+test('Launch Copilot test-only changes select their executable owner checks', async () => {
+  const plan = selectAffectedCommands([
+    'canvas/src/__tests__/launchCopilot.test.ts',
+    'mcp/__tests__/launch-copilot-contract.test.mjs',
+  ], await readContract())
+  assert.deepEqual(plan.unmatchedPaths, [])
+  assert.deepEqual(plan.commands, [
+    ['env', 'TSX_TSCONFIG_PATH=canvas/tsconfig.json', 'node', '--import', 'tsx',
+      '--import', './canvas/scripts/source-authority-test-bootstrap.mjs', '--test',
+      'canvas/src/__tests__/launchCopilot.test.ts'],
+    ['node', '--test', 'mcp/__tests__/launch-copilot-contract.test.mjs'],
+  ])
+})
+
+test('Launch Copilot runtime changes retain the broader source checks', async () => {
+  const contract = await readContract()
+  const plan = selectAffectedCommands([
+    'mcp/agent-graph/launch-copilot-contract.js',
+    'mcp/__tests__/launch-copilot-contract.test.mjs',
+  ], contract)
+  assert.deepEqual(plan.unmatchedPaths, [])
+  assert(plan.commands.some(command => command.join(' ') === 'npm run runtime:test:core'))
+  const canvas = selectAffectedCommands(['canvas/src/features/agent-graph/launchCopilotWorkspace.ts'], contract)
+  assert(canvas.commands.some(command => command.join(' ') === 'npm run check --workspace=@agentic-graph/canvas'))
+})
+
+test('scope-local mapping preserves unmatched fallback and rejects invalid boundaries', async () => {
+  const contract = await readContract()
+  const plan = selectAffectedCommands(['mcp/__tests__/launch-copilot-contract.test.mjs', 'unknown-input'], contract)
+  assert.deepEqual(plan.unmatchedPaths, ['unknown-input'])
+  assert(plan.commands.some(command => command.join(' ') === 'npm run runtime:test:core'))
+  for (const value of [false, 'true', 1]) {
+    const changed = structuredClone(contract)
+    changed.ci_exact_path_scopes.runtime.scope_local = value
+    assert.throws(() => validateContract(changed), /scope_local must be true/)
+  }
 })

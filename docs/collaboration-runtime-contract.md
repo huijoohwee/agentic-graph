@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 49
+contract_version: 50
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -137,6 +137,18 @@ ci_scopes:
       - ["npm", "run", "test:collaboration-contract"]
       - ["node", "--test", "scripts/__tests__/integration-build-memory-policy.test.mjs", "scripts/__tests__/integration-main-recheck.test.mjs"]
 ci_exact_path_scopes:
+  canvas:
+    scope_local: true
+    entries:
+      - path: "canvas/src/__tests__/launchCopilot.test.ts"
+        commands:
+          - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--import", "./canvas/scripts/source-authority-test-bootstrap.mjs", "--test", "canvas/src/__tests__/launchCopilot.test.ts"]
+  runtime:
+    scope_local: true
+    entries:
+      - path: "mcp/__tests__/launch-copilot-contract.test.mjs"
+        commands:
+          - ["node", "--test", "mcp/__tests__/launch-copilot-contract.test.mjs"]
   travel_commerce:
     entries:
       - path: "cloudflare/workers/agentic-graph-travel-commerce/worker-configuration.d.ts"
@@ -255,6 +267,14 @@ An exact-path CI scope may narrow only its own composite command when the comple
 normalized change set consists exclusively of declared repository-relative file
 paths. Other matching scopes still run normally. Any mixed, unknown, directory,
 configuration, or source path falls back to the ordinary affected-scope plan.
+An exact test mapping may explicitly select `scope_local: true` when its command
+executes the complete named test and no runtime source changes are exempted.
+Every changed path within that scope must then have an exact mapping; changes in
+other scopes keep their own checks. Unmatched paths restore the broader matching
+scope commands as well as the ordinary fallback.
+Launch Copilot uses this boundary for its native UI and contract test files. Any
+additional Canvas or runtime source change restores that scope's broader checks.
+The default whole-change-set boundary remains in force for all other mappings.
 Generated Worker binding declarations use this closed mapping to validate only
 their repository-owned generator output and matching consumer typecheck. The
 runtime scope still runs normally, and `ci:integration` retains its common

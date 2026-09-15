@@ -96,16 +96,17 @@ Priority follows dependency closure and existing source reuse, not a computed co
 ## TAD
 
 TAD consumes PRD `0.3.3`. Current source bindings for this review are Graph
-`3cc9123bd24d0da49da9ceb66d700e5d2bc83aa4`, its accepted Canvas dependency
-`b7039fbc3e84d2fb54ef8bc115087ea09e0b373e` in `docs/runtime-readiness-contract.md`, and installed OS
-`13c3839aba7fc64bf94f93aa29b1239ab929840d` in `package.json`. They are separate dependency identities;
+`c5527b6f80ecbd6b8d1340ccda99e5f3f9e1473f`, its accepted OS documentation/catalog
+dependency and installed OS package `b1ef126b0c7e550ca23b396628fe33ec95a9a6ac` in
+`docs/runtime-readiness-contract.md` and `package.json`. Source and documentation
+remain separate bindings even when they name the same commit;
 none shares the plan's revision. Guideline revision/source are pinned in frontmatter. Refresh affected
 joins when the consuming pins change; a newer sibling checkout does not silently upgrade this runtime.
 
 | Design | Existing responsibility and boundary | Remaining proof |
 |---|---|---|
-| T1 / evidence | Graph native Import URL/folder, repository acquisition, parser/runtime and selection; Canvas ingest/parse and query/explain validation. Retain repository URL, commit, parser/snapshot and reference/owned provenance; ≤12 nodes, ≤20 explained edges, depth one. | Relevant sample selection and full public/browser freshness/error paths. File-search degradation carries hashes and no inferred edges. |
-| T2 / composition | Canvas owns the five-role prompt/validator; Graph reuses its selected Chat connection and one bounded drafting attempt. Claims cite owned evidence or name NEW owner/dependency/check; reference-only source cannot establish owned implementation. | Live drafting and semantic entailment. Membership checks do not prove arbitrary prose. |
+| T1 / evidence | Graph native Import URL/folder, repository acquisition, parser/runtime and selection; Graph ingest/parse and OS query/explain validation. Retain repository URL, commit, parser/snapshot and reference/owned provenance; ≤12 nodes, ≤20 explained edges, depth one. | Relevant sample selection and full public/browser freshness/error paths. File-search degradation carries hashes and no inferred edges. |
+| T2 / composition | Graph owns the five-role prompt/validator; Graph reuses its selected Chat connection and one bounded drafting attempt. Claims cite owned evidence or name NEW owner/dependency/check; reference-only source cannot establish owned implementation. | Live drafting and semantic entailment. Membership checks do not prove arbitrary prose. |
 | T3 / presentation | Graph owns selection, layout, renderer, RichMediaPanels, workspace/document versions and source-bound Probe-Tree. Canonical graph stays read-only; separate `lc:` overlay retains decisions and proposed relations. | Complete paired public/phone/offline walkthrough at a release identity. |
 | T4 / handoff | Graph host binds review to five file hashes, evidence digest, source/contract identity, target and base. OS owns scoped admission, protected `land` and integration proof. | Actual human-approved proposal PR and exact integrated files. Inspect retained operation state before recovery. |
 | T5 / launch | Graph/Commerce own accepted implementation, release, checkout and readback; OS retains lifecycle governance. Generated mirror follows protected release. | LC-06 deployed loop and LC-07 real payer/cost evidence. |
@@ -151,8 +152,8 @@ ADR consumes PRD/TAD `0.3.3`. Product-owner decisions A1–A4 retain their inten
 
 | Decision | Selected option / alternatives | Consequence and reopen condition |
 |---|---|---|
-| A1 / native grounding | Reuse Graph acquisition/parse/query/explain with Canvas validation; use labelled file evidence when needed. A second engine or external package duplicates owners. | Preserve source identity and provenance; reopen at the source owner if an admitted input cannot be represented. |
-| A2 / native composition | One Canvas contract, existing Chat transport, renderer and five panels. Separate UI/server or five dependent model calls add cost without quality evidence. | One attempt, no automatic repair; human review checks entailment. Reopen on measured quality/interface failure. |
+| A1 / native grounding | Reuse Graph acquisition/parse/query/explain with OS validation; use labelled file evidence when needed. A second engine or external package duplicates owners. | Preserve source identity and provenance; reopen at the source owner if an admitted input cannot be represented. |
+| A2 / native composition | One Graph contract, existing Chat transport, renderer and five panels. Separate UI/server or five dependent model calls add cost without quality evidence. | One attempt, no automatic repair; human review checks entailment. Reopen on measured quality/interface failure. |
 | A3 / protected handoff | Native exact-file review followed by existing OS lifecycle. Direct canonical writes or a copied publication controller bypass established boundaries. | Graph is the enrolled output owner; inspect actual effects before retry. Real proposal publication remains unverified. |
 | A4 / service validation | Test the fixed-scope paid proposal before platform expansion. No new paid infrastructure or invented demand. | Price/pilot counts are experiment choices; actual payer, cost and runtime evidence decide continuation. |
 | A5 / source-plan migration | Keep one reviewed product plan in Graph and route private draft/reference/public entry through the runbook. Alternatives: leave mutable private-only authority, or copy a plan into every repository. | Exact predecessor bytes/history remain private; current public plan contains no private evidence bodies. Registry activates only after the artifact exists; recover with a joined successor or reviewed revert. |

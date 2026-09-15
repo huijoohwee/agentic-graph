@@ -5,14 +5,12 @@ import { createRoot } from 'react-dom/client'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
-import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import { unzipSync, strFromU8 } from 'fflate'
 import { createAgentGraphRuntime } from '../../../mcp/agent-graph/runtime.mjs'
 import { readAgentGraphSnapshot, writeAgentGraphSnapshotAtomic, listAgentGraphSourceEntries } from '../../../mcp/agent-graph/store.mjs'
 import { sanitizeAgentGraphImportResult } from '../../viteAgentGraphIngestSanitizer'
 import { validateAgentGraphHostResult } from '@/features/agent-graph/agentGraphHostAdapter'
-import { resolveAgenticCanvasOsDocsRoot } from '../../../mcp/agentic-canvas-os-docs-runtime.js'
 import { executeAgentGraphProposal } from '../../viteAgentGraphProposal'
 import { launchHandoffBinding, launchHandoffCommitMessage, runLaunchHandoff } from '../../viteAgentGraphHandoff'
 import { createExternalToolApprovalToken, authorizeExternalToolAction } from '../../../mcp/external-tool-approval.js'
@@ -28,16 +26,17 @@ import { listMediaOverlayNodes } from '@/lib/render/mediaOverlayPool'
 import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-import { mountReactRoot, unmountReactRoot, waitForFrames, waitForTasks } from '@/tests/lib/reactRootHarness'
+import { mountReactRoot, unmountReactRoot, waitForFrames, waitForReactCondition, waitForTasks } from '@/tests/lib/reactRootHarness'
 import { RichMediaOverlayLayer2d } from '@/components/GraphCanvasRoot/components/RichMediaOverlayLayer2d'
 import { invokeLaunchCopilot } from '@/features/agent-graph/launchCopilotInvocation'
 import { shouldPersistWorkspaceEntryInLocalSnapshot } from '@/features/workspace-fs/workspaceFsPersisted'
 
-test('native graph → validating Canvas client → five roles, source fence and separate overlay', async () => {
+test('native graph → validating OS client → five roles, source fence and separate overlay', async () => {
   const rootDir = path.resolve(import.meta.dirname, '../../..')
-  const docs = resolveAgenticCanvasOsDocsRoot({ rootDir, env: process.env })
-  const load = (name: string) => import(pathToFileURL(path.resolve(docs, '../src', name)).href)
-  const [contract, { createAgenticGraphClient }] = await Promise.all([load('launch-copilot-contract.js'), load('agentic-graph-mcp-contract.js')])
+  const [contract, { createAgenticGraphClient }] = await Promise.all([
+    import('../../../mcp/agent-graph/launch-copilot-contract.js'),
+    import('agentic-os/agents/agentic-graph-mcp-contract'),
+  ])
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'native-lc-r3-'))
   const source = path.join(temporary, 'source'), outputRoot = path.join(temporary, 'cache')
   await fs.mkdir(source)
@@ -82,7 +81,11 @@ test('native graph → validating Canvas client → five roles, source fence and
           stopEvent: event => event.stopPropagation(), onOverlayPanStart: noop, onOverlayPan: noop, onOverlayPanEnd: noop,
           onHeaderDragStart: noop, onHeaderDrag: noop, onHeaderDragEnd: noop,
         }), { window: dom.window, frames: 24 })
-        const paragraph = [...container.querySelectorAll<HTMLElement>('p[data-start-line]')].find(element => element.textContent?.includes('Editable outline'))!
+        const readParagraph = () => [...container.querySelectorAll<HTMLElement>('p[data-start-line]')].find(element => element.textContent?.includes('Editable outline'))
+        await waitForReactCondition(() => Boolean(readParagraph()), {
+          describe: () => `grounded document rendering: ${container.textContent?.slice(0, 500)}`,
+        })
+        const paragraph = readParagraph()!
         assert.ok(paragraph, 'native canvas renders the grounded document')
         paragraph.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
         await waitForTasks(2); await waitForFrames(dom.window, 2)

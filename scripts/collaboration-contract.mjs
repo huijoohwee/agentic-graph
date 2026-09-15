@@ -121,6 +121,9 @@ const validateExactPathScopes = (contract, declaredCommands) => {
     if (!definition || typeof definition !== 'object' || Array.isArray(definition)) {
       throw new Error(`${label} must be a mapping`)
     }
+    if (definition.scope_local !== undefined && definition.scope_local !== true) {
+      throw new Error(`${label}.scope_local must be true when provided`)
+    }
     if (!Array.isArray(definition.entries) || definition.entries.length === 0) {
       throw new Error(`${label}.entries must be a non-empty array`)
     }
@@ -152,6 +155,7 @@ const validateExactPathScopes = (contract, declaredCommands) => {
     }
     exactScopes.set(scopeName, {
       pathCommands,
+      scopeLocal: definition.scope_local === true,
     })
   }
   return exactScopes
@@ -388,6 +392,8 @@ export const selectAffectedCommands = (changedPaths, contract) => {
   ]))
   const matchedPaths = new Set()
   const scopes = []
+  const scopeBoundariesKnown = normalizedPaths.every(rel => Object.values(contract.ci_scopes)
+    .some(scope => scope.roots.some(root => rel === root || rel.startsWith(root))))
 
   const addCommand = command => {
     const expanded = expansionByKey.get(commandKey(command))
@@ -404,9 +410,10 @@ export const selectAffectedCommands = (changedPaths, contract) => {
     scopes.push(name)
     matches.forEach(rel => matchedPaths.add(rel))
     const exactScope = contract.ci_exact_path_scope_by_name?.get(name)
+    const coveragePaths = exactScope?.scopeLocal && scopeBoundariesKnown ? matches : normalizedPaths
     const exactOnly = exactScope
-      && normalizedPaths.length > 0
-      && normalizedPaths.every(rel => exactScope.pathCommands.has(rel))
+      && coveragePaths.length > 0
+      && coveragePaths.every(rel => exactScope.pathCommands.has(rel))
     if (!exactOnly) {
       for (const command of scope.commands) addCommand(command)
       continue

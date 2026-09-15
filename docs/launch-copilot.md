@@ -3,9 +3,11 @@
 The canonical [product plan](documents/launch-copilot-prd-tad-adr-mvp-gtm.md) owns
 `launch-copilot@0.3.3`; this runbook consumes its criteria and retains operational evidence.
 
-Launch Copilot is a lazy feature of Graph's native workspace. Canvas OS owns the
-five-role proposal contract introduced in PR #922, consumed through the current
-accepted Canvas revision in `docs/runtime-readiness-contract.md`. There is no separate LC
+Launch Copilot is a lazy feature of Graph's native workspace. Graph owns the
+five-role proposal contract at `mcp/agent-graph/launch-copilot-contract.js`; the
+validating query/explain client comes from the pinned `agentic-os` package. The
+[source transfer manifest](../scripts/local-runtime-migration.json) binds the
+unchanged contract and both original contract tests. There is no separate LC
 server, provider proxy, importer, parser, graph store, renderer or runtime package.
 
 ## Codebase Demo
@@ -108,7 +110,7 @@ local drafts because the default workspace policy excludes them from snapshots.
 
 ## Boundaries
 
-- The Canvas validating client checks query/explain results; source membership
+- The OS validating client checks query/explain results; source membership
   does not prove semantic entailment. Read excerpts and review each claim.
 - At most 12 evidence nodes and 20 explained edges; depth is one. Search starts
   with six hits and a bounded neighborhood. Truncation is visible.
@@ -155,14 +157,15 @@ local drafts because the default workspace policy excludes them from snapshots.
 
 ## Verification and budget
 
-Run `npm run check`, `npm run ci:integration`, `npm run agent-graph:check`, and:
+Run `npm run ci:integration` for the repository-selected checks. The dedicated
+source/UI regression uses:
 
 ```sh
-TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/launchCopilot.test.ts
+TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --import ./canvas/scripts/source-authority-test-bootstrap.mjs --test canvas/src/__tests__/launchCopilot.test.ts
 npm -C canvas run test:ci:unit -- workspace.import.agentGraph workspace.importUrl.native workspace.importUrl.agentGraph agentReady.webMcpRuntime.importUrl
 ```
 
-The dedicated test uses an actual temporary source corpus, Graph runtime, Canvas
+The dedicated test uses an actual temporary source corpus, Graph runtime, OS
 client and native workspace filesystem; it checks source immutability, exact
 roles, panel recognition, retained edits/positions/versions, default persistence
 admission, duplicate CID refusal, forged claims, stale snapshots and cancellation.
