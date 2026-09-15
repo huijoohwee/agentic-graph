@@ -53,12 +53,25 @@
       "destination": "scripts/__tests__/local-review-contract.test.mjs",
       "destinationSha256": "ea38b37e869bdaa16cc0c7a346d293819cb575ab3ea7e6ee175ab473d7ae790f",
       "partition": "Local review/prompt cases; candidate creation and authorization remain tested by the existing Graph release owner."
+    },
+    {
+      "source": "src/launch-copilot-contract.js",
+      "sourceSha256": "fc4c32e12b8032bfd47affd68f74578ce324bd7ef9d332f79e90014ed8d45f15",
+      "destination": "mcp/agent-graph/launch-copilot-contract.js",
+      "destinationSha256": "fc4c32e12b8032bfd47affd68f74578ce324bd7ef9d332f79e90014ed8d45f15"
+    },
+    {
+      "source": "__tests__/launch-copilot-contract.test.mjs",
+      "sourceSha256": "babf3512e066ad29cc0e53526a72ca18efb98ed03a557b0d4d4510516967d4e7",
+      "destination": "mcp/__tests__/launch-copilot-contract.test.mjs",
+      "destinationSha256": "a749db7b5924f293703927799d2055f66ec222e8739a2cc9a460498c02a5c592"
     }
   ],
   "transformations": [
     "Graph owns the Apex/storage supervisor and OS remains the catalog/runtime dependency.",
     "Committed repository profiles supply required check names.",
     "Existing Graph release validators and shared bounded JSON canonicalization are reused.",
-    "Historical state paths and ownership-token verification are preserved."
+    "Historical state paths and ownership-token verification are preserved.",
+    "Graph owns the unchanged five-role Launch Copilot contract and both original contract cases; the native UI test consumes Graph and OS module exports directly."
   ]
 }
