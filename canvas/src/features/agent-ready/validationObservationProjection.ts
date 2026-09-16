@@ -2,7 +2,9 @@ import { record, type RunTrace, type TraceSpan } from './missionControlProjectio
 
 export type ValidationObservation = {
   schema: 'agentic-os/validation-observation/v1'; authority: false; exportedAt: number; runId: string; status: string;
-  source: { repository: string; revision: string; tree: string; dirty: boolean };
+  source: { repository: string; revision: string; tree: string; dirty: boolean | null };
+  executionOrder?: 'sequential' | 'concurrent' | 'unknown';
+  coverage?: { totalStages: number; expectedStages: number; offset: number; partial: boolean };
   startedAt: number; finishedAt: number | null; elapsedMs: number | null;
   stages: { id: string; status: string; startedAt: number | null; finishedAt: number | null; elapsedMs: number | null;
     observedOutputBytes: number | null; outputTruncated: boolean }[];
@@ -21,7 +23,9 @@ export function readValidationObservation(text: string): ValidationObservation {
     || typeof source.repository !== 'string' || !/^github\.com\/[a-z0-9._-]+\/[a-z0-9._-]+$/iu.test(source.repository)
     || source.repository.split('/').some(part => ['.', '..'].includes(part))
     || typeof source.revision !== 'string' || !/^[a-f0-9]{40}$/u.test(source.revision)
-    || typeof source.tree !== 'string' || !/^[a-f0-9]{40}$/u.test(source.tree) || typeof source.dirty !== 'boolean') fail()
+    || typeof source.tree !== 'string' || !/^[a-f0-9]{40}$/u.test(source.tree) || source.dirty !== null && typeof source.dirty !== 'boolean') fail()
+  const coverage = record(value.coverage)
+  if (value.executionOrder !== undefined && !['sequential', 'concurrent', 'unknown'].includes(String(value.executionOrder))) fail()
   const ids = new Set<string>()
   const stages = value.stages.map(raw => {
     const s = record(raw), name = id(s.id), elapsedMs = finite(s.elapsedMs, true)
@@ -33,6 +37,9 @@ export function readValidationObservation(text: string): ValidationObservation {
       observedOutputBytes: finite(s.observedOutputBytes, true), outputTruncated: s.outputTruncated === true }
   })
   return { schema: 'agentic-os/validation-observation/v1', authority: false, exportedAt: finite(value.exportedAt)!,
+    executionOrder: (value.executionOrder ?? 'unknown') as ValidationObservation['executionOrder'],
+    ...(value.coverage === undefined ? {} : { coverage: { totalStages: finite(coverage.totalStages)!, expectedStages: finite(coverage.expectedStages)!,
+      offset: finite(coverage.offset)!, partial: coverage.partial === true } }),
     runId: id(value.runId), status: String(value.status), source: { repository: source.repository, revision: source.revision,
       tree: source.tree, dirty: source.dirty }, startedAt: finite(value.startedAt)!, finishedAt: finite(value.finishedAt, true),
     elapsedMs: finite(value.elapsedMs, true), stages,
@@ -45,13 +52,13 @@ export function validationTrace(observation: ValidationObservation, offset = 0, 
   const spans: TraceSpan[] = observation.stages.slice(offset, offset + 32).map((stage, index) => ({
     spanId: stage.id, parentSpanId: null, kind: 'check', operation: stage.id, taskId: '', attempt: null,
     status: stage.status, subjectDigest: null, component, evaluation,
-    links: offset + index > 0 ? [{ spanId: observation.stages[offset + index - 1]!.id, kind: 'sequence' }] : [],
+    links: observation.executionOrder === 'sequential' && offset + index > 0 ? [{ spanId: observation.stages[offset + index - 1]!.id, kind: 'sequence' }] : [],
     timing: { offset: stage.startedAt === null || stage.status === 'reused' ? null : Math.max(0, stage.startedAt - observation.startedAt),
       inclusive: stage.elapsedMs, exclusive: null }, cost: null,
   }))
   return { runId: observation.runId, status: observation.status, spans, subjectDigest: null, context: null,
     candidate: component, cohortId: '', profile: {}, evaluation, resources: null, observedAt: now, expiresAt: now + 60000,
-    partial: observation.status !== 'passed' || observation.stages.length > 32, dropped: null,
-    expected: observation.stages.length, total: observation.stages.length, offset, nextCursor: null,
+    partial: observation.coverage?.partial === true || observation.status !== 'passed' || observation.stages.length > 32, dropped: null,
+    expected: observation.coverage?.expectedStages ?? null, total: observation.stages.length, offset, nextCursor: null,
     localObservation: observation }
 }

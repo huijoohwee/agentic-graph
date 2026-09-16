@@ -60,7 +60,7 @@ export async function testMissionControlProjection(): Promise<void> {
 
   const observation = { schema: 'agentic-os/validation-observation/v1', authority: false, exportedAt: 2000,
     source: { repository: 'github.com/example/source', revision: '1'.repeat(40), tree: '2'.repeat(40), dirty: true },
-    runId: 'validation-fixture', status: 'failed', startedAt: 1000, finishedAt: 2000, elapsedMs: 1000,
+    executionOrder: 'sequential', runId: 'validation-fixture', status: 'failed', startedAt: 1000, finishedAt: 2000, elapsedMs: 1000,
     resources: { observedOutputBytes: 50000, emittedDiagnosticBytes: 200 },
     stages: Array.from({ length: 33 }, (_, i) => ({ id: `check-${i}`, status: i === 32 ? 'failed' : 'passed',
       startedAt: 1000 + i, finishedAt: 1001 + i, elapsedMs: 1, observedOutputBytes: 10, outputTruncated: false })) }
@@ -70,6 +70,9 @@ export async function testMissionControlProjection(): Promise<void> {
   assert.equal(localTrace.localObservation?.source.dirty, true)
   assert.equal(localTrace.spans[0]!.timing.exclusive, null); assert.equal(localTrace.spans[0]!.cost, null)
   assert.equal(localTrace.spans[0]!.links[0]!.spanId, 'check-31')
+  assert.equal(validationTrace({ ...local, executionOrder: 'concurrent' }).spans[1]!.links.length, 0)
+  const agentTrace = { ...trace, spans: trace.spans.map((s, i) => ({ ...s, kind: i === 0 || i === 2 ? 'agent' : 'tool' })) }
+  assert.equal(traceGraph(agentTrace, '', 'agents').nodes.filter(node => node.type === 'tool').length, 0)
   assert.equal(comparable(localTrace, { ...localTrace, candidate: { ...ref, revision: 'v2' } }), false)
   assert.throws(() => validationTrace(local, 1), /Invalid/)
   for (const invalid of [{ ...observation, authority: true }, { ...observation, stages: Array(129).fill(observation.stages[0]) },

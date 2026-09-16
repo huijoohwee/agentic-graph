@@ -119,8 +119,23 @@ export function visibleSpanTree(spans: TraceSpan[], search: string) {
   return rows
 }
 export const spanNodeId = (runId: string, spanId: string) => `agentic-os/${encodeURIComponent(runId)}/${encodeURIComponent(spanId)}`
-export function traceGraph(trace: RunTrace, search: string): GraphData {
-  const spans = visibleSpanTree(trace.spans, search).map(r => r.span), names = new Set(spans.map(s => s.spanId))
+export function traceGraph(trace: RunTrace, search: string, detail: 'all' | 'agents' = 'all'): GraphData {
+  let spans = visibleSpanTree(trace.spans, search).map(r => r.span)
+  if (detail === 'agents' && spans.some(span => span.kind === 'agent')) {
+    const byId = new Map(trace.spans.map(span => [span.spanId, span]))
+    const parentAgent = (id: string | null) => {
+      const seen = new Set<string>()
+      while (id && byId.has(id) && !seen.has(id)) {
+        seen.add(id); const parent = byId.get(id)!
+        if (parent.kind === 'agent') return id
+        id = parent.parentSpanId
+      }
+      return id && !byId.has(id) ? id : null
+    }
+    spans = spans.filter(span => span.kind === 'agent').map(span => ({ ...span,
+      parentSpanId: parentAgent(span.parentSpanId), links: span.links.filter(link => byId.get(link.spanId)?.kind === 'agent') }))
+  }
+  const names = new Set(spans.map(s => s.spanId))
   const graph: GraphData = { type: 'agentic-os-observation', nodes: [], edges: [], metadata: { readOnly: true } }
   for (const s of spans) graph.nodes.push({ id: spanNodeId(trace.runId, s.spanId), label: s.operation, type: s.kind,
     properties: { status: s.status, 'inspection:label': spanLabel(s), 'visual:shape': s.kind === 'tool' ? 'hex' : 'circle',
@@ -131,7 +146,7 @@ export function traceGraph(trace: RunTrace, search: string): GraphData {
     if (!names.has(source)) { names.add(source); graph.nodes.push({ id: spanNodeId(trace.runId, source),
       label: 'Outside this page', type: 'unavailable', properties: { observed: false } }) }
     graph.edges.push({ id: `${kind}:${source}:${target}`, source: spanNodeId(trace.runId, source),
-      target: spanNodeId(trace.runId, target), type: kind, label: kind, properties: {} })
+      target: spanNodeId(trace.runId, target), type: kind, label: kind, properties: { 'visual:stroke': '#a8a29e', 'visual:strokeWidth': 1.5 } })
   }
   for (const s of spans) {
     if (s.parentSpanId) edge(s.parentSpanId, s.spanId, 'contains')

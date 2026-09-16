@@ -31,6 +31,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const scope = React.useRef<string | null>(initial?.scope ?? null), active = React.useRef<AbortController | null>(null)
   const mutating = React.useRef(false)
   const [busy, setBusy] = React.useState(false), [error, setError] = React.useState(''), [notice, setNotice] = React.useState('')
+  const [topologyDetail, setTopologyDetail] = React.useState<'all' | 'agents'>('agents')
   const [localView, setLocalView] = React.useState('tree'), [localSearch, setLocalSearch] = React.useState(''), [live, setLive] = React.useState(false)
   const view = workspace ? workspaceSession?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
   const search = workspace ? inspection?.search ?? '' : localSearch, setSearch = workspace ? filterAgentRunInspection : setLocalSearch
@@ -141,7 +142,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       setSelection(current => current.spanId === inspection.spanId ? current : { ...current, spanId: inspection.spanId })
   }, [workspace, inspection?.spanId, inspection?.trace.runId])
   const spans = React.useMemo(() => visibleSpanTree(trace?.spans ?? [], search), [trace, search])
-  const topology = React.useMemo(() => trace ? traceGraph(trace, search) : null, [trace, search])
+  const topology = React.useMemo(() => trace ? traceGraph(trace, search, topologyDetail) : null, [trace, search, topologyDetail])
   const span = trace?.spans.find(s => s.spanId === selection.spanId) ?? null
   const subjectDigest = selection.spanId ? span?.subjectDigest : trace?.subjectDigest
   const evaluated = selection.spanId ? span?.evaluation : trace?.evaluation
@@ -254,7 +255,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           <div>Observed output<strong className="block text-xl">{numberLabel(trace.localObservation.resources.observedOutputBytes, ' bytes')}</strong></div>
           <div>Emitted diagnostics<strong className="block">{numberLabel(trace.localObservation.resources.emittedDiagnosticBytes, ' bytes')}</strong></div>
           <div>CPU · memory · tokens · cost<strong className="block">Unknown</strong></div></div>
-        <p className="pt-2 text-xs">Captured {new Date(trace.localObservation.exportedAt).toLocaleString()} · {trace.localObservation.source.dirty ? 'Working tree had changes' : 'Clean source observation'} · process outcomes are not release approval.</p>
+        <p className="pt-2 text-xs">Captured {new Date(trace.localObservation.exportedAt).toLocaleString()} · {trace.localObservation.source.dirty === null ? 'Historical working state unknown' : trace.localObservation.source.dirty ? 'Working tree had changes' : 'Clean source observation'} · process outcomes are not release approval.</p>
         <a className="text-xs underline" target="_blank" rel="noreferrer" href={`https://${trace.localObservation.source.repository}/tree/${trace.localObservation.source.revision}`}>Source revision {trace.localObservation.source.revision.slice(0, 12)}</a>
         <details className="pt-2 text-xs"><summary>Stage output and reuse</summary><ul>{trace.localObservation.stages.slice(trace.offset, trace.offset + 32).map(stage => <li key={stage.id} className="py-1">{stage.id} · {stage.status} · {numberLabel(stage.observedOutputBytes, ' output bytes')}{stage.outputTruncated ? ' · bounded log tail' : ''}</li>)}</ul></details>
       </section>}
@@ -280,9 +281,9 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           selectedRowIds={selection.spanId ? [selection.spanId] : []} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy=""
           sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={chooseSpan} onSelectionChanged={ids => chooseSpan(ids.at(-1) ?? null)} /></div>}
         {(view === 'tree' || view === 'timing') && <AgentRunSpanViews rows={spans} timing={view === 'timing'} selectedId={selection.spanId} onSelect={chooseSpan} />}
-        {view === 'topology' && topology && <React.Suspense fallback={<p>Loading topology…</p>}><FlowCanvasInspection graph={topology}
+        {view === 'topology' && topology && <><label className="flex items-center gap-2 text-xs">Topology detail<select aria-label="Topology detail" style={inputStyle} value={topologyDetail} onChange={event => setTopologyDetail(event.target.value as 'all' | 'agents')}><option value="agents">Agents</option><option value="all">All spans</option></select></label><p className="py-1 text-xs">Agent view shows containment and direct agent links. Runs without agent spans show all checks.</p><React.Suspense fallback={<p>Loading topology…</p>}><FlowCanvasInspection graph={topology}
           selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
-          onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense>}
+          onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense></>}
         {view === 'evidence' && <><p>Candidate: {trace.candidate.id} @ {trace.candidate.revision}</p>
           <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ profile: trace.profile, subjectDigest, evaluation: evaluated, component: span?.component, links: span?.links, timing: span?.timing, usage: span?.cost }, null, 2)}</pre></>}
       </div>

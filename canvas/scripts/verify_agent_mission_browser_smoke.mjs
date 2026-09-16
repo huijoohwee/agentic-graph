@@ -46,6 +46,8 @@ const waitText = async (locator, text) => {
 }
 const waitTopology = async scope => {
   const startedAt = Date.now()
+  const detail = scope.getByRole('combobox', { name: 'Topology detail', exact: true })
+  if (await detail.count()) await detail.selectOption('all')
   const panel = scope.locator('#agent-run-view-topology-panel')
   await panel.waitFor({ state: 'visible' })
   // The panel commits before its on-demand renderer. Cold module loading has the
@@ -240,7 +242,7 @@ async function verifyApexActivation(width) {
   const beforeLocalRequests = requests.length
   const observation = { schema: 'agentic-os/validation-observation/v1', authority: false, exportedAt: Date.now(),
     source: { repository: 'github.com/example/validation-fixture', revision: '1'.repeat(40), tree: '2'.repeat(40), dirty: false },
-    runId: 'validation-fixture', status: 'passed', startedAt: 1000, finishedAt: 4300, elapsedMs: 3300,
+    executionOrder: 'sequential', runId: 'validation-fixture', status: 'passed', startedAt: 1000, finishedAt: 4300, elapsedMs: 3300,
     resources: { observedOutputBytes: 128000, emittedDiagnosticBytes: 400 },
     stages: Array.from({ length: 33 }, (_, i) => ({ id: 'check-' + i, status: 'passed', startedAt: 1000 + i * 100,
       finishedAt: 1100 + i * 100, elapsedMs: 100, observedOutputBytes: 200, outputTruncated: false })) }
@@ -261,7 +263,8 @@ async function verifyApexActivation(width) {
   await editor.waitFor({ state: 'visible' })
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
   await waitText(editor.getByRole('region', { name: 'JSON Editor', exact: true }), 'validation-fixture')
-  await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }), 'check-0')
+  await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }), 'Agent run')
+  await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.endsWith('.md') && model.uri.startsWith('inmemory://agent-run/') && model.value.includes('check-0')))
   assert.equal(requests.length, beforeLocalRequests, 'Local validation inspection must never call the authenticated runtime')
 
   assertAuthored(await authoredSnapshot(), before, 'Apex activation must preserve authored work')

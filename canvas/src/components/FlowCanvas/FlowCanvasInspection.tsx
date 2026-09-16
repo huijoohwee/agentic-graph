@@ -57,9 +57,9 @@ export default function FlowCanvasInspection({ graph, selectedNodeId, onSelect }
   }
   return <section aria-label="Observed execution topology" className="min-w-0">
     <div className="flex flex-wrap gap-2 py-2">
-      <button type="button" onClick={() => zoom(1.25)} className={UI_THEME_TOKENS.button.neutralMuted}>Zoom in</button>
-      <button type="button" onClick={() => zoom(0.8)} className={UI_THEME_TOKENS.button.neutralMuted}>Zoom out</button>
-      <button type="button" onClick={fit} className={UI_THEME_TOKENS.button.neutralMuted}>Fit topology</button>
+      <button type="button" onClick={() => zoom(1.25)} className={`rounded border px-3 py-2 text-sm ${UI_THEME_TOKENS.button.neutralMuted}`}>Zoom in</button>
+      <button type="button" onClick={() => zoom(0.8)} className={`rounded border px-3 py-2 text-sm ${UI_THEME_TOKENS.button.neutralMuted}`}>Zoom out</button>
+      <button type="button" onClick={fit} className={`rounded border px-3 py-2 text-sm ${UI_THEME_TOKENS.button.neutralMuted}`}>Fit topology</button>
     </div>
     <div ref={container} className="w-full min-w-0 overflow-hidden rounded border" style={{ height: 'clamp(360px, 60vh, 720px)' }}>
       <canvas ref={canvas} role="img" aria-label="Observed spans and causal links; use the node buttons below to select a span"
