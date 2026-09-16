@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { readRunIndex, readRunTrace, traceGraph, visibleSpanTree, sourceLink, comparable, spanNodeId } from '@/features/agent-ready/missionControlProjection'
-import { durableObservationBinding } from '@/features/agent-ready/durableRunTransport'
+import { durableObservationBinding, readDurableSessionToken } from '@/features/agent-ready/durableRunTransport'
 
-export function testMissionControlProjection(): void {
+export async function testMissionControlProjection(): Promise<void> {
   const ref = { id: 'fixture', revision: 'v1', digest: 'a'.repeat(64) }
   const context = { taskId: 'draft', projectId: 'seller', goalId: 'first-result', receipt: { id: 'draft', digest: 'b'.repeat(64) },
     plan: { repository: 'github.com/owner/source', path: 'docs/plan.md', revision: '1'.repeat(40), digest: ref.digest,
@@ -48,4 +48,13 @@ export function testMissionControlProjection(): void {
   assert.equal(durableObservationBinding(env, 'https://app.example')!.endpoint, 'https://app.example/product/runs/')
   for (const path of ['https://foreign.example/runs/', '//foreign.example/runs/', '/a/../runs/', '/runs/?token=x'])
     assert.throws(() => durableObservationBinding({ ...env, VITE_AGENTIC_OS_OBSERVATION_PATH: path }, 'https://app.example'), /binding/)
+  const csrfToken = 'c'.repeat(64)
+  for (const control of ['no-store', 'no-store, no-transform', 'private, NO-STORE'])
+    assert.equal(await readDurableSessionToken(Response.json({ ok: true, csrfToken }, { headers: { 'cache-control': control } })), csrfToken)
+  for (const control of ['public, max-age=60', 'no-store-fake', ''])
+    await assert.rejects(readDurableSessionToken(Response.json({ ok: true, csrfToken }, { headers: { 'cache-control': control } })), /unavailable/)
+  await assert.rejects(readDurableSessionToken(Response.json({ ok: true, csrfToken: 'x'.repeat(5000) }, { headers: { 'cache-control': 'no-store' } })), /bound/)
+  await assert.rejects(readDurableSessionToken(Response.json({}, { status: 403 })), (error: unknown) => Boolean((error as { denied: boolean }).denied))
+  await assert.rejects(readDurableSessionToken(Response.json({ ok: true, csrfToken }, { headers: { 'cache-control': 'no-store' } }), AbortSignal.abort()))
+
 }
