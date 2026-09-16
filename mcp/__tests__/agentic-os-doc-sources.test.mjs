@@ -24,12 +24,15 @@ async function sourceFetch(url) {
 
 test('logical docs map only to existing native owners and preserve storage identities', async () => {
   const sources = await readRuntimeDocsSources({ docsRoot, graphRoot });
-  assert.equal(sources.length, 30);
+  assert.equal(sources.length, 31);
   assert.equal(new Set(sources.map(row => row.canonicalPath)).size, sources.length);
   assert.deepEqual([...new Set(sources.map(row => row.sourceRepository))].sort(), ['huijoohwee/agentic-graph', 'huijoohwee/agentic-os']);
   const preset = sources.find(row => row.fileName === 'PROMPT-PRESETS.md');
   assert.equal(preset.canonicalPath, 'agentic-canvas-os/docs/PROMPT-PRESETS.md');
   assert.equal(preset.sourcePath, 'runtime/agents/docs/PROMPT-PRESETS.md');
+  const admission = sources.find(row => row.fileName === 'UPSTREAM-DEPENDENCY-ADMISSION.md');
+  assert.equal(admission.sourceRepository, 'huijoohwee/agentic-os');
+  assert.equal(admission.sourcePath, 'runtime/agents/docs/UPSTREAM-DEPENDENCY-ADMISSION.md');
   const id = value => createHash('sha256').update(value).digest('hex').slice(0, 24);
   assert.equal(id(preset.canonicalPath), id('agentic-canvas-os/docs/PROMPT-PRESETS.md'));
   assert.equal(sources.find(row => row.fileName.startsWith('workspace-seeds/')).sourceRepository, 'huijoohwee/agentic-graph');

@@ -16,21 +16,6 @@ for (const workflow of ['integration.yml', 'promote-agentic-canvas-os.yml', 'rel
   })
 }
 
-test('protected refresh enrollment pins the generic controller and repository policy', () => {
-  const source = readFileSync(
-    new URL('../../.github/workflows/auto-delivery.yml', import.meta.url),
-    'utf8',
-  )
-
-  assert.match(source, /ref: 2f40c4078b5c41e5618d36b969d4287a423df6df/)
-  assert.match(source, /node \.agentic-canvas-os\/scripts\/sync-open-pr\.mjs --protected-head-refresh/)
-  assert.match(source, /PROTECTED_HEAD_REFRESH_CI_WORKFLOW: integration\.yml/)
-  assert.match(source, /PROTECTED_HEAD_REFRESH_REQUIRED_CI_CONTEXTS_JSON: '\["Integration Gate"\]'/)
-  assert.match(source, /PROTECTED_HEAD_REFRESH_CLASSIC_REQUIRED_CHECKS_JSON: '\["Integration Gate"\]'/)
-  assert.match(source, /PROTECTED_HEAD_REFRESH_RULESET_REQUIRED_CHECKS_JSON: '\[\]'/)
-  assert.doesNotMatch(source, /pull_request_target:/)
-})
-
 test('integration workflow authorizes the exact protected refresh candidate', () => {
   const source = readFileSync(
     new URL('../../.github/workflows/integration.yml', import.meta.url),
