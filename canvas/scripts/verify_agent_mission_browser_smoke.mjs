@@ -175,6 +175,7 @@ async function verifyApexActivation(width) {
   await activate.waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
   await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await page.waitForFunction(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const before = await authoredSnapshot()
   await page.evaluate(async () => {
@@ -234,6 +235,11 @@ async function switchPrincipal(id) {
 }
 try {
   await mkdir(output, { recursive: true })
+  if (process.env.AG_MISSION_ACTIVATION_ONLY === '1') {
+    await verifyApexActivation(360); await verifyApexActivation(1280)
+    assert.deepEqual(errors, [])
+    console.log('Focused Apex activation passed; full mission lifecycle remains a separate check.')
+  } else {
   await page.clock.install({ time: new Date() })
   await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
@@ -413,6 +419,7 @@ try {
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
       'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'canvas-eight-views', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], peak, streamed, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
+  }
 } catch (error) {
   console.error(error.message)
   console.error('Mission entry state:', await page.evaluate(() => ({
