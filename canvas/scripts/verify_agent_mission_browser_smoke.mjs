@@ -225,8 +225,14 @@ try {
   await refreshMission()
   const manualCount = requests.length; await page.waitForTimeout(5200)
   assert.equal(requests.length, manualCount, 'Manual mode must be idle')
-  await mission.getByRole('checkbox', { name: /Live/ }).check()
-  await page.waitForTimeout(5400); assert.ok(requests.length > manualCount)
+  const liveStartedAt = await page.evaluate(() => Date.now())
+  await Promise.all([
+    page.waitForRequest(request => request.url().endsWith('/api/agent-swarm/query'), { timeout: 60000 }),
+    mission.getByRole('checkbox', { name: /Live/ }).check(),
+  ])
+  assert.ok(await page.evaluate(() => Date.now()) - liveStartedAt >= 5000, 'Live refresh respects its minimum interval')
+  await mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ }).waitFor()
+  assert.ok(requests.length > manualCount)
   await page.evaluate(() => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: true })
     document.dispatchEvent(new Event('visibilitychange'))
