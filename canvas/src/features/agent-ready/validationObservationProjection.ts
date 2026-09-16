@@ -5,6 +5,7 @@ export type ValidationObservation = {
   schema: 'agentic-os/validation-observation/v1'; authority: false; exportedAt: number; runId: string; status: string;
   source: { repository: string; revision: string; tree: string; dirty: boolean | null };
   ci?: { runId: number; attempt: number; url: string; queueWaitMs: number | null };
+  feedbackUnavailable?: boolean;
   feedback?: { ranking: FeedbackRow[] };
   executionOrder?: 'sequential' | 'concurrent' | 'unknown';
   coverage?: { totalStages: number; expectedStages: number; offset: number; partial: boolean };
@@ -76,6 +77,7 @@ export function readValidationObservation(text: string): ValidationObservation {
     return [key, n]
   }))
   return { schema: 'agentic-os/validation-observation/v1', authority: false, exportedAt: finite(value.exportedAt)!,
+    ...(value.feedbackUnavailable === true ? { feedbackUnavailable: true } : {}),
     ...(ci ? { ci } : {}), ...(value.feedback === undefined ? {} : { feedback: feedback(value.feedback) }),
     executionOrder: (value.executionOrder ?? 'unknown') as ValidationObservation['executionOrder'],
     ...(value.coverage === undefined ? {} : { coverage: { totalStages: finite(coverage.totalStages)!, expectedStages: finite(coverage.expectedStages)!,

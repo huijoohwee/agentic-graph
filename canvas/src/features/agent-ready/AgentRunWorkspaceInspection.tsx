@@ -38,7 +38,7 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
       `Continuity: ${cell(plan?.continuityId)} · Digest: ${cell(plan?.digest)}`, '',
       '## Observed resources', '', jsonToMarkdownPreferTable([resourceLabels(traceResources(trace))], { tableMaxRows: 1, tableMaxColumns: 4, sortKeys: false }), '',
       'Peak process RSS is a maximum. Model cost is estimated; actual cash and machine charges are unknown. Reused stages are excluded from current consumption.', '',
-      ...(trace.localObservation?.ci ? [`CI queue: ${numberLabel(trace.localObservation.ci.queueWaitMs, ' ms')} · [CI run](${trace.localObservation.ci.url})`, ''] : []),
+      ...(trace.localObservation?.ci ? [`Initial CI wait: ${numberLabel(trace.localObservation.ci.queueWaitMs, ' ms')} · [CI run](${trace.localObservation.ci.url})`, ''] : []),
       ...(trace.localObservation?.feedback ? ['## Optimization feedback', '', ...trace.localObservation.feedback.ranking.map(row =>
         `- ${cell(row.id)}: ${numberLabel(row.meanMs, ' ms')} mean · ${row.samples} samples · ${row.samples < 3 ? 'cold baseline' : 'repeated observations'}${row.sourceRevision ? ` · [Source](https://${trace.localObservation!.source.repository}/tree/${row.sourceRevision})` : ''}`), ''] : []),
       '## Observed spans', '', jsonToMarkdownPreferTable(spanRows(trace.spans).map(({ id, __order, ...row }) =>
