@@ -119,7 +119,7 @@ export const GraphDataTableDomTableView = React.memo(function GraphDataTableDomT
                 tabIndex={0}
                 onKeyDown={event => {
                   if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) {
-                    event.preventDefault(); props.onRowClicked(row.id)
+                    event.preventDefault(); event.stopPropagation(); props.onRowClicked(row.id)
                   }
                 }}
                 onClick={() => props.onRowClicked(row.id)}

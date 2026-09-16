@@ -63,6 +63,10 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  agent_mission_control:
+    roots: ["canvas/src/features/agent-ready/AgenticOsMissionControl.tsx", "canvas/src/features/agent-ready/missionControlProjection.ts", "canvas/src/features/agent-ready/durableRunTransport.ts", "canvas/src/components/FlowCanvas.tsx", "canvas/src/components/FlowCanvas/FlowCanvasInspection.tsx", "canvas/src/components/FlowCanvas/shared.ts", "canvas/src/features/panels/views/DashboardView.tsx", "canvas/src/features/graph-data-table/ui/GraphDataTableDomTableView.tsx", "canvas/viteDurableRunBridge.mjs", "canvas/src/__tests__/missionControlProjection.test.ts", "canvas/src/__tests__/durableRunWebMcp.test.ts", "canvas/scripts/run_agent_mission_browser_smoke.mjs", "canvas/scripts/verify_agent_mission_browser_smoke.mjs", "package.json", "package-lock.json"]
+    commands:
+      - ["npm", "run", "agent-mission:check"]
   pages_catalog_publication:
     roots: ["scripts/pages-mirror-agent-ready.mjs", "scripts/pages-mirror-sync.mjs", "scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs"]
     commands:

@@ -28,7 +28,7 @@ async function run() {
   try {
     const planPath = 'docs/documents/agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md'
     const plan = { repository: 'github.com/huijoohwee/agentic-graph', path: planPath, revision: head,
-      digest: digest(await readFile(join(repositoryRoot, planPath))), continuityId: 'DURABLE-AGENT-WORKFLOWS-001',
+      digest: digest(await readFile(join(repositoryRoot, planPath))), continuityId: 'PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM',
       revisions: Object.fromEntries(['prd', 'tad', 'adr', 'mvp', 'gtm'].map(role => [role, '1.1.0'])) }
     const store = createAgentToolkitMemoryStore(), at = Date.now()
     const bounds = { inputTokens: 0, outputTokens: 0, attempts: 1, elapsedMs: 1000 }
