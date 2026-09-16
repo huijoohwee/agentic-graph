@@ -40,6 +40,7 @@ async function authoredSnapshot() {
 }
 async function verifyWorkspace(label, revoke = false) {
   const beforeWorkspace = await authoredSnapshot()
+  const previousView = await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] })
   await selected.getByPlaceholder('Search span metadata').fill('draft')
   await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
   const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
@@ -60,7 +61,7 @@ async function verifyWorkspace(label, revoke = false) {
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   await page.screenshot({ path: resolve(output, label + '-canvas.png') })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
-  await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }), 'draft')
+  await page.waitForFunction(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: draft-2')))
   assert.equal(await authoredSnapshot(), beforeWorkspace, 'Workspace/Canvas inspection must preserve authored graph and documents')
   const tokens = await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().markdownTokensPath)
   assert.ok(!String(tokens).includes('agent-run-'), 'Inspection must not publish authored Markdown tokens')
@@ -70,6 +71,9 @@ async function verifyWorkspace(label, revoke = false) {
   else await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await editor.waitFor({ state: 'detached' }); await canvas.waitFor({ state: 'detached' })
   assert.equal(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
+  assert.deepEqual(await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] }), previousView)
+  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
 async function switchPrincipal(id) {
   const path = process.env.AGENTIC_OS_DURABLE_RUN_HOST_CONFIG, config = JSON.parse(await readFile(path, 'utf8'))
