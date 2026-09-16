@@ -42,6 +42,7 @@ async function switchPrincipal(id) {
 }
 try {
   await mkdir(output, { recursive: true })
+  await page.clock.install({ time: new Date() })
   await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   const initialPanelOpen = await page.evaluate(async () => {
@@ -137,13 +138,15 @@ try {
   assert.equal(await mission.locator('tbody tr').count(), 0)
   await switchPrincipal('owner'); await mission.getByRole('button', { name: 'Refresh runs' }).click()
   await waitText(mission, '2 retained matches'); await choose('baseline-run')
-  await page.clock.install({ time: new Date() }); await page.clock.fastForward(61000)
+  await page.clock.fastForward(61000)
   await waitText(mission, 'Snapshot expired'); assert.equal(await selected.count(), 0)
   assert.equal(await mission.locator('tbody tr').count(), 0)
   assert.equal(peak, 1, 'Only one observation request may be in flight')
   assert.deepEqual(errors, [])
   await page.screenshot({ path: resolve(output, 'mobile.png') })
+  console.log('Mission browser: mobile lifecycle, authority and expiry passed')
   // Verify native desktop entry independently; the existing panel uses separate responsive mounts.
+  await page.clock.setSystemTime(new Date())
   await page.setViewportSize({ width: 1280, height: 900 }); await page.reload({ waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
