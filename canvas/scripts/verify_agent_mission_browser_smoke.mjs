@@ -177,10 +177,18 @@ async function verifyApexActivation(width) {
   await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const before = await authoredSnapshot()
+  await page.evaluate(async () => {
+    window.__AG_ACTIVATION_CHANGES__ = []
+    ;(await import('/src/hooks/useGraphStore.ts')).useGraphStore.subscribe((next, previous) => {
+      if (next.sourceFiles === previous.sourceFiles && next.history === previous.history) return
+      if (window.__AG_ACTIVATION_CHANGES__.length < 6) window.__AG_ACTIVATION_CHANGES__.push(new Error('Authored state changed during activation').stack)
+    })
+  })
   await activate.click()
   const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
   const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
   await canvas.waitFor({ timeout: 60000 }); await waitText(evidence, '2 retained matches')
+  assertAuthored(await authoredSnapshot(), before, 'Apex discovery must preserve authored work')
   const refresh = evidence.getByRole('button', { name: 'Refresh runs', exact: true })
   await evidence.getByLabel('Project', { exact: true }).fill('no-such-project')
   await evidence.getByRole('button', { name: 'Apply filters' }).click()
@@ -426,6 +434,7 @@ try {
       })),
     })),
     text: document.querySelector('[aria-label="Agentic OS mission control"]')?.textContent.slice(0, 4000),
+    authoredChanges: window.__AG_ACTIVATION_CHANGES__,
   })).catch(() => 'Document unavailable'))
   console.error('Mission transport state:', JSON.stringify({ errors, requests, streamed, pending: pending.size }))
   await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})
