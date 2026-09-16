@@ -39,7 +39,8 @@ const MarkdownWorkspacePresentationSurfaceLazy = React.lazy(
 
 export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(props: MarkdownWorkspaceMainProps) {
   const panelTypography = usePanelTypography()
-  const [splitPaneVisibility, setSplitPaneVisibility] = React.useState(DEFAULT_MARKDOWN_WORKSPACE_PANE_VISIBILITY)
+  const [splitPaneVisibility, setSplitPaneVisibility] = React.useState(() => props.passive && !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches
+    ? { json: true, markdown: true, viewer: true, html: false } : DEFAULT_MARKDOWN_WORKSPACE_PANE_VISIBILITY)
   const [viewerEl, setViewerEl] = React.useState<HTMLElement | null>(null)
   const [webpageViewerEl, setWebpageViewerEl] = React.useState<HTMLElement | null>(null)
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null)

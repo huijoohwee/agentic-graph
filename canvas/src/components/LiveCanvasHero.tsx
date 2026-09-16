@@ -90,6 +90,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
     props.onPresetChange?.({ id: selectedPromptPresetId, prompt: draft })
   }, [draft, selectedPromptPresetId, props.onPresetChange])
   const invocation = React.useMemo(() => parseGenerationInvocation(draft), [draft])
+  const observationPreset = selectedPromptPresetId === 'agent-observability'
   const selectedKinds = invocation?.kinds || []
   const promptParameters = React.useMemo(
     () => readLiveCanvasHeroPromptParameters(selectedPromptPresetPrompt),
@@ -262,12 +263,12 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
               type="submit"
               disabled={demoLoading || presetLoading || !draft.trim()}
               className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--kg-canvas-accent)] bg-[var(--kg-canvas-accent)] p-2.5 text-slate-950 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)]"
-              aria-label="Demo"
-              title="Open demo.md and its example conversation"
+              aria-label={observationPreset ? "Open observability" : "Demo"}
+              title={observationPreset ? "Open authorized agent run evidence" : "Open demo.md and its example conversation"}
               data-kg-live-canvas-hero-enter="true"
             >
               <Play className="mr-2 h-4 w-4" aria-label="Demo icon" data-kg-live-canvas-hero-action-icon="enter" />
-              {demoLoading ? 'Opening demo…' : 'Demo'}
+              {demoLoading ? 'Opening…' : observationPreset ? 'Open observability' : 'Demo'}
             </button>
             <button
               type="button"

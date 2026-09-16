@@ -40,7 +40,7 @@ export function LiveCanvasHeroPresetStage(props: {
     let current = true
     setDemo(null)
     setError('')
-    if (selection?.id) void loadLiveCanvasHeroDemo(selection.id).then(value => {
+    if (selection?.id && selection.id !== 'agent-observability') void loadLiveCanvasHeroDemo(selection.id).then(value => {
       if (current) setDemo(value)
     }).catch(reason => { if (current) setError(reason instanceof Error ? reason.message : 'Unable to load this demo.') })
     return () => { current = false }
@@ -66,7 +66,12 @@ export function LiveCanvasHeroPresetStage(props: {
         data-kg-live-canvas-hero-background={backgroundUrl ? 'shared-embed' : 'prompt-preset'}
         data-kg-live-canvas-hero-preset={selection?.id}
       >
-        {backgroundUrl ? (
+        {selection?.id === 'agent-observability' ? <div className="m-6 space-y-3 rounded-xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-5 text-sm">
+          <h2 className="font-semibold">Inspect an agent run</h2>
+          <p>Open observability to connect to your existing runtime and choose an authorized run.</p>
+          <p>Follow spans, timing and topology, inspect source and allocation, then evaluate or compare exact evidence.</p>
+          <p>JSON, Markdown, Viewer and Canvas share one selection. No run starts when choosing this preset.</p>
+        </div> : backgroundUrl ? (
           <iframe src={backgroundUrl} title={embedUrl ? `Interactive canvas embed for ${props.source.sourcePath}` : 'Physics Playground demo'}
             className="absolute inset-0 h-full w-full border-0 bg-transparent"
             sandbox="allow-forms allow-popups allow-same-origin allow-scripts"
@@ -81,7 +86,7 @@ export function LiveCanvasHeroPresetStage(props: {
               onNodeChange={preserveWorkspace} onNodePropertiesChange={preserveWorkspace} onNodeRemove={preserveWorkspace} />
           </React.Suspense>
         ) : <p className="p-6 text-sm text-[var(--kg-text-secondary)]" role={error ? 'alert' : 'status'}>{error || 'Loading preset demo…'}</p>}
-        {!backgroundUrl ? <div className="pointer-events-none absolute right-5 top-5 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-3 py-2 text-xs text-[var(--kg-text-secondary)]">
+        {!backgroundUrl && selection?.id !== 'agent-observability' ? <div className="pointer-events-none absolute right-5 top-5 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-3 py-2 text-xs text-[var(--kg-text-secondary)]">
           Example outputs · No model call
         </div> : null}
       </section>

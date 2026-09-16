@@ -591,3 +591,40 @@ Pilot one seller job: inspect its plan/task/goal, identify an unsuccessful attem
 and inspect the existing fulfillment/payment reference. Keep diagnosis time, observed tokens, known incremental
 cost and unknown machine cost separate. Report sample counts and retention coverage; no causal savings claim.
 Production waits for deployed source/route/session proof and the repository's human-authorized release candidate.
+
+
+## Native mission activation — 1.1.1
+
+CID `PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM`; PRD/TAD/ADR/MVP/GTM
+share this revision and the existing RAO-M01–M05 ownership. Source baseline:
+`a1154463928e3155635f0d110ccba57163faa455`. SVO: the solo operator activates
+observability from Apex Catalog / Prompt Presets, selects an authorized run, and inspects the same
+evidence across JSON, Markdown, Viewer and Canvas before deciding on another run.
+
+- **PRD / RAO-M01:** Apex Catalog selects the source-owned Agent observability prompt. Explicit Open observability activates it; FloatingPanel Prompt Presets seed the same prompt for explicit native Chat submission. No Settings detour or known run ID is required.
+  Distinguish connecting, unavailable, offline, authorized-empty and ready states.
+  Selection enables the eight existing evidence views; activation itself executes
+  no agent, evaluator or payment. Empty snapshots explain how existing executions
+  supply evidence. Credentials stay in the host/session owner.
+- **TAD / RAO-M02:** extend the memory-only inspection owner with an explicit empty
+  workspace session. Canvas View UI and its existing `/canvas.view.set #canvas-view
+  @canvas-view` invocation share activation. Existing authenticated query and bounded
+  JSON/SSE reads supply selection; reuse the current projection and rendering path.
+  Only one Canvas evidence owner reads. Editor panes remain passive projections.
+  Suspend the unrelated floating tool surface while inspecting without changing its
+  saved state; close/revocation/expiry restore the authored workspace.
+- **ADR / RAO-M03:** Constraints retain authentication, expiry, no source writeback,
+  no new dependencies and no auto-execution. Argumentation rejects a separate setup
+  dashboard or telemetry service. Outranking favors extending the existing Canvas
+  selector and inspection owner. Revert this increment to restore prior activation;
+  runtime records and budget reservations remain untouched.
+- **MVP / RAO-M04:** Refreshed 60-minute implementation checkpoint after Apex entry steering; at most 16 source modules
+  and 150 KB changed content, no new always-running service. Verify cold mobile and
+  desktop entry, requested view preservation, host denial and recovery, empty query,
+  SSE-backed selection, synchronized panes, hidden/offline pause, late floating panel,
+  close and private-state disposal. Existing `agent-mission:check` and affected CI
+  remain the verification owners; attach exact candidate results before readiness.
+- **GTM / RAO-M05:** reduce the activation detour for the existing seller-job pilot.
+  Target catalog selection and explicit activation to authorized discovery, then one
+  run selection. Measure time to first evidence separately from runtime/model time.
+  Buyer pain, willingness to pay and revenue remain unvalidated.

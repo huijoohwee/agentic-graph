@@ -1,3 +1,4 @@
+import { parseCanvasViewInvocation } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 import { load as parseYaml } from 'js-yaml'
 import {
   readCanonicalAgenticDocsMirrorEntries,
@@ -152,6 +153,9 @@ const parsePreset = (value: unknown): PromptPreset | null => {
       || activation !== 'card-inline'
       || !isAgenticGraphProbeTreePromptPreset(prompt)
     ) return null
+  } else if (runtimeCommand === '/canvas.view.set') {
+    if (id !== 'agent-observability' || activation !== 'chat-agent' || responseMode !== 'native-chat-response') return null
+    try { if (!parseCanvasViewInvocation(prompt).optionId.startsWith('agent-run:')) return null } catch { return null }
   } else if (runtimeCommand === '/launch-copilot') {
     if (id !== 'launch-copilot' || activation !== 'chat-agent'
       || responseMode !== 'native-chat-response'

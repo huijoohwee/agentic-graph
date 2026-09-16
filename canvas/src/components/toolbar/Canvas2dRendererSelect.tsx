@@ -7,7 +7,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { ToolbarDropdownSelect } from '@/components/toolbar/ToolbarDropdownSelect'
 import { isD3Like2dRenderer, isFrontmatterOnlyPolicyActive } from '@/lib/config.render'
 import type { CanvasViewOptionId, CanvasViewModelState, CanvasViewOption } from '@/components/toolbar/canvasViewTypes'
-import { useAgentRunInspection, selectAgentRunView } from '@/features/agent-ready/agentRunInspectionStore'
+import { useAgentRunWorkspace, selectAgentRunView, activateAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import { buildCanvasViewOptions, getCanvasViewRendererOptions, getCanvasViewTriggerState } from '@/components/toolbar/canvasViewMenu'
 import { applyCanvasViewSelection } from '@/components/toolbar/canvasViewActions'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -47,7 +47,7 @@ export function Canvas2dRendererSelect({
   onActivateGeoXrMode,
   onExitGeospatialMode,
 }: Canvas2dRendererSelectProps) {
-  const inspection = useAgentRunInspection()
+  const inspection = useAgentRunWorkspace()
   const [minimapCollapsed, setMinimapCollapsed] = useMinimapCollapsed()
   const state = useGraphStore(
     useShallow(s => ({
@@ -145,7 +145,9 @@ export function Canvas2dRendererSelect({
     children: Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([view, title]) => ({
       id: `agent-run:${view}` as CanvasViewOptionId, title, label: title, Icon: Eye, isActive: inspection.view === view,
     })),
-  }] : buildCanvasViewOptions(modelState, rendererOptions), [modelState, rendererOptions, inspection?.view, !!inspection])
+  }] : [...buildCanvasViewOptions(modelState, rendererOptions), { id: 'agent-run:topology', title: 'Agent observability', label: 'Agent observability', Icon: Eye,
+    children: Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([view, title]) => ({ id: `agent-run:${view}` as CanvasViewOptionId, title, label: title, Icon: Eye })),
+  }], [modelState, rendererOptions, inspection?.view, !!inspection])
   const triggerState = React.useMemo(() => inspection
     ? { id: `agent-run:${inspection.view}` as CanvasViewOptionId, title: AGENT_RUN_CANVAS_VIEWS[inspection.view] }
     : getCanvasViewTriggerState(modelState, rendererOptions), [modelState, rendererOptions, inspection?.view, !!inspection])
@@ -154,7 +156,7 @@ export function Canvas2dRendererSelect({
       if (!id.startsWith('agent-run:')) throw Error('Close run inspection to change the authored Canvas renderer.')
       selectAgentRunView(id.slice('agent-run:'.length)); return
     }
-    if (id.startsWith('agent-run:')) throw Error('Open an authorized run inspection first.')
+    if (id.startsWith('agent-run:')) { activateAgentRunWorkspace(id.slice('agent-run:'.length) as Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>); return }
     applyCanvasViewSelection({
       id,
       ensureBaselineUnlocked: baselineGuard,
@@ -233,7 +235,7 @@ export function Canvas2dRendererSelect({
     if (!option || option.disabled || option.children?.length) {
       throw new Error(`Canvas View option ${optionId} is unavailable in the current document.`)
     }
-    if (!inspection && !ensureBaselineUnlocked()) {
+    if (!inspection && !optionId.startsWith('agent-run:') && !ensureBaselineUnlocked()) {
       throw new Error('Canvas View control is locked by the active baseline.')
     }
     applyCanvasViewOption(optionId, () => true)

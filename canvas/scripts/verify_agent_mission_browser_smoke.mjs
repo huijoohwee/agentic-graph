@@ -162,6 +162,61 @@ async function verifyWorkspace(label, revoke = false) {
   await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
+async function verifyApexActivation(width) {
+  await context.close()
+  context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' })
+  await openPage()
+  const beforeEntryRequests = requests.length, startedAt = Date.now()
+  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
+  const preset = page.getByRole('combobox', { name: 'Prompt preset', exact: true })
+  await preset.waitFor({ state: 'visible', timeout: 120000 })
+  await preset.selectOption('agent-observability')
+  const activate = page.getByRole('button', { name: 'Open observability', exact: true })
+  await activate.waitFor()
+  assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
+  const before = await authoredSnapshot()
+  await activate.click()
+  const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
+  const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
+  await canvas.waitFor({ timeout: 60000 }); await waitText(evidence, '2 retained matches')
+  const refresh = evidence.getByRole('button', { name: 'Refresh runs', exact: true })
+  await evidence.getByLabel('Project', { exact: true }).fill('no-such-project')
+  await evidence.getByRole('button', { name: 'Apply filters' }).click()
+  await waitText(evidence, 'No runs in this authorized snapshot.')
+  await evidence.getByLabel('Project', { exact: true }).fill('')
+  await evidence.getByRole('button', { name: 'Apply filters' }).click()
+  await waitText(evidence, '2 retained matches')
+  await page.route('**/api/agent-swarm/query', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'run_forbidden' }) }))
+  await refresh.click(); await evidence.getByRole('alert').waitFor()
+  await waitText(evidence, 'Runtime unavailable')
+  assert.equal(await evidence.getByText('No runs in this authorized snapshot.').count(), 0)
+  await page.unroute('**/api/agent-swarm/query'); await refresh.click(); await waitText(evidence, '2 retained matches')
+  // A late authored panel request must remain saved but cannot intercept inspection.
+  await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(true))
+  assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0)
+  await evidence.locator('tr').filter({ hasText: 'candidate-run' }).press('Enter')
+  await evidence.locator('#agent-run-view-tree-panel').waitFor()
+  await waitText(evidence, '32/34 retained spans')
+  await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  await editor.waitFor({ timeout: 60000 })
+  if (width > 768) {
+    for (const name of ['Show JSON editor pane', 'Show Markdown editor pane', 'Show Viewer preview pane'])
+      assert.equal(await editor.getByRole('checkbox', { name, exact: true }).isChecked(), true)
+  } else {
+    await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
+    await editor.getByRole('checkbox', { name: 'Show Viewer preview pane', exact: true }).check()
+  }
+  await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ timeout: 60000 })
+  await page.screenshot({ path: resolve(output, `apex-${width}-inspection.png`) })
+  assertAuthored(await authoredSnapshot(), before, 'Apex activation must preserve authored work')
+  assert.ok(requests.slice(beforeEntryRequests).every(item => ['query', 'trace'].includes(item.operation)), 'Activation may only read observations')
+  await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  await editor.waitFor({ state: 'detached' })
+  assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
+  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  console.log('Mission Apex activation:', JSON.stringify({ width, elapsedMs: Date.now() - startedAt, source: 'pinned-catalog', status: 'passed' }))
+}
 async function switchPrincipal(id) {
   const path = process.env.AGENTIC_OS_DURABLE_RUN_HOST_CONFIG, config = JSON.parse(await readFile(path, 'utf8'))
   config.authorization = 'Bearer ' + createHash('sha256').update('private-browser-fixture-' + id).digest('hex')
@@ -170,7 +225,7 @@ async function switchPrincipal(id) {
 try {
   await mkdir(output, { recursive: true })
   await page.clock.install({ time: new Date() })
-  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
+  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const initialPanelOpen = await page.evaluate(async () => {
@@ -298,6 +353,8 @@ try {
   await waitText(mission, 'Snapshot expired'); assert.equal(await selected.count(), 0)
   assert.equal(await mission.locator('tbody tr').count(), 0)
   assert.equal(peak, 1, 'Only one observation request may be in flight')
+  await verifyApexActivation(360)
+  await verifyApexActivation(1280)
   assert.deepEqual(errors, [])
   await page.screenshot({ path: resolve(output, 'mobile.png') })
   console.log('Mission browser: mobile lifecycle, authority and expiry passed')
@@ -319,7 +376,7 @@ try {
   await context.close()
   context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
   await openPage()
-  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
+  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
   floating = page.locator('[data-kg-floating-panel-root="true"]')
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
@@ -336,11 +393,13 @@ try {
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
   await verifyWorkspace('desktop')
+  await verifyApexActivation(360)
+  await verifyApexActivation(1280)
   assert.deepEqual(errors, [])
   assert.ok(streamed.includes('query') && streamed.includes('trace'), 'Real authenticated bridge must serve SSE observations')
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
-    assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
+    assertions: ['apex-catalog-inert-selection', 'apex-explicit-activation', 'activation-empty-vs-denied', 'activation-preserves-requested-view', 'late-panel-isolation', 'desktop-default-panes', 'lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
       'subject-evaluation', 'phase-reauthorization', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',

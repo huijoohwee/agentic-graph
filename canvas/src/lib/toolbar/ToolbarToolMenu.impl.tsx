@@ -1,3 +1,4 @@
+import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ChevronDown } from 'lucide-react'
@@ -129,6 +130,7 @@ export function ToolbarToolMenu({
   requestedFloatingPanelViewSeq,
   onClose,
 }: ToolbarToolMenuProps) {
+  const inspectionWorkspace = useAgentRunWorkspace()
   const { pinned: floatingPanelPinned, togglePinned: toggleFloatingPanelPinned } = usePinnedLs(LS_KEYS.floatingPanelPinned, true)
   const [floatingPanelMinimized, setFloatingPanelMinimized] = React.useState(false)
   const floatingPanelView = useGraphStore(s => (s.floatingPanelView || 'propsPanel') as FloatingPanelView)
@@ -395,6 +397,8 @@ export function ToolbarToolMenu({
       window.removeEventListener(GRAPH_TRAVERSAL_FLOATING_PANEL_EVENT, handleOpenGraphTraversal)
     }
   }, [setFloatingPanelView])
+
+  if (inspectionWorkspace) return null
 
   if (floatingPanelMinimized) {
     return (

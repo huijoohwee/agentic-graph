@@ -1,5 +1,5 @@
 import React from 'react'
-import { useAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
+import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 const AgentRunInspectionLazy = React.lazy(() => import('@/features/agent-ready/AgentRunWorkspaceInspection'))
 
 const MarkdownWorkspaceLazy = React.lazy(() =>
@@ -7,7 +7,7 @@ const MarkdownWorkspaceLazy = React.lazy(() =>
 )
 
 export function EmbeddedEditorShell(props: { active: boolean }) {
-  const inspection = useAgentRunInspection()
+  const inspection = useAgentRunWorkspace()
   const authoredMounted = React.useRef(!inspection)
   if (!inspection) authoredMounted.current = true
   return (
