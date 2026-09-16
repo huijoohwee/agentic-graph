@@ -63,6 +63,11 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  native_docs_dev_loader:
+    roots: ["canvas/viteWorkspaceMirrorReadRoots.ts", "scripts/__tests__/vite-native-docs-mirror.test.mjs"]
+    commands:
+      - ["node", "--test", "scripts/__tests__/vite-native-docs-mirror.test.mjs"]
+      - ["npm", "run", "check"]
   local_runtime_review:
     roots: ["scripts/local-runtime", "scripts/local-review-contract.mjs", "scripts/worktree-policy.mjs", "scripts/production-release-authorization.mjs", "scripts/__tests__/local-runtime.test.mjs", "scripts/__tests__/local-review-contract.test.mjs"]
     commands:
