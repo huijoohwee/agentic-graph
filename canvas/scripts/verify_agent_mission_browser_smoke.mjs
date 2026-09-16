@@ -111,16 +111,6 @@ try {
   assert.equal(await authoredSnapshot(), before, 'Inspection must preserve authored graph, selection, layout, history and sources')
   const bounds = await mission.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth }))
   assert.ok(bounds.width <= 360 && bounds.scroll <= bounds.width + 1, JSON.stringify(bounds))
-  await page.setViewportSize({ width: 1280, height: 900 })
-  // The native responsive panel changes its mount; private observations are reauthorized.
-  await waitText(mission, '2 retained matches'); await choose('candidate-run')
-  await page.locator('#agent-run-view-topology-tab').click()
-  await selected.getByRole('img', { name: /Observed spans and causal links/ }).waitFor()
-  await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
-  await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
-  await page.setViewportSize({ width: 360, height: 800 })
-  await waitText(mission, '2 retained matches'); await choose('candidate-run')
-  assert.equal(await authoredSnapshot(), before, 'Responsive inspection must preserve authored state')
   const manualCount = requests.length; await page.waitForTimeout(5200)
   assert.equal(requests.length, manualCount, 'Manual mode must be idle')
   await mission.getByRole('checkbox', { name: /Live/ }).check()
@@ -153,6 +143,20 @@ try {
   assert.equal(peak, 1, 'Only one observation request may be in flight')
   assert.deepEqual(errors, [])
   await page.screenshot({ path: resolve(output, 'mobile.png') })
+  // Verify native desktop entry independently; the existing panel uses separate responsive mounts.
+  await page.setViewportSize({ width: 1280, height: 900 }); await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
+  if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
+    await floating.waitFor({ state: 'visible' }); await floating.getByRole('button', { name: 'Close', exact: true }).click()
+    await floating.waitFor({ state: 'detached' })
+  }
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
+  await waitText(mission, '2 retained matches'); await choose('candidate-run')
+  await page.locator('#agent-run-view-topology-tab').click()
+  await selected.getByRole('img', { name: /Observed spans and causal links/ }).waitFor()
+  await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
+  await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
+  assert.deepEqual(errors, [])
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
     assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
@@ -161,6 +165,7 @@ try {
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry'], peak, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
 } catch (error) {
+  console.error(error.message)
   await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})
   console.error((await mission.textContent().catch(() => 'Mission panel unavailable')).slice(0, 5000)); throw error
 } finally { await browser.close() }
