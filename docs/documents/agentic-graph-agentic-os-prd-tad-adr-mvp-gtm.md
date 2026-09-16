@@ -568,7 +568,7 @@ CID `PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM`; PRD/TAD/ADR/MVP/GTM sha
 
 ## Validation observation and Canvas clarity — 1.1.2
 
-Shared increment `ADLC-OBS-001@0.1.0` consumes the OS [validation economy owner](https://github.com/huijoohwee/agentic-os/blob/2e9b3b9842460e3e29cf2d414f0eb45c07a42281/guides/VALIDATION-ECONOMY.md); implementation updates the exact dependency pin. Source baseline `6ecb7192f9017b2e7630d79ccf8975e2b56a59f5`. SVO: the operator inspects observed validation stages to choose the next useful check.
+Shared increment `ADLC-OBS-001@0.1.0` consumes the OS [validation economy owner](https://github.com/huijoohwee/agentic-os/blob/e8e6b3017c0abd4ddfa08caff0bf8f53a121ffc8/guides/VALIDATION-ECONOMY.md); implementation updates the exact dependency pin. Source baseline `6ecb7192f9017b2e7630d79ccf8975e2b56a59f5`. SVO: the operator inspects observed validation stages to choose the next useful check.
 
 - **PRD / RAO-M01 / AO-02–AO-04:** recover a transient Apex Catalog failure without losing authored input; inspect clear span hierarchy, timing bars and a readable causal topology; import a native validation observation into the existing synchronized workspace. Keep imported/local observations distinct from authenticated agent execution.
 - **TAD / RAO-M02:** OS owns bounded stage execution, timing/resource receipts and sanitized export (AO-01). Graph's existing affected-command planner delegates execution to that owner. Reuse the prompt-catalog hook, memory-only inspection store, JSON/Markdown projection, native table and Flow/D3 2D renderer. No second graph store, background collector or synthetic execution data.
