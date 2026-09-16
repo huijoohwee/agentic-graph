@@ -575,8 +575,14 @@ Budget: 120–180 active minutes estimate, ≤12 product modules/120 KB, at most
 Required evidence: native projection/transport tests; 360 px and desktop browser flows; keyboard selection;
 fan-out/fan-in, failed/retried attempts, missing parents, unknown clocks, offline/hidden refresh and two principals;
 unchanged authored graph state; type/build/chunk checks; required Integration Gate; exact local review.
-Validation results belong to the resulting exact-source PR and browser receipt. Implementation is in progress;
-no public deployment is asserted. Commerce supplies the existing authenticated public ingress in dependent E3.
+The implementation is present; `agent-mission:check` is selected by the existing affected-CI owner.
+Local predecessor `b30fd94df018984b37db31a51e6163da069f5701` passed the 360 px fixture browser flow,
+including selection, evaluation, pagination, offline inspection, access isolation and authored graph preservation.
+The production build at `d84b78a25ea8965cb3fb00e056f56e851569db50` passed chunk hygiene; new mission and
+inspection chunks were 47.41 kB and 10.23 kB. Final-source results belong to the exact PR and browser receipt.
+These fixture/build observations confer no provider authority or public deployment proof. Commerce supplies
+the existing authenticated public ingress in dependent E3; the release build selects its fulfillment/session
+paths and `x-commerce-csrf` header. Unavailable or denied runtime access remains explicit.
 
 ### GTM / RAO-M05
 

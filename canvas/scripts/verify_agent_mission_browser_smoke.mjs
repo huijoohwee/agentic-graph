@@ -29,7 +29,10 @@ const choose = async id => {
 async function authoredSnapshot() {
   return page.evaluate(async () => {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts'), state = useGraphStore.getState()
-    return JSON.stringify(Object.fromEntries(['graphData', 'selectedNodeIds', 'selectedEdgeIds', 'nodePositions', 'history', 'historyIndex', 'sourceFiles'].map(key => [key, state[key]])))
+    const keys = ['graphData', 'selectedNodeIds', 'selectedEdgeIds', 'selectedGroupIds', 'layoutPositionCacheByMode',
+      'flowWidgetPosByNodeId', 'flowWidgetWorldPosByNodeId', 'openWidgetNodeIds', 'history', 'historyIndex', 'sourceFiles']
+    if (keys.some(key => !(key in state))) throw Error('Authored-state observation is incomplete')
+    return JSON.stringify(Object.fromEntries(keys.map(key => [key, state[key]])))
   })
 }
 async function switchPrincipal(id) {
@@ -43,12 +46,6 @@ try {
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   const initialPanelOpen = await page.evaluate(async () => {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
-    window.__missionPanelChanges = []
-    useGraphStore.subscribe((state, prior) => {
-      if (state.floatingPanelOpen !== prior.floatingPanelOpen) window.__missionPanelChanges.push({
-        open: state.floatingPanelOpen, activeElement: document.activeElement?.outerHTML?.slice(0, 300), stack: new Error().stack,
-      })
-    })
     return useGraphStore.getState().floatingPanelOpen
   })
   const floating = page.locator('[data-kg-floating-panel-root="true"]')
@@ -63,7 +60,7 @@ try {
   assert.equal(await mission.getByText('private-run', { exact: true }).count(), 0)
   const before = await authoredSnapshot()
   await choose('baseline-run')
-  assert.equal(await floating.count(), 0, 'Unexpected panel transition: ' + JSON.stringify(await page.evaluate(() => window.__missionPanelChanges)))
+  assert.equal(await floating.count(), 0, 'Inspection must not open another panel')
   console.log('Mission browser: authorized discovery and keyboard selection passed')
   await waitText(selected, '32/34 retained spans')
   await selected.getByText('Source ownership', { exact: true }).click()
@@ -75,6 +72,10 @@ try {
   await actualDraft.click()
   console.log('Mission browser: span selected')
   await waitText(selected, 'Span draft-2')
+  const search = selected.getByPlaceholder('Search span metadata')
+  await search.fill('draft-2')
+  assert.equal(await selected.getByRole('list', { name: 'Span hierarchy' }).locator('li').count(), 2, 'Search retains the matching span and its known ancestor')
+  await search.fill('')
   await page.locator('#agent-run-view-timing-tab').click()
   assert.equal(await selected.getByRole('button', { pressed: true }).count(), 1)
   await waitText(selected, 'exclusive observed')
@@ -83,6 +84,7 @@ try {
   assert.equal(await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { pressed: true }).count(), 1)
   await selected.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
+  await page.screenshot({ path: resolve(output, 'mobile-topology.png') })
   const canvas = await selected.locator('canvas').boundingBox()
   await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + 100); await page.mouse.down()
   await page.mouse.move(canvas.x + canvas.width / 2 + 20, canvas.y + 120); await page.mouse.up()
@@ -109,10 +111,23 @@ try {
   assert.equal(await authoredSnapshot(), before, 'Inspection must preserve authored graph, selection, layout, history and sources')
   const bounds = await mission.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth }))
   assert.ok(bounds.width <= 360 && bounds.scroll <= bounds.width + 1, JSON.stringify(bounds))
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.locator('#agent-run-view-topology-tab').click()
+  await selected.getByRole('img', { name: /Observed spans and causal links/ }).waitFor()
+  await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
+  await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
+  await page.setViewportSize({ width: 360, height: 800 })
   const manualCount = requests.length; await page.waitForTimeout(5200)
   assert.equal(requests.length, manualCount, 'Manual mode must be idle')
   await mission.getByRole('checkbox', { name: /Live/ }).check()
   await page.waitForTimeout(5400); assert.ok(requests.length > manualCount)
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
+  await waitText(mission, 'Paused while hidden')
+  const hiddenCount = requests.length; await page.waitForTimeout(5400); assert.equal(requests.length, hiddenCount)
+  await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')) })
   await context.setOffline(true); await waitText(mission, 'Offline')
   const offlineCount = requests.length; await page.waitForTimeout(5400); assert.equal(requests.length, offlineCount)
   await page.locator('#agent-run-view-tree-tab').click()
@@ -126,6 +141,11 @@ try {
   await switchPrincipal('denied'); await mission.getByRole('button', { name: 'Refresh runs' }).click()
   await waitText(mission, 'principal_expired'); assert.equal(await selected.count(), 0)
   assert.equal(await mission.locator('tbody tr').count(), 0)
+  await switchPrincipal('owner'); await mission.getByRole('button', { name: 'Refresh runs' }).click()
+  await waitText(mission, '2 retained matches'); await choose('baseline-run')
+  await page.clock.install({ time: new Date() }); await page.clock.fastForward(61000)
+  await waitText(mission, 'Snapshot expired'); assert.equal(await selected.count(), 0)
+  assert.equal(await mission.locator('tbody tr').count(), 0)
   assert.equal(peak, 1, 'Only one observation request may be in flight')
   assert.deepEqual(errors, [])
   await page.screenshot({ path: resolve(output, 'mobile.png') })
@@ -133,7 +153,8 @@ try {
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
     assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
       'subject-evaluation', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
-      'mobile-fit', 'manual-idle', 'live-bounded', 'offline-inspection', 'scope-change', 'denial-clears-cache'], peak, requests }, null, 2))
+      'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
+      'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry'], peak, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
 } catch (error) {
   await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})

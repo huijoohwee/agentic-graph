@@ -35,6 +35,7 @@ async function sessionHeaders(binding: NonNullable<ReturnType<typeof durableObse
     } finally { await reader.cancel().catch(() => {}); reader.releaseLock() }
     const value = JSON.parse(content)
     if (value?.ok !== true || typeof value.csrfToken !== 'string' || !/^[A-Za-z0-9_-]{32,128}$/.test(value.csrfToken)) throw Error('Runtime session unavailable.')
+    signal?.throwIfAborted()
     session = { token: value.csrfToken, expiresAt: Date.now() + 60000, path: binding.sessionPath }
   }
   return { [binding.csrfHeader]: session.token }
