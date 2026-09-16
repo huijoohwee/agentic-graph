@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 
 const toPosixRel = (rootDir, absolutePath) => path.relative(rootDir, absolutePath)
   .split(path.sep)
@@ -180,6 +181,20 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
     ...await collectLocalModuleClosureCopies({ agenticGraphRoot, mirrorRoot, entrySources: [agentReadyToolContractSource] }),
     ...await collectGrphSharedRuntimeCopies({ grphSharedRoot, mirrorRoot, entryRelativePaths: runtimeSharedEntries }),
   ]
+
+  // Published runtime data belongs to the source pin, independently of the mirror's ADLC harness.
+  const durableSource = agentReadyFeatureSource('durableRunAgentReadyContract.mjs')
+  const durableEntry = agentReadyRuntimeCopies.find(entry => entry[0] === durableSource)
+  if (!durableEntry) throw new Error('Published tool closure omits the durable contract')
+  const catalogImport = "import catalog from 'agentic-os/catalog/invocation.json' with { type: 'json' }"
+  const durableBody = await fs.readFile(durableSource, 'utf8')
+  if (durableBody.split(catalogImport).length !== 2) throw new Error('Durable catalog import changed')
+  const resolveSource = createRequire(source('package.json')).resolve
+  const catalogBytes = await fs.readFile(resolveSource('agentic-os/catalog/invocation.json'), 'utf8')
+  JSON.parse(catalogBytes)
+  durableEntry.push(durableBody.replace(catalogImport, () => (
+    `// Generated from the source-pinned OS catalog; regenerate through pages sync.\nconst catalog = JSON.parse(${JSON.stringify(catalogBytes)})`
+  )))
 
   return {
     agentReadyCommerceX402RouteBody, agentReadyCommerceX402RouteTarget, agentReadyDefaultDocRouteTarget,

@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import fsPromises from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { buildPagesMirrorAgentReadyPlan } from '../pages-mirror-agent-ready.mjs'
 import { buildAgentReadyHeaders } from '../pages-mirror-headers.mjs'
 import { buildAgenticGraphRedirects } from '../production-pages-routing.mjs'
@@ -38,6 +39,25 @@ const buildPlan = async t => {
 const copyTargetPaths = (plan, mirrorRoot) => new Set(plan.agentReadyRuntimeCopies.map(([, target]) => (
   path.relative(mirrorRoot, target).split(path.sep).join('/')
 )))
+
+test('published durable tools use the source catalog with an older mirror harness', async t => {
+  const { mirrorRoot, plan } = await buildPlan(t)
+  const packageRoot = path.join(mirrorRoot, 'node_modules', 'agentic-os')
+  await fsPromises.mkdir(packageRoot, { recursive: true })
+  await fsPromises.writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({
+    name: 'agentic-os', type: 'module', exports: { '.': './index.mjs' },
+  }))
+  const entry = plan.agentReadyRuntimeCopies.find(([source]) => source.endsWith('/durableRunAgentReadyContract.mjs'))
+  assert.ok(entry, 'the published closure must contain durable tools')
+  const [source, target, generatedBody] = entry
+  await fsPromises.mkdir(path.dirname(target), { recursive: true })
+  await fsPromises.writeFile(target, generatedBody ?? await fsPromises.readFile(source))
+  const [native, published] = await Promise.all([import(pathToFileURL(source)), import(pathToFileURL(target))])
+  const options = { buildWebName: name => `web.${name}` }
+  assert.deepEqual(published.buildDurableRunAgentReadyToolContracts(options), native.buildDurableRunAgentReadyToolContracts(options))
+  assert.deepEqual(published.DURABLE_RUN_AGENT_READY_TOOL_IDS, native.DURABLE_RUN_AGENT_READY_TOOL_IDS)
+  assert.doesNotMatch(await fsPromises.readFile(target, 'utf8'), /from ['"]agentic-os\//)
+})
 
 test('publish sync removes stale generated assets through a sealed legacy boundary', () => {
   assert.doesNotMatch(syncSource, /isRetainedAssetRelativePath/)
