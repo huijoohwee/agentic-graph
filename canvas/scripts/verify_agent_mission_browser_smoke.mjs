@@ -27,6 +27,15 @@ mission = page.getByRole('region', { name: 'Agentic OS mission control', exact: 
 selected = page.getByRole('region', { name: 'Selected run evidence' })
 }
 await openPage()
+// Playwright's predicate poll treats a Promise as truthy before its result resolves.
+// Evaluate asynchronous module reads to completion before polling their boolean result.
+async function waitForAsync(predicate) {
+  const deadline = Date.now() + 60000
+  while (!await page.evaluate(predicate)) {
+    if (Date.now() >= deadline) throw Error('Asynchronous workspace condition did not become ready')
+    await page.waitForTimeout(50)
+  }
+}
 const waitText = async (locator, text) => {
   if (locator === mission) {
     // Dashboard mounts before its on-demand mission module. Admit that cold
@@ -79,7 +88,7 @@ function assertAuthored(actual, expected, message) {
   throw Error(message + ': ' + JSON.stringify(changes))
 }
 async function verifyWorkspace(label, revoke = false) {
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const floatingPanel = page.locator('[data-kg-floating-panel-root="true"]')
   if (await floatingPanel.isVisible()) {
@@ -148,7 +157,7 @@ async function verifyWorkspace(label, revoke = false) {
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   await page.screenshot({ path: resolve(output, label + '-canvas.png') })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
-  await page.waitForFunction(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: draft-2')))
+  await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: draft-2')))
   assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Workspace/Canvas inspection must preserve authored graph and documents')
   const tokens = await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().markdownTokensPath)
   assert.ok(!String(tokens).includes('agent-run-'), 'Inspection must not publish authored Markdown tokens')
@@ -159,7 +168,7 @@ async function verifyWorkspace(label, revoke = false) {
   await editor.waitFor({ state: 'detached' }); await canvas.waitFor({ state: 'detached' })
   assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
   assert.deepEqual(await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] }), previousView)
-  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
 async function verifyApexActivation(width) {
@@ -174,8 +183,8 @@ async function verifyApexActivation(width) {
   const activate = page.getByRole('button', { name: 'Open observability', exact: true })
   await activate.waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
-  await page.waitForFunction(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const before = await authoredSnapshot()
   await page.evaluate(async () => {
@@ -225,7 +234,7 @@ async function verifyApexActivation(width) {
   await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await editor.waitFor({ state: 'detached' })
   assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
-  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission Apex activation:', JSON.stringify({ width, elapsedMs: Date.now() - startedAt, source: 'pinned-catalog', status: 'passed' }))
 }
 async function switchPrincipal(id) {
@@ -243,7 +252,7 @@ try {
   await page.clock.install({ time: new Date() })
   await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const initialPanelOpen = await page.evaluate(async () => {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
     return useGraphStore.getState().floatingPanelOpen
@@ -258,7 +267,7 @@ try {
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
   await waitText(mission, '2 retained matches')
   assert.equal(await mission.getByText('private-run', { exact: true }).count(), 0)
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const before = await authoredSnapshot()
   await choose('baseline-run')
   assert.equal(await floating.count(), 0, 'Inspection must not open another panel')
@@ -382,7 +391,7 @@ try {
   await context.setOffline(true); await page.clock.fastForward(61000)
   await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'detached' })
   await page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true }).waitFor({ state: 'detached' })
-  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await context.setOffline(false)
   console.log('Mission browser: mobile offline workspace expiry passed')
   // A genuinely fresh desktop must not inherit mobile fake timers, persisted views
@@ -393,7 +402,7 @@ try {
   await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
   floating = page.locator('[data-kg-floating-panel-root="true"]')
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
     await floating.waitFor({ state: 'visible' }); await floating.getByRole('button', { name: 'Close', exact: true }).click()
     await floating.waitFor({ state: 'detached' })
