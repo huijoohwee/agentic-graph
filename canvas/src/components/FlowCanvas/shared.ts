@@ -35,11 +35,6 @@ export function subscribeFlowResetZoomFloorCache(listener: () => void): () => vo
 }
 
 export type FlowCanvasProps = {
-  inspection?: {
-    graph: GraphData
-    selectedNodeId: string | null
-    onSelect: (nodeId: string) => void
-  }
   active?: boolean
   graphDataOverride?: GraphData | null
   mutationSourceGraphDataOverride?: GraphData | null

@@ -11,7 +11,7 @@ import { invokeDurableRun, clearDurableRunSession } from './durableRunTransport'
 import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, spanRows, SPAN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
   spanLabel, numberLabel, known, record, sourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
 
-const FlowCanvas = React.lazy(() => import('@/components/FlowCanvas'))
+const FlowCanvasInspection = React.lazy(() => import('@/components/FlowCanvas/FlowCanvasInspection'))
 const views = Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([key, label]) => ({ key, label }))
 const button = `rounded border px-3 py-2 text-sm disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
 const inputStyle = { minWidth: 0, maxWidth: '100%', border: '1px solid var(--kg-border)', borderRadius: 6, padding: 8,
@@ -251,9 +251,9 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           {s.timing.offset === null || s.timing.inclusive === null ? <p className="text-xs">Position unknown · incomparable or unfinished clock</p>
             : <div className="my-1 h-2 rounded bg-gray-200"><div className="h-2 rounded bg-indigo-500" style={{ marginLeft: `${s.timing.offset / maxTiming * 100}%`, width: `${s.timing.inclusive / maxTiming * 100}%` }} /></div>}
         </li>)}</ul>}
-        {view === 'topology' && topology && <React.Suspense fallback={<p>Loading topology…</p>}><FlowCanvas inspection={{ graph: topology,
-          selectedNodeId: selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null,
-          onSelect: id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) } }} /></React.Suspense>}
+        {view === 'topology' && topology && <React.Suspense fallback={<p>Loading topology…</p>}><FlowCanvasInspection graph={topology}
+          selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
+          onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense>}
         {view === 'evidence' && <><p>Candidate: {trace.candidate.id} @ {trace.candidate.revision}</p>
           <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ profile: trace.profile, subjectDigest, evaluation: evaluated, component: span?.component, links: span?.links, timing: span?.timing, usage: span?.cost }, null, 2)}</pre></>}
       </div>

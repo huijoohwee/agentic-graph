@@ -545,8 +545,8 @@ A disabled host is unavailable, never an empty successful dataset. WTP and first
 
 - `DashboardView.tsx` owns lazy entry; `missionControlProjection.ts` maps the OS read model into existing
   Dashboard metric and graph/table types. `AgenticOsMissionControl.tsx` owns one selection and bounded view state.
-- Reuse `GraphDataTableDomTableView`; add keyboard row selection at its owner. FlowCanvas dispatches inspection
-  to `FlowCanvasInspection.tsx`, which reuses native layout/scene/render functions with local pan/zoom only.
+- Reuse `GraphDataTableDomTableView`; add keyboard row selection at its owner. Lazy-load `FlowCanvasInspection.tsx`
+  directly; reuse native layout/scene/render functions with local pan/zoom without loading editable FlowCanvas.
   Inspection cannot write the authored graph, selection, layouts, snapshots, timeline, widgets or history.
 - `agentRunInspectionStore.ts` holds one bounded expiring memory-only handoff; existing EmbeddedEditorShell and CanvasViewport lazily render `AgentRunWorkspaceInspection.tsx` through MarkdownWorkspaceMain and FlowCanvas. JSON, Markdown, Viewer and Canvas share the run/span selection; no workspace files or host mirrors are created. Passive panes disable authored-token writeback and exports; no-sync viewers retain no shared parse-cache entries.
 - `durableRunTransport.ts` and `viteDurableRunBridge.mjs` consume the pinned OS operation contract.

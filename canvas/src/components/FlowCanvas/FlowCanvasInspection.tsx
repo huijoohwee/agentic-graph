@@ -1,6 +1,6 @@
 import React from 'react'
 import { zoomIdentity } from 'd3'
-import type { FlowCanvasProps } from './shared'
+import type { GraphData } from '@/lib/graph/types'
 import { buildDagreLayout } from './layout'
 import { readFlowConfig } from './config'
 import { buildAndSetFlowNativeScene } from './buildNativeScene'
@@ -9,7 +9,9 @@ import { createFlowNativeRuntime, setFlowNativeTransform, setFlowNativeViewport,
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 /** Renderer reuse without editor subscriptions, snapshots, persistence or global selection. */
-export default function FlowCanvasInspection({ graph, selectedNodeId, onSelect }: NonNullable<FlowCanvasProps['inspection']>) {
+export default function FlowCanvasInspection({ graph, selectedNodeId, onSelect }: {
+  graph: GraphData; selectedNodeId: string | null; onSelect: (nodeId: string) => void
+}) {
   const container = React.useRef<HTMLDivElement>(null), canvas = React.useRef<HTMLCanvasElement>(null)
   const runtime = React.useRef<FlowNativeRuntime | null>(null), selected = React.useRef(selectedNodeId)
   const pointer = React.useRef<{ id: number; x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null)

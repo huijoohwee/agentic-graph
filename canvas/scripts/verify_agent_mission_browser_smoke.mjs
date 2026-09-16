@@ -3,10 +3,9 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
-import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const output = resolve('../data/outputs/agent-mission-browser-smoke')
-const browser = await chromium.launch({ executablePath: findLocalChromiumExecutable() || undefined, headless: true })
+const browser = await chromium.launch({ headless: true })
 const context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' })
 const page = await context.newPage(), errors = [], requests = [], streamed = [], pending = new Set()
 page.setDefaultTimeout(15000)
@@ -306,7 +305,11 @@ try {
     panels: [...document.querySelectorAll('[aria-label="Main panel"]')].map(node => ({
       width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
     })),
-    text: document.body.innerText.slice(0, 5000),
+    topology: [...document.querySelectorAll('#agent-run-view-topology-panel')].map(node => ({
+      text: node.textContent.slice(0, 1000), html: node.innerHTML.slice(0, 2000),
+      width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
+    })),
+    text: document.querySelector('[aria-label="Agentic OS mission control"]')?.textContent.slice(0, 4000),
   })).catch(() => 'Document unavailable'))
   throw error
 } finally { await browser.close() }
