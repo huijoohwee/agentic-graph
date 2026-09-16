@@ -28,6 +28,11 @@ selected = page.getByRole('region', { name: 'Selected run evidence' })
 }
 await openPage()
 const waitText = async (locator, text) => {
+  if (locator === mission) {
+    // Dashboard mounts before its on-demand mission module. Admit that cold
+    // module separately from the data/assertion deadline, as for the editor.
+    await mission.waitFor({ state: 'visible', timeout: 60000 })
+  }
   await locator.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
 }
 const waitTopology = async scope => {
@@ -327,6 +332,9 @@ try {
   console.error(error.message)
   console.error('Mission entry state:', await page.evaluate(() => ({
     ready: window.__AG_MAIN_PANEL_OPEN_READY__,
+    dashboard: document.querySelector('#dashboard-surface-agentic-os-panel')?.textContent.slice(0, 4000),
+    modules: performance.getEntriesByType('resource').filter(entry => entry.name.includes('/src/')).slice(-12)
+      .map(entry => ({ path: new URL(entry.name).pathname, duration: entry.duration })),
     tabs: [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].map(node => node.id),
     panels: [...document.querySelectorAll('[aria-label="Main panel"]')].map(node => ({
       width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
@@ -342,6 +350,7 @@ try {
     })),
     text: document.querySelector('[aria-label="Agentic OS mission control"]')?.textContent.slice(0, 4000),
   })).catch(() => 'Document unavailable'))
+  console.error('Mission transport state:', JSON.stringify({ errors, requests, streamed, pending: pending.size }))
   await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})
   throw error
 } finally { await browser.close() }
