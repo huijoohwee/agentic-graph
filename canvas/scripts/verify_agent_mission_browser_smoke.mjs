@@ -218,9 +218,17 @@ try {
   await selected.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'mobile-topology.png') })
-  const canvas = await selected.locator('canvas').boundingBox()
-  await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + 100); await page.mouse.down()
-  await page.mouse.move(canvas.x + canvas.width / 2 + 20, canvas.y + 120); await page.mouse.up()
+  const canvas = selected.locator('canvas')
+  await canvas.scrollIntoViewIfNeeded()
+  const point = await canvas.evaluate(element => {
+    const box = element.getBoundingClientRect()
+    const x = (Math.max(0, box.left) + Math.min(innerWidth, box.right)) / 2
+    const y = (Math.max(0, box.top) + Math.min(innerHeight, box.bottom)) / 2
+    if (document.elementFromPoint(x, y) !== element) throw Error('Topology drag target is obscured')
+    return { x, y }
+  })
+  await page.mouse.move(point.x, point.y); await page.mouse.down()
+  await page.mouse.move(point.x + 20, point.y + 20); await page.mouse.up()
   // Prove the next phase recovers through fresh authorization and explicit selection.
   // A list refresh alone cannot restore a selection correctly cleared by expiry.
   await page.clock.fastForward(61000)
