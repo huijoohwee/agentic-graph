@@ -33,7 +33,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-os.git"
-  ref: "3663442db70b0e75c5eba487a86e7b444e9e7029"
+  ref: "edc6bde969fe789bc3e4d81104adac9400c43514"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-os/catalog/dictionaries"
   required_files: [ "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]
@@ -48,7 +48,7 @@ local_proof:
 durable_workflow_proof:
   continuity_id: "DURABLE-AGENT-WORKFLOWS-001"
   status: "browser-contract-and-local-bridge-implemented"
-  operations: ["run.start", "run.status", "run.cancel", "run.retry"]
+  operations: ["run.start", "run.status", "run.cancel", "run.retry", "run.query", "run.trace", "run.evaluate", "run.compare"]
   schema_owner: "agentic-os/catalog/invocation.json"
   command: "npm -C canvas run test:ci:unit -- agentReady.webMcpRuntime.durableRun"
   transport: "lazy authenticated same-origin HTTP"
