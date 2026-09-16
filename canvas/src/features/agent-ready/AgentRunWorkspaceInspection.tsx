@@ -6,7 +6,7 @@ import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
 import type { MarkdownPresentationApi } from '@/features/markdown-workspace/markdownWorkspaceTypes'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { spanRows, numberLabel, sourceLink } from './missionControlProjection'
-import { useAgentRunInspection, closeAgentRunInspection } from './agentRunInspectionStore'
+import { useAgentRunInspection, useAgentRunWorkspace, closeAgentRunInspection } from './agentRunInspectionStore'
 
 import { jsonToMarkdownPreferTable } from '@/features/markdown/jsonToMarkdown'
 
@@ -18,7 +18,7 @@ const button = `rounded border px-2 py-1 text-xs ${UI_THEME_TOKENS.button.neutra
 
 /** Presentation adapter only: existing workspace panes and Canvas own all rendering. */
 export default function AgentRunWorkspaceInspection({ surface }: { surface: 'editor' | 'canvas' }) {
-  const inspection = useAgentRunInspection()
+  const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const themeMode = useGraphStore(s => s.resolvedThemeMode || 'light')
   const [layout, setLayout] = React.useState<MarkdownWorkspaceLayoutMode>('editor')
   const [wrap, setWrap] = React.useState(true), [highlight, setHighlight] = React.useState(false)
@@ -41,18 +41,19 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
           char => `&#${char.charCodeAt(0)};`)]))), { tableMaxRows: 32, tableMaxColumns: 6, sortKeys: false }), '',
       'Full context, allocation, usage, immutable evaluation evidence and causal links are available in the JSON pane. Unknown values remain unknown.'].join('\n')
   }, [inspection])
-  if (!inspection) return null
-  const { trace } = inspection
+  if (!workspace) return null
+  const trace = inspection?.trace
   return <section aria-label={`Agent run ${surface === 'editor' ? 'Editor Workspace' : 'Canvas'} inspection`}
     className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden ${surface === 'canvas' ? 'kg-workspace-data-view-root' : ''} ${UI_THEME_TOKENS.panel.bg}`}>
     <header className="flex shrink-0 flex-wrap items-center gap-2 border-b p-2 text-xs" style={{ overflowWrap: 'anywhere' }}>
-      <strong>Run {trace.runId}</strong><span>Read-only · {trace.spans.length}/{trace.total} spans · expires {new Date(inspection.expiresAt).toLocaleTimeString()}</span>
+      <strong>{trace ? `Run ${trace.runId}` : 'Agent observability'}</strong>
+      {trace && inspection && <span>Read-only · {trace.spans.length}/{trace.total} spans · expires {new Date(inspection.expiresAt).toLocaleTimeString()}</span>}
       <button className={button} onClick={closeAgentRunInspection}>Close run inspection</button>
-      <button className={button} onClick={() => useGraphStore.getState().setWorkspaceViewState({
+      <button className={button} disabled={!trace} onClick={() => useGraphStore.getState().setWorkspaceViewState({
         mode: surface === 'editor' ? 'canvas' : 'editor', paneOpen: surface !== 'editor' && !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches,
       })}>{surface === 'editor' ? 'Show Canvas' : 'Show Editor Workspace'}</button>
     </header>
-    {surface === 'editor' ? <div className="flex min-h-0 min-w-0 flex-1">
+    {surface === 'editor' && trace ? <div className="flex min-h-0 min-w-0 flex-1">
       <MarkdownWorkspaceMain themeMode={themeMode} uiPanelTextFontClass="font-sans" uiPanelMonospaceTextClass="font-mono text-xs"
         explorerOpen={false} setExplorerOpen={noop} layoutMode={layout} setLayoutMode={setLayout}
         markdownWordWrap={wrap} setMarkdownWordWrap={setWrap} markdownTextHighlight={highlight} setMarkdownTextHighlight={setHighlight}

@@ -53,6 +53,11 @@ export function buildLiveCanvasHeroDemoDocument(selection: LiveCanvasHeroPresetS
 /** Explicit Demo creates its own local document and history; existing user files and chats stay intact. */
 export async function activateLiveCanvasHeroDemo(selection: LiveCanvasHeroPresetSelection): Promise<void> {
   if (!selection.prompt.trim()) throw new Error('Choose or enter a prompt before opening Demo.')
+  if (selection.id === 'agent-observability') {
+    const { activateAgentRunPrompt } = await import('@/features/agent-ready/agentRunInspectionStore')
+    activateAgentRunPrompt(selection.prompt)
+    return
+  }
   const demo = await loadLiveCanvasHeroDemo(selection.id)
   if (demo.repository) {
     const { activateLiveCanvasHeroRepositoryDemo } = await import('./activateLiveCanvasHeroRepositoryDemo')

@@ -29,7 +29,7 @@ async function run() {
     const planPath = 'docs/documents/agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md'
     const plan = { repository: 'github.com/huijoohwee/agentic-graph', path: planPath, revision: head,
       digest: digest(await readFile(join(repositoryRoot, planPath))), continuityId: 'PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM',
-      revisions: Object.fromEntries(['prd', 'tad', 'adr', 'mvp', 'gtm'].map(role => [role, '1.1.0'])) }
+      revisions: Object.fromEntries(['prd', 'tad', 'adr', 'mvp', 'gtm'].map(role => [role, '1.1.1'])) }
     const store = createAgentToolkitMemoryStore(), at = Date.now()
     const bounds = { inputTokens: 0, outputTokens: 0, attempts: 1, elapsedMs: 1000 }
     const cap = { inputTokens: 0, outputTokens: 0, attempts: 64, elapsedMs: 64000 }
@@ -81,7 +81,10 @@ async function run() {
       VITE_AGENTIC_OS_WORKSPACE_SEEDS_READ_ABS_ROOT: 'seeds', VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT: 'chat' })) {
       process.env[key] = join(root, suffix); await mkdir(process.env[key])
     }
-    Object.assign(process.env, { AGENTIC_OS_DURABLE_RUN_HOST_CONFIG: config, AG_MISSION_EXPECTED_HEAD: head,
+    // Use the installed source-owned catalog, never an independently authored test registry.
+    await writeFile(join(process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT, 'PROMPT-PRESETS.md'),
+      await readFile(join(repositoryRoot, 'node_modules/agentic-os/runtime/agents/docs/PROMPT-PRESETS.md')))
+    Object.assign(process.env, { VITE_BASE_PATH: '/', VITE_APEX_ROOT_ALIAS: '1', AGENTIC_OS_DURABLE_RUN_HOST_CONFIG: config, AG_MISSION_EXPECTED_HEAD: head,
       VITE_WORKSPACE_DOCS_MIRROR_STORAGE_FALLBACK_ENABLED: '0', VITE_WORKSPACE_SEED_SYNC_ENABLED: '0',
       VITE_AGENTIC_OS_GITHUB_WRITE_ENABLED: '0', VITE_AGENTIC_OS_GITHUB_WRITE_BASE_URL: '',
       VITE_AGENTIC_OS_STORAGE_BASE_URL: '', VITE_AGENTIC_OS_STORAGE_WORKSPACE_ID: '', VITE_AGENTIC_OS_STORAGE_CHAT_SESSION_TOKEN: '',

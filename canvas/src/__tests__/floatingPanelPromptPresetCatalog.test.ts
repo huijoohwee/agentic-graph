@@ -78,6 +78,25 @@ export async function testFloatingPanelChatPromptPresetCatalogLoadsChatAndMcpPre
   if (extendedInvocationEntries.at(-1)?.token !== '/crawler-reference-prompt-preset') {
     throw new Error(`expected future source-backed presets to join slash invocation without a local registry edit, got ${JSON.stringify(extendedInvocationEntries)}`)
   }
+  const observability = promptCatalogMarkdown.replace('prompt_presets:', `prompt_presets:
+  - id: "agent-observability"
+    label: "Agent observability"
+    slash_command: "/agent-observability-prompt-preset"
+    runtime_command: "/canvas.view.set"
+    description: "Inspect authorized runs"
+    activation: "chat-agent"
+    invocation_modes: ["native-chat-response", "mcp-invocation"]
+    chat_route: "active native shared runtime"
+    mcp_tool: "agentic-graph.agentic_canvas_os.docs.invoke"
+    mcp_token: "/canvas.view.set"
+    prompt: "/canvas.view.set #canvas-view @canvas-view option=agent-run:tree"`)
+  await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH, observability)
+  const observationPreset = await loadPromptPreset('agent-observability', workspace)
+  if (!observationPreset.ok || observationPreset.preset.activation !== 'chat-agent') throw Error('Native observation preset unavailable')
+  for (const option of ['renderer:d3', 'agent-run:unknown', 'agent-run:tree extra=execute']) {
+    await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH, observability.replace('option=agent-run:tree', 'option=' + option))
+    if ((await loadPromptPresetCatalog(workspace)).ok) throw Error('Observation preset admitted an unsupported invocation: ' + option)
+  }
 }
 
 export async function testHomePromptPresetCatalogUsesCanonicalPublishedStorage() {

@@ -34,6 +34,13 @@ export const useFloatingPanelChatSubmit = (
     ev.preventDefault()
     const trimmed = normalizeInvocationTokenSpacing(args.input.trim())
     if (!trimmed || args.isLoading) return
+    if (/^\/canvas\.view\.set(?:\s|$)/.test(trimmed)) {
+      try {
+        const { activateAgentRunPrompt } = await import('@/features/agent-ready/agentRunInspectionStore')
+        activateAgentRunPrompt(trimmed); args.setErrorText('')
+      } catch (error) { args.setErrorText(error instanceof Error ? error.message : 'Observability is unavailable.') }
+      return
+    }
     if (/^\/launch-copilot(?:\s|$)/.test(trimmed)) {
       await (await import('@/features/agent-graph/launchCopilotInvocation')).invokeLaunchCopilot(args)
       return

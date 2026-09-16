@@ -27,6 +27,15 @@ mission = page.getByRole('region', { name: 'Agentic OS mission control', exact: 
 selected = page.getByRole('region', { name: 'Selected run evidence' })
 }
 await openPage()
+// Playwright's predicate poll treats a Promise as truthy before its result resolves.
+// Evaluate asynchronous module reads to completion before polling their boolean result.
+async function waitForAsync(predicate) {
+  const deadline = Date.now() + 60000
+  while (!await page.evaluate(predicate)) {
+    if (Date.now() >= deadline) throw Error('Asynchronous workspace condition did not become ready')
+    await page.waitForTimeout(50)
+  }
+}
 const waitText = async (locator, text) => {
   if (locator === mission) {
     // Dashboard mounts before its on-demand mission module. Admit that cold
@@ -79,7 +88,7 @@ function assertAuthored(actual, expected, message) {
   throw Error(message + ': ' + JSON.stringify(changes))
 }
 async function verifyWorkspace(label, revoke = false) {
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const floatingPanel = page.locator('[data-kg-floating-panel-root="true"]')
   if (await floatingPanel.isVisible()) {
@@ -148,7 +157,7 @@ async function verifyWorkspace(label, revoke = false) {
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   await page.screenshot({ path: resolve(output, label + '-canvas.png') })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
-  await page.waitForFunction(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: draft-2')))
+  await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: draft-2')))
   assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Workspace/Canvas inspection must preserve authored graph and documents')
   const tokens = await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().markdownTokensPath)
   assert.ok(!String(tokens).includes('agent-run-'), 'Inspection must not publish authored Markdown tokens')
@@ -159,8 +168,80 @@ async function verifyWorkspace(label, revoke = false) {
   await editor.waitFor({ state: 'detached' }); await canvas.waitFor({ state: 'detached' })
   assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
   assert.deepEqual(await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] }), previousView)
-  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
+}
+async function verifyApexActivation(width) {
+  await context.close()
+  context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' })
+  await openPage()
+  const beforeEntryRequests = requests.length, startedAt = Date.now()
+  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
+  const preset = page.getByRole('combobox', { name: 'Prompt preset', exact: true })
+  await preset.waitFor({ state: 'visible', timeout: 120000 })
+  await preset.selectOption('agent-observability')
+  const activate = page.getByRole('button', { name: 'Open observability', exact: true })
+  await activate.waitFor()
+  assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
+  // Source bootstrap completes before the deferred active-file projection.
+  await waitForAsync(async () => {
+    const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
+    const path = (await import('/src/features/markdown-explorer/store.ts')).useMarkdownExplorerStore.getState().activePath
+    return !!path && state.sourceFiles[0]?.source?.path === `workspace:${path}`
+  })
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  const before = await authoredSnapshot()
+  await page.evaluate(async () => {
+    window.__AG_ACTIVATION_CHANGES__ = []
+    ;(await import('/src/hooks/useGraphStore.ts')).useGraphStore.subscribe((next, previous) => {
+      if (next.sourceFiles === previous.sourceFiles && next.history === previous.history) return
+      if (window.__AG_ACTIVATION_CHANGES__.length < 6) window.__AG_ACTIVATION_CHANGES__.push(new Error('Authored state changed during activation').stack)
+    })
+  })
+  await activate.click()
+  const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
+  const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
+  await canvas.waitFor({ timeout: 60000 }); await waitText(evidence, '2 retained matches')
+  assertAuthored(await authoredSnapshot(), before, 'Apex discovery must preserve authored work')
+  const refresh = evidence.getByRole('button', { name: 'Refresh runs', exact: true })
+  await evidence.getByLabel('Project', { exact: true }).fill('no-such-project')
+  await evidence.getByRole('button', { name: 'Apply filters' }).click()
+  await waitText(evidence, 'No runs in this authorized snapshot.')
+  await evidence.getByLabel('Project', { exact: true }).fill('')
+  await evidence.getByRole('button', { name: 'Apply filters' }).click()
+  await waitText(evidence, '2 retained matches')
+  await page.route('**/api/agent-swarm/query', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'run_forbidden' }) }))
+  await refresh.click(); await evidence.getByRole('alert').waitFor()
+  await waitText(evidence, 'Runtime unavailable')
+  assert.equal(await evidence.getByText('No runs in this authorized snapshot.').count(), 0)
+  await page.unroute('**/api/agent-swarm/query'); await refresh.click(); await waitText(evidence, '2 retained matches')
+  // A late authored panel request must remain saved but cannot intercept inspection.
+  await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(true))
+  assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0)
+  await evidence.locator('tr').filter({ hasText: 'candidate-run' }).press('Enter')
+  await evidence.locator('#agent-run-view-tree-panel').waitFor()
+  await waitText(evidence, '32/34 retained spans')
+  await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  await editor.waitFor({ timeout: 60000 })
+  if (width > 768) {
+    for (const name of ['Show JSON editor pane', 'Show Markdown editor pane', 'Show Viewer preview pane'])
+      assert.equal(await editor.getByRole('checkbox', { name, exact: true }).isChecked(), true)
+  } else {
+    await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
+    await editor.getByRole('checkbox', { name: 'Show Viewer preview pane', exact: true }).check()
+  }
+  await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ timeout: 60000 })
+  await page.screenshot({ path: resolve(output, `apex-${width}-inspection.png`) })
+  assertAuthored(await authoredSnapshot(), before, 'Apex activation must preserve authored work')
+  assert.ok(requests.slice(beforeEntryRequests).every(item => ['query', 'trace'].includes(item.operation)), 'Activation may only read observations')
+  await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  await editor.waitFor({ state: 'detached' })
+  assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
+  await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  console.log('Mission Apex activation:', JSON.stringify({ width, elapsedMs: Date.now() - startedAt, source: 'pinned-catalog', status: 'passed' }))
 }
 async function switchPrincipal(id) {
   const path = process.env.AGENTIC_OS_DURABLE_RUN_HOST_CONFIG, config = JSON.parse(await readFile(path, 'utf8'))
@@ -169,10 +250,15 @@ async function switchPrincipal(id) {
 }
 try {
   await mkdir(output, { recursive: true })
+  if (process.env.AG_MISSION_ACTIVATION_ONLY === '1') {
+    await verifyApexActivation(360); await verifyApexActivation(1280)
+    assert.deepEqual(errors, [])
+    console.log('Focused Apex activation passed; full mission lifecycle remains a separate check.')
+  } else {
   await page.clock.install({ time: new Date() })
-  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
+  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const initialPanelOpen = await page.evaluate(async () => {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
     return useGraphStore.getState().floatingPanelOpen
@@ -187,7 +273,7 @@ try {
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
   await waitText(mission, '2 retained matches')
   assert.equal(await mission.getByText('private-run', { exact: true }).count(), 0)
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const before = await authoredSnapshot()
   await choose('baseline-run')
   assert.equal(await floating.count(), 0, 'Inspection must not open another panel')
@@ -311,7 +397,7 @@ try {
   await context.setOffline(true); await page.clock.fastForward(61000)
   await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'detached' })
   await page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true }).waitFor({ state: 'detached' })
-  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await context.setOffline(false)
   console.log('Mission browser: mobile offline workspace expiry passed')
   // A genuinely fresh desktop must not inherit mobile fake timers, persisted views
@@ -319,10 +405,10 @@ try {
   await context.close()
   context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
   await openPage()
-  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
+  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
   floating = page.locator('[data-kg-floating-panel-root="true"]')
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
-  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
+  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
     await floating.waitFor({ state: 'visible' }); await floating.getByRole('button', { name: 'Close', exact: true }).click()
     await floating.waitFor({ state: 'detached' })
@@ -336,16 +422,19 @@ try {
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
   await verifyWorkspace('desktop')
+  await verifyApexActivation(360)
+  await verifyApexActivation(1280)
   assert.deepEqual(errors, [])
   assert.ok(streamed.includes('query') && streamed.includes('trace'), 'Real authenticated bridge must serve SSE observations')
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
-    assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
+    assertions: ['apex-catalog-inert-selection', 'apex-explicit-activation', 'activation-empty-vs-denied', 'activation-preserves-requested-view', 'late-panel-isolation', 'desktop-default-panes', 'lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
       'subject-evaluation', 'phase-reauthorization', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
       'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'canvas-eight-views', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], peak, streamed, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
+  }
 } catch (error) {
   console.error(error.message)
   console.error('Mission entry state:', await page.evaluate(() => ({
@@ -367,6 +456,7 @@ try {
       })),
     })),
     text: document.querySelector('[aria-label="Agentic OS mission control"]')?.textContent.slice(0, 4000),
+    authoredChanges: window.__AG_ACTIVATION_CHANGES__,
   })).catch(() => 'Document unavailable'))
   console.error('Mission transport state:', JSON.stringify({ errors, requests, streamed, pending: pending.size }))
   await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})

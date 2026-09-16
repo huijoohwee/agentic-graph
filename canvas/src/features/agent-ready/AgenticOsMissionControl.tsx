@@ -1,6 +1,5 @@
 import React from 'react'
-import { useGraphStore } from '@/hooks/useGraphStore'
-import { openAgentRunInspection, closeAgentRunInspection, useAgentRunInspection, updateAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection, selectAgentRunView } from './agentRunInspectionStore'
+import { openAgentRunInspection, activateAgentRunWorkspace, closeAgentRunInspection, useAgentRunInspection, useAgentRunWorkspace, updateAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection, selectAgentRunView } from './agentRunInspectionStore'
 import { AGENT_RUN_CANVAS_VIEWS } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 import type { ObservationListener } from './durableRunStream'
 import type { RunOperation } from 'agentic-os/agents/invocation'
@@ -20,7 +19,9 @@ type Selection = { runId: string | null; spanId: string | null }
 const emptySelection: Selection = { runId: null, spanId: null }
 
 export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false }: { onOpenWorkspace?: () => void; workspace?: boolean }) {
-  const inspection = useAgentRunInspection(), initial = workspace ? inspection : null
+  const inspection = useAgentRunInspection(), workspaceSession = useAgentRunWorkspace(), initial = workspace ? inspection : null
+  const inspectionRef = React.useRef(inspection)
+  inspectionRef.current = inspection
   const scopeExpiry = React.useRef(initial?.expiresAt ?? 0)
   const [index, setIndex] = React.useState<RunIndex | null>(null), [trace, setTrace] = React.useState<RunTrace | null>(initial?.trace ?? null)
   const [selection, setSelection] = React.useState<Selection>(initial ? { runId: initial.trace.runId, spanId: initial.spanId } : emptySelection), selected = React.useRef(selection)
@@ -29,7 +30,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const mutating = React.useRef(false)
   const [busy, setBusy] = React.useState(false), [error, setError] = React.useState(''), [notice, setNotice] = React.useState('')
   const [localView, setLocalView] = React.useState('tree'), [localSearch, setLocalSearch] = React.useState(''), [live, setLive] = React.useState(false)
-  const view = workspace ? inspection?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
+  const view = workspace ? workspaceSession?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
   const search = workspace ? inspection?.search ?? '' : localSearch, setSearch = workspace ? filterAgentRunInspection : setLocalSearch
   const [online, setOnline] = React.useState(navigator.onLine), [visible, setVisible] = React.useState(!document.hidden)
   const [backoff, setBackoff] = React.useState(5000), [expiry, setExpiry] = React.useState(initial?.expiresAt ?? 0)
@@ -40,9 +41,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     active.current?.abort(); active.current = null; setBusy(false)
   }, [])
   const clear = React.useCallback(() => {
-    closeAgentRunInspection(); scope.current = null; selected.current = emptySelection
+    if (!workspace || inspectionRef.current) closeAgentRunInspection()
+    scope.current = null; selected.current = emptySelection
     setIndex(null); setTrace(null); setSelection(emptySelection); setBaseline(null); setComparison(null); setExpiry(0)
-  }, [])
+  }, [workspace])
   const perform = React.useCallback(async (operation: (signal: AbortSignal) => Promise<void>, mutation = false) => {
     if (active.current || !navigator.onLine || document.hidden) return
     const controller = new AbortController(); active.current = controller; mutating.current = mutation; setBusy(true); setError('')
@@ -91,9 +93,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     scopeExpiry.current = Math.min(result.observedAt + 60000, result.access.expiresAt); setExpiry(scopeExpiry.current)
     const id = selected.current.runId
     if (!changed && id && result.items.some(r => r.runId === id)) await loadTrace(id, signal)
-    else { if (workspace) closeAgentRunInspection(); selected.current = emptySelection; setSelection(emptySelection); setTrace(null) }
+    else { if (workspace && selected.current.runId) closeAgentRunInspection(); selected.current = emptySelection; setSelection(emptySelection); setTrace(null) }
   }), [query, perform, clear])
-  React.useEffect(() => { if (!workspace) { stop(); clear(); void refresh() } }, [query, workspace]) // Workspace opens the authorized handoff without fetching.
+  // Existing evidence opens without fetching; explicit empty activation discovers authorized runs.
+  React.useEffect(() => { if (!workspace || !initial) { stop(); clear(); void refresh() } }, [query, workspace])
   React.useEffect(() => {
     const change = () => {
       setOnline(navigator.onLine); setVisible(!document.hidden)
@@ -163,10 +166,8 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const openWorkspace = () => {
     if (!trace || !scope.current || expiry <= Date.now()) return
     try {
-      const current = useGraphStore.getState(), previousView = { mode: current.workspaceViewMode, paneOpen: current.workspaceCanvasPaneOpen }
-      openAgentRunInspection({ trace, scope: scope.current, expiresAt: expiry, spanId: selection.spanId, search },
-        () => useGraphStore.getState().setWorkspaceViewState(previousView))
-      useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches })
+      activateAgentRunWorkspace('topology', 'editor')
+      openAgentRunInspection({ trace, scope: scope.current, expiresAt: expiry, spanId: selection.spanId, search })
       onOpenWorkspace?.()
     } catch (failure) { setError((failure as Error).message) }
   }
@@ -178,11 +179,12 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <button type="button" className={button} disabled={busy || !online} onClick={() => { void refresh() }}>Refresh runs</button>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
     </header>
-    <p role="status" className="pb-2 text-xs">{!online ? 'Offline · cached inspection only' : !visible ? 'Paused while hidden' : busy ? 'Reading runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
+    <p role="status" className="pb-2 text-xs">{!online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
       {index ? ` · observed ${new Date(index.observedAt).toLocaleTimeString()} · snapshot expires ${new Date(expiry).toLocaleTimeString()}` : ''}</p>
-    {error && <p role="alert" className="rounded border p-2">{error}</p>}
+    {error && <div role="alert" className="rounded border p-2"><p>Runtime unavailable · {error}</p><p className="text-xs">Check the existing runtime connection and signed session, then refresh. No run data is inferred.</p></div>}
+    {workspace && !trace && <p className="pb-3 text-sm">Select an authorized run to inspect spans, timing, source, allocation and evaluation. JSON, Markdown and Viewer open from the selected evidence.</p>}
     {notice && <p className="py-2 text-xs">{notice}</p>}
-    {!workspace && <form aria-label="Run filters" className="flex flex-wrap items-end gap-2 py-2" onSubmit={event => {
+    {(!workspace || !trace) && <form aria-label="Run filters" className="flex flex-wrap items-end gap-2 py-2" onSubmit={event => {
       event.preventDefault(); const data = new FormData(event.currentTarget), next: Record<string, unknown> = { limit: 32 }
       for (const key of ['projectId', 'agentId', 'status']) { const value = String(data.get(key) ?? '').trim(); if (value) next[key] = value }
       if (data.get('window') === '15') { next.to = Date.now(); next.from = Number(next.to) - 900000 }
@@ -196,10 +198,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <label className="grid text-xs">Window<select name="window" style={inputStyle}><option value="retained">Retention window</option><option value="15">Last 15 minutes</option></select></label>
       <button className={button} disabled={busy || !online}>Apply filters</button>
     </form>}
-    {workspace && <label className="flex flex-wrap gap-2 py-2 text-xs">Run<select aria-label="Run" style={inputStyle} value={selection.runId ?? ""} disabled={busy || !index || !online} onChange={event => chooseRun(event.target.value)}>
+    {workspace && trace && <label className="flex flex-wrap gap-2 py-2 text-xs">Run<select aria-label="Run" style={inputStyle} value={selection.runId ?? ""} disabled={busy || !index || !online} onChange={event => chooseRun(event.target.value)}>
       {!index && selection.runId && <option>{selection.runId}</option>}{index?.items.map(run => <option key={run.runId} value={run.runId}>{run.runId}</option>)}
     </select></label>}
-    {index && !workspace && <>
+    {index && (!workspace || !trace) && <>
       <div className="grid gap-2 py-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,14rem),1fr))' }}>
         {index.metrics.map(metric => <article key={metric.id} className="rounded border p-3">
           <h3 className="text-xs">{metric.label}</h3><p className="py-1 text-xl font-semibold">{metric.value}</p><p className="text-xs">{metric.detail}</p>
@@ -211,7 +213,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy="" sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}}
           onRowClicked={chooseRun} onSelectionChanged={ids => { if (ids.length) chooseRun(ids.at(-1)!); else { setSelection(emptySelection); setTrace(null) } }} />
       </div>
-      {!index.items.length && <p>No runs in this authorized snapshot.</p>}
+      {!index.items.length && <p>No runs in this authorized snapshot. Clear filters or complete an agent task through the existing execution workflow, then refresh. Opening observability does not start a run.</p>}
       {index.offset > 0 && <button className={button} disabled={busy || !online} onClick={() => { void refresh() }}>First run page</button>}
       {index.nextCursor && <button className={button} disabled={busy || !online} onClick={() => { void refresh(index.nextCursor!) }}>Next run page</button>}
     </>}

@@ -527,67 +527,41 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 
 ## Native mission inspection — 1.1.0
 
-This five-role increment implements approved `DURABLE-AGENT-WORKFLOWS-001@0.2.0`
-[AC-D11 and retained AC-D06](https://github.com/huijoohwee/agentic-os/blob/672b21ebf583ff3d5918d5ddba7821cef2b098ee/guides/DURABLE-WORKFLOWS.md).
-The protected runtime dependency is `047e7240b9cd31e7a78c708d998c02983144f0ea`
-([source/check receipt](https://github.com/huijoohwee/agentic-os/pull/180)). This adds an operator view
-inside the existing dashboard; the status-tool identity, permissions and baseline above remain scoped to status reads.
+This five-role increment implements approved `DURABLE-AGENT-WORKFLOWS-001@0.2.0` [AC-D11 and retained AC-D06](https://github.com/huijoohwee/agentic-os/blob/672b21ebf583ff3d5918d5ddba7821cef2b098ee/guides/DURABLE-WORKFLOWS.md). The protected runtime dependency is `047e7240b9cd31e7a78c708d998c02983144f0ea` ([source/check receipt](https://github.com/huijoohwee/agentic-os/pull/180)). This adds an operator view inside the existing dashboard; the status-tool identity, permissions and baseline above remain scoped to status reads.
 
 ### PRD / RAO-M01
 
-The solo operator needs to locate the failed or expensive attempt before spending another run.
-Given an authorized snapshot, the operator selects one run/span, switches list, tree, timing and topology,
-filters metadata while preserving known ancestors, inspects source/budget/evaluation evidence and explicitly
-requests a bounded evaluation. Open the same read-only snapshot in existing Editor Workspace JSON/Markdown/Viewer and Canvas; closing restores authored work. Missing cost, clock, authorization, retention or coverage is visible.
-A disabled host is unavailable, never an empty successful dataset. WTP and first-dollar conversion are unverified.
+The solo operator needs to locate the failed or expensive attempt before spending another run. Given an authorized snapshot, the operator selects one run/span, switches list, tree, timing and topology, filters metadata while preserving known ancestors, inspects source/budget/evaluation evidence and explicitly requests a bounded evaluation. Open the same read-only snapshot in existing Editor Workspace JSON/Markdown/Viewer and Canvas; closing restores authored work. Missing cost, clock, authorization, retention or coverage is visible. A disabled host is unavailable, never an empty successful dataset. WTP and first-dollar conversion are unverified.
 
 ### TAD / RAO-M02
 
-- `DashboardView.tsx` owns lazy entry; `missionControlProjection.ts` maps the OS read model into existing
-  Dashboard metric and graph/table types. `AgenticOsMissionControl.tsx` owns one selection and bounded view state.
-- Reuse `GraphDataTableDomTableView`; add keyboard row selection at its owner. Lazy-load `FlowCanvasInspection.tsx`
-  directly; reuse native layout/scene/render functions with local pan/zoom without loading editable FlowCanvas.
-  Inspection cannot write the authored graph, selection, layouts, snapshots, timeline, widgets or history.
+- `DashboardView.tsx` owns lazy entry; `missionControlProjection.ts` maps the OS read model into existing Dashboard metric and graph/table types. `AgenticOsMissionControl.tsx` owns one selection and bounded view state.
+- Reuse `GraphDataTableDomTableView`; add keyboard row selection at its owner. Lazy-load `FlowCanvasInspection.tsx` directly; reuse native layout/scene/render functions with local pan/zoom without loading editable FlowCanvas. Inspection cannot write the authored graph, selection, layouts, snapshots, timeline, widgets or history.
 - `agentRunInspectionStore.ts` holds one bounded expiring memory-only handoff; existing EmbeddedEditorShell and CanvasViewport lazily render `AgentRunWorkspaceInspection.tsx` through MarkdownWorkspaceMain and FlowCanvas. JSON, Markdown, Viewer and Canvas share the run/span selection; no workspace files or host mirrors are created. Passive panes disable authored-token writeback and exports; no-sync viewers retain no shared parse-cache entries.
-- `durableRunTransport.ts` and `viteDurableRunBridge.mjs` consume the pinned OS operation contract.
-  The optional public observation/session binding is trusted build configuration, same-origin paths only;
-  credentials and principal assignment remain in the existing host/session owner. Tool JSON selects neither.
-- One page holds at most 32 records/spans; server metrics keep their population and sample counts. Detail
-  cursors replace pages rather than accumulating unbounded traces. Missing endpoints remain explicit placeholders.
-- Opt-in live refresh has a five-second minimum, one request in flight, cancellation of obsolete reads,
-  a 60-second maximum backoff, and hidden/offline pause. Expiring memory-only snapshots support offline inspection;
-  authority change, denial and expiry clear private evidence. Dashboard unmount clears its cache; an explicit workspace handoff retains one page until expiry or close; a fresh authenticated read may renew the active observation. Offline evaluation is disabled.
-- Evaluation names immutable subject/profile evidence and uses the OS resource owner. Comparison preserves
-  matching cohort/profile boundaries, exclusions and insufficient-evidence holds. No score grants execution,
-  quota, release or payment authority. Metadata export is explicit; raw payloads are never copied into this view.
+- `durableRunTransport.ts` and `viteDurableRunBridge.mjs` consume the pinned OS operation contract. The optional public observation/session binding is trusted build configuration, same-origin paths only; credentials and principal assignment remain in the existing host/session owner. Tool JSON selects neither.
+- One page holds at most 32 records/spans; server metrics keep their population and sample counts. Detail cursors replace pages rather than accumulating unbounded traces. Missing endpoints remain explicit placeholders.
+- Opt-in live refresh has a five-second minimum, one request in flight, cancellation of obsolete reads, a 60-second maximum backoff, and hidden/offline pause. Expiring memory-only snapshots support offline inspection; authority change, denial and expiry clear private evidence. Dashboard unmount clears its cache; an explicit workspace handoff retains one page until expiry or close; a fresh authenticated read may renew the active observation. Offline evaluation is disabled.
+- Evaluation names immutable subject/profile evidence and uses the OS resource owner. Comparison preserves matching cohort/profile boundaries, exclusions and insufficient-evidence holds. No score grants execution, quota, release or payment authority. Metadata export is explicit; raw payloads are never copied into this view.
 
 ### ADR / RAO-M03
 
-Constraints reject another graph store, viewer engine, poller service or accounting implementation.
-Argumentation favors a read-only renderer seam over toggling editor drag flags, which leave other writes active.
-Outranking selects the existing dashboard/model/table/Flow owners and the authenticated OS read protocol.
-Rollback reverts these source changes and the exact package pin; it never deletes runtime records or reservations.
+Constraints reject another graph store, viewer engine, poller service or accounting implementation. Argumentation favors a read-only renderer seam over toggling editor drag flags, which leave other writes active. Outranking selects the existing dashboard/model/table/Flow owners and the authenticated OS read protocol. Rollback reverts these source changes and the exact package pin; it never deletes runtime records or reservations.
 
 ### MVP / RAO-M04
 
-Source baseline `ccf87bae948dbd04744561372f83d7e9c6461a4c`; one registered writer and scoped worktree.
-Refreshed E2 estimate: 90–150 additional active minutes for stream/Canvas View integration; ≤26 product modules/300 KB total, at most six new UI/adapter modules,
-<600 lines per authored file, <500,000 bytes per bundle, no new dependencies or always-on process.
-Required evidence: native projection/transport tests; 360 px and desktop browser flows; keyboard selection;
-fan-out/fan-in, failed/retried attempts, missing parents, unknown clocks, offline/hidden refresh and two principals;
-unchanged authored graph and document/draft state; existing workspace JSON/Markdown/Viewer plus Canvas, close/expiry/authority revocation; type/build/chunk checks; required Integration Gate; exact local review.
-The implementation is present; `agent-mission:check` is selected by the existing affected-CI owner.
-The mission fixture covers selection, evaluation, pagination, offline inspection, access isolation and authored-state preservation.
-The workspace extension reuses JSON→Markdown conversion and Canvas View Mode for table, span tree, timing, topology, source, allocation, evaluation and comparison. JSON/SSE uses the existing frame parser, ≤32 snapshots / 256 KiB / 55 seconds per request, one in flight, no automatic mutation replay; incomplete/malformed streams fail closed. Authorized complete snapshots update all views; native JSON remains the fallback. Mobile/desktop checks cover every mode, split frames, duplicate/stale events, abort, expiry and authored-state preservation. Final results are revision-bound.
-The production build at `d84b78a25ea8965cb3fb00e056f56e851569db50` passed chunk hygiene; new mission and
-inspection chunks were 47.41 kB and 10.23 kB. Final-source results belong to the exact PR and browser receipt.
-These fixture/build observations confer no provider authority or public deployment proof. Commerce supplies
-the existing authenticated public ingress in dependent E3; the release build selects its fulfillment/session
-paths and `x-commerce-csrf` header. Unavailable or denied runtime access remains explicit.
+Source baseline `ccf87bae948dbd04744561372f83d7e9c6461a4c`; one registered writer and scoped worktree. Refreshed E2 estimate: 90–150 additional active minutes for stream/Canvas View integration; ≤26 product modules/300 KB total, at most six new UI/adapter modules, <600 lines per authored file, <500,000 bytes per bundle, no new dependencies or always-on process. Required evidence: native projection/transport tests; 360 px and desktop browser flows; keyboard selection; fan-out/fan-in, failed/retried attempts, missing parents, unknown clocks, offline/hidden refresh and two principals; unchanged authored graph and document/draft state; existing workspace JSON/Markdown/Viewer plus Canvas, close/expiry/authority revocation; type/build/chunk checks; required Integration Gate; exact local review. The implementation is present; `agent-mission:check` is selected by the existing affected-CI owner. The mission fixture covers selection, evaluation, pagination, offline inspection, access isolation and authored-state preservation. The workspace extension reuses JSON→Markdown conversion and Canvas View Mode for table, span tree, timing, topology, source, allocation, evaluation and comparison. JSON/SSE uses the existing frame parser, ≤32 snapshots / 256 KiB / 55 seconds per request, one in flight, no automatic mutation replay; incomplete/malformed streams fail closed. Authorized complete snapshots update all views; native JSON remains the fallback. Mobile/desktop checks cover every mode, split frames, duplicate/stale events, abort, expiry and authored-state preservation. Final results are revision-bound. The production build at `d84b78a25ea8965cb3fb00e056f56e851569db50` passed chunk hygiene; new mission and inspection chunks were 47.41 kB and 10.23 kB. Final-source results belong to the exact PR and browser receipt. These fixture/build observations confer no provider authority or public deployment proof. Commerce supplies the existing authenticated public ingress in dependent E3; the release build selects its fulfillment/session paths and `x-commerce-csrf` header. Unavailable or denied runtime access remains explicit.
 
 ### GTM / RAO-M05
 
-Pilot one seller job: inspect its plan/task/goal, identify an unsuccessful attempt, evaluate the exact subject,
-and inspect the existing fulfillment/payment reference. Keep diagnosis time, observed tokens, known incremental
-cost and unknown machine cost separate. Report sample counts and retention coverage; no causal savings claim.
-Production waits for deployed source/route/session proof and the repository's human-authorized release candidate.
+Pilot one seller job: inspect its plan/task/goal, identify an unsuccessful attempt, evaluate the exact subject, and inspect the existing fulfillment/payment reference. Keep diagnosis time, observed tokens, known incremental cost and unknown machine cost separate. Report sample counts and retention coverage; no causal savings claim. Production waits for deployed source/route/session proof and the repository's human-authorized release candidate.
+
+
+## Native mission activation — 1.1.1
+
+CID `PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM`; PRD/TAD/ADR/MVP/GTM share this revision and the existing RAO-M01–M05 ownership. Source baseline: `a1154463928e3155635f0d110ccba57163faa455`. SVO: the solo operator activates observability from Apex Catalog / Prompt Presets, selects an authorized run, and inspects the same evidence across JSON, Markdown, Viewer and Canvas before deciding on another run.
+
+- **PRD / RAO-M01:** Apex Catalog selects the source-owned Agent observability prompt. Explicit Open observability activates it; FloatingPanel Prompt Presets seed the same prompt for explicit native Chat submission. No Settings detour or known run ID is required. Distinguish connecting, unavailable, offline, authorized-empty and ready states. Selection enables the eight existing evidence views; activation itself executes no agent, evaluator or payment. Empty snapshots explain how existing executions supply evidence. Credentials stay in the host/session owner.
+- **TAD / RAO-M02:** extend the memory-only inspection owner with an explicit empty workspace session. Canvas View UI and its existing `/canvas.view.set #canvas-view @canvas-view` invocation share activation. Existing authenticated query and bounded JSON/SSE reads supply selection; reuse the current projection and rendering path. Only one Canvas evidence owner reads. Editor panes remain passive projections. Suspend the unrelated floating tool surface while inspecting without changing its saved state; close/revocation/expiry restore the authored workspace.
+- **ADR / RAO-M03:** Constraints retain authentication, expiry, no source writeback, no new dependencies and no auto-execution. Argumentation rejects a separate setup dashboard or telemetry service. Outranking favors extending the existing Canvas selector and inspection owner. Revert this increment to restore prior activation; runtime records and budget reservations remain untouched.
+- **MVP / RAO-M04:** Refreshed 60-minute implementation checkpoint after Apex entry steering; at most 16 source modules and 150 KB changed content, no new always-running service. Verify cold mobile and desktop entry, requested view preservation, host denial and recovery, empty query, SSE-backed selection, synchronized panes, hidden/offline pause, late floating panel, close and private-state disposal. Existing `agent-mission:check` and affected CI remain the verification owners; attach exact candidate results before readiness.
+- **GTM / RAO-M05:** reduce the activation detour for the existing seller-job pilot. Target catalog selection and explicit activation to authorized discovery, then one run selection. Measure time to first evidence separately from runtime/model time. Buyer pain, willingness to pay and revenue remain unvalidated.
