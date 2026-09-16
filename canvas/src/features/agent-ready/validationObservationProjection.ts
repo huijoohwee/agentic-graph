@@ -41,7 +41,7 @@ export function readValidationObservation(text: string): ValidationObservation {
     ...(value.coverage === undefined ? {} : { coverage: { totalStages: finite(coverage.totalStages)!, expectedStages: finite(coverage.expectedStages)!,
       offset: finite(coverage.offset)!, partial: coverage.partial === true } }),
     runId: id(value.runId), status: String(value.status), source: { repository: source.repository, revision: source.revision,
-      tree: source.tree, dirty: source.dirty }, startedAt: finite(value.startedAt)!, finishedAt: finite(value.finishedAt, true),
+      tree: source.tree, dirty: source.dirty === null ? null : source.dirty === true }, startedAt: finite(value.startedAt)!, finishedAt: finite(value.finishedAt, true),
     elapsedMs: finite(value.elapsedMs, true), stages,
     resources: { observedOutputBytes: finite(resources.observedOutputBytes, true), emittedDiagnosticBytes: finite(resources.emittedDiagnosticBytes, true) } }
 }
