@@ -41,6 +41,15 @@ try {
   await mkdir(output, { recursive: true })
   await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
+  await page.evaluate(async () => {
+    const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+    window.__missionPanelChanges = []
+    useGraphStore.subscribe((state, prior) => {
+      if (state.floatingPanelOpen !== prior.floatingPanelOpen) window.__missionPanelChanges.push({
+        open: state.floatingPanelOpen, activeElement: document.activeElement?.outerHTML?.slice(0, 300), stack: new Error().stack,
+      })
+    })
+  })
   const floating = page.locator('[data-kg-floating-panel-root="true"]')
   if (await floating.count()) await floating.getByRole('button', { name: 'Close', exact: true }).click()
   assert.equal(requests.length, 0, 'Dashboard must not load or poll before opening')
@@ -49,7 +58,7 @@ try {
   assert.equal(await mission.getByText('private-run', { exact: true }).count(), 0)
   const before = await authoredSnapshot()
   await choose('baseline-run')
-  assert.equal(await floating.count(), 0, 'Row keyboard selection must not open another panel')
+  assert.equal(await floating.count(), 0, 'Unexpected panel transition: ' + JSON.stringify(await page.evaluate(() => window.__missionPanelChanges)))
   console.log('Mission browser: authorized discovery and keyboard selection passed')
   await waitText(selected, '32/34 retained spans')
   await selected.getByText('Source ownership', { exact: true }).click()
