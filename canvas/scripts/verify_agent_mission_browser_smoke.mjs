@@ -41,7 +41,7 @@ try {
   await mkdir(output, { recursive: true })
   await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
-  await page.evaluate(async () => {
+  const initialPanelOpen = await page.evaluate(async () => {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
     window.__missionPanelChanges = []
     useGraphStore.subscribe((state, prior) => {
@@ -49,9 +49,14 @@ try {
         open: state.floatingPanelOpen, activeElement: document.activeElement?.outerHTML?.slice(0, 300), stack: new Error().stack,
       })
     })
+    return useGraphStore.getState().floatingPanelOpen
   })
   const floating = page.locator('[data-kg-floating-panel-root="true"]')
-  if (await floating.count()) await floating.getByRole('button', { name: 'Close', exact: true }).click()
+  if (initialPanelOpen) {
+    await floating.waitFor({ state: 'visible', timeout: 30000 })
+    await floating.getByRole('button', { name: 'Close', exact: true }).click()
+    await floating.waitFor({ state: 'detached' })
+  }
   assert.equal(requests.length, 0, 'Dashboard must not load or poll before opening')
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
   await waitText(mission, '2 retained matches')
