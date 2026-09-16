@@ -1,5 +1,5 @@
-import type { TraceSpan, visibleSpanTree } from './missionControlProjection'
-import { numberLabel, record } from './missionControlProjection'
+import type { visibleSpanTree } from './missionControlProjection'
+import { numberLabel, spanResources, resourceLabels } from './missionControlProjection'
 
 const tones: Record<string, { icon: string; fill: string; stroke: string }> = {
   agent: { icon: 'A', fill: '#e0e7ff', stroke: '#4f46e5' },
@@ -14,11 +14,6 @@ export function AgentRunSpanViews({ rows, timing, selectedId, onSelect }: {
   rows: ReturnType<typeof visibleSpanTree>; timing: boolean; selectedId: string | null; onSelect: (id: string) => void
 }) {
   const end = Math.max(1, ...rows.map(({ span }) => (span.timing.offset ?? 0) + (span.timing.inclusive ?? 0)))
-  const usage = (span: TraceSpan) => {
-    const cost = record(span.cost)
-    return cost.status === 'reported' && typeof cost.prompt_tokens === 'number' && typeof cost.completion_tokens === 'number'
-      ? `${cost.prompt_tokens + cost.completion_tokens} tokens` : 'usage unknown'
-  }
   return <ul aria-label={timing ? 'Span timing' : 'Span hierarchy'} className="min-w-0 py-2">
     {rows.map(({ span, depth, missingParent }) => {
       const tone = spanTone(span.kind), selected = selectedId === span.spanId
@@ -31,8 +26,9 @@ export function AgentRunSpanViews({ rows, timing, selectedId, onSelect }: {
             <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-lg"
               style={{ background: tone.fill, color: tone.stroke, borderColor: tone.stroke }}>{tone.icon}</span>
             <span className="min-w-0"><span className="block truncate text-sm font-medium" title={span.operation}>{span.operation}</span>
-              <span className="block text-xs opacity-75">{span.kind} · {span.status}{timing && ` · exclusive observed ${numberLabel(span.timing.exclusive, ' ms')}`}{span.attempt !== null && ` · attempt ${span.attempt}`}{!timing && ` · ${durationLabel(span.timing.inclusive)} · ${usage(span)}`}
+              <span className="block text-xs opacity-75">{span.kind} · {span.status}{timing && ` · exclusive observed ${numberLabel(span.timing.exclusive, ' ms')}`}{span.attempt !== null && ` · attempt ${span.attempt}`}{!timing && ` · ${durationLabel(span.timing.inclusive)}`}
                 {span.evaluation.status !== 'unevaluated' && ` · evaluation ${span.evaluation.status}`}{missingParent && ' · parent outside this page'}</span>
+              <span className="block text-xs opacity-75" aria-label="Span resources">{Object.entries(resourceLabels(spanResources(span))).map(([label, value]) => `${label}: ${value}`).join(' · ')}</span>
             </span>
           </span>
           {timing && <span className="flex w-[45%] shrink-0 items-center gap-3">
