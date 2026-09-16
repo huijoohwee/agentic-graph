@@ -27,8 +27,12 @@ const selected = page.getByRole('region', { name: 'Selected run evidence' })
 const waitText = async (locator, text) => {
   await locator.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
 }
+const refreshMission = async () => {
+  const refresh = mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ })
+  await refresh.click(); await refresh.waitFor({ state: 'visible' })
+}
 const choose = async id => {
-  await mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ }).waitFor({ state: 'visible' })
+  await refreshMission()
   const row = mission.locator('tr').filter({ hasText: id }); await row.focus(); await page.keyboard.press('Enter')
   await selected.getByRole('heading', { name: 'Run ' + id, exact: true }).waitFor({ state: 'visible' })
 }
@@ -62,6 +66,7 @@ async function verifyWorkspace(label, revoke = false) {
     await floatingPanel.getByRole('button', { name: 'Close', exact: true }).click()
     await floatingPanel.waitFor({ state: 'detached' })
   }
+  await refreshMission() // Each cold workspace phase receives a fresh authorized minute.
   const beforeWorkspace = await authoredSnapshot()
   const previousView = await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] })
   await selected.getByPlaceholder('Search span metadata').fill('draft')
@@ -193,10 +198,12 @@ try {
   const canvas = await selected.locator('canvas').boundingBox()
   await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + 100); await page.mouse.down()
   await page.mouse.move(canvas.x + canvas.width / 2 + 20, canvas.y + 120); await page.mouse.up()
+  await refreshMission() // Lazy topology loading must not consume the next phase's cache lifetime.
   await page.locator('#agent-run-view-evidence-tab').click()
   await selected.getByRole('button', { name: 'Evaluate selected subject' }).click()
   await waitText(selected, 'Span draft-2 · reported')
   console.log('Mission browser: views and subject evaluation passed')
+  await refreshMission()
   await selected.getByRole('button', { name: 'Next span page' }).click()
   await waitText(selected, '2/34 retained spans')
   assert.equal(await selected.getByRole('button', { name: 'Evaluate selected subject' }).isDisabled(), true)
@@ -216,6 +223,7 @@ try {
   assert.equal(await authoredSnapshot(), before, 'Inspection must preserve authored graph, selection, layout, history and sources')
   const bounds = await mission.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth }))
   assert.ok(bounds.width <= 360 && bounds.scroll <= bounds.width + 1, JSON.stringify(bounds))
+  await refreshMission()
   const manualCount = requests.length; await page.waitForTimeout(5200)
   assert.equal(requests.length, manualCount, 'Manual mode must be idle')
   await mission.getByRole('checkbox', { name: /Live/ }).check()
