@@ -311,7 +311,7 @@
     "ci:affected:source": "node ./scripts/run-affected-ci.mjs",
     "check:plan": "node node_modules/agentic-os/bin/agentic-os-validation.mjs plan",
     "check:ci": "node node_modules/agentic-os/bin/agentic-os-validation.mjs ci",
-    "runtime:test:core": "node --test --test-concurrency=1 ecs/__tests__/*.test.mjs ecs/__pbt__/*.pbt.test.mjs cloudflare/workers/agentic-graph-mcp/__tests__/*.test.mjs cloudflare/workers/agentic-graph-mcp/__pbt__/*.test.mjs mcp/__tests__/*.test.mjs mcp/__pbt__/*.test.mjs web/__tests__/*.test.mjs web/__pbt__/*.test.mjs contracts/__tests__/*.test.mjs contracts/__pbt__/*.test.mjs",
+    "runtime:test:core": "node --test --test-concurrency=2 ecs/__tests__/*.test.mjs ecs/__pbt__/*.pbt.test.mjs cloudflare/workers/agentic-graph-mcp/__tests__/*.test.mjs cloudflare/workers/agentic-graph-mcp/__pbt__/*.test.mjs mcp/__tests__/*.test.mjs mcp/__pbt__/*.test.mjs web/__tests__/*.test.mjs web/__pbt__/*.test.mjs contracts/__tests__/*.test.mjs contracts/__pbt__/*.test.mjs",
     "runtime:local:ensure": "node ./scripts/local-runtime.mjs ensure",
     "runtime:local:status": "node ./scripts/local-runtime.mjs status",
     "runtime:local:stop": "node ./scripts/local-runtime.mjs stop",
