@@ -12,9 +12,9 @@
   ],
   "dependencies": [
     {
-      "id": "canvas",
-      "repository": "github.com/huijoohwee/agentic-canvas-os",
-      "path": "../agentic-canvas-os"
+      "id": "agentic-os",
+      "repository": "github.com/huijoohwee/agentic-os",
+      "path": "../agentic-os"
     },
     {
       "id": "mirror",

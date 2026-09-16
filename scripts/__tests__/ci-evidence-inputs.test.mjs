@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
-import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { spawnSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { test } from 'node:test'
 import { load } from 'js-yaml'
 import { ownerInputs } from '../ci-evidence-inputs.mjs'
 import { readContract } from '../collaboration-contract.mjs'
-import { validateCiEvidencePolicy } from '../../node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs'
+import { captureCiInputs, validateCiEvidencePolicy } from '../../node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs'
 
 const read = relative => readFileSync(new URL(`../../${relative}`, import.meta.url), 'utf8')
 const integration = load(read('.github/workflows/integration.yml')).jobs['integration-gate'].steps
@@ -20,12 +20,51 @@ const sample = (event, paths, extra = {}) => ownerInputs({ contract,
   gitText: () => paths.map(p => `${p}\0`).join(''),
   resolveCi: () => ({ base: 'a'.repeat(40) }), versions: { python: '3.11', chrome: '140' }, ...extra })
 
+test('protected evidence captures the native docs checkout and rejects its dirty bytes', () => {
+  const fixture = mkdtempSync(join(tmpdir(), 'ci-native-docs-owner-'))
+  const git = (cwd, ...args) => execFileSync('git', args, {
+    cwd, encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim()
+  const source = join(fixture, 'agentic-graph')
+  try {
+    // Match the actual workflow layout; no retired Canvas checkout is present.
+    for (const name of ['agentic-graph', 'agentic-os', 'huijoohwee', 'huijoohwee.github.io']) {
+      const root = join(fixture, name)
+      mkdirSync(root)
+      git(root, 'init', '--initial-branch=main')
+      git(root, 'config', 'user.name', 'Evidence fixture')
+      git(root, 'config', 'user.email', 'fixture@example.invalid')
+      git(root, 'remote', 'add', 'origin', `https://github.com/huijoohwee/${name}.git`)
+      writeFileSync(join(root, 'README.md'), `${name}\n`)
+      if (root === source) writeFileSync(join(root, '.agentic-os-ci-evidence.json'), read('.agentic-os-ci-evidence.json'))
+      git(root, 'add', '.')
+      git(root, '-c', 'commit.gpgsign=false', 'commit', '-m', 'Fixture source')
+    }
+    const environment = {
+      GITHUB_ACTIONS: 'true', GITHUB_SERVER_URL: 'https://github.com',
+      GITHUB_REPOSITORY: 'huijoohwee/agentic-graph', GITHUB_SHA: git(source, 'rev-parse', 'HEAD'),
+      GITHUB_REF: 'refs/heads/main', RUNNER_ENVIRONMENT: 'github-hosted',
+      ImageOS: 'fixture', ImageVersion: 'fixture', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64',
+    }
+    const capture = () => captureCiInputs(source, '.agentic-os-ci-evidence.json', environment)
+    const evidence = capture()
+    assert.equal(evidence.input.sources.length, 4)
+    assert.equal(evidence.input.sources.find(entry => entry.id === 'agentic-os')?.repository,
+      'github.com/huijoohwee/agentic-os')
+    const docsCheckout = integration.find(step => step.name === 'Checkout Agentic Canvas OS docs SSOT')
+    assert.equal(policy.dependencies.find(entry => entry.id === 'agentic-os')?.path, `../${docsCheckout.with.path}`)
+    writeFileSync(join(fixture, 'agentic-os', 'README.md'), 'Uncommitted docs change\n')
+    assert.throws(capture, /blocked-ci-evidence:dirty-source/)
+  } finally { rmSync(fixture, { recursive: true, force: true }) }
+})
+
 test('event-independent evidence retains exact owner-selected paths and expanded commands', () => {
   const paths = ['package.json', '.github/workflows/release.yml']
   assert.deepEqual(sample('push', paths), sample('workflow_dispatch', paths))
   assert.notDeepEqual(sample('push', paths), sample('workflow_dispatch', ['docs/README.md']))
-  assert.ok(sample('push', paths).commands.some(c => c.join(' ') === 'npm run check'))
-  assert.ok(sample('push', ['new-unknown-input']).commands.some(c => c.join(' ') === 'npm run check'))
+  const expandedCheck = 'npm run check --workspace=@agentic-graph/canvas'
+  assert.ok(sample('push', paths).commands.some(c => c.join(' ') === expandedCheck))
+  assert.ok(sample('push', ['new-unknown-input']).commands.some(c => c.join(' ') === expandedCheck))
   assert.notDeepEqual(sample('push', paths), sample('push', paths, { versions: { python: '3.12', chrome: '140' } }))
 })
 
