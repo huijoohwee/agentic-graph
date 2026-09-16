@@ -20,7 +20,10 @@ async function sessionHeaders(binding: NonNullable<ReturnType<typeof durableObse
     session = null
     const response = await fetch(binding.sessionPath, { credentials: 'same-origin', redirect: 'error', cache: 'no-store',
       signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(15000)]) })
-    if (!response.ok || response.headers.get('cache-control') !== 'no-store') { await response.body?.cancel(); throw Error('Runtime session unavailable.') }
+    if (!response.ok || response.headers.get('cache-control') !== 'no-store') {
+      await response.body?.cancel()
+      throw Object.assign(Error('Runtime session unavailable.'), { denied: response.status === 401 || response.status === 403 })
+    }
     const reader = response.body?.getReader(), decoder = new TextDecoder('utf-8', { fatal: true })
     if (!reader) throw Error('Runtime session unavailable.')
     let bytes = 0, content = ''
@@ -42,8 +45,9 @@ export async function invokeDurableRun(operation: RunOperation, input: Record<st
   if (typeof window === 'undefined') throw new Error('Durable run browser host is unavailable.')
   const { createAgentRunClient } = await import('agentic-os/agents/invocation')
   const binding = observations.has(operation) ? durableObservationBinding(import.meta.env ?? {}, window.location.origin) : null
+  const headers = binding ? await sessionHeaders(binding, signal) : null
   const result = await createAgentRunClient({ endpoint: binding?.endpoint ?? new URL('/api/agent-swarm/', window.location.origin).href,
-    ...(binding ? { getHeaders: () => sessionHeaders(binding, signal) } : {}) }).invoke(operation, input, { signal })
+    ...(headers ? { getHeaders: () => headers } : {}) }).invoke(operation, input, { signal })
   if (result.httpStatus === 401 || result.httpStatus === 403) clearDurableRunSession()
   return result
 }

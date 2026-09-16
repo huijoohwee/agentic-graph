@@ -64,7 +64,7 @@ async function run() {
       for (const span of [...spans.slice(1), spans[0]]) {
         const failed = span.spanId === 'draft-1'
         const result = await toolkit.finishSpan({ runId, spanId: span.spanId, status: failed ? 'failed' : 'completed',
-          ...(failed ? { reasonCode: 'fixture_retry' } : {}), effectId: span.spanId, costLog }, access)
+          ...(failed ? { reasonCode: 'tool_failed' } : {}), effectId: span.spanId, costLog }, access)
         assert.notEqual(result.status, 'blocked', JSON.stringify(result))
       }
       requireStatus(await toolkit.complete({ runId, status: 'completed', operationId: 'complete', costLog }, access), 'completed')

@@ -67,6 +67,9 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
       if (active >= 4) return json(response, 429, { code: 'run_request_capacity' })
       active++
       let stage = 'configuration'
+      const controller = new AbortController()
+      const disconnect = () => { if (!response.writableEnded) controller.abort() }
+      response.once('close', disconnect)
       try {
         let config
         try { config = await configuration(env.AGENTIC_OS_DURABLE_RUN_HOST_CONFIG) }
@@ -80,14 +83,16 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
         catch { return json(response, 400, { code: 'invalid_run_input' }) }
         const client = createAgentRunClient({ endpoint: config.endpoint, getHeaders: () => ({ authorization: config.authorization }) })
         stage = 'dispatch'
-        const result = await client.invoke(operation, input)
+        const result = await client.invoke(operation, input, { signal: controller.signal })
+        if (controller.signal.aborted) return
         return json(response, result.httpStatus ?? (result.status === 'blocked' ? 409
           : ['completed', 'canceled'].includes(result.status) ? 200 : 202), result)
       } catch (error) {
+        if (controller.signal.aborted) return
         const name = ['TypeError', 'RangeError', 'ReferenceError', 'SyntaxError'].includes(error?.name) ? error.name : 'Error'
         server.config?.logger?.warn('[durable-run-bridge] ' + stage + ': ' + name)
         return json(response, 502, { code: 'run_host_unavailable', ...(!readOnly.has(operation) ? { writeResultUnknown: true } : {}) })
-      } finally { active-- }
+      } finally { response.off('close', disconnect); active-- }
     })
   } }
 }
