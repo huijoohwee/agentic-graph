@@ -1,4 +1,6 @@
 import React from 'react'
+import { AgentRunSpanViews, durationLabel } from './AgentRunSpanViews'
+import { readValidationObservation, validationTrace, type ValidationObservation } from './validationObservationProjection'
 import { openAgentRunInspection, activateAgentRunWorkspace, closeAgentRunInspection, useAgentRunInspection, useAgentRunWorkspace, updateAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection, selectAgentRunView } from './agentRunInspectionStore'
 import { AGENT_RUN_CANVAS_VIEWS } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 import type { ObservationListener } from './durableRunStream'
@@ -8,7 +10,7 @@ import { GraphDataTableDomTableView } from '@/features/graph-data-table/ui/Graph
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { invokeDurableRun, clearDurableRunSession } from './durableRunTransport'
 import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, spanRows, SPAN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
-  spanLabel, numberLabel, known, record, sourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
+  numberLabel, known, record, sourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
 
 const FlowCanvasInspection = React.lazy(() => import('@/components/FlowCanvas/FlowCanvasInspection'))
 const views = Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([key, label]) => ({ key, label }))
@@ -29,6 +31,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const scope = React.useRef<string | null>(initial?.scope ?? null), active = React.useRef<AbortController | null>(null)
   const mutating = React.useRef(false)
   const [busy, setBusy] = React.useState(false), [error, setError] = React.useState(''), [notice, setNotice] = React.useState('')
+  const [topologyDetail, setTopologyDetail] = React.useState<'all' | 'agents'>('agents')
   const [localView, setLocalView] = React.useState('tree'), [localSearch, setLocalSearch] = React.useState(''), [live, setLive] = React.useState(false)
   const view = workspace ? workspaceSession?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
   const search = workspace ? inspection?.search ?? '' : localSearch, setSearch = workspace ? filterAgentRunInspection : setLocalSearch
@@ -36,6 +39,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const [backoff, setBackoff] = React.useState(5000), [expiry, setExpiry] = React.useState(initial?.expiresAt ?? 0)
   const [query, setQuery] = React.useState<Record<string, unknown>>({ limit: 32 })
   const [baseline, setBaseline] = React.useState<RunTrace | null>(null), [comparison, setComparison] = React.useState<unknown>(null)
+  const [localReport, setLocalReport] = React.useState<ValidationObservation | null>(initial?.trace.localObservation ?? null)
+  const importAttempt = React.useRef(0)
+  const local = Boolean(trace?.localObservation)
+  React.useEffect(() => () => { importAttempt.current++ }, [])
   const stop = React.useCallback(() => {
     if (mutating.current && active.current) setNotice('Evaluation may have been accepted. Refresh its evidence before another action.')
     active.current?.abort(); active.current = null; setBusy(false)
@@ -43,7 +50,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const clear = React.useCallback(() => {
     if (!workspace || inspectionRef.current) closeAgentRunInspection()
     scope.current = null; selected.current = emptySelection
-    setIndex(null); setTrace(null); setSelection(emptySelection); setBaseline(null); setComparison(null); setExpiry(0)
+    setLocalReport(null); setIndex(null); setTrace(null); setSelection(emptySelection); setBaseline(null); setComparison(null); setExpiry(0)
   }, [workspace])
   const perform = React.useCallback(async (operation: (signal: AbortSignal) => Promise<void>, mutation = false) => {
     if (active.current || !navigator.onLine || document.hidden) return
@@ -112,10 +119,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     }
   }, [stop, clear])
   React.useEffect(() => {
-    if (!live || !online || !visible || busy) return
+    if (local || !live || !online || !visible || busy) return
     const timer = window.setTimeout(() => { void refresh() }, backoff)
     return () => window.clearTimeout(timer)
-  }, [live, online, visible, busy, backoff, refresh])
+  }, [local, live, online, visible, busy, backoff, refresh])
   React.useEffect(() => {
     if (!expiry) return
     const timer = window.setTimeout(() => { stop(); clear(); setNotice('Snapshot expired. Refresh to reauthorize inspection.') }, Math.max(0, expiry - Date.now()))
@@ -135,11 +142,11 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       setSelection(current => current.spanId === inspection.spanId ? current : { ...current, spanId: inspection.spanId })
   }, [workspace, inspection?.spanId, inspection?.trace.runId])
   const spans = React.useMemo(() => visibleSpanTree(trace?.spans ?? [], search), [trace, search])
-  const topology = React.useMemo(() => trace ? traceGraph(trace, search) : null, [trace, search])
+  const topology = React.useMemo(() => trace ? traceGraph(trace, search, topologyDetail) : null, [trace, search, topologyDetail])
   const span = trace?.spans.find(s => s.spanId === selection.spanId) ?? null
   const subjectDigest = selection.spanId ? span?.subjectDigest : trace?.subjectDigest
   const evaluated = selection.spanId ? span?.evaluation : trace?.evaluation
-  const mayWrite = online && visible && !busy && expiry > Date.now()
+  const mayWrite = !local && online && visible && !busy && expiry > Date.now()
   const evaluate = () => {
     if (!trace || !subjectDigest || !mayWrite || selection.spanId && !span) return
     const request = { runId: trace.runId, ...(span ? { spanId: span.spanId } : {}), subjectDigest,
@@ -159,8 +166,8 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   }
   const exportMetadata = () => {
     if (!trace || expiry <= Date.now()) return
-    const url = URL.createObjectURL(new Blob([JSON.stringify({ ...trace, exportedAt: Date.now(), authority: false }, null, 2)], { type: 'application/json' }))
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'agent-run-metadata.json'; anchor.click()
+    const url = URL.createObjectURL(new Blob([JSON.stringify(trace.localObservation ?? { ...trace, exportedAt: Date.now(), authority: false }, null, 2)], { type: 'application/json' }))
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = local ? 'validation-observation.json' : 'agent-run-metadata.json'; anchor.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
   }
   const openWorkspace = () => {
@@ -171,17 +178,38 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       onOpenWorkspace?.()
     } catch (failure) { setError((failure as Error).message) }
   }
-  const maxTiming = Math.max(1, ...spans.map(({ span: s }) => (s.timing.offset ?? 0) + (s.timing.inclusive ?? 0)))
+  const showLocalReport = (report: ValidationObservation, offset = 0) => {
+    const result = validationTrace(report, offset), expiresAt = result.expiresAt
+    scope.current = `local:${result.runId}`; scopeExpiry.current = expiresAt
+    selected.current = { runId: result.runId, spanId: null }
+    setSelection(selected.current); setTrace(result); setIndex(null); setExpiry(expiresAt)
+    setBaseline(null); setComparison(null); setError(''); setLive(false); setLocalReport(report)
+    if (workspace) openAgentRunInspection({ trace: result, scope: scope.current, expiresAt, spanId: null, search: '', view: workspaceSession?.view ?? 'timing' })
+    setNotice('Local validation observation · read only · retained in memory for 60 seconds. No provider authority.')
+  }
+  const importReport = async (file: File | undefined) => {
+    if (!file) return
+    stop(); const attempt = ++importAttempt.current
+    try {
+      if (file.size > 128000) throw Error('Validation observation exceeds 128 KB.')
+      const contents = await file.text()
+      if (attempt !== importAttempt.current) return
+      showLocalReport(readValidationObservation(contents))
+    } catch (failure) { if (attempt === importAttempt.current) setError((failure as Error).message) }
+  }
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
   return <section aria-label={workspace ? "Agent run Canvas evidence" : "Agentic OS mission control"} className="h-full min-h-0 min-w-0 overflow-auto p-3" style={{ overflowWrap: 'anywhere' }}>
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
       {!workspace && <div><h2 className="font-semibold">Agentic OS</h2><p className="text-xs">Inspect execution, limits and evidence</p></div>}
-      <button type="button" className={button} disabled={busy || !online} onClick={() => { void refresh() }}>Refresh runs</button>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
+      <button type="button" className={button} disabled={local || busy || !online} onClick={() => { void refresh() }}>Refresh runs</button>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={local} checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
+      <label className={button}>Import validation report<input type="file" accept=".json,application/json" className="sr-only"
+        aria-label="Import validation report" onChange={event => { void importReport(event.target.files?.[0]); event.target.value = '' }} /></label>
+      {local && <button className={button} onClick={() => { stop(); clear() }}>Close local report</button>}
     </header>
-    <p role="status" className="pb-2 text-xs">{!online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
+    <p role="status" className="pb-2 text-xs">{local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
       {index ? ` · observed ${new Date(index.observedAt).toLocaleTimeString()} · snapshot expires ${new Date(expiry).toLocaleTimeString()}` : ''}</p>
-    {error && <div role="alert" className="rounded border p-2"><p>Runtime unavailable · {error}</p><p className="text-xs">Check the existing runtime connection and signed session, then refresh. No run data is inferred.</p></div>}
+    {error && <div role="alert" className="rounded border p-2"><p>{local ? "Observation unavailable" : "Runtime unavailable"} · {error}</p><p className="text-xs">Check the existing runtime connection and signed session, then refresh. No run data is inferred.</p></div>}
     {workspace && !trace && <p className="pb-3 text-sm">Select an authorized run to inspect spans, timing, source, allocation and evaluation. JSON, Markdown and Viewer open from the selected evidence.</p>}
     {notice && <p className="py-2 text-xs">{notice}</p>}
     {(!workspace || !trace) && <form aria-label="Run filters" className="flex flex-wrap items-end gap-2 py-2" onSubmit={event => {
@@ -221,7 +249,16 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <h3 className="font-semibold">Run {trace.runId}</h3>
       <p className="text-xs">Selected span: {selection.spanId || "Whole run"}</p>
       <p className="text-xs">Observed state: {trace.status} · {trace.spans.length}/{trace.total} retained spans on this page · expected {numberLabel(trace.expected)} · dropped {numberLabel(trace.dropped)}{trace.partial ? ' · Partial trace' : ''}</p>
-      <p className="py-2 text-sm">{context ? `${context.taskId} → ${context.projectId} → ${context.goalId}` : 'Legacy run · no plan context recorded'}</p>
+      <p className="py-2 text-sm">{local ? 'Local validation · selected owner checks' : context ? `${context.taskId} → ${context.projectId} → ${context.goalId}` : 'Legacy run · no plan context recorded'}</p>
+      {trace.localObservation && <section aria-label="Validation economics" className="my-3 rounded border p-3">
+        <div className="grid grid-cols-2 gap-3 text-sm"><div>Wall time<strong className="block text-xl">{durationLabel(trace.localObservation.elapsedMs)}</strong></div>
+          <div>Observed output<strong className="block text-xl">{numberLabel(trace.localObservation.resources.observedOutputBytes, ' bytes')}</strong></div>
+          <div>Emitted diagnostics<strong className="block">{numberLabel(trace.localObservation.resources.emittedDiagnosticBytes, ' bytes')}</strong></div>
+          <div>CPU · memory · tokens · cost<strong className="block">Unknown</strong></div></div>
+        <p className="pt-2 text-xs">Captured {new Date(trace.localObservation.exportedAt).toLocaleString()} · {trace.localObservation.source.dirty === null ? 'Historical working state unknown' : trace.localObservation.source.dirty ? 'Working tree had changes' : 'Clean source observation'} · process outcomes are not release approval.</p>
+        <a className="text-xs underline" target="_blank" rel="noreferrer" href={`https://${trace.localObservation.source.repository}/tree/${trace.localObservation.source.revision}`}>Source revision {trace.localObservation.source.revision.slice(0, 12)}</a>
+        <details className="pt-2 text-xs"><summary>Stage output and reuse</summary><ul>{trace.localObservation.stages.slice(trace.offset, trace.offset + 32).map(stage => <li key={stage.id} className="py-1">{stage.id} · {stage.status} · {numberLabel(stage.observedOutputBytes, ' output bytes')}{stage.outputTruncated ? ' · bounded log tail' : ''}</li>)}</ul></details>
+      </section>}
       {context && (!workspace || view === "source") && <details open={workspace || undefined}><summary>Source ownership</summary><p>{context.plan.continuityId}</p>
         {planUrl ? <a href={planUrl} target="_blank" rel="noreferrer" className="underline">{context.plan.path} @ {context.plan.revision}</a> : <p>{context.plan.repository} / {context.plan.path} @ {context.plan.revision}</p>}
         <p className="text-xs">Digest {context.plan.digest}</p><pre className="overflow-auto text-xs">{JSON.stringify(context.plan.revisions, null, 2)}</pre>
@@ -243,25 +280,18 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         {view === 'table' && <div className="overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={SPAN_COLUMNS} rows={spanRows(spans.map(row => row.span))}
           selectedRowIds={selection.spanId ? [selection.spanId] : []} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy=""
           sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={chooseSpan} onSelectionChanged={ids => chooseSpan(ids.at(-1) ?? null)} /></div>}
-        {view === 'tree' && <ul aria-label="Span hierarchy">{spans.map(({ span: s, depth, missingParent }) => <li key={s.spanId} style={{ paddingLeft: Math.min(depth, 8) * 12 }}>
-          <button type="button" aria-pressed={selection.spanId === s.spanId} className={`my-1 w-full rounded border p-2 text-left text-sm ${selection.spanId === s.spanId ? UI_THEME_TOKENS.button.activeSoft : ''}`} onClick={() => chooseSpan(s.spanId)}>
-            {spanLabel(s)}<span className="block text-xs">{s.kind} · {s.status} · {numberLabel(s.timing.inclusive, ' ms')} · {record(s.cost).status === 'reported' ? `${Number(record(s.cost).prompt_tokens) + Number(record(s.cost).completion_tokens)} tokens` : 'usage unknown'} · evaluation {s.evaluation.status}{missingParent ? ' · parent outside this page' : ''}</span>
-          </button></li>)}</ul>}
-        {view === 'timing' && <ul aria-label="Span timing">{spans.map(({ span: s }) => <li key={s.spanId} className="border-b py-2">
-          <button className="w-full text-left text-sm" type="button" aria-pressed={selection.spanId === s.spanId} onClick={() => chooseSpan(s.spanId)}>{spanLabel(s)}</button>
-          <p className="text-xs">Inclusive {numberLabel(s.timing.inclusive, ' ms')} · exclusive observed {numberLabel(s.timing.exclusive, ' ms')}</p>
-          {s.timing.offset === null || s.timing.inclusive === null ? <p className="text-xs">Position unknown · incomparable or unfinished clock</p>
-            : <div className="my-1 h-2 rounded bg-gray-200"><div className="h-2 rounded bg-indigo-500" style={{ marginLeft: `${s.timing.offset / maxTiming * 100}%`, width: `${s.timing.inclusive / maxTiming * 100}%` }} /></div>}
-        </li>)}</ul>}
-        {view === 'topology' && topology && <React.Suspense fallback={<p>Loading topology…</p>}><FlowCanvasInspection graph={topology}
+        {(view === 'tree' || view === 'timing') && <AgentRunSpanViews rows={spans} timing={view === 'timing'} selectedId={selection.spanId} onSelect={chooseSpan} />}
+        {view === 'topology' && topology && <><label className="flex items-center gap-2 text-xs">Topology detail<select aria-label="Topology detail" style={inputStyle} value={topologyDetail} onChange={event => setTopologyDetail(event.target.value as 'all' | 'agents')}><option value="agents">Agents</option><option value="all">All spans</option></select></label><p className="py-1 text-xs">Agent view shows containment and direct agent links. Runs without agent spans show all checks.</p><React.Suspense fallback={<p>Loading topology…</p>}><FlowCanvasInspection graph={topology}
           selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
-          onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense>}
+          onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense></>}
         {view === 'evidence' && <><p>Candidate: {trace.candidate.id} @ {trace.candidate.revision}</p>
           <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ profile: trace.profile, subjectDigest, evaluation: evaluated, component: span?.component, links: span?.links, timing: span?.timing, usage: span?.cost }, null, 2)}</pre></>}
       </div>
       <div className="flex flex-wrap gap-2 py-2">
-        {trace.offset > 0 && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal)) }}>First span page</button>}
+        {!local && trace.offset > 0 && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal)) }}>First span page</button>}
         {trace.nextCursor && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal, trace.nextCursor!)) }}>Next span page</button>}
+        {localReport && trace.offset > 0 && <button className={button} onClick={() => showLocalReport(localReport, trace.offset - 32)}>Previous stage page</button>}
+        {localReport && trace.offset + 32 < trace.total && <button className={button} onClick={() => showLocalReport(localReport, trace.offset + 32)}>Next stage page</button>}
         <button className={button} onClick={() => chooseSpan(null)}>Select whole run</button>
         <button className={button} onClick={exportMetadata}>Export metadata</button>
         {!workspace && <button className={button} disabled={expiry <= Date.now()} onClick={openWorkspace}>Open in Editor Workspace</button>}

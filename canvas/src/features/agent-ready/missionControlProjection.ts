@@ -1,3 +1,4 @@
+import type { ValidationObservation } from './validationObservationProjection'
 import type { DashboardMetric } from '@/components/DashboardCanvas/dashboardModel'
 import type { GraphData } from '@/lib/graph/types'
 import type { GraphRecordColumnDoc } from '@/lib/graph-record-db'
@@ -16,7 +17,7 @@ export type TraceSpan = { spanId: string; parentSpanId: string | null; kind: str
   taskId: string; attempt: number | null; status: string; subjectDigest: string | null; component: EvidenceRef;
   links: { spanId: string; kind: string }[]; timing: { offset: number | null; inclusive: number | null; exclusive: number | null };
   cost: unknown; evaluation: Evaluation }
-export type RunTrace = { runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
+export type RunTrace = { localObservation?: ValidationObservation; runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
   context: RunContext | null; candidate: EvidenceRef; cohortId: string; profile: RecordValue;
   evaluation: Evaluation; resources: RecordValue | null; expiresAt: number; observedAt: number;
   partial: boolean; dropped: number | null; expected: number | null; total: number; offset: number; nextCursor: string | null }
@@ -118,17 +119,34 @@ export function visibleSpanTree(spans: TraceSpan[], search: string) {
   return rows
 }
 export const spanNodeId = (runId: string, spanId: string) => `agentic-os/${encodeURIComponent(runId)}/${encodeURIComponent(spanId)}`
-export function traceGraph(trace: RunTrace, search: string): GraphData {
-  const spans = visibleSpanTree(trace.spans, search).map(r => r.span), names = new Set(spans.map(s => s.spanId))
+export function traceGraph(trace: RunTrace, search: string, detail: 'all' | 'agents' = 'all'): GraphData {
+  let spans = visibleSpanTree(trace.spans, search).map(r => r.span)
+  if (detail === 'agents' && spans.some(span => span.kind === 'agent')) {
+    const byId = new Map(trace.spans.map(span => [span.spanId, span]))
+    const parentAgent = (id: string | null) => {
+      const seen = new Set<string>()
+      while (id && byId.has(id) && !seen.has(id)) {
+        seen.add(id); const parent = byId.get(id)!
+        if (parent.kind === 'agent') return id
+        id = parent.parentSpanId
+      }
+      return id && !byId.has(id) ? id : null
+    }
+    spans = spans.filter(span => span.kind === 'agent').map(span => ({ ...span,
+      parentSpanId: parentAgent(span.parentSpanId), links: span.links.filter(link => byId.get(link.spanId)?.kind === 'agent') }))
+  }
+  const names = new Set(spans.map(s => s.spanId))
   const graph: GraphData = { type: 'agentic-os-observation', nodes: [], edges: [], metadata: { readOnly: true } }
-  for (const s of spans) graph.nodes.push({ id: spanNodeId(trace.runId, s.spanId), label: spanLabel(s), type: s.kind,
-    properties: { status: s.status, 'visual:fill': s.status === 'failed' ? '#fee2e2' : '#e0e7ff' } })
+  for (const s of spans) graph.nodes.push({ id: spanNodeId(trace.runId, s.spanId), label: s.operation, type: s.kind,
+    properties: { status: s.status, 'inspection:label': spanLabel(s), 'visual:shape': s.kind === 'tool' ? 'hex' : 'circle',
+      'visual:fill': s.status === 'failed' ? '#fee2e2' : s.kind === 'tool' ? '#fef9c3' : s.kind === 'retrieval' ? '#ccfbf1' : '#e0e7ff',
+      'visual:stroke': s.status === 'failed' ? '#be123c' : '#4f46e5', 'visual:strokeWidth': 2 } })
   function edge(source: string, target: string, kind: string) {
     if (!source || source === target) return
     if (!names.has(source)) { names.add(source); graph.nodes.push({ id: spanNodeId(trace.runId, source),
       label: 'Outside this page', type: 'unavailable', properties: { observed: false } }) }
     graph.edges.push({ id: `${kind}:${source}:${target}`, source: spanNodeId(trace.runId, source),
-      target: spanNodeId(trace.runId, target), type: kind, label: kind, properties: {} })
+      target: spanNodeId(trace.runId, target), type: kind, label: kind, properties: { 'visual:stroke': '#a8a29e', 'visual:strokeWidth': 1.5 } })
   }
   for (const s of spans) {
     if (s.parentSpanId) edge(s.parentSpanId, s.spanId, 'contains')
@@ -157,7 +175,7 @@ export function sourceLink(context: RunContext | null): string | null {
   return `https://${p.repository}/blob/${p.revision}/${p.path.split('/').map(encodeURIComponent).join('/')}`
 }
 export function comparable(baseline: RunTrace | null, candidate: RunTrace | null): boolean {
-  return Boolean(baseline && candidate && baseline.cohortId === candidate.cohortId
+  return Boolean(baseline && candidate && !baseline.localObservation && !candidate.localObservation && baseline.cohortId === candidate.cohortId
     && JSON.stringify(baseline.profile) === JSON.stringify(candidate.profile)
     && JSON.stringify(baseline.candidate) !== JSON.stringify(candidate.candidate))
 }

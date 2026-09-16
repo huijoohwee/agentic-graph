@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -63,28 +63,6 @@ export const readChangedPaths = ({
   return [...paths].sort()
 }
 
-const runCommand = (command, timeoutMs) => new Promise((resolve, reject) => {
-  const started = performance.now()
-  const [executable, ...args] = command
-  const child = spawn(executable, args, { cwd: repoRoot, env: process.env, stdio: 'inherit' })
-  let timedOut = false
-  let forceKillTimer
-  const timeout = setTimeout(() => {
-    timedOut = true
-    console.error(`[agentic-graph] affected check exceeded ${timeoutMs}ms: ${command.join(' ')}`)
-    child.kill('SIGTERM')
-    forceKillTimer = setTimeout(() => child.kill('SIGKILL'), 5000)
-  }, timeoutMs)
-  child.on('error', reject)
-  child.on('close', code => {
-    console.log(`[agentic-graph] ${command.join(' ')}: ${((performance.now() - started) / 1000).toFixed(2)}s, exit ${code}`)
-    clearTimeout(timeout)
-    clearTimeout(forceKillTimer)
-    if (code === 0 && !timedOut) resolve()
-    else reject(new Error(`${command.join(' ')} ${timedOut ? 'timed out' : `exited with ${code ?? 1}`}`))
-  })
-})
-
 export const main = async () => {
   const contract = await readContract()
   let baseRevision
@@ -101,9 +79,12 @@ export const main = async () => {
     console.log(`[agentic-graph] fallback paths: ${plan.unmatchedPaths.join(', ')}`)
   }
 
-  for (const command of plan.commands) {
-    console.log(`[agentic-graph] running affected check: ${command.join(' ')}`)
-    await runCommand(command, resolveCiCommandTimeoutMs(command, contract))
+  if (plan.commands.length) {
+    const { runValidationStages } = await import('../node_modules/agentic-os/bin/agentic-os-validation-stages.mjs')
+    await runValidationStages(repoRoot, plan.commands.map(command => ({
+      id: `check-${command.join('-').toLowerCase().replace(/[^a-z0-9.-]+/gu, '-').slice(0, 60)}-${createHash('sha256').update(JSON.stringify(command)).digest('hex').slice(0, 12)}`,
+      command, timeoutMs: resolveCiCommandTimeoutMs(command, contract),
+    })))
   }
   console.log('[agentic-graph] affected CI checks passed')
 }

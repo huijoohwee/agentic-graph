@@ -1,4 +1,5 @@
 import React, { act } from 'react'
+import { LiveCanvasHeroPromptPresetPicker } from '@/features/agentic-os/LiveCanvasHeroPromptPresetPicker'
 import { createRoot } from 'react-dom/client'
 
 import { createPresetWorkspace } from '@/__tests__/floatingPanelChatVideoPreset.test'
@@ -230,6 +231,7 @@ export async function testFloatingPanelPromptPresetsViewRendersAndInvokesAgentCh
   const catalog = await loadPromptPresetCatalog(workspace)
   if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
   await verifySkillsCommandPresetRouting(catalog)
+  await verifyCatalogRecovery(catalog)
   const { dom, restore } = initJsdomHarness()
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
@@ -315,4 +317,23 @@ async function verifySkillsCommandPresetRouting(catalog: Exclude<Awaited<ReturnT
     resetAgenticOsRemoteGrammarCatalogForTests()
     restore()
   }
+}
+
+async function verifyCatalogRecovery(catalog: Exclude<Awaited<ReturnType<typeof loadPromptPresetCatalog>>, { ok: false }>) {
+  const { dom, restore } = initJsdomHarness(), container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container), selected: unknown[] = []
+  let calls = 0
+  const runtime = { loadCatalog: async () => ++calls === 1 ? { ok: false as const, error: 'Temporarily unavailable' } : catalog,
+    loadPrompt: async () => ({ ok: true as const, prompt: 'authored prompt' }) }
+  try {
+    await mountReactRoot(root, React.createElement(LiveCanvasHeroPromptPresetPicker,
+      { activePresetId: catalog.presets[0]!.id, runtime, onSelect: value => selected.push(value) }),
+      { window: dom.window as unknown as Window, frames: 3 })
+    if (!container.querySelector('[role="alert"]') || container.querySelector('select')) throw Error('A missing catalog must remain unavailable')
+    const retry = [...container.querySelectorAll('button')].find(button => button.textContent === 'Retry catalog')!
+    await act(async () => { retry.click(); await waitForFrames(dom.window as unknown as Window, 3) })
+    if (calls !== 2 || !container.querySelector('select') || container.querySelector('[role="alert"]') || selected.length)
+      throw Error('Explicit retry must recover the catalog without selecting or executing a preset')
+  } finally { await unmountReactRoot(root, { window: dom.window as unknown as Window }); restore() }
 }
