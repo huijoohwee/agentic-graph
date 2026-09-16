@@ -196,8 +196,11 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     if (await textFileNeedsUpdate(body, entry.target)) productionRuntimeFunctionUpdates.push({ entry, body })
   }
   const agentReadyRuntimeFilesToCopy = []
-  for (const [source, target] of agentReadyRuntimeCopies) {
-    if (await plainFileNeedsUpdate(source, target)) agentReadyRuntimeFilesToCopy.push([source, target])
+  for (const [source, target, generatedBody] of agentReadyRuntimeCopies) {
+    const needsUpdate = generatedBody === undefined
+      ? await plainFileNeedsUpdate(source, target)
+      : await textFileNeedsUpdate(generatedBody, target)
+    if (needsUpdate) agentReadyRuntimeFilesToCopy.push([source, target, generatedBody])
   }
   const agentReadyRouteWrites = [agentReadyDocRouteTarget, agentReadyDefaultDocRouteTarget, agentReadyShareRouteTarget]
   const agentReadyRouteUpdates = []
@@ -287,7 +290,10 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   for (const { source, target } of plainCopyUpdates) await copyPlainFile(source, target)
   for (const { entry, body } of productionRuntimeFunctionUpdates) await writeTextFile(entry.target, body)
   for (const target of agentReadyRouteUpdates) await writeTextFile(target, agentReadyDocRouteBody)
-  for (const [source, target] of agentReadyRuntimeFilesToCopy) await copyPlainFile(source, target)
+  for (const [source, target, generatedBody] of agentReadyRuntimeFilesToCopy) {
+    if (generatedBody === undefined) await copyPlainFile(source, target)
+    else await writeTextFile(target, generatedBody)
+  }
   await writeTextFile(agentReadyCommerceX402RouteTarget, agentReadyCommerceX402RouteBody)
   for (const relativePath of agentReadyStaticFilesToWrite) await writeTextFile(path.resolve(mirrorRoot, relativePath), agentReadyArtifacts[relativePath].body)
   let legacyImagePayloadsCopied = 0

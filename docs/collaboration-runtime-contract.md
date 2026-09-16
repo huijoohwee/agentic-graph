@@ -63,6 +63,11 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  pages_catalog_publication:
+    roots: ["scripts/pages-mirror-agent-ready.mjs", "scripts/pages-mirror-sync.mjs", "scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs"]
+    commands:
+      - ["npm", "--prefix", "grph-shared", "run", "build"]
+      - ["node", "--test", "scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs"]
   native_docs_dev_loader:
     roots: ["canvas/viteWorkspaceMirrorReadRoots.ts", "scripts/__tests__/vite-native-docs-mirror.test.mjs"]
     commands:
