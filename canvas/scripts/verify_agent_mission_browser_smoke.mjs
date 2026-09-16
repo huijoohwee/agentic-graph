@@ -47,7 +47,7 @@ async function verifyWorkspace(label, revoke = false) {
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible' })
   await waitText(editor.getByRole('region', { name: 'JSON Editor', exact: true }), 'agent-run-inspection/v1')
-  await editor.getByRole('checkbox', { name: 'Show Viewer pane', exact: true }).check()
+  await editor.getByRole('checkbox', { name: 'Show Viewer preview pane', exact: true }).check()
   await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ state: 'visible' })
   assert.equal(await editor.getByRole('button', { name: 'Insert slash command trigger', exact: true }).count(), 0)
   await page.screenshot({ path: resolve(output, label + '-workspace.png') })
