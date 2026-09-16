@@ -6,6 +6,8 @@ contract_version: 50
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
+  - command: ["npm", "run", "agent-mission:check"]
+    timeout_ms: 600000
   - command: ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
     timeout_ms: 900000
   - command: ["npm", "run", "check:agentic-travel-commerce-platform"]

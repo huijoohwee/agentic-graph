@@ -529,7 +529,7 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 
 This five-role increment implements approved `DURABLE-AGENT-WORKFLOWS-001@0.2.0`
 [AC-D11 and retained AC-D06](https://github.com/huijoohwee/agentic-os/blob/672b21ebf583ff3d5918d5ddba7821cef2b098ee/guides/DURABLE-WORKFLOWS.md).
-The protected runtime dependency is `edc6bde969fe789bc3e4d81104adac9400c43514`
+The protected runtime dependency is `0c2d4d37f905052bdce0fb9277fc1c7bb4e3cf39`
 ([source/check receipt](https://github.com/huijoohwee/agentic-os/pull/180)). This adds an operator view
 inside the existing dashboard; the status-tool identity, permissions and baseline above remain scoped to status reads.
 
