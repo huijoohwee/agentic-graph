@@ -269,7 +269,9 @@ try {
     await floating.waitFor({ state: 'visible' }); await floating.getByRole('button', { name: 'Close', exact: true }).click()
     await floating.waitFor({ state: 'detached' })
   }
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
+  // Use the rendered desktop entry: readiness can precede a responsive toolbar remount.
+  await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click()
+  await page.locator('#main-panel-dashboard-tab:visible').click()
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await page.locator('#agent-run-view-topology-tab').click()
   await selected.getByRole('img', { name: /Observed spans and causal links/ }).waitFor()
@@ -298,5 +300,13 @@ try {
 } catch (error) {
   console.error(error.message)
   await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})
-  console.error((await mission.textContent().catch(() => 'Mission panel unavailable')).slice(0, 5000)); throw error
+  console.error('Mission entry state:', await page.evaluate(() => ({
+    ready: window.__AG_MAIN_PANEL_OPEN_READY__,
+    tabs: [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].map(node => node.id),
+    panels: [...document.querySelectorAll('[aria-label="Main panel"]')].map(node => ({
+      width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
+    })),
+    text: document.body.innerText.slice(0, 5000),
+  })).catch(() => 'Document unavailable'))
+  throw error
 } finally { await browser.close() }
