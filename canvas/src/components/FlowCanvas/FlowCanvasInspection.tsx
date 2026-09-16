@@ -1,5 +1,6 @@
 import React from 'react'
 import { zoomIdentity } from 'd3'
+import { defaultSchema } from '@/lib/graph/schema'
 import type { GraphData } from '@/lib/graph/types'
 import { buildDagreLayout } from './layout'
 import { readFlowConfig } from './config'
@@ -15,7 +16,7 @@ export default function FlowCanvasInspection({ graph, selectedNodeId, onSelect }
   const container = React.useRef<HTMLDivElement>(null), canvas = React.useRef<HTMLCanvasElement>(null)
   const runtime = React.useRef<FlowNativeRuntime | null>(null), selected = React.useRef(selectedNodeId)
   const pointer = React.useRef<{ id: number; x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null)
-  const positions = React.useMemo(() => buildDagreLayout({ nodes: graph.nodes, edges: graph.edges, rankdir: 'TB' }), [graph])
+  const positions = React.useMemo(() => buildDagreLayout({ nodes: graph.nodes, edges: graph.edges, rankdir: 'TB', nodeSize: { widthPx: 160, heightPx: 160 }, spacingPx: { nodesep: 60, ranksep: 70 } }), [graph])
   selected.current = selectedNodeId
   const draw = React.useCallback(() => {
     if (runtime.current) requestFlowNativeDraw(runtime.current, { selectedNodeIds: selected.current ? [selected.current] : [], selectedEdgeIds: [] })
@@ -24,22 +25,22 @@ export default function FlowCanvasInspection({ graph, selectedNodeId, onSelect }
     const rt = runtime.current
     if (!rt) return
     const points = Object.values(positions)
-    const width = Math.max(180, ...points.map(p => p.x + 180)), height = Math.max(48, ...points.map(p => p.y + 48))
+    const width = Math.max(180, ...points.map(p => p.x + 160)), height = Math.max(48, ...points.map(p => p.y + 160))
     const scale = Math.max(0.08, Math.min(1.5, (rt.viewportW - 32) / width, (rt.viewportH - 32) / height))
     setFlowNativeTransform(rt, zoomIdentity.translate((rt.viewportW - width * scale) / 2, 16).scale(scale)); draw()
   }, [positions, draw])
   React.useLayoutEffect(() => {
     const element = canvas.current, parent = container.current, ctx = element?.getContext('2d')
     if (!element || !parent || !ctx) return
-    const rt = createFlowNativeRuntime({ canvas: element, ctx, viewportW: parent.clientWidth, viewportH: 320,
+    const rt = createFlowNativeRuntime({ canvas: element, ctx, viewportW: parent.clientWidth, viewportH: parent.clientHeight,
       dpr: window.devicePixelRatio || 1, rankdir: 'TB' })
     runtime.current = rt
     // Static observed edges need no animation loop.
     rt.presentation.edges.animated = false
-    buildAndSetFlowNativeScene({ runtime: rt, graphData: graph, positions, schema: null, forbidCircleNodes: true,
-      flowConfig: readFlowConfig({ schema: null, rankdir: 'TB' }), sceneGroups: [], rankdir: 'TB' })
+    buildAndSetFlowNativeScene({ runtime: rt, graphData: graph, positions, schema: defaultSchema, forbidCircleNodes: false,
+      flowConfig: { ...readFlowConfig({ schema: defaultSchema, rankdir: 'TB' }), node: { ...readFlowConfig({ schema: defaultSchema, rankdir: 'TB' }).node, widthPx: 160, heightPx: 160 } }, sceneGroups: [], rankdir: 'TB' })
     const resize = () => {
-      const width = Math.max(1, parent.clientWidth), height = 320, dpr = window.devicePixelRatio || 1
+      const width = Math.max(1, parent.clientWidth), height = Math.max(320, parent.clientHeight), dpr = window.devicePixelRatio || 1
       element.width = Math.ceil(width * dpr); element.height = Math.ceil(height * dpr)
       setFlowNativeViewport(rt, { viewportW: width, viewportH: height, dpr }); fit()
     }
@@ -60,9 +61,9 @@ export default function FlowCanvasInspection({ graph, selectedNodeId, onSelect }
       <button type="button" onClick={() => zoom(0.8)} className={UI_THEME_TOKENS.button.neutralMuted}>Zoom out</button>
       <button type="button" onClick={fit} className={UI_THEME_TOKENS.button.neutralMuted}>Fit topology</button>
     </div>
-    <div ref={container} className="w-full min-w-0 overflow-hidden rounded border" style={{ height: 320 }}>
+    <div ref={container} className="w-full min-w-0 overflow-hidden rounded border" style={{ height: 'clamp(360px, 60vh, 720px)' }}>
       <canvas ref={canvas} role="img" aria-label="Observed spans and causal links; use the node buttons below to select a span"
-        style={{ width: '100%', height: 320, touchAction: 'none' }}
+        style={{ width: '100%', height: '100%', touchAction: 'none' }}
         onPointerDown={event => {
           const rt = runtime.current
           if (!rt || pointer.current) return

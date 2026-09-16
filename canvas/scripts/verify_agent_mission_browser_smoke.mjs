@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
 
-const output = resolve('../data/outputs/agent-mission-browser-smoke')
+const output = resolve(process.env.AG_MISSION_ARTIFACT_DIR || '../data/outputs/agent-mission-browser-smoke')
 const browser = await chromium.launch({ headless: true })
 let context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' })
 const errors = [], requests = [], streamed = [], pending = new Set()
@@ -235,6 +235,35 @@ async function verifyApexActivation(width) {
   }
   await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ timeout: 60000 })
   await page.screenshot({ path: resolve(output, `apex-${width}-inspection.png`) })
+  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await canvas.waitFor({ state: 'visible' })
+  const beforeLocalRequests = requests.length
+  const observation = { schema: 'agentic-os/validation-observation/v1', authority: false, exportedAt: Date.now(),
+    source: { repository: 'github.com/example/validation-fixture', revision: '1'.repeat(40), tree: '2'.repeat(40), dirty: false },
+    runId: 'validation-fixture', status: 'passed', startedAt: 1000, finishedAt: 4300, elapsedMs: 3300,
+    resources: { observedOutputBytes: 128000, emittedDiagnosticBytes: 400 },
+    stages: Array.from({ length: 33 }, (_, i) => ({ id: 'check-' + i, status: 'passed', startedAt: 1000 + i * 100,
+      finishedAt: 1100 + i * 100, elapsedMs: 100, observedOutputBytes: 200, outputTruncated: false })) }
+  await evidence.getByLabel('Import validation report', { exact: true }).setInputFiles({ name: 'validation.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(observation)) })
+  await waitText(evidence, 'Local validation observation')
+  assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
+  assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s' }).isDisabled(), true)
+  await waitText(evidence.getByRole('region', { name: 'Validation economics' }), '128,000 bytes')
+  await evidence.getByRole('tab', { name: 'Timing', exact: true }).click()
+  await evidence.getByRole('list', { name: 'Span timing' }).getByRole('button').first().click()
+  await waitText(evidence, 'Selected span: check-0')
+  await evidence.getByRole('button', { name: 'Next stage page' }).click()
+  await waitText(evidence, '1/33 retained spans')
+  await evidence.getByRole('button', { name: 'Previous stage page' }).click()
+  await evidence.getByRole('tab', { name: 'Topology', exact: true }).click(); await waitTopology(evidence)
+  await page.screenshot({ path: resolve(output, `validation-${width}-topology.png`) })
+  await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+  await editor.waitFor({ state: 'visible' })
+  await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
+  await waitText(editor.getByRole('region', { name: 'JSON Editor', exact: true }), 'validation-fixture')
+  await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }), 'check-0')
+  assert.equal(requests.length, beforeLocalRequests, 'Local validation inspection must never call the authenticated runtime')
+
   assertAuthored(await authoredSnapshot(), before, 'Apex activation must preserve authored work')
   assert.ok(requests.slice(beforeEntryRequests).every(item => ['query', 'trace'].includes(item.operation)), 'Activation may only read observations')
   await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()

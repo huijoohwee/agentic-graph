@@ -1,3 +1,4 @@
+import type { ValidationObservation } from './validationObservationProjection'
 import type { DashboardMetric } from '@/components/DashboardCanvas/dashboardModel'
 import type { GraphData } from '@/lib/graph/types'
 import type { GraphRecordColumnDoc } from '@/lib/graph-record-db'
@@ -16,7 +17,7 @@ export type TraceSpan = { spanId: string; parentSpanId: string | null; kind: str
   taskId: string; attempt: number | null; status: string; subjectDigest: string | null; component: EvidenceRef;
   links: { spanId: string; kind: string }[]; timing: { offset: number | null; inclusive: number | null; exclusive: number | null };
   cost: unknown; evaluation: Evaluation }
-export type RunTrace = { runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
+export type RunTrace = { localObservation?: ValidationObservation; runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
   context: RunContext | null; candidate: EvidenceRef; cohortId: string; profile: RecordValue;
   evaluation: Evaluation; resources: RecordValue | null; expiresAt: number; observedAt: number;
   partial: boolean; dropped: number | null; expected: number | null; total: number; offset: number; nextCursor: string | null }
@@ -121,8 +122,10 @@ export const spanNodeId = (runId: string, spanId: string) => `agentic-os/${encod
 export function traceGraph(trace: RunTrace, search: string): GraphData {
   const spans = visibleSpanTree(trace.spans, search).map(r => r.span), names = new Set(spans.map(s => s.spanId))
   const graph: GraphData = { type: 'agentic-os-observation', nodes: [], edges: [], metadata: { readOnly: true } }
-  for (const s of spans) graph.nodes.push({ id: spanNodeId(trace.runId, s.spanId), label: spanLabel(s), type: s.kind,
-    properties: { status: s.status, 'visual:fill': s.status === 'failed' ? '#fee2e2' : '#e0e7ff' } })
+  for (const s of spans) graph.nodes.push({ id: spanNodeId(trace.runId, s.spanId), label: s.operation, type: s.kind,
+    properties: { status: s.status, 'visual:shape': s.kind === 'tool' ? 'hex' : 'circle',
+      'visual:fill': s.status === 'failed' ? '#fee2e2' : s.kind === 'tool' ? '#fef9c3' : s.kind === 'retrieval' ? '#ccfbf1' : '#e0e7ff',
+      'visual:stroke': s.status === 'failed' ? '#be123c' : '#4f46e5', 'visual:strokeWidth': 2 } })
   function edge(source: string, target: string, kind: string) {
     if (!source || source === target) return
     if (!names.has(source)) { names.add(source); graph.nodes.push({ id: spanNodeId(trace.runId, source),
@@ -157,7 +160,7 @@ export function sourceLink(context: RunContext | null): string | null {
   return `https://${p.repository}/blob/${p.revision}/${p.path.split('/').map(encodeURIComponent).join('/')}`
 }
 export function comparable(baseline: RunTrace | null, candidate: RunTrace | null): boolean {
-  return Boolean(baseline && candidate && baseline.cohortId === candidate.cohortId
+  return Boolean(baseline && candidate && !baseline.localObservation && !candidate.localObservation && baseline.cohortId === candidate.cohortId
     && JSON.stringify(baseline.profile) === JSON.stringify(candidate.profile)
     && JSON.stringify(baseline.candidate) !== JSON.stringify(candidate.candidate))
 }
