@@ -31,7 +31,7 @@ export function AgentRunSpanViews({ rows, timing, selectedId, onSelect }: {
             <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-lg"
               style={{ background: tone.fill, color: tone.stroke, borderColor: tone.stroke }}>{tone.icon}</span>
             <span className="min-w-0"><span className="block truncate text-sm font-medium" title={span.operation}>{span.operation}</span>
-              <span className="block text-xs opacity-75">{span.kind} · {span.status}{span.attempt !== null && ` · attempt ${span.attempt}`}{!timing && ` · ${durationLabel(span.timing.inclusive)} · ${usage(span)}`}
+              <span className="block text-xs opacity-75">{span.kind} · {span.status}{timing && ` · exclusive observed ${numberLabel(span.timing.exclusive, ' ms')}`}{span.attempt !== null && ` · attempt ${span.attempt}`}{!timing && ` · ${durationLabel(span.timing.inclusive)} · ${usage(span)}`}
                 {span.evaluation.status !== 'unevaluated' && ` · evaluation ${span.evaluation.status}`}{missingParent && ' · parent outside this page'}</span>
             </span>
           </span>
