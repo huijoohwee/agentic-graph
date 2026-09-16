@@ -57,6 +57,7 @@ async function verifyWorkspace(label, revoke = false) {
   await canvas.getByRole('img', { name: /Observed spans and causal links/ }).waitFor({ state: 'visible' })
   await canvas.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await waitText(canvas, 'Selected span: draft-2')
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   await page.screenshot({ path: resolve(output, label + '-canvas.png') })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
   await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }), 'draft')

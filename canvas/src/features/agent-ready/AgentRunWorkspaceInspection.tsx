@@ -10,7 +10,8 @@ import { useAgentRunInspection, closeAgentRunInspection, selectAgentRunInspectio
 
 const FlowCanvas = React.lazy(() => import('@/components/FlowCanvas'))
 const noop = () => {}
-const cell = (value: unknown) => String(value ?? 'Unknown').replace(/[\\`*_{}[\]()#+.!|<>~-]/g, char => `&#${char.charCodeAt(0)};`).replace(/[\r\n]/g, ' ')
+const cell = (value: unknown) => String(value ?? 'Unknown').replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[\\`*_{}[\]()|]/g, char => `\\${char}`).replace(/[\r\n]/g, ' ')
 const button = `rounded border px-2 py-1 text-xs ${UI_THEME_TOKENS.button.neutralMuted}`
 
 /** Presentation adapter only: existing workspace panes and Canvas own all rendering. */
@@ -21,7 +22,8 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
   const [wrap, setWrap] = React.useState(true), [highlight, setHighlight] = React.useState(false)
   const editorRef = React.useRef<MonacoTextEditorHandle | null>(null)
   const presentationRef = React.useRef<MarkdownPresentationApi | null>(null)
-  const graph = React.useMemo(() => inspection ? traceGraph(inspection.trace, inspection.search) : null, [inspection])
+  const observedTrace = inspection?.trace, search = inspection?.search
+  const graph = React.useMemo(() => observedTrace ? traceGraph(observedTrace, search || '') : null, [observedTrace, search])
   const json = React.useMemo(() => inspection ? JSON.stringify({ schema: 'agent-run-inspection/v1', authority: false,
     expiresAt: inspection.expiresAt, selectedSpanId: inspection.spanId, trace: inspection.trace }, null, 2) : '', [inspection])
   const markdown = React.useMemo(() => {
@@ -41,12 +43,12 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
   if (!inspection || !graph) return null
   const { trace, spanId } = inspection
   return <section aria-label={`Agent run ${surface === 'editor' ? 'Editor Workspace' : 'Canvas'} inspection`}
-    className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden ${UI_THEME_TOKENS.panel.bg}`}>
+    className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden ${surface === 'canvas' ? 'kg-workspace-data-view-root' : ''} ${UI_THEME_TOKENS.panel.bg}`}>
     <header className="flex shrink-0 flex-wrap items-center gap-2 border-b p-2 text-xs" style={{ overflowWrap: 'anywhere' }}>
       <strong>Run {trace.runId}</strong><span>Read-only · {trace.spans.length}/{trace.total} spans · expires {new Date(inspection.expiresAt).toLocaleTimeString()}</span>
       <button className={button} onClick={closeAgentRunInspection}>Close run inspection</button>
       <button className={button} onClick={() => useGraphStore.getState().setWorkspaceViewState({
-        mode: surface === 'editor' ? 'canvas' : 'editor', paneOpen: surface !== 'editor',
+        mode: surface === 'editor' ? 'canvas' : 'editor', paneOpen: surface !== 'editor' && !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches,
       })}>{surface === 'editor' ? 'Show Canvas' : 'Show Editor Workspace'}</button>
     </header>
     {surface === 'editor' ? <div className="flex min-h-0 min-w-0 flex-1">

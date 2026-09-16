@@ -142,7 +142,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
     if (!trace || !scope.current || expiry <= Date.now()) return
     try {
       openAgentRunInspection({ trace, scope: scope.current, expiresAt: expiry, spanId: selection.spanId, search })
-      useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true })
+      useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches })
       onOpenWorkspace?.()
     } catch (failure) { setError((failure as Error).message) }
   }
