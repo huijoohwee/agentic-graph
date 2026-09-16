@@ -100,7 +100,12 @@ jobs:
       - { name: Reverify exact candidate, if: "steps.ci_evidence.outcome != 'success' || steps.ci_evidence.outputs.reused != 'true'", working-directory: agentic-graph, run: 'npm run ci:integration' }
       - name: Build and sync verified candidate
         working-directory: agentic-graph
-        env: { AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://airvio.co' }
+        env:
+          AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}'
+          VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://airvio.co'
+          VITE_AGENTIC_OS_OBSERVATION_PATH: '/agentic-commerce-os/fulfillment/'
+          VITE_AGENTIC_OS_SESSION_PATH: '/agentic-commerce-os/fulfillment/session'
+          VITE_AGENTIC_OS_CSRF_HEADER: 'x-commerce-csrf'
         run: npm run pages:build-sync
       - { name: Verify source-to-mirror parity, working-directory: agentic-graph, run: 'npm run conflict:mirror:check' }
       - { name: Build Pages functions, working-directory: agentic-graph, run: 'npm run pages:functions:build' }

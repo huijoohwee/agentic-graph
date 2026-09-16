@@ -47,7 +47,7 @@ async function run() {
     for (const [runId, principalId, version] of [['baseline-run', 'owner', 'one'], ['candidate-run', 'owner', 'two'], ['private-run', 'other', 'two']]) {
       const access = { principalId }, context = { projectId: 'listing-project', goalId: 'review-listing', taskId: runId, plan }
       const reservation = await resources.reserve({ context, principalId, runId, agentId: 'listing-agent', operationId: 'fixture', phase: 'execute' })
-      await resources.settle(reservation, principalId, { inputTokens: 0, outputTokens: 0, attempts: 1, elapsedMs: 1, providerCostMicros: 0 })
+      await resources.settle(reservation, principalId, { inputTokens: 0, outputTokens: 0, attempts: 1, elapsedMs: 1 })
       requireStatus(await toolkit.start({ runId, cohortId: 'listing-fixture', target: { kind: 'agent', ...ref('listing-agent') },
         candidate: { ...ref('listing-policy'), revision: version, digest: digest(version) }, adapter: ref('fixture-adapter'),
         operation: 'prepare-listing', profile, context }, access), 'running')
