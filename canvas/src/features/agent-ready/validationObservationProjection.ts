@@ -23,9 +23,14 @@ function metrics(raw: unknown): ResourceMetrics {
   const v = record(raw)
   if (v.costUsd != null && v.costBasis !== 'estimated'
     || (v.cpuMs != null || v.peakMemoryBytes != null) && v.memoryScope !== 'maximum-single-process-rss') fail()
+  if (v.costBasis !== undefined && !['estimated', 'unreported'].includes(String(v.costBasis))
+    || v.memoryScope !== undefined && v.memoryScope !== 'maximum-single-process-rss'
+    || v.measurement !== undefined && !['wait4', 'unavailable'].includes(String(v.measurement))) fail()
   const result = Object.fromEntries(metricKeys.map(key => [key, finite(v[key] ?? null, true)])) as ResourceMetrics
   if ([result.peakMemoryBytes, result.tokens].some(n => n !== null && !Number.isSafeInteger(n))) fail()
-  return result
+  return { ...result, ...(v.costBasis === undefined ? {} : { costBasis: v.costBasis as ResourceMetrics['costBasis'] }),
+    ...(v.memoryScope === undefined ? {} : { memoryScope: 'maximum-single-process-rss' as const }),
+    ...(v.measurement === undefined ? {} : { measurement: v.measurement as ResourceMetrics['measurement'] }) }
 }
 function feedback(raw: unknown): { ranking: FeedbackRow[] } {
   const v = record(raw), seen = new Set<string>()

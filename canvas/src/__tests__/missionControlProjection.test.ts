@@ -96,6 +96,8 @@ export async function testMissionControlProjection(): Promise<void> {
   assert.equal(spanRows(resourceTrace.spans)[0]!['CPU ms'], '42')
   assert.equal(spanRows(resourceTrace.spans)[0]!['Estimated USD'], '0')
   assert.equal(traceGraph(resourceTrace, '').nodes[0]!.properties?.['CPU ms'], '42')
+  assert.equal(resourceTrace.localObservation?.resources.costBasis, 'estimated')
+  assert.equal(resourceTrace.spans[0]?.resources?.memoryScope, 'maximum-single-process-rss')
   assert.equal(resourceTrace.localObservation?.ci?.queueWaitMs, 3000)
   assert.equal(resourceTrace.localObservation?.feedback?.ranking[0]?.samples, 3)
   assert.ok(!JSON.stringify(resourceTrace).includes('/private/feedback'))

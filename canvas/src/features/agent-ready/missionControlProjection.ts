@@ -3,7 +3,8 @@ import type { DashboardMetric } from '@/components/DashboardCanvas/dashboardMode
 import type { GraphData } from '@/lib/graph/types'
 import type { GraphRecordColumnDoc } from '@/lib/graph-record-db'
 
-export type ResourceMetrics = { cpuMs: number | null; peakMemoryBytes: number | null; tokens: number | null; costUsd: number | null }
+export type ResourceMetrics = { cpuMs: number | null; peakMemoryBytes: number | null; tokens: number | null; costUsd: number | null;
+  costBasis?: 'estimated' | 'unreported'; memoryScope?: 'maximum-single-process-rss'; measurement?: 'wait4' | 'unavailable' }
 type RecordValue = Record<string, unknown>
 export type EvidenceRef = { id: string; revision: string; digest: string }
 export type Evaluation = { status: string; score: number | null; reason: string; evidence: unknown }
