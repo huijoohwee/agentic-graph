@@ -548,7 +548,7 @@ A disabled host is unavailable, never an empty successful dataset. WTP and first
 - Reuse `GraphDataTableDomTableView`; add keyboard row selection at its owner. FlowCanvas dispatches inspection
   to `FlowCanvasInspection.tsx`, which reuses native layout/scene/render functions with local pan/zoom only.
   Inspection cannot write the authored graph, selection, layouts, snapshots, timeline, widgets or history.
-- `agentRunInspectionStore.ts` holds one bounded expiring memory-only handoff; existing EmbeddedEditorShell and CanvasViewport lazily render `AgentRunWorkspaceInspection.tsx` through MarkdownWorkspaceMain and FlowCanvas. JSON, Markdown, Viewer and Canvas share the run/span selection; no workspace files or host mirrors are created. Passive panes disable the authored-graph export bridge.
+- `agentRunInspectionStore.ts` holds one bounded expiring memory-only handoff; existing EmbeddedEditorShell and CanvasViewport lazily render `AgentRunWorkspaceInspection.tsx` through MarkdownWorkspaceMain and FlowCanvas. JSON, Markdown, Viewer and Canvas share the run/span selection; no workspace files or host mirrors are created. Passive panes disable authored-token writeback and exports; no-sync viewers retain no shared parse-cache entries.
 - `durableRunTransport.ts` and `viteDurableRunBridge.mjs` consume the pinned OS operation contract.
   The optional public observation/session binding is trusted build configuration, same-origin paths only;
   credentials and principal assignment remain in the existing host/session owner. Tool JSON selects neither.

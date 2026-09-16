@@ -120,8 +120,8 @@ export type MarkdownWorkspaceMainProps = {
 
   onStatusProgress?: (label: string, current?: number | null, total?: number | null, bytesCurrent?: number | null, bytesTotal?: number | null) => void
   onStatusWithAutoClear?: (label: string, ttlMs?: number) => void
-  /** Passive observations may render panes without exporting or registering authored-graph actions. */
-  exportEnabled?: boolean
+  /** Passive observations render panes without authored token, export or document actions. */
+  passive?: boolean
   onSaveAs?: () => void
   onToggleFullscreen: () => void
   presentationApiRef: React.MutableRefObject<MarkdownPresentationApi | null>

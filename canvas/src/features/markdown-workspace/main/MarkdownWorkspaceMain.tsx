@@ -386,10 +386,11 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
 
   const disableDerivedMarkdownMutations = !!disableViewerMutations
 
-  const markdownViewer = !viewerPaneVisible ? null : (viewerMode === 'read' || viewerMode === 'table') && viewerKind === 'markdown' ? (
+  const markdownViewer = !viewerPaneVisible ? null : (props.passive || (viewerMode === 'read' || viewerMode === 'table') && viewerKind === 'markdown') ? (
     <MarkdownWorkspaceViewerSurface
       ref={handleMarkdownViewerRootRef}
       markdownText={viewerText}
+      markdownTokenStoreSync={!props.passive}
       activeDocumentPath={activeDocumentKey}
       highlightedLineRange={highlightedLineRange}
       markdownWordWrap={markdownWordWrap}
@@ -444,7 +445,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
     handleExportSvg,
     handleExportJson,
   } = useWorkspaceExportBridge({
-    enabled: props.exportEnabled,
+    enabled: !props.passive,
     activeDocumentKey,
     activeText,
     jsonSourceText,
@@ -461,6 +462,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
   const presentation = (
     <React.Suspense fallback={null}>
       <MarkdownWorkspacePresentationSurfaceLazy
+        markdownTokenStoreSync={!props.passive}
         showWebpageHtml={showWebpageHtml}
         webpageUrl={webpageMeta?.url || ''}
         iframeSrc={iframeSrc}
@@ -498,20 +500,20 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
         markdownTextHighlight,
         setMarkdownTextHighlight,
         documentVersionGraphOpen,
-        setDocumentVersionGraphOpen,
+        setDocumentVersionGraphOpen: props.passive ? undefined : setDocumentVersionGraphOpen,
         viewerKind,
         viewerMode,
-        setViewerMode: handleSetViewerMode,
+        setViewerMode: props.passive ? undefined : handleSetViewerMode,
         splitPaneVisibility,
         setSplitPaneVisibility,
         paneAvailability,
-        onSaveAs: props.exportEnabled === false ? undefined : onSaveAs,
-        onExportWorkspaceFile: props.exportEnabled === false ? undefined : handleExportWorkspaceFile,
-        onExportMarkdown: props.exportEnabled === false ? undefined : handleExportMarkdown,
-        onExportHtmlViewer: props.exportEnabled === false ? undefined : handleExportHtmlViewer,
-        onExportHtmlCanvas: props.exportEnabled === false ? undefined : handleExportHtmlCanvas,
-        onExportJson: props.exportEnabled === false ? undefined : handleExportJson,
-        onExportSvg: props.exportEnabled === false ? undefined : handleExportSvg,
+        onSaveAs: props.passive ? undefined : onSaveAs,
+        onExportWorkspaceFile: props.passive ? undefined : handleExportWorkspaceFile,
+        onExportMarkdown: props.passive ? undefined : handleExportMarkdown,
+        onExportHtmlViewer: props.passive ? undefined : handleExportHtmlViewer,
+        onExportHtmlCanvas: props.passive ? undefined : handleExportHtmlCanvas,
+        onExportJson: props.passive ? undefined : handleExportJson,
+        onExportSvg: props.passive ? undefined : handleExportSvg,
         onToggleFullscreen,
         presentationApiRef,
         webpageSignalSummary,

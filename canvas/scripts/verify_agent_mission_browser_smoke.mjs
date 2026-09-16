@@ -61,6 +61,8 @@ async function verifyWorkspace(label, revoke = false) {
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
   await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }), 'draft')
   assert.equal(await authoredSnapshot(), beforeWorkspace, 'Workspace/Canvas inspection must preserve authored graph and documents')
+  const tokens = await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().markdownTokensPath)
+  assert.ok(!String(tokens).includes('agent-run-'), 'Inspection must not publish authored Markdown tokens')
   const stored = await page.evaluate(() => Object.values(localStorage).some(value => String(value).includes('agent-run-inspection/v1')))
   assert.equal(stored, false, 'Run snapshot must not persist in browser storage')
   if (revoke) await page.evaluate(() => window.dispatchEvent(new Event('agentic-os:authority-change')))

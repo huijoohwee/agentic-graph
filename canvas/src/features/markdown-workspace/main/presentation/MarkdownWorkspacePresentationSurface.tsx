@@ -5,6 +5,7 @@ import type { HighlightedLineRange, MarkdownPresentationApi } from '../../markdo
 import { MarkdownWorkspaceWebpageSurface } from './MarkdownWorkspaceWebpageSurface'
 
 export function MarkdownWorkspacePresentationSurface(props: {
+  markdownTokenStoreSync?: boolean
   showWebpageHtml: boolean
   webpageUrl: string
   iframeSrc: string | null
@@ -42,6 +43,7 @@ export function MarkdownWorkspacePresentationSurface(props: {
       <MarkdownPreview
         ref={el => props.onSurfaceRef?.(el)}
         markdownText={props.viewerText}
+        markdownTokenStoreSync={props.markdownTokenStoreSync}
         activeDocumentPath={props.activeDocumentKey}
         highlightedLineRange={props.highlightedLineRange}
         markdownWordWrap={props.markdownWordWrap}

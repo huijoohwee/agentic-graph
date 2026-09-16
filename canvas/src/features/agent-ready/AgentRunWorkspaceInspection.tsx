@@ -54,7 +54,7 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
         explorerOpen={false} setExplorerOpen={noop} layoutMode={layout} setLayoutMode={setLayout}
         markdownWordWrap={wrap} setMarkdownWordWrap={setWrap} markdownTextHighlight={highlight} setMarkdownTextHighlight={setHighlight}
         onToggleFullscreen={noop} presentationApiRef={presentationRef} isMarkdown activeText={markdown} setActiveText={noop}
-        jsonSourceText={json} exportEnabled={false} disableEditorMutations disableViewerMutations activeDocumentKey={`agent-run-${trace.runId}.md`}
+        jsonSourceText={json} passive disableEditorMutations disableViewerMutations activeDocumentKey={`agent-run-${trace.runId}.md`}
         highlightedLineRange={null} revealLineInEditor={noop} showInViewer={noop} showInPresentation={noop} showInGallery={noop}
         editorUri={`inmemory://agent-run/${encodeURIComponent(trace.runId)}/${trace.subjectDigest || trace.observedAt}.md`}
         editorLanguage="markdown" editorRef={editorRef} />
