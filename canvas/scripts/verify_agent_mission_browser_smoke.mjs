@@ -185,6 +185,12 @@ async function verifyApexActivation(width) {
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await waitForAsync(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
+  // Source bootstrap completes before the deferred active-file projection.
+  await waitForAsync(async () => {
+    const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
+    const path = (await import('/src/features/markdown-explorer/store.ts')).useMarkdownExplorerStore.getState().activePath
+    return !!path && state.sourceFiles[0]?.source?.path === `workspace:${path}`
+  })
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const before = await authoredSnapshot()
   await page.evaluate(async () => {
