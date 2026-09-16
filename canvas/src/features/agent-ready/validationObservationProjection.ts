@@ -26,7 +26,8 @@ function metrics(raw: unknown): ResourceMetrics {
   if (v.costBasis !== undefined && !['estimated', 'unreported'].includes(String(v.costBasis))
     || v.memoryScope !== undefined && v.memoryScope !== 'maximum-single-process-rss'
     || v.measurement !== undefined && !['wait4', 'unavailable'].includes(String(v.measurement))) fail()
-  const result = Object.fromEntries(metricKeys.map(key => [key, finite(v[key] ?? null, true)])) as ResourceMetrics
+  const result: ResourceMetrics = { cpuMs: finite(v.cpuMs ?? null, true), peakMemoryBytes: finite(v.peakMemoryBytes ?? null, true),
+    tokens: finite(v.tokens ?? null, true), costUsd: finite(v.costUsd ?? null, true) }
   if ([result.peakMemoryBytes, result.tokens].some(n => n !== null && !Number.isSafeInteger(n))) fail()
   return { ...result, ...(v.costBasis === undefined ? {} : { costBasis: v.costBasis as ResourceMetrics['costBasis'] }),
     ...(v.memoryScope === undefined ? {} : { memoryScope: 'maximum-single-process-rss' as const }),
