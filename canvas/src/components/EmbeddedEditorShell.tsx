@@ -8,13 +8,15 @@ const MarkdownWorkspaceLazy = React.lazy(() =>
 
 export function EmbeddedEditorShell(props: { active: boolean }) {
   const inspection = useAgentRunInspection()
+  const authoredMounted = React.useRef(!inspection)
+  if (!inspection) authoredMounted.current = true
   return (
     <section className={`relative w-full h-full ${props.active ? 'pointer-events-auto' : 'pointer-events-none'}`} aria-hidden={!props.active}>
-      <section className="absolute inset-0" hidden={!!inspection}>
+      {authoredMounted.current && <section className="absolute inset-0" hidden={!!inspection}>
         <React.Suspense fallback={null}>
           <MarkdownWorkspaceLazy active={props.active && !inspection} />
         </React.Suspense>
-      </section>
+      </section>}
       {inspection && <section className="absolute inset-0"><React.Suspense fallback={<p>Loading run workspace…</p>}>
         <AgentRunInspectionLazy surface="editor" />
       </React.Suspense></section>}
