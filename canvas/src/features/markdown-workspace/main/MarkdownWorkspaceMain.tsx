@@ -154,8 +154,8 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
     splitPaneVisibility,
     webpageUrl: webpageMeta?.url || null,
     webpageView: webpageMeta?.view || null,
-    workspaceEditorOverlayOpen,
-    workspaceEditorSurfaceActive: workspaceEditorOverlayOpen || layoutMode === 'editor' || layoutMode === 'split',
+    workspaceEditorOverlayOpen: !props.passive && workspaceEditorOverlayOpen,
+    workspaceEditorSurfaceActive: !props.passive && (workspaceEditorOverlayOpen || layoutMode === 'editor' || layoutMode === 'split'),
     setSplitPaneVisibility,
   })
 
