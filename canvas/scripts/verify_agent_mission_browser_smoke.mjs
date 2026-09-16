@@ -212,13 +212,23 @@ try {
   await page.locator('#agent-run-view-topology-tab').click()
   await waitTopology(selected)
   assert.equal(await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { pressed: true }).count(), 1)
+  await choose('baseline-run') // Cold loading and interaction have separate authorization windows.
+  await waitTopology(selected)
+  await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await selected.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'mobile-topology.png') })
   const canvas = await selected.locator('canvas').boundingBox()
   await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + 100); await page.mouse.down()
   await page.mouse.move(canvas.x + canvas.width / 2 + 20, canvas.y + 120); await page.mouse.up()
-  await refreshMission() // Lazy topology loading must not consume the next phase's cache lifetime.
+  // Prove the next phase recovers through fresh authorization and explicit selection.
+  // A list refresh alone cannot restore a selection correctly cleared by expiry.
+  await page.clock.fastForward(61000)
+  await waitText(mission, 'Snapshot expired')
+  await page.clock.setSystemTime(new Date())
+  await choose('baseline-run')
+  await waitTopology(selected)
+  await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await page.locator('#agent-run-view-evidence-tab').click()
   await selected.getByRole('button', { name: 'Evaluate selected subject' }).click()
   await waitText(selected, 'Span draft-2 · reported')
@@ -323,7 +333,7 @@ try {
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
     assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
-      'subject-evaluation', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
+      'subject-evaluation', 'phase-reauthorization', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
       'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'canvas-eight-views', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], peak, streamed, requests }, null, 2))
