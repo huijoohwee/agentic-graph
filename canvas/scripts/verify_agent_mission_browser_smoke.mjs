@@ -24,6 +24,7 @@ const waitText = async (locator, text) => {
   await locator.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
 }
 const choose = async id => {
+  await mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ }).waitFor({ state: 'visible' })
   const row = mission.locator('tr').filter({ hasText: id }); await row.focus(); await page.keyboard.press('Enter')
   await selected.getByRole('heading', { name: 'Run ' + id, exact: true }).waitFor({ state: 'visible' })
 }
