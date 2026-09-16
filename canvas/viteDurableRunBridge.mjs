@@ -3,7 +3,10 @@ import { createRequire } from 'node:module'
 import { readStableBoundedFile } from '../mcp/bounded-file-reader.js'
 
 const root = '/api/agent-swarm/'
-const operations = new Set(['start', 'status', 'cancel', 'retry'])
+const require = createRequire(import.meta.url)
+const operations = new Set(require('agentic-os/agents/invocation').RUN_OPERATIONS)
+const readOnly = new Set(require('agentic-os/catalog/invocation.json').entries
+  .filter(entry => entry.action === 'run' && entry.semantic === 'read-only').map(entry => entry.argv[0]))
 const loopback = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 const json = (response, status, body) => {
   response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
@@ -72,7 +75,7 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
         try { input = await body(request, AbortSignal.timeout(5000)) }
         catch { return json(response, 400, { code: 'invalid_run_input' }) }
         stage = 'load-client'
-        const { createAgentRunClient, validateRunInput } = createRequire(import.meta.url)('agentic-os/agents/invocation')
+        const { createAgentRunClient, validateRunInput } = require('agentic-os/agents/invocation')
         try { validateRunInput(operation, input) }
         catch { return json(response, 400, { code: 'invalid_run_input' }) }
         const client = createAgentRunClient({ endpoint: config.endpoint, getHeaders: () => ({ authorization: config.authorization }) })
@@ -83,7 +86,7 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
       } catch (error) {
         const name = ['TypeError', 'RangeError', 'ReferenceError', 'SyntaxError'].includes(error?.name) ? error.name : 'Error'
         server.config?.logger?.warn('[durable-run-bridge] ' + stage + ': ' + name)
-        return json(response, 502, { code: 'run_host_unavailable', ...(operation !== 'status' ? { writeResultUnknown: true } : {}) })
+        return json(response, 502, { code: 'run_host_unavailable', ...(!readOnly.has(operation) ? { writeResultUnknown: true } : {}) })
       } finally { active-- }
     })
   } }

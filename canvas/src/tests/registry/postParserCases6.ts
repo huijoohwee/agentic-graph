@@ -309,6 +309,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["agentReady.webMcpRuntime.canvasInteractionControl","@/__tests__/canvasInteractionWebMcpTools.test","testInteractionRowsUseSourceBackedWebMcpInvocation"],
   ["agentReady.webMcpRuntime.workspaceLaunchControl","@/__tests__/workspaceLaunchWebMcpTools.test","testLaunchRowsUseSourceBackedWebMcpInvocation"],
   ["agentReady.webMcpRuntime.durableRun","@/__tests__/durableRunWebMcp.test","testDurableRunWebMcpContractAndExecution"],
+  ["agentReady.missionControl.projection","@/__tests__/missionControlProjection.test","testMissionControlProjection"],
   ["agentReady.webMcpRuntime.toolbarActionControl","@/__tests__/toolbarActionWebMcpTools.test","testMainToolbarActionsUseSourceBackedWebMcpInvocation"],
   ["graph.data.preserveLayout.probeTreeOutputContentCommit","@/__tests__/graphDataPreservingLayoutSync.test","testSetGraphDataPreservingLayoutCommitsProbeTreeOutputWithoutTopologyChange"],
   ["harness.cleanup.mediaRendererIsolation","@/__tests__/canvasTestRuntimeMediaIsolation.test","testCanvasRuntimeCleanupRestoresMediaAndRendererSelection"],

@@ -31,7 +31,15 @@ import type { GraphSchema } from '@/lib/graph/schema'
 export { pickGraphDataForFlowRenderer }
 const WORKSPACE_PREINIT_DRAW_INTERACTION_BYPASS_MS = 1200
 
-export default function FlowCanvas({
+const Inspection = React.lazy(() => import('./FlowCanvas/FlowCanvasInspection'))
+export default function FlowCanvas(props: FlowCanvasProps) {
+  if (props.inspection) return <React.Suspense fallback={<p role="status">Loading topology…</p>}>
+    <Inspection {...props.inspection} />
+  </React.Suspense>
+  return <EditableFlowCanvas {...props} />
+}
+
+function EditableFlowCanvas({
   active = true,
   graphDataOverride,
   mutationSourceGraphDataOverride,

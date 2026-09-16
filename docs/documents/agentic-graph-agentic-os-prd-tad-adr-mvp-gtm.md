@@ -2,8 +2,8 @@
 title: "agentic-graph Agentic OS — Reference implementation PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-agentic-os-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.1"
-date: "2026-09-12"
+version: "1.1.0"
+date: "2026-09-16"
 lang: "en-US"
 owner: "docs.agentic-os.reference-implementation"
 local_rung: "spec-complete"
@@ -29,17 +29,17 @@ source_references:
   worker_configuration: "cloudflare/workers/agentic-graph-mcp/wrangler.toml"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM"
-worktree_id: "device-cba000d3779d--planning-v27"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--agent-economics-mission"
+agent_id: "codex-current-task"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "1.0.0"
-prd_revision: "1.0.1"
-tad_revision: "1.0.1"
-adr_revision: "1.0.1"
-mvp_revision: "1.0.1"
-gtm_revision: "1.0.1"
+reviewed_source_revision: "ccf87bae948dbd04744561372f83d7e9c6461a4c"
+previous_document_version: "1.0.1"
+prd_revision: "1.1.0"
+tad_revision: "1.1.0"
+adr_revision: "1.1.0"
+mvp_revision: "1.1.0"
+gtm_revision: "1.1.0"
 ---
 
 # agentic-graph Agentic OS — Reference implementation PRD-TAD-ADR-MVP-GTM
@@ -49,7 +49,7 @@ status surface in this repository. Every concrete product, provider, runtime,
 file, and tool name below is a non-binding **reference implementation** of the
 neutral OS Status Surface pattern.
 
-The source snapshot contains implementation code, but this document attaches no
+The original status-surface snapshot contains implementation code, but its baseline below attaches no
 recorded implementation-test result, mirror result, delivery check, or operator
 promotion instruction. Consequently, the only readiness claims are the
 frontmatter rungs: local `spec-complete` and delivered `undocumented`. Nothing in
@@ -101,7 +101,7 @@ delivery-surface VCC, result, or operator instruction is recorded here.
 - Enumerating the Worker's per-run durable objects without a separate index.
 - Automatic approval or approval-token issue, verify, or consume behavior.
 - Remote parity with the richer local tool catalog.
-- A dashboard, mobile application, push stream, or browser-only status runtime.
+- A separate dashboard application, push stream, or browser-only status runtime. Native mission inspection is specified below.
 - A deployment, secret change, route promotion, or live-provider proof.
 
 ## PRD
@@ -523,3 +523,64 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`mcp/os-status-contract.js`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/mcp/os-status-contract.js), [`mcp/os-status-runtime.js`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/mcp/os-status-runtime.js), [`mcp/local-tool-contract.js`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/mcp/local-tool-contract.js). Their existence does not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+
+## Native mission inspection — 1.1.0
+
+This five-role increment implements approved `DURABLE-AGENT-WORKFLOWS-001@0.2.0`
+[AC-D11 and retained AC-D06](https://github.com/huijoohwee/agentic-os/blob/672b21ebf583ff3d5918d5ddba7821cef2b098ee/guides/DURABLE-WORKFLOWS.md).
+The protected runtime dependency is `edc6bde969fe789bc3e4d81104adac9400c43514`
+([source/check receipt](https://github.com/huijoohwee/agentic-os/pull/180)). This adds an operator view
+inside the existing dashboard; the status-tool identity, permissions and baseline above remain scoped to status reads.
+
+### PRD / RAO-M01
+
+The solo operator needs to locate the failed or expensive attempt before spending another run.
+Given an authorized snapshot, the operator selects one run/span, switches list, tree, timing and topology,
+filters metadata while preserving known ancestors, inspects source/budget/evaluation evidence and explicitly
+requests a bounded evaluation. Missing cost, clock, authorization, retention or coverage is visible.
+A disabled host is unavailable, never an empty successful dataset. WTP and first-dollar conversion are unverified.
+
+### TAD / RAO-M02
+
+- `DashboardView.tsx` owns lazy entry; `missionControlProjection.ts` maps the OS read model into existing
+  Dashboard metric and graph/table types. `AgenticOsMissionControl.tsx` owns one selection and bounded view state.
+- Reuse `GraphDataTableDomTableView`; add keyboard row selection at its owner. FlowCanvas dispatches inspection
+  to `FlowCanvasInspection.tsx`, which reuses native layout/scene/render functions with local pan/zoom only.
+  Inspection cannot write the authored graph, selection, layouts, snapshots, timeline, widgets or history.
+- `durableRunTransport.ts` and `viteDurableRunBridge.mjs` consume the pinned OS operation contract.
+  The optional public observation/session binding is trusted build configuration, same-origin paths only;
+  credentials and principal assignment remain in the existing host/session owner. Tool JSON selects neither.
+- One page holds at most 32 records/spans; server metrics keep their population and sample counts. Detail
+  cursors replace pages rather than accumulating unbounded traces. Missing endpoints remain explicit placeholders.
+- Opt-in live refresh has a five-second minimum, one request in flight, cancellation of obsolete reads,
+  a 60-second maximum backoff, and hidden/offline pause. Expiring memory-only snapshots support offline inspection;
+  authority change, denial, expiry and unmount clear private cached evidence. Offline evaluation is disabled.
+- Evaluation names immutable subject/profile evidence and uses the OS resource owner. Comparison preserves
+  matching cohort/profile boundaries, exclusions and insufficient-evidence holds. No score grants execution,
+  quota, release or payment authority. Metadata export is explicit; raw payloads are never copied into this view.
+
+### ADR / RAO-M03
+
+Constraints reject another graph store, viewer engine, poller service or accounting implementation.
+Argumentation favors a read-only renderer seam over toggling editor drag flags, which leave other writes active.
+Outranking selects the existing dashboard/model/table/Flow owners and the authenticated OS read protocol.
+Rollback reverts these source changes and the exact package pin; it never deletes runtime records or reservations.
+
+### MVP / RAO-M04
+
+Source baseline `ccf87bae948dbd04744561372f83d7e9c6461a4c`; one registered writer and scoped worktree.
+Budget: 120–180 active minutes estimate, ≤12 product modules/120 KB, at most three new UI/adapter modules,
+<600 lines per authored file, <500,000 bytes per bundle, no new dependencies or always-on process.
+Required evidence: native projection/transport tests; 360 px and desktop browser flows; keyboard selection;
+fan-out/fan-in, failed/retried attempts, missing parents, unknown clocks, offline/hidden refresh and two principals;
+unchanged authored graph state; type/build/chunk checks; required Integration Gate; exact local review.
+Validation results belong to the resulting exact-source PR and browser receipt. Implementation is in progress;
+no public deployment is asserted. Commerce supplies the existing authenticated public ingress in dependent E3.
+
+### GTM / RAO-M05
+
+Pilot one seller job: inspect its plan/task/goal, identify an unsuccessful attempt, evaluate the exact subject,
+and inspect the existing fulfillment/payment reference. Keep diagnosis time, observed tokens, known incremental
+cost and unknown machine cost separate. Report sample counts and retention coverage; no causal savings claim.
+Production waits for deployed source/route/session proof and the repository's human-authorized release candidate.

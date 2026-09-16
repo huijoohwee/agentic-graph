@@ -19,7 +19,7 @@ export async function testDurableRunWebMcpContractAndExecution(): Promise<void> 
     return { runId: input.runId, status: 'running' }
   })
   const registry = createWebMcpToolRegistry(Object.values(builders).map(build => build()))
-  assert.equal(registry.tools.length, 4)
+  assert.equal(registry.tools.length, 8)
   const ajv = new Ajv2020({ strict: false })
   for (const entry of source) {
     const name = `agentic-graph.${entry.token.slice(1)}`, tool = registry.get(name)
@@ -29,13 +29,16 @@ export async function testDurableRunWebMcpContractAndExecution(): Promise<void> 
     assert.equal(tool.annotations?.idempotentHint, entry.token !== '/run.retry')
     const input = entry.argv[0] === 'start'
       ? { runId: 'draft-job', conversationId: 'draft', agent: { agentId: 'listing', revision: 'v1' }, goal: 'Write a listing', input: {}, maxParallel: 1 }
-      : entry.argv[0] === 'status' ? { runId: 'draft-job' }
+      : ['status', 'trace'].includes(entry.argv[0]) ? { runId: 'draft-job' }
+        : entry.argv[0] === 'query' ? { limit: 32 }
+          : entry.argv[0] === 'evaluate' ? { runId: 'draft-job', operationId: 'evaluation', subjectDigest: 'a'.repeat(64), evidence: { id: 'subject', digest: 'a'.repeat(64) } }
+            : entry.argv[0] === 'compare' ? { cohortId: 'cohort', baseline: { id: 'plan', revision: 'v1', digest: 'a'.repeat(64) }, candidate: { id: 'plan', revision: 'v2', digest: 'b'.repeat(64) } }
         : { runId: 'draft-job', operationId: 'same-operation', ...(entry.argv[0] === 'retry' ? { taskId: 'listing' } : {}) }
     assert.equal(ajv.compile(tool.inputSchema)(input), true)
     await registry.execute(name, input)
     await assert.rejects(registry.execute(name, { ...input, principalId: 'spoofed', endpoint: 'https://untrusted.example/' }))
   }
-  assert.equal(calls.length, 4)
+  assert.equal(calls.length, 8)
   const published = buildAgenticGraphAgentReadyToolContracts({ includeBrowserOnlyTools: false })
   assert.equal(published.some(entry => entry.name.startsWith('run.')), false)
   const metadata = readFileSync('src/features/agent-ready/durableRunAgentReadyContract.mjs', 'utf8')
