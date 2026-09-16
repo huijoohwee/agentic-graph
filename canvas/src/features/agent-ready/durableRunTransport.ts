@@ -1,4 +1,5 @@
 import type { RunOperation } from 'agentic-os/agents/invocation'
+import type { ObservationListener } from './durableRunStream'
 const observations = new Set<RunOperation>(['query', 'trace', 'evaluate', 'compare'])
 let session: { token: string; expiresAt: number; path: string } | null = null
 export function clearDurableRunSession() { session = null }
@@ -47,13 +48,31 @@ async function sessionHeaders(binding: NonNullable<ReturnType<typeof durableObse
 }
 // This lazy browser transport uses the authenticated same-origin host. Tool JSON cannot
 // choose a destination, credential, principal, provider or executable adapter.
-export async function invokeDurableRun(operation: RunOperation, input: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
+export async function invokeDurableRun(operation: RunOperation, input: Record<string, unknown>, signal?: AbortSignal, observe?: ObservationListener): Promise<unknown> {
   if (typeof window === 'undefined') throw new Error('Durable run browser host is unavailable.')
   const { createAgentRunClient } = await import('agentic-os/agents/invocation')
   const binding = observations.has(operation) ? durableObservationBinding(import.meta.env ?? {}, window.location.origin) : null
   const headers = binding ? await sessionHeaders(binding, signal) : null
-  const result = await createAgentRunClient({ endpoint: binding?.endpoint ?? new URL('/api/agent-swarm/', window.location.origin).href,
-    ...(headers ? { getHeaders: () => headers } : {}) }).invoke(operation, input, { signal })
-  if (result.httpStatus === 401 || result.httpStatus === 403) clearDurableRunSession()
-  return result
+  let observationFailure: unknown
+  try {
+    const result = await createAgentRunClient({ endpoint: binding?.endpoint ?? new URL('/api/agent-swarm/', window.location.origin).href,
+      ...(headers ? { getHeaders: () => headers } : {}),
+      ...(['query', 'trace'].includes(operation) ? { fetchImpl: async (url: RequestInfo | URL, init?: RequestInit) => {
+        const requestHeaders = new Headers(init?.headers); requestHeaders.set('accept', 'text/event-stream, application/json')
+        const response = await fetch(url, { ...init, headers: requestHeaders })
+        if (!response.ok || response.redirected || response.type === 'opaqueredirect') return response
+        try {
+          const { readRunObservation } = await import('./durableRunStream')
+          const value = await readRunObservation(response, operation as 'query' | 'trace', input.runId, init?.signal, observe)
+          return Response.json(value, { status: response.status, headers: { 'cache-control': 'no-store' } })
+        } catch (error) { observationFailure = error; throw error }
+      } } : {}),
+    }).invoke(operation, input, { signal })
+    if (observationFailure) throw observationFailure
+    if (result.httpStatus === 401 || result.httpStatus === 403) clearDurableRunSession()
+    return result
+  } catch (error) {
+    if (observationFailure) throw Object.assign(observationFailure, { observationInvalid: true })
+    throw error
+  }
 }

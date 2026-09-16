@@ -556,7 +556,7 @@ A disabled host is unavailable, never an empty successful dataset. WTP and first
   cursors replace pages rather than accumulating unbounded traces. Missing endpoints remain explicit placeholders.
 - Opt-in live refresh has a five-second minimum, one request in flight, cancellation of obsolete reads,
   a 60-second maximum backoff, and hidden/offline pause. Expiring memory-only snapshots support offline inspection;
-  authority change, denial and expiry clear private evidence. Dashboard unmount clears its cache; an explicit workspace handoff retains only that authorized page until its original expiry or close. Offline evaluation is disabled.
+  authority change, denial and expiry clear private evidence. Dashboard unmount clears its cache; an explicit workspace handoff retains one page until expiry or close; a fresh authenticated read may renew the active observation. Offline evaluation is disabled.
 - Evaluation names immutable subject/profile evidence and uses the OS resource owner. Comparison preserves
   matching cohort/profile boundaries, exclusions and insufficient-evidence holds. No score grants execution,
   quota, release or payment authority. Metadata export is explicit; raw payloads are never copied into this view.
@@ -571,14 +571,14 @@ Rollback reverts these source changes and the exact package pin; it never delete
 ### MVP / RAO-M04
 
 Source baseline `ccf87bae948dbd04744561372f83d7e9c6461a4c`; one registered writer and scoped worktree.
-Refreshed E2 estimate: 60–90 additional active minutes for the requested workspace handoff; ≤20 product modules/240 KB total, at most five new UI/adapter modules,
+Refreshed E2 estimate: 90–150 additional active minutes for stream/Canvas View integration; ≤26 product modules/300 KB total, at most six new UI/adapter modules,
 <600 lines per authored file, <500,000 bytes per bundle, no new dependencies or always-on process.
 Required evidence: native projection/transport tests; 360 px and desktop browser flows; keyboard selection;
 fan-out/fan-in, failed/retried attempts, missing parents, unknown clocks, offline/hidden refresh and two principals;
 unchanged authored graph and document/draft state; existing workspace JSON/Markdown/Viewer plus Canvas, close/expiry/authority revocation; type/build/chunk checks; required Integration Gate; exact local review.
 The implementation is present; `agent-mission:check` is selected by the existing affected-CI owner.
 The mission fixture covers selection, evaluation, pagination, offline inspection, access isolation and authored-state preservation.
-The workspace extension renders JSON/Markdown/Viewer and Canvas on mobile/desktop; it verifies shared selection, original view restoration, private-model disposal and revocation. Final results are revision-bound.
+The workspace extension reuses JSON→Markdown conversion and Canvas View Mode for table, span tree, timing, topology, source, allocation, evaluation and comparison. JSON/SSE uses the existing frame parser, ≤32 snapshots / 256 KiB / 55 seconds per request, one in flight, no automatic mutation replay; incomplete/malformed streams fail closed. Authorized complete snapshots update all views; native JSON remains the fallback. Mobile/desktop checks cover every mode, split frames, duplicate/stale events, abort, expiry and authored-state preservation. Final results are revision-bound.
 The production build at `d84b78a25ea8965cb3fb00e056f56e851569db50` passed chunk hygiene; new mission and
 inspection chunks were 47.41 kB and 10.23 kB. Final-source results belong to the exact PR and browser receipt.
 These fixture/build observations confer no provider authority or public deployment proof. Commerce supplies

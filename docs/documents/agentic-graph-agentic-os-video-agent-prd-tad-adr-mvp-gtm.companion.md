@@ -2,8 +2,8 @@
 title: "agentic-graph Agentic Video Workflow — Reference implementation companion"
 id: "md:agentic-graph-agentic-os-video-agent-prd-tad-companion"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.1"
-date: "2026-09-12"
+version: "1.1.0"
+date: "2026-09-16"
 lang: "en-US"
 owner: "docs.agentic-os.video-agent.companion"
 local_rung: "spec-complete"
@@ -12,7 +12,7 @@ lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-agentic-os-video-agent-prd-tad-adr-mvp-gtm.companion.md"
 parent: "docs/documents/agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md"
-parent_version: "1.0.0"
+parent_version: "1.1.0"
 reference_implementation: true
 guideline_title: "PRD, TAD & ADR Guidelines"
 guideline_version: "1.7.0"
@@ -50,17 +50,17 @@ external_pattern_reference: "https://github.com/HKUDS/ViMax"
 external_reference_policy: "architecture inspiration only; no code, prompt, fixture, provider config, or runtime dependency copied"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM"
-worktree_id: "device-cba000d3779d--planning-v27"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--agent-economics-mission"
+agent_id: "codex-current-task"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.4.0"
-prd_revision: "1.0.1"
-tad_revision: "1.0.1"
-adr_revision: "1.0.1"
-mvp_revision: "1.0.1"
-gtm_revision: "1.0.1"
+reviewed_source_revision: "ccf87bae948dbd04744561372f83d7e9c6461a4c"
+previous_document_version: "1.0.1"
+prd_revision: "1.1.0"
+tad_revision: "1.1.0"
+adr_revision: "1.1.0"
+mvp_revision: "1.1.0"
+gtm_revision: "1.1.0"
 ---
 
 # agentic-graph Agentic Video Workflow — Reference implementation companion
@@ -71,6 +71,8 @@ attaches no recorded test result, live-provider capture, mirror result, delivery
 check, or operator promotion instruction. Every capability and state below is a
 requirement unless an Evidence Reference is added later; source presence alone
 does not raise readiness.
+
+This companion follows parent revision `1.1.0` for the shared CID and five-role join. Its video-specific requirements and undocumented delivery status remain unchanged.
 
 ## Reference implementation outcome target
 

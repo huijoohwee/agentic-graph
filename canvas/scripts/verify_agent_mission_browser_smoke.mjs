@@ -8,7 +8,7 @@ import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs
 const output = resolve('../data/outputs/agent-mission-browser-smoke')
 const browser = await chromium.launch({ executablePath: findLocalChromiumExecutable() || undefined, headless: true })
 const context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' })
-const page = await context.newPage(), errors = [], requests = [], pending = new Set()
+const page = await context.newPage(), errors = [], requests = [], streamed = [], pending = new Set()
 page.setDefaultTimeout(15000)
 let peak = 0
 page.on('pageerror', error => { errors.push(error.message); console.error(error.stack) })
@@ -16,6 +16,10 @@ page.on('console', message => { if (message.type() === 'error') console.error('B
 page.on('request', request => {
   if (!request.url().includes('/api/agent-swarm/')) return
   requests.push({ operation: request.url().split('/').at(-1), at: Date.now() }); pending.add(request); peak = Math.max(peak, pending.size)
+})
+page.on('response', response => {
+  if (response.url().includes('/api/agent-swarm/') && response.headers()['content-type']?.includes('text/event-stream'))
+    streamed.push(response.url().split('/').at(-1))
 })
 for (const event of ['requestfinished', 'requestfailed']) page.on(event, request => pending.delete(request))
 const mission = page.getByRole('region', { name: 'Agentic OS mission control', exact: true })
@@ -33,7 +37,7 @@ async function authoredSnapshot() {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts'), state = useGraphStore.getState()
     const keys = ['graphData', 'selectedNodeIds', 'selectedEdgeIds', 'selectedGroupIds', 'layoutPositionCacheByMode',
       'flowWidgetPosByNodeId', 'flowWidgetWorldPosByNodeId', 'openWidgetNodeIds', 'history', 'historyIndex', 'sourceFiles',
-      'markdownDocumentName', 'markdownDocumentText', 'jsonSourceDocumentName', 'jsonSourceDocumentText']
+      'markdownDocumentName', 'markdownDocumentText', 'jsonSourceDocumentName', 'jsonSourceDocumentText', 'canvasRenderMode', 'canvas2dRenderer']
     if (keys.some(key => !(key in state))) throw Error('Authored-state observation is incomplete')
     return JSON.stringify(Object.fromEntries(keys.map(key => [key, state[key]])))
   })
@@ -78,6 +82,44 @@ async function verifyWorkspace(label, revoke = false) {
   await canvas.getByRole('img', { name: /Observed spans and causal links/ }).waitFor({ state: 'visible' })
   await canvas.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await waitText(canvas, 'Selected span: draft-2')
+  const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
+  const countBeforeRefresh = requests.length
+  await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).click()
+  await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).and(page.locator(':enabled')).waitFor()
+  assert.ok(requests.length > countBeforeRefresh, 'Canvas refresh must use the authenticated native transport')
+  for (const [key, name] of [['table', 'Span table'], ['tree', 'Span tree'], ['timing', 'Timing'], ['source', 'Source links'],
+    ['allocation', 'Allocation'], ['evidence', 'Evaluation'], ['comparison', 'Comparison'], ['topology', 'Topology']]) {
+    await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
+    await page.getByRole('button', { name, exact: true }).click()
+    await evidence.locator('#agent-run-view-' + key + '-panel').waitFor({ state: 'visible' })
+    await waitText(evidence, 'Selected span: draft-2')
+    if (key === 'table') assert.ok(await evidence.locator('tr').filter({ hasText: 'draft-2' }).isVisible())
+    if (key === 'tree') assert.ok(await evidence.getByRole('list', { name: 'Span hierarchy' }).isVisible())
+    if (key === 'timing') await waitText(evidence, 'exclusive observed')
+    if (key === 'source') assert.ok((await evidence.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
+    if (key === 'allocation') await waitText(evidence, 'Project allocation')
+    if (key === 'evidence') {
+      const evaluate = evidence.getByRole('button', { name: 'Evaluate selected subject', exact: true })
+      if (await evaluate.isEnabled()) { await evaluate.click(); await waitText(evidence, 'Span draft-2 · reported') }
+      assert.equal(await evaluate.isDisabled(), true)
+    }
+    if (key === 'comparison') assert.ok(await evidence.getByRole('button', { name: 'Use run as baseline' }).isVisible())
+  }
+  await page.evaluate(async () => {
+    const { executeCanvasViewControl } = await import('/src/lib/canvas/canvasViewControlRuntime.ts')
+    executeCanvasViewControl({ invocation: '/canvas.view.set #canvas-view @canvas-view option=agent-run:comparison' })
+  })
+  await evidence.locator('#agent-run-view-comparison-panel').waitFor()
+  await evidence.getByRole('button', { name: 'Use run as baseline' }).click()
+  await evidence.getByLabel('Run', { exact: true }).selectOption('baseline-run')
+  await evidence.getByRole('heading', { name: 'Run baseline-run', exact: true }).waitFor()
+  await evidence.getByRole('button', { name: 'Compare candidate' }).click()
+  await waitText(evidence.getByLabel('Comparison evidence'), 'insufficient-evidence')
+  await evidence.getByLabel('Run', { exact: true }).selectOption('candidate-run')
+  await evidence.getByRole('heading', { name: 'Run candidate-run', exact: true }).waitFor()
+  await evidence.locator('#agent-run-view-topology-tab').click()
+  await evidence.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
+  await waitText(evidence, 'Selected span: draft-2')
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   await page.screenshot({ path: resolve(output, label + '-canvas.png') })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
@@ -236,13 +278,14 @@ try {
   await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await context.setOffline(false)
   assert.deepEqual(errors, [])
+  assert.ok(streamed.includes('query') && streamed.includes('trace'), 'Real authenticated bridge must serve SSE observations')
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
     assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
       'subject-evaluation', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
-      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal'], peak, requests }, null, 2))
+      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'canvas-eight-views', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], peak, streamed, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
 } catch (error) {
   console.error(error.message)

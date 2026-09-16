@@ -1,32 +1,38 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { openAgentRunInspection, closeAgentRunInspection } from './agentRunInspectionStore'
+import { openAgentRunInspection, closeAgentRunInspection, useAgentRunInspection, updateAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection, selectAgentRunView } from './agentRunInspectionStore'
+import { AGENT_RUN_CANVAS_VIEWS } from '@/lib/canvas/canvasViewInvocationContract.mjs'
+import type { ObservationListener } from './durableRunStream'
 import type { RunOperation } from 'agentic-os/agents/invocation'
 import TabHeader from '@/features/panels/ui/TabHeader'
 import { GraphDataTableDomTableView } from '@/features/graph-data-table/ui/GraphDataTableDomTableView'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { invokeDurableRun, clearDurableRunSession } from './durableRunTransport'
-import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
+import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, spanRows, SPAN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
   spanLabel, numberLabel, known, record, sourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
 
 const FlowCanvas = React.lazy(() => import('@/components/FlowCanvas'))
-const views = ['Tree', 'Timing', 'Topology', 'Evidence'].map(label => ({ key: label.toLowerCase(), label }))
+const views = Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([key, label]) => ({ key, label }))
 const button = `rounded border px-3 py-2 text-sm disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
 const inputStyle = { minWidth: 0, maxWidth: '100%', border: '1px solid var(--kg-border)', borderRadius: 6, padding: 8,
   background: 'var(--kg-panel-bg)', color: 'var(--kg-text-primary)' } as const
 type Selection = { runId: string | null; spanId: string | null }
 const emptySelection: Selection = { runId: null, spanId: null }
 
-export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWorkspace?: () => void }) {
-  const [index, setIndex] = React.useState<RunIndex | null>(null), [trace, setTrace] = React.useState<RunTrace | null>(null)
-  const [selection, setSelection] = React.useState<Selection>(emptySelection), selected = React.useRef(selection)
+export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false }: { onOpenWorkspace?: () => void; workspace?: boolean }) {
+  const inspection = useAgentRunInspection(), initial = workspace ? inspection : null
+  const scopeExpiry = React.useRef(initial?.expiresAt ?? 0)
+  const [index, setIndex] = React.useState<RunIndex | null>(null), [trace, setTrace] = React.useState<RunTrace | null>(initial?.trace ?? null)
+  const [selection, setSelection] = React.useState<Selection>(initial ? { runId: initial.trace.runId, spanId: initial.spanId } : emptySelection), selected = React.useRef(selection)
   selected.current = selection
-  const scope = React.useRef<string | null>(null), active = React.useRef<AbortController | null>(null)
+  const scope = React.useRef<string | null>(initial?.scope ?? null), active = React.useRef<AbortController | null>(null)
   const mutating = React.useRef(false)
   const [busy, setBusy] = React.useState(false), [error, setError] = React.useState(''), [notice, setNotice] = React.useState('')
-  const [view, setView] = React.useState('tree'), [search, setSearch] = React.useState(''), [live, setLive] = React.useState(false)
+  const [localView, setLocalView] = React.useState('tree'), [localSearch, setLocalSearch] = React.useState(''), [live, setLive] = React.useState(false)
+  const view = workspace ? inspection?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
+  const search = workspace ? inspection?.search ?? '' : localSearch, setSearch = workspace ? filterAgentRunInspection : setLocalSearch
   const [online, setOnline] = React.useState(navigator.onLine), [visible, setVisible] = React.useState(!document.hidden)
-  const [backoff, setBackoff] = React.useState(5000), [expiry, setExpiry] = React.useState(0)
+  const [backoff, setBackoff] = React.useState(5000), [expiry, setExpiry] = React.useState(initial?.expiresAt ?? 0)
   const [query, setQuery] = React.useState<Record<string, unknown>>({ limit: 32 })
   const [baseline, setBaseline] = React.useState<RunTrace | null>(null), [comparison, setComparison] = React.useState<unknown>(null)
   const stop = React.useCallback(() => {
@@ -45,16 +51,16 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
       if (!controller.signal.aborted) setBackoff(5000)
     } catch (failure) {
       if (controller.signal.aborted) return
-      const cause = failure as Error & { denied?: boolean; uncertain?: boolean }
-      if (cause.denied) { clear(); clearDurableRunSession() }
+      const cause = failure as Error & { denied?: boolean; uncertain?: boolean; observationInvalid?: boolean }
+      if (cause.denied || cause.observationInvalid) { clear(); clearDurableRunSession() }
       setError(cause.message || 'Runtime unavailable.'); setBackoff(delay => Math.min(60000, delay * 2))
       if (mutation || cause.uncertain) setNotice('Refresh to inspect the evaluation outcome. An uncertain request is never retried automatically.')
     } finally {
       if (active.current === controller) { active.current = null; mutating.current = false; setBusy(false) }
     }
   }, [clear])
-  const call = async (operation: RunOperation, input: Record<string, unknown>, signal: AbortSignal) => {
-    const result = await invokeDurableRun(operation, input, signal); signal.throwIfAborted()
+  const call = async (operation: RunOperation, input: Record<string, unknown>, signal: AbortSignal, observe?: ObservationListener) => {
+    const result = await invokeDurableRun(operation, input, signal, value => { signal.throwIfAborted(); observe?.(value) }); signal.throwIfAborted()
     const value = record(result)
     if (value.status === 'blocked' || value.httpStatus === 401 || value.httpStatus === 403 || value.writeResultUnknown)
       throw Object.assign(Error(String(value.reasonCode || value.code || 'Runtime unavailable.')), {
@@ -64,21 +70,30 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
     return result
   }
   const loadTrace = async (runId: string, signal: AbortSignal, cursor?: string) => {
-    const result = readRunTrace(await call('trace', { runId, limit: 32, ...(cursor ? { cursor } : {}) }, signal), runId)
-    if (selected.current.runId !== runId) return
-    setTrace(result); setExpiry(until => Math.min(until, result.expiresAt))
+    let streamed = false
+    const accept = (value: unknown) => {
+      const result = readRunTrace(value, runId)
+      if (selected.current.runId !== runId) return
+      streamed = true; setTrace(result)
+      const expiresAt = Math.min(scopeExpiry.current, result.observedAt + 60000, result.expiresAt)
+      setExpiry(expiresAt)
+      if (workspace && scope.current) updateAgentRunInspection({ trace: result, scope: scope.current,
+        expiresAt, spanId: selected.current.spanId })
+    }
+    const result = await call('trace', { runId, limit: 32, ...(cursor ? { cursor } : {}) }, signal, accept)
+    if (!streamed) accept(result)
   }
   const refresh = React.useCallback((cursor?: string) => perform(async signal => {
     const result = readRunIndex(await call('query', { ...query, ...(cursor ? { cursor } : {}) }, signal))
     const changed = scope.current !== null && scope.current !== result.access.scope
     if (changed) { clear(); setNotice('The authenticated scope changed. Select a run from the new snapshot.') }
     scope.current = result.access.scope; setIndex(result)
-    setExpiry(Math.min(result.observedAt + 60000, result.access.expiresAt))
+    scopeExpiry.current = Math.min(result.observedAt + 60000, result.access.expiresAt); setExpiry(scopeExpiry.current)
     const id = selected.current.runId
     if (!changed && id && result.items.some(r => r.runId === id)) await loadTrace(id, signal)
-    else { selected.current = emptySelection; setSelection(emptySelection); setTrace(null) }
+    else { if (workspace) closeAgentRunInspection(); selected.current = emptySelection; setSelection(emptySelection); setTrace(null) }
   }), [query, perform, clear])
-  React.useEffect(() => { stop(); clear(); void refresh() }, [query]) // Only applied filters initiate discovery.
+  React.useEffect(() => { if (!workspace) { stop(); clear(); void refresh() } }, [query, workspace]) // Workspace opens the authorized handoff without fetching.
   React.useEffect(() => {
     const change = () => {
       setOnline(navigator.onLine); setVisible(!document.hidden)
@@ -108,7 +123,14 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
     selected.current = { runId, spanId: null }; setSelection(selected.current); setTrace(null); setComparison(null)
     void perform(signal => loadTrace(runId, signal))
   }
-  const chooseSpan = (spanId: string | null) => setSelection(current => ({ ...current, spanId }))
+  const chooseSpan = (spanId: string | null) => {
+    if (workspace) selectAgentRunInspection(spanId)
+    setSelection(current => ({ ...current, spanId }))
+  }
+  React.useEffect(() => {
+    if (workspace && inspection?.trace.runId === selected.current.runId)
+      setSelection(current => current.spanId === inspection.spanId ? current : { ...current, spanId: inspection.spanId })
+  }, [workspace, inspection?.spanId, inspection?.trace.runId])
   const spans = React.useMemo(() => visibleSpanTree(trace?.spans ?? [], search), [trace, search])
   const topology = React.useMemo(() => trace ? traceGraph(trace, search) : null, [trace, search])
   const span = trace?.spans.find(s => s.spanId === selection.spanId) ?? null
@@ -150,9 +172,9 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
   }
   const maxTiming = Math.max(1, ...spans.map(({ span: s }) => (s.timing.offset ?? 0) + (s.timing.inclusive ?? 0)))
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
-  return <section aria-label="Agentic OS mission control" className="h-full min-h-0 min-w-0 overflow-auto p-3" style={{ overflowWrap: 'anywhere' }}>
+  return <section aria-label={workspace ? "Agent run Canvas evidence" : "Agentic OS mission control"} className="h-full min-h-0 min-w-0 overflow-auto p-3" style={{ overflowWrap: 'anywhere' }}>
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
-      <div><h2 className="font-semibold">Agentic OS</h2><p className="text-xs">Inspect execution, limits and evidence</p></div>
+      {!workspace && <div><h2 className="font-semibold">Agentic OS</h2><p className="text-xs">Inspect execution, limits and evidence</p></div>}
       <button type="button" className={button} disabled={busy || !online} onClick={() => { void refresh() }}>Refresh runs</button>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
     </header>
@@ -160,7 +182,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
       {index ? ` · observed ${new Date(index.observedAt).toLocaleTimeString()} · snapshot expires ${new Date(expiry).toLocaleTimeString()}` : ''}</p>
     {error && <p role="alert" className="rounded border p-2">{error}</p>}
     {notice && <p className="py-2 text-xs">{notice}</p>}
-    <form aria-label="Run filters" className="flex flex-wrap items-end gap-2 py-2" onSubmit={event => {
+    {!workspace && <form aria-label="Run filters" className="flex flex-wrap items-end gap-2 py-2" onSubmit={event => {
       event.preventDefault(); const data = new FormData(event.currentTarget), next: Record<string, unknown> = { limit: 32 }
       for (const key of ['projectId', 'agentId', 'status']) { const value = String(data.get(key) ?? '').trim(); if (value) next[key] = value }
       if (data.get('window') === '15') { next.to = Date.now(); next.from = Number(next.to) - 900000 }
@@ -173,8 +195,11 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
       </select></label>
       <label className="grid text-xs">Window<select name="window" style={inputStyle}><option value="retained">Retention window</option><option value="15">Last 15 minutes</option></select></label>
       <button className={button} disabled={busy || !online}>Apply filters</button>
-    </form>
-    {index && <>
+    </form>}
+    {workspace && <label className="flex flex-wrap gap-2 py-2 text-xs">Run<select style={inputStyle} value={selection.runId ?? ""} disabled={busy || !index || !online} onChange={event => chooseRun(event.target.value)}>
+      {!index && selection.runId && <option>{selection.runId}</option>}{index?.items.map(run => <option key={run.runId} value={run.runId}>{run.runId}</option>)}
+    </select></label>}
+    {index && !workspace && <>
       <div className="grid gap-2 py-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,14rem),1fr))' }}>
         {index.metrics.map(metric => <article key={metric.id} className="rounded border p-3">
           <h3 className="text-xs">{metric.label}</h3><p className="py-1 text-xl font-semibold">{metric.value}</p><p className="text-xs">{metric.detail}</p>
@@ -192,14 +217,15 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
     </>}
     {trace && <section aria-label="Selected run evidence" className="min-w-0 border-t pt-3">
       <h3 className="font-semibold">Run {trace.runId}</h3>
+      <p className="text-xs">Selected span: {selection.spanId || "Whole run"}</p>
       <p className="text-xs">Observed state: {trace.status} · {trace.spans.length}/{trace.total} retained spans on this page · expected {numberLabel(trace.expected)} · dropped {numberLabel(trace.dropped)}{trace.partial ? ' · Partial trace' : ''}</p>
       <p className="py-2 text-sm">{context ? `${context.taskId} → ${context.projectId} → ${context.goalId}` : 'Legacy run · no plan context recorded'}</p>
-      {context && <details><summary>Source ownership</summary><p>{context.plan.continuityId}</p>
+      {context && (!workspace || view === "source") && <details open={workspace || undefined}><summary>Source ownership</summary><p>{context.plan.continuityId}</p>
         {planUrl ? <a href={planUrl} target="_blank" rel="noreferrer" className="underline">{context.plan.path} @ {context.plan.revision}</a> : <p>{context.plan.repository} / {context.plan.path} @ {context.plan.revision}</p>}
         <p className="text-xs">Digest {context.plan.digest}</p><pre className="overflow-auto text-xs">{JSON.stringify(context.plan.revisions, null, 2)}</pre>
         <p className="text-xs">Receipt reference: {JSON.stringify(context.receipt)}</p>
       </details>}
-      {resources ? <div aria-label="Resource allocation" className="my-3 rounded border p-3">
+      {(!workspace || view === "allocation") && (resources ? <div aria-label="Resource allocation" className="my-3 rounded border p-3">
         <h4 className="font-semibold">Project allocation · {String(resources.status)}</h4>
         <p className="text-xs">{String(record(resources.policy).windowId)} · zero incremental provider spend required · machine cost unknown</p>
         <div className="overflow-auto"><table className="w-full text-left text-xs"><thead><tr><th>Resource</th><th>Limit</th><th>Used</th><th>Reserved</th><th>Remaining</th></tr></thead><tbody>
@@ -208,10 +234,13 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
           </tr>)}
         </tbody></table></div>
         <p className="text-xs">{resources.status === 'held' ? 'Usage is uncertain. The host must reconcile it before further execution.' : 'The host rechecks all project, agent and run limits before execution.'}</p>
-      </div> : <p className="py-2 text-xs">Allocation unavailable for this observation.</p>}
+      </div> : <p className="py-2 text-xs">Allocation unavailable for this observation.</p>)}
       <TabHeader tabs={views} activeTab={view} onTabChange={setView} tabIdBase="agent-run-view"
         searchVisible searchPlaceholder="Search span metadata" searchQuery={search} onSearchChange={setSearch} />
       <div id={`agent-run-view-${view}-panel`} role="tabpanel" aria-labelledby={`agent-run-view-${view}-tab`} className="min-w-0 py-2">
+        {view === 'table' && <div className="overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={SPAN_COLUMNS} rows={spanRows(spans.map(row => row.span))}
+          selectedRowIds={selection.spanId ? [selection.spanId] : []} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy=""
+          sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={chooseSpan} onSelectionChanged={ids => chooseSpan(ids.at(-1) ?? null)} /></div>}
         {view === 'tree' && <ul aria-label="Span hierarchy">{spans.map(({ span: s, depth, missingParent }) => <li key={s.spanId} style={{ paddingLeft: Math.min(depth, 8) * 12 }}>
           <button type="button" aria-pressed={selection.spanId === s.spanId} className={`my-1 w-full rounded border p-2 text-left text-sm ${selection.spanId === s.spanId ? UI_THEME_TOKENS.button.activeSoft : ''}`} onClick={() => chooseSpan(s.spanId)}>
             {spanLabel(s)}<span className="block text-xs">{s.kind} · {s.status} · {numberLabel(s.timing.inclusive, ' ms')} · {record(s.cost).status === 'reported' ? `${Number(record(s.cost).prompt_tokens) + Number(record(s.cost).completion_tokens)} tokens` : 'usage unknown'} · evaluation {s.evaluation.status}{missingParent ? ' · parent outside this page' : ''}</span>
@@ -233,9 +262,9 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
         {trace.nextCursor && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal, trace.nextCursor!)) }}>Next span page</button>}
         <button className={button} onClick={() => chooseSpan(null)}>Select whole run</button>
         <button className={button} onClick={exportMetadata}>Export metadata</button>
-        <button className={button} disabled={expiry <= Date.now()} onClick={openWorkspace}>Open in Editor Workspace</button>
+        {!workspace && <button className={button} disabled={expiry <= Date.now()} onClick={openWorkspace}>Open in Editor Workspace</button>}
       </div>
-      <section aria-label="Subject evaluation" className="rounded border p-3">
+      {(!workspace || view === "evidence" || view === "comparison") && <section aria-label="Subject evaluation" className="rounded border p-3">
         <h4 className="font-semibold">{selection.spanId ? `Span ${selection.spanId}` : 'Whole run'} · {evaluated?.status ?? 'unevaluated'}</h4>
         <p className="text-xs">{selection.spanId && !span ? 'Selected span is outside this page; return to its page to evaluate.' : `Score: ${evaluated?.score ?? 'Unknown'} ${evaluated?.reason ?? ''}`}</p>
         <div className="flex flex-wrap gap-2 py-2">
@@ -245,7 +274,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWor
         </div>
         <p className="text-xs">{baseline ? `Baseline ${baseline.candidate.revision}. Select a different candidate with the same cohort and profile.` : 'Select a completed run as baseline, then a different candidate.'}</p>
         {comparison !== null && <pre className="max-h-72 overflow-auto text-xs" aria-label="Comparison evidence">{JSON.stringify(comparison, null, 2)}</pre>}
-      </section>
+      </section>}
     </section>}
   </section>
 }

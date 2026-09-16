@@ -143,6 +143,13 @@ export function runRows(index: RunIndex) {
   return index.items.map((r, i) => ({ id: r.runId, __order: i + index.offset + 1, Run: r.runId, Agent: r.agent,
     State: r.status, Latency: numberLabel(r.duration, ' ms'), Tokens: numberLabel(r.tokens), Evaluation: r.evaluation }))
 }
+export const SPAN_COLUMNS: GraphRecordColumnDoc[] = ['Span', 'Operation', 'State', 'Inclusive ms', 'Exclusive observed ms', 'Evaluation'].map((name, order) => ({
+  pk: `agentic-os/span/${name}`, tableId: 'nodes', columnId: name, name, kind: 'text', order, hidden: false, createdAtMs: 0, updatedAtMs: 0,
+}))
+export function spanRows(spans: TraceSpan[]) {
+  return spans.map((s, i) => ({ id: s.spanId, __order: i + 1, Span: s.spanId, Operation: spanLabel(s), State: s.status,
+    'Inclusive ms': numberLabel(s.timing.inclusive), 'Exclusive observed ms': numberLabel(s.timing.exclusive), Evaluation: s.evaluation.status }))
+}
 export function sourceLink(context: RunContext | null): string | null {
   const p = context?.plan
   if (!p || !/^github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(p.repository)

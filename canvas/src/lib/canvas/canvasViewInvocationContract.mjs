@@ -3,7 +3,13 @@ export const CANVAS_VIEW_SEMANTIC_TOKEN = '#canvas-view'
 export const CANVAS_VIEW_BINDING_TOKEN = '@canvas-view'
 export const CANVAS_VIEW_MCP_TOOL_NAME = 'agentic-graph.control_local_canvas_view'
 
+export const AGENT_RUN_CANVAS_VIEWS = Object.freeze({
+  table: 'Span table', tree: 'Span tree', timing: 'Timing', topology: 'Topology',
+  source: 'Source links', allocation: 'Allocation', evidence: 'Evaluation', comparison: 'Comparison',
+})
+
 export const CANVAS_VIEW_CONTROL_OPTION_IDS = Object.freeze([
+  ...Object.keys(AGENT_RUN_CANVAS_VIEWS).map(view => `agent-run:${view}`),
   'renderer:d3',
   'renderer:dashboard',
   'renderer:gallery',

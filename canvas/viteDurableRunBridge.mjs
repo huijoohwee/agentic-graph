@@ -85,6 +85,15 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
         stage = 'dispatch'
         const result = await client.invoke(operation, input, { signal: controller.signal })
         if (controller.signal.aborted) return
+        if (['query', 'trace'].includes(operation) && result.status !== 'blocked'
+          && request.headers.accept?.includes('text/event-stream')) {
+          // The existing native query owns each snapshot; this ingress only frames it.
+          const frame = 'data: ' + JSON.stringify(result) + '\n\ndata: [DONE]\n\n'
+          if (Buffer.byteLength(frame) > 262144) throw Error('observation_frame_too_large')
+          response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store',
+            'x-content-type-options': 'nosniff' })
+          return response.end(frame)
+        }
         return json(response, result.httpStatus ?? (result.status === 'blocked' ? 409
           : ['completed', 'canceled'].includes(result.status) ? 200 : 202), result)
       } catch (error) {

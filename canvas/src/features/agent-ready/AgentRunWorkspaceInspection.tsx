@@ -5,10 +5,12 @@ import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/w
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
 import type { MarkdownPresentationApi } from '@/features/markdown-workspace/markdownWorkspaceTypes'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { traceGraph, spanNodeId, spanLabel, numberLabel, sourceLink } from './missionControlProjection'
-import { useAgentRunInspection, closeAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection } from './agentRunInspectionStore'
+import { spanRows, numberLabel, sourceLink } from './missionControlProjection'
+import { useAgentRunInspection, closeAgentRunInspection } from './agentRunInspectionStore'
 
-const FlowCanvas = React.lazy(() => import('@/components/FlowCanvas'))
+import { jsonToMarkdownPreferTable } from '@/features/markdown/jsonToMarkdown'
+
+const MissionControl = React.lazy(() => import('./AgenticOsMissionControl'))
 const noop = () => {}
 const cell = (value: unknown) => String(value ?? 'Unknown').replace(/&/g, '&amp;')
   .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[\\`*_{}[\]()|]/g, char => `\\${char}`).replace(/[\r\n]/g, ' ')
@@ -22,8 +24,6 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
   const [wrap, setWrap] = React.useState(true), [highlight, setHighlight] = React.useState(false)
   const editorRef = React.useRef<MonacoTextEditorHandle | null>(null)
   const presentationRef = React.useRef<MarkdownPresentationApi | null>(null)
-  const observedTrace = inspection?.trace, search = inspection?.search
-  const graph = React.useMemo(() => observedTrace ? traceGraph(observedTrace, search || '') : null, [observedTrace, search])
   const json = React.useMemo(() => inspection ? JSON.stringify({ schema: 'agent-run-inspection/v1', authority: false,
     expiresAt: inspection.expiresAt, selectedSpanId: inspection.spanId, trace: inspection.trace }, null, 2) : '', [inspection])
   const markdown = React.useMemo(() => {
@@ -36,12 +36,13 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
       '## Source ownership', '', `${cell(trace.context?.taskId)} → ${cell(trace.context?.projectId)} → ${cell(trace.context?.goalId)}`, '',
       url ? `[Source plan at ${cell(plan?.revision)}](${url})` : 'Source plan unavailable.', '',
       `Continuity: ${cell(plan?.continuityId)} · Digest: ${cell(plan?.digest)}`, '',
-      '## Observed spans', '', '| Span | Operation | State | Inclusive ms | Exclusive observed ms | Evaluation |', '| --- | --- | --- | --- | --- | --- |',
-      ...trace.spans.map(s => `| ${cell(s.spanId)} | ${cell(spanLabel(s))} | ${cell(s.status)} | ${numberLabel(s.timing.inclusive)} | ${numberLabel(s.timing.exclusive)} | ${cell(s.evaluation.status)} |`), '',
+      '## Observed spans', '', jsonToMarkdownPreferTable(spanRows(trace.spans).map(({ id, __order, ...row }) =>
+        Object.fromEntries(Object.entries(row).map(([key, value]) => [key, String(value).replace(/[&<>`*_{}[\]()]/g,
+          char => `&#${char.charCodeAt(0)};`)]))), { tableMaxRows: 32, tableMaxColumns: 6, sortKeys: false }), '',
       'Full context, allocation, usage, immutable evaluation evidence and causal links are available in the JSON pane. Unknown values remain unknown.'].join('\n')
   }, [inspection])
-  if (!inspection || !graph) return null
-  const { trace, spanId } = inspection
+  if (!inspection) return null
+  const { trace } = inspection
   return <section aria-label={`Agent run ${surface === 'editor' ? 'Editor Workspace' : 'Canvas'} inspection`}
     className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden ${surface === 'canvas' ? 'kg-workspace-data-view-root' : ''} ${UI_THEME_TOKENS.panel.bg}`}>
     <header className="flex shrink-0 flex-wrap items-center gap-2 border-b p-2 text-xs" style={{ overflowWrap: 'anywhere' }}>
@@ -60,14 +61,8 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
         highlightedLineRange={null} revealLineInEditor={noop} showInViewer={noop} showInPresentation={noop} showInGallery={noop}
         editorUri={`inmemory://agent-run/${encodeURIComponent(trace.runId)}/${trace.subjectDigest || trace.observedAt}.md`}
         editorLanguage="markdown" editorRef={editorRef} />
-    </div> : <div className="min-w-0 flex-1 overflow-auto p-3">
-      <label className="flex flex-wrap gap-2 text-sm">Search span metadata<input className="min-w-0 max-w-full rounded border px-2"
-        maxLength={256} value={inspection.search} onChange={event => filterAgentRunInspection(event.target.value)} /></label>
-      <p className="py-2 text-xs">Selected span: {spanId || 'Whole run'} · observed causal links on this page only</p>
-      <React.Suspense fallback={<p>Loading topology…</p>}><FlowCanvas inspection={{ graph,
-        selectedNodeId: spanId ? spanNodeId(trace.runId, spanId) : null,
-        onSelect: id => { const span = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (span) selectAgentRunInspection(span.spanId) },
-      }} /></React.Suspense>
+    </div> : <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+      <React.Suspense fallback={<p>Loading run evidence…</p>}><MissionControl workspace /></React.Suspense>
     </div>}
   </section>
 }
