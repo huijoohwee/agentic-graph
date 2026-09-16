@@ -5,7 +5,7 @@ import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/w
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
 import type { MarkdownPresentationApi } from '@/features/markdown-workspace/markdownWorkspaceTypes'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { spanRows, numberLabel, sourceLink } from './missionControlProjection'
+import { spanRows, numberLabel, sourceLink, traceResources, resourceLabels } from './missionControlProjection'
 import { useAgentRunInspection, useAgentRunWorkspace, closeAgentRunInspection } from './agentRunInspectionStore'
 
 import { jsonToMarkdownPreferTable } from '@/features/markdown/jsonToMarkdown'
@@ -36,9 +36,14 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
       '## Source ownership', '', `${cell(trace.context?.taskId)} → ${cell(trace.context?.projectId)} → ${cell(trace.context?.goalId)}`, '',
       url ? `[Source plan at ${cell(plan?.revision)}](${url})` : 'Source plan unavailable.', '',
       `Continuity: ${cell(plan?.continuityId)} · Digest: ${cell(plan?.digest)}`, '',
+      '## Observed resources', '', jsonToMarkdownPreferTable([resourceLabels(traceResources(trace))], { tableMaxRows: 1, tableMaxColumns: 4, sortKeys: false }), '',
+      'Peak process RSS is a maximum. Model cost is estimated; actual cash and machine charges are unknown. Reused stages are excluded from current consumption.', '',
+      ...(trace.localObservation?.ci ? [`CI queue: ${numberLabel(trace.localObservation.ci.queueWaitMs, ' ms')} · [CI run](${trace.localObservation.ci.url})`, ''] : []),
+      ...(trace.localObservation?.feedback ? ['## Optimization feedback', '', ...trace.localObservation.feedback.ranking.map(row =>
+        `- ${cell(row.id)}: ${numberLabel(row.meanMs, ' ms')} mean · ${row.samples} samples · ${row.samples < 3 ? 'cold baseline' : 'repeated observations'}${row.sourceRevision ? ` · [Source](https://${trace.localObservation!.source.repository}/tree/${row.sourceRevision})` : ''}`), ''] : []),
       '## Observed spans', '', jsonToMarkdownPreferTable(spanRows(trace.spans).map(({ id, __order, ...row }) =>
         Object.fromEntries(Object.entries(row).map(([key, value]) => [key, String(value).replace(/[&<>`*_{}[\]()]/g,
-          char => `&#${char.charCodeAt(0)};`)]))), { tableMaxRows: 32, tableMaxColumns: 6, sortKeys: false }), '',
+          char => `&#${char.charCodeAt(0)};`)]))), { tableMaxRows: 32, tableMaxColumns: 10, sortKeys: false }), '',
       'Full context, allocation, usage, immutable evaluation evidence and causal links are available in the JSON pane. Unknown values remain unknown.'].join('\n')
   }, [inspection])
   if (!workspace) return null

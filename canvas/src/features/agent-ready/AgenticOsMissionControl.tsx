@@ -10,7 +10,7 @@ import { GraphDataTableDomTableView } from '@/features/graph-data-table/ui/Graph
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { invokeDurableRun, clearDurableRunSession } from './durableRunTransport'
 import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, spanRows, SPAN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
-  numberLabel, known, record, sourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
+  numberLabel, resourceLabels, traceResources, known, record, sourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
 
 const FlowCanvasInspection = React.lazy(() => import('@/components/FlowCanvas/FlowCanvasInspection'))
 const views = Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([key, label]) => ({ key, label }))
@@ -254,11 +254,23 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         <div className="grid grid-cols-2 gap-3 text-sm"><div>Wall time<strong className="block text-xl">{durationLabel(trace.localObservation.elapsedMs)}</strong></div>
           <div>Observed output<strong className="block text-xl">{numberLabel(trace.localObservation.resources.observedOutputBytes, ' bytes')}</strong></div>
           <div>Emitted diagnostics<strong className="block">{numberLabel(trace.localObservation.resources.emittedDiagnosticBytes, ' bytes')}</strong></div>
-          <div>CPU · memory · tokens · cost<strong className="block">Unknown</strong></div></div>
+          </div>
         <p className="pt-2 text-xs">Captured {new Date(trace.localObservation.exportedAt).toLocaleString()} · {trace.localObservation.source.dirty === null ? 'Historical working state unknown' : trace.localObservation.source.dirty ? 'Working tree had changes' : 'Clean source observation'} · process outcomes are not release approval.</p>
         <a className="text-xs underline" target="_blank" rel="noreferrer" href={`https://${trace.localObservation.source.repository}/tree/${trace.localObservation.source.revision}`}>Source revision {trace.localObservation.source.revision.slice(0, 12)}</a>
         <details className="pt-2 text-xs"><summary>Stage output and reuse</summary><ul>{trace.localObservation.stages.slice(trace.offset, trace.offset + 32).map(stage => <li key={stage.id} className="py-1">{stage.id} · {stage.status} · {numberLabel(stage.observedOutputBytes, ' output bytes')}{stage.outputTruncated ? ' · bounded log tail' : ''}</li>)}</ul></details>
       </section>}
+      <section aria-label="Observed resources" className="my-3 rounded border p-3">
+        <div className="grid grid-cols-2 gap-3 text-sm">{Object.entries(resourceLabels(traceResources(trace))).map(([label, value]) =>
+          <div key={label}>{label}<strong className="block text-lg tabular-nums">{value}</strong></div>)}</div>
+        <p className="pt-2 text-xs">Peak process RSS is the maximum observed process peak. Model cost is estimated; actual cash and machine charges are unknown. Reused stages are excluded from current consumption.</p>
+        {trace.localObservation?.resources.coverage && <p className="pt-1 text-xs">Measured stages: {Object.entries(trace.localObservation.resources.coverage).filter(([key]) => key !== 'expectedStages').map(([key, count]) => `${key} ${count}/${trace.localObservation?.resources.coverage?.expectedStages}`).join(' · ')}</p>}
+        {trace.localObservation?.ci && <p className="pt-2 text-sm">CI queue: {durationLabel(trace.localObservation.ci.queueWaitMs)} · <a className="underline" target="_blank" rel="noreferrer" href={trace.localObservation.ci.url}>Run {trace.localObservation.ci.runId}, attempt {trace.localObservation.ci.attempt}</a></p>}
+        {trace.localObservation?.feedback && <details className="pt-2 text-xs" open><summary>Optimization feedback</summary>
+          <p>Ranked observed stage cost; required checks and budgets remain unchanged. New observations refresh the baseline.</p>
+          <ol>{trace.localObservation.feedback.ranking.map(row => <li className="py-1" key={row.id}>{row.id}: {durationLabel(row.meanMs)} mean · {row.samples} samples · {row.samples < 3 ? 'cold baseline' : 'repeated observations'} · {(row.resourceMeans.queueWaitMs ?? 0) > row.meanMs / 2 ? 'Inspect CI queue' : 'Profile expensive stage'}
+            {row.sourceRevision && <a className="ml-1 underline" target="_blank" rel="noreferrer" href={`https://${trace.localObservation!.source.repository}/tree/${row.sourceRevision}`}>Source {row.sourceRevision.slice(0, 12)}</a>}</li>)}</ol>
+        </details>}
+      </section>
       {context && (!workspace || view === "source") && <details open={workspace || undefined}><summary>Source ownership</summary><p>{context.plan.continuityId}</p>
         {planUrl ? <a href={planUrl} target="_blank" rel="noreferrer" className="underline">{context.plan.path} @ {context.plan.revision}</a> : <p>{context.plan.repository} / {context.plan.path} @ {context.plan.revision}</p>}
         <p className="text-xs">Digest {context.plan.digest}</p><pre className="overflow-auto text-xs">{JSON.stringify(context.plan.revisions, null, 2)}</pre>
@@ -285,7 +297,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
           onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense></>}
         {view === 'evidence' && <><p>Candidate: {trace.candidate.id} @ {trace.candidate.revision}</p>
-          <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ profile: trace.profile, subjectDigest, evaluation: evaluated, component: span?.component, links: span?.links, timing: span?.timing, usage: span?.cost }, null, 2)}</pre></>}
+          <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ profile: trace.profile, subjectDigest, evaluation: evaluated, component: span?.component, links: span?.links, timing: span?.timing, usage: span?.cost, resources: span?.resources }, null, 2)}</pre></>}
       </div>
       <div className="flex flex-wrap gap-2 py-2">
         {!local && trace.offset > 0 && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal)) }}>First span page</button>}

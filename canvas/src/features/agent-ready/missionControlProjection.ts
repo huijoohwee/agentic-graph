@@ -3,6 +3,7 @@ import type { DashboardMetric } from '@/components/DashboardCanvas/dashboardMode
 import type { GraphData } from '@/lib/graph/types'
 import type { GraphRecordColumnDoc } from '@/lib/graph-record-db'
 
+export type ResourceMetrics = { cpuMs: number | null; peakMemoryBytes: number | null; tokens: number | null; costUsd: number | null }
 type RecordValue = Record<string, unknown>
 export type EvidenceRef = { id: string; revision: string; digest: string }
 export type Evaluation = { status: string; score: number | null; reason: string; evidence: unknown }
@@ -16,7 +17,7 @@ export type RunIndex = { items: RunSummary[]; total: number; offset: number; nex
 export type TraceSpan = { spanId: string; parentSpanId: string | null; kind: string; operation: string;
   taskId: string; attempt: number | null; status: string; subjectDigest: string | null; component: EvidenceRef;
   links: { spanId: string; kind: string }[]; timing: { offset: number | null; inclusive: number | null; exclusive: number | null };
-  cost: unknown; evaluation: Evaluation }
+  cost: unknown; resources?: ResourceMetrics; evaluation: Evaluation }
 export type RunTrace = { localObservation?: ValidationObservation; runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
   context: RunContext | null; candidate: EvidenceRef; cohortId: string; profile: RecordValue;
   evaluation: Evaluation; resources: RecordValue | null; expiresAt: number; observedAt: number;
@@ -99,6 +100,24 @@ export function readRunTrace(value: unknown, runId: string): RunTrace {
     total: known(p.total) ?? spans.length, offset: known(p.offset) ?? 0, nextCursor: cursor(p.nextCursor) }
 }
 
+/** Shared display projection: retain known zero; do not infer machine or cash charges. */
+export function spanResources(span: TraceSpan): ResourceMetrics {
+  const cost = record(span.cost), input = known(cost.prompt_tokens), output = known(cost.completion_tokens)
+  return span.resources ?? { cpuMs: null, peakMemoryBytes: null,
+    tokens: cost.status === 'reported' && Number.isSafeInteger(input) && Number.isSafeInteger(output)
+      && Number.isSafeInteger(Number(input) + Number(output)) ? Number(input) + Number(output) : null,
+    costUsd: cost.status === 'reported' ? known(cost.estimated_cost_usd) : null }
+}
+export function traceResources(trace: RunTrace): ResourceMetrics {
+  const v = trace.localObservation?.resources, tokens = record(trace.profile.tokenUsage)
+  return v ? { cpuMs: v.cpuMs ?? null, peakMemoryBytes: v.peakMemoryBytes ?? null,
+    tokens: v.tokens ?? null, costUsd: v.costUsd ?? null }
+    : spanResources({ cost: { status: tokens.status, prompt_tokens: tokens.promptTokens,
+      completion_tokens: tokens.completionTokens, estimated_cost_usd: trace.profile.estimatedCostUsd } } as TraceSpan)
+}
+export const resourceLabels = (v: ResourceMetrics) => ({ 'CPU ms': numberLabel(v.cpuMs),
+  'Peak process RSS bytes': numberLabel(v.peakMemoryBytes), Tokens: numberLabel(v.tokens), 'Estimated USD': numberLabel(v.costUsd) })
+
 export const spanLabel = (span: TraceSpan) => `${span.operation} · ${span.taskId || span.component.id}${span.attempt === null ? '' : ` · attempt ${span.attempt}`}`
 /** Filtering retains visible ancestors and terminates even on malformed remote cycles. */
 export function visibleSpanTree(spans: TraceSpan[], search: string) {
@@ -138,7 +157,7 @@ export function traceGraph(trace: RunTrace, search: string, detail: 'all' | 'age
   const names = new Set(spans.map(s => s.spanId))
   const graph: GraphData = { type: 'agentic-os-observation', nodes: [], edges: [], metadata: { readOnly: true } }
   for (const s of spans) graph.nodes.push({ id: spanNodeId(trace.runId, s.spanId), label: s.operation, type: s.kind,
-    properties: { status: s.status, 'inspection:label': spanLabel(s), 'visual:shape': s.kind === 'tool' ? 'hex' : 'circle',
+    properties: { status: s.status, ...resourceLabels(spanResources(s)), 'inspection:label': spanLabel(s), 'visual:shape': s.kind === 'tool' ? 'hex' : 'circle',
       'visual:fill': s.status === 'failed' ? '#fee2e2' : s.kind === 'tool' ? '#fef9c3' : s.kind === 'retrieval' ? '#ccfbf1' : '#e0e7ff',
       'visual:stroke': s.status === 'failed' ? '#be123c' : '#4f46e5', 'visual:strokeWidth': 2 } })
   function edge(source: string, target: string, kind: string) {
@@ -154,19 +173,19 @@ export function traceGraph(trace: RunTrace, search: string, detail: 'all' | 'age
   }
   return graph
 }
-export const RUN_COLUMNS: GraphRecordColumnDoc[] = ['Run', 'Agent', 'State', 'Latency', 'Tokens', 'Evaluation'].map((name, order) => ({
+export const RUN_COLUMNS: GraphRecordColumnDoc[] = ['Run', 'Agent', 'State', 'Latency', 'Tokens', 'Estimated USD', 'Evaluation'].map((name, order) => ({
   pk: `agentic-os/${name}`, tableId: 'nodes', columnId: name, name, kind: 'text', order, hidden: false, createdAtMs: 0, updatedAtMs: 0,
 }))
 export function runRows(index: RunIndex) {
   return index.items.map((r, i) => ({ id: r.runId, __order: i + index.offset + 1, Run: r.runId, Agent: r.agent,
-    State: r.status, Latency: numberLabel(r.duration, ' ms'), Tokens: numberLabel(r.tokens), Evaluation: r.evaluation }))
+    State: r.status, Latency: numberLabel(r.duration, ' ms'), Tokens: numberLabel(r.tokens), 'Estimated USD': numberLabel(r.cost), Evaluation: r.evaluation }))
 }
-export const SPAN_COLUMNS: GraphRecordColumnDoc[] = ['Span', 'Operation', 'State', 'Inclusive ms', 'Exclusive observed ms', 'Evaluation'].map((name, order) => ({
+export const SPAN_COLUMNS: GraphRecordColumnDoc[] = ['Span', 'Operation', 'State', 'Inclusive ms', 'Exclusive observed ms', 'CPU ms', 'Peak process RSS bytes', 'Tokens', 'Estimated USD', 'Evaluation'].map((name, order) => ({
   pk: `agentic-os/span/${name}`, tableId: 'nodes', columnId: name, name, kind: 'text', order, hidden: false, createdAtMs: 0, updatedAtMs: 0,
 }))
 export function spanRows(spans: TraceSpan[]) {
   return spans.map((s, i) => ({ id: s.spanId, __order: i + 1, Span: s.spanId, Operation: spanLabel(s), State: s.status,
-    'Inclusive ms': numberLabel(s.timing.inclusive), 'Exclusive observed ms': numberLabel(s.timing.exclusive), Evaluation: s.evaluation.status }))
+    'Inclusive ms': numberLabel(s.timing.inclusive), 'Exclusive observed ms': numberLabel(s.timing.exclusive), ...resourceLabels(spanResources(s)), Evaluation: s.evaluation.status }))
 }
 export function sourceLink(context: RunContext | null): string | null {
   const p = context?.plan

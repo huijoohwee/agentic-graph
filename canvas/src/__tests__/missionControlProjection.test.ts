@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { readValidationObservation, validationTrace } from '@/features/agent-ready/validationObservationProjection'
-import { readRunIndex, readRunTrace, traceGraph, visibleSpanTree, sourceLink, comparable, spanNodeId } from '@/features/agent-ready/missionControlProjection'
+import { readRunIndex, readRunTrace, traceGraph, visibleSpanTree, sourceLink, comparable, spanNodeId, spanRows, traceResources, spanResources } from '@/features/agent-ready/missionControlProjection'
 import { durableObservationBinding, readDurableSessionToken } from '@/features/agent-ready/durableRunTransport'
 
 export async function testMissionControlProjection(): Promise<void> {
@@ -83,5 +83,28 @@ export async function testMissionControlProjection(): Promise<void> {
   const stripped = readValidationObservation(JSON.stringify({ ...observation, privatePath: '/private/test',
     stages: observation.stages.map(stage => ({ ...stage, command: 'private-command', output: 'private-output' })) }))
   assert.ok(!JSON.stringify(stripped).includes('private-'))
+
+  const measured = { cpuMs: 42, peakMemoryBytes: 1048576, tokens: 0, costUsd: 0,
+    costBasis: 'estimated', memoryScope: 'maximum-single-process-rss' }
+  const withResources = { ...observation, resources: { ...observation.resources, ...measured },
+    stages: [{ ...observation.stages[0], resources: measured }],
+    ci: { runId: 5, attempt: 1, url: 'https://github.com/example/source/actions/runs/5', queueWaitMs: 3000 },
+    feedback: { status: 'advisory', authority: false, ranking: [{ id: 'check-0', samples: 3, meanMs: 1500,
+      sourceRevision: observation.source.revision, resourceMeans: { cpuMs: 40 }, privatePath: '/private/feedback' }] } }
+  const resourceTrace = validationTrace(readValidationObservation(JSON.stringify(withResources)))
+  assert.deepEqual(traceResources(resourceTrace), { cpuMs: 42, peakMemoryBytes: 1048576, tokens: 0, costUsd: 0 })
+  assert.equal(spanRows(resourceTrace.spans)[0]!['CPU ms'], '42')
+  assert.equal(spanRows(resourceTrace.spans)[0]!['Estimated USD'], '0')
+  assert.equal(traceGraph(resourceTrace, '').nodes[0]!.properties?.['CPU ms'], '42')
+  assert.equal(resourceTrace.localObservation?.ci?.queueWaitMs, 3000)
+  assert.equal(resourceTrace.localObservation?.feedback?.ranking[0]?.samples, 3)
+  assert.ok(!JSON.stringify(resourceTrace).includes('/private/feedback'))
+  assert.deepEqual(spanResources({ ...trace.spans[0]!, cost: { status: 'reported', prompt_tokens: 5,
+    completion_tokens: 3, estimated_cost_usd: 0.001 } }), { cpuMs: null, peakMemoryBytes: null, tokens: 8, costUsd: 0.001 })
+  assert.equal(traceResources(localTrace).cpuMs, null)
+  for (const patch of [{ resources: { ...measured, tokens: -1 } }, { resources: { ...measured, costBasis: 'actual' } },
+    { resources: { ...measured, memoryScope: 'total-tree' } }, { ci: { ...withResources.ci, url: 'https://foreign.invalid' } },
+    { feedback: { ...withResources.feedback, ranking: Array(6).fill(withResources.feedback.ranking[0]) } }])
+    assert.throws(() => readValidationObservation(JSON.stringify({ ...withResources, ...patch })), /Invalid/)
 
 }
