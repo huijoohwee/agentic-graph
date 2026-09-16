@@ -6,10 +6,12 @@ import { chromium } from 'playwright'
 
 const output = resolve('../data/outputs/agent-mission-browser-smoke')
 const browser = await chromium.launch({ headless: true })
-const context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' })
-const page = await context.newPage(), errors = [], requests = [], streamed = [], pending = new Set()
+let context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' })
+const errors = [], requests = [], streamed = [], pending = new Set()
+let page, mission, selected, peak = 0
+async function openPage() {
+page = await context.newPage()
 page.setDefaultTimeout(15000)
-let peak = 0
 page.on('pageerror', error => { errors.push(error.message); console.error(error.stack) })
 page.on('console', message => { if (message.type() === 'error') console.error('Browser console:', message.text()) })
 page.on('request', request => {
@@ -21,10 +23,24 @@ page.on('response', response => {
     streamed.push(response.url().split('/').at(-1))
 })
 for (const event of ['requestfinished', 'requestfailed']) page.on(event, request => pending.delete(request))
-const mission = page.getByRole('region', { name: 'Agentic OS mission control', exact: true })
-const selected = page.getByRole('region', { name: 'Selected run evidence' })
+mission = page.getByRole('region', { name: 'Agentic OS mission control', exact: true })
+selected = page.getByRole('region', { name: 'Selected run evidence' })
+}
+await openPage()
 const waitText = async (locator, text) => {
   await locator.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
+}
+const waitTopology = async scope => {
+  const startedAt = Date.now()
+  const panel = scope.locator('#agent-run-view-topology-panel')
+  await panel.waitFor({ state: 'visible' })
+  // The panel commits before its on-demand renderer. Cold module loading has the
+  // same bounded budget as the editor; accessibility remains a separate assertion.
+  const loading = panel.getByText('Loading topology…', { exact: true })
+  const cold = await loading.count() > 0
+  await loading.waitFor({ state: 'hidden', timeout: 60000 })
+  console.log('Mission topology module:', JSON.stringify({ cold, elapsedMs: Date.now() - startedAt }))
+  await scope.getByRole('img', { name: /Observed spans and causal links/ }).waitFor({ state: 'visible' })
 }
 const refreshMission = async () => {
   const refresh = mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ })
@@ -83,7 +99,7 @@ async function verifyWorkspace(label, revoke = false) {
   assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0, 'Run handoff must leave inspection unobscured')
   await page.screenshot({ path: resolve(output, label + '-workspace.png') })
   await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
-  await canvas.getByRole('img', { name: /Observed spans and causal links/ }).waitFor({ state: 'visible' })
+  await waitTopology(canvas)
   await canvas.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await waitText(canvas, 'Selected span: draft-2')
   const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
@@ -156,7 +172,7 @@ try {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
     return useGraphStore.getState().floatingPanelOpen
   })
-  const floating = page.locator('[data-kg-floating-panel-root="true"]')
+  let floating = page.locator('[data-kg-floating-panel-root="true"]')
   if (initialPanelOpen) {
     await floating.waitFor({ state: 'visible', timeout: 30000 })
     await floating.getByRole('button', { name: 'Close', exact: true }).click()
@@ -189,7 +205,7 @@ try {
   assert.equal(await selected.getByRole('button', { pressed: true }).count(), 1)
   await waitText(selected, 'exclusive observed')
   await page.locator('#agent-run-view-topology-tab').click()
-  await selected.getByRole('img', { name: /Observed spans and causal links/ }).waitFor()
+  await waitTopology(selected)
   assert.equal(await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { pressed: true }).count(), 1)
   await selected.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
@@ -265,9 +281,23 @@ try {
   await page.clock.setSystemTime(new Date())
   await mission.getByRole('button', { name: 'Refresh runs' }).click(); await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await verifyWorkspace('mobile', true)
-  // Verify native desktop entry independently; the existing panel uses separate responsive mounts.
-  await page.clock.setSystemTime(new Date())
-  await page.setViewportSize({ width: 1280, height: 900 }); await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
+  await waitText(mission, '2 retained matches'); await choose('candidate-run')
+  await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
+  await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'visible' })
+  await context.setOffline(true); await page.clock.fastForward(61000)
+  await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'detached' })
+  await page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true }).waitFor({ state: 'detached' })
+  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  await context.setOffline(false)
+  console.log('Mission browser: mobile offline workspace expiry passed')
+  // A genuinely fresh desktop must not inherit mobile fake timers, persisted views
+  // or graphics contexts. Expiry stays in the clock-controlled mobile lifecycle.
+  await context.close()
+  context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
+  await openPage()
+  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/', { waitUntil: 'domcontentloaded', timeout: 120000 })
+  floating = page.locator('[data-kg-floating-panel-root="true"]')
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
@@ -279,19 +309,10 @@ try {
   await page.locator('#main-panel-dashboard-tab:visible').click()
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await page.locator('#agent-run-view-topology-tab').click()
-  await selected.getByRole('img', { name: /Observed spans and causal links/ }).waitFor()
+  await waitTopology(selected)
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
   await verifyWorkspace('desktop')
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
-  await waitText(mission, '2 retained matches'); await choose('candidate-run')
-  await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
-  await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'visible' })
-  await context.setOffline(true); await page.clock.fastForward(61000)
-  await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'detached' })
-  await page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true }).waitFor({ state: 'detached' })
-  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
-  await context.setOffline(false)
   assert.deepEqual(errors, [])
   assert.ok(streamed.includes('query') && streamed.includes('trace'), 'Real authenticated bridge must serve SSE observations')
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
@@ -304,7 +325,6 @@ try {
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
 } catch (error) {
   console.error(error.message)
-  await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})
   console.error('Mission entry state:', await page.evaluate(() => ({
     ready: window.__AG_MAIN_PANEL_OPEN_READY__,
     tabs: [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].map(node => node.id),
@@ -314,8 +334,14 @@ try {
     topology: [...document.querySelectorAll('#agent-run-view-topology-panel')].map(node => ({
       text: node.textContent.slice(0, 1000), html: node.innerHTML.slice(0, 2000),
       width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
+      visibility: getComputedStyle(node).visibility,
+      canvas: [...node.querySelectorAll('canvas')].map(canvas => ({
+        width: canvas.getBoundingClientRect().width, height: canvas.getBoundingClientRect().height,
+        visibility: getComputedStyle(canvas).visibility, hidden: Boolean(canvas.closest('[aria-hidden="true"], [inert]')),
+      })),
     })),
     text: document.querySelector('[aria-label="Agentic OS mission control"]')?.textContent.slice(0, 4000),
   })).catch(() => 'Document unavailable'))
+  await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})
   throw error
 } finally { await browser.close() }
