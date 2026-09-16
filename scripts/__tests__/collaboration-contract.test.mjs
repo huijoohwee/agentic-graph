@@ -206,9 +206,10 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
     'package.json',
     'README.md',
   ], contract)
-  assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
+  assert.deepEqual(plan.scopes, ['agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.deepEqual(plan.commands, [
+    ['npm', 'run', 'agent-mission:check'],
     canvasCheck,
     ...runtimeCommands,
     ['npm', '--prefix', 'canvas', 'run', 'test:storage-parent-child-browser-smoke'],
@@ -322,7 +323,7 @@ test('affected XR review expands the composite gate and runs the shared check on
     pkg.scripts?.['xr-v2:review-candidate'],
     'npm run check && npm run xr-v2:unit && npm run video-editor:unit && npm run video-editor:compatibility && npm run video-editor:source-ready && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser',
   )
-  assert.deepEqual(plan.scopes, ['dependencies', 'canvas', 'storage_parent_child_browser', 'xr_v2_video_editor', 'xrpl_paid_resource'])
+  assert.deepEqual(plan.scopes, ['agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'xr_v2_video_editor', 'xrpl_paid_resource'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.equal(
     plan.commands.filter(command => command.join(' ') === canvasCheck.join(' ')).length,
@@ -330,6 +331,7 @@ test('affected XR review expands the composite gate and runs the shared check on
   )
   assert.ok(!plan.commands.some(command => command.join(' ') === 'npm run xr-v2:review-ready'))
   assert.deepEqual(plan.commands, [
+    ['npm', 'run', 'agent-mission:check'],
     canvasCheck,
     ...runtimeCommands,
     ['npm', '--prefix', 'canvas', 'run', 'test:storage-parent-child-browser-smoke'],
@@ -345,6 +347,7 @@ test('affected XR review expands the composite gate and runs the shared check on
     ['npm', 'run', 'payment:x402:xrpl:source-check'],
   ])
   assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'check'], contract), 300000)
+  assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'agent-mission:check'], contract), 600000)
   assert.equal(
     resolveCiCommandTimeoutMs(['npm', 'run', 'check:agentic-travel-commerce-platform'], contract),
     900000,

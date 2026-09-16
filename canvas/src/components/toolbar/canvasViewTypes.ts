@@ -6,8 +6,10 @@ import type { CanvasBoardLayoutMode } from '@/lib/canvas/canvasBoardLayoutDispla
 import type { CanvasCardWidgetDisplayMode } from '@/lib/canvas/canvasCardWidgetDisplayControls'
 import type { CanvasSurfaceModeId } from '@/lib/canvas/canvas3dMode'
 import type { GraphSchema } from '@/lib/graph/schema'
+import type { AGENT_RUN_CANVAS_VIEWS } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 
 export type CanvasViewOptionId =
+  | `agent-run:${Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>}`
   | 'renderer:menu'
   | `renderer:${Canvas2dRendererId}`
   | 'layout:menu'

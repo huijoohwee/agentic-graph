@@ -116,12 +116,20 @@ export const GraphDataTableDomTableView = React.memo(function GraphDataTableDomT
                 key={row.id}
                 className={`${UI_THEME_TOKENS.table.rowBg} ${selected ? UI_THEME_TOKENS.table.rowSelected : ''} ${UI_THEME_TOKENS.table.rowHover}`}
                 aria-current={selected ? 'true' : undefined}
+                tabIndex={0}
+                onKeyDown={event => {
+                  if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) {
+                    event.preventDefault(); event.stopPropagation(); props.onRowClicked(row.id)
+                  }
+                }}
                 onClick={() => props.onRowClicked(row.id)}
               >
                 <td className={`sticky left-0 z-10 border-b border-r ${UI_THEME_TOKENS.table.cellBorder} ${UI_THEME_TOKENS.table.rowBg}`} style={{ height: rowHeightPx }}>
                   <input
                     type="checkbox"
                     checked={selected}
+                    aria-label={`Select row ${String((row as any).__order ?? row.id)}`}
+                    onClick={event => event.stopPropagation()}
                     onChange={e => {
                       e.stopPropagation()
                       const next = new Set(props.selectedRowIds)

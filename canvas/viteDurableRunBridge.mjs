@@ -3,7 +3,10 @@ import { createRequire } from 'node:module'
 import { readStableBoundedFile } from '../mcp/bounded-file-reader.js'
 
 const root = '/api/agent-swarm/'
-const operations = new Set(['start', 'status', 'cancel', 'retry'])
+const require = createRequire(import.meta.url)
+const operations = new Set(require('agentic-os/agents/invocation').RUN_OPERATIONS)
+const readOnly = new Set(require('agentic-os/catalog/invocation.json').entries
+  .filter(entry => entry.action === 'run' && entry.semantic === 'read-only').map(entry => entry.argv[0]))
 const loopback = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 const json = (response, status, body) => {
   response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
@@ -64,6 +67,9 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
       if (active >= 4) return json(response, 429, { code: 'run_request_capacity' })
       active++
       let stage = 'configuration'
+      const controller = new AbortController()
+      const disconnect = () => { if (!response.writableEnded) controller.abort() }
+      response.once('close', disconnect)
       try {
         let config
         try { config = await configuration(env.AGENTIC_OS_DURABLE_RUN_HOST_CONFIG) }
@@ -72,19 +78,30 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
         try { input = await body(request, AbortSignal.timeout(5000)) }
         catch { return json(response, 400, { code: 'invalid_run_input' }) }
         stage = 'load-client'
-        const { createAgentRunClient, validateRunInput } = createRequire(import.meta.url)('agentic-os/agents/invocation')
+        const { createAgentRunClient, validateRunInput } = require('agentic-os/agents/invocation')
         try { validateRunInput(operation, input) }
         catch { return json(response, 400, { code: 'invalid_run_input' }) }
         const client = createAgentRunClient({ endpoint: config.endpoint, getHeaders: () => ({ authorization: config.authorization }) })
         stage = 'dispatch'
-        const result = await client.invoke(operation, input)
+        const result = await client.invoke(operation, input, { signal: controller.signal })
+        if (controller.signal.aborted) return
+        if (['query', 'trace'].includes(operation) && result.status !== 'blocked'
+          && request.headers.accept?.includes('text/event-stream')) {
+          // The existing native query owns each snapshot; this ingress only frames it.
+          const frame = 'data: ' + JSON.stringify(result) + '\n\ndata: [DONE]\n\n'
+          if (Buffer.byteLength(frame) > 262144) throw Error('observation_frame_too_large')
+          response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store',
+            'x-content-type-options': 'nosniff' })
+          return response.end(frame)
+        }
         return json(response, result.httpStatus ?? (result.status === 'blocked' ? 409
           : ['completed', 'canceled'].includes(result.status) ? 200 : 202), result)
       } catch (error) {
+        if (controller.signal.aborted) return
         const name = ['TypeError', 'RangeError', 'ReferenceError', 'SyntaxError'].includes(error?.name) ? error.name : 'Error'
         server.config?.logger?.warn('[durable-run-bridge] ' + stage + ': ' + name)
-        return json(response, 502, { code: 'run_host_unavailable', ...(operation !== 'status' ? { writeResultUnknown: true } : {}) })
-      } finally { active-- }
+        return json(response, 502, { code: 'run_host_unavailable', ...(!readOnly.has(operation) ? { writeResultUnknown: true } : {}) })
+      } finally { response.off('close', disconnect); active-- }
     })
   } }
 }

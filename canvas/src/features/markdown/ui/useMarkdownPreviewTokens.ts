@@ -159,8 +159,12 @@ export function useMarkdownPreviewLexedMarkdown(
 
   const providedTokensFrontmatter = React.useMemo(() => {
     if (!providedTokens || providedTokens.length === 0) return null
+    if (!shouldUpdateStore) {
+      const { meta, startIndex } = parseMarkdownFrontmatter(splitMarkdownLines(text))
+      return { meta, startLineOffset: startIndex }
+    }
     return getParsedFrontmatterCached(text, currentTokensKey)
-  }, [currentTokensKey, providedTokens, text])
+  }, [currentTokensKey, providedTokens, shouldUpdateStore, text])
 
   const lexedLarge = React.useMemo((): LexedMarkdownResult => {
     if (providedTokens && providedTokens.length > 0 && providedTokensFrontmatter) {
@@ -173,10 +177,11 @@ export function useMarkdownPreviewLexedMarkdown(
         startLineOffset: providedTokensFrontmatter.startLineOffset,
       }
     }
-    return getLexedMarkdownCached(text, currentTokensKey)
-  }, [currentTokensKey, providedTokens, providedTokensFrontmatter, text])
+    return shouldUpdateStore ? getLexedMarkdownCached(text, currentTokensKey) : lexMarkdown(text)
+  }, [currentTokensKey, providedTokens, providedTokensFrontmatter, shouldUpdateStore, text])
 
   const lexedSmall = React.useMemo((): LexedMarkdownResult => {
+    if (!shouldUpdateStore) return lexedLarge
     if (providedTokens && providedTokens.length > 0 && providedTokensFrontmatter) {
       return {
         tokens: sanitizeProvidedMarkdownPreviewTokensForFrontmatter(
@@ -204,6 +209,8 @@ export function useMarkdownPreviewLexedMarkdown(
 
     return getLexedMarkdownCached(text, currentTokensKey)
   }, [
+    shouldUpdateStore,
+    lexedLarge,
     currentTokensKey,
     providedTokens,
     providedTokensFrontmatter,

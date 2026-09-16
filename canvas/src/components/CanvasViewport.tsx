@@ -1,4 +1,6 @@
 import React from 'react'
+import { useAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
+const AgentRunInspectionLazy = React.lazy(() => import('@/features/agent-ready/AgentRunWorkspaceInspection'))
 import { useShallow } from 'zustand/react/shallow'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config.render'
 import type { GraphData } from '@/lib/graph/types'
@@ -95,6 +97,14 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
   return isCanvas2dRendererId(renderer) ? getCanvas2dSurfaceId(renderer) : null
 }
 export function CanvasViewport(props: CanvasViewportProps) {
+  const inspection = useAgentRunInspection()
+  if (inspection && props.variant === 'workspace') return <section className="absolute inset-0 z-10" aria-label="Canvas viewport"
+    style={{ left: props.workspaceEditorOverlayOpen ? props.workspaceVisibleCanvasLeft : undefined }}>
+    <React.Suspense fallback={<p>Loading run canvas…</p>}><AgentRunInspectionLazy surface="canvas" /></React.Suspense>
+  </section>
+  return <AuthoredCanvasViewport {...props} />
+}
+function AuthoredCanvasViewport(props: CanvasViewportProps) {
   useEmbeddedCanvasChatCommandReceiver()
   const {
     variant,

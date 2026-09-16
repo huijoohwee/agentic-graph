@@ -6,7 +6,8 @@ import { UI_COPY } from '@/lib/config'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ToolbarDropdownSelect } from '@/components/toolbar/ToolbarDropdownSelect'
 import { isD3Like2dRenderer, isFrontmatterOnlyPolicyActive } from '@/lib/config.render'
-import type { CanvasViewOptionId, CanvasViewModelState } from '@/components/toolbar/canvasViewTypes'
+import type { CanvasViewOptionId, CanvasViewModelState, CanvasViewOption } from '@/components/toolbar/canvasViewTypes'
+import { useAgentRunInspection, selectAgentRunView } from '@/features/agent-ready/agentRunInspectionStore'
 import { buildCanvasViewOptions, getCanvasViewRendererOptions, getCanvasViewTriggerState } from '@/components/toolbar/canvasViewMenu'
 import { applyCanvasViewSelection } from '@/components/toolbar/canvasViewActions'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -19,6 +20,7 @@ import {
 } from '@/features/three/xrSceneSurfaceRuntime'
 import {
   CANVAS_VIEW_BINDING_TOKEN,
+  AGENT_RUN_CANVAS_VIEWS,
   CANVAS_VIEW_COMMAND_TOKEN,
   CANVAS_VIEW_MCP_TOOL_NAME,
   CANVAS_VIEW_SEMANTIC_TOKEN,
@@ -45,6 +47,7 @@ export function Canvas2dRendererSelect({
   onActivateGeoXrMode,
   onExitGeospatialMode,
 }: Canvas2dRendererSelectProps) {
+  const inspection = useAgentRunInspection()
   const [minimapCollapsed, setMinimapCollapsed] = useMinimapCollapsed()
   const state = useGraphStore(
     useShallow(s => ({
@@ -137,9 +140,21 @@ export function Canvas2dRendererSelect({
   )
 
   const rendererOptions = React.useMemo(() => getCanvasViewRendererOptions(), [])
-  const options = React.useMemo(() => buildCanvasViewOptions(modelState, rendererOptions), [modelState, rendererOptions])
-  const triggerState = React.useMemo(() => getCanvasViewTriggerState(modelState, rendererOptions), [modelState, rendererOptions])
+  const options = React.useMemo<CanvasViewOption[]>(() => inspection ? [{ id: 'renderer:menu',
+    title: '2D Renderer', label: 'Agent observability', valueLabel: AGENT_RUN_CANVAS_VIEWS[inspection.view], Icon: Eye,
+    children: Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([view, title]) => ({
+      id: `agent-run:${view}` as CanvasViewOptionId, title, label: title, Icon: Eye, isActive: inspection.view === view,
+    })),
+  }] : buildCanvasViewOptions(modelState, rendererOptions), [modelState, rendererOptions, inspection?.view, !!inspection])
+  const triggerState = React.useMemo(() => inspection
+    ? { id: `agent-run:${inspection.view}` as CanvasViewOptionId, title: AGENT_RUN_CANVAS_VIEWS[inspection.view] }
+    : getCanvasViewTriggerState(modelState, rendererOptions), [modelState, rendererOptions, inspection?.view, !!inspection])
   const applyCanvasViewOption = React.useCallback((id: CanvasViewOptionId, baselineGuard = ensureBaselineUnlocked) => {
+    if (inspection) {
+      if (!id.startsWith('agent-run:')) throw Error('Close run inspection to change the authored Canvas renderer.')
+      selectAgentRunView(id.slice('agent-run:'.length)); return
+    }
+    if (id.startsWith('agent-run:')) throw Error('Open an authorized run inspection first.')
     applyCanvasViewSelection({
       id,
       ensureBaselineUnlocked: baselineGuard,
@@ -202,6 +217,7 @@ export function Canvas2dRendererSelect({
       requestStoryboardWidgetLayoutRebalance: state.requestStoryboardWidgetLayoutRebalance,
     })
   }, [
+    inspection,
     ensureBaselineUnlocked,
     geospatialEnabled,
     minimapCollapsed,
@@ -217,11 +233,11 @@ export function Canvas2dRendererSelect({
     if (!option || option.disabled || option.children?.length) {
       throw new Error(`Canvas View option ${optionId} is unavailable in the current document.`)
     }
-    if (!ensureBaselineUnlocked()) {
+    if (!inspection && !ensureBaselineUnlocked()) {
       throw new Error('Canvas View control is locked by the active baseline.')
     }
     applyCanvasViewOption(optionId, () => true)
-  }), [applyCanvasViewOption, ensureBaselineUnlocked, options])
+  }), [applyCanvasViewOption, ensureBaselineUnlocked, options, !!inspection])
 
   const resolveInvocationOptionId = React.useCallback((option: (typeof options)[number]): CanvasViewOptionId | null => {
     if (!option.children?.length) return option.id

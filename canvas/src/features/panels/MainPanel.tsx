@@ -453,7 +453,7 @@ export default function MainPanel({
         <section className="h-full min-h-0" role="tabpanel" id="main-panel-dashboard-panel" aria-labelledby="main-panel-dashboard-tab" hidden={tab !== 'dashboard'}>
           {tab === 'dashboard' && (
             <React.Suspense fallback={null}>
-              <DashboardViewLazy />
+              <DashboardViewLazy onOpenWorkspace={onClose} />
             </React.Suspense>
           )}
         </section>
