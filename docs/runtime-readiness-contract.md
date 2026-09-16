@@ -33,7 +33,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-os.git"
-  ref: "b1ef126b0c7e550ca23b396628fe33ec95a9a6ac"
+  ref: "3663442db70b0e75c5eba487a86e7b444e9e7029"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-os/catalog/dictionaries"
   required_files: [ "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]
@@ -97,6 +97,12 @@ agent facade, skills, presets and shared runtime documents. Graph owns rendering
 product contracts and the production marker schema. `mcp/agentic-os-doc-sources.mjs`
 resolves legacy document names to those existing owners; it contains no document bodies.
 The unused FACTS catalog contributes no additional tokens and is no longer loaded.
+
+The obsolete `auto-delivery.yml` workflow and its Canvas lifecycle controller are
+retired. Start and publish scoped work through the pinned OS `lane` and `land`
+commands. The protected Integration Gate still controls every merge; production
+uses the separate reviewed-candidate workflow. Historical controller revisions
+remain in Git for recovery and are not active lifecycle dependencies.
 
 `DURABLE-AGENT-WORKFLOWS-001@0.1.0` source cutover: the local MCP reader verifies the
 clean OS checkout and fetched-main ancestry. The edge reader uses six immutable reads
