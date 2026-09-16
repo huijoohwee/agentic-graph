@@ -115,7 +115,6 @@ try {
   await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const before = await authoredSnapshot()
   await choose('baseline-run')
-  if (!process.env.AG_MISSION_WORKSPACE_ONLY) {
   assert.equal(await floating.count(), 0, 'Inspection must not open another panel')
   console.log('Mission browser: authorized discovery and keyboard selection passed')
   await waitText(selected, '32/34 retained spans')
@@ -200,7 +199,6 @@ try {
   assert.deepEqual(errors, [])
   await page.screenshot({ path: resolve(output, 'mobile.png') })
   console.log('Mission browser: mobile lifecycle, authority and expiry passed')
-  }
   await page.clock.setSystemTime(new Date())
   await mission.getByRole('button', { name: 'Refresh runs' }).click(); await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await verifyWorkspace('mobile', true)
@@ -219,14 +217,23 @@ try {
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
   await verifyWorkspace('desktop')
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
+  await waitText(mission, '2 retained matches'); await choose('candidate-run')
+  await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
+  await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'visible' })
+  await context.setOffline(true); await page.clock.fastForward(61000)
+  await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'detached' })
+  await page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true }).waitFor({ state: 'detached' })
+  await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
+  await context.setOffline(false)
   assert.deepEqual(errors, [])
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
-    status: 'passed', workspaceOnly: Boolean(process.env.AG_MISSION_WORKSPACE_ONLY), fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
+    status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
     assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
       'subject-evaluation', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
-      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence'], peak, requests }, null, 2))
+      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal'], peak, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
 } catch (error) {
   console.error(error.message)
