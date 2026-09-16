@@ -52,7 +52,12 @@ function assertAuthored(actual, expected, message) {
 }
 async function verifyWorkspace(label, revoke = false) {
   await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
-  await page.evaluate(async () => { const { useGraphStore } = await import('/src/hooks/useGraphStore.ts'); console.error('PANEL BEFORE HANDOFF', useGraphStore.getState().floatingPanelOpen); useGraphStore.subscribe((next, previous) => { if (next.floatingPanelOpen && !previous.floatingPanelOpen) console.error('PANEL OPENED', new Error().stack) }) })
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  const floatingPanel = page.locator('[data-kg-floating-panel-root="true"]')
+  if (await floatingPanel.isVisible()) {
+    await floatingPanel.getByRole('button', { name: 'Close', exact: true }).click()
+    await floatingPanel.waitFor({ state: 'detached' })
+  }
   const beforeWorkspace = await authoredSnapshot()
   const previousView = await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] })
   await selected.getByPlaceholder('Search span metadata').fill('draft')
