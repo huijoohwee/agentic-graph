@@ -20,6 +20,8 @@ const emptySelection: Selection = { runId: null, spanId: null }
 
 export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false }: { onOpenWorkspace?: () => void; workspace?: boolean }) {
   const inspection = useAgentRunInspection(), workspaceSession = useAgentRunWorkspace(), initial = workspace ? inspection : null
+  const inspectionRef = React.useRef(inspection)
+  inspectionRef.current = inspection
   const scopeExpiry = React.useRef(initial?.expiresAt ?? 0)
   const [index, setIndex] = React.useState<RunIndex | null>(null), [trace, setTrace] = React.useState<RunTrace | null>(initial?.trace ?? null)
   const [selection, setSelection] = React.useState<Selection>(initial ? { runId: initial.trace.runId, spanId: initial.spanId } : emptySelection), selected = React.useRef(selection)
@@ -39,10 +41,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     active.current?.abort(); active.current = null; setBusy(false)
   }, [])
   const clear = React.useCallback(() => {
-    if (!workspace || inspection) closeAgentRunInspection()
+    if (!workspace || inspectionRef.current) closeAgentRunInspection()
     scope.current = null; selected.current = emptySelection
     setIndex(null); setTrace(null); setSelection(emptySelection); setBaseline(null); setComparison(null); setExpiry(0)
-  }, [workspace, !!inspection])
+  }, [workspace])
   const perform = React.useCallback(async (operation: (signal: AbortSignal) => Promise<void>, mutation = false) => {
     if (active.current || !navigator.onLine || document.hidden) return
     const controller = new AbortController(); active.current = controller; mutating.current = mutation; setBusy(true); setError('')
@@ -93,7 +95,8 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     if (!changed && id && result.items.some(r => r.runId === id)) await loadTrace(id, signal)
     else { if (workspace && selected.current.runId) closeAgentRunInspection(); selected.current = emptySelection; setSelection(emptySelection); setTrace(null) }
   }), [query, perform, clear])
-  React.useEffect(() => { if (!workspace) { stop(); clear(); void refresh() } else if (!initial) { void refresh() } }, [query, workspace]) // Workspace opens the authorized handoff without fetching.
+  // Existing evidence opens without fetching; explicit empty activation discovers authorized runs.
+  React.useEffect(() => { if (!workspace || !initial) { stop(); clear(); void refresh() } }, [query, workspace])
   React.useEffect(() => {
     const change = () => {
       setOnline(navigator.onLine); setVisible(!document.hidden)
@@ -176,7 +179,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <button type="button" className={button} disabled={busy || !online} onClick={() => { void refresh() }}>Refresh runs</button>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
     </header>
-    <p role="status" className="pb-2 text-xs">{!online ? 'Offline · cached inspection only' : !visible ? 'Paused while hidden' : busy ? 'Reading runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
+    <p role="status" className="pb-2 text-xs">{!online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
       {index ? ` · observed ${new Date(index.observedAt).toLocaleTimeString()} · snapshot expires ${new Date(expiry).toLocaleTimeString()}` : ''}</p>
     {error && <div role="alert" className="rounded border p-2"><p>Runtime unavailable · {error}</p><p className="text-xs">Check the existing runtime connection and signed session, then refresh. No run data is inferred.</p></div>}
     {workspace && !trace && <p className="pb-3 text-sm">Select an authorized run to inspect spans, timing, source, allocation and evaluation. JSON, Markdown and Viewer open from the selected evidence.</p>}
