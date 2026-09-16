@@ -28,6 +28,11 @@ selected = page.getByRole('region', { name: 'Selected run evidence' })
 }
 await openPage()
 const waitText = async (locator, text) => {
+  if (locator === mission) {
+    // Dashboard mounts before its on-demand mission module. Admit that cold
+    // module separately from the data/assertion deadline, as for the editor.
+    await mission.waitFor({ state: 'visible', timeout: 60000 })
+  }
   await locator.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
 }
 const waitTopology = async scope => {
@@ -207,13 +212,31 @@ try {
   await page.locator('#agent-run-view-topology-tab').click()
   await waitTopology(selected)
   assert.equal(await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { pressed: true }).count(), 1)
+  await choose('baseline-run') // Cold loading and interaction have separate authorization windows.
+  await waitTopology(selected)
+  await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await selected.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'mobile-topology.png') })
-  const canvas = await selected.locator('canvas').boundingBox()
-  await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + 100); await page.mouse.down()
-  await page.mouse.move(canvas.x + canvas.width / 2 + 20, canvas.y + 120); await page.mouse.up()
-  await refreshMission() // Lazy topology loading must not consume the next phase's cache lifetime.
+  const canvas = selected.locator('canvas')
+  await canvas.scrollIntoViewIfNeeded()
+  const point = await canvas.evaluate(element => {
+    const box = element.getBoundingClientRect()
+    const x = (Math.max(0, box.left) + Math.min(innerWidth, box.right)) / 2
+    const y = (Math.max(0, box.top) + Math.min(innerHeight, box.bottom)) / 2
+    if (document.elementFromPoint(x, y) !== element) throw Error('Topology drag target is obscured')
+    return { x, y }
+  })
+  await page.mouse.move(point.x, point.y); await page.mouse.down()
+  await page.mouse.move(point.x + 20, point.y + 20); await page.mouse.up()
+  // Prove the next phase recovers through fresh authorization and explicit selection.
+  // A list refresh alone cannot restore a selection correctly cleared by expiry.
+  await page.clock.fastForward(61000)
+  await waitText(mission, 'Snapshot expired')
+  await page.clock.setSystemTime(new Date())
+  await choose('baseline-run')
+  await waitTopology(selected)
+  await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await page.locator('#agent-run-view-evidence-tab').click()
   await selected.getByRole('button', { name: 'Evaluate selected subject' }).click()
   await waitText(selected, 'Span draft-2 · reported')
@@ -318,7 +341,7 @@ try {
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
     assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
-      'subject-evaluation', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
+      'subject-evaluation', 'phase-reauthorization', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
       'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'canvas-eight-views', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], peak, streamed, requests }, null, 2))
@@ -327,6 +350,9 @@ try {
   console.error(error.message)
   console.error('Mission entry state:', await page.evaluate(() => ({
     ready: window.__AG_MAIN_PANEL_OPEN_READY__,
+    dashboard: document.querySelector('#dashboard-surface-agentic-os-panel')?.textContent.slice(0, 4000),
+    modules: performance.getEntriesByType('resource').filter(entry => entry.name.includes('/src/')).slice(-12)
+      .map(entry => ({ path: new URL(entry.name).pathname, duration: entry.duration })),
     tabs: [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].map(node => node.id),
     panels: [...document.querySelectorAll('[aria-label="Main panel"]')].map(node => ({
       width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
@@ -342,6 +368,7 @@ try {
     })),
     text: document.querySelector('[aria-label="Agentic OS mission control"]')?.textContent.slice(0, 4000),
   })).catch(() => 'Document unavailable'))
+  console.error('Mission transport state:', JSON.stringify({ errors, requests, streamed, pending: pending.size }))
   await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})
   throw error
 } finally { await browser.close() }
