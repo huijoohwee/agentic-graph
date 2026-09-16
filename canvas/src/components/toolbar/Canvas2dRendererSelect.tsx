@@ -147,7 +147,7 @@ export function Canvas2dRendererSelect({
     })),
   }] : buildCanvasViewOptions(modelState, rendererOptions), [modelState, rendererOptions, inspection?.view, !!inspection])
   const triggerState = React.useMemo(() => inspection
-    ? { id: `agent-run:${inspection.view}`, title: AGENT_RUN_CANVAS_VIEWS[inspection.view] }
+    ? { id: `agent-run:${inspection.view}` as CanvasViewOptionId, title: AGENT_RUN_CANVAS_VIEWS[inspection.view] }
     : getCanvasViewTriggerState(modelState, rendererOptions), [modelState, rendererOptions, inspection?.view, !!inspection])
   const applyCanvasViewOption = React.useCallback((id: CanvasViewOptionId, baselineGuard = ensureBaselineUnlocked) => {
     if (inspection) {

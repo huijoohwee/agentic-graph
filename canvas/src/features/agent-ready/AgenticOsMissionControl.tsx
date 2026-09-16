@@ -196,7 +196,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <label className="grid text-xs">Window<select name="window" style={inputStyle}><option value="retained">Retention window</option><option value="15">Last 15 minutes</option></select></label>
       <button className={button} disabled={busy || !online}>Apply filters</button>
     </form>}
-    {workspace && <label className="flex flex-wrap gap-2 py-2 text-xs">Run<select style={inputStyle} value={selection.runId ?? ""} disabled={busy || !index || !online} onChange={event => chooseRun(event.target.value)}>
+    {workspace && <label className="flex flex-wrap gap-2 py-2 text-xs">Run<select aria-label="Run" style={inputStyle} value={selection.runId ?? ""} disabled={busy || !index || !online} onChange={event => chooseRun(event.target.value)}>
       {!index && selection.runId && <option>{selection.runId}</option>}{index?.items.map(run => <option key={run.runId} value={run.runId}>{run.runId}</option>)}
     </select></label>}
     {index && !workspace && <>
