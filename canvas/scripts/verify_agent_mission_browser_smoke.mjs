@@ -38,7 +38,20 @@ async function authoredSnapshot() {
     return JSON.stringify(Object.fromEntries(keys.map(key => [key, state[key]])))
   })
 }
+function assertAuthored(actual, expected, message) {
+  if (actual === expected) return
+  const changes = []
+  function walk(a, b, path) {
+    if (changes.length >= 12 || a === b) return
+    if (a && b && typeof a === 'object' && typeof b === 'object') {
+      for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) walk(a[key], b[key], path + '.' + key)
+    } else changes.push({ path, before: String(b).slice(0, 100), after: String(a).slice(0, 100) })
+  }
+  walk(JSON.parse(actual), JSON.parse(expected), 'authored')
+  throw Error(message + ': ' + JSON.stringify(changes))
+}
 async function verifyWorkspace(label, revoke = false) {
+  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const beforeWorkspace = await authoredSnapshot()
   const previousView = await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] })
   await selected.getByPlaceholder('Search span metadata').fill('draft')
@@ -62,7 +75,7 @@ async function verifyWorkspace(label, revoke = false) {
   await page.screenshot({ path: resolve(output, label + '-canvas.png') })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
   await page.waitForFunction(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: draft-2')))
-  assert.equal(await authoredSnapshot(), beforeWorkspace, 'Workspace/Canvas inspection must preserve authored graph and documents')
+  assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Workspace/Canvas inspection must preserve authored graph and documents')
   const tokens = await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().markdownTokensPath)
   assert.ok(!String(tokens).includes('agent-run-'), 'Inspection must not publish authored Markdown tokens')
   const stored = await page.evaluate(() => Object.values(localStorage).some(value => String(value).includes('agent-run-inspection/v1')))
@@ -70,7 +83,7 @@ async function verifyWorkspace(label, revoke = false) {
   if (revoke) await page.evaluate(() => window.dispatchEvent(new Event('agentic-os:authority-change')))
   else await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await editor.waitFor({ state: 'detached' }); await canvas.waitFor({ state: 'detached' })
-  assert.equal(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
+  assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
   assert.deepEqual(await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] }), previousView)
   await page.waitForFunction(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
@@ -99,6 +112,7 @@ try {
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
   await waitText(mission, '2 retained matches')
   assert.equal(await mission.getByText('private-run', { exact: true }).count(), 0)
+  await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const before = await authoredSnapshot()
   await choose('baseline-run')
   if (!process.env.AG_MISSION_WORKSPACE_ONLY) {
