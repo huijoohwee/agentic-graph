@@ -5,6 +5,7 @@ import { registerMarkdownWorkspaceActionBridge } from '@/features/markdown-explo
 import { isStandaloneSpatialCaptureManifestText } from '@/features/markdown-workspace/workspaceImport/spatialCaptureFileset'
 
 type UseWorkspaceExportBridgeArgs = {
+  enabled?: boolean
   activeDocumentKey: string
   activeText: string
   jsonSourceText?: string | null
@@ -251,8 +252,9 @@ export function useWorkspaceExportBridge(args: UseWorkspaceExportBridgeArgs) {
   )
 
   React.useEffect(() => {
+    if (args.enabled === false) return
     return registerMarkdownWorkspaceActionBridge('markdown-workspace-export', exportBridge)
-  }, [exportBridge])
+  }, [args.enabled, exportBridge])
 
   return {
     handleExportWorkspaceFile,

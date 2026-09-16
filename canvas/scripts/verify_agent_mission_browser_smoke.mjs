@@ -30,10 +30,41 @@ async function authoredSnapshot() {
   return page.evaluate(async () => {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts'), state = useGraphStore.getState()
     const keys = ['graphData', 'selectedNodeIds', 'selectedEdgeIds', 'selectedGroupIds', 'layoutPositionCacheByMode',
-      'flowWidgetPosByNodeId', 'flowWidgetWorldPosByNodeId', 'openWidgetNodeIds', 'history', 'historyIndex', 'sourceFiles']
+      'flowWidgetPosByNodeId', 'flowWidgetWorldPosByNodeId', 'openWidgetNodeIds', 'history', 'historyIndex', 'sourceFiles',
+      'markdownDocumentName', 'markdownDocumentText', 'jsonSourceDocumentName', 'jsonSourceDocumentText']
     if (keys.some(key => !(key in state))) throw Error('Authored-state observation is incomplete')
     return JSON.stringify(Object.fromEntries(keys.map(key => [key, state[key]])))
   })
+}
+async function verifyWorkspace(label, revoke = false) {
+  const beforeWorkspace = await authoredSnapshot()
+  await selected.getByPlaceholder('Search span metadata').fill('draft')
+  await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
+  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
+  await editor.waitFor({ state: 'visible', timeout: 60000 })
+  await editor.getByRole('region', { name: 'Markdown Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible', timeout: 60000 })
+  await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
+  await editor.getByRole('region', { name: 'JSON Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible' })
+  await waitText(editor.getByRole('region', { name: 'JSON Editor', exact: true }), 'agent-run-inspection/v1')
+  await editor.getByRole('checkbox', { name: 'Show Viewer pane', exact: true }).check()
+  await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ state: 'visible' })
+  assert.equal(await editor.getByRole('button', { name: 'Insert slash command trigger', exact: true }).count(), 0)
+  await page.screenshot({ path: resolve(output, label + '-workspace.png') })
+  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await canvas.getByRole('img', { name: /Observed spans and causal links/ }).waitFor({ state: 'visible' })
+  await canvas.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
+  await waitText(canvas, 'Selected span: draft-2')
+  await page.screenshot({ path: resolve(output, label + '-canvas.png') })
+  await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+  await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }), 'draft')
+  assert.equal(await authoredSnapshot(), beforeWorkspace, 'Workspace/Canvas inspection must preserve authored graph and documents')
+  const stored = await page.evaluate(() => Object.values(localStorage).some(value => String(value).includes('agent-run-inspection/v1')))
+  assert.equal(stored, false, 'Run snapshot must not persist in browser storage')
+  if (revoke) await page.evaluate(() => window.dispatchEvent(new Event('agentic-os:authority-change')))
+  else await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  await editor.waitFor({ state: 'detached' }); await canvas.waitFor({ state: 'detached' })
+  assert.equal(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
 }
 async function switchPrincipal(id) {
   const path = process.env.AGENTIC_OS_DURABLE_RUN_HOST_CONFIG, config = JSON.parse(await readFile(path, 'utf8'))
@@ -145,6 +176,9 @@ try {
   assert.deepEqual(errors, [])
   await page.screenshot({ path: resolve(output, 'mobile.png') })
   console.log('Mission browser: mobile lifecycle, authority and expiry passed')
+  await page.clock.setSystemTime(new Date())
+  await mission.getByRole('button', { name: 'Refresh runs' }).click(); await waitText(mission, '2 retained matches'); await choose('candidate-run')
+  await verifyWorkspace('mobile', true)
   // Verify native desktop entry independently; the existing panel uses separate responsive mounts.
   await page.clock.setSystemTime(new Date())
   await page.setViewportSize({ width: 1280, height: 900 }); await page.reload({ waitUntil: 'domcontentloaded' })
@@ -159,13 +193,15 @@ try {
   await selected.getByRole('img', { name: /Observed spans and causal links/ }).waitFor()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
+  await verifyWorkspace('desktop')
   assert.deepEqual(errors, [])
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
     assertions: ['lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
       'subject-evaluation', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
-      'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry'], peak, requests }, null, 2))
+      'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
+      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence'], peak, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
 } catch (error) {
   console.error(error.message)

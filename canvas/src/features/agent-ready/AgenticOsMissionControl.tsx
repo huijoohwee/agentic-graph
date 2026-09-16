@@ -1,4 +1,6 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { openAgentRunInspection, closeAgentRunInspection } from './agentRunInspectionStore'
 import type { RunOperation } from 'agentic-os/agents/invocation'
 import TabHeader from '@/features/panels/ui/TabHeader'
 import { GraphDataTableDomTableView } from '@/features/graph-data-table/ui/GraphDataTableDomTableView'
@@ -15,7 +17,7 @@ const inputStyle = { minWidth: 0, maxWidth: '100%', border: '1px solid var(--kg-
 type Selection = { runId: string | null; spanId: string | null }
 const emptySelection: Selection = { runId: null, spanId: null }
 
-export default function AgenticOsMissionControl() {
+export default function AgenticOsMissionControl({ onOpenWorkspace }: { onOpenWorkspace?: () => void }) {
   const [index, setIndex] = React.useState<RunIndex | null>(null), [trace, setTrace] = React.useState<RunTrace | null>(null)
   const [selection, setSelection] = React.useState<Selection>(emptySelection), selected = React.useRef(selection)
   selected.current = selection
@@ -32,7 +34,7 @@ export default function AgenticOsMissionControl() {
     active.current?.abort(); active.current = null; setBusy(false)
   }, [])
   const clear = React.useCallback(() => {
-    scope.current = null; selected.current = emptySelection
+    closeAgentRunInspection(); scope.current = null; selected.current = emptySelection
     setIndex(null); setTrace(null); setSelection(emptySelection); setBaseline(null); setComparison(null); setExpiry(0)
   }, [])
   const perform = React.useCallback(async (operation: (signal: AbortSignal) => Promise<void>, mutation = false) => {
@@ -136,6 +138,14 @@ export default function AgenticOsMissionControl() {
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'agent-run-metadata.json'; anchor.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
   }
+  const openWorkspace = () => {
+    if (!trace || !scope.current || expiry <= Date.now()) return
+    try {
+      openAgentRunInspection({ trace, scope: scope.current, expiresAt: expiry, spanId: selection.spanId, search })
+      useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true })
+      onOpenWorkspace?.()
+    } catch (failure) { setError((failure as Error).message) }
+  }
   const maxTiming = Math.max(1, ...spans.map(({ span: s }) => (s.timing.offset ?? 0) + (s.timing.inclusive ?? 0)))
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
   return <section aria-label="Agentic OS mission control" className="h-full min-h-0 min-w-0 overflow-auto p-3" style={{ overflowWrap: 'anywhere' }}>
@@ -221,6 +231,7 @@ export default function AgenticOsMissionControl() {
         {trace.nextCursor && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal, trace.nextCursor!)) }}>Next span page</button>}
         <button className={button} onClick={() => chooseSpan(null)}>Select whole run</button>
         <button className={button} onClick={exportMetadata}>Export metadata</button>
+        <button className={button} disabled={expiry <= Date.now()} onClick={openWorkspace}>Open in Editor Workspace</button>
       </div>
       <section aria-label="Subject evaluation" className="rounded border p-3">
         <h4 className="font-semibold">{selection.spanId ? `Span ${selection.spanId}` : 'Whole run'} · {evaluated?.status ?? 'unevaluated'}</h4>

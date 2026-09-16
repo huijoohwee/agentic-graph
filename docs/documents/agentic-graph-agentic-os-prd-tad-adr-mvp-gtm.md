@@ -538,7 +538,7 @@ inside the existing dashboard; the status-tool identity, permissions and baselin
 The solo operator needs to locate the failed or expensive attempt before spending another run.
 Given an authorized snapshot, the operator selects one run/span, switches list, tree, timing and topology,
 filters metadata while preserving known ancestors, inspects source/budget/evaluation evidence and explicitly
-requests a bounded evaluation. Missing cost, clock, authorization, retention or coverage is visible.
+requests a bounded evaluation. Open the same read-only snapshot in existing Editor Workspace JSON/Markdown/Viewer and Canvas; closing restores authored work. Missing cost, clock, authorization, retention or coverage is visible.
 A disabled host is unavailable, never an empty successful dataset. WTP and first-dollar conversion are unverified.
 
 ### TAD / RAO-M02
@@ -548,6 +548,7 @@ A disabled host is unavailable, never an empty successful dataset. WTP and first
 - Reuse `GraphDataTableDomTableView`; add keyboard row selection at its owner. FlowCanvas dispatches inspection
   to `FlowCanvasInspection.tsx`, which reuses native layout/scene/render functions with local pan/zoom only.
   Inspection cannot write the authored graph, selection, layouts, snapshots, timeline, widgets or history.
+- `agentRunInspectionStore.ts` holds one bounded expiring memory-only handoff; existing EmbeddedEditorShell and CanvasViewport lazily render `AgentRunWorkspaceInspection.tsx` through MarkdownWorkspaceMain and FlowCanvas. JSON, Markdown, Viewer and Canvas share the run/span selection; no workspace files or host mirrors are created. Passive panes disable the authored-graph export bridge.
 - `durableRunTransport.ts` and `viteDurableRunBridge.mjs` consume the pinned OS operation contract.
   The optional public observation/session binding is trusted build configuration, same-origin paths only;
   credentials and principal assignment remain in the existing host/session owner. Tool JSON selects neither.
@@ -555,7 +556,7 @@ A disabled host is unavailable, never an empty successful dataset. WTP and first
   cursors replace pages rather than accumulating unbounded traces. Missing endpoints remain explicit placeholders.
 - Opt-in live refresh has a five-second minimum, one request in flight, cancellation of obsolete reads,
   a 60-second maximum backoff, and hidden/offline pause. Expiring memory-only snapshots support offline inspection;
-  authority change, denial, expiry and unmount clear private cached evidence. Offline evaluation is disabled.
+  authority change, denial and expiry clear private evidence. Dashboard unmount clears its cache; an explicit workspace handoff retains only that authorized page until its original expiry or close. Offline evaluation is disabled.
 - Evaluation names immutable subject/profile evidence and uses the OS resource owner. Comparison preserves
   matching cohort/profile boundaries, exclusions and insufficient-evidence holds. No score grants execution,
   quota, release or payment authority. Metadata export is explicit; raw payloads are never copied into this view.
@@ -570,11 +571,11 @@ Rollback reverts these source changes and the exact package pin; it never delete
 ### MVP / RAO-M04
 
 Source baseline `ccf87bae948dbd04744561372f83d7e9c6461a4c`; one registered writer and scoped worktree.
-Budget: 120–180 active minutes estimate, ≤12 product modules/120 KB, at most three new UI/adapter modules,
+Refreshed E2 estimate: 60–90 additional active minutes for the requested workspace handoff; ≤20 product modules/240 KB total, at most five new UI/adapter modules,
 <600 lines per authored file, <500,000 bytes per bundle, no new dependencies or always-on process.
 Required evidence: native projection/transport tests; 360 px and desktop browser flows; keyboard selection;
 fan-out/fan-in, failed/retried attempts, missing parents, unknown clocks, offline/hidden refresh and two principals;
-unchanged authored graph state; type/build/chunk checks; required Integration Gate; exact local review.
+unchanged authored graph and document/draft state; existing workspace JSON/Markdown/Viewer plus Canvas, close/expiry/authority revocation; type/build/chunk checks; required Integration Gate; exact local review.
 The implementation is present; `agent-mission:check` is selected by the existing affected-CI owner.
 Local predecessor `b30fd94df018984b37db31a51e6163da069f5701` passed the 360 px fixture browser flow,
 including selection, evaluation, pagination, offline inspection, access isolation and authored graph preservation.
