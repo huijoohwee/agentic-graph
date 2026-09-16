@@ -123,7 +123,7 @@ export function traceGraph(trace: RunTrace, search: string): GraphData {
   const spans = visibleSpanTree(trace.spans, search).map(r => r.span), names = new Set(spans.map(s => s.spanId))
   const graph: GraphData = { type: 'agentic-os-observation', nodes: [], edges: [], metadata: { readOnly: true } }
   for (const s of spans) graph.nodes.push({ id: spanNodeId(trace.runId, s.spanId), label: s.operation, type: s.kind,
-    properties: { status: s.status, 'visual:shape': s.kind === 'tool' ? 'hex' : 'circle',
+    properties: { status: s.status, 'inspection:label': spanLabel(s), 'visual:shape': s.kind === 'tool' ? 'hex' : 'circle',
       'visual:fill': s.status === 'failed' ? '#fee2e2' : s.kind === 'tool' ? '#fef9c3' : s.kind === 'retrieval' ? '#ccfbf1' : '#e0e7ff',
       'visual:stroke': s.status === 'failed' ? '#be123c' : '#4f46e5', 'visual:strokeWidth': 2 } })
   function edge(source: string, target: string, kind: string) {

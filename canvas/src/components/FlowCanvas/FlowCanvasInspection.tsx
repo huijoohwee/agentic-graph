@@ -92,7 +92,7 @@ export default function FlowCanvasInspection({ graph, selectedNodeId, onSelect }
       {graph.nodes.map(node => <li key={node.id} className="min-w-0 max-w-full">
         <button type="button" disabled={node.properties.observed === false} aria-pressed={node.id === selectedNodeId}
           className={`rounded border p-2 text-left text-xs ${node.id === selectedNodeId ? UI_THEME_TOKENS.button.activeSoft : ''}`}
-          style={{ overflowWrap: 'anywhere' }} onClick={() => onSelect(node.id)}>{node.label}</button>
+          style={{ overflowWrap: 'anywhere' }} onClick={() => onSelect(node.id)}>{String(node.properties['inspection:label'] || node.label)}</button>
       </li>)}
     </ul>
   </section>
