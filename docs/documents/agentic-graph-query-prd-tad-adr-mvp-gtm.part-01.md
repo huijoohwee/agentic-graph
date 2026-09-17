@@ -1,28 +1,28 @@
 ---
 title: "Reference implementation: agentic-graph-query-prd-tad-adr-mvp-gtm section 1"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.1"
-date: "2026-09-12"
+version: "0.3.2"
+date: "2026-09-17"
 lang: "en-US"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.3.1"
-tad_revision: "0.3.1"
-adr_revision: "0.3.1"
-mvp_revision: "0.3.1"
-gtm_revision: "0.3.1"
+prd_revision: "0.3.2"
+tad_revision: "0.3.2"
+adr_revision: "0.3.2"
+mvp_revision: "0.3.2"
+gtm_revision: "0.3.2"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-cba000d3779d--planning-v27"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--node-impact-inspector"
+agent_id: "codex-01a0af1e"
 parent: "agentic-graph-query-prd-tad-adr-mvp-gtm.md"
 guideline_revision: "2.7.0"
 source_section_lines: "1-478"
 ---
 
-[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.1`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
+[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.2`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
 
 
 

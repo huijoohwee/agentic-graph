@@ -2,7 +2,7 @@
 title: "agentic-graph Queryable Corpus Graph - PRD and TAD"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 id: "agentic-graph-query-prd-tad"
-version: "0.3.1"
+version: "0.3.2"
 status: "implemented-finetune-contract"
 created: "2026-05-29"
 updated: "2026-07-22"
@@ -44,29 +44,29 @@ related:
   - "docs/documents/agentic-graph-chat-ai-markdown-pipeline-document.md"
   - "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md"
   - "docs/documents/agentic-graph-deterministic-agent-graph-runtime.md"
-date: "2026-09-12"
+date: "2026-09-17"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-cba000d3779d--planning-v27"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--node-impact-inspector"
+agent_id: "codex-01a0af1e"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.3.0"
-prd_revision: "0.3.1"
-tad_revision: "0.3.1"
-adr_revision: "0.3.1"
-mvp_revision: "0.3.1"
-gtm_revision: "0.3.1"
+reviewed_source_revision: "9cb689e67578d2e326470fe21a59e918a2160151"
+previous_document_version: "0.3.1"
+prd_revision: "0.3.2"
+tad_revision: "0.3.2"
+adr_revision: "0.3.2"
+mvp_revision: "0.3.2"
+gtm_revision: "0.3.2"
 ---
 
 # Reference implementation: agentic-graph Queryable Corpus Graph - PRD and TAD
 
-This combined planning artifact joins `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.1`. Sections are split solely to keep each authored file below 600 lines. Existing source observations retain their recorded scope and revision. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
+This combined planning artifact joins `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.2`. Sections are split solely to keep each authored file below 600 lines. Existing source observations retain their recorded scope and revision. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
 
 <a id="executive-summary"></a>
 - [Executive Summary](agentic-graph-query-prd-tad-adr-mvp-gtm.part-01.md#executive-summary)
