@@ -281,13 +281,14 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
               title={observationPreset ? "Import a local observation into the full Canvas" : "Import canvas embed"}
               data-kg-live-canvas-hero-import-embed="true"
             >
-              <Upload className="h-4 w-4" aria-label="Import canvas embed icon" data-kg-live-canvas-hero-action-icon="import" />
+              <Upload className="h-4 w-4" aria-label={observationPreset ? "Import local file icon" : "Import canvas embed icon"} data-kg-live-canvas-hero-action-icon="import" />
             </button>
             {observationPreset && <input ref={observationFile} type="file" accept=".json,application/json" className="sr-only" aria-label="Import local observation"
               onChange={event => {
                 const file = event.target.files?.[0]; event.target.value = ''
                 if (file) void import('@/features/agent-ready/agentRunImport').then(({ importAgentRunFile }) =>
                   importAgentRunFile(file, props.onEnter, 'canvas')).then(handled => { if (!handled) setErrorText('Choose native run or workflow JSON, or an exported inspection.') })
+                  .catch(reason => setErrorText(reason instanceof Error ? reason.message : 'Unable to import this observation.'))
               }} />}
             <kbd className="rounded-md border border-[color:var(--kg-border)] px-2 py-1 font-mono text-[10px] text-[var(--kg-text-secondary)]" title="Open Demo shortcut">Ctrl/⌘↵</kbd>
           </section>
