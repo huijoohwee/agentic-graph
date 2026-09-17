@@ -3,7 +3,7 @@ schema: "agentic-graph-runtime-contract/v1"
 title: "agentic-graph Deterministic Agent-Graph Runtime"
 doc_type: "Runtime Contract"
 id: "agentic-graph-deterministic-agent-graph-runtime"
-version: "1.4.0"
+version: "1.5.0"
 date: "2026-09-17"
 status: "active"
 created: "2026-07-22"
@@ -273,3 +273,23 @@ query and evidence explanation remain the authoritative syntax path into the exi
 GTM: compare compatible next-run stage observations; do not infer cash or model usage from deterministic
 checks. Scope: at most nine source/test/doc files (including protected OS pin adoption), 60 KB, 35 active minutes; provider waits separate. Revert this
 source increment on regression while preserving previous observations and immutable lifecycle roots.
+
+
+## Source-plan reuse (CI-EVIDENCE-002)
+
+PRD: execute the same source-validation plan once across PR and main when evidence remains valid.
+TAD: consume the pinned OS merged-PR-tree verifier through the existing protected-evidence action.
+The source policy binds the complete owner-selected paths, expanded commands, tools, runner,
+dependencies and environment; only the primary commit identity differs. The executor verifies once
+at the source-plan boundary, writes reused stages into the existing OS observation store, and
+retains the original provider run/revision. Canvas imports preserve bounded reuse attribution, link
+to the original run and project reused spans against the tested source revision. JSON/SSE, MCP and `/workflow.trace #read-only @input`
+reuse the native reader; AST extraction, queries, explanations and D3 remain in their current owners.
+ADR: source fixtures and deterministic checks are eligible; mutable-service, live deployment,
+commit/PR ownership and runtime-review checks remain fresh. Future live checks must stay outside
+this opt-in source plan. An unavailable or changed proof executes the original plan with an explicit
+miss disposition; it never skips checks because a local file merely claims success. Read-only
+Actions access allows retrieval of the bound artifact; no write or deployment permission is added.
+MVP: validate merge/input/provider drift, fallback, fresh preflight and original-run attribution.
+GTM: measure verified reuse, avoided source commands and lookup overhead on the first protected
+PR-to-main transition. Do not claim avoided CPU/token/cash amounts from missing measurements.

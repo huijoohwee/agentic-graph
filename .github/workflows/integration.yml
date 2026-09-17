@@ -17,6 +17,7 @@ on:
       - main
 
 permissions:
+  actions: read
   contents: read
   pull-requests: read
 
@@ -260,12 +261,43 @@ jobs:
           export "$owner_inputs"
           node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs capture --policy=.agentic-os-ci-evidence.json --output="$RUNNER_TEMP/ci-evidence-before.json"
 
+      - name: Find prior PR source-plan evidence
+        id: source_evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: ./agentic-graph/.github/actions/protected-ci-evidence
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          policy: .agentic-os-ci-source-evidence.json
+          defer-verification: 'true'
+
+      - name: Capture source-plan inputs
+        id: source_inputs
+        if: github.event_name == 'pull_request'
+        working-directory: agentic-graph
+        run: |
+          owner_inputs="$(node scripts/ci-evidence-inputs.mjs)"
+          export "$owner_inputs"
+          node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs capture --policy=.agentic-os-ci-source-evidence.json --output="$RUNNER_TEMP/source-before.json"
+
       - name: Run canonical integration gate
         id: integration
         working-directory: agentic-graph
         env:
           AGENTIC_OS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR: ${{ runner.temp }}
         run: npm run ci:integration
+
+      - name: Retain source-plan reuse decision
+        if: always() && github.event_name == 'push'
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-source-reuse-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source-reuse.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Export native validation observation
         id: validation_observation
@@ -314,5 +346,23 @@ jobs:
         with:
           name: agentic-os-ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/evidence.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Seal PR source-plan evidence
+        if: steps.source_inputs.outcome == 'success'
+        working-directory: agentic-graph
+        run: |
+          owner_inputs="$(node scripts/ci-evidence-inputs.mjs)"
+          export "$owner_inputs"
+          mkdir -p "$RUNNER_TEMP/source-evidence"
+          node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs seal --policy=.agentic-os-ci-source-evidence.json --before="$RUNNER_TEMP/source-before.json" --output="$RUNNER_TEMP/source-evidence/evidence.json"
+
+      - name: Retain PR source-plan evidence
+        if: steps.source_inputs.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: agentic-os-ci-source-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/source-evidence/evidence.json
           if-no-files-found: error
           retention-days: 1

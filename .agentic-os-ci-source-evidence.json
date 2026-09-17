@@ -1,0 +1,41 @@
+{
+  "schema": "agentic-os/ci-evidence-policy/v2",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "workflow": ".github/workflows/integration.yml",
+  "branch": "main",
+  "job": "Integration Gate",
+  "step": "Run canonical integration gate",
+  "command": [
+    "npm",
+    "run",
+    "ci:affected:source"
+  ],
+  "dependencies": [
+    {
+      "id": "agentic-os",
+      "repository": "github.com/huijoohwee/agentic-os",
+      "path": "../agentic-os"
+    },
+    {
+      "id": "mirror",
+      "repository": "github.com/huijoohwee/huijoohwee",
+      "path": "../huijoohwee"
+    },
+    {
+      "id": "schema",
+      "repository": "github.com/huijoohwee/huijoohwee.github.io",
+      "path": "../huijoohwee.github.io"
+    }
+  ],
+  "environment": [
+    "NODE_OPTIONS",
+    "CI",
+    "NODE_ENV",
+    "AG_DEV_SOURCE_MODE",
+    "VITE_AGENTIC_OS_STORAGE_BASE_URL",
+    "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT",
+    "AGENTIC_OS_CI_OWNER_INPUTS"
+  ],
+  "maxAgeSeconds": 86400,
+  "reuse": "merged-pr-tree"
+}

@@ -45,7 +45,7 @@ const authorize = (overrides = {}) => spawnSync('bash', ['--noprofile', '--norc'
 
 test('exact main recovery runs the existing read-only gate without PR metadata', () => {
   assert.equal(authorize().status, 0)
-  assert.deepEqual(workflow.permissions, { contents: 'read', 'pull-requests': 'read' })
+  assert.deepEqual(workflow.permissions, { actions: 'read', contents: 'read', 'pull-requests': 'read' })
   assert.equal(workflow.on.workflow_dispatch.inputs.pull_request_number.default, 0)
   assert.equal(authorization.if, "${{ github.event_name == 'workflow_dispatch' }}")
   assert.equal(steps.find(step => step.name === 'Load exact protected refresh pull request metadata').if,

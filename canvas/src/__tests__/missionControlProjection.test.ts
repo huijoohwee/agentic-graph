@@ -113,6 +113,21 @@ export async function testMissionControlProjection(): Promise<void> {
     stages: observation.stages.map(stage => ({ ...stage, command: 'private-command', output: 'private-output' })) }))
   assert.ok(!JSON.stringify(stripped).includes('private-'))
 
+  const reuseEvidence = { runUrl: 'https://github.com/example/source/actions/runs/7', runId: 7, runAttempt: 1,
+    inputDigest: 'a'.repeat(64), sourceRevision: '3'.repeat(40), targetRevision: observation.source.revision }
+  const reused = { ...observation, status: 'passed', reuseEvidence,
+    stages: [{ ...observation.stages[0], status: 'reused', elapsedMs: 0 }] }
+  const reuseTrace = validationTrace(readValidationObservation(JSON.stringify(reused)))
+  assert.deepEqual(reuseTrace.localObservation?.reuseEvidence, reuseEvidence)
+  assert.equal(reuseTrace.spans[0]!.component.revision, reuseEvidence.sourceRevision)
+  assert.equal(reuseTrace.candidate.revision, observation.source.revision)
+  assert.equal(reuseTrace.spans[0]!.timing.offset, null)
+  assert.equal(traceResources(reuseTrace).cpuMs, null)
+  for (const update of [{ runUrl: 'https://github.com/other/repository/actions/runs/7' }, { runAttempt: 0 },
+    { inputDigest: 'invalid' }, { sourceRevision: 'invalid' }, { targetRevision: '4'.repeat(40) }])
+    assert.throws(() => readValidationObservation(JSON.stringify({ ...reused, reuseEvidence: { ...reuseEvidence, ...update } })), /Invalid/)
+  assert.throws(() => readValidationObservation(JSON.stringify({ ...reused, stages: observation.stages })), /Invalid/)
+
   const measured = { cpuMs: 42, peakMemoryBytes: 1048576, tokens: 0, costUsd: 0,
     costBasis: 'estimated', memoryScope: 'maximum-single-process-rss' }
   const withResources = { ...observation, resources: { ...observation.resources, ...measured },
