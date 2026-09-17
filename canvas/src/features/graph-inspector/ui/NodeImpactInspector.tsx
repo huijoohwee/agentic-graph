@@ -1,15 +1,18 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { NodeEvidenceLegend } from './NodeEvidenceLegend'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { inspectNodeImpact, impactExplanation, rankImpactNodes, filterImpactNodes, type ImpactDirection } from '../lib/nodeImpact'
+import { inspectNodeImpact, impactExplanation, rankImpactNodes, rankImpactModules, filterImpactNodes, type ImpactDirection } from '../lib/nodeImpact'
+import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
 
 export default function NodeImpactInspector({ nodeId }: { nodeId: string | null }) {
+  const searchId = useId()
   const graphData = useGraphStore(s => s.graphData)
   const graphRevision = useGraphStore(s => s.graphDataRevision)
   const [query, setQuery] = useState('')
+  const [ranking, setRanking] = useState<'nodes' | 'modules'>('modules')
   const [depth, setDepth] = useState(2)
   const [direction, setDirection] = useState<ImpactDirection>('incoming')
   const result = useMemo(() => {
@@ -24,6 +27,10 @@ export default function NodeImpactInspector({ nodeId }: { nodeId: string | null 
   const { lookup, impact, error } = result
   const ranked = useMemo(() => lookup ? rankImpactNodes(lookup) : [], [lookup])
   const found = useMemo(() => filterImpactNodes(ranked, query), [ranked, query])
+  const rankedModules = useMemo(() => lookup ? rankImpactModules(lookup) : [], [lookup])
+  const modules = useMemo(() => filterImpactNodes(rankedModules, query), [rankedModules, query])
+  const native = isReadOnlyAgentGraphProjection(graphData)
+  const showModules = native && ranking === 'modules'
   const selected = ranked.find(row => row.node.id === nodeId)
   const buttonClass = `App-toolbar__btn ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`
   if (error) return <p role="alert" className="px-3 py-2 text-xs">{error}</p>
@@ -33,19 +40,36 @@ export default function NodeImpactInspector({ nodeId }: { nodeId: string | null 
     useGraphStore.getState().requestZoom('selection')
   }
   return <><section aria-label="Find a node" className="min-w-0 px-3 py-2 text-xs">
-    <label className="block font-semibold" htmlFor="impact-node-search">Find a node</label>
-    <input id="impact-node-search" type="search" value={query} onChange={event => setQuery(event.target.value)}
+    <label className="block font-semibold" htmlFor={searchId}>{showModules ? 'Find a module' : 'Find a node'}</label>
+    <input id={searchId} type="search" value={query} onChange={event => setQuery(event.target.value)}
       className={`mt-2 w-full min-w-0 rounded border p-2 ${UI_THEME_TOKENS.panel.border}`}
-      placeholder="Name, kind:function path:src/ prov:extracted" />
+      placeholder={showModules ? 'Path, kind:module path:src/ prov:extracted' : 'Name, kind:function path:src/ prov:extracted'} />
     <p className="mt-1">Filter by kind, path, or provenance using kind:, path:, prov:.</p>
     <h3 className="mt-2 font-semibold">Most connected</h3>
-    <p aria-live="polite">{found.length} matching nodes in the loaded graph.</p>
+    {native && <div role="group" aria-label="Rank by" className="my-2 flex gap-2">
+      {(['modules', 'nodes'] as const).map(value => <button key={value} type="button" className={buttonClass}
+        aria-pressed={ranking === value} onClick={() => setRanking(value)}>{value === 'modules' ? 'Modules' : 'Nodes'}</button>)}
+    </div>}
+    {showModules ? <>
+      <p>Module = captured source file. Relationships are counted once per file, including internal links. Unreported paths are excluded.</p>
+      <p aria-live="polite">{modules.length} matching modules in the loaded graph.</p>
+      <ul className="mt-1 space-y-2">{modules.slice(0, 8).map(row => <li key={row.path} className="min-w-0 break-words">
+        <button type="button" className="underline" onClick={() => {
+          useGraphStore.getState().selectNodesExpanded({ nodeIds: row.nodeIds, edgeIds: [], activeNodeId: row.node.id, forceMulti: true })
+          useGraphStore.getState().requestZoom('selection')
+        }}>{row.path}</button>
+        <span> · module · {row.nodeIds.length} nodes · {row.degree} relationships</span>
+        <p>prov: {row.provenance} ({row.provenanceBasis})</p>
+      </li>)}</ul>
+      {modules.length > 8 && <p>Showing the 8 most connected matching modules.</p>}
+    </> : <><p aria-live="polite">{found.length} matching nodes in the loaded graph.</p>
     <ul className="mt-1 space-y-2">{found.slice(0, 8).map(row => <li key={row.node.id} className="min-w-0 break-words">
       <button type="button" className="underline" onClick={() => selectNode(row.node.id)}>{String(row.node.label || row.node.id)}</button>
       <span> · {row.degree} relationships</span>
       <p>kind: {row.kind} · path: {row.path || 'unreported'} · prov: {row.provenance} ({row.provenanceBasis})</p>
     </li>)}</ul>
-    {found.length > 8 && <p>Showing the 8 most connected matches.</p>}
+    {found.length > 8 && <p>Showing the 8 most connected matches.</p>}</>}
+    {native && <p>Loaded projections may be partial; rankings and sizes are lower-bound views of captured relationships.</p>}
     <NodeEvidenceLegend graph={lookup.graphData} />
   </section>{impact && <section aria-label="Blast radius" className={`min-w-0 border-b px-3 py-2 text-xs ${UI_THEME_TOKENS.panel.divider}`}>
     <div className="flex flex-wrap items-center justify-between gap-2">

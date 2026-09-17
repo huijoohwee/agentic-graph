@@ -46,7 +46,27 @@ export function rankImpactNodes(lookup: CachedGraphLookup) {
   }).sort((a, b) => b.degree - a.degree || (a.node.id < b.node.id ? -1 : a.node.id > b.node.id ? 1 : 0))
 }
 
-export function filterImpactNodes(rows: ReturnType<typeof rankImpactNodes>, query: string) {
+/** A module is a captured source file, not a synthesized community or renamed node. */
+export function rankImpactModules(lookup: CachedGraphLookup) {
+  const modules = new Map<string, { nodeIds: string[]; edges: Map<string, GraphEdge> }>()
+  for (const node of lookup.nodes) {
+    const path = impactSourcePath(node)
+    if (!path) continue
+    const group = modules.get(path) || { nodeIds: [], edges: new Map<string, GraphEdge>() }
+    group.nodeIds.push(node.id)
+    for (const edge of lookup.incidentEdgesByNodeId.get(node.id) || []) group.edges.set(edge.id, edge)
+    modules.set(path, group)
+  }
+  return [...modules].map(([path, group]) => {
+    group.nodeIds.sort((a, b) => Number(lookup.nodeById.get(b)?.type === 'SourceFile') - Number(lookup.nodeById.get(a)?.type === 'SourceFile') || a.localeCompare(b))
+    const node = lookup.nodeById.get(group.nodeIds[0]!)!
+    const kinds = [...new Set([...group.edges.values()].map(edge => text(edge.properties?.['evidence:kind'])).filter(Boolean))].sort()
+    return { node, nodeIds: group.nodeIds, degree: group.edges.size, kind: 'module', path,
+      provenance: kinds.join(', ') || 'unreported', provenanceBasis: 'incident edges', search: `${path} module`.toLowerCase() }
+  }).sort((a, b) => b.degree - a.degree || a.path.localeCompare(b.path))
+}
+
+export function filterImpactNodes<T extends ReturnType<typeof rankImpactNodes>[number]>(rows: T[], query: string): T[] {
   const tokens: string[] = query.slice(0, 256).toLowerCase().match(/(?:[^\s"]+|"[^"]*")+/g) || []
   return rows.filter(row => tokens.every(token => {
     const colon = token.indexOf(':'), key = colon < 0 ? '' : token.slice(0, colon)
