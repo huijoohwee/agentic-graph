@@ -270,6 +270,7 @@ async function verifyApexActivation(width) {
   assert.ok(dashboardBounds.width > width * .9, 'Observability dashboard must use the full Canvas width')
   await dashboard.getByText('1. Import local file', { exact: true }).waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
+  await page.screenshot({ path: resolve(output, `apex-${width}-catalog-overlay.png`) })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await waitForAsync(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
   // Source bootstrap completes before the deferred active-file projection.
