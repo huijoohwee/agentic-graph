@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ElementType } from 'react'
+import { lazy, Suspense, Fragment, useEffect, useMemo, useRef, useState, type ElementType } from 'react'
 import type { GraphRecordColumnDoc } from '@/lib/graph-record-db'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { SELECTION_INSPECTOR_EMPTY_TEXT } from '@/lib/config'
@@ -31,6 +31,8 @@ import {
   GRAPH_RECORD_INSPECTOR_DETAIL_GRID_CLASS_NAME,
   GRAPH_RECORD_INSPECTOR_ROOT_CLASS_NAME,
 } from '@/features/graph-inspector/ui/graphInspectorResponsiveMetrics'
+
+const NodeImpactInspector = lazy(() => import('./NodeImpactInspector'))
 
 const EMPTY_WIDGET_REGISTRY: WidgetRegistryEntry[] = []
 const EMPTY_STRING_ARRAY: string[] = []
@@ -401,6 +403,9 @@ export function GraphRecordInspector({
         className={scrollMode === 'internal' ? `${UI_RESPONSIVE_VIEWPORT_SCROLL_PANEL_CLASSNAME} flex-1 min-h-0` : undefined}
         aria-label="Record fields"
       >
+        <Suspense fallback={<p className="px-3 py-2 text-xs">Loading graph inspection…</p>}>
+          <NodeImpactInspector nodeId={row?.tableId === 'nodes' ? row.rowId : null} />
+        </Suspense>
         {isEmpty ? (
           <p className={cn('px-3 py-2', microLabelClass, UI_THEME_TOKENS.text.tertiary)}>{SELECTION_INSPECTOR_EMPTY_TEXT}</p>
         ) : (

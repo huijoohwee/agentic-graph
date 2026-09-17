@@ -1,28 +1,28 @@
 ---
 title: "Reference implementation: agentic-graph-query-prd-tad-adr-mvp-gtm section 2"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.1"
-date: "2026-09-12"
+version: "0.3.2"
+date: "2026-09-17"
 lang: "en-US"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.3.1"
-tad_revision: "0.3.1"
-adr_revision: "0.3.1"
-mvp_revision: "0.3.1"
-gtm_revision: "0.3.1"
+prd_revision: "0.3.2"
+tad_revision: "0.3.2"
+adr_revision: "0.3.2"
+mvp_revision: "0.3.2"
+gtm_revision: "0.3.2"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-cba000d3779d--planning-v27"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--node-impact-inspector"
+agent_id: "codex-01a0af1e"
 parent: "agentic-graph-query-prd-tad-adr-mvp-gtm.md"
 guideline_revision: "2.7.0"
 source_section_lines: "479-569"
 ---
 
-[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.1`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
+[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.2`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
 
 ### Context
 
@@ -91,7 +91,7 @@ This implemented PRD/TAD remains accepted when it keeps valid YAML frontmatter, 
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -113,5 +113,57 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 ## Planning gaps — reference implementation
 
-Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/lib/toolbar/LaunchDropdown.impl.tsx`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/toolbar/LaunchDropdown.impl.tsx), [`canvas/src/features/markdown-explorer/workspaceActionBridge.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/markdown-explorer/workspaceActionBridge.ts), [`canvas/src/features/markdown-workspace/workspaceImport/localImport.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/markdown-workspace/workspaceImport/localImport.ts). Their existence does not confirm every behavior asserted by the specification.
+Source review is bounded to repository `9cb689e67578d2e326470fe21a59e918a2160151`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/lib/toolbar/LaunchDropdown.impl.tsx`](https://github.com/huijoohwee/agentic-graph/blob/9cb689e67578d2e326470fe21a59e918a2160151/canvas/src/lib/toolbar/LaunchDropdown.impl.tsx), [`canvas/src/features/markdown-explorer/workspaceActionBridge.ts`](https://github.com/huijoohwee/agentic-graph/blob/9cb689e67578d2e326470fe21a59e918a2160151/canvas/src/features/markdown-explorer/workspaceActionBridge.ts), [`canvas/src/features/markdown-workspace/workspaceImport/localImport.ts`](https://github.com/huijoohwee/agentic-graph/blob/9cb689e67578d2e326470fe21a59e918a2160151/canvas/src/features/markdown-workspace/workspaceImport/localImport.ts). Their existence does not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+
+## Node impact inspection — reference implementation
+
+**CID QUERY-IMPACT-01**, joined to this family's `0.3.2` revision. Authorization: the
+2026-09-17 operator instruction explicitly requests native enhancements and protected integration.
+Role/Subject: solo developer; Action/Verb: inspect; Outcome/Object: bounded source-explained change reach.
+
+**PRD.** Pain: an operator can import a codebase but must manually trace which nodes and files a
+change may affect. The requested node inspector supplies Blast radius, Depth (1–3), Nodes affected,
+Incoming and Outgoing. Count distinct reachable nodes excluding the selected root, retain shortest
+hop distances, deduplicate known source files, and disclose missing paths and partial projections.
+Incoming is the default dependency-impact direction; outgoing explores references. Reachability is
+potential impact, never proof that a test or runtime will fail. Demand/WTP remains unvalidated.
+
+**TAD / ADR.** Reuse the existing deterministic parser, source evidence, GraphData selection,
+D3 canvas, graph lookup cache and native query traversal. Extract the materialized traversal into
+one browser-safe owner consumed by MCP and the lazy inspector. No parser, model call, network,
+vector store, service, dependency or competing graph store is added. The inspector reads the full
+loaded graph before group collapse; it cannot infer absent source records. Each edge retains its
+native explanation. Show on canvas uses existing multi-selection and preserves source graph bytes.
+OS retains lifecycle collection/economics; Canvas retains runtime coordination; generated mirrors
+receive source only through the protected release owner. Other fleet owners need no implementation delta.
+
+**VCC.** Cyclic, diamond, parallel-edge and isolated fixtures prove unique counts, shortest hops,
+direction, source-path deduplication and partial-state disclosure. Interaction checks exercise depth,
+direction, selection and Show on canvas without graph mutation; existing MCP tests cover extracted
+traversal compatibility. Run affected integration checks and production/browser checks separately.
+At most 2,000 nodes/5,000 edges per imported projection, depth ≤3, and 32 visible rows per list;
+counts cover the bounded traversal and label graph truncation separately from list truncation.
+
+**MVP / GTM.** Demo (60 seconds): import existing local evidence (15s), select a node (10s),
+change depth/direction and read the count/explanation (20s), select the affected nodes (10s),
+record outcome (5s). The reveal is the VCC-backed changed count, not a narrated risk claim.
+Nearest first-dollar hypothesis: a priced code-change review for an existing solo builder before
+hosted monitoring or agent payments. No payer, revenue or savings is claimed; measure review time,
+CPU/memory and known token/cost provenance with the existing OS workflow collector, then remeasure
+one successor on the same graph/quality cohort. Rollback reverts the inspector and shared extraction;
+retained imports, source documents, lifecycle manifests and runtime receipts remain independent.
+
+
+The same `QUERY-IMPACT-01` scope includes the operator's follow-up: Find a node accepts bounded
+`kind:`, `path:` and `prov:` filters plus text; Most connected ranks distinct incident edges with
+stable node-ID ties. The legend explains captured evidence and direction without claiming renderer
+colors encode confidence. Missing provenance is unreported; edge-derived provenance is labelled as
+such, never silently assigned to a node. Lists show eight ranked matches and retain total match count.
+
+
+Authoring evidence (2026-09-17): all 110 native MCP tests and three inspector behavior/interaction
+tests passed locally; the eight-repository fleet scan reports zero ownership findings. Required
+integration/CI and deployed browser evidence remain separate and are bound to the eventual exact
+candidate in its PR and release receipts; this record claims neither production readiness nor savings.
