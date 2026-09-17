@@ -336,7 +336,7 @@ async function verifyApexActivation(width) {
 
   assertAuthored(await authoredSnapshot(), before, 'Apex activation must preserve authored work')
   assert.ok(requests.slice(beforeEntryRequests).every(item => ['query', 'trace'].includes(item.operation)), 'Activation may only read observations')
-  await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  await verifyLocalTraceImport('apex-' + width)
   await editor.waitFor({ state: 'detached' })
   assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
@@ -521,9 +521,7 @@ try {
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
   await verifyWorkspace('desktop')
-  await verifyLocalTraceImport('desktop')
   await verifyApexActivation(360)
-  await verifyLocalTraceImport('mobile')
   await verifyApexActivation(1280)
   assert.deepEqual(errors, [])
   assert.ok(streamed.includes('query') && streamed.includes('trace'), 'Real authenticated bridge must serve SSE observations')
