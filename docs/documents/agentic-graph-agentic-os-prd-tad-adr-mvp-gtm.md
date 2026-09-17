@@ -44,16 +44,9 @@ gtm_revision: "1.1.0"
 
 # agentic-graph Agentic OS — Reference implementation PRD-TAD-ADR-MVP-GTM
 
-This document is the canonical product and technical owner for the Agentic OS
-status surface in this repository. Every concrete product, provider, runtime,
-file, and tool name below is a non-binding **reference implementation** of the
-neutral OS Status Surface pattern.
+This document is the canonical product and technical owner for the Agentic OS status surface in this repository. Every concrete product, provider, runtime, file, and tool name below is a non-binding **reference implementation** of the neutral OS Status Surface pattern.
 
-The original status-surface snapshot contains implementation code, but its baseline below attaches no
-recorded implementation-test result, mirror result, delivery check, or operator
-promotion instruction. Consequently, the only readiness claims are the
-frontmatter rungs: local `spec-complete` and delivered `undocumented`. Nothing in
-this document asserts a deployed or live service.
+The original status-surface snapshot contains implementation code, but its baseline below attaches no recorded implementation-test result, mirror result, delivery check, or operator promotion instruction. Consequently, the only readiness claims are the frontmatter rungs: local `spec-complete` and delivered `undocumented`. Nothing in this document asserts a deployed or live service.
 
 ## Document contract
 
