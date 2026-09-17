@@ -5,6 +5,7 @@ export type ValidationObservation = {
   schema: 'agentic-os/validation-observation/v1'; authority: false; exportedAt: number; runId: string; status: string;
   source: { repository: string; revision: string; tree: string; dirty: boolean | null };
   ci?: { runId: number; attempt: number; url: string; queueWaitMs: number | null };
+  reuseEvidence?: { runUrl: string; runId: number; runAttempt: number; inputDigest: string; sourceRevision: string; targetRevision: string };
   feedbackUnavailable?: boolean;
   feedback?: { ranking: FeedbackRow[] };
   executionOrder?: 'sequential' | 'concurrent' | 'unknown';
@@ -77,6 +78,17 @@ export function readValidationObservation(text: string): ValidationObservation {
       || c.url !== `https://${source.repository}/actions/runs/${runId}`) fail()
     ci = { runId, attempt, url: String(c.url), queueWaitMs: finite(c.queueWaitMs, true) }
   }
+  let reuseEvidence: ValidationObservation['reuseEvidence']
+  if (value.reuseEvidence !== undefined) {
+    const r = record(value.reuseEvidence), runId = finite(r.runId)!, runAttempt = finite(r.runAttempt)!
+    if (![runId, runAttempt].every(n => Number.isSafeInteger(n) && n > 0)
+      || r.runUrl !== `https://${source.repository}/actions/runs/${runId}`
+      || typeof r.inputDigest !== 'string' || !/^[a-f0-9]{64}$/u.test(r.inputDigest)
+      || typeof r.sourceRevision !== 'string' || !/^[a-f0-9]{40}$/u.test(r.sourceRevision)
+      || r.targetRevision !== source.revision || !stages.length || stages.some(s => s.status !== 'reused')) fail()
+    reuseEvidence = { runUrl: String(r.runUrl), runId, runAttempt, inputDigest: r.inputDigest,
+      sourceRevision: r.sourceRevision, targetRevision: source.revision }
+  }
   const metricCoverage = resources.coverage === undefined ? undefined : Object.fromEntries(Object.entries(record(resources.coverage)).map(([key, value]) => {
     if (![...metricKeys, 'queueWaitMs', 'expectedStages'].includes(key)) fail()
     const n = finite(value)!; if (!Number.isSafeInteger(n) || n > 256) fail()
@@ -84,7 +96,7 @@ export function readValidationObservation(text: string): ValidationObservation {
   }))
   return { schema: 'agentic-os/validation-observation/v1', authority: false, exportedAt: finite(value.exportedAt)!,
     ...(value.feedbackUnavailable === true ? { feedbackUnavailable: true } : {}),
-    ...(ci ? { ci } : {}), ...(value.feedback === undefined ? {} : { feedback: feedback(value.feedback) }),
+    ...(reuseEvidence ? { reuseEvidence } : {}), ...(ci ? { ci } : {}), ...(value.feedback === undefined ? {} : { feedback: feedback(value.feedback) }),
     executionOrder: (value.executionOrder ?? 'unknown') as ValidationObservation['executionOrder'],
     ...(value.coverage === undefined ? {} : { coverage: { totalStages: finite(coverage.totalStages)!, expectedStages: finite(coverage.expectedStages)!,
       offset: finite(coverage.offset)!, partial: coverage.partial === true } }),
@@ -99,7 +111,9 @@ export function validationTrace(observation: ValidationObservation, offset = 0, 
   const evaluation = { status: 'unevaluated', score: null, reason: 'Local process exit observations; no provider evaluation.', evidence: null }
   const spans: TraceSpan[] = observation.stages.slice(offset, offset + 32).map((stage, index) => ({
     spanId: stage.id, parentSpanId: null, kind: 'check', operation: stage.id, taskId: '', attempt: null,
-    status: stage.status, subjectDigest: null, component, evaluation,
+    status: stage.status, subjectDigest: null,
+    component: stage.status === 'reused' && observation.reuseEvidence
+      ? { ...component, revision: observation.reuseEvidence.sourceRevision } : component, evaluation,
     links: observation.executionOrder === 'sequential' && offset + index > 0 ? [{ spanId: observation.stages[offset + index - 1]!.id, kind: 'sequence' }] : [],
     timing: { offset: stage.startedAt === null || stage.status === 'reused' ? null : Math.max(0, stage.startedAt - observation.startedAt),
       inclusive: stage.elapsedMs, exclusive: null }, cost: null, resources: stage.resources,

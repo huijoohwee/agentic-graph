@@ -282,7 +282,8 @@ TAD: consume the pinned OS merged-PR-tree verifier through the existing protecte
 The source policy binds the complete owner-selected paths, expanded commands, tools, runner,
 dependencies and environment; only the primary commit identity differs. The executor verifies once
 at the source-plan boundary, writes reused stages into the existing OS observation store, and
-retains the original provider run/revision. JSON/SSE, MCP and `/workflow.trace #read-only @input`
+retains the original provider run/revision. Canvas imports preserve bounded reuse attribution, link
+to the original run and project reused spans against the tested source revision. JSON/SSE, MCP and `/workflow.trace #read-only @input`
 reuse the native reader; AST extraction, queries, explanations and D3 remain in their current owners.
 ADR: source fixtures and deterministic checks are eligible; mutable-service, live deployment,
 commit/PR ownership and runtime-review checks remain fresh. Future live checks must stay outside
