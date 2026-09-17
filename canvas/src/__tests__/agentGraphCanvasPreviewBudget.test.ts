@@ -48,6 +48,7 @@ export function testAgentGraphCanvasPreviewFitsAggregateProgressWithinDecoratedB
   const { restore } = initJsdomHarness()
   try {
     useGraphStore.getState().resetAll()
+    useGraphStore.getState().setCanvasRenderMode('2d')
     const first = progressFrame(1, 'node:z:')
     const second = progressFrame(2, 'node:a:')
     const session = createAgentGraphCanvasPreviewSession()
@@ -68,6 +69,29 @@ export function testAgentGraphCanvasPreviewFitsAggregateProgressWithinDecoratedB
     assert.equal(metadata?.complete, false)
     assert.equal(metadata?.truncated, true)
     assert.deepEqual(useGraphStore.getState().graphData.nodes.map(node => node.id), ids)
+
+    let publications = 0
+    const unsubscribe = useGraphStore.subscribe((next, previous) => {
+      if (next.graphData !== previous.graphData) publications += 1
+    })
+    const burst = createAgentGraphCanvasPreviewSession()
+    for (let index = 1; index <= 1000; index += 1) burst.apply({
+      ...progressFrame(index, 'burst:'), sourceTotal: 1000,
+      graphData: { type: 'Graph', nodes: [{ id: `burst:${index}`, label: 'Source', type: 'Symbol', properties: {} }], edges: [] },
+    })
+    unsubscribe()
+    assert.ok(publications <= 32, `expected at most 32 preview publications, got ${publications}`)
+    assert.equal(useGraphStore.getState().graphData.nodes.length, 1000)
+    burst.rollback()
+
+    useGraphStore.setState({ canvasRenderMode: '3d' })
+    const xrGraph = useGraphStore.getState().graphData
+    const xrPreview = createAgentGraphCanvasPreviewSession()
+    xrPreview.apply(progressFrame(1, 'xr:'))
+    assert.equal(useGraphStore.getState().canvasRenderMode, '3d', 'parsing must not tear down an active XR surface')
+    assert.equal(useGraphStore.getState().graphData, xrGraph)
+    xrPreview.rollback()
+    useGraphStore.setState({ canvasRenderMode: '2d' })
   } finally {
     useGraphStore.getState().resetAll()
     restore()

@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 52
+contract_version: 53
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -66,7 +66,7 @@ deployment:
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
   node_impact_inspector:
-    roots: ["canvas/src/features/graph-inspector/", "canvas/src/__tests__/nodeImpactInspector.test.tsx", "mcp/agent-graph/neighborhood.mjs", "mcp/agent-graph/query-core.mjs"]
+    roots: ["canvas/src/features/graph-inspector/", "canvas/src/__tests__/nodeImpactInspector.test.tsx", "canvas/src/features/panels/views/OrchestratorSettingsSection.tsx", "canvas/src/features/agent-graph/agentGraphVisualEvidence.ts", "mcp/agent-graph/neighborhood.mjs", "mcp/agent-graph/query-core.mjs"]
     commands:
       - ["npm", "run", "agent-graph:check"]
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/nodeImpactInspector.test.tsx"]

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { NodeEvidenceLegend } from './NodeEvidenceLegend'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
@@ -42,11 +43,7 @@ export default function NodeImpactInspector({ nodeId }: { nodeId: string | null 
       <p>kind: {row.kind} · path: {row.path || 'unreported'} · prov: {row.provenance} ({row.provenanceBasis})</p>
     </li>)}</ul>
     {found.length > 8 && <p>Showing the 8 most connected matches.</p>}
-    <details className="mt-2"><summary>Legend</summary>
-      <p>Extracted: explicit source evidence. Inferred: a derived relationship. Ambiguous: unresolved evidence. Unreported: provenance was not captured.</p>
-      <p>Incoming points toward a node; outgoing points away. One hop follows one relationship. Most connected counts distinct incident relationships, including each self-link once.</p>
-      <p>Provenance from incident edges describes those relationships, not a verified classification of the node. Counts cover the loaded graph. Canvas colors and line styles follow its current renderer settings.</p>
-    </details>
+    <NodeEvidenceLegend graph={lookup.graphData} />
   </section>{impact && <section aria-label="Blast radius" className={`min-w-0 border-b px-3 py-2 text-xs ${UI_THEME_TOKENS.panel.divider}`}>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="font-semibold">Blast radius</h3>
@@ -82,6 +79,7 @@ export default function NodeImpactInspector({ nodeId }: { nodeId: string | null 
         return <li key={edge.id} className="min-w-0 break-words">
           <button type="button" className="underline" onClick={() => selectNode(other)}>{edge.label || 'related'}: {other}</button>
           <p>{impactExplanation(edge)}</p>
+          <p>Provenance: {String(edge.properties?.['evidence:kind'] || 'unreported')} · Certainty: {String(edge.properties?.['evidence:certainty'] || 'unreported')}</p>
         </li>
       })}</ul>
       {impact[value].length > 32 && <p>Showing 32 of {impact[value].length} relationships.</p>}
