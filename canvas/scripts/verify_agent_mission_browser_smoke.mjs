@@ -57,7 +57,7 @@ const waitTopology = async scope => {
   await loading.waitFor({ state: 'hidden', timeout: 60000 })
   console.log('Mission topology module:', JSON.stringify({ cold, elapsedMs: Date.now() - startedAt }))
   await scope.locator('[data-renderer="d3"] svg[role="img"]').waitFor({ state: 'visible' })
-  assert.ok(await panel.locator('svg .node').count() > 0, 'Native D3 scene must render observed nodes')
+  assert.ok(await panel.locator('svg [data-kg-layer="nodes"] [data-node-id]').count() > 0, 'Native D3 scene must render observed nodes')
 }
 const refreshMission = async () => {
   const refresh = mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ })
@@ -71,7 +71,7 @@ const choose = async id => {
 async function authoredSnapshot() {
   return page.evaluate(async () => {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts'), state = useGraphStore.getState()
-    const keys = ['graphData', 'selectedNodeIds', 'selectedEdgeIds', 'selectedGroupIds', 'layoutPositionCacheByMode',
+    const keys = ['schema', 'fitToScreenMode', 'zoomToSelectionMode', 'graphData', 'selectedNodeIds', 'selectedEdgeIds', 'selectedGroupIds', 'layoutPositionCacheByMode',
       'flowWidgetPosByNodeId', 'flowWidgetWorldPosByNodeId', 'openWidgetNodeIds', 'history', 'historyIndex', 'sourceFiles',
       'markdownDocumentName', 'markdownDocumentText', 'jsonSourceDocumentName', 'jsonSourceDocumentText', 'canvasRenderMode', 'canvas2dRenderer']
     if (keys.some(key => !(key in state))) throw Error('Authored-state observation is incomplete')
@@ -217,6 +217,8 @@ async function verifyLocalTraceImport(label) {
   assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s', exact: true }).isDisabled(), true)
   await evidence.getByRole('list', { name: 'Topology nodes' }).getByRole('button').click()
   await waitText(evidence, 'Selected span: checks')
+  await evidence.locator('svg [data-kg-layer="nodes"] [data-node-id]').click({ modifiers: ['Shift'] })
+  assertAuthored(await authoredSnapshot(), before, 'Modifier selection must remain inside inspection')
   await evidence.getByRole('tab', { name: 'Evaluation', exact: true }).click()
   assert.equal(await evidence.getByRole('button', { name: 'Evaluate selected subject', exact: true }).isDisabled(), true)
   await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()

@@ -53,6 +53,7 @@ import { filterGraphCanvasViewportFitNodes } from '@/components/GraphCanvas/view
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>
 
 type SetupGraphSceneArgs = {
+  isolateDocumentState?: boolean
   active: () => boolean
   svgEl: SVGSVGElement
   svgRef: RefObject<SVGSVGElement>
@@ -277,7 +278,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
           getRenderMediaAsNodes(),
         )
   },
-  active)
+  active, args.isolateDocumentState)
   zoomRef.current = zoom
   const applyInitialTransform = (t: { k: number; x: number; y: number } | null) => {
     if (!t) return
