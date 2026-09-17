@@ -213,7 +213,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
       {!workspace && <div><h2 className="font-semibold">{preview ? 'Agent observability' : 'Agentic OS'}</h2><p className="text-xs">Inspect execution, limits and evidence</p></div>}
       <label className={button}>Import local file<input type="file" accept=".json,application/json" className="sr-only" aria-label="Import local file"
-        onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void importAgentRunFile(file, onOpenWorkspace).then(handled => {
+        onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void importAgentRunFile(file, onOpenWorkspace, preview || workspace ? 'canvas' : 'editor').then(handled => {
           if (!handled) setError('Choose a native run trace or exported inspection JSON file. Validation reports use Import validation report.')
         }) }} /></label>
       <button type="button" className={button} disabled={local || busy || !online} onClick={() => {
@@ -270,7 +270,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <div className="grid grid-cols-2 gap-3 rounded border p-3 text-sm">{Object.keys(resourceLabels({ cpuMs: null, peakMemoryBytes: null, tokens: null, costUsd: null })).map(label =>
         <div key={label}>{label}<strong className="block text-lg">Unknown</strong></div>)}</div>
       <nav aria-label="Available observation views" className="flex flex-wrap gap-2">{views.map(item =>
-        <span className="rounded border px-3 py-2 text-xs" key={item.key}>{item.label}</span>)}</nav>
+        <button type="button" disabled title="Import an observation to use this view" className="rounded border px-3 py-2 text-xs opacity-60" key={item.key}>{item.label}</button>)}</nav>
       <div className="min-w-0 overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={RUN_COLUMNS} rows={[]} selectedRowIds={[]}
         columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy="" sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={() => undefined} onSelectionChanged={() => undefined} /></div>
       <p className="text-sm">No observation loaded. Import native run or workflow JSON to synchronize JSON, Markdown, Viewer and Canvas. Recorded evaluations remain evidence; live evaluation and comparison require a connected runtime.</p>

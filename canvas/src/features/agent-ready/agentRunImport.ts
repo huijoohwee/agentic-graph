@@ -30,7 +30,7 @@ export function readAgentRunImport(text: string, fileName: string, importedAt = 
 }
 let generation = 0
 /** Shared Launch entry. Ordinary JSON remains with the existing document importer. */
-export async function importAgentRunFile(file: File, onImported?: () => void): Promise<boolean> {
+export async function importAgentRunFile(file: File, onImported?: () => void, surface: 'editor' | 'canvas' = 'editor'): Promise<boolean> {
   if (!file.name.toLowerCase().endsWith('.json')) return false
   const attempt = ++generation
   if (file.size > AGENT_RUN_IMPORT_MAX_BYTES) return false
@@ -41,7 +41,7 @@ export async function importAgentRunFile(file: File, onImported?: () => void): P
     if (!imported) return false
     const store = await import('./agentRunInspectionStore')
     if (attempt !== generation) return true
-    store.activateAgentRunWorkspace('topology', 'editor')
+    store.activateAgentRunWorkspace('topology', surface)
     store.openAgentRunInspection({ ...imported, scope: `local-import:${attempt}`, expiresAt: imported.trace.localImport!.importedAt + 60000, search: '', view: 'topology' })
     onImported?.()
   } catch (error) {
