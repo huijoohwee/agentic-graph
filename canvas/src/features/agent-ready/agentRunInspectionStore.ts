@@ -55,8 +55,8 @@ function validated(input: Omit<AgentRunInspection, 'view'> & { view?: AgentRunVi
   const expiresAt = Math.min(input.expiresAt, importedAt === undefined ? input.trace.expiresAt : importedAt + 60_000,
     (importedAt ?? input.trace.observedAt) + 60_000, Date.now() + 60_000)
   const bytes = JSON.stringify(input)
-  if (!input.scope || !Number.isFinite(expiresAt) || expiresAt <= Date.now() || input.trace.spans.length > 32
-    || new TextEncoder().encode(bytes).length > 262144) throw Error('Run inspection is unavailable or expired. Refresh its authorized snapshot.')
+  if (!input.scope || !Number.isFinite(expiresAt) || expiresAt <= Date.now() || input.trace.spans.length > (importedAt === undefined ? 32 : 2048)
+    || new TextEncoder().encode(bytes).length > (importedAt === undefined ? 262144 : 16 * 1024 * 1024)) throw Error('Run inspection is unavailable or expired. Refresh its authorized snapshot.')
   return { ...JSON.parse(bytes), expiresAt, view: input.view ?? 'topology' }
 }
 function scheduleExpiry() {

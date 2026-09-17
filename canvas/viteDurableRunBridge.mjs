@@ -7,6 +7,8 @@ const require = createRequire(import.meta.url)
 const operations = new Set(require('agentic-os/agents/invocation').RUN_OPERATIONS)
 const readOnly = new Set(require('agentic-os/catalog/invocation.json').entries
   .filter(entry => entry.action === 'run' && entry.semantic === 'read-only').map(entry => entry.argv[0]))
+operations.add('workflow-trace')
+readOnly.add('workflow-trace')
 const loopback = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 const json = (response, status, body) => {
   response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
@@ -71,12 +73,23 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
       const disconnect = () => { if (!response.writableEnded) controller.abort() }
       response.once('close', disconnect)
       try {
-        let config
-        try { config = await configuration(env.AGENTIC_OS_DURABLE_RUN_HOST_CONFIG) }
-        catch { return json(response, 503, { code: 'host_configuration_required' }) }
         let input
         try { input = await body(request, AbortSignal.timeout(5000)) }
         catch { return json(response, 400, { code: 'invalid_run_input' }) }
+        if (operation === 'workflow-trace') {
+          stage = 'workflow-archive'
+          // Native request-time loading survives Vite's configuration runner lifecycle.
+          const { readWorkflowArchiveRequest } = require('./viteWorkflowArchiveBridge.mjs')
+          try {
+            const frame = await readWorkflowArchiveRequest(input)
+            if (controller.signal.aborted) return
+            response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
+            return response.end(frame)
+          } catch { return json(response, 422, { code: 'workflow_archive_unavailable', message: 'The selected immutable manifest or a referenced page is missing, invalid, or outside this local workspace.' }) }
+        }
+        let config
+        try { config = await configuration(env.AGENTIC_OS_DURABLE_RUN_HOST_CONFIG) }
+        catch { return json(response, 503, { code: 'host_configuration_required' }) }
         stage = 'load-client'
         const { createAgentRunClient, validateRunInput } = require('agentic-os/agents/invocation')
         try { validateRunInput(operation, input) }

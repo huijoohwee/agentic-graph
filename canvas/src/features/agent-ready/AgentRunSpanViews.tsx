@@ -47,11 +47,13 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '' }: {
       else { const parent = visible.findIndex(item => item.span.spanId === row.span.parentSpanId); if (parent >= 0) focus(parent) }
     }
   }
-  const end = Math.max(1, ...rows.map(({ span }) => (span.timing.offset ?? 0) + (span.timing.inclusive ?? 0)))
+  const ends = new Map<string, number>()
+  for (const { span } of rows) { const scope = span.timing.scope ?? ''; ends.set(scope, Math.max(ends.get(scope) ?? 1, (span.timing.offset ?? 0) + (span.timing.inclusive ?? 0))) }
   return <ul ref={container} role="tree" aria-label="Span hierarchy" className="min-w-0 py-2">
     {visible.map(({ span, depth, missingParent }, index) => {
       const tone = spanTone(span.kind), selected = selectedId === span.spanId
-      const iconKey = icons[span.kind] ?? 'invocation.subject.agent', resources = spanResources(span)
+      const iconKey = icons[span.kind] ?? 'invocation.subject.agent', resources = span.status === 'reused' && span.historicalResources ? span.historicalResources : spanResources(span)
+      const end = ends.get(span.timing.scope ?? '') ?? 1
       const sourceIndex = rows.findIndex(row => row.span.spanId === span.spanId)
       const hasChildren = (rows[sourceIndex + 1]?.depth ?? 0) > depth
       const expanded = Boolean(search.trim()) || !collapsed.has(span.spanId)
@@ -93,12 +95,13 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '' }: {
                 {missingParent && <span>· parent outside this page</span>}{depth > 8 && <span>· depth {depth}</span>}
               </span>
               <span className="block text-xs opacity-70" aria-label="Span resources" title={Object.entries(resourceLabels(resources)).map(([label, value]) => `${label}: ${value}`).join(' · ')}>
-                {reported.join(' · ')}{selected && <span className="block">{Object.entries(resourceLabels(resources)).filter(([, value]) => value === 'Unknown').map(([label]) => `${label}: Unknown`).join(' · ')}</span>}
+                {span.status === 'reused' && span.historicalResources && <span>Original measurement · </span>}{reported.join(' · ')}{span.model && <span> · Model: {span.model} ({span.modelIdentityBasis})</span>}{selected && <span className="block">{Object.entries(resourceLabels(resources)).filter(([, value]) => value === 'Unknown').map(([label]) => `${label}: Unknown`).join(' · ')}</span>}
               </span>
             </span>
           </span>
-          <span data-span-timing="" className="relative w-full shrink-0 sm:w-[40%]" title={`Start offset: ${numberLabel(span.timing.offset, ' ms')}`}>
-            {span.timing.offset === null || span.timing.inclusive === null ? <span className="text-xs">Position unknown</span>
+          <span data-span-timing="" className="relative w-full shrink-0 sm:w-[40%]" title={`Clock: ${span.timing.scope || 'run'} · Start offset: ${numberLabel(span.timing.offset, ' ms')}`} >
+            {span.timing.scope && <span className="block truncate text-[10px] opacity-60">{span.timing.scope}{span.timing.basis === 'observed-extent' ? ' · observed extent' : ''}</span>}
+            {span.timing.offset === null || span.timing.inclusive === null ? <span className="text-xs">{span.kind === 'workflow' && !span.timing.scope ? 'Worktree timelines below' : span.timing.inclusive !== null ? `Duration ${durationLabel(span.timing.inclusive)} · start not recorded` : 'Timestamp not recorded in source receipt'}</span>
               : <span aria-hidden="true" className="block h-2 rounded bg-gray-200"><span className="block h-2 rounded" style={{ background: tone.stroke,
                 marginLeft: `${span.timing.offset / end * 100}%`, width: `${span.timing.inclusive / end * 100}%` }} /></span>}
           </span>

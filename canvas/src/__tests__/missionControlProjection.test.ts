@@ -1,3 +1,4 @@
+import { testWorkflowImport } from './agentWorkflowImport.test'
 import { readAgentRunImport, agentRunInspectionJson } from '@/features/agent-ready/agentRunImport'
 import assert from 'node:assert/strict'
 import { readValidationObservation, validationTrace } from '@/features/agent-ready/validationObservationProjection'
@@ -5,6 +6,7 @@ import { readRunIndex, readRunTrace, traceGraph, visibleSpanTree, sourceLink, wo
 import { durableObservationBinding, readDurableSessionToken } from '@/features/agent-ready/durableRunTransport'
 
 export async function testMissionControlProjection(): Promise<void> {
+  await testWorkflowImport()
   const ref = { id: 'fixture', revision: 'v1', digest: 'a'.repeat(64) }
   const context = { taskId: 'draft', projectId: 'seller', goalId: 'first-result', receipt: { id: 'draft', digest: 'b'.repeat(64) },
     plan: { repository: 'github.com/owner/source', path: 'docs/plan.md', revision: '1'.repeat(40), digest: ref.digest,
@@ -17,6 +19,13 @@ export async function testMissionControlProjection(): Promise<void> {
     expiresAt: 999999, observedAt: 1000, evaluation: { status: 'reported', score: 0 },
     spans: [span('root', null), span('failed', 'root'), { ...span('retry', 'root', 2), links: [{ spanId: 'failed', kind: 'handoff' }] }, span('orphan', 'outside')],
     coverage: { retainedSpans: 4, expectedSpans: null, droppedEvents: 2, partial: true }, page: { total: 6, offset: 0, nextCursor: 'next' } }
+  const nestedMeasurements = readRunTrace({ ...raw, profile: { workflow: {} }, spans: [
+    { ...span('parent',null),status:'completed',resources:{cpuMs:10,peakMemoryBytes:100,tokens:2,costUsd:0} },
+    { ...span('child','parent'),status:'completed',resources:{cpuMs:5,peakMemoryBytes:50,tokens:2,costUsd:0} },
+    { ...span('reuse',null),status:'reused',resources:{cpuMs:90,peakMemoryBytes:900},historicalResources:{cpuMs:90,peakMemoryBytes:900},model:'recorded-model' },
+  ] }, 'run')
+  assert.equal(traceResources(nestedMeasurements).cpuMs,10);assert.equal(traceResources(nestedMeasurements).peakMemoryBytes,100)
+  assert.equal(traceResources(nestedMeasurements,nestedMeasurements.spans[2]).cpuMs,90);assert.equal(nestedMeasurements.spans[2]!.model,'recorded-model')
   const before = JSON.stringify(raw), trace = readRunTrace(raw, 'run')
   assert.equal(trace.evaluation.score, 0); assert.equal(trace.expected, null); assert.equal(trace.partial, true)
   assert.equal(trace.spans[0]!.timing.inclusive, 0); assert.equal(trace.spans[0]!.timing.exclusive, null)
@@ -38,8 +47,8 @@ export async function testMissionControlProjection(): Promise<void> {
   assert.equal(readAgentRunImport('{"nodes":[],"edges":[]}', 'graph.json'), null)
   assert.throws(() => readAgentRunImport(JSON.stringify({ schema: 'agent-run-inspection/v1', trace: {} }), 'bad.json'), /identity|schema/i)
   assert.throws(() => readAgentRunImport(JSON.stringify({ ...raw, spans: [raw.spans[0], raw.spans[0]] }), 'bad.json'), /Duplicate/)
-  assert.throws(() => readAgentRunImport(JSON.stringify({ ...raw, spans: Array(33).fill(raw.spans[0]) }), 'big.json'), /bounded/)
-  assert.throws(() => readAgentRunImport(' '.repeat(262145), 'big.json'), /256 KB/)
+  assert.throws(() => readAgentRunImport(JSON.stringify({ ...raw, spans: Array(33).fill(raw.spans[0]) }), 'big.json'), /Duplicate/)
+  assert.throws(() => readAgentRunImport(' '.repeat(16 * 1024 * 1024 + 1), 'big.json'), /16 MiB/)
   const measuredImport = readAgentRunImport(JSON.stringify({ ...raw, status: 'blocked', spans: [{ ...raw.spans[0],
     resources: { cpuMs: 0, peakMemoryBytes: 1024, tokens: 0, costUsd: 0 } }] }), 'workflow.json')!
   assert.equal(measuredImport.trace.status, 'blocked')

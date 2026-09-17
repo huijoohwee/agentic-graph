@@ -17,8 +17,8 @@ export type RunIndex = { items: RunSummary[]; total: number; offset: number; nex
   metrics: DashboardMetric[] }
 export type TraceSpan = { spanId: string; parentSpanId: string | null; kind: string; operation: string;
   taskId: string; attempt: number | null; status: string; subjectDigest: string | null; component: EvidenceRef;
-  links: { spanId: string; kind: string }[]; timing: { offset: number | null; inclusive: number | null; exclusive: number | null };
-  cost: unknown; resources?: ResourceMetrics; evaluation: Evaluation }
+  links: { spanId: string; kind: string }[]; timing: { offset: number | null; inclusive: number | null; exclusive: number | null; scope?: string; basis?: string };
+  cost: unknown; resources?: ResourceMetrics; historicalResources?: ResourceMetrics; model?: string | null; modelIdentityBasis?: string; evaluation: Evaluation }
 export type RunTrace = { localImport?: { fileName: string; importedAt: number }; localObservation?: ValidationObservation; runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
   context: RunContext | null; candidate: EvidenceRef; cohortId: string; profile: RecordValue;
   evaluation: Evaluation; resources: RecordValue | null; expiresAt: number; observedAt: number;
@@ -91,8 +91,10 @@ export function readRunTrace(value: unknown, runId: string): RunTrace {
       operation: text(s.operation), taskId: text(s.taskId), attempt: known(s.attempt), status: text(s.status),
       ...(s.resources ? { resources: { cpuMs: known(record(s.resources).cpuMs), peakMemoryBytes: known(record(s.resources).peakMemoryBytes), tokens: known(record(s.resources).tokens), costUsd: known(record(s.resources).costUsd) } } : {}),
       subjectDigest: digest(s.subjectDigest), component: ref(s.component), cost: s.cost ?? null, evaluation: evaluation(s.evaluation),
+      model: text(s.model) || text(record(s.cost).model) || null, modelIdentityBasis: text(s.modelIdentityBasis) || (text(s.model) ? 'reported-span' : text(record(s.cost).model) ? 'reported-cost-log' : 'unreported'),
+      ...(s.historicalResources ? { historicalResources: { cpuMs: known(record(s.historicalResources).cpuMs), peakMemoryBytes: known(record(s.historicalResources).peakMemoryBytes), tokens: known(record(s.historicalResources).tokens), costUsd: known(record(s.historicalResources).costUsd) } } : {}),
       links: (Array.isArray(s.links) ? s.links.slice(0, 32) : []).map(link => ({ spanId: text(record(link).spanId), kind: text(record(link).kind) })),
-      timing: { offset: known(t.startOffsetMs), inclusive: known(t.inclusiveMs), exclusive: known(t.exclusiveObservedMs) } }
+      timing: { offset: known(t.startOffsetMs), inclusive: known(t.inclusiveMs), exclusive: known(t.exclusiveObservedMs), ...(text(t.scope) ? { scope: text(t.scope) } : {}), ...(text(t.basis) ? { basis: text(t.basis) } : {}) } }
   })
   if (new Set(spans.map(s => s.spanId)).size !== spans.length) throw Error('Duplicate span identity.')
   return { runId, status: text(v.status), spans, subjectDigest: digest(v.subjectDigest), context: context(v.context),
@@ -110,7 +112,26 @@ export function spanResources(span: TraceSpan): ResourceMetrics {
       && Number.isSafeInteger(Number(input) + Number(output)) ? Number(input) + Number(output) : null,
     costUsd: cost.status === 'reported' ? known(cost.estimated_cost_usd) : null }
 }
-export function traceResources(trace: RunTrace): ResourceMetrics {
+export function traceResources(trace: RunTrace, selected?: TraceSpan | null): ResourceMetrics {
+  if (selected) return selected.status === 'reused' && selected.historicalResources ? selected.historicalResources : spanResources(selected)
+  if (trace.profile.workflow) {
+    const byId = new Map(trace.spans.map(s => [s.spanId,s]))
+    const result: ResourceMetrics = { cpuMs:null,peakMemoryBytes:null,tokens:null,costUsd:null }
+    for (const key of ['cpuMs','peakMemoryBytes','tokens','costUsd'] as const) {
+      const values = trace.spans.filter(s => s.status !== 'reused').flatMap(s => {
+        const value = spanResources(s)[key]; if (value === null) return []
+        let parent = s.parentSpanId; const seen = new Set([s.spanId])
+        while (parent && byId.has(parent) && !seen.has(parent)) {
+          seen.add(parent); const ancestor = byId.get(parent)!
+          if (ancestor.status !== 'reused' && spanResources(ancestor)[key] !== null) return []
+          parent = ancestor.parentSpanId
+        }
+        return [value]
+      })
+      if (values.length) result[key] = key === 'peakMemoryBytes' ? Math.max(...values) : values.reduce((sum,n)=>sum+n,0)
+    }
+    return result
+  }
   const v = trace.localObservation?.resources, tokens = record(trace.profile.tokenUsage)
   return v ? { cpuMs: v.cpuMs ?? null, peakMemoryBytes: v.peakMemoryBytes ?? null,
     tokens: v.tokens ?? null, costUsd: v.costUsd ?? null }
@@ -182,12 +203,13 @@ export function runRows(index: RunIndex) {
   return index.items.map((r, i) => ({ id: r.runId, __order: i + index.offset + 1, Run: r.runId, Agent: r.agent,
     State: r.status, Latency: numberLabel(r.duration, ' ms'), Tokens: numberLabel(r.tokens), 'Estimated USD': numberLabel(r.cost), Evaluation: r.evaluation }))
 }
-export const SPAN_COLUMNS: GraphRecordColumnDoc[] = ['Span', 'Operation', 'State', 'Inclusive ms', 'Exclusive observed ms', 'CPU ms', 'Peak process RSS bytes', 'Tokens', 'Estimated USD', 'Evaluation'].map((name, order) => ({
+export const SPAN_COLUMNS: GraphRecordColumnDoc[] = ['Span', 'Operation', 'State', 'Model', 'Clock', 'Start offset ms', 'Measurement', 'Inclusive ms', 'Exclusive observed ms', 'CPU ms', 'Peak process RSS bytes', 'Tokens', 'Estimated USD', 'Evaluation'].map((name, order) => ({
   pk: `agentic-os/span/${name}`, tableId: 'nodes', columnId: name, name, kind: 'text', order, hidden: false, createdAtMs: 0, updatedAtMs: 0,
 }))
 export function spanRows(spans: TraceSpan[]) {
-  return spans.map((s, i) => ({ id: s.spanId, __order: i + 1, Span: s.spanId, Operation: spanLabel(s), State: s.status,
-    'Inclusive ms': numberLabel(s.timing.inclusive), 'Exclusive observed ms': numberLabel(s.timing.exclusive), ...resourceLabels(spanResources(s)), Evaluation: s.evaluation.status }))
+  return spans.map((s, i) => ({ id: s.spanId, __order: i + 1, Span: s.spanId, Operation: spanLabel(s), State: s.status, Model: s.model || 'Not recorded', Clock: s.timing.scope || 'run',
+    'Start offset ms': numberLabel(s.timing.offset), Measurement: s.status === 'reused' ? 'historical' : 'current',
+    'Inclusive ms': numberLabel(s.timing.inclusive), 'Exclusive observed ms': numberLabel(s.timing.exclusive), ...resourceLabels(s.status === 'reused' && s.historicalResources ? s.historicalResources : spanResources(s)), Evaluation: s.evaluation.status }))
 }
 export function sourceLink(context: RunContext | null): string | null {
   const p = context?.plan

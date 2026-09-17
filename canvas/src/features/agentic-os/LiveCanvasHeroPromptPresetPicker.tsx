@@ -38,6 +38,7 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
   }, [loadingPresetId, onSelect, runtime])
 
   const statusMessage = catalogError || invocationError
+  const selectedDescription = presets.find(preset => preset.id === activePresetId)?.description
   return (
     <fieldset data-kg-live-canvas-hero-prompt-presets="true">
       <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">
@@ -51,7 +52,8 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
         <select
           className="mt-1 min-h-9 w-full rounded-lg border border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/80 px-2.5 py-1.5 text-xs text-[var(--kg-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)]"
           aria-label="Prompt preset"
-          title={presets.find(preset => preset.id === activePresetId)?.description}
+          title={selectedDescription}
+          aria-describedby={selectedDescription ? 'apex-preset-description' : undefined}
           value={activePresetId}
           disabled={Boolean(loadingPresetId)}
           data-kg-live-canvas-hero-prompt-preset-select="true"
@@ -71,6 +73,8 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
           ))}
         </select>
       ) : null}
+      {!loading && !catalogError && selectedDescription ? <p id="apex-preset-description"
+        className="mt-2 max-h-16 overflow-y-auto text-xs leading-4 text-[var(--kg-text-secondary)]">{selectedDescription}</p> : null}
     </fieldset>
   )
 }
