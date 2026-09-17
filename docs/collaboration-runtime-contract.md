@@ -2,11 +2,11 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 51
+contract_version: 52
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
-  - command: ["npm", "run", "agent-mission:check"]
+  - command: ["node", "canvas/scripts/run_agent_mission_browser_smoke.mjs"]
     timeout_ms: 600000
   - command: ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
     timeout_ms: 900000
@@ -66,7 +66,7 @@ deployment:
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
   agent_mission_control:
-    roots: ["canvas/src/features/agentic-os/LiveCanvasHeroPromptPresetPicker.tsx", "canvas/src/features/agent-ready/agentWorkflowImport.ts", "canvas/src/features/agent-ready/agentRunImport.ts", "canvas/src/features/agent-ready/AgentRunSpanViews.tsx", "canvas/src/__tests__/agentWorkflowImport.test.ts", "canvas/viteWorkflowArchiveBridge.mjs", "scripts/__tests__/workflow-archive-bridge.test.mjs", "canvas/src/features/agent-ready/durableRunStream.ts", "canvas/src/components/toolbar/Canvas2dRendererSelect.tsx", "canvas/src/components/toolbar/canvasViewTypes.ts", "canvas/src/lib/canvas/canvasViewInvocationContract.mjs", "canvas/src/features/markdown/ui/useMarkdownPreviewTokens.ts", "canvas/src/features/markdown-workspace/main/presentation/MarkdownWorkspacePresentationSurface.tsx", "canvas/src/features/markdown-workspace/main/types.ts", "canvas/src/features/markdown-workspace/main/MarkdownWorkspaceMain.tsx", "canvas/src/features/markdown-workspace/main/useWorkspaceExportBridge.ts", "canvas/src/features/agent-ready/agentRunInspectionStore.ts", "canvas/src/features/agent-ready/AgentRunWorkspaceInspection.tsx", "canvas/src/components/EmbeddedEditorShell.tsx", "canvas/src/components/CanvasViewport.tsx", "canvas/src/features/panels/MainPanel.tsx", "canvas/src/features/agent-ready/AgenticOsMissionControl.tsx", "canvas/src/features/agent-ready/missionControlProjection.ts", "canvas/src/features/agent-ready/durableRunTransport.ts", "canvas/src/components/FlowCanvas.tsx", "canvas/src/components/FlowCanvas/FlowCanvasInspection.tsx", "canvas/src/components/FlowCanvas/shared.ts", "canvas/src/features/panels/views/DashboardView.tsx", "canvas/src/features/graph-data-table/ui/GraphDataTableDomTableView.tsx", "canvas/viteDurableRunBridge.mjs", "canvas/src/__tests__/missionControlProjection.test.ts", "canvas/src/__tests__/durableRunWebMcp.test.ts", "canvas/scripts/run_agent_mission_browser_smoke.mjs", "canvas/scripts/verify_agent_mission_browser_smoke.mjs", "package.json", "package-lock.json"]
+    roots: ["canvas/scripts/lib/mission-phase-observation.mjs", "scripts/__tests__/agent-mission-stages.test.mjs", "canvas/src/features/agentic-os/LiveCanvasHeroPromptPresetPicker.tsx", "canvas/src/features/agent-ready/agentWorkflowImport.ts", "canvas/src/features/agent-ready/agentRunImport.ts", "canvas/src/features/agent-ready/AgentRunSpanViews.tsx", "canvas/src/__tests__/agentWorkflowImport.test.ts", "canvas/viteWorkflowArchiveBridge.mjs", "scripts/__tests__/workflow-archive-bridge.test.mjs", "canvas/src/features/agent-ready/durableRunStream.ts", "canvas/src/components/toolbar/Canvas2dRendererSelect.tsx", "canvas/src/components/toolbar/canvasViewTypes.ts", "canvas/src/lib/canvas/canvasViewInvocationContract.mjs", "canvas/src/features/markdown/ui/useMarkdownPreviewTokens.ts", "canvas/src/features/markdown-workspace/main/presentation/MarkdownWorkspacePresentationSurface.tsx", "canvas/src/features/markdown-workspace/main/types.ts", "canvas/src/features/markdown-workspace/main/MarkdownWorkspaceMain.tsx", "canvas/src/features/markdown-workspace/main/useWorkspaceExportBridge.ts", "canvas/src/features/agent-ready/agentRunInspectionStore.ts", "canvas/src/features/agent-ready/AgentRunWorkspaceInspection.tsx", "canvas/src/components/EmbeddedEditorShell.tsx", "canvas/src/components/CanvasViewport.tsx", "canvas/src/features/panels/MainPanel.tsx", "canvas/src/features/agent-ready/AgenticOsMissionControl.tsx", "canvas/src/features/agent-ready/missionControlProjection.ts", "canvas/src/features/agent-ready/durableRunTransport.ts", "canvas/src/components/FlowCanvas.tsx", "canvas/src/components/FlowCanvas/FlowCanvasInspection.tsx", "canvas/src/components/FlowCanvas/shared.ts", "canvas/src/features/panels/views/DashboardView.tsx", "canvas/src/features/graph-data-table/ui/GraphDataTableDomTableView.tsx", "canvas/viteDurableRunBridge.mjs", "canvas/src/__tests__/missionControlProjection.test.ts", "canvas/src/__tests__/durableRunWebMcp.test.ts", "canvas/scripts/run_agent_mission_browser_smoke.mjs", "canvas/scripts/verify_agent_mission_browser_smoke.mjs", "package.json", "package-lock.json"]
     commands:
       - ["npm", "run", "agent-mission:check"]
   pages_catalog_publication:
@@ -196,6 +196,12 @@ ci_exact_path_scopes:
           - ["npm", "run", "marketplace:worker:types:check"]
           - ["npm", "run", "marketplace:typecheck"]
 ci_command_expansions:
+  - command: ["npm", "run", "agent-mission:check"]
+    verify_script: true
+    steps:
+      - ["node", "--test", "scripts/__tests__/workflow-archive-bridge.test.mjs", "scripts/__tests__/agent-mission-stages.test.mjs"]
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.missionControl.projection", "agentReady.webMcpRuntime.durableRun"]
+      - ["node", "canvas/scripts/run_agent_mission_browser_smoke.mjs"]
   - command: ["npm", "run", "xr-v2:review-ready"]
     steps:
       - ["npm", "run", "xr-v2:source-runner:test"]

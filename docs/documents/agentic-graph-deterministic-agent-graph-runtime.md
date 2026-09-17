@@ -3,7 +3,7 @@ schema: "agentic-graph-runtime-contract/v1"
 title: "agentic-graph Deterministic Agent-Graph Runtime"
 doc_type: "Runtime Contract"
 id: "agentic-graph-deterministic-agent-graph-runtime"
-version: "1.3.0"
+version: "1.4.0"
 date: "2026-09-17"
 status: "active"
 created: "2026-07-22"
@@ -245,3 +245,31 @@ are exported from the existing stage receipt; the duplicated XR comprehensive in
 while retaining workspace-seed and comprehensive coverage. OS owns publication preflight and bounded
 workflow navigation; this repository owns syntax parsing and its protected checks. Release/deployment
 proof remains separate. Rollback reverts this increment and retains immutable snapshots.
+
+## Mission validation economy increment (ADLC-OBS-004@0.1.0)
+
+PRD: distinguish archive ingress, unit contracts and browser lifecycle costs before optimizing the
+observability workflow. The protected baseline run 35197440265 measured the composite mission stage
+at 566.05 seconds and 131,901 CPU ms; their difference alone does not identify a specific wait.
+
+TAD: reuse the existing verified command-expansion contract and OS stage runner. Expansion must match
+`agent-mission:check` exactly and reject omitted lifecycle hooks. Batch the two existing compatible
+unit selections using the runner's union filters, retaining per-test isolation and the npm pre-hook.
+Archive, unit and browser phases receive separate source-bound time/CPU/RSS receipts and existing
+feedback ranking. The browser retains monotonic sequential checkpoint intervals in its existing
+fixture evidence and bounded diagnostic output, independent of page clock simulation.
+
+ADR: preserve every lifecycle, authority, AST/query/explanation and D3 assertion; remove only the
+second identical unit-runner startup. Keep the outer 900-second owner budget and explicitly retain
+600 seconds for the browser phase; shorter phases use the existing per-command bound. Checkpoints
+are diagnostics, not production traces, CPU samples or execution authority. No new parser, renderer,
+telemetry store or dependency is added. Canvas consumes the same OS contracts through its adapter.
+
+MVP: validate exact expansion, union selection and per-phase limits; run both unit selections together
+and the full mobile/desktop browser lifecycle. Existing `/workflow.trace #read-only @input:<file>` and
+MCP traversal locate the package entry and retain unresolved syntax honestly. Native AST ingest,
+query and evidence explanation remain the authoritative syntax path into the existing D3 renderer.
+
+GTM: compare compatible next-run stage observations; do not infer cash or model usage from deterministic
+checks. Scope: at most eight modules, 60 KB, 35 active minutes; provider waits separate. Revert this
+source increment on regression while preserving previous observations and immutable lifecycle roots.

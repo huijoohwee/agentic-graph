@@ -209,7 +209,7 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
   assert.deepEqual(plan.scopes, ['agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.deepEqual(plan.commands, [
-    ['npm', 'run', 'agent-mission:check'],
+    ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps,
     canvasCheck,
     ...runtimeCommands,
     ['npm', '--prefix', 'canvas', 'run', 'test:storage-parent-child-browser-smoke'],
@@ -331,7 +331,7 @@ test('affected XR review expands the composite gate and runs the shared check on
   )
   assert.ok(!plan.commands.some(command => command.join(' ') === 'npm run xr-v2:review-ready'))
   assert.deepEqual(plan.commands, [
-    ['npm', 'run', 'agent-mission:check'],
+    ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps,
     canvasCheck,
     ...runtimeCommands,
     ['npm', '--prefix', 'canvas', 'run', 'test:storage-parent-child-browser-smoke'],
@@ -347,7 +347,7 @@ test('affected XR review expands the composite gate and runs the shared check on
     ['npm', 'run', 'payment:x402:xrpl:source-check'],
   ])
   assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'check'], contract), 300000)
-  assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'agent-mission:check'], contract), 600000)
+  assert.equal(resolveCiCommandTimeoutMs(['node', 'canvas/scripts/run_agent_mission_browser_smoke.mjs'], contract), 600000)
   assert.equal(
     resolveCiCommandTimeoutMs(['npm', 'run', 'check:agentic-travel-commerce-platform'], contract),
     900000,
