@@ -1,6 +1,7 @@
 import * as d3 from 'd3'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import type { GraphData } from '@/lib/graph/types'
+import type { GraphData, GraphNode } from '@/lib/graph/types'
+import { hashStringToHex } from '@/lib/hash/stringHash'
 import type { ZoomRequest } from '@/lib/zoom/requests'
 import { readZoomScaleExtent } from '@/lib/graph/layoutDefaults'
 import { DEFAULT_TOOLBAR_ZOOM_CONFIG } from '@/lib/zoom/toolbarZoom'
@@ -65,6 +66,15 @@ export const applyZoomRequest = (
   const t0 = node ? d3.zoomTransform(node) : d3.zoomIdentity
   const state = useGraphStore.getState()
   const schema = state.schema
+  // Reopened records can be fresh objects while D3 retains its positioned scene.
+  // Viewport geometry belongs to that rendered scene, never to source evidence.
+  const positions = new Map(svg.selectAll<SVGElement, GraphNode>('[data-node-id]').data()
+    .filter(node => node && typeof node.id === 'string' && Number.isFinite(node.x) && Number.isFinite(node.y))
+    .map(node => [node.id, { x: node.x, y: node.y }]))
+  const positionedGraph = graphData && positions.size ? { ...graphData,
+    nodes: graphData.nodes.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id) } : node),
+  } : graphData
+  const geometryKey = hashStringToHex(JSON.stringify(positionedGraph?.nodes.map(node => [node.id, node.x, node.y]) ?? []))
   const [curMinK, curMaxK] = zoom.scaleExtent()
   const schemaExtent = schema
     ? (() => {
@@ -74,7 +84,7 @@ export const applyZoomRequest = (
     : { minK: curMinK, maxK: curMaxK }
   const resolved = resolveZoomRequest2d({
     zoomRequest,
-    graphData,
+    graphData: positionedGraph,
     schema,
     documentSemanticMode: (state.documentSemanticMode as 'document' | 'keyword' | undefined) ?? undefined,
     graphDataRevision: state.graphDataRevision || 0,
@@ -95,7 +105,7 @@ export const applyZoomRequest = (
     currentTransform: t0,
     schemaExtent,
     currentExtent: { minK: curMinK, maxK: curMaxK },
-    cacheKeyBase: '2d',
+    cacheKeyBase: `2d:${geometryKey}`,
   })
   if (!resolved) {
     clear()

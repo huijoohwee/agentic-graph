@@ -47,17 +47,20 @@ export function useZoomEffects({
         selectedGroupIds: state.selectedGroupIds,
       })
     }
-    const schedule = (zoomRequest: ZoomRequest | null) => {
-      if (rafId != null) return
+    const schedule = () => {
+      if (rafId != null || !useGraphStore.getState().zoomRequest) return
       rafId = requestAnimationFrame(() => {
         rafId = null
-        apply(zoomRequest)
+        apply(useGraphStore.getState().zoomRequest)
       })
     }
     const unsubZoomRequest = useGraphStore.subscribe(
       s => s.zoomRequest,
-      zoomRequest => schedule(zoomRequest),
+      schedule,
     )
+    // Selection can replace the bounded render graph before the queued frame runs.
+    // Resume its pending request after rebinding instead of dropping it in cleanup.
+    schedule()
     return () => {
       unsubZoomRequest()
       if (rafId != null) cancelAnimationFrame(rafId)
