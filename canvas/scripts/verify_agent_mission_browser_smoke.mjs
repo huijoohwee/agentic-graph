@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
+import { createMissionPhaseObservation } from './lib/mission-phase-observation.mjs'
+const phaseObservation = createMissionPhaseObservation()
 
 const output = resolve(process.env.AG_MISSION_ARTIFACT_DIR || '../data/outputs/agent-mission-browser-smoke')
 const browser = await chromium.launch({ headless: true })
@@ -196,7 +198,7 @@ async function verifyWorkspace(label, revoke = false) {
   assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
   assert.deepEqual(await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] }), previousView)
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
-  console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
+  phaseObservation.checkpoint('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
 async function verifyLocalTraceImport(label, fromApex = false) {
   const currentEditor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
@@ -251,7 +253,7 @@ async function verifyLocalTraceImport(label, fromApex = false) {
   assert.equal(requests.length, beforeRequests, 'Replacing a mounted inspection must not reactivate the runtime')
   await canvas.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   assertAuthored(await authoredSnapshot(), before, 'Trace file import must preserve authored documents and graph')
-  console.log('Mission browser: ' + label + ' local file import, native D3 and synchronized selection passed')
+  phaseObservation.checkpoint('Mission browser: ' + label + ' local file import, native D3 and synchronized selection passed')
 }
 async function verifyApexActivation(width) {
   await context.close()
@@ -408,7 +410,7 @@ try {
   const before = await authoredSnapshot()
   await choose('baseline-run')
   assert.equal(await floating.count(), 0, 'Inspection must not open another panel')
-  console.log('Mission browser: authorized discovery and keyboard selection passed')
+  phaseObservation.checkpoint('Mission browser: authorized discovery and keyboard selection passed')
   await waitText(selected, '32/34 retained spans')
   await selected.getByText('Source ownership', { exact: true }).click()
   assert.ok((await selected.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
@@ -416,7 +418,7 @@ try {
   // Hierarchy, timing and topology share one span selection owner.
   const actualDraft = selected.getByRole('treeitem', { name: /draft · tool · completed/ })
   await actualDraft.click()
-  console.log('Mission browser: span selected')
+  phaseObservation.checkpoint('Mission browser: span selected')
   await waitText(selected, 'Span draft-2')
   const search = selected.getByPlaceholder('Search spans by name, kind or status')
   await search.fill('draft-2')
@@ -455,7 +457,7 @@ try {
   await page.locator('#agent-run-view-evidence-tab').click()
   await selected.getByRole('button', { name: 'Evaluate selected subject' }).click()
   await waitText(selected, 'Span draft-2 · reported')
-  console.log('Mission browser: views and subject evaluation passed')
+  phaseObservation.checkpoint('Mission browser: views and subject evaluation passed')
   await refreshMission()
   await selected.getByRole('button', { name: 'Next span page' }).click()
   await waitText(selected, '2/34 retained spans')
@@ -515,7 +517,7 @@ try {
   assert.equal(peak, 1, 'Only one observation request may be in flight')
   assert.deepEqual(errors, [])
   await page.screenshot({ path: resolve(output, 'mobile.png') })
-  console.log('Mission browser: mobile lifecycle, authority and expiry passed')
+  phaseObservation.checkpoint('Mission browser: mobile lifecycle, authority and expiry passed')
   await page.clock.setSystemTime(new Date())
   await mission.getByRole('button', { name: 'Refresh runs' }).click(); await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await verifyWorkspace('mobile', true)
@@ -528,7 +530,7 @@ try {
   await page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true }).waitFor({ state: 'detached' })
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await context.setOffline(false)
-  console.log('Mission browser: mobile offline workspace expiry passed')
+  phaseObservation.checkpoint('Mission browser: mobile offline workspace expiry passed')
   // A genuinely fresh desktop must not inherit mobile fake timers, persisted views
   // or graphics contexts. Expiry stays in the clock-controlled mobile lifecycle.
   await context.close()
@@ -561,11 +563,12 @@ try {
       'subject-evaluation', 'phase-reauthorization', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
-      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'canvas-eight-views', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], peak, streamed, requests }, null, 2))
+      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'canvas-eight-views', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], phaseObservation: phaseObservation.snapshot(), peak, streamed, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
   }
 } catch (error) {
   console.error(error.message)
+  console.error('Completed mission checkpoints:', JSON.stringify(phaseObservation.snapshot()))
   console.error('Mission entry state:', await page.evaluate(() => ({
     ready: window.__AG_MAIN_PANEL_OPEN_READY__,
     dashboard: document.querySelector('#dashboard-surface-agentic-os-panel')?.textContent.slice(0, 4000),
