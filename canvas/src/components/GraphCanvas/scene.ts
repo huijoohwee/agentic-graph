@@ -51,7 +51,6 @@ import { resolveWorkspaceVisibleViewport } from '@/lib/zoom/workspaceVisibleView
 import { filterGraphCanvasViewportFitNodes } from '@/components/GraphCanvas/viewportFitNodes'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>
-
 type SetupGraphSceneArgs = {
   isolateDocumentState?: boolean
   active: () => boolean

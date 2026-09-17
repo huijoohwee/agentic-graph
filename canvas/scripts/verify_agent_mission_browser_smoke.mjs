@@ -124,7 +124,7 @@ async function verifyWorkspace(label, revoke = false) {
   await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).click()
   await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).and(page.locator(':enabled')).waitFor()
   assert.ok(requests.length > countBeforeRefresh, 'Canvas refresh must use the authenticated native transport')
-  for (const [key, name] of [['table', 'Span table'], ['tree', 'Span tree'], ['timing', 'Timing'], ['source', 'Source links'],
+  for (const [key, name] of [['table', 'Span table'], ['tree', 'Span tree'], ['source', 'Source links'],
     ['allocation', 'Allocation'], ['evidence', 'Evaluation'], ['comparison', 'Comparison'], ['topology', 'Topology']]) {
     await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
     await page.getByRole('button', { name, exact: true }).click()
@@ -134,6 +134,9 @@ async function verifyWorkspace(label, revoke = false) {
     if (key === 'tree') {
       const tree = evidence.getByRole('tree', { name: 'Span hierarchy' })
       assert.ok(await tree.isVisible())
+      assert.equal(await evidence.getByRole('tab', { name: 'Timing', exact: true }).count(), 0)
+      assert.equal(await tree.locator('[data-span-timing]').count(), await tree.getByRole('treeitem').count())
+      await waitText(tree, 'exclusive observed')
       const root = tree.getByRole('treeitem', { name: /^prepare-listing/ })
       const selectedSpan = tree.getByRole('treeitem', { name: /^draft · tool · completed/ })
       assert.equal(await selectedSpan.getAttribute('aria-selected'), 'true')
@@ -154,7 +157,6 @@ async function verifyWorkspace(label, revoke = false) {
       assert.equal(await selectedSpan.getAttribute('aria-level'), '2')
       await evidence.getByPlaceholder('Search spans by name, kind or status').fill('draft')
     }
-    if (key === 'timing') await waitText(evidence, 'exclusive observed')
     if (key === 'source') assert.ok((await evidence.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
     if (key === 'allocation') await waitText(evidence, 'Project allocation')
     if (key === 'evidence') {
@@ -337,8 +339,12 @@ async function verifyApexActivation(width) {
   assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
   assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s' }).isDisabled(), true)
   await waitText(evidence.getByRole('region', { name: 'Validation economics' }), '128,000 bytes')
-  await evidence.getByRole('tab', { name: 'Timing', exact: true }).click()
-  await evidence.getByRole('list', { name: 'Span timing' }).getByRole('button').first().click()
+  await evidence.getByRole('tab', { name: 'Span tree', exact: true }).click()
+  const firstStage = evidence.getByRole('tree', { name: 'Span hierarchy' }).getByRole('treeitem').first()
+  await firstStage.click()
+  assert.equal(await firstStage.getByText('100 ms', { exact: true }).count(), 1, 'Each span shows its duration once')
+  assert.equal(await firstStage.locator('[data-span-timing]').innerText(), '', 'The interval bar does not duplicate duration text')
+  await page.screenshot({ path: resolve(output, `validation-${width}-span-tree.png`) })
   await waitText(evidence, 'Selected span: check-0')
   await evidence.getByRole('button', { name: 'Next stage page' }).click()
   await waitText(evidence, '1/33 retained spans')
@@ -407,7 +413,7 @@ try {
   await selected.getByText('Source ownership', { exact: true }).click()
   assert.ok((await selected.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
   await waitText(selected, 'Project allocation')
-  // Tree semantics expose the same span selection owner as timing and topology.
+  // Hierarchy, timing and topology share one span selection owner.
   const actualDraft = selected.getByRole('treeitem', { name: /draft · tool · completed/ })
   await actualDraft.click()
   console.log('Mission browser: span selected')
@@ -416,8 +422,7 @@ try {
   await search.fill('draft-2')
   assert.equal(await selected.getByRole('tree', { name: 'Span hierarchy' }).getByRole('treeitem').count(), 2, 'Search retains the matching span and its known ancestor')
   await search.fill('')
-  await page.locator('#agent-run-view-timing-tab').click()
-  assert.equal(await selected.getByRole('button', { pressed: true }).count(), 1)
+  assert.equal(await selected.getByRole('treeitem', { selected: true }).count(), 1)
   await waitText(selected, 'exclusive observed')
   await page.locator('#agent-run-view-topology-tab').click()
   await waitTopology(selected)

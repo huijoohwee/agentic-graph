@@ -4,7 +4,7 @@ export const CANVAS_VIEW_BINDING_TOKEN = '@canvas-view'
 export const CANVAS_VIEW_MCP_TOOL_NAME = 'agentic-graph.control_local_canvas_view'
 
 export const AGENT_RUN_CANVAS_VIEWS = Object.freeze({
-  table: 'Span table', tree: 'Span tree', timing: 'Timing', topology: 'Topology',
+  table: 'Span table', tree: 'Span tree', topology: 'Topology',
   source: 'Source links', allocation: 'Allocation', evidence: 'Evaluation', comparison: 'Comparison',
 })
 
