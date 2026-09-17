@@ -251,9 +251,8 @@ export function useStatsDerivedData({
   }, [effectiveGraph, maxListItems, schema, tokenCfg])
 
   const dashboardKeywordTerms = React.useMemo<StatsKeywordTerm[]>(() => {
-    const graph = data as GraphData | null
-    return collectGraphKeywordTermStats(graph)
-  }, [data])
+    return collectGraphKeywordTermStats(effectiveGraph)
+  }, [effectiveGraph])
 
   return {
     datasetStats,

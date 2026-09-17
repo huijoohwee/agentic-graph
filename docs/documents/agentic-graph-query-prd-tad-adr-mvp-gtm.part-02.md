@@ -1,28 +1,28 @@
 ---
 title: "Reference implementation: agentic-graph-query-prd-tad-adr-mvp-gtm section 2"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.6"
+version: "0.3.7"
 date: "2026-09-18"
 lang: "en-US"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.3.6"
-tad_revision: "0.3.6"
-adr_revision: "0.3.6"
-mvp_revision: "0.3.6"
-gtm_revision: "0.3.6"
+prd_revision: "0.3.7"
+tad_revision: "0.3.7"
+adr_revision: "0.3.7"
+mvp_revision: "0.3.7"
+gtm_revision: "0.3.7"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--graph-selection-geometry"
+worktree_id: "device-0232231d4a19--graph-panel-ownership"
 agent_id: "codex-01a0af1e"
 parent: "agentic-graph-query-prd-tad-adr-mvp-gtm.md"
 guideline_revision: "2.7.0"
 source_section_lines: "479-569"
 ---
 
-[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.5`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
+[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.7`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
 
 ### Context
 
@@ -91,7 +91,7 @@ This implemented PRD/TAD remains accepted when it keeps valid YAML frontmatter, 
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.5`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.7`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -297,3 +297,29 @@ Source Files reopening. Rankings remain bounded by loaded evidence; viewport rep
 prove complete repository coverage or production readiness. Reuse exact-input validation receipts
 and profile expensive checks before increasing concurrency. Recovery is a reviewed owner revert;
 retained source records and validation evidence remain under their existing workspace owners.
+
+
+### Panel ownership and restored graph statistics
+
+**QUERY-IMPACT-06 / PRD.** Solo developer / inspect an imported source graph / use native
+source groups, module ranking, provenance and impact in FloatingPanel Graph Traversal, then
+review the original statistical sections in Dashboard. This correction supersedes the native
+Dashboard replacement in QUERY-IMPACT-04. Do not duplicate the full native inspection surface.
+
+**TAD / ADR.** Move the existing native section into the graph-inspector owner and lazy-load it
+through the existing FloatingPanel traversal route. Restore Dashboard's Dataset Inspector,
+Keywords, Word frequencies, Clusters and Edges sections for every graph. Dashboard supplies its
+effective graph to the existing mini-charts; keyword counts use the same loaded/selection scope.
+Renderer retains its existing independent Dataset Inspector behavior. Directory groups are not
+semantic communities, and absent similarity or co-occurrence values remain unavailable.
+
+**MVP / validation.** Bound the correction to 12 files, 30 KB and 30 active implementation
+minutes; protected CI is a separate external wait. Verify single FloatingPanel ownership,
+restored Dashboard sections, loaded-versus-rendered chart fidelity, scope changes and keyword
+selection with neutral fixtures. Preserve import/reopening, module focus and radius regressions.
+Use exact candidate checks, protected integration and canonical runtime/browser readback.
+
+**GTM / limits.** The pilot remains one solo developer inspecting a captured codebase. No new
+parser, renderer, dependency or full-repository analytics claim is introduced. Projection budgets
+and unavailable semantic evidence remain explicit. Store local lifecycle receipts under
+`.workspace/.artifacts`; production deployment and buyer validation require separate evidence.

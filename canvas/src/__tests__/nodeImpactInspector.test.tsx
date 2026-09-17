@@ -13,7 +13,9 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { getNodeRadiusFromSchema, defaultSchema } from '@/lib/graph/schema'
 import { buildAgentGraphCanvasProjection } from '@/features/agent-graph/agentGraphCanvasProjection'
 import { agentGraphResult } from './agentGraphWorkspaceArtifact.test'
-import NativeGraphStatsSection from '@/features/graph-stats/sections/NativeGraphStatsSection'
+import NativeGraphStatsSection from '@/features/graph-inspector/ui/NativeGraphStatsSection'
+import GraphStatsPanel from '@/features/graph-stats/GraphStatsPanel'
+import OrchestratorSettingsSection from '@/features/panels/views/OrchestratorSettingsSection'
 import * as d3 from 'd3'
 import { applyZoomRequest } from '@/components/GraphCanvas/zoomController'
 import { useZoomEffects } from '@/components/GraphCanvas/hooks/useZoomEffects'
@@ -221,5 +223,57 @@ test('native statistics share module selection, source groups, evidence and stab
     assert.deepEqual(useGraphStore.getState().graphData!.nodes.map(node => node.properties['visual:nodeSize']), data.nodes.map(node => node.properties['visual:nodeSize']))
     await act(async () => { Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Nodes')!.click() })
     assert.match(container.textContent || '', /5 matching nodes/)
+  } finally { await act(async () => root.unmount()); container.remove(); useGraphStore.setState(before, true); restore() }
+})
+
+
+test('FloatingPanel owns native inspection while Dashboard restores scoped statistics without duplication', async () => {
+  const { restore } = initJsdomHarness(), before = useGraphStore.getState()
+  const container = document.createElement('div'); document.body.append(container)
+  const root = createRoot(container)
+  const native = buildAgentGraphCanvasProjection(agentGraphResult())
+  const data = { ...graph, metadata: native.metadata, edges: [], nodes: Array.from({ length: 500 }, (_, i) => ({
+    id: `node-${i}`, label: i === 499 ? 'Unique selection token' : `Function ${i}`,
+    type: i === 499 ? 'DocumentText' : 'Function', properties: { 'corpus:sourcePath': `src/file-${i}.ts` },
+  })) } as GraphData
+  const buttons = () => Array.from(container.querySelectorAll<HTMLElement>('[role="button"], button'))
+  const expand = async (title: string) => {
+    const header = buttons().find(button => button.getAttribute('aria-expanded') === 'false' && button.textContent?.includes(title))
+    if (header) await act(async () => header.click())
+  }
+  const distribution = () => Array.from(container.querySelectorAll('span')).find(span => span.textContent === 'Node type distribution')!.parentElement!
+  const keyword = (name: string) => buttons().find(button => button.textContent?.startsWith(`#${name}`))
+  try {
+    useGraphStore.getState().resetAll()
+    useGraphStore.setState({ graphData: data, graphDataRevision: 86, canvasRenderMode: '2d', canvas2dRenderer: 'd3', schema: defaultSchema })
+    await act(async () => root.render(<GraphStatsPanel />))
+    for (const title of ['Dataset Inspector', 'Keywords', 'Word frequencies by node', 'Clusters', 'Edges (co-occurrence + similarity)']) {
+      assert.ok(container.textContent?.includes(title), title)
+      await expand(title)
+    }
+    assert.equal(container.querySelector('[aria-label="Native graph statistics"]'), null)
+    assert.doesNotMatch(container.textContent || '', /Most connected|Find a module|Source groups/)
+    assert.match(container.textContent || '', /Loaded graph: 500 nodes/)
+    assert.match(container.textContent || '', /Rendered: 420 nodes/)
+    assert.equal(distribution().querySelectorAll('rect').length, 2, 'charts include the loaded type outside the canvas budget')
+    assert.equal(keyword('Function')?.getAttribute('title'), '499 nodes')
+    await act(async () => keyword('DocumentText')!.click())
+    assert.deepEqual(useGraphStore.getState().selectedNodeIds, ['node-499'])
+    assert.equal(distribution().querySelectorAll('rect').length, 1, 'Auto charts follow the selection')
+    assert.equal(keyword('Function'), undefined, 'keyword inventory follows the same scope')
+    assert.match(container.textContent || '', /Unique selection token/)
+    const scope = container.querySelector('[aria-label="Stats scope"]')!
+    await act(async () => Array.from(scope.querySelectorAll('button')).find(button => button.textContent === 'Loaded graph')!.click())
+    assert.equal(distribution().querySelectorAll('rect').length, 2, 'loaded scope restores every loaded type despite selection')
+    assert.equal(keyword('Function')?.getAttribute('title'), '499 nodes')
+    assert.equal(container.querySelectorAll('[aria-label="Stats scope"]').length, 1)
+    assert.match(container.textContent || '', /No clusters detected/)
+    const noop = () => {}
+    await act(async () => root.render(<OrchestratorSettingsSection graphRagCollapsed presetsCollapsed editorCollapsed contextCollapsed indexingCollapsed tracingCollapsed
+      setGraphRagCollapsed={noop} setPresetsCollapsed={noop} setEditorCollapsed={noop} setContextCollapsed={noop} setIndexingCollapsed={noop} setTracingCollapsed={noop} />))
+    assert.equal(container.querySelectorAll('[aria-label="Native graph statistics"]').length, 1)
+    assert.equal(Array.from(container.querySelectorAll('h3')).filter(heading => heading.textContent === 'Most connected').length, 1)
+    assert.match(container.textContent || '', /Source groups/)
+    assert.doesNotMatch(container.textContent || '', /Word frequencies by node|GraphRAG Workflow/)
   } finally { await act(async () => root.unmount()); container.remove(); useGraphStore.setState(before, true); restore() }
 })

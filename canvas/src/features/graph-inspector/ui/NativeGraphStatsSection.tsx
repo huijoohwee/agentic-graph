@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { useStatsSelection } from '../hooks/useStatsSelection'
+import { useStatsSelection } from '@/features/graph-stats/hooks/useStatsSelection'
 import { agentGraphSourceGroup, agentGraphGroupColor, agentGraphEdgeCertainty } from '@/features/agent-graph/agentGraphVisualEvidence'
 import { impactSourcePath } from '@/features/graph-inspector/lib/nodeImpact'
 import NodeImpactInspector from '@/features/graph-inspector/ui/NodeImpactInspector'
