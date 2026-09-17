@@ -1,3 +1,4 @@
+import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
 import type { GraphData } from '@/lib/graph/types'
 
 type ProjectionMetadata = {
@@ -84,4 +85,15 @@ export function hasSameReadOnlyAgentGraphProjectionIdentity(
     && left.snapshotDigest === right.snapshotDigest
     && typeof left.projectionToken === 'string'
     && left.projectionToken === right.projectionToken
+}
+
+export const AGENT_GRAPH_PROJECTION_DIRECTORY = `${WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH}/codebase-graph`
+
+/** Only retained workspace paths can reopen an owned snapshot. */
+export function retainedAgentGraphDocumentIdentity(name: string): { graphId: string; snapshotDigest: string; path: string } | null {
+  name = name.startsWith('/') ? name : `/${name}`
+  const prefix = `${AGENT_GRAPH_PROJECTION_DIRECTORY}/`
+  if (!name.startsWith(prefix)) return null
+  const match = /^([a-f0-9]{32})-([a-f0-9]{64})\.json$/.exec(name.slice(prefix.length))
+  return match ? { path: name, graphId: `kg:graph:${match[1]}`, snapshotDigest: match[2]! } : null
 }

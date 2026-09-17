@@ -3,13 +3,15 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { extractYamlFrontmatterHeaderBlock } from '@/lib/markdown/frontmatter'
 import { readAgentGraphWorkspaceProjection } from './agentGraphWorkspaceArtifact'
 import { prepareAgentGraphCanvasView } from './agentGraphCanvasProjection'
+import { retainedAgentGraphDocumentIdentity } from './agentGraphProjectionPolicy'
 import { persistGraphDataToLocalStorage } from '@/hooks/store/graphDataPersistence'
 
 /** A passive import document reopens a retained native snapshot; Markdown never becomes code evidence. */
 export async function restoreAgentGraphWorkspaceDocument(name: string, text: string): Promise<boolean> {
+  const retained = retainedAgentGraphDocumentIdentity(name)
   const header = extractYamlFrontmatterHeaderBlock(text)
-  if (!header || header.yamlText.length > 40_000) return true
-  const meta = parseYaml(header.yamlText) as Record<string, unknown> | null
+  if (!retained && (!header || header.yamlText.length > 40_000)) return true
+  const meta: Record<string, unknown> | null = retained ? { document_type: 'agent-graph-manifest', source_projection: retained.path, graph_id: retained.graphId, snapshot_digest: retained.snapshotDigest } : parseYaml(header!.yamlText) as Record<string, unknown> | null
   if (meta?.document_type !== 'agent-graph-manifest' || meta.source_projection === undefined) return true
   const graphId = String(meta.graph_id || '')
   const snapshotDigest = String(meta.snapshot_digest || '')
@@ -18,7 +20,7 @@ export async function restoreAgentGraphWorkspaceDocument(name: string, text: str
     || historyId.length > 200 || typeof meta.source_projection !== 'string') throw new Error('Invalid source graph document identity.')
   const current = useGraphStore.getState().graphData
   const identity = current?.metadata?.agentGraphProjection as Record<string, unknown> | undefined
-  if (identity?.graphId === graphId && identity.snapshotDigest === snapshotDigest
+  if (!retained && identity?.graphId === graphId && identity.snapshotDigest === snapshotDigest
     && (current?.metadata?.graphId || graphId) === historyId) return true
   const graph = await readAgentGraphWorkspaceProjection(meta.source_projection, { graphId, snapshotDigest })
   const active = useGraphStore.getState()

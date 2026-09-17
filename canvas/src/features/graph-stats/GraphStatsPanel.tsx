@@ -34,6 +34,9 @@ export default function GraphStatsPanel() {
   const setKeywordGraphMentionEdgesPerSourceNode = useGraphStore(s => s.setKeywordGraphMentionEdgesPerSourceNode)
   const {
     data,
+    renderedGraph,
+    datasetGraph,
+    datasetScopeLabel,
     schema,
     effectiveGraph,
     statsScope,
@@ -176,6 +179,11 @@ export default function GraphStatsPanel() {
 
   return (
     <section className="h-full min-h-0 flex flex-col overflow-auto px-3 py-2" aria-label="Dashboard">
+      <p className="mb-2 text-xs" role="status">
+        {datasetScopeLabel}: {datasetGraph?.nodes.length ?? 0} nodes / {datasetGraph?.edges.length ?? 0} edges.
+        {' '}Rendered: {renderedGraph?.nodes.length ?? 0} nodes / {renderedGraph?.edges.length ?? 0} edges.
+        {' '}Selection statistics follow the selected scope; loaded projections can be partial.
+      </p>
       <nav className="mb-2 flex flex-wrap items-center justify-between gap-2" aria-label="Dashboard controls">
         <section
           className={`inline-flex rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} overflow-hidden`}
@@ -194,7 +202,7 @@ export default function GraphStatsPanel() {
               ].join(' ')}
               onClick={() => setStatsScope(key)}
             >
-              {key === 'auto' ? 'Auto' : key === 'dataset' ? 'Dataset' : 'Selection'}
+              {key === 'auto' ? 'Auto' : key === 'dataset' ? datasetScopeLabel : 'Selection'}
             </button>
           ))}
         </section>

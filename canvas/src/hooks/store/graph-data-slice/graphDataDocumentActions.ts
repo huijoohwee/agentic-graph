@@ -1,3 +1,4 @@
+import { retainedAgentGraphDocumentIdentity } from '@/features/agent-graph/agentGraphProjectionPolicy'
 import type { GraphData, JSONValue } from '@/lib/graph/types'
 import type { GetGraph, SetGraph } from './graphDataSliceAccess'
 import { containsFrontmatterMermaid, isMarkdownLikeFileName, normalizeMermaidMmdToMarkdown } from 'grph-shared/markdown/mermaidInput'
@@ -274,7 +275,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           canonicalText,
         })
       : normalizedText
-    if (isWorkspaceDocumentCanvasGraphApplyDisabled(text)) {
+    if (retainedAgentGraphDocumentIdentity(name) || isWorkspaceDocumentCanvasGraphApplyDisabled(text)) {
       get().setMarkdownDocument(name, text, { autoEnableFrontmatter: false, applyViewPreset: false })
       if ('sourceUrl' in args) get().setMarkdownDocumentSourceUrl(args.sourceUrl ?? null)
       const { restoreAgentGraphWorkspaceDocument } = await import('@/features/agent-graph/agentGraphWorkspaceDocument')
@@ -427,7 +428,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
       const nextName = String(request.name || '').trim()
       const nextText = String(request.text || '')
       if (!nextName || !nextText.trim()) return false
-      if (isWorkspaceDocumentCanvasGraphApplyDisabled(nextText)) return true
+      if (retainedAgentGraphDocumentIdentity(name) || isWorkspaceDocumentCanvasGraphApplyDisabled(nextText)) return true
 
       const lower = nextName.toLowerCase()
       const isMarkdown = isMarkdownLikeFileName(lower)

@@ -193,6 +193,8 @@ export function applyCanvasRenderBudget(args: {
   graphRevision?: number | null
   surface: CanvasRenderBudgetSurface
   documentSemanticMode?: string | null
+  priorityNodeIds?: readonly string[]
+  priorityEdgeIds?: readonly string[]
 }): GraphData | null {
   const graphData = args.graphData || null
   if (!graphData) return null
@@ -216,6 +218,8 @@ export function applyCanvasRenderBudget(args: {
   const edges = Array.isArray(topologyGraph.edges) ? (topologyGraph.edges as GraphEdge[]) : []
   if (nodes.length <= budget.maxNodes && edges.length <= budget.maxEdges) return graphData
 
+  const priorityNodes = [...new Set(args.priorityNodeIds || [])].slice(0, budget.maxNodes)
+  const priorityEdges = new Set((args.priorityEdgeIds || []).slice(0, budget.maxEdges))
   const cacheKey = buildScopedGraphSemanticKey('canvas-render-budget', {
     graphData,
     graphRevision: args.graphRevision || 0,
@@ -225,6 +229,7 @@ export function applyCanvasRenderBudget(args: {
       `nodes:${budget.maxNodes}`,
       `edges:${budget.maxEdges}`,
       `incident:${budget.maxIncidentEdgesPerNode}`,
+      JSON.stringify(priorityNodes), JSON.stringify([...priorityEdges]),
     ].join('|'),
   })
   if (cacheKey) {
@@ -306,6 +311,8 @@ export function applyCanvasRenderBudget(args: {
     return true
   }
 
+  for (const id of priorityNodes) retainNode(id)
+
   if (structuralDegreeById.size > 0) {
     const structuralReserve = Math.max(1, Math.floor(budget.maxNodes * STRUCTURAL_NODE_RESERVE_RATIO))
     let roots = scoredNodes.filter(item => {
@@ -367,6 +374,8 @@ export function applyCanvasRenderBudget(args: {
   const incidentCountByNodeId = new Map<string, number>()
   const retainedEdges: ScoredEdge[] = []
   const sortedEdges = scoredEdges.sort((a, b) => {
+    const priority = Number(priorityEdges.has(b.edge.id)) - Number(priorityEdges.has(a.edge.id))
+    if (priority) return priority
     if (b.score !== a.score) return b.score - a.score
     return a.index - b.index
   })

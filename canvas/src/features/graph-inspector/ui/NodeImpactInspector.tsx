@@ -28,7 +28,10 @@ export default function NodeImpactInspector({ nodeId }: { nodeId: string | null 
   const buttonClass = `App-toolbar__btn ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`
   if (error) return <p role="alert" className="px-3 py-2 text-xs">{error}</p>
   if (!lookup) return null
-  const selectNode = (id: string) => useGraphStore.getState().selectNode(id)
+  const selectNode = (id: string) => {
+    useGraphStore.getState().selectNode(id)
+    useGraphStore.getState().requestZoom('selection')
+  }
   return <><section aria-label="Find a node" className="min-w-0 px-3 py-2 text-xs">
     <label className="block font-semibold" htmlFor="impact-node-search">Find a node</label>
     <input id="impact-node-search" type="search" value={query} onChange={event => setQuery(event.target.value)}
@@ -47,9 +50,10 @@ export default function NodeImpactInspector({ nodeId }: { nodeId: string | null 
   </section>{impact && <section aria-label="Blast radius" className={`min-w-0 border-b px-3 py-2 text-xs ${UI_THEME_TOKENS.panel.divider}`}>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="font-semibold">Blast radius</h3>
-      <button className={buttonClass} type="button" onClick={() => useGraphStore.getState().selectNodesExpanded({
-        nodeIds: impact.nodeIds, edgeIds: impact.edgeIds, activeNodeId: nodeId, forceMulti: true,
-      })}>Show on canvas</button>
+      <button className={buttonClass} type="button" onClick={() => {
+        useGraphStore.getState().selectNodesExpanded({ nodeIds: impact.nodeIds, edgeIds: impact.edgeIds, activeNodeId: nodeId, forceMulti: true })
+        useGraphStore.getState().requestZoom('selection')
+      }}>Show on canvas</button>
     </div>
     {selected && <p className="mt-2 break-words">kind: {selected.kind} · path: {selected.path || 'unreported'} · prov: {selected.provenance} ({selected.provenanceBasis})</p>}
     <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Depth">

@@ -39,6 +39,7 @@ const modXrArPlacementRuntime = () => import('@/__tests__/xrArPlacementRuntime.t
 const modWorkspaceImportXrSpatialCaptureIngestion = () => import('@/__tests__/workspaceImportXrSpatialCaptureIngestion.test')
 const modWorkspaceImportXrSpatialCaptureLaunchUrl = () => import('@/__tests__/workspaceImportXrSpatialCaptureLaunchUrl.test')
 const modWorkspaceImportXrSpatialCaptureRuntime = () => import('@/__tests__/workspaceImportXrSpatialCaptureRuntime.test')
+const modAgentGraphImportFidelity = () => import('@/__tests__/agentGraphImportFidelity.test')
 const modAgentGraphLaunchIntegration = () => import('@/__tests__/agentGraphLaunchIntegration.test')
 const modAgentGraphHostAdapter = () => import('@/__tests__/agentGraphHostAdapter.test')
 const modAgentGraphHostAdapterProgress = () => import('@/__tests__/agentGraphHostAdapterProgress.test')
@@ -263,170 +264,50 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modXrArPlacementRuntime()
     await mod.testXrArPlacementRuntimeRejectsInvalidAndForeignFrames()
   })
-  await execTest(results, 'workspace.import.xrSpatialCapture.localPlyManifestCache', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyLocalUsesSourceManifestCache()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.localPlyRuntimePendingPayload', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyLocalRuntimeLoadsPendingPayload()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.localPlyRuntimeBrowserCache', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyLocalRuntimeLoadsBrowserCacheFallback()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.localPlyRuntimeOperatorSourceRoot', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyLocalRuntimeLoadsOperatorSourceRoot()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.urlPlyManifestCache', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyUrlUsesCachedManifestWithoutPayloadFetch()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.urlPlyHeadMimeHint', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testWorkspaceImportXrStandalonePlyUrlUsesHeadMimeHintForExtensionlessAssets()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.genericUrlSkipsSpatialProbe', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testWorkspaceImportXrStandaloneGenericUrlSkipsSpatialHeadProbe()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.launchUrlBridgeFallback', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testLaunchImportUrlFallsBackWhenBridgeCreatesNoWorkspacePath()
-  })
-  await execTest(results, 'workspace.import.url.launchBridgeSuccess', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testLaunchImportUrlSkipsFallbackWhenBridgeCreatesWorkspacePath()
-  })
-  await execTest(results, 'workspace.import.url.launchBridgeHandled', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testLaunchImportUrlSkipsFallbackWhenBridgeHandledWithoutWorkspacePath()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.launchLocalFilesBridgeFallback', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testLaunchImportLocalFilesFallsBackWhenBridgeRejects()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.launchUrlFallbackXrMode', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testLaunchImportUrlFallbackActivatesXrModeForStandalonePlyUrl()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.launchLocalFilesFallbackXrMode', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testLaunchImportLocalFilesFallbackActivatesXrModeForStandalonePlyFile()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.launchFormats', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
-    await mod.testWorkspaceImportXrStandalonePlyLaunchImportFormatsStayAdvertised()
-  })
-  await execTest(results, 'workspace.import.agentGraph.handledSuppressesFallback', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    await mod.testAgentGraphHandledResultSuppressesLegacyFallbackWithoutCreatedPaths()
-  })
-  await execTest(results, 'workspace.import.agentGraph.repositoryUsesCanonicalHost', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    await mod.testAgentGraphRepositoryUrlUsesCanonicalHostAndPreservesProjectionIds()
-  })
-  await execTest(results, 'workspace.import.agentGraph.repositoryFailsClosedWithoutHost', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    await mod.testAgentGraphRepositoryUrlFailsClosedWithoutCanonicalHost()
-  })
-  await execTest(results, 'workspace.import.agentGraph.repositoryRejectsUnsafeUrl', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    await mod.testAgentGraphRepositoryUrlRejectsUnsafeVariants()
-  })
-  await execTest(results, 'workspace.import.agentGraph.incompleteFailsClosed', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    await mod.testAgentGraphIncompleteRepositoryImportFailsClosed()
-  })
-  await execTest(results, 'workspace.import.agentGraph.folderUsesOpaqueCapability', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    await mod.testAgentGraphFolderUsesOpaqueHostCapability()
-  })
-  await execTest(results, 'workspace.import.agentGraph.browserFolderFallbackIsSmall', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    await mod.testAgentGraphBrowserFolderFallbackIsSmallAndExplicit()
-  })
-  await execTest(results, 'workspace.import.agentGraph.projectionIsBounded', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    mod.testAgentGraphCanvasProjectionRejectsUnboundedPayload()
-  })
-  await execTest(results, 'workspace.import.agentGraph.projectionRejectsPrivatePaths', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    mod.testAgentGraphCanvasProjectionRejectsPrivatePathsAndNonCanonicalIds()
-  })
-  await execTest(results, 'workspace.import.agentGraph.projectionRejectsOversizedProperties', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    mod.testAgentGraphCanvasProjectionRejectsOversizedProperties()
-  })
-  await execTest(results, 'workspace.import.agentGraph.projectionBlocksMutations', async () => {
-    const mod = await modAgentGraphLaunchIntegration()
-    mod.testAgentGraphCanvasProjectionBlocksGraphContentMutations()
-  })
-  await execTest(results, 'workspace.import.agentGraph.hostOpaqueFolderGrant', async () => {
-    const mod = await modAgentGraphHostAdapter()
-    await mod.testAgentGraphHostUsesOpaqueContentAddressedFolderGrant()
-  })
-  await execTest(results, 'workspace.import.agentGraph.hostStrictMultipartFolder', async () => {
-    const mod = await modAgentGraphHostAdapter()
-    await mod.testAgentGraphHostStrictFolderCommitCompletesMultipartRuntime()
-  })
-  await execTest(results, 'workspace.import.agentGraph.hostStreamsFolder', async () => {
-    const mod = await modAgentGraphHostAdapter()
-    await mod.testAgentGraphBrowserAdapterStreamsFolderAndSkipsGeneratedTrees()
-  })
-  await execTest(results, 'workspace.import.agentGraph.hostStreamsRepositoryProgress', async () => {
-    const mod = await modAgentGraphHostAdapterProgress()
-    await mod.testAgentGraphBrowserAdapterStreamsRepositoryProgress()
-  })
-  await execTest(results, 'workspace.import.agentGraph.hostRepositoryBoundary', async () => {
-    const mod = await modAgentGraphHostAdapter()
-    await mod.testAgentGraphHostRepositoryBoundaryIsStrictAndPathSafe()
-  })
-  await execTest(results, 'workspace.import.agentGraph.defaultCanvasHostRoute', async () => {
-    const mod = await modAgentGraphHostAdapter()
-    await mod.testAgentGraphDefaultCanvasBridgeRunsSourceBackedRepositoryIngest()
-  })
-  await execTest(results, 'workspace.import.agentGraph.defaultCanvasHostOwner', async () => {
-    const mod = await modAgentGraphHostAdapter()
-    await mod.testAgentGraphToolbarLauncherOwnsDefaultHostRegistration()
-  })
-  await execTest(results, 'workspace.import.agentGraph.hostBoundsBrowserProjection', async () => {
-    const mod = await modAgentGraphHostAdapter()
-    await mod.testAgentGraphHostRejectsOversizedProjectionBeforeBrowserTransfer()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.noLegacyModelExports', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyDoesNotAdvertiseGltfGlbExports()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.spatialRendererNoGraphFallback', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyUsesSpatialRendererInsteadOfGraphFallback()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.runtimeCacheBudget', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyRuntimeCachesBudgetedLoads()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.noValidationAssetHardcodes', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyManifestForbidsValidationAssetHardcodes()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.plyParserGeometryColor', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureIngestion()
-    await mod.testWorkspaceImportXrStandalonePlyParserPreservesGeometryAndColor()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.plyParserFidelityDefaults', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureRuntime()
-    await mod.testWorkspaceImportXrStandalonePlyParserHandlesEndianSamplingAndPartialGaussianRows()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.runtimeCacheDedupPrune', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureRuntime()
-    await mod.testWorkspaceImportXrStandalonePlyRuntimeDedupesAndBoundsParsedLoadCache()
-  })
-  await execTest(results, 'workspace.import.xrSpatialCapture.adaptiveRenderBudget', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureRuntime()
-    await mod.testWorkspaceImportXrStandalonePlyRuntimeUsesAdaptiveRenderBudget()
-  })
+  await execTest(results, 'workspace.import.xrSpatialCapture.localPlyManifestCache', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyLocalUsesSourceManifestCache())
+  await execTest(results, 'workspace.import.xrSpatialCapture.localPlyRuntimePendingPayload', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyLocalRuntimeLoadsPendingPayload())
+  await execTest(results, 'workspace.import.xrSpatialCapture.localPlyRuntimeBrowserCache', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyLocalRuntimeLoadsBrowserCacheFallback())
+  await execTest(results, 'workspace.import.xrSpatialCapture.localPlyRuntimeOperatorSourceRoot', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyLocalRuntimeLoadsOperatorSourceRoot())
+  await execTest(results, 'workspace.import.xrSpatialCapture.urlPlyManifestCache', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyUrlUsesCachedManifestWithoutPayloadFetch())
+  await execTest(results, 'workspace.import.xrSpatialCapture.urlPlyHeadMimeHint', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testWorkspaceImportXrStandalonePlyUrlUsesHeadMimeHintForExtensionlessAssets())
+  await execTest(results, 'workspace.import.xrSpatialCapture.genericUrlSkipsSpatialProbe', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testWorkspaceImportXrStandaloneGenericUrlSkipsSpatialHeadProbe())
+  await execTest(results, 'workspace.import.xrSpatialCapture.launchUrlBridgeFallback', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testLaunchImportUrlFallsBackWhenBridgeCreatesNoWorkspacePath())
+  await execTest(results, 'workspace.import.url.launchBridgeSuccess', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testLaunchImportUrlSkipsFallbackWhenBridgeCreatesWorkspacePath())
+  await execTest(results, 'workspace.import.url.launchBridgeHandled', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testLaunchImportUrlSkipsFallbackWhenBridgeHandledWithoutWorkspacePath())
+  await execTest(results, 'workspace.import.xrSpatialCapture.launchLocalFilesBridgeFallback', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testLaunchImportLocalFilesFallsBackWhenBridgeRejects())
+  await execTest(results, 'workspace.import.xrSpatialCapture.launchUrlFallbackXrMode', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testLaunchImportUrlFallbackActivatesXrModeForStandalonePlyUrl())
+  await execTest(results, 'workspace.import.xrSpatialCapture.launchLocalFilesFallbackXrMode', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testLaunchImportLocalFilesFallbackActivatesXrModeForStandalonePlyFile())
+  await execTest(results, 'workspace.import.xrSpatialCapture.launchFormats', async () => (await modWorkspaceImportXrSpatialCaptureLaunchUrl()).testWorkspaceImportXrStandalonePlyLaunchImportFormatsStayAdvertised())
+  await execTest(results, 'workspace.import.agentGraph.handledSuppressesFallback', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphHandledResultSuppressesLegacyFallbackWithoutCreatedPaths())
+  await execTest(results, 'workspace.import.agentGraph.repositoryUsesCanonicalHost', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphRepositoryUrlUsesCanonicalHostAndPreservesProjectionIds())
+  await execTest(results, 'workspace.import.agentGraph.repositoryFailsClosedWithoutHost', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphRepositoryUrlFailsClosedWithoutCanonicalHost())
+  await execTest(results, 'workspace.import.agentGraph.repositoryRejectsUnsafeUrl', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphRepositoryUrlRejectsUnsafeVariants())
+  await execTest(results, 'workspace.import.agentGraph.incompleteFailsClosed', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphIncompleteRepositoryImportFailsClosed())
+  for (const name of ['testFolderImportPersistsNativeArtifactAndCancellationPreservesGraph', 'testRetainedJsonReopensEvidenceAndRejectsCorruption', 'testRenderBudgetPrioritizesSelectionWithoutGrowing', 'testStatisticsKeepLoadedGraphAndSelectionScope'] as const) {
+    await execTest(results, `workspace.import.fidelity.${name}`, async () => (await modAgentGraphImportFidelity())[name]())
+  }
+  await execTest(results, 'workspace.import.agentGraph.folderUsesOpaqueCapability', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphFolderUsesOpaqueHostCapability())
+  await execTest(results, 'workspace.import.agentGraph.browserFolderFallbackIsSmall', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphBrowserFolderFallbackIsSmallAndExplicit())
+  await execTest(results, 'workspace.import.agentGraph.projectionIsBounded', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphCanvasProjectionRejectsUnboundedPayload())
+  await execTest(results, 'workspace.import.agentGraph.projectionRejectsPrivatePaths', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphCanvasProjectionRejectsPrivatePathsAndNonCanonicalIds())
+  await execTest(results, 'workspace.import.agentGraph.projectionRejectsOversizedProperties', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphCanvasProjectionRejectsOversizedProperties())
+  await execTest(results, 'workspace.import.agentGraph.projectionBlocksMutations', async () => (await modAgentGraphLaunchIntegration()).testAgentGraphCanvasProjectionBlocksGraphContentMutations())
+  await execTest(results, 'workspace.import.agentGraph.hostOpaqueFolderGrant', async () => (await modAgentGraphHostAdapter()).testAgentGraphHostUsesOpaqueContentAddressedFolderGrant())
+  await execTest(results, 'workspace.import.agentGraph.hostStrictMultipartFolder', async () => (await modAgentGraphHostAdapter()).testAgentGraphHostStrictFolderCommitCompletesMultipartRuntime())
+  await execTest(results, 'workspace.import.agentGraph.hostStreamsFolder', async () => (await modAgentGraphHostAdapter()).testAgentGraphBrowserAdapterStreamsFolderAndSkipsGeneratedTrees())
+  await execTest(results, 'workspace.import.agentGraph.hostStreamsRepositoryProgress', async () => (await modAgentGraphHostAdapterProgress()).testAgentGraphBrowserAdapterStreamsRepositoryProgress())
+  await execTest(results, 'workspace.import.agentGraph.hostRepositoryBoundary', async () => (await modAgentGraphHostAdapter()).testAgentGraphHostRepositoryBoundaryIsStrictAndPathSafe())
+  await execTest(results, 'workspace.import.agentGraph.defaultCanvasHostRoute', async () => (await modAgentGraphHostAdapter()).testAgentGraphDefaultCanvasBridgeRunsSourceBackedRepositoryIngest())
+  await execTest(results, 'workspace.import.agentGraph.defaultCanvasHostOwner', async () => (await modAgentGraphHostAdapter()).testAgentGraphToolbarLauncherOwnsDefaultHostRegistration())
+  await execTest(results, 'workspace.import.agentGraph.hostBoundsBrowserProjection', async () => (await modAgentGraphHostAdapter()).testAgentGraphHostRejectsOversizedProjectionBeforeBrowserTransfer())
+  await execTest(results, 'workspace.import.xrSpatialCapture.noLegacyModelExports', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyDoesNotAdvertiseGltfGlbExports())
+  await execTest(results, 'workspace.import.xrSpatialCapture.spatialRendererNoGraphFallback', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyUsesSpatialRendererInsteadOfGraphFallback())
+  await execTest(results, 'workspace.import.xrSpatialCapture.runtimeCacheBudget', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyRuntimeCachesBudgetedLoads())
+  await execTest(results, 'workspace.import.xrSpatialCapture.noValidationAssetHardcodes', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyManifestForbidsValidationAssetHardcodes())
+  await execTest(results, 'workspace.import.xrSpatialCapture.plyParserGeometryColor', async () => (await modWorkspaceImportXrSpatialCaptureIngestion()).testWorkspaceImportXrStandalonePlyParserPreservesGeometryAndColor())
+  await execTest(results, 'workspace.import.xrSpatialCapture.plyParserFidelityDefaults', async () => (await modWorkspaceImportXrSpatialCaptureRuntime()).testWorkspaceImportXrStandalonePlyParserHandlesEndianSamplingAndPartialGaussianRows())
+  await execTest(results, 'workspace.import.xrSpatialCapture.runtimeCacheDedupPrune', async () => (await modWorkspaceImportXrSpatialCaptureRuntime()).testWorkspaceImportXrStandalonePlyRuntimeDedupesAndBoundsParsedLoadCache())
+  await execTest(results, 'workspace.import.xrSpatialCapture.adaptiveRenderBudget', async () => (await modWorkspaceImportXrSpatialCaptureRuntime()).testWorkspaceImportXrStandalonePlyRuntimeUsesAdaptiveRenderBudget())
   await execTest(results, 'workspace.import.xrSpatialCapture.boundedGaussianSortCadence', async () => {
     const mod = await modSpatialCaptureRenderPerformance()
     await mod.testSpatialCaptureRenderStageUsesBoundedGaussianSortCadence()
@@ -447,10 +328,7 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modGaussianSplatEditorSurface()
     await mod.testGaussianSplatEditorSurfaceIsWiredAndCleanRoom()
   })
-  await execTest(results, 'workspace.import.xrSpatialCapture.workerParserTransfer', async () => {
-    const mod = await modWorkspaceImportXrSpatialCaptureRuntime()
-    await mod.testWorkspaceImportXrStandalonePlyRuntimeUsesTransferBackedWorkerParser()
-  })
+  await execTest(results, 'workspace.import.xrSpatialCapture.workerParserTransfer', async () => (await modWorkspaceImportXrSpatialCaptureRuntime()).testWorkspaceImportXrStandalonePlyRuntimeUsesTransferBackedWorkerParser())
   await execTest(results, 'canvas.viewSelection.shared3dSurfaceModeOwner', async () => {
     const mod = await modCanvasXrSharedSurfaceOwnership()
     await mod.testCanvasSurfaceMode3dSelectionUsesSharedOwner()
