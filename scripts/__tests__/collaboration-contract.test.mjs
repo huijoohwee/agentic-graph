@@ -9,7 +9,7 @@ import {
   validateContract,
   validateExpansionScripts,
   validatePullRequestMetadata,
-  validateTaskBranch,
+  validateReviewBodyInput, validateTaskBranch,
 } from '../collaboration-contract.mjs'
 import { readChangedPaths, readGitText } from '../run-affected-ci.mjs'
 import { findProtectedPushes, parsePrePushEntries } from '../check-pre-push-refs.mjs'
@@ -587,4 +587,12 @@ test('verified CI expansions preserve script coverage and reject drift, hooks an
     assert.equal(plan.commands.filter(value => JSON.stringify(value) === JSON.stringify(command)).length, 1)
   for (const command of rootScripts['check:agentic-travel-commerce-platform'].split(' && '))
     assert.ok(plan.commands.some(value => value.join(' ') === command), command)
+})
+test('native publication adapter rejects stale successor scope before publishing', async () => {
+  const contract = await readContract(); const input = {schema: 'agentic-os/review-body-input/v1', ref: 'agent/macbook/ci-economy',
+    body: '---\naction: /fix\nscope: "#ci-economy"\nactor: "@codex-task"\nbase_sha: "0123456789abcdef0123456789abcdef01234567"\n---\n'}
+  assert.deepEqual(validateReviewBodyInput(input, contract), {valid: true, scope: '#ci-economy'})
+  assert.throws(() => validateReviewBodyInput({...input, ref: 'agent/macbook/ci-successor'}, contract), /scope/)
+  assert.throws(() => validateReviewBodyInput({...input, body: ''}, contract), /frontmatter/)
+  assert.throws(() => validateReviewBodyInput({...input, execute: true}, contract), /invalid native review input/)
 })

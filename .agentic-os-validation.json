@@ -21,5 +21,6 @@
       "reuse": "never",
       "timeoutMs": 900000
     }
-  ]
+  ],
+  "reviewBodyCheck": "scripts/collaboration-contract.mjs"
 }

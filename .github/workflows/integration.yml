@@ -261,16 +261,33 @@ jobs:
           node node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs capture --policy=.agentic-os-ci-evidence.json --output="$RUNNER_TEMP/ci-evidence-before.json"
 
       - name: Run canonical integration gate
+        id: integration
         working-directory: agentic-graph
         env:
           AGENTIC_OS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run ci:integration
 
+      - name: Export native validation observation
+        id: validation_observation
+        if: ${{ always() && steps.integration.outcome != '' }}
+        continue-on-error: true
+        working-directory: agentic-graph
+        run: node node_modules/agentic-os/bin/agentic-os-validation.mjs observe --root=. > "$RUNNER_TEMP/validation-observation.json"
+
+      - name: Retain native validation observation
+        if: ${{ always() && steps.validation_observation.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: validation-observation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/validation-observation.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Run XR v2 runtime review-candidate gate
         working-directory: agentic-graph
         env:
           AG_XR_V2_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
-        run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser && node canvas/scripts/run_xr_v2_browser_smoke.mjs
+        run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser
 
       - name: Upload XR v2 browser observation
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
