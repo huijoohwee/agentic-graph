@@ -206,7 +206,7 @@ async function verifyLocalTraceImport(label, fromApex = false) {
       resources: { cpuMs: 40, peakMemoryBytes: 1048576, tokens: null, costUsd: null } }],
     coverage: { retainedSpans: 1, expectedSpans: 1, droppedEvents: null, partial: false }, page: { total: 1, offset: 0, nextCursor: null } }
   const localFile = { name: 'workflow.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(payload)) }
-  if (fromApex) await mission.getByLabel('Import local file', { exact: true }).setInputFiles(localFile)
+  if (fromApex) await page.getByLabel('Import local observation', { exact: true }).setInputFiles(localFile)
   else {
     await page.getByRole('button', { name: 'Launch', exact: true }).click()
     const chooser = page.waitForEvent('filechooser')
@@ -265,6 +265,8 @@ async function verifyApexActivation(width) {
   const dashboard = page.getByRole('region', { name: 'Observation dashboard', exact: true })
   await dashboard.waitFor()
   const dashboardBounds = await dashboard.boundingBox()
+  const overlay = page.locator('[data-kg-live-canvas-hero-editorial="overlay"]')
+  assert.equal(await overlay.evaluate(element => getComputedStyle(element).position), 'absolute', 'Catalog must reuse the existing translucent overlay')
   assert.ok(dashboardBounds.width > width * .9, 'Observability dashboard must use the full Canvas width')
   await dashboard.getByText('1. Import local file', { exact: true }).waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')

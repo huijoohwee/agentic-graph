@@ -43,7 +43,6 @@ import {
 import type { PromptPresetSelectionRuntime } from '@/features/chat/promptPresetSelectionRuntime'
 
 export type LiveCanvasHeroProps = {
-  compact?: boolean
   onEnter?: () => void
   onPresetChange?: (selection: LiveCanvasHeroPresetSelection) => void
   sourceFiles?: readonly SourceFile[]
@@ -93,6 +92,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
   }, [draft, selectedPromptPresetId, props.onPresetChange])
   const invocation = React.useMemo(() => parseGenerationInvocation(draft), [draft])
   const observationPreset = selectedPromptPresetId === 'agent-observability'
+  const observationFile = React.useRef<HTMLInputElement>(null)
   const selectedKinds = invocation?.kinds || []
   const promptParameters = React.useMemo(
     () => readLiveCanvasHeroPromptParameters(selectedPromptPresetPrompt),
@@ -134,13 +134,12 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
 
   return (
     <section
-      className={props.compact ? "relative w-full text-[var(--kg-text-primary)]" : "pointer-events-none absolute inset-0 z-[40] overflow-hidden text-[var(--kg-text-primary)]"}
+      className="pointer-events-none absolute inset-0 z-[40] overflow-hidden text-[var(--kg-text-primary)]"
       aria-labelledby="agentic-graph-live-canvas-hero-title"
       data-kg-live-canvas-hero="true"
       data-kg-live-canvas-hero-state="ready"
       data-kg-live-canvas-hero-layout="overlay-on-canvas"
     >
-      {!props.compact && <>
       <section
         className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--kg-canvas-bg)_14%,transparent)_25%,color-mix(in_srgb,var(--kg-canvas-bg)_92%,transparent)_56%,var(--kg-canvas-bg)_100%)] md:hidden"
         aria-hidden="true"
@@ -154,12 +153,10 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
         aria-hidden="true"
       />
 
-      </>}
       <article
-        className={props.compact ? "pointer-events-auto relative max-h-[55dvh] overflow-auto border-b p-3" : "pointer-events-auto absolute bottom-[calc(var(--kg-safe-bottom,0px)+var(--kg-canvas-viewport-edge-gap,12px)+var(--kg-toolbar-compact-surface-height,38px)+12px)] left-4 right-4 flex max-h-[calc(100dvh-var(--kg-main-toolbar-height,38px)-var(--kg-toolbar-compact-surface-height,38px)-4rem)] flex-col overflow-y-auto pr-1 md:bottom-auto md:left-8 md:right-auto md:top-1/2 md:w-[min(34rem,calc(100%-4rem))] md:max-h-[calc(100dvh-var(--kg-main-toolbar-height,38px)-2.5rem)] md:-translate-y-1/2 lg:left-12 lg:w-[34rem]"}
+        className="pointer-events-auto absolute bottom-[calc(var(--kg-safe-bottom,0px)+var(--kg-canvas-viewport-edge-gap,12px)+var(--kg-toolbar-compact-surface-height,38px)+12px)] left-4 right-4 flex max-h-[calc(100dvh-var(--kg-main-toolbar-height,38px)-var(--kg-toolbar-compact-surface-height,38px)-4rem)] flex-col overflow-y-auto pr-1 md:bottom-auto md:left-8 md:right-auto md:top-1/2 md:w-[min(34rem,calc(100%-4rem))] md:max-h-[calc(100dvh-var(--kg-main-toolbar-height,38px)-2.5rem)] md:-translate-y-1/2 lg:left-12 lg:w-[34rem]"
         data-kg-live-canvas-hero-editorial="overlay"
       >
-        <div className={props.compact ? "sr-only" : undefined}>
         <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--kg-text-secondary)]">
           <span
             className="h-3 w-3 shrink-0 bg-contain bg-center bg-no-repeat"
@@ -178,9 +175,8 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
           {renderHeroInlineCodeText(content.lede)}
         </p>
 
-        </div>
         <form
-          className={props.compact ? "grid items-start gap-3 sm:grid-cols-[minmax(10rem,1fr)_minmax(12rem,2fr)_auto]" : "mt-4 flex h-[29rem] shrink-0 flex-col overflow-hidden rounded-2xl border border-[color:var(--kg-border)] bg-[color-mix(in_srgb,var(--kg-panel-bg)_72%,transparent)] p-3 shadow-[0_18px_64px_color-mix(in_srgb,var(--kg-canvas-bg)_72%,transparent)] backdrop-blur-xl md:mt-6 md:p-4"}
+          className="mt-4 flex h-[29rem] shrink-0 flex-col overflow-hidden rounded-2xl border border-[color:var(--kg-border)] bg-[color-mix(in_srgb,var(--kg-panel-bg)_72%,transparent)] p-3 shadow-[0_18px_64px_color-mix(in_srgb,var(--kg-canvas-bg)_72%,transparent)] backdrop-blur-xl md:mt-6 md:p-4"
           onSubmit={handleSubmit}
           data-kg-live-canvas-hero-command-deck="true"
         >
@@ -193,8 +189,6 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
               setErrorText('')
             }}
           />
-          <details open={!props.compact} className="min-w-0">
-          <summary className={props.compact ? 'cursor-pointer py-2 text-sm' : 'hidden'}>Prompt Presets · / @ # · MCP</summary>
           <label className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]" htmlFor="agentic-graph-live-canvas-hero-query">
             Prompt Presets
           </label>
@@ -203,6 +197,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
           {selectedPromptPresetId === 'video-agent' && model.sourceLabel ? <p className="mt-2 truncate text-[10px] text-[var(--kg-text-secondary)]" title={model.sourceWorkspacePath || model.sourceLabel}>Script: {model.sourceLabel}</p> : null}
           <section className="mt-3 h-24 shrink-0 overflow-y-auto overscroll-contain pr-1" aria-label="Prompt preset controls" data-kg-live-canvas-hero-prompt-controls-scroll="fixed">
             <section className="grid gap-2">
+            {observationPreset && <p className="text-xs">Import local run or workflow JSON → inspect spans, resources and source → review evaluation/comparison → export. MCP: <code>{CANVAS_VIEW_MCP_TOOL_NAME}</code> accepts <code>{JSON.stringify({ invocation: draft })}</code>.</p>}
             {!invocation && promptParameters.length ? (
               <fieldset className="h-16 overflow-hidden" data-kg-live-canvas-hero-prompt-parameters="true">
                 <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">
@@ -266,8 +261,6 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
             </section>
           </section>
 
-          {observationPreset && <p className="pb-2 text-xs">Start with Import local file in the dashboard. Use this / @ # tuple in Chat or the browser-local MCP Canvas View control. Inspect tree, timing, D3 topology, sources, allocation and evaluation, then export the same evidence.<code className="mt-2 block break-all">{CANVAS_VIEW_MCP_TOOL_NAME} {JSON.stringify({ invocation: draft })}</code></p>}
-          </details>
           <section className="mt-auto flex shrink-0 flex-wrap items-center gap-2">
             <button
               type="submit"
@@ -280,29 +273,35 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
               <Play className="mr-2 h-4 w-4" aria-label="Demo icon" data-kg-live-canvas-hero-action-icon="enter" />
               {demoLoading ? 'Opening…' : observationPreset ? 'Open observability' : 'Demo'}
             </button>
-            {!observationPreset && <button
+            <button
               type="button"
-              onClick={() => setImportPanelOpen(true)}
+              onClick={() => observationPreset ? observationFile.current?.click() : setImportPanelOpen(true)}
               className={heroActionControlClassName}
-              aria-label="Import canvas embed"
-              title="Import canvas embed"
+              aria-label={observationPreset ? "Import local file" : "Import canvas embed"}
+              title={observationPreset ? "Import a local observation into the full Canvas" : "Import canvas embed"}
               data-kg-live-canvas-hero-import-embed="true"
             >
               <Upload className="h-4 w-4" aria-label="Import canvas embed icon" data-kg-live-canvas-hero-action-icon="import" />
-            </button>}
+            </button>
+            {observationPreset && <input ref={observationFile} type="file" accept=".json,application/json" className="sr-only" aria-label="Import local observation"
+              onChange={event => {
+                const file = event.target.files?.[0]; event.target.value = ''
+                if (file) void import('@/features/agent-ready/agentRunImport').then(({ importAgentRunFile }) =>
+                  importAgentRunFile(file, props.onEnter, 'canvas')).then(handled => { if (!handled) setErrorText('Choose native run or workflow JSON, or an exported inspection.') })
+              }} />}
             <kbd className="rounded-md border border-[color:var(--kg-border)] px-2 py-1 font-mono text-[10px] text-[var(--kg-text-secondary)]" title="Open Demo shortcut">Ctrl/⌘↵</kbd>
           </section>
           </fieldset>
           {errorText || presetError ? <p className="mt-2 text-xs text-red-500" role="alert">{errorText || presetError}</p> : null}
         </form>
 
-        {!props.compact && <ul className="mt-3 hidden flex-wrap gap-2 text-[10px] text-[var(--kg-text-secondary)] md:flex" aria-label="Agent-ready execution posture">
+        <ul className="mt-3 hidden flex-wrap gap-2 text-[10px] text-[var(--kg-text-secondary)] md:flex" aria-label="Agent-ready execution posture">
           {content.posture.map(label => (
             <li key={label} className="rounded-full border border-[color:var(--kg-border)] bg-[color-mix(in_srgb,var(--kg-panel-bg)_54%,transparent)] px-2.5 py-1 backdrop-blur-md">
               {label}
             </li>
           ))}
-        </ul>}
+        </ul>
       </article>
       {importPanelOpen ? <CanvasEmbedImportPanel onClose={() => setImportPanelOpen(false)} /> : null}
     </section>
@@ -326,7 +325,7 @@ export function LiveCanvasHero(props: LiveCanvasHeroShellProps) {
   }, [props.source.sourceLayerHash, requestZoom])
   return (
     <section
-      className={props.compact ? "relative z-[40] w-full shrink-0" : "pointer-events-none absolute inset-0 z-[40] overflow-hidden"}
+      className="pointer-events-none absolute inset-0 z-[40] overflow-hidden"
       aria-label="agentic-graph Live Canvas Hero"
       data-kg-live-canvas-hero-shell="full-bleed"
       data-kg-live-canvas-hero-source={props.source.sourcePath}

@@ -60,11 +60,11 @@ export function LiveCanvasHeroPresetStage(props: {
   const observation = selection?.id === 'agent-observability'
   if (!props.visible) return null
   return (
-    <section className={`absolute inset-0 z-[40] bg-[var(--kg-canvas-bg)] ${observation ? 'flex flex-col' : ''}`} data-kg-live-canvas-hero-viewport-owner={props.visible ? 'true' : undefined}>
-      <LiveCanvasHero compact={observation} source={props.source} sourceFiles={props.sourceFiles}
+    <section className="absolute inset-0 z-[40] bg-[var(--kg-canvas-bg)]" data-kg-live-canvas-hero-viewport-owner={props.visible ? 'true' : undefined}>
+      <LiveCanvasHero source={props.source} sourceFiles={props.sourceFiles}
         onPresetChange={onPresetChange} onEnter={props.onEnter} />
       <section
-        className={observation ? 'relative min-h-0 w-full flex-1' : `absolute inset-0 ${backgroundUrl ? '' : 'md:left-[48%]'}`}
+        className={`absolute inset-0 ${backgroundUrl || observation ? '' : 'md:left-[48%]'}`}
         data-kg-canvas-viewport-root="1"
         aria-label={backgroundUrl ? 'Shared interactive canvas background' : 'Prompt preset demo'}
         data-kg-live-canvas-hero-background={backgroundUrl ? 'shared-embed' : 'prompt-preset'}
