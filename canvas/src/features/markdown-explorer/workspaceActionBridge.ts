@@ -96,7 +96,8 @@ export type WorkspaceAgentGraphImportResult = {
 }
 
 export type WorkspaceAgentGraphArtifactRequest = {
-  repositoryUrl: string
+  source?: { kind: 'repository-url'; url: string } | { kind: 'folder' }
+  repositoryUrl?: string
   invocation: WorkspaceAgentGraphInvocation
   result: WorkspaceAgentGraphImportResult
 }

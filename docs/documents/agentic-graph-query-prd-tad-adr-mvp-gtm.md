@@ -2,7 +2,7 @@
 title: "agentic-graph Queryable Corpus Graph - PRD and TAD"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 id: "agentic-graph-query-prd-tad"
-version: "0.3.3"
+version: "0.3.4"
 status: "implemented-finetune-contract"
 created: "2026-05-29"
 updated: "2026-07-22"
@@ -51,22 +51,22 @@ local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--codebase-graph-runtime"
+worktree_id: "device-0232231d4a19--import-canvas-fidelity"
 agent_id: "codex-01a0af1e"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "ef2dad01d75fde7722ef9286f668a1de67bd4aed"
-previous_document_version: "0.3.2"
-prd_revision: "0.3.3"
-tad_revision: "0.3.3"
-adr_revision: "0.3.3"
-mvp_revision: "0.3.3"
-gtm_revision: "0.3.3"
+reviewed_source_revision: "136b02bf0261c0ebbf8fb356c10bd72261e50c79"
+previous_document_version: "0.3.3"
+prd_revision: "0.3.4"
+tad_revision: "0.3.4"
+adr_revision: "0.3.4"
+mvp_revision: "0.3.4"
+gtm_revision: "0.3.4"
 ---
 
 # Reference implementation: agentic-graph Queryable Corpus Graph - PRD and TAD
 
-This combined planning artifact joins `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.3`. Sections are split solely to keep each authored file below 600 lines. Existing source observations retain their recorded scope and revision. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
+This combined planning artifact joins `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.4`. Sections are split solely to keep each authored file below 600 lines. Existing source observations retain their recorded scope and revision. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
 
 <a id="executive-summary"></a>
 - [Executive Summary](agentic-graph-query-prd-tad-adr-mvp-gtm.part-01.md#executive-summary)

@@ -1,3 +1,4 @@
+import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSelectionAnchorIds } from '@/components/GraphCanvas/highlight'
@@ -17,7 +18,9 @@ export function useStatsSelection() {
   const selectedEdgeId = useGraphStore(s => s.selectedEdgeId)
   const selectedNodeIds = useGraphStore(s => s.selectedNodeIds ?? EMPTY_STRING_ARRAY)
   const selectedEdgeIds = useGraphStore(s => s.selectedEdgeIds ?? EMPTY_STRING_ARRAY)
-  const derivedGraph = useActiveGraphRenderData()
+  const renderedGraph = useActiveGraphRenderData()
+  const native = isReadOnlyAgentGraphProjection(data)
+  const derivedGraph = native ? data : renderedGraph
 
   const edgeSelectionSnapshotRef = React.useRef<SelectionSnapshot | null>(null)
   const communitySelectionSnapshotRef = React.useRef<SelectionSnapshot | null>(null)
@@ -128,6 +131,9 @@ export function useStatsSelection() {
 
   return {
     data,
+    renderedGraph,
+    datasetGraph: derivedGraph,
+    datasetScopeLabel: native ? 'Loaded graph' : 'Rendered graph',
     schema,
     effectiveGraph,
     statsScope,

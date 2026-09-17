@@ -129,16 +129,17 @@ function finishAgentGraphImport(
   return result
 }
 
-async function materializeRepositoryAgentGraphArtifact(args: {
+async function materializeAgentGraphArtifact(args: {
   bridge: MarkdownWorkspaceActionBridge
-  repositoryUrl: string
+  source: { kind: 'repository-url'; url: string } | { kind: 'folder' }
   invocation: WorkspaceAgentGraphInvocation
   result: WorkspaceAgentGraphImportResult
 }): Promise<void> {
   const materialize = args.bridge.materializeAgentGraphImport
   if (typeof materialize !== 'function') return
   await materialize({
-    repositoryUrl: args.repositoryUrl,
+    source: args.source,
+    ...(args.source.kind === 'repository-url' ? { repositoryUrl: args.source.url } : {}),
     invocation: args.invocation,
     result: args.result,
   })
@@ -198,12 +199,26 @@ export function hasLaunchAgentGraphFolderImporter(bridge: MarkdownWorkspaceActio
 
 export async function runLaunchImportAgentGraphFolder(args: {
   bridge: MarkdownWorkspaceActionBridge
+  resolveMcpInvocation?: (mcpTool: string) => Promise<{ invocation: WorkspaceAgentGraphInvocation }>
 }): Promise<WorkspaceAgentGraphImportResult> {
   const importFolder = args.bridge.agentGraph?.importFolder
   if (typeof importFolder !== 'function') {
     throw new Error('Canonical knowledge graph folder import is unavailable.')
   }
-  return finishAgentGraphImport(await importFolder())
+  const preview = createAgentGraphCanvasPreviewSession()
+  try {
+    const result = await importFolder()
+    preview.commit(result)
+    if (args.bridge.materializeAgentGraphImport) {
+      const resolve = args.resolveMcpInvocation || (await import('@/features/agentic-os/agenticOsMcpInvocationResolver')).resolveAgenticOsMcpInvocation
+      const { invocation } = await resolve(AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest)
+      await materializeAgentGraphArtifact({ bridge: args.bridge, source: { kind: 'folder' }, invocation, result })
+    }
+    return result
+  } catch (error) {
+    preview.rollback()
+    throw error
+  }
 }
 
 export async function runLaunchImportUrl(args: {
@@ -255,9 +270,9 @@ export async function runLaunchImportUrl(args: {
       const completedOperation = operation
         .then(async importResult => {
           preview.commit(importResult)
-          await materializeRepositoryAgentGraphArtifact({
+          await materializeAgentGraphArtifact({
             bridge: args.bridge,
-            repositoryUrl,
+            source: { kind: 'repository-url', url: repositoryUrl },
             invocation: resolved.invocation,
             result: importResult,
           })

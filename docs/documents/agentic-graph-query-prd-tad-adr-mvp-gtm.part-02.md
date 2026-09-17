@@ -1,28 +1,28 @@
 ---
 title: "Reference implementation: agentic-graph-query-prd-tad-adr-mvp-gtm section 2"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.3"
+version: "0.3.4"
 date: "2026-09-17"
 lang: "en-US"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.3.3"
-tad_revision: "0.3.3"
-adr_revision: "0.3.3"
-mvp_revision: "0.3.3"
-gtm_revision: "0.3.3"
+prd_revision: "0.3.4"
+tad_revision: "0.3.4"
+adr_revision: "0.3.4"
+mvp_revision: "0.3.4"
+gtm_revision: "0.3.4"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--codebase-graph-runtime"
+worktree_id: "device-0232231d4a19--import-canvas-fidelity"
 agent_id: "codex-01a0af1e"
 parent: "agentic-graph-query-prd-tad-adr-mvp-gtm.md"
 guideline_revision: "2.7.0"
 source_section_lines: "479-569"
 ---
 
-[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.3`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
+[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.4`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
 
 ### Context
 
@@ -91,7 +91,7 @@ This implemented PRD/TAD remains accepted when it keeps valid YAML frontmatter, 
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.3`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.4`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -119,7 +119,7 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 
 ## Node impact inspection — reference implementation
 
-**CID QUERY-IMPACT-01**, joined to this family's `0.3.3` revision. Authorization: the
+**CID QUERY-IMPACT-01**, joined to this family's `0.3.4` revision. Authorization: the
 2026-09-17 operator instruction explicitly requests native enhancements and protected integration.
 Role/Subject: solo developer; Action/Verb: inspect; Outcome/Object: bounded source-explained change reach.
 
@@ -199,3 +199,38 @@ while retaining all imported source artifacts and lifecycle evidence.
 and direction → affected source explanation. Record preview publication count separately from wall
 time, CPU and memory. No avoided crash rate, resource savings, buyer demand or WTP is claimed from
 synthetic tests. Production deployment remains a separate protected candidate and runtime receipt.
+
+
+## Import-to-canvas fidelity — reference implementation
+
+**QUERY-IMPACT-03 / PRD.** Solo developer / reopen imported source evidence / inspect the same
+identified graph across Source Files, Renderer, Graph Traversal, Workflow Manager and Dashboard.
+The source audit found native JSON converted to generic relationships, missing folder artifacts,
+selection without viewport focus, and rendered-subset counts labeled as the dataset. The user's
+FIX instruction authorizes this four-gap successor at the family's `0.3.4` revision.
+
+**Acceptance.** URL and folder imports retain one native manifest/projection pair. Reopening either
+retains IDs, relationship labels, provenance and read-only ownership. Invalid retained identity or
+records fail closed. Cancellation adds no artifact. Most connected and Show on canvas bring the
+selected root/neighborhood into view within existing render limits. Loaded graph statistics agree
+with Workflow Manager; rendered and selected counts remain explicit and partial coverage is disclosed.
+
+**TAD / ADR.** Extend the retained projection reader, document action, existing artifact writer,
+render budget, selection-fit request and statistics hook. Retained JSON is not generic Flowchart input.
+Use a tagged folder/remote origin without inventing a local URL. Selected nodes take priority in the
+existing bounded display set and its cache identity. Native statistics read the loaded immutable
+projection; rendering retains its independent budget. No extra store, parser, renderer or dependency.
+These owners preserve one graph identity while separating persistence, presentation and analysis.
+
+**MVP / validation.** One lane, 60 active minutes, at most 24 authored files and 150 KB diff;
+no new always-loaded module. Regression checks cover folder persistence/cancellation, native JSON
+reopen and corruption, selection-aware rendering/cache isolation, loaded/selected statistics, and
+inspector focus requests. Reuse unchanged checks by exact input identity; required integration and
+browser readback remain distinct receipts. Existing browser folder-picker automation cannot prove
+the native picker; host acquisition/commit tests cover the deterministic folder path independently.
+
+**GTM / successor.** Demonstrate import → Source Files reopen → Most connected → focused impact
+→ matching loaded totals in 90 seconds. Willingness to pay remains unvalidated. Static code evidence
+never implies execution metrics or production readiness. Next optimization: measure import/reopen
+and focus latency on the same source snapshot before changing budgets or concurrency. Recovery is
+a reviewed revert of these owner changes; retained source artifacts remain available.

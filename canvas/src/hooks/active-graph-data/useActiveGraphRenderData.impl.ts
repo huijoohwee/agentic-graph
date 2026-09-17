@@ -41,6 +41,9 @@ const EMPTY_STRING_ARRAY: string[] = []
 export function useActiveGraphRenderData(enabled: boolean = true): GraphData | null {
   const activeDocumentGraph = useActiveGraphData(enabled)
   const sourceGraph = useGraphStore(s => s.graphData)
+  const selectedNodeId = useGraphStore(s => s.selectedNodeId)
+  const selectedNodeIds = useGraphStore(s => s.selectedNodeIds || EMPTY_STRING_ARRAY)
+  const selectedEdgeIds = useGraphStore(s => s.selectedEdgeIds || EMPTY_STRING_ARRAY)
   const sourceIsReadOnly = (sourceGraph?.metadata?.agentGraphProjection as Record<string, unknown>)?.readOnly === true
   const graphData = sourceIsReadOnly ? sourceGraph : activeDocumentGraph
   const proposalOverlay = useGraphStore(s => s.launchProposalOverlay)
@@ -210,8 +213,10 @@ export function useActiveGraphRenderData(enabled: boolean = true): GraphData | n
       graphRevision: graphDataRevision,
       surface: budgetSurface,
       documentSemanticMode: effectiveDocumentSemanticMode,
+      priorityNodeIds: selectedNodeId ? [selectedNodeId, ...selectedNodeIds] : selectedNodeIds,
+      priorityEdgeIds: selectedEdgeIds,
     })
-  }, [budgetSurface, effectiveDocumentSemanticMode, graphDataRevision, topologyComputed])
+  }, [budgetSurface, effectiveDocumentSemanticMode, graphDataRevision, topologyComputed, selectedNodeId, selectedNodeIds, selectedEdgeIds])
 
   const highlightedComputed = React.useMemo(() => {
     return applyMarkdownSigilHighlightsToGraphData({

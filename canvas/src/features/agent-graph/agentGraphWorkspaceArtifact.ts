@@ -3,12 +3,12 @@ import type {
   WorkspaceAgentGraphArtifactResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
-import { WORKSPACE_DOCS_SOURCE_ROOT_PATH, WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
+import { WORKSPACE_DOCS_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
 import { formatWorkspaceUtcSessionTimestamp } from '@/features/workspace-fs/workspaceTimestamp'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { upsertWorkspaceMarkdownSourceFile } from '@/features/source-files/upsertWorkspaceMarkdownSourceFile'
 import type { GraphData } from '@/lib/graph/types'
-import { isReadOnlyAgentGraphProjection } from './agentGraphProjectionPolicy'
+import { isReadOnlyAgentGraphProjection, AGENT_GRAPH_PROJECTION_DIRECTORY, retainedAgentGraphDocumentIdentity } from './agentGraphProjectionPolicy'
 import { styleAgentGraphProjection } from './agentGraphVisualEvidence'
 import { buildAgentGraphCanvasProjection, prepareAgentGraphCanvasView, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -21,7 +21,7 @@ const MANIFEST_LIST_MAX_ITEMS = 64
 
 export const AGENT_GRAPH_WORKSPACE_ARTIFACT_DIRECTORY =
   `${WORKSPACE_DOCS_SOURCE_ROOT_PATH}/${CODEBASE_GRAPH_DIRECTORY_NAME}` as const
-const PROJECTION_CACHE_DIRECTORY = `${WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH}/${CODEBASE_GRAPH_DIRECTORY_NAME}`
+const PROJECTION_CACHE_DIRECTORY = AGENT_GRAPH_PROJECTION_DIRECTORY
 
 export function buildAgentGraphWorkspaceArtifactFileName(timestampMs: number): string {
   return `${CODEBASE_GRAPH_DOCUMENT_PREFIX}_${formatWorkspaceUtcSessionTimestamp(timestampMs)}.md`
@@ -57,13 +57,16 @@ export function buildAgentGraphWorkspaceArtifactMarkdown(
   args: WorkspaceAgentGraphArtifactRequest,
   options?: { projectionPath?: string },
 ): string {
-  const { invocation, repositoryUrl, result } = args
+  const { invocation, result } = args
+  const source = args.source || { kind: 'repository-url' as const, url: args.repositoryUrl! }
+  const sourceLabel = source.kind === 'repository-url' ? source.url : 'Local folder'
   const counts = result.counts
   return `---
 title: "Codebase graph"
 document_type: "agent-graph-manifest"
 kgCanvasGraphApply: false
-${options?.projectionPath ? `source_projection: ${manifestYamlString(options.projectionPath)}\nkgCanvasRenderMode: 2d\nkgCanvas2dRenderer: d3\n` : ''}source_remote: ${manifestYamlString(repositoryUrl)}
+${options?.projectionPath ? `source_projection: ${manifestYamlString(options.projectionPath)}\nkgCanvasRenderMode: 2d\nkgCanvas2dRenderer: d3\n` : ''}source_kind: ${manifestYamlString(source.kind)}
+${source.kind === 'repository-url' ? `source_remote: ${manifestYamlString(source.url)}` : 'source_remote: null'}
 source_commit: ${manifestYamlString(result.acquisition?.commitSha || 'unavailable')}
 source_subpath: ${manifestYamlString(result.acquisition?.subpath || '')}
 graph_id: ${manifestYamlString(result.graphId)}
@@ -89,7 +92,7 @@ invocation:
 
 This source-backed record identifies the completed local, deterministic codebase graph import. The graph snapshot remains the canonical query surface; its edges retain their source explanations in the graph data.
 
-- Source remote: ${manifestYamlString(repositoryUrl)}
+- Source: ${manifestYamlString(sourceLabel)}
 - Acquisition commit: ${manifestYamlString(result.acquisition?.commitSha || 'unavailable for local files or older imports')}
 - Graph ID: ${manifestYamlString(result.graphId)}
 - Snapshot digest: ${manifestYamlString(result.snapshotDigest)}
@@ -102,7 +105,8 @@ This source-backed record identifies the completed local, deterministic codebase
 
 function assertCompletedAgentGraphArtifactRequest(args: WorkspaceAgentGraphArtifactRequest): void {
   if (
-    args.result.kind !== 'agent-graph'
+    (!args.source && !args.repositoryUrl)
+    || args.result.kind !== 'agent-graph'
     || args.result.complete !== true
   ) {
     throw new Error('A completed canonical knowledge graph result is required before materializing its Source Files artifact.')
@@ -160,13 +164,23 @@ export async function retainAgentGraphWorkspaceProjection(graph: GraphData): Pro
 }
 
 export async function readAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<GraphData> {
-  if (!target.startsWith(`${PROJECTION_CACHE_DIRECTORY}/`) || !/^[a-f0-9]{32}-[a-f0-9]{64}\.json$/.test(target.slice(PROJECTION_CACHE_DIRECTORY.length + 1))) throw new Error('Invalid retained source path')
+  const pathIdentity = retainedAgentGraphDocumentIdentity(target)
+  if (!pathIdentity || pathIdentity.graphId !== expected.graphId || pathIdentity.snapshotDigest !== expected.snapshotDigest) throw new Error('Invalid retained source path')
   const text = await (await getWorkspaceFs()).readFileText(target)
   if (!text || new TextEncoder().encode(text).length > AGENT_GRAPH_CANVAS_MAX_BYTES) throw new Error('Retained source projection unavailable')
   const graph = JSON.parse(text) as GraphData
   const identity = graph.metadata?.agentGraphProjection as Record<string, unknown>
   if (!isReadOnlyAgentGraphProjection(graph) || identity.graphId !== expected.graphId || identity.snapshotDigest !== expected.snapshotDigest) throw new Error('Retained source identity mismatch')
-  return styleAgentGraphProjection(graph)
+  const validated = buildAgentGraphCanvasProjection({
+    handled: true, kind: 'agent-graph', graphId: expected.graphId, snapshotDigest: expected.snapshotDigest,
+    parserRegistryDigest: identity.parserRegistryDigest as string, complete: identity.complete as boolean,
+    ...(identity.acquisition ? { acquisition: identity.acquisition as Parameters<typeof buildAgentGraphCanvasProjection>[0]['acquisition'] } : {}),
+    counts: identity.counts as Parameters<typeof buildAgentGraphCanvasProjection>[0]['counts'],
+    projection: { token: identity.projectionToken as string, readOnly: true,
+      complete: identity.projectionComplete as boolean, truncated: identity.projectionTruncated as boolean,
+      limit: identity.projectionLimit as number, ...(identity.projectionReason ? { reason: identity.projectionReason as string } : {}), graphData: graph },
+  })
+  return styleAgentGraphProjection(validated)
 }
 
 export async function reopenAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<void> {

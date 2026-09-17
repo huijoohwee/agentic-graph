@@ -136,6 +136,11 @@ const parseWorkspaceJsonGraphData = (args: { markdownName: string | null; markdo
     const parsed = JSON.parse(trimmed) as unknown
     if (!parsed || typeof parsed !== 'object') return null
     if (!Array.isArray(parsed)) {
+      // Owned source snapshots are restored through the retained-document reader.
+      // Never reinterpret ownership/evidence as a generic Flowchart.
+      const metadata = (parsed as GraphData).metadata
+      if (metadata && (metadata.kind === 'agent-graph' || metadata.kind === 'knowledge-graph' || 'agentGraphProjection' in metadata || 'agentGraphPreview' in metadata
+        || 'knowledgeGraphProjection' in metadata || 'knowledgeGraphPreview' in metadata)) return null
       const flowchartPayload = parseFlowchartApiGraphPayload(parsed)
       if (flowchartPayload) {
         return normalizeFlowchartApiGraphData({

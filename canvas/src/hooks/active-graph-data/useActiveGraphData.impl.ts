@@ -1,3 +1,4 @@
+import { retainedAgentGraphDocumentIdentity } from '@/features/agent-graph/agentGraphProjectionPolicy'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -86,7 +87,7 @@ export function resolveActiveMarkdownBaseGraph(args: {
   const markdownName = String(args.markdownName || '').trim()
   const markdownText = String(args.markdownText || '')
   if (!markdownName || !markdownText.trim()) return base
-  if (isWorkspaceDocumentCanvasGraphApplyDisabled(markdownText)) return base
+  if (retainedAgentGraphDocumentIdentity(markdownName) || isWorkspaceDocumentCanvasGraphApplyDisabled(markdownText)) return base
   const metadata = base.metadata && typeof base.metadata === 'object' && !Array.isArray(base.metadata)
     ? (base.metadata as Record<string, unknown>)
     : null
@@ -139,7 +140,7 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
     return isFrontmatterOnlyPolicyActive({ canvasRenderMode, canvas2dRenderer })
   }, [canvas2dRenderer, canvasRenderMode])
   const effectiveMode: 'document' | 'keyword' = frontmatterOnlyPolicyActive ? 'document' : mode
-  const workspaceDocumentCanvasGraphApplyDisabled = isWorkspaceDocumentCanvasGraphApplyDisabled(markdownText || '')
+  const workspaceDocumentCanvasGraphApplyDisabled = !!retainedAgentGraphDocumentIdentity(markdownName || '') || isWorkspaceDocumentCanvasGraphApplyDisabled(markdownText || '')
 
   const wantsApiGraphFlowchart = false
   const debouncedStructuredMarkdownText = useDebouncedValue(
