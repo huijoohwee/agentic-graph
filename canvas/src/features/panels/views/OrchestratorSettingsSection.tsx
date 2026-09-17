@@ -1,6 +1,6 @@
 import React from 'react'
 import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
-const NodeImpactInspector = React.lazy(() => import('@/features/graph-inspector/ui/NodeImpactInspector'))
+const NativeGraphStatsSection = React.lazy(() => import('@/features/graph-inspector/ui/NativeGraphStatsSection'))
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type {
@@ -67,9 +67,8 @@ type OrchestratorSettingsSectionProps = {
 
 export default function OrchestratorSettingsSection(props: OrchestratorSettingsSectionProps) {
   const graph = useGraphStore(s => s.graphData)
-  const nodeId = useGraphStore(s => s.selectedNodeId)
   if (isReadOnlyAgentGraphProjection(graph)) return <React.Suspense fallback={<p>Loading source graph inspection…</p>}>
-    <NodeImpactInspector nodeId={nodeId} />
+    <NativeGraphStatsSection />
   </React.Suspense>
   return <GraphRagSettingsSection {...props} />
 }

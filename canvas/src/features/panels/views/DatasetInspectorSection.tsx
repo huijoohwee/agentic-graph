@@ -40,6 +40,7 @@ interface DatasetStats {
 
 interface DatasetInspectorSectionProps {
   datasetStats: DatasetStats
+  graphOverride?: GraphData | null
   contextComparison?: AgenticRagContextComparison | null
   ignoreFilters?: AgenticRagIgnoreFiltersSummary | null
   toolbarAligned?: boolean
@@ -49,6 +50,7 @@ interface DatasetInspectorSectionProps {
 
 export default function DatasetInspectorSection({
   datasetStats,
+  graphOverride,
   contextComparison,
   ignoreFilters,
   toolbarAligned = false,
@@ -101,12 +103,13 @@ export default function DatasetInspectorSection({
   const [vizSource, setVizSource] = React.useState<'auto' | 'dataset' | 'selection'>('auto')
 
   const effectiveGraph = React.useMemo<GraphData | null>(() => {
+    if (graphOverride !== undefined) return graphOverride
     if (!graph) return null
     if (vizSource === 'dataset') return graph
     if (vizSource === 'selection') return selectionSubgraph && hasSelectionSubgraph ? selectionSubgraph : graph
     if (vizSource === 'auto' && hasSelectionSubgraph && selectionSubgraph) return selectionSubgraph
     return graph
-  }, [graph, hasSelectionSubgraph, selectionSubgraph, vizSource])
+  }, [graph, graphOverride, hasSelectionSubgraph, selectionSubgraph, vizSource])
 
   const selectionSummary = React.useMemo(() => {
     if (!hasSelectionSubgraph || !selectionSubgraph) return ''
@@ -204,7 +207,7 @@ export default function DatasetInspectorSection({
         Array.isArray(effectiveGraph.edges) &&
         effectiveGraph.nodes.length > 0 && (
           <>
-            {hasSelectionSubgraph && selectionSummary && (
+            {graphOverride === undefined && hasSelectionSubgraph && selectionSummary && (
               <section className="mt-2 flex items-center justify-between gap-2">
                 <section
                   className={[
