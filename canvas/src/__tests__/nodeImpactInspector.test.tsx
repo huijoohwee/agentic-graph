@@ -5,11 +5,15 @@ import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import type { GraphData } from '@/lib/graph/types'
-import { inspectNodeImpact, rankImpactNodes, filterImpactNodes } from '@/features/graph-inspector/lib/nodeImpact'
+import { inspectNodeImpact, rankImpactNodes, rankImpactModules, filterImpactNodes } from '@/features/graph-inspector/lib/nodeImpact'
 import { styleAgentGraphNode, styleAgentGraphEdge, styleAgentGraphProjection, agentGraphGroupColor } from '@/features/agent-graph/agentGraphVisualEvidence'
 import NodeImpactInspector from '@/features/graph-inspector/ui/NodeImpactInspector'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { getNodeRadiusFromSchema, defaultSchema } from '@/lib/graph/schema'
+import { buildAgentGraphCanvasProjection } from '@/features/agent-graph/agentGraphCanvasProjection'
+import { agentGraphResult } from './agentGraphWorkspaceArtifact.test'
+import NativeGraphStatsSection from '@/features/graph-stats/sections/NativeGraphStatsSection'
 
 const graph = {
   type: 'Graph',
@@ -112,4 +116,42 @@ test('source presentation remains bounded and marks a trimmed projection as part
   assert.ok(styled.nodes.length < input.nodes.length)
   assert.equal((styled.metadata?.agentGraphProjection as Record<string, unknown>).projectionTruncated, true)
   assert.equal(JSON.stringify(input), original)
+})
+
+test('modules aggregate captured file membership and count shared relationships once', () => {
+  const modules = rankImpactModules(lookup())
+  assert.deepEqual(modules.map(row => [row.path, row.nodeIds.length, row.degree]), [['src/core.ts', 1, 6], ['src/use.ts', 3, 6]])
+  assert.equal(filterImpactNodes(modules, 'kind:module path:use prov:extracted').length, 1)
+  assert.equal(modules.some(row => row.nodeIds.includes('isolated')), false)
+  const styled = styleAgentGraphProjection(graph)
+  const sizes = new Map(styled.nodes.map(node => [node.id, getNodeRadiusFromSchema(node, defaultSchema)]))
+  assert.equal(sizes.get('isolated'), 6)
+  assert(sizes.get('a')! > sizes.get('b')!)
+  assert.deepEqual(styleAgentGraphProjection(styled).nodes, styled.nodes)
+  assert.equal(styled.edges.find(edge => edge.id === 'ab')!.properties['evidence:explanation'], graph.edges[0]!.properties['evidence:explanation'])
+})
+
+test('native statistics share module selection, source groups, evidence and stable connectivity sizes', async () => {
+  const { restore } = initJsdomHarness(), before = useGraphStore.getState()
+  const container = document.createElement('div'); document.body.append(container)
+  const root = createRoot(container)
+  try {
+    const native = buildAgentGraphCanvasProjection(agentGraphResult())
+    const data = styleAgentGraphProjection({ ...graph, metadata: native.metadata })
+    useGraphStore.getState().resetAll()
+    useGraphStore.setState({ graphData: data, graphDataRevision: 44, canvasRenderMode: '2d', canvas2dRenderer: 'd3' })
+    await act(async () => { root.render(<NativeGraphStatsSection />) })
+    assert.match(container.textContent || '', /source-file modules/)
+    assert.match(container.textContent || '', /2 matching modules/)
+    assert.match(container.textContent || '', /Node size/)
+    assert.match(container.textContent || '', /Edge provenance/)
+    assert.doesNotMatch(container.textContent || '', /No clusters detected|co-occurrence/)
+    const moduleButton = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'src/use.ts')!
+    await act(async () => { moduleButton.click() })
+    assert.deepEqual(new Set(useGraphStore.getState().selectedNodeIds), new Set(['b', 'c', 'd']))
+    assert.equal(useGraphStore.getState().zoomRequest?.type, 'selection')
+    assert.deepEqual(useGraphStore.getState().graphData!.nodes.map(node => node.properties['visual:nodeSize']), data.nodes.map(node => node.properties['visual:nodeSize']))
+    await act(async () => { Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Nodes')!.click() })
+    assert.match(container.textContent || '', /5 matching nodes/)
+  } finally { await act(async () => root.unmount()); container.remove(); useGraphStore.setState(before, true); restore() }
 })

@@ -9,7 +9,6 @@ import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { upsertWorkspaceMarkdownSourceFile } from '@/features/source-files/upsertWorkspaceMarkdownSourceFile'
 import type { GraphData } from '@/lib/graph/types'
 import { isReadOnlyAgentGraphProjection, AGENT_GRAPH_PROJECTION_DIRECTORY, retainedAgentGraphDocumentIdentity } from './agentGraphProjectionPolicy'
-import { styleAgentGraphProjection } from './agentGraphVisualEvidence'
 import { buildAgentGraphCanvasProjection, prepareAgentGraphCanvasView, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
@@ -180,7 +179,7 @@ export async function readAgentGraphWorkspaceProjection(target: string, expected
       complete: identity.projectionComplete as boolean, truncated: identity.projectionTruncated as boolean,
       limit: identity.projectionLimit as number, ...(identity.projectionReason ? { reason: identity.projectionReason as string } : {}), graphData: graph },
   })
-  return styleAgentGraphProjection(validated)
+  return validated
 }
 
 export async function reopenAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<void> {

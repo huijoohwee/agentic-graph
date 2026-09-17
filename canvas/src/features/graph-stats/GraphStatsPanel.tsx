@@ -19,8 +19,15 @@ import type { GraphData } from '@/lib/graph/types'
 import { UI_RESPONSIVE_COMPACT_INLINE_CONTROL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { normalizeSemanticHighlightColor } from '@/lib/ui/semanticHighlight'
 import { GRAPH_STATS_KEYWORD_CONTROL_GRID_CLASS_NAME } from '@/features/graph-stats/graphStatsResponsiveClasses'
+import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
+import NativeGraphStatsSection from './sections/NativeGraphStatsSection'
 
 export default function GraphStatsPanel() {
+  const graph = useGraphStore(s => s.graphData)
+  return isReadOnlyAgentGraphProjection(graph) ? <NativeGraphStatsSection /> : <GenericGraphStatsPanel />
+}
+
+function GenericGraphStatsPanel() {
   const semanticMode = useGraphStore(s => (s.documentSemanticMode || 'document') as 'document' | 'keyword')
   const keywordSourceMaxLines = useGraphStore(s => s.keywordSourceMaxLines)
   const keywordSourceMaxChars = useGraphStore(s => s.keywordSourceMaxChars)

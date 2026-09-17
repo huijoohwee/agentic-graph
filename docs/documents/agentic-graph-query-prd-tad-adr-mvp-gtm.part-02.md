@@ -1,28 +1,28 @@
 ---
 title: "Reference implementation: agentic-graph-query-prd-tad-adr-mvp-gtm section 2"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.4"
+version: "0.3.5"
 date: "2026-09-17"
 lang: "en-US"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.3.4"
-tad_revision: "0.3.4"
-adr_revision: "0.3.4"
-mvp_revision: "0.3.4"
-gtm_revision: "0.3.4"
+prd_revision: "0.3.5"
+tad_revision: "0.3.5"
+adr_revision: "0.3.5"
+mvp_revision: "0.3.5"
+gtm_revision: "0.3.5"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--import-canvas-fidelity"
+worktree_id: "device-0232231d4a19--graph-module-fidelity"
 agent_id: "codex-01a0af1e"
 parent: "agentic-graph-query-prd-tad-adr-mvp-gtm.md"
 guideline_revision: "2.7.0"
 source_section_lines: "479-569"
 ---
 
-[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.4`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
+[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.5`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
 
 ### Context
 
@@ -91,7 +91,7 @@ This implemented PRD/TAD remains accepted when it keeps valid YAML frontmatter, 
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.4`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.5`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -119,7 +119,7 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 
 ## Node impact inspection — reference implementation
 
-**CID QUERY-IMPACT-01**, joined to this family's `0.3.4` revision. Authorization: the
+**CID QUERY-IMPACT-01**, joined to this family's `0.3.5` revision. Authorization: the
 2026-09-17 operator instruction explicitly requests native enhancements and protected integration.
 Role/Subject: solo developer; Action/Verb: inspect; Outcome/Object: bounded source-explained change reach.
 
@@ -207,7 +207,7 @@ synthetic tests. Production deployment remains a separate protected candidate an
 identified graph across Source Files, Renderer, Graph Traversal, Workflow Manager and Dashboard.
 The source audit found native JSON converted to generic relationships, missing folder artifacts,
 selection without viewport focus, and rendered-subset counts labeled as the dataset. The user's
-FIX instruction authorizes this four-gap successor at the family's `0.3.4` revision.
+FIX instruction authorizes this four-gap successor at the family's `0.3.5` revision.
 
 **Acceptance.** URL and folder imports retain one native manifest/projection pair. Reopening either
 retains IDs, relationship labels, provenance and read-only ownership. Invalid retained identity or
@@ -234,3 +234,41 @@ the native picker; host acquisition/commit tests cover the deterministic folder 
 never implies execution metrics or production readiness. Next optimization: measure import/reopen
 and focus latency on the same source snapshot before changing budgets or concurrency. Recovery is
 a reviewed revert of these owner changes; retained source artifacts remain available.
+
+
+### Source modules and connectivity fidelity
+
+**QUERY-IMPACT-04 / PRD.** Solo developer / rank imported source files / inspect the most
+connected captured module and its evidence from Graph Traversal or Dashboard. The operator's
+follow-up authorizes module labels, meaningful node size, native Graph statistics and local
+metadata under `.workspace`. Import URL and folder continue through the same native projection,
+Source Files manifest and retained JSON readers. User repository addresses remain runtime inputs.
+
+**TAD.** Reuse `nodeImpact` and `NodeImpactInspector` for both surfaces. A module groups nodes
+by captured source-file path; each incident edge counts once per module, including internal
+relationships. Missing paths are excluded and never inferred. Selecting a module selects its
+loaded member nodes and requests the existing selection fit. Node radius uses distinct loaded
+incident relationships, from 6 units for isolates to a 36-unit cap; the render budget does not
+recompute that value from its smaller subset. Source-directory colors and certainty styles retain
+their existing owner. The final byte-fit callback computes sizes for the actual retained graph.
+
+**ADR.** Native Graph statistics uses captured snapshot, loaded and rendered counts separately,
+source-file modules, source-directory groups, node kinds and edge evidence. Generic document
+keyword, text-community and similarity analytics retain their existing route. Source groups are
+not discovered semantic communities. Existing module/selection/legend UI is reused without a new
+renderer or vector index. Removing the duplicate retained-JSON style pass saves repeated work;
+no measured latency saving is claimed. Agentic OS owns opt-in clone cache bodies under
+`.workspace/.local`; Graph adopts its exact released revision and does not own a second cache.
+
+**MVP / validation.** Check cyclic and shared relationships, missing paths, deterministic ranking,
+module selection/focus, renderer radius, stable sizes after selection, byte bounds and native
+Dashboard evidence. Existing folder cancellation, URL bridge, retained JSON reopening and loaded
+versus rendered tests remain applicable. Use the native required Integration Gate on the candidate.
+The fixture is repository-neutral; a real repository is supplied only during local validation.
+
+**GTM / limits.** The pilot is a solo developer tracing one high-connectivity source file after
+import, then reviewing incoming/outgoing impact. Projection caps remain 1,000 loaded nodes and
+420 rendered nodes: rankings describe that sample, not full-repository centrality or parity with
+another implementation. WTP, payment, repeat use and production deployment remain unvalidated.
+Store validation records and exact candidate links under `.workspace/.artifacts`, with unknown
+model/token/cost fields left unknown. Reuse checks only for matching input and environment digests.
