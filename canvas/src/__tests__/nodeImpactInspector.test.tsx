@@ -14,6 +14,9 @@ import { getNodeRadiusFromSchema, defaultSchema } from '@/lib/graph/schema'
 import { buildAgentGraphCanvasProjection } from '@/features/agent-graph/agentGraphCanvasProjection'
 import { agentGraphResult } from './agentGraphWorkspaceArtifact.test'
 import NativeGraphStatsSection from '@/features/graph-stats/sections/NativeGraphStatsSection'
+import * as d3 from 'd3'
+import { applyZoomRequest } from '@/components/GraphCanvas/zoomController'
+import { useZoomEffects } from '@/components/GraphCanvas/hooks/useZoomEffects'
 
 const graph = {
   type: 'Graph',
@@ -26,6 +29,71 @@ const graph = {
   metadata: { agentGraphProjection: { complete: true, projectionComplete: true, projectionTruncated: false } },
 } as unknown as GraphData
 const lookup = () => getCachedGraphLookup({ cacheScope: 'impact-test', graphData: graph, graphRevision: 1 })
+
+test('selection fit follows rendered positions after snapshot reopening and layout changes without mutating source', () => {
+  const { restore } = initJsdomHarness(), before = useGraphStore.getState()
+  const element = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  document.body.append(element)
+  const svg = d3.select(element), zoom = d3.zoom<SVGSVGElement, unknown>().extent([[0, 0], [1000, 800]])
+  const source = { type: 'Graph', nodes: [{ id: 'left', type: 'SourceFile', label: 'left' }, { id: 'right', type: 'Function', label: 'right' }], edges: [] } as unknown as GraphData
+  const bytes = JSON.stringify(source)
+  const rendered = source.nodes.map((node, i) => ({ ...node, x: 2000 + i * 200, y: 3000 + i * 100 }))
+  try {
+    svg.call(zoom)
+    svg.selectAll('circle').data(rendered).join('circle').attr('data-node-id', node => node.id)
+    useGraphStore.setState({ schema: defaultSchema, graphDataRevision: 7654, zoomDurationSelectionMs: 0 })
+    const fit = () => {
+      applyZoomRequest({ type: 'selection', at: Date.now() }, { svg, zoom, graphData: source, width: 1000, height: 800,
+        selectedNodeId: 'left', selectedNodeIds: ['left', 'right'], selectedEdgeId: null })
+      const transform = d3.zoomTransform(element)
+      for (const node of rendered) {
+        const [x, y] = transform.apply([node.x, node.y])
+        assert(x >= 0 && x <= 1000 && y >= 0 && y <= 800, `selected node must be visible: ${x}, ${y}`)
+      }
+      assert.equal(JSON.stringify(source), bytes)
+    }
+    fit()
+    for (const node of rendered) { node.x += 5000; node.y -= 4000 }
+    fit()
+  } finally { element.remove(); useGraphStore.setState(before, true); restore() }
+})
+
+test('selection zoom survives render-graph rebinding and applies the latest queued request', async () => {
+  const { restore } = initJsdomHarness(), before = useGraphStore.getState()
+  const request = globalThis.requestAnimationFrame, cancel = globalThis.cancelAnimationFrame
+  const pending = new Map<number, FrameRequestCallback>(); let frameId = 0
+  globalThis.requestAnimationFrame = callback => { pending.set(++frameId, callback); return frameId }
+  globalThis.cancelAnimationFrame = id => { pending.delete(id) }
+  const container = document.createElement('div'), element = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  document.body.append(container, element)
+  const root = createRoot(container), svg = d3.select(element), zoom = d3.zoom<SVGSVGElement, unknown>().extent([[0, 0], [1000, 800]])
+  const svgRef = { current: element }, zoomRef = { current: zoom }
+  const source = { type: 'Graph', nodes: [{ id: 'picked', type: 'Function', label: 'picked' }], edges: [] } as unknown as GraphData
+  const rendered = { ...source.nodes[0], x: 4000, y: -3000 }
+  const Probe = ({ data }: { data: GraphData }) => {
+    useZoomEffects({ svgRef, zoomRef, width: 1000, height: 800, graphDataOverride: data })
+    return null
+  }
+  try {
+    svg.call(zoom); svg.append('circle').datum(rendered).attr('data-node-id', 'picked')
+    useGraphStore.setState({ schema: defaultSchema, graphDataRevision: 7655, selectedNodeId: 'picked', selectedNodeIds: ['picked'], zoomRequest: null, zoomDurationSelectionMs: 0 })
+    await act(async () => root.render(<Probe data={source} />))
+    await act(async () => {
+      useGraphStore.getState().requestZoomTransform({ k: 1, x: 0, y: 0 })
+      useGraphStore.getState().requestZoom('selection')
+    })
+    assert.equal(pending.size, 1)
+    await act(async () => root.render(<Probe data={{ ...source }} />))
+    assert.equal(pending.size, 1, 'rebinding must reschedule the pending selection')
+    await act(async () => { for (const [id, callback] of [...pending]) { pending.delete(id); callback(0) } })
+    const [x, y] = d3.zoomTransform(element).apply([rendered.x, rendered.y])
+    assert(x >= 0 && x <= 1000 && y >= 0 && y <= 800)
+    assert.equal(useGraphStore.getState().zoomRequest, null)
+  } finally {
+    await act(async () => root.unmount()); container.remove(); element.remove(); useGraphStore.setState(before, true)
+    globalThis.requestAnimationFrame = request; globalThis.cancelAnimationFrame = cancel; restore()
+  }
+})
 
 test('impact reuses bounded traversal, excludes its root, deduplicates cycles/files, and keeps shortest hops', () => {
   const incoming = inspectNodeImpact(lookup(), 'a', 3, 'incoming')!

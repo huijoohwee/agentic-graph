@@ -1,21 +1,21 @@
 ---
 title: "Reference implementation: agentic-graph-query-prd-tad-adr-mvp-gtm section 2"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.5"
-date: "2026-09-17"
+version: "0.3.6"
+date: "2026-09-18"
 lang: "en-US"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.3.5"
-tad_revision: "0.3.5"
-adr_revision: "0.3.5"
-mvp_revision: "0.3.5"
-gtm_revision: "0.3.5"
+prd_revision: "0.3.6"
+tad_revision: "0.3.6"
+adr_revision: "0.3.6"
+mvp_revision: "0.3.6"
+gtm_revision: "0.3.6"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--graph-module-fidelity"
+worktree_id: "device-0232231d4a19--graph-selection-geometry"
 agent_id: "codex-01a0af1e"
 parent: "agentic-graph-query-prd-tad-adr-mvp-gtm.md"
 guideline_revision: "2.7.0"
@@ -272,3 +272,28 @@ import, then reviewing incoming/outgoing impact. Projection caps remain 1,000 lo
 another implementation. WTP, payment, repeat use and production deployment remain unvalidated.
 Store validation records and exact candidate links under `.workspace/.artifacts`, with unknown
 model/token/cost fields left unknown. Reuse checks only for matching input and environment digests.
+
+
+### Selection geometry after retained-source reopening
+
+**QUERY-IMPACT-05 / PRD.** Solo developer / select a captured module after reopening its
+retained JSON / bring its rendered nodes into the viewport. Browser validation found that the
+inspector selected the correct members while the canvas fitted fresh source objects without
+layout coordinates. Rebinding the bounded render graph could also cancel the queued selection.
+
+**TAD / ADR.** Keep source evidence immutable. The existing D3 zoom owner overlays actual
+rendered positions only for viewport calculations and includes geometry in the fit-cache key.
+The existing zoom effect coalesces to the latest request and resumes pending selection after
+render-graph rebinding. No second renderer, store, relationship inference or dependency is added.
+
+**MVP / validation.** Bound this correction to six files, 15 active implementation minutes and
+15 KB diff; protected CI is a separate external wait. Regression tests first fail against the
+original owners, then verify reopening, changed layout, unchanged source bytes, latest-request
+coalescing and queued-selection survival. Existing native import, module, radius and statistics
+checks remain applicable. Required integration and browser readback provide separate evidence.
+
+**GTM / limits.** The pilot's Most connected action must focus the selected loaded module after
+Source Files reopening. Rankings remain bounded by loaded evidence; viewport repair does not
+prove complete repository coverage or production readiness. Reuse exact-input validation receipts
+and profile expensive checks before increasing concurrency. Recovery is a reviewed owner revert;
+retained source records and validation evidence remain under their existing workspace owners.
