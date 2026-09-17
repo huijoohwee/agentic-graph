@@ -9,7 +9,8 @@ import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { upsertWorkspaceMarkdownSourceFile } from '@/features/source-files/upsertWorkspaceMarkdownSourceFile'
 import type { GraphData } from '@/lib/graph/types'
 import { isReadOnlyAgentGraphProjection } from './agentGraphProjectionPolicy'
-import { buildAgentGraphCanvasProjection, cloneAgentGraphNodeWithDirectory, prepareAgentGraphCanvasView, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
+import { styleAgentGraphProjection } from './agentGraphVisualEvidence'
+import { buildAgentGraphCanvasProjection, prepareAgentGraphCanvasView, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 
@@ -165,7 +166,7 @@ export async function readAgentGraphWorkspaceProjection(target: string, expected
   const graph = JSON.parse(text) as GraphData
   const identity = graph.metadata?.agentGraphProjection as Record<string, unknown>
   if (!isReadOnlyAgentGraphProjection(graph) || identity.graphId !== expected.graphId || identity.snapshotDigest !== expected.snapshotDigest) throw new Error('Retained source identity mismatch')
-  return { ...graph, nodes: graph.nodes.map(cloneAgentGraphNodeWithDirectory) }
+  return styleAgentGraphProjection(graph)
 }
 
 export async function reopenAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<void> {

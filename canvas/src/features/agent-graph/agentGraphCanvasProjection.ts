@@ -4,6 +4,7 @@ import type {
   WorkspaceAgentGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { styleAgentGraphNode, styleAgentGraphProjection } from './agentGraphVisualEvidence'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import {
   fitAgentGraphProjectionRecords,
@@ -19,7 +20,6 @@ export const AGENT_GRAPH_CANVAS_MAX_NODES = 2_000
 export const AGENT_GRAPH_CANVAS_MAX_EDGES = 5_000
 export const AGENT_GRAPH_CANVAS_MAX_BYTES = AGENT_GRAPH_PROJECTION_MAX_BYTES
 export const AGENT_GRAPH_CANVAS_MAX_RECORD_BYTES = 64 * 1024
-
 const MAX_JSON_DEPTH = 8
 const MAX_JSON_STRING_LENGTH = 16_384
 const MAX_JSON_ARRAY_LENGTH = 2_048
@@ -49,23 +49,17 @@ export class AgentGraphProjectionError extends Error {
     this.code = code
   }
 }
-
 const cleanString = (value: unknown): string => String(value || '').trim()
-
 const isPlainRecord = (value: unknown): value is Record<string, JSONValue> => (
   !!value && typeof value === 'object' && !Array.isArray(value)
 )
-
 const isNonNegativeInteger = (value: unknown): value is number => (
   typeof value === 'number' && Number.isInteger(value) && value >= 0
 )
-
 const isPositiveInteger = (value: unknown): value is number => (
   typeof value === 'number' && Number.isInteger(value) && value > 0
 )
-
 const byteLength = agentGraphProjectionByteLength
-
 const hasForbiddenControlCharacter = (value: string, allowLineWhitespace = false): boolean => {
   for (const character of value) {
     const codePoint = character.codePointAt(0) || 0
@@ -76,7 +70,6 @@ const hasForbiddenControlCharacter = (value: string, allowLineWhitespace = false
   }
   return false
 }
-
 const isCanonicalId = (value: unknown): value is string => (
   typeof value === 'string'
   && value.length > 0
@@ -84,14 +77,12 @@ const isCanonicalId = (value: unknown): value is string => (
   && value === value.trim()
   && !hasForbiddenControlCharacter(value)
 )
-
 const isCanonicalLabel = (value: unknown): value is string => (
   typeof value === 'string'
   && value.trim().length > 0
   && value.length <= MAX_JSON_STRING_LENGTH
   && !hasForbiddenControlCharacter(value, true)
 )
-
 const isLogicalRelativePath = (value: string): boolean => {
   if (!value || value === '.') return true
   const normalized = value.replaceAll('\\', '/')
@@ -142,19 +133,16 @@ function validateJsonValue(value: unknown, path: string, depth = 0): void {
     validateJsonValue(nested, `${path}.${key}`, depth + 1)
   }
 }
-
 const cloneJsonRecord = (value: Record<string, JSONValue> | undefined, path: string): Record<string, JSONValue> => {
   if (!value) return {}
   validateJsonValue(value, path)
   return JSON.parse(JSON.stringify(value)) as Record<string, JSONValue>
 }
-
 const cloneNode = (node: GraphNode): GraphNode => ({
   ...node,
   properties: cloneJsonRecord(node.properties, `node:${node.id}.properties`),
   ...(node.metadata ? { metadata: cloneJsonRecord(node.metadata, `node:${node.id}.metadata`) } : {}),
 })
-
 const cloneEdge = (edge: GraphEdge): GraphEdge => ({
   ...edge,
   properties: cloneJsonRecord(edge.properties, `edge:${edge.id}.properties`),
@@ -366,15 +354,12 @@ export function buildAgentGraphCanvasProjection(
     nodes: graphData.nodes.map(cloneAgentGraphNodeWithDirectory),
     edges: graphData.edges.map(cloneEdge),
   }
-  return validateGraphData(projected, counts, AGENT_GRAPH_CANVAS_MAX_BYTES)
+  return validateGraphData(styleAgentGraphProjection(projected), counts, AGENT_GRAPH_CANVAS_MAX_BYTES)
 }
 
 /** Source grouping is view metadata, derived equally for new and retained projections. */
 export function cloneAgentGraphNodeWithDirectory(node: GraphNode): GraphNode {
-  const cloned = cloneNode(node)
-  const path = String(cloned.properties['corpus:sourcePath'] || '')
-  if (path) cloned.properties['visual:layer'] = path.includes('/') ? path.split('/')[0] : '(repository root)'
-  return cloned
+  return styleAgentGraphNode(cloneNode(node))
 }
 
 type ValidatedAgentGraphProgress = Omit<WorkspaceAgentGraphImportProgress, 'graphData'> & { graphData: GraphData }
@@ -429,6 +414,10 @@ export function prepareAgentGraphCanvasView(options: { activateSource?: boolean 
       'Knowledge graph import cannot change the renderer while the document baseline is locked.',
     )
   }
+  if (options.activateSource) {
+    initialState.setMarkdownDocument(null, null, { autoEnableFrontmatter: false, applyViewPreset: false })
+    initialState.setMarkdownDocumentSourceUrl(null)
+  }
   if (initialState.canvasRenderMode !== '2d') initialState.setCanvasRenderMode('2d')
   const modeState = useGraphStore.getState()
   if (modeState.canvas2dRenderer !== 'd3') modeState.setCanvas2dRenderer('d3')
@@ -438,10 +427,6 @@ export function prepareAgentGraphCanvasView(options: { activateSource?: boolean 
       'graph-view-unavailable',
       'Knowledge graph import could not open the required 2D Graph view.',
     )
-  }
-  if (options.activateSource) {
-    graphViewState.setMarkdownDocument(null, null, { autoEnableFrontmatter: false, applyViewPreset: false })
-    graphViewState.setMarkdownDocumentSourceUrl(null)
   }
 }
 
@@ -467,6 +452,7 @@ export function createAgentGraphCanvasPreviewSession(): AgentGraphCanvasPreviewS
   let truncated = false
   let previewPublished = false
   let complete = false
+  let publishedBucket = -1
 
   const buildPreviewGraph = (): GraphData => {
     const buildGraph = (previewNodes: GraphNode[], previewEdges: GraphEdge[], previewTruncated: boolean): GraphData => ({
@@ -550,7 +536,13 @@ export function createAgentGraphCanvasPreviewSession(): AgentGraphCanvasPreviewS
         truncated = retainBoundedAgentGraphProjectionRecord(edges, edge, AGENT_GRAPH_CANVAS_MAX_EDGES) || truncated
       }
       const graphData = buildPreviewGraph()
-      if (graphData.nodes.length || graphData.edges.length) publishPreview(graphData)
+      const bucket = Math.floor((sourceIndex - 1) * 31 / sourceTotal)
+      // Keep XR and its document owner intact until the verified final commit.
+      // At most 32 preview publications, regardless of source-file count.
+      if (baselineCanvasRenderMode === '2d' && (bucket !== publishedBucket || sourceIndex === sourceTotal)) {
+        if (graphData.nodes.length || graphData.edges.length) publishPreview(graphData)
+        publishedBucket = bucket
+      }
       return graphData
     },
     commit(result) {

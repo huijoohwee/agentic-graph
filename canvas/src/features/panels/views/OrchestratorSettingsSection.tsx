@@ -1,4 +1,6 @@
 import React from 'react'
+import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
+const NodeImpactInspector = React.lazy(() => import('@/features/graph-inspector/ui/NodeImpactInspector'))
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type {
@@ -63,7 +65,16 @@ type OrchestratorSettingsSectionProps = {
   setTracingCollapsed: (next: boolean) => void
 }
 
-export default function OrchestratorSettingsSection({
+export default function OrchestratorSettingsSection(props: OrchestratorSettingsSectionProps) {
+  const graph = useGraphStore(s => s.graphData)
+  const nodeId = useGraphStore(s => s.selectedNodeId)
+  if (isReadOnlyAgentGraphProjection(graph)) return <React.Suspense fallback={<p>Loading source graph inspection…</p>}>
+    <NodeImpactInspector nodeId={nodeId} />
+  </React.Suspense>
+  return <GraphRagSettingsSection {...props} />
+}
+
+function GraphRagSettingsSection({
   graphRagCollapsed,
   presetsCollapsed,
   editorCollapsed,

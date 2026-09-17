@@ -6,6 +6,7 @@ import { Simulate } from 'react-dom/test-utils'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import type { GraphData } from '@/lib/graph/types'
 import { inspectNodeImpact, rankImpactNodes, filterImpactNodes } from '@/features/graph-inspector/lib/nodeImpact'
+import { styleAgentGraphNode, styleAgentGraphEdge, styleAgentGraphProjection, agentGraphGroupColor } from '@/features/agent-graph/agentGraphVisualEvidence'
 import NodeImpactInspector from '@/features/graph-inspector/ui/NodeImpactInspector'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -76,4 +77,34 @@ test('inspector changes depth/direction, renders filters and legend, and highlig
   } finally {
     await act(async () => root.unmount()); container.remove(); useGraphStore.setState(before, true); restore()
   }
+})
+
+
+test('native source styles preserve evidence and do not manufacture certainty', () => {
+  const node = graph.nodes[0]!, source = JSON.stringify(node)
+  const styled = styleAgentGraphNode(node)
+  assert.equal(styled.properties['visual:fill'], agentGraphGroupColor('src'))
+  assert.equal(styled.properties['visual:layer'], 'src')
+  assert.equal(JSON.stringify(node), source)
+  const edge = graph.edges[0]!, original = JSON.stringify(edge)
+  assert.equal(styleAgentGraphEdge(edge).properties['visual:dash'], '1 7')
+  for (const [certainty, dash, width] of [['exact', '0', 2], ['inferred', '6 4', 1.5], ['ambiguous', '1 4', 1]] as const) {
+    const result = styleAgentGraphEdge({ ...edge, properties: { ...edge.properties, 'evidence:certainty': certainty } })
+    assert.equal(result.properties['visual:dash'], dash)
+    assert.equal(result.properties['visual:strokeWidth'], width)
+    assert.equal(result.properties['evidence:explanation'], edge.properties['evidence:explanation'])
+  }
+  assert.equal(JSON.stringify(edge), original)
+})
+
+test('source presentation remains bounded and marks a trimmed projection as partial', () => {
+  const input = { ...graph, nodes: Array.from({ length: 1000 }, (_, index) => ({
+    id: `node:${index}`, label: 'Source', type: 'Symbol', properties: { 'corpus:sourcePath': `src/${index}.ts`, content: 'x'.repeat(2400) },
+  })), edges: [] } as GraphData
+  const original = JSON.stringify(input)
+  const styled = styleAgentGraphProjection(input)
+  assert.ok(Buffer.byteLength(JSON.stringify(styled)) <= 2 * 1024 * 1024)
+  assert.ok(styled.nodes.length < input.nodes.length)
+  assert.equal((styled.metadata?.agentGraphProjection as Record<string, unknown>).projectionTruncated, true)
+  assert.equal(JSON.stringify(input), original)
 })

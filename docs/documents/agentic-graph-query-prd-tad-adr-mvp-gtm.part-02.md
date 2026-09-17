@@ -1,28 +1,28 @@
 ---
 title: "Reference implementation: agentic-graph-query-prd-tad-adr-mvp-gtm section 2"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.2"
+version: "0.3.3"
 date: "2026-09-17"
 lang: "en-US"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.3.2"
-tad_revision: "0.3.2"
-adr_revision: "0.3.2"
-mvp_revision: "0.3.2"
-gtm_revision: "0.3.2"
+prd_revision: "0.3.3"
+tad_revision: "0.3.3"
+adr_revision: "0.3.3"
+mvp_revision: "0.3.3"
+gtm_revision: "0.3.3"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--node-impact-inspector"
+worktree_id: "device-0232231d4a19--codebase-graph-runtime"
 agent_id: "codex-01a0af1e"
 parent: "agentic-graph-query-prd-tad-adr-mvp-gtm.md"
 guideline_revision: "2.7.0"
 source_section_lines: "479-569"
 ---
 
-[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.2`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
+[Combined planning owner](agentic-graph-query-prd-tad-adr-mvp-gtm.md) · `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.3`. This companion preserves the source section; diagrams and frontmatter projections remain owned by the combined artifact.
 
 ### Context
 
@@ -91,7 +91,7 @@ This implemented PRD/TAD remains accepted when it keeps valid YAML frontmatter, 
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-QUERY-PRD-TAD-ADR-MVP-GTM@0.3.3`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -113,13 +113,13 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 ## Planning gaps — reference implementation
 
-Source review is bounded to repository `9cb689e67578d2e326470fe21a59e918a2160151`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/lib/toolbar/LaunchDropdown.impl.tsx`](https://github.com/huijoohwee/agentic-graph/blob/9cb689e67578d2e326470fe21a59e918a2160151/canvas/src/lib/toolbar/LaunchDropdown.impl.tsx), [`canvas/src/features/markdown-explorer/workspaceActionBridge.ts`](https://github.com/huijoohwee/agentic-graph/blob/9cb689e67578d2e326470fe21a59e918a2160151/canvas/src/features/markdown-explorer/workspaceActionBridge.ts), [`canvas/src/features/markdown-workspace/workspaceImport/localImport.ts`](https://github.com/huijoohwee/agentic-graph/blob/9cb689e67578d2e326470fe21a59e918a2160151/canvas/src/features/markdown-workspace/workspaceImport/localImport.ts). Their existence does not confirm every behavior asserted by the specification.
+Source review is bounded to repository `ef2dad01d75fde7722ef9286f668a1de67bd4aed`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/lib/toolbar/LaunchDropdown.impl.tsx`](https://github.com/huijoohwee/agentic-graph/blob/ef2dad01d75fde7722ef9286f668a1de67bd4aed/canvas/src/lib/toolbar/LaunchDropdown.impl.tsx), [`canvas/src/features/markdown-explorer/workspaceActionBridge.ts`](https://github.com/huijoohwee/agentic-graph/blob/ef2dad01d75fde7722ef9286f668a1de67bd4aed/canvas/src/features/markdown-explorer/workspaceActionBridge.ts), [`canvas/src/features/markdown-workspace/workspaceImport/localImport.ts`](https://github.com/huijoohwee/agentic-graph/blob/ef2dad01d75fde7722ef9286f668a1de67bd4aed/canvas/src/features/markdown-workspace/workspaceImport/localImport.ts). Their existence does not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
 
 
 ## Node impact inspection — reference implementation
 
-**CID QUERY-IMPACT-01**, joined to this family's `0.3.2` revision. Authorization: the
+**CID QUERY-IMPACT-01**, joined to this family's `0.3.3` revision. Authorization: the
 2026-09-17 operator instruction explicitly requests native enhancements and protected integration.
 Role/Subject: solo developer; Action/Verb: inspect; Outcome/Object: bounded source-explained change reach.
 
@@ -167,3 +167,35 @@ Authoring evidence (2026-09-17): all 110 native MCP tests and three inspector be
 tests passed locally; the eight-repository fleet scan reports zero ownership findings. Required
 integration/CI and deployed browser evidence remain separate and are bound to the eventual exact
 candidate in its PR and release receipts; this record claims neither production readiness nor savings.
+
+
+## Bounded import and source evidence presentation
+
+**QUERY-IMPACT-02 / PRD.** Solo developer / import and inspect / reach a responsive source graph.
+The observed sequence was repository URL import → parsing → Graph Traversal → renderer crash.
+A fresh baseline run completed; the original crash cause is not proven. Source review found one
+whole-graph publication per parsed file and a renderer transition before the prior XR document
+owner was released. Acceptance: a 1,000-file burst publishes at most 32 previews; an active 3D
+surface remains intact until final verification; final graph and failure rollback remain bounded.
+
+**TAD / ADR.** Reuse the current preview session and final immutable projection. Cap publications
+by source progress, with no timer or background queue. Clear the old document owner before D3
+activation. Reuse the source inspector in Graph Traversal for read-only codebase graphs; ordinary
+GraphRAG workflows retain their existing controls. Derive node color from captured top-level source
+directory, not an invented community or score. Reuse D3 visual properties for exact/inferred/ambiguous
+edge certainty; keep absent certainty explicit. Fit decorated projections inside the existing byte
+budget and disclose truncation. Preserve source IDs, provenance and explanations; do not manufacture
+runtime observations or synthesized evidence. Colors can repeat and group labels disambiguate them.
+
+**MVP / validation.** Scope: 60 active minutes, 16 modules, 150 KB, zero new dependencies or services.
+Extend native import/rollback, byte-budget, inspector and style tests; check the real repository URL
+and traversal route in the browser. Reuse the existing exact-input protected CI receipt path when
+its tree, owner plan, dependencies and environment match. Local owner-plan checks remain fresh
+because that plan includes external/runtime inputs. Profile existing stage receipts before any
+concurrency change; required integration gates remain intact. Rollback reverts this source change
+while retaining all imported source artifacts and lifecycle evidence.
+
+**GTM.** Demonstrate repository import → source-group legend → kind/path/provenance filter → depth
+and direction → affected source explanation. Record preview publication count separately from wall
+time, CPU and memory. No avoided crash rate, resource savings, buyer demand or WTP is claimed from
+synthetic tests. Production deployment remains a separate protected candidate and runtime receipt.

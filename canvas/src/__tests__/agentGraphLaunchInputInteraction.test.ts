@@ -211,14 +211,9 @@ export async function testAgentGraphLaunchImportUrlInputRunsVisibleCanonicalGrap
         await waitForTasks(1)
       }
     })
-    assert.equal(useGraphStore.getState().canvasRenderMode, '2d')
-    assert.equal(useGraphStore.getState().canvas2dRenderer, 'd3')
-    assert.equal(useGraphStore.getState().graphData.nodes.length, 1)
-    assert.equal(
-      (useGraphStore.getState().graphData.metadata?.agentGraphPreview as { complete?: unknown } | undefined)?.complete,
-      false,
-      'the parsing-time Canvas graph must remain an explicitly incomplete preview',
-    )
+    assert.equal(useGraphStore.getState().canvasRenderMode, '3d', 'keep the current surface during parsing')
+    assert.equal(useGraphStore.getState().canvas2dRenderer, 'storyboard')
+    assert.equal(useGraphStore.getState().graphData.metadata?.agentGraphPreview, undefined)
     assert.equal(
       useGraphStore.getState().uiToasts.find(toast => toast.id === 'launch:import:agent-graph-url')?.busy,
       true,
@@ -255,8 +250,9 @@ export async function testAgentGraphLaunchImportUrlInputRunsVisibleCanonicalGrap
 export async function testAgentGraphRepositoryProgressPreviewRollsBackOnFailure() {
   const graphBefore = useGraphStore.getState().graphData
   try {
+    for (const mode of ['2d', '3d'] as const) {
     useGraphStore.getState().resetAll()
-    useGraphStore.getState().setCanvasRenderMode('3d')
+    useGraphStore.getState().setCanvasRenderMode(mode)
     useGraphStore.getState().setCanvas2dRenderer('storyboard')
     const baseline = useGraphStore.getState().graphData
     let previewSeen = false
@@ -289,10 +285,11 @@ export async function testAgentGraphRepositoryProgressPreviewRollsBackOnFailure(
         }),
       }),
     )
-    if (!previewSeen) throw new Error('expected the repository import to publish a parsing-time Canvas preview')
+    assert.equal(previewSeen, mode === '2d', 'preview only replaces an existing 2D surface')
     assert.equal(useGraphStore.getState().graphData, baseline)
-    assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
+    assert.equal(useGraphStore.getState().canvasRenderMode, mode)
     assert.equal(useGraphStore.getState().canvas2dRenderer, 'storyboard')
+    }
   } finally {
     useGraphStore.getState().resetAll()
     if (graphBefore) useGraphStore.getState().setGraphData(graphBefore)
