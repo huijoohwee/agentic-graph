@@ -103,6 +103,15 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     if (!changed && id && result.items.some(r => r.runId === id)) await loadTrace(id, signal)
     else { if (workspace && selected.current.runId) closeAgentRunInspection(); selected.current = emptySelection; setSelection(emptySelection); setTrace(null) }
   }), [query, perform, clear])
+  // A Launch import can replace an already mounted live workspace without remounting its panes.
+  React.useEffect(() => {
+    if (!workspace || !inspection || scope.current === inspection.scope) return
+    stop(); scope.current = inspection.scope; scopeExpiry.current = inspection.expiresAt
+    selected.current = { runId: inspection.trace.runId, spanId: inspection.spanId }
+    setTrace(inspection.trace); setSelection(selected.current); setExpiry(inspection.expiresAt)
+    setLocalReport(inspection.trace.localObservation ?? null); setIndex(null); setBaseline(null); setComparison(null)
+    setLive(false); setError(''); setNotice('')
+  }, [workspace, inspection?.scope, stop])
   // Existing evidence opens without fetching; explicit empty activation discovers authorized runs.
   React.useEffect(() => { if (!workspace || !initial) { stop(); clear(); void refresh() } }, [query, workspace])
   React.useEffect(() => {
