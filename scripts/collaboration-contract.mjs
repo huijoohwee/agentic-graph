@@ -431,3 +431,26 @@ export const selectAffectedCommands = (changedPaths, contract) => {
 
   return { commands: [...commands.values()], scopes, unmatchedPaths }
 }
+
+/** Native OS pre-publication adapter; metadata grammar remains owned here. */
+export function validateReviewBodyInput(value, contract) {
+  if (!value || Object.keys(value).sort().join() !== 'body,ref,schema'
+    || value.schema !== 'agentic-os/review-body-input/v1' || typeof value.body !== 'string'
+    || Buffer.byteLength(value.body) > 65536) throw Error('invalid native review input')
+  const metadata = validatePullRequestMetadata(value.body, contract)
+  validateTaskBranch(value.ref, contract, metadata.scope)
+  return { valid: true, scope: metadata.scope }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  try {
+    const chunks = []; let bytes = 0
+    for await (const chunk of process.stdin) {
+      bytes += chunk.length
+      if (bytes > 140000) throw Error('review input exceeds byte budget')
+      chunks.push(chunk)
+    }
+    const result = validateReviewBodyInput(JSON.parse(Buffer.concat(chunks).toString('utf8')), await readContract())
+    console.log(JSON.stringify(result))
+  } catch (error) { console.error(error.message); process.exitCode = 1 }
+}

@@ -13,9 +13,9 @@ import {
 } from "./resolution-retention.mjs";
 
 const RESOLVER_ID = "local-repository-scoped-resolver";
-const RESOLVER_VERSION = "2.0.0";
+const RESOLVER_VERSION = "2.1.0";
 const CODE_EXTENSIONS = [".cjs", ".js", ".jsx", ".mjs", ".ts", ".tsx"];
-const CODE_PREMISE_LABELS = new Set(["imports", "reexports"]);
+const CODE_PREMISE_LABELS = new Set(["imports", "reexports", "referencesModule"]);
 const MAX_DERIVED_EDGES = 200_000;
 const MAX_EVIDENCE_CANDIDATE_IDS = 64;
 
@@ -139,7 +139,7 @@ function resolveCodeDependencies(
           ruleId: "resolve.relative-code-import.repository",
           explanation: ambiguous
             ? `Relative module ${moduleName} has ${candidates.length} candidates inside repository ${repository.repositoryPath}; ${target.label} is preserved as one candidate.`
-            : `Relative module ${moduleName} resolves to ${target.label} inside repository ${repository.repositoryPath}.`,
+            : `Relative module ${moduleName} has source candidate ${target.label} inside repository ${repository.repositoryPath}; this inferred path match does not prove runtime binding or execution.`,
         }),
       }), repository, derivedBudget, retentionBudget);
     }

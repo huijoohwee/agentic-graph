@@ -269,7 +269,7 @@ test("dense generated JavaScript retains its complete AST graph within separate 
   const index = await readAgentGraphRepositoryIndex(snapshot, repository);
   const entry = index.sources.find((source) => source.sourcePath === "z-dist/dense-runtime.bundle.js");
   assert.ok(entry);
-  assert.match(entry.parserVersion, /^1\.1\.0\+typescript-/);
+  assert.match(entry.parserVersion, /^1\.2\.0\+typescript-/);
   const shard = await readAgentGraphSourceShard(snapshot, entry);
   assert.equal(shard.status, "parsed");
   const classNode = shard.nodes.find((node) => node.type === "CodeClass" && node.label === "DenseRenderer");

@@ -3,11 +3,11 @@ schema: "agentic-graph-runtime-contract/v1"
 title: "agentic-graph Deterministic Agent-Graph Runtime"
 doc_type: "Runtime Contract"
 id: "agentic-graph-deterministic-agent-graph-runtime"
-version: "1.2.0"
-date: "2026-09-05"
+version: "1.3.0"
+date: "2026-09-17"
 status: "active"
 created: "2026-07-22"
-updated: "2026-09-05"
+updated: "2026-09-17"
 author: "airvio / joohwee"
 domain: "agentic-graph"
 lang: "en-US"
@@ -219,3 +219,29 @@ Documentation validation requires valid YAML frontmatter, `git diff --check`, an
 ## Readiness Boundary
 
 This contract proves only the local stdio agent-graph lane. It does not claim a Pages, Worker, Cloudflare, public HTTP, hosted MCP, browser WebMCP, vector, model, or cross-project graph service. Any future expansion requires a separate owner, threat model, acceptance gate, and explicit authorization.
+
+## Workflow source navigation increment (ADLC-OBS-002@0.1.0)
+
+PRD: a solo maintainer tracing an expensive CI entrypoint must see lazy module dependencies without
+executing project code. Preserve explained evidence through the existing import/query/D3 flow.
+
+TAD: extend the existing TypeScript AST adapter for one literal argument to dynamic `import()` and
+identifier `require()` calls. The existing repository resolver follows these references, preserving
+source digest, parser identity, extraction location, premise edges and candidate counts. Dynamic or
+computed arguments remain ordinary unresolved call references; comments and strings are not imports.
+
+ADR: syntax evidence is exact; inferred repository path matches do not establish runtime binding or
+execution. A shadowed `require` therefore remains a potential module reference, never a proven import.
+Bump parser and resolver versions so old extraction caches cannot claim new coverage. Reuse OS typed
+adapters, Canvas compatibility exports, Import local files/folder/URL and the existing D3 projection;
+no second parser, vector store, renderer, network service or model call is introduced.
+
+MVP: ingest a local source with a lazy literal dependency, query the path to its source candidate,
+explain the relationship, and inspect the same evidence in the existing projection. Tests cover
+comments, strings, computed arguments, source-bound explanation and zero model/vector usage.
+
+GTM: evaluate locally on a real repository before claiming navigation-time savings. CI observations
+are exported from the existing stage receipt; the duplicated XR comprehensive invocation is removed
+while retaining workspace-seed and comprehensive coverage. OS owns publication preflight and bounded
+workflow navigation; this repository owns syntax parsing and its protected checks. Release/deployment
+proof remains separate. Rollback reverts this increment and retains immutable snapshots.

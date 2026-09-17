@@ -12,7 +12,7 @@ try {
 }
 
 export const TYPESCRIPT_PARSER_ID = "local-typescript-ast";
-const TYPESCRIPT_WRAPPER_VERSION = "1.1.0";
+const TYPESCRIPT_WRAPPER_VERSION = "1.2.0";
 const TYPESCRIPT_RUNTIME_VERSION = String(typescript?.version || "unavailable").replace(/[^A-Za-z0-9._-]+/g, "-");
 export const TYPESCRIPT_PARSER_VERSION = versionAgentGraphParserOutput(
   `${TYPESCRIPT_WRAPPER_VERSION}+typescript-${TYPESCRIPT_RUNTIME_VERSION}`,
@@ -180,6 +180,21 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
       }
     }
     if (ts.isCallExpression(node)) {
+      // Syntax establishes a literal reference, never that a call executed or that require is unshadowed.
+      const dynamicImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
+      const requireCall = ts.isIdentifier(node.expression) && node.expression.text === "require";
+      const argument = node.arguments[0];
+      if ((dynamicImport || requireCall) && node.arguments.length === 1 && ts.isStringLiteralLike(argument)) {
+        const moduleName = argument.text;
+        const dependencyId = stableEntityId("CodeDependency", sourcePath, `${moduleName}:${node.getStart(sourceFile)}`);
+        addNode(makeNode({ id: dependencyId, label: moduleName, type: "CodeDependency", sourcePath,
+          properties: { "code:module": moduleName, "code:referenceKind": dynamicImport ? "dynamic-import" : "require-call" } }));
+        addEdge({ source: nextOwner, target: dependencyId, label: dynamicImport ? "imports" : "referencesModule",
+          astNode: argument, ruleId: dynamicImport ? "typescript.dynamic-import.literal.ast" : "typescript.require.literal.ast",
+          explanation: dynamicImport
+            ? `${sourcePath} contains a dynamic import of literal module ${moduleName}; execution is not observed.`
+            : `${sourcePath} contains require with literal module ${moduleName}; binding and execution are unresolved.` });
+      }
       const callName = node.expression.getText(sourceFile).slice(0, 200);
       const referenceId = stableEntityId("CodeCallReference", sourcePath, `${callName}:${node.getStart(sourceFile)}`);
       addNode(makeNode({ id: referenceId, label: callName, type: "CodeCallReference", sourcePath, properties: { "code:referenceKind": "call" } }));
