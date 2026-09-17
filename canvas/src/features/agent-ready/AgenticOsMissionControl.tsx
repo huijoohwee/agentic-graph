@@ -288,12 +288,12 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         <p className="text-xs">{resources.status === 'held' ? 'Usage is uncertain. The host must reconcile it before further execution.' : 'The host rechecks all project, agent and run limits before execution.'}</p>
       </div> : <p className="py-2 text-xs">Allocation unavailable for this observation.</p>)}
       <TabHeader tabs={views} activeTab={view} onTabChange={setView} tabIdBase="agent-run-view"
-        searchVisible searchPlaceholder="Search span metadata" searchQuery={search} onSearchChange={setSearch} />
+        searchVisible searchPlaceholder="Search spans by name, kind or status" searchQuery={search} onSearchChange={setSearch} />
       <div id={`agent-run-view-${view}-panel`} role="tabpanel" aria-labelledby={`agent-run-view-${view}-tab`} className="min-w-0 py-2">
         {view === 'table' && <div className="overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={SPAN_COLUMNS} rows={spanRows(spans.map(row => row.span))}
           selectedRowIds={selection.spanId ? [selection.spanId] : []} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy=""
           sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={chooseSpan} onSelectionChanged={ids => chooseSpan(ids.at(-1) ?? null)} /></div>}
-        {(view === 'tree' || view === 'timing') && <AgentRunSpanViews rows={spans} timing={view === 'timing'} selectedId={selection.spanId} onSelect={chooseSpan} />}
+        {(view === 'tree' || view === 'timing') && <AgentRunSpanViews key={trace.runId} rows={spans} timing={view === 'timing'} selectedId={selection.spanId} onSelect={chooseSpan} search={search} />}
         {view === 'topology' && topology && <><label className="flex items-center gap-2 text-xs">Topology detail<select aria-label="Topology detail" style={inputStyle} value={topologyDetail} onChange={event => setTopologyDetail(event.target.value as 'all' | 'agents')}><option value="agents">Agents</option><option value="all">All spans</option></select></label><p className="py-1 text-xs">Agent view shows containment and direct agent links. Runs without agent spans show all checks.</p><React.Suspense fallback={<p>Loading topology…</p>}><FlowCanvasInspection graph={topology}
           selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
           onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense></>}
