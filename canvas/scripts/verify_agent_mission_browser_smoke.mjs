@@ -196,7 +196,7 @@ async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
-async function verifyLocalTraceImport(label) {
+async function verifyLocalTraceImport(label, fromApex = false) {
   const currentEditor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
   if (await currentEditor.isVisible()) await currentEditor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
   const before = await authoredSnapshot(), beforeRequests = requests.length
@@ -205,10 +205,14 @@ async function verifyLocalTraceImport(label) {
       timing: { startOffsetMs: 0, inclusiveMs: 1200, exclusiveObservedMs: null },
       resources: { cpuMs: 40, peakMemoryBytes: 1048576, tokens: null, costUsd: null } }],
     coverage: { retainedSpans: 1, expectedSpans: 1, droppedEvents: null, partial: false }, page: { total: 1, offset: 0, nextCursor: null } }
-  await page.getByRole('button', { name: 'Launch', exact: true }).click()
-  const chooser = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: /Import local files/ }).click()
-  await (await chooser).setFiles({ name: 'workflow.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(payload)) })
+  const localFile = { name: 'workflow.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(payload)) }
+  if (fromApex) await mission.getByLabel('Import local file', { exact: true }).setInputFiles(localFile)
+  else {
+    await page.getByRole('button', { name: 'Launch', exact: true }).click()
+    const chooser = page.waitForEvent('filechooser')
+    await page.getByRole('button', { name: /Import local files/ }).click()
+    await (await chooser).setFiles(localFile)
+  }
   const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
   const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
   const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
@@ -253,6 +257,11 @@ async function verifyApexActivation(width) {
   await preset.selectOption('agent-observability')
   const activate = page.getByRole('button', { name: 'Open observability', exact: true })
   await activate.waitFor()
+  const dashboard = page.getByRole('region', { name: 'Observation dashboard', exact: true })
+  await dashboard.waitFor()
+  const dashboardBounds = await dashboard.boundingBox()
+  assert.ok(dashboardBounds.width > width * .9, 'Observability dashboard must use the full Canvas width')
+  await dashboard.getByText('1. Import local file', { exact: true }).waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await waitForAsync(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
@@ -339,9 +348,14 @@ async function verifyApexActivation(width) {
 
   assertAuthored(await authoredSnapshot(), before, 'Apex activation must preserve authored work')
   assert.ok(requests.slice(beforeEntryRequests).every(item => ['query', 'trace'].includes(item.operation)), 'Activation may only read observations')
-  await verifyLocalTraceImport('apex-' + width)
+  await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await editor.waitFor({ state: 'detached' })
   assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
+  // Start a separate import scenario after verifying restoration. Launch intentionally closes the tool menu.
+  await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(false))
+  await page.getByRole('combobox', { name: 'Prompt preset', exact: true }).selectOption('agent-observability')
+  await dashboard.waitFor()
+  await verifyLocalTraceImport('apex-' + width, true)
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission Apex activation:', JSON.stringify({ width, elapsedMs: Date.now() - startedAt, source: 'pinned-catalog', status: 'passed' }))
 }

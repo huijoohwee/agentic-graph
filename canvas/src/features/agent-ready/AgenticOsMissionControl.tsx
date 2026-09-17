@@ -1,5 +1,5 @@
 import React from 'react'
-import { agentRunInspectionJson } from './agentRunImport'
+import { agentRunInspectionJson, importAgentRunFile } from './agentRunImport'
 import { AgentRunSpanViews, durationLabel } from './AgentRunSpanViews'
 import { readValidationObservation, validationTrace, type ValidationObservation } from './validationObservationProjection'
 import { openAgentRunInspection, activateAgentRunWorkspace, closeAgentRunInspection, useAgentRunInspection, useAgentRunWorkspace, updateAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection, selectAgentRunView } from './agentRunInspectionStore'
@@ -21,7 +21,7 @@ const inputStyle = { minWidth: 0, maxWidth: '100%', border: '1px solid var(--kg-
 type Selection = { runId: string | null; spanId: string | null }
 const emptySelection: Selection = { runId: null, spanId: null }
 
-export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false }: { onOpenWorkspace?: () => void; workspace?: boolean }) {
+export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false, preview = false }: { onOpenWorkspace?: () => void; workspace?: boolean; preview?: boolean }) {
   const inspection = useAgentRunInspection(), workspaceSession = useAgentRunWorkspace(), initial = workspace ? inspection : null
   const inspectionRef = React.useRef(inspection)
   inspectionRef.current = inspection
@@ -113,7 +113,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     setLive(false); setError(''); setNotice('')
   }, [workspace, inspection?.scope, stop])
   // Existing evidence opens without fetching; explicit empty activation discovers authorized runs.
-  React.useEffect(() => { if (!workspace || !initial) { stop(); clear(); void refresh() } }, [query, workspace])
+  React.useEffect(() => { if (!preview && (!workspace || !initial)) { stop(); clear(); void refresh() } }, [query, workspace, preview])
   React.useEffect(() => {
     const change = () => {
       setOnline(navigator.onLine); setVisible(!document.hidden)
@@ -129,10 +129,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     }
   }, [stop, clear])
   React.useEffect(() => {
-    if (local || !live || !online || !visible || busy) return
+    if (preview || local || !live || !online || !visible || busy) return
     const timer = window.setTimeout(() => { void refresh() }, backoff)
     return () => window.clearTimeout(timer)
-  }, [local, live, online, visible, busy, backoff, refresh])
+  }, [preview, local, live, online, visible, busy, backoff, refresh])
   React.useEffect(() => {
     if (!expiry) return
     const timer = window.setTimeout(() => { stop(); clear(); setNotice('Snapshot expired. Refresh to reauthorize inspection.') }, Math.max(0, expiry - Date.now()))
@@ -211,20 +211,26 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
   return <section aria-label={workspace ? "Agent run Canvas evidence" : "Agentic OS mission control"} className="h-full min-h-0 min-w-0 overflow-auto p-3" style={{ overflowWrap: 'anywhere' }}>
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
-      {!workspace && <div><h2 className="font-semibold">Agentic OS</h2><p className="text-xs">Inspect execution, limits and evidence</p></div>}
-      <button type="button" className={button} disabled={local || busy || !online} onClick={() => { void refresh() }}>Refresh runs</button>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={local} checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
+      {!workspace && <div><h2 className="font-semibold">{preview ? 'Agent observability' : 'Agentic OS'}</h2><p className="text-xs">Inspect execution, limits and evidence</p></div>}
+      <label className={button}>Import local file<input type="file" accept=".json,application/json" className="sr-only" aria-label="Import local file"
+        onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void importAgentRunFile(file, onOpenWorkspace).then(handled => {
+          if (!handled) setError('Choose a native run trace or exported inspection JSON file. Validation reports use Import validation report.')
+        }) }} /></label>
+      <button type="button" className={button} disabled={local || busy || !online} onClick={() => {
+        if (preview) { activateAgentRunWorkspace('tree'); onOpenWorkspace?.() } else void refresh()
+      }}>{preview ? 'Connect runtime' : 'Refresh runs'}</button>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={preview || local} checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
       <label className={button}>Import validation report<input type="file" accept=".json,application/json" className="sr-only"
         aria-label="Import validation report" onChange={event => { void importReport(event.target.files?.[0]); event.target.value = '' }} /></label>
       {local && <button className={button} onClick={() => { stop(); clear() }}>Close local report</button>}
     </header>
-    <p role="status" className="pb-2 text-xs">{local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
+    <p role="status" className="pb-2 text-xs">{preview ? 'Import a local observation to begin · no runtime connection' : local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
       {index ? ` · observed ${new Date(index.observedAt).toLocaleTimeString()} · snapshot expires ${new Date(expiry).toLocaleTimeString()}` : ''}</p>
     {trace?.localImport && <p className="py-2 text-xs">Imported local trace: {trace.localImport.fileName} · read-only · original observation {new Date(trace.observedAt).toLocaleString()} · runtime actions disabled</p>}
     {error && <div role="alert" className="rounded border p-2"><p>{local ? "Observation unavailable" : "Runtime unavailable"} · {error}</p><p className="text-xs">Check the existing runtime connection and signed session, then refresh. No run data is inferred.</p></div>}
     {workspace && !trace && <p className="pb-3 text-sm">Select an authorized run to inspect spans, timing, source, allocation and evaluation. JSON, Markdown and Viewer open from the selected evidence.</p>}
     {notice && <p className="py-2 text-xs">{notice}</p>}
-    {(!workspace || !trace) && <form aria-label="Run filters" className="flex flex-wrap items-end gap-2 py-2" onSubmit={event => {
+    {!preview && (!workspace || !trace) && <form aria-label="Run filters" className="flex flex-wrap items-end gap-2 py-2" onSubmit={event => {
       event.preventDefault(); const data = new FormData(event.currentTarget), next: Record<string, unknown> = { limit: 32 }
       for (const key of ['projectId', 'agentId', 'status']) { const value = String(data.get(key) ?? '').trim(); if (value) next[key] = value }
       if (data.get('window') === '15') { next.to = Date.now(); next.from = Number(next.to) - 900000 }
@@ -257,6 +263,18 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       {index.offset > 0 && <button className={button} disabled={busy || !online} onClick={() => { void refresh() }}>First run page</button>}
       {index.nextCursor && <button className={button} disabled={busy || !online} onClick={() => { void refresh(index.nextCursor!) }}>Next run page</button>}
     </>}
+    {!index && !trace && <section aria-label="Observation dashboard" className="space-y-4 py-3">
+      <ol className="flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="Observation workflow">
+        <li>1. Import local file</li><li>2. Inspect spans and resources</li><li>3. Review evaluations and compare</li><li>4. Export evidence</li>
+      </ol>
+      <div className="grid grid-cols-2 gap-3 rounded border p-3 text-sm">{Object.keys(resourceLabels({ cpuMs: null, peakMemoryBytes: null, tokens: null, costUsd: null })).map(label =>
+        <div key={label}>{label}<strong className="block text-lg">Unknown</strong></div>)}</div>
+      <nav aria-label="Available observation views" className="flex flex-wrap gap-2">{views.map(item =>
+        <span className="rounded border px-3 py-2 text-xs" key={item.key}>{item.label}</span>)}</nav>
+      <div className="min-w-0 overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={RUN_COLUMNS} rows={[]} selectedRowIds={[]}
+        columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy="" sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={() => undefined} onSelectionChanged={() => undefined} /></div>
+      <p className="text-sm">No observation loaded. Import native run or workflow JSON to synchronize JSON, Markdown, Viewer and Canvas. Recorded evaluations remain evidence; live evaluation and comparison require a connected runtime.</p>
+    </section>}
     {trace && <section aria-label="Selected run evidence" className="min-w-0 border-t pt-3">
       <h3 className="font-semibold">Run {trace.runId}</h3>
       <p className="text-xs">Selected span: {selection.spanId || "Whole run"}</p>
