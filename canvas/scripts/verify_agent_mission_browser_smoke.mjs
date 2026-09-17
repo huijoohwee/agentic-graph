@@ -197,6 +197,8 @@ async function verifyWorkspace(label, revoke = false) {
   console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
 async function verifyLocalTraceImport(label) {
+  const currentEditor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  if (await currentEditor.isVisible()) await currentEditor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
   const before = await authoredSnapshot(), beforeRequests = requests.length
   const payload = { schema: 'agent-toolkit-run/v1', authority: false, runId: 'imported-workflow', status: 'completed',
     observedAt: 1000, expiresAt: 2000, spans: [{ spanId: 'checks', parentSpanId: null, kind: 'tool', operation: 'checks', status: 'completed',
@@ -227,6 +229,7 @@ async function verifyLocalTraceImport(label) {
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
   await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: checks')))
   assert.equal(requests.length, beforeRequests, 'Local file inspection must not use runtime sessions, polling or evaluation')
+  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
   await page.getByRole('button', { name: 'Launch', exact: true }).click()
   const replacement = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: /Import local files/ }).click()
@@ -351,7 +354,7 @@ try {
   await mkdir(output, { recursive: true })
   if (process.env.AG_MISSION_ACTIVATION_ONLY === '1') {
     await verifyApexActivation(360)
-  await verifyLocalTraceImport('mobile'); await verifyApexActivation(1280)
+    await verifyApexActivation(1280)
     assert.deepEqual(errors, [])
     console.log('Focused Apex activation passed; full mission lifecycle remains a separate check.')
   } else {

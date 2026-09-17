@@ -1,7 +1,7 @@
 import { readAgentRunImport, agentRunInspectionJson } from '@/features/agent-ready/agentRunImport'
 import assert from 'node:assert/strict'
 import { readValidationObservation, validationTrace } from '@/features/agent-ready/validationObservationProjection'
-import { readRunIndex, readRunTrace, traceGraph, visibleSpanTree, sourceLink, comparable, spanNodeId, spanRows, traceResources, spanResources } from '@/features/agent-ready/missionControlProjection'
+import { readRunIndex, readRunTrace, traceGraph, visibleSpanTree, sourceLink, workflowSourceLink, comparable, spanNodeId, spanRows, traceResources, spanResources } from '@/features/agent-ready/missionControlProjection'
 import { durableObservationBinding, readDurableSessionToken } from '@/features/agent-ready/durableRunTransport'
 
 export async function testMissionControlProjection(): Promise<void> {
@@ -43,6 +43,8 @@ export async function testMissionControlProjection(): Promise<void> {
   const measuredImport = readAgentRunImport(JSON.stringify({ ...raw, status: 'blocked', spans: [{ ...raw.spans[0],
     resources: { cpuMs: 0, peakMemoryBytes: 1024, tokens: 0, costUsd: 0 } }] }), 'workflow.json')!
   assert.equal(measuredImport.trace.status, 'blocked')
+  assert.equal(workflowSourceLink({ ...trace, profile: { workflow: { source: { repository: 'github.com/owner/repo', revision: '1'.repeat(40) } } } }), 'https://github.com/owner/repo/tree/' + '1'.repeat(40))
+  assert.equal(workflowSourceLink({ ...trace, profile: { workflow: { source: { repository: 'github.com/../private', revision: '1'.repeat(40) } } } }), null)
   assert.deepEqual(spanResources(measuredImport.trace.spans[0]!), { cpuMs: 0, peakMemoryBytes: 1024, tokens: 0, costUsd: 0 })
   const cyclic = trace.spans.map((s, i) => ({ ...s, parentSpanId: trace.spans[(i + 1) % trace.spans.length]!.spanId }))
   assert.equal(visibleSpanTree(cyclic, '').length, 4)

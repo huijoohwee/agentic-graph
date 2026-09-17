@@ -11,7 +11,7 @@ import { GraphDataTableDomTableView } from '@/features/graph-data-table/ui/Graph
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { invokeDurableRun, clearDurableRunSession } from './durableRunTransport'
 import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, spanRows, SPAN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
-  numberLabel, resourceLabels, traceResources, known, record, sourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
+  numberLabel, resourceLabels, traceResources, known, record, sourceLink, workflowSourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
 
 const GraphCanvasInspection = React.lazy(() => import('@/components/GraphCanvas/GraphCanvasInspection'))
 const views = Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([key, label]) => ({ key, label }))
@@ -207,6 +207,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       showLocalReport(readValidationObservation(contents))
     } catch (failure) { if (attempt === importAttempt.current) setError((failure as Error).message) }
   }
+  const workflow = record(trace?.profile.workflow), workflowUrl = trace ? workflowSourceLink(trace) : null
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
   return <section aria-label={workspace ? "Agent run Canvas evidence" : "Agentic OS mission control"} className="h-full min-h-0 min-w-0 overflow-auto p-3" style={{ overflowWrap: 'anywhere' }}>
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
@@ -260,7 +261,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <h3 className="font-semibold">Run {trace.runId}</h3>
       <p className="text-xs">Selected span: {selection.spanId || "Whole run"}</p>
       <p className="text-xs">Observed state: {trace.status} · {trace.spans.length}/{trace.total} retained spans on this page · expected {numberLabel(trace.expected)} · dropped {numberLabel(trace.dropped)}{trace.partial ? ' · Partial trace' : ''}</p>
-      <p className="py-2 text-sm">{trace.localObservation ? 'Local validation · selected owner checks' : context ? `${context.taskId} → ${context.projectId} → ${context.goalId}` : 'Legacy run · no plan context recorded'}</p>
+      <p className="py-2 text-sm">{trace.localObservation ? 'Local validation · selected owner checks' : workflowUrl ? 'Local workflow · source-bound phase receipts' : context ? `${context.taskId} → ${context.projectId} → ${context.goalId}` : 'Legacy run · no plan context recorded'}</p>
       {trace.localObservation && <section aria-label="Validation economics" className="my-3 rounded border p-3">
         <div className="grid grid-cols-2 gap-3 text-sm"><div>Wall time<strong className="block text-xl">{durationLabel(trace.localObservation.elapsedMs)}</strong></div>
           <div>Observed output<strong className="block text-xl">{numberLabel(trace.localObservation.resources.observedOutputBytes, ' bytes')}</strong></div>
@@ -288,6 +289,12 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         <p className="text-xs">Digest {context.plan.digest}</p><pre className="overflow-auto text-xs">{JSON.stringify(context.plan.revisions, null, 2)}</pre>
         <p className="text-xs">Receipt reference: {JSON.stringify(context.receipt)}</p>
       </details>}
+      {workflowUrl && (!workspace || view === 'source') && <section aria-label="Workflow receipt sources" className="my-3 rounded border p-3">
+        <a className="underline" target="_blank" rel="noreferrer" href={workflowUrl}>Workflow source revision</a>
+        <p className="text-xs">Receipt coverage is observation only; it grants no release or payment authority.</p>
+        <p className="text-xs">Missing phases: {Array.isArray(workflow.missing) && workflow.missing.length ? workflow.missing.map(String).join(', ') : 'None reported'}</p>
+        <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ phases: workflow.phases, measurementScope: workflow.measurementScope }, null, 2)}</pre>
+      </section>}
       {(!workspace || view === "allocation") && (resources ? <div aria-label="Resource allocation" className="my-3 rounded border p-3">
         <h4 className="font-semibold">Project allocation · {String(resources.status)}</h4>
         <p className="text-xs">{String(record(resources.policy).windowId)} · zero incremental provider spend required · machine cost unknown</p>

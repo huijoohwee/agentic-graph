@@ -195,6 +195,13 @@ export function sourceLink(context: RunContext | null): string | null {
     || !/^[a-f0-9]{40}$/.test(p.revision) || p.path.split('/').some(part => !part || ['.', '..'].includes(part))) return null
   return `https://${p.repository}/blob/${p.revision}/${p.path.split('/').map(encodeURIComponent).join('/')}`
 }
+/** Workflow receipts carry a source revision without inventing an authored PRD context. */
+export function workflowSourceLink(trace: RunTrace): string | null {
+  const source = record(record(trace.profile.workflow).source), repository = String(source.repository || ''), revision = String(source.revision || '')
+  if (!/^github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) || repository.split('/').some(part => ['.', '..'].includes(part))
+    || !/^[a-f0-9]{40}$/.test(revision)) return null
+  return `https://${repository}/tree/${revision}`
+}
 export function comparable(baseline: RunTrace | null, candidate: RunTrace | null): boolean {
   return Boolean(baseline && candidate && !baseline.localObservation && !candidate.localObservation && baseline.cohortId === candidate.cohortId
     && JSON.stringify(baseline.profile) === JSON.stringify(candidate.profile)
