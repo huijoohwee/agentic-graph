@@ -1,4 +1,5 @@
 import React from 'react'
+import { CANVAS_VIEW_MCP_TOOL_NAME } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 import { Play, Upload } from 'lucide-react'
 import {
   buildAgenticOsInvocationChipAttrs,
@@ -91,6 +92,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
   }, [draft, selectedPromptPresetId, props.onPresetChange])
   const invocation = React.useMemo(() => parseGenerationInvocation(draft), [draft])
   const observationPreset = selectedPromptPresetId === 'agent-observability'
+  const observationFile = React.useRef<HTMLInputElement>(null)
   const selectedKinds = invocation?.kinds || []
   const promptParameters = React.useMemo(
     () => readLiveCanvasHeroPromptParameters(selectedPromptPresetPrompt),
@@ -195,6 +197,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
           {selectedPromptPresetId === 'video-agent' && model.sourceLabel ? <p className="mt-2 truncate text-[10px] text-[var(--kg-text-secondary)]" title={model.sourceWorkspacePath || model.sourceLabel}>Script: {model.sourceLabel}</p> : null}
           <section className="mt-3 h-24 shrink-0 overflow-y-auto overscroll-contain pr-1" aria-label="Prompt preset controls" data-kg-live-canvas-hero-prompt-controls-scroll="fixed">
             <section className="grid gap-2">
+            {observationPreset && <p className="text-xs">Import local run or workflow JSON → inspect spans, resources and source → review evaluation/comparison → export. MCP: <code>{CANVAS_VIEW_MCP_TOOL_NAME}</code> accepts <code>{JSON.stringify({ invocation: draft })}</code>.</p>}
             {!invocation && promptParameters.length ? (
               <fieldset className="h-16 overflow-hidden" data-kg-live-canvas-hero-prompt-parameters="true">
                 <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">
@@ -272,14 +275,21 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
             </button>
             <button
               type="button"
-              onClick={() => setImportPanelOpen(true)}
+              onClick={() => observationPreset ? observationFile.current?.click() : setImportPanelOpen(true)}
               className={heroActionControlClassName}
-              aria-label="Import canvas embed"
-              title="Import canvas embed"
+              aria-label={observationPreset ? "Import local file" : "Import canvas embed"}
+              title={observationPreset ? "Import a local observation into the full Canvas" : "Import canvas embed"}
               data-kg-live-canvas-hero-import-embed="true"
             >
-              <Upload className="h-4 w-4" aria-label="Import canvas embed icon" data-kg-live-canvas-hero-action-icon="import" />
+              <Upload className="h-4 w-4" aria-label={observationPreset ? "Import local file icon" : "Import canvas embed icon"} data-kg-live-canvas-hero-action-icon="import" />
             </button>
+            {observationPreset && <input ref={observationFile} type="file" accept=".json,application/json" className="sr-only" aria-label="Import local observation"
+              onChange={event => {
+                const file = event.target.files?.[0]; event.target.value = ''
+                if (file) void import('@/features/agent-ready/agentRunImport').then(({ importAgentRunFile }) =>
+                  importAgentRunFile(file, props.onEnter, 'canvas')).then(handled => { if (!handled) setErrorText('Choose native run or workflow JSON, or an exported inspection.') })
+                  .catch(reason => setErrorText(reason instanceof Error ? reason.message : 'Unable to import this observation.'))
+              }} />}
             <kbd className="rounded-md border border-[color:var(--kg-border)] px-2 py-1 font-mono text-[10px] text-[var(--kg-text-secondary)]" title="Open Demo shortcut">Ctrl/⌘↵</kbd>
           </section>
           </fieldset>

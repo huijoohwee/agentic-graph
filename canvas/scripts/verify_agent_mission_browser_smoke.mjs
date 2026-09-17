@@ -56,7 +56,8 @@ const waitTopology = async scope => {
   const cold = await loading.count() > 0
   await loading.waitFor({ state: 'hidden', timeout: 60000 })
   console.log('Mission topology module:', JSON.stringify({ cold, elapsedMs: Date.now() - startedAt }))
-  await scope.getByRole('img', { name: /Observed spans and causal links/ }).waitFor({ state: 'visible' })
+  await scope.locator('[data-renderer="d3"] svg[role="img"]').waitFor({ state: 'visible' })
+  assert.ok(await panel.locator('svg [data-kg-layer="nodes"] [data-node-id]').count() > 0, 'Native D3 scene must render observed nodes')
 }
 const refreshMission = async () => {
   const refresh = mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ })
@@ -70,7 +71,7 @@ const choose = async id => {
 async function authoredSnapshot() {
   return page.evaluate(async () => {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts'), state = useGraphStore.getState()
-    const keys = ['graphData', 'selectedNodeIds', 'selectedEdgeIds', 'selectedGroupIds', 'layoutPositionCacheByMode',
+    const keys = ['schema', 'fitToScreenMode', 'zoomToSelectionMode', 'graphData', 'selectedNodeIds', 'selectedEdgeIds', 'selectedGroupIds', 'layoutPositionCacheByMode',
       'flowWidgetPosByNodeId', 'flowWidgetWorldPosByNodeId', 'openWidgetNodeIds', 'history', 'historyIndex', 'sourceFiles',
       'markdownDocumentName', 'markdownDocumentText', 'jsonSourceDocumentName', 'jsonSourceDocumentText', 'canvasRenderMode', 'canvas2dRenderer']
     if (keys.some(key => !(key in state))) throw Error('Authored-state observation is incomplete')
@@ -123,7 +124,7 @@ async function verifyWorkspace(label, revoke = false) {
   await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).click()
   await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).and(page.locator(':enabled')).waitFor()
   assert.ok(requests.length > countBeforeRefresh, 'Canvas refresh must use the authenticated native transport')
-  for (const [key, name] of [['table', 'Span table'], ['tree', 'Span tree'], ['timing', 'Timing'], ['source', 'Source links'],
+  for (const [key, name] of [['table', 'Span table'], ['tree', 'Span tree'], ['source', 'Source links'],
     ['allocation', 'Allocation'], ['evidence', 'Evaluation'], ['comparison', 'Comparison'], ['topology', 'Topology']]) {
     await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
     await page.getByRole('button', { name, exact: true }).click()
@@ -133,6 +134,9 @@ async function verifyWorkspace(label, revoke = false) {
     if (key === 'tree') {
       const tree = evidence.getByRole('tree', { name: 'Span hierarchy' })
       assert.ok(await tree.isVisible())
+      assert.equal(await evidence.getByRole('tab', { name: 'Timing', exact: true }).count(), 0)
+      assert.equal(await tree.locator('[data-span-timing]').count(), await tree.getByRole('treeitem').count())
+      await waitText(tree, 'exclusive observed')
       const root = tree.getByRole('treeitem', { name: /^prepare-listing/ })
       const selectedSpan = tree.getByRole('treeitem', { name: /^draft · tool · completed/ })
       assert.equal(await selectedSpan.getAttribute('aria-selected'), 'true')
@@ -153,7 +157,6 @@ async function verifyWorkspace(label, revoke = false) {
       assert.equal(await selectedSpan.getAttribute('aria-level'), '2')
       await evidence.getByPlaceholder('Search spans by name, kind or status').fill('draft')
     }
-    if (key === 'timing') await waitText(evidence, 'exclusive observed')
     if (key === 'source') assert.ok((await evidence.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
     if (key === 'allocation') await waitText(evidence, 'Project allocation')
     if (key === 'evidence') {
@@ -195,6 +198,61 @@ async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
+async function verifyLocalTraceImport(label, fromApex = false) {
+  const currentEditor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  if (await currentEditor.isVisible()) await currentEditor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  const before = await authoredSnapshot(), beforeRequests = requests.length
+  const payload = { schema: 'agent-toolkit-run/v1', authority: false, runId: 'imported-workflow', status: 'completed',
+    observedAt: 1000, expiresAt: 2000, spans: [{ spanId: 'checks', parentSpanId: null, kind: 'tool', operation: 'checks', status: 'completed',
+      timing: { startOffsetMs: 0, inclusiveMs: 1200, exclusiveObservedMs: null },
+      resources: { cpuMs: 40, peakMemoryBytes: 1048576, tokens: null, costUsd: null } }],
+    coverage: { retainedSpans: 1, expectedSpans: 1, droppedEvents: null, partial: false }, page: { total: 1, offset: 0, nextCursor: null } }
+  const localFile = { name: 'workflow.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(payload)) }
+  if (fromApex) await page.getByLabel('Import local observation', { exact: true }).setInputFiles(localFile)
+  else {
+    await page.getByRole('button', { name: 'Launch', exact: true }).click()
+    const chooser = page.waitForEvent('filechooser')
+    await page.getByRole('button', { name: /Import local files/ }).click()
+    await (await chooser).setFiles(localFile)
+  }
+  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
+  const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
+  if (fromApex) {
+    await canvas.waitFor({ timeout: 60000 })
+    assert.ok((await canvas.boundingBox()).width > page.viewportSize().width * .9, 'Apex import must open a full-width Canvas')
+  } else {
+    await editor.waitFor({ timeout: 60000 })
+    await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  }
+  await waitText(evidence, 'Imported local trace: workflow.json'); await waitTopology(evidence)
+  assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
+  assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s', exact: true }).isDisabled(), true)
+  await evidence.getByRole('list', { name: 'Topology nodes' }).getByRole('button').click()
+  await waitText(evidence, 'Selected span: checks')
+  await evidence.locator('svg .node-label').click({ modifiers: ['Shift'] })
+  assertAuthored(await authoredSnapshot(), before, 'Modifier selection must remain inside inspection')
+  await evidence.getByRole('tab', { name: 'Evaluation', exact: true }).click()
+  assert.equal(await evidence.getByRole('button', { name: 'Evaluate selected subject', exact: true }).isDisabled(), true)
+  await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
+  await page.getByRole('button', { name: '2D Renderer: D3 Graph', exact: true }).click(); await waitTopology(evidence)
+  await page.screenshot({ path: resolve(output, label + '-imported-d3.png') })
+  await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+  await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: checks')))
+  assert.equal(requests.length, beforeRequests, 'Local file inspection must not use runtime sessions, polling or evaluation')
+  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await page.getByRole('button', { name: 'Launch', exact: true }).click()
+  const replacement = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: /Import local files/ }).click()
+  await (await replacement).setFiles({ name: 'replacement.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...payload, runId: 'replacement-workflow' })) })
+  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await waitText(evidence, 'Imported local trace: replacement.json')
+  await evidence.getByRole('heading', { name: 'Run replacement-workflow', exact: true }).waitFor()
+  assert.equal(requests.length, beforeRequests, 'Replacing a mounted inspection must not reactivate the runtime')
+  await canvas.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  assertAuthored(await authoredSnapshot(), before, 'Trace file import must preserve authored documents and graph')
+  console.log('Mission browser: ' + label + ' local file import, native D3 and synchronized selection passed')
+}
 async function verifyApexActivation(width) {
   await context.close()
   context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' })
@@ -206,7 +264,15 @@ async function verifyApexActivation(width) {
   await preset.selectOption('agent-observability')
   const activate = page.getByRole('button', { name: 'Open observability', exact: true })
   await activate.waitFor()
+  const dashboard = page.getByRole('region', { name: 'Observation dashboard', exact: true })
+  await dashboard.waitFor()
+  const dashboardBounds = await dashboard.boundingBox()
+  const overlay = page.locator('[data-kg-live-canvas-hero-editorial="overlay"]')
+  assert.equal(await overlay.evaluate(element => getComputedStyle(element).position), 'absolute', 'Catalog must reuse the existing translucent overlay')
+  assert.ok(dashboardBounds.width > width * .9, 'Observability dashboard must use the full Canvas width')
+  await dashboard.getByText('1. Import local file', { exact: true }).waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
+  await page.screenshot({ path: resolve(output, `apex-${width}-catalog-overlay.png`) })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await waitForAsync(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
   // Source bootstrap completes before the deferred active-file projection.
@@ -273,8 +339,12 @@ async function verifyApexActivation(width) {
   assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
   assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s' }).isDisabled(), true)
   await waitText(evidence.getByRole('region', { name: 'Validation economics' }), '128,000 bytes')
-  await evidence.getByRole('tab', { name: 'Timing', exact: true }).click()
-  await evidence.getByRole('list', { name: 'Span timing' }).getByRole('button').first().click()
+  await evidence.getByRole('tab', { name: 'Span tree', exact: true }).click()
+  const firstStage = evidence.getByRole('tree', { name: 'Span hierarchy' }).getByRole('treeitem').first()
+  await firstStage.click()
+  assert.equal(await firstStage.getByText('100 ms', { exact: true }).count(), 1, 'Each span shows its duration once')
+  assert.equal(await firstStage.locator('[data-span-timing]').innerText(), '', 'The interval bar does not duplicate duration text')
+  await page.screenshot({ path: resolve(output, `validation-${width}-span-tree.png`) })
   await waitText(evidence, 'Selected span: check-0')
   await evidence.getByRole('button', { name: 'Next stage page' }).click()
   await waitText(evidence, '1/33 retained spans')
@@ -295,6 +365,11 @@ async function verifyApexActivation(width) {
   await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await editor.waitFor({ state: 'detached' })
   assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
+  // Start a separate import scenario after verifying restoration. Launch intentionally closes the tool menu.
+  await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(false))
+  await page.getByRole('combobox', { name: 'Prompt preset', exact: true }).selectOption('agent-observability')
+  await dashboard.waitFor()
+  await verifyLocalTraceImport('apex-' + width, true)
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission Apex activation:', JSON.stringify({ width, elapsedMs: Date.now() - startedAt, source: 'pinned-catalog', status: 'passed' }))
 }
@@ -306,7 +381,8 @@ async function switchPrincipal(id) {
 try {
   await mkdir(output, { recursive: true })
   if (process.env.AG_MISSION_ACTIVATION_ONLY === '1') {
-    await verifyApexActivation(360); await verifyApexActivation(1280)
+    await verifyApexActivation(360)
+    await verifyApexActivation(1280)
     assert.deepEqual(errors, [])
     console.log('Focused Apex activation passed; full mission lifecycle remains a separate check.')
   } else {
@@ -337,7 +413,7 @@ try {
   await selected.getByText('Source ownership', { exact: true }).click()
   assert.ok((await selected.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
   await waitText(selected, 'Project allocation')
-  // Tree semantics expose the same span selection owner as timing and topology.
+  // Hierarchy, timing and topology share one span selection owner.
   const actualDraft = selected.getByRole('treeitem', { name: /draft · tool · completed/ })
   await actualDraft.click()
   console.log('Mission browser: span selected')
@@ -346,8 +422,7 @@ try {
   await search.fill('draft-2')
   assert.equal(await selected.getByRole('tree', { name: 'Span hierarchy' }).getByRole('treeitem').count(), 2, 'Search retains the matching span and its known ancestor')
   await search.fill('')
-  await page.locator('#agent-run-view-timing-tab').click()
-  assert.equal(await selected.getByRole('button', { pressed: true }).count(), 1)
+  assert.equal(await selected.getByRole('treeitem', { selected: true }).count(), 1)
   await waitText(selected, 'exclusive observed')
   await page.locator('#agent-run-view-topology-tab').click()
   await waitTopology(selected)
@@ -358,13 +433,13 @@ try {
   await selected.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'mobile-topology.png') })
-  const canvas = selected.locator('canvas')
+  const canvas = selected.locator('svg[role="img"]')
   await canvas.scrollIntoViewIfNeeded()
   const point = await canvas.evaluate(element => {
     const box = element.getBoundingClientRect()
     const x = (Math.max(0, box.left) + Math.min(innerWidth, box.right)) / 2
     const y = (Math.max(0, box.top) + Math.min(innerHeight, box.bottom)) / 2
-    if (document.elementFromPoint(x, y) !== element) throw Error('Topology drag target is obscured')
+    if (!element.contains(document.elementFromPoint(x, y))) throw Error('Topology drag target is obscured')
     return { x, y }
   })
   await page.mouse.move(point.x, point.y); await page.mouse.down()
@@ -397,7 +472,7 @@ try {
   await selected.getByRole('button', { name: 'Export metadata' }).click()
   const saved = await download; await saved.saveAs(resolve(output, 'metadata.json'))
   const metadata = JSON.parse(await readFile(resolve(output, 'metadata.json'), 'utf8'))
-  assert.equal(metadata.authority, false); assert.equal(metadata.runId, 'candidate-run')
+  assert.equal(metadata.authority, false); assert.equal(metadata.trace.runId, 'candidate-run')
   assert.equal(await authoredSnapshot(), before, 'Inspection must preserve authored graph, selection, layout, history and sources')
   const bounds = await mission.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth }))
   assert.ok(bounds.width <= 360 && bounds.scroll <= bounds.width + 1, JSON.stringify(bounds))
@@ -482,7 +557,7 @@ try {
   assert.ok(streamed.includes('query') && streamed.includes('trace'), 'Real authenticated bridge must serve SSE observations')
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
-    assertions: ['apex-catalog-inert-selection', 'apex-explicit-activation', 'activation-empty-vs-denied', 'activation-preserves-requested-view', 'late-panel-isolation', 'desktop-default-panes', 'lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
+    assertions: ['apex-catalog-inert-selection', 'apex-explicit-activation', 'activation-empty-vs-denied', 'activation-preserves-requested-view', 'late-panel-isolation', 'desktop-default-panes', 'lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology', 'launch-trace-import', 'native-d3-scene', 'imported-observation-no-runtime',
       'subject-evaluation', 'phase-reauthorization', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
@@ -504,7 +579,7 @@ try {
       text: node.textContent.slice(0, 1000), html: node.innerHTML.slice(0, 2000),
       width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
       visibility: getComputedStyle(node).visibility,
-      canvas: [...node.querySelectorAll('canvas')].map(canvas => ({
+      canvas: [...node.querySelectorAll('svg[role="img"]')].map(canvas => ({
         width: canvas.getBoundingClientRect().width, height: canvas.getBoundingClientRect().height,
         visibility: getComputedStyle(canvas).visibility, hidden: Boolean(canvas.closest('[aria-hidden="true"], [inert]')),
       })),

@@ -32,6 +32,7 @@ export const createZoom = (
   onZoomTransform?: (t: { k: number; x: number; y: number }) => void,
   onLabelLodVisibilityChange?: (hidden: boolean) => void,
   isActive?: () => boolean,
+  isolateDocumentState = false,
 ) => {
   const __kgWheelZoomSsot = (deltaYpx: number, increment: number, rect: DOMRect) => {
     const nowMs = Date.now()
@@ -150,7 +151,7 @@ export const createZoom = (
       },
       lockUserSelect: () => lockGlobalUserSelect(),
       unlockUserSelect: () => unlockGlobalUserSelect(),
-      disableAutoZoomModes: () => disableAutoZoomModesForUserGesture(useGraphStore.getState()),
+      disableAutoZoomModes: () => { if (!isolateDocumentState) disableAutoZoomModesForUserGesture(useGraphStore.getState()) },
       readLocalPoint: (e) => readElementLocalPoint({ el: svgEl, event: e }),
       getBoundingRect: () => svgEl.getBoundingClientRect(),
       pointerCapture: {
@@ -206,7 +207,7 @@ export const createZoom = (
       },
       getSchema: () => useGraphStore.getState().schema || schema,
       computeScaleExtent: ({ currentK }) => ({ minK: scaleExtent.minK, maxK: scaleExtent.maxK }),
-      disableAutoZoomModes: () => disableAutoZoomModesForUserGesture(useGraphStore.getState()),
+      disableAutoZoomModes: () => { if (!isolateDocumentState) disableAutoZoomModesForUserGesture(useGraphStore.getState()) },
       onGestureStart: () => controller.destroy(),
       readLocalPoint: (e) => readElementLocalPoint({ el: svgEl, event: e }),
       getBoundingRect: () => svgEl.getBoundingClientRect(),

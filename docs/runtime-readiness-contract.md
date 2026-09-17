@@ -33,7 +33,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-os.git"
-  ref: "2c09469301485d3686ad94d1c0488198e117d23e"
+  ref: "e85aaefaef7b319ee63f88c63f8183a429556529"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-os/catalog/dictionaries"
   required_files: [ "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]

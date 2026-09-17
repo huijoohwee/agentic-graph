@@ -1,11 +1,12 @@
 import React from 'react'
+import { agentRunInspectionJson } from './agentRunImport'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MarkdownWorkspaceMain } from '@/features/markdown-workspace/main/MarkdownWorkspaceMain'
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
 import type { MarkdownPresentationApi } from '@/features/markdown-workspace/markdownWorkspaceTypes'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { spanRows, numberLabel, sourceLink, traceResources, resourceLabels } from './missionControlProjection'
+import { spanRows, numberLabel, sourceLink, traceResources, resourceLabels, workflowSourceLink } from './missionControlProjection'
 import { useAgentRunInspection, useAgentRunWorkspace, closeAgentRunInspection } from './agentRunInspectionStore'
 
 import { jsonToMarkdownPreferTable } from '@/features/markdown/jsonToMarkdown'
@@ -24,8 +25,7 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
   const [wrap, setWrap] = React.useState(true), [highlight, setHighlight] = React.useState(false)
   const editorRef = React.useRef<MonacoTextEditorHandle | null>(null)
   const presentationRef = React.useRef<MarkdownPresentationApi | null>(null)
-  const json = React.useMemo(() => inspection ? JSON.stringify({ schema: 'agent-run-inspection/v1', authority: false,
-    expiresAt: inspection.expiresAt, selectedSpanId: inspection.spanId, trace: inspection.trace }, null, 2) : '', [inspection])
+  const json = React.useMemo(() => inspection ? agentRunInspectionJson(inspection.trace, inspection.spanId, inspection.expiresAt) : '', [inspection])
   const markdown = React.useMemo(() => {
     if (!inspection) return ''
     const { trace, spanId } = inspection, plan = trace.context?.plan, url = sourceLink(trace.context)
@@ -41,6 +41,7 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
       ...(trace.localObservation?.ci ? [`Initial CI wait: ${numberLabel(trace.localObservation.ci.queueWaitMs, ' ms')} · [CI run](${trace.localObservation.ci.url})`, ''] : []),
       ...(trace.localObservation?.feedback ? ['## Optimization feedback', '', ...trace.localObservation.feedback.ranking.map(row =>
         `- ${cell(row.id)}: ${numberLabel(row.meanMs, ' ms')} mean · ${row.samples} samples · ${row.samples < 3 ? 'cold baseline' : 'repeated observations'}${row.sourceRevision ? ` · [Source](https://${trace.localObservation!.source.repository}/tree/${row.sourceRevision})` : ''}`), ''] : []),
+      ...(workflowSourceLink(trace) ? [`[Workflow source revision](${workflowSourceLink(trace)}) · phase receipts and advisory feedback are retained in JSON.`, ''] : []),
       '## Observed spans', '', jsonToMarkdownPreferTable(spanRows(trace.spans).map(({ id, __order, ...row }) =>
         Object.fromEntries(Object.entries(row).map(([key, value]) => [key, String(value).replace(/[&<>`*_{}[\]()]/g,
           char => `&#${char.charCodeAt(0)};`)]))), { tableMaxRows: 32, tableMaxColumns: 10, sortKeys: false }), '',

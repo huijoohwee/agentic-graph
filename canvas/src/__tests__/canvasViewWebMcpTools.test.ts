@@ -34,7 +34,7 @@ export async function testCanvasViewRowsUseSourceBackedWebMcpInvocation(): Promi
   if (!validateInput({ invocation }) || !validateInput({ optionId: 'renderer:storyboard' })) {
     throw new Error(`expected both canonical Canvas View inputs to validate: ${JSON.stringify(validateInput.errors)}`)
   }
-  if (validateInput({ optionId: 'renderer:unknown' }) || validateInput({ invocation, optionId: 'renderer:storyboard' })) {
+  if (validateInput({ optionId: 'renderer:unknown' }) || validateInput({ optionId: 'agent-run:timing' }) || validateInput({ invocation, optionId: 'renderer:storyboard' })) {
     throw new Error('expected unknown or ambiguous Canvas View control input to fail schema validation')
   }
 
@@ -59,6 +59,9 @@ export async function testCanvasViewRowsUseSourceBackedWebMcpInvocation(): Promi
   const applied: string[] = []
   const unregister = registerCanvasViewControlHandler(optionId => applied.push(optionId))
   try {
+    let rejected = false
+    try { executeCanvasViewControl({ invocation: '/canvas.view.set #canvas-view @canvas-view option=agent-run:timing' }) } catch { rejected = true }
+    if (!rejected || applied.length) throw new Error('The removed Timing view must not execute through Chat or MCP')
     const runtimeResult = executeCanvasViewControl({ invocation })
     if (
       runtimeResult.optionId !== 'renderer:storyboard'

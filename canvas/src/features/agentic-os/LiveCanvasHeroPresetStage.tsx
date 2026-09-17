@@ -20,6 +20,7 @@ const FlowCanvas = React.lazy(() => import('@/components/FlowCanvas').then(modul
     return <module.default {...props} />
   },
 })))
+const AgenticOsMissionControl = React.lazy(() => import('@/features/agent-ready/AgenticOsMissionControl'))
 const preserveWorkspace = () => undefined
 
 export function LiveCanvasHeroPresetStage(props: {
@@ -56,22 +57,22 @@ export function LiveCanvasHeroPresetStage(props: {
     window.addEventListener(LIVE_CANVAS_HERO_SOURCE_SELECT_EVENT, select)
     return () => window.removeEventListener(LIVE_CANVAS_HERO_SOURCE_SELECT_EVENT, select)
   }, [])
+  const observation = selection?.id === 'agent-observability'
   if (!props.visible) return null
   return (
     <section className="absolute inset-0 z-[40] bg-[var(--kg-canvas-bg)]" data-kg-live-canvas-hero-viewport-owner={props.visible ? 'true' : undefined}>
+      <LiveCanvasHero source={props.source} sourceFiles={props.sourceFiles}
+        onPresetChange={onPresetChange} onEnter={props.onEnter} />
       <section
-        className={`absolute inset-0 ${backgroundUrl ? '' : 'md:left-[48%]'}`}
+        className="absolute inset-0"
         data-kg-canvas-viewport-root="1"
         aria-label={backgroundUrl ? 'Shared interactive canvas background' : 'Prompt preset demo'}
         data-kg-live-canvas-hero-background={backgroundUrl ? 'shared-embed' : 'prompt-preset'}
         data-kg-live-canvas-hero-preset={selection?.id}
       >
-        {selection?.id === 'agent-observability' ? <div className="m-6 space-y-3 rounded-xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-5 text-sm">
-          <h2 className="font-semibold">Inspect an agent run</h2>
-          <p>Open observability to connect to your existing runtime and choose an authorized run.</p>
-          <p>Follow spans, timing and topology, inspect source and allocation, then evaluate or compare exact evidence.</p>
-          <p>JSON, Markdown, Viewer and Canvas share one selection. No run starts when choosing this preset.</p>
-        </div> : backgroundUrl ? (
+        {observation ? <React.Suspense fallback={<p role="status">Loading observability…</p>}>
+          <AgenticOsMissionControl preview onOpenWorkspace={props.onEnter} />
+        </React.Suspense> : backgroundUrl ? (
           <iframe src={backgroundUrl} title={embedUrl ? `Interactive canvas embed for ${props.source.sourcePath}` : 'Physics Playground demo'}
             className="absolute inset-0 h-full w-full border-0 bg-transparent"
             sandbox="allow-forms allow-popups allow-same-origin allow-scripts"
@@ -90,8 +91,6 @@ export function LiveCanvasHeroPresetStage(props: {
           Example outputs · No model call
         </div> : null}
       </section>
-      {props.visible ? <LiveCanvasHero source={props.source} sourceFiles={props.sourceFiles} onPresetChange={onPresetChange}
-        onEnter={props.onEnter} /> : null}
     </section>
   )
 }

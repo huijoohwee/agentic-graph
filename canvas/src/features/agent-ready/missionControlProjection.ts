@@ -19,7 +19,7 @@ export type TraceSpan = { spanId: string; parentSpanId: string | null; kind: str
   taskId: string; attempt: number | null; status: string; subjectDigest: string | null; component: EvidenceRef;
   links: { spanId: string; kind: string }[]; timing: { offset: number | null; inclusive: number | null; exclusive: number | null };
   cost: unknown; resources?: ResourceMetrics; evaluation: Evaluation }
-export type RunTrace = { localObservation?: ValidationObservation; runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
+export type RunTrace = { localImport?: { fileName: string; importedAt: number }; localObservation?: ValidationObservation; runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
   context: RunContext | null; candidate: EvidenceRef; cohortId: string; profile: RecordValue;
   evaluation: Evaluation; resources: RecordValue | null; expiresAt: number; observedAt: number;
   partial: boolean; dropped: number | null; expected: number | null; total: number; offset: number; nextCursor: string | null }
@@ -89,6 +89,7 @@ export function readRunTrace(value: unknown, runId: string): RunTrace {
     if (!text(s.spanId)) throw Error('Span identity is missing.')
     return { spanId: text(s.spanId), parentSpanId: text(s.parentSpanId) || null, kind: text(s.kind),
       operation: text(s.operation), taskId: text(s.taskId), attempt: known(s.attempt), status: text(s.status),
+      ...(s.resources ? { resources: { cpuMs: known(record(s.resources).cpuMs), peakMemoryBytes: known(record(s.resources).peakMemoryBytes), tokens: known(record(s.resources).tokens), costUsd: known(record(s.resources).costUsd) } } : {}),
       subjectDigest: digest(s.subjectDigest), component: ref(s.component), cost: s.cost ?? null, evaluation: evaluation(s.evaluation),
       links: (Array.isArray(s.links) ? s.links.slice(0, 32) : []).map(link => ({ spanId: text(record(link).spanId), kind: text(record(link).kind) })),
       timing: { offset: known(t.startOffsetMs), inclusive: known(t.inclusiveMs), exclusive: known(t.exclusiveObservedMs) } }
@@ -193,6 +194,13 @@ export function sourceLink(context: RunContext | null): string | null {
   if (!p || !/^github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(p.repository)
     || !/^[a-f0-9]{40}$/.test(p.revision) || p.path.split('/').some(part => !part || ['.', '..'].includes(part))) return null
   return `https://${p.repository}/blob/${p.revision}/${p.path.split('/').map(encodeURIComponent).join('/')}`
+}
+/** Workflow receipts carry a source revision without inventing an authored PRD context. */
+export function workflowSourceLink(trace: RunTrace): string | null {
+  const source = record(record(trace.profile.workflow).source), repository = String(source.repository || ''), revision = String(source.revision || '')
+  if (!/^github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) || repository.split('/').some(part => ['.', '..'].includes(part))
+    || !/^[a-f0-9]{40}$/.test(revision)) return null
+  return `https://${repository}/tree/${revision}`
 }
 export function comparable(baseline: RunTrace | null, candidate: RunTrace | null): boolean {
   return Boolean(baseline && candidate && !baseline.localObservation && !candidate.localObservation && baseline.cohortId === candidate.cohortId
