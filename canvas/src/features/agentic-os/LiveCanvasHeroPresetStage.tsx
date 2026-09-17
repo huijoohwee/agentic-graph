@@ -64,7 +64,7 @@ export function LiveCanvasHeroPresetStage(props: {
       <LiveCanvasHero source={props.source} sourceFiles={props.sourceFiles}
         onPresetChange={onPresetChange} onEnter={props.onEnter} />
       <section
-        className={`absolute inset-0 ${backgroundUrl || observation ? '' : 'md:left-[48%]'}`}
+        className="absolute inset-0"
         data-kg-canvas-viewport-root="1"
         aria-label={backgroundUrl ? 'Shared interactive canvas background' : 'Prompt preset demo'}
         data-kg-live-canvas-hero-background={backgroundUrl ? 'shared-embed' : 'prompt-preset'}
