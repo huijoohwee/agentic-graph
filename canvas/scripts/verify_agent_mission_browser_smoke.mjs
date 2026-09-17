@@ -217,7 +217,7 @@ async function verifyLocalTraceImport(label) {
   assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s', exact: true }).isDisabled(), true)
   await evidence.getByRole('list', { name: 'Topology nodes' }).getByRole('button').click()
   await waitText(evidence, 'Selected span: checks')
-  await evidence.locator('svg [data-kg-layer="nodes"] [data-node-id]').click({ modifiers: ['Shift'] })
+  await evidence.locator('svg .node-label').click({ modifiers: ['Shift'] })
   assertAuthored(await authoredSnapshot(), before, 'Modifier selection must remain inside inspection')
   await evidence.getByRole('tab', { name: 'Evaluation', exact: true }).click()
   assert.equal(await evidence.getByRole('button', { name: 'Evaluate selected subject', exact: true }).isDisabled(), true)
