@@ -554,7 +554,6 @@ Source baseline `ccf87bae948dbd04744561372f83d7e9c6461a4c`; one registered write
 
 Pilot one seller job: inspect its plan/task/goal, identify an unsuccessful attempt, evaluate the exact subject, and inspect the existing fulfillment/payment reference. Keep diagnosis time, observed tokens, known incremental cost and unknown machine cost separate. Report sample counts and retention coverage; no causal savings claim. Production waits for deployed source/route/session proof and the repository's human-authorized release candidate.
 
-
 ## Native mission activation — 1.1.1
 
 CID `PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM`; PRD/TAD/ADR/MVP/GTM share this revision and the existing RAO-M01–M05 ownership. Source baseline: `a1154463928e3155635f0d110ccba57163faa455`. SVO: the solo operator activates observability from Apex Catalog / Prompt Presets, selects an authorized run, and inspects the same evidence across JSON, Markdown, Viewer and Canvas before deciding on another run.
@@ -600,22 +599,6 @@ AO-TREE-001 consolidates elapsed intervals and exclusive observed time into the 
 
 ## Manifest import completeness · OBS-IMPORT-001
 
-PRD/RAO/SVO: the operator selects one immutable ADLC root and inspects all captured worktree spans
-through the existing Canvas, JSON, Markdown and Viewer selection. Explicit user FIX authorization
-covers this change. TAD: extend the existing same-origin loopback bridge with the native OS reader;
-resolve only the uploaded manifest digest under the configured workspace. Reuse bounded JSON/SSE
-pages, validate a stable root and contiguous offsets, and commit the import atomically. No runtime
-credential or model invocation is needed for local read-only evidence.
-ADR: retain page limits and fail if the complete import exceeds 2,048 spans or 16 MiB; no silent
-truncation. Preserve reported models and historical reused resources; per-worktree clocks render
-with explicit scope. The group root has multiple clocks rather than a fabricated global position.
-MVP: manifest → verified pages → one complete trace → existing tree/D3/Markdown/export.
-GTM: shorten diagnosis and remove manual page stitching; WTP and measured savings stay unverified.
-Acceptance: manifest import, tampered/missing/misordered pages, digest/origin guards, reported model
-and scoped timing tests plus owner-selected checks. Rollback: revert the reader/UI changes while
-retaining all archived evidence. No production readiness or new authority is implied.
+PRD/RAO/SVO: the operator selects one immutable ADLC root and inspects all captured worktree spans through the existing Canvas, JSON, Markdown and Viewer selection. Explicit user FIX authorization covers this change. TAD: extend the existing same-origin loopback bridge with the native OS reader; resolve only the uploaded manifest digest under the configured workspace. Reuse bounded JSON/SSE pages, validate a stable root and contiguous offsets, and commit the import atomically. No runtime credential or model invocation is needed for local read-only evidence. ADR: retain page limits and fail if the complete import exceeds 2,048 spans or 16 MiB; no silent truncation. Preserve reported models and historical reused resources; per-worktree clocks render with explicit scope. The group root has multiple clocks rather than a fabricated global position. MVP: manifest → verified pages → one complete trace → existing tree/D3/Markdown/export. GTM: shorten diagnosis and remove manual page stitching; WTP and measured savings stay unverified. Acceptance: manifest import, tampered/missing/misordered pages, digest/origin guards, reported model and scoped timing tests plus owner-selected checks. Rollback: revert the reader/UI changes while retaining all archived evidence. No production readiness or new authority is implied.
 
-The Apex catalog renders each selected preset description through its existing shared picker, so the
-OS-owned SSOT manifest locator and demo steps remain visible without a second observability layout.
-Browser evidence: one root loaded 104/104 spans, 101 recoverable positions, historical resources and
-shared selection through the native SSE reader. Provider integration/deployment receipts stay separate.
+The Apex catalog renders each selected preset description through its existing shared picker, so the OS-owned SSOT manifest locator and demo steps remain visible without a second observability layout. Browser evidence: one root loaded 104/104 spans, 101 recoverable positions, historical resources and shared selection through the native SSE reader. Provider integration/deployment receipts stay separate.
