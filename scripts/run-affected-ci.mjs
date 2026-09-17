@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
@@ -8,60 +7,8 @@ import {
   resolveCiCommandTimeoutMs,
   selectAffectedCommands,
 } from './collaboration-contract.mjs'
-
-export const readGitText = (args, { spawnGit = spawnSync } = {}) => {
-  const result = spawnGit('git', args, { cwd: repoRoot, encoding: 'utf8' })
-  if (result.error) throw new Error(`git ${args[0]} could not start: ${result.error.message}`)
-  if (result.status !== 0) throw new Error(`git ${args[0]} exited with ${result.status ?? 1}`)
-  return String(result.stdout || '')
-}
-
-const runGit = args => readGitText(args)
-
-const addGitPaths = (set, value) => {
-  const inventory = String(value || '')
-  if (inventory === '') return
-  if (!inventory.endsWith('\0')) throw new Error('git path inventory is not NUL-terminated')
-  for (const rel of inventory.slice(0, -1).split('\0')) {
-    if (rel === '' || /[\\\r\n]/u.test(rel)) throw new Error('git path inventory contains a noncanonical path')
-    set.add(rel)
-  }
-}
-
-export const readChangedPaths = ({
-  environment = process.env,
-  gitText = runGit,
-  baseRevision,
-} = {}) => {
-  const paths = new Set()
-  const githubBaseRef = String(environment.GITHUB_BASE_REF || '').trim()
-  const canonicalBaseRef = String(environment.AGENTIC_OS_PR_BASE_REF || '').trim()
-  if (githubBaseRef && canonicalBaseRef && githubBaseRef !== canonicalBaseRef) {
-    throw new Error('GitHub base ref conflicts with the canonical agentic-graph pull request base ref')
-  }
-  const protectedRefreshBaseRef = environment.GITHUB_ACTIONS === 'true'
-    && environment.GITHUB_EVENT_NAME === 'workflow_dispatch'
-    ? canonicalBaseRef
-    : ''
-  const baseRef = githubBaseRef || protectedRefreshBaseRef
-  const before = String(environment.GITHUB_EVENT_BEFORE || '').trim()
-
-  if (baseRevision !== undefined) {
-    if (!/^[0-9a-f]{40}$/u.test(baseRevision) || /^0+$/u.test(baseRevision)) throw new Error('invalid validation base revision')
-    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `${baseRevision}...HEAD`]))
-  } else if (baseRef) addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `origin/${baseRef}...HEAD`]))
-  else if (/^[0-9a-f]{40}$/.test(before) && !/^0+$/.test(before)) {
-    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', `${before}...HEAD`]))
-  } else if (environment.GITHUB_ACTIONS === 'true') {
-    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', 'HEAD^...HEAD']))
-  } else {
-    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', 'origin/main...HEAD']))
-    addGitPaths(paths, gitText(['diff', '--no-renames', '--name-only', '-z', 'HEAD']))
-    addGitPaths(paths, gitText(['ls-files', '-z', '--others', '--exclude-standard']))
-  }
-
-  return [...paths].sort()
-}
+import { readChangedPaths, ownerInputDigest } from './ci-evidence-inputs.mjs'
+export { readChangedPaths, readGitText } from './ci-evidence-inputs.mjs'
 
 export const main = async () => {
   const contract = await readContract()
@@ -80,11 +27,28 @@ export const main = async () => {
   }
 
   if (plan.commands.length) {
-    const { runValidationStages } = await import('../node_modules/agentic-os/bin/agentic-os-validation-stages.mjs')
-    await runValidationStages(repoRoot, plan.commands.map(command => ({
+    const { runValidationStages, recordCiStageReuse } = await import('../node_modules/agentic-os/bin/agentic-os-validation-stages.mjs')
+    const stages = plan.commands.map(command => ({
       id: `check-${command.join('-').toLowerCase().replace(/[^a-z0-9.-]+/gu, '-').slice(0, 60)}-${createHash('sha256').update(JSON.stringify(command)).digest('hex').slice(0, 12)}`,
       command, timeoutMs: resolveCiCommandTimeoutMs(command, contract),
-    })))
+    }))
+    let reuse = null
+    const directory = process.env.AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR
+    if (directory && process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME === 'push'
+      && process.env.GITHUB_REF === 'refs/heads/main') {
+      try {
+        const { runCiEvidence } = await import('../node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs')
+        reuse = runCiEvidence(['verify', '--policy=.agentic-os-ci-source-evidence.json',
+          `--lookup=${path.join(directory, 'ci-evidence-lookup.json')}`,
+          `--evidence=${path.join(directory, 'protected-ci-evidence/evidence.json')}`,
+          `--output=${path.join(directory, 'ci-source-reuse.json')}`],
+        { ...process.env, AGENTIC_OS_CI_OWNER_INPUTS: await ownerInputDigest() })
+      } catch { console.log('[agentic-graph] source reuse unavailable; executing original plan') }
+    }
+    if (reuse?.reused === true) {
+      recordCiStageReuse(repoRoot, stages, reuse)
+      console.log(`[agentic-graph] reused ${stages.length} source checks from ${reuse.runUrl}`)
+    } else await runValidationStages(repoRoot, stages)
   }
   console.log('[agentic-graph] affected CI checks passed')
 }
