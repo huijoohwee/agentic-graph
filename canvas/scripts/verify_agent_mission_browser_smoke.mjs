@@ -546,7 +546,9 @@ try {
   }
   // Use the rendered desktop entry: readiness can precede a responsive toolbar remount.
   await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click()
-  await page.locator('#main-panel-dashboard-tab:visible').click()
+  // This is an in-page tab switch. A background preview iframe may navigate;
+  // wait for the mission's visible data below rather than that unrelated load.
+  await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true })
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await page.locator('#agent-run-view-topology-tab').click()
   await waitTopology(selected)
