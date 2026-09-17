@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
+import YAML from 'yaml'
 import { digest, seal } from '../travel-mesh-release-plan.mjs'
 import { assertRecoveryAuthority, assertRecoveryProviderState, createRecoveryPlan,
   RECOVERY_REQUIRED_STEPS, recoveryMode, validateRecoveryPlan, validateRecoveryRun } from '../production-release-recovery-proof.mjs'
@@ -131,4 +132,33 @@ test('release checks mirror bytes before activation and preserves all resources 
   const recovery = fs.readFileSync(new URL('../../.github/workflows/production-release-recovery.yml', import.meta.url), 'utf8')
   assert.match(recovery, /environment: production/)
   assert.doesNotMatch(recovery, /pages deploy|versions upload|d1 migrations apply/)
+})
+
+test('each release job verifies pinned document ancestry before production effects', () => {
+  const workflow = YAML.parse(fs.readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8'))
+  for (const [job, checkoutName, dryRunName, boundary] of [
+    ['verify', 'Checkout Agentic Canvas OS docs SSOT', 'Validate canonical document sources before candidate verification', 'Bind immutable production candidate'],
+    ['deploy', 'Checkout exact Agentic Canvas OS docs SSOT', 'Validate canonical document sources before deployment', 'Enforce sole deployment ownership'],
+  ]) {
+    const steps = workflow.jobs[job].steps
+    const index = name => steps.findIndex(step => step.name === name)
+    const checkout = steps[index(checkoutName)]
+    assert.equal(checkout.with['fetch-depth'], 0, 'pinned revision needs fetched main ancestry')
+    assert.match(checkout.with.ref, /outputs\.(?:ref|docs_revision)/)
+    assert(index(checkoutName) < index(dryRunName) && index(dryRunName) < index(boundary))
+    assert.equal(steps[index(dryRunName)].run, 'npm run --silent storage:d1:seed:docs -- --dry-run')
+  }
+})
+
+test('rollback retains exact authority but does not require a still-current forward source', () => {
+  const workflow = YAML.parse(fs.readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8'))
+  const steps = workflow.jobs.deploy.steps
+  const rollback = steps.find(step => step.name === 'Restore exact prior travel mesh versions')
+  assert.match(rollback.if, /steps\.rollback_eligibility\.outputs\.eligible == 'true'/)
+  assert.match(rollback.run, /release:candidate:authorization -- verify/)
+  assert.match(rollback.run, /travel-mesh-release\.mjs rollback[\s\S]*--authorization[\s\S]*--receipt/)
+  assert.doesNotMatch(rollback.run, /release:main-authority:check/)
+  for (const name of ['Deploy verified artifact', 'Reconcile canonical docs into D1', 'Publish verified production mirror']) {
+    assert.match(steps.find(step => step.name === name).run, /release:main-authority:check/)
+  }
 })
