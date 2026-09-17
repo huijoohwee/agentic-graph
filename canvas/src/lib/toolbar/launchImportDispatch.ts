@@ -151,6 +151,10 @@ export async function runLaunchImportLocalFiles(args: {
 }): Promise<void | WorkspaceBridgeImportResult> {
   const snapshot = args.files ? Array.from(args.files as ArrayLike<File>) : []
   if (snapshot.length === 0) return
+  if (snapshot.length === 1 && snapshot[0]!.name.toLowerCase().endsWith('.json')) {
+    const { importAgentRunFile } = await import('@/features/agent-ready/agentRunImport')
+    if (await importAgentRunFile(snapshot[0]!)) return { handled: true }
+  }
   const bridgeImport = args.bridge.importLocalFiles
   if (typeof bridgeImport === 'function') {
     try {

@@ -1,4 +1,5 @@
 import React from 'react'
+import { agentRunInspectionJson } from './agentRunImport'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MarkdownWorkspaceMain } from '@/features/markdown-workspace/main/MarkdownWorkspaceMain'
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
@@ -24,8 +25,7 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
   const [wrap, setWrap] = React.useState(true), [highlight, setHighlight] = React.useState(false)
   const editorRef = React.useRef<MonacoTextEditorHandle | null>(null)
   const presentationRef = React.useRef<MarkdownPresentationApi | null>(null)
-  const json = React.useMemo(() => inspection ? JSON.stringify({ schema: 'agent-run-inspection/v1', authority: false,
-    expiresAt: inspection.expiresAt, selectedSpanId: inspection.spanId, trace: inspection.trace }, null, 2) : '', [inspection])
+  const json = React.useMemo(() => inspection ? agentRunInspectionJson(inspection.trace, inspection.spanId, inspection.expiresAt) : '', [inspection])
   const markdown = React.useMemo(() => {
     if (!inspection) return ''
     const { trace, spanId } = inspection, plan = trace.context?.plan, url = sourceLink(trace.context)

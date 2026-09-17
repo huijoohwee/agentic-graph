@@ -1,3 +1,4 @@
+import { readAgentRunImport, agentRunInspectionJson } from '@/features/agent-ready/agentRunImport'
 import assert from 'node:assert/strict'
 import { readValidationObservation, validationTrace } from '@/features/agent-ready/validationObservationProjection'
 import { readRunIndex, readRunTrace, traceGraph, visibleSpanTree, sourceLink, comparable, spanNodeId, spanRows, traceResources, spanResources } from '@/features/agent-ready/missionControlProjection'
@@ -26,6 +27,23 @@ export async function testMissionControlProjection(): Promise<void> {
   assert.ok(graph.nodes.every(n => n.id.startsWith('agentic-os/run/')))
   assert.equal(spanNodeId('other', 'root') === spanNodeId('run', 'root'), false)
   assert.equal(JSON.stringify(raw), before, 'projection must not mutate its source')
+  const imported = readAgentRunImport(agentRunInspectionJson(trace, 'retry', 1500), 'saved.json', 2000000)!
+  assert.equal(imported.spanId, 'retry')
+  assert.equal(imported.trace.observedAt, 1000, 'Historical observation time must not be renewed')
+  assert.equal(imported.trace.localImport?.importedAt, 2000000)
+  assert.equal(imported.trace.nextCursor, null, 'Captured paging capabilities must be removed')
+  assert.equal(imported.trace.evaluation.score, 0)
+  assert.deepEqual(imported.trace.spans[0]!.timing, trace.spans[0]!.timing)
+  assert.equal(sourceLink(imported.trace.context), sourceLink(trace.context))
+  assert.equal(readAgentRunImport('{"nodes":[],"edges":[]}', 'graph.json'), null)
+  assert.throws(() => readAgentRunImport(JSON.stringify({ schema: 'agent-run-inspection/v1', trace: {} }), 'bad.json'), /identity|schema/i)
+  assert.throws(() => readAgentRunImport(JSON.stringify({ ...raw, spans: [raw.spans[0], raw.spans[0]] }), 'bad.json'), /Duplicate/)
+  assert.throws(() => readAgentRunImport(JSON.stringify({ ...raw, spans: Array(33).fill(raw.spans[0]) }), 'big.json'), /bounded/)
+  assert.throws(() => readAgentRunImport(' '.repeat(262145), 'big.json'), /256 KB/)
+  const measuredImport = readAgentRunImport(JSON.stringify({ ...raw, status: 'blocked', spans: [{ ...raw.spans[0],
+    resources: { cpuMs: 0, peakMemoryBytes: 1024, tokens: 0, costUsd: 0 } }] }), 'workflow.json')!
+  assert.equal(measuredImport.trace.status, 'blocked')
+  assert.deepEqual(spanResources(measuredImport.trace.spans[0]!), { cpuMs: 0, peakMemoryBytes: 1024, tokens: 0, costUsd: 0 })
   const cyclic = trace.spans.map((s, i) => ({ ...s, parentSpanId: trace.spans[(i + 1) % trace.spans.length]!.spanId }))
   assert.equal(visibleSpanTree(cyclic, '').length, 4)
   assert.throws(() => readRunTrace(raw, 'foreign'), /identity/)

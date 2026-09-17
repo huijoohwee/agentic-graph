@@ -56,7 +56,8 @@ const waitTopology = async scope => {
   const cold = await loading.count() > 0
   await loading.waitFor({ state: 'hidden', timeout: 60000 })
   console.log('Mission topology module:', JSON.stringify({ cold, elapsedMs: Date.now() - startedAt }))
-  await scope.getByRole('img', { name: /Observed spans and causal links/ }).waitFor({ state: 'visible' })
+  await scope.locator('[data-renderer="d3"] svg[role="img"]').waitFor({ state: 'visible' })
+  assert.ok(await panel.locator('svg .node').count() > 0, 'Native D3 scene must render observed nodes')
 }
 const refreshMission = async () => {
   const refresh = mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ })
@@ -195,6 +196,39 @@ async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   console.log('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
+async function verifyLocalTraceImport(label) {
+  const before = await authoredSnapshot(), beforeRequests = requests.length
+  const payload = { schema: 'agent-toolkit-run/v1', authority: false, runId: 'imported-workflow', status: 'completed',
+    observedAt: 1000, expiresAt: 2000, spans: [{ spanId: 'checks', parentSpanId: null, kind: 'tool', operation: 'checks', status: 'completed',
+      timing: { startOffsetMs: 0, inclusiveMs: 1200, exclusiveObservedMs: null },
+      resources: { cpuMs: 40, peakMemoryBytes: 1048576, tokens: null, costUsd: null } }],
+    coverage: { retainedSpans: 1, expectedSpans: 1, droppedEvents: null, partial: false }, page: { total: 1, offset: 0, nextCursor: null } }
+  await page.getByRole('button', { name: 'Launch', exact: true }).click()
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: /Import local files/ }).click()
+  await (await chooser).setFiles({ name: 'workflow.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(payload)) })
+  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
+  const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
+  await editor.waitFor({ timeout: 60000 })
+  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await waitText(evidence, 'Imported local trace: workflow.json'); await waitTopology(evidence)
+  assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
+  assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s', exact: true }).isDisabled(), true)
+  await evidence.getByRole('list', { name: 'Topology nodes' }).getByRole('button').click()
+  await waitText(evidence, 'Selected span: checks')
+  await evidence.getByRole('tab', { name: 'Evaluation', exact: true }).click()
+  assert.equal(await evidence.getByRole('button', { name: 'Evaluate selected subject', exact: true }).isDisabled(), true)
+  await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
+  await page.getByRole('button', { name: '2D Renderer: D3 Graph', exact: true }).click(); await waitTopology(evidence)
+  await page.screenshot({ path: resolve(output, label + '-imported-d3.png') })
+  await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+  await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: checks')))
+  assert.equal(requests.length, beforeRequests, 'Local file inspection must not use runtime sessions, polling or evaluation')
+  await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  assertAuthored(await authoredSnapshot(), before, 'Trace file import must preserve authored documents and graph')
+  console.log('Mission browser: ' + label + ' local file import, native D3 and synchronized selection passed')
+}
 async function verifyApexActivation(width) {
   await context.close()
   context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' })
@@ -306,7 +340,8 @@ async function switchPrincipal(id) {
 try {
   await mkdir(output, { recursive: true })
   if (process.env.AG_MISSION_ACTIVATION_ONLY === '1') {
-    await verifyApexActivation(360); await verifyApexActivation(1280)
+    await verifyApexActivation(360)
+  await verifyLocalTraceImport('mobile'); await verifyApexActivation(1280)
     assert.deepEqual(errors, [])
     console.log('Focused Apex activation passed; full mission lifecycle remains a separate check.')
   } else {
@@ -358,13 +393,13 @@ try {
   await selected.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'mobile-topology.png') })
-  const canvas = selected.locator('canvas')
+  const canvas = selected.locator('svg[role="img"]')
   await canvas.scrollIntoViewIfNeeded()
   const point = await canvas.evaluate(element => {
     const box = element.getBoundingClientRect()
     const x = (Math.max(0, box.left) + Math.min(innerWidth, box.right)) / 2
     const y = (Math.max(0, box.top) + Math.min(innerHeight, box.bottom)) / 2
-    if (document.elementFromPoint(x, y) !== element) throw Error('Topology drag target is obscured')
+    if (!element.contains(document.elementFromPoint(x, y))) throw Error('Topology drag target is obscured')
     return { x, y }
   })
   await page.mouse.move(point.x, point.y); await page.mouse.down()
@@ -476,13 +511,15 @@ try {
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
   await verifyWorkspace('desktop')
+  await verifyLocalTraceImport('desktop')
   await verifyApexActivation(360)
+  await verifyLocalTraceImport('mobile')
   await verifyApexActivation(1280)
   assert.deepEqual(errors, [])
   assert.ok(streamed.includes('query') && streamed.includes('trace'), 'Real authenticated bridge must serve SSE observations')
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
     status: 'passed', fixtureOnly: true, providerAuthority: false, viewport: { width: 360, height: 800 },
-    assertions: ['apex-catalog-inert-selection', 'apex-explicit-activation', 'activation-empty-vs-denied', 'activation-preserves-requested-view', 'late-panel-isolation', 'desktop-default-panes', 'lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology',
+    assertions: ['apex-catalog-inert-selection', 'apex-explicit-activation', 'activation-empty-vs-denied', 'activation-preserves-requested-view', 'late-panel-isolation', 'desktop-default-panes', 'lazy-entry', 'authorized-discovery', 'keyboard-row', 'bounded-span-pages', 'shared-selection', 'native-topology', 'launch-trace-import', 'native-d3-scene', 'imported-observation-no-runtime',
       'subject-evaluation', 'phase-reauthorization', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
@@ -504,7 +541,7 @@ try {
       text: node.textContent.slice(0, 1000), html: node.innerHTML.slice(0, 2000),
       width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
       visibility: getComputedStyle(node).visibility,
-      canvas: [...node.querySelectorAll('canvas')].map(canvas => ({
+      canvas: [...node.querySelectorAll('svg[role="img"]')].map(canvas => ({
         width: canvas.getBoundingClientRect().width, height: canvas.getBoundingClientRect().height,
         visibility: getComputedStyle(canvas).visibility, hidden: Boolean(canvas.closest('[aria-hidden="true"], [inert]')),
       })),

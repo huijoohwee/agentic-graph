@@ -51,7 +51,9 @@ export function closeAgentRunInspection(): void {
   const restore = restoreView; restoreView = null; restore?.(); emit()
 }
 function validated(input: Omit<AgentRunInspection, 'view'> & { view?: AgentRunView }): AgentRunInspection {
-  const expiresAt = Math.min(input.expiresAt, input.trace.expiresAt, input.trace.observedAt + 60_000, Date.now() + 60_000)
+  const importedAt = input.trace.localImport?.importedAt
+  const expiresAt = Math.min(input.expiresAt, importedAt === undefined ? input.trace.expiresAt : importedAt + 60_000,
+    (importedAt ?? input.trace.observedAt) + 60_000, Date.now() + 60_000)
   const bytes = JSON.stringify(input)
   if (!input.scope || !Number.isFinite(expiresAt) || expiresAt <= Date.now() || input.trace.spans.length > 32
     || new TextEncoder().encode(bytes).length > 262144) throw Error('Run inspection is unavailable or expired. Refresh its authorized snapshot.')

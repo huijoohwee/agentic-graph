@@ -142,9 +142,9 @@ export function Canvas2dRendererSelect({
   const rendererOptions = React.useMemo(() => getCanvasViewRendererOptions(), [])
   const options = React.useMemo<CanvasViewOption[]>(() => inspection ? [{ id: 'renderer:menu',
     title: '2D Renderer', label: 'Agent observability', valueLabel: AGENT_RUN_CANVAS_VIEWS[inspection.view], Icon: Eye,
-    children: Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([view, title]) => ({
+    children: [{ id: 'renderer:d3' as CanvasViewOptionId, title: '2D Renderer: D3 Graph', label: '2D Renderer: D3 Graph', Icon: Eye, isActive: inspection.view === 'topology' }, ...Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([view, title]) => ({
       id: `agent-run:${view}` as CanvasViewOptionId, title, label: title, Icon: Eye, isActive: inspection.view === view,
-    })),
+    }))],
   }] : [...buildCanvasViewOptions(modelState, rendererOptions), { id: 'agent-run:topology', title: 'Agent observability', label: 'Agent observability', Icon: Eye,
     children: Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([view, title]) => ({ id: `agent-run:${view}` as CanvasViewOptionId, title, label: title, Icon: Eye })),
   }], [modelState, rendererOptions, inspection?.view, !!inspection])
@@ -153,6 +153,7 @@ export function Canvas2dRendererSelect({
     : getCanvasViewTriggerState(modelState, rendererOptions), [modelState, rendererOptions, inspection?.view, !!inspection])
   const applyCanvasViewOption = React.useCallback((id: CanvasViewOptionId, baselineGuard = ensureBaselineUnlocked) => {
     if (inspection) {
+      if (id === 'renderer:d3') { selectAgentRunView('topology'); return }
       if (!id.startsWith('agent-run:')) throw Error('Close run inspection to change the authored Canvas renderer.')
       selectAgentRunView(id.slice('agent-run:'.length)); return
     }
