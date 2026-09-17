@@ -58,6 +58,7 @@ jobs:
           ref: ${{ steps.agentic_canvas_os_docs.outputs.ref }}
           path: agentic-os
           fetch-depth: 0
+      - { name: Validate canonical document sources before candidate verification, working-directory: agentic-graph, run: 'npm run --silent storage:d1:seed:docs -- --dry-run' }
       - name: Restore protected browser attempt history
         id: browser_history
         working-directory: agentic-graph
@@ -153,12 +154,13 @@ jobs:
     steps:
       - { name: Checkout exact candidate, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { ref: '${{ inputs.source_sha }}', path: agentic-graph, fetch-depth: 1 } }
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.verify.outputs.mirror_revision }}', path: huijoohwee, token: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}' } }
-      - { name: Checkout exact Agentic Canvas OS docs SSOT, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-os } }
+      - { name: Checkout exact Agentic Canvas OS docs SSOT, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-os, fetch-depth: 0 } }
       - { name: Setup Node, uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" } }
       - name: Install dependencies
         working-directory: agentic-graph
         run: bash ./scripts/install-production-release-dependencies.sh
       - { name: Download verified artifacts, uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c , with: { name: 'production-${{ inputs.source_sha }}', path: '${{ runner.temp }}/production-mirror-artifact' } }
+      - { name: Validate canonical document sources before deployment, working-directory: agentic-graph, run: 'npm run --silent storage:d1:seed:docs -- --dry-run' }
       - name: Reconcile verified artifact into exact mirror base
         working-directory: agentic-graph
         run: npm run --silent production:mirror-artifact:reconcile -- "$RUNNER_TEMP/production-mirror-artifact" "$GITHUB_WORKSPACE/huijoohwee"
@@ -493,7 +495,6 @@ jobs:
         working-directory: agentic-graph
         env: *travel_mesh_environment
         run: |
-          npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           node ./scripts/travel-mesh-release.mjs rollback --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --receipt "$RUNNER_TEMP/travel-mesh-release-receipt.json" --output "$RUNNER_TEMP/travel-mesh-rollback-receipt.json" --github-output
       - name: Checkout rollback agentic-graph source

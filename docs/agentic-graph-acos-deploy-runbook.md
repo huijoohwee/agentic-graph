@@ -237,6 +237,13 @@ head/fence, ambiguous disposition, unresolved last-known-good identity, or diges
 before candidate preparation. Never recreate the object after dispatch to make a changed workspace
 fit a waiting run; produce a new object and candidate instead.
 
+Both release jobs fetch the pinned document owner's full Git history and run the native
+document seeding dry run before production effects. This proves `origin/main` ancestry and
+source readability without a D1 write. A shallow pinned checkout cannot supply that proof.
+Forward effects still require current protected `main`. Pre-publication Worker rollback instead
+uses the consumed exact-candidate authorization, sealed deployment receipt and live version
+checks; a later merge cannot prohibit restoring that attempt's recorded prior versions.
+
 ### Verify job
 
 Confirm:
