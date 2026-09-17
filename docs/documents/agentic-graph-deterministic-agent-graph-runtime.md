@@ -271,5 +271,5 @@ MCP traversal locate the package entry and retain unresolved syntax honestly. Na
 query and evidence explanation remain the authoritative syntax path into the existing D3 renderer.
 
 GTM: compare compatible next-run stage observations; do not infer cash or model usage from deterministic
-checks. Scope: at most eight modules, 60 KB, 35 active minutes; provider waits separate. Revert this
+checks. Scope: at most nine source/test/doc files (including protected OS pin adoption), 60 KB, 35 active minutes; provider waits separate. Revert this
 source increment on regression while preserving previous observations and immutable lifecycle roots.
