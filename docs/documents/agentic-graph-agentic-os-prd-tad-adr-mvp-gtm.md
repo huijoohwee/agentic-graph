@@ -44,16 +44,9 @@ gtm_revision: "1.1.0"
 
 # agentic-graph Agentic OS — Reference implementation PRD-TAD-ADR-MVP-GTM
 
-This document is the canonical product and technical owner for the Agentic OS
-status surface in this repository. Every concrete product, provider, runtime,
-file, and tool name below is a non-binding **reference implementation** of the
-neutral OS Status Surface pattern.
+This document is the canonical product and technical owner for the Agentic OS status surface in this repository. Every concrete product, provider, runtime, file, and tool name below is a non-binding **reference implementation** of the neutral OS Status Surface pattern.
 
-The original status-surface snapshot contains implementation code, but its baseline below attaches no
-recorded implementation-test result, mirror result, delivery check, or operator
-promotion instruction. Consequently, the only readiness claims are the
-frontmatter rungs: local `spec-complete` and delivered `undocumented`. Nothing in
-this document asserts a deployed or live service.
+The original status-surface snapshot contains implementation code, but its baseline below attaches no recorded implementation-test result, mirror result, delivery check, or operator promotion instruction. Consequently, the only readiness claims are the frontmatter rungs: local `spec-complete` and delivered `undocumented`. Nothing in this document asserts a deployed or live service.
 
 ## Document contract
 
@@ -554,7 +547,6 @@ Source baseline `ccf87bae948dbd04744561372f83d7e9c6461a4c`; one registered write
 
 Pilot one seller job: inspect its plan/task/goal, identify an unsuccessful attempt, evaluate the exact subject, and inspect the existing fulfillment/payment reference. Keep diagnosis time, observed tokens, known incremental cost and unknown machine cost separate. Report sample counts and retention coverage; no causal savings claim. Production waits for deployed source/route/session proof and the repository's human-authorized release candidate.
 
-
 ## Native mission activation — 1.1.1
 
 CID `PLAN-AGENTIC-GRAPH-AGENTIC-OS-PRD-TAD-ADR-MVP-GTM`; PRD/TAD/ADR/MVP/GTM share this revision and the existing RAO-M01–M05 ownership. Source baseline: `a1154463928e3155635f0d110ccba57163faa455`. SVO: the solo operator activates observability from Apex Catalog / Prompt Presets, selects an authorized run, and inspects the same evidence across JSON, Markdown, Viewer and Canvas before deciding on another run.
@@ -597,3 +589,9 @@ AO-IMPORT-001@0.1.0 / PRD: import a native trace or workflow observation through
 ADR: captured timestamps remain historical; local import grants no session, paging, evaluation or execution capability. A 256-KB/32-span bound and 60-second in-memory handoff preserve zero/unknown resources, causal links, source identity and authored documents. Ordinary JSON keeps the existing importer. MVP: baseline `f4d4e766a3f092ba7991cef6c0eae2cddf966210`, 60 active minutes, 22 Graph files and 8 OS files, 100 KB edits; verify export/import, mobile/desktop D3 fit/selection, unchanged authored state and the existing complete agent lifecycle. GTM: join native preparation/check/CI/integration/cleanup/sync/runtime receipts using the OS workflow exporter; compare measured time/resource evidence without inferring savings or release authority. Rollback restores the prior source and OS pin; private records remain in `.workspace/.artifacts`.
 
 AO-TREE-001 consolidates elapsed intervals and exclusive observed time into the collapsible Span tree; remove the standalone Timing tab and invocation option. Show duration once with aligned bars on desktop and wrapped bars on mobile. The existing mission browser suite validates the combined hierarchy, keyboard selection, interval placement and absence of the retired view. APEX-OBS-001 extends the import loop: the source-owned preset opens the existing lazy dashboard across the full Canvas beneath the single existing translucent Apex catalog/prompt overlay shared by every preset; all preset backgrounds occupy the full viewport. Import local file uses the Launch trace parser and synchronized workspace; no runtime read occurs on selection. Explicit connection and the canonical `/canvas.view.set #canvas-view @canvas-view` tuple reuse the existing browser-local MCP control. Desktop/mobile mission checks require full-width entry, unknown empty metrics and zero requests until activation. No additional renderer, provider or state store.
+
+## Manifest import completeness · OBS-IMPORT-001
+
+PRD/RAO/SVO: the operator selects one immutable ADLC root and inspects all captured worktree spans through the existing Canvas, JSON, Markdown and Viewer selection. Explicit user FIX authorization covers this change. TAD: extend the existing same-origin loopback bridge with the native OS reader; resolve only the uploaded manifest digest under the configured workspace. Reuse bounded JSON/SSE pages, validate a stable root and contiguous offsets, and commit the import atomically. No runtime credential or model invocation is needed for local read-only evidence. ADR: retain page limits and fail if the complete import exceeds 2,048 spans or 16 MiB; no silent truncation. Preserve reported models and historical reused resources; per-worktree clocks render with explicit scope. The group root has multiple clocks rather than a fabricated global position. MVP: manifest → verified pages → one complete trace → existing tree/D3/Markdown/export. GTM: shorten diagnosis and remove manual page stitching; WTP and measured savings stay unverified. Acceptance: manifest import, tampered/missing/misordered pages, digest/origin guards, reported model and scoped timing tests plus owner-selected checks. Rollback: revert the reader/UI changes while retaining all archived evidence. No production readiness or new authority is implied.
+
+The Apex catalog renders each selected preset description through its existing shared picker, so the OS-owned SSOT manifest locator and demo steps remain visible without a second observability layout. Browser evidence: one root loaded 104/104 spans, 101 recoverable positions, historical resources and shared selection through the native SSE reader. Provider integration/deployment receipts stay separate.

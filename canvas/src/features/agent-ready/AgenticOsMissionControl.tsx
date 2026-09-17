@@ -290,7 +290,9 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         <details className="pt-2 text-xs"><summary>Stage output and reuse</summary><ul>{trace.localObservation.stages.slice(trace.offset, trace.offset + 32).map(stage => <li key={stage.id} className="py-1">{stage.id} · {stage.status} · {numberLabel(stage.observedOutputBytes, ' output bytes')}{stage.outputTruncated ? ' · bounded log tail' : ''}</li>)}</ul></details>
       </section>}
       <section aria-label="Observed resources" className="my-3 rounded border p-3">
-        <div className="grid grid-cols-2 gap-3 text-sm">{Object.entries(resourceLabels(traceResources(trace))).map(([label, value]) =>
+        {!span && trace.profile.workflow && <p className="pb-2 text-xs">Reported usage across loaded evidence · unmeasured phases excluded · nested measurements counted once</p>}
+        {span && <p className="pb-2 text-xs">{span.status === 'reused' ? 'Original check measurements · excluded from current consumption' : 'Selected span measurements'} · Model: {span.model || 'Not recorded by source'}</p>}
+        <div className="grid grid-cols-2 gap-3 text-sm">{Object.entries(resourceLabels(traceResources(trace, span))).map(([label, value]) =>
           <div key={label}>{label}<strong className="block text-lg tabular-nums">{value}</strong></div>)}</div>
         <p className="pt-2 text-xs">Peak process RSS is the maximum observed process peak. Model cost is estimated; actual cash and machine charges are unknown. Reused stages are excluded from current consumption.</p>
         {trace.localObservation?.resources.coverage && <p className="pt-1 text-xs">Measured stages: {Object.entries(trace.localObservation.resources.coverage).filter(([key]) => key !== 'expectedStages').map(([key, count]) => `${key} ${count}/${trace.localObservation?.resources.coverage?.expectedStages}`).join(' · ')}</p>}
