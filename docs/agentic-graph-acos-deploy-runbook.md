@@ -205,6 +205,13 @@ is specific to the candidate and does not authorize later revisions, Workers, or
 If a newer protected `main` revision or newer candidate run appears while this run is waiting,
 stop and retire the waiting run instead of authorizing it.
 
+A completed release stopped by the read-only runtime preflight may retain its passed browser
+ledger. Recovery verifies the exact prior run, attempt, source, successful candidate job, and
+skipped Pages, Worker, D1, publication and rollback effects through provider job evidence.
+Missing or ambiguous evidence, failed browser verification, interrupted runs and attempted
+deployment remain blocked. Repair the preflight configuration before preparing a new candidate;
+the retained browser result grants no deployment or authorization authority.
+
 ## Expected protected workflow sequence
 
 ### Pre-dispatch release evidence

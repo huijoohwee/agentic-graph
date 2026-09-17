@@ -11,7 +11,44 @@ const repository = 'huijoohwee/agentic-graph'
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 const gh = (...args) => execFileSync('gh', args, { cwd: root, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024 })
 export const historyArtifactName = binding => 'browser-preflight-' + createHash('sha256').update(canonicalJson(binding)).digest('hex')
-export function assertPriorBrowserRun(run, currentRun) {
+// A passed browser ledger remains evidence when a later read-only preflight
+// stops deployment. It never substitutes for fresh production authorization.
+export function assertPreDeploymentStop(run, jobs) {
+  assert.ok(Array.isArray(jobs), 'prior release jobs are required')
+  const exactJob = name => {
+    const matches = jobs.filter(job => job.name === name)
+    assert.equal(matches.length, 1, `prior ${name} job is ambiguous`)
+    const job = matches[0]
+    assert.equal(job.run_id, run.id)
+    assert.equal(job.run_attempt, run.run_attempt)
+    assert.equal(job.head_sha, run.head_sha)
+    assert.equal(job.status, 'completed')
+    return job
+  }
+  const verify = exactJob('Verify Release Candidate')
+  assert.equal(verify.conclusion, 'success', 'prior candidate verification did not pass')
+  const deploy = exactJob('Human-Authorized Deploy, Verify, And Publish Mirror')
+  assert.equal(deploy.conclusion, 'failure')
+  const stepResult = (name, conclusion) => {
+    const matches = deploy.steps.filter(step => step.name === name)
+    assert.equal(matches.length, 1, `prior ${name} step is missing or ambiguous`)
+    assert.equal(matches[0].status, 'completed')
+    assert.equal(matches[0].conclusion, conclusion, `prior ${name} was not ${conclusion}`)
+  }
+  stepResult('Preflight protected travel mesh without mutation', 'failure')
+  for (const name of ['Deploy verified artifact', 'Capture authoritative candidate deployment',
+    'Record exact Pages deployment receipt', 'Upload and activate exact-candidate travel mesh versions',
+    'Reconcile canonical docs into D1', 'Publish exact canonical documents through the storage owner',
+    'Publish verified production mirror', 'Restore exact prior travel mesh versions',
+    'Roll back Pages to exact last-known-good deployment', 'Restore and reconcile last-known-good D1 state']) {
+    stepResult(name, 'skipped')
+  }
+  const allowedFailures = new Set(['Preflight protected travel mesh without mutation',
+    'Require an exact successful deployment attempt'])
+  assert.ok(deploy.steps.every(step => ['success', 'skipped'].includes(step.conclusion)
+    || (step.conclusion === 'failure' && allowedFailures.has(step.name))), 'prior deployment has an unresolved failure')
+}
+export function assertPriorBrowserRun(run, currentRun, jobs) {
   assert.ok(Number.isSafeInteger(run.id), 'prior run identity is missing')
   assert.match(run.head_sha, /^[0-9a-f]{40}$/, 'prior source revision is invalid')
   assert.notEqual(String(run.id), String(currentRun), 'a release attempt cannot overwrite its own browser history')
@@ -19,7 +56,8 @@ export function assertPriorBrowserRun(run, currentRun) {
   assert.equal(run.event, 'workflow_dispatch', 'browser history trigger differs')
   assert.equal(run.head_branch, 'main', 'browser history is not protected main')
   assert.equal(run.status, 'completed', 'prior release is still active; preserve its history')
-  assert.equal(run.conclusion, 'success', 'unchanged prior release failed or was interrupted; repair or reconcile before retry')
+  if (run.conclusion === 'failure' && jobs) assertPreDeploymentStop(run, jobs)
+  else assert.equal(run.conclusion, 'success', 'unchanged prior release failed or was interrupted; repair or reconcile before retry')
 }
 
 async function restore() {
@@ -47,7 +85,15 @@ async function restore() {
     assert.equal(artifact.expired, false, 'expired browser history requires reconciliation')
     assert.ok(artifact.size_in_bytes > 0 && artifact.size_in_bytes <= 4 * 1024 * 1024, 'browser history artifact exceeds its bound')
     const run = JSON.parse(gh('api', `repos/${repository}/actions/runs/${artifact.workflow_run.id}`))
-    assertPriorBrowserRun(run, process.env.GITHUB_RUN_ID)
+    let jobs
+    if (run.status === 'completed' && run.conclusion === 'failure') {
+      assert.ok(Number.isSafeInteger(run.run_attempt) && run.run_attempt > 0, 'prior attempt identity is missing')
+      const payload = JSON.parse(gh('api', `repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`))
+      assert.ok(Array.isArray(payload.jobs) && payload.jobs.length === payload.total_count && payload.total_count <= 100,
+        'prior job observation is incomplete')
+      jobs = payload.jobs
+    }
+    assertPriorBrowserRun(run, process.env.GITHUB_RUN_ID, jobs)
     const commit = JSON.parse(gh('api', `repos/${repository}/git/commits/${run.head_sha}`))
     assert.equal(commit.tree.sha, binding.sourceTree, 'browser history source tree differs')
   }
