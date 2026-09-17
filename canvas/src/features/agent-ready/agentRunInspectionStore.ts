@@ -81,7 +81,8 @@ export function updateAgentRunInspection(input: Pick<AgentRunInspection, 'trace'
     snapshot = validated({ ...input, search: '', view: workspace.view })
     scheduleExpiry(); emit(); return
   }
-  if (snapshot.scope !== input.scope || snapshot.expiresAt <= Date.now()) return closeAgentRunInspection()
+  if (snapshot.scope !== input.scope) return // A late prior-scope response cannot clear a newer handoff.
+  if (snapshot.expiresAt <= Date.now()) return closeAgentRunInspection()
   if (input.trace.runId === snapshot.trace.runId && input.trace.observedAt < snapshot.trace.observedAt) return
   snapshot = validated({ ...snapshot, ...input }); scheduleExpiry(); emit()
 }

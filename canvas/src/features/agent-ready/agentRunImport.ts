@@ -41,7 +41,6 @@ export async function importAgentRunFile(file: File): Promise<boolean> {
     if (!imported) return false
     const store = await import('./agentRunInspectionStore')
     if (attempt !== generation) return true
-    store.closeAgentRunInspection()
     store.activateAgentRunWorkspace('topology', 'editor')
     store.openAgentRunInspection({ ...imported, scope: `local-import:${attempt}`, expiresAt: imported.trace.localImport!.importedAt + 60000, search: '', view: 'topology' })
   } catch (error) {
