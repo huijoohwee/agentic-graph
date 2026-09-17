@@ -337,15 +337,14 @@ try {
   await selected.getByText('Source ownership', { exact: true }).click()
   assert.ok((await selected.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
   await waitText(selected, 'Project allocation')
-  const draft = selected.getByRole('button', { name: /draft · draft · attempt 2/ })
-  // The native span label includes task and attempt identity; one selection follows all views.
-  const actualDraft = await draft.count() ? draft : selected.getByRole('button').filter({ hasText: /draft.*attempt 2/ }).first()
+  // Tree semantics expose the same span selection owner as timing and topology.
+  const actualDraft = selected.getByRole('treeitem', { name: /draft · tool · completed/ })
   await actualDraft.click()
   console.log('Mission browser: span selected')
   await waitText(selected, 'Span draft-2')
   const search = selected.getByPlaceholder('Search spans by name, kind or status')
   await search.fill('draft-2')
-  assert.equal(await selected.getByRole('list', { name: 'Span hierarchy' }).locator('li').count(), 2, 'Search retains the matching span and its known ancestor')
+  assert.equal(await selected.getByRole('tree', { name: 'Span hierarchy' }).getByRole('treeitem').count(), 2, 'Search retains the matching span and its known ancestor')
   await search.fill('')
   await page.locator('#agent-run-view-timing-tab').click()
   assert.equal(await selected.getByRole('button', { pressed: true }).count(), 1)

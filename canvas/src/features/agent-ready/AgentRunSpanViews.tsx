@@ -61,7 +61,7 @@ export function AgentRunSpanViews({ rows, timing, selectedId, onSelect, search =
         resources.costUsd === null ? null : `Est. $${resources.costUsd.toLocaleString(undefined, { maximumFractionDigits: 6 })}`].filter(Boolean)
       return <li key={span.spanId} role={timing ? undefined : 'none'} className="min-w-0">
         <div role={timing ? 'button' : 'treeitem'} tabIndex={timing || focusedId === span.spanId ? 0 : -1}
-          aria-label={`${span.operation} · ${span.kind} · ${span.status}`}
+          aria-label={`${span.operation} · ${span.kind} · ${span.status}${span.attempt === null ? '' : ` · attempt ${span.attempt}`}`}
           aria-selected={timing ? undefined : selected} aria-pressed={timing ? selected : undefined}
           aria-level={timing ? undefined : depth + 1} aria-expanded={!timing && hasChildren ? expanded : undefined}
           onKeyDown={event => timing ? (event.key === 'Enter' || event.key === ' ') && (event.preventDefault(), onSelect(span.spanId)) : navigate(event, index, hasChildren, expanded)}
