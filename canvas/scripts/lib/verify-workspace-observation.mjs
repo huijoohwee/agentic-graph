@@ -22,7 +22,7 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     const data = { schema: 'agent-toolkit-run/v1', authority: false, runId: 'workflow-workspace-fixture', status: 'running',
       manifestDigest: digest(manifestText), subjectDigest: digest(manifestText), observedAt: now, expiresAt: now + 60000,
       spans: [{ spanId: 'checks', kind: 'check', operation: `workspace-check-${revision}`, status: 'completed',
-        timing: { startOffsetMs: 0, inclusiveMs: 12, scope: 'fixture' }, resources: { cpuMs: 3, peakMemoryBytes: 1024 } }],
+        timing: { startOffsetMs: 0, inclusiveMs: 12, exclusiveObservedMs: 4, scope: 'fixture' }, resources: { cpuMs: 3, peakMemoryBytes: 1024 } }],
       page: { offset: 0, total: 1, nextCursor: null }, coverage: { partial: true, sourcePartial: true, expectedSpans: 7 } }
     await route.fulfill({ contentType: 'text/event-stream', headers: { 'cache-control': 'no-store' }, body: `data: ${JSON.stringify(data)}\n\ndata: [DONE]\n\n` })
   })
@@ -34,15 +34,38 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     const tree = mission.getByRole('tree', { name: 'Span hierarchy' })
     await tree.getByRole('treeitem', { name: /workspace-check-1/ }).waitFor()
     const metric = mission.getByRole('group', { name: 'Span metric', exact: true })
+    const inspectHeight = (await mission.getByRole('combobox', { name: 'Inspect run details', exact: true }).boundingBox()).height
+    assert.equal((await metric.boundingBox()).height, inspectHeight, 'Metric controls align with the Inspect selector')
+    await metric.getByRole('button', { name: 'Show Exclusive observed', exact: true }).click()
+    await tree.locator('[data-span-metric="exclusive"][data-span-metric-value="4"]').waitFor()
     await metric.getByRole('button', { name: 'Show Tokens', exact: true }).click()
     await tree.locator('[data-span-metric="tokens"][data-span-metric-value="unknown"]').waitFor()
-    assert.equal(await tree.locator('[data-span-metric] [aria-hidden="true"]').count(), 0, 'Unknown tokens have no fabricated bar')
+    assert.equal(await tree.locator('[data-span-metric="tokens"] [aria-hidden="true"]').count(), 0, 'Unknown tokens have no fabricated bar')
     await metric.getByRole('button', { name: 'Show CPU', exact: true }).click()
     await tree.locator('[data-span-metric="cpuMs"][data-span-metric-value="3"]').waitFor()
     await metric.getByRole('button', { name: 'Show Cost', exact: true }).click()
     await tree.locator('[data-span-metric="costUsd"][data-span-metric-value="unknown"]').waitFor()
-    await metric.getByRole('button', { name: 'Show Memory', exact: true }).click()
+    await metric.getByRole('button', { name: 'Show Peak RSS', exact: true }).click()
     await tree.locator('[data-span-metric="peakMemoryBytes"]').getByText('1 KiB', { exact: true }).waitFor()
+    const headings = mission.locator('[data-span-metric-heading]')
+    assert.deepEqual(await headings.allTextContents(), ['Time', 'Exclusive observed', 'Tokens', 'CPU', 'Peak RSS', 'Cost'])
+    const row = tree.getByRole('treeitem', { name: /workspace-check-1/ })
+    const beforeSelection = await row.boundingBox(), details = row.locator('[data-span-description]')
+    const textBeforeSelection = await details.innerText()
+    assert.equal((await details.boundingBox()).height, 36, 'Span name and combined resources occupy exactly two text lines')
+    assert.equal(await details.locator('[aria-label="Span resources"]').getAttribute('title'), '12 ms · exclusive observed 4 ms · CPU 3 ms · Peak RSS 1 KiB · Tokens: Unknown · Estimated USD: Unknown')
+    await row.click()
+    assert.equal(await row.getAttribute('aria-selected'), 'true')
+    assert.equal((await row.boundingBox()).height, beforeSelection.height, 'Selecting a span does not expand the row')
+    assert.equal(await details.innerText(), textBeforeSelection, 'Selection does not add resource lines')
+    for (const key of ['time', 'exclusive', 'tokens', 'cpuMs', 'peakMemoryBytes', 'costUsd']) {
+      const heading = await mission.locator(`[data-span-metric-heading="${key}"]`).boundingBox()
+      const cell = await row.locator(`[data-span-metric="${key}"]`).boundingBox()
+      assert.ok(Math.abs(heading.x - cell.x) < 1 && Math.abs(heading.width - cell.width) < 1, `${key} header and data column align`)
+    }
+    await metric.getByRole('button', { name: 'Show Tokens', exact: true }).click()
+    assert.equal(await tree.locator('[data-span-metric="tokens"]').count(), 0)
+    assert.equal(await tree.locator('[data-span-metric="time"]').count(), 1, 'Removing one column retains the others')
     assert.equal(await mission.getByLabel('Import local file', { exact: true }).count(), 0, 'Run source belongs only to the back')
     const frame = mission.locator('[data-dashboard-widget="mission:tree"]'), before = await frame.boundingBox()
     await showMissionFace(mission, true)
@@ -64,8 +87,8 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
       .some(model => model.language === 'json' && model.uri.startsWith('inmemory://agent-run/') && model.value.includes('workspace-check-2')))
     await page.getByRole('region', { name: 'Markdown Workspace', exact: true }).getByRole('button', { name: 'Close', exact: true }).click()
     await tree.getByRole('treeitem', { name: /workspace-check-2/ }).waitFor()
-    assert.equal(await metric.getByRole('button', { name: 'Show Memory', exact: true }).getAttribute('aria-pressed'), 'true', 'Metric selection survives streamed updates and flips')
-    await metric.getByRole('button', { name: 'Show Time', exact: true }).click()
+    assert.equal(await metric.getByRole('button', { name: 'Show Peak RSS', exact: true }).getAttribute('aria-pressed'), 'true', 'Metric selection survives streamed updates and flips')
+    assert.equal(await metric.getByRole('button', { name: 'Show Time', exact: true }).getAttribute('aria-pressed'), 'true')
     await tree.locator('[data-span-timing]').waitFor()
     assert.equal(reads, 2, 'One initial source read and one timed refresh')
     await showMissionFace(mission, true); await mission.getByRole('checkbox', { name: 'Live · ≥5 s' }).uncheck()

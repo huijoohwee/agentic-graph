@@ -1,16 +1,23 @@
 import { known, numberLabel, spanResources, type TraceSpan } from './missionControlProjection'
 
 export const SPAN_METRICS = [
-  { key: 'time', label: 'Time' }, { key: 'tokens', label: 'Tokens' },
-  { key: 'cpuMs', label: 'CPU' }, { key: 'peakMemoryBytes', label: 'Memory' },
+  { key: 'time', label: 'Time' }, { key: 'exclusive', label: 'Exclusive observed' }, { key: 'tokens', label: 'Tokens' },
+  { key: 'cpuMs', label: 'CPU' }, { key: 'peakMemoryBytes', label: 'Peak RSS' },
   { key: 'costUsd', label: 'Cost' },
 ] as const
 export type SpanMetric = typeof SPAN_METRICS[number]['key']
+export const DEFAULT_SPAN_METRICS: SpanMetric[] = ['time']
+export function toggleSpanMetric(selected: SpanMetric[], metric: SpanMetric): SpanMetric[] {
+  const next = new Set(selected)
+  if (!next.delete(metric)) next.add(metric)
+  return SPAN_METRICS.filter(option => next.has(option.key)).map(option => option.key)
+}
 export const durationLabel = (ms: number | null) => ms === null ? 'Unknown duration' : ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`
 
 /** Match the existing resource details, including explicitly labelled historical reuse. */
 export function spanMetricValue(span: TraceSpan, metric: SpanMetric): number | null {
   if (metric === 'time') return known(span.timing.inclusive)
+  if (metric === 'exclusive') return known(span.timing.exclusive)
   const resources = span.status === 'reused' && span.historicalResources ? span.historicalResources : spanResources(span)
   return known(resources[metric])
 }
@@ -26,7 +33,7 @@ export function spanMetricPercent(value: number | null, maximum: number): number
 
 export function spanMetricLabel(value: number | null, metric: SpanMetric): string {
   if (value === null) return 'Unknown'
-  if (metric === 'time' || metric === 'cpuMs') return durationLabel(value)
+  if (metric === 'time' || metric === 'exclusive' || metric === 'cpuMs') return durationLabel(value)
   if (metric === 'tokens') return numberLabel(value, ' tokens')
   if (metric === 'costUsd') return `Est. $${value.toLocaleString(undefined, { maximumSignificantDigits: 6 })}`
   const [unit, divisor] = value >= 1073741824 ? ['GiB', 1073741824] as const

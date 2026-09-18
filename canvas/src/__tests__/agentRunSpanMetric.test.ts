@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { spanMetricLabel, spanMetricMaximum, spanMetricPercent, spanMetricValue } from '@/features/agent-ready/agentRunSpanMetric'
+import { DEFAULT_SPAN_METRICS, SPAN_METRICS, toggleSpanMetric, spanMetricLabel, spanMetricMaximum, spanMetricPercent, spanMetricValue } from '@/features/agent-ready/agentRunSpanMetric'
 import type { TraceSpan } from '@/features/agent-ready/missionControlProjection'
 
 export function testAgentRunSpanMetric(): void {
@@ -9,6 +9,9 @@ export function testAgentRunSpanMetric(): void {
     evaluation: { status: 'unevaluated', score: null, reason: null, evidence: null },
     resources: { cpuMs: 60, tokens: 0, peakMemoryBytes: 1024, costUsd: null } }
   assert.equal(spanMetricValue(span, 'time'), 120)
+  assert.equal(spanMetricValue(span, 'exclusive'), null, 'Unobserved exclusive time is not inferred from duration')
+  assert.equal(spanMetricValue({ ...span, timing: { ...span.timing, exclusive: 40 } }, 'exclusive'), 40)
+  assert.equal(spanMetricLabel(40, 'exclusive'), '40 ms')
   assert.equal(spanMetricValue(span, 'tokens'), 0)
   assert.equal(spanMetricValue(span, 'costUsd'), null)
   assert.equal(spanMetricLabel(0, 'tokens'), '0 tokens')
@@ -26,4 +29,10 @@ export function testAgentRunSpanMetric(): void {
   const costLog: TraceSpan = { ...span, resources: undefined, cost: { status: 'reported', prompt_tokens: 4, completion_tokens: 6, estimated_cost_usd: 0.01 } }
   assert.equal(spanMetricValue(costLog, 'tokens'), 10, 'Reuse the native cost-log projection')
   assert.equal(spanMetricValue(costLog, 'costUsd'), 0.01)
+  const selected = toggleSpanMetric(toggleSpanMetric(DEFAULT_SPAN_METRICS, 'cpuMs'), 'exclusive')
+  assert.deepEqual(selected, ['time', 'exclusive', 'cpuMs'], 'Independent metric selections retain the canonical column order')
+  assert.deepEqual(toggleSpanMetric(selected, 'time'), ['exclusive', 'cpuMs'])
+  assert.deepEqual(DEFAULT_SPAN_METRICS, ['time'], 'Toggling must not mutate the existing selection')
+  assert.deepEqual(toggleSpanMetric(DEFAULT_SPAN_METRICS, 'time'), [], 'All metrics can be hidden without hiding the hierarchy')
+  assert.deepEqual(SPAN_METRICS.map(metric => metric.label), ['Time', 'Exclusive observed', 'Tokens', 'CPU', 'Peak RSS', 'Cost'])
 }
