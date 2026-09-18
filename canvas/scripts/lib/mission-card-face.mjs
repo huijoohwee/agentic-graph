@@ -3,6 +3,7 @@ export async function showMissionFace(scope, back) {
   const frame = scope.locator('[data-dashboard-widget="mission:tree"]')
   if (!await frame.count()) return
   if ((await frame.getAttribute('aria-expanded') === 'true') === back) return
+  if (!back && !await frame.locator('[data-kg-toolbar-action="flip"]').count()) { await frame.getByRole('button', { name: 'Cancel', exact: true }).click(); return }
   if (!await frame.locator('[data-kg-toolbar-action="flip"]').count()) await frame.press('Enter')
   await frame.locator('[data-kg-toolbar-action="flip"]').click()
   await frame.locator(`[data-kg-widget-face="${back ? 'back' : 'front'}"]`).waitFor()
