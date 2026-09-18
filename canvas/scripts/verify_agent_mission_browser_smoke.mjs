@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
+import { verifyDashboardWidgets } from './lib/verify-dashboard-widgets.mjs'
 import { createMissionPhaseObservation } from './lib/mission-phase-observation.mjs'
 const phaseObservation = createMissionPhaseObservation()
 
@@ -111,6 +112,7 @@ async function verifyWorkspace(label, revoke = false) {
   const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
   const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
   await editor.waitFor({ state: 'visible', timeout: 60000 })
+  await editor.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).waitFor()
   await editor.getByRole('region', { name: 'Markdown Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible', timeout: 60000 })
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible' })
@@ -403,6 +405,7 @@ try {
   assert.equal(requests.length, 0, 'Dashboard must not load or poll before opening')
   await openDashboard()
   await waitText(mission, '2 retained matches')
+  await verifyDashboardWidgets(page)
   assert.equal(await mission.getByText('private-run', { exact: true }).count(), 0)
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const before = await authoredSnapshot()
@@ -507,7 +510,7 @@ try {
   await waitText(mission, '2 retained matches'); await choose('baseline-run')
   await page.clock.fastForward(61000)
   await mission.waitFor({ state: 'detached' }); await openDashboard(); assert.equal(await selected.count(), 0)
-  assert.equal(await mission.locator('tbody tr').count(), 0)
+  assert.equal(await page.getByRole('region', { name: 'Selected run evidence' }).count(), 0)
   assert.equal(peak, 1, 'Only one observation request may be in flight')
   assert.deepEqual(errors, [])
   await page.screenshot({ path: resolve(output, 'mobile.png') })

@@ -1,10 +1,11 @@
 import React from 'react'
+import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics, updateDashboardWidget, updateDashboardWidgets } from './dashboardWidgetConfiguration'
 import { DashboardLineAreaChart } from './DashboardCharts'
 import { DashboardCardView, DashboardMetricTile, type DashboardCardTextField } from './DashboardWidgets'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useContainerDims } from '@/hooks/useContainerDims'
-import { areKanbanRowIdsEqual, reconcileKanbanRowIds } from '@/features/markdown/ui/kanban/kanbanOrderState'
+import { areKanbanRowIdsEqual } from '@/features/markdown/ui/kanban/kanbanOrderState'
 import { reorderKanbanRowIds } from '@/features/markdown/ui/kanban/kanbanReorder'
 import {
   useKanbanDragAndDrop,
@@ -21,8 +22,6 @@ import {
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   buildDashboardCanvasModel,
-  type DashboardCard,
-  type DashboardMetric,
 } from './dashboardModel'
 
 type DashboardCanvasProps = {
@@ -33,37 +32,8 @@ const DASHBOARD_METRICS_GROUP_KEY = 'dashboard-metrics'
 const DASHBOARD_CONTENT_STYLE = buildResponsiveViewportFitContentStyle()
 const DASHBOARD_METRICS_GRID_STYLE = buildResponsiveViewportFitGridStyle()
 
-type DashboardMetricTextOverride = {
-  label?: string
-  detail?: string
-}
-
-
-type DashboardCardTextOverride = Partial<Record<DashboardCardTextField, string>>
-
-const orderDashboardCards = (cards: readonly DashboardCard[], order: readonly string[] | null | undefined): DashboardCard[] => {
-  const cardById = new Map(cards.map(card => [card.id, card]))
-  const reconciled = reconcileKanbanRowIds(order, cards.map(card => card.id))
-  return reconciled.map(id => cardById.get(id)).filter(Boolean) as DashboardCard[]
-}
-
-const orderDashboardMetrics = (metrics: readonly DashboardMetric[], order: readonly string[] | null | undefined): DashboardMetric[] => {
-  const metricById = new Map(metrics.map(metric => [metric.id, metric]))
-  const reconciled = reconcileKanbanRowIds(order, metrics.map(metric => metric.id))
-  return reconciled.map(id => metricById.get(id)).filter(Boolean) as DashboardMetric[]
-}
-
-const readDashboardCardTextField = (card: DashboardCard, field: DashboardCardTextField): string => {
-  if (field === 'title') return card.title
-  if (field === 'subtitle') return card.subtitle
-  return card.footnote || ''
-}
-
-const hasDashboardCardTextOverride = (override: DashboardCardTextOverride | null | undefined): boolean => {
-  return !!override && (!!override.title || !!override.subtitle || !!override.footnote)
-}
-
 export default function DashboardCanvas(props: DashboardCanvasProps) {
+  const widgetConfiguration = useDashboardWidgets()
   const active = props.active !== false
   const containerRef = React.useRef<HTMLElement | null>(null)
   const graphData = useActiveGraphRenderData(active)
@@ -73,10 +43,6 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
   const selectNode = useGraphStore(state => state.selectNode)
   const updateNode = useGraphStore(state => state.updateNode)
   const dims = useContainerDims(containerRef)
-  const [cardOrderBySection, setCardOrderBySection] = React.useState<Record<string, string[]>>({})
-  const [metricOrder, setMetricOrder] = React.useState<string[]>([])
-  const [metricTextOverrides, setMetricTextOverrides] = React.useState<Record<string, DashboardMetricTextOverride>>({})
-  const [cardTextOverrides, setCardTextOverrides] = React.useState<Record<string, DashboardCardTextOverride>>({})
   const graphSemanticKey = React.useMemo(
     () => buildScopedGraphSemanticKey('dashboard-canvas', { graphData }),
     [graphData],
@@ -88,172 +54,29 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
   const canvasGrid = React.useMemo(() => readCanvasGridRenderConfigFromSchema(schema), [schema])
   const getDashboardGridTransform = React.useCallback(() => ({ k: 1, x: 0, y: 0 }), [])
   const getDashboardGridEventTarget = React.useCallback(() => containerRef.current, [])
-  const sectionOrderKey = React.useMemo(
-    () => model.sections.map(section => `${section.id}:${section.cards.map(card => card.id).join(',')}`).join('|'),
-    [model.sections],
-  )
-  const metricOrderKey = React.useMemo(
-    () => model.metrics.map(metric => metric.id).join('|'),
-    [model.metrics],
-  )
-
-  React.useEffect(() => {
-    setCardOrderBySection(current => {
-      let changed = false
-      const next: Record<string, string[]> = {}
-      for (const section of model.sections) {
-        const ids = section.cards.map(card => card.id)
-        const reconciled = reconcileKanbanRowIds(current[section.id], ids)
-        next[section.id] = reconciled
-        if (!areKanbanRowIdsEqual(current[section.id] || [], reconciled)) changed = true
-      }
-      for (const sectionId of Object.keys(current)) {
-        if (!Object.prototype.hasOwnProperty.call(next, sectionId)) changed = true
-      }
-      return changed ? next : current
-    })
-    setCardTextOverrides(current => {
-      const validCardIds = new Set(model.sections.flatMap(section => section.cards.map(card => card.id)))
-      let changed = false
-      const next: Record<string, DashboardCardTextOverride> = {}
-      for (const [cardId, override] of Object.entries(current)) {
-        if (!validCardIds.has(cardId)) {
-          changed = true
-          continue
-        }
-        next[cardId] = override
-      }
-      return changed ? next : current
-    })
-  }, [model.sections, sectionOrderKey])
-
-  React.useEffect(() => {
-    const metricIds = model.metrics.map(metric => metric.id)
-    setMetricOrder(current => {
-      const next = reconcileKanbanRowIds(current, metricIds)
-      return areKanbanRowIdsEqual(current, next) ? current : next
-    })
-    setMetricTextOverrides(current => {
-      const valid = new Set(metricIds)
-      let changed = false
-      const next: Record<string, DashboardMetricTextOverride> = {}
-      for (const [metricId, override] of Object.entries(current)) {
-        if (!valid.has(metricId)) {
-          changed = true
-          continue
-        }
-        next[metricId] = override
-      }
-      return changed ? next : current
-    })
-  }, [metricOrderKey, model.metrics])
-
-  const displayMetrics = React.useMemo(
-    () => model.metrics.map(metric => {
-      const override = metricTextOverrides[metric.id]
-      if (!override) return metric
-      return {
-        ...metric,
-        label: override.label || metric.label,
-        detail: override.detail || metric.detail,
-      }
-    }),
-    [metricTextOverrides, model.metrics],
-  )
-
-  const displaySections = React.useMemo(
-    () => model.sections.map(section => ({
-      ...section,
-      cards: section.cards.map(card => {
-        const override = cardTextOverrides[card.id]
-        if (!hasDashboardCardTextOverride(override)) return card
-        return {
-          ...card,
-          title: override.title || card.title,
-          subtitle: override.subtitle || card.subtitle,
-          footnote: override.footnote || card.footnote,
-        }
-      }),
-    })),
-    [cardTextOverrides, model.sections],
-  )
-
+  const displayMetrics = React.useMemo(() => configureDashboardMetrics(widgetConfiguration.document, model.metrics), [widgetConfiguration.document, model.metrics])
+  const displaySections = React.useMemo(() => model.sections.map(section => ({ ...section,
+    cards: configureDashboardCards(widgetConfiguration.document, section.cards),
+  })).filter(section => section.cards.length > 0), [widgetConfiguration.document, model.sections])
+  const orderedIds = (group: string) => group === DASHBOARD_METRICS_GROUP_KEY ? displayMetrics.map(item => item.id)
+    : displaySections.find(section => section.id === group)?.cards.map(item => item.id) ?? []
   const dashboardDrag = useKanbanDragAndDrop({
     enabled: active,
     isNoOpMove: move => {
-      if (move.sourceGroupKey === DASHBOARD_METRICS_GROUP_KEY && move.targetGroupKey === DASHBOARD_METRICS_GROUP_KEY) {
-        const availableMetricIds = model.metrics.map(metric => metric.id)
-        if (!availableMetricIds.includes(move.rowId)) return true
-        const currentOrder = reconcileKanbanRowIds(metricOrder, availableMetricIds)
-        const rowIdToGroupKey = new Map(currentOrder.map(metricId => [metricId, DASHBOARD_METRICS_GROUP_KEY]))
-        const nextOrder = reorderKanbanRowIds({
-          orderedRowIds: currentOrder,
-          availableRowIds: currentOrder,
-          rowIdToGroupKey,
-          draggedRowId: move.rowId,
-          targetGroupKey: move.targetGroupKey,
-          targetRowId: move.targetRowId,
-          position: move.position,
-        })
-        return areKanbanRowIdsEqual(currentOrder, nextOrder)
-      }
       if (move.sourceGroupKey !== move.targetGroupKey) return true
-      const section = model.sections.find(item => item.id === move.targetGroupKey)
-      if (!section) return true
-      const availableCardIds = section.cards.map(card => card.id)
-      if (!availableCardIds.includes(move.rowId)) return true
-      const currentOrder = reconcileKanbanRowIds(cardOrderBySection[section.id], availableCardIds)
-      const rowIdToGroupKey = new Map(currentOrder.map(cardId => [cardId, section.id]))
-      const nextOrder = reorderKanbanRowIds({
-        orderedRowIds: currentOrder,
-        availableRowIds: currentOrder,
-        rowIdToGroupKey,
-        draggedRowId: move.rowId,
-        targetGroupKey: move.targetGroupKey,
-        targetRowId: move.targetRowId,
-        position: move.position,
-      })
-      return areKanbanRowIdsEqual(currentOrder, nextOrder)
+      const ids = orderedIds(move.targetGroupKey)
+      return !ids.includes(move.rowId) || areKanbanRowIdsEqual(ids, reorderKanbanRowIds({ orderedRowIds: ids, availableRowIds: ids,
+        rowIdToGroupKey: new Map(ids.map(id => [id, move.targetGroupKey])), draggedRowId: move.rowId,
+        targetGroupKey: move.targetGroupKey, targetRowId: move.targetRowId, position: move.position }))
     },
     onCommitMove: move => {
-      if (move.sourceGroupKey === DASHBOARD_METRICS_GROUP_KEY && move.targetGroupKey === DASHBOARD_METRICS_GROUP_KEY) {
-        setMetricOrder(current => {
-          const availableMetricIds = model.metrics.map(metric => metric.id)
-          if (!availableMetricIds.includes(move.rowId)) return current
-          const currentOrder = reconcileKanbanRowIds(current, availableMetricIds)
-          const rowIdToGroupKey = new Map(currentOrder.map(metricId => [metricId, DASHBOARD_METRICS_GROUP_KEY]))
-          const nextOrder = reorderKanbanRowIds({
-            orderedRowIds: currentOrder,
-            availableRowIds: currentOrder,
-            rowIdToGroupKey,
-            draggedRowId: move.rowId,
-            targetGroupKey: move.targetGroupKey,
-            targetRowId: move.targetRowId,
-            position: move.position,
-          })
-          return areKanbanRowIdsEqual(currentOrder, nextOrder) ? current : nextOrder
-        })
-        return
-      }
       if (move.sourceGroupKey !== move.targetGroupKey) return
-      setCardOrderBySection(current => {
-        const section = model.sections.find(item => item.id === move.targetGroupKey)
-        if (!section) return current
-        const availableCardIds = section.cards.map(card => card.id)
-        if (!availableCardIds.includes(move.rowId)) return current
-        const currentOrder = reconcileKanbanRowIds(current[section.id], availableCardIds)
-        const rowIdToGroupKey = new Map(currentOrder.map(cardId => [cardId, section.id]))
-        const nextOrder = reorderKanbanRowIds({
-          orderedRowIds: currentOrder,
-          availableRowIds: currentOrder,
-          rowIdToGroupKey,
-          draggedRowId: move.rowId,
-          targetGroupKey: move.targetGroupKey,
-          targetRowId: move.targetRowId,
-          position: move.position,
-        })
-        return areKanbanRowIdsEqual(currentOrder, nextOrder) ? current : { ...current, [section.id]: nextOrder }
-      })
+      const ids = orderedIds(move.targetGroupKey)
+      if (!ids.includes(move.rowId)) return
+      const next = reorderKanbanRowIds({ orderedRowIds: ids, availableRowIds: ids,
+        rowIdToGroupKey: new Map(ids.map(id => [id, move.targetGroupKey])), draggedRowId: move.rowId,
+        targetGroupKey: move.targetGroupKey, targetRowId: move.targetRowId, position: move.position })
+      void updateDashboardWidgets(Object.fromEntries(next.map((id, order) => [`graph:${id}`, { order }]))).catch(() => undefined)
     },
   })
 
@@ -265,52 +88,12 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
     })
   }, [updateNode])
 
-  const commitMetricTextOverride = React.useCallback((metricId: string, field: keyof DashboardMetricTextOverride, nextValue: string) => {
-    const id = String(metricId || '').trim()
-    if (!id) return
-    const metric = model.metrics.find(item => item.id === id)
-    if (!metric) return
-    const baseValue = field === 'label' ? metric.label : metric.detail
-    const normalized = String(nextValue || '').trim()
-    setMetricTextOverrides(current => {
-      const currentEntry = current[id] || {}
-      const nextEntry: DashboardMetricTextOverride = { ...currentEntry }
-      if (!normalized || normalized === baseValue) {
-        delete nextEntry[field]
-      } else {
-        nextEntry[field] = normalized
-      }
-      const hasEntry = !!nextEntry.label || !!nextEntry.detail
-      if (!hasEntry && !current[id]) return current
-      const next = { ...current }
-      if (hasEntry) next[id] = nextEntry
-      else delete next[id]
-      return next
-    })
-  }, [model.metrics])
-
-  const commitCardTextOverride = React.useCallback((cardId: string, field: DashboardCardTextField, nextValue: string) => {
-    const id = String(cardId || '').trim()
-    if (!id) return
-    const card = model.sections.flatMap(section => section.cards).find(item => item.id === id)
-    if (!card) return
-    const baseValue = readDashboardCardTextField(card, field)
-    const normalized = String(nextValue || '').trim()
-    setCardTextOverrides(current => {
-      const currentEntry = current[id] || {}
-      const nextEntry: DashboardCardTextOverride = { ...currentEntry }
-      if (!normalized || normalized === baseValue) {
-        delete nextEntry[field]
-      } else {
-        nextEntry[field] = normalized
-      }
-      if (!hasDashboardCardTextOverride(nextEntry) && !current[id]) return current
-      const next = { ...current }
-      if (hasDashboardCardTextOverride(nextEntry)) next[id] = nextEntry
-      else delete next[id]
-      return next
-    })
-  }, [model.sections])
+  const commitMetricTextOverride = (id: string, field: 'label' | 'detail', value: string) => {
+    void updateDashboardWidget(`graph:${id}`, { [field === 'label' ? 'title' : 'subtitle']: value.trim() }).catch(() => undefined)
+  }
+  const commitCardTextOverride = (id: string, field: DashboardCardTextField, value: string) => {
+    void updateDashboardWidget(`graph:${id}`, { [field]: value.trim() }).catch(() => undefined)
+  }
 
   if (!active) return null
 
@@ -358,7 +141,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
               data-kg-dashboard-metrics-cards="1"
               {...dashboardDrag.createLaneDropProps(DASHBOARD_METRICS_GROUP_KEY)}
             >
-              {orderDashboardMetrics(displayMetrics, metricOrder).map(metric => {
+              {displayMetrics.map(metric => {
                 const metricDragProps = dashboardDrag.createCardDragProps({ rowId: metric.id, groupKey: DASHBOARD_METRICS_GROUP_KEY })
                 const metricDropProps = dashboardDrag.createCardDropProps({ rowId: metric.id, groupKey: DASHBOARD_METRICS_GROUP_KEY })
                 return (
@@ -397,7 +180,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
                     data-kg-dashboard-section-cards="1"
                     {...dashboardDrag.createLaneDropProps(section.id)}
                   >
-                    {orderDashboardCards(section.cards, cardOrderBySection[section.id]).map(card => {
+                    {section.cards.map(card => {
                       const cardDragProps = dashboardDrag.createCardDragProps({ rowId: card.id, groupKey: section.id })
                       const cardDropProps = dashboardDrag.createCardDropProps({ rowId: card.id, groupKey: section.id })
                       return (

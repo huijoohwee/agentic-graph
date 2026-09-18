@@ -8,9 +8,13 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { GroupPanelPaletteAction } from '@/features/toolbar/GroupPanelPaletteAction'
 
+import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
+const DashboardPropsPanel = React.lazy(() => import('@/components/DashboardCanvas/DashboardPropsPanel'))
+
 const EMPTY_WIDGET_REGISTRY: WidgetRegistryEntry[] = []
 
 export function FloatingPropsPanel() {
+  const inspection = useAgentRunWorkspace()
   const effectiveWidgetRegistry = useGraphStore(s => s.effectiveWidgetRegistry ?? EMPTY_WIDGET_REGISTRY)
   const canvasRenderMode = useGraphStore(s => s.canvasRenderMode)
   const canvas2dRenderer = useGraphStore(s => s.canvas2dRenderer)
@@ -20,6 +24,8 @@ export function FloatingPropsPanel() {
   )
   const storyboardRendererActive = canvasRenderMode === '2d' && canvas2dRenderer === 'storyboard'
   const widgetDragEnabled = storyboardRendererActive && widgetPaletteEntries.length > 0
+
+  if (inspection || (canvasRenderMode === '2d' && canvas2dRenderer === 'dashboard')) return <section aria-label="Props Panel"><React.Suspense fallback={<p>Loading widgets…</p>}><DashboardPropsPanel /></React.Suspense></section>
 
   return (
     <section

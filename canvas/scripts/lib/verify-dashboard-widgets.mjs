@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict'
+
+/** Exercise the actual existing Props surface against persisted Workspace FS configuration. */
+export async function verifyDashboardWidgets(page) {
+  const dashboard = page.getByRole('region', { name: 'Dashboard', exact: true })
+  await dashboard.getByRole('tab', { name: 'Graph statistics', exact: true }).click()
+  await dashboard.getByRole('button', { name: 'Configure widgets', exact: true }).click()
+  const props = page.getByRole('region', { name: 'Dashboard widgets', exact: true })
+  await props.getByLabel('Dashboard widget', { exact: true }).selectOption('graph:node-types')
+  await props.getByLabel('Title', { exact: true }).fill('My node types')
+  await props.getByLabel('Display', { exact: true }).selectOption('table')
+  await props.getByRole('button', { name: 'Save widget', exact: true }).click()
+  const card = dashboard.getByRole('group', { name: 'Dashboard card My node types', exact: true })
+  await card.waitFor()
+  assert.equal(await card.getByRole('img', { name: 'Dashboard bar chart' }).count(), 0)
+  assert.ok((await card.innerText()).length > 'My node types'.length, 'Table must retain data from the chart source')
+  await props.getByRole('button', { name: 'Remove widget', exact: true }).click()
+  await card.waitFor({ state: 'detached' })
+  await props.getByLabel('Add Dashboard widget', { exact: true }).selectOption('graph:node-types')
+  await props.getByRole('button', { name: 'Add widget', exact: true }).click()
+  await card.waitFor()
+  await props.getByLabel('Title', { exact: true }).fill('Node Types')
+  await props.getByLabel('Display', { exact: true }).selectOption('bar')
+  await props.getByRole('button', { name: 'Save widget', exact: true }).click()
+  await dashboard.getByRole('group', { name: 'Dashboard card Node Types', exact: true }).waitFor()
+  const source = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts')).getWorkspaceFs()).readFileText('/notes/dashboard.widgets.json'))
+  assert.equal(JSON.parse(source).widgets['graph:node-types'].title, 'Node Types')
+  assert.equal(source.includes('agent-run-inspection/v1'), false, 'Widget configuration must never persist run evidence')
+  await page.locator('[data-kg-floating-panel-root="true"]').getByRole('button', { name: 'Close', exact: true }).click()
+  await dashboard.getByRole('tab', { name: 'Agent Mission', exact: true }).click()
+  console.log('Dashboard Props widget CRUD and source configuration passed')
+}

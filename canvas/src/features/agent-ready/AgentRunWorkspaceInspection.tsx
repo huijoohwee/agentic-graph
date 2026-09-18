@@ -1,4 +1,7 @@
 import React from 'react'
+import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
+import { MarkdownExplorerSection } from '@/features/markdown-workspace/MarkdownExplorerSection'
+import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { agentRunInspectionJson } from './agentRunImport'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MarkdownWorkspaceMain } from '@/features/markdown-workspace/main/MarkdownWorkspaceMain'
@@ -20,6 +23,8 @@ const button = `rounded border px-2 py-1 text-xs ${UI_THEME_TOKENS.button.neutra
 export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' }) {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const themeMode = useGraphStore(s => s.resolvedThemeMode || 'light')
+  const [explorerOpen, setExplorerOpen] = React.useState(true), [sourceCollapsed, setSourceCollapsed] = React.useState(false)
+  const [source, setSource] = React.useState('/agent-mission.md')
   const [layout, setLayout] = React.useState<MarkdownWorkspaceLayoutMode>('editor')
   const [wrap, setWrap] = React.useState(true), [highlight, setHighlight] = React.useState(false)
   const editorRef = React.useRef<MonacoTextEditorHandle | null>(null)
@@ -48,6 +53,11 @@ export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' 
   }, [inspection])
   if (!workspace) return null
   const trace = inspection?.trace
+  const jsonSelected = source.endsWith('.json')
+  const entries: WorkspaceEntry[] = trace ? [
+    { path: '/agent-mission.manifest.json', parentPath: '/', kind: 'file', name: 'agent-mission.manifest.json', updatedAtMs: trace.observedAt },
+    { path: '/agent-mission.md', parentPath: '/', kind: 'file', name: 'agent-mission.md', updatedAtMs: trace.observedAt },
+  ] : []
   return <section aria-label="Agent run Editor Workspace inspection"
     className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden ${UI_THEME_TOKENS.panel.bg}`}>
     <header className="flex shrink-0 flex-wrap items-center gap-2 border-b p-2 text-xs" style={{ overflowWrap: 'anywhere' }}>
@@ -59,14 +69,21 @@ export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' 
       })}>Show Canvas</button>
     </header>
     {trace ? <div className="flex min-h-0 min-w-0 flex-1">
-      <MarkdownWorkspaceMain themeMode={themeMode} uiPanelTextFontClass="font-sans" uiPanelMonospaceTextClass="font-mono text-xs"
-        explorerOpen={false} setExplorerOpen={noop} layoutMode={layout} setLayoutMode={setLayout}
+      {explorerOpen && <aside className="kg-markdown-workspace-explorer flex h-full min-h-0 w-56 max-w-[40%] shrink-0 flex-col border-r" aria-label="Markdown Explorer">
+        <MarkdownExplorerSection title="Source Files" collapsed={sourceCollapsed} setCollapsed={setSourceCollapsed} scrollMode="primary" right={<span>{entries.length}</span>}>
+          <p className="p-2 text-xs">Agent Mission · read-only session</p>
+          <MarkdownFileTree entries={entries} readOnly expandedPaths={new Set(['/'])} toggleExpanded={noop} activePath={source} onSelectFile={setSource} />
+          <p className="p-2 text-xs">Available until this observation expires. Export explicitly to keep a copy.</p>
+        </MarkdownExplorerSection>
+      </aside>}
+      <MarkdownWorkspaceMain key={source} themeMode={themeMode} uiPanelTextFontClass="font-sans" uiPanelMonospaceTextClass="font-mono text-xs"
+        explorerOpen={explorerOpen} setExplorerOpen={setExplorerOpen} layoutMode={layout} setLayoutMode={setLayout}
         markdownWordWrap={wrap} setMarkdownWordWrap={setWrap} markdownTextHighlight={highlight} setMarkdownTextHighlight={setHighlight}
-        onToggleFullscreen={noop} presentationApiRef={presentationRef} isMarkdown activeText={markdown} setActiveText={noop}
-        jsonSourceText={json} passive disableEditorMutations disableViewerMutations activeDocumentKey={`agent-run-${trace.runId}.md`}
+        onToggleFullscreen={noop} presentationApiRef={presentationRef} isMarkdown={!jsonSelected} activeText={jsonSelected ? json : markdown} setActiveText={noop}
+        jsonSourceText={json} passive disableEditorMutations disableViewerMutations activeDocumentKey={source}
         highlightedLineRange={null} revealLineInEditor={noop} showInViewer={noop} showInPresentation={noop} showInGallery={noop}
-        editorUri={`inmemory://agent-run/${encodeURIComponent(trace.runId)}/${trace.subjectDigest || trace.observedAt}.md`}
-        editorLanguage="markdown" editorRef={editorRef} />
+        editorUri={`inmemory://agent-run/${encodeURIComponent(trace.runId)}/${trace.subjectDigest || trace.observedAt}${source}`}
+        editorLanguage={jsonSelected ? 'json' : 'markdown'} editorRef={editorRef} />
     </div> : <p className="p-3">Select a run in Dashboard to inspect its source.</p>}
   </section>
 }

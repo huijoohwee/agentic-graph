@@ -315,7 +315,7 @@ export function ToolbarToolMenu({
   const viewButtons = (
     <>
       {FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS.map(spec => {
-        if (spec.hidden) return null
+        if (spec.hidden || (inspectionWorkspace && spec.view !== 'propsPanel')) return null
         const Icon = spec.icon
         return (
           <IconButton
@@ -333,7 +333,7 @@ export function ToolbarToolMenu({
           </IconButton>
         )
       })}
-      {FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS.length > 0 ? (
+      {!inspectionWorkspace && FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS.length > 0 ? (
         <ToolbarDropdownSelect
           value={overflowValue}
           options={FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS}
@@ -398,7 +398,7 @@ export function ToolbarToolMenu({
     }
   }, [setFloatingPanelView])
 
-  if (inspectionWorkspace) return null
+  if (inspectionWorkspace && floatingPanelView !== 'propsPanel') return null
 
   if (floatingPanelMinimized) {
     return (

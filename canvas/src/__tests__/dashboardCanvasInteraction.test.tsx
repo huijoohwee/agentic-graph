@@ -1,3 +1,5 @@
+import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { DASHBOARD_WIDGETS_PATH } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
@@ -8,6 +10,12 @@ import type { GraphData } from '@/lib/graph/types'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 const waitFrame = () => new Promise(resolve => setTimeout(resolve, 0))
+
+async function waitForSavedDisplay(predicate: () => boolean) {
+  const deadline = Date.now() + 5000
+  while (!predicate() && Date.now() < deadline) await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
+  if (!predicate()) throw Error('Dashboard save did not reach the display: ' + await (await getWorkspaceFs()).readFileText(DASHBOARD_WIDGETS_PATH))
+}
 
 const buildDashboardDragGraph = (): GraphData => ({
   type: 'generic',
@@ -94,6 +102,8 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
+  const fs = await getWorkspaceFs(), previousConfiguration = await fs.readFileText(DASHBOARD_WIDGETS_PATH)
+  await fs.deleteEntry(DASHBOARD_WIDGETS_PATH, { mirrorToHost: false })
   const previousState = useGraphStore.getState()
   const previousSlice = {
     graphData: previousState.graphData,
@@ -157,6 +167,7 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
       await waitFrame()
     })
 
+    await waitForSavedDisplay(() => readOrder().join(',') === 'degree-leaders,node-types,edge-types')
     const afterOrder = readOrder()
     if (afterOrder.join(',') !== 'degree-leaders,node-types,edge-types') {
       throw new Error(`expected shared Dashboard card drag to reorder within section, got ${afterOrder.join(',')}`)
@@ -195,6 +206,7 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
       await waitFrame()
     })
 
+    await waitForSavedDisplay(() => readMetricOrder().join(',') === 'grid,nodes,edges,density,signals')
     const afterMetricOrder = readMetricOrder()
     if (afterMetricOrder.join(',') !== 'grid,nodes,edges,density,signals') {
       throw new Error(`expected shared Dashboard metric drag to reorder within metrics lane, got ${afterMetricOrder.join(',')}`)
@@ -204,6 +216,8 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
       root.unmount()
     })
     useGraphStore.setState(previousSlice)
+    await fs.deleteEntry(DASHBOARD_WIDGETS_PATH, { mirrorToHost: false })
+    if (previousConfiguration !== null) await fs.createFile({ parentPath: '/notes', name: 'dashboard.widgets.json', text: previousConfiguration, mirrorToHost: false })
     restore()
   }
 }
@@ -213,6 +227,8 @@ export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEdito
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
+  const fs = await getWorkspaceFs(), previousConfiguration = await fs.readFileText(DASHBOARD_WIDGETS_PATH)
+  await fs.deleteEntry(DASHBOARD_WIDGETS_PATH, { mirrorToHost: false })
   const previousState = useGraphStore.getState()
   const previousSlice = {
     graphData: previousState.graphData,
@@ -271,6 +287,7 @@ export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEdito
       await waitFrame()
     })
 
+    await waitForSavedDisplay(() => !!container.querySelector(cardSelector)?.textContent?.includes('Edited Node Type Trend'))
     const editedCard = container.querySelector(cardSelector)
     if (!editedCard?.textContent?.includes('Edited Node Type Trend')) {
       throw new Error('expected Dashboard card title edit to commit through the shared card text override path')
@@ -300,6 +317,7 @@ export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEdito
       await waitFrame()
     })
 
+    await waitForSavedDisplay(() => !!container.querySelector(cardSelector)?.textContent?.includes('Edited dashboard narrative'))
     const editedNarrativeCard = container.querySelector(cardSelector)
     if (!editedNarrativeCard?.textContent?.includes('Edited dashboard narrative')) {
       throw new Error('expected Dashboard card note edit to commit through the shared Storyboard multiline editor path')
@@ -309,6 +327,8 @@ export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEdito
       root.unmount()
     })
     useGraphStore.setState(previousSlice)
+    await fs.deleteEntry(DASHBOARD_WIDGETS_PATH, { mirrorToHost: false })
+    if (previousConfiguration !== null) await fs.createFile({ parentPath: '/notes', name: 'dashboard.widgets.json', text: previousConfiguration, mirrorToHost: false })
     restore()
   }
 }

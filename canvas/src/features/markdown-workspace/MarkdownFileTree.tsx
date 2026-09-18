@@ -48,6 +48,7 @@ const buildTree = (entries: WorkspaceEntry[]): Node => {
 
 export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   entries: WorkspaceEntry[]
+  readOnly?: boolean
   expandedPaths: Set<string>
   toggleExpanded: (path: WorkspacePath) => void
   activePath: WorkspacePath | null
@@ -208,6 +209,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             onContextMenu={event => {
               event.preventDefault()
               event.stopPropagation()
+              if (props.readOnly) return
               const pos = clampOverlayTopLeftFullyInViewport({
                 pos: { left: event.clientX, top: event.clientY },
                 size: { width: 220, height: 260 },
