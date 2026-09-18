@@ -90,10 +90,16 @@ try {
     assert.ok(Math.abs(bounds.left) < 1 && Math.abs(bounds.width - bounds.viewportWidth) < 1,
       `Editor overlay must not apply a second canvas inset: ${JSON.stringify(bounds)}`)
   }
+  const initialViewport = page.viewportSize()
+  assert.ok(initialViewport, 'XR smoke requires a bounded viewport')
   await assertFullCanvas()
   await page.setViewportSize({ width: 844, height: 964 })
   await assertFullCanvas()
   await page.setViewportSize({ width: 1280, height: 964 })
+  await assertFullCanvas()
+  // Responsive geometry checks must not resize the remaining software-rendered XR workload.
+  await page.setViewportSize(initialViewport)
+  await assertFullCanvas()
   assert.equal(
     await page.locator('[data-kg-xr-camera-aspect-mask="1"]').count(),
     0,
@@ -317,6 +323,17 @@ try {
   assert.equal(await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-11-source-asset'), savedAssetId)
   assert.equal(await runPackaging.isDisabled(), false, 'AC-11 requires persisted captured frames after reload')
   assert.equal(await publishCrossDevice.isDisabled(), false, 'explicit existing-storage publish requires the opened capture')
+  const publishRequests = []
+  const publishStartedAt = Date.now()
+  const recordPublishRequest = (event, request, status) => {
+    const path = new URL(request.url()).pathname
+    if (!path.startsWith('/api/storage/')) return
+    publishRequests.push({ event, path, status, elapsedMs: Date.now() - publishStartedAt })
+    if (publishRequests.length > 48) publishRequests.shift()
+  }
+  page.on('request', request => recordPublishRequest('request', request))
+  page.on('response', response => recordPublishRequest('response', response.request(), response.status()))
+  page.on('requestfailed', request => recordPublishRequest('failed', request, request.failure()?.errorText))
   const publishEventStart = storageFixture.events.length
   await publishCrossDevice.click()
   await page.waitForFunction(() => (
@@ -330,6 +347,7 @@ try {
   assert.equal(publishState.phase, 'ready', `explicit publish failed closed: ${JSON.stringify({
     publishState,
     events: storageFixture.events.slice(publishEventStart),
+    publishRequests,
     browserErrors,
   })}`)
   const publishEvents = storageFixture.events.slice(publishEventStart)
