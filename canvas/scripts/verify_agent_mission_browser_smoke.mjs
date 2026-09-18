@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
 import { verifyAgentMissionSourceFiles, verifyDashboardWidgets, verifyFullCanvas } from './lib/verify-dashboard-widgets.mjs'
+import { verifyCanvasContainerSizing } from './lib/verify-canvas-container-sizing.mjs'
 import { createMissionPhaseObservation } from './lib/mission-phase-observation.mjs'
 const phaseObservation = createMissionPhaseObservation()
 
@@ -326,6 +327,7 @@ async function verifyApexActivation(width) {
   for (const name of ['Show JSON editor pane', 'Show Markdown editor pane', 'Show Viewer preview pane'])
     await editor.getByRole('checkbox', { name, exact: true }).check()
   await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ timeout: 60000 })
+  await verifyCanvasContainerSizing(page)
   await page.screenshot({ path: resolve(output, `apex-${width}-inspection.png`) })
   await editor.getByRole('button', { name: 'Close', exact: true }).click()
   await canvas.waitFor({ state: 'visible' })

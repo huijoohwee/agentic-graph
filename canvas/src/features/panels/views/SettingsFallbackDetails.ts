@@ -60,8 +60,8 @@ const WORKSPACE_PRINT_FALLBACK_DETAILS = Object.fromEntries(
     },
   ]),
 )
-
 export const FALLBACK_DETAILS: Record<string, { area?: string; responsibility?: string; notes?: string }> = {
+  'canvas.container.sizing': { area: 'Canvas View Mode', responsibility: 'Canvas View Mode container sizing', notes: 'Full (default) fills the canvas behind Editor Workspace and panels. Inset fits the available space around open Editor Workspace, MainPanel, FloatingPanel and BottomPanel. Applies to all Canvas View Modes and is saved in this browser.' },
   ...WORKSPACE_LAYOUT_FALLBACK_DETAILS,
   ...WORKSPACE_PRINT_FALLBACK_DETAILS,
   'workspace.sync.seed.enabled': {

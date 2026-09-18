@@ -505,6 +505,22 @@
     "notes": "",
     "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L566"
   },
+  "canvas.container.sizing": {
+    "area": "Canvas View Mode",
+    "modules": [
+      "canvas/src/features/settings/registry-ui.workspace.ts"
+    ],
+    "classes": [
+      "window"
+    ],
+    "functions": [],
+    "responsibility": "Canvas View Mode container sizing",
+    "imports": [
+      "localStorage"
+    ],
+    "notes": "Full (default) fills the canvas behind Editor Workspace and panels. Inset fits the available space around open Editor Workspace, MainPanel, FloatingPanel and BottomPanel. Applies to all Canvas View Modes and is saved in this browser.",
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L62"
+  },
   "canvas3dMode": {
     "area": "Canvas Rendering",
     "modules": [
@@ -8851,7 +8867,7 @@
       "localStorage"
     ],
     "notes": "Local filesystem paths and Cloudflare dashboard D1 URLs normalize to the configured storage base URL.",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L133"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L139"
   },
   "workspace.import.shareExportRootPath": {
     "area": "Import / Export",
@@ -8865,7 +8881,7 @@
       "localStorage"
     ],
     "notes": "Accepts workspace-like roots such as /docs_ and also normalizes sibling absolute filesystem paths under the current workspace mirror base root.",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L147"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L153"
   },
   "workspace.import.videoDownload.outputDir": {
     "area": "Workspace",
@@ -8879,7 +8895,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L157"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L163"
   },
   "workspace.split.divider.gap": {
     "area": "Workspace",
@@ -9033,7 +9049,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L103"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L109"
   },
   "workspace.sync.docsMirror.rootPath": {
     "area": "Workspace Storage Sync",
@@ -9047,7 +9063,7 @@
       "localStorage"
     ],
     "notes": "Defaults to VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT when no MainPanel override is saved.",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L63"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L69"
   },
   "workspace.sync.seed.enabled": {
     "area": "Workspace Storage Sync",
@@ -9061,7 +9077,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L73"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L79"
   },
   "workspace.sync.seed.idleMaxMs": {
     "area": "Workspace Storage Sync",
@@ -9075,7 +9091,7 @@
       "localStorage"
     ],
     "notes": "Unit: ms, clamped to [1000, 300000]",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L93"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L99"
   },
   "workspace.sync.seed.pollMs": {
     "area": "Workspace Storage Sync",
@@ -9089,7 +9105,7 @@
       "localStorage"
     ],
     "notes": "Unit: ms, clamped to [1000, 60000]",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L83"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L89"
   },
   "workspace.sync.sourceFiles.debounceMs": {
     "area": "Source File Management",
@@ -9103,7 +9119,7 @@
       "localStorage"
     ],
     "notes": "Unit: ms, clamped to [100, 10000]; applies to automated docs mirror and workspace-FS refreshes.",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L123"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L129"
   },
   "workspace.sync.sourceFiles.docsOnly": {
     "area": "Source File Management",
@@ -9117,7 +9133,7 @@
       "localStorage"
     ],
     "notes": "Default automated paths are the configured docs mirror plus the configured chat workspace root; Import local files remains manual-only.",
-    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L113"
+    "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L119"
   },
   "workspaceAutosaveEnabled": {
     "area": "UI",

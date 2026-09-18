@@ -54,6 +54,7 @@ export type LsKeyOwner =
 
 export const LS_KEY_OWNERS: Partial<Record<LsKeyId, LsKeyOwner>> = {
   overlayOpacity: 'ui.overlayOpacity',
+  canvasContainerSizing: 'ui.workspace',
   panelOpacity: 'ui.panelOpacity',
   toolbarOpacity: 'ui.toolbarOpacity',
   iconScale: 'ui.icons',

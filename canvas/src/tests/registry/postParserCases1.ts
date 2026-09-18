@@ -2,6 +2,9 @@ import { TEST_CASES_POST_PARSER_1_PREFIX } from './postParserCases1Prefix'
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ...TEST_CASES_POST_PARSER_1_PREFIX,
+  ["ui.canvasContainerSizing.defaultFull","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingDefaultsToFull"],
+  ["ui.canvasContainerSizing.editorAndPanels","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingAvoidsEditorAndPanels"],
+  ["ui.canvasContainerSizing.compactAndCovered","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingHandlesCompactAndCoveredViews"],
   ["testFixture.docsSsot.LocalReadsStayFreshAcrossRoots","@/__tests__/docsSsotFixtureResolution.test","testDocsSsotFixtureLocalReadsStayFreshAcrossRoots"],
   ["testFixture.docsSsot.MissingAndInvalidLocalInputsFailWithoutNetwork","@/__tests__/docsSsotFixtureResolution.test","testDocsSsotFixtureMissingAndInvalidLocalInputsFailWithoutNetwork"],
   ["testFixture.docsSsot.DefaultRootUsesCanonicalWorkspaceOwner","@/__tests__/docsSsotFixtureResolution.test","testDocsSsotFixtureDefaultRootUsesCanonicalWorkspaceOwner"],

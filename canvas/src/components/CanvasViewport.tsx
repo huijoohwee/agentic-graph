@@ -1,4 +1,5 @@
 import React from 'react'
+import { CanvasViewContainer } from '@/components/CanvasViewContainer'
 import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import { useShallow } from 'zustand/react/shallow'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config.render'
@@ -97,7 +98,7 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
 export function CanvasViewport(props: CanvasViewportProps) {
   const inspection = useAgentRunWorkspace()
   if (inspection && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
-    <React.Suspense fallback={<p>Loading run canvas…</p>}><DashboardCanvasLazy active /></React.Suspense>
+    <CanvasViewContainer><React.Suspense fallback={<p>Loading run canvas…</p>}><DashboardCanvasLazy active /></React.Suspense></CanvasViewContainer>
   </section>
   return <AuthoredCanvasViewport {...props} />
 }
@@ -327,7 +328,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
                   ? 'Canvas Preview Only'
                   : 'Canvas viewport'}
     >
-      <React.Suspense fallback={null}>
+      <CanvasViewContainer configurable={variant === 'workspace'}><React.Suspense fallback={null}>
         {liveCanvasHeroVisible && liveCanvasHeroSource ? (
           <LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles}
             visible={liveCanvasHeroVisible} onEnter={dismissLiveCanvasHero} />
@@ -486,6 +487,8 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
           ? <CanvasSourceInitializationError error={sourceFilesBootstrap.error} />
           : null}
 
+      </React.Suspense></CanvasViewContainer>
+      <React.Suspense fallback={null}>
         {variant === 'workspace' ? (
           <>
             {layout === 'full' && !documentSwitchOwnsViewport && !homePreviewVisible ? (

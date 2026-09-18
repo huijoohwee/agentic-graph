@@ -3,9 +3,12 @@ import assert from 'node:assert/strict'
 export async function verifyFullCanvas(page) {
   const pane = await page.getByRole('region', { name: 'Canvas pane', exact: true }).boundingBox()
   const viewport = await page.locator('[data-kg-canvas-viewport-root="1"]').boundingBox()
+  const container = await page.locator('[data-kg-canvas-view-container="full"]').boundingBox()
   assert.ok(pane && viewport && Math.abs(pane.x - viewport.x) < 1 && Math.abs(pane.y - viewport.y) < 1
     && Math.abs(pane.width - viewport.width) < 1 && Math.abs(pane.height - viewport.height) < 1,
     'Every renderer must fill the shared canvas beneath workspace overlays')
+  assert.ok(container && Math.abs(container.x - pane.x) < 1 && Math.abs(container.width - pane.width) < 1,
+    'Full sizing is the default for the shared renderer container')
 }
 
 export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored) {
