@@ -60,7 +60,10 @@ try {
   await seedRow.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   // Default startup now applies this same XR source. Explicitly leave it first
   // so the selection test still proves teardown and source-owned activation.
+  await page.locator('[data-kg-xr-v2-authoring-runtime="1"]').waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   await sourceFiles.getByRole('button', { name: 'File README.md', exact: true }).click()
+  await page.getByRole('button', { name: 'Heading Workspace Seed Authority', exact: true })
+    .waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   await page.locator('[data-kg-xr-v2-authoring-runtime="1"]').waitFor({ state: 'detached', timeout: coldStartTimeoutMs })
   assert.equal(
     await page.locator('[data-kg-xr-v2-authoring-runtime="1"]').count(),
