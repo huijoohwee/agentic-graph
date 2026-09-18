@@ -1,3 +1,4 @@
+import { isKeyTypeValue, unwrapKeyTypeValue as unwrapTypedValue } from '@/lib/graph/keyTypeValue'
 import yaml from 'js-yaml'
 import type { GraphNode } from '@/lib/graph/types'
 import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
@@ -9,13 +10,8 @@ const STRUCTURED_ENVELOPE_KEYS = ['result', 'response', 'structuredContent'] as 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
-const unwrapTypedValue = (value: unknown): unknown =>
-  isRecord(value) && Object.prototype.hasOwnProperty.call(value, 'value')
-    ? value.value
-    : value
-
 const replaceTypedValue = (value: unknown, nextValue: unknown): unknown =>
-  isRecord(value) && Object.prototype.hasOwnProperty.call(value, 'value')
+  isKeyTypeValue(value)
     ? { ...value, value: nextValue }
     : nextValue
 

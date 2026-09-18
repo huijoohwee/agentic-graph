@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-
+import { readKtvWorkspaceSeedFlow, parseYamlFrontmatter } from '../workspace-seed-frontmatter.mjs'
 import {
   AGENTIC_OS_WORKSPACE_SEED_INVENTORY,
   CITY_SIM_SEED_RELATIVE_PATH,
@@ -16,7 +16,6 @@ import {
   resolveWorkspaceSeedSiblingRootsFromGitCommonDir,
   verifyWorkspaceSeedAuthority,
 } from '../workspace-seed-authority.mjs'
-
 const canonicalSeed = await readFile(new URL('../../docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md', import.meta.url), 'utf8')
 const flightRuntimeSeed = `---
 status: "runtime-ready"
@@ -131,7 +130,24 @@ test('accepts the exact authored and projection inventories', async t => {
   t.after(() => rm(roots.root, { recursive: true, force: true }))
   await assert.doesNotReject(() => verifyWorkspaceSeedAuthority(roots))
 })
-
+test('XR source gates reject malformed or partially typed KTV graph fields', () => {
+  const raw = parseYamlFrontmatter('XR demo', canonicalSeed).flow
+  assert.equal(readKtvWorkspaceSeedFlow('XR demo', raw).nodes.length, 29)
+  for (const field of ['direction', 'node.id', 'node.properties', 'edge.source']) {
+    for (const defect of ['plain', 'missing-value', 'wrong-key', 'wrong-type', 'extra-key']) {
+      const flow = structuredClone(raw)
+      const [kind, key = kind] = field.split('.')
+      const row = kind === 'node' ? flow.nodes[0] : kind === 'edge' ? flow.edges[0] : flow
+      const cell = row[key]
+      if (defect === 'plain') row[key] = cell.value
+      if (defect === 'missing-value') delete cell.value
+      if (defect === 'wrong-key') cell.key = 'wrong'
+      if (defect === 'wrong-type') cell.type = 'boolean'
+      if (defect === 'extra-key') cell.extra = true
+      assert.throws(() => readKtvWorkspaceSeedFlow('XR demo', flow), /KTV flow/, `${field}: ${defect}`)
+    }
+  }
+})
 test('rejects drift in the scoped XR edited-media evidence projection', async t => {
   const mutations = [
     ['opened XR bottom panel', 'kgBottomPanelOpen: false', 'kgBottomPanelOpen: true'],
@@ -163,41 +179,25 @@ test('rejects drift in the scoped XR edited-media evidence projection', async t 
       '      integration_result_schema: "agentic-device-integration-result/v1"',
       '      integration_result_schema: "agentic-device-integration-result/v1"\n      deployment_receipt: null',
     ],
-    [
-      'extra proof node key',
-      '    - id: "xr_edited_media_proof"\n      type: "XrDemoValidation"',
-      '    - id: "xr_edited_media_proof"\n      extraNodeState: "forbidden"\n      type: "XrDemoValidation"',
-    ],
-    [
-      'extra proof position key',
-      '      pos: {x: 880, y: 300}',
-      '      pos: {x: 880, y: 300, z: 0}',
-    ],
-    [
-      'extra proof properties key',
-      '        role: "downstream canonical-main evidence projection"',
-      '        role: "downstream canonical-main evidence projection"\n        deploymentState: "none"',
-    ],
-    [
-      'extra proof edge key',
-      '    - source: "xr_demo_entry"\n      target: "xr_edited_media_proof"',
-      '    - source: "xr_demo_entry"\n      extraEdgeState: "forbidden"\n      target: "xr_edited_media_proof"',
-    ],
-    [
-      'duplicate proof node',
-      '  edges:\n    - source: "xr_demo_entry"',
-      '    - id: "xr_edited_media_proof"\n      type: "Duplicate"\n  edges:\n    - source: "xr_demo_entry"',
-    ],
-    [
-      'extra incident proof edge',
-      '      label: "inspect scoped proof"\n',
-      '      label: "inspect scoped proof"\n    - source: "xr_edited_media_proof"\n      target: "xr_demo_entry"\n      label: "return"\n',
-    ],
-    [
-      'wrong proof topology',
-      '    - source: "xr_demo_entry"\n      target: "xr_edited_media_proof"\n      label: "inspect scoped proof"',
-      '    - source: "xr_runtime_gate"\n      target: "xr_edited_media_proof"\n      label: "inspect scoped proof"',
-    ],
+    ['extra proof node key',
+      '    - id: {key: id, type: string, value: "xr_edited_media_proof"}',
+      '    - id: {key: id, type: string, value: "xr_edited_media_proof"}\n      extraNodeState: {key: extraNodeState, type: string, value: "forbidden"}'],
+    ['extra proof position key',
+      'value: {"x":880,"y":300}', 'value: {"x":880,"y":300,"z":0}'],
+    ['extra proof properties key',
+      '"role":"downstream canonical-main evidence projection"',
+      '"role":"downstream canonical-main evidence projection","deploymentState":"none"'],
+    ['extra proof edge key',
+      '      target: {key: target, type: string, value: "xr_edited_media_proof"}',
+      '      target: {key: target, type: string, value: "xr_edited_media_proof"}\n      extraEdgeState: {key: extraEdgeState, type: string, value: "forbidden"}'],
+    ['duplicate proof node', '  edges:\n    - source: {key:',
+      '    - id: {key: id, type: string, value: "xr_edited_media_proof"}\n      type: {key: type, type: string, value: "Duplicate"}\n  edges:\n    - source: {key:'],
+    ['extra incident proof edge',
+      '      label: {key: label, type: string, value: "inspect scoped proof"}\n',
+      '      label: {key: label, type: string, value: "inspect scoped proof"}\n    - source: {key: source, type: string, value: "xr_edited_media_proof"}\n      target: {key: target, type: string, value: "xr_demo_entry"}\n      label: {key: label, type: string, value: "return"}\n'],
+    ['wrong proof topology',
+      '    - source: {key: source, type: string, value: "xr_demo_entry"}\n      target: {key: target, type: string, value: "xr_edited_media_proof"}',
+      '    - source: {key: source, type: string, value: "xr_runtime_gate"}\n      target: {key: target, type: string, value: "xr_edited_media_proof"}'],
   ]
   for (const [label, from, to] of mutations) {
     await t.test(label, async t => {

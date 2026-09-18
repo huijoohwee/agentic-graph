@@ -7,6 +7,7 @@ import {
   isRecord,
   normalizePresetToken,
   parseYamlFrontmatter,
+  readKtvWorkspaceSeedFlow,
   readBooleanPreset,
   readCanvasRenderMode,
   readCanvasSurfaceMode,
@@ -19,7 +20,7 @@ export function requireXrV2RuntimeIdentity({ source, seedBasename, seedRelativeP
   const readiness = isRecord(frontmatter.runtime_readiness) ? frontmatter.runtime_readiness : {}
   const permissions = isRecord(frontmatter.permission_control) ? frontmatter.permission_control : {}
   const criteria = Array.isArray(frontmatter.acceptance_criteria) ? frontmatter.acceptance_criteria : []
-  const flow = isRecord(frontmatter.flow) ? frontmatter.flow : {}
+  const flow = readKtvWorkspaceSeedFlow(seedBasename, frontmatter.flow)
   const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
   const connections = Array.isArray(flow.edges) ? flow.edges : []
   const missing = []

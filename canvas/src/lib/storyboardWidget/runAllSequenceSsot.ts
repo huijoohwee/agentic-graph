@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue } from '@/lib/graph/keyTypeValue'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import {
   FLOW_ANNOTATION_ENGINE_NODE_TYPE_ID,
@@ -26,16 +27,12 @@ export const FLOW_RUN_ALL_PHASES: readonly FlowRunAllPhase[] = [
 const SCENE_HINT_KEYWORDS = ['scene', 'shot', 's01', 's02', 's03', 's04']
 
 function normalizeText(value: unknown): string {
-  if (value && typeof value === 'object' && !Array.isArray(value) && 'value' in value) {
-    return normalizeText((value as { value?: unknown }).value)
-  }
+  value = unwrapKeyTypeValue(value)
   return String(value || '').trim().toLowerCase()
 }
 
 function normalizeId(value: unknown): string {
-  if (value && typeof value === 'object' && !Array.isArray(value) && 'value' in value) {
-    return normalizeId((value as { value?: unknown }).value)
-  }
+  value = unwrapKeyTypeValue(value)
   return String(value || '').trim()
 }
 

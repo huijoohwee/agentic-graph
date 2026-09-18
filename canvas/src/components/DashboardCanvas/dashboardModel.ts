@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue as unwrapGraphValue } from '@/lib/graph/keyTypeValue'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
@@ -91,12 +92,6 @@ const titleCase = (value: string): string => {
   return cleaned.replace(/\b\w/g, char => char.toUpperCase())
 }
 
-const unwrapGraphValue = (value: unknown): unknown => {
-  if (isPlainObject(value) && 'value' in value && ('type' in value || 'key' in value)) {
-    return value.value
-  }
-  return value
-}
 
 const readGraphMetadataText = (graphData: GraphData | null | undefined, keys: readonly string[]): string => {
   const metadata = graphData?.metadata

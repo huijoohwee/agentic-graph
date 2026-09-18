@@ -1,4 +1,5 @@
 import { load as loadYaml } from 'js-yaml'
+import { normalizeKeyTypeValueRecord } from '../canvas/src/lib/graph/keyTypeValue.ts'
 
 export const isRecord = value => (
   !!value && typeof value === 'object' && !Array.isArray(value)
@@ -27,6 +28,31 @@ export const parseYamlFrontmatter = (basename, source) => {
     )
   }
   return frontmatter
+}
+
+// Keep source gates on the same KTV decoder as the Editor and canvas. Structured
+// payloads inside object/array values keep their own runtime schema unchanged.
+export const readKtvWorkspaceSeedFlow = (basename, rawFlow) => {
+  if (!isRecord(rawFlow)) throw new Error(`${basename} requires a KTV flow object`)
+  const { nodes, edges, ...settings } = rawFlow
+  const warnings = []
+  const normalize = (rawRecord, recordPath) => normalizeKeyTypeValueRecord({
+    rawRecord, recordPath, warnings, requireTyped: true,
+  })
+  const readRows = (rows, key) => {
+    if (!Array.isArray(rows)) throw new Error(`${basename} requires flow.${key}=array`)
+    return rows.map((row, index) => {
+      if (!isRecord(row)) throw new Error(`${basename} requires flow.${key}[${index}]=object`)
+      return normalize(row, `flow.${key}[${index}]`)
+    })
+  }
+  const flow = {
+    ...normalize(settings, 'flow'),
+    nodes: readRows(nodes, 'nodes'),
+    edges: readRows(edges, 'edges'),
+  }
+  if (warnings.length) throw new Error(`${basename} has invalid KTV flow: ${warnings.join('; ')}`)
+  return flow
 }
 
 const normalizePresetToken = value => String(value || '')

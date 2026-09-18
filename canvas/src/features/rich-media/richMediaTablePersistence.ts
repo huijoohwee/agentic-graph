@@ -1,3 +1,4 @@
+import { isKeyTypeValue as isPropertyEnvelope } from '@/lib/graph/keyTypeValue'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import {
@@ -8,15 +9,8 @@ import {
 export const GENERATED_MARKDOWN_PIPE_TABLE_FORMAT = 'markdown-pipe-table'
 export const GENERATED_MARKDOWN_PIPE_TABLE_MIME_TYPE = 'text/markdown; charset=utf-8'
 
-type PropertyEnvelope = Record<string, unknown> & { value: unknown }
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
-
-const isPropertyEnvelope = (value: unknown): value is PropertyEnvelope =>
-  isRecord(value)
-  && Object.prototype.hasOwnProperty.call(value, 'value')
-  && (Object.prototype.hasOwnProperty.call(value, 'key') || Object.prototype.hasOwnProperty.call(value, 'type'))
 
 const readScalar = (value: unknown): unknown => unwrapGraphCellValue(value)
 

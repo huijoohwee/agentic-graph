@@ -6,7 +6,7 @@ import { requireXrV2RuntimeIdentity } from './workspace-seed-xr-v2-authority.mjs
 import {
   isRecord,
   normalizePresetToken,
-  parseYamlFrontmatter,
+  parseYamlFrontmatter, readKtvWorkspaceSeedFlow,
   readBooleanPreset,
   readCanvas2dRenderer,
   readCanvasRenderMode,
@@ -150,7 +150,7 @@ const requirePhysicsEditedMediaEvidence = source => {
   const runtime = isRecord(evidence.canonical_runtime_reconciliation)
     ? evidence.canonical_runtime_reconciliation
     : {}
-  const flow = isRecord(frontmatter.flow) ? frontmatter.flow : {}
+  const flow = readKtvWorkspaceSeedFlow(PHYSICS_SEED_BASENAME, frontmatter.flow)
   const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
   const connections = Array.isArray(flow.edges) ? flow.edges : []
   const missing = []

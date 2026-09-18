@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue as unwrapValidationValue } from '@/lib/graph/keyTypeValue'
 import { readEnvString } from '@/lib/config.env'
 import type { WorkspaceImportUrlOpts } from '@/features/markdown-explorer/workspaceActionBridge'
 
@@ -61,10 +62,6 @@ export function buildVideoAgentValidationUrlOptions(urls: readonly string[]): Vi
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 
-const unwrapValidationValue = (value: unknown): unknown => {
-  if (!isRecord(value)) return value
-  return 'value' in value ? value.value : value
-}
 
 const readRecord = (value: unknown): Record<string, unknown> | null => {
   const unwrapped = unwrapValidationValue(value)

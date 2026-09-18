@@ -251,15 +251,15 @@ test('XR v2 workspace seed rejects evidence and cross-device claim drift', async
     ['second XR Canvas prohibition', 'second_r3f_canvas_forbidden: true', 'second_r3f_canvas_forbidden: false'],
     ['AC-4 evidence', 'evidence: browser-observable-after-selected-saved-asset render', 'evidence: browser-observed'],
     ['AC-4 promotion', 'promotion_boundary: physical four-tier viewer matrix, hardened shared storage, and two-device reopen', 'promotion_boundary: none'],
-    ['AC-4 evidence state', 'evidenceState: \"browser-observable-after-saved-asset-render\"', 'evidenceState: \"browser-backed\"'],
+    ['AC-4 evidence state', '"evidenceState":\"browser-observable-after-saved-asset-render\"', '"evidenceState":\"browser-backed\"'],
     ['AC-4 output', 'Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence.', 'Session entry proves viewer readiness.'],
     ['AC-11 evidence', 'evidence: browser-observable-after-explicit-package-and-play action', 'evidence: browser-backed'],
     ['AC-11 promotion', 'promotion_boundary: target-browser user-capture track and codec preservation', 'promotion_boundary: none'],
-    ['AC-11 evidence state', 'evidenceState: \"browser-observable-after-explicit-action\"', 'evidenceState: \"browser-backed\"'],
+    ['AC-11 evidence state', '"evidenceState":\"browser-observable-after-explicit-action\"', '"evidenceState":\"browser-backed\"'],
     ['AC-11 output', 'Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances.', 'Packaging is assumed.'],
     ['AC-12 evidence', 'evidence: browser-observable-after-explicit-local-connected-preview action', 'evidence: browser-backed'],
     ['AC-12 promotion', 'promotion_boundary: physical two-device transport and measured latency', 'promotion_boundary: none'],
-    ['AC-12 evidence state', 'evidenceState: \"browser-observable-after-explicit-action\"', 'evidenceState: \"browser-backed\"'],
+    ['AC-12 evidence state', '"evidenceState":\"browser-observable-after-explicit-action\"', '"evidenceState":\"browser-backed\"'],
     ['AC-12 output', 'Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload.', 'Connected preview is assumed.'],
   ]
   const source = readFileSync(resolve(REPOSITORY_ROOT, XR_V2_SEED_RELATIVE_PATH), 'utf8')

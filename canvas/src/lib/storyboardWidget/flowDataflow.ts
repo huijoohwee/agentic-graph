@@ -39,13 +39,7 @@ const readPlainObject = (value: unknown): Record<string, unknown> | null => {
   return isPlainObject(value) ? (value as Record<string, unknown>) : null
 }
 const readPersistedPropertyObject = (value: unknown): Record<string, unknown> | null => {
-  const raw = readPlainObject(value)
-  if (!raw) return null
-  const logical = Object.prototype.hasOwnProperty.call(raw, 'value')
-    && (Object.prototype.hasOwnProperty.call(raw, 'key') || Object.prototype.hasOwnProperty.call(raw, 'type'))
-    ? unwrapGraphCellValue(raw)
-    : raw
-  return readPlainObject(logical)
+  return readPlainObject(unwrapGraphCellValue(value))
 }
 function isStoppedFlowValue(value: unknown): boolean { return value == null }
 

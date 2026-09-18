@@ -1,3 +1,4 @@
+import { isKeyTypeValue as isTypedPropertyEnvelope } from '@/lib/graph/keyTypeValue'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config'
 import { normalizeGeneratedRichMediaTableProperties } from '@/features/rich-media/richMediaTablePersistence'
 import { isCanonicalNodeIdEqual, resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
@@ -30,14 +31,6 @@ const STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LEGACY_MAX_DELTA_X =
   STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_OFFSET_X + RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.width * 2
 const STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LEGACY_MAX_DELTA_Y =
   RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.height * 4
-
-const isTypedPropertyEnvelope = (
-  value: unknown,
-): value is Record<string, unknown> & { value: unknown } => (
-  isPlainObject(value)
-  && Object.prototype.hasOwnProperty.call(value, 'value')
-  && (Object.prototype.hasOwnProperty.call(value, 'key') || Object.prototype.hasOwnProperty.call(value, 'type'))
-)
 
 const mergeStoryboardWidgetWorkflowPropertyValues = (
   current: Record<string, unknown>,

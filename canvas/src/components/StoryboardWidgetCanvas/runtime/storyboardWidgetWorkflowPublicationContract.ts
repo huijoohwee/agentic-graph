@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue } from '@/lib/graph/keyTypeValue'
 import type { ImageToThreeJsRunInput } from '@/features/image-to-threejs/imageToThreeJsContract'
 import type { AnnotationRunResult } from '@/features/visual-annotation-engine'
 import type { GraphNode } from '@/lib/graph/types'
@@ -11,9 +12,7 @@ import {
 } from './storyboardWidgetRunExecutionAnchor'
 
 export const readStoryboardWidgetWorkflowPublicationString = (value: unknown): string => {
-  const scalar = value && typeof value === 'object' && !Array.isArray(value) && 'value' in value
-    ? (value as { value?: unknown }).value
-    : value
+  const scalar = unwrapKeyTypeValue(value)
   return typeof scalar === 'string' ? scalar.trim() : ''
 }
 

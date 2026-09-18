@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue as unwrapTypedEnvelope } from '@/lib/graph/keyTypeValue'
 import { hashText } from '@/features/parsers/hash'
 import {
   FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
@@ -54,18 +55,6 @@ function cleanIdPart(value: unknown): string {
     .toLowerCase()
 }
 
-function unwrapTypedEnvelope(value: unknown, expectedKey?: string): unknown {
-  if (!isRecord(value)) return value
-  const keys = Object.keys(value)
-  const exactEnvelope = keys.length === 3
-    && Object.prototype.hasOwnProperty.call(value, 'key')
-    && Object.prototype.hasOwnProperty.call(value, 'type')
-    && Object.prototype.hasOwnProperty.call(value, 'value')
-  if (!exactEnvelope) return value
-  const key = asString(value.key)
-  if (expectedKey && key && key !== expectedKey) return value
-  return value.value
-}
 
 function readRenderOn(value: unknown): string[] {
   const raw = unwrapTypedEnvelope(value)

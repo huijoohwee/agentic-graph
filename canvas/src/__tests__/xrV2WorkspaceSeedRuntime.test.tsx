@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { load as loadYaml, dump as dumpYaml } from 'js-yaml'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
+import { normalizeKeyTypeValueRecord } from '@/lib/graph/keyTypeValue'
 
 import type { XrAuthoringEcsRuntimeSnapshot } from '@/features/agentic-ecs/xrAuthoringEcsRuntime'
 import {
@@ -173,6 +176,41 @@ test('XR v2 uses the shared Physics lifecycle owner', () => {
   )
   assert.equal(isXrPhysicsRunReadyDemoActive(path, source), true)
   assert.equal(isXrPhysicsRuntimeRunReadyDemoActive(path, source), true)
+})
+
+test('XR KTV source preserves graph payloads through the Editor parser', () => {
+  const name = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
+  const source = readFileSync(new URL(`../../../docs/workspace-seeds/${name}`, import.meta.url), 'utf8')
+  const meta = loadYaml(source.match(/^---\n([\s\S]*?)\n---/)![1]) as Record<string, unknown>
+  const flow = meta.flow as Record<string, unknown>
+  const warnings: string[] = []
+  const normalize = (rawRecord: Record<string, unknown>, recordPath: string) =>
+    normalizeKeyTypeValueRecord({ rawRecord, recordPath, warnings, requireTyped: true })
+  const { nodes, edges, ...settings } = flow
+  const plainFlow = {
+    ...normalize(settings, 'flow'),
+    nodes: (nodes as Record<string, unknown>[]).map((row, i) => normalize(row, `flow.nodes[${i}]`)),
+    edges: (edges as Record<string, unknown>[]).map((row, i) => normalize(row, `flow.edges[${i}]`)),
+  }
+  assert.deepEqual(warnings, [])
+  const plainSource = `---\n${dumpYaml({ ...meta, flow: plainFlow })}---\n`
+  const typed = tryParseMarkdownFrontmatterFlowGraph(name, source)!.graphData
+  const plain = tryParseMarkdownFrontmatterFlowGraph(name, plainSource)!.graphData
+  assert.equal(typed.nodes.length, 29)
+  assert.equal(typed.edges.length, 21)
+  const runtimeNodes = (nodes: typeof typed.nodes) => nodes.map(node => {
+    const { ['frontmatter:widgetFields']: _authoringFields, ...properties } = node.properties || {}
+    return { ...node, properties }
+  })
+  assert.deepEqual(runtimeNodes(typed.nodes), runtimeNodes(plain.nodes))
+  assert.deepEqual(typed.edges, plain.edges)
+  for (const node of plainFlow.nodes) {
+    const rendered = typed.nodes.find(candidate => candidate.id === node.id)
+    assert.ok(rendered)
+    for (const [key, value] of Object.entries(node.properties as Record<string, unknown>)) {
+      assert.deepEqual(rendered.properties?.[key], value, `${node.id}.${key}`)
+    }
+  }
 })
 
 test('workspace readiness does not promote projected counts or an unmounted viewer', async () => {

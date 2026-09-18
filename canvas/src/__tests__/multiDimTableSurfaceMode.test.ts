@@ -274,7 +274,7 @@ export function testMultiDimTableStructuredSourceMetadataBuildsVisibleTable() {
       '| flow | nodes | id |  |  | id | string | storyboard_card_2 | L2 | - id: {key: id, type: string, value: "typed_node"} | 13 | 4 |',
     ],
   })
-  if (!nextListMap?.includes('    - id: {key: id, type: string, value: "storyboard_card_2"}') || nextListMap.includes('    - id: "storyboard_card_2"')) {
+  if (!nextListMap?.includes('    - id: {key: "id", type: "string", value: "storyboard_card_2"}') || nextListMap.includes('    - id: "storyboard_card_2"')) {
     throw new Error(`expected YAML list-map edit to preserve native - key: value syntax, got:\n${nextListMap}`)
   }
   const nextBody = applyStructuredSourceDataViewReplacement({

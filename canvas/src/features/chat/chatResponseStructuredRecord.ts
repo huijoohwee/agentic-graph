@@ -1,5 +1,5 @@
 import type { JSONValue } from '@/lib/graph/types'
-import { unwrapFlowEnvelopeFieldValue } from '@/features/parsers/markdownFrontmatterFlowGraph.flowEnvelope'
+import { readKeyTypeValueField } from '@/lib/graph/keyTypeValue'
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -35,7 +35,7 @@ export const readString = (value: unknown): string =>
       : ''
 
 export const unwrapStructuredFieldValue = (raw: unknown, key: string): unknown =>
-  unwrapFlowEnvelopeFieldValue({
+  readKeyTypeValueField({
     raw,
     path: `structuredContent.${key}`,
     expectedKey: key || undefined,
@@ -58,7 +58,7 @@ export const mergeStructuredProperties = (record: Record<string, unknown>): Reco
   } else if (Array.isArray(properties)) {
     for (const item of properties) {
       if (!isRecord(item)) continue
-      assignIfMissing(item.key, Object.prototype.hasOwnProperty.call(item, 'value') ? item.value : item)
+      assignIfMissing(item.key, item)
     }
   }
   return out
