@@ -1,0 +1,30 @@
+[data-kg-xr-timeline-transport] .timeline-player {
+  height: auto;
+  min-height: 44px;
+}
+
+[data-kg-xr-timeline-transport] .timeline-player-toolbar > div {
+  max-width: 100%;
+}
+
+[data-kg-xr-timeline-transport] .timeline-transport-header-tools {
+  flex-shrink: 0;
+}
+
+[data-kg-xr-timeline-transport] {
+  container-name: xr-timeline-transport;
+  container-type: inline-size;
+}
+
+@container xr-timeline-transport (max-width: 600px) {
+  [data-kg-xr-timeline-transport] .timeline-player {
+    flex-wrap: wrap;
+    padding-top: 4px;
+  }
+
+  [data-kg-xr-timeline-transport] .timeline-player-toolbar {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    padding-inline: 0;
+  }
+}

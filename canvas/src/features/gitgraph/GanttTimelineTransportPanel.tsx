@@ -18,6 +18,7 @@ export function GanttTimelineTransportPanel({
   runtimeDurationSeconds = 0,
   runtimeFrameRate = 0,
   supplementalLanes,
+  transportControls,
   timeAxisControls,
   timeRulerOverlay,
   timelineInsertedLanes,
@@ -35,6 +36,7 @@ export function GanttTimelineTransportPanel({
   runtimeDurationSeconds?: number
   runtimeFrameRate?: number
   supplementalLanes?: React.ReactNode
+  transportControls?: React.ReactNode
   timeAxisControls?: React.ReactNode
   timeRulerOverlay?: React.ReactNode
   timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]
@@ -54,5 +56,5 @@ export function GanttTimelineTransportPanel({
     timelineInsertedLanes,
     onSelectedRowKeyChange,
   })
-  return <GanttTimelineTransportSurface model={transportRouteModel.surfaceModel} renderClipOverlay={renderClipOverlay} supplementalLanes={supplementalLanes} timeAxisControls={timeAxisControls} timeRulerOverlay={timeRulerOverlay} timelineInsertedLanes={timelineInsertedLanes} />
+  return <GanttTimelineTransportSurface model={transportRouteModel.surfaceModel} renderClipOverlay={renderClipOverlay} supplementalLanes={supplementalLanes} transportControls={transportControls} timeAxisControls={timeAxisControls} timeRulerOverlay={timeRulerOverlay} timelineInsertedLanes={timelineInsertedLanes} />
 }

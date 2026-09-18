@@ -6,6 +6,7 @@ import {
 } from './xrAnimationCatalog'
 import {
   readXrMotionReferenceRuntime,
+  selectXrMotionReferenceCastMark,
   setXrMotionReferenceCastAnimation,
 } from './xrMotionReferenceRuntime'
 import {
@@ -25,6 +26,15 @@ export type XrAnimationAssignmentUpdateResult = Readonly<{
   message: string
   positionMarksChanged: boolean
 }>
+
+/** Keep replacement path marks selected through the same runtime used by both panels. */
+function synchronizeAssignmentMark(actorId: string): void {
+  const runtime = readXrMotionReferenceRuntime()
+  if (runtime.selectedMark?.kind === 'cast' && runtime.selectedMark.actorId === actorId) return
+  const marks = runtime.plan.cast.find(track => track.actorId === actorId)?.marks || []
+  const mark = [...marks].reverse().find(candidate => candidate.timeSeconds <= runtime.playheadSeconds) || marks[0]
+  if (mark) selectXrMotionReferenceCastMark(actorId, mark.id)
+}
 
 export function updateXrAnimationAssignment(
   update: XrAnimationAssignmentUpdate,
@@ -46,6 +56,7 @@ export function updateXrAnimationAssignment(
         positionMarksChanged: false,
       }
     }
+    synchronizeAssignmentMark(update.targetId)
     return { ok: true, message: `Animation cleared from ${track.label}.`, positionMarksChanged: track.animation?.kind === 'action-path' }
   }
   if (!isXrAnimationPresetId(update.presetId)) {
@@ -76,5 +87,6 @@ export function updateXrAnimationAssignment(
   } else {
     setXrMotionReferenceCastAnimation(update.targetId, preset.id)
   }
+  synchronizeAssignmentMark(update.targetId)
   return { ok: true, message: `${preset.label} applied to ${track.label}.`, positionMarksChanged: preset.kind === 'action-path' }
 }

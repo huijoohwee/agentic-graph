@@ -423,7 +423,10 @@ test('XR v2 hosted gate produces the browser observation before upload', () => {
     resolve(REPOSITORY_ROOT, '.github/workflows/integration.yml'),
     'utf8',
   )
-  const producer = workflow.indexOf('node canvas/scripts/run_xr_v2_browser_smoke.mjs')
+  const producer = workflow.indexOf('npm -C canvas run test:smoke:xr-v2:browser')
+  const { scripts } = JSON.parse(readFileSync(resolve(REPOSITORY_ROOT, 'canvas/package.json'), 'utf8'))
+  assert.match(scripts['test:smoke:xr-v2:browser'], /npm run test:smoke:xr-v2:browser:comprehensive(?:\s|$)/u)
+  assert.equal(scripts['test:smoke:xr-v2:browser:comprehensive'], 'node ./scripts/run_xr_v2_browser_smoke.mjs')
   const upload = workflow.indexOf('path: agentic-graph/data/outputs/xr-v2-browser-smoke.json')
   assert.ok(producer >= 0, 'hosted XR gate must run the observation producer')
   assert.ok(upload > producer, 'observation upload must follow its producer')

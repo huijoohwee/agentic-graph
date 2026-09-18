@@ -389,7 +389,7 @@ export function setXrMotionReferenceCastMark(args: {
   actorId: string
   timeSeconds: number
   position: XrMotionReferenceVector
-  transition?: XrMotionReferenceTransition
+  transition?: XrChoreographyEasing
   gait?: XrChoreographyGait
 }): XrMotionReferenceRuntimeSnapshot {
   const actorId = String(args.actorId || '').trim()

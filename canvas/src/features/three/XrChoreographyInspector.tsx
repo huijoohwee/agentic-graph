@@ -10,6 +10,7 @@ import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { UI_INLINE_CHIP_GROUP_CLASSNAME } from '@/lib/ui/textLayout'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
+import { resolveXrAnimationPreset } from './xrAnimationCatalog'
 import { resolveXrChoreographySpeedWarnings } from './xrChoreographyDiagnostics'
 import { type XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntime'
 
@@ -136,7 +137,7 @@ export function XrChoreographyInspector({
           title={track.label}
           description="Drag its numbered stage mark; tap WASD or arrow keys for 0.25 m, hold for smooth motion, and use Shift for 0.05 m precision. Edit XYZ in its Timeline lane."
           invocation={projectedCastInvocation}
-          metadata={`${track.marks.length} mark${track.marks.length === 1 ? '' : 's'} · mark ${castMarkIndex + 1} · ${castMark.timeSeconds}s`}
+          metadata={`${track.animation ? `${resolveXrAnimationPreset(track.animation.presetId).label} · ` : 'Authored path · '}${track.marks.length} mark${track.marks.length === 1 ? '' : 's'} · mark ${castMarkIndex + 1} · ${castMark.timeSeconds}s`}
           footer={<span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-choreography-selection-owner="timeline-cast">Select marks in the {track.label} Timeline lane.</span>}
         />
       ) : (
