@@ -78,7 +78,6 @@ export type CanvasViewportProps = {
   layout?: 'full' | 'pane'
   geospatialModeEnabled: boolean
   workspaceEditorOverlayOpen?: boolean
-  workspaceVisibleCanvasLeft?: string
   canvasRenderMode: '2d' | '3d'
   canvas3dMode: Canvas3dModeId
   canvas2dRenderer: Canvas2dRendererId
@@ -97,8 +96,7 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
 }
 export function CanvasViewport(props: CanvasViewportProps) {
   const inspection = useAgentRunWorkspace()
-  if (inspection && props.variant === 'workspace') return <section className="absolute inset-0 z-10" aria-label="Canvas viewport"
-    style={{ left: props.workspaceEditorOverlayOpen ? props.workspaceVisibleCanvasLeft : undefined }}>
+  if (inspection && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
     <React.Suspense fallback={<p>Loading run canvas…</p>}><DashboardCanvasLazy active /></React.Suspense>
   </section>
   return <AuthoredCanvasViewport {...props} />
@@ -110,7 +108,6 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
     layout = 'full',
     geospatialModeEnabled,
     workspaceEditorOverlayOpen = false,
-    workspaceVisibleCanvasLeft,
     canvasRenderMode,
     canvas3dMode,
     canvas2dRenderer,

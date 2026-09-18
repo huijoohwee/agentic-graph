@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
-import { verifyAgentMissionSourceFiles, verifyDashboardWidgets } from './lib/verify-dashboard-widgets.mjs'
+import { verifyAgentMissionSourceFiles, verifyDashboardWidgets, verifyFullCanvas } from './lib/verify-dashboard-widgets.mjs'
 import { createMissionPhaseObservation } from './lib/mission-phase-observation.mjs'
 const phaseObservation = createMissionPhaseObservation()
 
@@ -113,7 +113,7 @@ async function verifyWorkspace(label, revoke = false) {
   await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
   const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
-  await editor.waitFor({ state: 'visible', timeout: 60000 })
+  await editor.waitFor({ state: 'visible', timeout: 60000 }); await verifyFullCanvas(page)
   const explorer = editor.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }); await explorer.check()
   await editor.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).waitFor()
   if (page.viewportSize().width <= 768) await explorer.uncheck()

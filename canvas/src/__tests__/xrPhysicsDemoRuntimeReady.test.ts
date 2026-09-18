@@ -265,7 +265,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     throw new Error('expected late document UI restores to remain unable to replace any dedicated run-ready surface')
   }
   if (
-    !canvasPageSource.includes('workspaceVisibleCanvasLeft={workspaceCanvasPaneVisible ? workspacePaneBoundaryCss : undefined}')
+    !canvasPageSource.includes('layout="full"') || viewportSource.includes('workspaceVisibleCanvasLeft')
     || viewportSource.includes('workspaceXrViewportInset')
     || viewportSource.includes('width: `calc(100% - ${workspaceXrViewportInset})`')
   ) {

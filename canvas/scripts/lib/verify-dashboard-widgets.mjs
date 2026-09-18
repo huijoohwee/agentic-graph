@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict'
 
+export async function verifyFullCanvas(page) {
+  const pane = await page.getByRole('region', { name: 'Canvas pane', exact: true }).boundingBox()
+  const viewport = await page.locator('[data-kg-canvas-viewport-root="1"]').boundingBox()
+  assert.ok(pane && viewport && Math.abs(pane.x - viewport.x) < 1 && Math.abs(pane.y - viewport.y) < 1
+    && Math.abs(pane.width - viewport.width) < 1 && Math.abs(pane.height - viewport.height) < 1,
+    'Every renderer must fill the shared canvas beneath workspace overlays')
+}
+
 export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored) {
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: false }))
   const shell = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
@@ -7,6 +15,7 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   const files = shell.getByRole('region', { name: 'Source Files content', exact: true })
   await files.getByRole('button', { name: 'Folder agent-mission', exact: true }).waitFor()
   await files.getByRole('button', { name: 'Folder docs', exact: true }).waitFor()
+  await verifyFullCanvas(page)
   const before = await authoredSnapshot()
   await files.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).click()
   const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
@@ -15,6 +24,7 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   await editor.getByRole('button', { name: 'Folder docs', exact: true }).waitFor()
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor()
+  await verifyFullCanvas(page)
   await editor.getByRole('button', { name: 'Close', exact: true }).click()
   await page.getByRole('region', { name: 'Dashboard', exact: true }).getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await files.getByRole('button', { name: 'Folder agent-mission', exact: true }).waitFor()
