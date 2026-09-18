@@ -14,6 +14,13 @@ export type AgenticGraphStorageBrowserSessionState = {
   workspaces?: { id: string; title: string; role: string }[]
 }
 
+export class AgenticGraphStorageSignInRequiredError extends Error {
+  constructor(readonly baseUrl?: string | null) {
+    super('Sign in and choose a cloud workspace, then share this file again.')
+    this.name = 'AgenticGraphStorageSignInRequiredError'
+  }
+}
+
 export class AgenticGraphStorageBrowserSessionOriginError extends Error {
   constructor(message: string) {
     super(message)

@@ -100,7 +100,7 @@ belong to the install contract's sole endpoint Invocation Register and a non-own
 | Mission workspace | `canvas/src/features/agent-ready/agentMissionWorkspace.ts` | one workflow under `.workspace`, exact native root plus `.worktrees` references; START-WORKFLOW/RELEASE-WORKFLOW retain identity and archive history; read-only path actions and settled source inventory | `spec-complete` | `undocumented` |
 | Local stdio MCP | `mcp/server.js`, `mcp/local-tool-contract.js` | broad descriptor/executor catalog; configuration-gated per tool | `spec-complete` | `undocumented` |
 | Control-plane MCP | `cloudflare/workers/agentic-graph-mcp/tool-registry.mjs` | separate 10-tool registry | `spec-complete` | `undocumented` |
-| Source materialization | `canvas/src/features/source-files/` and parser owners | source-backed workspace/canvas path | `spec-complete` | `undocumented` |
+| Source materialization | `canvas/src/features/source-files/` and parser owners | source-backed workspace/canvas path; share actions require the existing browser session before upload and reuse account recovery | `spec-complete` | `undocumented` |
 | Release controller | `.github/workflows/release.yml` | exact candidate, protected approval, verification | `spec-complete` | `undocumented` |
 
 Source presence is not a delivery claim. The release workflow does not deploy the separate

@@ -97,6 +97,8 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["sourceFiles.shareUrl.publication.BomAndUnicodePreserveExactReadbackBytes","@/__tests__/sourceFileSharePublication.test.ts","testSourceShareBomAndUnicodePreserveExactReadbackBytes"],
   ["sourceFiles.shareUrl.publication.ReadOnlyMemberCannotPublishOrWrite","@/__tests__/sourceFileSharePublication.test.ts","testSourceShareReadOnlyMemberCannotPublishOrWrite"],
   ["sourceFiles.shareUrl.publication.ExplicitActionPublishesExactBrowserRevision","@/__tests__/sourceFileSharePublication.test.ts","testSourceShareExplicitActionPublishesExactBrowserRevision"],
+  ["sourceFiles.shareUrl.publication.SessionBeforeUpload","@/__tests__/sourceFileSharePublication.test.ts","testSourceShareRequestsSessionBeforeQueueingUpload"],
+  ["sourceFiles.shareUrl.publication.AccountDialog","@/__tests__/sourceFileShareSession.test.tsx","testSourceShareMenuReusesAccountDialog"],
   ["sourceFiles.shareUrl.publication.ExistingPublicSourceReusesAnonymousExactBytes","@/__tests__/sourceFileSharePublication.test.ts","testSourceShareExistingPublicSourceReusesAnonymousExactBytes"],
   ["sourceFiles.shareUrl.publication.PrivateSourceRequiresActualPublication","@/__tests__/sourceFileSharePublication.test.ts","testSourceSharePrivateSourceRequiresActualPublication"],
   ["sourceFiles.shareUrl.publication.ForeignSourceNeverReceivesWorkspaceRequests","@/__tests__/sourceFileSharePublication.test.ts","testSourceShareForeignSourceNeverReceivesWorkspaceRequests"],

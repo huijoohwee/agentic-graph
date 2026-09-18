@@ -11,6 +11,7 @@ import { AGENTIC_OS_STORAGE_API_VERSION, buildAgenticGraphStorageDocPath, hashAg
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from '@/lib/storage/agentic-graph-storage-route-paths'
 import { AGENTIC_OS_STORAGE_SYNC_BOUNDS } from '@/lib/storage/agentic-graph-storage-bounds'
 import { getClientFetch, parseStorageResponseJson, resolveAgenticGraphStorageApiUrl } from '@/lib/storage/agentic-graph-storage-client-transport'
+import { readAgenticGraphStorageBrowserSession, AgenticGraphStorageSignInRequiredError } from '@/lib/storage/agentic-graph-storage-browser-session'
 import { exportAgenticGraphStorageWorkspacePages } from '@/lib/storage/agentic-graph-storage-client-export'
 import { buildPublishedDocShareUrl, buildPublishedDocShareUrlFromSource } from '@/features/canvas/canvasDocDeepLink'
 import { readEnvString } from '@/lib/config.env'
@@ -495,6 +496,14 @@ export const publishWorkspaceEntryShareUrl = async (args: {
       const shareUrl = buildPublishedDocShareUrlFromSource({ sourceUrl: sourceUrl.href, origin })
       if (shareUrl && await readStorageDocumentTextMatches({ fetchImpl, url: sourceUrl.href, text, credentials: 'omit' })) return shareUrl
     }
+  }
+  // Preserve the existing memory-only local retention/refusal without starting transport.
+  // A durable browser can authenticate before enqueuing any upload for the selected workspace.
+  const persistence = (await getAgenticGraphStorageDb()).persistence.getState()
+  if (typeof window !== 'undefined' && persistence.mode === 'indexeddb' && persistence.status === 'active') {
+    const session = await withShareDeadline(signal => readAgenticGraphStorageBrowserSession({ workspaceId, baseUrl, fetchImpl, signal }))
+    if (session.status === 'unauthenticated' || session.status === 'access-denied') throw new AgenticGraphStorageSignInRequiredError(baseUrl)
+    if (session.status !== 'authenticated') throw new Error(session.message || 'Cloud sharing is unavailable. Try again when connected.')
   }
   const result = await publishWorkspaceEntriesToAgenticGraphStorage({
     entries: [{ ...args.entry, text }], workspaceId, syncNow: false,
