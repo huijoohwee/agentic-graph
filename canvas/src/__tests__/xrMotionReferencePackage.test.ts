@@ -495,10 +495,10 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     || !videoSequenceRulerSource.includes("data-kg-timeline-clip-compact={compactTimelineBar ? '1' : undefined}")
     || !videoSequenceRulerSource.includes("data-kg-timeline-clip-select-surface={compactTimelineBar && !thumbnailSamples.length ? '1' : undefined}")
     || !videoSequenceRulerSource.includes("const compactTimelineBar = workflowProjection || compactSourceMedia || !editable")
-    || !videoSequenceRulerSource.includes("{editable ? <button type=\"button\" className=\"timeline-transport-track-handle")
+    || !videoSequenceRulerSource.includes("(canEditTrack?.(span.rowKey, 'resize-end') ?? editable)")
     || !ganttPlaybackControlsSource.includes('args.publishPlaybackRequest === false')
     || !ganttPlaybackRuntimeSource.includes('xrBottomTimelineOwnsClock')) {
-    throw new Error('expected the reused XR player to retain one clock and the canonical compact read-only bars while isolating media playback requests')
+    throw new Error('expected the reused XR player to retain one clock and the canonical compact bars with owner-authorized resize while isolating media playback requests')
   }
   if (!ganttTransportSurfaceSource.includes('const selectedPreviewEmpty = !!transportSession.selectedSpan && !transportSession.previewPlan')) {
     throw new Error('expected stale cross-document Timeline selection keys to preserve source thumbnail fallback')

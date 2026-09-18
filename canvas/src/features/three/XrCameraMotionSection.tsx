@@ -1,7 +1,7 @@
 import React from 'react'
 import type { VideoSequenceTimelineClipOverlayRenderArgs } from '@/components/timeline/VideoSequenceTimelineRuler'
 import {
-  resolveVideoSequenceRulerInsetLeft,
+  resolveVideoSequenceRulerInsetLeft, resolveVideoSequenceRulerInsetWidth,
   resolveVideoSequenceRulerInsetPixelMetrics,
 } from '@/components/timeline/videoSequenceTimelineRulerGeometry'
 import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
@@ -38,6 +38,8 @@ import { CameraMotionMarkRetime, createXrTimelineMarkOnDoubleClick } from './Cam
 import { controlLocalAnimation } from './xrAnimationMcpRuntime'
 import { selectXrTimelineRow } from './xrTimelineCueRuntime'
 import { sampleXrTimelineSceneObject } from './xrTimelineSceneProjection'
+import { useXrTimelineLaneSelection, type XrTimelineLaneSelection } from './useXrTimelineLaneSelection'
+import { xrTimelineCommandAdapter } from './xrTimelineCommandAdapter'
 import { XrTimelineRehearsalControls } from './XrTimelineRehearsalControls'
 import {
   controlXrSharedAssetControls,
@@ -61,7 +63,6 @@ import {
   readGameFpsSnapshot,
   subscribeGameFpsSnapshot,
 } from '@/features/game-fps/gameFpsRuntime'
-type XrTimelineLaneSelection = 'scene' | 'simulation' | 'camera' | `object:${string}` | `npc:${string}`
 type XrTimelineLaneBarDragState = {
   input: 'mouse' | 'pointer'
   laneId: XrTimelineLaneSelection
@@ -71,12 +72,6 @@ type XrTimelineLaneBarDragState = {
   rectLeft: number
   rectWidth: number
 }
-
-const SELECTED_INSERTED_TIMELINE_CLIP_STYLE = Object.freeze({
-  borderColor: 'transparent',
-  borderWidth: 0,
-  boxShadow: 'none',
-}) satisfies React.CSSProperties
 
 const XR_TIMELINE_LANE_DRAG_THRESHOLD_PX = 3
 const GAME_FPS_NPC_TIMELINE_COLORS = Object.freeze({
@@ -159,9 +154,8 @@ export function XrCameraMotionSection() {
     () => inspectXrSharedAssetControls(),
     [gameMission.revision, runtime.revision, sharedAssetControlRevision],
   )
-  const [selectedTimelineLaneId, setSelectedTimelineLaneId] = React.useState<XrTimelineLaneSelection>(() => (
-    selectedShotTarget.id === XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID ? 'scene' : `object:${selectedShotTarget.id}`
-  ))
+  const [selectedTimelineLaneId, setSelectedTimelineLaneId] = useXrTimelineLaneSelection(timelineCode, selectedShotTarget.id,
+    sharedAssetControls.selectedKind || '', sharedAssetControls.selectedTargetId || '', JSON.stringify(runtime.selectedMark))
   const [draggingTimelineLaneId, setDraggingTimelineLaneId] = React.useState<XrTimelineLaneSelection | null>(null)
   const timelineLaneDragStateRef = React.useRef<XrTimelineLaneBarDragState | null>(null)
   const timelineLaneDragMovedRef = React.useRef(false)
@@ -182,17 +176,6 @@ export function XrCameraMotionSection() {
     if (transportDocumentKey !== xrTransportDocumentKey) return
     setXrMotionReferencePlayhead(transportPosition * 60)
   }, [transportDocumentKey, transportPosition, xrActive, xrTransportDocumentKey])
-
-  React.useEffect(() => {
-    setSelectedTimelineLaneId(
-      selectedShotTarget.id === XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID ? 'scene' : `object:${selectedShotTarget.id}`,
-    )
-  }, [selectedShotTarget.id])
-
-  React.useEffect(() => {
-    if (sharedAssetControls.selectedKind !== 'npc' || !sharedAssetControls.selectedTargetId) return
-    setSelectedTimelineLaneId(`npc:${sharedAssetControls.selectedTargetId}`)
-  }, [sharedAssetControls.selectedKind, sharedAssetControls.selectedTargetId])
 
   const savePlan = React.useCallback(() => {
     if (!graphData) return
@@ -258,7 +241,7 @@ export function XrCameraMotionSection() {
       targetId: XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID,
     })
     if (!result.ok) selectBoundXrShotTarget(XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID)
-  }, [])
+  }, [setSelectedTimelineLaneId])
   const selectObjectTimelineLane = React.useCallback((targetId: string) => {
     setSelectedTimelineLaneId(`object:${targetId}`)
     const result = controlXrSharedAssetControls({ operation: 'select-target', targetId })
@@ -276,22 +259,22 @@ export function XrCameraMotionSection() {
       kind: 'success',
       message: result.message,
     })
-  }, [documentLoaded, pushUiToast])
+  }, [documentLoaded, pushUiToast, setSelectedTimelineLaneId])
   const selectObjectTimelineLaneSurface = React.useCallback((targetId: string) => {
     setSelectedTimelineLaneId(`object:${targetId}`)
     const result = controlXrSharedAssetControls({ operation: 'select-target', targetId })
     if (!result.ok) selectBoundXrShotTarget(targetId)
-  }, [])
+  }, [setSelectedTimelineLaneId])
   const selectSimulationTimelineLane = React.useCallback(() => {
     setSelectedTimelineLaneId('simulation')
     openSimulationWorkbench()
-  }, [openSimulationWorkbench])
+  }, [openSimulationWorkbench, setSelectedTimelineLaneId])
   const selectSimulationTimelineLaneSurface = React.useCallback(() => {
     setSelectedTimelineLaneId('simulation')
-  }, [])
+  }, [setSelectedTimelineLaneId])
   const selectCameraTimelineLane = React.useCallback(() => {
     setSelectedTimelineLaneId('camera')
-  }, [])
+  }, [setSelectedTimelineLaneId])
   const selectNpcTimelineLane = React.useCallback((npcId: string) => {
     setSelectedTimelineLaneId(`npc:${npcId}`)
     const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: npcId })
@@ -300,11 +283,11 @@ export function XrCameraMotionSection() {
       kind: result.ok ? 'success' : documentLoaded ? 'error' : 'warning',
       message: result.message,
     })
-  }, [documentLoaded, pushUiToast])
+  }, [documentLoaded, pushUiToast, setSelectedTimelineLaneId])
   const selectNpcTimelineLaneSurface = React.useCallback((npcId: string) => {
     setSelectedTimelineLaneId(`npc:${npcId}`)
     controlXrSharedAssetControls({ operation: 'select-target', targetId: npcId })
-  }, [])
+  }, [setSelectedTimelineLaneId])
   const simulationTimelineLaneSelected = selectedTimelineLaneId === 'simulation'
   const cameraTimelineLaneSelected = selectedTimelineLaneId === 'camera'
 
@@ -530,13 +513,14 @@ export function XrCameraMotionSection() {
         }
       }}
     >
-      <section aria-label="XR animation timeline" data-kg-xr-timeline-transport="reused-gantt-player">
+      <section aria-label="XR animation timeline" data-kg-xr-timeline-transport="reused-gantt-player" style={{ '--kg-xr-scene-span-width': resolveVideoSequenceRulerInsetWidth(runtime.plan.durationSeconds / sceneScaleDurationSeconds * 100) } as React.CSSProperties}>
         <GanttTimelineTransportPanel
           transportControls={<XrTimelineRehearsalControls durationSeconds={runtime.plan.durationSeconds} fps={runtime.plan.fps} disabled={!documentLoaded} />}
           code={timelineCode}
           clockActive
           compact
           editable={false}
+          commandAdapter={xrTimelineCommandAdapter}
           mode="media"
           publishPlaybackRequest={false}
           renderClipOverlay={renderXrSceneStageClipOverlay}
@@ -553,6 +537,7 @@ export function XrCameraMotionSection() {
               const selected = selectedTimelineLaneId === `object:${target.id}`
               return {
                 id: `xr-object:${target.id}`,
+                selectRowKey: `xr-lane:object:${target.id}`,
                 insertAfterLaneId: 'scene',
                 selected,
                 label: (
@@ -576,11 +561,9 @@ export function XrCameraMotionSection() {
                     laneStyle="video"
                     className={cn(
                       'xr-camera-motion-retime-time-axis-rail',
-                      selected && 'timeline-transport-track-clip--selected',
                     )}
                     aria-label={`${target.label} linked SHOOT time rail`}
                     aria-current={selected ? 'true' : undefined}
-                    style={selected ? SELECTED_INSERTED_TIMELINE_CLIP_STYLE : undefined}
                     data-kg-xr-choreography-shared-axis-rail={track ? 'cast' : 'object'}
                     data-kg-xr-timeline-lane-affordance={`object:${target.id}`}
                     data-kg-xr-timeline-lane-selected={selected ? '1' : undefined}
@@ -594,7 +577,7 @@ export function XrCameraMotionSection() {
                     >
                       <button
                         type="button"
-                        className="xr-shot-target-timeline-bar"
+                        className={cn('xr-shot-target-timeline-bar', selected && 'timeline-transport-track-clip--selected')}
                         style={{ '--kg-xr-shot-target-color': target.color } as React.CSSProperties}
                         aria-label={`Link SHOOT to ${target.label} for the full scene. Drag to scrub XR timeline.`}
                         aria-pressed={selected}
@@ -626,6 +609,7 @@ export function XrCameraMotionSection() {
             }),
             {
               id: 'xr-camera',
+              selectRowKey: 'xr-lane:camera',
               insertAfterLaneId: 'scene',
               selected: cameraTimelineLaneSelected,
               label: (
@@ -648,11 +632,9 @@ export function XrCameraMotionSection() {
                   laneStyle="audio"
                   className={cn(
                     'xr-camera-motion-retime-time-axis-rail',
-                    cameraTimelineLaneSelected && 'timeline-transport-track-clip--selected',
                   )}
                   aria-label="Camera choreography time rail"
                   aria-current={cameraTimelineLaneSelected ? 'true' : undefined}
-                  style={cameraTimelineLaneSelected ? SELECTED_INSERTED_TIMELINE_CLIP_STYLE : undefined}
                   data-kg-xr-choreography-shared-axis-rail="camera"
                   data-kg-xr-timeline-lane-affordance="camera"
                   data-kg-xr-timeline-lane-selected={cameraTimelineLaneSelected ? '1' : undefined}
@@ -664,7 +646,7 @@ export function XrCameraMotionSection() {
                   >
                     <button
                       type="button"
-                      className="xr-shot-target-timeline-bar xr-shot-target-timeline-bar--camera"
+                      className={cn('xr-shot-target-timeline-bar xr-shot-target-timeline-bar--camera', cameraTimelineLaneSelected && 'timeline-transport-track-clip--selected')}
                       style={{ '--kg-xr-shot-target-color': '#64748b' } as React.CSSProperties}
                       aria-label="Select Camera choreography lane. Drag to scrub XR timeline."
                       aria-pressed={cameraTimelineLaneSelected}
@@ -693,6 +675,7 @@ export function XrCameraMotionSection() {
             },
             {
               id: 'xr-simulation',
+              selectRowKey: 'xr-lane:simulation',
               insertAfterLaneId: 'scene',
               selected: simulationTimelineLaneSelected,
               label: (
@@ -715,11 +698,9 @@ export function XrCameraMotionSection() {
                   laneStyle="audio"
                   className={cn(
                     'xr-camera-motion-retime-time-axis-rail',
-                    simulationTimelineLaneSelected && 'timeline-transport-track-clip--selected',
                   )}
                   aria-label="XR Simulation runtime lane"
                   aria-current={simulationTimelineLaneSelected ? 'true' : undefined}
-                  style={simulationTimelineLaneSelected ? SELECTED_INSERTED_TIMELINE_CLIP_STYLE : undefined}
                   data-kg-xr-simulation-lane="1"
                   data-kg-xr-timeline-lane-affordance="simulation"
                   data-kg-xr-timeline-lane-selected={simulationTimelineLaneSelected ? '1' : undefined}
@@ -732,7 +713,7 @@ export function XrCameraMotionSection() {
                   >
                     <button
                       type="button"
-                      className="xr-shot-target-timeline-bar"
+                      className={cn('xr-shot-target-timeline-bar', simulationTimelineLaneSelected && 'timeline-transport-track-clip--selected')}
                       style={{ '--kg-xr-shot-target-color': '#22c55e' } as React.CSSProperties}
                       aria-label={`Open XR Simulation workbench. ${simulationPhase}; ${simulationBodyCount} bodies. Drag to scrub XR timeline.`}
                       aria-pressed={simulationTimelineLaneSelected}
@@ -756,6 +737,7 @@ export function XrCameraMotionSection() {
               const npcColor = GAME_FPS_NPC_TIMELINE_COLORS[npc.action]
               return {
                 id: `xr-gameplay-npc:${npc.id}`,
+                selectRowKey: `xr-lane:npc:${npc.id}`,
                 insertAfterLaneId: 'scene',
                 selected,
                 label: (
@@ -778,11 +760,9 @@ export function XrCameraMotionSection() {
                     laneStyle="video"
                     className={cn(
                       'xr-camera-motion-retime-time-axis-rail',
-                      selected && 'timeline-transport-track-clip--selected',
                     )}
                     aria-label={`${npc.id} gameplay NPC time rail`}
                     aria-current={selected ? 'true' : undefined}
-                    style={selected ? SELECTED_INSERTED_TIMELINE_CLIP_STYLE : undefined}
                     data-kg-xr-gameplay-npc-shared-axis-rail={npc.id}
                     data-kg-xr-timeline-lane-affordance={`npc:${npc.id}`}
                     data-kg-xr-timeline-lane-selected={selected ? '1' : undefined}
@@ -796,7 +776,7 @@ export function XrCameraMotionSection() {
                     >
                       <button
                         type="button"
-                        className="xr-shot-target-timeline-bar"
+                        className={cn('xr-shot-target-timeline-bar', selected && 'timeline-transport-track-clip--selected')}
                         style={{ '--kg-xr-shot-target-color': npcColor } as React.CSSProperties}
                         aria-label={`Select ${npc.id} for shared 3D for XR controls. Drag to scrub XR timeline.`}
                         aria-pressed={selected}

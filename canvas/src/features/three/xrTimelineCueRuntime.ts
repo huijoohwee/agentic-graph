@@ -16,6 +16,7 @@ export function jumpToXrTimelineCue(beat: XrTimelineCue): void {
     useGraphStore.getState().pushUiToast({ id: 'xr:beat-seek:error', kind: 'error', message: result.message })
     return
   }
+  if (beat.kind !== 'animation') useGraphStore.getState().setMermaidDiagramSelectedRowKey('gantt', beat.kind === 'camera' ? 'xr-lane:camera' : `xr-lane:object:${beat.targetId}`)
   if (beat.kind === 'cast' && beat.markId) selectXrMotionReferenceCastMark(beat.targetId, beat.markId)
   if (beat.kind === 'camera' && beat.markId) selectXrMotionReferenceCameraMark(beat.markId)
 }

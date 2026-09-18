@@ -8,9 +8,11 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { XrShootCameraSection } from '@/features/strybldr/XrShootCameraSection'
 import { XrAnimationFloatingPanelView } from '@/features/three/XrAnimationFloatingPanelView'
+import { xrTimelineCommandAdapter } from '@/features/three/xrTimelineCommandAdapter'
+import { xrMotionReferenceTimelineDocumentKey } from '@/features/three/xrMotionReferenceTimeline'
 import { XrRehearsalStatus } from '@/features/three/XrRehearsalStatus'
 import { controlXrSharedAssetControls, inspectXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
-import { serializeXrMotionReferencePlan } from '@/features/three/xrMotionReferenceModel'
+import { serializeXrMotionReferencePlan, readXrMotionReferencePlan } from '@/features/three/xrMotionReferenceModel'
 import { hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import { XrCameraMotionSection } from '@/features/three/XrCameraMotionSection'
 import { XrTimelineRehearsalControls } from '@/features/three/XrTimelineRehearsalControls'
@@ -115,10 +117,15 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     assert.equal(inspectXrSharedAssetControls().selectedKind, 'object')
     assert.equal(inspectXrSharedAssetControls().selectedTargetId, 'actor')
     assert.equal(readXrMotionReferenceRuntime().selectedMark?.kind, 'cast')
+    const selectedBars = () => container.querySelectorAll('.timeline-transport-track-clip--selected')
+    assert.equal(selectedBars().length, 1, 'one selection outline across native and XR bars')
+    assert.equal(selectedBars()[0]!.getAttribute('data-kg-xr-shot-target-bar'), 'actor')
     await act(async () => { cameraMark().dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })) })
     assert.equal(inspectLocalAnimation().runtime.transport.frame, 30)
     assert.match(container.querySelector('[aria-label="Shared Timeline rehearsal"]')!.textContent!, /Frame 30 · 30 fps · 0.25× · Paused/)
     assert.equal(readXrMotionReferenceRuntime().selectedMark?.kind, 'camera')
+    assert.equal(selectedBars().length, 1)
+    assert.ok(selectedBars()[0]!.classList.contains('xr-shot-target-timeline-bar--camera'))
     assert.match(container.querySelector('[data-kg-xr-shot-target-bar="actor"]')!.textContent!, /walk · linear · \(0.9, 0.0, 0.0\)/)
     await act(async () => { container.querySelector<HTMLButtonElement>('[aria-label="Link SHOOT to 3D Object Parcel"]')!.click() })
     assert.equal(readXrMotionReferenceRuntime().selectedShotTargetId, 'prop')
@@ -175,6 +182,8 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     assert.ok(animationClip, 'animation cue uses the existing effect clip')
     await act(async () => { animationClip.click() })
     assert.equal(inspectLocalAnimation().runtime.transport.timeSeconds, 0.5)
+    assert.equal(selectedBars().length, 1)
+    assert.ok(selectedBars()[0]!.getAttribute('data-kg-gantt-timeline-track-row-key')?.includes('xr_animation_effect_actor'))
     assert.equal(inspectXrSharedAssetControls().selectedTargetId, 'actor')
     assert.equal(container.querySelectorAll('[data-kg-xr-lane-cast-mark]').length, 3, 'animation does not add duplicate cast markers')
     const objectLane = container.querySelector<HTMLElement>('[data-kg-xr-shot-target-lane="actor"]')!
@@ -220,6 +229,41 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     assert.equal(presetSelect().value, 'helicopter-orbit', 'FloatingPanel apply updates the existing Timeline preset')
     assert.equal(readXrMotionReferenceRuntime().plan.cast[0]!.marks.length, pathCount)
     assert.equal(inspectLocalAnimation().runtime.transport.timeSeconds, 0, 'assignment preserves the shared playhead')
+    await loadPlan(plan)
+    await mountReactRoot(root, <XrCameraMotionSection />)
+    const scene = () => container.querySelector<HTMLElement>('[data-kg-gantt-timeline-track-row-key*="xr_stage_scene"]')!
+    await act(async () => { scene().querySelector<HTMLButtonElement>('.timeline-transport-track-clip-move')!.click() })
+    assert.equal(selectedBars().length, 1)
+    assert.equal(selectedBars()[0], scene())
+    assert.ok(container.querySelector('[aria-label="XR scene stage selector"]'))
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-kg-xr-shot-target-bar="actor"]')!.click() })
+    assert.equal(selectedBars().length, 1)
+    assert.equal(container.querySelector('[aria-label="XR scene stage selector"]'), null)
+    assert.equal(container.querySelectorAll('[data-kg-gantt-timeline-track-drag-mode="resize-end"]').length, 1)
+    assert.equal(container.querySelector('[data-kg-gantt-timeline-track-drag-mode="resize-start"]'), null)
+    await act(async () => { controlLocalAnimation({ operation: 'scrub', timeSeconds: 2 }) })
+    const resize = scene().querySelector<HTMLElement>('[data-kg-gantt-timeline-track-drag-mode="resize-end"]')!
+    resize.closest<HTMLElement>('[data-kg-gantt-timeline-ruler-content="1"]')!.getBoundingClientRect = axis.getBoundingClientRect
+    await act(async () => { resize.dispatchEvent(new env.dom.window.MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 250 })) })
+    await act(async () => { env.dom.window.dispatchEvent(new env.dom.window.MouseEvent('pointercancel', { bubbles: true, clientX: 50 })) })
+    assert.equal(readXrMotionReferenceRuntime().plan.durationSeconds, 2, 'cancelled gestures leave the authored duration intact')
+    await act(async () => { resize.dispatchEvent(new env.dom.window.MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 250 })) })
+    await act(async () => { env.dom.window.dispatchEvent(new env.dom.window.MouseEvent('pointermove', { bubbles: true, clientX: 50 })) })
+    await act(async () => { env.dom.window.dispatchEvent(new env.dom.window.MouseEvent('pointerup', { bubbles: true, clientX: 50 })) })
+    assert.equal(readXrMotionReferenceRuntime().plan.durationSeconds, 1, 'Scene edge edits the constrained authored duration')
+    assert.equal(inspectLocalAnimation().runtime.transport.timeSeconds, 1, 'shortening clamps the shared playhead')
+    assert.equal(readXrMotionReferenceRuntime().plan.fps, 30)
+    assert.equal(selectedBars().length, 1)
+    assert.ok(container.querySelector<HTMLElement>('[data-kg-xr-timeline-transport]')!.style.getPropertyValue('--kg-xr-scene-span-width').includes('* 0.1)'), 'all bars share Scene duration')
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-kg-xr-motion-save]')!.click() })
+    assert.equal(readXrMotionReferencePlan(useGraphStore.getState().graphData!.metadata!.kgXrMotionReference).durationSeconds, 1)
+    assert.equal(readXrMotionReferenceRuntime().dirty, false)
+    const resizeCommand = { schema: 'agentic-graph.gantt-timeline-transport-command/v1', kind: 'drag-edit', mode: 'resize-end',
+      target: { documentKey: xrMotionReferenceTimelineDocumentKey('Cues.md'), selectedRowKey: scene().getAttribute('data-kg-gantt-timeline-track-row-key'), playheadMinutes: 1 / 60 },
+      sourceStartMinutes: 0, sourceEndMinutes: 1 / 60, effectiveDeltaMinutes: 1 / 60, displayLaneDelta: 0 } as const
+    assert.equal(xrTimelineCommandAdapter.handleCommand({ ...resizeCommand, target: { ...resizeCommand.target, documentKey: 'other.md' } }).status, 'rejected')
+    assert.equal(xrTimelineCommandAdapter.handleCommand({ ...resizeCommand, sourceEndMinutes: 2 / 60 }).status, 'rejected', 'stale drags cannot overwrite a newer duration')
+    assert.equal(readXrMotionReferenceRuntime().plan.durationSeconds, 1)
     await mountReactRoot(root, <XrTimelineRehearsalControls durationSeconds={2} fps={30} disabled />)
     assert.ok([...container.querySelectorAll<HTMLButtonElement>('button')].every(button => button.disabled))
     assert.equal(container.querySelector('[aria-label="XR scene overview"]'), null)

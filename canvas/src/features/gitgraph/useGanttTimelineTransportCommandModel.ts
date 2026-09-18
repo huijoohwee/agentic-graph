@@ -101,6 +101,7 @@ export function useGanttTimelineTransportCommandModel(args: {
   }, [args.commandAdapter, commandTarget, documentActions.handleMediaDrop])
 
   const handleCommittedDragUpdate = React.useCallback((input: Parameters<typeof documentActions.handleCommittedDragUpdate>[0]) => {
+    if (input.dragState.markdownDocumentName !== args.markdownDocumentName || input.dragState.markdownText !== args.markdownText) return
     routeGanttTimelineTransportCommand({
       adapter: args.commandAdapter,
       command: {
@@ -118,7 +119,7 @@ export function useGanttTimelineTransportCommandModel(args: {
       },
       markdownFallback: () => documentActions.handleCommittedDragUpdate(input),
     })
-  }, [args.commandAdapter, commandTarget, documentActions.handleCommittedDragUpdate])
+  }, [args.commandAdapter, args.markdownDocumentName, args.markdownText, commandTarget, documentActions.handleCommittedDragUpdate])
 
   return {
     chromeModelCommands: {

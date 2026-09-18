@@ -1,16 +1,16 @@
 ---
 title: "XR Frame Transport PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.4.2"
+version: "1.4.3"
 date: "2026-09-18"
 lang: "en-US"
 frontmatter_contract: "required"
 continuity_id: "XR-FRAME-TRANSPORT-001"
-prd_revision: "1.4.2"
-tad_revision: "1.4.2"
-adr_revision: "1.4.2"
-mvp_revision: "1.4.2"
-gtm_revision: "1.4.2"
+prd_revision: "1.4.3"
+tad_revision: "1.4.3"
+adr_revision: "1.4.3"
+mvp_revision: "1.4.3"
+gtm_revision: "1.4.3"
 owner: "agentic-graph"
 status: "implementation"
 load_policy: "on-demand"
@@ -21,7 +21,7 @@ source_revision: "dddf1ab47ab0227eb5a21a7cbf49cba45ae8f322"
 
 ## PRD
 
-`XR-FRAME-TRANSPORT-001@1.4.2`: a solo builder rehearses an authored XR product
+`XR-FRAME-TRANSPORT-001@1.4.3`: a solo builder rehearses an authored XR product
 demonstration at quarter speed, pauses on consecutive frames, and reads the same
 position through BottomPanel Timeline and the existing local animation tool.
 The prior shared-store tolerance was 0.001 timeline units: in fractional minutes
@@ -49,12 +49,13 @@ authored scene frames. Outcome: repeatable frame and speed readback.
 | F12 | Existing object lanes display sampled authored position and path state at the shared playhead. Lane selection leaves playback position unchanged. Authored object and Camera tracks precede simulation/NPC tracks. No separate overview, beat picker, object list, or transport is mounted. | Existing `xrShotTargets.ts` and `xrMotionReferenceSampling.ts`; mounted Timeline regression and desktop/mobile browser checks |
 | F13 | Camera, Motion Control, Animation, Game Mode and Media display the same authored frame, FPS, playback rate and play/pause state. Selecting a Timeline object lane clears a prior NPC focus through the existing shared target controller. | [shared readout](../../canvas/src/features/three/XrRehearsalStatus.tsx), `XrSharedAssetControls.tsx`, `XrAnimationFloatingPanelView.tsx`; mounted regression and cross-panel browser checks |
 | F14 | Updating authored XR choreography writes the current plan back to its flow document, active Source File and native workspace write queue, so editor text and source reparse preserve cues and assignments. Inline and block YAML sections are replaced once; unrelated frontmatter and body remain intact. | `graphDataFrontmatterFlowSync.ts`, extracted `graphDataFrontmatterSections.ts`; `canvas.xrMode.timeline.sourceReparse` |
-
 | F15 | Action Paths cards show the assigned preset and target. Apply/Clear from either panel updates the same Timeline selector; replacing a path retains a valid native mark selection. Choreography reflects that mark and preset, while Timeline owns parameter editing. | `xrAnimationAssignmentRuntime.ts`, `XrAnimationFloatingPanelView.tsx`, `XrChoreographyInspector.tsx`; bidirectional mounted `canvas.xrMode.timeline.sceneCues` regression |
+
+| F16 | Scene, object, Camera, simulation, NPC and animation-effect bars share one Gantt row selection; playback preserves the explicit selection. Scene’s trailing handle resizes the native bounded duration, pauses and clamps playback, and gives all full-scene bars the same endpoint. Scene Save persists the edit through F14. Unsupported and stale resize commands are rejected. | `useXrTimelineLaneSelection.ts`, `xrTimelineCommandAdapter.ts`; mounted `canvas.xrMode.timeline.sceneCues` selection, pointer resize and source-save regression |
 
 ## TAD and ADR
 
-TAD `1.4.2` consumes PRD `1.4.2`; ADR `1.4.2` binds that design. F01–F15 share
+TAD `1.4.3` consumes PRD `1.4.3`; ADR `1.4.3` binds that design. F01–F16 share
 the continuity ID above. Keep the existing transport store and panel; extract its
 animation adapter into one helper loaded with the existing XR animation feature.
 Use authored FPS for frame targeting and the shared rate list for validation.
@@ -190,7 +191,7 @@ retained while this same-worktree successor supplies the complete source change.
 
 ## Scene cues increment — 2026-09-18
 
-CID `XR-FRAME-TRANSPORT-001@1.4.2` carries F11–F14 through PRD, TAD,
+CID `XR-FRAME-TRANSPORT-001@1.4.3` carries F11–F14 through PRD, TAD,
 ADR, MVP and GTM. Role/Subject: solo builder. Action/Verb: rehearse and inspect.
 Object: authored demonstration beats and scene objects. Outcome: jump to a cue
 and verify the relevant object without repeatedly dragging the ruler.

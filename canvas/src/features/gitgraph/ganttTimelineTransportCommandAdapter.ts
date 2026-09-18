@@ -50,6 +50,8 @@ export type GanttTimelineTransportCommandAdapterDecision =
   | Readonly<{ status: 'unhandled' }>
 
 export type GanttTimelineTransportCommandAdapter = Readonly<{
+  selectionFollowsPlayhead?: boolean
+  canEditTrack?: (rowKey: string, mode: MermaidGanttBarDragMode) => boolean
   handleCommand: (command: GanttTimelineTransportCommand) => GanttTimelineTransportCommandAdapterDecision
 }>
 

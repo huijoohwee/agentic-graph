@@ -28,6 +28,7 @@ export type GanttTimelineTransportRulerModel = {
     draggingMode: MermaidGanttBarDragMode | null
     draggingRowKey: string
     editable: boolean
+    canEditTrack?: (rowKey: string, mode: MermaidGanttBarDragMode) => boolean
     maxMinutes: number
     mediaDurationSeconds: number
     mediaFrameRate: number
@@ -58,6 +59,7 @@ export function useGanttTimelineTransportRulerModel(args: {
   draggingMode: MermaidGanttBarDragMode | null
   draggingRowKey: string
   editable: boolean
+  canEditTrack?: (rowKey: string, mode: MermaidGanttBarDragMode) => boolean
   maxMinutes: number
   mediaDurationSeconds: number
   mediaFrameRate: number
@@ -106,6 +108,7 @@ export function useGanttTimelineTransportRulerModel(args: {
       draggingMode: args.draggingMode,
       draggingRowKey: args.draggingRowKey,
       editable: args.editable,
+      canEditTrack: args.canEditTrack,
       maxMinutes: args.maxMinutes,
       mediaDurationSeconds: args.mediaDurationSeconds,
       mediaFrameRate: args.mediaFrameRate,
@@ -134,6 +137,7 @@ export function useGanttTimelineTransportRulerModel(args: {
     args.draggingMode,
     args.draggingRowKey,
     args.editable,
+    args.canEditTrack,
     args.maxMinutes,
     args.mediaDurationSeconds,
     args.mediaFrameRate,
