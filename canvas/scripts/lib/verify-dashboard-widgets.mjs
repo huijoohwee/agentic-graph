@@ -52,7 +52,7 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(await floating.count(), 1)
   await floating.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()
   const palette = page.getByRole('complementary', { name: 'Widget palette', exact: true })
-  assert.equal(await palette.locator('[data-kg-widget-palette-layout]').count(), 5, 'Retain all original Widget Card Types')
+  for (const title of ['Widget Card Type 0', 'Probe-Tree Type 1', 'Probe-Tree Type 2', 'Deliverables Widget Card', 'Rich Media Panel']) await palette.getByText(title, { exact: true }).waitFor()
   assert.equal(await palette.getByRole('listitem', { name: /^Template / }).count(), 6)
   assert.equal(await palette.getByRole('form', { name: 'Widget configuration' }).count(), 0, 'Fronts contain no configuration')
   assert.equal(await palette.getByText('Relationship Types', { exact: true }).count(), 0, 'Template fronts must be unbound')
