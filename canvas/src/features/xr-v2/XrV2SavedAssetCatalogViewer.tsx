@@ -292,7 +292,13 @@ export function XrV2SavedAssetCatalogViewer({
               preload="auto"
               src={opened.lease.playbackUrl}
               onCanPlay={event => {
-                opened.lease.markFlatPlaybackCanPlay(event.currentTarget.isConnected)
+                const video = event.currentTarget
+                opened.lease.markFlatPlaybackCanPlay(video.isConnected)
+                // Open is the playback intent. Attribute-only autoplay may defer
+                // an asynchronously loaded video below the panel's viewport.
+                // Native controls remain available if browser policy denies play;
+                // readiness still requires observed temporal progress below.
+                void video.play().catch(() => undefined)
               }}
               onPlaying={event => {
                 if (opened.lease.markFlatPlaybackProgress(

@@ -4,6 +4,7 @@ import {
   XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
   XR_PHYSICS_RUN_READY_DEMO_ID,
   resolveWorkspaceRunReadyDemoSeed,
+  resolveWorkspaceRunReadyDemoIdForDocument,
 } from './workspaceRunReadyDemos'
 import { importNodeFsPromises, importNodePath } from './workspaceSeedNodeModules'
 import { readEnvString } from '@/lib/config.env'
@@ -29,7 +30,7 @@ let sourcePromise: Promise<string> | null = null
 const normalizeSource = (value: unknown): string => {
   const text = String(value || '')
   if (!text.startsWith('---\n')) return ''
-  if (!text.includes(`id: "${XR_PHYSICS_RUN_READY_DEMO_ID}"`)) return ''
+  if (resolveWorkspaceRunReadyDemoIdForDocument('', text) !== XR_PHYSICS_RUN_READY_DEMO_ID) return ''
   if (!text.includes('native_runtime: true')) return ''
   return text
 }
@@ -67,7 +68,7 @@ export function loadXrPhysicsDemoSeedSource(): Promise<string> {
   if (!sourcePromise) {
     sourcePromise = (async () => {
       try {
-        const module = await import('../../../../docs/workspace-seeds/agentic-graph-physics-playground-demo.md?raw') as {
+        const module = await import('../../../../docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md?raw') as {
           default?: string
         }
         const bundled = normalizeSource(module.default)

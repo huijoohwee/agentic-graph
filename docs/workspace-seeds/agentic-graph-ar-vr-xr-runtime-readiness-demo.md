@@ -30,7 +30,9 @@ run_ready_demo:
   imported_path_alias_required: false
   identity_conflict: fail closed when path and source identity disagree
   canonical_consumers:
+    - home-apex
     - workspace
+    - game-mode-overlay
   dev_command: npm run dev
   canonical_source_file: /docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md
   validation_seed_path: /docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md
@@ -40,14 +42,14 @@ run_ready_demo:
   native_runtime: true
   browser_activation_evidence: actual Explorer Source Files row selection; no environment selector
   mount_status: mounted-after-applied-source-document
-  canonical_xr_world_owner: docs/workspace-seeds/agentic-graph-physics-playground-demo.md
-  presentation: pinned-xr-v2-runtime-readiness
-  document_presentation: workspace-runtime-readiness-demo
+  canonical_xr_world_owner: docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md
+  presentation: full-frame-playground
+  document_presentation: workspace-playground
   auto_start: true
   external_dependencies: []
 shared_xr_scene:
-  source_authority: /docs/workspace-seeds/agentic-graph-physics-playground-demo.md
-  world_ownership: overlay-only
+  source_authority: /docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md
+  world_ownership: source-authored
   surface_owner: canonical XR Physics shared Three surface
   renderer_owner: canvas/src/lib/three/ThreeGraph.impl.tsx
   second_r3f_canvas_forbidden: true
@@ -150,592 +152,443 @@ behavior_graph_contract:
       to: hero-burst
   bound_entity: "0"
 behavior_runtime_dispatch_schema: agentic-graph-xr-v2-behavior-dispatch-graph/v1
+game_mode_xr_fidelity_status: "single-source authority contract"
+home_apex:
+  source_authority: "/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
+  scene_authority: "the authored XR Physics Playground world in this document"
+  game_mode_projection: "actor, camera, and controls overlay only"
+  forbidden_variants: ["fallback arena", "standalone game scene", "duplicate world", "legacy environment"]
+native_controller_demo:
+  runtime_owner: "XR Simulation workbench"
+  default_controller: "ball"
+  controller_switching: "preserve active body pose and velocity"
+  deterministic_step: true
+  camera_mode: "fixed-follow"
+  camera:
+    default: "fixed-follow"
+    selector: "FloatingPanel Camera / SHOOT / Camera source"
+    available: ["fixed-follow", "free-orbit"]
+    invocation: "/camera.select @camera #camera camera=fixed-follow|free-orbit"
+    timeline_override: "camera-mark playback temporarily owns framing"
+  scene: "procedural Singapore waterfront terrain"
+  terrain:
+    default: "singapore"
+    selector: "XR Terrain / Environment catalog"
+    future_provisioning: "catalog-driven stable terrain IDs"
+    available: ["singapore", "tropical-playground"]
+  asset_library:
+    default: "vehicle-helicopter"
+    featured: ["vehicle-helicopter", "vehicle-sedan", "prop-ball"]
+  objective: "collect key then unlock treasure"
+  interactive_props: ["barrels", "bowling pins", "cannonballs"]
+  controllers:
+    - id: "ball"
+      presentation: "procedural sphere"
+      behaviors: ["rolling movement", "grounded jump", "air control", "modifier torque"]
+    - id: "rocket"
+      presentation: "procedural rocket"
+      behaviors: ["directional thrust", "vertical thrust", "bounded tilt", "modifier stabilization"]
+  input:
+    keyboard:
+      movement: ["W", "A", "S", "D", "ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"]
+      primary: "Space"
+      modifier: "Shift"
+    gamepad:
+      movement: "standard left stick"
+      primary: "standard primary action"
+      modifier: "standard shoulder action"
+  lifecycle: ["develop-and-run", "pause", "resume", "reset", "exit"]
+motion_control:
+  runtime: "browser-local LiteRT.js"
+  model: "Google BlazePose GHUM Full"
+  permission: "explicit Start action"
+  frame_upload: false
+  frame_persistence: false
+  xr_drivers: ["native physics controller", "selected humanoid pose"]
+  invocation: "/motion.control @canvas #pose operation=start backend=auto"
+  inspect_tool: "agentic-graph.inspect_local_motion_control"
+  control_tool: "agentic-graph.control_local_motion_control"
+  game_mode_role: "optional normalized player input only; never the NPC decision policy"
+game_mode:
+  companion_view: "gameMode"
+  invocation: "/game.mode @canvas #gameplay operation=open"
+  invocation_prefix: "/game.mode @canvas #gameplay"
+  invocation_policy: "exactly one /game.mode command, one @canvas binding, and one #gameplay semantic"
+  operations: ["open", "start", "stop", "restart", "fire", "reload", "save", "exit"]
+  operation_invocations:
+    open: "/game.mode @canvas #gameplay operation=open"
+    start: "/game.mode @canvas #gameplay operation=start"
+    stop: "/game.mode @canvas #gameplay operation=stop"
+    restart: "/game.mode @canvas #gameplay operation=restart"
+    fire: "/game.mode @canvas #gameplay operation=fire"
+    reload: "/game.mode @canvas #gameplay operation=reload"
+    save: "/game.mode @canvas #gameplay operation=save"
+    exit: "/game.mode @canvas #gameplay operation=exit"
+  web_mcp_schema: "agentic-graph-game-mode-mcp/v1"
+  inspect_tool: "agentic-graph.inspect_local_game_mode"
+  control_tool: "agentic-graph.control_local_game_mode"
+  source_authority: "/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
+  activation_scope: "optional overlay on the active authored XR world; never a standalone Home source"
+  lifecycle: "retain the authored XR scene while suspending its controller input and simulation; restore both on exit"
+  controller_handoff: "temporarily suspend the native XR controller stage and restore it on exit"
+  renderer_owner: "the existing React Three Fiber Canvas in shared XR Mode; never a second Canvas"
+  scene_composition: "one canonical authored XR atmosphere, terrain, props, and paused frame plus the Game Mode first-person actor overlay"
+  scene_variant_policy: "fallback, renamed, conditional, duplicate, stale, and legacy arena or environment producers are forbidden"
+  spatial_profile: "reuse the canonical active XR stage placement, playable bounds, and projection-aware static colliders; admit deterministic clear spawns and replace stale surface/terrain profiles"
+  simulation_clock: "ready at tick zero until normalized desktop, pointer, touch, Motion Control, or MCP input"
+  webgl_gate: "synchronous probe; fail closed with the local unsupported state without mounting another scene or renderer"
+  stop_start: "resume the exact in-memory mission tick and state"
+  decision_persistence: "browser-local WorkspaceFs; terminal Decisions remain pending until explicit Save and are never auto-saved"
+  malformed_hydration: "preserve bytes and block Start and Restart until explicit Reset"
+  validation_input_forbid_hardcode_in_repo: true
+kgXrMotionReference:
+  schema: "agentic-graph-xr-motion-reference/v1"
+  stageId: "singapore"
+  appearance:
+    skyColor: "#8ed5f3"
+    fogColor: "#c5e8ed"
+    groundColor: "#e7dec1"
+    waterColor: "#229fad"
+    lightColor: "#fff1d0"
+    lightIntensity: 1.8
+    sunAzimuthDegrees: 35
+    fogDistanceMeters: 92
+    detail: "standard"
+    shadows: true
+  durationSeconds: 6
+  fps: 12
+  subjects:
+    - id: "xr-subject:vehicle-helicopter:1"
+      assetId: "vehicle-helicopter"
+      label: "Helicopter"
+      color: "#f59e0b"
+      position: [7.2, 0.55, 2.1]
+      rotationYDegrees: -31.5
+      scale: 0.42
+    - id: "xr-subject:vehicle-sedan:1"
+      assetId: "vehicle-sedan"
+      label: "Car"
+      color: "#60a5fa"
+      position: [-5.6, 0.15, 3.8]
+      rotationYDegrees: -24
+      scale: 0.82
+  cast:
+    - actorId: "xr-subject:vehicle-helicopter:1"
+      label: "Helicopter"
+      animation: null
+      marks:
+        - timeSeconds: 0
+          position: [7.2, 0.55, 2.1]
+          transition: "hold"
+          gait: "flight"
+    - actorId: "xr-subject:vehicle-sedan:1"
+      label: "Car"
+      animation: null
+      marks:
+        - timeSeconds: 0
+          position: [-5.6, 0.15, 3.8]
+          transition: "hold"
+          gait: "wheeled"
+  camera: []
+runtime_validation:
+  baseline_local_candidate_commit: "067ed16d0a8c77d1c612d6f63aa791ae02fba19c"
+  baseline_local_verified_at: "2026-07-21T07:01:46Z"
+  follow_up_pull_request: 273
+  follow_up_protected_merge_commit: "0b0e70787edb80e71d368d56c1478ffd9655ce0d"
+  exact_main_runtime_commit: "0b0e70787edb80e71d368d56c1478ffd9655ce0d"
+  follow_up_verified_at: "2026-07-21T10:08:11Z"
+  mode_activation: ["xr surface", "3d renderer", "xr stage"]
+  required_states: ["ready", "running", "paused"]
+  controller_parity: ["ball", "rocket"]
+  replayable: true
+  local_assets_only: true
+  required_external_calls: false
+  editor_chrome: true
+  dedicated_editor_chrome: false
+  validation_input_locator_persisted: false
+  external_proof: "operator-supplied public document bytes were read into the local exact-main runtime; no deploy or public mutation occurred"
+  xr_authoring_edited_media_delivery:
+    scope: "xr-authoring-edited-media-delivery"
+    projection_role: "downstream scoped evidence; not a second XR readiness authority"
+    prd: "/docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md"
+    runtime_owner: "canvas/src/components/timeline; canvas/src/features/gitgraph"
+    source_snapshot_schema: "agentic-graph-xr-v2-readiness/v1"
+    source_snapshot_status: "source-ready"
+    canonical_delivery_status: "runtime-ready"
+    canonical_delivery_limit: "XR authoring and native edited-media delivery only"
+    reviewed_feature_commit: "fcd69c6b2d42a00779f55be8c1d57a0ab468339b"
+    pull_request: 674
+    protected_refresh_chain:
+      - "48c58307481c96e5c73c9f4d2f53eb2c2f1c8549"
+      - "fea5e37b9bf0d648284330cfbc3dcca03890def0"
+      - "a6de5722e550e633d0d73f59f187a09ec7388879"
+    canonical_main_commit: "a3ddfef7cc55c38385520173273abd66010e9747"
+    canonical_main_tree: "76c8e22da9c9284f01c2627c8ace9c9d3abcd682"
+    canonical_main_proof:
+      workflow: "Integration"
+      run_id: 30895597328
+      check: "Integration Gate"
+      conclusion: "success"
+      completed_at: "2026-08-04T09:26:58Z"
+      affected_scope: "xr_v2_video_editor"
+      focused_gate: "npm run xr-v2:review-ready"
+      browser_observation_schema: "agentic-graph-xr-v2-browser-smoke/v1"
+      browser_observation: "pass"
+    canonical_runtime_reconciliation:
+      integration_result_schema: "agentic-device-integration-result/v1"
+      integration_status: "runtime_ready"
+      readiness_schema: "agentic-local-runtime-readiness/v1"
+      feature_runtime_source_revision: "a3ddfef7cc55c38385520173273abd66010e9747"
+      feature_runtime_agentic_canvas_os_revision: "217a8a42d6497e059839a6a1f809c2459530ca54"
+      feature_runtime_evidence_digest: "fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23"
+      feature_runtime_verified_at: "2026-08-04T09:29:02.924Z"
+    proven:
+      - "canonical ECS projection including entity zero"
+      - "real standalone Three.js material application"
+      - "mounted canonical Timeline command routing"
+      - "same-origin browser-native edited-media export"
+      - "non-empty Blob, decoded metadata, and bounded playback"
+      - "media teardown and object-URL revocation without observed page or media errors"
+      - "clean-room dependency and source enforcement"
+    external_dependencies: []
+    no_deployment: true
+    deploy_boundary: "Dev-only"
+    broader_xr_status: "blocked"
+    blocked_claims:
+      - "mounted-renderer material wiring"
+      - "live depth model and quality"
+      - "reference-device frame budget"
+      - "camera permission and lifecycle on named physical devices"
+      - "physical-headset XR behavior"
+      - "Production availability"
+      - "deployment authority"
+mcp_control:
+  inspect_tool: "agentic-graph.inspect_local_xr_scene_assets"
+  control_tool: "agentic-graph.control_local_xr_scene"
+  launch: "/xr.physics @canvas #controller operation=develop-run mode=ball"
+  switch: "/xr.physics @canvas #controller operation=select mode=rocket"
+  reset: "/xr.physics @canvas #controller operation=reset"
+animation_rehearsal:
+  control_tool: "agentic-graph.control_local_animation"
+  quarter_speed: "/animation.control @canvas operation=play rate=0.25"
+  next_frame: "/animation.control @canvas operation=scrub frame=next"
+  previous_frame: "/animation.control @canvas operation=scrub frame=previous"
+  scope: "authored animation and camera tracks; interactive physics and Game Mode are not rewound"
+  load_policy: "open Animation and BottomPanel Timeline on demand"
 flow:
-  direction: LR
-  edgeType: smoothstep
-  balancedViewportPreset: widgetFrontmatter
+  direction: {key: direction, type: string, value: "LR"}
+  edgeType: {key: edgeType, type: string, value: "smoothstep"}
+  balancedViewportPreset: {key: balancedViewportPreset, type: string, value: "widgetFrontmatter"}
   nodes:
-    - id: schema:XrParticleEmitter
-      type: EcsComponentSchema
-      label: XrParticleEmitter
-      position:
-        x: 0
-        y: -2760
-      ecsComponent:
-        name: XrParticleEmitter
-        fields:
-          rate: f32
-          lifetime: f32
-          ceiling: u16
-          size: f32
-          color: u32
-      properties:
-        ecsComponent:
-          name: XrParticleEmitter
-          fields:
-            rate: f32
-            lifetime: f32
-            ceiling: u16
-            size: f32
-            color: u32
-    - id: schema:XrRenderable
-      type: EcsComponentSchema
-      label: XrRenderable
-      position:
-        x: 0
-        y: -2520
-      ecsComponent:
-        name: XrRenderable
-        fields:
-          geometryKind: u8
-          visible: u8
-      properties:
-        ecsComponent:
-          name: XrRenderable
-          fields:
-            geometryKind: u8
-            visible: u8
-    - id: schema:XrRig
-      type: EcsComponentSchema
-      label: XrRig
-      position:
-        x: 0
-        y: -2280
-      ecsComponent:
-        name: XrRig
-        fields:
-          enabled: u8
-      properties:
-        ecsComponent:
-          name: XrRig
-          fields:
-            enabled: u8
-    - id: schema:XrTransform
-      type: EcsComponentSchema
-      label: XrTransform
-      position:
-        x: 0
-        y: -2040
-      ecsComponent:
-        name: XrTransform
-        fields:
-          px: f32
-          py: f32
-          pz: f32
-          qx: f32
-          qy: f32
-          qz: f32
-          qw: f32
-          sx: f32
-          sy: f32
-          sz: f32
-      properties:
-        ecsComponent:
-          name: XrTransform
-          fields:
-            px: f32
-            py: f32
-            pz: f32
-            qx: f32
-            qy: f32
-            qz: f32
-            qw: f32
-            sx: f32
-            sy: f32
-            sz: f32
-    - id: entity:scene.hero
-      type: EcsEntity
-      label: Hero
-      position:
-        x: 0
-        y: -1800
-      ecsEntity:
-        entityRef: scene.hero
-        components:
-          XrTransform:
-            px: 0
-            py: 0
-            pz: 0
-            qx: 0
-            qy: 0
-            qz: 0
-            qw: 1
-            sx: 1
-            sy: 1
-            sz: 1
-          XrRenderable:
-            geometryKind: 0
-            visible: 1
-          XrParticleEmitter:
-            rate: 12
-            lifetime: 0.75
-            ceiling: 64
-            size: 0.06
-            color: 6737151
-          XrRig:
-            enabled: 1
-      properties:
-        ecsEntity:
-          entityRef: scene.hero
-          components:
-            XrTransform:
-              px: 0
-              py: 0
-              pz: 0
-              qx: 0
-              qy: 0
-              qz: 0
-              qw: 1
-              sx: 1
-              sy: 1
-              sz: 1
-            XrRenderable:
-              geometryKind: 0
-              visible: 1
-            XrParticleEmitter:
-              rate: 12
-              lifetime: 0.75
-              ceiling: 64
-              size: 0.06
-              color: 6737151
-            XrRig:
-              enabled: 1
-    - id: entity:scene.marker
-      type: EcsEntity
-      label: Marker
-      position:
-        x: 0
-        y: -1560
-      ecsEntity:
-        entityRef: scene.marker
-        components:
-          XrTransform:
-            px: -1.5
-            py: -0.5
-            pz: 0
-            qx: 0
-            qy: 0
-            qz: 0
-            qw: 1
-            sx: 1
-            sy: 1
-            sz: 1
-      properties:
-        ecsEntity:
-          entityRef: scene.marker
-          components:
-            XrTransform:
-              px: -1.5
-              py: -0.5
-              pz: 0
-              qx: 0
-              qy: 0
-              qz: 0
-              qw: 1
-              sx: 1
-              sy: 1
-              sz: 1
-    - id: action:hero:burst
-      type: XrBehaviorAction
-      label: Burst particles
-      position:
-        x: 0
-        y: -1320
-      properties:
-        xrBehaviorAction:
-          actionId: hero-burst
-          kind: emit-particle-burst
-          targetEntityRef: scene.hero
-          parameters:
-            count: 8
-      xrBehaviorAction:
-        actionId: hero-burst
-        kind: emit-particle-burst
-        targetEntityRef: scene.hero
-        parameters:
-          count: 8
-    - id: behavior:hero:select
-      type: XrBehaviorTrigger
-      label: Select hero
-      position:
-        x: 0
-        y: -1080
-      properties:
-        xrBehaviorTrigger:
-          behaviorId: hero-select
-          trigger: select
-          sourceEntityRef: scene.hero
-      xrBehaviorTrigger:
-        behaviorId: hero-select
-        trigger: select
-        sourceEntityRef: scene.hero
-    - id: xr_v2_demo_entry
-      type: XrDemoControl
-      label: Run XR v2 Browser Demo
-      position:
-        x: 0
-        y: -840
-      output: Apply this source document, then run npm run xr-v2:review-ready for the clean browser evidence gate.
-      properties:
-        role: lifecycle
-        state: browser-demo-ready
-        output: Apply this source document, then run npm run xr-v2:review-ready for the clean browser evidence gate.
-      role: lifecycle
-      state: browser-demo-ready
-    - id: xr_v2_ac_01
-      type: XrDemoValidation
-      label: AC-1 Capability detection
-      position:
-        x: 0
-        y: -600
-      criterion: AC-1
-      evidenceState: source-backed
-      output: Resolve exactly one pinned capability tier; physical matrix remains external certification.
-      properties:
-        criterion: AC-1
-        evidenceState: source-backed
-        output: Resolve exactly one pinned capability tier; physical matrix remains external certification.
-    - id: xr_v2_ac_02
-      type: XrDemoValidation
-      label: AC-2 Live capture default
-      position:
-        x: 0
-        y: -360
-      criterion: AC-2
-      evidenceState: browser-backed
-      output: After explicit camera Start, sample the canonical stream through local depth inference and render live DIBR stereo previews; named-device frame budget remains external proof.
-      properties:
-        criterion: AC-2
-        evidenceState: browser-backed
-        output: After explicit camera Start, sample the canonical stream through local depth inference and render live DIBR stereo previews; named-device frame budget remains external proof.
-    - id: xr_v2_ac_03
-      type: XrDemoValidation
-      label: AC-3 Post-process fallback
-      position:
-        x: 0
-        y: -120
-      criterion: AC-3
-      evidenceState: browser-backed
-      output: On consecutive frame-budget breaches, continue raw capture and atomically persist the flat asset plus one typed post-process job on save.
-      properties:
-        criterion: AC-3
-        evidenceState: browser-backed
-        output: On consecutive frame-budget breaches, continue raw capture and atomically persist the flat asset plus one typed post-process job on save.
-    - id: xr_v2_ac_04
-      type: XrDemoValidation
-      label: AC-4 Progressive viewer
-      position:
-        x: 0
-        y: 120
-      criterion: AC-4
-      evidenceState: browser-observable-after-saved-asset-render
-      output: Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence.
-      properties:
-        criterion: AC-4
-        evidenceState: browser-observable-after-saved-asset-render
-        output: Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence.
-    - id: xr_v2_ac_05
-      type: XrDemoValidation
-      label: AC-5 iOS constraint
-      position:
-        x: 0
-        y: 360
-      criterion: AC-5
-      evidenceState: source-backed
-      output: Fail closed from WebXR tiers when platform facts disallow WebXR; named iOS proof remains external.
-      properties:
-        criterion: AC-5
-        evidenceState: source-backed
-        output: Fail closed from WebXR tiers when platform facts disallow WebXR; named iOS proof remains external.
-    - id: xr_v2_ac_06
-      type: XrDemoValidation
-      label: AC-6 ECS composition
-      position:
-        x: 0
-        y: 600
-      criterion: AC-6
-      evidenceState: browser-backed
-      output: Project the mounted fixture entities and component schemas without duplicate query results.
-      properties:
-        criterion: AC-6
-        evidenceState: browser-backed
-        output: Project the mounted fixture entities and component schemas without duplicate query results.
-    - id: xr_v2_ac_07
-      type: XrDemoValidation
-      label: AC-7 Material graph
-      position:
-        x: 0
-        y: 840
-      criterion: AC-7
-      evidenceState: browser-backed
-      output: Compile and apply the checker material graph to the Hero target.
-      properties:
-        criterion: AC-7
-        evidenceState: browser-backed
-        output: Compile and apply the checker material graph to the Hero target.
-    - id: xr_v2_ac_08
-      type: XrDemoValidation
-      label: AC-8 Behavior graph
-      position:
-        x: 0
-        y: 1080
-      criterion: AC-8
-      evidenceState: source-backed
-      output: Dispatch the wired Hero select action exactly once and keep unwired triggers inert.
-      properties:
-        criterion: AC-8
-        evidenceState: source-backed
-        output: Dispatch the wired Hero select action exactly once and keep unwired triggers inert.
-    - id: xr_v2_ac_09
-      type: XrDemoValidation
-      label: AC-9 Particles
-      position:
-        x: 0
-        y: 1320
-      criterion: AC-9
-      evidenceState: source-backed
-      output: Keep the Hero emitter within rate, lifetime, and ceiling bounds.
-      properties:
-        criterion: AC-9
-        evidenceState: source-backed
-        output: Keep the Hero emitter within rate, lifetime, and ceiling bounds.
-    - id: xr_v2_ac_10
-      type: XrDemoValidation
-      label: AC-10 Timeline
-      position:
-        x: 0
-        y: 1560
-      criterion: AC-10
-      evidenceState: source-backed
-      output: Interpolate the Hero Arm bone-pose track at the mounted playhead.
-      properties:
-        criterion: AC-10
-        evidenceState: source-backed
-        output: Interpolate the Hero Arm bone-pose track at the mounted playhead.
-    - id: xr_v2_ac_11
-      type: XrDemoValidation
-      label: AC-11 Packaging
-      position:
-        x: 0
-        y: 1800
-      criterion: AC-11
-      evidenceState: browser-observable-after-explicit-action
-      output: Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances.
-      properties:
-        criterion: AC-11
-        evidenceState: browser-observable-after-explicit-action
-        output: Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances.
-    - id: xr_v2_ac_12
-      type: XrDemoValidation
-      label: AC-12 Connected preview
-      position:
-        x: 0
-        y: 2040
-      criterion: AC-12
-      evidenceState: browser-observable-after-explicit-action
-      output: Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload.
-      properties:
-        criterion: AC-12
-        evidenceState: browser-observable-after-explicit-action
-        output: Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload.
-    - id: xr_v2_certification_boundary
-      type: XrDemoValidation
-      label: External Physical-device Certification
-      position:
-        x: 0
-        y: 2280
-      browserDemoState: runtime-ready
-      browserLocalMountState: mounted
-      output: Browser demo proof never substitutes for named camera, sensor, headset, device, or Production certification.
-      physicalDeviceState: external-required
-      pinnedContractState: partial
-      productionState: not-claimed
-      properties:
-        role: promotion-boundary
-        browserDemoState: runtime-ready
-        browserLocalMountState: mounted
-        pinnedContractState: partial
-        physicalDeviceState: external-required
-        productionState: not-claimed
-        output: Browser demo proof never substitutes for named camera, sensor, headset, device, or Production certification.
-      role: promotion-boundary
-    - id: material:hero
-      type: XrMaterialGraph
-      label: Hero checker material
-      position:
-        x: 0
-        y: 2520
-      properties:
-        xrMaterialGraph:
-          schema: agentic-graph-xr-material-graph/v1
-          nodes:
-            - id: albedo
-              type: color
-              value: "#336699"
-            - id: surface
-              type: texture-2d
-              assetId: builtin:checker-v1
-            - id: roughness
-              type: number
-              value: 0.35
-            - id: output
-              type: mesh-standard-output
-              bindings:
-                color: albedo
-                map: surface
-                roughness: roughness
-      xrMaterialGraph:
-        schema: agentic-graph-xr-material-graph/v1
-        nodes:
-          - id: albedo
-            type: color
-            value: "#336699"
-          - id: surface
-            type: texture-2d
-            assetId: builtin:checker-v1
-          - id: roughness
-            type: number
-            value: 0.35
-          - id: output
-            type: mesh-standard-output
-            bindings:
-              color: albedo
-              map: surface
-              roughness: roughness
-    - id: timeline:hero
-      type: XrTimelineSequence
-      label: Hero arm animation
-      position:
-        x: 0
-        y: 2760
-      properties:
-        xrTimelineSequence:
-          schema: agentic-graph-xr-timeline-sequence/v1
-          durationSeconds: 2
-          loop: false
-          tracks:
-            - id: arm-pose
-              kind: bone-pose
-              targetName: Arm
-              keyframes:
-                - timeSeconds: 0
-                  value:
-                    translation:
-                      - 0
-                      - 0
-                      - 0
-                    rotation:
-                      - 0
-                      - 0
-                      - 0
-                      - 1
-                    scale:
-                      - 1
-                      - 1
-                      - 1
-                - timeSeconds: 2
-                  value:
-                    translation:
-                      - 0
-                      - 1
-                      - 0
-                    rotation:
-                      - 0
-                      - 1
-                      - 0
-                      - 0
-                    scale:
-                      - 1
-                      - 1
-                      - 1
-      xrTimelineSequence:
-        schema: agentic-graph-xr-timeline-sequence/v1
-        durationSeconds: 2
-        loop: false
-        tracks:
-          - id: arm-pose
-            kind: bone-pose
-            targetName: Arm
-            keyframes:
-              - timeSeconds: 0
-                value:
-                  translation:
-                    - 0
-                    - 0
-                    - 0
-                  rotation:
-                    - 0
-                    - 0
-                    - 0
-                    - 1
-                  scale:
-                    - 1
-                    - 1
-                    - 1
-              - timeSeconds: 2
-                value:
-                  translation:
-                    - 0
-                    - 1
-                    - 0
-                  rotation:
-                    - 0
-                    - 1
-                    - 0
-                    - 0
-                  scale:
-                    - 1
-                    - 1
-                    - 1
-  connections:
-    - from: material:hero
-      to: entity:scene.hero
-      label: xr-material-target
-    - from: behavior:hero:select
-      to: action:hero:burst
-      label: xr-behavior-wire
-    - from: timeline:hero
-      to: entity:scene.hero
-      label: xr-timeline-target
-    - from: xr_v2_demo_entry
-      to: xr_v2_ac_01
-      label: validate AC-1
-    - from: xr_v2_ac_01
-      to: xr_v2_ac_02
-      label: validate AC-2
-    - from: xr_v2_ac_02
-      to: xr_v2_ac_03
-      label: validate AC-3
-    - from: xr_v2_ac_03
-      to: xr_v2_ac_04
-      label: validate AC-4
-    - from: xr_v2_ac_04
-      to: xr_v2_ac_05
-      label: validate AC-5
-    - from: xr_v2_ac_05
-      to: xr_v2_ac_06
-      label: validate AC-6
-    - from: xr_v2_ac_06
-      to: xr_v2_ac_07
-      label: validate AC-7
-    - from: xr_v2_ac_07
-      to: xr_v2_ac_08
-      label: validate AC-8
-    - from: xr_v2_ac_08
-      to: xr_v2_ac_09
-      label: validate AC-9
-    - from: xr_v2_ac_09
-      to: xr_v2_ac_10
-      label: validate AC-10
-    - from: xr_v2_ac_10
-      to: xr_v2_ac_11
-      label: validate AC-11
-    - from: xr_v2_ac_11
-      to: xr_v2_ac_12
-      label: validate AC-12
-    - from: xr_v2_ac_12
-      to: xr_v2_certification_boundary
-      label: stop at external certification
+    - id: {key: id, type: string, value: "xr_demo_entry"}
+      type: {key: type, type: string, value: "XrDemoControl"}
+      label: {key: label, type: string, value: "Develop and Run"}
+      pos: {key: pos, type: object, value: {"x":-420,"y":0}}
+      properties: {key: properties, type: object, value: {"role":"lifecycle","state":"runtime-ready","output":"Apply this Source Files document to launch the native demo, then switch controllers without resetting motion."}}
+    - id: {key: id, type: string, value: "xr_ball_controller"}
+      type: {key: type, type: string, value: "XrDemoController"}
+      label: {key: label, type: string, value: "Ball Controller"}
+      pos: {key: pos, type: object, value: {"x":0,"y":-180}}
+      properties: {key: properties, type: object, value: {"role":"controller","controllerId":"ball","output":"Roll, jump, steer in air, and apply modifier torque."}}
+    - id: {key: id, type: string, value: "xr_rocket_controller"}
+      type: {key: type, type: string, value: "XrDemoController"}
+      label: {key: label, type: string, value: "Rocket Controller"}
+      pos: {key: pos, type: object, value: {"x":0,"y":180}}
+      properties: {key: properties, type: object, value: {"role":"controller","controllerId":"rocket","output":"Thrust, tilt, steer laterally, and stabilize with the modifier."}}
+    - id: {key: id, type: string, value: "xr_runtime_gate"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "Native Runtime Gate"}
+      pos: {key: pos, type: object, value: {"x":440,"y":0}}
+      properties: {key: properties, type: object, value: {"role":"validation","state":"runtime-ready","output":"Verify deterministic stepping, controller switching, camera follow, keyboard input, and gamepad input."}}
+    - id: {key: id, type: string, value: "xr_edited_media_proof"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "Scoped Edited-media Proof"}
+      pos: {key: pos, type: object, value: {"x":880,"y":300}}
+      properties: {key: properties, type: object, value: {"role":"downstream canonical-main evidence projection","scope":"xr-authoring-edited-media-delivery","sourceSnapshotState":"source-ready","canonicalDeliveryState":"runtime-ready","broaderXrState":"blocked","output":"Inspect the protected-main XR v2 review gate and canonical runtime receipt; applying this seed does not rerun the browser smoke."}}
+    - id: {key: id, type: string, value: "schema:XrParticleEmitter"}
+      type: {key: type, type: string, value: "EcsComponentSchema"}
+      label: {key: label, type: string, value: "XrParticleEmitter"}
+      position: {key: position, type: object, value: {"x":0,"y":-2760}}
+      properties: {key: properties, type: object, value: {"ecsComponent":{"name":"XrParticleEmitter","fields":{"rate":"f32","lifetime":"f32","ceiling":"u16","size":"f32","color":"u32"}}}}
+    - id: {key: id, type: string, value: "schema:XrRenderable"}
+      type: {key: type, type: string, value: "EcsComponentSchema"}
+      label: {key: label, type: string, value: "XrRenderable"}
+      position: {key: position, type: object, value: {"x":0,"y":-2520}}
+      properties: {key: properties, type: object, value: {"ecsComponent":{"name":"XrRenderable","fields":{"geometryKind":"u8","visible":"u8"}}}}
+    - id: {key: id, type: string, value: "schema:XrRig"}
+      type: {key: type, type: string, value: "EcsComponentSchema"}
+      label: {key: label, type: string, value: "XrRig"}
+      position: {key: position, type: object, value: {"x":0,"y":-2280}}
+      properties: {key: properties, type: object, value: {"ecsComponent":{"name":"XrRig","fields":{"enabled":"u8"}}}}
+    - id: {key: id, type: string, value: "schema:XrTransform"}
+      type: {key: type, type: string, value: "EcsComponentSchema"}
+      label: {key: label, type: string, value: "XrTransform"}
+      position: {key: position, type: object, value: {"x":0,"y":-2040}}
+      properties: {key: properties, type: object, value: {"ecsComponent":{"name":"XrTransform","fields":{"px":"f32","py":"f32","pz":"f32","qx":"f32","qy":"f32","qz":"f32","qw":"f32","sx":"f32","sy":"f32","sz":"f32"}}}}
+    - id: {key: id, type: string, value: "entity:scene.hero"}
+      type: {key: type, type: string, value: "EcsEntity"}
+      label: {key: label, type: string, value: "Hero"}
+      position: {key: position, type: object, value: {"x":0,"y":-1800}}
+      properties: {key: properties, type: object, value: {"ecsEntity":{"entityRef":"scene.hero","components":{"XrTransform":{"px":0,"py":0,"pz":0,"qx":0,"qy":0,"qz":0,"qw":1,"sx":1,"sy":1,"sz":1},"XrRenderable":{"geometryKind":0,"visible":1},"XrParticleEmitter":{"rate":12,"lifetime":0.75,"ceiling":64,"size":0.06,"color":6737151},"XrRig":{"enabled":1}}}}}
+    - id: {key: id, type: string, value: "entity:scene.marker"}
+      type: {key: type, type: string, value: "EcsEntity"}
+      label: {key: label, type: string, value: "Marker"}
+      position: {key: position, type: object, value: {"x":0,"y":-1560}}
+      properties: {key: properties, type: object, value: {"ecsEntity":{"entityRef":"scene.marker","components":{"XrTransform":{"px":-1.5,"py":-0.5,"pz":0,"qx":0,"qy":0,"qz":0,"qw":1,"sx":1,"sy":1,"sz":1}}}}}
+    - id: {key: id, type: string, value: "action:hero:burst"}
+      type: {key: type, type: string, value: "XrBehaviorAction"}
+      label: {key: label, type: string, value: "Burst particles"}
+      position: {key: position, type: object, value: {"x":0,"y":-1320}}
+      properties: {key: properties, type: object, value: {"xrBehaviorAction":{"actionId":"hero-burst","kind":"emit-particle-burst","targetEntityRef":"scene.hero","parameters":{"count":8}}}}
+    - id: {key: id, type: string, value: "behavior:hero:select"}
+      type: {key: type, type: string, value: "XrBehaviorTrigger"}
+      label: {key: label, type: string, value: "Select hero"}
+      position: {key: position, type: object, value: {"x":0,"y":-1080}}
+      properties: {key: properties, type: object, value: {"xrBehaviorTrigger":{"behaviorId":"hero-select","trigger":"select","sourceEntityRef":"scene.hero"}}}
+    - id: {key: id, type: string, value: "xr_v2_demo_entry"}
+      type: {key: type, type: string, value: "XrDemoControl"}
+      label: {key: label, type: string, value: "Run XR v2 Browser Demo"}
+      position: {key: position, type: object, value: {"x":0,"y":-840}}
+      properties: {key: properties, type: object, value: {"role":"lifecycle","state":"browser-demo-ready","output":"Apply this source document, then run npm run xr-v2:review-ready for the clean browser evidence gate."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_01"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-1 Capability detection"}
+      position: {key: position, type: object, value: {"x":0,"y":-600}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-1","evidenceState":"source-backed","output":"Resolve exactly one pinned capability tier; physical matrix remains external certification."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_02"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-2 Live capture default"}
+      position: {key: position, type: object, value: {"x":0,"y":-360}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-2","evidenceState":"browser-backed","output":"After explicit camera Start, sample the canonical stream through local depth inference and render live DIBR stereo previews; named-device frame budget remains external proof."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_03"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-3 Post-process fallback"}
+      position: {key: position, type: object, value: {"x":0,"y":-120}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-3","evidenceState":"browser-backed","output":"On consecutive frame-budget breaches, continue raw capture and atomically persist the flat asset plus one typed post-process job on save."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_04"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-4 Progressive viewer"}
+      position: {key: position, type: object, value: {"x":0,"y":120}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-4","evidenceState":"browser-observable-after-saved-asset-render","output":"Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_05"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-5 iOS constraint"}
+      position: {key: position, type: object, value: {"x":0,"y":360}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-5","evidenceState":"source-backed","output":"Fail closed from WebXR tiers when platform facts disallow WebXR; named iOS proof remains external."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_06"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-6 ECS composition"}
+      position: {key: position, type: object, value: {"x":0,"y":600}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-6","evidenceState":"browser-backed","output":"Project the mounted fixture entities and component schemas without duplicate query results."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_07"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-7 Material graph"}
+      position: {key: position, type: object, value: {"x":0,"y":840}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-7","evidenceState":"browser-backed","output":"Compile and apply the checker material graph to the Hero target."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_08"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-8 Behavior graph"}
+      position: {key: position, type: object, value: {"x":0,"y":1080}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-8","evidenceState":"source-backed","output":"Dispatch the wired Hero select action exactly once and keep unwired triggers inert."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_09"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-9 Particles"}
+      position: {key: position, type: object, value: {"x":0,"y":1320}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-9","evidenceState":"source-backed","output":"Keep the Hero emitter within rate, lifetime, and ceiling bounds."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_10"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-10 Timeline"}
+      position: {key: position, type: object, value: {"x":0,"y":1560}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-10","evidenceState":"source-backed","output":"Interpolate the Hero Arm bone-pose track at the mounted playhead."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_11"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-11 Packaging"}
+      position: {key: position, type: object, value: {"x":0,"y":1800}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-11","evidenceState":"browser-observable-after-explicit-action","output":"Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances."}}
+    - id: {key: id, type: string, value: "xr_v2_ac_12"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "AC-12 Connected preview"}
+      position: {key: position, type: object, value: {"x":0,"y":2040}}
+      properties: {key: properties, type: object, value: {"criterion":"AC-12","evidenceState":"browser-observable-after-explicit-action","output":"Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload."}}
+    - id: {key: id, type: string, value: "xr_v2_certification_boundary"}
+      type: {key: type, type: string, value: "XrDemoValidation"}
+      label: {key: label, type: string, value: "External Physical-device Certification"}
+      position: {key: position, type: object, value: {"x":0,"y":2280}}
+      properties: {key: properties, type: object, value: {"role":"promotion-boundary","browserDemoState":"runtime-ready","browserLocalMountState":"mounted","pinnedContractState":"partial","physicalDeviceState":"external-required","productionState":"not-claimed","output":"Browser demo proof never substitutes for named camera, sensor, headset, device, or Production certification."}}
+    - id: {key: id, type: string, value: "material:hero"}
+      type: {key: type, type: string, value: "XrMaterialGraph"}
+      label: {key: label, type: string, value: "Hero checker material"}
+      position: {key: position, type: object, value: {"x":0,"y":2520}}
+      properties: {key: properties, type: object, value: {"xrMaterialGraph":{"schema":"agentic-graph-xr-material-graph/v1","nodes":[{"id":"albedo","type":"color","value":"#336699"},{"id":"surface","type":"texture-2d","assetId":"builtin:checker-v1"},{"id":"roughness","type":"number","value":0.35},{"id":"output","type":"mesh-standard-output","bindings":{"color":"albedo","map":"surface","roughness":"roughness"}}]}}}
+    - id: {key: id, type: string, value: "timeline:hero"}
+      type: {key: type, type: string, value: "XrTimelineSequence"}
+      label: {key: label, type: string, value: "Hero arm animation"}
+      position: {key: position, type: object, value: {"x":0,"y":2760}}
+      properties: {key: properties, type: object, value: {"xrTimelineSequence":{"schema":"agentic-graph-xr-timeline-sequence/v1","durationSeconds":2,"loop":false,"tracks":[{"id":"arm-pose","kind":"bone-pose","targetName":"Arm","keyframes":[{"timeSeconds":0,"value":{"translation":[0,0,0],"rotation":[0,0,0,1],"scale":[1,1,1]}},{"timeSeconds":2,"value":{"translation":[0,1,0],"rotation":[0,1,0,0],"scale":[1,1,1]}}]}]}}}
+  edges:
+    - source: {key: source, type: string, value: "xr_demo_entry"}
+      target: {key: target, type: string, value: "xr_ball_controller"}
+      label: {key: label, type: string, value: "select ball"}
+    - source: {key: source, type: string, value: "xr_demo_entry"}
+      target: {key: target, type: string, value: "xr_rocket_controller"}
+      label: {key: label, type: string, value: "select rocket"}
+    - source: {key: source, type: string, value: "xr_ball_controller"}
+      target: {key: target, type: string, value: "xr_runtime_gate"}
+      label: {key: label, type: string, value: "validate"}
+    - source: {key: source, type: string, value: "xr_rocket_controller"}
+      target: {key: target, type: string, value: "xr_runtime_gate"}
+      label: {key: label, type: string, value: "validate"}
+    - source: {key: source, type: string, value: "xr_demo_entry"}
+      target: {key: target, type: string, value: "xr_edited_media_proof"}
+      label: {key: label, type: string, value: "inspect scoped proof"}
+    - source: {key: source, type: string, value: "material:hero"}
+      target: {key: target, type: string, value: "entity:scene.hero"}
+      label: {key: label, type: string, value: "xr-material-target"}
+    - source: {key: source, type: string, value: "behavior:hero:select"}
+      target: {key: target, type: string, value: "action:hero:burst"}
+      label: {key: label, type: string, value: "xr-behavior-wire"}
+    - source: {key: source, type: string, value: "timeline:hero"}
+      target: {key: target, type: string, value: "entity:scene.hero"}
+      label: {key: label, type: string, value: "xr-timeline-target"}
+    - source: {key: source, type: string, value: "xr_v2_demo_entry"}
+      target: {key: target, type: string, value: "xr_v2_ac_01"}
+      label: {key: label, type: string, value: "validate AC-1"}
+    - source: {key: source, type: string, value: "xr_v2_ac_01"}
+      target: {key: target, type: string, value: "xr_v2_ac_02"}
+      label: {key: label, type: string, value: "validate AC-2"}
+    - source: {key: source, type: string, value: "xr_v2_ac_02"}
+      target: {key: target, type: string, value: "xr_v2_ac_03"}
+      label: {key: label, type: string, value: "validate AC-3"}
+    - source: {key: source, type: string, value: "xr_v2_ac_03"}
+      target: {key: target, type: string, value: "xr_v2_ac_04"}
+      label: {key: label, type: string, value: "validate AC-4"}
+    - source: {key: source, type: string, value: "xr_v2_ac_04"}
+      target: {key: target, type: string, value: "xr_v2_ac_05"}
+      label: {key: label, type: string, value: "validate AC-5"}
+    - source: {key: source, type: string, value: "xr_v2_ac_05"}
+      target: {key: target, type: string, value: "xr_v2_ac_06"}
+      label: {key: label, type: string, value: "validate AC-6"}
+    - source: {key: source, type: string, value: "xr_v2_ac_06"}
+      target: {key: target, type: string, value: "xr_v2_ac_07"}
+      label: {key: label, type: string, value: "validate AC-7"}
+    - source: {key: source, type: string, value: "xr_v2_ac_07"}
+      target: {key: target, type: string, value: "xr_v2_ac_08"}
+      label: {key: label, type: string, value: "validate AC-8"}
+    - source: {key: source, type: string, value: "xr_v2_ac_08"}
+      target: {key: target, type: string, value: "xr_v2_ac_09"}
+      label: {key: label, type: string, value: "validate AC-9"}
+    - source: {key: source, type: string, value: "xr_v2_ac_09"}
+      target: {key: target, type: string, value: "xr_v2_ac_10"}
+      label: {key: label, type: string, value: "validate AC-10"}
+    - source: {key: source, type: string, value: "xr_v2_ac_10"}
+      target: {key: target, type: string, value: "xr_v2_ac_11"}
+      label: {key: label, type: string, value: "validate AC-11"}
+    - source: {key: source, type: string, value: "xr_v2_ac_11"}
+      target: {key: target, type: string, value: "xr_v2_ac_12"}
+      label: {key: label, type: string, value: "validate AC-12"}
+    - source: {key: source, type: string, value: "xr_v2_ac_12"}
+      target: {key: target, type: string, value: "xr_v2_certification_boundary"}
+      label: {key: label, type: string, value: "stop at external certification"}
 ---
 
 # AR/VR/XR Runtime-readiness Demo
@@ -754,9 +607,13 @@ and later revisions cannot silently expand the demo's evidence claim.
 Run `npm run dev`, then apply **Explorer → Source Files → docs →
 workspace-seeds → agentic-graph-ar-vr-xr-runtime-readiness-demo.md**. The applied
 document activates the existing canonical XR world through the XR v2 runtime
-adapter and opens Motion Control; it does not declare a second Three/XR world
-owner. Run `npm run xr-v2:review-ready` from a clean checkout for the focused
+readiness adapter and shared physics lifecycle, and opens Motion Control; this document owns the shared Three/XR world. Run `npm run xr-v2:review-ready` from a clean checkout for the focused
 source, unit, and Chromium evidence gate.
+
+Flow settings, node fields, and edge fields use exact `{key, type, value}`
+wrappers. The shared `canvas/src/lib/graph/keyTypeValue.ts` decoder serves the
+Editor, graph, panels, and source gates; object values retain their own schemas.
+Plain identity and runtime metadata remain ordinary YAML.
 
 The graph source-authors the same ECS schemas, Hero/Marker entities, checker
 material graph, exact-once behavior wire, particle emitter, rig, and timeline
@@ -812,20 +669,79 @@ validation and make no automatic network, permission, camera, sensor, or
 immersive-session request. This seed claims neither Production availability nor
 deployment authority.
 
-## Demo checks
+## Physics Playground
 
-- [x] Source-authored `run_ready_demo.id: xr-v2` owns activation and conflicts fail closed.
-- [x] Applying the document requests the shared 3D host; the source-authored XR v2 runtime activates the canonical XR stage and Motion Control without a second world owner.
-- [x] The canonical `/docs/workspace-seeds/…` row is the validation and activation path; no environment selector bypasses Explorer selection.
-- [x] The exact pinned commit, Git blob, and content SHA-256 are recorded.
-- [x] The mounted authoring fixture and AC-1 through AC-12 are source-authored as graph nodes and edges.
-- [x] User-started canonical camera frames reach local depth inference, DIBR preview, IndexedDB capture artifacts, and bounded raw/post-process fallback.
-- [x] Saved assets expose exactly `xr_capability_tier`, `synthesis_mode`, `depth_metadata_ref`, and `fallback_triggered`.
-- [x] The browser gate saves a real capture, reloads the page, reopens it from IndexedDB, and publishes AC-4 evidence only after two distinct saved frames render or raw-video time advances.
-- [x] Visible AC-11 binds the raw clip and encoded source tracks before exact mux, while AC-12 acknowledges only after the attached viewer canvas paints the transported edit; both begin only on user click.
-- [x] Explicit existing-storage publish/list/read is client-only, manifest-last, integrity-checked, atomic on import, and performs no network request on mount.
-- [x] Shared-storage workspace authentication and server-side digest recomputation remain named external promotion blockers.
-- [x] The focused local browser gate is `npm run xr-v2:review-ready`.
-- [x] Camera and sensors remain user-controlled and disabled until explicit opt-in.
-- [x] Browser-local mounted runtime readiness is separated from external physical-device certification.
-- [x] Production availability and deployment authority remain unclaimed.
+The same Source Files document activates a playable XR physics playground inside the normal agentic-graph workspace. The default Singapore waterfront terrain, player presentations, physics stepping, inputs, controller switching, objective loop, and selectable camera source are owned by agentic-graph runtime modules and need no remote service or downloaded asset.
+
+### Play and author
+
+From the repository root, run `npm run dev`. In agentic-graph, open **Explorer → Source Files → docs → workspace-seeds → agentic-graph-ar-vr-xr-runtime-readiness-demo.md**. Applying this document starts the Beach Ball, playground, camera, and bottom vehicle switcher automatically while Explorer remains available.
+
+Home Apex (`npm run dev:apex`) consumes this same source through **Demo → Physics Playground**. Open **FloatingPanel → Animation** and **BottomPanel → Timeline** when rehearsing; the default keeps Timeline closed to preserve canvas space. Apply a compatible authored motion, choose **0.25x**, then use the previous/next frame controls to pause on consecutive authored frames. The shared frame/FPS readout follows the authored document and disables stepping at its bounds. This samples authored animation and camera tracks; it does not rewind the live physics simulation or a Game Mode mission.
+
+The native objective HUD shows the key-to-treasure objective and provides **Pause / Resume**, **Reset**, and **Replay** after completion. **Motion Control → Start** enables optional local camera input; **Stop** releases it. Pose-input frames are neither stored nor synchronized; explicit XR capture separately saves the authorized spatial clip. Game Mode keeps its existing explicit **Save** action for terminal Decisions.
+
+Use **Timeline → SCENE → Scene appearance** for a look preset, or **FloatingPanel
+→ Media → 3D for XR → Scene appearance** for sky, horizon, ground, water,
+sunlight, direction, haze, shadows and detail. These edit `kgXrMotionReference.appearance`
+in this same source; the Editor, both panels and saved scene agree. Low detail
+omits decorative horizon/shore meshes and uses a smaller shadow map. Existing
+terrain and Placed Subjects controls swap catalog scenes/assets and edit colour,
+position, rotation, scale and motion. Interactive fixtures retain their native
+geometry/collision owner. Night flight missions retain their required lighting.
+
+For another device, use the existing **Settings → Workspace sync**: sign in,
+enable Online, upload this scene's selected file scope and verify the read-back,
+then download it in that workspace on the receiving device. Local conflicts are
+retained as separate copies. A local appearance edit alone is not a cloud acknowledgement.
+
+## Source Files storage and refresh
+
+This Git-backed file is the canonical Physics Playground and XR readiness seed. On upgrade, Source Files preserves both retired Playground seed filenames as byte-identical recovered notes under `notes` before removing their old canonical rows. Imported files remain user-owned. After changing it in Dev, restart the serving dev process, reload the page, and use **Source Files → Refresh**; generated demo instances are local working documents. Verify the expected heading or frontmatter change in the editor because Refresh alone may retain an earlier loaded seed. Preserve or export a customized seed before refreshing because canonical seed reconciliation replaces its working copy. A local save, a workspace snapshot upload, and a GitHub commit are distinct results.
+
+The Source Files **Offline: Browser storage** row describes the local layer, not a cloud acknowledgement. Source Files uses IndexedDB for offline working files and retains Git-backed Markdown as the canonical source. The first successful open imports the legacy localStorage snapshot once, preserving its original bytes as a backup. The separate sync engine retains its own IndexedDB database. Browser stores are scoped to the browser origin and app base path and can be removed by clearing site data. A degraded-storage warning means new edits may be held only in memory; export them before closing or reloading. Export important local edits before changing browser, device, or origin. A storage indicator that says **Cloud sync is unavailable** means that no remote acknowledgement is available; it must not be read as synchronized.
+
+For this free-tier MVP, retain local operation without a provider. Configure a real workspace and authenticated transport only when cross-device sync is needed, then require upload/readback agreement and conflict handling before claiming success. The [storage contract](../documents/agentic-graph-storage-sync-prd-tad-adr-mvp-gtm.md) owns storage architecture; the [rehearsal plan](../documents/agentic-graph-xr-frame-transport-prd-tad-adr-mvp-gtm.md) records the free-tier recommendation and validation boundaries. This seed adds no provider, database, background polling, or storage schema.
+
+## Scoped XR edited-media evidence
+
+This document projects downstream evidence for `xr-authoring-edited-media-delivery`; applying it starts the native Playground and the readiness controls. It does not load a video sequence, run the dedicated smoke route, or claim that opening the XR choreography Timeline reproduces the edited-media proof.
+
+The checked-in `agentic-graph-xr-v2-readiness/v1` source snapshot remains `source-ready`. Separately, the protected delivery chain is `runtime-ready` for this scope only: reviewed feature commit `fcd69c6b2d42a00779f55be8c1d57a0ab468339b`, protected-refresh head `a6de5722e550e633d0d73f59f187a09ec7388879`, and canonical `main` commit `a3ddfef7cc55c38385520173273abd66010e9747` share the admitted feature lineage. Canonical push run `30895597328` passed **Integration Gate**, selected `npm run xr-v2:review-ready`, and passed the dedicated Chromium edited-media observation. Agentic Canvas OS then reconciled the clean canonical runtime at that exact agentic-graph commit under `agentic-local-runtime-readiness/v1` at revision `217a8a42d6497e059839a6a1f809c2459530ca54`.
+
+To reproduce the focused feature evidence from clean exact canonical agentic-graph `main`, run `npm run xr-v2:review-ready`. It uses the dedicated local XR v2 smoke route and committed same-origin fixture; it does not deploy.
+
+The evidence covers canonical Timeline command routing, browser-native edited-media export, non-empty output, decoded metadata, bounded playback, and resource teardown. It does not establish mounted-renderer material wiring, live depth, a named-device frame budget, camera lifecycle on physical devices, physical-headset behavior, Production availability, or deployment authority. The clean-room editor boundary remains dependency-free and attribution-only; no external editor code, package, generated asset, or runtime/build/test contact is admitted.
+
+## Controls
+
+| Action | Keyboard | Standard gamepad |
+|---|---|---|
+| Move or steer | W/A/S/D or arrow keys | Left stick |
+| Jump or vertical thrust | Space | Primary action |
+| Torque or stabilization | Shift | Shoulder action |
+| Switch controller | Ball / Rocket buttons | Simulation controls |
+
+The same runtime is MCP-controllable through `agentic-graph.control_local_xr_scene`; use `/xr.physics @canvas #controller operation=develop-run mode=ball`, then `operation=select mode=rocket`, `operation=pause`, `operation=resume`, or `operation=reset`. While this document remains applied, an `exit` transition is immediately reclaimed as a fresh Ball run so the authored editor preview cannot replace the native stage. Applying another document releases the document-owned runtime.
+
+This document is the sole source authority for the Home Apex background, the workspace Physics Playground, and Game Mode when opened from either surface. Game Mode is an optional actor, camera, and controls overlay on this authored world; no standalone Game Mode document, arena, terrain, environment, or second Canvas participates in Home activation.
+
+**FloatingPanel → Game Mode** uses the same React Three Fiber Canvas and authored XR world as **Media**, **Animation**, **Motion Control**, and **Camera**. Its native invocation prefix is exactly `/game.mode @canvas #gameplay`; add one supported operation from **Open**, **Start**, **Stop**, **Restart**, **Fire**, **Reload**, **Save**, or **Exit**. Browser-local WebMCP exposes schema `agentic-graph-game-mode-mcp/v1` through `agentic-graph.inspect_local_game_mode` and `agentic-graph.control_local_game_mode`. The synchronous WebGL probe fails closed before mission start and exposes a visible local unsupported state without mounting another scene or renderer.
+
+Opening Game Mode while XR owns the surface keeps the authored atmosphere, Singapore terrain, props, and exact paused frame visibly mounted in the same Canvas. Only the first-person gameplay camera and actor overlay change. Fallback, renamed, conditional, duplicate, stale, and legacy arena or environment producers are forbidden at source. Start prepares a healthy tick-zero frame and waits for normalized desktop, pointer, touch, Motion Control, or MCP engagement before deterministic ticks begin. Stop followed by Start resumes the exact in-memory Game Mode tick and state. Exiting restores XR input and simulation ownership so its deterministic stage continues. Switching the FloatingPanel among Media, Animation, Motion Control, Game Mode, and Camera preserves the same Canvas and authored scene. Motion Control remains an optional normalized player-input source only; its camera/LiteRT pipeline never becomes the four-action NPC decision policy.
+
+Terminal Game Mode results remain pending and are not auto-saved. **Save** is the only operation that persists validated game Decisions through browser-local WorkspaceFs. Malformed saved bytes remain intact and block **Start** and **Restart** until the operator explicitly chooses **Reset local save**.
+
+Camera source is independent of controller and object selection. In **FloatingPanel Camera → SHOOT**, choose **Fixed Follow** for stage-aware tracking or **Free Orbit** for direct pan, rotate, and zoom. The same choice is invocable through `agentic-graph.control_local_camera` with `/camera.select @camera #camera camera=fixed-follow` or `camera=free-orbit`. Timeline camera-mark playback temporarily takes framing ownership, then returns to the selected source.
+
+The ball rolls across the terrain, jumps only from supported contact, retains bounded air steering, and exposes a stronger torque response while the modifier is held. The rocket applies directional and vertical thrust, visualizes bounded tilt and live exhaust, dampens rotation, and uses the modifier to stabilize toward upright. Rocket altitude stays within the authored terrain scale while the single camera raises and widens into a bounded aerial composition of the procedural Singapore waterfront and skyline.
+
+XR authoring uses the same persisted scene owner. **Terrain / Environment** defaults to **Singapore** and remains catalog-driven for future terrain IDs. The Singapore first frame is a native procedural waterfront composition with Marina Bay towers, the Singapore Flyer, Gardens by the Bay, and source-authored selectable **Helicopter**, **Airplane**, and **Car** subjects. Those subjects use the same persisted 3D Objects / Assets path as anything placed from Media: select them on the Canvas, frame them with Camera, transform or replace their catalog asset, and remove them without a parallel showcase state. **Add 3D Object / Asset** defaults to **Helicopter** and exposes **Helicopter**, **Airplane**, **Car**, and **Ball** as native procedural library choices. Placed subjects remain visible while the controller demo runs and can change asset without changing subject ID, transform, custom label, or persistence path; untouched catalog-default labels and colors follow the selected asset. Buildings, landmark trees, roads, and waterfront geometry remain fixed environment-kit set dressing rather than selectable subjects.
+
+Find the procedural key near the grotto, then return to the treasure chest to unlock it. Barrels, bowling pins, and timed cannonballs share the same deterministic collision world with both vehicles. Press `R` to restore the Beach Ball, player, interactive props, key, treasure, and selected objective state.
+
+Switching between Ball and Rocket changes the active controller and procedural presentation while preserving the simulated body position and velocity. Pause, Resume, and Reset remain deterministic lifecycle actions. Fixed Follow eases toward the active body without creating a second camera owner; selecting Helicopter, Airplane, Car, or another authored object does not change the camera source.
+
+## Validation
+
+Run `npm run xr-v2:review-ready` on the clean candidate for source, runtime, and browser evidence. The separate physical-device and Production boundaries above remain explicit.

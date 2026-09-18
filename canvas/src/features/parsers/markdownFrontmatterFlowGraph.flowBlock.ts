@@ -14,7 +14,7 @@ import {
 import { buildCanonicalWidgetRegistryDraft } from '@/features/storyboard-widget-manager/registryTemplates'
 import { AG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
 import { normalizeFlowSubgraphs } from '@/features/parsers/markdownFrontmatterFlowGraph.subgraphs'
-import { normalizeFlowEnvelopeRecord, unwrapFlowEnvelopeFieldValue } from '@/features/parsers/markdownFrontmatterFlowGraph.flowEnvelope'
+import { normalizeKeyTypeValueRecord, readKeyTypeValueField, isKeyTypeValue } from '@/lib/graph/keyTypeValue'
 import { buildImplicitFlowEdgePortKey } from '@/lib/graph/flowPorts'
 export { repairFlowInlineEnvelopeBlockScalars } from '@/lib/markdown/frontmatterYamlRepair'
 const FRONTMATTER_FLOW_SETTINGS_KEY = 'frontmatterFlowSettings' as const
@@ -27,12 +27,6 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 function asString(v: unknown): string {
   return typeof v === 'string' ? v.trim() : ''
-}
-function asStringOrEnvelopeValue(v: unknown): string {
-  const direct = asString(v)
-  if (direct) return direct
-  if (!isRecord(v)) return ''
-  return asString(v.value)
 }
 function isChatAgenticGraphFlowContractRelaxed(meta: Record<string, unknown>): boolean {
   if (meta['frontmatter:chatAgenticGraphRelaxed'] === true) return true
@@ -219,7 +213,7 @@ function extractWidgetFieldSpecsFromFlowNode(args: {
     for (const [k, v] of Object.entries(args.rawNode)) {
       const fieldName = asString(k)
       if (!fieldName) continue
-      if (!isRecord(v)) continue
+      if (!isKeyTypeValue(v, fieldName)) continue
       const rec = v as Record<string, unknown>
       const fieldKey = asString(rec.key)
       const fieldType = asString(rec.type)
@@ -281,7 +275,7 @@ function extractWidgetFieldSpecsFromFlowNode(args: {
   for (const [k, v] of Object.entries(args.rawNode)) {
     const fieldName = asString(k)
     if (!fieldName) continue
-    if (!isRecord(v)) continue
+    if (!isKeyTypeValue(v, fieldName)) continue
     const rec = v as Record<string, unknown>
     const fieldKey = asString(rec.key)
     const fieldType = asString(rec.type)
@@ -308,7 +302,7 @@ function collectDeclaredFlowNodePropertyValues(args: {
   resolvedStringCache: Map<string, string>
 }): Record<string, unknown> {
   const out: Record<string, unknown> = {}
-  for (const [k, v] of Object.entries(args.rawNode)) {
+  for (const k of Object.keys(args.rawNode)) {
     const fieldName = asString(k)
     if (!fieldName) continue
     if (
@@ -323,9 +317,7 @@ function collectDeclaredFlowNodePropertyValues(args: {
     ) {
       continue
     }
-    const rawValue = isRecord(v) && Object.prototype.hasOwnProperty.call(v, 'value')
-      ? (v as Record<string, unknown>).value
-      : (args.normalizedRawNode as Record<string, unknown>)[fieldName]
+    const rawValue = args.normalizedRawNode[fieldName]
     const resolved = resolveTemplateValue(rawValue, args.vars, args.pathCache, args.declarationCache, args.resolvedStringCache)
     if (typeof resolved === 'undefined') continue
     out[fieldName] = resolved
@@ -342,7 +334,7 @@ function collectDeclaredFlowEdgePropertyValues(args: {
   resolvedStringCache: Map<string, string>
 }): Record<string, unknown> {
   const out: Record<string, unknown> = {}
-  for (const [k, v] of Object.entries(args.rawEdge)) {
+  for (const k of Object.keys(args.rawEdge)) {
     const fieldName = asString(k)
     if (!fieldName) continue
     if (
@@ -359,9 +351,7 @@ function collectDeclaredFlowEdgePropertyValues(args: {
     ) {
       continue
     }
-    const rawValue = isRecord(v) && Object.prototype.hasOwnProperty.call(v, 'value')
-      ? (v as Record<string, unknown>).value
-      : (args.normalizedRawEdge as Record<string, unknown>)[fieldName]
+    const rawValue = args.normalizedRawEdge[fieldName]
     const resolved = resolveTemplateValue(rawValue, args.vars, args.pathCache, args.declarationCache, args.resolvedStringCache)
     if (typeof resolved === 'undefined') continue
     out[fieldName] = resolved
@@ -574,7 +564,6 @@ function readFlowWarnings(raw: string[]): string[] {
   return deduped
 }
 
-
 function normalizeFlowDataValue(value: unknown): { value: unknown; hasPending: boolean } {
   if (typeof value === 'string') {
     const s = value.trim()
@@ -728,7 +717,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
   const resolvedStringCache = new Map<string, string>()
   const flowWarnings: string[] = []
   const readFlowValue = (path: string, v: unknown, expectedKey?: string): unknown =>
-    unwrapFlowEnvelopeFieldValue({
+    readKeyTypeValueField({
       raw: v,
       path,
       expectedKey,
@@ -740,7 +729,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
   for (let i = 0; i < rawNodes.length; i += 1) {
     const rawNode = rawNodes[i]
     if (!isRecord(rawNode)) continue
-    const normalizedRawNode = normalizeFlowEnvelopeRecord({
+    const normalizedRawNode = normalizeKeyTypeValueRecord({
       rawRecord: rawNode as Record<string, unknown>,
       recordPath: `flow.nodes[${i}]`,
       warnings: flowWarnings,
@@ -761,7 +750,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
     const outputs = coerceFlowNodePorts(handles?.source)
     const dataResolved = resolveTemplateValue(normalizedRawNode.data, vars, pathCache, declarationCache, resolvedStringCache)
     const dataNormalized = normalizeFlowDataValue(dataResolved)
-    const computeRaw = asStringOrEnvelopeValue(normalizedRawNode.compute)
+    const computeRaw = asString(normalizedRawNode.compute)
     let compute = computeRaw ? resolveTemplateString(computeRaw, vars, pathCache, declarationCache, resolvedStringCache) : ''
     if (allowMixedHandles && compute) {
       flowWarnings.push(`Flow chatAgenticGraph contract: compute removed for node ${id}`)
@@ -833,7 +822,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
   for (let i = 0; i < rawEdges.length; i += 1) {
     const row = rawEdges[i]
     if (!isRecord(row)) continue
-    const normalizedRawEdge = normalizeFlowEnvelopeRecord({
+    const normalizedRawEdge = normalizeKeyTypeValueRecord({
       rawRecord: row as Record<string, unknown>,
       recordPath: `flow.edges[${i}]`,
       warnings: flowWarnings,
@@ -877,7 +866,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
     const node = normalizedNodes[i]
     if (!isRecord(node)) continue
     const labelRaw = asString(node.label)
-    const computeRaw = asStringOrEnvelopeValue(node.compute)
+    const computeRaw = asString(node.compute)
     node.label = labelRaw ? resolveTemplateString(labelRaw, flowVars, pathCache, declarationCache, resolvedStringCache) : asString(node.id)
     node.data = normalizeFlowNodeDataValue(
       resolveTemplateValue(node.data, flowVars, pathCache, declarationCache, resolvedStringCache),

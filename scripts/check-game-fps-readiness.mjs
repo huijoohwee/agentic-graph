@@ -66,7 +66,7 @@ const requiredPaths = [
   'canvas/src/__tests__/gameModeSourceAuthority.test.ts',
   'canvas/src/__tests__/canvasSurfaceGameDeparture.test.ts',
   'canvas/src/__tests__/canvasXrSharedSurfaceOwnership.test.ts',
-  'docs/workspace-seeds/agentic-graph-physics-playground-demo.md',
+  'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
   'docs/documents/agentic-graph-game-fps-prd-tad-adr-mvp-gtm.md',
   'docs/documents/agentic-graph-game-fps-runtime-readiness.md',
   'docs/documents/agentic-graph-native-physics-engines-prd-tad-adr-mvp-gtm.md',
@@ -269,8 +269,8 @@ if (!decisionStoreSource.includes("from '../../../../ecs/decisionDocument.js'")
 const physicsSeedPath = PHYSICS_SEED_RELATIVE_PATH
 const physicsSeedSource = await text(physicsSeedPath)
 const physicsSeed = parseFrontmatter(physicsSeedSource, physicsSeedPath)
-if (physicsSeed?.run_ready_demo?.id !== 'xr-physics') {
-  throw new Error('the canonical source seed must remain xr-physics')
+if (physicsSeed?.run_ready_demo?.id !== 'xr-v2') {
+  throw new Error('the canonical source seed must be xr-v2')
 }
 if (physicsSeed?.game_mode?.invocation !== '/game.mode @canvas #gameplay operation=open'
   || physicsSeed?.game_mode?.operation_invocations?.start !== '/game.mode @canvas #gameplay operation=start'
@@ -338,7 +338,7 @@ for (const relPath of workspaceSeedPaths) {
   }
 }
 
-const xrPhysicsAuthorityPattern = /\bXR_PHYSICS_RUN_READY_DEMO_ID\b|['"]xr-physics['"]|agentic-graph-physics-playground-demo\.md/
+const xrPhysicsAuthorityPattern = /\bXR_PHYSICS_RUN_READY_DEMO_ID\b|['"]xr-physics['"]|agentic-graph-ar-vr-xr-runtime-readiness-demo\.md/
 const xrPhysicsThreeOwners = productionSources
   .filter(({ source }) => xrPhysicsAuthorityPattern.test(source) && threePresentationPattern.test(source))
   .map(({ relPath }) => relPath)
@@ -348,7 +348,7 @@ if (xrPhysicsThreeOwners.length > 0) {
 
 const { readRuntimeDocsSources } = await import('./runtime-docs-sources.mjs')
 const publishedPhysics = (await readRuntimeDocsSources({ graphRoot: root }))
-  .find(entry => entry.fileName === 'workspace-seeds/agentic-graph-physics-playground-demo.md')
+  .find(entry => entry.fileName === 'workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md')
 if (!publishedPhysics || publishedPhysics.bytes.toString('utf8') !== physicsSeedSource) {
   throw new Error('Published Physics seed differs from its Graph source owner')
 }

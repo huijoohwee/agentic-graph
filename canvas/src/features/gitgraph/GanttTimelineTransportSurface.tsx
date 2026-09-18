@@ -8,6 +8,7 @@ export type GanttTimelineTransportSurfaceProps = {
   model: GanttTimelineTransportSurfaceModel
   renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer
   supplementalLanes?: React.ReactNode
+  transportControls?: React.ReactNode
   timeAxisControls?: React.ReactNode
   timeRulerOverlay?: React.ReactNode
   timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]
@@ -23,6 +24,7 @@ export function GanttTimelineTransportSurface(args: GanttTimelineTransportSurfac
         rulerModel={args.model.rulerModel}
         shellModel={args.model.shellModel}
         supplementalLanes={args.supplementalLanes}
+        transportControls={args.transportControls}
         timeAxisControls={args.timeAxisControls}
         timeRulerOverlay={args.timeRulerOverlay}
         timelineInsertedLanes={args.timelineInsertedLanes}

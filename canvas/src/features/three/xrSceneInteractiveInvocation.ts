@@ -43,7 +43,7 @@ const BODY_MODES = new Set<XrPhysicsBodyMode>(['static', 'dynamic', 'kinematic',
 const WORLD_OPERATIONS = new Set<XrPhysicsOperation>(['play', 'pause', 'stop', 'reset', 'step', 'configure'])
 const BODY_OPERATIONS = new Set<XrPhysicsOperation>(['attach', 'configure', 'detach'])
 const IMPULSE_OPERATIONS = new Set<XrPhysicsOperation>(['impulse'])
-const CONTROLLER_OPERATIONS = new Set<XrPhysicsOperation>(['develop-run', 'pause', 'resume', 'reset', 'exit', 'select'])
+const CONTROLLER_OPERATIONS = new Set<XrPhysicsOperation>(['develop-run', 'pause', 'resume', 'reset', 'exit', 'select', 'step'])
 const BODY_PROPERTY_KEYS = Object.freeze([
   'bodyMode',
   'massKg',
@@ -179,11 +179,11 @@ function normalizePhysics(value: unknown, coerceInvocationValues = false): XrPhy
   if (source.gravity !== undefined && !gravity) return null
   if (source.impulse !== undefined && !impulse) return null
   if (scope === 'impulse' && !impulse) return null
-  if (scope !== 'world' && (gravity || fixedStepSeconds !== undefined || maxSubsteps !== undefined || ticks !== undefined)) return null
+  if (scope !== 'world' && (gravity || fixedStepSeconds !== undefined || maxSubsteps !== undefined)) return null
   if (scope !== 'body' && (bodyMode || massKg !== undefined || friction !== undefined || restitution !== undefined || linearDamping !== undefined || collisionGroup !== undefined || collisionMask !== undefined)) return null
   if (scope !== 'impulse' && impulse) return null
   if (scope !== 'controller' && controllerMode !== undefined) return null
-  if (operation !== 'step' && ticks !== undefined) return null
+  if ((operation !== 'step' || (scope !== 'world' && scope !== 'controller')) && ticks !== undefined) return null
   if (scope === 'world' && operation === 'configure' && !gravity && fixedStepSeconds === undefined && maxSubsteps === undefined) return null
   if (scope === 'body' && operation === 'configure'
     && !bodyMode
@@ -247,7 +247,7 @@ export function parseXrInteractiveInvocation(value: unknown): XrInteractiveInvoc
     ? new Set(['operation', 'gravity', 'fixedStep', 'maxSubsteps', 'ticks'])
     : scope === 'body'
       ? new Set(['operation', 'subject', 'mode', 'mass', 'friction', 'restitution', 'damping', 'group', 'mask'])
-      : scope === 'impulse' ? new Set(['operation', 'subject', 'vector']) : new Set(['operation', 'mode'])
+      : scope === 'impulse' ? new Set(['operation', 'subject', 'vector']) : new Set(['operation', 'mode', 'ticks'])
   const pairs = parsePairs(tokens.slice(1).filter(token => !token.startsWith('@') && !token.startsWith('#')), allowed)
   if (!pairs) return null
   const physics = normalizePhysics({

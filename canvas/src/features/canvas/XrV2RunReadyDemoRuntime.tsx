@@ -3,14 +3,6 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { isXrV2RunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import {
-  developAndRunXrNativeControllerDemo,
-  exitXrNativeControllerDemo,
-  readXrNativeControllerDemo,
-  selectXrNativeControllerDemoMode,
-} from '@/features/three/xrNativeControllerDemoRuntime'
-import { stopXrPhysicsRuntime } from '@/features/three/xrPhysicsRuntime'
-import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
-import {
   startXrV2WorkspaceReadinessRuntime,
   stopXrV2WorkspaceReadinessRuntime,
 } from '@/features/xr-v2/xrV2WorkspaceReadinessRuntime'
@@ -20,11 +12,9 @@ import {
   startXrV2PostProcessFallbackRuntime,
   stopXrV2PostProcessFallbackRuntime,
 } from '@/features/xr-v2/xrV2PostProcessFallbackLifecycle'
-import { ensureXrPhysicsRunReadyDemoRunning } from './xrPhysicsRunReadyLifecycle'
-import { applyXrRunReadyDefaultCameraSource } from './xrRunReadyCameraDefaults'
 
 /**
- * Activates the canonical XR scene for the source-authored xr-v2 seed. This
+ * Observes the canonical XR scene for the source-authored xr-v2 seed. This
  * runtime never requests camera, sensor, or immersive-session permission.
  */
 export function XrV2RunReadyDemoRuntime() {
@@ -34,15 +24,10 @@ export function XrV2RunReadyDemoRuntime() {
   const canvasRenderMode = useGraphStore(state => state.canvasRenderMode)
   const canvas3dMode = useGraphStore(state => state.canvas3dMode)
   const active = isXrV2RunReadyDemoActive(documentName, documentText)
-  const ownsRuntime = React.useRef(false)
   const ownsReadinessRuntime = React.useRef(false)
-  const genericSessionQuiesced = React.useRef(false)
-  const cameraDefaultsApplied = React.useRef(false)
 
   React.useLayoutEffect(() => {
     if (!active) {
-      genericSessionQuiesced.current = false
-      cameraDefaultsApplied.current = false
       stopXrV2PostProcessFallbackRuntime()
       void stopXrV2ImmersiveSession()
       void cancelXrV2SpatialCapture()
@@ -50,48 +35,17 @@ export function XrV2RunReadyDemoRuntime() {
         ownsReadinessRuntime.current = false
         stopXrV2WorkspaceReadinessRuntime()
       }
-      if (ownsRuntime.current) {
-        ownsRuntime.current = false
-        if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()
-      }
       return
     }
     // Explorer materialization owns frontmatter preset replay. Wait for that
-    // exact source-authority boundary before taking the shared surface to XR.
+    // exact source boundary before observing the shared XR surface.
     if (!sourceFilesBootstrapReady) return
-    const store = useGraphStore.getState()
-    if (!genericSessionQuiesced.current) {
-      genericSessionQuiesced.current = true
-      if (store.canvasRenderMode === '3d' && store.canvas3dMode === 'xr') {
-        // Force one synchronous inactive render so the generic XR entry owner
-        // releases an existing/pending session before XR v2 takes ownership.
-        store.setCanvas3dMode('3d')
-        return
-      }
-    }
-    if (store.canvasRenderMode !== '3d' || store.canvas3dMode !== 'xr') {
-      activateXrSceneSurface({ preserveGameplay: false })
-      // Let the shared Canvas finish its mode transition before readiness
-      // subscribes to mounted evidence from that exact surface.
-      return
-    }
-    if (!cameraDefaultsApplied.current) {
-      cameraDefaultsApplied.current = true
-      applyXrRunReadyDefaultCameraSource()
-    }
-    store.setFloatingPanelOpen(true)
-    store.setFloatingPanelView('motionControl')
-    store.setBottomSurfaceCollapsed(true)
+    // The shared physics lifecycle owns surface, camera and controller state.
+    // Source presets own initial panels; editing a mark must not reopen them.
+    if (canvasRenderMode !== '3d' || canvas3dMode !== 'xr') return
     startXrV2WorkspaceReadinessRuntime()
     startXrV2PostProcessFallbackRuntime()
     ownsReadinessRuntime.current = true
-    ownsRuntime.current = ensureXrPhysicsRunReadyDemoRunning(readXrNativeControllerDemo(), {
-      selectMode: selectXrNativeControllerDemoMode,
-      developAndRun: () => {
-        stopXrPhysicsRuntime()
-        return developAndRunXrNativeControllerDemo()
-      },
-    }) || ownsRuntime.current
   }, [active, canvas3dMode, canvasRenderMode, documentName, documentText, sourceFilesBootstrapReady])
 
   React.useEffect(() => {
@@ -116,9 +70,6 @@ export function XrV2RunReadyDemoRuntime() {
       ownsReadinessRuntime.current = false
       stopXrV2WorkspaceReadinessRuntime()
     }
-    if (!ownsRuntime.current) return
-    ownsRuntime.current = false
-    if (readXrNativeControllerDemo().phase !== 'off') exitXrNativeControllerDemo()
   }, [])
 
   return null

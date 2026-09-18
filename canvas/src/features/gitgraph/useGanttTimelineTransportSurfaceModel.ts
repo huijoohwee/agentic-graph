@@ -359,6 +359,7 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     setTransportPlaying: transportSession.setTransportPlaying,
     timelineModel: transportSession.timelineModel,
     positionOnlySelectedRowKeys,
+    selectionFollowsPlayhead: args.commandAdapter?.selectionFollowsPlayhead,
     onCommitDrag: transportCommandModel.handleCommittedDragUpdate,
   })
   const editable = args.editable !== false
@@ -409,6 +410,7 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     draggingMode: transportInteractionModel.draggingMode,
     draggingRowKey: transportInteractionModel.draggingRowKey,
     editable,
+    canEditTrack: args.commandAdapter?.canEditTrack,
     maxMinutes: transportSession.maxMinutes,
     mediaDurationSeconds: rulerMediaDurationSeconds,
     mediaFrameRate: Number(args.runtimeFrameRate) > 0
@@ -423,7 +425,7 @@ export function useGanttTimelineTransportSurfaceModel(args: {
       transportSession.setTransportPlaybackPosition(positionMinutes)
       handleSelectedRowKeyChange(rowKey)
     },
-    onTrackPointerStart: editable ? transportInteractionModel.handleTrackPointerStart : () => {},
+    onTrackPointerStart: (event, span, mode) => { if (editable || args.commandAdapter?.canEditTrack?.(span.rowKey, mode)) transportInteractionModel.handleTrackPointerStart(event, span, mode) },
     playheadPercent: transportInteractionModel.playheadPercent,
     positionMinutes: transportSession.positionMinutes,
     scopes: compactSourceTimeline || workflowMode ? [] : transportSession.monitorScopes,

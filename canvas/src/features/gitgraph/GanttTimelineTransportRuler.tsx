@@ -21,6 +21,7 @@ export function GanttTimelineTransportRuler(args: GanttTimelineTransportRulerPro
       draggingMode={args.model.draggingMode}
       draggingRowKey={args.model.draggingRowKey}
       editable={args.model.editable}
+      canEditTrack={args.model.canEditTrack}
       maxMinutes={args.model.maxMinutes}
       mediaDurationSeconds={args.model.mediaDurationSeconds}
       mediaFrameRate={args.model.mediaFrameRate}

@@ -1,5 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_1_PREFIX: TestCaseTuple[] = [
+  ["graph.ktv.payloads","@/__tests__/graphKeyTypeValue.test","testKtvReadersPreservePayloadsAndFalsyValues"],
+  ["graph.ktv.malformed","@/__tests__/graphKeyTypeValue.test","testKtvReadersRejectMalformedFieldsConsistently"],
+  ["graph.ktv.paths","@/__tests__/graphKeyTypeValue.test","testKtvPropertyPathsDecodeEachFieldOnce"],
+  ["graph.ktv.parser","@/__tests__/graphKeyTypeValue.test","testKtvFlowNeverBypassesRejectedWrappers"],
+  ["graph.ktv.editor","@/__tests__/graphKeyTypeValue.test","testKtvEditorTablePreservesTypesAndMatchingKeys"],
   ["policy.pagesHeaders.agenticGraphReportOnlyCsp.omitsIgnoredUpgradeDirective","@/__tests__/agentic-graph-pages-headers-regression.test","testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective"],
   ["policy.pagesHeaders.agenticGraphAppShellHtml.addsNoTransformForCloudflareJsd","@/__tests__/agentic-graph-pages-headers-regression.test","testAgenticGraphAppShellHtmlAddsNoTransformForCloudflareJsd"],
   ["policy.publishSync.agenticGraphIndexHtml.keepsCanonicalEntryScriptUrl","@/__tests__/pagesSyncPublishHtmlRegression.test","testPagesSyncPublishHtmlKeepsCanonicalEntryScriptUrl"],

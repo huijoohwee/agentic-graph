@@ -77,6 +77,7 @@ const XR_PHYSICS_CONTROL_INPUT_SCHEMA = Object.freeze({
     buildXrPhysicsOperationSchema({ scope: 'controller', operation: 'develop-run', fields: ['controllerMode'] }),
     ...['pause', 'resume', 'reset', 'exit'].map(operation => buildXrPhysicsOperationSchema({ scope: 'controller', operation })),
     buildXrPhysicsOperationSchema({ scope: 'controller', operation: 'select', fields: ['controllerMode'], required: ['controllerMode'] }),
+    buildXrPhysicsOperationSchema({ scope: 'controller', operation: 'step', fields: ['ticks'] }),
   ],
 })
 

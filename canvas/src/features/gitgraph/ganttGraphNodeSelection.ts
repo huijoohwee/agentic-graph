@@ -61,7 +61,7 @@ const readNodeComparableValues = (node: GraphNode): unknown[] => {
     props.label,
     props.semanticKey,
     props.strybldrElementId,
-  ].map(unwrapGraphCellValue)
+  ].map(value => unwrapGraphCellValue(value))
 }
 
 const scoreNodeForTaskKeys = (node: GraphNode, taskKeys: Set<string>, primaryTaskKey: string, labelKey: string): number => {

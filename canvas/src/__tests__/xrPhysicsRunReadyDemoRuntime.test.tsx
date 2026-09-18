@@ -1,3 +1,4 @@
+import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { XrPhysicsRunReadyDemoRuntime } from '@/features/canvas/XrPhysicsRunReadyDemoRuntime'
@@ -48,6 +49,7 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
   const container = dom.window.document.getElementById('root')
   if (!container) throw new Error('missing React root container')
 
+  completeSourceFilesBootstrap()
   resetGraphStoreForTests()
   resetCameraFramingRuntimeForDocument('xr-physics-document-activation-test')
   selectXrNativeControllerCameraMode('free-orbit')
@@ -75,7 +77,7 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
     delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
     useGraphStore.setState({
       markdownDocumentName: canonicalDocsPath,
-      markdownDocumentText: '# Canonical XR physics demo',
+      markdownDocumentText: '---\nrun_ready_demo:\n  id: xr-v2\n---\n# Canonical XR physics demo',
       markdownDocumentApplyViewPreset: false,
     })
     exitXrNativeControllerDemo()
@@ -135,7 +137,7 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
     delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
     useGraphStore.setState({
       markdownDocumentName: canonicalDocsPath,
-      markdownDocumentText: '# Canonical XR physics demo',
+      markdownDocumentText: '---\nrun_ready_demo:\n  id: xr-v2\n---\n# Canonical XR physics demo',
       markdownDocumentApplyViewPreset: false,
     })
     exitXrNativeControllerDemo()
@@ -187,7 +189,8 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
     }
     exitXrNativeControllerDemo()
     selectXrNativeControllerCameraMode('fixed-follow')
-    resetGraphStoreForTests()
+    completeSourceFilesBootstrap()
+  resetGraphStoreForTests()
     useGraphStore.setState(restoreGraphState)
     restoreDom()
     restoreWindow()
@@ -207,7 +210,7 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
     if (resolved !== XR_PHYSICS_RUN_READY_DEMO_ID) {
       throw new Error(`expected canonical Source Files path ${canonicalPath} to resolve the XR physics demo, got ${String(resolved || '')}`)
     }
-    if (!isXrPhysicsRunReadyDemoActive(canonicalPath)) {
+    if (!isXrPhysicsRunReadyDemoActive(canonicalPath, '---\nrun_ready_demo:\n  id: xr-v2\n---\n')) {
       throw new Error(`expected ordinary dev to activate XR physics for ${canonicalPath}`)
     }
   }
@@ -266,6 +269,7 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
   const container = dom.window.document.getElementById('root')
   if (!container) throw new Error('missing React root container')
 
+  completeSourceFilesBootstrap()
   resetGraphStoreForTests()
   const before = useGraphStore.getState()
   const restoreGraphState = {
@@ -331,8 +335,8 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
     if (
       activatedGraph.canvasRenderMode !== '3d'
       || activatedGraph.canvas3dMode !== 'xr'
-      || activatedGraph.floatingPanelOpen
-      || !activatedGraph.bottomSurfaceCollapsed
+      || !activatedGraph.floatingPanelOpen
+      || activatedGraph.bottomSurfaceCollapsed
     ) {
       throw new Error('expected source-authored document activation to make the existing XR canvas runtime-ready')
     }
@@ -366,7 +370,8 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
       }
     }
     exitXrNativeControllerDemo()
-    resetGraphStoreForTests()
+    completeSourceFilesBootstrap()
+  resetGraphStoreForTests()
     selectXrNativeControllerCameraMode('fixed-follow')
     useGraphStore.setState(restoreGraphState)
     restoreDom()
@@ -386,6 +391,7 @@ export async function testXrPhysicsRunReadyRuntimeReclaimsOffFallbackWithoutDoub
   const container = dom.window.document.getElementById('root')
   if (!container) throw new Error('missing React root container')
 
+  completeSourceFilesBootstrap()
   resetGraphStoreForTests()
   resetCameraFramingRuntimeForDocument('xr-physics-run-ready-lifecycle-test')
   selectXrNativeControllerCameraMode('free-orbit')
@@ -443,7 +449,7 @@ export async function testXrPhysicsRunReadyRuntimeReclaimsOffFallbackWithoutDoub
       })}`)
     }
     const graph = useGraphStore.getState()
-    if (graph.canvasRenderMode !== '3d' || graph.canvas3dMode !== 'xr' || graph.floatingPanelOpen || !graph.bottomSurfaceCollapsed) {
+    if (graph.canvasRenderMode !== '3d' || graph.canvas3dMode !== 'xr' || !graph.floatingPanelOpen || graph.bottomSurfaceCollapsed) {
       throw new Error('expected run-ready runtime to activate the canonical XR surface')
     }
 
@@ -482,7 +488,8 @@ export async function testXrPhysicsRunReadyRuntimeReclaimsOffFallbackWithoutDoub
         // Preserve an earlier assertion failure.
       }
     }
-    resetGraphStoreForTests()
+    completeSourceFilesBootstrap()
+  resetGraphStoreForTests()
     useGraphStore.setState(restoreGraphState)
     restoreDom()
     restoreWindow()

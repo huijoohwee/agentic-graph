@@ -42,6 +42,7 @@ export function useGanttTimelineTransportInteractionModel(args: {
   setTransportPlaybackPosition: (position: number) => void
   setTransportPlaying: (playing: boolean) => void
   timelineModel: MermaidGanttTimelineModel
+  selectionFollowsPlayhead?: boolean
   positionOnlySelectedRowKeys?: ReadonlySet<string>
   onCommitDrag: (args: {
     dragState: GanttTimelineTransportDragState
@@ -57,6 +58,7 @@ export function useGanttTimelineTransportInteractionModel(args: {
     scrubMaxMinutes: args.scrubMaxMinutes,
     resolveRowKeyAtPosition: position => resolveMermaidGanttTimelineRowKeyAtPosition(args.timelineModel, position),
     selectedRowKey: args.selectedRowKey,
+    selectionFollowsPlayhead: args.selectionFollowsPlayhead,
     setSelectedRowKey: args.setSelectedRowKey,
     setTransportPlaybackPosition: args.setTransportPlaybackPosition,
     setTransportPlaying: args.setTransportPlaying,
@@ -75,6 +77,7 @@ export function useGanttTimelineTransportInteractionModel(args: {
     positionMinutes: args.positionMinutes,
     resolveRowKeyAtPosition: position => resolveMermaidGanttTimelineRowKeyAtPosition(args.timelineModel, position),
     selectedRowKey: args.selectedRowKey,
+    selectionFollowsPlayhead: args.selectionFollowsPlayhead,
     setSelectedRowKey: args.setSelectedRowKey,
     setTransportPlaybackPosition: args.setTransportPlaybackPosition,
     positionOnlySelectedRowKeys: args.positionOnlySelectedRowKeys,

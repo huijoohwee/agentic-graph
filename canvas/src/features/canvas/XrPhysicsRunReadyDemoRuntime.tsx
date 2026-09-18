@@ -1,5 +1,6 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import {
   isXrPhysicsRuntimeRunReadyDemoActive,
   isXrPhysicsRunReadyDemoActive,
@@ -20,6 +21,7 @@ import { useCanvasGameplayOverlayState } from './useCanvasGameplayOverlayState'
 import { applyXrRunReadyDefaultCameraSource } from './xrRunReadyCameraDefaults'
 
 export function XrPhysicsRunReadyDemoRuntime() {
+  const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
   const active = isXrPhysicsRuntimeRunReadyDemoActive(
@@ -66,6 +68,7 @@ export function XrPhysicsRunReadyDemoRuntime() {
       }
       return undefined
     }
+    if (!sourceFilesBootstrapReady) return undefined
     if (gameplayOverlayActive) {
       if (readXrNativeControllerDemo().phase === 'running') {
         pausedForGameplayRef.current = true
@@ -86,10 +89,6 @@ export function XrPhysicsRunReadyDemoRuntime() {
         && !activateXrSceneSurface({ preserveGameplay: !dedicatedDemo })
       ) return undefined
       surfaceInitializedRef.current = true
-      if (activatesXrSurface) {
-        state.setFloatingPanelOpen(false)
-        state.setBottomSurfaceCollapsed(true)
-      }
     }
     if (
       !cameraDefaultsAppliedRef.current
@@ -107,6 +106,6 @@ export function XrPhysicsRunReadyDemoRuntime() {
     })
     if (launched && !dedicatedDemo) ownsDocumentLaunchRef.current = true
     return undefined
-  }, [active, dedicatedDemo, gameplayOverlayActive, markdownDocumentName, markdownDocumentText, phase, revision])
+  }, [active, dedicatedDemo, gameplayOverlayActive, markdownDocumentName, markdownDocumentText, phase, revision, sourceFilesBootstrapReady])
   return null
 }

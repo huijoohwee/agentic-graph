@@ -1,8 +1,10 @@
 import React from 'react'
-import { Pause, Play, RotateCcw, Rocket } from 'lucide-react'
+import { Pause, Play, RotateCcw, Rocket, StepForward } from 'lucide-react'
 import {
   developAndRunXrNativeControllerDemo,
   readXrNativeControllerDemo,
+  readSharedXrNativeControllerDemoFrame,
+  stepPausedXrNativeControllerDemo,
   pauseXrNativeControllerDemo,
   resumeXrNativeControllerDemo,
   resetSharedXrNativeControllerDemo,
@@ -63,6 +65,22 @@ export function XrNativeControllerDemoHud() {
           {runtime.phase === 'running' ? <Pause className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
           {runtime.phase === 'running' ? 'Pause' : 'Resume'}
         </button>
+        <button
+          type="button"
+          onClick={() => stepPausedXrNativeControllerDemo()}
+          disabled={runtime.phase !== 'paused'}
+          title="Pause, then advance one physics tick"
+          className="inline-flex min-h-11 min-w-11 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-lg disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          data-kg-xr-playground-step="1"
+        >
+          <StepForward className="size-4" aria-hidden />
+          Step
+        </button>
+        {runtime.phase === 'paused' && (
+          <output aria-label="Paused physics tick" aria-live="polite" className="rounded-full bg-sky-950/90 px-3 py-2 text-xs tabular-nums text-white">
+            Tick {readSharedXrNativeControllerDemoFrame().stepCount} · {runtime.fixedRateHz} Hz
+          </output>
+        )}
         <button
           type="button"
           onClick={resetSharedXrNativeControllerDemo}

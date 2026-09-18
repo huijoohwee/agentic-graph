@@ -25,7 +25,8 @@ import {
   subscribeXrMotionReferenceRuntime,
   toggleXrMotionReferenceCastMarkArmed,
 } from '@/features/three/xrMotionReferenceRuntime'
-import { selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
+import { controlXrSharedAssetControls, inspectXrSharedAssetControls, readXrSharedAssetControlRevision, subscribeXrSharedAssetControlRuntime } from '@/features/three/xrSharedAssetControlRuntime'
+import { XrRehearsalStatus } from '@/features/three/XrRehearsalStatus'
 import { buildXrShotTargets } from '@/features/three/xrShotTargets'
 import { XrCameraMovePresetControl } from './XrCameraMovePresetControl'
 import {
@@ -70,8 +71,9 @@ export function XrShootCameraSection() {
     readXrNativeControllerCamera,
   )
   const shotTargets = React.useMemo(() => buildXrShotTargets(runtime.plan), [runtime.plan])
-  const selectedShotTarget = shotTargets.find(target => target.id === runtime.selectedShotTargetId)
-    || shotTargets[0]
+  React.useSyncExternalStore(subscribeXrSharedAssetControlRuntime, readXrSharedAssetControlRevision, readXrSharedAssetControlRevision)
+  const sharedSelection = inspectXrSharedAssetControls()
+  const selectedShotTarget = shotTargets.find(target => target.id === sharedSelection.selectedTargetId)
     || null
   const selectedTrack = selectedShotTarget?.castActorId
     ? runtime.plan.cast.find(track => track.actorId === selectedShotTarget.castActorId) || null
@@ -164,6 +166,7 @@ export function XrShootCameraSection() {
           {runtime.playheadSeconds.toFixed(2)}s<br />{runtime.plan.camera.length} camera marks
         </output>
       </header>
+      <XrRehearsalStatus />
 
       <label className="grid gap-1 text-[10px]">
         <span className={UI_THEME_TOKENS.text.tertiary}>Camera source</span>
@@ -187,10 +190,14 @@ export function XrShootCameraSection() {
         <PanelSelect
           aria-label="SHOOT scene or 3D object target"
           value={selectedShotTarget?.id || ''}
-          disabled={!selectedShotTarget}
-          onChange={event => selectBoundXrShotTarget(event.target.value)}
+          disabled={!shotTargets.length}
+          onChange={event => {
+            const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: event.target.value })
+            if (!result.ok) pushUiToast({ id: 'xr:shoot:select-target', kind: 'error', message: result.message })
+          }}
           data-kg-xr-shoot-target="scene-or-object"
         >
+          {!selectedShotTarget && <option value="" disabled>Select a scene or object to frame</option>}
           {shotTargets.map(target => (
             <option key={target.id} value={target.id}>
               {target.kind === 'scene' ? 'SCENE' : '3D OBJECT'} · {target.label}

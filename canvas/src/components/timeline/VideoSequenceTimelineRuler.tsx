@@ -206,7 +206,7 @@ export function VideoSequenceTimelineRuler({
   dragPreview,
   draggingMode,
   draggingRowKey,
-  editable = true,
+  editable = true, canEditTrack,
   maxMinutes,
   mediaDurationSeconds = 0,
   mediaFrameRate = 0,
@@ -231,7 +231,7 @@ export function VideoSequenceTimelineRuler({
   displayTicks: readonly MermaidGanttTimelineTick[]
   dragPreview: MermaidGanttTimelineDragPreview | null
   draggingMode: MermaidGanttBarDragMode | null
-  draggingRowKey: string; editable?: boolean
+  draggingRowKey: string; editable?: boolean; canEditTrack?: (rowKey: string, mode: MermaidGanttBarDragMode) => boolean
   maxMinutes: number
   mediaDurationSeconds?: number
   mediaFrameRate?: number
@@ -632,7 +632,7 @@ export function VideoSequenceTimelineRuler({
                   ))}
                 </section>
               ) : null}
-              {editable ? <button type="button" className="timeline-transport-track-handle timeline-transport-track-handle--start" aria-label={`Resize ${span.label} start`} data-kg-gantt-timeline-track-drag-mode="resize-start" title={`Trim ${span.label} start`} onPointerDown={event => onTrackPointerStart(event, span, 'resize-start')}>
+              {(canEditTrack?.(span.rowKey, 'resize-start') ?? editable) ? <button type="button" className="timeline-transport-track-handle timeline-transport-track-handle--start" aria-label={`Resize ${span.label} start`} data-kg-gantt-timeline-track-drag-mode="resize-start" title={`Trim ${span.label} start`} onPointerDown={event => onTrackPointerStart(event, span, 'resize-start')}>
                 <span className="timeline-transport-track-handle-grip" aria-hidden="true" />
                 {activeResizeMode === 'resize-start' ? <span className="timeline-video-sequence-trim-guide">{VIDEO_SEQUENCE_RESIZE_MODE_LABELS[activeResizeMode]}</span> : null}
               </button> : null}
@@ -645,7 +645,7 @@ export function VideoSequenceTimelineRuler({
                 ) : null}
                 {!verticalMarker && !workflowProjection ? <VideoSequenceTimelineClipMeta compact={compactTimelineBar} durationLabel={formatClipTime(durationMinutes)} durationMinutes={durationMinutes} sourceWindow={thumbnailWindow} /> : null}
               </button>
-              {editable ? <button type="button" className="timeline-transport-track-handle timeline-transport-track-handle--end" aria-label={`Resize ${span.label} end`} data-kg-gantt-timeline-track-drag-mode="resize-end" title={`Trim ${span.label} end`} onPointerDown={event => onTrackPointerStart(event, span, 'resize-end')}><span className="timeline-transport-track-handle-grip" aria-hidden="true" />
+              {(canEditTrack?.(span.rowKey, 'resize-end') ?? editable) ? <button type="button" className="timeline-transport-track-handle timeline-transport-track-handle--end" aria-label={`Resize ${span.label} end`} data-kg-gantt-timeline-track-drag-mode="resize-end" title={`Trim ${span.label} end`} onPointerDown={event => onTrackPointerStart(event, span, 'resize-end')}><span className="timeline-transport-track-handle-grip" aria-hidden="true" />
                 {activeResizeMode === 'resize-end' ? <span className="timeline-video-sequence-trim-guide">{VIDEO_SEQUENCE_RESIZE_MODE_LABELS[activeResizeMode]}</span> : null}
               </button> : null}
             </article>

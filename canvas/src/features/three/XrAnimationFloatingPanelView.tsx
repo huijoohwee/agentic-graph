@@ -1,4 +1,6 @@
 import React from 'react'
+import { XrRehearsalStatus } from './XrRehearsalStatus'
+import { inspectXrSharedAssetControls, readXrSharedAssetControlRevision, subscribeXrSharedAssetControlRuntime } from './xrSharedAssetControlRuntime'
 import {
   Armchair,
   ArrowUp,
@@ -127,6 +129,7 @@ function AnimationPresetCard({
   onApply,
   onToggle,
   preset,
+  appliedTo,
 }: {
   collapsed: boolean
   compatible: boolean
@@ -135,6 +138,7 @@ function AnimationPresetCard({
   onApply: () => void
   onToggle: (collapsed: boolean) => void
   preset: XrAnimationPreset
+  appliedTo?: string
 }) {
   const Icon = PRESET_ICON_BY_ID[preset.id]
   const detailsId = `xr-animation-preset-${preset.id}`
@@ -145,6 +149,7 @@ function AnimationPresetCard({
       data-kg-animation-card={preset.id}
       data-kg-animation-card-layout="media-3-rows"
       data-kg-animation-card-kind={preset.kind}
+      data-kg-animation-card-applied={appliedTo ? "1" : "0"}
     >
       <span className={floatingPanelCatalogThreeRowThumbnailFrameClassName('items-center justify-center')} role="img" aria-label={`${preset.label} procedural animation preview`}>
         <Icon className="size-8" strokeWidth={1.45} aria-hidden />
@@ -171,6 +176,7 @@ function AnimationPresetCard({
         </section>
         <footer className="flex min-w-0 flex-wrap items-center gap-1" data-kg-animation-card-row="action">
           <button type="button" className="App-toolbar__btn shrink-0" disabled={disabled || !compatible} onClick={onApply} data-kg-animation-card-apply={preset.id}>Apply</button>
+          {appliedTo ? <output className="text-[10px] text-emerald-700 dark:text-emerald-300" aria-label={`${preset.label} assignment`}>Applied to {appliedTo}</output> : null}
           <AnimationInvocationChips invocation={invocation} surface="action" />
         </footer>
       </section>
@@ -206,12 +212,14 @@ function PresetGroup({
   selectedActorId: string
 }) {
   const selectedSubject = runtime.plan.subjects.find(subject => subject.id === selectedActorId)
+  const selectedTrack = runtime.plan.cast.find(track => track.actorId === selectedActorId)
   return (
     <section className="grid gap-2">
       {presets.map(preset => (
         <AnimationPresetCard
           key={preset.id}
           preset={preset}
+          appliedTo={selectedTrack?.animation?.presetId === preset.id ? selectedTrack.label : undefined}
           collapsed={collapsedKeys.has(preset.id)}
           disabled={disabled}
           compatible={xrAnimationPresetCompatible({ preset, assetId: selectedSubject?.assetId, category: selectedSubject?.category, graphActor: Boolean(selectedActorId && !selectedSubject) })}
@@ -236,7 +244,8 @@ export function XrAnimationFloatingPanelView() {
     timelinePlaying: state.timelineTransportPlaying,
   })))
   const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
-  const selectedActorId = readBoundXrSelectedActorId()
+  React.useSyncExternalStore(subscribeXrSharedAssetControlRuntime, readXrSharedAssetControlRevision, readXrSharedAssetControlRevision)
+  const selectedActorId = inspectXrSharedAssetControls().selectedKind === 'npc' ? '' : readBoundXrSelectedActorId()
   const animationInspection = inspectLocalAnimation()
   const search = useFloatingPanelCatalogSearch()
   const sceneReady = resolveXrSceneDocumentReady({
@@ -314,6 +323,7 @@ export function XrAnimationFloatingPanelView() {
         ) : null}
       </section> : null}
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-3')}>
+        <XrRehearsalStatus />
         <XrChoreographyInspector
           cameraInvocation={animationInspection.invocationGrammar?.configureCameraMark || animationInspection.webMcpTools.control}
           castInvocation={animationInspection.invocationGrammar?.configureCastMark || animationInspection.webMcpTools.control}

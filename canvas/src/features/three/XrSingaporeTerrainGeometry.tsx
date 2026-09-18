@@ -1,3 +1,4 @@
+import type { XrSceneAppearance } from './xrSceneAppearance'
 import type { XrMotionReferenceStagePreset } from './xrSceneLibrary'
 import {
   XR_SINGAPORE_MAJOR_POIS,
@@ -109,14 +110,16 @@ export function XrSingaporeTerrainGeometry({
   scale,
   shadows = false,
   stage,
+  appearance,
 }: {
   groundY?: number
   scale: number
   shadows?: boolean
   stage: XrMotionReferenceStagePreset
+  appearance?: XrSceneAppearance
 }) {
   const perimeter = resolveXrTerrainPerimeter(stage)
-  const oceanMarginMeters = Math.max(perimeter.widthMeters, perimeter.depthMeters) * 0.6
+  const oceanMarginMeters = Math.max(perimeter.widthMeters, perimeter.depthMeters) * (appearance ? 2 : 0.6)
   const promenadeWidthMeters = perimeter.widthMeters - 2.2
   const promenadeZ = -perimeter.halfDepthMeters + 1.05
   const transitDepthMeters = perimeter.depthMeters - 3.2
@@ -138,7 +141,7 @@ export function XrSingaporeTerrainGeometry({
           0.36,
           perimeter.depthMeters + oceanMarginMeters * 2,
         ]} />
-        <meshStandardMaterial color="#2aaac2" roughness={0.34} metalness={0.12} />
+        <meshStandardMaterial color={appearance?.waterColor || "#2aaac2"} roughness={0.34} metalness={0.12} />
       </mesh>
       <group name="agentic_os_xr_singapore_perimeter" userData={FIXED_TERRAIN_USER_DATA}>
         {perimeter.edges.map(edge => edge.side === 'north' ? (

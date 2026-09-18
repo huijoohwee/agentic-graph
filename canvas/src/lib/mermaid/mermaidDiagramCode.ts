@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue as readNeutralTimelineRecordValue } from '@/lib/graph/keyTypeValue'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { readNodeProperties } from '@/lib/graph/nodeProperties'
 import { toMetadataRecord } from '@/lib/graph/documentMetadata'
@@ -117,11 +118,6 @@ const sanitizeNeutralTimelineLabel = (value: unknown, fallback: string): string 
   return cleaned || fallback
 }
 
-const readNeutralTimelineRecordValue = (value: unknown): unknown => {
-  if (!isPlainObject(value)) return value
-  const record = value as Record<string, unknown>
-  return Object.prototype.hasOwnProperty.call(record, 'value') ? record.value : value
-}
 
 const parseNeutralTimelinePayload = (value: unknown): unknown => {
   const unwrapped = readNeutralTimelineRecordValue(value)

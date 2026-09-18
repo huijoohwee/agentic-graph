@@ -16,6 +16,7 @@ export type GanttTimelineTransportShellProps = {
   rulerModel: GanttTimelineTransportRulerModel
   shellModel: GanttTimelineTransportShellModel
   supplementalLanes?: React.ReactNode
+  transportControls?: React.ReactNode
   timeAxisControls?: React.ReactNode
   timeRulerOverlay?: React.ReactNode
   timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]
@@ -40,7 +41,9 @@ export function GanttTimelineTransportShell(args: GanttTimelineTransportShellPro
       playing={args.shellModel.playing}
       shellClassName={args.shellModel.shellClassName}
       rootProps={args.shellModel.rootProps}
-      headerAside={<GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />}
+      headerAside={args.transportControls ? <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+        {args.transportControls}<GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />
+      </div> : <GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />}
       mediaPlayer={args.mediaPlayerModel.active ? <GanttTimelineTransportMediaPlayer model={args.mediaPlayerModel} /> : null}
       ruler={<GanttTimelineTransportRuler model={args.rulerModel.ruler} renderClipOverlay={args.renderClipOverlay} timeAxisControls={args.timeAxisControls} timeRulerOverlay={args.timeRulerOverlay} timelineInsertedLanes={args.timelineInsertedLanes} />}
       rulerClassName={args.rulerModel.chrome.rulerClassName}

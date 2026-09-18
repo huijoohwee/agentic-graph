@@ -1,9 +1,15 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["workspace.sourceFiles.revealActive", "@/__tests__/markdownFileTreeRowButton.test.tsx", "testMarkdownFileTreeRevealsActiveSourceWithoutStealingFocus"],
+  ["canvas.xrMode.appearance.catalog", "@/__tests__/xrSceneAppearance.test.tsx", "testXrSceneAppearanceNormalizesAndPreservesEveryCatalogAsset"],
+  ["canvas.xrMode.appearance.source", "@/__tests__/xrSceneAppearance.test.tsx", "testXrSceneAppearancePanelsAndEditorShareSavedSource"],
+  ["canvas.xrMode.appearance.cloud", "@/__tests__/xrSceneAppearanceCloud.test", "testXrSceneAppearanceAuthenticatedDeviceRoundTrip"],
   ["sourceFiles.cloudSync.downloadPreservesLocalAndDirectoryScope", "@/__tests__/sourceFileCloudTransfer.test", "testSourceFileCloudDownloadPreservesLocalBytesAndDirectoryScope"],
   ["sourceFiles.cloudSync.configurationAndProxyBoundary", "@/__tests__/sourceFileCloudTransfer.test", "testSourceFileCloudConfigurationAndProxyOriginBoundaries"],
   ["canvas.xrMode.timeline.rehearsalControls", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrTimelineRehearsalControlsPreserveSharedTransport"],
+  ["canvas.xrMode.timeline.sceneCues", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrTimelineSceneCuesShareSelectionAndTransport"],
+  ["canvas.xrMode.timeline.sourceReparse", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrTimelineAuthoredCuesSurviveSourceReparse"],
   ["canvas.xrMode.physics.nativeController.hud", "@/__tests__/xrNativeControllerDemoHud.test.tsx", "testXrNativeControllerDemoHudPreservesPausedReset"],
   ["ui.graphCanvas.frozenLabels.presentationRefresh", "@/__tests__/graphCanvasFrozenLabelsPresentation.test", "testFrozenNodeLabelsKeepPositionsOnPresentationRefresh"],
   ["flow.dataflow.cache.completeInputs", "@/__tests__/flowConnectedValuesCache.test", "testFlowConnectedValuesCachePreservesCompleteInputs"],
@@ -240,6 +246,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["markdown.frontmatter.normalizesXrFloatingPanelRoute","@/__tests__/markdownFrontmatterSharedGuard.test","testMarkdownFrontmatterNormalizesXrSurfaceAlias"],
   ["history.restoreRevision.explicitNavigationOnly","@/__tests__/graphFieldsSyncChurn.test","testHistorySliceOnlyAdvancesRestoreRevisionForExplicitNavigation"],
   ["history.scheduledCommit.cancelBeforeReset","@/__tests__/graphFieldsSyncChurn.test","testHistorySliceCanCancelPendingScheduledCommitBeforeReset"],
+  ["canvas.xrMode.physics.nativeController.fixedStep", "@/__tests__/xrPlaygroundFixedStep.test.tsx", "testXrPlaygroundFixedStep"],
   ["canvas.xrMode.physics.nativeController.input","@/__tests__/xrNativeControllerDemo.test","testXrNativeControllerInputNormalizesKeyboardAndGamepad"],
   ["canvas.xrMode.physics.nativeController.ball","@/__tests__/xrNativeControllerDemo.test","testXrNativeBallControllerIsDeterministicAndInteractive"],
   ["canvas.xrMode.physics.nativeController.rocket","@/__tests__/xrNativeControllerDemo.test","testXrNativeRocketControllerThrustsTiltsAndStabilizes"],

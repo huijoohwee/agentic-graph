@@ -1,4 +1,5 @@
 import { resolveThreeCanvasSurfaceLifecycle } from '@/lib/three/threeRendererLifecycle'
+import { load as parseYaml } from 'js-yaml'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { act } from 'react'
@@ -86,7 +87,7 @@ function readPhysicsPlaygroundSource(): {
 } {
   const path = resolve(process.cwd(), '..', XR_PHYSICS_DEMO_REPO_REL_PATH)
   const text = readFileSync(path, 'utf8')
-  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-physics-playground-demo.md', text)
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('agentic-graph-ar-vr-xr-runtime-readiness-demo.md', text)
   if (!parsed) throw new Error(`expected canonical Physics Playground to parse from ${path}`)
   const sourceFileId = 'physics-playground-live-hero-proof'
   return {
@@ -94,14 +95,14 @@ function readPhysicsPlaygroundSource(): {
     graphData: parsed.graphData,
     sourceFile: {
       id: sourceFileId,
-      name: 'agentic-graph-physics-playground-demo.md',
+      name: 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
       text,
       enabled: true,
       status: 'parsed',
       parsedParserId: 'markdown',
       parsedTextHash: buildSourceFileParseIdentityHash({
         cacheNamespace: `source-file:${sourceFileId}`,
-        name: 'agentic-graph-physics-playground-demo.md',
+        name: 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
         text,
       }),
       parsedGraphRevision: 1,
@@ -128,7 +129,8 @@ export function testLiveCanvasHeroUsesSourceBackedInvocationContract(): void {
   }
 
   const { text } = readPhysicsPlaygroundSource()
-  if (!text.includes('kgCanvasSurfaceMode: "xr"') || !text.includes('kgCanvasRenderMode: "3d"')) {
+  const meta = parseYaml(text.split('---')[1]) as Record<string, unknown>
+  if (meta.kgCanvasSurfaceMode !== '3d' || meta.kgCanvasRenderMode !== '3d') {
     throw new Error('expected the canonical startup document to own XR/3D initialization')
   }
 }
@@ -141,7 +143,7 @@ export function testLiveCanvasHeroPhysicsPlaygroundSourceFidelity(): void {
   ) {
     throw new Error('expected local and published Physics Playground identities to resolve one canonical startup source')
   }
-  if (!text.includes('auto_start: true') || graphData.nodes.length !== 5) {
+  if (!text.includes('auto_start: true') || graphData.nodes.length !== 29 || graphData.edges.length !== 21) {
     throw new Error(`expected the authored Physics Playground graph, got ${graphData.nodes.length} nodes/${graphData.edges.length} edges`)
   }
   if (!text.includes('broaderXrState: "blocked"') || !text.includes('applying this seed does not rerun the browser smoke')) throw new Error('expected the scoped XR evidence node to preserve the broader runtime evidence boundary')
@@ -149,8 +151,10 @@ export function testLiveCanvasHeroPhysicsPlaygroundSourceFidelity(): void {
   for (const id of ['xr_demo_entry', 'xr_ball_controller', 'xr_rocket_controller', 'xr_runtime_gate', 'xr_edited_media_proof']) {
     if (!nodeIds.has(id)) throw new Error(`expected authored Physics Playground node ${id}`)
   }
-  for (const connection of ['from: "xr_demo_entry"', 'to: "xr_ball_controller"', 'to: "xr_rocket_controller"']) {
-    if (!text.includes(connection)) throw new Error(`expected authored Physics Playground connection ${connection}`)
+  for (const target of ['xr_ball_controller', 'xr_rocket_controller', 'xr_edited_media_proof']) {
+    if (!graphData.edges.some(edge => edge.source === 'xr_demo_entry' && edge.target === target)) {
+      throw new Error(`expected parsed Physics Playground connection to ${target}`)
+    }
   }
 }
 
@@ -165,7 +169,7 @@ export function testLiveCanvasHeroVisibilityFailsClosedOutsideHydratedApex(): vo
   const { sourceFile } = readPhysicsPlaygroundSource()
   const defaultSeedState = resolveLiveCanvasHeroWorkspaceSourceState({
     sourceFiles: [sourceFile],
-    markdownDocumentName: 'agentic-graph-physics-playground-demo.md',
+    markdownDocumentName: 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
   })
   if (!defaultSeedState.defaultSeedOnly || defaultSeedState.meaningfulSourceFilesPresent) {
     throw new Error(`expected the default seed to remain hero-eligible, got ${JSON.stringify(defaultSeedState)}`)
@@ -315,7 +319,6 @@ export function testLiveCanvasHeroUsesInteractiveWorkspaceCanvas(): void {
     'workspaceDocumentSwitchPending: isRootAlias ? false : args.workspaceDocumentSwitchPending',
     'hasSearchParams,\n    isEmbeddedPreview:',
     'data-kg-live-canvas-hero-viewport-owner={props.visible',
-    '&& !homePreviewVisible\n    && workspaceEditorOverlayOpen',
     'resolveThreeCanvasSurfaceLifecycle({',
     'geospatialOverlayOwnsViewport, liveCanvasHeroVisible: homePreviewVisible, canvasRenderMode,',
     'xrPhysicsRunReadyDemo && !gameplayOverlayActive && !homePreviewVisible',

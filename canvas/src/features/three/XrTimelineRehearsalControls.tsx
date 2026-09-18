@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { controlLocalAnimation } from './xrAnimationMcpRuntime'
 import { readXrAnimationTransport } from './xrAnimationTransportRuntime'
+import './XrTimelineRehearsalControls.css'
 
 /** Timeline projects the existing command owner; it owns no clock or gameplay state. */
 export function XrTimelineRehearsalControls({ durationSeconds, fps, disabled = false }: {
@@ -20,7 +21,7 @@ export function XrTimelineRehearsalControls({ durationSeconds, fps, disabled = f
     })
   }
   return (
-    <div className="flex items-center gap-1 px-2" role="group" aria-label="XR frame rehearsal">
+    <div className="xr-timeline-rehearsal-controls flex shrink-0 items-center gap-1" role="group" aria-label="XR frame rehearsal">
       <button type="button" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded hover:bg-black/5 disabled:opacity-40 focus-visible:outline" aria-label="Previous XR animation frame"
         disabled={disabled || transport.timeSeconds <= 0} onClick={() => step('previous')}>
         <ChevronLeft className="size-4" aria-hidden />

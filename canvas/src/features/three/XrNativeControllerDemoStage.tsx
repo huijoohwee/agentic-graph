@@ -1,3 +1,4 @@
+import { DEFAULT_XR_SCENE_APPEARANCE, xrSceneSunPosition, type XrSceneAppearance } from './xrSceneAppearance'
 import React from 'react'
 import { GameFpsSharedNpcHighlights } from '@/features/game-fps/GameFpsSharedNpcHighlights'
 import { useFrame } from '@react-three/fiber'
@@ -50,6 +51,7 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
 }
 
 export function XrNativeControllerDemoStage({
+  appearance = DEFAULT_XR_SCENE_APPEARANCE,
   environmentVisible = true,
   inputEnabled = true,
   stageScale,
@@ -58,6 +60,7 @@ export function XrNativeControllerDemoStage({
   stage,
   visualsVisible = true,
 }: {
+  appearance?: XrSceneAppearance
   environmentVisible?: boolean
   inputEnabled?: boolean
   stageScale: number
@@ -188,12 +191,13 @@ export function XrNativeControllerDemoStage({
             args={night ? ['#182a56', '#090d17', 0.22] : ['#dff4ff', '#d9b978', 0.55]}
           />
           <directionalLight
-            position={[stageScale * 12, stageScale * 19, stageScale * 10]}
-            intensity={night ? 0.5 : 1.8}
-            color={night ? '#9db7ff' : '#fff8df'}
-            castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
+            key={appearance.detail}
+            position={xrSceneSunPosition(appearance, stageScale)}
+            intensity={night ? 0.5 : appearance.lightIntensity}
+            color={night ? '#9db7ff' : appearance.lightColor}
+            castShadow={appearance.shadows}
+            shadow-mapSize-width={appearance.detail === 'low' ? 1024 : 2048}
+            shadow-mapSize-height={appearance.detail === 'low' ? 1024 : 2048}
             shadow-camera-left={stageScale * -16}
             shadow-camera-right={stageScale * 16}
             shadow-camera-top={stageScale * 15}
@@ -220,7 +224,7 @@ export function XrNativeControllerDemoStage({
           terrainId: runtime.terrainId,
         }}
       >
-        {environmentVisible ? <XrNativeControllerDemoEnvironment objective={runtime.objective} stage={stage} /> : null}
+        {environmentVisible ? <XrNativeControllerDemoEnvironment objective={runtime.objective} stage={stage} appearance={appearance} /> : null}
         <XrNativeControllerAuthoredSubjects />
         <GameFpsSharedNpcHighlights />
         <group ref={playerRootRef} name="agentic_os_xr_native_controller_player">

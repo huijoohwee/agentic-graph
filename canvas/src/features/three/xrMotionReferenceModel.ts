@@ -1,3 +1,4 @@
+import { readXrSceneAppearance, type XrSceneAppearance } from './xrSceneAppearance'
 import type { GraphData, GraphNode, JSONValue } from '@/lib/graph/types'
 import { resolveCameraFramingPose, type CameraFramingPose } from '@/lib/camera/cameraFramingPose'
 import {
@@ -117,6 +118,7 @@ export type XrMotionReferenceSubject = Readonly<{
 export type XrMotionReferencePlan = Readonly<{
   schema: typeof XR_MOTION_REFERENCE_SCHEMA
   stageId: XrMotionReferenceStageId
+  appearance: XrSceneAppearance
   durationSeconds: number
   fps: number
   subjects: readonly XrMotionReferenceSubject[]
@@ -364,7 +366,15 @@ function resolveCast(
   const savedActors = savedRecords
     .map(saved => ({ actorId: String(saved.actorId || '').trim(), label: String(saved.label || '').trim() }))
     .filter(actor => actor.actorId && !graphActorIds.has(actor.actorId) && subjects.some(subject => subject.id === actor.actorId))
-  return Object.freeze([...graphActors, ...savedActors].slice(0, XR_MOTION_REFERENCE_MAX_CAST_TRACKS).map((actor, index) => {
+  // Explicit authored marks take priority over auto-generated graph actors.
+  // Large readiness/behavior graphs must not evict placed subjects' tracks.
+  const actors = [...graphActors, ...savedActors]
+  const byId = new Map(actors.map(actor => [actor.actorId, actor]))
+  const ordered = actors.length > XR_MOTION_REFERENCE_MAX_CAST_TRACKS
+    ? [...savedById.keys()].flatMap(id => byId.has(id) ? [byId.get(id)!] : [])
+      .concat(actors.filter(actor => !savedById.has(actor.actorId)))
+    : actors
+  return Object.freeze(ordered.slice(0, XR_MOTION_REFERENCE_MAX_CAST_TRACKS).map((actor, index) => {
     const actorId = actor.actorId || `actor-${index + 1}`
     const saved = savedById.get(actorId) || {}
     const fallbackPosition = defaultActorPosition(index)
@@ -430,6 +440,7 @@ export function readXrMotionReferencePlan(value: unknown, nodes: readonly GraphN
   return Object.freeze({
     schema: XR_MOTION_REFERENCE_SCHEMA,
     stageId,
+    appearance: readXrSceneAppearance(record.appearance),
     durationSeconds,
     fps: normalizeFps(record.fps),
     subjects,
@@ -452,6 +463,7 @@ export function serializeXrMotionReferencePlan(plan: XrMotionReferencePlan): JSO
   return {
     schema: XR_MOTION_REFERENCE_SCHEMA,
     stageId: plan.stageId,
+    appearance: { ...readXrSceneAppearance(plan.appearance) },
     durationSeconds: plan.durationSeconds,
     fps: plan.fps,
     subjects: plan.subjects.map(subject => ({

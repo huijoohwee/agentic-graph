@@ -1,3 +1,4 @@
+import { isKeyTypeValue as isTypedPropertyEnvelope } from '@/lib/graph/keyTypeValue'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import { readSubgraphs, writeSubgraphs, type UserSubgraph } from '@/lib/graph/subgraphs'
@@ -13,17 +14,6 @@ export const WORKFLOW_MATERIALIZATION_GROUP_ID_PREFIX =
   'workflow-materialization:' as const
 
 const cleanId = (value: unknown): string => String(unwrapGraphCellValue(value) ?? '').trim()
-
-const isTypedPropertyEnvelope = (
-  value: unknown,
-): value is Record<string, unknown> & { value: unknown } => (
-  isPlainObject(value)
-  && Object.prototype.hasOwnProperty.call(value, 'value')
-  && (
-    Object.prototype.hasOwnProperty.call(value, 'key')
-    || Object.prototype.hasOwnProperty.call(value, 'type')
-  )
-)
 
 const readLogicalProperties = (properties: unknown): Record<string, unknown> => {
   if (!isPlainObject(properties)) return {}

@@ -1,4 +1,5 @@
 import React from 'react'
+import { XrSceneAppearanceControls } from '@/features/three/XrSceneAppearanceControls'
 import { Armchair, Box, Building2, Car, Hand, PawPrint, Trash2, TreePine, UserRound, UsersRound, type LucideIcon } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -26,7 +27,7 @@ import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from 
 import { motionControlPoseToAnimationPose } from '@/features/three/motionControlPose'
 import { readMotionControlSnapshot, subscribeMotionControl } from '@/features/three/motionControlRuntime'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
-import { selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
+import { controlXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
 import { resolveMotionControlSubjectPose } from '@/features/three/useMotionControlAnimationPose'
 import {
   buildXrPlaceInvocation,
@@ -76,7 +77,6 @@ import { isXrMediaInvocationMetadataReady } from './xrMediaInvocationMetadata'
 import { buildXrMediaLibraryProjection } from './xrMediaLibrarySearch'
 import { buildXrMediaInvocationControlInput } from './xrMediaInvocationRuntime'
 import { resolveXrSceneDocumentReady } from '@/features/three/xrSceneDocumentReadiness'
-
 type XrSceneLibraryFilter = 'all' | XrSceneLibraryCategory
 
 const CATEGORY_ICONS: Readonly<Record<XrSceneLibraryCategory, LucideIcon>> = {
@@ -339,12 +339,11 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
   }, [runControl])
 
   const setSubjectMotionControlTarget = React.useCallback((subjectId: string, subjectLabel: string) => {
-    selectBoundXrShotTarget(subjectId)
-    openMotionControlSurface('motion-control')
+    const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: subjectId })
+    if (result.ok) openMotionControlSurface('motion-control')
     pushUiToast({
       id: 'media:xr-library:motion-control-target',
-      kind: 'success',
-      message: `Motion Control target set to ${subjectLabel}.`,
+      kind: result.ok ? 'success' : 'error', message: result.ok ? `Motion Control target set to ${subjectLabel}.` : result.message,
     })
   }, [pushUiToast])
 
@@ -428,7 +427,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
           </section>
         ) : null}
       </header>
-
+      <XrSceneAppearanceControls disabled={!sceneReady} />
       <XrSharedAssetControls surface="media" />
 
       <CollapsibleSection

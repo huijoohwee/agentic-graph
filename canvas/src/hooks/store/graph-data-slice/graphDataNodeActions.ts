@@ -26,6 +26,7 @@ import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widg
 import { reportRuntimeTrace } from '@/lib/debug/runtimeTrace'
 import { isCanonicalNodeIdEqual, resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
+import { canAuthorWorkspaceSceneMetadata } from '@/features/workspace-table/workspaceSceneMetadataAuthoring'
 
 const STORYBOARD_MEDIA_PANEL_LOOP_TRACE_SCOPE = 'storyboard-media-panel-loop'
 
@@ -181,7 +182,7 @@ export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
   },
 
   updateGraphMetadata: (updates: Record<string, JSONValue | undefined>) => {
-    if (isWorkspaceGraphMutationBlocked(get())) return
+    if (isWorkspaceGraphMutationBlocked(get()) && !canAuthorWorkspaceSceneMetadata(get(), updates)) return
     const { graphData } = get();
     if (!graphData) return;
     const nextMetadata = { ...(graphData.metadata || {}) } as Record<string, JSONValue>

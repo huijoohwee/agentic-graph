@@ -56,7 +56,6 @@ type CameraFramingControlsRuntimeArgs = {
   controls: OrbitControls
   mode: Canvas3dModeId
   paused: boolean
-  nativeCompositionOnly?: boolean
   modelAssetRenderKey?: string
   modelAssetFit?: ModelAssetCameraFit | null
   xrEmptyWorld?: boolean
@@ -284,7 +283,6 @@ export function useCameraFramingControlsRuntime({
   controls,
   mode,
   paused,
-  nativeCompositionOnly = false,
   modelAssetRenderKey,
   modelAssetFit,
   xrEmptyWorld = false,
@@ -317,9 +315,9 @@ export function useCameraFramingControlsRuntime({
     xrEmptyWorld,
     cameraMarkCount: xrRuntime.plan.camera.length,
   }
-  const sharedCameraFramingEnabled = isSharedCameraFramingSurfaceMode(mode) && !nativeCompositionOnly
-  const choreographyCanDriveCamera = !nativeCompositionOnly && xrChoreographyCanDriveCamera(cameraOwnershipArgs)
-  const choreographyOwnsCamera = !nativeCompositionOnly && xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
+  const sharedCameraFramingEnabled = isSharedCameraFramingSurfaceMode(mode)
+  const choreographyCanDriveCamera = xrChoreographyCanDriveCamera(cameraOwnershipArgs)
+  const choreographyOwnsCamera = xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
   const [axisRequest, setAxisRequest] = React.useState<{ axis: SpatialCaptureAxisId; revision: number }>(() => ({
     axis: readSpatialCaptureAxis(),
     revision: 0,

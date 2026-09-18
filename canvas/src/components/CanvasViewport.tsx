@@ -307,13 +307,6 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
     && active2dSurface !== 'storyboard'
   const rootRef = React.useRef<HTMLElement | null>(null)
   useForbidBrowserZoomWheel(rootRef, true, { stopPropagation: false })
-  const workspaceXrViewportInset = xrPhysicsRuntimeRunReadyDemo
-    && !gameplayOverlayActive
-    && !homePreviewVisible
-    && workspaceEditorOverlayOpen
-    && String(workspaceVisibleCanvasLeft || '').trim()
-      ? String(workspaceVisibleCanvasLeft).trim()
-      : ''
 
   return (
     <section
@@ -325,10 +318,6 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
         touchAction: 'manipulation',
         overscrollBehavior: 'none',
         WebkitTapHighlightColor: 'transparent',
-        ...(workspaceXrViewportInset ? {
-          marginLeft: workspaceXrViewportInset,
-          width: `calc(100% - ${workspaceXrViewportInset})`,
-        } : {}),
       }}
       aria-label={homePreviewVisible ? 'Prompt preset canvas' : sourceFilesBootstrap.phase === 'error'
         ? 'Canvas source initialization error'

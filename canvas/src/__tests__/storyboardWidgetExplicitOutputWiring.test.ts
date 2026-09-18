@@ -569,7 +569,7 @@ export function testSelectedChildRunRestoresExplicitTargetFromCanonicalGraph() {
         source: 'mcp-response-n1-qa1',
         target: 'system-result',
         label: 'probe-tree-generated-result',
-        properties: { value: { workflowOutputEdge: true } } as never,
+        properties: { key: 'properties', type: 'object', value: { workflowOutputEdge: true } } as never,
       },
     ],
   }

@@ -58,6 +58,13 @@ try {
   })
   if (!await seedRow.isVisible()) await workspaceSeedsFolder.click()
   await seedRow.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
+  // Default startup now applies this same XR source. Explicitly leave it first
+  // so the selection test still proves teardown and source-owned activation.
+  await page.locator('[data-kg-xr-v2-authoring-runtime="1"]').waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
+  await sourceFiles.getByRole('button', { name: 'File README.md', exact: true }).click()
+  await page.getByRole('button', { name: 'Heading Workspace Seed Authority', exact: true })
+    .waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
+  await page.locator('[data-kg-xr-v2-authoring-runtime="1"]').waitFor({ state: 'detached', timeout: coldStartTimeoutMs })
   assert.equal(
     await page.locator('[data-kg-xr-v2-authoring-runtime="1"]').count(),
     0,
@@ -75,10 +82,22 @@ try {
   await threeCanvas.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const xrStage = page.locator('[data-kg-xr-document-loaded="1"]')
   await xrStage.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
+  const assertFullCanvas = async () => {
+    const bounds = await page.locator('[data-kg-canvas-viewport-root="1"]').evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      return { left: rect.left, width: rect.width, viewportWidth: innerWidth }
+    })
+    assert.ok(Math.abs(bounds.left) < 1 && Math.abs(bounds.width - bounds.viewportWidth) < 1,
+      `Editor overlay must not apply a second canvas inset: ${JSON.stringify(bounds)}`)
+  }
+  await assertFullCanvas()
+  await page.setViewportSize({ width: 844, height: 964 })
+  await assertFullCanvas()
+  await page.setViewportSize({ width: 1280, height: 964 })
   assert.equal(
     await page.locator('[data-kg-xr-camera-aspect-mask="1"]').count(),
     0,
-    'XR v2 workspace seed must keep only the richer native XR composition, without the Camera aspect-mask variant',
+    'The default full canvas must stay unmasked until Camera or Timeline explicitly claims framing',
   )
   assert.equal(
     await page.locator('[data-kg-camera-optics-source="camera-canvas"]').count(),

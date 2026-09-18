@@ -128,7 +128,7 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.equal(browserEnv.AG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)
   assert.equal(browserEnv.AG_COLLABORATION_E2E_GUEST_DEVICE_ID, config.guestClientDeviceId)
   assert.equal(browserEnv.AG_COLLABORATION_E2E_DOC_PATH, config.documentPath)
-  assert.equal(config.mutableSourcePath, '/tmp/agentic-graph-test/docs/workspace-seeds/agentic-graph-physics-playground-demo.md')
+  assert.equal(config.mutableSourcePath, '/tmp/agentic-graph-test/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md')
   assert.equal(config.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH, config.mutableSourcePath)
   assert.equal(workerEnv.AGENTIC_OS_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
   assert.equal(workerEnv.AGENTIC_OS_STORAGE_LOCAL_RUNTIME, 'true')

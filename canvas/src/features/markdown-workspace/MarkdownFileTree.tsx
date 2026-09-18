@@ -192,6 +192,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
         <section className="group flex items-center" aria-label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
           <MarkdownFileTreeRowButton
             ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
+            title={entry.path}
             indent={indent}
             isActive={isActive}
             textClassName={panelTypography.panelTextClass}

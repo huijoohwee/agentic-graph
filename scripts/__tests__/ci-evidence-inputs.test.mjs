@@ -138,4 +138,7 @@ test('main reuse retains fresh canonical preflight and verifies once at the plan
   assert.match(script, /reuse\?\.reused === true/)
   assert.match(script, /else await runValidationStages\(repoRoot, stages\)/)
   assert.ok(integration.findIndex(s => s.name === 'Seal PR source-plan evidence') > integration.findIndex(s => s.name === 'Run XR v2 runtime review-candidate gate'))
+  assert.match(integration.find(s => s.id === 'validation_observation').run,
+    /--input="\$\(git rev-parse --git-path agentic-os-tests\/validation-last\.json\)"/,
+    'export the aggregate native result so a passing final partition cannot hide an earlier failure')
 })

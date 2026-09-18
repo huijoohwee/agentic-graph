@@ -1,3 +1,4 @@
+import type { XrSceneAppearance } from './xrSceneAppearance'
 import React from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import type { Object3D } from 'three'
@@ -14,6 +15,7 @@ const STRUCTURE_TONES = {
 
 export function XrStagePresetGeometry({
   stage,
+  appearance,
   span,
   groundY = 0,
   showAxes = true,
@@ -25,6 +27,7 @@ export function XrStagePresetGeometry({
   coordinateRootRef,
 }: {
   stage: XrMotionReferenceStagePreset
+  appearance?: XrSceneAppearance
   span: number
   groundY?: number
   showAxes?: boolean
@@ -60,11 +63,11 @@ export function XrStagePresetGeometry({
       >
         <boxGeometry args={[floorWidth, floorThickness, floorHeight]} />
         <meshStandardMaterial
-          color={singapore ? '#cfe2c5' : '#475569'}
+          color={appearance?.groundColor || (singapore ? '#cfe2c5' : '#475569')}
           roughness={1}
           metalness={0}
-          transparent={!singapore}
-          opacity={singapore ? 1 : 0.68}
+          transparent={!appearance && !singapore}
+          opacity={appearance || singapore ? 1 : 0.68}
         />
       </mesh>
       {showGrid ? (
@@ -84,6 +87,7 @@ export function XrStagePresetGeometry({
       {singapore ? (
         <XrSingaporeTerrainGeometry
           stage={stage}
+          appearance={appearance}
           scale={scale}
           groundY={groundY}
           shadows={shadows}

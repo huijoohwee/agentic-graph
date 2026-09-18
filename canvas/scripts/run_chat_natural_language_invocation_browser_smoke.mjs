@@ -8,7 +8,7 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url))
 const canvasRoot = resolve(scriptDirectory, '..')
 const repositoryRoot = resolve(scriptDirectory, '../..')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-const authoredSourceDocumentName = 'agentic-graph-physics-playground-demo.md'
+const authoredSourceDocumentName = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 
 function readGitText(args) {
   return String(execFileSync('git', ['-C', repositoryRoot, ...args], { encoding: 'utf8' }) || '').trim()

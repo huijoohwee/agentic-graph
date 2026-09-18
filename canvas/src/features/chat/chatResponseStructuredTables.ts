@@ -1,8 +1,9 @@
+import { unwrapKeyTypeValue } from '@/lib/graph/keyTypeValue'
 import { containsMarkdownPipeTable, serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 import { isRecord, mergeStructuredProperties, readFieldValue, readFirstString } from './chatResponseStructuredRecord'
 
 const tableCellText = (value: unknown): string => {
-  const scalar = value && isRecord(value) && Object.prototype.hasOwnProperty.call(value, 'value') ? readFieldValue(value, 'value') : value
+  const scalar = unwrapKeyTypeValue(value)
   if (typeof scalar === 'string' || typeof scalar === 'number' || typeof scalar === 'boolean') return String(scalar)
   if (scalar == null) return ''
   try { return JSON.stringify(scalar) } catch { return '' }

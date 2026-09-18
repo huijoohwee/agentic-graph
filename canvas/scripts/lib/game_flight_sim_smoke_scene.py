@@ -115,7 +115,7 @@ def read_and_pin_authored_physics_baseline(
             && state.canvas3dMode === 'xr'
             && workspacePreset.canvasSurfaceMode === 'xr'
             && String(state.markdownDocumentName || '')
-              .endsWith('agentic-graph-physics-playground-demo.md')
+              .endsWith('agentic-graph-ar-vr-xr-runtime-readiness-demo.md')
             && nativeController.phase === 'running'
             && nativeFrame.phase === 'running'
             && nativeFrame.stepCount > 0

@@ -188,7 +188,7 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
   assert(control, 'expected the browser-local XR scene control contract')
 
   const physicsSchema = control.inputSchema?.properties?.physics as JsonSchema | undefined
-  assert(physicsSchema?.oneOf?.length === 16, `expected sixteen operation-specific XR physics schemas, got ${physicsSchema?.oneOf?.length || 0}`)
+  assert(physicsSchema?.oneOf?.length === 17, `expected seventeen operation-specific XR physics schemas, got ${physicsSchema?.oneOf?.length || 0}`)
   const operationSchema = (scope: string, operation: string): JsonSchema | undefined => physicsSchema.oneOf?.find(schema => (
     schema.properties?.scope?.const === scope && schema.properties?.operation?.const === operation
   ))
@@ -199,6 +199,8 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
   assert(!operationSchema('body', 'detach')?.properties?.massKg, 'expected Detach schema to reject body configuration fields')
   assert(operationSchema('controller', 'develop-run')?.properties?.controllerMode, 'expected native controller launch to accept an optional mode')
   assert(operationSchema('controller', 'select')?.required?.includes('controllerMode'), 'expected native controller selection to require a mode')
+
+  assert(operationSchema('controller', 'step')?.properties?.ticks?.maximum === 240, 'controller stepping must share the bounded physics tick schema')
 
   const sceneControlSchema = control.inputSchema as JsonSchema | undefined
   assert(sceneControlSchema?.oneOf?.length === 9, `expected invocation plus eight structured XR action schemas, got ${sceneControlSchema?.oneOf?.length || 0}`)
@@ -214,6 +216,10 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
     && Object.keys(invocationSchema.properties || {}).join('|') === 'invocation', 'expected invocation calls to reject contradictory structured action fields')
 
   const validateControl = new Ajv2020({ allErrors: true, strict: true }).compile(control.inputSchema)
+  assert(validateControl({ action: 'physics', physics: { scope: 'controller', operation: 'step', ticks: 240 } }), 'controller step schema must accept its upper bound')
+  for (const ticks of [0, 241, 1.5, '1', null]) {
+    assert(!validateControl({ action: 'physics', physics: { scope: 'controller', operation: 'step', ticks } }), 'controller step schema must reject invalid ticks')
+  }
   assert(validateControl({
     action: 'physics',
     physics: { scope: 'world', operation: 'configure', gravity: [0, -9.81, 0] },
@@ -320,7 +326,7 @@ function assertExpandedCleanRoomBoundary(): void {
     'package.json',
   ].map(path => resolve(process.cwd(), path))
   paths.push(resolve(repoRoot, 'package.json'), resolve(repoRoot, 'package-lock.json'))
-  paths.push(resolve(repoRoot, 'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'))
+  paths.push(resolve(repoRoot, 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'))
   const source = paths.map(path => readFileSync(path, 'utf8')).join('\n').toLowerCase()
   const forbidden = [
     ['8th', 'wall'].join(''),
@@ -338,6 +344,9 @@ export async function assertXrScenePhysicsWebMcpLifecycle(args: Readonly<{
   subjectId: string
 }>): Promise<void> {
   assert(args.subjectId, 'expected a placed XR subject before exercising physics WebMCP')
+  const inspection = await args.inspect() as { invocationGrammar?: { physicsController?: string } }
+  assert(inspection.invocationGrammar?.physicsController?.includes('|step')
+    && inspection.invocationGrammar.physicsController.includes('ticks=<1..240>'), 'scene inspection must advertise bounded controller stepping')
   const transformed = await args.control({ invocation: `/xr.transform @${encodeURIComponent(args.subjectId)} #transform asset=prop-ball position=1,0,-2 rotation=30 scale=1.25 color=#38bdf8` })
   const staged = await args.control({ action: 'stage', stageId: 'tropical-playground' })
   const invalidSemantics = await args.control({ invocation: '/xr.physics @canvas #world #body operation=play' })
@@ -349,6 +358,15 @@ export async function assertXrScenePhysicsWebMcpLifecycle(args: Readonly<{
   const stopped = await args.control({ invocation: '/xr.physics @canvas #world operation=stop' })
   const controllerStarted = await args.control({ invocation: '/xr.physics @canvas #controller operation=develop-run mode=ball' })
   const controllerSelected = await args.control({ action: 'physics', physics: { scope: 'controller', operation: 'select', controllerMode: 'rocket' } })
+  const rejectedStep = await args.control({ invocation: '/xr.physics @canvas #controller operation=step' })
+  const pausedController = await args.control({ invocation: '/xr.physics @canvas #controller operation=pause' })
+  const steppedController = await args.control({ action: 'physics', physics: { scope: 'controller', operation: 'step', ticks: 2 } })
+  const controllerState = (value: unknown) => (value as { scene?: { physics?: { controllerDemo?: { phase?: string; frame?: { stepCount?: number } } } } }).scene?.physics?.controllerDemo
+  assert((rejectedStep as { ok?: boolean }).ok === false, 'WebMCP must reject stepping a running controller')
+  assert((steppedController as { ok?: boolean }).ok === true
+    && controllerState(steppedController)?.phase === 'paused'
+    && controllerState(steppedController)?.frame?.stepCount === Number(controllerState(pausedController)?.frame?.stepCount) + 2,
+  'WebMCP must advance exactly the requested paused physics ticks')
   const controllerExited = await args.control({ invocation: '/xr.physics @canvas #controller operation=exit' })
   assert((invalidSemantics as { ok?: unknown }).ok === false, 'expected duplicate XR physics semantics to fail closed')
   const transformedSubject = (transformed as { scene?: { runtime?: { subjects?: Array<Record<string, unknown>> } } }).scene?.runtime?.subjects?.find(subject => subject.id === args.subjectId)

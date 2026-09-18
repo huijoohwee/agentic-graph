@@ -5,6 +5,7 @@ import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 type MarkdownFileTreeRowButtonProps = {
   ariaLabel: string
+  title?: string
   indent: number
   isActive: boolean
   textClassName: string
@@ -14,16 +15,23 @@ type MarkdownFileTreeRowButtonProps = {
 }
 
 export function MarkdownFileTreeRowButton(props: MarkdownFileTreeRowButtonProps) {
-  const { ariaLabel, indent, isActive, textClassName, onClick, onContextMenu, children } = props
+  const { ariaLabel, title, indent, isActive, textClassName, onClick, onContextMenu, children } = props
+  const rowRef = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => {
+    if (isActive) rowRef.current?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+  }, [isActive])
 
   return (
     <button
+      ref={rowRef}
       type="button"
       className={`flex-1 min-w-0 flex items-center gap-1 rounded ${UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME} ${textClassName} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${uiSelectedRowStateClassName(isActive)}`}
       style={{ paddingLeft: 6 + indent }}
       onClick={onClick}
       onContextMenu={onContextMenu}
       aria-label={ariaLabel}
+      aria-current={isActive ? 'page' : undefined}
+      title={title || ariaLabel}
     >
       {children}
     </button>

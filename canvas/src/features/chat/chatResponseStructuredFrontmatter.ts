@@ -1,6 +1,6 @@
 import type { JSONValue } from '@/lib/graph/types'
 import { resolveCanvas2dRendererId } from '@/lib/config.render'
-import { unwrapFlowEnvelopeFieldValue } from '@/features/parsers/markdownFrontmatterFlowGraph.flowEnvelope'
+import { readKeyTypeValueField } from '@/lib/graph/keyTypeValue'
 
 const CANVAS_FRONTMATTER_FIELD_KEYS = [
   'kgCanvasSurfaceMode',
@@ -172,7 +172,7 @@ const readString = (value: unknown): string =>
       : ''
 
 const unwrapStructuredFieldValue = (raw: unknown, key: string): unknown =>
-  unwrapFlowEnvelopeFieldValue({
+  readKeyTypeValueField({
     raw,
     path: `structuredContent.${key}`,
     expectedKey: key || undefined,
@@ -193,7 +193,7 @@ const mergeStructuredProperties = (record: Record<string, unknown>): Record<stri
     }
   } else if (Array.isArray(properties)) {
     for (const item of properties) {
-      if (isRecord(item)) assignIfMissing(item.key, Object.prototype.hasOwnProperty.call(item, 'value') ? item.value : item)
+      if (isRecord(item)) assignIfMissing(item.key, item)
     }
   }
   return out

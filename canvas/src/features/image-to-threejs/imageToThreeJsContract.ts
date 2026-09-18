@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue as unwrapScalar } from '@/lib/graph/keyTypeValue'
 import type { GraphNode } from '@/lib/graph/types'
 import type { FlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
 import { extractMarkdownMediaUrl } from '@/lib/canvas/graph-elements/mediaSpecMarkdown'
@@ -114,10 +115,6 @@ function cleanString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function unwrapScalar(value: unknown): unknown {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || !('value' in value)) return value
-  return (value as { value?: unknown }).value
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value)

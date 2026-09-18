@@ -71,6 +71,7 @@ export function useGanttTimelineInteractions(args: {
   scrubMaxMinutes?: number
   resolveRowKeyAtPosition: (position: number) => string
   selectedRowKey: string
+  selectionFollowsPlayhead?: boolean
   setSelectedRowKey: (rowKey: string) => void
   setTransportPlaybackPosition: (position: number) => void
   setTransportPlaying: (playing: boolean) => void
@@ -88,6 +89,7 @@ export function useGanttTimelineInteractions(args: {
   const handlePositionChange = React.useCallback((value: number) => {
     const nextPosition = clampTimelineTransportValue(value, 0, args.maxMinutes)
     args.setTransportPlaybackPosition(nextPosition)
+    if (args.selectionFollowsPlayhead === false) return
     const rowKey = args.resolveRowKeyAtPosition(nextPosition)
     if (rowKey && rowKey !== args.selectedRowKey) args.setSelectedRowKey(rowKey)
   }, [args])
@@ -169,6 +171,7 @@ export function useGanttTimelineInteractions(args: {
       const displayLaneDelta = resolveDisplayLaneDelta(event.clientY, dragState)
       setDragState(null)
       setDragPreview(null)
+      if (event.type === 'pointercancel') return
       if (!resolveMermaidGanttBarDragCommitted(preview.deltaPx) && !displayLaneDelta) return
       const deltaMinutes = normalizeVideoSequenceClipEditDeltaMinutes(preview.deltaPx * dragState.minutesPerPixel, dragState.stepMinutes)
       const effectiveDeltaMinutes = resolveMermaidGanttTimelineDragEffectiveDelta({

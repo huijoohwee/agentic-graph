@@ -81,7 +81,7 @@ test('offline native XR sources suppress automatic remote grammar hydration', as
       useGraphStore.setState({
         markdownDocumentName: id === 'flight-sim'
           ? 'agentic-graph-game-flight-sim-demo.md'
-          : 'agentic-graph-physics-playground-demo.md',
+          : 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
         markdownDocumentText: offlineRunReadySource(id),
       })
       const { dom, restore } = initJsdomHarness()
@@ -193,7 +193,7 @@ test('runtime identity proof explicitly hydrates grammar for an offline native X
   process.env.VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL = '1'
   completeSourceFilesBootstrap()
   useGraphStore.setState({
-    markdownDocumentName: 'agentic-graph-physics-playground-demo.md',
+    markdownDocumentName: 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
     markdownDocumentText: offlineRunReadySource('xr-physics'),
   })
   resetAgenticOsRemoteGrammarCatalogForTests()

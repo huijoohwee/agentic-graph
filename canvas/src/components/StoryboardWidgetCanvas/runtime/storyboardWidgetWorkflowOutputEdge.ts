@@ -1,3 +1,4 @@
+import { isKeyTypeValue as isTypedEdgePropertiesContainer } from '@/lib/graph/keyTypeValue'
 import {
   FLOW_EDGE_SOURCE_PORT_KEY,
   FLOW_EDGE_TARGET_PORT_KEY,
@@ -20,11 +21,6 @@ type StoryboardWidgetWorkflowOutputEdgePropertiesArgs = {
   targetPortKey?: string | null
 }
 
-const isTypedEdgePropertiesContainer = (properties: unknown): properties is Record<string, unknown> => (
-  isPlainObject(properties)
-  && Object.prototype.hasOwnProperty.call(properties, 'value')
-  && (Object.prototype.hasOwnProperty.call(properties, 'key') || Object.prototype.hasOwnProperty.call(properties, 'type'))
-)
 
 const readWorkflowOutputEdgeProperties = (properties: unknown): Record<string, unknown> => {
   const logical = isTypedEdgePropertiesContainer(properties) ? unwrapGraphCellValue(properties) : properties

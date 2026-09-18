@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue } from '@/lib/graph/keyTypeValue'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { getChatDefaultEndpointUrlForProvider, normalizeChatProviderId } from '@/lib/chatEndpoint'
 import { UI_COPY, FLOW_ANNOTATION_ENGINE_NODE_TYPE_ID, FLOW_HTML_VIDEO_RENDERER_NODE_TYPE_ID } from '@/lib/config'
@@ -34,9 +35,7 @@ import {
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaPublication'
 
 const readWorkflowString = (value: unknown): string => {
-  const scalar = value && typeof value === 'object' && !Array.isArray(value) && 'value' in value
-    ? (value as { value?: unknown }).value
-    : value
+  const scalar = unwrapKeyTypeValue(value)
   return typeof scalar === 'string' ? scalar.trim() : ''
 }
 

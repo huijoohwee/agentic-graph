@@ -56,7 +56,7 @@ test('rollback publication reads the selected Graph source while preserving docu
   const rollbackRoot = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'graph-docs-rollback-')));
   t.after(() => fs.rm(rollbackRoot, { recursive: true, force: true }));
   const paths = [...Object.values(GRAPH_DOC_PATHS).filter(value => value.endsWith('.md')),
-    'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'];
+    'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'];
   for (const sourcePath of paths) {
     const destination = path.join(rollbackRoot, sourcePath);
     await fs.mkdir(path.dirname(destination), { recursive: true });

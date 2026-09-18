@@ -390,13 +390,13 @@ export async function testWorkspaceSeedProviderCompleteSourceFilesBootstrapOverl
       store.setSourceFiles([
         {
           id: 'sf-seed-physics',
-          name: 'agentic-graph-physics-playground-demo.md',
+          name: 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
           text: '# physics seed\n',
           enabled: true,
           status: 'idle',
           source: {
             kind: 'local',
-            path: '/virtual/workspace/docs/workspace-seeds/agentic-graph-physics-playground-demo.md',
+            path: '/virtual/workspace/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
           },
         },
         {

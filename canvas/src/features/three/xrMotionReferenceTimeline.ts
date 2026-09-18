@@ -42,6 +42,11 @@ function stableToken(value: string): string {
     .replace(/^_+|_+$/g, '') || 'item'
 }
 
+/** Resolve the same generated animation row identity used by the native ruler. */
+export function resolveXrTimelineAnimationTrack(plan: XrMotionReferencePlan, rowKey: string) {
+  return plan.cast.find(track => track.animation && new RegExp(`xr_animation_effect_${stableToken(track.actorId)}(?:$|[^a-z0-9_])`).test(rowKey))
+}
+
 /**
  * Projects the native XR plan into the same Mermaid-Gantt vocabulary used by
  * the consolidated BottomPanel Timeline player. Seconds stay authoritative;

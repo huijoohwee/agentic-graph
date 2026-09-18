@@ -37,12 +37,12 @@
 
 - **Bootstrap source roots**:
   - The editorial, video-validation, and geospatial seeds remain sourced from `huijoohwee/docs` and materialized into the workspace root.
-  - The default XR physics seed is owned at `agentic-graph/docs/workspace-seeds/agentic-graph-physics-playground-demo.md`, published under the canonical path resolved by `XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH`, and materialized at `/docs/workspace-seeds/agentic-graph-physics-playground-demo.md`.
+  - The default XR physics seed is owned at `agentic-graph/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md`, published under the canonical path resolved by `XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH`, and materialized at `/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md`.
 - **Canonical initialization-file family**:
   - `/workspace-readme.md`
   - `/agentic-graph-agentic-video-canvas-demo.md`
   - `/agentic-graph-maps-places.md`
-  - `/docs/workspace-seeds/agentic-graph-physics-playground-demo.md`
+  - `/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md`
 - **Materialization rule**:
   - The three legacy initialization files stay root-level for deterministic explorer ordering and stable source-file ids. The physics seed keeps its source-owned `/docs/workspace-seeds/...` path so Dev, D1 publication, opaque share identity, and runtime selection resolve one document.
 - **Frontmatter SSOT**:
@@ -50,7 +50,7 @@
   - `agentic-graph-agentic-video-canvas-demo.md` lands on `2d + Storyboard Widget + Frontmatter Mode` and remains the explicit agentic-video validation/loading demo.
   - `Load preset` must refresh its runtime `/docs/agentic-graph-agentic-video-canvas-demo.md` mirror from this canonical initialization source before parsing, so generated runtime projections cannot replace the authored text/image/video stage graph across local ports.
   - `agentic-graph-maps-places.md` lands on `Geospatial Mode` from frontmatter and keeps document/frontmatter semantics enabled.
-  - `agentic-graph-physics-playground-demo.md` is the cold-start default and lands on `XR + 3D`, opens Motion Control, and auto-starts the native physics runtime from frontmatter. A custom `VITE_AGENTIC_OS_TEST_VALIDATION_SEED` remains an explicit validation-only override.
+  - `agentic-graph-ar-vr-xr-runtime-readiness-demo.md` is the cold-start default and lands on `XR + 3D`, opens Motion Control, and auto-starts the native physics runtime from frontmatter. A custom `VITE_AGENTIC_OS_TEST_VALIDATION_SEED` remains an explicit validation-only override.
 - **Activation precedence**:
   - On workspace bootstrap and exact UI import, the activated initialization file becomes the raw-frontmatter authority before composed source-file replay or metadata/layout helpers run.
   - A previously active document must not reapply stale frontmatter over the newly activated initialization file.
@@ -119,11 +119,11 @@
   - Must ensure `layout.mode` is 'force'.
   - Must ensure `frontmatterModeEnabled` is true.
   - Must ensure Frontmatter Mode never yields an empty canvas: if no frontmatter Mermaid nodes exist, render the full graph.
-  - Must materialize the canonical initialization family: the three legacy root files from `huijoohwee/docs` plus the source-owned physics seed at `/docs/workspace-seeds/agentic-graph-physics-playground-demo.md`.
+  - Must materialize the canonical initialization family: the three legacy root files from `huijoohwee/docs` plus the source-owned physics seed at `/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md`.
   - Must preserve each seed's canonical source owner and activation path; no downstream mirror or renderer query may replace frontmatter authority.
   - Must default `workspace-readme.md` to `canvasRenderMode='2d'`, `canvas2dRenderer='d3'`, `documentSemanticMode='document'`, and `frontmatterModeEnabled=true` from frontmatter.
   - Must default `agentic-graph-agentic-video-canvas-demo.md` to `canvasRenderMode='2d'`, `canvas2dRenderer='storyboard'`, `documentSemanticMode='document'`, and `frontmatterModeEnabled=true` from frontmatter.
-  - Must choose `agentic-graph-physics-playground-demo.md` for a cold unselected workspace and apply its `canvasSurfaceMode='xr'`, `canvasRenderMode='3d'`, `canvas3dMode='xr'`, and Motion Control state from frontmatter.
+  - Must choose `agentic-graph-ar-vr-xr-runtime-readiness-demo.md` for a cold unselected workspace and apply its `canvasSurfaceMode='xr'`, `canvasRenderMode='3d'`, `canvas3dMode='xr'`, and Motion Control state from frontmatter.
   - Must keep geospatial startup opt-in for non-geospatial sessions, while allowing the canonical geospatial initialization file to enable geospatial mode directly from frontmatter.
   - Must keep the generic FloatingPanel baseline closed with `propsPanel`; the canonical physics seed may explicitly open `motionControl` through frontmatter.
   - Must default `View Lock` OFF by initializing `documentStructureBaselineLock` to false in the shared UI slice.

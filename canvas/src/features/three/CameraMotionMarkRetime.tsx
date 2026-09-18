@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clapperboard, Eraser, Hand, MapPin, Pause, Play, Trash2 } from 'lucide-react'
+import { Clapperboard, Eraser, Hand, MapPin, Pause, Play, Plus, Trash2 } from 'lucide-react'
 import { TimelineTransportTimeAxisMark } from '@/components/timeline/TimelineTransportControls'
 import { resolveVideoSequenceRulerInsetLeft, resolveVideoSequenceRulerInsetPixelMetrics } from '@/components/timeline/videoSequenceTimelineRulerGeometry'
 import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
@@ -30,6 +30,7 @@ import { buildXrShotTargets } from './xrShotTargets'
 import { readMotionControlSnapshot, subscribeMotionControl } from './motionControlRuntime'
 import { xrMotionReferenceTimelineDocumentKey } from './xrMotionReferenceTimeline'
 import { formatCameraOptics } from '@/features/strybldr/cameraOptics'
+import { createXrTimelineCastMark, jumpToXrTimelineCue } from './xrTimelineCueRuntime'
 import './CameraMotionMarkRetime.css'
 
 function TimeEditor({
@@ -85,11 +86,25 @@ function markEditorAxisStyle(timeSeconds: number, scaleDurationSeconds: number):
   } as React.CSSProperties
 }
 
+function rulerMarkSeconds(axis: HTMLElement, clientX: number, scaleDurationSeconds: number): number {
+  const rect = axis.getBoundingClientRect()
+  const metrics = resolveVideoSequenceRulerInsetPixelMetrics(rect.width)
+  return Math.min(1, Math.max(0, (clientX - rect.left - metrics.insetLeftPx) / metrics.widthPx)) * scaleDurationSeconds
+}
+
+export function createXrTimelineMarkOnDoubleClick(event: React.MouseEvent<HTMLElement>, actorId: string, scaleDurationSeconds: number, disabled: boolean): void {
+  if (disabled || (event.target as Element).closest('[data-kg-timeline-time-axis-mark], .xr-camera-motion-mark-selection-controls')) return
+  event.preventDefault()
+  event.stopPropagation()
+  createXrTimelineCastMark(actorId, rulerMarkSeconds(event.currentTarget, event.clientX, scaleDurationSeconds))
+}
+
 function beginRulerMarkDrag(
   event: React.PointerEvent<HTMLElement>,
   scaleDurationSeconds: number,
   selectMark: () => void,
   retimeMark: (value: number) => void,
+  onDrag: () => void,
 ): void {
   const axis = event.currentTarget.closest<HTMLElement>('[data-kg-xr-choreography-lane-axis="1"]')
     || document.querySelector<HTMLElement>('[data-kg-video-sequence-ruler-axis="1"]')
@@ -97,14 +112,11 @@ function beginRulerMarkDrag(
   event.preventDefault()
   event.stopPropagation()
   selectMark()
-  const update = (clientX: number) => {
-    const rect = axis.getBoundingClientRect()
-    const metrics = resolveVideoSequenceRulerInsetPixelMetrics(rect.width)
-    const ratio = Math.min(1, Math.max(0, (clientX - rect.left - metrics.insetLeftPx) / metrics.widthPx))
-    retimeMark(Math.round(ratio * scaleDurationSeconds * 20) / 20)
-  }
+  const update = (clientX: number) => retimeMark(Math.round(rulerMarkSeconds(axis, clientX, scaleDurationSeconds) * 20) / 20)
   const move = (moveEvent: PointerEvent) => {
+    if (Math.abs(moveEvent.clientX - event.clientX) < 3) return
     moveEvent.preventDefault()
+    onDrag()
     update(moveEvent.clientX)
   }
   const finish = () => {
@@ -134,6 +146,7 @@ export function CameraMotionMarkRetime({
   onLaneSurfaceMouseDown?: (event: React.MouseEvent<HTMLElement>) => void
   onLaneSurfacePointerDown?: (event: React.PointerEvent<HTMLElement>) => void
 }) {
+  const suppressMarkClick = React.useRef(false)
   useGraphStore(state => state.selectedNodeId)
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const timelineTransportDocumentKey = useGraphStore(state => state.timelineTransportDocumentKey)
@@ -265,6 +278,9 @@ export function CameraMotionMarkRetime({
         data-kg-xr-shared-asset-action-cluster="individual-lane"
         data-kg-xr-shared-asset-target={selectedCastTrack.actorId}
       >
+        <button type="button" className={actionButtonClass} aria-label="Add cast mark at playhead" onClick={() => createXrTimelineCastMark(selectedCastTrack.actorId, runtime.playheadSeconds)} title="Add mark at playhead. Double-click empty track space to add at that time.">
+          <Plus className={actionIconClass} aria-hidden />
+        </button>
         <button type="button" className={actionButtonClass} disabled={!canApply} aria-label="Apply selected XR animation" onClick={() => runSelectedCastSharedAssetAction('apply-animation', { presetId: actionPresetId })} title="Apply animation to this 3D for XR lane" data-kg-xr-shared-asset-animate="individual-lane">
           <Clapperboard className={actionIconClass} aria-hidden />
         </button>
@@ -353,26 +369,27 @@ export function CameraMotionMarkRetime({
           const selected = runtime.selectedMark?.kind === 'cast'
             && runtime.selectedMark.actorId === track.actorId
             && runtime.selectedMark.markId === mark.id
-          const selectMark = () => selectXrMotionReferenceCastMark(track.actorId, mark.id)
+          const selectMark = () => { suppressMarkClick.current = false; selectXrMotionReferenceCastMark(track.actorId, mark.id) }
+          const jumpToMark = () => jumpToXrTimelineCue({ kind: 'cast', targetId: track.actorId, markId: mark.id, timeSeconds: mark.timeSeconds })
           return (
             <TimelineTransportTimeAxisMark
               key={`${track.actorId}:${mark.id}`}
               laneStyle="video"
               className="xr-camera-motion-retime-lane-mark"
               style={{ ...markAxisStyle(mark.timeSeconds, scaleDurationSeconds), '--kg-xr-ruler-mark-color': track.color } as React.CSSProperties}
-              title={`${track.label} · ${mark.timeSeconds}s · drag to retime`}
+              title={`${track.label} · ${mark.timeSeconds}s · ${mark.gait} · ${mark.transition} · click to seek; drag to retime`}
               aria-label={`${track.label} mark ${index + 1} at ${mark.timeSeconds} seconds`}
               aria-pressed={selected}
               role="button"
               tabIndex={0}
-              onClick={event => { event.stopPropagation(); selectMark() }}
-              onKeyDown={event => selectMarkOnKeyDown(event, selectMark)}
+              onClick={event => { event.stopPropagation(); if (!suppressMarkClick.current) jumpToMark(); suppressMarkClick.current = false }}
+              onKeyDown={event => selectMarkOnKeyDown(event, jumpToMark)}
               onMouseDown={event => event.stopPropagation()}
               onPointerDown={event => beginRulerMarkDrag(event, scaleDurationSeconds, selectMark, value => {
                 const selection = readXrMotionReferenceRuntime().selectedMark
                 const activeMarkId = selection?.kind === 'cast' && selection.actorId === track.actorId ? selection.markId : mark.id
                 retimeXrMotionReferenceCastMark(track.actorId, activeMarkId, value)
-              })}
+              }, () => { suppressMarkClick.current = true })}
               data-kg-xr-lane-cast-mark={index + 1}
               data-kg-xr-lane-mark-shape="circle-only"
               data-kg-xr-stage-highlight-target={selected ? 'cast-mark' : undefined}
@@ -407,25 +424,26 @@ export function CameraMotionMarkRetime({
         {runtime.plan.camera.map((mark, index) => {
           const selected = runtime.selectedMark?.kind === 'camera' && runtime.selectedMark.markId === mark.id
           const targetLabel = shotTargetLabelById.get(mark.anchorId) || 'Unbound target'
-          const selectMark = () => selectXrMotionReferenceCameraMark(mark.id)
+          const selectMark = () => { suppressMarkClick.current = false; selectXrMotionReferenceCameraMark(mark.id) }
+          const jumpToMark = () => jumpToXrTimelineCue({ kind: 'camera', targetId: mark.anchorId, markId: mark.id, timeSeconds: mark.timeSeconds })
           return (
             <TimelineTransportTimeAxisMark
               key={mark.id}
               laneStyle="audio"
               className="xr-camera-motion-retime-lane-mark xr-camera-motion-retime-lane-mark--camera"
               style={markAxisStyle(mark.timeSeconds, scaleDurationSeconds)}
-              title={`${targetLabel} · ${resolveXrCameraMoveLabel(mark.moveId)} · ${mark.rig} · ${formatCameraOptics(mark.settings)} · ${mark.timeSeconds}s · drag to retime`}
+              title={`${targetLabel} · ${resolveXrCameraMoveLabel(mark.moveId)} · ${mark.rig} · ${formatCameraOptics(mark.settings)} · ${mark.timeSeconds}s · click to seek; drag to retime`}
               aria-label={`Camera mark ${index + 1} linked to ${targetLabel} at ${mark.timeSeconds} seconds · ${resolveXrCameraMoveLabel(mark.moveId)} · ${mark.rig} · ${formatCameraOptics(mark.settings)}`}
               aria-pressed={selected}
               role="button"
               tabIndex={0}
-              onClick={event => { event.stopPropagation(); selectMark() }}
-              onKeyDown={event => selectMarkOnKeyDown(event, selectMark)}
+              onClick={event => { event.stopPropagation(); if (!suppressMarkClick.current) jumpToMark(); suppressMarkClick.current = false }}
+              onKeyDown={event => selectMarkOnKeyDown(event, jumpToMark)}
               onMouseDown={event => event.stopPropagation()}
               onPointerDown={event => beginRulerMarkDrag(event, scaleDurationSeconds, selectMark, value => {
                 const selection = readXrMotionReferenceRuntime().selectedMark
                 retimeXrMotionReferenceCameraMark(selection?.kind === 'camera' ? selection.markId : mark.id, value)
-              })}
+              }, () => { suppressMarkClick.current = true })}
               data-kg-xr-lane-camera-mark={index + 1}
               data-kg-xr-camera-mark-target={mark.anchorId}
               data-kg-camera-optics-projection="timeline-mark"

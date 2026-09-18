@@ -1,3 +1,4 @@
+import { unwrapKeyTypeValue } from '@/lib/graph/keyTypeValue'
 import {
   AGENTIC_OS_DOCS_MCP_TOOL_NAME,
   normalizeAgenticOsDocsMcpInvocationTokens,
@@ -21,9 +22,7 @@ export type RichMediaDeliverablesResult = {
 
 export function isRichMediaDeliverablesWidget(properties: Record<string, unknown>): boolean {
   const raw = properties[RICH_MEDIA_DELIVERABLES_MODE_PROPERTY]
-  const value = raw && typeof raw === 'object' && !Array.isArray(raw) && 'value' in raw
-    ? (raw as { value?: unknown }).value
-    : raw
+  const value = unwrapKeyTypeValue(raw)
   return value === true || String(value || '').trim().toLowerCase() === 'true'
 }
 

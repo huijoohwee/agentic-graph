@@ -23,6 +23,7 @@ export function useGanttTimelineSelectionSync(args: {
   setSelectedRowKey: (rowKey: string) => void
   setTransportPlaybackPosition: (position: number) => void
   positionOnlySelectedRowKeys?: ReadonlySet<string>
+  selectionFollowsPlayhead?: boolean
   taskSpans: readonly MermaidGanttTimelineTaskSpan[]
 }) {
   const previousSelectedRowKeyRef = React.useRef(args.selectedRowKey)
@@ -46,6 +47,7 @@ export function useGanttTimelineSelectionSync(args: {
   }, [args])
 
   React.useEffect(() => {
+    if (args.selectionFollowsPlayhead === false) return
     if (skipNextPositionSelectionSyncRef.current) {
       skipNextPositionSelectionSyncRef.current = false
       return
