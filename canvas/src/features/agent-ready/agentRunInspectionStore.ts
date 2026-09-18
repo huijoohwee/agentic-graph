@@ -6,7 +6,7 @@ import { AGENT_RUN_CANVAS_VIEWS, parseCanvasViewInvocation } from '@/lib/canvas/
 export type AgentRunView = Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>
 export type AgentRunInspection = { trace: RunTrace; scope: string; expiresAt: number; spanId: string | null; search: string; view: AgentRunView }
 let snapshot: AgentRunInspection | null = null
-let workspace: { view: AgentRunView; dashboardTab?: 'mission' | 'graph' } | null = null
+let workspace: { view: AgentRunView } | null = null
 let cleanup: (() => void) | null = null
 let restoreView: (() => void) | null = null
 let timer: number | undefined
@@ -111,8 +111,4 @@ export function activateAgentRunPrompt(prompt: string): void {
   if (optionId === 'renderer:dashboard') { activateAgentRunWorkspace('tree'); return }
   if (!optionId.startsWith('agent-run:')) throw Error('Choose an agent observability view.')
   activateAgentRunWorkspace(optionId.slice('agent-run:'.length) as AgentRunView)
-}
-
-export function selectDashboardTab(dashboardTab: 'mission' | 'graph'): void {
-  if (workspace) { workspace = { ...workspace, dashboardTab }; emit() }
 }

@@ -3,9 +3,17 @@ import assert from 'node:assert/strict'
 /** CRUD uses the existing visual Props palette and inline Dashboard editors. */
 export async function verifyDashboardWidgets(page) {
   const dashboard = page.getByRole('region', { name: 'Dashboard', exact: true })
-  await dashboard.getByRole('tab', { name: 'Graph statistics', exact: true }).click()
+  assert.equal(await dashboard.locator('[data-kg-dashboard-canvas]').count(), 1)
+  assert.equal(await page.locator('#canvas-dashboard-mission-panel, #canvas-dashboard-graph-panel').count(), 0)
+  assert.equal(await dashboard.locator('[data-kg-dashboard-card="agent-tree"]').count(), 1)
   await dashboard.getByRole('button', { name: 'Props Panel', exact: true }).click()
   const palette = page.getByRole('complementary', { name: 'Widget palette', exact: true })
+  assert.equal(await palette.getByRole('listitem', { name: /^Widget mission:/ }).count(), 1)
+  const treeEntry = palette.getByRole('listitem', { name: 'Widget mission:tree', exact: true })
+  await treeEntry.getByRole('button', { name: 'Remove widget', exact: true }).click()
+  await dashboard.locator('[data-kg-dashboard-card="agent-tree"]').waitFor({ state: 'detached' })
+  await treeEntry.getByRole('button', { name: 'Show widget', exact: true }).click()
+  await dashboard.locator('[data-kg-dashboard-card="agent-tree"]').waitFor()
   const entry = palette.getByRole('listitem', { name: 'Widget graph:node-types', exact: true })
   await entry.getByRole('region', { name: 'Dashboard card title for node-types', exact: true }).dblclick()
   await entry.getByRole('textbox', { name: 'Dashboard card title for node-types', exact: true }).fill('My node types')
@@ -33,6 +41,5 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(JSON.parse(source).widgets['graph:node-types'].title, 'Node Types')
   assert.equal(source.includes('agent-run-inspection/v1'), false)
   await page.locator('[data-kg-floating-panel-root="true"]').getByRole('button', { name: 'Close', exact: true }).click()
-  await dashboard.getByRole('tab', { name: 'Agent Mission', exact: true }).click()
   console.log('Existing Props palette widget CRUD and Source Files configuration passed')
 }

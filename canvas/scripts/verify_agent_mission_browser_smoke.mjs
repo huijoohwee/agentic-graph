@@ -37,9 +37,10 @@ async function waitForAsync(predicate) {
     await page.waitForTimeout(50)
   }
 }
+const openRunSource = async (scope = mission) => { const details = scope.locator('details').filter({ has: page.locator('summary').filter({ hasText: /^Run source$/ }) }); if (await details.count() && !await details.getAttribute('open').then(value => value !== null)) await details.locator('summary').first().click() }
 const waitText = async (locator, text) => {
   if (locator === mission) {
-    await mission.waitFor({ state: 'visible', timeout: 60000 })
+    await mission.waitFor({ state: 'visible', timeout: 60000 }); await openRunSource()
   }
   await locator.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
 }
@@ -57,6 +58,7 @@ const waitTopology = async scope => {
   assert.ok(await panel.locator('svg [data-kg-layer="nodes"] [data-node-id]').count() > 0, 'Native D3 scene must render observed nodes')
 }
 const refreshMission = async () => {
+  await openRunSource()
   const refresh = mission.locator('button:enabled').filter({ hasText: /^Refresh runs$/ })
   await refresh.click(); await refresh.waitFor({ state: 'visible' })
 }
@@ -128,12 +130,12 @@ async function verifyWorkspace(label, revoke = false) {
   await waitText(canvas, 'Selected span: draft-2')
   const evidence = canvas.getByRole('region', { name: 'Agent Mission', exact: true })
   const countBeforeRefresh = requests.length
-  await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).click()
+  await openRunSource(evidence); await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).click()
   await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).and(page.locator(':enabled')).waitFor()
   assert.ok(requests.length > countBeforeRefresh, 'Canvas refresh must use the authenticated native transport')
   for (const [key, name] of [['table', 'Span table'], ['tree', 'Span tree'], ['source', 'Source links'],
     ['allocation', 'Allocation'], ['evidence', 'Evaluation'], ['comparison', 'Comparison'], ['topology', 'Topology']]) {
-    await evidence.getByRole('tab', { name, exact: true }).click()
+    await evidence.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption(key)
     await evidence.locator('#agent-run-view-' + key + '-panel').waitFor({ state: 'visible' })
     await waitText(evidence, 'Selected span: draft-2')
     if (key === 'table') assert.ok(await evidence.locator('tr').filter({ hasText: 'draft-2' }).isVisible())
@@ -184,7 +186,7 @@ async function verifyWorkspace(label, revoke = false) {
   await waitText(evidence.getByLabel('Comparison evidence'), 'insufficient-evidence')
   await choose('candidate-run')
   await evidence.getByRole('heading', { name: 'Run candidate-run', exact: true }).waitFor()
-  await evidence.locator('#agent-run-view-topology-tab').click()
+  await evidence.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('topology')
   await evidence.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await waitText(evidence, 'Selected span: draft-2')
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
@@ -231,16 +233,16 @@ async function verifyLocalTraceImport(label, fromApex = false) {
     await editor.waitFor({ timeout: 60000 })
     await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
   }
-  await waitText(evidence, 'Imported local trace: workflow.json'); await waitTopology(evidence)
+  await openRunSource(evidence); await waitText(evidence, 'Imported local trace: workflow.json'); await waitTopology(evidence)
   assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
   assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s', exact: true }).isDisabled(), true)
   await evidence.getByRole('list', { name: 'Topology nodes' }).getByRole('button').click()
   await waitText(evidence, 'Selected span: checks')
   await evidence.locator('svg .node-label').click({ modifiers: ['Shift'] })
   assertAuthored(await authoredSnapshot(), before, 'Modifier selection must remain inside inspection')
-  await evidence.getByRole('tab', { name: 'Evaluation', exact: true }).click()
+  await evidence.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('evidence')
   assert.equal(await evidence.getByRole('button', { name: 'Evaluate selected subject', exact: true }).isDisabled(), true)
-  await evidence.getByRole('tab', { name: 'Topology', exact: true }).click(); await waitTopology(evidence)
+  await evidence.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('topology'); await waitTopology(evidence)
   await page.screenshot({ path: resolve(output, label + '-imported-d3.png') })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
   await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: checks')))
@@ -251,7 +253,7 @@ async function verifyLocalTraceImport(label, fromApex = false) {
   await page.getByRole('button', { name: /Import local files/ }).click()
   await (await replacement).setFiles({ name: 'replacement.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...payload, runId: 'replacement-workflow' })) })
   await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
-  await waitText(evidence, 'Imported local trace: replacement.json')
+  await openRunSource(evidence); await waitText(evidence, 'Imported local trace: replacement.json')
   await evidence.getByRole('heading', { name: 'Run replacement-workflow', exact: true }).waitFor()
   assert.equal(requests.length, beforeRequests, 'Replacing a mounted inspection must not reactivate the runtime')
   await canvas.getByRole('button', { name: 'Close run inspection', exact: true }).click()
@@ -271,11 +273,11 @@ async function verifyApexActivation(width) {
   await activate.waitFor()
   const dashboard = page.getByRole('region', { name: 'Observation dashboard', exact: true })
   await dashboard.waitFor()
-  const dashboardBounds = await dashboard.boundingBox()
+  const dashboardBounds = await page.getByRole('region', { name: 'Dashboard', exact: true }).boundingBox()
   const overlay = page.locator('[data-kg-live-canvas-hero-editorial="overlay"]')
   assert.equal(await overlay.evaluate(element => getComputedStyle(element).position), 'absolute', 'Catalog must reuse the existing translucent overlay')
   assert.ok(dashboardBounds.width > width * .9, 'Observability dashboard must use the full Canvas width')
-  await dashboard.getByText('1. Import local file', { exact: true }).waitFor()
+  await page.getByLabel('Import local file', { exact: true }).waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
   await page.screenshot({ path: resolve(output, `apex-${width}-catalog-overlay.png`) })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
@@ -338,11 +340,12 @@ async function verifyApexActivation(width) {
     stages: Array.from({ length: 33 }, (_, i) => ({ id: 'check-' + i, status: 'passed', startedAt: 1000 + i * 100,
       finishedAt: 1100 + i * 100, elapsedMs: 100, observedOutputBytes: 200, outputTruncated: false })) }
   await evidence.getByLabel('Import validation report', { exact: true }).setInputFiles({ name: 'validation.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(observation)) })
-  await waitText(evidence, 'Local validation observation')
+  await openRunSource(evidence); await waitText(evidence, 'Local validation observation')
+  await evidence.locator('summary').filter({ hasText: /^Run measurements$/ }).click()
   assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
   assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s' }).isDisabled(), true)
   await waitText(evidence.getByRole('region', { name: 'Validation economics' }), '128,000 bytes')
-  await evidence.getByRole('tab', { name: 'Span tree', exact: true }).click()
+  await evidence.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('tree')
   const firstStage = evidence.getByRole('tree', { name: 'Span hierarchy' }).getByRole('treeitem').first()
   await firstStage.click()
   assert.equal(await firstStage.getByText('100 ms', { exact: true }).count(), 1, 'Each span shows its duration once')
@@ -352,7 +355,7 @@ async function verifyApexActivation(width) {
   await evidence.getByRole('button', { name: 'Next stage page' }).click()
   await waitText(evidence, '1/33 retained spans')
   await evidence.getByRole('button', { name: 'Previous stage page' }).click()
-  await evidence.getByRole('tab', { name: 'Topology', exact: true }).click(); await waitTopology(evidence)
+  await evidence.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('topology'); await waitTopology(evidence)
   await page.screenshot({ path: resolve(output, `validation-${width}-topology.png`) })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
   await editor.waitFor({ state: 'visible' })
@@ -413,9 +416,9 @@ try {
   assert.equal(await floating.count(), 0, 'Inspection must not open another panel')
   phaseObservation.checkpoint('Mission browser: authorized discovery and keyboard selection passed')
   await waitText(selected, '32/34 retained spans')
-  await selected.getByRole('tab', { name: 'Source links', exact: true }).click()
+  await selected.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('source')
   assert.ok((await selected.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
-  await selected.getByRole('tab', { name: 'Allocation', exact: true }).click(); await waitText(selected, 'Project allocation'); await selected.getByRole('tab', { name: 'Span tree', exact: true }).click()
+  await selected.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('allocation'); await waitText(selected, 'Project allocation'); await selected.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('tree')
   const actualDraft = selected.getByRole('treeitem', { name: /draft · tool · completed/ })
   await actualDraft.click()
   phaseObservation.checkpoint('Mission browser: span selected')
@@ -426,7 +429,7 @@ try {
   await search.fill('')
   assert.equal(await selected.getByRole('treeitem', { selected: true }).count(), 1)
   await waitText(selected, 'exclusive observed')
-  await page.locator('#agent-run-view-topology-tab').click()
+  await page.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('topology')
   await waitTopology(selected)
   assert.equal(await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { pressed: true }).count(), 1)
   await choose('baseline-run') // Cold loading and interaction have separate authorization windows.
@@ -452,7 +455,7 @@ try {
   await choose('baseline-run')
   await waitTopology(selected)
   await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
-  await page.locator('#agent-run-view-evidence-tab').click()
+  await page.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('evidence')
   await selected.getByRole('button', { name: 'Evaluate selected subject' }).click()
   await waitText(selected, 'Span draft-2 · reported')
   phaseObservation.checkpoint('Mission browser: views and subject evaluation passed')
@@ -496,7 +499,7 @@ try {
   await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')) })
   await context.setOffline(true); await waitText(mission, 'Offline')
   const offlineCount = requests.length; await page.waitForTimeout(5400); assert.equal(requests.length, offlineCount)
-  await page.locator('#agent-run-view-tree-tab').click()
+  await page.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('tree')
   assert.ok(await selected.getByRole('tree', { name: 'Span hierarchy' }).isVisible())
   await context.setOffline(false)
   await mission.getByRole('checkbox', { name: /Live/ }).uncheck()
@@ -504,7 +507,7 @@ try {
   await mission.waitFor({ state: 'detached' }); await page.getByRole('button', { name: /^Canvas View Mode:/ }).click(); await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click(); await waitText(mission, '1 retained matches'); assert.equal(await selected.count(), 0)
   assert.equal(await mission.getByText('baseline-run', { exact: true }).count(), 0)
   await choose('private-run')
-  await switchPrincipal('denied'); await mission.getByRole('button', { name: 'Refresh runs' }).click()
+  await switchPrincipal('denied'); await openRunSource(); await mission.getByRole('button', { name: 'Refresh runs' }).click()
   await mission.waitFor({ state: 'detached' }); assert.equal(await selected.count(), 0)
   await switchPrincipal('owner'); await openDashboard()
   await waitText(mission, '2 retained matches'); await choose('baseline-run')
@@ -542,7 +545,7 @@ try {
   await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click()
   returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] }); await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true })
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
-  await page.locator('#agent-run-view-topology-tab').click()
+  await page.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('topology')
   await waitTopology(selected)
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'desktop-topology.png') })
@@ -557,7 +560,7 @@ try {
       'subject-evaluation', 'phase-reauthorization', 'comparison-insufficiency', 'source-join', 'allocation', 'metadata-export', 'authored-state-preserved',
       'metadata-search-ancestors', 'mobile-fit', 'desktop-topology', 'manual-idle', 'live-bounded', 'hidden-event-pause',
       'offline-inspection', 'scope-change', 'denial-clears-cache', 'snapshot-expiry', 'workspace-json-markdown-viewer', 'workspace-canvas-selection',
-      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'canvas-eight-views', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], phaseObservation: phaseObservation.snapshot(), peak, streamed, requests }, null, 2))
+      'workspace-authority-revocation', 'workspace-close-preserves-documents', 'workspace-no-persistence', 'workspace-offline-expiry', 'private-model-disposal', 'native-sse-observation', 'single-dashboard-span-card', 'canvas-view-command', 'canvas-evaluation-comparison', 'stream-to-editor-projection'], phaseObservation: phaseObservation.snapshot(), peak, streamed, requests }, null, 2))
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
   }
 } catch (error) {

@@ -4,7 +4,6 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { DashboardCardView, DashboardMetricTile } from './DashboardWidgets'
 import { buildDashboardCanvasModel, type DashboardCard, type DashboardMetric } from './dashboardModel'
 import { useDashboardWidgets, updateDashboardWidget, updateDashboardWidgets, configureDashboardCards, configureDashboardMetrics, widgetSettings } from './dashboardWidgetConfiguration'
-import { AGENT_RUN_CANVAS_VIEWS } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 import { useAgentRunInspection, selectAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
 import { AgentRunSpanViews } from '@/features/agent-ready/AgentRunSpanViews'
 import { visibleSpanTree } from '@/features/agent-ready/missionControlProjection'
@@ -17,7 +16,7 @@ export default function DashboardWidgetPalette() {
   const all = { ...config.document, widgets: Object.fromEntries(Object.entries(config.document.widgets).map(([id, value]) => [id, { ...value, visible: true }])) }
   const cards = configureDashboardCards(all, model.sections.flatMap(section => section.cards)), metrics = configureDashboardMetrics(all, model.metrics)
   const entries: { id: string; title: string; card?: DashboardCard; metric?: DashboardMetric; mission?: string }[] = [
-    ...Object.entries(AGENT_RUN_CANVAS_VIEWS).map(([mission, title]) => ({ id: `mission:${mission}`, title, mission })),
+    { id: 'mission:tree', title: 'Span tree', mission: 'tree' },
     ...metrics.map(metric => ({ id: `graph:${metric.id}`, title: metric.label, metric })),
     ...cards.map(card => ({ id: `graph:${card.id}`, title: card.title, card })),
   ]

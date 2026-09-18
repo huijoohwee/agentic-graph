@@ -8,7 +8,6 @@ import { openAgentRunInspection, activateAgentRunWorkspace, closeAgentRunInspect
 import { AGENT_RUN_CANVAS_VIEWS } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 import type { ObservationListener } from './durableRunStream'
 import type { RunOperation } from 'agentic-os/agents/invocation'
-import TabHeader from '@/features/panels/ui/TabHeader'
 import { GraphDataTableDomTableView } from '@/features/graph-data-table/ui/GraphDataTableDomTableView'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { invokeDurableRun, clearDurableRunSession } from './durableRunTransport'
@@ -25,7 +24,7 @@ const emptySelection: Selection = { runId: null, spanId: null }
 
 export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false, preview = false }: { onOpenWorkspace?: () => void; workspace?: boolean; preview?: boolean }) {
   const widgetConfig = useDashboardWidgets()
-  const widgetViews = views.filter(item => widgetSettings(widgetConfig.document, `mission:${item.key}`).visible !== false).sort((a, b) => (widgetSettings(widgetConfig.document, `mission:${a.key}`).order ?? 0) - (widgetSettings(widgetConfig.document, `mission:${b.key}`).order ?? 0))
+  const viewSettings = widgetSettings(widgetConfig.document, 'mission:tree')
   const inspection = useAgentRunInspection(), workspaceSession = useAgentRunWorkspace(), initial = workspace ? inspection : null
   const inspectionRef = React.useRef(inspection)
   inspectionRef.current = inspection
@@ -39,8 +38,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const [topologyDetail, setTopologyDetail] = React.useState<'all' | 'agents'>('agents')
   const [localView, setLocalView] = React.useState('tree'), [localSearch, setLocalSearch] = React.useState(''), [live, setLive] = React.useState(false)
   const requestedView = workspace ? workspaceSession?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
-  const view = widgetViews.some(item => item.key === requestedView) ? requestedView : widgetViews[0]?.key ?? ''
-  const viewSettings = widgetSettings(widgetConfig.document, `mission:${view}`)
+  const view = views.some(item => item.key === requestedView) ? requestedView : 'tree'
   const search = workspace ? inspection?.search ?? '' : localSearch, setSearch = workspace ? filterAgentRunInspection : setLocalSearch
   const [online, setOnline] = React.useState(navigator.onLine), [visible, setVisible] = React.useState(!document.hidden)
   const [backoff, setBackoff] = React.useState(5000), [expiry, setExpiry] = React.useState(initial?.expiresAt ?? 0)
@@ -215,7 +213,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   }
   const workflow = record(trace?.profile.workflow), workflowUrl = trace ? workflowSourceLink(trace) : null
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
-  return <section aria-label="Agent Mission" className="h-full min-h-0 min-w-0 overflow-auto p-3" style={{ overflowWrap: 'anywhere' }}>
+  if (viewSettings.visible === false) return null
+  return <section aria-label="Agent Mission" className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
+    <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }} canEditCardText onCommitCardText={(_id, field, value) => { void updateDashboardWidget('mission:tree', { [field]: value }).catch(() => undefined) }}>
+    <details open={!trace}><summary className="cursor-pointer text-xs">Run source</summary>
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
 
       <label className={button}>Import local file<input type="file" accept=".json,application/json" className="sr-only" aria-label="Import local file"
@@ -251,33 +252,27 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <button className={button} disabled={busy || !online}>Apply filters</button>
     </form>}
     {index && <>
-      <DashboardMetricGrid metrics={index.metrics} />
       <p className="text-xs">{index.items.length} rows · {index.total} retained matches · {index.partial ? 'Partial retention or trace coverage' : 'Retained snapshot; full historical population unknown'}</p>
-      <DashboardCardView card={{ id: 'agent-runs', title: 'Agent runs', subtitle: 'Authorized retained observations', kind: 'table', tone: 'blue', series: [], rows: [] }}><div className="max-h-64 overflow-auto">
+      <div className="max-h-64 overflow-auto" aria-label="Agent runs">
         <GraphDataTableDomTableView tableId="nodes" columns={RUN_COLUMNS} rows={runRows(index)} selectedRowIds={selection.runId ? [selection.runId] : []}
           columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy="" sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}}
           onRowClicked={chooseRun} onSelectionChanged={ids => { if (ids.length) chooseRun(ids.at(-1)!); else { setSelection(emptySelection); setTrace(null) } }} />
-      </div></DashboardCardView>
+      </div>
       {!index.items.length && <p>No runs in this authorized snapshot. Clear filters or complete an agent task through the existing execution workflow, then refresh. Opening observability does not start a run.</p>}
       {index.offset > 0 && <button className={button} disabled={busy || !online} onClick={() => { void refresh() }}>First run page</button>}
       {index.nextCursor && <button className={button} disabled={busy || !online} onClick={() => { void refresh(index.nextCursor!) }}>Next run page</button>}
     </>}
-    {!index && !trace && <section aria-label="Observation dashboard" className="space-y-4 py-3">
-      <ol className="flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="Observation workflow">
-        <li>1. Import local file</li><li>2. Inspect spans and resources</li><li>3. Review evaluations and compare</li><li>4. Export evidence</li>
-      </ol>
-      <DashboardMetricGrid metrics={Object.entries(resourceLabels({ cpuMs: null, peakMemoryBytes: null, tokens: null, costUsd: null })).map(([label, value]) => ({ id: label, label, value, detail: 'No observation loaded', tone: 'slate' }))} />
-      <nav aria-label="Available observation views" className="flex flex-wrap gap-2">{views.map(item =>
-        <button type="button" disabled title="Import an observation to use this view" className="rounded border px-3 py-2 text-xs opacity-60" key={item.key}>{item.label}</button>)}</nav>
-      <DashboardCardView card={{ id: 'agent-runs', title: 'Agent runs', subtitle: 'Import evidence or connect the runtime', kind: 'table', tone: 'slate', series: [], rows: [] }}><GraphDataTableDomTableView tableId="nodes" columns={RUN_COLUMNS} rows={[]} selectedRowIds={[]}
-        columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy="" sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={() => undefined} onSelectionChanged={() => undefined} /></DashboardCardView>
-      <p className="text-sm">No observation loaded. Import native run or workflow JSON to synchronize JSON, Markdown, Viewer and Canvas. Recorded evaluations remain evidence; live evaluation and comparison require a connected runtime.</p>
+    </details>
+    {!index && !trace && <section aria-label="Observation dashboard" className="py-3 text-sm">
+      No observation loaded. Import a run to see its spans. Unobserved resources remain unknown.
     </section>}
-    {trace && <section aria-label="Selected run evidence" className="min-w-0 border-t pt-3">
+    {trace && <section aria-label="Selected run evidence" className="min-w-0">
+
       <h3 className="font-semibold">Run {trace.runId}</h3>
       <p className="text-xs">Selected span: {selection.spanId || "Whole run"}</p>
       <p className="text-xs">Observed state: {trace.status} · {trace.spans.length}/{trace.total} retained spans on this page · expected {numberLabel(trace.expected)} · dropped {numberLabel(trace.dropped)}{trace.partial ? ' · Partial trace' : ''}</p>
       <p className="py-2 text-sm">{trace.localObservation ? 'Local validation · selected owner checks' : workflowUrl ? 'Local workflow · source-bound phase receipts' : context ? `${context.taskId} → ${context.projectId} → ${context.goalId}` : 'Legacy run · no plan context recorded'}</p>
+      <details className="my-2"><summary className="cursor-pointer text-xs">Run measurements</summary>
       {trace.localObservation && <section aria-label="Validation economics" className="my-3 rounded border p-3">
         <div className="grid grid-cols-2 gap-3 text-sm"><div>Wall time<strong className="block text-xl">{durationLabel(trace.localObservation.elapsedMs)}</strong></div>
           <div>Observed output<strong className="block text-xl">{numberLabel(trace.localObservation.resources.observedOutputBytes, ' bytes')}</strong></div>
@@ -287,7 +282,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         <a className="text-xs underline" target="_blank" rel="noreferrer" href={`https://${trace.localObservation.source.repository}/tree/${trace.localObservation.source.revision}`}>Source revision {trace.localObservation.source.revision.slice(0, 12)}</a>
         <details className="pt-2 text-xs"><summary>Stage output and reuse</summary><ul>{trace.localObservation.stages.slice(trace.offset, trace.offset + 32).map(stage => <li key={stage.id} className="py-1">{stage.id} · {stage.status} · {numberLabel(stage.observedOutputBytes, ' output bytes')}{stage.outputTruncated ? ' · bounded log tail' : ''}</li>)}</ul></details>
       </section>}
-      <section aria-label="Observed resources" className="my-3 rounded border p-3">
+      <section aria-label="Observed resources" className="min-w-0">
         {!span && trace.profile.workflow && <p className="pb-2 text-xs">Reported usage across loaded evidence · unmeasured phases excluded · nested measurements counted once</p>}
         {span && <p className="pb-2 text-xs">{span.status === 'reused' ? 'Original check measurements · excluded from current consumption' : 'Selected span measurements'} · Model: {span.model || 'Not recorded by source'}</p>}
         <DashboardMetricGrid metrics={Object.entries(resourceLabels(traceResources(trace, span))).map(([label, value]) => ({ id: label, label, value, detail: span ? 'Selected span' : 'Whole run', tone: 'blue' }))} />
@@ -301,7 +296,12 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           <ol>{trace.localObservation.feedback.ranking.map(row => <li className="py-1" key={row.id}>{row.id}: {durationLabel(row.meanMs)} mean · {row.samples} samples · {row.samples < 3 ? 'cold baseline' : 'repeated observations'} · {(row.resourceMeans.queueWaitMs ?? 0) > row.meanMs / 2 ? 'Inspect CI queue' : 'Profile expensive stage'}
             {row.sourceRevision && <a className="ml-1 underline" target="_blank" rel="noreferrer" href={`https://${trace.localObservation!.source.repository}/tree/${row.sourceRevision}`}>Source {row.sourceRevision.slice(0, 12)}</a>}</li>)}</ol>
         </details>}
-      </section>
+      </section></details>
+      <div className="flex flex-wrap items-center gap-2 py-2 text-xs">
+        <label>Inspect <select aria-label="Inspect run details" value={view} onChange={event => setView(event.target.value)} style={inputStyle}>{views.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        <input aria-label="Search spans by name, kind or status" placeholder="Search spans by name, kind or status" value={search} onChange={event => setSearch(event.target.value)} style={inputStyle} />
+      </div>
+      <div id={`agent-run-view-${view}-panel`} role="region" aria-label={views.find(item => item.key === view)!.label} className="min-w-0 py-2">
       {context && (!workspace || view === "source") && <details open={workspace || undefined}><summary>Source ownership</summary><p>{context.plan.continuityId}</p>
         {planUrl ? <a href={planUrl} target="_blank" rel="noreferrer" className="underline">{context.plan.path} @ {context.plan.revision}</a> : <p>{context.plan.repository} / {context.plan.path} @ {context.plan.revision}</p>}
         <p className="text-xs">Digest {context.plan.digest}</p><pre className="overflow-auto text-xs">{JSON.stringify(context.plan.revisions, null, 2)}</pre>
@@ -324,10 +324,6 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={() => undefined} onSelectionChanged={() => undefined} />
         <p className="text-xs">{resources.status === 'held' ? 'Usage is uncertain. The host must reconcile it before further execution.' : 'The host rechecks all project, agent and run limits before execution.'}</p>
       </div> : <p className="py-2 text-xs">Allocation unavailable for this observation.</p>)}
-      <TabHeader tabs={widgetViews.map(item => ({ ...item, label: widgetSettings(widgetConfig.document, `mission:${item.key}`).title ?? item.label }))} activeTab={view} onTabChange={setView} tabIdBase="agent-run-view"
-        searchVisible searchPlaceholder="Search spans by name, kind or status" searchQuery={search} onSearchChange={setSearch} />
-      {view ? <DashboardCardView card={{ id: `agent-${view}`, title: viewSettings.title ?? views.find(item => item.key === view)!.label, subtitle: viewSettings.subtitle ?? 'Selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }} canEditCardText onCommitCardText={(_id, field, value) => { void updateDashboardWidget(`mission:${view}`, { [field]: value }).catch(() => undefined) }}>
-      <div id={`agent-run-view-${view}-panel`} role="tabpanel" aria-labelledby={`agent-run-view-${view}-tab`} className="min-w-0 py-2">
         {view === 'table' && <div className="overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={SPAN_COLUMNS} rows={spanRows(spans.map(row => row.span))}
           selectedRowIds={selection.spanId ? [selection.spanId] : []} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy=""
           sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={chooseSpan} onSelectionChanged={ids => chooseSpan(ids.at(-1) ?? null)} /></div>}
@@ -337,7 +333,8 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense></>}
         {view === 'evidence' && <><p>Candidate: {trace.candidate.id} @ {trace.candidate.revision}</p>
           <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ profile: trace.profile, subjectDigest, evaluation: evaluated, component: span?.component, links: span?.links, timing: span?.timing, usage: span?.cost, resources: span?.resources }, null, 2)}</pre></>}
-      </div></DashboardCardView> : <p>Add a Mission widget from Props Panel to inspect this run.</p>}
+      </div>
+
       <div className="flex flex-wrap gap-2 py-2">
         {!local && trace.offset > 0 && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal)) }}>First span page</button>}
         {trace.nextCursor && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal, trace.nextCursor!)) }}>Next span page</button>}
@@ -359,5 +356,6 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         {comparison !== null && <pre className="max-h-72 overflow-auto text-xs" aria-label="Comparison evidence">{JSON.stringify(comparison, null, 2)}</pre>}
       </section>}
     </section>}
+    </DashboardCardView>
   </section>
 }

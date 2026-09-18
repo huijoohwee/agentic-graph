@@ -26,6 +26,8 @@ import {
 
 type DashboardCanvasProps = {
   active?: boolean
+  headerActions?: React.ReactNode
+  children?: React.ReactNode
 }
 
 const DASHBOARD_METRICS_GROUP_KEY = 'dashboard-metrics'
@@ -126,6 +128,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
           <header className="grid min-w-0 grid-cols-1 gap-4 border-b border-[var(--kg-border)] pb-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,42%)]">
             <section className="min-w-0">
               <p className={`m-0 text-xs font-medium ${UI_THEME_TOKENS.text.tertiary}`}>Dashboard</p>
+              {props.headerActions}
               <h2 className="m-0 mt-1 truncate text-2xl font-semibold leading-tight" title={model.title}>{model.title}</h2>
               <p className={`m-0 mt-2 truncate text-sm ${UI_THEME_TOKENS.text.secondary}`} title={model.subtitle}>{model.subtitle}</p>
             </section>
@@ -212,6 +215,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
               ))}
             </section>
           </section>
+          {props.children}
         </section>
       </section>
     </section>
