@@ -9,10 +9,11 @@ import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { upsertWorkspaceMarkdownSourceFile } from '@/features/source-files/upsertWorkspaceMarkdownSourceFile'
 import type { GraphData } from '@/lib/graph/types'
 import { isReadOnlyAgentGraphProjection, AGENT_GRAPH_PROJECTION_DIRECTORY, retainedAgentGraphDocumentIdentity } from './agentGraphProjectionPolicy'
-import { buildAgentGraphCanvasProjection, prepareAgentGraphCanvasView, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
+import { buildAgentGraphCanvasProjection, AGENT_GRAPH_CANVAS_MAX_BYTES } from './agentGraphCanvasProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { retainAgentGraphWorkspaceIndex } from './agentGraphWorkspaceIndex'
+import { workspaceDocumentKey } from '@/features/workspace-fs/path'
 
 const CODEBASE_GRAPH_DIRECTORY_NAME = 'codebase-graph'
 const CODEBASE_GRAPH_DOCUMENT_PREFIX = 'codebase-graph'
@@ -190,6 +191,9 @@ export async function reopenAgentGraphWorkspaceProjection(target: string, expect
   const graph = await readAgentGraphWorkspaceProjection(target, expected)
   const { closeAgentRunInspection } = await import('@/features/agent-ready/agentRunInspectionStore')
   closeAgentRunInspection()
-  prepareAgentGraphCanvasView({ activateSource: true })
-  useGraphStore.getState().setGraphData(graph)
+  const name = workspaceDocumentKey(target as Parameters<typeof workspaceDocumentKey>[0]), text = JSON.stringify(graph)
+  // Bind the retained source through the existing editor owner so a previous
+  // document cannot reapply its renderer after Mission closes.
+  await useGraphStore.getState().setActiveMarkdownDocument({ name, text, applyToGraph: true })
+  await useGraphStore.getState().applyMarkdownDocumentToGraph(name, text, { force: true })
 }

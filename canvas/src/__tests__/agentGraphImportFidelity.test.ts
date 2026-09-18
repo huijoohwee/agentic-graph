@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { load } from 'js-yaml'
 import { agentGraphResult, SOURCE_BACKED_INVOCATION } from './agentGraphWorkspaceArtifact.test'
 import { buildAgentGraphCanvasProjection } from '@/features/agent-graph/agentGraphCanvasProjection'
-import { materializeAgentGraphWorkspaceArtifact, retainAgentGraphWorkspaceProjection, readAgentGraphWorkspaceProjection } from '@/features/agent-graph/agentGraphWorkspaceArtifact'
+import { materializeAgentGraphWorkspaceArtifact, retainAgentGraphWorkspaceProjection, readAgentGraphWorkspaceProjection, reopenAgentGraphWorkspaceProjection } from '@/features/agent-graph/agentGraphWorkspaceArtifact'
 import { isReadOnlyAgentGraphProjection } from '@/features/agent-graph/agentGraphProjectionPolicy'
 import { runLaunchImportAgentGraphFolder } from '@/lib/toolbar/launchImportDispatch'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
@@ -72,8 +72,11 @@ export async function testRetainedJsonReopensEvidenceAndRejectsCorruption() {
     const path = await retainAgentGraphWorkspaceProjection(original), fs = await getWorkspaceFs()
     const text = (await fs.readFileText(path as WorkspacePath))!, name = workspaceDocumentKey(path as WorkspacePath)
     // The same Source Files action used by the editor must restore the native graph.
-    await useGraphStore.getState().setActiveMarkdownDocument({ name, text, applyToGraph: true })
-    await useGraphStore.getState().applyMarkdownDocumentToGraph(name, text, { force: true })
+    useGraphStore.getState().setMarkdownDocument('prior.md', '# Prior graph')
+    useGraphStore.getState().setCanvas2dRenderer('storyboard')
+    await reopenAgentGraphWorkspaceProjection(path, { graphId: result.graphId, snapshotDigest: result.snapshotDigest })
+    assert.equal(useGraphStore.getState().markdownDocumentName, name)
+    assert.equal(useGraphStore.getState().canvas2dRenderer, 'd3')
     const reopened = useGraphStore.getState().graphData!
     assert.ok(isReadOnlyAgentGraphProjection(reopened))
     assert.deepEqual(reopened.nodes, original.nodes); assert.deepEqual(reopened.edges, original.edges)
