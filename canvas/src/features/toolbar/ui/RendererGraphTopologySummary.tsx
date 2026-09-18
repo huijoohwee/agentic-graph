@@ -215,8 +215,9 @@ export const readRendererHighlightTokens = (
     .slice(0, 8)
 }
 
-export function RendererGraphTopologySummary() {
-  const graphData = useActiveGraphRenderData()
+export function RendererGraphTopologySummary({ graph }: { graph?: GraphData } = {}) {
+  const activeGraph = useActiveGraphRenderData()
+  const graphData = graph ?? activeGraph
   const selectedNodeId = useGraphStore(s => s.selectedNodeId || null)
   const selectedEdgeId = useGraphStore(s => s.selectedEdgeId || null)
   const topologyGraph = React.useMemo(() => {

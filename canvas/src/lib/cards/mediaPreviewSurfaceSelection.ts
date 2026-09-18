@@ -40,6 +40,8 @@ export function resolveMediaPreviewSurfaceSelectionProps(args: {
   enabled: boolean
   ariaLabel?: string
   claimPointerDown?: boolean
+  selectionPhase?: 'pointer' | 'click'
+  claimClick?: boolean
   selectableSurface?: boolean
   onSelect?: (event: MediaPreviewSurfaceSelectionEvent) => void
 }): MediaPreviewSurfaceSelectionProps {
@@ -69,14 +71,15 @@ export function resolveMediaPreviewSurfaceSelectionProps(args: {
     else selectSurface(event)
   }
   const claimSurfaceClick = (event: React.MouseEvent<HTMLElement>) => {
-    claimSurfaceEvent(event)
+    if (args.claimClick === false) selectSurface(event)
+    else claimSurfaceEvent(event)
   }
   return {
     role: 'group',
     'aria-label': args.ariaLabel,
     [MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR]: selectableSurface ? MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE : undefined,
-    onPointerDownCapture: claimPointerSurfaceEvent,
-    onMouseDownCapture: claimPointerSurfaceEvent,
+    onPointerDownCapture: args.selectionPhase === 'click' ? undefined : claimPointerSurfaceEvent,
+    onMouseDownCapture: args.selectionPhase === 'click' ? undefined : claimPointerSurfaceEvent,
     onClickCapture: claimSurfaceClick,
   }
 }

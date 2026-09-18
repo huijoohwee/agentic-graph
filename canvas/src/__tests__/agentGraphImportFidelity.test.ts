@@ -21,6 +21,8 @@ import { agentMissionOverviewModel, agentMissionSpanImpact } from '@/features/ag
 import { readRunTrace } from '@/features/agent-ready/missionControlProjection'
 import { computeNodeVisual, computeEdgeVisual } from '@/components/GraphCanvas/highlight'
 import { defaultSchema } from '@/lib/graph/schema'
+import { resolveMediaPreviewSurfaceSelectionProps } from '@/lib/cards/mediaPreviewSurfaceSelection'
+import { focusRendererInspectionGraph, releaseRendererInspectionGraph, useRendererInspectionGraph } from '@/features/toolbar/floatingPanelBridge'
 
 export async function testFolderImportPersistsNativeArtifactAndCancellationPreservesGraph() {
   const { restore } = initJsdomHarness(), before = useGraphStore.getState()
@@ -121,6 +123,29 @@ export async function testRetainedJsonReopensEvidenceAndRejectsCorruption() {
     assert.deepEqual(agentMissionSpanImpact({ ...boundSpan, component: { ...boundSpan.component, digest: 'f'.repeat(64) } }, impactGraph).nodeIds, [])
     assert.deepEqual(agentMissionSpanImpact({ ...boundSpan, component: { ...boundSpan.component, id: 'src/alpha.ts', digest: 'b'.repeat(64) } }, impactGraph).nodeIds.sort(), ['repo:alpha', 'repo:beta'])
     assert.deepEqual(agentMissionSpanImpact({ ...trace.spans[0]!, operation: 'src/alpha.ts' }, impactGraph).nodeIds, [])
+    const surface = document.createElement('div'); document.body.append(surface)
+    const surfaceRoot = createRoot(surface)
+    let selectedCount = 0, nodeClicks = 0, rendererGraph: unknown = null
+    function RendererFocusProbe() {
+      rendererGraph = useRendererInspectionGraph()
+      return React.createElement('div', resolveMediaPreviewSurfaceSelectionProps({ enabled: true,
+        selectionPhase: 'click', claimClick: false,
+        onSelect: () => { selectedCount++; focusRendererInspectionGraph(original) },
+      }), React.createElement('button', { onClick: () => nodeClicks++ }, 'Codebase node'))
+    }
+    try {
+      await act(async () => surfaceRoot.render(React.createElement(RendererFocusProbe)))
+      const target = surface.querySelector('button')!
+      for (const name of ['pointerdown', 'mousedown']) target.dispatchEvent(new window.MouseEvent(name, { bubbles: true, button: 0 }))
+      assert.equal(selectedCount, 0) // Drag starts do not open Renderer.
+      const click = new window.MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })
+      await act(async () => { target.dispatchEvent(click) })
+      assert.equal(selectedCount, 1); assert.equal(nodeClicks, 1); assert.equal(click.defaultPrevented, false)
+      assert.equal(rendererGraph, original); assert.equal(useGraphStore.getState().graphData, reopened)
+      await act(async () => { focusRendererInspectionGraph(impactGraph); releaseRendererInspectionGraph(original) })
+      assert.equal(rendererGraph, impactGraph) // Stale surface cleanup cannot clear newer focus.
+      await act(async () => releaseRendererInspectionGraph(impactGraph)); assert.equal(rendererGraph, null)
+    } finally { releaseRendererInspectionGraph(original); releaseRendererInspectionGraph(impactGraph); await act(async () => surfaceRoot.unmount()); surface.remove() }
     assert.equal(parseWorkspaceJsonGraphDataCached({ markdownName: name, markdownText: text }), null)
     const identity = original.metadata!.agentGraphProjection as { graphId: string; snapshotDigest: string }
     const corrupted = JSON.parse(text); corrupted.nodes[0].id = 'invalid\u0000id'

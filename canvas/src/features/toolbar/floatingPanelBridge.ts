@@ -1,5 +1,26 @@
 import type { PropsPanelOpenEventDetail, FloatingPanelOpenEventDetail } from '@/features/canvas/utils'
 import type { FloatingPanelView } from '@/hooks/store/store-types/graph-state-chat-import'
+import { useSyncExternalStore } from 'react'
+import type { GraphData } from '@/lib/graph/types'
+
+// Ephemeral renderer focus for an embedded read-only D3 surface; never replaces authored graph data.
+let rendererInspectionGraph: GraphData | null = null
+const rendererInspectionListeners = new Set<() => void>()
+const subscribeRendererInspection = (listener: () => void) => {
+  rendererInspectionListeners.add(listener)
+  return () => { rendererInspectionListeners.delete(listener) }
+}
+export const useRendererInspectionGraph = () => useSyncExternalStore(subscribeRendererInspection, () => rendererInspectionGraph, () => null)
+export function focusRendererInspectionGraph(graph: GraphData): void {
+  if (rendererInspectionGraph === graph) return
+  rendererInspectionGraph = graph
+  rendererInspectionListeners.forEach(listener => listener())
+}
+export function releaseRendererInspectionGraph(graph: GraphData): void {
+  if (rendererInspectionGraph !== graph) return
+  rendererInspectionGraph = null
+  rendererInspectionListeners.forEach(listener => listener())
+}
 
 export type FloatingPanelRequestedView = FloatingPanelView
 

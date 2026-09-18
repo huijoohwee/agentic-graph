@@ -46,7 +46,7 @@ function CodebaseExplorer({ codebase, span }: { codebase: MissionCodebaseIndex; 
       {graph.nodes.filter(node => `${node.label} ${node.properties['corpus:sourcePath'] ?? ''}`.toLowerCase().includes(search.toLowerCase())).slice(0,20).map(node =>
         <li key={node.id}><button type="button" className={button} onClick={() => setSelected(node.id)}>{node.label}</button></li>)}
     </ul>}
-    <React.Suspense fallback={<p role="status">Loading D3…</p>}><GraphInspection graph={graph} selectedNodeId={span && !impact.nodeIds.length ? null : selected} onSelect={setSelected}
+    <React.Suspense fallback={<p role="status">Loading D3…</p>}><GraphInspection graph={graph} rendererControls selectedNodeId={span && !impact.nodeIds.length ? null : selected} onSelect={setSelected}
       highlightedNodeIds={impact.nodeIds} highlightedEdgeIds={impact.edgeIds}
       label="Codebase knowledge graph" description="Indexed sources, symbols and relationships; select a node to inspect source evidence" /></React.Suspense>
     {node && <section aria-label="Selected codebase evidence" className="rounded border p-3 text-xs">
