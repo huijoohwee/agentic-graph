@@ -5,6 +5,7 @@ import { assertPinnedAgenticOsDictionaryTokensForTest, PINNED_MOTION_CONTROL_DIC
 import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { readMediaCatalogMode, setMediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
 import {
+  getAgenticGraphWebMcpToolRegistry,
   installAgenticGraphWebMcpRuntime,
   resetAgenticGraphWebMcpRuntimeForTests,
 } from '@/features/agent-ready/webMcpRuntime'
@@ -457,13 +458,15 @@ export async function testMotionControlWebMcpReusesCanonicalXrTargets() {
       },
     }
     installAgenticGraphWebMcpRuntime()
+    await registeredTools.get('agentic-graph.select_local_tool_scope')?.execute({ scope: 'motionControl' })
 
     const inspectTool = registeredTools.get('agentic-graph.inspect_local_motion_control')
     const controlTool = registeredTools.get('agentic-graph.control_local_motion_control')
     if (!inspectTool || !controlTool) {
       throw new Error(`expected both Motion Control WebMCP tools, got ${Array.from(registeredTools.keys()).join(', ')}`)
     }
-    const inspectOutputSchema = inspectTool.outputSchema as {
+    if (inspectTool.outputSchema) throw new Error('browser discovery must omit the internal output schema')
+    const inspectOutputSchema = getAgenticGraphWebMcpToolRegistry().get(inspectTool.name)!.outputSchema as {
       required?: string[]
       properties?: {
         targets?: {
@@ -487,7 +490,7 @@ export async function testMotionControlWebMcpReusesCanonicalXrTargets() {
       || !targetSurfaceSchema.required.includes('animation')
       || targetSurfaceSchema.properties?.xr3d?.properties?.webMcpTool?.const !== 'agentic-graph.control_local_xr_scene'
       || targetSurfaceSchema.properties?.animation?.properties?.webMcpTool?.const !== 'agentic-graph.control_local_animation') {
-      throw new Error(`expected the Motion Control WebMCP output schema to own its target projection, got ${JSON.stringify(inspectTool.outputSchema)}`)
+      throw new Error(`expected the internal Motion Control output schema to own its target projection, got ${JSON.stringify(inspectOutputSchema)}`)
     }
 
     useGraphStore.setState({
