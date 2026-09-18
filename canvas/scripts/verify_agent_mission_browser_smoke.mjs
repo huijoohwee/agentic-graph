@@ -95,8 +95,8 @@ async function openDashboard() {
   await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click()
   await waitText(mission, '2 retained matches')
   assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
-  assert.ok(await mission.locator('[data-kg-dashboard-card="agent-runs"] table').count() === 1)
-  assert.ok(await mission.locator('[data-kg-dashboard-metric]').count() > 0)
+  assert.ok(await mission.locator('[aria-label="Agent runs"] table').count() === 1)
+  assert.ok(await page.getByRole('region', { name: 'Dashboard metrics', exact: true }).locator('[data-kg-dashboard-metric]').count() > 0)
 }
 async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
