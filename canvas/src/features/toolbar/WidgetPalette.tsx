@@ -27,6 +27,8 @@ import {
 export default function WidgetPalette(args: {
   entries: ReadonlyArray<WidgetRegistryEntry>
   dragEnabled: boolean
+  dashboardActive?: boolean
+  children?: React.ReactNode
 }) {
   const panelTypography = usePanelTypography()
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME)
@@ -60,7 +62,7 @@ export default function WidgetPalette(args: {
         <p className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>
           {selectionLinkSession
             ? <>Choose a target Widget to link to “{selectionSummary}”.</>
-            : 'Drag a widget, card, or flow-editor layout into the canvas.'}
+            : args.dashboardActive ? 'Select a Dashboard template, then use Flip in its floating toolbar to configure. Switch to Storyboard to drag the other card types.' : 'Drag a widget, card, or flow-editor layout into the canvas.'}
         </p>
         {selectionLinkSession ? (
           <button
@@ -74,6 +76,7 @@ export default function WidgetPalette(args: {
       </header>
       <nav className="min-h-0 overflow-auto p-2" aria-label="Palette items">
         <menu className={uiToolbarColumnMenuListClassName} aria-label="Widget entries">
+          {args.children}
           {layoutVariants.length === 0 ? (
             <li className={`px-2 py-2 ${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>No enabled entries.</li>
           ) : (

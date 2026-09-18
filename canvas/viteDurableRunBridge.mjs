@@ -7,8 +7,8 @@ const require = createRequire(import.meta.url)
 const operations = new Set(require('agentic-os/agents/invocation').RUN_OPERATIONS)
 const readOnly = new Set(require('agentic-os/catalog/invocation.json').entries
   .filter(entry => entry.action === 'run' && entry.semantic === 'read-only').map(entry => entry.argv[0]))
-operations.add('workflow-trace')
-readOnly.add('workflow-trace')
+operations.add('workflow-trace'); operations.add('workspace-source')
+readOnly.add('workflow-trace'); readOnly.add('workspace-source')
 const loopback = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 const json = (response, status, body) => {
   response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
@@ -46,7 +46,7 @@ async function body(request, signal) {
 
 /** Optional local browser ingress. The remote runtime still owns its principal,
  * authorization, queue and state. Importing this plugin performs no host I/O. */
-export function createDurableRunBridgePlugin({ env = process.env } = {}) {
+export function createDurableRunBridgePlugin({ env = process.env, repoRoot = process.cwd() } = {}) {
   let active = 0
   return { name: 'agentic-graph-durable-run-bridge', apply: 'serve', configureServer(server) {
     server.middlewares.use(async (request, response, next) => {
@@ -76,12 +76,19 @@ export function createDurableRunBridgePlugin({ env = process.env } = {}) {
         let input
         try { input = await body(request, AbortSignal.timeout(5000)) }
         catch { return json(response, 400, { code: 'invalid_run_input' }) }
+        if (operation === 'workspace-source') {
+          const { readWorkspaceObservationSource } = require('./viteWorkspaceObservationBridge.mjs')
+          try {
+            const source = await readWorkspaceObservationSource(repoRoot, input)
+            return json(response, 200, source ?? { code: 'workspace_source_unselected' })
+          } catch { return json(response, 422, { code: 'workspace_source_unavailable' }) }
+        }
         if (operation === 'workflow-trace') {
           stage = 'workflow-archive'
           // Native request-time loading survives Vite's configuration runner lifecycle.
           const { readWorkflowArchiveRequest } = require('./viteWorkflowArchiveBridge.mjs')
           try {
-            const frame = await readWorkflowArchiveRequest(input)
+            const frame = await readWorkflowArchiveRequest(input, undefined, repoRoot)
             if (controller.signal.aborted) return
             response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
             return response.end(frame)

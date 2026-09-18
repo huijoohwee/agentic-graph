@@ -84,7 +84,7 @@ export function WorkspaceDataViewHeader(props: {
 
   return (
     <WorkspaceHeader ariaLabel="Data view header" border="border" className="relative z-20 kg-data-view-header kg-data-view-new-record-hover-scope">
-      <section className={`kg-data-view-header-controls ${uiToolbarRowScrollClassName} gap-2 px-3 pt-2`} aria-label="Data view controls">
+      <section className={`kg-data-view-header-controls ${uiToolbarRowScrollClassName} gap-2 px-3 py-1.5`} aria-label="Data view controls">
         <button
           type="button"
           className={squareIconButtonClassName}
@@ -101,6 +101,14 @@ export function WorkspaceDataViewHeader(props: {
         >
           <Layers className={icon14Class} aria-hidden="true" />
         </button>
+        {props.tableSelector ? (
+          <aside className="kg-data-view-table-selector min-w-0 max-w-full" aria-label="Data view table selector">
+            <section className={`${uiToolbarRowScrollInlineClassName} gap-2`} role="group" aria-label="Table selector">
+              {props.tableSelector}
+            </section>
+          </aside>
+        ) : null}
+
         <section className={`kg-data-view-actions ${uiToolbarRowScrollJustifyEndClassName} ml-auto gap-2`} aria-label="Data view actions">
           {!searchExpanded ? (
             <button
@@ -213,15 +221,6 @@ export function WorkspaceDataViewHeader(props: {
         </section>
       </section>
 
-      <section className={`kg-data-view-header-options ${uiToolbarRowScrollClassName} gap-2 px-3 pb-2`} aria-label="Data view header options">
-        {props.tableSelector ? (
-          <aside className="kg-data-view-table-selector ml-2 min-w-0 max-w-full" aria-label="Data view table selector">
-            <section className={`${uiToolbarRowScrollInlineClassName} gap-2`} role="group" aria-label="Table selector">
-              {props.tableSelector}
-            </section>
-          </aside>
-        ) : null}
-      </section>
     </WorkspaceHeader>
   )
 }

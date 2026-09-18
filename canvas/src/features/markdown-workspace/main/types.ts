@@ -31,7 +31,7 @@ export const DEFAULT_MARKDOWN_WORKSPACE_PANE_AVAILABILITY: MarkdownWorkspacePane
 }
 
 function extensionLower(nameRaw: string): string {
-  const base = String(nameRaw || '').split(/[/?#]/)[0]?.split('/').filter(Boolean).pop() || ''
+  const base = String(nameRaw || '').split(/[?#]/)[0]?.split('/').filter(Boolean).pop() || ''
   const index = base.lastIndexOf('.')
   return index > 0 ? base.slice(index + 1).toLowerCase() : ''
 }

@@ -1,4 +1,5 @@
 import { testWorkflowImport } from './agentWorkflowImport.test'
+import { testAgentRunSpanMetric } from './agentRunSpanMetric.test'
 import { readAgentRunImport, agentRunInspectionJson } from '@/features/agent-ready/agentRunImport'
 import assert from 'node:assert/strict'
 import { readValidationObservation, validationTrace } from '@/features/agent-ready/validationObservationProjection'
@@ -6,6 +7,7 @@ import { readRunIndex, readRunTrace, traceGraph, visibleSpanTree, sourceLink, wo
 import { durableObservationBinding, readDurableSessionToken } from '@/features/agent-ready/durableRunTransport'
 
 export async function testMissionControlProjection(): Promise<void> {
+  testAgentRunSpanMetric()
   await testWorkflowImport()
   const ref = { id: 'fixture', revision: 'v1', digest: 'a'.repeat(64) }
   const context = { taskId: 'draft', projectId: 'seller', goalId: 'first-result', receipt: { id: 'draft', digest: 'b'.repeat(64) },

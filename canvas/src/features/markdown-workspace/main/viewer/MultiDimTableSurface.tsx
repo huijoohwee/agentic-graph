@@ -6,7 +6,7 @@ import { replaceMarkdownLineRange } from 'grph-shared/markdown/lineEditing'
 import { writeWorkspaceSourceTextIfPresent } from '@/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
 import type { MarkdownInlineDraftTextChangeOptions } from '@/features/markdown/ui/MarkdownRendererTypes'
 import { sanitizeInvalidDataUrls } from '@/features/markdown-workspace/main/sanitize'
-import { MarkdownWorkspaceDerivedViewer } from '@/features/markdown-workspace/main/viewer/MarkdownWorkspaceDerivedViewer'
+import { MarkdownWorkspaceDerivedViewer, type WorkspaceDataViewSource } from '@/features/markdown-workspace/main/viewer/MarkdownWorkspaceDerivedViewer'
 import {
   applyStructuredSourceDataViewReplacement,
 } from '@/features/markdown-workspace/main/viewer/sourceStructuredDataViewTable'
@@ -16,7 +16,7 @@ import { UI_VIEW_EDIT_SURFACE_AREA_CLASS_NAME, UI_VIEW_EDIT_SURFACE_DATA_ATTRIBU
 const NOOP_REVEAL_LINE = () => void 0
 const NOOP_VIEWER_ROOT_REF = () => void 0
 
-export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: string }) {
+export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: string; dataViewSource?: WorkspaceDataViewSource }) {
   const active = props.active !== false
   const panelTypography = usePanelTypography()
   const source = useCanvasWorkspaceDataViewSource('multi-dimensional-table.md')
@@ -26,7 +26,7 @@ export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: stri
   const sourceBackedMarkdownText = source.sourceBackedMarkdownText
   const editableMarkdownText = viewerInlineMarkdownDraftText ?? sourceBackedMarkdownText
   const persistedEditableMarkdownText = source.sourceMarkdownText
-  const canMutate = persistedEditableMarkdownText.trim().length > 0
+  const canMutate = !props.dataViewSource && persistedEditableMarkdownText.trim().length > 0
   const markdownText = React.useMemo(() => {
     const editableSource = String(viewerInlineViewerText ?? viewerInlineMarkdownDraftText ?? sourceBackedMarkdownText ?? '')
     if (editableSource.trim()) return sanitizeInvalidDataUrls(editableSource)
@@ -128,9 +128,10 @@ export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: stri
       <MarkdownWorkspaceDerivedViewer
         viewerKind="markdown"
         viewerMode="multiDimTable"
-        markdownText={markdownText}
-        title={source.title}
-        activeDocumentPath={activeDocumentPath}
+        dataViewSource={props.dataViewSource}
+        markdownText={props.dataViewSource ? '' : markdownText}
+        title={props.dataViewSource?.label ?? source.title}
+        activeDocumentPath={props.dataViewSource ? null : activeDocumentPath}
         markdownWordWrap={true}
         markdownTextHighlight={false}
         uiPanelTextFontClass={panelTypography.fontClass}

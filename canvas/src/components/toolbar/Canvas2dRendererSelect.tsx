@@ -6,8 +6,8 @@ import { UI_COPY } from '@/lib/config'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ToolbarDropdownSelect } from '@/components/toolbar/ToolbarDropdownSelect'
 import { isD3Like2dRenderer, isFrontmatterOnlyPolicyActive } from '@/lib/config.render'
-import type { CanvasViewOptionId, CanvasViewModelState, CanvasViewOption } from '@/components/toolbar/canvasViewTypes'
-import { useAgentRunWorkspace, selectAgentRunView, activateAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
+import type { CanvasViewOptionId, CanvasViewModelState } from '@/components/toolbar/canvasViewTypes'
+import { useAgentRunWorkspace, closeAgentRunInspection, activateAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import { buildCanvasViewOptions, getCanvasViewRendererOptions, getCanvasViewTriggerState } from '@/components/toolbar/canvasViewMenu'
 import { applyCanvasViewSelection } from '@/components/toolbar/canvasViewActions'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -140,24 +140,15 @@ export function Canvas2dRendererSelect({
   )
 
   const rendererOptions = React.useMemo(() => getCanvasViewRendererOptions(), [])
-  const options = React.useMemo<CanvasViewOption[]>(() => inspection ? [{ id: 'renderer:menu',
-    title: '2D Renderer', label: 'Agent observability', valueLabel: AGENT_RUN_CANVAS_VIEWS[inspection.view], Icon: Eye,
-    children: [{ id: 'renderer:d3' as CanvasViewOptionId, title: '2D Renderer: D3 Graph', label: '2D Renderer: D3 Graph', Icon: Eye, isActive: inspection.view === 'topology' }, ...Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([view, title]) => ({
-      id: `agent-run:${view}` as CanvasViewOptionId, title, label: title, Icon: Eye, isActive: inspection.view === view,
-    }))],
-  }] : [...buildCanvasViewOptions(modelState, rendererOptions), { id: 'agent-run:topology', title: 'Agent observability', label: 'Agent observability', Icon: Eye,
-    children: Object.entries<string>(AGENT_RUN_CANVAS_VIEWS).map(([view, title]) => ({ id: `agent-run:${view}` as CanvasViewOptionId, title, label: title, Icon: Eye })),
-  }], [modelState, rendererOptions, inspection?.view, !!inspection])
-  const triggerState = React.useMemo(() => inspection
-    ? { id: `agent-run:${inspection.view}` as CanvasViewOptionId, title: AGENT_RUN_CANVAS_VIEWS[inspection.view] }
-    : getCanvasViewTriggerState(modelState, rendererOptions), [modelState, rendererOptions, inspection?.view, !!inspection])
+  const effectiveModel = inspection ? { ...modelState, canvas2dRenderer: 'dashboard' as const, canvasRenderMode: '2d' as const, geospatialEnabled: false } : modelState
+  const options = buildCanvasViewOptions(effectiveModel, rendererOptions)
+  const triggerState = getCanvasViewTriggerState(effectiveModel, rendererOptions)
   const applyCanvasViewOption = React.useCallback((id: CanvasViewOptionId, baselineGuard = ensureBaselineUnlocked) => {
-    if (inspection) {
-      if (id === 'renderer:d3') { selectAgentRunView('topology'); return }
-      if (!id.startsWith('agent-run:')) throw Error('Close run inspection to change the authored Canvas renderer.')
-      selectAgentRunView(id.slice('agent-run:'.length)); return
+    if (id === 'renderer:dashboard' || id.startsWith('agent-run:')) {
+      activateAgentRunWorkspace(id === 'renderer:dashboard' ? inspection?.view ?? 'tree' : id.slice('agent-run:'.length) as Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>); return
     }
-    if (id.startsWith('agent-run:')) { activateAgentRunWorkspace(id.slice('agent-run:'.length) as Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>); return }
+    if (!baselineGuard()) return
+    if (inspection) closeAgentRunInspection()
     applyCanvasViewSelection({
       id,
       ensureBaselineUnlocked: baselineGuard,
@@ -231,6 +222,7 @@ export function Canvas2dRendererSelect({
     state,
   ])
   React.useEffect(() => registerCanvasViewControlHandler(optionId => {
+    if (optionId.startsWith('agent-run:') || optionId === 'renderer:dashboard') { applyCanvasViewOption(optionId); return }
     const option = options.flatMap(parent => parent.children?.length ? parent.children : [parent])
       .find(candidate => candidate.id === optionId)
     if (!option || option.disabled || option.children?.length) {

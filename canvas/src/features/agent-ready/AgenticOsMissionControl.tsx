@@ -1,16 +1,22 @@
+import { readWorkspaceObservation } from './workspaceObservation'
+import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
 import React from 'react'
+import { useDashboardWidgets, widgetSettings } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
+import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import { agentRunInspectionJson, importAgentRunFile } from './agentRunImport'
 import { AgentRunSpanViews, durationLabel } from './AgentRunSpanViews'
+import { AgentRunMetricSelector } from './AgentRunMetricSelector'
+import { AgentRunTable } from './AgentRunTable'
+import { DEFAULT_SPAN_METRICS, toggleSpanMetric, type SpanMetric } from './agentRunSpanMetric'
 import { readValidationObservation, validationTrace, type ValidationObservation } from './validationObservationProjection'
 import { openAgentRunInspection, activateAgentRunWorkspace, closeAgentRunInspection, useAgentRunInspection, useAgentRunWorkspace, updateAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection, selectAgentRunView } from './agentRunInspectionStore'
 import { AGENT_RUN_CANVAS_VIEWS } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 import type { ObservationListener } from './durableRunStream'
 import type { RunOperation } from 'agentic-os/agents/invocation'
-import TabHeader from '@/features/panels/ui/TabHeader'
 import { GraphDataTableDomTableView } from '@/features/graph-data-table/ui/GraphDataTableDomTableView'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { invokeDurableRun, clearDurableRunSession } from './durableRunTransport'
-import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, spanRows, SPAN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
+import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
   numberLabel, resourceLabels, traceResources, known, record, sourceLink, workflowSourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
 
 const GraphCanvasInspection = React.lazy(() => import('@/components/GraphCanvas/GraphCanvasInspection'))
@@ -22,6 +28,8 @@ type Selection = { runId: string | null; spanId: string | null }
 const emptySelection: Selection = { runId: null, spanId: null }
 
 export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false, preview = false }: { onOpenWorkspace?: () => void; workspace?: boolean; preview?: boolean }) {
+  const widgetConfig = useDashboardWidgets()
+  const viewSettings = widgetSettings(widgetConfig.document, 'mission:tree')
   const inspection = useAgentRunInspection(), workspaceSession = useAgentRunWorkspace(), initial = workspace ? inspection : null
   const inspectionRef = React.useRef(inspection)
   inspectionRef.current = inspection
@@ -33,8 +41,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const mutating = React.useRef(false)
   const [busy, setBusy] = React.useState(false), [error, setError] = React.useState(''), [notice, setNotice] = React.useState('')
   const [topologyDetail, setTopologyDetail] = React.useState<'all' | 'agents'>('agents')
+  const [spanMetrics, setSpanMetrics] = React.useState<SpanMetric[]>(DEFAULT_SPAN_METRICS)
   const [localView, setLocalView] = React.useState('tree'), [localSearch, setLocalSearch] = React.useState(''), [live, setLive] = React.useState(false)
-  const view = workspace ? workspaceSession?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
+  const requestedView = workspace ? workspaceSession?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
+  const view = views.some(item => item.key === requestedView) ? requestedView : 'tree'
   const search = workspace ? inspection?.search ?? '' : localSearch, setSearch = workspace ? filterAgentRunInspection : setLocalSearch
   const [online, setOnline] = React.useState(navigator.onLine), [visible, setVisible] = React.useState(!document.hidden)
   const [backoff, setBackoff] = React.useState(5000), [expiry, setExpiry] = React.useState(initial?.expiresAt ?? 0)
@@ -42,6 +52,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const [baseline, setBaseline] = React.useState<RunTrace | null>(null), [comparison, setComparison] = React.useState<unknown>(null)
   const [localReport, setLocalReport] = React.useState<ValidationObservation | null>(initial?.trace.localObservation ?? null)
   const importAttempt = React.useRef(0)
+  const workspaceFeed = Boolean(trace?.workspaceObservation)
   const local = Boolean(trace?.localObservation || trace?.localImport)
   React.useEffect(() => () => { importAttempt.current++ }, [])
   const stop = React.useCallback(() => {
@@ -94,6 +105,22 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     if (!streamed) accept(result)
   }
   const refresh = React.useCallback((cursor?: string) => perform(async signal => {
+    const localTrace = await readWorkspaceObservation(signal)
+    if (localTrace) {
+      const nextScope = `workspace:${localTrace.runId}`, expiresAt = localTrace.localImport!.importedAt + 60000
+      const spanId = localTrace.spans.some(s => s.spanId === selected.current.spanId) ? selected.current.spanId : null
+      const first = scope.current !== nextScope
+      scope.current = nextScope; scopeExpiry.current = expiresAt; selected.current = { runId: localTrace.runId, spanId }
+      setTrace(localTrace); setSelection(selected.current); setExpiry(expiresAt); setIndex(null); setLocalReport(null)
+      if (first) { setLive(true); setBaseline(null); setComparison(null) }
+      if (workspace) {
+        if (first) openAgentRunInspection({ trace: localTrace, scope: nextScope, expiresAt, spanId, search: '', view: 'tree' })
+        else updateAgentRunInspection({ trace: localTrace, scope: nextScope, expiresAt, spanId })
+      }
+      setNotice('Streaming the selected .workspace archive · read only · source receipts retain their original revisions.')
+      return
+    }
+    if (scope.current?.startsWith('workspace:')) throw Error('The .workspace source was removed. Select a valid native manifest to resume.')
     const result = readRunIndex(await call('query', { ...query, ...(cursor ? { cursor } : {}) }, signal))
     const changed = scope.current !== null && scope.current !== result.access.scope
     if (changed) { clear(); setNotice('The authenticated scope changed. Select a run from the new snapshot.') }
@@ -129,10 +156,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     }
   }, [stop, clear])
   React.useEffect(() => {
-    if (preview || local || !live || !online || !visible || busy) return
-    const timer = window.setTimeout(() => { void refresh() }, backoff)
+    if (preview || local && !workspaceFeed || !live || !online || !visible || busy) return
+    const timer = window.setTimeout(() => { void refresh() }, workspaceFeed ? Math.max(15000, backoff) : backoff)
     return () => window.clearTimeout(timer)
-  }, [preview, local, live, online, visible, busy, backoff, refresh])
+  }, [preview, local, workspaceFeed, live, online, visible, busy, backoff, refresh])
   React.useEffect(() => {
     if (!expiry) return
     const timer = window.setTimeout(() => { stop(); clear(); setNotice('Snapshot expired. Refresh to reauthorize inspection.') }, Math.max(0, expiry - Date.now()))
@@ -209,22 +236,23 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   }
   const workflow = record(trace?.profile.workflow), workflowUrl = trace ? workflowSourceLink(trace) : null
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
-  return <section aria-label={workspace ? "Agent run Canvas evidence" : "Agentic OS mission control"} className="h-full min-h-0 min-w-0 overflow-auto p-3" style={{ overflowWrap: 'anywhere' }}>
+  const sourceConfiguration = <>
+    <section aria-label="Run source" className="space-y-2"><h4 className="font-semibold">Run source</h4>
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
-      {!workspace && <div><h2 className="font-semibold">{preview ? 'Agent observability' : 'Agentic OS'}</h2><p className="text-xs">Inspect execution, limits and evidence</p></div>}
+
       <label className={button}>Import local file<input type="file" accept=".json,application/json" className="sr-only" aria-label="Import local file"
         onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void importAgentRunFile(file, onOpenWorkspace, preview || workspace ? 'canvas' : 'editor').then(handled => {
           if (!handled) setError('Choose a native run trace or exported inspection JSON file. Validation reports use Import validation report.')
         }) }} /></label>
-      <button type="button" className={button} disabled={local || busy || !online} onClick={() => {
+      <button type="button" className={button} disabled={local && !workspaceFeed || busy || !online} onClick={() => {
         if (preview) { activateAgentRunWorkspace('tree'); onOpenWorkspace?.() } else void refresh()
       }}>{preview ? 'Connect runtime' : 'Refresh runs'}</button>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={preview || local} checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={preview || local && !workspaceFeed} checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
       <label className={button}>Import validation report<input type="file" accept=".json,application/json" className="sr-only"
         aria-label="Import validation report" onChange={event => { void importReport(event.target.files?.[0]); event.target.value = '' }} /></label>
       {local && <button className={button} onClick={() => { stop(); clear() }}>Close local report</button>}
     </header>
-    <p role="status" className="pb-2 text-xs">{preview ? 'Import a local observation to begin · no runtime connection' : local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
+    <p role="status" className="pb-2 text-xs">{preview ? 'Import a local observation to begin · no runtime connection' : workspaceFeed ? (!online ? '.workspace · offline' : !visible ? '.workspace · paused while hidden' : live ? '.workspace · SSE snapshots every 15 s' : '.workspace · stream paused') : local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
       {index ? ` · observed ${new Date(index.observedAt).toLocaleTimeString()} · snapshot expires ${new Date(expiry).toLocaleTimeString()}` : ''}</p>
     {trace?.localImport && <p className="py-2 text-xs">Imported local trace: {trace.localImport.fileName} · read-only · original observation {new Date(trace.observedAt).toLocaleString()} · runtime actions disabled</p>}
     {error && <div role="alert" className="rounded border p-2"><p>{local ? "Observation unavailable" : "Runtime unavailable"} · {error}</p><p className="text-xs">Check the existing runtime connection and signed session, then refresh. No run data is inferred.</p></div>}
@@ -244,17 +272,9 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       <label className="grid text-xs">Window<select name="window" style={inputStyle}><option value="retained">Retention window</option><option value="15">Last 15 minutes</option></select></label>
       <button className={button} disabled={busy || !online}>Apply filters</button>
     </form>}
-    {workspace && trace && <label className="flex flex-wrap gap-2 py-2 text-xs">Run<select aria-label="Run" style={inputStyle} value={selection.runId ?? ""} disabled={busy || !index || !online} onChange={event => chooseRun(event.target.value)}>
-      {!index && selection.runId && <option>{selection.runId}</option>}{index?.items.map(run => <option key={run.runId} value={run.runId}>{run.runId}</option>)}
-    </select></label>}
-    {index && (!workspace || !trace) && <>
-      <div className="grid gap-2 py-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,14rem),1fr))' }}>
-        {index.metrics.map(metric => <article key={metric.id} className="rounded border p-3">
-          <h3 className="text-xs">{metric.label}</h3><p className="py-1 text-xl font-semibold">{metric.value}</p><p className="text-xs">{metric.detail}</p>
-        </article>)}
-      </div>
+    {index && <>
       <p className="text-xs">{index.items.length} rows · {index.total} retained matches · {index.partial ? 'Partial retention or trace coverage' : 'Retained snapshot; full historical population unknown'}</p>
-      <div className="flex min-w-0 overflow-auto py-2" style={{ maxHeight: 260 }}>
+      <div className="max-h-64 overflow-auto" aria-label="Agent runs">
         <GraphDataTableDomTableView tableId="nodes" columns={RUN_COLUMNS} rows={runRows(index)} selectedRowIds={selection.runId ? [selection.runId] : []}
           columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy="" sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}}
           onRowClicked={chooseRun} onSelectionChanged={ids => { if (ids.length) chooseRun(ids.at(-1)!); else { setSelection(emptySelection); setTrace(null) } }} />
@@ -263,23 +283,24 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       {index.offset > 0 && <button className={button} disabled={busy || !online} onClick={() => { void refresh() }}>First run page</button>}
       {index.nextCursor && <button className={button} disabled={busy || !online} onClick={() => { void refresh(index.nextCursor!) }}>Next run page</button>}
     </>}
-    {!index && !trace && <section aria-label="Observation dashboard" className="space-y-4 py-3">
-      <ol className="flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="Observation workflow">
-        <li>1. Import local file</li><li>2. Inspect spans and resources</li><li>3. Review evaluations and compare</li><li>4. Export evidence</li>
-      </ol>
-      <div className="grid grid-cols-2 gap-3 rounded border p-3 text-sm">{Object.keys(resourceLabels({ cpuMs: null, peakMemoryBytes: null, tokens: null, costUsd: null })).map(label =>
-        <div key={label}>{label}<strong className="block text-lg">Unknown</strong></div>)}</div>
-      <nav aria-label="Available observation views" className="flex flex-wrap gap-2">{views.map(item =>
-        <button type="button" disabled title="Import an observation to use this view" className="rounded border px-3 py-2 text-xs opacity-60" key={item.key}>{item.label}</button>)}</nav>
-      <div className="min-w-0 overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={RUN_COLUMNS} rows={[]} selectedRowIds={[]}
-        columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy="" sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={() => undefined} onSelectionChanged={() => undefined} /></div>
-      <p className="text-sm">No observation loaded. Import native run or workflow JSON to synchronize JSON, Markdown, Viewer and Canvas. Recorded evaluations remain evidence; live evaluation and comparison require a connected runtime.</p>
+    </section>
+  </>
+  if (viewSettings.visible === false) return null
+  return <section aria-label="Agent Mission" data-agent-mission-mode={preview ? 'preview' : workspace ? 'workspace' : 'panel'} className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
+    <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings} configuration={sourceConfiguration}>
+    <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }}>
+
+    {!trace && <section aria-label="Observation dashboard" className="py-3 text-sm">
+      {busy ? 'Loading observations…' : error || `${index ? `${index.items.length} runs available. ` : 'No observation selected. '}Select this card, then Flip to configure its run source.`}
     </section>}
-    {trace && <section aria-label="Selected run evidence" className="min-w-0 border-t pt-3">
+    {trace && <section aria-label="Selected run evidence" className="min-w-0">
+
+      {workspaceFeed && <p className="pb-2 text-xs" role="status">.workspace stream · {!online ? 'offline' : !visible ? 'paused while hidden' : error ? 'refresh unavailable' : live ? 'live' : 'paused'}</p>}
       <h3 className="font-semibold">Run {trace.runId}</h3>
       <p className="text-xs">Selected span: {selection.spanId || "Whole run"}</p>
       <p className="text-xs">Observed state: {trace.status} · {trace.spans.length}/{trace.total} retained spans on this page · expected {numberLabel(trace.expected)} · dropped {numberLabel(trace.dropped)}{trace.partial ? ' · Partial trace' : ''}</p>
       <p className="py-2 text-sm">{trace.localObservation ? 'Local validation · selected owner checks' : workflowUrl ? 'Local workflow · source-bound phase receipts' : context ? `${context.taskId} → ${context.projectId} → ${context.goalId}` : 'Legacy run · no plan context recorded'}</p>
+      <details className="my-2"><summary className="cursor-pointer text-xs">Run measurements</summary>
       {trace.localObservation && <section aria-label="Validation economics" className="my-3 rounded border p-3">
         <div className="grid grid-cols-2 gap-3 text-sm"><div>Wall time<strong className="block text-xl">{durationLabel(trace.localObservation.elapsedMs)}</strong></div>
           <div>Observed output<strong className="block text-xl">{numberLabel(trace.localObservation.resources.observedOutputBytes, ' bytes')}</strong></div>
@@ -289,11 +310,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         <a className="text-xs underline" target="_blank" rel="noreferrer" href={`https://${trace.localObservation.source.repository}/tree/${trace.localObservation.source.revision}`}>Source revision {trace.localObservation.source.revision.slice(0, 12)}</a>
         <details className="pt-2 text-xs"><summary>Stage output and reuse</summary><ul>{trace.localObservation.stages.slice(trace.offset, trace.offset + 32).map(stage => <li key={stage.id} className="py-1">{stage.id} · {stage.status} · {numberLabel(stage.observedOutputBytes, ' output bytes')}{stage.outputTruncated ? ' · bounded log tail' : ''}</li>)}</ul></details>
       </section>}
-      <section aria-label="Observed resources" className="my-3 rounded border p-3">
+      <section aria-label="Observed resources" className="min-w-0">
         {!span && trace.profile.workflow && <p className="pb-2 text-xs">Reported usage across loaded evidence · unmeasured phases excluded · nested measurements counted once</p>}
         {span && <p className="pb-2 text-xs">{span.status === 'reused' ? 'Original check measurements · excluded from current consumption' : 'Selected span measurements'} · Model: {span.model || 'Not recorded by source'}</p>}
-        <div className="grid grid-cols-2 gap-3 text-sm">{Object.entries(resourceLabels(traceResources(trace, span))).map(([label, value]) =>
-          <div key={label}>{label}<strong className="block text-lg tabular-nums">{value}</strong></div>)}</div>
+        <DashboardMetricGrid metrics={Object.entries(resourceLabels(traceResources(trace, span))).map(([label, value]) => ({ id: label, label, value, detail: span ? 'Selected span' : 'Whole run', tone: 'blue' }))} />
         <p className="pt-2 text-xs">Peak process RSS is the maximum observed process peak. Model cost is estimated; actual cash and machine charges are unknown. Reused stages are excluded from current consumption.</p>
         {trace.localObservation?.resources.coverage && <p className="pt-1 text-xs">Measured stages: {Object.entries(trace.localObservation.resources.coverage).filter(([key]) => key !== 'expectedStages').map(([key, count]) => `${key} ${count}/${trace.localObservation?.resources.coverage?.expectedStages}`).join(' · ')}</p>}
         {trace.localObservation?.ci && <p className="pt-2 text-sm">Initial CI wait: {durationLabel(trace.localObservation.ci.queueWaitMs)} · <a className="underline" target="_blank" rel="noreferrer" href={trace.localObservation.ci.url}>Run {trace.localObservation.ci.runId}, attempt {trace.localObservation.ci.attempt}</a></p>}
@@ -304,7 +324,13 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           <ol>{trace.localObservation.feedback.ranking.map(row => <li className="py-1" key={row.id}>{row.id}: {durationLabel(row.meanMs)} mean · {row.samples} samples · {row.samples < 3 ? 'cold baseline' : 'repeated observations'} · {(row.resourceMeans.queueWaitMs ?? 0) > row.meanMs / 2 ? 'Inspect CI queue' : 'Profile expensive stage'}
             {row.sourceRevision && <a className="ml-1 underline" target="_blank" rel="noreferrer" href={`https://${trace.localObservation!.source.repository}/tree/${row.sourceRevision}`}>Source {row.sourceRevision.slice(0, 12)}</a>}</li>)}</ol>
         </details>}
+      </section></details>
+      <section aria-label="Span view controls" className="flex min-w-0 flex-wrap items-center gap-2 py-2 text-xs">
+        <label className="flex h-9 shrink-0 items-center gap-1">Inspect <select className="h-9" aria-label="Inspect run details" value={view} onChange={event => setView(event.target.value)} style={inputStyle}>{views.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        {view === 'tree' && <AgentRunMetricSelector value={spanMetrics} onToggle={metric => setSpanMetrics(current => toggleSpanMetric(current, metric))} />}
+        <input className="h-9" aria-label="Search spans by name, kind or status" placeholder="Search spans by name, kind or status" value={search} onChange={event => setSearch(event.target.value)} style={inputStyle} />
       </section>
+      <div id={`agent-run-view-${view}-panel`} role="region" aria-label={views.find(item => item.key === view)!.label} className="min-w-0 py-2">
       {context && (!workspace || view === "source") && <details open={workspace || undefined}><summary>Source ownership</summary><p>{context.plan.continuityId}</p>
         {planUrl ? <a href={planUrl} target="_blank" rel="noreferrer" className="underline">{context.plan.path} @ {context.plan.revision}</a> : <p>{context.plan.repository} / {context.plan.path} @ {context.plan.revision}</p>}
         <p className="text-xs">Digest {context.plan.digest}</p><pre className="overflow-auto text-xs">{JSON.stringify(context.plan.revisions, null, 2)}</pre>
@@ -319,26 +345,23 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       {(!workspace || view === "allocation") && (resources ? <div aria-label="Resource allocation" className="my-3 rounded border p-3">
         <h4 className="font-semibold">Project allocation · {String(resources.status)}</h4>
         <p className="text-xs">{String(record(resources.policy).windowId)} · zero incremental provider spend required · machine cost unknown</p>
-        <div className="overflow-auto"><table className="w-full text-left text-xs"><thead><tr><th>Resource</th><th>Limit</th><th>Used</th><th>Reserved</th><th>Remaining</th></tr></thead><tbody>
-          {['inputTokens', 'outputTokens', 'attempts', 'elapsedMs'].map(unit => <tr key={unit}><th className="py-2">{unit}</th>
-            {[record(record(resources.policy).project), record(resources.used), record(resources.reserved), record(resources.remaining)].map((values, i) => <td key={i}>{numberLabel(known(values[unit]))}</td>)}
-          </tr>)}
-        </tbody></table></div>
+        <GraphDataTableDomTableView tableId="nodes" columns={['Resource', 'Limit', 'Used', 'Reserved', 'Remaining'].map((name, order) => ({ ...RUN_COLUMNS[0]!, pk: `agentic-os/allocation/${name}`, columnId: name, name, order }))}
+          rows={['inputTokens', 'outputTokens', 'attempts', 'elapsedMs'].map((unit, order) => ({ id: unit, __order: order + 1, Resource: unit,
+            Limit: numberLabel(known(record(record(resources.policy).project)[unit])), Used: numberLabel(known(record(resources.used)[unit])),
+            Reserved: numberLabel(known(record(resources.reserved)[unit])), Remaining: numberLabel(known(record(resources.remaining)[unit])) }))}
+          selectedRowIds={[]} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy="" sortRules={[]}
+          rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={() => undefined} onSelectionChanged={() => undefined} />
         <p className="text-xs">{resources.status === 'held' ? 'Usage is uncertain. The host must reconcile it before further execution.' : 'The host rechecks all project, agent and run limits before execution.'}</p>
       </div> : <p className="py-2 text-xs">Allocation unavailable for this observation.</p>)}
-      <TabHeader tabs={views} activeTab={view} onTabChange={setView} tabIdBase="agent-run-view"
-        searchVisible searchPlaceholder="Search spans by name, kind or status" searchQuery={search} onSearchChange={setSearch} />
-      <div id={`agent-run-view-${view}-panel`} role="tabpanel" aria-labelledby={`agent-run-view-${view}-tab`} className="min-w-0 py-2">
-        {view === 'table' && <div className="overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={SPAN_COLUMNS} rows={spanRows(spans.map(row => row.span))}
-          selectedRowIds={selection.spanId ? [selection.spanId] : []} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy=""
-          sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={chooseSpan} onSelectionChanged={ids => chooseSpan(ids.at(-1) ?? null)} /></div>}
-        {view === 'tree' && <AgentRunSpanViews key={trace.runId} rows={spans} selectedId={selection.spanId} onSelect={chooseSpan} search={search} />}
+        {view === 'table' && <AgentRunTable runId={trace.runId} spans={spans.map(row => row.span)} selectedId={selection.spanId} onSelect={chooseSpan} />}
+        {view === 'tree' && <AgentRunSpanViews key={trace.runId} rows={spans} selectedId={selection.spanId} onSelect={chooseSpan} search={search} metrics={spanMetrics} />}
         {view === 'topology' && topology && <><label className="flex items-center gap-2 text-xs">Topology detail<select aria-label="Topology detail" style={inputStyle} value={topologyDetail} onChange={event => setTopologyDetail(event.target.value as 'all' | 'agents')}><option value="agents">Agents</option><option value="all">All spans</option></select></label><p className="py-1 text-xs">Agent view shows containment and direct agent links. Runs without agent spans show all checks.</p><React.Suspense fallback={<p>Loading topology…</p>}><GraphCanvasInspection graph={topology}
           selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
           onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense></>}
         {view === 'evidence' && <><p>Candidate: {trace.candidate.id} @ {trace.candidate.revision}</p>
           <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ profile: trace.profile, subjectDigest, evaluation: evaluated, component: span?.component, links: span?.links, timing: span?.timing, usage: span?.cost, resources: span?.resources }, null, 2)}</pre></>}
       </div>
+
       <div className="flex flex-wrap gap-2 py-2">
         {!local && trace.offset > 0 && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal)) }}>First span page</button>}
         {trace.nextCursor && <button className={button} disabled={!mayWrite} onClick={() => { void perform(signal => loadTrace(trace.runId, signal, trace.nextCursor!)) }}>Next span page</button>}
@@ -360,5 +383,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         {comparison !== null && <pre className="max-h-72 overflow-auto text-xs" aria-label="Comparison evidence">{JSON.stringify(comparison, null, 2)}</pre>}
       </section>}
     </section>}
+    </DashboardCardView>
+    </DashboardWidgetFlip>
   </section>
 }

@@ -2,6 +2,10 @@ import { TEST_CASES_POST_PARSER_1_PREFIX } from './postParserCases1Prefix'
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ...TEST_CASES_POST_PARSER_1_PREFIX,
+  ["markdown.workspace.initialPaneVisibility.absoluteDocumentPaths","@/__tests__/markdownWorkspaceAbsoluteDocumentPanes.test","testMarkdownWorkspaceAbsoluteDocumentPathsOpenMatchingPane"],
+  ["ui.canvasContainerSizing.defaultFull","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingDefaultsToFull"],
+  ["ui.canvasContainerSizing.editorAndPanels","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingAvoidsEditorAndPanels"],
+  ["ui.canvasContainerSizing.compactAndCovered","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingHandlesCompactAndCoveredViews"],
   ["testFixture.docsSsot.LocalReadsStayFreshAcrossRoots","@/__tests__/docsSsotFixtureResolution.test","testDocsSsotFixtureLocalReadsStayFreshAcrossRoots"],
   ["testFixture.docsSsot.MissingAndInvalidLocalInputsFailWithoutNetwork","@/__tests__/docsSsotFixtureResolution.test","testDocsSsotFixtureMissingAndInvalidLocalInputsFailWithoutNetwork"],
   ["testFixture.docsSsot.DefaultRootUsesCanonicalWorkspaceOwner","@/__tests__/docsSsotFixtureResolution.test","testDocsSsotFixtureDefaultRootUsesCanonicalWorkspaceOwner"],
@@ -261,6 +265,10 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["layout.positioning.isolatesRenderMediaAsNodes","@/__tests__/layoutPositioning.test","testLayoutPositioningCacheKeyIsolatesRenderMediaAsNodes"],
   ["layout.datasetKey.reusesSharedReaders","@/__tests__/layoutDatasetKeyStable.test","testLayoutDatasetKeyReusesSharedReaders"],
   ["pipeline.2dRenderer.sharedSurfaceHelpers","@/__tests__/rendererPipelineNeutrality.test","test2dRendererPipelineUsesSharedSurfaceHelpers"],
+  ["pipeline.2dRenderer.dashboardWidgets.sourceCrud","@/__tests__/dashboardWidgetConfiguration.test","testDashboardWidgetSourceConfiguration"],
+  ["pipeline.2dRenderer.dashboardWidgets.interaction","@/__tests__/dashboardCanvasInteraction.test","testDashboardCanvasCardDragReordersWithinSection"],
+  ["pipeline.2dRenderer.dashboardWidgets.flipConfiguration","@/__tests__/dashboardCanvasInteraction.test","testDashboardCanvasCardFlipConfiguration"],
+  ["pipeline.2dRenderer.dashboardWidgets.readOnlyEvidence","@/__tests__/dashboardCanvasInteraction.test","testDashboardEvidenceMetricsReuseReadOnlyWidgets"],
   ["pipeline.2dRenderer.dashboardModel.fileAgnostic","@/__tests__/dashboardCanvasModel.test","testDashboardCanvasModelDerivesCardsWithoutFixtureBackfill"],
   ["pipeline.2dRenderer.dashboardSource.frontmatterFlow","@/__tests__/dashboardActiveSourceFlowGraph.test","testDashboardWorkspaceFrontmatterFlowUsesSelectedSourceContent"],
   ["pipeline.2dRenderer.dashboardGrid.sharedDisplayControl","@/__tests__/canvasViewDisplayControls.test","testDashboardRendererGridToggleUsesSharedDisplayControl"],

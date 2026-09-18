@@ -79,6 +79,7 @@ export function ToolbarMenuLauncher({
     if (typeof window === 'undefined') return
 
     const openRequestedFloatingPanel = (view: FloatingPanelRequestedView) => {
+      useGraphStore.getState().setFloatingPanelView(view)
       floatingPanelRequestSeqRef.current += 1
       setFloatingPanelRequestedView({
         view,

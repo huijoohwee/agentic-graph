@@ -1,4 +1,5 @@
 import type { SettingMeta } from './types'
+import { readCanvasContainerSizing, writeCanvasContainerSizing } from '@/lib/canvas/canvasContainerSizing'
 import {
   PRINT_LAYOUT_TOKENS,
   WORKSPACE_LAYOUT_TOKENS,
@@ -57,6 +58,11 @@ const printSettings: SettingMeta[] = PRINT_LAYOUT_TOKENS.map(token => ({
 }))
 
 export const uiWorkspaceSettingsRegistry: SettingMeta[] = [
+  {
+    key: 'canvas.container.sizing', type: 'string', source: 'localStorage',
+    read: readCanvasContainerSizing, write: writeCanvasContainerSizing,
+    default: () => 'full', options: ['full', 'inset'],
+  },
   ...workspaceSettings,
   ...printSettings,
   {

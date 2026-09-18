@@ -1,6 +1,6 @@
 import React from 'react'
+import { CanvasViewContainer } from '@/components/CanvasViewContainer'
 import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
-const AgentRunInspectionLazy = React.lazy(() => import('@/features/agent-ready/AgentRunWorkspaceInspection'))
 import { useShallow } from 'zustand/react/shallow'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config.render'
 import type { GraphData } from '@/lib/graph/types'
@@ -52,7 +52,7 @@ import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbed
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
 const LiveCanvasHeroPresetStageLazy = React.lazy(() => import('@/features/agentic-os/LiveCanvasHeroPresetStage').then(mod => ({ default: mod.LiveCanvasHeroPresetStage })))
 const SharedGraphCanvasLazy = React.lazy(() => import('@/components/GraphCanvas'))
-const DashboardCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/DashboardCanvas'), { retries: 2, retryDelayMs: 50 }))
+const DashboardCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/DashboardCanvas/Surface'), { retries: 2, retryDelayMs: 50 }))
 const GalleryCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/GalleryCanvas'), { retries: 2, retryDelayMs: 50 }))
 const MediaCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/MediaCanvas'), { retries: 2, retryDelayMs: 50 }))
 const MultiDimTableSurfaceLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.MultiDimTableSurface })))
@@ -79,7 +79,6 @@ export type CanvasViewportProps = {
   layout?: 'full' | 'pane'
   geospatialModeEnabled: boolean
   workspaceEditorOverlayOpen?: boolean
-  workspaceVisibleCanvasLeft?: string
   canvasRenderMode: '2d' | '3d'
   canvas3dMode: Canvas3dModeId
   canvas2dRenderer: Canvas2dRendererId
@@ -98,9 +97,8 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
 }
 export function CanvasViewport(props: CanvasViewportProps) {
   const inspection = useAgentRunWorkspace()
-  if (inspection && props.variant === 'workspace') return <section className="absolute inset-0 z-10" aria-label="Canvas viewport"
-    style={{ left: props.workspaceEditorOverlayOpen ? props.workspaceVisibleCanvasLeft : undefined }}>
-    <React.Suspense fallback={<p>Loading run canvas…</p>}><AgentRunInspectionLazy surface="canvas" /></React.Suspense>
+  if (inspection && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
+    <CanvasViewContainer><React.Suspense fallback={<p>Loading run canvas…</p>}><DashboardCanvasLazy active /></React.Suspense></CanvasViewContainer>
   </section>
   return <AuthoredCanvasViewport {...props} />
 }
@@ -111,7 +109,6 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
     layout = 'full',
     geospatialModeEnabled,
     workspaceEditorOverlayOpen = false,
-    workspaceVisibleCanvasLeft,
     canvasRenderMode,
     canvas3dMode,
     canvas2dRenderer,
@@ -331,7 +328,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
                   ? 'Canvas Preview Only'
                   : 'Canvas viewport'}
     >
-      <React.Suspense fallback={null}>
+      <CanvasViewContainer configurable={variant === 'workspace'}><React.Suspense fallback={null}>
         {liveCanvasHeroVisible && liveCanvasHeroSource ? (
           <LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles}
             visible={liveCanvasHeroVisible} onEnter={dismissLiveCanvasHero} />
@@ -490,6 +487,8 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
           ? <CanvasSourceInitializationError error={sourceFilesBootstrap.error} />
           : null}
 
+      </React.Suspense></CanvasViewContainer>
+      <React.Suspense fallback={null}>
         {variant === 'workspace' ? (
           <>
             {layout === 'full' && !documentSwitchOwnsViewport && !homePreviewVisible ? (

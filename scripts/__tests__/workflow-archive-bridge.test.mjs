@@ -43,3 +43,30 @@ test('workflow ingress remains available after the Vite configuration runner clo
   assert.equal(response.status,422,await response.text())
  }finally{await server?.close();await rm(fixture,{recursive:true,force:true})}
 })
+
+import {mkdir,readFile,symlink,realpath} from 'node:fs/promises'
+import {execFileSync} from 'node:child_process'
+import {collectWorkflow,WORKFLOW_PHASES} from '../../node_modules/agentic-os/bin/agentic-os-workflow.mjs'
+import {readWorkspaceObservationSource} from '../../canvas/viteWorkspaceObservationBridge.mjs'
+test('workspace selection reads the exact native archive; unselected, malformed, outside and symlink sources fail closed',async()=>{
+ const fixture=await realpath(await mkdtemp(path.join(os.tmpdir(),'workspace-observation-'))),repo=path.join(fixture,'repo')
+ const git=(...args)=>execFileSync('git',args,{cwd:repo,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ try{
+  await mkdir(repo);git('init');git('config','user.email','fixture@example.invalid');git('config','user.name','Fixture');git('commit','--allow-empty','-m','fixture')
+  assert.equal(await readWorkspaceObservationSource(repo,{}),null)
+  await assert.rejects(readWorkspaceObservationSource(repo,{path:'/private'}),/input/)
+  const input=path.join(fixture,'input.json'),repository='github.com/example/fixture'
+  await writeFile(input,JSON.stringify({schema:'agentic-os/workflow-observation-input/v1',id:'source-fixture',
+   source:{repository,revision:git('rev-parse','HEAD'),tree:git('rev-parse','HEAD^{tree}')},expected:WORKFLOW_PHASES,phases:[]}))
+  const stored=collectWorkflow(repo,repository,input)
+  git('config','agentic-os.workflowManifest',stored.manifest)
+  const source=await readWorkspaceObservationSource(repo,{})
+  assert.equal(source.manifestText,await readFile(stored.manifest,'utf8'));assert.equal(source.manifestDigest,stored.digest)
+  const frame=await readWorkflowArchiveRequest({manifestText:source.manifestText,offset:0},undefined,repo)
+  assert(frame.includes('workflow-source-fixture'));assert(frame.includes('"missing"'));assert(frame.endsWith('data: [DONE]\n\n'))
+  const outside=path.join(fixture,'outside.json');await writeFile(outside,source.manifestText,{mode:0o600})
+  git('config','agentic-os.workflowManifest',outside);await assert.rejects(readWorkspaceObservationSource(repo,{}),/archive_required/)
+  const linked=path.join(fixture,'linked.json');await symlink(stored.manifest,linked)
+  git('config','agentic-os.workflowManifest',linked);await assert.rejects(readWorkspaceObservationSource(repo,{}))
+ }finally{await rm(fixture,{recursive:true,force:true})}
+})

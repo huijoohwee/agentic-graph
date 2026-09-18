@@ -1,4 +1,6 @@
 import React from 'react'
+import { useAgentRunWorkspaceDocument } from '@/features/agent-ready/agentRunWorkspaceDocument'
+import { selectAgentRunSource } from '@/features/agent-ready/agentRunInspectionStore'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
@@ -34,7 +36,8 @@ import { useMarkdownWorkspaceCollaborationRuntimeBridge } from './useMarkdownWor
 import { useMarkdownWorkspaceStreamingSelectionLock } from './useMarkdownWorkspaceStreamingSelectionLock'; import { useMarkdownWorkspaceOpenSourceFilesEvent } from './useMarkdownWorkspaceOpenSourceFilesEvent'
 const EMPTY_STRING_ARRAY: string[] = []
 export function MarkdownWorkspace(props: { active?: boolean } = {}) {
-  const active = props.active !== false
+  const missionDocument = useAgentRunWorkspaceDocument()
+  const active = props.active !== false && !missionDocument.sourcePath
   const activeRef = React.useRef(active)
   React.useEffect(() => { activeRef.current = active }, [active])
   const themeMode = useGraphStore(s => (s.resolvedThemeMode || 'light') as 'light' | 'dark')
@@ -77,13 +80,11 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
   const selectNode = useGraphStore(s => s.selectNode)
   const selectEdge = useGraphStore(s => s.selectEdge)
   const openWidgetNodeIds = useGraphStore(s => s.openWidgetNodeIds ?? EMPTY_STRING_ARRAY)
-
   const activePath = useMarkdownExplorerStore(s => s.activePath)
   const setActivePath = useMarkdownExplorerStore(s => s.setActivePath)
   const requestedRevealLine = useMarkdownExplorerStore(s => s.requestedRevealLine)
   const requestRevealLine = useMarkdownExplorerStore(s => s.requestRevealLine)
   const lastSetActivePath = useMarkdownExplorerStore(s => s.lastSetActivePath)
-
   const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen({ workspaceViewMode, workspaceCanvasPaneOpen })
   const effectiveBottomSurfaceCollapsed = workspaceEditorOverlayOpen ? false : bottomSurfaceCollapsed
   const graphSemanticKey = React.useMemo(() => {
@@ -173,7 +174,6 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     activePathRef,
     layoutModeRef,
   } = bootstrapState
-
   const status = useWorkspaceStatusHelpers()
   const setStatusInfo = status.setStatusInfo
   const setStatusError = status.setStatusError
@@ -182,7 +182,6 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     (label: string, ttlMs: number = UI_TOAST_TTL_MS.statusAutoClose) => status.setStatusInfo(label, { ttlMs }),
     [status],
   )
-
   const wasWorkspaceEditorOverlayOpenRef = React.useRef<boolean>(workspaceEditorOverlayOpen)
   React.useEffect(() => {
     layoutModeRef.current = layoutMode
@@ -437,7 +436,6 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     applyMarkdownDocumentToGraph,
     ...runtimeInteractionStatusBindings,
   })
-
   const fileActions = useWorkspaceFileActions(
     buildMarkdownWorkspaceFileActionsArgs({
       getFs: explorerState.getFs,
@@ -465,7 +463,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     workspaceRootRef,
     fileActions,
     createParentPath: selectionState.createParentPath,
-    saveEnabled: effectiveContent.saveEnabled,
+    saveEnabled: !missionDocument.sourcePath && effectiveContent.saveEnabled,
     saveActiveFileNow: saveState.saveActiveFileNow,
     setStatusWithAutoClear,
   })
@@ -497,7 +495,6 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
   })
   const saveEnabled = effectiveContent.saveEnabled
   const saveActiveFileNow = saveState.saveActiveFileNow
-
   return (
     <section
       ref={workspaceRootRef}
@@ -518,8 +515,8 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
             loadError={loadError}
             expandedPaths={expandedPaths}
             toggleExpanded={viewShell.toggleExpanded}
-            activePath={selectionState.selectionPath || activePath}
-            onSelectFile={viewShell.onSelectFile}
+            activePath={missionDocument.sourcePath || selectionState.selectionPath || activePath}
+            onSelectFile={path => { selectAgentRunSource(null); viewShell.onSelectFile(path) }}
             onSelectFolder={viewShell.onSelectFolder}
             search={search}
             setSearch={setSearch}
@@ -529,14 +526,14 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
             setTocCollapsed={setTocCollapsed}
             backlinksCollapsed={backlinksCollapsed}
             setBacklinksCollapsed={setBacklinksCollapsed}
-            tocTokens={interactionState.tocTokens}
-            backlinks={interactionState.backlinks}
+            tocTokens={missionDocument.sourcePath ? missionDocument.tocTokens : interactionState.tocTokens}
+            backlinks={missionDocument.sourcePath ? [] : interactionState.backlinks}
             onRevealLine={interactionState.revealLineInEditor}
             onOpenBacklink={viewShell.openBacklink}
-            onTocReorder={interactionState.onTocReorder}
+            onTocReorder={missionDocument.sourcePath ? () => {} : interactionState.onTocReorder}
             onCreateNewFile={parentPath => void fileActions.createNewFile({ parentPath: parentPath || selectionState.createParentPath })}
             onRefresh={() => void explorerState.refresh()}
-            canRefreshActiveFromSource={viewShell.canRefreshActiveFromSource}
+            canRefreshActiveFromSource={!missionDocument.sourcePath && viewShell.canRefreshActiveFromSource}
             onRefreshActiveFromSource={() => {
               const refreshPath = activePath || selectionState.selectionPath
               if (refreshPath) void fileActions.refreshFileFromSource(refreshPath)
@@ -555,8 +552,8 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
           />
         </>
       ) : null}
-
       <MarkdownWorkspaceMain
+        key={missionDocument.sourcePath || 'authored'}
         themeMode={themeMode}
         uiPanelTextFontClass={uiPanelTextFontClass}
         uiPanelMonospaceTextClass={uiPanelMonospaceTextClass}
@@ -608,6 +605,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
         onViewerInlineEditStateChange={activeState =>
           viewShell.handleViewerInlineEditStateChange(activeState, updater => setViewerInlineEditActive(updater))
         }
+        {...missionDocument.mainProps}
       />
     </section>
   )

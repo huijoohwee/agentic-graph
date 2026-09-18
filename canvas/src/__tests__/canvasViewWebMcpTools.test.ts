@@ -62,6 +62,11 @@ export async function testCanvasViewRowsUseSourceBackedWebMcpInvocation(): Promi
     let rejected = false
     try { executeCanvasViewControl({ invocation: '/canvas.view.set #canvas-view @canvas-view option=agent-run:timing' }) } catch { rejected = true }
     if (!rejected || applied.length) throw new Error('The removed Timing view must not execute through Chat or MCP')
+    for (const optionId of ['renderer:dashboard', 'agent-run:tree']) {
+      executeCanvasViewControl({ invocation: buildCanvasViewInvocation(optionId) })
+    }
+    if (applied.join(',') !== 'renderer:dashboard,agent-run:tree') throw Error('Dashboard and Mission views must share the native invocation owner')
+    applied.length = 0
     const runtimeResult = executeCanvasViewControl({ invocation })
     if (
       runtimeResult.optionId !== 'renderer:storyboard'

@@ -14,6 +14,8 @@ import { MarkdownWorkspaceBacklinksList } from './MarkdownWorkspaceBacklinksList
 import { MarkdownWorkspaceTocList } from './MarkdownWorkspaceTocList'
 import { MarkdownWorkspaceExplorerHeaderActions } from './MarkdownWorkspaceExplorerHeaderActions'
 import { MarkdownWorkspaceSourceFilesList } from './MarkdownWorkspaceSourceFilesList'
+import { matchesAgentMissionSource } from '@/features/agent-ready/agentMissionSourceFiles'
+import { useAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
 import { MarkdownWorkspaceTocTree } from './MarkdownWorkspaceTocTree'
 import { MarkdownExplorerSectionResizeHandle } from './MarkdownExplorerSectionResizeHandle'
 import {
@@ -112,6 +114,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
     renderSourceFileRight,
   } = props
   const panelTypography = usePanelTypography()
+  const missionInspection = useAgentRunInspection()
   const sourceFilesSectionRef = React.useRef<HTMLElement | null>(null)
   const tocSectionRef = React.useRef<HTMLElement | null>(null)
   const backlinksSectionRef = React.useRef<HTMLElement | null>(null)
@@ -204,9 +207,10 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
           }}
           sectionStyle={resolveSectionStyle('sourceFiles', sourceFilesCollapsed)}
           scrollMode="primary"
-          right={<span className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>{sourceFileCount}</span>}
+          right={<span className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>{sourceFileCount + (matchesAgentMissionSource(search) ? 1 + Number(!!missionInspection) : 0)}</span>}
         >
           <MarkdownWorkspaceSourceFilesList
+            search={search}
             loading={loading}
             loadError={loadError}
             textSizeClass={panelTypography.textSizeClass}
