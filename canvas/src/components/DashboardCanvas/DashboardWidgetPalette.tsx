@@ -41,8 +41,8 @@ export default function DashboardWidgetPalette() {
           {present && <button className="rounded border px-2 py-1" onClick={() => { void (settings.source ? updateDashboardWidgets({ [entry.id]: null }) : updateDashboardWidget(entry.id, { visible: false })).catch(() => undefined) }}>Remove widget</button>}
           {entry.card && <label>Display <select aria-label={`Display ${entry.id}`} value={entry.card.kind} onChange={event => update({ kind: event.target.value as DashboardCard['kind'] })}>{['bar', 'line', 'area', 'table'].map(kind => <option key={kind}>{kind}</option>)}</select></label>}
           <label>Color <select aria-label={`Color ${entry.id}`} value={settings.tone ?? entry.card?.tone ?? entry.metric?.tone ?? 'blue'} onChange={event => update({ tone: event.target.value as DashboardCard['tone'] })}>{['blue', 'green', 'amber', 'rose', 'slate'].map(tone => <option key={tone}>{tone}</option>)}</select></label>
-          <button aria-label={`Move ${entry.id} earlier`} className="rounded border px-2 py-1" onClick={() => update({ order: Math.max(-10000, (settings.order ?? 0) - 1) })}>↑</button>
-          <button aria-label={`Move ${entry.id} later`} className="rounded border px-2 py-1" onClick={() => update({ order: Math.min(10000, (settings.order ?? 0) + 1) })}>↓</button>
+          {!entry.mission && <><button aria-label={`Move ${entry.id} earlier`} className="rounded border px-2 py-1" onClick={() => update({ order: Math.max(-10000, (settings.order ?? 0) - 1) })}>↑</button>
+          <button aria-label={`Move ${entry.id} later`} className="rounded border px-2 py-1" onClick={() => update({ order: Math.min(10000, (settings.order ?? 0) + 1) })}>↓</button></>}
         </div>
       </li>
     })}

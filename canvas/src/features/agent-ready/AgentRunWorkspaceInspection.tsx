@@ -23,7 +23,7 @@ const button = `rounded border px-2 py-1 text-xs ${UI_THEME_TOKENS.button.neutra
 export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' }) {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const themeMode = useGraphStore(s => s.resolvedThemeMode || 'light')
-  const [explorerOpen, setExplorerOpen] = React.useState(true), [sourceCollapsed, setSourceCollapsed] = React.useState(false)
+  const [explorerOpen, setExplorerOpen] = React.useState(() => !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches), [sourceCollapsed, setSourceCollapsed] = React.useState(false)
   const [source, setSource] = React.useState('/agent-mission.md')
   const [layout, setLayout] = React.useState<MarkdownWorkspaceLayoutMode>('editor')
   const [wrap, setWrap] = React.useState(true), [highlight, setHighlight] = React.useState(false)
@@ -68,7 +68,7 @@ export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' 
         mode: 'canvas', paneOpen: false,
       })}>Show Canvas</button>
     </header>
-    {trace ? <div className="flex min-h-0 min-w-0 flex-1">
+    {trace ? <div className="kg-markdown-workspace-shell flex min-h-0 min-w-0 flex-1">
       {explorerOpen && <aside className="kg-markdown-workspace-explorer flex h-full min-h-0 w-56 max-w-[40%] shrink-0 flex-col border-r" aria-label="Markdown Explorer">
         <MarkdownExplorerSection title="Source Files" collapsed={sourceCollapsed} setCollapsed={setSourceCollapsed} scrollMode="primary" right={<span>{entries.length}</span>}>
           <p className="p-2 text-xs">Agent Mission · read-only session</p>

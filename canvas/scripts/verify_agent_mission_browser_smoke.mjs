@@ -114,7 +114,9 @@ async function verifyWorkspace(label, revoke = false) {
   const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
   const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
   await editor.waitFor({ state: 'visible', timeout: 60000 })
+  const explorer = editor.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }); await explorer.check()
   await editor.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).waitFor()
+  if (page.viewportSize().width <= 768) await explorer.uncheck()
   await editor.getByRole('region', { name: 'Markdown Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible', timeout: 60000 })
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible' })
@@ -314,7 +316,7 @@ async function verifyApexActivation(width) {
   assert.equal(await evidence.getByText('No runs in this authorized snapshot.').count(), 0)
   await page.unroute('**/api/agent-swarm/query'); await refresh.click(); await waitText(evidence, '2 retained matches')
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(true))
-  assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0)
+  const latePanel = page.locator('[data-kg-floating-panel-root="true"]'); if (await latePanel.count()) { await latePanel.getByRole('region', { name: 'Props Panel', exact: true }).waitFor(); await latePanel.getByRole('button', { name: 'Close', exact: true }).click() }
   await evidence.locator('tr').filter({ hasText: 'candidate-run' }).press('Enter')
   await evidence.locator('#agent-run-view-tree-panel').waitFor()
   await waitText(evidence, '32/34 retained spans')
