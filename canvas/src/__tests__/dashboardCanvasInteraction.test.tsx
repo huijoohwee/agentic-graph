@@ -4,6 +4,10 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import DashboardCanvas from '@/components/DashboardCanvas'
+import { useDashboardSource } from '@/components/DashboardCanvas/useDashboardSource'
+import { buildDashboardCanvasModel } from '@/components/DashboardCanvas/dashboardModel'
+import { readRunTrace } from '@/features/agent-ready/missionControlProjection'
+import { activateAgentRunWorkspace, openAgentRunInspection, closeAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
 import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
 import { DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -336,4 +340,35 @@ export async function testDashboardEvidenceMetricsReuseReadOnlyWidgets() {
     await act(async () => { metric.querySelector('[data-kg-card-inline-edit]')?.dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true, detail: 2 })); await waitFrame() })
     if (container.querySelector('[contenteditable="true"], input, textarea')) throw Error('Evidence labels cannot be authored')
   } finally { await act(async () => root.unmount()); restore() }
+  await testDashboardObservationSource()
+}
+
+async function testDashboardObservationSource() {
+  const { dom, restore } = initJsdomHarness(), container = dom.window.document.createElement('section')
+  const root = createRoot(container), previous = useGraphStore.getState()
+  let source: ReturnType<typeof useDashboardSource>
+  function SourceProbe() { source = useDashboardSource(true); return null }
+  const model = () => buildDashboardCanvasModel(source.graphData, null)
+  try {
+    useGraphStore.setState({ graphData: buildDashboardDragGraph(), graphDataRevision: previous.graphDataRevision + 1,
+      frontmatterModeEnabled: false, multiDimTableModeEnabled: false, selectedNodeId: 'source' })
+    await act(async () => { root.render(<SourceProbe />); await waitFrame() })
+    if (source!.readOnly || model().title !== 'Dashboard Drag Contract') throw Error('Ordinary Dashboard must use the authored graph')
+    await act(async () => { activateAgentRunWorkspace('tree'); await waitFrame() })
+    if (!source!.readOnly || source!.graphData?.nodes.length !== 0 || model().title !== 'Agent Mission') throw Error('An empty inspection must not backfill authored content')
+    const now = Date.now(), trace = readRunTrace({ schema: 'agent-toolkit-run/v1', runId: 'dashboard-observation',
+      observedAt: now, expiresAt: now + 60000, coverage: { partial: true }, spans: [{ spanId: 'check', kind: 'check',
+        operation: 'Observed check', status: 'completed', timing: { inclusiveMs: 12, exclusiveObservedMs: 0 }, resources: { cpuMs: 3 } }] }, 'dashboard-observation')
+    await act(async () => { openAgentRunInspection({ trace, scope: 'fixture', expiresAt: trace.expiresAt, spanId: null, search: '', view: 'tree' }); await waitFrame() })
+    const node = source!.graphData!.nodes[0]
+    if (node.label !== 'Observed check' || model().metrics[0].value !== '1' || !model().subtitle.includes('Partial trace')) throw Error('Dashboard must summarize the retained observation')
+    if (node.properties?.Tokens !== null || node.properties?.['Exclusive observed ms'] !== 0 || 'visual:strokeWidth' in node.properties!) throw Error('Observation data must preserve unknown/zero and exclude display styling')
+    await act(async () => { source!.selectNode(node.id); await waitFrame() })
+    if (source!.selectedNodeId !== node.id || useGraphStore.getState().selectedNodeId !== 'source') throw Error('Dashboard selection belongs to the inspection only')
+    await act(async () => { closeAgentRunInspection(); await waitFrame() })
+    if (source!.readOnly || source!.selectedNodeId !== 'source' || model().title !== 'Dashboard Drag Contract' || model().metrics[0].value !== '3') throw Error('Closing inspection restores the authored Dashboard')
+  } finally {
+    await act(async () => { closeAgentRunInspection(); root.unmount() })
+    useGraphStore.setState(previous); restore()
+  }
 }

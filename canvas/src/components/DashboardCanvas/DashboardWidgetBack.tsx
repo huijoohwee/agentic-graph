@@ -1,5 +1,5 @@
 import React from 'react'
-import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
+import { useDashboardSource } from './useDashboardSource'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { buildDashboardCanvasModel, type DashboardCard } from './dashboardModel'
 import { useDashboardWidgets, updateDashboardWidget, updateDashboardWidgets, widgetSettings, type DashboardWidgetSettings } from './dashboardWidgetConfiguration'
@@ -9,7 +9,7 @@ const control = 'w-full min-w-0 rounded border border-[var(--kg-border)] bg-[var
 const button = 'rounded border border-[var(--kg-border)] px-2 py-1.5 text-xs'
 
 export default function DashboardWidgetConfiguration(props: DashboardWidgetEditorProps & { onClose: () => void }) {
-  const graph = useActiveGraphRenderData(true), schema = useGraphStore(state => state.schema)
+  const { graphData: graph } = useDashboardSource(true), schema = useGraphStore(state => state.schema)
   const config = useDashboardWidgets()
   const model = React.useMemo(() => buildDashboardCanvasModel(graph, schema), [graph, schema])
   const sources = props.template === 'metric'

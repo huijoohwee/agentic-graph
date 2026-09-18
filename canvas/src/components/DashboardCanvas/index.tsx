@@ -3,7 +3,7 @@ import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics
 import DashboardWidgetFlip from './DashboardWidgetFlip'
 import { DashboardLineAreaChart } from './DashboardCharts'
 import { DashboardCardView, DashboardMetricTile } from './DashboardWidgets'
-import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
+import { useDashboardSource } from './useDashboardSource'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useContainerDims } from '@/hooks/useContainerDims'
 import { areKanbanRowIdsEqual } from '@/features/markdown/ui/kanban/kanbanOrderState'
@@ -39,11 +39,9 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
   const widgetConfiguration = useDashboardWidgets()
   const active = props.active !== false
   const containerRef = React.useRef<HTMLElement | null>(null)
-  const graphData = useActiveGraphRenderData(active)
+  const { graphData, selectedNodeId, selectNode, readOnly } = useDashboardSource(active)
   const schema = useGraphStore(state => state.schema)
   const resolvedThemeMode = useGraphStore(state => state.resolvedThemeMode || 'light')
-  const selectedNodeId = useGraphStore(state => String(state.selectedNodeId || '').trim())
-  const selectNode = useGraphStore(state => state.selectNode)
   const updateNode = useGraphStore(state => state.updateNode)
   const dims = useContainerDims(containerRef)
   const graphSemanticKey = React.useMemo(
@@ -85,11 +83,11 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
 
   const handleCommitRowLabel = React.useCallback((rowId: string, nextValue: string) => {
     const nodeId = String(rowId || '').trim()
-    if (!nodeId) return
+    if (!nodeId || readOnly) return
     updateNode(nodeId, {
       label: String(nextValue || '').trim(),
     })
-  }, [updateNode])
+  }, [updateNode, readOnly])
 
   if (!active) return null
 
@@ -99,6 +97,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
       className={`absolute inset-0 overflow-hidden bg-[var(--kg-canvas-bg)] ${UI_THEME_TOKENS.text.primary}`}
       aria-label="Dashboard canvas"
       data-kg-dashboard-canvas="1"
+      data-kg-dashboard-source={readOnly ? 'observation' : 'authored'}
       data-kg-dashboard-semantic-key={graphSemanticKey || 'empty'}
       data-kg-dashboard-grid-enabled={model.grid.enabled ? '1' : '0'}
       data-kg-dashboard-grid-variant={model.grid.variant}
@@ -185,7 +184,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
                           card={card}
                           gridEnabled={model.grid.enabled}
                           selectedNodeId={selectedNodeId}
-                          canEditRows={typeof updateNode === 'function'}
+                          canEditRows={!readOnly && typeof updateNode === 'function'}
                           cardDragProps={cardDragProps}
                           cardDropProps={cardDropProps}
                           draggingCardId={dashboardDrag.draggingRowId}

@@ -2,12 +2,18 @@
 
 Agent Mission uses the original Dashboard Span tree card and the existing Editor Workspace.
 The read-only `/agent-mission/agent-mission.manifest.json` source reflects the same in-memory
-observation as the tree. Select the card once, then choose **Flip** on its shared floating toolbar
+observation as the tree and the shared Dashboard metrics, charts and tables. While inspection is
+active, cards summarize retained span kinds, causal links and recorded measurements; they never
+fall back to the authored canvas graph. Table selection selects the corresponding span and its
+source label stays read-only. Closing inspection restores the authored Dashboard. The original
+cards and configuration backs share this source binding; display settings remain editable.
+Select the card once, then choose **Flip** on its shared floating toolbar
 to configure imports, filters, run selection, refresh and display settings. Configuration scrolls
 inside the unchanged card dimensions; the front presents evidence.
 
-The front's compact metric selector switches the Span tree between Time, Tokens, CPU, Memory,
-and Cost. Time retains source clock offsets; resource bars compare recorded per-span values
+The front's compact metric selector independently toggles Time, Exclusive observed, Tokens,
+CPU, Peak RSS and Cost in aligned columns. Two-line span rows keep the same height on selection.
+Time retains source clock offsets; resource bars compare recorded per-span values
 against the largest loaded measurement. Unknown values have no bar, measured zero stays zero,
 and reused spans retain their labelled original measurements. The selection survives refreshes.
 

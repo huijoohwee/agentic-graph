@@ -323,7 +323,7 @@ export function buildDashboardCanvasModel(
       {
         id: 'structure',
         title: 'Structure',
-        cadence: 'Current graph',
+        cadence: readGraphMetadataText(graphData, ['summaryScope']) || 'Current graph',
         cards: [
           {
             id: 'node-types',
