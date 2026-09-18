@@ -1,4 +1,5 @@
 import path from "node:path";
+import { startAgentGraphObservation } from './operation-observation.mjs';
 
 import {
   checkAgentGraphBudget,
@@ -450,7 +451,10 @@ async function ingestResolved(args, deps, abortSignal, deadline, resolved, parse
   );
 }
 
-export async function ingestAgentGraph(args, deps = {}, options = {}) {
+export const ingestAgentGraph = async (args, deps = {}, options = {}) =>
+  startAgentGraphObservation('ingest')(await ingestObservedAgentGraph(args, deps, options));
+
+async function ingestObservedAgentGraph(args, deps = {}, options = {}) {
   const normalized = args && typeof args === "object" && !Array.isArray(args) ? args : {};
   const deadline = createAgentGraphDeadline(normalized.maxDurationMs, { now: deps.now });
   const operationAbort = createOperationAbortSignal(deadline, options.abortSignal);
@@ -501,6 +505,7 @@ async function snapshotForRead(args, deps, budget) {
 }
 
 async function runSnapshotOperation(operation, args, deps, options, perform) {
+  const observe = startAgentGraphObservation(operation);
   const normalized = args && typeof args === "object" && !Array.isArray(args) ? args : {};
   const deadline = createAgentGraphDeadline(normalized.maxDurationMs, { now: deps.now });
   const operationAbort = createOperationAbortSignal(deadline, options.abortSignal);
@@ -509,7 +514,7 @@ async function runSnapshotOperation(operation, args, deps, options, perform) {
     const snapshot = await snapshotForRead(normalized, deps, budget);
     const payload = await perform(snapshot, normalized, budget);
     checkAgentGraphBudget({ ...budget, stage: operation });
-    return success(operation, { graphId: normalized.graphId, ...payload });
+    return observe(success(operation, { graphId: normalized.graphId, ...payload }));
   } catch (caught) {
     let error = caught;
     try {
@@ -517,7 +522,7 @@ async function runSnapshotOperation(operation, args, deps, options, perform) {
     } catch (budgetError) {
       error = budgetError;
     }
-    return failure(operation, error);
+    return observe(failure(operation, error));
   } finally {
     operationAbort.cleanup();
   }
