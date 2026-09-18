@@ -14,6 +14,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { retainAgentGraphWorkspaceIndex } from './agentGraphWorkspaceIndex'
 import { workspaceDocumentKey } from '@/features/workspace-fs/path'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 
 const CODEBASE_GRAPH_DIRECTORY_NAME = 'codebase-graph'
 const CODEBASE_GRAPH_DOCUMENT_PREFIX = 'codebase-graph'
@@ -190,6 +191,7 @@ export async function readAgentGraphWorkspaceProjection(target: string, expected
 export async function reopenAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<void> {
   const graph = await readAgentGraphWorkspaceProjection(target, expected)
   const { closeAgentRunInspection } = await import('@/features/agent-ready/agentRunInspectionStore')
+  useMarkdownExplorerStore.getState().setActivePath(target as Parameters<typeof workspaceDocumentKey>[0])
   closeAgentRunInspection()
   const name = workspaceDocumentKey(target as Parameters<typeof workspaceDocumentKey>[0]), text = JSON.stringify(graph)
   // Bind the retained source through the existing editor owner so a previous

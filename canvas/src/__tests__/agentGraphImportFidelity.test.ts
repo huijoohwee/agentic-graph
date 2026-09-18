@@ -12,6 +12,7 @@ import { workspaceDocumentKey } from '@/features/workspace-fs/path'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { parseWorkspaceJsonGraphDataCached } from '@/hooks/active-graph-data/workspaceStructuredGraph'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { applyCanvasRenderBudget } from '@/lib/graph/canvasRenderBudget'
 import { useStatsSelection } from '@/features/graph-stats/hooks/useStatsSelection'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -57,6 +58,7 @@ export async function testFolderImportPersistsNativeArtifactAndCancellationPrese
 
 export async function testRetainedJsonReopensEvidenceAndRejectsCorruption() {
   const { restore } = initJsdomHarness(), before = useGraphStore.getState()
+  const previousPath = useMarkdownExplorerStore.getState().activePath
   try {
     resetWorkspaceFsForTests(); useGraphStore.getState().resetAll()
     const result = agentGraphResult()
@@ -76,6 +78,7 @@ export async function testRetainedJsonReopensEvidenceAndRejectsCorruption() {
     useGraphStore.getState().setCanvas2dRenderer('storyboard')
     await reopenAgentGraphWorkspaceProjection(path, { graphId: result.graphId, snapshotDigest: result.snapshotDigest })
     assert.equal(useGraphStore.getState().markdownDocumentName, name)
+    assert.equal(useMarkdownExplorerStore.getState().activePath, path)
     assert.equal(useGraphStore.getState().canvas2dRenderer, 'd3')
     const reopened = useGraphStore.getState().graphData!
     assert.ok(isReadOnlyAgentGraphProjection(reopened))
@@ -93,7 +96,7 @@ export async function testRetainedJsonReopensEvidenceAndRejectsCorruption() {
     assert.equal(parseWorkspaceJsonGraphDataCached({ markdownName: 'generic.json', markdownText: JSON.stringify({ metadata: { agentGraphProjection: {} }, nodes: [], edges: [] }) }), null)
     const generic = parseWorkspaceJsonGraphDataCached({ markdownName: 'flow.json', markdownText: JSON.stringify({ nodes: [{ id: 'a', type: 'problem' }, { id: 'b', type: 'solution' }], edges: [{ source: 'a', target: 'b', type: 'solves' }] }) })
     assert.equal(generic?.nodes.length, 2)
-  } finally { useGraphStore.setState(before); restore() }
+  } finally { useMarkdownExplorerStore.getState().setActivePath(previousPath); useGraphStore.setState(before); restore() }
 }
 
 export function testRenderBudgetPrioritizesSelectionWithoutGrowing() {
