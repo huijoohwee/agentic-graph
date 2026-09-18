@@ -40,10 +40,12 @@ async function waitForAsync(predicate) {
 }
 const openRunSource = async (scope = mission) => { const details = scope.locator('details').filter({ has: page.locator('summary').filter({ hasText: /^Run source$/ }) }); if (await details.count() && !await details.getAttribute('open').then(value => value !== null)) await details.locator('summary').first().click() }
 const waitText = async (locator, text) => {
-  if (locator === mission) {
-    await mission.waitFor({ state: 'visible', timeout: 60000 }); await openRunSource()
-  }
-  await locator.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
+  await locator.waitFor({ state: 'visible', timeout: 60000 })
+  const target = locator.getByText(text, { exact: false }).first()
+  await target.waitFor({ state: 'attached', timeout: 30000 })
+  // Imports can remount the card with its Run source disclosure closed.
+  await openRunSource(locator)
+  await target.waitFor({ state: 'visible', timeout: 30000 })
 }
 const waitTopology = async scope => {
   const startedAt = Date.now()
@@ -316,8 +318,11 @@ async function verifyApexActivation(width) {
   await waitText(evidence, 'Runtime unavailable')
   assert.equal(await evidence.getByText('No runs in this authorized snapshot.').count(), 0)
   await page.unroute('**/api/agent-swarm/query'); await refresh.click(); await waitText(evidence, '2 retained matches')
-  await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(true))
-  const latePanel = page.locator('[data-kg-floating-panel-root="true"]'); if (await latePanel.count()) { await latePanel.getByRole('region', { name: 'Props Panel', exact: true }).waitFor(); await latePanel.getByRole('button', { name: 'Close', exact: true }).click() }
+  await page.getByRole('button', { name: 'Create Node', exact: true }).click()
+  const latePanel = page.locator('[data-kg-floating-panel-root="true"]')
+  await latePanel.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
+  await latePanel.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()
+  await latePanel.getByRole('button', { name: 'Close', exact: true }).click()
   await evidence.locator('tr').filter({ hasText: 'candidate-run' }).press('Enter')
   await evidence.locator('#agent-run-view-tree-panel').waitFor()
   await waitText(evidence, '32/34 retained spans')
@@ -369,8 +374,7 @@ async function verifyApexActivation(width) {
   assert.ok(requests.slice(beforeEntryRequests).every(item => ['query', 'trace'].includes(item.operation)), 'Activation may only read observations')
   await editor.getByRole('button', { name: 'Close', exact: true }).click(); await canvas.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor({ state: 'detached' })
-  assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
-  await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(false))
+  assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), false)
   await page.getByRole('combobox', { name: 'Prompt preset', exact: true }).selectOption('agent-observability')
   await dashboard.waitFor()
   await verifyLocalTraceImport('apex-' + width, true)

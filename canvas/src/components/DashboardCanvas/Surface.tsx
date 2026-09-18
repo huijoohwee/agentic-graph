@@ -15,7 +15,6 @@ export default function DashboardSurface({ active = true, preview = false, onOpe
     if (event.dataTransfer.types.includes(DASHBOARD_WIDGET_DRAG_TYPE)) event.preventDefault()
   }} onDrop={event => { const source = event.dataTransfer.getData(DASHBOARD_WIDGET_DRAG_TYPE); if (source) { event.preventDefault(); void addDashboardWidget(source).catch(() => undefined) } }}>
     <DashboardCanvas active headerActions={<div className="mt-2 flex flex-wrap gap-2 text-xs">
-      <button className="rounded border px-2 py-1" onClick={() => { const state = useGraphStore.getState(); state.setFloatingPanelView('propsPanel'); state.setFloatingPanelOpen(true) }}>Props Panel</button>
       {workspace && <><button className="rounded border px-2 py-1" disabled={!inspection} onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches })}>Show Editor Workspace</button>
         <button className="rounded border px-2 py-1" onClick={closeAgentRunInspection}>Close run inspection</button></>}
     </div>}>

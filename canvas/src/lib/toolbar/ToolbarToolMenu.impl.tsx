@@ -1,4 +1,3 @@
-import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ChevronDown } from 'lucide-react'
@@ -130,7 +129,6 @@ export function ToolbarToolMenu({
   requestedFloatingPanelViewSeq,
   onClose,
 }: ToolbarToolMenuProps) {
-  const inspectionWorkspace = useAgentRunWorkspace()
   const { pinned: floatingPanelPinned, togglePinned: toggleFloatingPanelPinned } = usePinnedLs(LS_KEYS.floatingPanelPinned, true)
   const [floatingPanelMinimized, setFloatingPanelMinimized] = React.useState(false)
   const floatingPanelView = useGraphStore(s => (s.floatingPanelView || 'propsPanel') as FloatingPanelView)
@@ -315,7 +313,7 @@ export function ToolbarToolMenu({
   const viewButtons = (
     <>
       {FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS.map(spec => {
-        if (spec.hidden || (inspectionWorkspace && spec.view !== 'propsPanel')) return null
+        if (spec.hidden) return null
         const Icon = spec.icon
         return (
           <IconButton
@@ -333,7 +331,7 @@ export function ToolbarToolMenu({
           </IconButton>
         )
       })}
-      {!inspectionWorkspace && FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS.length > 0 ? (
+      {FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS.length > 0 ? (
         <ToolbarDropdownSelect
           value={overflowValue}
           options={FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS}
@@ -397,8 +395,6 @@ export function ToolbarToolMenu({
       window.removeEventListener(GRAPH_TRAVERSAL_FLOATING_PANEL_EVENT, handleOpenGraphTraversal)
     }
   }, [setFloatingPanelView])
-
-  if (inspectionWorkspace && floatingPanelView !== 'propsPanel') return null
 
   if (floatingPanelMinimized) {
     return (

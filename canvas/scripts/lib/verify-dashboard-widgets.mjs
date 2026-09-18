@@ -14,6 +14,8 @@ export async function verifyFullCanvas(page) {
 export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored) {
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: false }))
   const shell = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
+  // The first native Editor mount loads its module graph on a cold CI server.
+  await shell.waitFor({ state: 'visible', timeout: 60000 })
   await shell.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check()
   const files = shell.getByRole('region', { name: 'Source Files content', exact: true })
   await files.getByRole('button', { name: 'Folder agent-mission', exact: true }).waitFor()
@@ -43,7 +45,13 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(await dashboard.locator('[data-kg-dashboard-canvas]').count(), 1)
   assert.equal(await page.locator('#canvas-dashboard-mission-panel, #canvas-dashboard-graph-panel').count(), 0)
   assert.equal(await dashboard.locator('[data-kg-dashboard-card="agent-tree"]').count(), 1)
-  await dashboard.getByRole('button', { name: 'Props Panel', exact: true }).click()
+  assert.equal(await dashboard.getByRole('button', { name: 'Props Panel', exact: true }).count(), 0)
+  await page.getByRole('button', { name: 'Create Node', exact: true }).click()
+  const floating = page.locator('[data-kg-floating-panel-root="true"]')
+  await floating.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
+  assert.equal(await floating.count(), 1, 'Dashboard reuses the standard FloatingPanel')
+  await floating.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()
+  await floating.locator('[data-kg-floating-panel-view-trigger="propsPanel"]').waitFor()
   const palette = page.getByRole('complementary', { name: 'Widget palette', exact: true })
   await palette.getByRole('listitem', { name: 'Widget mission:tree', exact: true }).waitFor()
   assert.equal(await palette.getByRole('listitem', { name: /^Widget mission:/ }).count(), 1)
