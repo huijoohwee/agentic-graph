@@ -138,10 +138,11 @@ function DashboardTableRows(props: {
           className={[
             'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--kg-border)] py-2 last:border-b-0',
             rowMovable ? 'cursor-grab select-none active:cursor-grabbing' : '',
-            selected ? 'rounded border-b-transparent bg-blue-50/80 px-2 ring-1 ring-blue-300' : '',
+            selected ? 'rounded border-b-transparent bg-blue-50/80 px-2' : '',
             dragging ? 'opacity-45' : '',
           ].join(' ')}
           data-kg-dashboard-table-row={row.id}
+          data-kg-dashboard-row-selected={selected ? 'true' : undefined}
           data-kg-dashboard-table-row-draggable={rowMovable ? '1' : undefined}
           draggable={rowMovable}
           aria-grabbed={rowMovable ? dragging : undefined}

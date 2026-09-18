@@ -7,9 +7,12 @@
 .kg-dashboard-widget[data-kg-widget-selected="true"],
 .kg-dashboard-widget:focus-visible,
 .kg-dashboard-widget:has(> .kg-dashboard-widget-face > :focus-visible),
+.kg-dashboard-widget-face :focus-visible,
 [data-kg-dashboard-card]:focus,
 [data-kg-dashboard-metric]:focus,
-[data-kg-dashboard-chart-hit]:focus {
+[data-kg-dashboard-chart-hit]:focus,
+[data-kg-dashboard-row-selected="true"] {
+  /* Keep the full line inside scroll clips without changing card or row geometry. */
   outline: 1px solid var(--kg-primary, #2563eb);
   outline-offset: -1px;
 }
