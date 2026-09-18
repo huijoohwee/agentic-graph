@@ -7,6 +7,10 @@ export function testDashboardWidgetSourceConfiguration() {
   } }))
   const card = { id: 'a', title: 'Original', subtitle: 'Source', kind: 'bar' as const, tone: 'blue' as const, series: [], rows: [] }
   assert.deepEqual(configureDashboardCards(source, [card, { ...card, id: 'b' }]).map(item => [item.id, item.title, item.kind]), [['b', 'Edited', 'table']])
+  source.widgets['graph:custom'] = { source: 'graph:a', title: 'My chart' }
+  assert.equal(configureDashboardCards(source, [card]).at(-1)?.title, 'My chart', 'new instances reuse the existing data source')
+  delete source.widgets['graph:custom']
+  assert.equal(configureDashboardCards(source, [card]).length, 0, 'removing an instance leaves its source untouched')
   assert.equal(card.title, 'Original', 'display configuration must not modify the data source')
   source.widgets['graph:a'] = { visible: true, order: -2 }
   assert.deepEqual(configureDashboardCards(source, [card, { ...card, id: 'b' }]).map(item => item.id), ['a', 'b'])

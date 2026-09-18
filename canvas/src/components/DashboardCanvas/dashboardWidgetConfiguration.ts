@@ -6,7 +6,7 @@ import type { DashboardCard, DashboardMetric } from './dashboardModel'
 
 /** Authored display configuration only. Run evidence never enters this source file. */
 export const DASHBOARD_WIDGETS_PATH = '/notes/dashboard.widgets.json'
-export type DashboardWidgetSettings = { visible?: boolean; title?: string; subtitle?: string; footnote?: string; kind?: DashboardCard['kind']; tone?: DashboardCard['tone']; order?: number }
+export type DashboardWidgetSettings = { source?: string; visible?: boolean; title?: string; subtitle?: string; footnote?: string; kind?: DashboardCard['kind']; tone?: DashboardCard['tone']; order?: number }
 export type DashboardWidgetDocument = { version: 1; widgets: Record<string, DashboardWidgetSettings> }
 const empty = (): DashboardWidgetDocument => ({ version: 1, widgets: {} })
 const object = (input: unknown): Record<string, unknown> => {
@@ -24,7 +24,8 @@ export function parseDashboardWidgets(text: string | null): DashboardWidgetDocum
     if (!/^(graph|mission):[a-zA-Z0-9_-]{1,80}$/.test(id)) throw Error('Invalid Dashboard widget identity.')
     const item = object(raw), next: DashboardWidgetSettings = {}
     for (const [key, value] of Object.entries(item).map(([key, value]) => [key, unwrapKeyTypeValue(value, key)] as const)) {
-      if (key === 'visible' && typeof value === 'boolean') next.visible = value
+      if (key === 'source' && typeof value === 'string' && /^graph:[a-zA-Z0-9_-]{1,80}$/.test(value)) next.source = value
+      else if (key === 'visible' && typeof value === 'boolean') next.visible = value
       else if (['title', 'subtitle', 'footnote'].includes(key) && typeof value === 'string' && value.length <= 256) Object.assign(next, { [key]: value })
       else if (key === 'kind' && ['bar', 'line', 'area', 'table'].includes(String(value))) next.kind = value as DashboardCard['kind']
       else if (key === 'tone' && ['blue', 'green', 'amber', 'rose', 'slate'].includes(String(value))) next.tone = value as DashboardCard['tone']
@@ -57,10 +58,10 @@ export function useDashboardWidgets() {
 export function updateDashboardWidget(id: string, update: DashboardWidgetSettings): Promise<void> {
   return updateDashboardWidgets({ [id]: update })
 }
-export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSettings>): Promise<void> {
+export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSettings | null>): Promise<void> {
   const operation = pending.then(async () => {
     const fs = await getWorkspaceFs(), before = await fs.readFileText(DASHBOARD_WIDGETS_PATH), document = parseDashboardWidgets(before)
-    for (const [id, update] of Object.entries(updates)) document.widgets[id] = { ...document.widgets[id], ...update }
+    for (const [id, update] of Object.entries(updates)) { if (update === null) delete document.widgets[id]; else document.widgets[id] = { ...document.widgets[id], ...update } }
     const text = JSON.stringify(parseDashboardWidgets(JSON.stringify(document)), null, 2) + '\n'
     // Read immediately before write; never replace concurrent Editor edits with a stale form.
     if (await fs.readFileText(DASHBOARD_WIDGETS_PATH) !== before) throw Error('Dashboard configuration changed. Retry this edit.')
@@ -75,13 +76,21 @@ export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSe
 }
 export const widgetSettings = (document: DashboardWidgetDocument, id: string) => document.widgets[id] ?? {}
 export function configureDashboardCards(document: DashboardWidgetDocument, cards: DashboardCard[]): DashboardCard[] {
-  return cards.filter(card => widgetSettings(document, `graph:${card.id}`).visible !== false)
-    .map(card => ({ ...card, ...Object.fromEntries(Object.entries(widgetSettings(document, `graph:${card.id}`)).filter(([key]) => !['visible', 'order'].includes(key))) }))
+  const instances = [...cards, ...Object.entries(document.widgets).flatMap(([id, settings]) => {
+    const source = cards.find(card => `graph:${card.id}` === settings.source)
+    return source ? [{ ...source, id: id.slice('graph:'.length) }] : []
+  })]
+  return instances.filter(card => widgetSettings(document, `graph:${card.id}`).visible !== false)
+    .map(card => ({ ...card, ...Object.fromEntries(Object.entries(widgetSettings(document, `graph:${card.id}`)).filter(([key]) => !['visible', 'order', 'source'].includes(key))) }))
     .map(card => ({ ...card, rows: card.rows.length ? card.rows : card.series.map((point, index) => ({ id: `point-${index}`, label: point.label, value: String(point.value), detail: point.detail })), series: card.series.length ? card.series : card.rows.flatMap(row => Number.isFinite(Number(row.value)) ? [{ label: row.label, value: Number(row.value), detail: row.detail }] : []) }))
     .sort((a, b) => (widgetSettings(document, `graph:${a.id}`).order ?? 0) - (widgetSettings(document, `graph:${b.id}`).order ?? 0))
 }
 export function configureDashboardMetrics(document: DashboardWidgetDocument, metrics: DashboardMetric[]): DashboardMetric[] {
-  return metrics.filter(metric => widgetSettings(document, `graph:${metric.id}`).visible !== false).map(metric => {
+  const instances = [...metrics, ...Object.entries(document.widgets).flatMap(([id, settings]) => {
+    const source = metrics.find(metric => `graph:${metric.id}` === settings.source)
+    return source ? [{ ...source, id: id.slice('graph:'.length) }] : []
+  })]
+  return instances.filter(metric => widgetSettings(document, `graph:${metric.id}`).visible !== false).map(metric => {
     const config = widgetSettings(document, `graph:${metric.id}`)
     return { ...metric, label: config.title ?? metric.label, detail: config.subtitle ?? metric.detail, tone: config.tone ?? metric.tone }
   }).sort((a, b) => (widgetSettings(document, `graph:${a.id}`).order ?? 0) - (widgetSettings(document, `graph:${b.id}`).order ?? 0))
