@@ -52,7 +52,7 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     assert.equal(await tree.getByRole('treeitem', { name: /workspace-check-1/ }).getAttribute('aria-selected'), 'true', 'Shared Dashboard rows select observed spans')
     await leader.dblclick()
     assert.equal(await leaders.locator('input, textarea, [contenteditable="true"]').count(), 0, 'Observed span labels are read-only')
-    assert.equal(await dashboard.locator('[data-kg-dashboard-metric="nodes"]').innerText(), 'Nodes\n1\n1 types')
+    assert.equal((await dashboard.locator('[data-kg-dashboard-metric="nodes"]').innerText()).replace(/\s+/g, ' '), 'Nodes 1 1 types')
     assert.equal(await dashboard.locator('[data-kg-dashboard-card="numeric-summary"]').getByText('Visual StrokeWidth', { exact: true }).count(), 0, 'Renderer styling is not observation data')
     const metric = mission.getByRole('group', { name: 'Span metric', exact: true })
     const inspectHeight = (await mission.getByRole('combobox', { name: 'Inspect run details', exact: true }).boundingBox()).height
