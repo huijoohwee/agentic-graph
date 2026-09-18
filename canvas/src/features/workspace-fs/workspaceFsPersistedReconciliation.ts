@@ -1,4 +1,4 @@
-import { RETIRED_XR_WORKSPACE_SEED_PATH, preserveRetiredXrSeed } from './workspaceXrSeedMigration'
+import { RETIRED_XR_WORKSPACE_SEED_PATHS, preserveRetiredXrSeed } from './workspaceXrSeedMigration'
 import type { PersistedCollectionMap } from '@/lib/storage/persistedCollectionStore'
 import { isAgenticGraphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
@@ -358,19 +358,22 @@ const reconcileWorkspaceDocsMirrorEntries = async (
   // Preserve bytes before retiring the superseded canonical row, and only after
   // a complete authoritative replacement inventory has been admitted.
   if (canonicalWorkspaceSeedInventoryPresent && desiredEntriesByPath.get(XR_PHYSICS_WORKSPACE_SEED_PATH)?.kind === 'file') {
-    const retired = existingRows.find(row => row.get('path') === RETIRED_XR_WORKSPACE_SEED_PATH && row.get('kind') === 'file')
-    if (retired) {
-      const entries = new Map(existingRows.map(row => [String(row.get('path')), row.toJSON() as WorkspaceEntry]))
-      const preserved = preserveRetiredXrSeed(String(retired.get('text') ?? ''), entries)
-      if (preserved) {
-        for (const entry of expandWorkspaceSeedFileEntries(preserved.path, preserved.text ?? '', preserved.updatedAtMs)) {
-          if (entry.kind === 'folder' && entries.has(entry.path)) continue
-          await collections.entries.incrementalUpsert(entry)
+    const entries = new Map(existingRows.map(row => [String(row.get('path')), row.toJSON() as WorkspaceEntry]))
+    for (const retiredPath of RETIRED_XR_WORKSPACE_SEED_PATHS) {
+      const retired = existingRows.find(row => row.get('path') === retiredPath && row.get('kind') === 'file')
+      if (retired) {
+        const preserved = preserveRetiredXrSeed(String(retired.get('text') ?? ''), entries)
+        if (preserved) {
+          for (const entry of expandWorkspaceSeedFileEntries(preserved.path, preserved.text ?? '', preserved.updatedAtMs)) {
+            if (entry.kind === 'folder' && entries.has(entry.path)) continue
+            await collections.entries.incrementalUpsert(entry)
+            entries.set(entry.path, entry)
+          }
         }
+        await retired.remove()
+        clearWorkspaceEntrySource(retiredPath)
+        changed = true
       }
-      await retired.remove()
-      clearWorkspaceEntrySource(RETIRED_XR_WORKSPACE_SEED_PATH)
-      changed = true
     }
   }
   for (let i = 0; i < existingRows.length; i += 1) {

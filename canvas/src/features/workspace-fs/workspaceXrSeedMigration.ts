@@ -2,8 +2,11 @@ import { hashStringToHex } from '@/lib/hash/stringHash'
 import { normalizeWorkspacePath } from './path'
 import type { WorkspaceEntry, WorkspacePath } from './types'
 
-/** Only the retired canonical location is migrated; imported/user paths remain owned by the user. */
-export const RETIRED_XR_WORKSPACE_SEED_PATH = '/docs/workspace-seeds/agentic-graph-physics-playground-demo.md'
+/** Only the retired seed locations are migrated; imported/user paths remain owned by the user. */
+export const RETIRED_XR_WORKSPACE_SEED_PATHS = Object.freeze([
+  '/docs/workspace-seeds/agentic-graph-physics-playground-demo.md',
+  '/docs/workspace-seeds/knowgrph-physics-playground-demo.md',
+])
 
 export function preserveRetiredXrSeed(
   text: string,

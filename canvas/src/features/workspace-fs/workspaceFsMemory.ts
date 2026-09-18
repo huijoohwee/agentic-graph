@@ -1,4 +1,4 @@
-import { RETIRED_XR_WORKSPACE_SEED_PATH, preserveRetiredXrSeed } from './workspaceXrSeedMigration'
+import { RETIRED_XR_WORKSPACE_SEED_PATHS, preserveRetiredXrSeed } from './workspaceXrSeedMigration'
 import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from './types'
 import { WORKSPACE_ROOT_PATH, joinWorkspacePath, normalizeWorkspacePath, workspaceBasename } from './path'
 import {
@@ -218,16 +218,18 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
     const activeValidationSeedMaterialized = !CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE
       || entriesByPath.get(TEST_VALIDATION_WORKSPACE_SEED_PATH)?.kind === 'file'
     if (canonicalSeedInventoryMaterialized && activeValidationSeedMaterialized) {
-      const retired = entriesByPath.get(RETIRED_XR_WORKSPACE_SEED_PATH)
-      if (retired?.kind === 'file') {
-        const preserved = preserveRetiredXrSeed(retired.text ?? '', entriesByPath)
-        if (preserved) for (const entry of expandWorkspaceSeedFileEntries(preserved.path, preserved.text ?? '', preserved.updatedAtMs)) {
-          if (entry.kind === 'folder' && entriesByPath.has(entry.path)) continue
-          entriesByPath.set(entry.path, entry)
+      for (const retiredPath of RETIRED_XR_WORKSPACE_SEED_PATHS) {
+        const retired = entriesByPath.get(retiredPath)
+        if (retired?.kind === 'file') {
+          const preserved = preserveRetiredXrSeed(retired.text ?? '', entriesByPath)
+          if (preserved) for (const entry of expandWorkspaceSeedFileEntries(preserved.path, preserved.text ?? '', preserved.updatedAtMs)) {
+            if (entry.kind === 'folder' && entriesByPath.has(entry.path)) continue
+            entriesByPath.set(entry.path, entry)
+          }
+          entriesByPath.delete(retiredPath)
+          clearWorkspaceEntrySource(retiredPath)
+          changed = true
         }
-        entriesByPath.delete(RETIRED_XR_WORKSPACE_SEED_PATH)
-        clearWorkspaceEntrySource(RETIRED_XR_WORKSPACE_SEED_PATH)
-        changed = true
       }
       if (removeNoncanonicalXrPhysicsFiles()) changed = true
       if (clearStaleXrPhysicsSourcesIfCanonicalMaterialized()) changed = true
