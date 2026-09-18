@@ -10,7 +10,7 @@ const output = resolve(process.env.AG_MISSION_ARTIFACT_DIR || '../data/outputs/a
 const browser = await chromium.launch({ headless: true })
 let context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' })
 const errors = [], requests = [], streamed = [], pending = new Set()
-let page, mission, selected, peak = 0
+let page, mission, selected, returnView, peak = 0
 async function openPage() {
 page = await context.newPage()
 page.setDefaultTimeout(15000)
@@ -25,12 +25,10 @@ page.on('response', response => {
     streamed.push(response.url().split('/').at(-1))
 })
 for (const event of ['requestfinished', 'requestfailed']) page.on(event, request => pending.delete(request))
-mission = page.getByRole('region', { name: 'Agentic OS mission control', exact: true })
+mission = page.getByRole('region', { name: 'Agent Mission', exact: true })
 selected = page.getByRole('region', { name: 'Selected run evidence' })
 }
 await openPage()
-// Playwright's predicate poll treats a Promise as truthy before its result resolves.
-// Evaluate asynchronous module reads to completion before polling their boolean result.
 async function waitForAsync(predicate) {
   const deadline = Date.now() + 60000
   while (!await page.evaluate(predicate)) {
@@ -40,8 +38,6 @@ async function waitForAsync(predicate) {
 }
 const waitText = async (locator, text) => {
   if (locator === mission) {
-    // Dashboard mounts before its on-demand mission module. Admit that cold
-    // module separately from the data/assertion deadline, as for the editor.
     await mission.waitFor({ state: 'visible', timeout: 60000 })
   }
   await locator.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
@@ -52,8 +48,6 @@ const waitTopology = async scope => {
   if (await detail.count()) await detail.selectOption('all')
   const panel = scope.locator('#agent-run-view-topology-panel')
   await panel.waitFor({ state: 'visible' })
-  // The panel commits before its on-demand renderer. Cold module loading has the
-  // same bounded budget as the editor; accessibility remains a separate assertion.
   const loading = panel.getByText('Loading topology…', { exact: true })
   const cold = await loading.count() > 0
   await loading.waitFor({ state: 'hidden', timeout: 60000 })
@@ -92,6 +86,15 @@ function assertAuthored(actual, expected, message) {
   walk(JSON.parse(actual), JSON.parse(expected), 'authored')
   throw Error(message + ': ' + JSON.stringify(changes))
 }
+async function openDashboard() {
+  returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] })
+  await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
+  await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click()
+  await waitText(mission, '2 retained matches')
+  assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
+  assert.ok(await mission.locator('[data-kg-dashboard-card="agent-runs"] table').count() === 1)
+  assert.ok(await mission.locator('[data-kg-dashboard-metric]').count() > 0)
+}
 async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
@@ -102,11 +105,11 @@ async function verifyWorkspace(label, revoke = false) {
   }
   await refreshMission() // Each cold workspace phase receives a fresh authorized minute.
   const beforeWorkspace = await authoredSnapshot()
-  const previousView = await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] })
+  const previousView = returnView
   await selected.getByPlaceholder('Search spans by name, kind or status').fill('draft')
   await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
   const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
-  const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
+  const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
   await editor.waitFor({ state: 'visible', timeout: 60000 })
   await editor.getByRole('region', { name: 'Markdown Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible', timeout: 60000 })
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
@@ -121,15 +124,14 @@ async function verifyWorkspace(label, revoke = false) {
   await waitTopology(canvas)
   await canvas.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await waitText(canvas, 'Selected span: draft-2')
-  const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
+  const evidence = canvas.getByRole('region', { name: 'Agent Mission', exact: true })
   const countBeforeRefresh = requests.length
   await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).click()
   await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).and(page.locator(':enabled')).waitFor()
   assert.ok(requests.length > countBeforeRefresh, 'Canvas refresh must use the authenticated native transport')
   for (const [key, name] of [['table', 'Span table'], ['tree', 'Span tree'], ['source', 'Source links'],
     ['allocation', 'Allocation'], ['evidence', 'Evaluation'], ['comparison', 'Comparison'], ['topology', 'Topology']]) {
-    await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
-    await page.getByRole('button', { name, exact: true }).click()
+    await evidence.getByRole('tab', { name, exact: true }).click()
     await evidence.locator('#agent-run-view-' + key + '-panel').waitFor({ state: 'visible' })
     await waitText(evidence, 'Selected span: draft-2')
     if (key === 'table') assert.ok(await evidence.locator('tr').filter({ hasText: 'draft-2' }).isVisible())
@@ -218,8 +220,8 @@ async function verifyLocalTraceImport(label, fromApex = false) {
     await (await chooser).setFiles(localFile)
   }
   const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
-  const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
-  const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
+  const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
+  const evidence = canvas.getByRole('region', { name: 'Agent Mission', exact: true })
   if (fromApex) {
     await canvas.waitFor({ timeout: 60000 })
     assert.ok((await canvas.boundingBox()).width > page.viewportSize().width * .9, 'Apex import must open a full-width Canvas')
@@ -236,8 +238,7 @@ async function verifyLocalTraceImport(label, fromApex = false) {
   assertAuthored(await authoredSnapshot(), before, 'Modifier selection must remain inside inspection')
   await evidence.getByRole('tab', { name: 'Evaluation', exact: true }).click()
   assert.equal(await evidence.getByRole('button', { name: 'Evaluate selected subject', exact: true }).isDisabled(), true)
-  await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
-  await page.getByRole('button', { name: '2D Renderer: D3 Graph', exact: true }).click(); await waitTopology(evidence)
+  await evidence.getByRole('tab', { name: 'Topology', exact: true }).click(); await waitTopology(evidence)
   await page.screenshot({ path: resolve(output, label + '-imported-d3.png') })
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
   await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: checks')))
@@ -277,7 +278,6 @@ async function verifyApexActivation(width) {
   await page.screenshot({ path: resolve(output, `apex-${width}-catalog-overlay.png`) })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await waitForAsync(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
-  // Source bootstrap completes before the deferred active-file projection.
   await waitForAsync(async () => {
     const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
     const path = (await import('/src/features/markdown-explorer/store.ts')).useMarkdownExplorerStore.getState().activePath
@@ -293,8 +293,8 @@ async function verifyApexActivation(width) {
     })
   })
   await activate.click()
-  const canvas = page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true })
-  const evidence = canvas.getByRole('region', { name: 'Agent run Canvas evidence', exact: true })
+  const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
+  const evidence = canvas.getByRole('region', { name: 'Agent Mission', exact: true })
   await canvas.waitFor({ timeout: 60000 }); await waitText(evidence, '2 retained matches')
   assertAuthored(await authoredSnapshot(), before, 'Apex discovery must preserve authored work')
   const refresh = evidence.getByRole('button', { name: 'Refresh runs', exact: true })
@@ -309,7 +309,6 @@ async function verifyApexActivation(width) {
   await waitText(evidence, 'Runtime unavailable')
   assert.equal(await evidence.getByText('No runs in this authorized snapshot.').count(), 0)
   await page.unroute('**/api/agent-swarm/query'); await refresh.click(); await waitText(evidence, '2 retained matches')
-  // A late authored panel request must remain saved but cannot intercept inspection.
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(true))
   assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0)
   await evidence.locator('tr').filter({ hasText: 'candidate-run' }).press('Enter')
@@ -367,7 +366,6 @@ async function verifyApexActivation(width) {
   await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await editor.waitFor({ state: 'detached' })
   assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
-  // Start a separate import scenario after verifying restoration. Launch intentionally closes the tool menu.
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(false))
   await page.getByRole('combobox', { name: 'Prompt preset', exact: true }).selectOption('agent-observability')
   await dashboard.waitFor()
@@ -403,7 +401,7 @@ try {
     await floating.waitFor({ state: 'detached' })
   }
   assert.equal(requests.length, 0, 'Dashboard must not load or poll before opening')
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
+  await openDashboard()
   await waitText(mission, '2 retained matches')
   assert.equal(await mission.getByText('private-run', { exact: true }).count(), 0)
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
@@ -412,14 +410,13 @@ try {
   assert.equal(await floating.count(), 0, 'Inspection must not open another panel')
   phaseObservation.checkpoint('Mission browser: authorized discovery and keyboard selection passed')
   await waitText(selected, '32/34 retained spans')
-  await selected.getByText('Source ownership', { exact: true }).click()
+  await selected.getByRole('tab', { name: 'Source links', exact: true }).click()
   assert.ok((await selected.locator('a').first().getAttribute('href')).includes(process.env.AG_MISSION_EXPECTED_HEAD))
-  await waitText(selected, 'Project allocation')
-  // Hierarchy, timing and topology share one span selection owner.
+  await selected.getByRole('tab', { name: 'Allocation', exact: true }).click(); await waitText(selected, 'Project allocation'); await selected.getByRole('tab', { name: 'Span tree', exact: true }).click()
   const actualDraft = selected.getByRole('treeitem', { name: /draft · tool · completed/ })
   await actualDraft.click()
   phaseObservation.checkpoint('Mission browser: span selected')
-  await waitText(selected, 'Span draft-2')
+  await waitText(selected, 'Selected span: draft-2')
   const search = selected.getByPlaceholder('Search spans by name, kind or status')
   await search.fill('draft-2')
   assert.equal(await selected.getByRole('tree', { name: 'Span hierarchy' }).getByRole('treeitem').count(), 2, 'Search retains the matching span and its known ancestor')
@@ -446,10 +443,8 @@ try {
   })
   await page.mouse.move(point.x, point.y); await page.mouse.down()
   await page.mouse.move(point.x + 20, point.y + 20); await page.mouse.up()
-  // Prove the next phase recovers through fresh authorization and explicit selection.
-  // A list refresh alone cannot restore a selection correctly cleared by expiry.
   await page.clock.fastForward(61000)
-  await waitText(mission, 'Snapshot expired')
+  await mission.waitFor({ state: 'detached' }); await openDashboard()
   await page.clock.setSystemTime(new Date())
   await choose('baseline-run')
   await waitTopology(selected)
@@ -503,16 +498,15 @@ try {
   await context.setOffline(false)
   await mission.getByRole('checkbox', { name: /Live/ }).uncheck()
   await switchPrincipal('other'); await mission.getByRole('button', { name: 'Refresh runs' }).click()
-  await waitText(mission, '1 retained matches'); assert.equal(await selected.count(), 0)
+  await mission.waitFor({ state: 'detached' }); await page.getByRole('button', { name: /^Canvas View Mode:/ }).click(); await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click(); await waitText(mission, '1 retained matches'); assert.equal(await selected.count(), 0)
   assert.equal(await mission.getByText('baseline-run', { exact: true }).count(), 0)
   await choose('private-run')
   await switchPrincipal('denied'); await mission.getByRole('button', { name: 'Refresh runs' }).click()
-  await waitText(mission, 'principal_expired'); assert.equal(await selected.count(), 0)
-  assert.equal(await mission.locator('tbody tr').count(), 0)
-  await switchPrincipal('owner'); await mission.getByRole('button', { name: 'Refresh runs' }).click()
+  await mission.waitFor({ state: 'detached' }); assert.equal(await selected.count(), 0)
+  await switchPrincipal('owner'); await openDashboard()
   await waitText(mission, '2 retained matches'); await choose('baseline-run')
   await page.clock.fastForward(61000)
-  await waitText(mission, 'Snapshot expired'); assert.equal(await selected.count(), 0)
+  await mission.waitFor({ state: 'detached' }); await openDashboard(); assert.equal(await selected.count(), 0)
   assert.equal(await mission.locator('tbody tr').count(), 0)
   assert.equal(peak, 1, 'Only one observation request may be in flight')
   assert.deepEqual(errors, [])
@@ -521,18 +515,16 @@ try {
   await page.clock.setSystemTime(new Date())
   await mission.getByRole('button', { name: 'Refresh runs' }).click(); await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await verifyWorkspace('mobile', true)
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent('kg:mainPanelOpen', { detail: { tab: 'dashboard' } })))
+  await openDashboard()
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
   await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'visible' })
   await context.setOffline(true); await page.clock.fastForward(61000)
   await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'detached' })
-  await page.getByRole('region', { name: 'Agent run Canvas inspection', exact: true }).waitFor({ state: 'detached' })
+  await page.getByRole('region', { name: 'Dashboard', exact: true }).waitFor({ state: 'detached' })
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await context.setOffline(false)
   phaseObservation.checkpoint('Mission browser: mobile offline workspace expiry passed')
-  // A genuinely fresh desktop must not inherit mobile fake timers, persisted views
-  // or graphics contexts. Expiry stays in the clock-controlled mobile lifecycle.
   await context.close()
   context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
   await openPage()
@@ -544,11 +536,8 @@ try {
     await floating.waitFor({ state: 'visible' }); await floating.getByRole('button', { name: 'Close', exact: true }).click()
     await floating.waitFor({ state: 'detached' })
   }
-  // Use the rendered desktop entry: readiness can precede a responsive toolbar remount.
   await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click()
-  // This is an in-page tab switch. A background preview iframe may navigate;
-  // wait for the mission's visible data below rather than that unrelated load.
-  await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true })
+  returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] }); await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true })
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await page.locator('#agent-run-view-topology-tab').click()
   await waitTopology(selected)
@@ -589,7 +578,7 @@ try {
         visibility: getComputedStyle(canvas).visibility, hidden: Boolean(canvas.closest('[aria-hidden="true"], [inert]')),
       })),
     })),
-    text: document.querySelector('[aria-label="Agentic OS mission control"]')?.textContent.slice(0, 4000),
+    text: document.querySelector('[aria-label="Agent Mission"]')?.textContent.slice(0, 4000),
     authoredChanges: window.__AG_ACTIVATION_CHANGES__,
   })).catch(() => 'Document unavailable'))
   console.error('Mission transport state:', JSON.stringify({ errors, requests, streamed, pending: pending.size }))

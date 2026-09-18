@@ -20,7 +20,7 @@ const FlowCanvas = React.lazy(() => import('@/components/FlowCanvas').then(modul
     return <module.default {...props} />
   },
 })))
-const AgenticOsMissionControl = React.lazy(() => import('@/features/agent-ready/AgenticOsMissionControl'))
+const DashboardSurface = React.lazy(() => import('@/components/DashboardCanvas/Surface'))
 const preserveWorkspace = () => undefined
 
 export function LiveCanvasHeroPresetStage(props: {
@@ -71,7 +71,7 @@ export function LiveCanvasHeroPresetStage(props: {
         data-kg-live-canvas-hero-preset={selection?.id}
       >
         {observation ? <React.Suspense fallback={<p role="status">Loading observability…</p>}>
-          <AgenticOsMissionControl preview onOpenWorkspace={props.onEnter} />
+          <DashboardSurface preview onOpenWorkspace={props.onEnter} />
         </React.Suspense> : backgroundUrl ? (
           <iframe src={backgroundUrl} title={embedUrl ? `Interactive canvas embed for ${props.source.sourcePath}` : 'Physics Playground demo'}
             className="absolute inset-0 h-full w-full border-0 bg-transparent"

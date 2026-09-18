@@ -11,14 +11,13 @@ import { useAgentRunInspection, useAgentRunWorkspace, closeAgentRunInspection } 
 
 import { jsonToMarkdownPreferTable } from '@/features/markdown/jsonToMarkdown'
 
-const MissionControl = React.lazy(() => import('./AgenticOsMissionControl'))
 const noop = () => {}
 const cell = (value: unknown) => String(value ?? 'Unknown').replace(/&/g, '&amp;')
   .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[\\`*_{}[\]()|]/g, char => `\\${char}`).replace(/[\r\n]/g, ' ')
 const button = `rounded border px-2 py-1 text-xs ${UI_THEME_TOKENS.button.neutralMuted}`
 
 /** Presentation adapter only: existing workspace panes and Canvas own all rendering. */
-export default function AgentRunWorkspaceInspection({ surface }: { surface: 'editor' | 'canvas' }) {
+export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' }) {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const themeMode = useGraphStore(s => s.resolvedThemeMode || 'light')
   const [layout, setLayout] = React.useState<MarkdownWorkspaceLayoutMode>('editor')
@@ -49,17 +48,17 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
   }, [inspection])
   if (!workspace) return null
   const trace = inspection?.trace
-  return <section aria-label={`Agent run ${surface === 'editor' ? 'Editor Workspace' : 'Canvas'} inspection`}
-    className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden ${surface === 'canvas' ? 'kg-workspace-data-view-root' : ''} ${UI_THEME_TOKENS.panel.bg}`}>
+  return <section aria-label="Agent run Editor Workspace inspection"
+    className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden ${UI_THEME_TOKENS.panel.bg}`}>
     <header className="flex shrink-0 flex-wrap items-center gap-2 border-b p-2 text-xs" style={{ overflowWrap: 'anywhere' }}>
       <strong>{trace ? `Run ${trace.runId}` : 'Agent observability'}</strong>
       {trace && inspection && <span>Read-only · {trace.spans.length}/{trace.total} spans · expires {new Date(inspection.expiresAt).toLocaleTimeString()}</span>}
       <button className={button} onClick={closeAgentRunInspection}>Close run inspection</button>
       <button className={button} disabled={!trace} onClick={() => useGraphStore.getState().setWorkspaceViewState({
-        mode: surface === 'editor' ? 'canvas' : 'editor', paneOpen: surface !== 'editor' && !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches,
-      })}>{surface === 'editor' ? 'Show Canvas' : 'Show Editor Workspace'}</button>
+        mode: 'canvas', paneOpen: false,
+      })}>Show Canvas</button>
     </header>
-    {surface === 'editor' && trace ? <div className="flex min-h-0 min-w-0 flex-1">
+    {trace ? <div className="flex min-h-0 min-w-0 flex-1">
       <MarkdownWorkspaceMain themeMode={themeMode} uiPanelTextFontClass="font-sans" uiPanelMonospaceTextClass="font-mono text-xs"
         explorerOpen={false} setExplorerOpen={noop} layoutMode={layout} setLayoutMode={setLayout}
         markdownWordWrap={wrap} setMarkdownWordWrap={setWrap} markdownTextHighlight={highlight} setMarkdownTextHighlight={setHighlight}
@@ -68,8 +67,6 @@ export default function AgentRunWorkspaceInspection({ surface }: { surface: 'edi
         highlightedLineRange={null} revealLineInEditor={noop} showInViewer={noop} showInPresentation={noop} showInGallery={noop}
         editorUri={`inmemory://agent-run/${encodeURIComponent(trace.runId)}/${trace.subjectDigest || trace.observedAt}.md`}
         editorLanguage="markdown" editorRef={editorRef} />
-    </div> : <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-      <React.Suspense fallback={<p>Loading run evidence…</p>}><MissionControl workspace /></React.Suspense>
-    </div>}
+    </div> : <p className="p-3">Select a run in Dashboard to inspect its source.</p>}
   </section>
 }

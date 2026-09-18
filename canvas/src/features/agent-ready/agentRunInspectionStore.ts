@@ -108,6 +108,7 @@ export function filterAgentRunInspection(search: string): void {
 /** Shared explicit preset/Chat entry; malformed or unrelated options never execute. */
 export function activateAgentRunPrompt(prompt: string): void {
   const { optionId } = parseCanvasViewInvocation(prompt)
+  if (optionId === 'renderer:dashboard') { activateAgentRunWorkspace('tree'); return }
   if (!optionId.startsWith('agent-run:')) throw Error('Choose an agent observability view.')
   activateAgentRunWorkspace(optionId.slice('agent-run:'.length) as AgentRunView)
 }

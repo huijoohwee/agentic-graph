@@ -34,7 +34,7 @@ const CANVAS_2D_RENDERER_SPECS: Record<Canvas2dRendererId, Canvas2dRendererSpec>
     surfaceId: 'dashboard',
     registryLabel: 'Dashboard',
     menuLabel: 'Dash',
-    menuDescription: 'Graph dashboard',
+    menuDescription: 'Agent Mission and graph statistics',
     menuBadges: ['D3', 'Grid'],
     supportsStoryboardFlowFrontmatterSyntax: false,
   },

@@ -2,6 +2,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import DashboardCanvas from '@/components/DashboardCanvas'
+import { DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -75,15 +76,17 @@ const stubCardRect = (element: Element) => {
 
 const setEditableValue = (
   dom: ReturnType<typeof initJsdomHarness>['dom'],
-  editable: HTMLInputElement | HTMLTextAreaElement,
+  editable: HTMLElement,
   value: string,
 ) => {
+  if (editable.getAttribute('contenteditable') === 'true') { editable.textContent = value; Simulate.input(editable); return }
+  const control = editable as HTMLInputElement | HTMLTextAreaElement
   const prototype = editable instanceof dom.window.HTMLTextAreaElement
     ? dom.window.HTMLTextAreaElement.prototype
     : dom.window.HTMLInputElement.prototype
   const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
   if (valueSetter) valueSetter.call(editable, value)
-  else editable.value = value
+  else control.value = value
 }
 
 export async function testDashboardCanvasCardDragReordersWithinSection() {
@@ -256,13 +259,14 @@ export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEdito
       await waitFrame()
     })
 
-    const titleEditor = container.querySelector('input[aria-label="Dashboard card title for node-types"]')
-    if (!(titleEditor instanceof dom.window.HTMLInputElement)) {
-      throw new Error(`expected Dashboard card title to open the shared title editor, html=${container.innerHTML}`)
+    const titleEditor = container.querySelector('[role="textbox"][aria-label="Dashboard card title for node-types"]')
+    if (!(titleEditor instanceof dom.window.HTMLElement)) {
+      throw new Error(`expected Dashboard card title to open the shared title editor, found=${container.querySelectorAll('[role="textbox"]').length}`)
     }
 
     await act(async () => {
       setEditableValue(dom, titleEditor, 'Edited Node Type Trend')
+      await waitFrame()
       Simulate.keyDown(titleEditor, { key: 'Enter' })
       await waitFrame()
     })
@@ -284,13 +288,14 @@ export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEdito
       await waitFrame()
     })
 
-    const footnoteEditor = container.querySelector('textarea[aria-label="Dashboard card footnote for node-types"]')
-    if (!(footnoteEditor instanceof dom.window.HTMLTextAreaElement)) {
-      throw new Error(`expected Dashboard card note to open the shared multiline editor, html=${container.innerHTML}`)
+    const footnoteEditor = container.querySelector('[role="textbox"][aria-label="Dashboard card footnote for node-types"]')
+    if (!(footnoteEditor instanceof dom.window.HTMLElement)) {
+      throw new Error(`expected Dashboard card note to open the shared multiline editor, found=${container.querySelectorAll('[role="textbox"]').length}`)
     }
 
     await act(async () => {
       setEditableValue(dom, footnoteEditor, 'YTD Trend\nEdited dashboard narrative')
+      await waitFrame()
       Simulate.keyDown(footnoteEditor, { key: 'Enter', metaKey: true })
       await waitFrame()
     })
@@ -306,4 +311,17 @@ export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEdito
     useGraphStore.setState(previousSlice)
     restore()
   }
+}
+
+export async function testDashboardEvidenceMetricsReuseReadOnlyWidgets() {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section'), root = createRoot(container)
+  dom.window.document.body.appendChild(container)
+  try {
+    await act(async () => { root.render(<DashboardMetricGrid metrics={[{ id: 'tokens', label: 'Tokens', value: 'Unknown', detail: 'No observation', tone: 'slate' }]} />); await waitFrame() })
+    const metric = container.querySelector('[data-kg-dashboard-metric="tokens"]')
+    if (!metric || metric.getAttribute('draggable') !== 'false' || !metric.textContent?.includes('Unknown')) throw Error('Evidence must reuse immutable Dashboard metrics without inventing zero')
+    await act(async () => { metric.querySelector('[data-kg-card-inline-edit]')?.dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true, detail: 2 })); await waitFrame() })
+    if (container.querySelector('[contenteditable="true"], input, textarea')) throw Error('Evidence labels cannot be authored')
+  } finally { await act(async () => root.unmount()); restore() }
 }
