@@ -7,12 +7,17 @@ export async function verifyCanvasContainerSizing(page) {
   const editor = page.locator('[data-kg-workspace-left-pane="1"]')
   const frame = page.locator('[data-kg-canvas-container-frame="1"]')
   const configure = async mode => {
+    await page.getByRole('region', { name: 'Markdown Workspace', exact: true })
+      .getByRole('button', { name: 'Close', exact: true }).click()
     await page.getByRole('button', { name: 'Settings', exact: true }).click()
     const panel = page.getByRole('complementary', { name: 'Main panel', exact: true })
     await panel.getByRole('textbox', { name: 'Search settings…', exact: true }).fill('canvas.container.sizing')
     await panel.getByRole('combobox', { name: '', exact: true }).selectOption(mode)
     await panel.getByRole('button', { name: 'Apply', exact: true }).click()
     await panel.getByRole('button', { name: 'Close', exact: true }).click()
+    await page.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+    await page.getByRole('region', { name: 'Markdown Workspace', exact: true })
+      .getByRole('checkbox', { name: 'Show Canvas pane', exact: true }).check()
     await page.waitForFunction(expected => document.querySelector('[data-kg-canvas-view-container]')?.getAttribute('data-kg-canvas-view-container') === expected, mode)
   }
   assert.equal(await container.getAttribute('data-kg-canvas-view-container'), 'full')
