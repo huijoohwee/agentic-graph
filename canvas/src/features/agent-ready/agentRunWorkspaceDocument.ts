@@ -6,6 +6,7 @@ import { record, spanRows, numberLabel, sourceLink, traceResources, resourceLabe
 import { jsonToMarkdownPreferTable } from '@/features/markdown/jsonToMarkdown'
 import { useMarkdownPreviewTokens } from '@/features/markdown/ui/useMarkdownPreviewTokens'
 import type { MarkdownWorkspaceMainProps } from '@/features/markdown-workspace/main/types'
+import { useAgentMissionCodebaseIndex } from './useAgentMissionCodebaseIndex'
 const noop = () => {}
 const cell = (value: unknown) => String(value ?? 'Unknown').replace(/&/g, '&amp;')
   .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[\\`*_{}[\]()|]/g, char => `\\${char}`).replace(/[\r\n]/g, ' ')
@@ -13,8 +14,9 @@ const cell = (value: unknown) => String(value ?? 'Unknown').replace(/&/g, '&amp;
 /** Read-only document projection for the existing Editor Workspace. No alternate shell. */
 export function useAgentRunWorkspaceDocument() {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
-  const projection = agentMissionWorkspace(inspection?.trace)
-  const sourcePath = workspace ? resolveAgentMissionSource(inspection?.trace, workspace.source) : null
+  const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
+  const projection = agentMissionWorkspace(inspection?.trace, codebase.data)
+  const sourcePath = workspace ? resolveAgentMissionSource(inspection?.trace, workspace.source, codebase.data) : null
   const reference = sourcePath ? projection.references.get(sourcePath) : undefined
   const json = reference ? JSON.stringify(reference, null, 2)
     : sourcePath === projection.manifestPath && inspection?.trace.workflowManifest ? inspection.trace.workflowManifest.text

@@ -1,11 +1,12 @@
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { record, type RunTrace } from './missionControlProjection'
+import type { MissionCodebaseIndex } from './useAgentMissionCodebaseIndex'
 
 export const AGENT_MISSION_SOURCE_ROOT = '/.workspace'
 const segment = (value: unknown) => encodeURIComponent(String(value || 'unobserved'))
 
 /** Session-only navigation over the native archive. Member documents are references, not copied evidence. */
-export function agentMissionWorkspace(trace?: RunTrace | null) {
+export function agentMissionWorkspace(trace?: RunTrace | null, codebase?: MissionCodebaseIndex) {
   const workflow = record(trace?.profile.workflow), manifest = trace?.workflowManifest
   const id = String(manifest?.value.id ?? trace?.cohortId ?? trace?.runId ?? 'unobserved') || 'unobserved'
   const root = `${AGENT_MISSION_SOURCE_ROOT}/${segment(id)}`
@@ -27,13 +28,22 @@ export function agentMissionWorkspace(trace?: RunTrace | null) {
       workflowId: id, memberId: member.id, manifest: member.manifest, digest: member.digest,
       source: member.source, context: member.context, coverage: member.coverage, missing: member.missing })
   }
+  if (codebase) {
+    const indexPath = `${root}/codebase-index.manifest.json`
+    entries.push(entry(indexPath, root, 'codebase-index.manifest.json', 'file'))
+    references.set(indexPath, codebase.index.value)
+    if (codebase.reference) {
+      entries.push(entry(codebase.reference.path, root, 'codebase-index.ref.json', 'file'))
+      references.set(codebase.reference.path, codebase.reference.value)
+    }
+  }
   return { id, root, manifestPath, markdownPath, entries, references,
     folders: entries.filter(row => row.kind === 'folder').map(row => row.path) }
 }
 
-export function resolveAgentMissionSource(trace: RunTrace | null | undefined, source: string | null | undefined) {
+export function resolveAgentMissionSource(trace: RunTrace | null | undefined, source: string | null | undefined, codebase?: MissionCodebaseIndex) {
   if (source === null) return null
-  const projection = agentMissionWorkspace(trace)
+  const projection = agentMissionWorkspace(trace, codebase)
   return projection.entries.some(row => row.kind === 'file' && row.path === source) ? source!
     : trace && !trace.workflowManifest ? projection.markdownPath : projection.manifestPath
 }

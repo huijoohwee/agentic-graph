@@ -15,6 +15,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { applyCanvasRenderBudget } from '@/lib/graph/canvasRenderBudget'
 import { useStatsSelection } from '@/features/graph-stats/hooks/useStatsSelection'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { bindAgentGraphWorkspaceIndex, readActiveAgentGraphWorkspaceIndex, retainAgentGraphWorkspaceIndex } from '@/features/agent-graph/agentGraphWorkspaceIndex'
 
 export async function testFolderImportPersistsNativeArtifactAndCancellationPreservesGraph() {
   const { restore } = initJsdomHarness(), before = useGraphStore.getState()
@@ -34,6 +35,20 @@ export async function testFolderImportPersistsNativeArtifactAndCancellationPrese
     const header = load(text!.split('---')[1]!) as Record<string, unknown>
     assert.equal(header.source_kind, 'folder'); assert.equal(header.source_remote, null)
     assert.ok(header.source_projection)
+    const index = await readActiveAgentGraphWorkspaceIndex()
+    assert.ok(index?.path.startsWith('/.workspace/codebase-index/'))
+    assert.equal(index?.value.snapshotDigest, agentGraphResult().snapshotDigest)
+    assert.deepEqual(index?.value.traversal, { graphId: agentGraphResult().graphId, expectedSnapshotDigest: agentGraphResult().snapshotDigest })
+    assert.equal((index?.value.projection as Record<string, unknown>).renderer, 'd3')
+    assert.equal(index?.value.observation, null) // An older host never implies measured zero.
+    const fs = await getWorkspaceFs(), beforeRepeat = await fs.listEntries()
+    await retainAgentGraphWorkspaceIndex(buildAgentGraphCanvasProjection(agentGraphResult()), String(header.source_projection))
+    assert.deepEqual(await fs.listEntries(), beforeRepeat)
+    const first = await bindAgentGraphWorkspaceIndex('mission-first', index!)
+    const second = await bindAgentGraphWorkspaceIndex('mission-second', index!)
+    assert.notEqual(first.path, second.path)
+    assert.equal(first.value.path, second.value.path)
+    assert.equal(JSON.parse((await fs.readFileText(first.path))!).snapshotDigest, agentGraphResult().snapshotDigest)
     const graph = useGraphStore.getState().graphData, files = useGraphStore.getState().sourceFiles
     await assert.rejects(runLaunchImportAgentGraphFolder({ bridge: { agentGraph: { importFolder: async () => { throw new Error('cancelled') } } } }), /cancelled/)
     assert.equal(useGraphStore.getState().graphData, graph); assert.equal(useGraphStore.getState().sourceFiles, files)
@@ -44,7 +59,16 @@ export async function testRetainedJsonReopensEvidenceAndRejectsCorruption() {
   const { restore } = initJsdomHarness(), before = useGraphStore.getState()
   try {
     resetWorkspaceFsForTests(); useGraphStore.getState().resetAll()
-    const original = buildAgentGraphCanvasProjection(agentGraphResult())
+    const result = agentGraphResult()
+    result.graphId = `kg:graph:${'4'.repeat(32)}`
+    result.snapshotDigest = '5'.repeat(64)
+    result.observation = { schema: 'agentic-graph-operation-observation/v1', operation: 'ingest', status: 'completed', elapsedMs: 17,
+      cpu: { scope: 'node-process-window', userMs: 2, systemMs: 1, totalMs: 3 },
+      memory: { scope: 'node-process-endpoint-samples', rssBeforeBytes: 100, rssAfterBytes: 120, heapUsedBeforeBytes: 50, heapUsedAfterBytes: 55 },
+      output: { bytes: 500, basis: 'utf8-json-excluding-observation' },
+      model: { id: null, calls: 0, promptTokens: 0, completionTokens: 0, costUsd: 0, scope: 'native-runtime-only' },
+      sources: { parsed: 1, reused: 0, admittedBytes: 30 } }
+    const original = buildAgentGraphCanvasProjection(result)
     const path = await retainAgentGraphWorkspaceProjection(original), fs = await getWorkspaceFs()
     const text = (await fs.readFileText(path as WorkspacePath))!, name = workspaceDocumentKey(path as WorkspacePath)
     // The same Source Files action used by the editor must restore the native graph.
@@ -54,6 +78,9 @@ export async function testRetainedJsonReopensEvidenceAndRejectsCorruption() {
     assert.ok(isReadOnlyAgentGraphProjection(reopened))
     assert.deepEqual(reopened.nodes, original.nodes); assert.deepEqual(reopened.edges, original.edges)
     assert.equal(reopened.metadata?.source, original.metadata?.source)
+    assert.deepEqual((reopened.metadata?.agentGraphProjection as Record<string, unknown>).observation, result.observation)
+    await retainAgentGraphWorkspaceIndex(reopened, path)
+    assert.deepEqual((await readActiveAgentGraphWorkspaceIndex())?.value.observation, result.observation)
     assert.equal(parseWorkspaceJsonGraphDataCached({ markdownName: name, markdownText: text }), null)
     const identity = original.metadata!.agentGraphProjection as { graphId: string; snapshotDigest: string }
     const corrupted = JSON.parse(text); corrupted.nodes[0].id = 'invalid\u0000id'

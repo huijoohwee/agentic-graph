@@ -37,6 +37,13 @@ export async function testAgentMissionWorkspaceLifecycle() {
   assert.equal(resolveAgentMissionSource(start, '/agent-mission/agent-mission.md'), projection.manifestPath)
   assert.equal(resolveAgentMissionSource(start, projection.markdownPath), projection.markdownPath)
   assert.equal(resolveAgentMissionSource(start, null), null)
+  const codebase = { index: { path: '/.workspace/codebase-index/source/index.manifest.json', text: '{}',
+    value: { graphId: 'kg:graph:source', snapshotDigest: 'c'.repeat(64) } },
+    reference: { path: `${projection.root}/codebase-index.ref.json`, value: { workflowId: 'mission-1' } } }
+  const indexed = agentMissionWorkspace(start, codebase)
+  assert.equal(indexed.references.get(`${projection.root}/codebase-index.manifest.json`), codebase.index.value)
+  assert.equal(resolveAgentMissionSource(start, `${projection.root}/codebase-index.manifest.json`, codebase), `${projection.root}/codebase-index.manifest.json`)
+  assert.equal(resolveAgentMissionSource(start, undefined, codebase), projection.manifestPath)
   const end = await importBoundary('mission-1', 'end', 2)
   assert.equal(agentMissionWorkspace(end).manifestPath, projection.manifestPath)
   assert.notEqual(end.workflowManifest?.digest, start.workflowManifest?.digest)
