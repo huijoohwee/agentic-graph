@@ -641,9 +641,6 @@ export function testMarkdownWorkspaceInitialPaneVisibilityFollowsCsvJsonMarkdown
   const cases = [
     { path: 'people.csv', expected: { json: false, markdown: false, viewer: true, html: false } },
     { path: 'scores.tsv', expected: { json: false, markdown: false, viewer: true, html: false } },
-    { path: '/agent-mission/agent-mission.manifest.json', expected: { json: true, markdown: false, viewer: false, html: false } },
-    { path: 'workspace:/notes/rows.json?revision=1#section', expected: { json: true, markdown: false, viewer: false, html: false } },
-    { path: '/docs/table.csv', expected: { json: false, markdown: false, viewer: true, html: false } },
     { path: 'rows.json', expected: { json: true, markdown: false, viewer: false, html: false } },
     { path: 'graph.geojson', expected: { json: true, markdown: false, viewer: false, html: false } },
     { path: 'notes.md', expected: { json: false, markdown: true, viewer: false, html: false } },

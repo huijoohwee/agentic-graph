@@ -2,6 +2,7 @@ import { TEST_CASES_POST_PARSER_1_PREFIX } from './postParserCases1Prefix'
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ...TEST_CASES_POST_PARSER_1_PREFIX,
+  ["markdown.workspace.initialPaneVisibility.absoluteDocumentPaths","@/__tests__/markdownWorkspaceAbsoluteDocumentPanes.test","testMarkdownWorkspaceAbsoluteDocumentPathsOpenMatchingPane"],
   ["ui.canvasContainerSizing.defaultFull","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingDefaultsToFull"],
   ["ui.canvasContainerSizing.editorAndPanels","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingAvoidsEditorAndPanels"],
   ["ui.canvasContainerSizing.compactAndCovered","@/__tests__/canvasContainerSizing.test","testCanvasContainerSizingHandlesCompactAndCoveredViews"],
