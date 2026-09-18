@@ -43,7 +43,7 @@ authored scene frames. Outcome: repeatable frame and speed readback.
 | F06 | Given an open document, previous/next Timeline buttons pause on the exact adjacent authored frame, preserve playback rate, show the shared frame and disable at its bounds; absent documents disable stepping. | `XrTimelineRehearsalControls.tsx`; mounted component test plus existing animation runtime |
 | F07 | The pinned Timeline stays inside the mobile safe-area insets and desktop centering remains intact. | `responsive-canvas-toolbar.css`; real-browser geometry at 390 x 844 |
 | F08 | Home Apex loads the explicitly configured canonical Canvas catalog and opens Physics Playground through Demo. | `config.env.ts`; local Apex browser activation |
-| F09 | The canonical Physics Playground seed describes frame controls, local save and canonical refresh; the ownership row does not imply every local store uses IndexedDB or that cloud sync succeeded. | `agentic-graph-physics-playground-demo.md`, `documentRepositoryAuthority.ts`; source authority, ownership projection and browser refresh/readback |
+| F09 | The canonical Physics Playground seed describes frame controls, local save and canonical refresh; the ownership row does not imply every local store uses IndexedDB or that cloud sync succeeded. | `agentic-graph-ar-vr-xr-runtime-readiness-demo.md`, `documentRepositoryAuthority.ts`; source authority, ownership projection and browser refresh/readback |
 | F10 | Source Files saves path-keyed records in IndexedDB, imports legacy localStorage atomically once without deleting its bytes, survives database close/reopen, and rejects stale or failed durable writes. Git-backed Markdown remains canonical. | `workspaceFsIndexedDb.ts`, shared `indexedDbCollectionStore.ts`; `workspaceFs.indexedDb` registered migration, reopen, conflict and write-failure cases |
 | F11 | Existing cast and Camera track markers pause and seek their exact cue times on click or keyboard activation, preserve speed, and use shared object/mark selection. Existing animation effect clips select their shared object and seek the animation start; no second animation marker is added. Dragging a cast or Camera mark retimes without seeking. Double-clicking empty object-track space creates a frame-snapped mark from its sampled pose; existing times select without duplication. The selected mark editor also offers Add at playhead. | [cue projection](../../canvas/src/features/three/xrTimelineSceneProjection.ts), [cue navigation](../../canvas/src/features/three/xrTimelineCueRuntime.ts); `canvas.xrMode.timeline.sceneCues` |
 | F12 | Existing object lanes display sampled authored position and path state at the shared playhead. Lane selection leaves playback position unchanged. Authored object and Camera tracks precede simulation/NPC tracks. No separate overview, beat picker, object list, or transport is mounted. | Existing `xrShotTargets.ts` and `xrMotionReferenceSampling.ts`; mounted Timeline regression and desktop/mobile browser checks |
@@ -84,7 +84,7 @@ document. No remote provider, model, credential or network call is added.
 
 ## MVP, GTM and evidence
 
-Open the [Physics Playground](../workspace-seeds/agentic-graph-physics-playground-demo.md),
+Open the [Physics Playground](../workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md),
 choose Animation, apply a compatible authored motion, and use BottomPanel
 Timeline for quarter-speed rehearsal. Existing Motion Control and Game Mode
 remain on the same surface; this slice adds no competing controls to them.
@@ -283,3 +283,22 @@ a separate receiving local workspace; it does not establish a live cloud session
 GTM hypothesis: configurable native scene styling reduces time to create a
 client-specific interactive demo. Validate by measuring edit-to-demo time and
 obtaining a buyer commitment; these controls do not establish demand or revenue.
+
+## Consolidated XR source and full canvas (2026-09-18)
+
+The AR/VR/XR readiness seed is the sole authored Playground source for Home,
+Workspace, Game Mode, and Flight overlay consumers. It retains the shared scene,
+appearance, cast marks, permission controls and pinned readiness ledger. The
+Physics launcher resolves to the same source identity. Source Files retires the
+old canonical row only after a complete replacement inventory is available,
+preserving its bytes in a recovered note. Imported paths remain untouched.
+
+One physics lifecycle owns controller launch, pause/resume and camera defaults;
+the readiness adapter observes the same surface and owns only capture/readiness
+resources. Editor panels overlay the full Canvas without a second width inset.
+Camera and Timeline use their normal shared framing ownership. Authored cast
+marks precede generated graph actors at the bounded track capacity.
+
+Validation owners: `xrSeedConsolidation.test.ts`, `xrPhysicsDemoRuntimeReady.test.ts`,
+`xrPhysicsRunReadyDemoRuntime.test.tsx`, and the XR workspace browser smoke.
+This consolidation does not expand the pinned physical-device or Production claim.

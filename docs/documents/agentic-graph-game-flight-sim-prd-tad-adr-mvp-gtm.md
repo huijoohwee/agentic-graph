@@ -53,7 +53,7 @@ source_references:
   optional_glb_generator: "scripts/generate-game-flight-sim-optional-prop-glb.mjs"
   kiro_authority: ".kiro/specs/agentic-graph-game-flight-sim/"
   validation_seed: "docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md"
-  authored_world_source: "docs/workspace-seeds/agentic-graph-physics-playground-demo.md"
+  authored_world_source: "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
   clean_room_gate: "scripts/check-game-flight-sim-boundary.mjs"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM"
@@ -422,7 +422,7 @@ npm run game-flight-sim:browser-smoke
 
 Each `agentic-graph-flight-sim-browser-run/v5` record carries `runIndex` 1/2 or 2/2, exact candidate/source identity, first-frame timing, trusted Chromium-emulated touch provenance, the four exact MapLibre view/style/projection results, rendered Flight layer and live-coordinate evidence, map interaction, ordered route transitions and terminal Decision, camera ownership, lifecycle/failure evidence, and separated Geo-provider/Flight-gameplay transport inventories. Gameplay-network proof invokes the explicit Flight guard with a real browser transport inside a never-invoked executor, then requires exact mission-state equivalence apart from the monotonic revision and runtime diagnostic, the exact runtime error/deadline observation, zero executor invocation, and zero observed transport; it does not replace Geo-owned browser transports globally. The aggregate `agentic-graph-flight-sim-browser-proof/v5` record requires both runs to share the same identity. Native Pointer Lock is attempted first; only the exact automation-host `WrongDocumentError` may activate the browser-interface contract harness, while production code retains native request and rejection diagnostics. The final handoff reports the exact evidence-bound SHA and source hash without embedding a self-invalidating commit hash in this tracked document.
 
-Both commands are finite and local apart from ordinary build/test artifacts, access no paid model or runtime image-to-3D service, and do not deploy or mutate Cloudflare. The physics-playground seed (`docs/workspace-seeds/agentic-graph-physics-playground-demo.md`) is the canonical shared XR source authority: it selects the companion-authored regional terrain, selectable airplane/helicopter subjects, the Physics-controller camera with exactly fixed-follow/free-orbit, Motion Control boundary, and `/ @ #` MCP grammar.
+Both commands are finite and local apart from ordinary build/test artifacts, access no paid model or runtime image-to-3D service, and do not deploy or mutate Cloudflare. The physics-playground seed (`docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md`) is the canonical shared XR source authority: it selects the companion-authored regional terrain, selectable airplane/helicopter subjects, the Physics-controller camera with exactly fixed-follow/free-orbit, Motion Control boundary, and `/ @ #` MCP grammar.
 
 ## Agent-Platform Readiness
 

@@ -21,7 +21,7 @@ export function requireXrV2RuntimeIdentity({ source, seedBasename, seedRelativeP
   const criteria = Array.isArray(frontmatter.acceptance_criteria) ? frontmatter.acceptance_criteria : []
   const flow = isRecord(frontmatter.flow) ? frontmatter.flow : {}
   const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
-  const connections = Array.isArray(flow.connections) ? flow.connections : []
+  const connections = Array.isArray(flow.edges) ? flow.edges : []
   const missing = []
   const requireValue = (label, actual, expected) => {
     if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
@@ -41,7 +41,7 @@ export function requireXrV2RuntimeIdentity({ source, seedBasename, seedRelativeP
     ['kgFloatingPanelView', frontmatter.kgFloatingPanelView, 'motionControl'], ['run_ready_demo.id', runReady.id, 'xr-v2'],
     ['run_ready_demo.canonical_source_file', runReady.canonical_source_file, `/${seedRelativePath}`], ['run_ready_demo.source_root', runReady.source_root, 'agentic-graph/docs'],
     ['run_ready_demo.source_backed', readBooleanPreset(runReady.source_backed), true], ['run_ready_demo.native_runtime', readBooleanPreset(runReady.native_runtime), true],
-    ['run_ready_demo.canonical_xr_world_owner', runReady.canonical_xr_world_owner, 'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'],
+    ['run_ready_demo.canonical_xr_world_owner', runReady.canonical_xr_world_owner, 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'],
     ['run_ready_demo.auto_start', readBooleanPreset(runReady.auto_start), true], ['pinned_source.path', pinned.path, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'],
     ['pinned_source.commit', pinned.commit, XR_V2_PINNED_DOCUMENT_REVISION], ['pinned_source.git_blob_sha1', pinned.git_blob_sha1, XR_V2_PINNED_DOCUMENT_BLOB],
     ['pinned_source.content_sha256', pinned.content_sha256, XR_V2_PINNED_DOCUMENT_SHA256], ['runtime_readiness.focused_gate', readiness.focused_gate, 'npm run xr-v2:review-ready'],
@@ -75,7 +75,7 @@ export function requireXrV2RuntimeIdentity({ source, seedBasename, seedRelativeP
     ['xr_v2_ac_12', 'xr_v2_certification_boundary', 'stop at external certification'],
   ]
   for (const [from, to, label] of requiredEdges) {
-    if (!connections.some(edge => isRecord(edge) && edge.from === from && edge.to === to && edge.label === label)) missing.push(`flow.connections=${from}->${to}:${label}`)
+    if (!connections.some(edge => isRecord(edge) && edge.source === from && edge.target === to && edge.label === label)) missing.push(`flow.edges=${from}->${to}:${label}`)
   }
   if (missing.length > 0) throw new Error(`XR v2 workspace document ${seedBasename} has invalid authority; missing=${JSON.stringify(missing)}`)
 }

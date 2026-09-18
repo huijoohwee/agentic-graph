@@ -53,7 +53,6 @@ export function useXrMotionReferenceCameraPlayback({
   mode,
   paused,
   playing,
-  nativeCompositionOnly = false,
   xrEmptyWorld,
 }: {
   camera: PerspectiveCamera
@@ -61,7 +60,6 @@ export function useXrMotionReferenceCameraPlayback({
   mode: Canvas3dModeId
   paused: boolean
   playing: boolean
-  nativeCompositionOnly?: boolean
   xrEmptyWorld: boolean
 }) {
   const runtime = React.useSyncExternalStore(
@@ -77,7 +75,7 @@ export function useXrMotionReferenceCameraPlayback({
   const viewportInputOwnership = useThreeViewportInputOwnership()
   const previousPlayingRef = React.useRef(false)
   const prePlaybackPoseRef = React.useRef<FreeOrbitPlaybackSnapshot | null>(null)
-  const cameraTrackAvailable = !nativeCompositionOnly && xrChoreographyCanDriveCamera({
+  const cameraTrackAvailable = xrChoreographyCanDriveCamera({
     mode,
     xrEmptyWorld,
     cameraMarkCount: runtime.plan.camera.length,

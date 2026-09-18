@@ -14,7 +14,7 @@ import {
 } from './workspace-seed-frontmatter.mjs'
 
 export const WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH = 'docs/workspace-seeds'
-export const PHYSICS_SEED_BASENAME = 'agentic-graph-physics-playground-demo.md'
+export const PHYSICS_SEED_BASENAME = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 export const PHYSICS_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${PHYSICS_SEED_BASENAME}`
 export const XR_V2_SEED_BASENAME = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 export const XR_V2_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${XR_V2_SEED_BASENAME}`
@@ -75,7 +75,7 @@ const XR_EDITED_MEDIA_PROOF_NODE_ID = 'xr_edited_media_proof'
 const XR_EDITED_MEDIA_PROOF_NODE_KEYS = Object.freeze(['id', 'type', 'label', 'pos', 'properties'])
 const XR_EDITED_MEDIA_PROOF_POSITION_KEYS = Object.freeze(['x', 'y'])
 const XR_EDITED_MEDIA_PROOF_PROPERTIES_KEYS = Object.freeze(['role', 'scope', 'sourceSnapshotState', 'canonicalDeliveryState', 'broaderXrState', 'output'])
-const XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS = Object.freeze(['from', 'to', 'label'])
+const XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS = Object.freeze(['source', 'target', 'label'])
 
 export const resolveWorkspaceSeedSiblingRootsFromGitCommonDir = gitCommonDirRaw => {
   const gitCommonDir = path.resolve(String(gitCommonDirRaw || '').trim())
@@ -127,14 +127,12 @@ const requireExactFileInventory = async ({
 }
 
 const requireCanonicalIdentity = source => {
-  const requiredMarkers = [
-    'canonical_source_file: "/docs/workspace-seeds/agentic-graph-physics-playground-demo.md"',
-    'source_root: "agentic-graph/docs"',
-    'source_backed: true',
-  ]
-  const missing = requiredMarkers.filter(marker => !source.includes(marker))
-  if (missing.length > 0) {
-    throw new Error(`canonical workspace seed is missing identity markers: ${missing.join(', ')}`)
+  const frontmatter = parseYamlFrontmatter(PHYSICS_SEED_BASENAME, source)
+  const runReady = frontmatter.run_ready_demo
+  if (runReady?.id !== 'xr-v2'
+      || runReady.canonical_source_file !== `/${PHYSICS_SEED_RELATIVE_PATH}`
+      || runReady.source_root !== 'agentic-graph/docs' || runReady.source_backed !== true) {
+    throw new Error('canonical workspace seed is missing identity markers')
   }
 }
 
@@ -154,7 +152,7 @@ const requirePhysicsEditedMediaEvidence = source => {
     : {}
   const flow = isRecord(frontmatter.flow) ? frontmatter.flow : {}
   const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
-  const connections = Array.isArray(flow.connections) ? flow.connections : []
+  const connections = Array.isArray(flow.edges) ? flow.edges : []
   const missing = []
   const requireValue = (label, actual, expected) => {
     if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
@@ -229,7 +227,7 @@ const requirePhysicsEditedMediaEvidence = source => {
     missing.push('blocked_claims=exact broader-XR blocker set')
   }
   if (!Array.isArray(flow.nodes)) missing.push('flow.nodes=array')
-  if (!Array.isArray(flow.connections)) missing.push('flow.connections=array')
+  if (!Array.isArray(flow.edges)) missing.push('flow.edges=array')
   const proofNodes = nodes.filter(node => (
     isRecord(node) && node.id === XR_EDITED_MEDIA_PROOF_NODE_ID
   ))
@@ -273,12 +271,12 @@ const requirePhysicsEditedMediaEvidence = source => {
   const proofConnections = connections.filter(connection => (
     isRecord(connection)
     && (
-      connection.from === XR_EDITED_MEDIA_PROOF_NODE_ID
-      || connection.to === XR_EDITED_MEDIA_PROOF_NODE_ID
+      connection.source === XR_EDITED_MEDIA_PROOF_NODE_ID
+      || connection.target === XR_EDITED_MEDIA_PROOF_NODE_ID
     )
   ))
   if (proofConnections.length !== 1) {
-    missing.push(`flow.connections=exactly one incident ${XR_EDITED_MEDIA_PROOF_NODE_ID} edge`)
+    missing.push(`flow.edges=exactly one incident ${XR_EDITED_MEDIA_PROOF_NODE_ID} edge`)
   } else {
     const proofConnection = proofConnections[0]
     requireExactKeys(
@@ -286,8 +284,8 @@ const requirePhysicsEditedMediaEvidence = source => {
       proofConnection,
       XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS,
     )
-    requireValue('proof_connection.from', proofConnection.from, 'xr_demo_entry')
-    requireValue('proof_connection.to', proofConnection.to, XR_EDITED_MEDIA_PROOF_NODE_ID)
+    requireValue('proof_connection.source', proofConnection.source, 'xr_demo_entry')
+    requireValue('proof_connection.target', proofConnection.target, XR_EDITED_MEDIA_PROOF_NODE_ID)
     requireValue('proof_connection.label', proofConnection.label, 'inspect scoped proof')
   }
   for (const marker of [

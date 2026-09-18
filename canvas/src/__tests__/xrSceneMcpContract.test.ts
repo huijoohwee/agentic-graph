@@ -326,7 +326,7 @@ function assertExpandedCleanRoomBoundary(): void {
     'package.json',
   ].map(path => resolve(process.cwd(), path))
   paths.push(resolve(repoRoot, 'package.json'), resolve(repoRoot, 'package-lock.json'))
-  paths.push(resolve(repoRoot, 'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'))
+  paths.push(resolve(repoRoot, 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'))
   const source = paths.map(path => readFileSync(path, 'utf8')).join('\n').toLowerCase()
   const forbidden = [
     ['8th', 'wall'].join(''),

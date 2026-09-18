@@ -18,7 +18,7 @@ const repositoryRoot = process.cwd()
 const flightFeatureRoot = 'canvas/src/features/game-flight-sim'
 const flightPrdPath = 'docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md'
 const flightSeedPath = 'docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md'
-const physicsSeedPath = 'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'
+const physicsSeedPath = 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 const kiroSpecRoot = '.kiro/specs/agentic-graph-game-flight-sim'
 const requiredPaths = [
   `${kiroSpecRoot}/.config.kiro`,

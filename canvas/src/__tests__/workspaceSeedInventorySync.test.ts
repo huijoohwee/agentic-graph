@@ -397,7 +397,7 @@ export async function testWorkspaceSeedProviderOverlaysLocalInventoryOnPublished
 export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory() {
   const storage = new MemoryStorage()
   const { restore } = initWindowHarness({ storage })
-  const desiredPath = '/docs/workspace-seeds/agentic-graph-physics-playground-demo.md'
+  const desiredPath = '/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
   const restoredPaths = [
     '/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.companion.md',
     '/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md',
@@ -425,12 +425,12 @@ export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory(
       { path: '/', parentPath: '', kind: 'folder', name: '', updatedAtMs: now },
       { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: now },
       { path: '/docs/workspace-seeds', parentPath: '/docs', kind: 'folder', name: 'workspace-seeds', updatedAtMs: now },
-      { path: desiredPath, parentPath: '/docs/workspace-seeds', kind: 'file', name: 'agentic-graph-physics-playground-demo.md', text: '# Stale text\n', updatedAtMs: now },
+      { path: desiredPath, parentPath: '/docs/workspace-seeds', kind: 'file', name: 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md', text: '# Stale text\n', updatedAtMs: now },
       { path: unrelatedPath, parentPath: '/docs', kind: 'file', name: 'private-note.md', text: '# Private\n', updatedAtMs: now },
       { path: unmanagedPath, parentPath: '/docs', kind: 'file', name: 'unmanaged-note.md', text: '# Unmanaged\n', updatedAtMs: now },
     ]
     for (const entry of initialEntries) await db.collections.entries.incrementalUpsert(entry)
-    setWorkspaceEntrySource(desiredPath, { kind: 'local', originalName: 'agentic-graph-physics-playground-demo.md' }, { persist: 'sync' })
+    setWorkspaceEntrySource(desiredPath, { kind: 'local', originalName: 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md' }, { persist: 'sync' })
     for (const restoredPath of restoredPaths) {
       setWorkspaceEntrySource(
         restoredPath,

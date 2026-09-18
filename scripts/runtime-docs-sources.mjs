@@ -44,8 +44,8 @@ export async function readRuntimeDocsSources({ docsRoot, graphRoot = path.resolv
   for (const [fileName, sourcePath] of Object.entries(GRAPH_DOC_PATHS)) {
     if (fileName.endsWith('.md')) await add(fileName, graphRoot, sourcePath);
   }
-  await add('workspace-seeds/agentic-graph-physics-playground-demo.md', graphRoot,
-    'docs/workspace-seeds/agentic-graph-physics-playground-demo.md');
+  await add('workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md', graphRoot,
+    'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md');
   if (revision !== await resolveAgenticCanvasOsDocsRevision({ absoluteDocsRoot })) throw new Error('Document source changed during observation');
   return [...records.values()].sort((a, b) => a.fileName.localeCompare(b.fileName));
 }

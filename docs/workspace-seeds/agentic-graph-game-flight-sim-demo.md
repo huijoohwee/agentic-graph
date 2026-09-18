@@ -41,7 +41,7 @@ run_ready_demo:
   external_dependencies: []
   forbid_external_copy_or_dependency: true
 shared_xr_scene:
-  source_authority: "/docs/workspace-seeds/agentic-graph-physics-playground-demo.md"
+  source_authority: "/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
   world_ownership: "overlay-only"
   surface_owner: "Geo+XR Mode"
   renderer_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"

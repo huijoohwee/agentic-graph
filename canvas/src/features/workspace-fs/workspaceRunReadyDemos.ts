@@ -8,13 +8,14 @@ export const CARE_AGENT_RUN_READY_DEMO_ID = 'care-agent'
 export const CARE_AGENT_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-care-agent-demo.md'
 export const RISK_COPILOT_RUN_READY_DEMO_ID = 'risk-copilot'
 export const RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-sme-care-agent-demo.md'
-export const XR_PHYSICS_RUN_READY_DEMO_ID = 'xr-physics'
-export const XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-physics-playground-demo.md'
-export const XR_PHYSICS_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
-export const XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH = `agentic-canvas-os/${XR_PHYSICS_DEMO_REPO_REL_PATH}`
 export const XR_V2_RUN_READY_DEMO_ID = 'xr-v2'
 export const XR_V2_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 export const XR_V2_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${XR_V2_DEMO_WORKSPACE_SEED_BASENAME}`
+// Physics is a capability of the canonical XR document, not another seed.
+export const XR_PHYSICS_RUN_READY_DEMO_ID = XR_V2_RUN_READY_DEMO_ID
+export const XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME = XR_V2_DEMO_WORKSPACE_SEED_BASENAME
+export const XR_PHYSICS_DEMO_REPO_REL_PATH = XR_V2_DEMO_REPO_REL_PATH
+export const XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH = `agentic-canvas-os/${XR_V2_DEMO_REPO_REL_PATH}`
 export const FLIGHT_SIM_RUN_READY_DEMO_ID = 'flight-sim'
 export const FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'agentic-graph-game-flight-sim-demo.md'
 export const FLIGHT_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
@@ -46,11 +47,10 @@ export type WorkspaceRunReadyDemoActivationDiagnostic =
     sourceId: string | null
   }>
 
-const normalizeDemoId = (value: string): string =>
-  String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[_\s]+/g, '-')
+const normalizeDemoId = (value: string): string => {
+  const id = String(value || '').trim().toLowerCase().replace(/[_\s]+/g, '-')
+  return id === 'xr-physics' ? XR_V2_RUN_READY_DEMO_ID : id
+}
 
 const RUN_READY_FRONTMATTER_CACHE_LIMIT = 48
 const runReadyFrontmatterIdCache = new Map<string, string | null>()
@@ -85,14 +85,6 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
     label: 'agentic-graph XR v2 Runtime-readiness Demo',
     validationSeedRelPath: XR_V2_DEMO_REPO_REL_PATH,
     seedRelPathCandidates: [XR_V2_DEMO_REPO_REL_PATH],
-    sourceRoot: 'agentic-graph/docs',
-    cleanCanvasRecommended: true,
-  },
-  {
-    id: XR_PHYSICS_RUN_READY_DEMO_ID,
-    label: 'agentic-graph Native XR Physics Demo',
-    validationSeedRelPath: XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
-    seedRelPathCandidates: [XR_PHYSICS_DEMO_REPO_REL_PATH],
     sourceRoot: 'agentic-graph/docs',
     cleanCanvasRecommended: true,
   },
@@ -270,9 +262,8 @@ export const isXrPhysicsRunReadyDemoActive = (
   documentText?: string | null,
 ): boolean => {
   const id = readWorkspaceRunReadyDemoId(documentPath, documentText)
-  // XR v2 shares the dedicated Physics-authored world/camera surface so the
-  // generic session panel cannot become a second immersive-session owner.
-  return id === XR_PHYSICS_RUN_READY_DEMO_ID || id === XR_V2_RUN_READY_DEMO_ID
+  // Physics and readiness share one source identity and immersive-session owner.
+  return id === XR_V2_RUN_READY_DEMO_ID
 }
 
 export const isXrV2RunReadyDemoActive = (

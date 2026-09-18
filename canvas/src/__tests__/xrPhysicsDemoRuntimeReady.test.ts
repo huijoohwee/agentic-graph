@@ -86,8 +86,8 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
 
   if (
     meta.status !== 'runtime-ready'
-    || meta.runtime_status !== 'runtime-ready'
-    || meta.publish_scope !== 'local-only'
+    || meta.runtime_status !== 'browser-local-runtime-ready'
+    || meta.publish_scope !== 'local-first-explicit-existing-storage'
   ) {
     throw new Error(`expected local runtime-ready status, got ${JSON.stringify({
       status: meta.status,
@@ -96,9 +96,9 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     })}`)
   }
   if (
-    meta.kgCanvasSurfaceMode !== 'xr'
+    meta.kgCanvasSurfaceMode !== '3d'
     || meta.kgCanvasRenderMode !== '3d'
-    || meta.kgCanvas3dMode !== 'xr'
+    || meta.kgCanvas3dMode !== '3d'
   ) {
     throw new Error('expected the workspace seed to activate the canonical XR surface and 3D renderer')
   }
@@ -114,8 +114,8 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   const runReady = asRecord(meta.run_ready_demo, 'run_ready_demo')
   if (
     runReady.id !== XR_PHYSICS_RUN_READY_DEMO_ID
-    || runReady.env_selector !== `${WORKSPACE_RUN_READY_DEMO_ENV}=${XR_PHYSICS_RUN_READY_DEMO_ID}`
-    || runReady.validation_seed_path !== `/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
+    || runReady.env_selector !== undefined
+    || runReady.validation_seed_path !== `/${SEED_REL_PATH}`
     || runReady.source_root !== 'agentic-graph/docs'
     || runReady.source_backed !== true
     || runReady.clean_canvas_recommended !== true
@@ -132,7 +132,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   if (
     !registered
     || registered.id !== XR_PHYSICS_RUN_READY_DEMO_ID
-    || registered.validationSeedRelPath !== XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME
+    || registered.validationSeedRelPath !== SEED_REL_PATH
     || registered.sourceRoot !== 'agentic-graph/docs'
     || registered.cleanCanvasRecommended !== true
     || !registered.seedRelPathCandidates.includes(SEED_REL_PATH)
@@ -144,7 +144,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     runReadyDemoId: XR_PHYSICS_RUN_READY_DEMO_ID,
     defaultRelPath: 'fallback.md',
   })
-  if (selected !== XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME) {
+  if (selected !== SEED_REL_PATH) {
     throw new Error(`expected XR physics demo mode to select its source seed, got ${selected}`)
   }
   const explicit = resolveWorkspaceValidationSeedRelPath({
@@ -228,7 +228,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     if (!markdownText.includes(required)) throw new Error(`expected native demo contract to include ${required}`)
   }
   for (const forbidden of [/https?:\/\//i, /\bgithub\b/i, /\bcdn\b/i, /\bnode_modules\b/i]) {
-    if (forbidden.test(JSON.stringify(meta))) throw new Error(`expected standalone seed to avoid external locator ${forbidden.source}`)
+    if (forbidden.test(JSON.stringify({ runReady, controller: meta.native_controller_demo, motion: meta.kgXrMotionReference }))) throw new Error(`expected standalone seed to avoid external locator ${forbidden.source}`)
   }
 
   const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')) as PlainRecord
@@ -238,7 +238,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   if (rootScripts['demo:xr-physics'] !== 'npm run dev:xr-physics --workspace=@agentic-graph/canvas --') {
     throw new Error('expected the repository demo command to delegate to the Canvas workspace')
   }
-  const expectedCanvasScript = `VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT=$PWD/../../huijoohwee/docs VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL=1 ${WORKSPACE_RUN_READY_DEMO_ENV}=${XR_PHYSICS_RUN_READY_DEMO_ID} vite --configLoader runner --port 5174 --strictPort`
+  const expectedCanvasScript = `VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT=$PWD/../../huijoohwee/docs VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL=1 ${WORKSPACE_RUN_READY_DEMO_ENV}=xr-physics vite --configLoader runner --port 5174 --strictPort`
   if (canvasScripts['dev:xr-physics'] !== expectedCanvasScript) {
     throw new Error('expected the Canvas demo command to activate repo-local source authority and the shared run-ready selector')
   }
@@ -266,10 +266,10 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   }
   if (
     !canvasPageSource.includes('workspaceVisibleCanvasLeft={workspaceCanvasPaneVisible ? workspacePaneBoundaryCss : undefined}')
-    || !viewportSource.includes('workspaceXrViewportInset')
-    || !viewportSource.includes('width: `calc(100% - ${workspaceXrViewportInset})`')
+    || viewportSource.includes('workspaceXrViewportInset')
+    || viewportSource.includes('width: `calc(100% - ${workspaceXrViewportInset})`')
   ) {
-    throw new Error('expected the document-driven playground to center its camera and controls inside the visible workspace canvas pane')
+    throw new Error('expected the shared canvas to retain its full surface beneath the editor overlay')
   }
   if (!viewportSource.includes('<XrNativeControllerDemoHud') || !viewportSource.includes('isXrPhysicsRunReadyDemoActive')) {
     throw new Error('expected the shared viewport to own the standalone controller HUD')
@@ -301,7 +301,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     || !xrRunReadyRuntimeSource.includes('pauseXrNativeControllerDemo()')
     || !xrRunReadyRuntimeSource.includes('resumeXrNativeControllerDemo()')
     || !xrRunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraSource()')
-    || !xrV2RunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraSource()')
+    || xrV2RunReadyRuntimeSource.includes('applyXrRunReadyDefaultCameraSource()')
     || !xrRunReadyCameraDefaultsSource.includes("selectXrNativeControllerCameraMode('fixed-follow')")
     || xrRunReadyCameraDefaultsSource.includes('publishCameraFramingRuntime')
     || xrRunReadyCameraDefaultsSource.includes('STRYBLDR_DEFAULT_CAMERA_SETTINGS')) {

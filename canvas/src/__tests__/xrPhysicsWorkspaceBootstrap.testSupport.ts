@@ -33,8 +33,8 @@ export const assertCanonicalXrEntry = (entries: WorkspaceEntries) => {
     throw new Error('expected the Source Files entry to reuse the canonical in-repo XR document without a duplicated fallback copy')
   }
   for (const requiredMetadata of [
-    'status: "runtime-ready"',
-    'runtime_status: "runtime-ready"',
+    'status: runtime-ready',
+    'runtime_status: browser-local-runtime-ready',
     'native_runtime: true',
     'external_dependencies: []',
   ]) {

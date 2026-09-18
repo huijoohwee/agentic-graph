@@ -14,7 +14,7 @@ demos:
       - title: Rocket
         text: "Steer, apply the booster and hold the landing control to return to the pad. The controller selector switches between ball and rocket."
       - title: Shared scene
-        text: "Source: docs/workspace-seeds/agentic-graph-physics-playground-demo.md. This demo reuses the canonical interactive scene and its native physics runtime."
+        text: "Source: docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md. This demo reuses the canonical interactive scene and its native physics runtime."
   - id: launch-copilot
     title: Launch Copilot (81rv10)
     repository: https://github.com/anthropics/commerce-agents

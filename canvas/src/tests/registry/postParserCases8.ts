@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["workspace.xrSeed.consolidationPreservesBytes", "@/__tests__/xrSeedConsolidation.test", "testXrSeedConsolidationPreservesAuthoredBytes"],
   ["workspace.activeEntryCache.cacheGlobalInvalidationFencesDelayedRead","@/__tests__/workspaceActiveEntryCacheIsolation.test","testActiveEntryCacheGlobalInvalidationFencesDelayedRead"],
   ["workspace.activeEntryCache.cacheCapturesMetadataBeforeAsyncRepair","@/__tests__/workspaceActiveEntryCacheIsolation.test","testActiveEntryCacheCapturesMetadataBeforeAsyncRepair"],
   ["workspace.activeEntryCache.cacheBoundsCombinedRetainedCharacters","@/__tests__/workspaceActiveEntryCacheIsolation.test","testActiveEntryCacheBoundsCombinedRetainedCharacters"],

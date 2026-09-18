@@ -28,8 +28,8 @@ test('XR v2 workspace seed is the mandatory browser-local mount authority', () =
   assert.match(seed, yamlScalar('kgCanvasSurfaceMode', '3d'))
   assert.match(seed, yamlScalar('kgCanvasRenderMode', '3d'))
   assert.match(seed, yamlScalar('kgCanvas3dMode', '3d'))
-  assert.match(seed, /^shared_xr_scene:\n {2}source_authority: "?\/docs\/workspace-seeds\/agentic-graph-physics-playground-demo\.md"?$/mu)
-  assert.match(seed, indentedYamlScalar('world_ownership', 'overlay-only'))
+  assert.match(seed, /^shared_xr_scene:\n {2}source_authority: "?\/docs\/workspace-seeds\/agentic-graph-ar-vr-xr-runtime-readiness-demo\.md"?$/mu)
+  assert.match(seed, indentedYamlScalar('world_ownership', 'source-authored'))
   assert.match(seed, indentedYamlScalar('renderer_owner', 'canvas/src/lib/three/ThreeGraph.impl.tsx'))
   assert.match(seed, /^ {2}second_r3f_canvas_forbidden: true$/mu)
   assert.match(
@@ -44,10 +44,10 @@ test('XR v2 workspace seed is the mandatory browser-local mount authority', () =
   const activationRuntime = read('canvas/src/features/canvas/XrV2RunReadyDemoRuntime.tsx')
   assert.match(activationRuntime, /useSourceFilesBootstrapReady/u)
   assert.match(activationRuntime, /if \(!sourceFilesBootstrapReady\) return/u)
-  assert.match(
-    activationRuntime,
-    /if \(store\.canvasRenderMode !== '3d' \|\| store\.canvas3dMode !== 'xr'\) \{\s*activateXrSceneSurface\(\{ preserveGameplay: false \}\)\s*\/\/ Let the shared Canvas finish its mode transition before readiness\s*\/\/ subscribes to mounted evidence from that exact surface\.\s*return\s*\}/u,
-  )
+  assert.match(activationRuntime, /if \(canvasRenderMode !== '3d' \|\| canvas3dMode !== 'xr'\) return/u)
+  const physicsRuntime = read('canvas/src/features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
+  assert.match(physicsRuntime, /activateXrSceneSurface\(\{ preserveGameplay: !dedicatedDemo \}\)/u)
+
 
   const pinned = readFileSync(
     resolve(REPOSITORY_ROOT, 'docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'),
@@ -85,20 +85,14 @@ test('XR v2 workspace smoke activates only through the actual Explorer row', () 
   assert.match(verifier, /data-kg-camera-optics-source="camera-canvas"/u)
 })
 
-test('XR v2 workspace seed keeps only the native XR camera composition', () => {
-  const aspectMask = read('canvas/src/features/three/XrCameraAspectMask.tsx')
+test('the consolidated XR source keeps one shared authoring camera owner', () => {
   const controls = read('canvas/src/features/three/Controls.tsx')
-  const framing = read('canvas/src/features/three/cameraFramingControlsRuntime.ts')
-  const playback = read('canvas/src/features/three/xrCameraPlaybackControlsRuntime.ts')
-
-  assert.match(aspectMask, /isXrV2RunReadyDemoActive/u)
-  assert.match(aspectMask, /if \(!settings \|\| xrV2NativeCompositionOnly\) return null/u)
-  assert.match(controls, /isXrV2RunReadyDemoActive\(markdownDocumentName, markdownDocumentText\)/u)
-  assert.match(controls, /baseEnabled: !paused && !choreographyOwnsCamera && !immersiveMediaActive && !xrV2NativeCompositionOnly/u)
-  assert.match(controls, /nativeCompositionOnly: xrV2NativeCompositionOnly/u)
-  assert.match(framing, /sharedCameraFramingEnabled = isSharedCameraFramingSurfaceMode\(mode\) && !nativeCompositionOnly/u)
-  assert.match(framing, /!sharedCameraFramingEnabled/u)
-  assert.match(playback, /!nativeCompositionOnly && xrChoreographyCanDriveCamera/u)
+  const readiness = read('canvas/src/features/canvas/XrV2RunReadyDemoRuntime.tsx')
+  const physics = read('canvas/src/features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
+  assert.doesNotMatch(controls, /xrV2NativeCompositionOnly/)
+  assert.match(controls, /choreographyOwnsCamera = xrChoreographyOwnsCamera/)
+  assert.doesNotMatch(readiness, /developAndRunXrNativeControllerDemo|applyXrRunReadyDefaultCameraSource|setFloatingPanelView/)
+  assert.match(physics, /ensureXrPhysicsRunReadyDemoRunning/)
 })
 
 test('XR v2 review browser gate retains comprehensive and Explorer evidence', () => {

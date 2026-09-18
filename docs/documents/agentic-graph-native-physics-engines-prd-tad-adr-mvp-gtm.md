@@ -31,7 +31,7 @@ source_authority:
   spatial_step: "canvas/src/features/physics/spatialPhysicsStep.ts"
   xr_adapter: "canvas/src/features/three/xrSpatialPhysicsAdapter.ts"
   xr_projection: "canvas/src/features/three/XrPhysicsStageRuntime.tsx"
-  canonical_seed: "docs/workspace-seeds/agentic-graph-physics-playground-demo.md"
+  canonical_seed: "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-NATIVE-PHYSICS-ENGINES-PRD-TAD-ADR-MVP-GTM"
 local_rung: "undocumented"

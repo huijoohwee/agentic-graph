@@ -51,11 +51,11 @@ source_references:
   workspace_fs: "canvas/src/features/workspace-fs/workspaceFs.ts"
   workspace_upsert: "canvas/src/features/workspace-fs/upsertWorkspaceTextDocument.ts"
   cost_log_contract: "contracts/cost-log.schema.js"
-  workspace_seed: "docs/workspace-seeds/agentic-graph-physics-playground-demo.md"
+  workspace_seed: "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
   runtime_proof: "docs/documents/agentic-graph-game-fps-runtime-readiness.md"
   native_physics_boundary: "docs/documents/agentic-graph-native-physics-engines-prd-tad-adr-mvp-gtm.md"
   ar_broadcast_runtime: "canvas/src/features/game-fps/arBroadcastRuntime.ts"
-  ar_broadcast_validation_seed: "docs/workspace-seeds/agentic-graph-physics-playground-demo.md"
+  ar_broadcast_validation_seed: "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
   ar_inspiration_reference_only: "github.co (inspiration only; no source copy, no dependency; Supabase forbidden)"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-GAME-FPS-PRD-TAD-ADR-MVP-GTM"
@@ -146,7 +146,7 @@ A bounded, optional companion that films the live authored ECS scene as a miniat
 - **Broadcast framing reuses existing owners.** Filming and framing reuse the existing camera source (fixed-follow / free-orbit), Timeline camera-marks, and the existing capture/export path — no new renderer or recorder.
 - **MCP-invocable.** Strict native `/ar.broadcast @canvas #broadcast` with exactly one supported operation from `open`, `start`, `anchor`, `record`, `stop`, `exit`; browser-local WebMCP exposes only `agentic-graph.inspect_local_ar_broadcast` and `agentic-graph.control_local_ar_broadcast` — no stdio, HTTP, gateway, or deployment surface.
 - **No new Must-scope dependency.** The WebXR path is a browser standard (no dependency); the image-target fallback is an optional module loaded only when AR broadcast is opted into on a non-WebXR browser, so the Must-scope "zero new runtime dependencies" holds.
-- **Validation surface.** Exercised against the native XR physics-playground seed (`docs/workspace-seeds/agentic-graph-physics-playground-demo.md`), which already provides the shared XR Canvas, selectable camera source, the Motion Control camera boundary, and the `/ @ #` MCP grammar — all local-only with no external calls.
+- **Validation surface.** Exercised against the native XR physics-playground seed (`docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md`), which already provides the shared XR Canvas, selectable camera source, the Motion Control camera boundary, and the `/ @ #` MCP grammar — all local-only with no external calls.
 
 ### User stories
 
@@ -267,7 +267,7 @@ Given AR Tabletop Broadcast active, when the mission ticks, then AR reads only t
 | XR lifecycle | `canvas/src/features/three/xrSceneSurfaceRuntime.ts`, existing XR controller runtime, and shared surface catalog | Route Media, Animation, Motion Control, Game Mode, and Camera through one XR activation owner; pause, resume, and restore without replacing the Canvas or world |
 | Browser persistence | `canvas/src/features/workspace-fs/` | Use WorkspaceFs and its existing source-file bridge; do not add storage or Git owners |
 | Cost truth | `contracts/cost-log.schema.js` | Accept only the canonical model-free zero record for the no-reasoning tick |
-| Activation | `docs/workspace-seeds/agentic-graph-physics-playground-demo.md` plus `/game.mode @canvas #gameplay` | One source-backed `xr-physics` world plus explicit Game Mode overlay; no standalone game seed or auto-start route |
+| Activation | `docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md` plus `/game.mode @canvas #gameplay` | One source-backed `xr-physics` world plus explicit Game Mode overlay; no standalone game seed or auto-start route |
 | Proof | `docs/documents/agentic-graph-game-fps-runtime-readiness.md` | Exact commands and evidence state |
 
 ### Runtime topology

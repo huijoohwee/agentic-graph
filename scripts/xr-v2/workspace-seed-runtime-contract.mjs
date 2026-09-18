@@ -14,8 +14,8 @@ import {
 
 export const XR_V2_SHARED_SCENE_AUTHORITY = Object.freeze({
   id: 'xr-v2',
-  sourceAuthority: '/docs/workspace-seeds/agentic-graph-physics-playground-demo.md',
-  worldOwnership: 'overlay-only',
+  sourceAuthority: '/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
+  worldOwnership: 'source-authored',
   surfaceOwner: 'canonical XR Physics shared Three surface',
   rendererOwner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
   secondR3fCanvasForbidden: true,
@@ -52,7 +52,7 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
   const criteria = Array.isArray(frontmatter.acceptance_criteria) ? frontmatter.acceptance_criteria : []
   const flow = isRecord(frontmatter.flow) ? frontmatter.flow : {}
   const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
-  const connections = Array.isArray(flow.connections) ? flow.connections : []
+  const connections = Array.isArray(flow.edges) ? flow.edges : []
   const missing = []
   const requireValue = (label, actual, expected) => {
     if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
@@ -74,7 +74,7 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
     ['run_ready_demo.source_backed', readBooleanPreset(runReady.source_backed), true], ['run_ready_demo.native_runtime', readBooleanPreset(runReady.native_runtime), true],
     ['run_ready_demo.browser_activation_evidence', runReady.browser_activation_evidence, 'actual Explorer Source Files row selection; no environment selector'],
     ['run_ready_demo.mount_status', runReady.mount_status, 'mounted-after-applied-source-document'],
-    ['run_ready_demo.canonical_xr_world_owner', runReady.canonical_xr_world_owner, 'docs/workspace-seeds/agentic-graph-physics-playground-demo.md'],
+    ['run_ready_demo.canonical_xr_world_owner', runReady.canonical_xr_world_owner, 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'],
     ['shared_xr_scene.source_authority', sharedXrScene.source_authority, XR_V2_SHARED_SCENE_AUTHORITY.sourceAuthority],
     ['shared_xr_scene.world_ownership', sharedXrScene.world_ownership, XR_V2_SHARED_SCENE_AUTHORITY.worldOwnership],
     ['shared_xr_scene.surface_owner', sharedXrScene.surface_owner, XR_V2_SHARED_SCENE_AUTHORITY.surfaceOwner],
@@ -134,7 +134,7 @@ export const requireXrV2RuntimeIdentity = ({ basename, relativePath, source }) =
     ['xr_v2_ac_12', 'xr_v2_certification_boundary', 'stop at external certification'],
   ]
   for (const [from, to, label] of requiredEdges) {
-    if (!connections.some(edge => isRecord(edge) && edge.from === from && edge.to === to && edge.label === label)) missing.push(`flow.connections=${from}->${to}:${label}`)
+    if (!connections.some(edge => isRecord(edge) && edge.source === from && edge.target === to && edge.label === label)) missing.push(`flow.edges=${from}->${to}:${label}`)
   }
   if (missing.length > 0) throw new Error(`runtime-ready workspace document ${basename} has invalid authority; missing=${JSON.stringify(missing)}`)
 }

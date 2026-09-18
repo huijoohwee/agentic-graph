@@ -78,7 +78,7 @@ test('seed readiness rejects a missing course-director authority field', async (
       seed,
       flightSeedPath,
       physicsSeedPath:
-        'docs/workspace-seeds/agentic-graph-physics-playground-demo.md',
+        'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
       readText: relativePath => readFile(
         path.join(repositoryRoot, relativePath),
         'utf8',

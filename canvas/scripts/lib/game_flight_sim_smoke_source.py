@@ -17,7 +17,7 @@ from lib.game_flight_sim_smoke_source_selection import (
 
 SOURCE_BASENAME = "agentic-graph-game-flight-sim-demo.md"
 SOURCE_DEMO_ID = "flight-sim"
-PHYSICS_SOURCE_BASENAME = "agentic-graph-physics-playground-demo.md"
+PHYSICS_SOURCE_BASENAME = "agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
 EXPECTED_SOURCE_NODE_IDS = {
     "flight_aircraft",
     "flight_demo_entry",

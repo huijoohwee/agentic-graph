@@ -366,7 +366,15 @@ function resolveCast(
   const savedActors = savedRecords
     .map(saved => ({ actorId: String(saved.actorId || '').trim(), label: String(saved.label || '').trim() }))
     .filter(actor => actor.actorId && !graphActorIds.has(actor.actorId) && subjects.some(subject => subject.id === actor.actorId))
-  return Object.freeze([...graphActors, ...savedActors].slice(0, XR_MOTION_REFERENCE_MAX_CAST_TRACKS).map((actor, index) => {
+  // Explicit authored marks take priority over auto-generated graph actors.
+  // Large readiness/behavior graphs must not evict placed subjects' tracks.
+  const actors = [...graphActors, ...savedActors]
+  const byId = new Map(actors.map(actor => [actor.actorId, actor]))
+  const ordered = actors.length > XR_MOTION_REFERENCE_MAX_CAST_TRACKS
+    ? [...savedById.keys()].flatMap(id => byId.has(id) ? [byId.get(id)!] : [])
+      .concat(actors.filter(actor => !savedById.has(actor.actorId)))
+    : actors
+  return Object.freeze(ordered.slice(0, XR_MOTION_REFERENCE_MAX_CAST_TRACKS).map((actor, index) => {
     const actorId = actor.actorId || `actor-${index + 1}`
     const saved = savedById.get(actorId) || {}
     const fallbackPosition = defaultActorPosition(index)

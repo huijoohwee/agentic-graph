@@ -165,14 +165,14 @@ test('pinned behavior and spatial asset contracts expose exact runtime schemas',
   assert.equal(isXrV2SpatialAssetMetadata({ ...metadata, unexpected: true }), false)
 })
 
-test('XR v2 shares the dedicated XR world without starting a second Physics lifecycle owner', () => {
+test('XR v2 uses the shared Physics lifecycle owner', () => {
   const path = '/docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
   const source = readFileSync(
     new URL('../../../docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md', import.meta.url),
     'utf8',
   )
   assert.equal(isXrPhysicsRunReadyDemoActive(path, source), true)
-  assert.equal(isXrPhysicsRuntimeRunReadyDemoActive(path, source), false)
+  assert.equal(isXrPhysicsRuntimeRunReadyDemoActive(path, source), true)
 })
 
 test('workspace readiness does not promote projected counts or an unmounted viewer', async () => {

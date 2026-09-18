@@ -10,7 +10,7 @@ source_root: "agentic-graph/docs"
 `agentic-graph/docs/workspace-seeds` is the only authored source for agentic-graph
 workspace seeds.
 
-The dedicated XR v2 source is
+The consolidated XR Playground and readiness source is
 `agentic-graph-ar-vr-xr-runtime-readiness-demo.md`. Its source-authored
 `run_ready_demo.id` (`xr-v2`), immutable v3.0.0 authority identity,
 mounted-fixture graph, AC-1–AC-12 browser evidence chain, separate AC-14
@@ -25,9 +25,8 @@ reopen are separate explicit actions through the existing storage surface; the
 adapter reports the inherited authentication and server-side digest gap as a
 Production promotion blocker.
 
-The XR Physics source is `agentic-graph-physics-playground-demo.md`; its
-`run_ready_demo.id`, source identity, scene composition, Motion Control, and
-optional Game Mode projection are edited here first. The Flight Sim source is
+The same document owns Physics scene composition, Motion Control, and the
+optional Game Mode projection. The Flight Sim source is
 `agentic-graph-game-flight-sim-demo.md`; its `run_ready_demo.id` (`flight-sim`),
 source identity, native flight demo, asset pipeline, shared Camera catalog,
 Motion Control handoff, and Flight Sim projection are edited here first. It is
@@ -80,7 +79,6 @@ Explorer → Source Files must reconcile this exact authored inventory in both r
 - `agentic-graph-maps-places-reference.md`
 - `agentic-graph-maps-places.md`
 - `agentic-graph-missalph-demo.md`
-- `agentic-graph-physics-playground-demo.md`
 - `agentic-graph-ralphthon-video-demo.md`
 - `agentic-graph-research-agent-demo.md`
 - `agentic-graph-sme-care-agent-demo.md`
@@ -102,16 +100,15 @@ The protected app build packages these exact source files as revision-pinned, re
 | Seed source | `run_ready_demo.id` | Surface | Status | Notes |
 |---|---|---|---|---|
 | `agentic-graph-ar-vr-xr-runtime-readiness-demo.md` | `xr-v2` | XR + 3D + Motion Control workspace graph | browser-demo-ready for AC-1–AC-12; AC-14 source-only; full pinned contract partial | Immutable v3.0.0 authority at commit `1272bae345edf0d132e6fc750d5c5c7eade00b29`, blob `ff41649ac8562b62c7c539baed2d226402fdfe51`, SHA-256 `5067f019a099a94ec02d3f7581963cf2c514ab46bf5a853020df8dfe85d5ef45`; source-authors the mounted AC-1–AC-12 chain while AC-14 remains a separate source implementation; saved assets require explicit publish/refresh/reopen actions; camera/sensors are user enable/disable; `npm run xr-v2:review-ready` is the bounded local proof gate but cannot establish AC-14 browser/device proof, named physical-device, hardened shared storage, headset, Production, or deployment certification |
-| `agentic-graph-physics-playground-demo.md` | `xr-physics` | Shared XR Canvas (physics playground, optional Game Mode) | runtime-ready | Canonical XR terrain, controllers, Motion Control, camera source |
 | `agentic-graph-game-flight-sim-demo.md` | `flight-sim` | XR Mode overlay on the Physics-authored world | runtime-ready | Native deterministic flight, Media environment-kit selection into the shared Geo panel and next Flight spatial profile, exactly three ordered waypoints then a landing pad, shared Fixed Follow / Free Orbit ownership with Chase/Cockpit/Survey descriptors and a local north-up route inset, spec-primary required aircraft plus one committed-local optional opaque beacon, strict browser-local invocation, Decisions-only WorkspaceFs; prove with `npm run game-flight-sim:runtime-ready` and `npm run game-flight-sim:browser-smoke` |
 | `agentic-graph-game-city-building-sim-demo.md` | `city-sim` | Geo+XR: one semantic MapLibre canvas with checked-in regional context, meter-scaled City parcels, and stopped Flight context | implementation candidate | Applied source selects one exact regional POI profile and authors the City grid/geographic profile; the regional band contains every admitted surface plus one identity locator per POI; layer order is regional context, City, then Flight; the Flight-local XR environment and HTML POI markers remain absent; City creates no Three presentation and any retained shared canvas is inactive and pointer-transparent; runtime-ready status follows exact-head source and browser proof |
 | `agentic-graph-game-mmorpg-demo.md` | planned `mmorpg` | 2D Flow design record (planned shared-XR MMORPG World) | draft | Non-activating design seed until its runtime-readiness and browser-smoke gates exist and pass; proposed offline single-player MMO-style RPG world (no networked multiplayer, no Supabase); proposed three-track asset provenance |
 
-Every runtime-ready seed, and every draft's target contract, is **native and in-repo**: `run_ready_demo.external_dependencies` or `planned_run_ready_demo.external_dependencies` must be empty, no runtime external asset/provider/model dependency call is permitted, and no external project source may be copied or depended upon. The XR v2 seed's explicit Publish, Refresh shared, and Reopen actions may use only the existing first-party Asset Contract Writer/storage boundary; they never run on mount, capture, authoring, save, catalog load, or playback. Local runtime readiness is not protected integration, projection, or release proof. New seeds are registered in this table; stale, renamed, fallback, legacy, conditional, or conflicting seed variants are forbidden rather than aliased or hidden.
+Every runtime-ready seed, and every draft's target contract, is **native and in-repo**: `run_ready_demo.external_dependencies` or `planned_run_ready_demo.external_dependencies` must be empty, no runtime external asset/provider/model dependency call is permitted, and no external project source may be copied or depended upon. The XR v2 seed's explicit Publish, Refresh shared, and Reopen actions may use only the existing first-party Asset Contract Writer/storage boundary; they never run on mount, capture, authoring, save, catalog load, or playback. Local runtime readiness is not protected integration, projection, or release proof. The previous Playground command selector resolves to `xr-v2`; it does not register another seed. New seeds are registered in this table; stale, renamed, fallback, legacy, conditional, or conflicting seed variants are forbidden rather than aliased or hidden.
 
 The future projection contract for the Flight Sim seed is documented in `agentic-graph-game-flight-sim-demo.companion.md`, and for the MMORPG seed in `agentic-graph-game-mmorpg-demo.companion.md`. Those companions are documentation notes only — they carry no `run_ready_demo` activation and are not seeds. Flight Sim and MMORPG projection files do not currently exist. The Flight projection remains absent until an exact protected integrated SHA passes its gates and an operator authorizes a protected release.
 
-The exact current `agentic-canvas-os/docs/workspace-seeds` inventory contains only the byte-identical `agentic-graph-physics-playground-demo.md` release-pinned default-storage projection. It is not an independent authoring surface. A protected docs update may refresh it only from this source, and cross-repository validation must reject any byte drift. XR v2, City, Flight, draft, and companion projections are intentionally forbidden from that inventory in this Dev candidate.
+The generated `agentic-canvas-os/docs/workspace-seeds` inventory must contain only the byte-identical `agentic-graph-ar-vr-xr-runtime-readiness-demo.md` default-storage projection produced from the admitted Graph revision. It is not an independent authoring surface; existing release-pinned output changes only through protected promotion. A protected docs update may refresh it only from this source, and cross-repository validation must reject any byte drift. City, Flight, draft, and companion projections are intentionally forbidden from that inventory in this Dev candidate.
 
 Publish repositories must not contain an editable `docs/workspace-seeds` copy. Their runtime assets and public routes are generated by the protected release controller from the verified agentic-graph source. Stale, renamed, fallback, legacy, conditional, or conflicting seed variants are forbidden rather than aliased or hidden.
 

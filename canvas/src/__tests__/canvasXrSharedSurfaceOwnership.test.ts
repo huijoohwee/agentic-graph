@@ -392,7 +392,7 @@ export async function testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels() 
     'agentic-graph-game-mmorpg-demo.md',
   ]
   const flightBasename = 'agentic-graph-game-flight-sim-demo.md'
-  const physicsBasename = 'agentic-graph-physics-playground-demo.md'
+  const physicsBasename = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
   const applyWorkspaceSeed = async (basename: string): Promise<void> => {
     const name = `docs/workspace-seeds/${basename}`
     const text = readWorkspaceSeed(basename)
@@ -421,11 +421,11 @@ export async function testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels() 
   const assertPhysicsXr = (): void => {
     const active = useGraphStore.getState()
     if (active.canvasRenderMode !== '3d'
-      || active.canvas3dMode !== 'xr'
+      || active.canvas3dMode !== '3d'
       || readGeospatialOverlayEnabledPreference()
       || active.floatingPanelOpen !== true
       || active.floatingPanelView !== 'motionControl') {
-      throw new Error(`expected Physics source activation to restore native XR, got ${JSON.stringify({
+      throw new Error(`expected consolidated source to stage the 3D host before the shared XR lifecycle, got ${JSON.stringify({
         canvasRenderMode: active.canvasRenderMode,
         canvas3dMode: active.canvas3dMode,
         geospatialModeEnabled: readGeospatialOverlayEnabledPreference(),
