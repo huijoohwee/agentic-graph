@@ -5,6 +5,8 @@ import { useDashboardWidgets, widgetSettings } from '@/components/DashboardCanva
 import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import { agentRunInspectionJson, importAgentRunFile } from './agentRunImport'
 import { AgentRunSpanViews, durationLabel } from './AgentRunSpanViews'
+import { AgentRunMetricSelector } from './AgentRunMetricSelector'
+import type { SpanMetric } from './agentRunSpanMetric'
 import { readValidationObservation, validationTrace, type ValidationObservation } from './validationObservationProjection'
 import { openAgentRunInspection, activateAgentRunWorkspace, closeAgentRunInspection, useAgentRunInspection, useAgentRunWorkspace, updateAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection, selectAgentRunView } from './agentRunInspectionStore'
 import { AGENT_RUN_CANVAS_VIEWS } from '@/lib/canvas/canvasViewInvocationContract.mjs'
@@ -38,6 +40,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const mutating = React.useRef(false)
   const [busy, setBusy] = React.useState(false), [error, setError] = React.useState(''), [notice, setNotice] = React.useState('')
   const [topologyDetail, setTopologyDetail] = React.useState<'all' | 'agents'>('agents')
+  const [spanMetric, setSpanMetric] = React.useState<SpanMetric>('time')
   const [localView, setLocalView] = React.useState('tree'), [localSearch, setLocalSearch] = React.useState(''), [live, setLive] = React.useState(false)
   const requestedView = workspace ? workspaceSession?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
   const view = views.some(item => item.key === requestedView) ? requestedView : 'tree'
@@ -323,6 +326,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       </section></details>
       <div className="flex flex-wrap items-center gap-2 py-2 text-xs">
         <label>Inspect <select aria-label="Inspect run details" value={view} onChange={event => setView(event.target.value)} style={inputStyle}>{views.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        {view === 'tree' && <AgentRunMetricSelector value={spanMetric} onChange={setSpanMetric} />}
         <input aria-label="Search spans by name, kind or status" placeholder="Search spans by name, kind or status" value={search} onChange={event => setSearch(event.target.value)} style={inputStyle} />
       </div>
       <div id={`agent-run-view-${view}-panel`} role="region" aria-label={views.find(item => item.key === view)!.label} className="min-w-0 py-2">
@@ -351,7 +355,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         {view === 'table' && <div className="overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={SPAN_COLUMNS} rows={spanRows(spans.map(row => row.span))}
           selectedRowIds={selection.spanId ? [selection.spanId] : []} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy=""
           sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={chooseSpan} onSelectionChanged={ids => chooseSpan(ids.at(-1) ?? null)} /></div>}
-        {view === 'tree' && <AgentRunSpanViews key={trace.runId} rows={spans} selectedId={selection.spanId} onSelect={chooseSpan} search={search} />}
+        {view === 'tree' && <AgentRunSpanViews key={trace.runId} rows={spans} selectedId={selection.spanId} onSelect={chooseSpan} search={search} metric={spanMetric} />}
         {view === 'topology' && topology && <><label className="flex items-center gap-2 text-xs">Topology detail<select aria-label="Topology detail" style={inputStyle} value={topologyDetail} onChange={event => setTopologyDetail(event.target.value as 'all' | 'agents')}><option value="agents">Agents</option><option value="all">All spans</option></select></label><p className="py-1 text-xs">Agent view shows containment and direct agent links. Runs without agent spans show all checks.</p><React.Suspense fallback={<p>Loading topology…</p>}><GraphCanvasInspection graph={topology}
           selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
           onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense></>}

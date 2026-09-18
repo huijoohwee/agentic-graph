@@ -136,9 +136,9 @@ function DashboardTableRows(props: {
         <section
           key={row.id}
           className={[
-            'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--kg-border)] py-2 last:border-b-0',
+            'grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--kg-border)] px-2 py-2 last:border-b-0',
             rowMovable ? 'cursor-grab select-none active:cursor-grabbing' : '',
-            selected ? 'rounded border-b-transparent bg-blue-50/80 px-2' : '',
+            selected ? 'rounded border-b-transparent bg-blue-50/80' : '',
             dragging ? 'opacity-45' : '',
           ].join(' ')}
           data-kg-dashboard-table-row={row.id}

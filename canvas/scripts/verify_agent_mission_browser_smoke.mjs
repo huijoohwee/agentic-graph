@@ -17,6 +17,8 @@ let page, mission, selected, returnView, peak = 0
 async function openPage() {
 page = await context.newPage()
 page.setDefaultTimeout(15000)
+// Host fixtures must not inherit the developer clone's explicitly selected workspace archive.
+await page.route('**/api/agent-swarm/workspace-source', route => route.fulfill({ contentType: 'application/json', body: '{"code":"workspace_source_unselected"}' }))
 page.on('pageerror', error => { errors.push(error.message); console.error(error.stack) })
 page.on('console', message => { if (message.type() === 'error') console.error('Browser console:', message.text()) })
 page.on('request', request => {

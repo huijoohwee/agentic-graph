@@ -6,6 +6,11 @@ observation as the tree. Select the card once, then choose **Flip** on its share
 to configure imports, filters, run selection, refresh and display settings. Configuration scrolls
 inside the unchanged card dimensions; the front presents evidence.
 
+The front's compact metric selector switches the Span tree between Time, Tokens, CPU, Memory,
+and Cost. Time retains source clock offsets; resource bars compare recorded per-span values
+against the largest loaded measurement. Unknown values have no bar, measured zero stays zero,
+and reused spans retain their labelled original measurements. The selection survives refreshes.
+
 Collect real phase receipts with the native `agentic-os workflow collect --input=<input>` owner.
 Select the exact immutable `manifest` path returned by collection for this local clone:
 

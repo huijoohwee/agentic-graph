@@ -2,6 +2,8 @@ import * as React from 'react'
 import { MainPanelTypeIcon, type MainPanelTypeIconKey } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import type { visibleSpanTree } from './missionControlProjection'
 import { numberLabel, spanResources, resourceLabels } from './missionControlProjection'
+import { durationLabel, spanMetricLabel, spanMetricMaximum, spanMetricPercent, spanMetricValue, type SpanMetric } from './agentRunSpanMetric'
+export { durationLabel } from './agentRunSpanMetric'
 
 const tones: Record<string, { fill: string; stroke: string }> = {
   agent: { fill: '#e0e7ff', stroke: '#4f46e5' },
@@ -11,12 +13,11 @@ const tones: Record<string, { fill: string; stroke: string }> = {
   check: { fill: '#e0f2fe', stroke: '#0369a1' },
 }
 export const spanTone = (kind: string) => tones[kind] ?? tones.agent!
-export const durationLabel = (ms: number | null) => ms === null ? 'Unknown duration' : ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`
 // Semantic references reuse the Help library's component definitions and discoverability.
 const icons: Record<string, MainPanelTypeIconKey> = { agent: 'invocation.subject.agent', model: 'invocation.subject.memory',
   tool: 'invocation.prefix.slash', retrieval: 'invocation.subject.research', check: 'field.type.checkbox' }
-export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '' }: {
-  rows: ReturnType<typeof visibleSpanTree>; selectedId: string | null; onSelect: (id: string) => void; search?: string
+export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', metric = 'time' }: {
+  rows: ReturnType<typeof visibleSpanTree>; selectedId: string | null; onSelect: (id: string) => void; search?: string; metric?: SpanMetric
 }) {
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set())
   const container = React.useRef<HTMLUListElement>(null)
@@ -48,12 +49,14 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '' }: {
     }
   }
   const ends = new Map<string, number>()
+  const maximum = spanMetricMaximum(rows.map(row => row.span), metric)
   for (const { span } of rows) { const scope = span.timing.scope ?? ''; ends.set(scope, Math.max(ends.get(scope) ?? 1, (span.timing.offset ?? 0) + (span.timing.inclusive ?? 0))) }
   return <ul ref={container} role="tree" aria-label="Span hierarchy" className="min-w-0 py-2">
     {visible.map(({ span, depth, missingParent }, index) => {
       const tone = spanTone(span.kind), selected = selectedId === span.spanId
       const iconKey = icons[span.kind] ?? 'invocation.subject.agent', resources = span.status === 'reused' && span.historicalResources ? span.historicalResources : spanResources(span)
       const end = ends.get(span.timing.scope ?? '') ?? 1
+      const metricValue = spanMetricValue(span, metric), metricLabel = spanMetricLabel(metricValue, metric)
       const sourceIndex = rows.findIndex(row => row.span.spanId === span.spanId)
       const hasChildren = (rows[sourceIndex + 1]?.depth ?? 0) > depth
       const expanded = Boolean(search.trim()) || !collapsed.has(span.spanId)
@@ -99,12 +102,17 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '' }: {
               </span>
             </span>
           </span>
-          <span data-span-timing="" className="relative w-full shrink-0 sm:w-[40%]" title={`Clock: ${span.timing.scope || 'run'} · Start offset: ${numberLabel(span.timing.offset, ' ms')}`} >
+          {metric === 'time' ? <span data-span-timing="" className="relative w-full shrink-0 sm:w-[40%]" title={`Clock: ${span.timing.scope || 'run'} · Start offset: ${numberLabel(span.timing.offset, ' ms')}`} >
             {span.timing.scope && <span className="block truncate text-[10px] opacity-60">{span.timing.scope}{span.timing.basis === 'observed-extent' ? ' · observed extent' : ''}</span>}
             {span.timing.offset === null || span.timing.inclusive === null ? <span className="text-xs">{span.kind === 'workflow' && !span.timing.scope ? 'Worktree timelines below' : span.timing.inclusive !== null ? `Duration ${durationLabel(span.timing.inclusive)} · start not recorded` : 'Timestamp not recorded in source receipt'}</span>
               : <span aria-hidden="true" className="block h-2 rounded bg-gray-200"><span className="block h-2 rounded" style={{ background: tone.stroke,
                 marginLeft: `${span.timing.offset / end * 100}%`, width: `${span.timing.inclusive / end * 100}%` }} /></span>}
-          </span>
+          </span> : <span data-span-metric={metric} data-span-metric-value={metricValue ?? 'unknown'} className="relative w-full shrink-0 sm:w-[40%]"
+            title={`${metricLabel} · relative to largest loaded span measurement${span.status === 'reused' ? ' · original measurement' : ''}`}>
+            <span className="mb-1 block text-xs">{metricLabel}</span>
+            {metricValue !== null && <span aria-hidden="true" className="block h-2 rounded bg-gray-200"><span className="block h-2 rounded"
+              style={{ background: tone.stroke, width: `${spanMetricPercent(metricValue, maximum)}%` }} /></span>}
+          </span>}
         </div>
       </li>
     })}

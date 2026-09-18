@@ -6,7 +6,7 @@
 .kg-dashboard-widget { border-radius: 0.375rem; }
 .kg-dashboard-widget[data-kg-widget-selected="true"],
 .kg-dashboard-widget:focus-visible,
-.kg-dashboard-widget:has(> .kg-dashboard-widget-face > :focus-visible),
+.kg-dashboard-widget:focus-within,
 .kg-dashboard-widget-face :focus-visible,
 [data-kg-dashboard-card]:focus,
 [data-kg-dashboard-metric]:focus,
