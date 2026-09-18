@@ -1,5 +1,8 @@
 import React from 'react'
 import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
+import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
+import { useDashboardWidgets, widgetSettings } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
+import { WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import type { GraphData } from '@/lib/graph/types'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -36,11 +39,11 @@ function CodebaseExplorer({ codebase, span }: { codebase: MissionCodebaseIndex; 
   const edges = selected ? lookup?.incidentEdgesByNodeId.get(selected) ?? [] : []
   if (!graph) return <p role="status" className="py-3 text-sm">{error || 'Loading retained D3 projection…'}</p>
   return <section aria-label="Codebase traversal and context" className="min-w-0 space-y-3 pt-3">
-    <div role="status" className="rounded border p-3 text-xs"><p>{span ? `Selected span: ${span.operation}` : 'Codebase context'}</p><p>{impact.reason}</p>
+    <div role="status" aria-label="Codebase context" tabIndex={0} className={`rounded border p-3 text-xs ${WIDGET_SELECTION_SURFACE_CLASS_NAME}`}><p>{span ? `Selected span: ${span.operation}` : 'Codebase context'}</p><p>{impact.reason}</p>
       {span && <button className={`${button} mt-2`} onClick={() => selectAgentRunInspection(null)}>Clear span focus</button>}
     </div>
     <label className="grid gap-1 text-xs">Find a node in this projection
-      <input className="rounded border bg-transparent p-2" value={search} onChange={event => setSearch(event.target.value)} placeholder="Source path or symbol" />
+      <input className={`rounded border bg-transparent p-2 ${WIDGET_SELECTION_SURFACE_CLASS_NAME}`} value={search} onChange={event => setSearch(event.target.value)} placeholder="Source path or symbol" />
     </label>
     {search && <ul className="flex max-h-40 flex-wrap gap-2 overflow-auto" aria-label="Matching codebase nodes">
       {graph.nodes.filter(node => `${node.label} ${node.properties['corpus:sourcePath'] ?? ''}`.toLowerCase().includes(search.toLowerCase())).slice(0,20).map(node =>
@@ -72,7 +75,10 @@ function CodebaseExplorer({ codebase, span }: { codebase: MissionCodebaseIndex; 
 export default function AgentMissionOverview() {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
+  const widgetConfiguration = useDashboardWidgets()
+  const codebaseWidget = widgetSettings(widgetConfiguration.document, 'mission:codebase')
   const [exploring, setExploring] = React.useState(false)
+  React.useEffect(() => { if (typeof codebaseWidget.visible === 'boolean') setExploring(codebaseWidget.visible) }, [codebaseWidget.visible])
   const explorer = React.useRef<HTMLElement | null>(null)
   React.useEffect(() => {
     if (!inspection?.spanId) return
@@ -114,11 +120,18 @@ export default function AgentMissionOverview() {
           <button className={button} onClick={() => openView('evidence')}>Evaluation evidence</button></div>
       </li>
     </ol>
-    {data && exploring && <section ref={explorer}><DashboardCardView card={{ id: 'mission-codebase', title: 'Codebase knowledge graph', subtitle: 'Retained native snapshot · read only', kind: 'table', tone: 'blue', series: [], rows: [] }}>
-      <p className="text-xs">This explorer traverses the retained projection. Full-index queries use the same graph and snapshot identity from the index manifest.</p>
-      <CodebaseExplorer key={data.index.path} codebase={data} span={trace.spans.find(span => span.spanId === inspection.spanId) ?? null} />
-      <AgentMissionCodebaseGraphButton codebase={data} />
-    </DashboardCardView></section>}
+    {data && exploring && <section ref={explorer}>
+      <DashboardWidgetFlip widgetId="mission:codebase" template="codebase" title={codebaseWidget.title ?? 'Codebase knowledge graph'}
+        defaults={{ title: 'Codebase knowledge graph', subtitle: 'Retained native snapshot · read only', tone: 'blue' }}
+        configuration={<p className="text-xs">Uses the current Mission’s linked native codebase index. Renderer settings configure its retained D3 visualization.</p>}>
+        <DashboardCardView card={{ id: 'mission-codebase', title: codebaseWidget.title ?? 'Codebase knowledge graph', subtitle: codebaseWidget.subtitle ?? 'Retained native snapshot · read only', footnote: codebaseWidget.footnote, kind: 'table', tone: codebaseWidget.tone ?? 'blue', series: [], rows: [] }}>
+          <p className="text-xs">This explorer traverses the retained projection. Full-index queries use the same graph and snapshot identity from the index manifest.</p>
+          <CodebaseExplorer key={data.index.path} codebase={data} span={trace.spans.find(span => span.spanId === inspection.spanId) ?? null} />
+          <AgentMissionCodebaseGraphButton codebase={data} />
+        </DashboardCardView>
+      </DashboardWidgetFlip>
+    </section>}
+
     <details className="rounded border p-3" open><summary className="cursor-pointer text-sm font-semibold">Indexing economics · {model.model}</summary>
       <DashboardMetricGrid metrics={model.indexMetrics} />
       <p className="text-xs">{model.modelCalls} captured model calls. These are retained import measurements; opening this dashboard does not repeat indexing.</p>

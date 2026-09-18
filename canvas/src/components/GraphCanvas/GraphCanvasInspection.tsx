@@ -14,7 +14,9 @@ import { readLayoutMode2d } from '@/lib/graph/layoutMode'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { resolveMediaPreviewSurfaceSelectionProps } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { emitRendererPanelOpen } from '@/features/canvas/utils'
-import { focusRendererInspectionGraph, releaseRendererInspectionGraph } from '@/features/toolbar/floatingPanelBridge'
+import { focusRendererInspectionGraph, releaseRendererInspectionGraph, useRendererInspectionGraph } from '@/features/toolbar/floatingPanelBridge'
+
+import { getStoryboardWidgetPanelSelectionChromeClassName, WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 
 type Scene = Parameters<typeof setupGraphScene>[0]
 const noop = () => {}
@@ -28,6 +30,7 @@ export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect,
   highlightedNodeIds?: string[]; highlightedEdgeIds?: string[]
   rendererControls?: boolean
 }) {
+  const focusedGraph = useRendererInspectionGraph()
   const configuredSchema = useGraphStore(state => rendererControls ? state.schema : defaultSchema)
   const fitFill = useGraphStore(state => rendererControls ? state.viewportFitFillRatio : undefined)
   const inspectionSchema = React.useMemo(() => ({ ...configuredSchema, behavior: { ...configuredSchema.behavior,
@@ -113,7 +116,7 @@ export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect,
       <button type="button" onClick={fit} className={button}>Fit topology</button>
       {rendererControls && <button type="button" onClick={configure} className={button}>Renderer settings</button>}
     </div>
-    <div {...selectionProps} ref={parent} className="w-full min-w-0 overflow-hidden rounded border" style={{ height: 'clamp(360px, 60vh, 720px)' }}>
+    <div {...selectionProps} ref={parent} tabIndex={rendererControls ? 0 : undefined} className={`w-full min-w-0 overflow-hidden rounded border ${WIDGET_SELECTION_SURFACE_CLASS_NAME} ${getStoryboardWidgetPanelSelectionChromeClassName(rendererControls && focusedGraph === graph)}`} style={{ height: 'clamp(360px, 60vh, 720px)' }}>
       <svg ref={svg} role="img" aria-label={description}
         onClickCapture={event => { if (event.shiftKey || event.ctrlKey || event.metaKey) { event.preventDefault(); event.stopPropagation() } }}
         style={{ width: '100%', height: '100%', touchAction: 'none' }} />

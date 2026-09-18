@@ -3,8 +3,9 @@ import { parseDashboardWidgets, configureDashboardCards, configureDashboardMetri
 
 export function testDashboardWidgetSourceConfiguration() {
   const source = parseDashboardWidgets(JSON.stringify({ version: { key: 'version', type: 'number', value: 1 }, widgets: {
-    'graph:a': { visible: false }, 'graph:b': { title: 'Edited', kind: 'table', tone: 'green', order: -1 }, 'mission:tree': { title: 'Execution spans' },
+    'graph:a': { visible: false }, 'graph:b': { title: 'Edited', kind: 'table', tone: 'green', order: -1 }, 'mission:tree': { title: 'Execution spans' }, 'mission:codebase': { title: 'Source context', visible: true },
   } }))
+  assert.deepEqual(source.widgets['mission:codebase'], { title: 'Source context', visible: true })
   const card = { id: 'a', title: 'Original', subtitle: 'Source', kind: 'bar' as const, tone: 'blue' as const, series: [], rows: [] }
   assert.deepEqual(configureDashboardCards(source, [card, { ...card, id: 'b' }]).map(item => [item.id, item.title, item.kind]), [['b', 'Edited', 'table']])
   source.widgets['graph:custom'] = { source: 'graph:a', title: 'My chart' }

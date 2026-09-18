@@ -10,6 +10,8 @@ import type { DataViewCandidate } from '@/features/markdown-workspace/main/viewe
 import { buildDashboardCanvasModel } from '@/components/DashboardCanvas/dashboardModel'
 import { readRunTrace } from '@/features/agent-ready/missionControlProjection'
 import { activateAgentRunWorkspace, openAgentRunInspection, closeAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
+import DashboardWidgetPalette from '@/components/DashboardCanvas/DashboardWidgetPalette'
+import { getStoryboardWidgetPanelSelectionChromeClassName } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
 import { DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -275,6 +277,7 @@ export async function testDashboardCanvasCardFlipConfiguration() {
     const frame = container.querySelector('article.kg-dashboard-widget[data-dashboard-widget="graph:node-types"]')!
     const toolbar = frame.querySelector('nav.kg-dashboard-widget-toolbar[data-kg-bubble-toolbar="1"]')!
     if (!toolbar || frame.querySelector('form')) throw Error('Single-click must reveal the shared toolbar without opening settings')
+    if (!frame.classList.contains(getStoryboardWidgetPanelSelectionChromeClassName(true))) throw Error('Dashboard selection must use the shared Widget Card outline')
     const flipButton = toolbar.querySelector('button[data-kg-toolbar-action="flip"]')!
     const flipIcon = flipButton.querySelector('[data-kg-toolbar-action-icon="flip"][role="img"]')!
     if (!flipIcon) throw Error('Flip must expose the shared selectable icon surface')
@@ -318,6 +321,23 @@ export async function testDashboardCanvasCardFlipConfiguration() {
       Simulate.click(container.querySelector('label')!); await waitFrame()
     })
     if (selected !== 2 || container.querySelector('form')) throw Error('Span selection and control labels must not flip their enclosing card')
+    const graphBeforeTemplate = useGraphStore.getState().graphData
+    await act(async () => { root.render(<ul><DashboardWidgetPalette /></ul>); await waitFrame() })
+    const codebaseTemplate = container.querySelector('[data-dashboard-widget="template:codebase"]')!
+    if (!codebaseTemplate) throw Error('Props palette must expose the native Codebase Graph template')
+    await act(async () => { Simulate.click(codebaseTemplate); await waitFrame() })
+    if (!codebaseTemplate.classList.contains(getStoryboardWidgetPanelSelectionChromeClassName(true))) throw Error('Templates and instances must share the selection outline')
+    await act(async () => { Simulate.click(codebaseTemplate.querySelector('[data-kg-toolbar-action="flip"]')!); await waitFrame() })
+    const codebaseForm = codebaseTemplate.querySelector<HTMLFormElement>('form')!
+    if (!codebaseForm || codebaseForm.querySelector('[aria-label="Data source"], [aria-label="Display"]')) throw Error('The native codebase widget must bind the current Mission without an unrelated chart source')
+    const codebaseTitle = codebaseForm.querySelector('input')!
+    await act(async () => { setEditableValue(dom, codebaseTitle, 'My codebase'); Simulate.change(codebaseTitle); await waitFrame() })
+    await act(async () => { Simulate.submit(codebaseForm); await waitFrame() })
+    await waitForSavedDisplay(() => !codebaseTemplate.querySelector('form'))
+    const savedWidgets = JSON.parse((await fs.readFileText(DASHBOARD_WIDGETS_PATH))!).widgets
+    if (savedWidgets['mission:codebase']?.title !== 'My codebase' || savedWidgets['mission:codebase']?.visible !== true) throw Error('Codebase template settings must reach the single existing Mission widget')
+    if (savedWidgets['mission:codebase'].source !== undefined || savedWidgets['mission:codebase'].kind !== undefined || useGraphStore.getState().graphData !== graphBeforeTemplate) throw Error('Codebase configuration cannot copy, replace or re-index source evidence')
+
 
 
   } finally {

@@ -6,9 +6,10 @@ import DashboardWidgetConfiguration from './DashboardWidgetBack'
 import { useDashboardWidgetToolbarDock } from './useDashboardWidgetToolbarDock'
 import type { DashboardWidgetSettings } from './dashboardWidgetConfiguration'
 import type { DashboardCardKind } from './dashboardModel'
+import { getStoryboardWidgetPanelSelectionChromeClassName, WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import './dashboardWidgetFlip.css'
 
-export type DashboardTemplate = DashboardCardKind | 'metric' | 'tree'
+export type DashboardTemplate = DashboardCardKind | 'metric' | 'tree' | 'codebase'
 export type DashboardWidgetEditorProps = {
   widgetId?: string
   template: DashboardTemplate
@@ -50,7 +51,7 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
     setTurned(true); setFlipped(true)
   }
   const select = () => setToolbarVisible(true)
-  return <article ref={frame} className="kg-dashboard-widget relative min-w-0 h-full" tabIndex={flipped ? -1 : 0} role="group"
+  return <article ref={frame} className={`kg-dashboard-widget relative min-w-0 h-full ${WIDGET_SELECTION_SURFACE_CLASS_NAME} ${getStoryboardWidgetPanelSelectionChromeClassName(toolbarVisible)}`} tabIndex={flipped ? -1 : 0} role="group"
     style={flipped && frontSize ? { width: frontSize.width, height: frontSize.height, maxWidth: '100%' } : undefined}
     aria-label={`Configure ${props.title}`} aria-expanded={flipped}
     data-dashboard-widget={props.widgetId ?? `template:${props.template}`} data-kg-widget-selected={toolbarVisible ? 'true' : 'false'}

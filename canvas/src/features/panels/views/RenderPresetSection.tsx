@@ -30,6 +30,7 @@ import { uiToolbarButtonNeutralClassName } from '@/features/toolbar/ui/toolbarSt
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 interface RenderPresetSectionProps {
+  inspection?: boolean
   schema: GraphSchema
   setSchema: (schema: GraphSchema) => void
   setCanvasRenderMode: (mode: '2d' | '3d') => void
@@ -54,6 +55,7 @@ interface TraversalPresetSectionProps {
 }
 
 export default function RenderPresetSection({
+  inspection = false,
   schema,
   setSchema,
   setCanvasRenderMode,
@@ -120,7 +122,7 @@ export default function RenderPresetSection({
       }
 
       if (overrides?.applyGraphLayerDefaults) {
-        const current = schema
+        const current = useGraphStore.getState().schema
         const metadata = current.metadata && typeof current.metadata === 'object' && !Array.isArray(current.metadata)
           ? current.metadata
           : {}
@@ -193,21 +195,6 @@ export default function RenderPresetSection({
           className={presetButtonClassName}
           type="button"
           onClick={() => {
-            setCanvasRenderMode('2d')
-            const currentSchema = schema
-            const layout = currentSchema.layout || {}
-            setSchema({
-              ...currentSchema,
-              layout: { ...layout, mode: 'radial' },
-            })
-          }}
-        >
-          2D Radial Cluster Tree
-        </button>
-        <button
-          className={presetButtonClassName}
-          type="button"
-          onClick={() => {
             const nodeTypes = schema.catalog?.nodeTypes || []
             const edgeLabels = schema.catalog?.edgeLabels || []
             const nodePalette = ['#007BFF', '#FFC107', '#28A745', '#FD7E14', '#DC3545']
@@ -219,7 +206,7 @@ export default function RenderPresetSection({
               const primaryEdgeLabel = edgeLabels[0]
               updateEdgeStyle(primaryEdgeLabel, { color: '#9aa0a6', width: 1.5 })
               setEdgeArrow(primaryEdgeLabel, true)
-              const currentSchema = schema
+              const currentSchema = useGraphStore.getState().schema
               const routing = currentSchema.edgeRouting || {}
               const curvatureByLabel = routing.curvatureByLabel ? { ...routing.curvatureByLabel } : {}
               curvatureByLabel[primaryEdgeLabel] = 0.25
@@ -238,6 +225,7 @@ export default function RenderPresetSection({
             key={preset.id}
             className={presetButtonClassName}
             type="button"
+            disabled={inspection}
             onClick={() => applyThreePreset(preset)}
           >
             {preset.label}

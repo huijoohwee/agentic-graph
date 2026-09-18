@@ -1,4 +1,5 @@
 import React from 'react'
+import { WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import { UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME, buildResponsiveViewportFitGridStyle } from '@/lib/ui/responsiveViewportFitGrid'
 import { buildKanbanCardDropIntentLabel } from '@/features/markdown/ui/kanban/kanbanDragIntent'
 import { getKanbanCardDragVisualState } from '@/features/markdown/ui/kanban/kanbanDragVisualState'
@@ -48,6 +49,7 @@ export function DashboardMetricTile(input: {
       className={[
         'relative min-h-[78px] min-w-0 rounded-md border px-3 py-2 shadow-sm transition-transform duration-150',
         colors.chip,
+        WIDGET_SELECTION_SURFACE_CLASS_NAME,
         metricDragVisualState.className,
       ].join(' ')}
       style={metricDragVisualState.style}
@@ -237,6 +239,7 @@ export function DashboardCardView(input: {
       className={[
         `relative min-w-0 rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-4 shadow-sm`,
         'transition-transform duration-150',
+        WIDGET_SELECTION_SURFACE_CLASS_NAME,
         cardDragVisualState.className,
       ].join(' ')}
       style={cardDragVisualState.style}

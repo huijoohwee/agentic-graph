@@ -552,14 +552,9 @@ export interface RenderPanelSectionCopy {
 export const RENDER_PANEL_SECTION_COPY: Record<RenderPanelSectionKey, RenderPanelSectionCopy> = {
   presetsAndTuning: {
     id: 'presetsAndTuning',
-    badge: PIPELINE_STAGE_COPY.renderInspect.badge,
-    title: 'Render / Inspect (Renderer, indexers)',
-    descriptionShort:
-      'Apply renderer presets and tune 2D/3D layout settings for AgenticRAG GraphData and traversal overlays.',
-    descriptionLong:
-      'Use renderer presets and 2D/3D tuning controls to align appearance with AgenticRAG graph semantics and GraphRAG traversal highlights while keeping visual choices as a late, replaceable layer on top of GraphData.',
-    tooltip:
-      'Renderer presets → map AgenticRAG nodes, edges, and traversal overlays into 2D/3D camera and layout settings → keep visual styling replaceable while preserving GraphRAG semantics and Orchestrator playback clarity.',
+    title: 'Layout',
+    descriptionShort: 'Layout, fit, renderer presets and visual settings.',
+    descriptionLong: 'Configure the existing 2D and 3D renderer settings without changing source graph content.',
   },
   datasetInspector: {
     id: 'datasetInspector',
