@@ -39,6 +39,7 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
   return <section aria-label="Widget settings" className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain space-y-3 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-sm"
     onKeyDown={event => { if (event.key === 'Escape' && !busy) { event.preventDefault(); props.onClose() } }}
     >
+    <header className="flex items-center justify-between gap-2"><h4 className="text-sm font-semibold">Configure {props.title}</h4><button ref={cancelButton} type="button" className={button} disabled={busy} onClick={props.onClose}>Cancel</button></header>
     {props.configuration}
     <form aria-label="Widget configuration" className="space-y-3" onSubmit={event => {
       event.preventDefault()
@@ -49,7 +50,7 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
         visible: draft.visible !== false }).filter(([, value]) => value !== undefined))
       void run(() => updateDashboardWidget(id, settings))
     }}>
-    <header className="flex items-center justify-between gap-2"><h4 className="text-sm font-semibold">Configure {props.title}</h4><button ref={cancelButton} type="button" className={button} disabled={busy} onClick={props.onClose}>Cancel</button></header>
+
     {!props.widgetId && props.template !== 'tree' && <label className="block text-xs">Widget<select aria-label="Widget" className={control} value={selected} onChange={event => choose(event.target.value)}>
       <option value="">New widget</option>{existing.map(id => <option key={id} value={id}>{widgetSettings(config.document, id).title ?? sources.find(source => source.id === (widgetSettings(config.document, id).source ?? id))?.title ?? id}{widgetSettings(config.document, id).visible === false ? ' (hidden)' : ''}</option>)}
     </select></label>}

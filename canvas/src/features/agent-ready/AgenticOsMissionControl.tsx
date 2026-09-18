@@ -153,7 +153,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   }, [stop, clear])
   React.useEffect(() => {
     if (preview || local && !workspaceFeed || !live || !online || !visible || busy) return
-    const timer = window.setTimeout(() => { void refresh() }, workspaceFeed ? 15000 : backoff)
+    const timer = window.setTimeout(() => { void refresh() }, workspaceFeed ? Math.max(15000, backoff) : backoff)
     return () => window.clearTimeout(timer)
   }, [preview, local, workspaceFeed, live, online, visible, busy, backoff, refresh])
   React.useEffect(() => {
@@ -248,7 +248,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         aria-label="Import validation report" onChange={event => { void importReport(event.target.files?.[0]); event.target.value = '' }} /></label>
       {local && <button className={button} onClick={() => { stop(); clear() }}>Close local report</button>}
     </header>
-    <p role="status" className="pb-2 text-xs">{preview ? 'Import a local observation to begin · no runtime connection' : workspaceFeed ? (live ? '.workspace · SSE snapshots every 15 s' : '.workspace · stream paused') : local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
+    <p role="status" className="pb-2 text-xs">{preview ? 'Import a local observation to begin · no runtime connection' : workspaceFeed ? (!online ? '.workspace · offline' : !visible ? '.workspace · paused while hidden' : live ? '.workspace · SSE snapshots every 15 s' : '.workspace · stream paused') : local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
       {index ? ` · observed ${new Date(index.observedAt).toLocaleTimeString()} · snapshot expires ${new Date(expiry).toLocaleTimeString()}` : ''}</p>
     {trace?.localImport && <p className="py-2 text-xs">Imported local trace: {trace.localImport.fileName} · read-only · original observation {new Date(trace.observedAt).toLocaleString()} · runtime actions disabled</p>}
     {error && <div role="alert" className="rounded border p-2"><p>{local ? "Observation unavailable" : "Runtime unavailable"} · {error}</p><p className="text-xs">Check the existing runtime connection and signed session, then refresh. No run data is inferred.</p></div>}

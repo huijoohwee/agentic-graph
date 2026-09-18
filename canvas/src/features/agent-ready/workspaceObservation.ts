@@ -3,6 +3,7 @@ import { readWorkflowImport } from './agentWorkflowImport'
 /** The host selects one native archive. The existing SSE importer verifies every page before publication. */
 export async function readWorkspaceObservation(signal: AbortSignal, request: typeof fetch = fetch) {
   signal = AbortSignal.any([signal, AbortSignal.timeout(30000)])
+  await Promise.resolve(); signal.throwIfAborted()
   const response = await request('/api/agent-swarm/workspace-source', { method: 'POST', signal,
     headers: { 'content-type': 'application/json' }, body: '{}' })
   const text = await response.text()
