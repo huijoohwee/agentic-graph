@@ -35,5 +35,5 @@ export function resolveAgentMissionSource(trace: RunTrace | null | undefined, so
   if (source === null) return null
   const projection = agentMissionWorkspace(trace)
   return projection.entries.some(row => row.kind === 'file' && row.path === source) ? source!
-    : trace ? projection.markdownPath : projection.manifestPath
+    : trace && !trace.workflowManifest ? projection.markdownPath : projection.manifestPath
 }

@@ -28,7 +28,8 @@ export function activateAgentRunWorkspace(view: AgentRunView = 'topology', surfa
     restoreView = () => useGraphStore.getState().setWorkspaceViewState(previous)
     listenForRevocation()
   }
-  workspace = { ...workspace, view, ...(source ? { source } : {}) }
+  // A fresh invocation resolves the current manifest; file selection supplies an explicit source.
+  workspace = { ...workspace, view, source }
   if (snapshot) snapshot = { ...snapshot, view }
   useGraphStore.getState().setWorkspaceViewState({ mode: surface,
     paneOpen: surface === 'editor' && !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches })

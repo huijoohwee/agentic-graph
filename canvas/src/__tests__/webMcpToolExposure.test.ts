@@ -3,7 +3,7 @@ import { createWebMcpToolExposure, WEB_MCP_CORE_TOOL_IDS, WEB_MCP_TOOL_SCOPES,
   WEB_MCP_SCOPE_TOOL_NAME, WEB_MCP_EXPOSURE_BUDGET, measureWebMcpExposure } from '@/features/agent-ready/webMcpToolExposure.mjs'
 import { getAgenticGraphWebMcpToolRegistry, installAgenticGraphWebMcpRuntime,
   resetAgenticGraphWebMcpRuntimeForTests } from '@/features/agent-ready/webMcpRuntime'
-import { activateAgentRunWorkspace, closeAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
+import { activateAgentRunWorkspace, closeAgentRunInspection, readAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import type { WebMcpTool } from '@/features/agent-ready/webMcpRuntimeTypes'
@@ -63,7 +63,10 @@ export async function testWebMcpActiveWorkspaceScopes() {
     await context.tools.find(tool => tool.name === WEB_MCP_SCOPE_TOOL_NAME)!.execute({ scope: 'storage' })
     useGraphStore.setState({ markdownDocumentName: 'unrelated-update' })
     if (String(document.documentElement.dataset.kgWebmcpScope) !== 'storage') throw Error('unrelated updates must not restart discovery')
+    activateAgentRunWorkspace('tree', 'editor', '/.workspace/previous/agent-mission.md')
+    if (readAgentRunWorkspace()?.source !== '/.workspace/previous/agent-mission.md') throw Error('explicit source selection must remain available')
     activateAgentRunWorkspace('tree')
+    if (readAgentRunWorkspace()?.source !== undefined) throw Error('fresh invocation must resolve the current mission manifest')
     if (String(document.documentElement.dataset.kgWebmcpScope) !== 'mission'
       || !context.tools.some(tool => tool.name === 'agentic-graph.run.trace')
       || context.tools.some(tool => tool.name === 'agentic-graph.control_local_file_sync')) throw Error('mission must replace inactive tools')

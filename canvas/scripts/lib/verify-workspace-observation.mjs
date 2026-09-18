@@ -101,8 +101,9 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     await openEditorWorkspace(page)
     const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
     await editor.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check()
-    await editor.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).click()
-    await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
+    await editor.getByRole('region', { name: 'JSON Editor', exact: true }).waitFor()
+    assert.equal(await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).isChecked(), true,
+      'The active workflow manifest opens as JSON without selecting a file')
     await page.waitForFunction(async expected => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots()
       .some(model => model.language === 'json' && model.uri.startsWith('inmemory://agent-run/') && model.value === expected), manifest())
     await editor.getByText('Loading…', { exact: true }).waitFor({ state: 'detached' })
