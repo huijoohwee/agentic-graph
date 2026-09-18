@@ -61,7 +61,7 @@ const refreshMission = async () => {
 }
 const choose = async id => {
   await refreshMission()
-  const row = mission.locator('tr').filter({ hasText: id }); await row.focus(); await page.keyboard.press('Enter')
+  const row = mission.locator('tr').filter({ hasText: id }); await row.focus(); await page.keyboard.press('Enter'); await showEvidence()
   await selected.getByRole('heading', { name: 'Run ' + id, exact: true }).waitFor({ state: 'visible' })
 }
 async function authoredSnapshot() {
@@ -322,7 +322,7 @@ async function verifyApexActivation(width) {
   await waitText(evidence, 'Runtime unavailable')
   assert.equal(await evidence.getByText('No runs in this authorized snapshot.').count(), 0)
   await page.unroute('**/api/agent-swarm/query'); await refresh.click(); await waitText(evidence, '2 retained matches')
-  await evidence.locator('tr').filter({ hasText: 'candidate-run' }).press('Enter')
+  await evidence.locator('tr').filter({ hasText: 'candidate-run' }).press('Enter'); await showEvidence(evidence)
   await evidence.locator('#agent-run-view-tree-panel').waitFor()
   await waitText(evidence, '32/34 retained spans')
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()

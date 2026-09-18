@@ -283,7 +283,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   </>
   if (viewSettings.visible === false) return null
   return <section aria-label="Agent Mission" className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
-    <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings} configuration={sourceConfiguration} contentKey={trace?.runId}>
+    <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings} configuration={sourceConfiguration}>
     <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }}>
 
     {!index && !trace && <section aria-label="Observation dashboard" className="py-3 text-sm">
