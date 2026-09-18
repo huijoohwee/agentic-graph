@@ -1,3 +1,11 @@
+import { TOOLBAR_ACTION_AGENT_READY_TOOL_IDS } from './toolbarActionAgentReadyContract.mjs'
+import { WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS } from './workspaceLaunchAgentReadyContract.mjs'
+import { CANVAS_INTERACTION_AGENT_READY_TOOL_IDS } from './canvasInteractionAgentReadyContract.mjs'
+import { CANVAS_VIEW_AGENT_READY_TOOL_IDS } from './canvasViewAgentReadyContract.mjs'
+import { IMPORT_URL_AGENT_READY_TOOL_IDS } from './importUrlAgentReadyContract.mjs'
+import { GROUP_PANEL_AGENT_READY_TOOL_IDS } from '@/features/group-panel/groupPanelContract.mjs'
+import { STORAGE_SYNC_AGENT_READY_TOOL_IDS } from './storageSyncAgentReadyContract.mjs'
+import { DURABLE_RUN_AGENT_READY_TOOL_IDS } from './durableRunAgentReadyContract.mjs'
 import {
   AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   buildAgenticGraphStorageDefaultDocPath,
@@ -35,22 +43,6 @@ import { inspectLocalMainPanelChatCanvasPipeline } from './localMainPanelChatCan
 import { inspectLocalSettingsChatReadiness } from './localSettingsChatReadinessInspection'
 import { inspectLocalWorkspaceDocument } from './localWorkspaceDocumentInspection'
 import { buildReadLocalRuntimeIdentityTool } from './localRuntimeIdentityWebMcpTool'
-import { buildXrSceneWebMcpToolBuilders } from './xrSceneWebMcpTools'
-import { buildCameraWebMcpToolBuilders } from './cameraWebMcpTools'
-import { buildXrAnimationWebMcpToolBuilders } from './xrAnimationWebMcpTools'
-import { buildMotionControlWebMcpToolBuilders } from './motionControlWebMcpTools'
-import { buildGameModeWebMcpToolBuilders } from './gameModeWebMcpTools'
-import { buildFlightSimWebMcpToolBuilders } from './flightSimWebMcpTools'
-import { buildImmersiveMediaWebMcpToolBuilders } from './immersiveMediaWebMcpTools'
-import { buildCitySimWebMcpToolBuilders } from './citySimWebMcpTools'
-import { buildStorageSyncWebMcpToolBuilders } from './storageSyncWebMcpTools'
-import { buildGroupPanelWebMcpToolBuilders } from '@/features/group-panel/groupPanelWebMcpTools'
-import { buildImportUrlWebMcpToolBuilders } from './importUrlWebMcpTools'
-import { buildCanvasViewWebMcpToolBuilders } from './canvasViewWebMcpTools'
-import { buildCanvasInteractionWebMcpToolBuilders } from './canvasInteractionWebMcpTools'
-import { buildWorkspaceLaunchWebMcpToolBuilders } from './workspaceLaunchWebMcpTools'
-import { buildToolbarActionWebMcpToolBuilders } from './toolbarActionWebMcpTools'
-import { buildDurableRunWebMcpToolBuilders } from './durableRunWebMcpTools'
 import type { AgentReadyToolContract, WebMcpTool, WebMcpToolInput } from './webMcpRuntimeTypes'
 import type { ErrorObject, ValidateFunction } from 'ajv'
 export type WebMcpToolRegistry = {
@@ -61,7 +53,6 @@ export type WebMcpToolRegistry = {
 export class WebMcpToolInputValidationError extends Error {
   readonly toolName: string
   readonly missingFields: readonly string[]
-
   constructor(toolName: string, message: string, missingFields: readonly string[]) {
     super(message)
     this.name = 'WebMcpToolInputValidationError'
@@ -69,7 +60,6 @@ export class WebMcpToolInputValidationError extends Error {
     this.missingFields = Object.freeze([...new Set(missingFields)].sort())
   }
 }
-
 type AjvRuntime = Readonly<{
   compile(schema: object): ValidateFunction
   errorsText(
@@ -77,7 +67,6 @@ type AjvRuntime = Readonly<{
     options?: { separator?: string; dataVar?: string },
   ): string
 }>
-
 let ajvRuntimePromise: Promise<AjvRuntime> | null = null
 const getAjvRuntime = (): Promise<AjvRuntime> => {
   ajvRuntimePromise ||= import('ajv/dist/2020.js').then(({ default: Ajv2020 }) => (
@@ -85,7 +74,6 @@ const getAjvRuntime = (): Promise<AjvRuntime> => {
   ))
   return ajvRuntimePromise
 }
-
 const cloneFrozenMetadata = <T>(value: T, seen = new WeakMap<object, unknown>()): T => {
   if (!value || typeof value !== 'object') return value
   const existing = seen.get(value)
@@ -103,7 +91,6 @@ const cloneFrozenMetadata = <T>(value: T, seen = new WeakMap<object, unknown>())
   })
   return Object.freeze(clone) as T
 }
-
 const freezeValidatedTool = (tool: WebMcpTool): WebMcpTool => {
   const { name: toolName, execute: executeTool } = tool
   if (typeof executeTool !== 'function') throw new Error(`WebMCP tool executor is missing: ${toolName}`)
@@ -142,7 +129,6 @@ const freezeValidatedTool = (tool: WebMcpTool): WebMcpTool => {
     },
   })
 }
-
 export const createWebMcpToolRegistry = (tools: readonly WebMcpTool[]): WebMcpToolRegistry => {
   const toolsByName = new Map<string, WebMcpTool>()
   for (const tool of tools) {
@@ -174,21 +160,31 @@ const findWebToolContract = (name: string): AgentReadyToolContract => {
   }
   return contract
 }
-const XR_SCENE_WEB_MCP_TOOL_BUILDERS = buildXrSceneWebMcpToolBuilders(findWebToolContract)
-const CAMERA_WEB_MCP_TOOL_BUILDERS = buildCameraWebMcpToolBuilders(findWebToolContract)
-const XR_ANIMATION_WEB_MCP_TOOL_BUILDERS = buildXrAnimationWebMcpToolBuilders(findWebToolContract)
-const MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS = buildMotionControlWebMcpToolBuilders(findWebToolContract)
-const GAME_MODE_WEB_MCP_TOOL_BUILDERS = buildGameModeWebMcpToolBuilders(findWebToolContract)
-const FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS = buildFlightSimWebMcpToolBuilders(findWebToolContract)
-const IMMERSIVE_MEDIA_WEB_MCP_TOOL_BUILDERS = buildImmersiveMediaWebMcpToolBuilders(findWebToolContract)
-const CITY_SIM_WEB_MCP_TOOL_BUILDERS = buildCitySimWebMcpToolBuilders(findWebToolContract)
-const STORAGE_SYNC_WEB_MCP_TOOL_BUILDERS = buildStorageSyncWebMcpToolBuilders(findWebToolContract)
-const GROUP_PANEL_WEB_MCP_TOOL_BUILDERS = buildGroupPanelWebMcpToolBuilders(findWebToolContract)
-const IMPORT_URL_WEB_MCP_TOOL_BUILDERS = buildImportUrlWebMcpToolBuilders(findWebToolContract)
-const CANVAS_VIEW_WEB_MCP_TOOL_BUILDERS = buildCanvasViewWebMcpToolBuilders(findWebToolContract)
-const CANVAS_INTERACTION_WEB_MCP_TOOL_BUILDERS = buildCanvasInteractionWebMcpToolBuilders(findWebToolContract)
-const WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS = buildWorkspaceLaunchWebMcpToolBuilders(findWebToolContract)
-const TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS = buildToolbarActionWebMcpToolBuilders(findWebToolContract)
+const lazyToolBuilders = (names: readonly string[], load: () => Promise<Record<string, () => WebMcpTool>>) => {
+  let builders: ReturnType<typeof load> | undefined
+  return Object.fromEntries(names.map(name => [name, () => {
+    const contract = findWebToolContract(name)
+    return { ...contract, name: contract.webName, execute: async (input?: WebMcpToolInput) => {
+      builders ||= load()
+      return (await builders)[name]().execute(input)
+    } }
+  }]))
+}
+const XR_SCENE_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene], () => import('./xrSceneWebMcpTools').then(m => m.buildXrSceneWebMcpToolBuilders(findWebToolContract)))
+const CAMERA_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCamera, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalCamera], () => import('./cameraWebMcpTools').then(m => m.buildCameraWebMcpToolBuilders(findWebToolContract)))
+const XR_ANIMATION_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalAnimation, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalAnimation], () => import('./xrAnimationWebMcpTools').then(m => m.buildXrAnimationWebMcpToolBuilders(findWebToolContract)))
+const MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalMotionControl, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalMotionControl], () => import('./motionControlWebMcpTools').then(m => m.buildMotionControlWebMcpToolBuilders(findWebToolContract)))
+const GAME_MODE_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalGameMode, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalGameMode], () => import('./gameModeWebMcpTools').then(m => m.buildGameModeWebMcpToolBuilders(findWebToolContract)))
+const FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim], () => import('./flightSimWebMcpTools').then(m => m.buildFlightSimWebMcpToolBuilders(findWebToolContract)))
+const IMMERSIVE_MEDIA_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalImmersiveMedia, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia], () => import('./immersiveMediaWebMcpTools').then(m => m.buildImmersiveMediaWebMcpToolBuilders(findWebToolContract)))
+const CITY_SIM_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCitySim, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalCitySim], () => import('./citySimWebMcpTools').then(m => m.buildCitySimWebMcpToolBuilders(findWebToolContract)))
+const STORAGE_SYNC_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders(Object.values(STORAGE_SYNC_AGENT_READY_TOOL_IDS), () => import('./storageSyncWebMcpTools').then(m => m.buildStorageSyncWebMcpToolBuilders(findWebToolContract)))
+const GROUP_PANEL_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders(Object.values(GROUP_PANEL_AGENT_READY_TOOL_IDS), () => import('@/features/group-panel/groupPanelWebMcpTools').then(m => m.buildGroupPanelWebMcpToolBuilders(findWebToolContract)))
+const IMPORT_URL_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders(Object.values(IMPORT_URL_AGENT_READY_TOOL_IDS), () => import('./importUrlWebMcpTools').then(m => m.buildImportUrlWebMcpToolBuilders(findWebToolContract)))
+const CANVAS_VIEW_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders(Object.values(CANVAS_VIEW_AGENT_READY_TOOL_IDS), () => import('./canvasViewWebMcpTools').then(m => m.buildCanvasViewWebMcpToolBuilders(findWebToolContract)))
+const CANVAS_INTERACTION_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders(Object.values(CANVAS_INTERACTION_AGENT_READY_TOOL_IDS), () => import('./canvasInteractionWebMcpTools').then(m => m.buildCanvasInteractionWebMcpToolBuilders(findWebToolContract)))
+const WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders(Object.values(WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS), () => import('./workspaceLaunchWebMcpTools').then(m => m.buildWorkspaceLaunchWebMcpToolBuilders(findWebToolContract)))
+const TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders(Object.values(TOOLBAR_ACTION_AGENT_READY_TOOL_IDS), () => import('./toolbarActionWebMcpTools').then(m => m.buildToolbarActionWebMcpToolBuilders(findWebToolContract)))
 const SEARCH_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.search)
 const FETCH_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.fetch)
 const SOURCE_FILES_TOOL_CONTRACT = findWebToolContract(AGENTIC_OS_AGENT_READY_TOOL_IDS.listSourceFiles)
@@ -231,16 +227,12 @@ const INSPECT_AGENT_SURFACE_TOOL_NAME = INSPECT_AGENT_SURFACE_TOOL_CONTRACT.webN
 const WEB_MCP_DEFAULT_STORAGE_BASE_URL = 'https://airvio.co'
 const WEB_MCP_DEFAULT_AGENT_READY_BASE_URL = 'https://airvio.co/agentic-graph'
 const WEB_MCP_APP_BASE_PATH = '/agentic-graph'
-
 const normalizeString = (value: unknown): string => String(value || '').trim()
-
 const isLocalhostHost = (hostname: string): boolean => {
   const normalized = normalizeString(hostname).toLowerCase()
   return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '0.0.0.0'
 }
-
 const readWebMcpStorageBaseUrl = (): string => normalizeString(readEnvString('VITE_AGENTIC_OS_STORAGE_BASE_URL', ''))
-
 const buildWebMcpStorageRequestUrl = (path: string): string => {
   const safePath = normalizeString(path)
   if (!safePath) return ''
@@ -254,7 +246,6 @@ const buildWebMcpStorageRequestUrl = (path: string): string => {
   const baseUrl = readWebMcpStorageBaseUrl() || WEB_MCP_DEFAULT_STORAGE_BASE_URL
   return new URL(safePath, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString()
 }
-
 const readWebMcpDocumentBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
     const currentOrigin = normalizeString(window.location?.origin)
@@ -262,7 +253,6 @@ const readWebMcpDocumentBaseUrl = (): string => {
   }
   return readWebMcpStorageBaseUrl() || WEB_MCP_DEFAULT_STORAGE_BASE_URL
 }
-
 const readWebMcpAgentReadyBaseUrl = (): string => {
   const configuredBaseUrl = normalizeString(readEnvString('VITE_AGENTIC_OS_AGENT_READY_BASE_URL', ''))
   if (configuredBaseUrl) return configuredBaseUrl.replace(/\/+$/, '')
@@ -276,7 +266,6 @@ const readWebMcpAgentReadyBaseUrl = (): string => {
   }
   return WEB_MCP_DEFAULT_AGENT_READY_BASE_URL
 }
-
 const fetchJson = async (url: string, accept = 'application/json'): Promise<unknown> => {
   const response = await fetch(url, {
     headers: { accept },
@@ -286,14 +275,12 @@ const fetchJson = async (url: string, accept = 'application/json'): Promise<unkn
   }
   return response.json()
 }
-
 const buildStorageDocPath = (canonicalPath: string, workspaceId = ''): string => {
   const normalizedWorkspaceId = normalizeString(workspaceId)
   return normalizedWorkspaceId
     ? buildAgenticGraphStorageDocPath(normalizedWorkspaceId, canonicalPath)
     : buildAgenticGraphStorageDefaultDocPath(canonicalPath)
 }
-
 const buildAgentSurfaceInspection = () =>
   createAgentSurfaceInspectionExecutor({
     baseUrl: readWebMcpAgentReadyBaseUrl(),
@@ -350,22 +337,18 @@ const buildInspectLocalMainPanelStateTool = (): WebMcpTool => buildContractTool(
   INSPECT_LOCAL_MAINPANEL_STATE_TOOL_CONTRACT,
   async () => inspectLocalMainPanelState(readLocalMainPanelSurfaceSnapshot()),
 )
-
 const buildInspectLocalSettingsChatReadinessTool = (): WebMcpTool => buildContractTool(
   INSPECT_LOCAL_SETTINGS_CHAT_READINESS_TOOL_CONTRACT,
   async () => inspectLocalSettingsChatReadiness(readLocalSettingsChatReadinessSurfaceSnapshot()),
 )
-
 const buildInspectLocalEditorWorkspaceStateTool = (): WebMcpTool => buildContractTool(
   INSPECT_LOCAL_EDITOR_WORKSPACE_STATE_TOOL_CONTRACT,
   async () => inspectLocalEditorWorkspaceState(readLocalEditorWorkspaceSurfaceSnapshot()),
 )
-
 const buildInspectLocalChatPipelineStateTool = (): WebMcpTool => buildContractTool(
   INSPECT_LOCAL_CHAT_PIPELINE_STATE_TOOL_CONTRACT,
   async () => inspectLocalChatPipelineState(readLocalChatPipelineSurfaceSnapshot()),
 )
-
 const buildInspectLocalMainPanelChatCanvasPipelineTool = (): WebMcpTool => ({
   name: INSPECT_LOCAL_MAINPANEL_CHAT_CANVAS_PIPELINE_TOOL_NAME,
   title: INSPECT_LOCAL_MAINPANEL_CHAT_CANVAS_PIPELINE_TOOL_CONTRACT.title,
@@ -397,7 +380,6 @@ const buildInspectLocalMainPanelChatCanvasPipelineTool = (): WebMcpTool => ({
     })
   },
 })
-
 const buildInspectLocalWorkspaceDocumentTool = (): WebMcpTool => ({
   name: INSPECT_LOCAL_WORKSPACE_DOCUMENT_TOOL_NAME,
   title: INSPECT_LOCAL_WORKSPACE_DOCUMENT_TOOL_CONTRACT.title,
@@ -406,7 +388,6 @@ const buildInspectLocalWorkspaceDocumentTool = (): WebMcpTool => ({
   annotations: INSPECT_LOCAL_WORKSPACE_DOCUMENT_TOOL_CONTRACT.annotations,
   execute: async () => inspectLocalWorkspaceDocument(useGraphStore.getState()),
 })
-
 const buildInspectLocalCanvasTopologyTool = (): WebMcpTool => ({
   name: INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_NAME,
   title: INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT.title,
@@ -432,7 +413,6 @@ const buildInspectLocalCanvasTopologyTool = (): WebMcpTool => ({
     })
   },
 })
-
 const buildInspectLocalCanvasSnapshotTool = (): WebMcpTool => ({
   name: INSPECT_LOCAL_CANVAS_SNAPSHOT_TOOL_NAME,
   title: INSPECT_LOCAL_CANVAS_SNAPSHOT_TOOL_CONTRACT.title,
@@ -450,7 +430,6 @@ const buildInspectLocalCanvasSnapshotTool = (): WebMcpTool => ({
     })
   },
 })
-
 const buildInspectLocal3dCameraPoseTool = (): WebMcpTool => ({
   name: INSPECT_LOCAL_3D_CAMERA_POSE_TOOL_NAME,
   title: INSPECT_LOCAL_3D_CAMERA_POSE_TOOL_CONTRACT.title,
@@ -468,7 +447,6 @@ const buildInspectLocal3dCameraPoseTool = (): WebMcpTool => ({
     })
   },
 })
-
 const buildInspectLocal3dLayoutPositionsTool = (): WebMcpTool => ({
   name: INSPECT_LOCAL_3D_LAYOUT_POSITIONS_TOOL_NAME,
   title: INSPECT_LOCAL_3D_LAYOUT_POSITIONS_TOOL_CONTRACT.title,
@@ -487,7 +465,6 @@ const buildInspectLocal3dLayoutPositionsTool = (): WebMcpTool => ({
     })
   },
 })
-
 const buildInspectLocal2dZoomViewportTool = (): WebMcpTool => ({
   name: INSPECT_LOCAL_2D_ZOOM_VIEWPORT_TOOL_NAME,
   title: INSPECT_LOCAL_2D_ZOOM_VIEWPORT_TOOL_CONTRACT.title,
@@ -518,7 +495,6 @@ const buildInspectLocal2dZoomViewportTool = (): WebMcpTool => ({
     })
   },
 })
-
 const buildInspectLocalSourceFilesSnapshotTool = (): WebMcpTool => ({
   name: INSPECT_LOCAL_SOURCE_FILES_SNAPSHOT_TOOL_NAME,
   title: INSPECT_LOCAL_SOURCE_FILES_SNAPSHOT_TOOL_CONTRACT.title,
@@ -565,7 +541,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...CANVAS_INTERACTION_WEB_MCP_TOOL_BUILDERS,
   ...WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS,
   ...TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS,
-  ...buildDurableRunWebMcpToolBuilders(findWebToolContract),
+  ...lazyToolBuilders(Object.values(DURABLE_RUN_AGENT_READY_TOOL_IDS), () => import('./durableRunWebMcpTools').then(m => m.buildDurableRunWebMcpToolBuilders(findWebToolContract))),
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,
@@ -585,15 +561,25 @@ const applySharedDescriptorFields = (
   ...(contract._meta ? { _meta: contract._meta } : {}),
 })
 
-const WEB_MCP_TOOLS = WEB_MCP_TOOL_CONTRACTS.map((contract) => {
+const toolsByName = new Map<string, WebMcpTool>()
+const getTool = (name: string): WebMcpTool | null => {
+  if (toolsByName.has(name)) return toolsByName.get(name)!
+  const contract = WEB_MCP_TOOL_CONTRACTS.find(tool => tool.webName === name)
+  if (!contract) return null
   const buildTool = WEB_MCP_TOOL_BUILDERS[contract.name]
-  if (typeof buildTool !== 'function') {
-    throw new Error(`missing agentic-graph browser WebMCP tool builder: ${contract.name}`)
-  }
-  return applySharedDescriptorFields(buildTool(), contract)
+  if (!buildTool) throw new Error(`missing agentic-graph browser WebMCP tool builder: ${contract.name}`)
+  const tool = freezeValidatedTool(applySharedDescriptorFields(buildTool(), contract))
+  toolsByName.set(name, tool)
+  return tool
+}
+let allTools: readonly WebMcpTool[] | undefined
+const AGENTIC_OS_WEB_MCP_TOOL_REGISTRY: WebMcpToolRegistry = Object.freeze({
+  get tools() { return allTools ||= Object.freeze(WEB_MCP_TOOL_CONTRACTS.map(contract => getTool(contract.webName)!)) },
+  get: getTool,
+  execute: async (name: string, input?: WebMcpToolInput) => {
+    const tool = getTool(name)
+    if (!tool) throw new Error(`unknown WebMCP tool: ${name}`)
+    return tool.execute(input)
+  },
 })
-
-const AGENTIC_OS_WEB_MCP_TOOL_REGISTRY = createWebMcpToolRegistry(WEB_MCP_TOOLS)
-
-export const getAgenticGraphWebMcpToolRegistry = (): WebMcpToolRegistry =>
-  AGENTIC_OS_WEB_MCP_TOOL_REGISTRY
+export const getAgenticGraphWebMcpToolRegistry = (): WebMcpToolRegistry => AGENTIC_OS_WEB_MCP_TOOL_REGISTRY

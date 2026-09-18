@@ -1,9 +1,11 @@
+import { assertWebMcpScopedTools } from './webMcpToolExposure.test'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { encodePublishedDocShareToken } from '@/features/canvas/canvasDocShareToken.mjs'
 import { buildAgenticGraphAgentReadyToolContracts } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import {
+  getAgenticGraphWebMcpToolRegistry,
   installAgenticGraphWebMcpRuntime,
   resetAgenticGraphWebMcpRuntimeForTests,
 } from '@/features/agent-ready/webMcpRuntime'
@@ -130,12 +132,12 @@ export async function testWebMcpRuntimeLateBindsAndUsesSameOriginStoragePaths():
         `expected installed runtime state after late modelContext binding, got ${String(document.documentElement.dataset.kgWebmcpContext)}`,
       )
     }
-    assertWebMcpRuntimeToolParity(Array.from(registeredTools.values()), 'runtime registerTool')
-    if (document.documentElement.dataset.kgWebmcpTools !== EXPECTED_WEB_MCP_RUNTIME_CONTRACTS.map((tool) => tool.webName).join(',')) {
-      throw new Error(
-        `expected runtime data-kg-webmcp-tools to match shared browser contract order, got ${String(document.documentElement.dataset.kgWebmcpTools)}`,
-      )
-    }
+    assertWebMcpScopedTools(Array.from(registeredTools.values()))
+    // Full internal routing remains independently available; only discovery is scoped.
+    const internalTools = getAgenticGraphWebMcpToolRegistry().tools
+    assertWebMcpRuntimeToolParity([...internalTools], 'internal registry')
+    registeredTools.clear()
+    internalTools.forEach(tool => registeredTools.set(tool.name, tool))
 
     const listTool = registeredTools.get('agentic-graph.list_source_files')
     const readTool = registeredTools.get('agentic-graph.read_source_file')
@@ -559,12 +561,7 @@ export async function testWebMcpRuntimeProvidesContextWhenRegisterToolIsUnavaila
         `expected installed runtime state after provideContext registration, got ${String(document.documentElement.dataset.kgWebmcpContext)}`,
       )
     }
-    assertWebMcpRuntimeToolParity(providedTools, 'runtime provideContext')
-    if (document.documentElement.dataset.kgWebmcpTools !== EXPECTED_WEB_MCP_RUNTIME_CONTRACTS.map((tool) => tool.webName).join(',')) {
-      throw new Error(
-        `expected provideContext data-kg-webmcp-tools to match shared browser contract order, got ${String(document.documentElement.dataset.kgWebmcpTools)}`,
-      )
-    }
+    assertWebMcpScopedTools(providedTools)
   } finally {
     if (typeof previousBaseUrl === 'string') process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL = previousBaseUrl
     else delete process.env.VITE_AGENTIC_OS_STORAGE_BASE_URL

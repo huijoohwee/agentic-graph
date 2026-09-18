@@ -362,6 +362,11 @@ const runNodeOnlyUiTests = async (results: TestResult[]) => {
 
     const modWebMcpRuntime = await import('../__tests__/webMcpRuntime.test')
     const modWebMcpLifecycle = await import('../__tests__/webMcpLifecycle.test')
+    await execTest(results, 'agentReady.webMcpRuntime.scope.reconciliation', modWebMcpLifecycle.testWebMcpScopeReconciliationOwnsOnlyItsRegistrations)
+    const modWebMcpExposure = await import('../__tests__/webMcpToolExposure.test')
+    await execTest(results, 'agentReady.webMcpRuntime.scope.budgets', modWebMcpExposure.testWebMcpExposureBudgetsAndValidation)
+    await execTest(results, 'agentReady.webMcpRuntime.scope.workspace', modWebMcpExposure.testWebMcpActiveWorkspaceScopes)
+
     await execTest(
       results,
       'agentReady.webMcpRuntime.fallbackRetry.truthfulReadiness',

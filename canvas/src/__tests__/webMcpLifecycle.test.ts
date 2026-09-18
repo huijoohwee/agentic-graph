@@ -94,3 +94,58 @@ export function testWebMcpFallbackReadinessSurvivesHostRetryExhaustion() {
     throw new Error('expected the same native host object to rebind live tools after fallback readiness')
   }
 }
+
+export function testWebMcpScopeReconciliationOwnsOnlyItsRegistrations() {
+  for (const transport of ['register', 'provide', 'array', 'fallback']) {
+    const core = { name: 'core', execute: async () => undefined }
+    const old = { name: 'old', execute: async () => undefined }
+    const next = { name: 'next', execute: async () => undefined }
+    const foreign = { name: 'foreign', execute: async () => undefined }
+    let registrations = 0
+    const signals: AbortSignal[] = []
+    const context = { tools: [foreign] } as { tools: typeof core[]; registerTool?: Function; provideContext?: Function }
+    if (transport === 'register') context.registerTool = (tool: typeof core, { signal }: { signal: AbortSignal }) => {
+      registrations++; signals.push(signal); context.tools.push(tool)
+      signal.addEventListener('abort', () => context.tools.splice(context.tools.indexOf(tool), 1), { once: true })
+    }
+    if (transport === 'provide') context.provideContext = ({ tools }: { tools: typeof core[] }) => {
+      registrations++; context.tools.splice(0, context.tools.length, ...tools)
+    }
+    const root = { navigator: {} as { modelContext?: typeof context } }
+    if (transport !== 'fallback') root.navigator.modelContext = context
+    const controller = createWebMcpLifecycleController({ root, state: {
+      registrations: new WeakMap(), activeRegisteredContext: null, fallbackContext: null,
+      lateBindingRetryId: null, lateBindingAttemptCount: 0,
+    }, tools: [core, old] })
+    controller.install()
+    const active = root.navigator.modelContext!
+    const initial = registrations
+    controller.install(); controller.updateTools([core, old])
+    if (initial !== registrations) throw Error(`${transport}: unchanged install repeated registration`)
+    controller.updateTools([core, next])
+    if (active.tools.includes(old) || !active.tools.includes(core) || !active.tools.includes(next)
+      || (transport !== 'fallback' && !active.tools.includes(foreign))) throw Error(`${transport}: scope reconciliation lost ownership`)
+    if (transport === 'register' && (!signals[1].aborted || signals[0].aborted || registrations !== 3)) {
+      throw Error('inactive scope must abort once, preserving core registration')
+    }
+    try { controller.updateTools([core, core]); throw Error('duplicate accepted') }
+    catch (error) { if ((error as Error).message === 'duplicate accepted') throw error }
+    if (!active.tools.includes(next)) throw Error('malformed update changed the active catalog')
+    controller.dispose()
+    if (active.tools.some(tool => tool !== foreign) || (transport !== 'fallback' && !active.tools.includes(foreign))) {
+      throw Error(`${transport}: disposal retained owned tools or removed foreign tools`)
+    }
+  }
+  const foreign = { name: 'collision', execute: async () => undefined }
+  let attempts = 0
+  const context = { tools: [foreign], registerTool() { attempts++; throw Object.assign(Error('owned elsewhere'), { name: 'InvalidStateError' }) } }
+  const controller = createWebMcpLifecycleController({ root: { navigator: { modelContext: context } }, state: {
+    registrations: new WeakMap(), activeRegisteredContext: null, fallbackContext: null,
+    lateBindingRetryId: null, lateBindingAttemptCount: 0,
+  }, tools: [{ ...foreign }] })
+  if (controller.installToolsIntoModelContext(context) || controller.installToolsIntoModelContext(context)) {
+    throw Error('a foreign name collision must not be accepted as owned registration')
+  }
+  controller.dispose()
+  if (attempts !== 1 || context.tools[0] !== foreign) throw Error('unchanged failure must not retry or release foreign ownership')
+}
