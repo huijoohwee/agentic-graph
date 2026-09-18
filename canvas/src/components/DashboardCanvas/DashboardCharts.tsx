@@ -325,4 +325,3 @@ export function DashboardBarChart(props: {
     </svg>
   )
 }
-

@@ -231,12 +231,12 @@ async function verifyLocalTraceImport(label, fromApex = false) {
   const evidence = canvas.getByRole('region', { name: 'Agent Mission', exact: true })
   if (fromApex) {
     await canvas.waitFor({ timeout: 60000 })
-    assert.ok((await canvas.boundingBox()).width > page.viewportSize().width * .9, 'Apex import must open a full-width Canvas')
   } else {
     await editor.waitFor({ timeout: 60000 })
     await editor.getByRole('button', { name: 'Close', exact: true }).click()
   }
   await openRunSource(evidence); await waitText(evidence, 'Imported local trace: workflow.json'); await waitTopology(evidence)
+  if (fromApex) assert.ok((await canvas.boundingBox()).width > page.viewportSize().width * .9, 'Apex import must open a full-width Canvas')
   assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
   assert.equal(await evidence.getByRole('checkbox', { name: 'Live · ≥5 s', exact: true }).isDisabled(), true)
   await evidence.getByRole('list', { name: 'Topology nodes' }).getByRole('button').click()
