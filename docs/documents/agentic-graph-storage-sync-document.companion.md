@@ -414,6 +414,23 @@ environment. Provider setup does not establish deployed runtime readiness.
 
 ## Browser sign-in and free quota
 
+### Provider rejection and recovery
+
+CID `storage.browser-signin-rejection` consumes the same storage plan and adapter owner.
+PRD/MVP: a solo author reaching the Google callback must receive a bounded, actionable
+failure instead of an undifferentiated provider-unavailable message. TAD/ADR/SVO:
+`storageOAuthProviders.ts` reads the existing bounded response before classifying
+fixed OAuth error codes. Configuration rejection directs the workspace owner to
+the client ID/secret or registered callback; rejected authorization requires a fresh
+explicit sign-in ([Google OAuth error guidance](https://developers.google.com/identity/protocols/oauth2/web-server#errors)). Never reflect provider descriptions, authorization codes, tokens,
+or secrets. Preserve one-use challenges, membership, quotas and no automatic retry.
+Acceptance reuses `storageOAuth.test.ts`: encoded token request, safe error rendering,
+response limit/cancellation, no session creation and replay rejection. GTM measures
+first verified cloud save; source checks do not establish live Google success.
+The observed deployed callback returned 502; its discarded provider response does
+not prove a credential or redirect mismatch. A protected exact-candidate deployment
+and fresh sign-in remain necessary to diagnose and validate that live failure.
+
 ### Native account lightbox and private workspace
 
 CID `storage.account-lightbox` continues `storage.browser-signin-presentation`.

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createFixture, migrations, syncMigrations } from '../../../canvas/src/__tests__/helpers/native-agentic-graph-storage-fixture'
 import { readAgenticGraphStorageBrowserSessionConfiguration, handleAgenticGraphStorageBrowserSessionRoute as route } from './storageBrowserSession'
-import { readOAuthConfiguration, exchangeOAuthIdentity } from './storageOAuthProviders'
+import { readOAuthConfiguration, exchangeOAuthIdentity, OAuthFailure } from './storageOAuthProviders'
 import { oauthRandom, openOAuthState, sealOAuthState, OAUTH_COOKIE, safeOAuthReturnTo } from './storageOAuthState'
 import { admitOAuthRequest, OAUTH_DAILY_REQUESTS } from './storageOAuthQuota'
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS, AGENTIC_OS_STORAGE_SYNC_API_VERSION, hashAgenticGraphStorageContent } from './contract'
@@ -158,6 +158,64 @@ test('provider failures and oversized responses do not retry or expose tokens', 
     await assert.rejects(exchangeOAuthIdentity(state, 'code', config, (async () => { calls++; return response }) as typeof fetch, now))
     assert.equal(calls, 1)
   }
+})
+test('Google token rejection distinguishes owner configuration from fresh authorization without reflecting provider data', async () => {
+  const config = readOAuthConfiguration(env)!
+  const state = { provider: 'google' as const, origin, returnTo: '/', clientId: config.clients.google!.id,
+    state: oauthRandom(), verifier: oauthRandom(), nonce: oauthRandom(), issuedAt: now }
+  const sensitive = 'fixture-code-secret-token-description'
+  for (const [error, expectedStatus, message] of [
+    ['invalid_client', 503, /client ID or secret/], ['redirect_uri_mismatch', 503, /callback address/],
+    ['unauthorized_client', 503, /not enabled/], ['deleted_client', 503, /not enabled/],
+    ['invalid_grant', 401, /fresh authorization/], ['invalid_request', 502, /request format/],
+    ['unsupported_grant_type', 502, /request format/], ['temporarily_unavailable', 503, /temporarily/],
+    [sensitive, 401, /not accepted/],
+  ] as const) {
+    let calls = 0
+    await assert.rejects(exchangeOAuthIdentity(state, sensitive, config, (async (input, init) => {
+      calls++
+      assert.equal(String(input), 'https://oauth2.googleapis.com/token')
+      const form = new URLSearchParams(await new Request(String(input), init).text())
+      assert.equal(form.get('grant_type'), 'authorization_code')
+      assert.equal(form.get('redirect_uri'), origin + '/api/storage/auth/callback')
+      assert.equal(form.get('code_verifier'), state.verifier)
+      assert.equal(form.get('client_id'), config.clients.google!.id)
+      assert.equal(form.get('client_secret'), config.clients.google!.secret)
+      return Response.json({ error, error_description: sensitive, access_token: sensitive }, { status: 400 })
+    }) as typeof fetch, now), failure => {
+      assert.ok(failure instanceof OAuthFailure)
+      assert.equal(failure.status, expectedStatus); assert.match(failure.message, message)
+      assert.doesNotMatch(failure.message, new RegExp(sensitive)); return true
+    })
+    assert.equal(calls, 1)
+  }
+  let cancelled = false
+  const large = new Response(new ReadableStream({ start(c) { c.enqueue(new Uint8Array(65537)) }, cancel() { cancelled = true } }), { status: 400 })
+  await assert.rejects(exchangeOAuthIdentity(state, 'code', config, (async () => large) as typeof fetch, now), /response too large/)
+  assert.equal(cancelled, true)
+})
+test('Google callback renders a safe owner action, consumes its challenge once and creates no session on rejection', async () => {
+  const f = await fixture()
+  try {
+    const a = await start(f, 'google', '&return_origin=http%3A%2F%2F127.0.0.1%3A4188')
+    const before = Number(f.sql.prepare('SELECT count(*) AS n FROM auth_sessions').get()!.n)
+    let calls = 0
+    const oauthFetch = (async () => {
+      calls++; return Response.json({ error: 'invalid_client', error_description: '<script>private-provider-data</script>' }, { status: 401 })
+    }) as typeof fetch
+    const callback = () => route({ request: new Request(origin + a.callback, { headers: { cookie: a.cookie } }),
+      db: f.d1, env: { ...env, DB: f.d1 }, dependencies: { now: () => new Date(now), oauthFetch } })
+    const result = await callback()
+    assert.equal(result.status, 503)
+    const page = await result.text()
+    assert.match(page, /Google rejected the configured client ID or secret/)
+    assert.match(page, /return_origin=http%3A%2F%2F127.0.0.1%3A4188/)
+    assert.doesNotMatch(page, /private-provider-data|valid-code/)
+    assert.match(result.headers.get('set-cookie')!, /Max-Age=0/)
+    assert.equal((await callback()).status, 401)
+    assert.equal(calls, 1)
+    assert.equal(Number(f.sql.prepare('SELECT count(*) AS n FROM auth_sessions').get()!.n), before)
+  } finally { await f.close() }
 })
 test('Google verifies the signature, audience, nonce and issuance time using fixed JWKS', async () => {
   resetAccessJwksCacheForTest()
