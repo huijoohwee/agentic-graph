@@ -351,7 +351,7 @@ async function testEphemeralTableConfiguration() {
   const root = createRoot(container), previousMode = useGraphStore.getState().multiDimTableModeEnabled
   let config: ReturnType<typeof useWorkspaceDataViewConfig>
   const candidate: DataViewCandidate = { id: 'private-span-table', label: 'Spans', readonly: true,
-    table: { type: 'table', raw: '', header: [], align: [], rows: [], startLine: 1, endLine: 1 },
+    table: { type: 'table', raw: '', header: [], rows: [], startLine: 1, endLine: 1 },
     view: { columns: [{ id: 'col_0', name: 'Span', kind: 'text' }], rows: [], titleColumnId: 'col_0', groupByColumnId: null } }
   function Probe({ source }: { source: DataViewCandidate }) { config = useWorkspaceDataViewConfig(source, null, 'multiDimTable', true); return null }
   try {
