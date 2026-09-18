@@ -3,6 +3,7 @@ import { WidgetEditorActionsToolbar } from '@/components/StoryboardWidget/Widget
 import { buildWidgetBubbleToolbarPresentation } from '@/components/StoryboardWidget/widgetBubbleToolbarPresentation'
 import { useOutsideClose } from '@/hooks/useOutsideClose'
 import DashboardWidgetConfiguration from './DashboardWidgetBack'
+import { useDashboardWidgetToolbarDock } from './useDashboardWidgetToolbarDock'
 import type { DashboardWidgetSettings } from './dashboardWidgetConfiguration'
 import type { DashboardCardKind } from './dashboardModel'
 import './dashboardWidgetFlip.css'
@@ -32,6 +33,7 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
   const frame = React.useRef<HTMLElement>(null)
   const dragged = React.useRef(false)
   const keyboardSelection = React.useRef(false)
+  const toolbarTop = useDashboardWidgetToolbarDock(frame, toolbarVisible)
   useOutsideClose(toolbarVisible, setToolbarVisible, frame)
   React.useEffect(() => {
     if (toolbarVisible && keyboardSelection.current) {
@@ -69,6 +71,7 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
     }}>
     <WidgetEditorActionsToolbar {...toolbarPresentation} visible={toolbarVisible} ariaLabel={`${props.title} widget actions`}
       navClassName={`kg-dashboard-widget-toolbar ${toolbarPresentation.navClassName}`}
+      navStyle={{ ...toolbarPresentation.navStyle, top: toolbarTop }}
       flipAction={{ flipped, onFlip: flip }} onRun={noop} onDuplicate={noop} onClearOutput={noop}
       onHelp={noop} onRemove={noop} onConvertToLoopNode={noop} />
     <section key={flipped ? 'back' : 'front'} data-kg-widget-face={flipped ? 'back' : 'front'}
