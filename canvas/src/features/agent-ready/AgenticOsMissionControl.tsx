@@ -282,12 +282,12 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     </section>
   </>
   if (viewSettings.visible === false) return null
-  return <section aria-label="Agent Mission" className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
+  return <section aria-label="Agent Mission" data-agent-mission-mode={preview ? 'preview' : workspace ? 'workspace' : 'panel'} className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
     <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings} configuration={sourceConfiguration}>
     <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }}>
 
-    {!index && !trace && <section aria-label="Observation dashboard" className="py-3 text-sm">
-      {busy ? 'Loading .workspace observation…' : error || 'No observation selected. Select this card, then Flip to configure its run source.'}
+    {!trace && <section aria-label="Observation dashboard" className="py-3 text-sm">
+      {busy ? 'Loading observations…' : error || `${index ? `${index.items.length} runs available. ` : 'No observation selected. '}Select this card, then Flip to configure its run source.`}
     </section>}
     {trace && <section aria-label="Selected run evidence" className="min-w-0">
 

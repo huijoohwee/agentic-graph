@@ -301,7 +301,7 @@ async function verifyApexActivation(width) {
   await activate.click()
   const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
   const evidence = canvas.getByRole('region', { name: 'Agent Mission', exact: true })
-  await canvas.waitFor({ timeout: 60000 }); await waitText(evidence, '2 retained matches')
+  await canvas.waitFor({ timeout: 60000 }); await page.locator('[data-agent-mission-mode="workspace"]').waitFor(); await waitText(evidence, '2 retained matches')
   assertAuthored(await authoredSnapshot(), before, 'Apex discovery must preserve authored work')
   await waitForAsync(async () => (await import('/src/features/toolbar/floatingPanelBridge.ts')).isFloatingPanelBridgeReady())
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
@@ -390,8 +390,9 @@ try {
   if (process.env.AG_MISSION_ACTIVATION_ONLY === '1') {
     await verifyApexActivation(360)
     await verifyApexActivation(1280)
+    await verifyWorkspaceObservation(page, () => openDashboard(false))
     assert.deepEqual(errors, [])
-    console.log('Focused Apex activation passed; full mission lifecycle remains a separate check.')
+    console.log('Focused Apex activation and workspace stream passed; full mission lifecycle remains a separate check.')
   } else {
   await page.clock.install({ time: new Date() })
   await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
