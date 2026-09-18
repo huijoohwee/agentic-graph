@@ -5,6 +5,8 @@ import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import DashboardCanvas from '@/components/DashboardCanvas'
 import { useDashboardSource } from '@/components/DashboardCanvas/useDashboardSource'
+import { useWorkspaceDataViewConfig } from '@/features/markdown-workspace/main/viewer/useWorkspaceDataViewConfig'
+import type { DataViewCandidate } from '@/features/markdown-workspace/main/viewer/markdownWorkspaceDataViewCandidates'
 import { buildDashboardCanvasModel } from '@/components/DashboardCanvas/dashboardModel'
 import { readRunTrace } from '@/features/agent-ready/missionControlProjection'
 import { activateAgentRunWorkspace, openAgentRunInspection, closeAgentRunInspection } from '@/features/agent-ready/agentRunInspectionStore'
@@ -341,6 +343,26 @@ export async function testDashboardEvidenceMetricsReuseReadOnlyWidgets() {
     if (container.querySelector('[contenteditable="true"], input, textarea')) throw Error('Evidence labels cannot be authored')
   } finally { await act(async () => root.unmount()); restore() }
   await testDashboardObservationSource()
+  await testEphemeralTableConfiguration()
+}
+
+async function testEphemeralTableConfiguration() {
+  const { dom, restore } = initJsdomHarness(), container = dom.window.document.createElement('section')
+  const root = createRoot(container), previousMode = useGraphStore.getState().multiDimTableModeEnabled
+  let config: ReturnType<typeof useWorkspaceDataViewConfig>
+  const candidate: DataViewCandidate = { id: 'private-span-table', label: 'Spans', readonly: true,
+    table: { type: 'table', raw: '', header: [], align: [], rows: [], startLine: 1, endLine: 1 },
+    view: { columns: [{ id: 'col_0', name: 'Span', kind: 'text' }], rows: [], titleColumnId: 'col_0', groupByColumnId: null } }
+  function Probe({ source }: { source: DataViewCandidate }) { config = useWorkspaceDataViewConfig(source, null, 'multiDimTable', true); return null }
+  try {
+    await act(async () => { root.render(<Probe source={candidate} />); await waitFrame() })
+    await act(async () => { config!.commitViewConfig({ ...config!.viewConfig!, graphEnabled: !previousMode,
+      filterGroups: [{ id: 'g0', rules: [{ id: 'r0', columnId: 'col_0', columnKind: 'text', op: 'equals', value: 'private-span-filter' }] }] }); await waitFrame() })
+    await act(async () => { root.render(<Probe source={{ ...candidate, view: { ...candidate.view, rows: [{ id: 'updated', cells: ['Fresh observation'] }] } }} />); await waitFrame() })
+    if (config!.viewConfig?.filterGroups[0]?.rules[0]?.value !== 'private-span-filter') throw Error('Stream updates must preserve the table view configuration')
+    if (useGraphStore.getState().multiDimTableModeEnabled !== previousMode) throw Error('Inspection settings must not alter authored graph modes')
+    if (Object.values(localStorage).some(value => String(value).includes('private-span-filter'))) throw Error('Inspection table filters must not persist')
+  } finally { await act(async () => root.unmount()); restore() }
 }
 
 async function testDashboardObservationSource() {

@@ -6,6 +6,7 @@ import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCa
 import { agentRunInspectionJson, importAgentRunFile } from './agentRunImport'
 import { AgentRunSpanViews, durationLabel } from './AgentRunSpanViews'
 import { AgentRunMetricSelector } from './AgentRunMetricSelector'
+import { AgentRunTable } from './AgentRunTable'
 import { DEFAULT_SPAN_METRICS, toggleSpanMetric, type SpanMetric } from './agentRunSpanMetric'
 import { readValidationObservation, validationTrace, type ValidationObservation } from './validationObservationProjection'
 import { openAgentRunInspection, activateAgentRunWorkspace, closeAgentRunInspection, useAgentRunInspection, useAgentRunWorkspace, updateAgentRunInspection, selectAgentRunInspection, filterAgentRunInspection, selectAgentRunView } from './agentRunInspectionStore'
@@ -15,7 +16,7 @@ import type { RunOperation } from 'agentic-os/agents/invocation'
 import { GraphDataTableDomTableView } from '@/features/graph-data-table/ui/GraphDataTableDomTableView'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { invokeDurableRun, clearDurableRunSession } from './durableRunTransport'
-import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, spanRows, SPAN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
+import { readRunIndex, readRunTrace, runRows, RUN_COLUMNS, visibleSpanTree, traceGraph, spanNodeId,
   numberLabel, resourceLabels, traceResources, known, record, sourceLink, workflowSourceLink, comparable, type RunIndex, type RunTrace } from './missionControlProjection'
 
 const GraphCanvasInspection = React.lazy(() => import('@/components/GraphCanvas/GraphCanvasInspection'))
@@ -352,9 +353,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
           rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={() => undefined} onSelectionChanged={() => undefined} />
         <p className="text-xs">{resources.status === 'held' ? 'Usage is uncertain. The host must reconcile it before further execution.' : 'The host rechecks all project, agent and run limits before execution.'}</p>
       </div> : <p className="py-2 text-xs">Allocation unavailable for this observation.</p>)}
-        {view === 'table' && <div className="overflow-auto"><GraphDataTableDomTableView tableId="nodes" columns={SPAN_COLUMNS} rows={spanRows(spans.map(row => row.span))}
-          selectedRowIds={selection.spanId ? [selection.spanId] : []} columnVisibilityById={{}} filterMatch="all" filterClauses={[]} groupBy=""
-          sortRules={[]} rowHeightPreset="comfortable" columnWidthsPxById={{}} onRowClicked={chooseSpan} onSelectionChanged={ids => chooseSpan(ids.at(-1) ?? null)} /></div>}
+        {view === 'table' && <AgentRunTable runId={trace.runId} spans={spans.map(row => row.span)} selectedId={selection.spanId} onSelect={chooseSpan} />}
         {view === 'tree' && <AgentRunSpanViews key={trace.runId} rows={spans} selectedId={selection.spanId} onSelect={chooseSpan} search={search} metrics={spanMetrics} />}
         {view === 'topology' && topology && <><label className="flex items-center gap-2 text-xs">Topology detail<select aria-label="Topology detail" style={inputStyle} value={topologyDetail} onChange={event => setTopologyDetail(event.target.value as 'all' | 'agents')}><option value="agents">Agents</option><option value="all">All spans</option></select></label><p className="py-1 text-xs">Agent view shows containment and direct agent links. Runs without agent spans show all checks.</p><React.Suspense fallback={<p>Loading topology…</p>}><GraphCanvasInspection graph={topology}
           selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
@@ -370,7 +369,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         {localReport && trace.offset + 32 < trace.total && <button className={button} onClick={() => showLocalReport(localReport, trace.offset + 32)}>Next stage page</button>}
         <button className={button} onClick={() => chooseSpan(null)}>Select whole run</button>
         <button className={button} onClick={exportMetadata}>Export metadata</button>
-        <button className={button} disabled={expiry <= Date.now()} onClick={openWorkspace}>Open in Editor Workspace</button>
+        {!workspace && <button className={button} disabled={expiry <= Date.now()} onClick={openWorkspace}>Open in Editor Workspace</button>}
       </div>
       {(!workspace || view === "evidence" || view === "comparison") && <section aria-label="Subject evaluation" className="rounded border p-3">
         <h4 className="font-semibold">{selection.spanId ? `Span ${selection.spanId}` : 'Whole run'} · {evaluated?.status ?? 'unevaluated'}</h4>

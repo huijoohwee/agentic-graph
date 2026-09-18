@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { openEditorWorkspace } from './mission-card-face.mjs'
 
 export async function verifyCanvasContainerSizing(page) {
   await page.getByRole('region', { name: 'Markdown Workspace', exact: true })
@@ -15,7 +16,7 @@ export async function verifyCanvasContainerSizing(page) {
     await panel.getByRole('combobox', { name: '', exact: true }).selectOption(mode)
     await panel.getByRole('button', { name: 'Apply', exact: true }).click()
     await panel.getByRole('button', { name: 'Close', exact: true }).click()
-    await page.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+    await openEditorWorkspace(page)
     await page.getByRole('region', { name: 'Markdown Workspace', exact: true })
       .getByRole('checkbox', { name: 'Show Canvas pane', exact: true }).check()
     await page.waitForFunction(expected => document.querySelector('[data-kg-canvas-view-container]')?.getAttribute('data-kg-canvas-view-container') === expected, mode)

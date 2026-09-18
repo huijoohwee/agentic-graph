@@ -51,6 +51,7 @@ type MarkdownDataViewTableViewProps = {
   canConfigure?: boolean
   onUpdateCell: (args: { rowId: string; columnId: string; nextValue: string }) => void
   onActivateRow?: (rowId: string) => void
+  selectedRowId?: string | null
   onNewRecord?: () => void
   onAddColumn?: (args: { name: string; columnType: MarkdownDataViewColumnType }) => void
   onChangeColumnType?: (args: { columnId: string; nextType: MarkdownDataViewColumnType }) => void
@@ -396,7 +397,10 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
             const isNestedRowCollapsed = collapsedNestedRowIds.has(r.id)
             return <tr
               key={r.id}
-              className={[`${UI_THEME_TOKENS.table.rowHoverHighlight} transition-colors`, onActivateRow ? 'cursor-pointer' : ''].join(' ')}
+              className={[`${UI_THEME_TOKENS.table.rowHoverHighlight} transition-colors`, onActivateRow ? 'cursor-pointer' : '', props.selectedRowId === r.id ? 'bg-blue-50/80 outline outline-1 -outline-offset-1 outline-[var(--kg-primary)]' : ''].join(' ')}
+              aria-selected={props.selectedRowId === undefined ? undefined : props.selectedRowId === r.id}
+              tabIndex={onActivateRow ? 0 : undefined}
+              onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onActivateRow?.(r.id) } }}
               data-kg-markdown-data-view-row-nested-depth={String(rowDepth)}
               onClick={
                 onActivateRow

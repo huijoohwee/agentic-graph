@@ -12,6 +12,7 @@ import { getThemeModeLabel } from '@/lib/ui/theme';
 import { useCanvasToolbarContext } from '@/components/toolbar/useCanvasToolbarContext';
 import { Canvas2dRendererSelect } from '@/components/toolbar/Canvas2dRendererSelect';
 import { EditorWorkspaceSelect } from '@/components/toolbar/EditorWorkspaceSelect';
+import { AgentRunCloseButton } from '@/features/agent-ready/AgentRunCloseButton'
 import { InteractionModeSelect } from '@/components/toolbar/InteractionModeSelect';
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
@@ -502,6 +503,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
           <Download className={iconSizeClass} strokeWidth={iconStrokeWidth} />
         </IconButton>
       )}
+      <AgentRunCloseButton iconSizeClass={iconSizeClass} iconStrokeWidth={iconStrokeWidth} />
     </nav>
   );
 }

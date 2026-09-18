@@ -27,7 +27,6 @@ import {
 
 type DashboardCanvasProps = {
   active?: boolean
-  headerActions?: React.ReactNode
   children?: React.ReactNode
 }
 
@@ -114,18 +113,17 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
       />
       <section className="absolute inset-0 overflow-auto z-[1]" data-kg-dashboard-scroll-surface="1">
         <section
-          className={UI_RESPONSIVE_VIEWPORT_FIT_CONTENT_CLASSNAME}
+          className={`kg-dashboard-content ${UI_RESPONSIVE_VIEWPORT_FIT_CONTENT_CLASSNAME}`}
           style={DASHBOARD_CONTENT_STYLE}
           data-kg-dashboard-responsive-width="1"
         >
-          <header className="grid min-w-0 grid-cols-1 gap-4 border-b border-[var(--kg-border)] pb-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,42%)]">
+          <header className="kg-dashboard-header grid min-w-0 grid-cols-1 items-center gap-3 border-b border-[var(--kg-border)] pb-3 lg:grid-cols-[minmax(0,1fr)_minmax(200px,28%)]">
             <section className="min-w-0">
               <p className={`m-0 text-xs font-medium ${UI_THEME_TOKENS.text.tertiary}`}>Dashboard</p>
-              {props.headerActions}
-              <h2 className="m-0 mt-1 truncate text-2xl font-semibold leading-tight" title={model.title}>{model.title}</h2>
-              <p className={`m-0 mt-2 truncate text-sm ${UI_THEME_TOKENS.text.secondary}`} title={model.subtitle}>{model.subtitle}</p>
+              <h2 className="m-0 mt-1 truncate text-xl font-semibold leading-tight" title={model.title}>{model.title}</h2>
+              <p className={`m-0 mt-1 truncate text-xs ${UI_THEME_TOKENS.text.secondary}`} title={model.subtitle}>{model.subtitle}</p>
             </section>
-            <section className="h-[180px] min-w-0">
+            <section className="h-[72px] min-w-0 lg:h-[96px]">
               <DashboardLineAreaChart series={model.heroSeries} tone="blue" gridEnabled={model.grid.enabled} area />
             </section>
           </header>

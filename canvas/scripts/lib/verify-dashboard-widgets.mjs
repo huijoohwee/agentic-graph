@@ -31,7 +31,7 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor()
   await verifyFullCanvas(page)
   await editor.getByRole('button', { name: 'Close', exact: true }).click()
-  await page.getByRole('region', { name: 'Dashboard', exact: true }).getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  await page.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await files.getByRole('button', { name: 'Folder agent-mission', exact: true }).waitFor()
   assertAuthored(await authoredSnapshot(), before, 'Manifest inspection must preserve the active authored source')
   await editor.getByRole('button', { name: 'Close', exact: true }).click()

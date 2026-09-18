@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { showMissionFace } from './mission-card-face.mjs'
+import { showMissionFace, openEditorWorkspace } from './mission-card-face.mjs'
 
 export async function configureMissionPage(page, errors) {
   page.setDefaultTimeout(15000)
@@ -43,6 +43,9 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     const tree = mission.getByRole('tree', { name: 'Span hierarchy' })
     await tree.getByRole('treeitem', { name: /workspace-check-1/ }).waitFor()
     const dashboard = page.locator('[data-kg-dashboard-canvas][data-kg-dashboard-source="observation"]')
+    assert.equal(await page.getByRole('button', { name: 'Show Editor Workspace', exact: true }).count(), 0, 'Editor Workspace uses its existing Toolbar entry')
+    const toolbar = page.getByRole('navigation', { name: 'Main Toolbar', exact: true })
+    await toolbar.getByRole('button', { name: 'Close run inspection', exact: true }).waitFor()
     await dashboard.getByRole('heading', { name: 'Agent Mission · workflow-workspace-fixture', exact: true }).waitFor()
     await dashboard.locator('[data-kg-dashboard-card="node-types"]').getByText('Check', { exact: true }).waitFor()
     const leaders = dashboard.locator('[data-kg-dashboard-card="degree-leaders"]')
@@ -95,7 +98,7 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     assert.equal(after.width, before.width); assert.equal(after.height, before.height)
     assert.equal(await mission.locator('form form').count(), 0, 'Source filters must not nest inside display configuration form')
     await showMissionFace(mission, false)
-    await page.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
+    await openEditorWorkspace(page)
     const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
     await editor.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check()
     await editor.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).click()
@@ -113,6 +116,24 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     assert.equal(await metric.getByRole('button', { name: 'Show Peak RSS', exact: true }).getAttribute('aria-pressed'), 'true', 'Metric selection survives streamed updates and flips')
     assert.equal(await metric.getByRole('button', { name: 'Show Time', exact: true }).getAttribute('aria-pressed'), 'true')
     await tree.locator('[data-span-timing]').waitFor()
+    const inspect = mission.getByRole('combobox', { name: 'Inspect run details', exact: true })
+    await inspect.selectOption('table')
+    const table = mission.getByRole('region', { name: 'Span Multi-dimensional Table', exact: true })
+    await table.getByRole('button', { name: 'Layout: Multi-dimensional Table', exact: true }).waitFor()
+    const nativeRow = table.getByRole('row').filter({ hasText: 'workspace-check-2' })
+    await nativeRow.click()
+    await table.locator('tr[aria-selected="true"]').filter({ hasText: 'workspace-check-2' }).waitFor()
+    await nativeRow.dblclick()
+    assert.equal(await nativeRow.locator('input, textarea, [contenteditable="true"]').count(), 0, 'Native table evidence cells stay read-only')
+    const tableHeader = table.locator('[aria-label="Data view header"]')
+    assert.ok((await tableHeader.boundingBox()).height <= 48, 'Native table controls occupy one compact header row')
+    await tableHeader.getByRole('button', { name: 'Search', exact: true }).click()
+    await tableHeader.getByRole('textbox').fill('private-filter-no-match')
+    await nativeRow.waitFor({ state: 'detached' })
+    await tableHeader.getByRole('textbox').fill('')
+    await nativeRow.waitFor()
+    assert.equal(await page.evaluate(() => Object.values(localStorage).some(value => value.includes('private-filter-no-match'))), false)
+    await inspect.selectOption('tree')
     assert.equal(reads, 2, 'One initial source read and one timed refresh')
     await showMissionFace(mission, true); await mission.getByRole('checkbox', { name: 'Live · ≥5 s' }).uncheck()
     await page.clock.fastForward(15000); assert.equal(reads, 2, 'Paused stream performs no reads')

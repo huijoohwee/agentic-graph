@@ -1,4 +1,11 @@
 /** Exercise the shared selectable toolbar, never invoke a hidden control. */
+export async function openEditorWorkspace(page) {
+  await page.getByRole('button', { name: 'Workspace View', exact: true }).click()
+  const option = page.getByRole('button', { name: 'Editor Workspace', exact: true })
+  if (await option.isVisible()) await option.click()
+  await page.getByRole('region', { name: 'Markdown Workspace', exact: true }).waitFor()
+}
+
 export async function showMissionFace(scope, back) {
   const frame = scope.locator('[data-dashboard-widget="mission:tree"]')
   if (!await frame.count()) return

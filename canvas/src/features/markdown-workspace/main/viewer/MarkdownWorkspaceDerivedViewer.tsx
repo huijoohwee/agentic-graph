@@ -1,4 +1,5 @@
 import React from 'react'
+import { useWorkspaceDataViewConfig } from './useWorkspaceDataViewConfig'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import MarkdownPreview from '@/features/markdown/ui/MarkdownPreview'
@@ -32,17 +33,10 @@ import { WorkspaceDataViewHeader, type WorkspaceDataViewHeaderState } from './Wo
 import type { JsonToMarkdownMode } from '@/features/markdown/jsonToMarkdown'
 import {
   applyWorkspaceDataViewQuery,
-  defaultWorkspaceDataViewConfig,
   duplicateWorkspaceDataViewConfigColumn,
   removeWorkspaceDataViewConfigColumn,
-  readWorkspaceDataViewConfig,
-  type WorkspaceDataViewConfig,
   type WorkspaceDataViewFilterOp,
-  writeWorkspaceDataViewConfig,
 } from './workspaceDataViewConfig'
-import { cancelWorkspaceSyncTask, scheduleWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
-import { WORKSPACE_SYNC_SCOPE_MARKDOWN_WORKSPACE_DATAVIEW_RUNTIME_PERSISTENCE } from '@/lib/async/workspaceSyncKeys'
-import { hashStringToHex } from '@/lib/hash/stringHash'
 import { useMarkdownPreviewLexedMarkdown } from '@/features/markdown/ui/useMarkdownPreviewTokens'
 import { setGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
 import { emitFloatingPanelOpen } from '@/features/canvas/utils'
@@ -73,7 +67,11 @@ const MarkdownWorkspaceHtmlViewerPaneLazy = React.lazy(
 export type MarkdownWorkspaceDerivedViewerKind = 'markdown' | 'html' | 'json'
 export type MarkdownWorkspaceDerivedViewerMode = 'read' | 'table' | 'multiDimTable' | 'kanban' | 'geospatial'
 
+export type WorkspaceDataViewSource = { id: string; label: string; view: MarkdownDataView;
+  selectedRowId?: string | null; onActivateRow?: (rowId: string) => void }
+
 export function MarkdownWorkspaceDerivedViewer(props: {
+  dataViewSource?: WorkspaceDataViewSource
   viewerKind: MarkdownWorkspaceDerivedViewerKind
   viewerMode: MarkdownWorkspaceDerivedViewerMode
   onChangeViewerMode?: (mode: MarkdownWorkspaceDerivedViewerMode) => void
@@ -193,7 +191,6 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     [effectiveMarkdownText, shouldLexDataViewCandidates],
   )
   const [selectedTableId, setSelectedTableId] = React.useState<string>('')
-  const [viewConfig, setViewConfig] = React.useState<WorkspaceDataViewConfig | null>(null)
   const [settingsPanel, setSettingsPanel] = React.useState<'layout' | 'properties' | 'filter' | 'sort' | 'group' | 'reset'>('properties')
   const [headerState, setHeaderState] = React.useState<WorkspaceDataViewHeaderState>(() => ({
     searchQuery: '',
@@ -215,7 +212,10 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     return shouldRelax ? buildDataViewCandidates(effectiveMarkdownText, candidatesKey, candidateTokens, true) : []
   }, [candidateTokens, candidatesKey, derivedStructuredText, effectiveMarkdownText, props.viewerKind, shouldLexDataViewCandidates, strictCandidates.length])
 
-  const candidates = rowsJsonCandidates.length > 0
+  const externalCandidates = React.useMemo<DataViewCandidate[]>(() => props.dataViewSource ? [{
+    ...props.dataViewSource, readonly: true, table: { type: 'table', raw: '', header: [], align: [], rows: [], startLine: 1, endLine: 1 },
+  }] : [], [props.dataViewSource])
+  const candidates = externalCandidates.length ? externalCandidates : rowsJsonCandidates.length > 0
     ? rowsJsonCandidates
     : delimitedTextCandidates.length > 0
       ? delimitedTextCandidates
@@ -238,70 +238,9 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     return candidates.find(c => c.id === selectedTableId) ?? (candidates[0] ?? null)
   }, [candidates, selectedTableId])
 
-  React.useEffect(() => {
-    if (!selected) {
-      setViewConfig(null)
-      return
-    }
-    const fallback = defaultWorkspaceDataViewConfig({
-      title:
-        props.viewerMode === 'kanban'
-          ? MARKDOWN_DATA_VIEW_COPY.kanbanViewLabel
-          : props.viewerMode === 'geospatial'
-            ? MARKDOWN_DATA_VIEW_COPY.geospatialViewLabel
-            : MARKDOWN_DATA_VIEW_COPY.tableViewLabel,
-      layout: props.viewerMode === 'kanban' ? 'kanban' : 'table',
-      groupByColumnId: selected.view.groupByColumnId || null,
-    })
-
-    const docPath = props.activeDocumentPath ?? null
-    const stableId = selected.id
-    const cfg = readWorkspaceDataViewConfig({ activeDocumentPath: docPath, tableId: stableId, fallback })
-    setViewConfig(cfg)
-  }, [props.activeDocumentPath, props.viewerMode, selected])
-
-  React.useEffect(() => {
-    if (!selected) return
-    if (!viewConfig) return
-
-    const docPath = props.activeDocumentPath ?? null
-    const tableId = selected.id
-    const value = viewConfig
-    const taskKey = `markdown-workspace:dataview:${tableId}`
-    const signature = hashStringToHex(
-      JSON.stringify({
-        docPath,
-        tableId,
-        value,
-      }),
-    )
-    scheduleWorkspaceSyncTask(taskKey, () => {
-      writeWorkspaceDataViewConfig({ activeDocumentPath: docPath, tableId, value })
-    }, 200, {
-      signature,
-      scopeKey: WORKSPACE_SYNC_SCOPE_MARKDOWN_WORKSPACE_DATAVIEW_RUNTIME_PERSISTENCE,
-    })
-
-    return () => {
-      cancelWorkspaceSyncTask(taskKey)
-    }
-  }, [props.activeDocumentPath, selected, viewConfig])
-
-  const commitViewConfig = React.useCallback((next: WorkspaceDataViewConfig) => {
-    setViewConfig(next)
-    if (selected) {
-      writeWorkspaceDataViewConfig({
-        activeDocumentPath: props.activeDocumentPath ?? null,
-        tableId: selected.id,
-        value: next,
-      })
-    }
-    const prevGraphEnabled = viewConfig?.graphEnabled === true
-    const nextGraphEnabled = next.graphEnabled === true
-    if (prevGraphEnabled !== nextGraphEnabled) {
-      useGraphStore.getState().setMultiDimTableModeEnabled(nextGraphEnabled)
-    }
-  }, [props.activeDocumentPath, selected, viewConfig?.graphEnabled])
+  const { viewConfig, setViewConfig, commitViewConfig } = useWorkspaceDataViewConfig(
+    selected, props.activeDocumentPath, props.viewerMode, !!props.dataViewSource,
+  )
 
   const canMutate = !props.disableViewerMutations && props.viewerKind !== 'json' && !usingLooseTables && !selected?.readonly
 
@@ -367,6 +306,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
 
   const onActivateRow = React.useCallback(
     (rowId: string) => {
+      if (props.dataViewSource) { props.dataViewSource.onActivateRow?.(rowId); return }
       if (!selected) return
       const line = rowIdToMarkdownLineInTable({
         rowId,
@@ -542,7 +482,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
       return { ...prev, layout: 'table', graphEnabled: true, geospatialViewEnabled: true }
     })
     props.onChangeViewerMode?.('geospatial')
-    void setGeospatialModeEnabled(true).catch(() => void 0)
+    if (!props.dataViewSource) void setGeospatialModeEnabled(true).catch(() => void 0)
   }, [props])
 
   const openViewSettingsPanel = React.useCallback((panel: 'layout' | 'properties' | 'filter' | 'sort' | 'group' | 'reset') => {
@@ -587,7 +527,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           })
         }
         props.onChangeViewerMode?.(mode)
-        useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')
+        if (!props.dataViewSource) useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')
       },
       onSelectGeospatialView: handleSelectGeospatialView,
       onReset: onResetDataView,
@@ -757,6 +697,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
             canConfigure={true}
             onUpdateCell={onUpdateCell}
             onActivateRow={onActivateRow}
+            selectedRowId={props.dataViewSource?.selectedRowId}
             onNewRecord={canMutate ? () => onNewRecord() : undefined}
             onAddColumn={canMutate ? onAddColumn : undefined}
             onChangeColumnType={onChangeColumnType}
