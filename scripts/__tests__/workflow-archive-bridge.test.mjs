@@ -47,7 +47,38 @@ test('workflow ingress remains available after the Vite configuration runner clo
 import {mkdir,readFile,symlink,realpath} from 'node:fs/promises'
 import {execFileSync} from 'node:child_process'
 import {collectWorkflow,WORKFLOW_PHASES} from '../../node_modules/agentic-os/bin/agentic-os-workflow.mjs'
-import {readWorkspaceObservationSource} from '../../canvas/viteWorkspaceObservationBridge.mjs'
+import {readWorkspaceObservationSource,readWorkspaceCodebaseIndex} from '../../canvas/viteWorkspaceObservationBridge.mjs'
+import {createHash} from 'node:crypto'
+import {createAgentGraphRuntime} from '../../mcp/agent-graph/runtime.mjs'
+test('Mission reads one existing native index with exact selection, digest and path binding',async()=>{
+ const fixture=await realpath(await mkdtemp(path.join(os.tmpdir(),'workspace-codebase-'))),repo=path.join(fixture,'repo')
+ const git=(...args)=>execFileSync('git',args,{cwd:repo,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ try{
+  await mkdir(repo);git('init');git('config','user.email','fixture@example.invalid');git('config','user.name','Fixture')
+  await writeFile(path.join(repo,'index.js'),'export const mission = 1;\n');git('add','.');git('commit','-m','fixture')
+  const outputRoot=path.join(fixture,'.workspace/.artifacts/codebase-index/native')
+  const runtime=createAgentGraphRuntime({agenticGraphRoot:repo,outputRoot})
+  const result=await runtime.ingest({rootPath:repo,strict:true,useCache:true,projectionLimit:20})
+  assert.equal(result.ok,true)
+  const text=JSON.stringify(result),file=path.join(outputRoot,'ingest.json')
+  await writeFile(file,text,{mode:0o600})
+  const ref={file:'.artifacts/codebase-index/native/ingest.json',digest:createHash('sha256').update(text).digest('hex'),
+   graphId:result.graphId,snapshotDigest:result.snapshotDigest}
+  const manifest={source:{repository:'github.com/example/fixture'},codebaseIndex:{snapshot:ref}}
+  const digest='a'.repeat(64),load=async()=>({manifestDigest:digest,manifestText:JSON.stringify(manifest)})
+  const read=()=>readWorkspaceCodebaseIndex(repo,{manifestDigest:digest},load)
+  const first=await read(),second=await read()
+  assert.deepEqual(first,second);assert.deepEqual(first.result,result)
+  assert.equal(first.result.observation.model.calls,0)
+  await assert.rejects(readWorkspaceCodebaseIndex(repo,{manifestDigest:'b'.repeat(64)},load),/selection_changed/)
+  await assert.rejects(readWorkspaceCodebaseIndex(repo,{manifestDigest:digest,path:file},load),/input/)
+  ref.file='../outside.json';await assert.rejects(read(),/reference/)
+  ref.file='.artifacts/codebase-index/native/ingest.json';ref.digest='0'.repeat(64);await assert.rejects(read(),/digest_changed/)
+  ref.digest=createHash('sha256').update(text).digest('hex');ref.snapshotDigest='0'.repeat(64)
+  await assert.rejects(read(),/identity_changed/)
+  ref.snapshotDigest=result.snapshotDigest;await writeFile(file,text+' ');await assert.rejects(read(),/digest_changed/)
+ }finally{await rm(fixture,{recursive:true,force:true})}
+})
 test('workspace selection reads the exact native archive; unselected, malformed, outside and symlink sources fail closed',async()=>{
  const fixture=await realpath(await mkdtemp(path.join(os.tmpdir(),'workspace-observation-'))),repo=path.join(fixture,'repo')
  const git=(...args)=>execFileSync('git',args,{cwd:repo,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()

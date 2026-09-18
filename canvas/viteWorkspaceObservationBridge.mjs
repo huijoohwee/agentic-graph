@@ -2,6 +2,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { readStableBoundedFile } from '../mcp/bounded-file-reader.js'
 const require = createRequire(import.meta.url)
 
@@ -25,4 +26,29 @@ export async function readWorkspaceObservationSource(repoRoot, input) {
   const page = readWorkflowManifestPage(repoRoot, manifestText, 0)
   return { schema: 'agentic-graph/workspace-observation-source/v1', authority: false, manifestText,
     manifestDigest: page.manifestDigest, manifestPath: path.relative(workspace, locator) }
+}
+
+/** Read the selected workflow's digest-bound native result; never invokes ingestion. */
+export async function readWorkspaceCodebaseIndex(repoRoot, input, loadSource = readWorkspaceObservationSource) {
+  if (!input || Object.keys(input).join() !== 'manifestDigest' || !/^[a-f0-9]{64}$/.test(input.manifestDigest))
+    throw Error('invalid_codebase_input')
+  const source = await loadSource(repoRoot, {})
+  if (!source || source.manifestDigest !== input.manifestDigest) throw Error('workspace_selection_changed')
+  const manifest = JSON.parse(source.manifestText), ref = manifest.codebaseIndex?.snapshot
+  if (!ref) return { code: 'workspace_codebase_unobserved' }
+  const owner = path.resolve(path.dirname(require.resolve('agentic-os')), '..')
+  const { workflowPaths } = await import(pathToFileURL(path.join(owner, 'bin/agentic-os-workflow.mjs')).href)
+  const { workspace } = workflowPaths(repoRoot, manifest.source?.repository)
+  if (typeof ref.file !== 'string' || !ref.file.startsWith('.artifacts/codebase-index/')
+    || ref.file.includes('\\') || ref.file.split('/').some(part => part === '..' || part === '.')
+    || !/^[a-f0-9]{64}$/.test(ref.digest)) throw Error('invalid_codebase_reference')
+  const filePath = path.resolve(workspace, ref.file)
+  const { content } = await readStableBoundedFile({ filePath, containingDirectory: workspace,
+    minimumBytes: 1, maximumBytes: 512000, requirePrivate: true })
+  if (createHash('sha256').update(content).digest('hex') !== ref.digest) throw Error('codebase_digest_changed')
+  const result = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(content))
+  require('agentic-os/agents/agentic-graph-mcp-contract').validateAgenticGraphIngestResult(result)
+  if (result.complete !== true || result.graphId !== ref.graphId || result.snapshotDigest !== ref.snapshotDigest)
+    throw Error('codebase_identity_changed')
+  return { manifestDigest: source.manifestDigest, indexDigest: ref.digest, result }
 }
