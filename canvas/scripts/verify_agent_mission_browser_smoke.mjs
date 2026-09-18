@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
-import { verifyDashboardWidgets } from './lib/verify-dashboard-widgets.mjs'
+import { verifyAgentMissionSourceFiles, verifyDashboardWidgets } from './lib/verify-dashboard-widgets.mjs'
 import { createMissionPhaseObservation } from './lib/mission-phase-observation.mjs'
 const phaseObservation = createMissionPhaseObservation()
 
@@ -279,7 +279,7 @@ async function verifyApexActivation(width) {
   const overlay = page.locator('[data-kg-live-canvas-hero-editorial="overlay"]')
   assert.equal(await overlay.evaluate(element => getComputedStyle(element).position), 'absolute', 'Catalog must reuse the existing translucent overlay')
   assert.ok(dashboardBounds.width > width * .9, 'Observability dashboard must use the full Canvas width')
-  await page.getByLabel('Import local file', { exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Import local file', exact: true }).waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
   await page.screenshot({ path: resolve(output, `apex-${width}-catalog-overlay.png`) })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
@@ -408,6 +408,7 @@ try {
     await floating.waitFor({ state: 'detached' })
   }
   assert.equal(requests.length, 0, 'Dashboard must not load or poll before opening')
+  await verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored)
   await openDashboard()
   await waitText(mission, '2 retained matches')
   await verifyDashboardWidgets(page)

@@ -6,7 +6,7 @@ import { AGENT_RUN_CANVAS_VIEWS, parseCanvasViewInvocation } from '@/lib/canvas/
 export type AgentRunView = Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>
 export type AgentRunInspection = { trace: RunTrace; scope: string; expiresAt: number; spanId: string | null; search: string; view: AgentRunView }
 let snapshot: AgentRunInspection | null = null
-let workspace: { view: AgentRunView } | null = null
+let workspace: { view: AgentRunView; source?: string } | null = null
 let cleanup: (() => void) | null = null
 let restoreView: (() => void) | null = null
 let timer: number | undefined
@@ -18,7 +18,7 @@ export const useAgentRunInspection = () => useSyncExternalStore(subscribe, read,
 export const useAgentRunWorkspace = () => useSyncExternalStore(subscribe, () => workspace, () => null)
 
 /** Explicit entry can discover runs without holding private evidence or executing work. */
-export function activateAgentRunWorkspace(view: AgentRunView = 'topology', surface: 'editor' | 'canvas' = 'canvas'): void {
+export function activateAgentRunWorkspace(view: AgentRunView = 'topology', surface: 'editor' | 'canvas' = 'canvas', source?: string): void {
   if (!Object.hasOwn(AGENT_RUN_CANVAS_VIEWS, view)) return
   if (!workspace) {
     const state = useGraphStore.getState()
@@ -26,7 +26,7 @@ export function activateAgentRunWorkspace(view: AgentRunView = 'topology', surfa
     restoreView = () => useGraphStore.getState().setWorkspaceViewState(previous)
     listenForRevocation()
   }
-  workspace = { ...workspace, view }
+  workspace = { ...workspace, view, ...(source ? { source } : {}) }
   if (snapshot) snapshot = { ...snapshot, view }
   useGraphStore.getState().setWorkspaceViewState({ mode: surface,
     paneOpen: surface === 'editor' && !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches })

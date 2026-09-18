@@ -14,6 +14,7 @@ import { MarkdownWorkspaceBacklinksList } from './MarkdownWorkspaceBacklinksList
 import { MarkdownWorkspaceTocList } from './MarkdownWorkspaceTocList'
 import { MarkdownWorkspaceExplorerHeaderActions } from './MarkdownWorkspaceExplorerHeaderActions'
 import { MarkdownWorkspaceSourceFilesList } from './MarkdownWorkspaceSourceFilesList'
+import { matchesAgentMissionSource } from '@/features/agent-ready/agentMissionSourceFiles'
 import { MarkdownWorkspaceTocTree } from './MarkdownWorkspaceTocTree'
 import { MarkdownExplorerSectionResizeHandle } from './MarkdownExplorerSectionResizeHandle'
 import {
@@ -204,9 +205,10 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
           }}
           sectionStyle={resolveSectionStyle('sourceFiles', sourceFilesCollapsed)}
           scrollMode="primary"
-          right={<span className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>{sourceFileCount}</span>}
+          right={<span className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>{sourceFileCount + Number(matchesAgentMissionSource(search))}</span>}
         >
           <MarkdownWorkspaceSourceFilesList
+            search={search}
             loading={loading}
             loadError={loadError}
             textSizeClass={panelTypography.textSizeClass}

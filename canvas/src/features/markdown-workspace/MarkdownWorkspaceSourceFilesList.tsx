@@ -19,8 +19,10 @@ import {
   useSourceFileCloudSync,
 } from './SourceFileCloudSyncIndicator'
 import { SourceFilesOwnershipSummary } from './SourceFilesOwnershipSummary'
+import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourceFiles'
 
 type MarkdownWorkspaceSourceFilesListProps = {
+  search?: string
   loading: boolean
   loadError: string
   textSizeClass: string
@@ -114,18 +116,13 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     openCanvasEmbedCodePanel(detail)
   }, [])
 
-  if (loading) {
-    return <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
-  }
-
-  if (loadError) {
-    return <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
-  }
-
   return (
     <>
       <SourceFilesOwnershipSummary />
-      <MarkdownFileTree
+      <AgentMissionSourceFile search={props.search} />
+      {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
+        : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
+        : <MarkdownFileTree
         entries={entries}
         expandedPaths={expandedPaths}
         toggleExpanded={toggleExpanded}
@@ -144,7 +141,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         onCanvasEmbedReady={handleCanvasEmbedReady}
         onShareCodeReady={handleShareCodeReady}
         renderFileRight={renderFileStatusRight}
-      />
+      />}
     </>
   )
 }

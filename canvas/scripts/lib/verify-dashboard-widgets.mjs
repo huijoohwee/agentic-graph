@@ -1,5 +1,25 @@
 import assert from 'node:assert/strict'
 
+export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored) {
+  await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: false }))
+  const shell = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
+  await shell.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check()
+  const files = shell.getByRole('region', { name: 'Source Files content', exact: true })
+  await files.getByRole('button', { name: 'Folder agent-mission', exact: true }).waitFor()
+  await files.getByRole('button', { name: 'Folder docs', exact: true }).waitFor()
+  const before = await authoredSnapshot()
+  await files.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).click()
+  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  await editor.getByText('No observation loaded.', { exact: false }).waitFor()
+  await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
+  await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor()
+  await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  await files.getByRole('button', { name: 'Folder agent-mission', exact: true }).waitFor()
+  assertAuthored(await authoredSnapshot(), before, 'Manifest inspection must preserve the active authored source')
+  const persisted = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts')).getWorkspaceFs()).listEntries())
+  assert.equal(persisted.some(entry => entry.path.startsWith('/agent-mission/')), false, 'Session evidence must not enter persistent Source Files')
+}
+
 /** CRUD uses the existing visual Props palette and inline Dashboard editors. */
 export async function verifyDashboardWidgets(page) {
   const dashboard = page.getByRole('region', { name: 'Dashboard', exact: true })

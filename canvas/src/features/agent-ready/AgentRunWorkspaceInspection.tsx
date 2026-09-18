@@ -3,6 +3,7 @@ import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree
 import { MarkdownExplorerSection } from '@/features/markdown-workspace/MarkdownExplorerSection'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { agentRunInspectionJson } from './agentRunImport'
+import { AGENT_MISSION_MANIFEST_PATH, AGENT_MISSION_SOURCE_ROOT, agentMissionManifestEntry, agentMissionSourceFolder } from './agentMissionSourceFiles'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MarkdownWorkspaceMain } from '@/features/markdown-workspace/main/MarkdownWorkspaceMain'
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
@@ -24,14 +25,16 @@ export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' 
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const themeMode = useGraphStore(s => s.resolvedThemeMode || 'light')
   const [explorerOpen, setExplorerOpen] = React.useState(() => !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches), [sourceCollapsed, setSourceCollapsed] = React.useState(false)
-  const [source, setSource] = React.useState('/agent-mission.md')
+  const [source, setSource] = React.useState(workspace?.source ?? `${AGENT_MISSION_SOURCE_ROOT}/agent-mission.md`)
+  const [sourceExpanded, setSourceExpanded] = React.useState(true)
   const [layout, setLayout] = React.useState<MarkdownWorkspaceLayoutMode>('editor')
   const [wrap, setWrap] = React.useState(true), [highlight, setHighlight] = React.useState(false)
   const editorRef = React.useRef<MonacoTextEditorHandle | null>(null)
   const presentationRef = React.useRef<MarkdownPresentationApi | null>(null)
-  const json = React.useMemo(() => inspection ? agentRunInspectionJson(inspection.trace, inspection.spanId, inspection.expiresAt) : '', [inspection])
+  const json = React.useMemo(() => inspection ? agentRunInspectionJson(inspection.trace, inspection.spanId, inspection.expiresAt)
+    : JSON.stringify({ schema: 'agent-run-inspection/v1', authority: false, expiresAt: null, selectedSpanId: null, trace: null }, null, 2), [inspection])
   const markdown = React.useMemo(() => {
-    if (!inspection) return ''
+    if (!inspection) return '# Agent Mission\n\nNo observation loaded. Open Dashboard to import a run or connect the runtime.\n'
     const { trace, spanId } = inspection, plan = trace.context?.plan, url = sourceLink(trace.context)
     return [`# Agent run ${cell(trace.runId)}`, '', 'Read-only observation. This snapshot grants no execution, release or payment authority.', '',
       `State: ${cell(trace.status)} · Selected span: ${cell(spanId || 'Whole run')}`, '',
@@ -53,26 +56,26 @@ export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' 
   }, [inspection])
   if (!workspace) return null
   const trace = inspection?.trace
-  const jsonSelected = source.endsWith('.json')
-  const entries: WorkspaceEntry[] = trace ? [
-    { path: '/agent-mission.manifest.json', parentPath: '/', kind: 'file', name: 'agent-mission.manifest.json', updatedAtMs: trace.observedAt },
-    { path: '/agent-mission.md', parentPath: '/', kind: 'file', name: 'agent-mission.md', updatedAtMs: trace.observedAt },
-  ] : []
+  const jsonSelected = !trace || source === AGENT_MISSION_MANIFEST_PATH
+  const entries: WorkspaceEntry[] = [agentMissionSourceFolder, agentMissionManifestEntry, ...(trace ? [
+    { path: `${AGENT_MISSION_SOURCE_ROOT}/agent-mission.md`, parentPath: AGENT_MISSION_SOURCE_ROOT, kind: 'file' as const, name: 'agent-mission.md', updatedAtMs: trace.observedAt },
+  ] : [])]
   return <section aria-label="Agent run Editor Workspace inspection"
     className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden ${UI_THEME_TOKENS.panel.bg}`}>
     <header className="flex shrink-0 flex-wrap items-center gap-2 border-b p-2 text-xs" style={{ overflowWrap: 'anywhere' }}>
       <strong>{trace ? `Run ${trace.runId}` : 'Agent observability'}</strong>
       {trace && inspection && <span>Read-only · {trace.spans.length}/{trace.total} spans · expires {new Date(inspection.expiresAt).toLocaleTimeString()}</span>}
       <button className={button} onClick={closeAgentRunInspection}>Close run inspection</button>
-      <button className={button} disabled={!trace} onClick={() => useGraphStore.getState().setWorkspaceViewState({
+      <button className={button} onClick={() => useGraphStore.getState().setWorkspaceViewState({
         mode: 'canvas', paneOpen: false,
       })}>Show Canvas</button>
     </header>
-    {trace ? <div className="kg-markdown-workspace-shell flex min-h-0 min-w-0 flex-1">
+    {!trace && <p className="px-2 text-xs">No observation loaded. Show Canvas to import a run or connect the runtime.</p>}
+    <div className="kg-markdown-workspace-shell flex min-h-0 min-w-0 flex-1">
       {explorerOpen && <aside className="kg-markdown-workspace-explorer flex h-full min-h-0 w-56 max-w-[40%] shrink-0 flex-col border-r" aria-label="Markdown Explorer">
-        <MarkdownExplorerSection title="Source Files" collapsed={sourceCollapsed} setCollapsed={setSourceCollapsed} scrollMode="primary" right={<span>{entries.length}</span>}>
+        <MarkdownExplorerSection title="Source Files" collapsed={sourceCollapsed} setCollapsed={setSourceCollapsed} scrollMode="primary" right={<span>{entries.length - 1}</span>}>
           <p className="p-2 text-xs">Agent Mission · read-only session</p>
-          <MarkdownFileTree entries={entries} readOnly expandedPaths={new Set(['/'])} toggleExpanded={noop} activePath={source} onSelectFile={setSource} />
+          <MarkdownFileTree entries={entries} readOnly expandedPaths={new Set(sourceExpanded ? ['/', AGENT_MISSION_SOURCE_ROOT] : ['/'])} toggleExpanded={() => setSourceExpanded(value => !value)} activePath={jsonSelected ? AGENT_MISSION_MANIFEST_PATH : source} onSelectFile={setSource} />
           <p className="p-2 text-xs">Available until this observation expires. Export explicitly to keep a copy.</p>
         </MarkdownExplorerSection>
       </aside>}
@@ -82,8 +85,8 @@ export default function AgentRunWorkspaceInspection(_props: { surface: 'editor' 
         onToggleFullscreen={noop} presentationApiRef={presentationRef} isMarkdown={!jsonSelected} activeText={jsonSelected ? json : markdown} setActiveText={noop}
         jsonSourceText={json} passive disableEditorMutations disableViewerMutations activeDocumentKey={source}
         highlightedLineRange={null} revealLineInEditor={noop} showInViewer={noop} showInPresentation={noop} showInGallery={noop}
-        editorUri={`inmemory://agent-run/${encodeURIComponent(trace.runId)}/${trace.subjectDigest || trace.observedAt}${source}`}
+        editorUri={`inmemory://agent-run/${encodeURIComponent(trace?.runId ?? 'unobserved')}/${trace?.subjectDigest || trace?.observedAt || 'empty'}${source}`}
         editorLanguage={jsonSelected ? 'json' : 'markdown'} editorRef={editorRef} />
-    </div> : <p className="p-3">Select a run in Dashboard to inspect its source.</p>}
+    </div>
   </section>
 }
