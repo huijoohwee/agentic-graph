@@ -56,23 +56,37 @@ test('release setup installs the mirror lockfile and development dependency befo
   ])
 })
 
-test('release setup retries the configured mirror path without splitting spaces', t => {
-  const result = runInstaller(t, { mirrorRoot: '/fixture/production mirror', mirrorFailures: 2 })
+test('release setup preserves the configured mirror path without splitting spaces', t => {
+  const result = runInstaller(t, { mirrorRoot: '/fixture/production mirror' })
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(result.calls.filter(call => call.includes('--prefix')),
-    Array(3).fill(['npm', '--prefix', '/fixture/production mirror', 'ci', '--ignore-scripts', '--include=dev']))
-  assert.deepEqual(result.calls.filter(call => call[0] === 'sleep'), [['sleep', '10'], ['sleep', '20']])
+    [['npm', '--prefix', '/fixture/production mirror', 'ci', '--ignore-scripts', '--include=dev']])
+  assert.deepEqual(result.calls.filter(call => call[0] === 'sleep'), [])
   assert.deepEqual(result.calls.at(-1), ['npx', 'playwright', 'install', '--with-deps', 'chromium'])
 })
 
-test('exhausted source or mirror dependency installation stops before later preparation', t => {
-  for (const failures of [{ graphFailures: 3 }, { mirrorFailures: 3 }]) {
+test('first source or mirror install failure stops without rerunning or preparing release', t => {
+  for (const failures of [{ graphFailures: 1 }, { mirrorFailures: 1 }]) {
     const result = runInstaller(t, failures)
-    assert.notEqual(result.status, 0)
-    assert.equal(result.calls.filter(call => call[0] === 'sleep').length, 2)
+    assert.equal(result.status, 17)
+    assert.equal(result.calls.filter(call => call[0] === 'sleep').length, 0)
     assert.ok(result.calls.every(call => !call.includes('smoke:prepare') && call[0] !== 'npx'))
     const installs = result.calls.filter(call => call.includes('ci'))
-    assert.equal(installs.length, failures.graphFailures ? 3 : 4)
-    assert.match(result.stderr, /npm ci failed after 3 attempts/)
+    assert.equal(installs.length, failures.graphFailures ? 1 : 2)
   }
+})
+
+
+test('Integration Gate propagates the first dependency failure without rerunning install', t => {
+  const workflow = YAML.parse(fs.readFileSync(path.resolve(import.meta.dirname, '../../.github/workflows/integration.yml'), 'utf8'))
+  const installs = Object.values(workflow.jobs).flatMap(job => job.steps || []).filter(step => step.name === 'Install dependencies')
+  assert.equal(installs.length, 1)
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'integration-install-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const log = path.join(root, 'calls')
+  fs.writeFileSync(path.join(root, 'npm'), '#!/bin/sh\nprintf "install\\n" >> "$LC_INSTALL_LOG"\nexit 17\n', { mode: 0o755 })
+  const result = spawnSync('bash', ['-e', '-c', installs[0].run], { encoding: 'utf8', timeout: 1000,
+    env: { ...process.env, PATH: `${root}${path.delimiter}${process.env.PATH}`, LC_INSTALL_LOG: log } })
+  assert.equal(result.status, 17, result.stderr)
+  assert.equal(fs.readFileSync(log, 'utf8'), 'install\n')
 })
