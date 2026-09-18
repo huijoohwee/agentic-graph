@@ -36,9 +36,11 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
     setBusy(true); setError('')
     try { await operation(); props.onClose() } catch (failure) { setError((failure as Error).message); setBusy(false) }
   }
-  return <form aria-label="Widget configuration" className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain space-y-3 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-sm"
+  return <section aria-label="Widget settings" className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain space-y-3 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-sm"
     onKeyDown={event => { if (event.key === 'Escape' && !busy) { event.preventDefault(); props.onClose() } }}
-    onSubmit={event => {
+    >
+    {props.configuration}
+    <form aria-label="Widget configuration" className="space-y-3" onSubmit={event => {
       event.preventDefault()
       if (props.template !== 'tree' && !source) { setError('Choose a data source.'); return }
       const id = selected || `graph:widget-${crypto.randomUUID()}`
@@ -70,5 +72,5 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
       {selected && <button type="button" className={button} disabled={busy || !config.ready} onClick={() => { void run(() => selected !== 'mission:tree' && !sources.some(source => source.id === selected)
         ? updateDashboardWidgets({ [selected]: null }) : updateDashboardWidget(selected, { visible: false })) }}>Remove widget</button>}
     </footer>
-  </form>
+  </form></section>
 }

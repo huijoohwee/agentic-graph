@@ -1,3 +1,4 @@
+import { readWorkspaceObservation } from './workspaceObservation'
 import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
 import React from 'react'
 import { useDashboardWidgets, widgetSettings } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
@@ -47,6 +48,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const [baseline, setBaseline] = React.useState<RunTrace | null>(null), [comparison, setComparison] = React.useState<unknown>(null)
   const [localReport, setLocalReport] = React.useState<ValidationObservation | null>(initial?.trace.localObservation ?? null)
   const importAttempt = React.useRef(0)
+  const workspaceFeed = Boolean(trace?.workspaceObservation)
   const local = Boolean(trace?.localObservation || trace?.localImport)
   React.useEffect(() => () => { importAttempt.current++ }, [])
   const stop = React.useCallback(() => {
@@ -99,6 +101,22 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     if (!streamed) accept(result)
   }
   const refresh = React.useCallback((cursor?: string) => perform(async signal => {
+    const localTrace = await readWorkspaceObservation(signal)
+    if (localTrace) {
+      const nextScope = `workspace:${localTrace.runId}`, expiresAt = localTrace.localImport!.importedAt + 60000
+      const spanId = localTrace.spans.some(s => s.spanId === selected.current.spanId) ? selected.current.spanId : null
+      const first = scope.current !== nextScope
+      scope.current = nextScope; scopeExpiry.current = expiresAt; selected.current = { runId: localTrace.runId, spanId }
+      setTrace(localTrace); setSelection(selected.current); setExpiry(expiresAt); setIndex(null); setLocalReport(null)
+      if (first) { setLive(true); setBaseline(null); setComparison(null) }
+      if (workspace) {
+        if (first) openAgentRunInspection({ trace: localTrace, scope: nextScope, expiresAt, spanId, search: '', view: 'tree' })
+        else updateAgentRunInspection({ trace: localTrace, scope: nextScope, expiresAt, spanId })
+      }
+      setNotice('Streaming the selected .workspace archive · read only · source receipts retain their original revisions.')
+      return
+    }
+    if (scope.current?.startsWith('workspace:')) throw Error('The .workspace source was removed. Select a valid native manifest to resume.')
     const result = readRunIndex(await call('query', { ...query, ...(cursor ? { cursor } : {}) }, signal))
     const changed = scope.current !== null && scope.current !== result.access.scope
     if (changed) { clear(); setNotice('The authenticated scope changed. Select a run from the new snapshot.') }
@@ -134,10 +152,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     }
   }, [stop, clear])
   React.useEffect(() => {
-    if (preview || local || !live || !online || !visible || busy) return
-    const timer = window.setTimeout(() => { void refresh() }, backoff)
+    if (preview || local && !workspaceFeed || !live || !online || !visible || busy) return
+    const timer = window.setTimeout(() => { void refresh() }, workspaceFeed ? 15000 : backoff)
     return () => window.clearTimeout(timer)
-  }, [preview, local, live, online, visible, busy, backoff, refresh])
+  }, [preview, local, workspaceFeed, live, online, visible, busy, backoff, refresh])
   React.useEffect(() => {
     if (!expiry) return
     const timer = window.setTimeout(() => { stop(); clear(); setNotice('Snapshot expired. Refresh to reauthorize inspection.') }, Math.max(0, expiry - Date.now()))
@@ -214,26 +232,23 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   }
   const workflow = record(trace?.profile.workflow), workflowUrl = trace ? workflowSourceLink(trace) : null
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
-  if (viewSettings.visible === false) return null
-  return <section aria-label="Agent Mission" className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
-    <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings}>
-    <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }}>
-    <details open={!trace}><summary className="cursor-pointer text-xs">Run source</summary>
+  const sourceConfiguration = <>
+    <section aria-label="Run source" className="space-y-2"><h4 className="font-semibold">Run source</h4>
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
 
       <label className={button}>Import local file<input type="file" accept=".json,application/json" className="sr-only" aria-label="Import local file"
         onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void importAgentRunFile(file, onOpenWorkspace, preview || workspace ? 'canvas' : 'editor').then(handled => {
           if (!handled) setError('Choose a native run trace or exported inspection JSON file. Validation reports use Import validation report.')
         }) }} /></label>
-      <button type="button" className={button} disabled={local || busy || !online} onClick={() => {
+      <button type="button" className={button} disabled={local && !workspaceFeed || busy || !online} onClick={() => {
         if (preview) { activateAgentRunWorkspace('tree'); onOpenWorkspace?.() } else void refresh()
       }}>{preview ? 'Connect runtime' : 'Refresh runs'}</button>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={preview || local} checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={preview || local && !workspaceFeed} checked={live} onChange={e => setLive(e.target.checked)} />Live · ≥5 s</label>
       <label className={button}>Import validation report<input type="file" accept=".json,application/json" className="sr-only"
         aria-label="Import validation report" onChange={event => { void importReport(event.target.files?.[0]); event.target.value = '' }} /></label>
       {local && <button className={button} onClick={() => { stop(); clear() }}>Close local report</button>}
     </header>
-    <p role="status" className="pb-2 text-xs">{preview ? 'Import a local observation to begin · no runtime connection' : local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
+    <p role="status" className="pb-2 text-xs">{preview ? 'Import a local observation to begin · no runtime connection' : workspaceFeed ? (live ? '.workspace · SSE snapshots every 15 s' : '.workspace · stream paused') : local ? 'Local file · read only · no polling' : !online ? trace || index ? 'Offline · cached inspection only' : 'Offline · connect to read authorized runs' : !visible ? 'Paused while hidden' : busy ? index ? 'Reading runtime…' : 'Connecting to runtime…' : live ? `Live · next refresh after ${backoff / 1000} s` : 'Manual refresh'}
       {index ? ` · observed ${new Date(index.observedAt).toLocaleTimeString()} · snapshot expires ${new Date(expiry).toLocaleTimeString()}` : ''}</p>
     {trace?.localImport && <p className="py-2 text-xs">Imported local trace: {trace.localImport.fileName} · read-only · original observation {new Date(trace.observedAt).toLocaleString()} · runtime actions disabled</p>}
     {error && <div role="alert" className="rounded border p-2"><p>{local ? "Observation unavailable" : "Runtime unavailable"} · {error}</p><p className="text-xs">Check the existing runtime connection and signed session, then refresh. No run data is inferred.</p></div>}
@@ -264,12 +279,19 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       {index.offset > 0 && <button className={button} disabled={busy || !online} onClick={() => { void refresh() }}>First run page</button>}
       {index.nextCursor && <button className={button} disabled={busy || !online} onClick={() => { void refresh(index.nextCursor!) }}>Next run page</button>}
     </>}
-    </details>
+    </section>
+  </>
+  if (viewSettings.visible === false) return null
+  return <section aria-label="Agent Mission" className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
+    <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings} configuration={sourceConfiguration} contentKey={trace?.runId}>
+    <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }}>
+
     {!index && !trace && <section aria-label="Observation dashboard" className="py-3 text-sm">
-      No observation loaded. Import a run to see its spans. Unobserved resources remain unknown.
+      {busy ? 'Loading .workspace observation…' : error || 'No observation selected. Select this card, then Flip to configure its run source.'}
     </section>}
     {trace && <section aria-label="Selected run evidence" className="min-w-0">
 
+      {workspaceFeed && <p className="pb-2 text-xs" role="status">.workspace stream · {!online ? 'offline' : !visible ? 'paused while hidden' : error ? 'refresh unavailable' : live ? 'live' : 'paused'}</p>}
       <h3 className="font-semibold">Run {trace.runId}</h3>
       <p className="text-xs">Selected span: {selection.spanId || "Whole run"}</p>
       <p className="text-xs">Observed state: {trace.status} · {trace.spans.length}/{trace.total} retained spans on this page · expected {numberLabel(trace.expected)} · dropped {numberLabel(trace.dropped)}{trace.partial ? ' · Partial trace' : ''}</p>

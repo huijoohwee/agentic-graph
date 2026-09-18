@@ -14,6 +14,8 @@ export type DashboardWidgetEditorProps = {
   template: DashboardTemplate
   title: string
   defaults?: DashboardWidgetSettings
+  configuration?: React.ReactNode
+  contentKey?: string
 }
 const interactive = 'label, [role="treeitem"], [role="row"], [role="tab"], [role="option"], button, input, textarea, select, a, summary, [contenteditable="true"], [role="button"], [role="textbox"], [data-kg-dashboard-table-row]'
 const noop = () => void 0
@@ -27,6 +29,7 @@ const toolbarPresentation = buildWidgetBubbleToolbarPresentation({
 /** Selection reveals the shared Widget Card toolbar; only its Flip action opens settings. */
 export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & { children: React.ReactNode }) {
   const [flipped, setFlipped] = React.useState(false)
+  React.useEffect(() => { setFlipped(false) }, [props.contentKey])
   const [turned, setTurned] = React.useState(false)
   const [toolbarVisible, setToolbarVisible] = React.useState(false)
   const [frontSize, setFrontSize] = React.useState<{ width: number; height: number } | null>(null)

@@ -1,3 +1,4 @@
+import { readWorkspaceObservation } from '@/features/agent-ready/workspaceObservation'
 import assert from 'node:assert/strict'
 import { readWorkflowImport } from '@/features/agent-ready/agentWorkflowImport'
 import { readAgentRunImport, agentRunInspectionJson } from '@/features/agent-ready/agentRunImport'
@@ -25,4 +26,15 @@ export async function testWorkflowImport(): Promise<void> {
     (v:ReturnType<typeof snapshot>)=>{v.page.total=2049}]) await assert.rejects(readWorkflowImport(manifestText,'manifest.json',new AbortController().signal,request(mutate)))
   const canceled=new AbortController();canceled.abort();await assert.rejects(readWorkflowImport(manifestText,'manifest.json',canceled.signal,request()))
   await assert.rejects(readWorkflowImport(manifestText,'manifest.json',new AbortController().signal,(async()=>new Response('{}',{status:422})) as typeof fetch),/unavailable/)
+  const workspaceSource = { schema: 'agentic-graph/workspace-observation-source/v1', authority: false, manifestText,
+    manifestDigest: digest, manifestPath: `.artifacts/workflows/${'a'.repeat(24)}/${digest}/manifest.json` }
+  const workspaceRequest = ((url: string, init: RequestInit) => url.endsWith('/workspace-source')
+    ? Promise.resolve(new Response(JSON.stringify(workspaceSource), { headers: { 'cache-control': 'no-store' } }))
+    : request()(url, init)) as typeof fetch
+  const workspace = await readWorkspaceObservation(new AbortController().signal, workspaceRequest)
+  assert.equal(workspace?.spans.length, 70); assert.equal(workspace?.workspaceObservation.manifestDigest, digest)
+  assert.equal(await readWorkspaceObservation(new AbortController().signal, (async () => new Response('{}', { status: 404 })) as typeof fetch), null)
+  workspaceSource.manifestDigest = 'b'.repeat(64)
+  await assert.rejects(readWorkspaceObservation(new AbortController().signal, workspaceRequest), /digest/)
+
 }

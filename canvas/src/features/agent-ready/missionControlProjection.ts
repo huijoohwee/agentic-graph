@@ -19,7 +19,7 @@ export type TraceSpan = { spanId: string; parentSpanId: string | null; kind: str
   taskId: string; attempt: number | null; status: string; subjectDigest: string | null; component: EvidenceRef;
   links: { spanId: string; kind: string }[]; timing: { offset: number | null; inclusive: number | null; exclusive: number | null; scope?: string; basis?: string };
   cost: unknown; resources?: ResourceMetrics; historicalResources?: ResourceMetrics; model?: string | null; modelIdentityBasis?: string; evaluation: Evaluation }
-export type RunTrace = { localImport?: { fileName: string; importedAt: number }; localObservation?: ValidationObservation; runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
+export type RunTrace = { workspaceObservation?: { manifestPath: string; manifestDigest: string }; localImport?: { fileName: string; importedAt: number }; localObservation?: ValidationObservation; runId: string; status: string; spans: TraceSpan[]; subjectDigest: string | null;
   context: RunContext | null; candidate: EvidenceRef; cohortId: string; profile: RecordValue;
   evaluation: Evaluation; resources: RecordValue | null; expiresAt: number; observedAt: number;
   partial: boolean; dropped: number | null; expected: number | null; total: number; offset: number; nextCursor: string | null }

@@ -6919,7 +6919,7 @@ export default defineConfig(({ command, mode }) => {
             autoThemeTarget: '#root',
           }),
           stripeCheckoutDevPlugin,
-          createAgenticOsGrammarDevPlugin({ rootDir: repoRoot }), createProbeTreeMcpBridgePlugin({ repoRoot }), createExternalMcpBridgePlugin(), createAgentGraphBridgePlugin({ repoRoot }), createDurableRunBridgePlugin(),
+          createAgenticOsGrammarDevPlugin({ rootDir: repoRoot }), createProbeTreeMcpBridgePlugin({ repoRoot }), createExternalMcpBridgePlugin(), createAgentGraphBridgePlugin({ repoRoot }), createDurableRunBridgePlugin({ repoRoot }),
           markdownPipelineDevPlugin,
           apiGraphDevPlugin,
           flowchartFixtureDevPlugin,
