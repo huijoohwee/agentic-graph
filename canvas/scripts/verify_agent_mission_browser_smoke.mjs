@@ -306,6 +306,7 @@ async function verifyApexActivation(width) {
   const evidence = canvas.getByRole('region', { name: 'Agent Mission', exact: true })
   await canvas.waitFor({ timeout: 60000 }); await waitText(evidence, '2 retained matches')
   assertAuthored(await authoredSnapshot(), before, 'Apex discovery must preserve authored work')
+  await waitForAsync(async () => (await import('/src/features/toolbar/floatingPanelBridge.ts')).isFloatingPanelBridgeReady())
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
   const latePanel = page.locator('[data-kg-floating-panel-root="true"]')
   await latePanel.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
