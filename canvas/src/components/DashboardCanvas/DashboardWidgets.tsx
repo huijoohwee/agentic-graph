@@ -49,7 +49,6 @@ export function DashboardMetricTile(input: {
         'relative min-h-[78px] min-w-0 rounded-md border px-3 py-2 shadow-sm transition-transform duration-150',
         colors.chip,
         metricDragVisualState.className,
-        dragging ? '' : 'hover:-translate-y-[1px]',
       ].join(' ')}
       style={metricDragVisualState.style}
       data-kg-dashboard-metric={metric.id}
@@ -238,7 +237,6 @@ export function DashboardCardView(input: {
         `relative min-w-0 rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-4 shadow-sm`,
         'transition-transform duration-150',
         cardDragVisualState.className,
-        dragging ? '' : 'hover:-translate-y-[1px]',
       ].join(' ')}
       style={cardDragVisualState.style}
       ref={element => props.registerCardElement(card.id, element)}
