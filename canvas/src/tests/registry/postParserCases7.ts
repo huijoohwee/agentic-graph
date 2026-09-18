@@ -240,6 +240,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["markdown.frontmatter.normalizesXrFloatingPanelRoute","@/__tests__/markdownFrontmatterSharedGuard.test","testMarkdownFrontmatterNormalizesXrSurfaceAlias"],
   ["history.restoreRevision.explicitNavigationOnly","@/__tests__/graphFieldsSyncChurn.test","testHistorySliceOnlyAdvancesRestoreRevisionForExplicitNavigation"],
   ["history.scheduledCommit.cancelBeforeReset","@/__tests__/graphFieldsSyncChurn.test","testHistorySliceCanCancelPendingScheduledCommitBeforeReset"],
+  ["canvas.xrMode.physics.nativeController.fixedStep", "@/__tests__/xrPlaygroundFixedStep.test.tsx", "testXrPlaygroundFixedStep"],
   ["canvas.xrMode.physics.nativeController.input","@/__tests__/xrNativeControllerDemo.test","testXrNativeControllerInputNormalizesKeyboardAndGamepad"],
   ["canvas.xrMode.physics.nativeController.ball","@/__tests__/xrNativeControllerDemo.test","testXrNativeBallControllerIsDeterministicAndInteractive"],
   ["canvas.xrMode.physics.nativeController.rocket","@/__tests__/xrNativeControllerDemo.test","testXrNativeRocketControllerThrustsTiltsAndStabilizes"],

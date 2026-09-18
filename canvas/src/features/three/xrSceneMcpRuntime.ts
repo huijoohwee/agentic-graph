@@ -67,6 +67,7 @@ import {
   resumeXrNativeControllerDemo,
   selectXrNativeControllerDemoMode,
   setSharedXrNativeControllerDemoTerrain,
+  stepPausedXrNativeControllerDemo,
 } from './xrNativeControllerDemoRuntime'
 import {
   XR_SCENE_INVOCATION_COMMANDS,
@@ -258,6 +259,12 @@ function runXrPhysicsControl(physics: XrPhysicsControlInput): XrPhysicsControlRe
       developAndRunXrNativeControllerDemo()
     } else if (physics.operation === 'select' && physics.controllerMode) {
       selectXrNativeControllerDemoMode(physics.controllerMode)
+    } else if (physics.operation === 'step') {
+      const ticks = physics.ticks ?? 1
+      if (stepPausedXrNativeControllerDemo(ticks) !== ticks) {
+        return { ok: false, message: 'Pause the native XR controller before advancing 1–240 physics ticks.' }
+      }
+      return { ok: true, message: `Native XR controller advanced ${ticks} physics ${ticks === 1 ? 'tick' : 'ticks'} and remains paused.` }
     } else if (physics.operation === 'pause') pauseXrNativeControllerDemo()
     else if (physics.operation === 'resume') resumeXrNativeControllerDemo()
     else if (physics.operation === 'reset') resetSharedXrNativeControllerDemo()

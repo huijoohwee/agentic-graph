@@ -576,6 +576,14 @@ export function stepSharedXrNativeControllerDemo(deltaSeconds: number): number {
   return steps
 }
 
+/** Advance only a paused playground; explicit ticks do not consume wall-clock backlog. */
+export function stepPausedXrNativeControllerDemo(ticks = 1): number {
+  if (sharedRuntime.phase !== 'paused' || !Number.isInteger(ticks) || ticks < 1 || ticks > 240) return 0
+  const steps = stepXrNativeControllerDemoRuntimeTicks(sharedRuntime, ticks)
+  publishShared()
+  return steps
+}
+
 export function readSharedXrNativeControllerDemoFrame(): XrNativeControllerDemoFrame {
   return readXrNativeControllerDemoRuntimeFrame(sharedRuntime)
 }

@@ -11,17 +11,14 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
     defaultWorkspaceId: 'kgws:test',
     includeBrowserOnlyTools: true,
   })
-  const readOnlyCount = contracts.filter(contract => contract.annotations?.readOnlyHint === true).length
-  const guardedControlCount = contracts.filter(contract => contract.annotations?.readOnlyHint === false).length
-  if (contracts.length !== 50 || readOnlyCount !== 31 || guardedControlCount !== 19) {
-    throw new Error(`expected 50 WebMCP tools split 31/19, got ${contracts.length} split ${readOnlyCount}/${guardedControlCount}`)
-  }
-
   const toolId = AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalImportUrl
   if (toolId !== 'control_local_import_url') {
     throw new Error(`expected canonical Import URL tool id, got ${String(toolId)}`)
   }
-  const contract = contracts.find(candidate => candidate.name === toolId)
+  // Whole-registry parity belongs to agenticOsInvocationExecutor.test.ts.
+  const matchingContracts = contracts.filter(candidate => candidate.name === toolId)
+  if (matchingContracts.length !== 1) throw new Error('expected exactly one Import URL contract')
+  const contract = matchingContracts[0]
   if (!contract || contract.webName !== 'agentic-graph.control_local_import_url') {
     throw new Error('expected shared contract to expose agentic-graph.control_local_import_url')
   }

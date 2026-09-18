@@ -3,8 +3,8 @@ title: "agentic-graph Independent Native 2D And 3D Physics Engines PRD-TAD-ADR-M
 id: "md:agentic-graph-native-physics-engines-prd-tad"
 author: "airvio / joohwee"
 date: "2026-09-12"
-updated: "2026-07-22"
-version: "1.1.2"
+updated: "2026-09-18"
+version: "1.1.3"
 status: "runtime-ready"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 lang: "en-US"
@@ -38,17 +38,17 @@ local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-cba000d3779d--planning-v27"
-agent_id: "codex-01a0940a"
+worktree_id: "device-cba000d3779d--playground-fixed-step"
+agent_id: "codex-01a0b1ea"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "1.1.0"
-prd_revision: "1.1.2"
-tad_revision: "1.1.2"
-adr_revision: "1.1.2"
-mvp_revision: "1.1.2"
-gtm_revision: "1.1.2"
+reviewed_source_revision: "dddf1ab47ab0227eb5a21a7cbf49cba45ae8f322"
+previous_document_version: "1.1.2"
+prd_revision: "1.1.3"
+tad_revision: "1.1.3"
+adr_revision: "1.1.3"
+mvp_revision: "1.1.3"
+gtm_revision: "1.1.3"
 ---
 
 # agentic-graph Independent Native 2D And 3D Physics Engines PRD-TAD-ADR-MVP-GTM
@@ -186,7 +186,7 @@ Retain the independent fixed-step 2D and 3D cores and adapt the existing XR pers
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-NATIVE-PHYSICS-ENGINES-PRD-TAD-ADR-MVP-GTM@1.1.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-NATIVE-PHYSICS-ENGINES-PRD-TAD-ADR-MVP-GTM@1.1.3`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -247,3 +247,51 @@ Control's virtual-camera browser check releases all tracks on Stop. The first
 objective and controls were visually checked on the live local stage. Full-suite
 failures and recovered live sandbox delivery are recorded once in the
 [frame-transport handover](agentic-graph-xr-frame-transport-prd-tad-adr-mvp-gtm.md#rehearsal-integration-handover--2026-09-14).
+
+
+## Playground fixed-step rehearsal — 1.1.3
+
+**CID:** `PLAN-AGENTIC-GRAPH-NATIVE-PHYSICS-ENGINES-PRD-TAD-ADR-MVP-GTM@1.1.3`.
+PRD, TAD, ADR, MVP and GTM below share this revision. Historical integration evidence above
+retains its original scope. RAO/SVO: a solo builder advances a paused playground to inspect a
+collision or controller response before demonstrating it to a buyer.
+
+- **PRD:** the existing playground HUD exposes Pause → Step → inspect tick → Resume / Reset.
+  Step advances one native 120 Hz physics tick; agent control accepts 1–240 integer ticks, default one.
+  Off, ready, running and malformed requests fail without advancing simulation or publishing state.
+- **TAD:** [native controller runtime](../../canvas/src/features/three/xrNativeControllerDemoRuntime.ts)
+  owns stepping and notifications; [HUD](../../canvas/src/features/three/XrNativeControllerDemoHud.tsx)
+  projects the paused tick on command transitions. [XR command runtime](../../canvas/src/features/three/xrSceneMcpRuntime.ts)
+  delegates to the same owner. Existing physics, scene, input, objective and collision owners remain in use.
+- **ADR:** explicit stepping requires pause to avoid competing with the render loop. It uses current
+  normalized input and preserves the fractional wall-clock remainder; it advances simulation rather
+  than seeking animation. No reverse physics, replay history, timer, storage, dependency or network call
+  is introduced. Game Mode retains its independent clock and ownership contract.
+- **MVP:** launch Physics Playground through Home Apex or Source Files; pause, select Step, observe
+  exactly one tick, then resume or reset. The existing browser-local scene control accepts
+  `/xr.physics @canvas #controller operation=pause`, then `operation=step ticks=2`; inspection returns
+  `physics.controllerDemo.frame.stepCount`. Reset while paused returns to tick zero and stays paused.
+  Run `npm -C canvas run test:ci:unit -- canvas.xrMode.physics` and the WebMCP lifecycle suite;
+  [behavior/UI tests](../../canvas/src/__tests__/xrPlaygroundFixedStep.test.tsx) and
+  [schema/agent lifecycle tests](../../canvas/src/__tests__/xrSceneMcpContract.test.ts) bind the acceptance.
+- **GTM:** test the hypothesis that solo builders need inspectable local simulations for buyer demos
+  and agent-authored interactive assets. Compare time to explain a collision using Pause/Step against
+  repeated live runs. Target a first demonstration within two minutes; timing and WTP are unmeasured.
+  Reuse the existing marketplace/payment owners for a future priced pilot; this change establishes no
+  purchase, collected revenue, or production deployment evidence.
+
+Source ownership stays in Graph. Agentic OS owns lifecycle; Canvas OS and the website retain their
+existing contract/guideline roles; Commerce owns commerce. The existing protected release workflow
+owns generated `huijoohwee` mirrors and Cloudflare publication; `81rv10` and GameXR gain no copied runtime.
+
+Observed local evidence on 2026-09-18, based on `dddf1ab47ab0227eb5a21a7cbf49cba45ae8f322`:
+`npm run check` passed; native engines passed 16/16 and source boundaries 6/6;
+the physics group passed 17/17, including mounted HUD stepping. XR WebMCP schema and lifecycle
+checks passed. A stale whole-registry count in the Import URL test was removed in favor of its
+single-contract assertion and the dedicated registry-parity owner; both focused tests passed.
+In the live local browser, HUD Step changed tick 1391 → 1392; agent stepping changed 3588 → 3590
+while paused; Reset returned to zero; Resume disabled Step. At 390×844, controls remained visible
+and Step changed 3590 → 3591. The eight-repository ownership check observed 551 artifacts and
+17 responsibilities with no findings. These are local observations, not protected integration,
+production, revenue or performance claims. Home Apex's default prompt catalog was unavailable in
+this checkout; the live rehearsal used the existing repo-local `xr-physics` entry.
