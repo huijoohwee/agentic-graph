@@ -289,14 +289,12 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' })
   const reloadedSourceFiles = page.getByRole('navigation', { name: 'Source files', exact: true })
   await reloadedSourceFiles.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
-  const reloadedDocs = reloadedSourceFiles.getByRole('button', { name: 'Folder docs', exact: true })
-  const reloadedSeeds = reloadedSourceFiles.getByRole('button', { name: 'Folder workspace-seeds', exact: true })
-  if (!await reloadedSeeds.isVisible()) await reloadedDocs.click()
   const reloadedSeedRow = reloadedSourceFiles.getByRole('button', {
     name: 'File agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
     exact: true,
   })
-  if (!await reloadedSeedRow.isVisible()) await reloadedSeeds.click()
+  // Startup reveals the active source's ancestors; toggling during hydration can close them.
+  await reloadedSeedRow.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   await reloadedSeedRow.click()
   const reloadedReadiness = page.locator('[data-kg-xr-v2-workspace-readiness="1"]')
   await reloadedReadiness.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
@@ -406,13 +404,10 @@ try {
   })
   const secondSourceFiles = secondPage.getByRole('navigation', { name: 'Source files', exact: true })
   await secondSourceFiles.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
-  const secondDocs = secondSourceFiles.getByRole('button', { name: 'Folder docs', exact: true })
-  const secondSeeds = secondSourceFiles.getByRole('button', { name: 'Folder workspace-seeds', exact: true })
-  if (!await secondSeeds.isVisible()) await secondDocs.click()
   const secondSeedRow = secondSourceFiles.getByRole('button', {
     name: 'File agentic-graph-ar-vr-xr-runtime-readiness-demo.md', exact: true,
   })
-  if (!await secondSeedRow.isVisible()) await secondSeeds.click()
+  await secondSeedRow.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   await secondSeedRow.click()
   const secondCrossPanel = secondPage.locator('[data-kg-xr-v2-cross-device-panel="1"]')
   await secondCrossPanel.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
