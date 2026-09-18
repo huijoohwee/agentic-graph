@@ -1,4 +1,4 @@
-import { verifyWorkspaceObservation } from './lib/verify-workspace-observation.mjs'
+import { configureMissionPage, verifyWorkspaceObservation } from './lib/verify-workspace-observation.mjs'
 import { showMissionFace, sourceText, waitForMissionAsync } from './lib/mission-card-face.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -16,11 +16,7 @@ const errors = [], requests = [], streamed = [], pending = new Set()
 let page, mission, selected, returnView, peak = 0
 async function openPage() {
 page = await context.newPage()
-page.setDefaultTimeout(15000)
-// Host fixtures must not inherit the developer clone's explicitly selected workspace archive.
-await page.route('**/api/agent-swarm/workspace-source', route => route.fulfill({ contentType: 'application/json', headers: { 'cache-control': 'no-store' }, body: '{"code":"workspace_source_unselected"}' }))
-page.on('pageerror', error => { errors.push(error.message); console.error(error.stack) })
-page.on('console', message => { if (message.type() === 'error') console.error('Browser console:', message.text()) })
+await configureMissionPage(page, errors)
 page.on('request', request => {
   if (!request.url().includes('/api/agent-swarm/')) return
   requests.push({ operation: request.url().split('/').at(-1), at: Date.now() }); pending.add(request); peak = Math.max(peak, pending.size)
