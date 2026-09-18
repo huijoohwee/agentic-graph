@@ -1,8 +1,8 @@
 import React from 'react'
 import { agentRunInspectionJson } from './agentRunImport'
 import { useAgentRunInspection, useAgentRunWorkspace } from './agentRunInspectionStore'
-import { AGENT_MISSION_MANIFEST_PATH, AGENT_MISSION_SOURCE_ROOT } from './agentMissionSourceFiles'
-import { spanRows, numberLabel, sourceLink, traceResources, resourceLabels, workflowSourceLink } from './missionControlProjection'
+import { agentMissionWorkspace, resolveAgentMissionSource } from './agentMissionWorkspace'
+import { record, spanRows, numberLabel, sourceLink, traceResources, resourceLabels, workflowSourceLink } from './missionControlProjection'
 import { jsonToMarkdownPreferTable } from '@/features/markdown/jsonToMarkdown'
 import { useMarkdownPreviewTokens } from '@/features/markdown/ui/useMarkdownPreviewTokens'
 import type { MarkdownWorkspaceMainProps } from '@/features/markdown-workspace/main/types'
@@ -13,19 +13,28 @@ const cell = (value: unknown) => String(value ?? 'Unknown').replace(/&/g, '&amp;
 /** Read-only document projection for the existing Editor Workspace. No alternate shell. */
 export function useAgentRunWorkspaceDocument() {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
-  const sourcePath = workspace?.source === null ? null : workspace?.source
-    ?? (workspace && inspection ? `${AGENT_MISSION_SOURCE_ROOT}/agent-mission.md` : null)
-  const json = React.useMemo(() => inspection ? agentRunInspectionJson(inspection.trace, inspection.spanId, inspection.expiresAt)
-    : JSON.stringify({ schema: 'agent-run-inspection/v1', authority: false, expiresAt: null, selectedSpanId: null, trace: null }, null, 2), [inspection])
+  const projection = agentMissionWorkspace(inspection?.trace)
+  const sourcePath = workspace ? resolveAgentMissionSource(inspection?.trace, workspace.source) : null
+  const reference = sourcePath ? projection.references.get(sourcePath) : undefined
+  const json = reference ? JSON.stringify(reference, null, 2)
+    : sourcePath === projection.manifestPath && inspection?.trace.workflowManifest ? inspection.trace.workflowManifest.text
+    : inspection ? agentRunInspectionJson(inspection.trace, inspection.spanId, inspection.expiresAt)
+      : JSON.stringify({ schema: 'agent-run-inspection/v1', authority: false, expiresAt: null, selectedSpanId: null, trace: null }, null, 2)
   const markdown = React.useMemo(() => {
     if (!inspection) return '# Agent Mission\n\nNo observation loaded. Open Dashboard to import a run or connect the runtime.\n'
-    const { trace, spanId } = inspection, plan = trace.context?.plan, url = sourceLink(trace.context)
+    const { trace, spanId } = inspection, workflow = record(trace.profile.workflow)
+    const plan = trace.context?.plan ?? record(workflow.planning), url = sourceLink(trace.context)
     return [`# Agent run ${cell(trace.runId)}`, '', 'Read-only observation. This snapshot grants no execution, release or payment authority.', '',
       `State: ${cell(trace.status)} · Selected span: ${cell(spanId || 'Whole run')}`, '',
       `Observed ${new Date(trace.observedAt).toISOString()} · Expires ${new Date(inspection.expiresAt).toISOString()}`, '',
       `Coverage: ${trace.spans.length}/${trace.total} retained spans on this page; expected ${numberLabel(trace.expected)}; dropped ${numberLabel(trace.dropped)}${trace.partial ? '; partial trace' : ''}.`, '',
+      ...(trace.workflowManifest ? ['## Workflow workspace', '',
+        `Workflow: ${cell(trace.workflowManifest.value.id)} · Boundary: ${cell(trace.workflowManifest.value.boundary)} · Sequence: ${cell(trace.workflowManifest.value.sequence)}`, '',
+        `Native manifest: ${cell(trace.workspaceObservation?.manifestPath ?? trace.localImport?.fileName)} · Digest: ${cell(trace.workflowManifest.digest)}`, '',
+        'A workflow end records the session boundary. Captured receipt coverage determines readiness.', '',
+        ...((Array.isArray(workflow.members) ? workflow.members : []).map(value => { const member = record(value); return `- ${cell(member.id)} · ${cell(record(member.source).repository)} · .worktrees/${cell(record(member.context).worktreeId)} · ${cell(member.digest)}` })), ''] : []),
       '## Source ownership', '', `${cell(trace.context?.taskId)} → ${cell(trace.context?.projectId)} → ${cell(trace.context?.goalId)}`, '',
-      url ? `[Source plan at ${cell(plan?.revision)}](${url})` : 'Source plan unavailable.', '',
+      url ? `[Source plan at ${cell(plan?.revision)}](${url})` : plan?.path ? `Source plan: ${cell(plan.path)} at ${cell(plan.revision)}` : 'Source plan unavailable.', '',
       `Continuity: ${cell(plan?.continuityId)} · Digest: ${cell(plan?.digest)}`, '',
       '## Observed resources', '', jsonToMarkdownPreferTable([resourceLabels(traceResources(trace))], { tableMaxRows: 1, tableMaxColumns: 4, sortKeys: false }), '',
       'Peak process RSS is a maximum. Model cost is estimated; actual cash and machine charges are unknown. Reused stages are excluded from current consumption.', '',
@@ -39,7 +48,7 @@ export function useAgentRunWorkspaceDocument() {
       'Full context, allocation, usage, immutable evaluation evidence and causal links are available in the JSON pane. Unknown values remain unknown.'].join('\n')
   }, [inspection])
 
-  const jsonSelected = sourcePath === AGENT_MISSION_MANIFEST_PATH
+  const jsonSelected = sourcePath?.endsWith('.json') === true
   const tocTokens = useMarkdownPreviewTokens(sourcePath && !jsonSelected ? markdown : '', undefined, sourcePath ?? '', false)
   const mainProps: Partial<MarkdownWorkspaceMainProps> = sourcePath ? {
     passive: true, activeText: jsonSelected ? json : markdown, jsonSourceText: json,

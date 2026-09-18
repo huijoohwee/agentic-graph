@@ -37,5 +37,6 @@ export async function readWorkflowImport(manifestText: string, fileName: string,
   } while (offset < first.total)
   signal.throwIfAborted()
   return { ...first, spans, total: spans.length, offset: 0, nextCursor: null, partial,
+    workflowManifest: { value: manifest, digest, text: manifestText },
     localImport: { fileName: fileName.slice(0, 240), importedAt: Date.now() } }
 }

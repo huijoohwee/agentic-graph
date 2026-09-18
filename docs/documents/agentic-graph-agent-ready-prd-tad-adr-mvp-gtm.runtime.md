@@ -97,6 +97,7 @@ belong to the install contract's sole endpoint Invocation Register and a non-own
 |---|---|---|---|---|
 | Pages HTTP MCP | `cloudflare/pages/agentic-graph-agent-ready.mjs` | exactly 7 read-only tools | `spec-complete` | `undocumented` |
 | App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` plus shared contract | bounded core plus active workspace group; shared catalog retained internally | `spec-complete` | `undocumented` |
+| Mission workspace | `canvas/src/features/agent-ready/agentMissionWorkspace.ts` | one workflow under `.workspace`, exact native root plus `.worktrees` member references; start/end retain identity and archive history | `spec-complete` | `undocumented` |
 | Local stdio MCP | `mcp/server.js`, `mcp/local-tool-contract.js` | broad descriptor/executor catalog; configuration-gated per tool | `spec-complete` | `undocumented` |
 | Control-plane MCP | `cloudflare/workers/agentic-graph-mcp/tool-registry.mjs` | separate 10-tool registry | `spec-complete` | `undocumented` |
 | Source materialization | `canvas/src/features/source-files/` and parser owners | source-backed workspace/canvas path | `spec-complete` | `undocumented` |
