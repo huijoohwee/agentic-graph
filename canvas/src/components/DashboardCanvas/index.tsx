@@ -28,6 +28,7 @@ import {
 type DashboardCanvasProps = {
   active?: boolean
   children?: React.ReactNode
+  overview?: React.ReactNode
 }
 
 const DASHBOARD_METRICS_GROUP_KEY = 'dashboard-metrics'
@@ -127,6 +128,8 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
               <DashboardLineAreaChart series={model.heroSeries} tone="blue" gridEnabled={model.grid.enabled} area />
             </section>
           </header>
+
+          {props.overview}
 
           <section className="min-w-0" aria-label="Dashboard metrics" data-kg-dashboard-metrics-board="1">
             <section

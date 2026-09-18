@@ -17,6 +17,10 @@ import { applyCanvasRenderBudget } from '@/lib/graph/canvasRenderBudget'
 import { useStatsSelection } from '@/features/graph-stats/hooks/useStatsSelection'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { bindAgentGraphWorkspaceIndex, readActiveAgentGraphWorkspaceIndex, retainAgentGraphWorkspaceIndex } from '@/features/agent-graph/agentGraphWorkspaceIndex'
+import { agentMissionOverviewModel, agentMissionSpanImpact } from '@/features/agent-ready/agentMissionOverviewModel'
+import { readRunTrace } from '@/features/agent-ready/missionControlProjection'
+import { computeNodeVisual, computeEdgeVisual } from '@/components/GraphCanvas/highlight'
+import { defaultSchema } from '@/lib/graph/schema'
 
 export async function testFolderImportPersistsNativeArtifactAndCancellationPreservesGraph() {
   const { restore } = initJsdomHarness(), before = useGraphStore.getState()
@@ -87,6 +91,36 @@ export async function testRetainedJsonReopensEvidenceAndRejectsCorruption() {
     assert.deepEqual((reopened.metadata?.agentGraphProjection as Record<string, unknown>).observation, result.observation)
     await retainAgentGraphWorkspaceIndex(reopened, path)
     assert.deepEqual((await readActiveAgentGraphWorkspaceIndex())?.value.observation, result.observation)
+    const trace = readRunTrace({ schema: 'agent-toolkit-run/v1', runId: 'mission-economics', profile: { workflow: {} },
+      spans: [
+        { spanId: 'root', status: 'completed', timing: { inclusiveMs: 23 }, resources: { cpuMs: 9, peakMemoryBytes: 250, tokens: 5, costUsd: 0.01 } },
+        { spanId: 'child', parentSpanId: 'root', status: 'completed', resources: { cpuMs: 4, peakMemoryBytes: 120, tokens: 3, costUsd: 0.005 } },
+        { spanId: 'reuse', status: 'reused', resources: { cpuMs: 999, peakMemoryBytes: 999, tokens: 999, costUsd: 999 } },
+      ] }, 'mission-economics')
+    const overview = agentMissionOverviewModel(trace, (await readActiveAgentGraphWorkspaceIndex())!)
+    assert.equal(overview.indexMetrics.find(row => row.id === 'index-tokens')?.value, '0 tokens')
+    assert.equal(overview.indexMetrics.find(row => row.id === 'index-rss')?.value, '120 B')
+    assert.equal(overview.workflowMetrics.find(row => row.id === 'mission-tokens')?.value, '5 tokens')
+    assert.equal(overview.workflowMetrics.find(row => row.id === 'mission-rss')?.value, '250 B')
+    assert.equal(overview.workflowMetrics.find(row => row.id === 'mission-time')?.value, '23 ms')
+    assert.equal(overview.model, 'Native · no model calls')
+    assert.ok(agentMissionOverviewModel(trace).indexMetrics.every(row => row.value === 'Unknown'))
+    const separateClocks = { ...trace, spans: [...trace.spans, { ...trace.spans[0]!, spanId: 'another-root' }] }
+    assert.equal(agentMissionOverviewModel(separateClocks).workflowMetrics.find(row => row.id === 'mission-time')?.value, 'Unknown')
+    const impactGraph = { ...original, nodes: [...original.nodes, { id: 'unrelated', label: 'Other source', type: 'Symbol', properties: {} }] }
+    const boundSpan = { ...trace.spans[0]!, component: { id: 'repo:alpha', revision: '', digest: result.snapshotDigest } }
+    assert.deepEqual(agentMissionSpanImpact(boundSpan, impactGraph).nodeIds.sort(), ['repo:alpha', 'repo:beta'])
+    assert.deepEqual(agentMissionSpanImpact(boundSpan, impactGraph).edgeIds, ['edge:alpha-beta'])
+    const impact = agentMissionSpanImpact(boundSpan, impactGraph)
+    const highlight = { data: impactGraph, schema: defaultSchema, selectedNodeId: null, selectedEdgeId: null,
+      selectedNodeIds: impact.nodeIds, selectedEdgeIds: impact.edgeIds, renderMediaAsNodes: false, neighborIds: new Set<string>() }
+    assert.equal(computeNodeVisual(impactGraph.nodes[0]!, highlight).opacity, 1)
+    assert.equal(computeNodeVisual(impactGraph.nodes[2]!, highlight).opacity, 0.2)
+    assert.equal(computeEdgeVisual(impactGraph.edges[0]!, highlight).opacity, 0.9)
+    assert.equal(computeEdgeVisual({ ...impactGraph.edges[0]!, id: 'unrelated-edge' }, highlight).opacity, 0.2)
+    assert.deepEqual(agentMissionSpanImpact({ ...boundSpan, component: { ...boundSpan.component, digest: 'f'.repeat(64) } }, impactGraph).nodeIds, [])
+    assert.deepEqual(agentMissionSpanImpact({ ...boundSpan, component: { ...boundSpan.component, id: 'src/alpha.ts', digest: 'b'.repeat(64) } }, impactGraph).nodeIds.sort(), ['repo:alpha', 'repo:beta'])
+    assert.deepEqual(agentMissionSpanImpact({ ...trace.spans[0]!, operation: 'src/alpha.ts' }, impactGraph).nodeIds, [])
     assert.equal(parseWorkspaceJsonGraphDataCached({ markdownName: name, markdownText: text }), null)
     const identity = original.metadata!.agentGraphProjection as { graphId: string; snapshotDigest: string }
     const corrupted = JSON.parse(text); corrupted.nodes[0].id = 'invalid\u0000id'

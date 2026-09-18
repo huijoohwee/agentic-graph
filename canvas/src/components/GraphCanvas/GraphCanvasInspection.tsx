@@ -8,6 +8,7 @@ import { setupGraphScene } from './scene'
 import { applySelectionHighlight } from './highlight'
 import { fitAllTransform } from './fit'
 import { buildDagreLayout } from '@/components/FlowCanvas/layout'
+import { packDisjointPositions2d } from './layout/collectivePackPositions'
 
 type Scene = Parameters<typeof setupGraphScene>[0]
 const noop = () => {}
@@ -16,18 +17,31 @@ const refKeys = ['gRef', 'nodesSelRef', 'groupChevronSelRef', 'mediaSelRef', 'po
   'linksSelRef', 'labelsSelRef', 'zoomRef', 'tempLinkSelRef', 'linkDragRef', 'simulationRef', 'sceneGraphDataRef',
   'beforeRenderFrameRef', 'selectedEdgeIdRef', 'selectedNodeIdRef', 'selectedNodeIdsRef', 'selectedEdgeIdsRef'] as const
 /** Read-only adapter to the existing D3 scene. No authored graph writes, persistence or continuous simulation. */
-export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect }: {
+export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect, highlightedNodeIds, highlightedEdgeIds, label = 'Observed execution topology', description = 'Observed spans and causal links; use the node buttons below to select a span' }: {
   graph: GraphData; selectedNodeId: string | null; onSelect: (nodeId: string) => void
+  label?: string; description?: string
+  highlightedNodeIds?: string[]; highlightedEdgeIds?: string[]
 }) {
   const parent = React.useRef<HTMLDivElement>(null), svg = React.useRef<SVGSVGElement>(null)
   const refs = React.useMemo(() => Object.fromEntries(refKeys.map(key => [key, { current: null }])) as unknown as Pick<Scene, typeof refKeys[number]>, [])
   const selectSpan = React.useRef(onSelect); selectSpan.current = onSelect
-  refs.selectedNodeIdRef.current = selectedNodeId
+  refs.selectedNodeIdRef.current = highlightedNodeIds?.length ? null : selectedNodeId
+  refs.selectedNodeIdsRef.current = highlightedNodeIds
+  refs.selectedEdgeIdsRef.current = highlightedEdgeIds
+  const highlightSchema = React.useMemo(() => highlightedNodeIds?.length ? { ...inspectionSchema,
+    behavior: { ...inspectionSchema.behavior, expansion: { ...inspectionSchema.behavior.expansion, highlightNeighbors: false } } } : inspectionSchema, [highlightedNodeIds])
+  const highlightOptions = React.useRef({ schema: highlightSchema, nodes: highlightedNodeIds, edges: highlightedEdgeIds })
+  highlightOptions.current = { schema: highlightSchema, nodes: highlightedNodeIds, edges: highlightedEdgeIds }
   const [size, setSize] = React.useState({ width: 1, height: 360 })
   const scene = React.useMemo(() => {
     const copy = structuredClone(graph)
-    const positions = buildDagreLayout({ nodes: copy.nodes, edges: copy.edges, rankdir: 'TB',
-      nodeSize: { widthPx: 120, heightPx: 100 }, spacingPx: { nodesep: 48, ranksep: 64 } })
+    const nodeSize = copy.metadata?.agentGraphProjection ? { widthPx: 240, heightPx: 140 } : { widthPx: 120, heightPx: 100 }
+    const dagre = buildDagreLayout({ nodes: copy.nodes, edges: copy.edges, rankdir: 'TB',
+      nodeSize, spacingPx: { nodesep: 48, ranksep: 64 } })
+    const positions = copy.metadata?.agentGraphProjection ? packDisjointPositions2d({
+      nodeIds: copy.nodes.map(node => node.id), edges: copy.edges, positions: dagre,
+      nodeSize, paddingPx: 0, // Codebase cells already reserve space for labels.
+    }) : dagre
     for (const node of copy.nodes) { Object.assign(node, positions[node.id]); node.fx = node.x; node.fy = node.y }
     return { graph: copy, positions }
   }, [graph])
@@ -35,8 +49,11 @@ export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect 
     if (svg.current && refs.zoomRef.current) select(svg.current).call(refs.zoomRef.current.transform,
       fitAllTransform(scene.graph.nodes, size.width, size.height, { pad: 32, enforceAspectRatio: false, maxScale: 1.5, schema: defaultSchema }))
   }, [scene, size, refs])
-  const highlight = React.useCallback(() => applySelectionHighlight(refs.nodesSelRef.current, refs.mediaSelRef.current,
-    refs.labelsSelRef.current, refs.linksSelRef.current, scene.graph, defaultSchema, refs.selectedNodeIdRef.current, null, [], [], false), [scene, refs])
+  const highlight = React.useCallback(() => {
+    const { schema, nodes, edges } = highlightOptions.current
+    applySelectionHighlight(refs.nodesSelRef.current, refs.mediaSelRef.current, refs.labelsSelRef.current, refs.linksSelRef.current,
+      scene.graph, schema, nodes?.length ? null : refs.selectedNodeIdRef.current, null, nodes ?? [], edges ?? [], false)
+  }, [scene, refs])
   React.useLayoutEffect(() => {
     if (!parent.current) return
     const element = parent.current
@@ -60,26 +77,26 @@ export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect 
       selectEdge: noop, selectGroup: noop, selectGroupExpanded: noop, toggleGroupCollapsed: noop,
       setSelectionSource: noop, addEdge: noop, updateEdge: noop, addNode: noop, updateNode: noop,
       setHoverInfo: noop, setLifecycleStageRendering: noop, requestZoomSelection: noop, onZoomTransform: noop,
-      getSchema: () => inspectionSchema, getRenderMediaAsNodes: () => false, layoutCacheKey: null, setLayoutPositionsForMode: null,
+      getSchema: () => highlightOptions.current.schema, getRenderMediaAsNodes: () => false, layoutCacheKey: null, setLayoutPositionsForMode: null,
     })
     refs.simulationRef.current?.stop(); fit(); highlight()
     return cleanup
   }, [scene, size, refs, fit, highlight])
-  React.useEffect(highlight, [highlight, selectedNodeId])
+  React.useEffect(highlight, [highlight, selectedNodeId, highlightedNodeIds, highlightedEdgeIds])
   const zoom = (factor: number) => { if (svg.current && refs.zoomRef.current) select(svg.current).call(refs.zoomRef.current.scaleBy, factor) }
   const button = `rounded border px-3 py-2 text-sm ${UI_THEME_TOKENS.button.neutralMuted}`
-  return <section aria-label="Observed execution topology" data-renderer="d3" className="min-w-0">
+  return <section aria-label={label} data-renderer="d3" className="min-w-0">
     <div className="flex flex-wrap items-center gap-2 py-2"><span className="text-xs">2D Renderer: D3 · read-only snapshot</span>
       <button type="button" onClick={() => zoom(1.25)} className={button}>Zoom in</button>
       <button type="button" onClick={() => zoom(0.8)} className={button}>Zoom out</button>
       <button type="button" onClick={fit} className={button}>Fit topology</button>
     </div>
     <div ref={parent} className="w-full min-w-0 overflow-hidden rounded border" style={{ height: 'clamp(360px, 60vh, 720px)' }}>
-      <svg ref={svg} role="img" aria-label="Observed spans and causal links; use the node buttons below to select a span"
+      <svg ref={svg} role="img" aria-label={description}
         onClickCapture={event => { if (event.shiftKey || event.ctrlKey || event.metaKey) { event.preventDefault(); event.stopPropagation() } }}
         style={{ width: '100%', height: '100%', touchAction: 'none' }} />
     </div>
-    <ul aria-label="Topology nodes" className="flex flex-wrap gap-2 py-2">
+    <ul aria-label="Topology nodes" className="flex max-h-40 flex-wrap gap-2 overflow-auto py-2">
       {graph.nodes.map(node => <li key={node.id} className="min-w-0 max-w-full"><button type="button"
         disabled={node.properties.observed === false} aria-pressed={node.id === selectedNodeId}
         className={`rounded border p-2 text-left text-xs ${node.id === selectedNodeId ? UI_THEME_TOKENS.button.activeSoft : ''}`}
