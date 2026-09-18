@@ -62,7 +62,7 @@ export default function WidgetPalette(args: {
         <p className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>
           {selectionLinkSession
             ? <>Choose a target Widget to link to “{selectionSummary}”.</>
-            : args.dashboardActive ? 'Drag a Dashboard widget onto the canvas or choose Add. Double-click its text to edit.' : 'Drag a widget, card, or flow-editor layout into the canvas.'}
+            : args.dashboardActive ? 'Click a Dashboard template to configure its back. Switch to Storyboard to drag the other card types.' : 'Drag a widget, card, or flow-editor layout into the canvas.'}
         </p>
         {selectionLinkSession ? (
           <button
@@ -77,7 +77,7 @@ export default function WidgetPalette(args: {
       <nav className="min-h-0 overflow-auto p-2" aria-label="Palette items">
         <menu className={uiToolbarColumnMenuListClassName} aria-label="Widget entries">
           {args.children}
-          {!args.dashboardActive && (layoutVariants.length === 0 ? (
+          {layoutVariants.length === 0 ? (
             <li className={`px-2 py-2 ${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>No enabled entries.</li>
           ) : (
             layoutVariants.map(variant => {
@@ -146,7 +146,7 @@ export default function WidgetPalette(args: {
                 </li>
               )
             })
-          ))}
+          )}
         </menu>
       </nav>
     </aside>

@@ -267,7 +267,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["pipeline.2dRenderer.sharedSurfaceHelpers","@/__tests__/rendererPipelineNeutrality.test","test2dRendererPipelineUsesSharedSurfaceHelpers"],
   ["pipeline.2dRenderer.dashboardWidgets.sourceCrud","@/__tests__/dashboardWidgetConfiguration.test","testDashboardWidgetSourceConfiguration"],
   ["pipeline.2dRenderer.dashboardWidgets.interaction","@/__tests__/dashboardCanvasInteraction.test","testDashboardCanvasCardDragReordersWithinSection"],
-  ["pipeline.2dRenderer.dashboardWidgets.inlineEdit","@/__tests__/dashboardCanvasInteraction.test","testDashboardCanvasCardInlineEditUsesSharedStoryboardEditor"],
+  ["pipeline.2dRenderer.dashboardWidgets.flipConfiguration","@/__tests__/dashboardCanvasInteraction.test","testDashboardCanvasCardFlipConfiguration"],
   ["pipeline.2dRenderer.dashboardWidgets.readOnlyEvidence","@/__tests__/dashboardCanvasInteraction.test","testDashboardEvidenceMetricsReuseReadOnlyWidgets"],
   ["pipeline.2dRenderer.dashboardModel.fileAgnostic","@/__tests__/dashboardCanvasModel.test","testDashboardCanvasModelDerivesCardsWithoutFixtureBackfill"],
   ["pipeline.2dRenderer.dashboardSource.frontmatterFlow","@/__tests__/dashboardActiveSourceFlowGraph.test","testDashboardWorkspaceFrontmatterFlowUsesSelectedSourceContent"],

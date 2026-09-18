@@ -42,6 +42,9 @@ export async function testPropsPanelRendersWidgetPaletteOnlySurface() {
       throw new Error(`expected five canonical palette layouts, got ${layouts.length}`)
     }
 
+    useGraphStore.setState({ canvasRenderMode: '2d', canvas2dRenderer: 'dashboard' })
+    await renderAndFlush(root, React.createElement(FloatingPropsPanel))
+    if (surface.querySelectorAll('[data-kg-widget-palette-layout]').length !== 5) throw Error('Dashboard must retain all five original Widget Card Types')
     const text = String(container.textContent || '')
     for (const expected of [
       'Group Panel',

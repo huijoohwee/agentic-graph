@@ -75,10 +75,13 @@ export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSe
   return operation
 }
 export const widgetSettings = (document: DashboardWidgetDocument, id: string) => document.widgets[id] ?? {}
-export function configureDashboardCards(document: DashboardWidgetDocument, cards: DashboardCard[]): DashboardCard[] {
-  const instances = [...cards, ...Object.entries(document.widgets).flatMap(([id, settings]) => {
+export function configureDashboardCards(document: DashboardWidgetDocument, cards: DashboardCard[], allCards = cards): DashboardCard[] {
+  const instances = [...cards.map(card => {
+    const source = allCards.find(item => `graph:${item.id}` === widgetSettings(document, `graph:${card.id}`).source)
+    return source ? { ...source, id: card.id } : card
+  }), ...Object.entries(document.widgets).flatMap(([id, settings]) => {
     const source = cards.find(card => `graph:${card.id}` === settings.source)
-    return source ? [{ ...source, id: id.slice('graph:'.length) }] : []
+    return source && id.startsWith('graph:') && !allCards.some(card => `graph:${card.id}` === id) ? [{ ...source, id: id.slice('graph:'.length) }] : []
   })]
   return instances.filter(card => widgetSettings(document, `graph:${card.id}`).visible !== false)
     .map(card => ({ ...card, ...Object.fromEntries(Object.entries(widgetSettings(document, `graph:${card.id}`)).filter(([key]) => !['visible', 'order', 'source'].includes(key))) }))
@@ -86,9 +89,12 @@ export function configureDashboardCards(document: DashboardWidgetDocument, cards
     .sort((a, b) => (widgetSettings(document, `graph:${a.id}`).order ?? 0) - (widgetSettings(document, `graph:${b.id}`).order ?? 0))
 }
 export function configureDashboardMetrics(document: DashboardWidgetDocument, metrics: DashboardMetric[]): DashboardMetric[] {
-  const instances = [...metrics, ...Object.entries(document.widgets).flatMap(([id, settings]) => {
+  const instances = [...metrics.map(metric => {
+    const source = metrics.find(item => `graph:${item.id}` === widgetSettings(document, `graph:${metric.id}`).source)
+    return source ? { ...source, id: metric.id } : metric
+  }), ...Object.entries(document.widgets).flatMap(([id, settings]) => {
     const source = metrics.find(metric => `graph:${metric.id}` === settings.source)
-    return source ? [{ ...source, id: id.slice('graph:'.length) }] : []
+    return source && id.startsWith('graph:') && !metrics.some(metric => `graph:${metric.id}` === id) ? [{ ...source, id: id.slice('graph:'.length) }] : []
   })]
   return instances.filter(metric => widgetSettings(document, `graph:${metric.id}`).visible !== false).map(metric => {
     const config = widgetSettings(document, `graph:${metric.id}`)

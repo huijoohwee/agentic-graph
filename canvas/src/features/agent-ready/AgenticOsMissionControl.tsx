@@ -1,5 +1,6 @@
+import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
 import React from 'react'
-import { useDashboardWidgets, widgetSettings, updateDashboardWidget } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
+import { useDashboardWidgets, widgetSettings } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
 import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import { agentRunInspectionJson, importAgentRunFile } from './agentRunImport'
 import { AgentRunSpanViews, durationLabel } from './AgentRunSpanViews'
@@ -215,7 +216,8 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const context = trace?.context, planUrl = sourceLink(context ?? null), resources = trace?.resources
   if (viewSettings.visible === false) return null
   return <section aria-label="Agent Mission" className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
-    <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }} canEditCardText onCommitCardText={(_id, field, value) => { void updateDashboardWidget('mission:tree', { [field]: value }).catch(() => undefined) }}>
+    <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings}>
+    <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }}>
     <details open={!trace}><summary className="cursor-pointer text-xs">Run source</summary>
     <header className="flex flex-wrap items-center justify-between gap-2 pb-3">
 
@@ -357,5 +359,6 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       </section>}
     </section>}
     </DashboardCardView>
+    </DashboardWidgetFlip>
   </section>
 }

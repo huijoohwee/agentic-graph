@@ -1,7 +1,8 @@
 import React from 'react'
-import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics, updateDashboardWidget, updateDashboardWidgets } from './dashboardWidgetConfiguration'
+import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics, updateDashboardWidgets } from './dashboardWidgetConfiguration'
+import DashboardWidgetFlip from './DashboardWidgetFlip'
 import { DashboardLineAreaChart } from './DashboardCharts'
-import { DashboardCardView, DashboardMetricTile, type DashboardCardTextField } from './DashboardWidgets'
+import { DashboardCardView, DashboardMetricTile } from './DashboardWidgets'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useContainerDims } from '@/hooks/useContainerDims'
@@ -58,7 +59,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
   const getDashboardGridEventTarget = React.useCallback(() => containerRef.current, [])
   const displayMetrics = React.useMemo(() => configureDashboardMetrics(widgetConfiguration.document, model.metrics), [widgetConfiguration.document, model.metrics])
   const displaySections = React.useMemo(() => model.sections.map(section => ({ ...section,
-    cards: configureDashboardCards(widgetConfiguration.document, section.cards),
+    cards: configureDashboardCards(widgetConfiguration.document, section.cards, model.sections.flatMap(item => item.cards)),
   })).filter(section => section.cards.length > 0), [widgetConfiguration.document, model.sections])
   const orderedIds = (group: string) => group === DASHBOARD_METRICS_GROUP_KEY ? displayMetrics.map(item => item.id)
     : displaySections.find(section => section.id === group)?.cards.map(item => item.id) ?? []
@@ -89,13 +90,6 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
       label: String(nextValue || '').trim(),
     })
   }, [updateNode])
-
-  const commitMetricTextOverride = (id: string, field: 'label' | 'detail', value: string) => {
-    void updateDashboardWidget(`graph:${id}`, { [field === 'label' ? 'title' : 'subtitle']: value.trim() }).catch(() => undefined)
-  }
-  const commitCardTextOverride = (id: string, field: DashboardCardTextField, value: string) => {
-    void updateDashboardWidget(`graph:${id}`, { [field]: value.trim() }).catch(() => undefined)
-  }
 
   if (!active) return null
 
@@ -148,10 +142,9 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
                 const metricDragProps = dashboardDrag.createCardDragProps({ rowId: metric.id, groupKey: DASHBOARD_METRICS_GROUP_KEY })
                 const metricDropProps = dashboardDrag.createCardDropProps({ rowId: metric.id, groupKey: DASHBOARD_METRICS_GROUP_KEY })
                 return (
+                  <DashboardWidgetFlip key={metric.id} widgetId={`graph:${metric.id}`} template="metric" title={metric.label} defaults={{ title: metric.label, subtitle: metric.detail, tone: metric.tone }}>
                   <DashboardMetricTile
-                    key={metric.id}
                     metric={metric}
-                    canEdit
                     cardDragProps={metricDragProps}
                     cardDropProps={metricDropProps}
                     draggingMetricId={dashboardDrag.draggingRowId}
@@ -161,9 +154,8 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
                     registerMetricElement={(metricId, element) => {
                       dashboardDrag.registerFocusableRowElement({ rowId: metricId, element })
                     }}
-                    onCommitMetricLabel={(metricId, nextValue) => commitMetricTextOverride(metricId, 'label', nextValue)}
-                    onCommitMetricDetail={(metricId, nextValue) => commitMetricTextOverride(metricId, 'detail', nextValue)}
                   />
+                  </DashboardWidgetFlip>
                 )
               })}
             </section>
@@ -187,14 +179,13 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
                       const cardDragProps = dashboardDrag.createCardDragProps({ rowId: card.id, groupKey: section.id })
                       const cardDropProps = dashboardDrag.createCardDropProps({ rowId: card.id, groupKey: section.id })
                       return (
+                        <DashboardWidgetFlip key={card.id} widgetId={`graph:${card.id}`} template={card.kind} title={card.title} defaults={{ title: card.title, subtitle: card.subtitle, footnote: card.footnote, kind: card.kind, tone: card.tone }}>
                         <DashboardCardView
-                          key={card.id}
                           sectionLabel={section.title}
                           card={card}
                           gridEnabled={model.grid.enabled}
                           selectedNodeId={selectedNodeId}
                           canEditRows={typeof updateNode === 'function'}
-                          canEditCardText
                           cardDragProps={cardDragProps}
                           cardDropProps={cardDropProps}
                           draggingCardId={dashboardDrag.draggingRowId}
@@ -206,8 +197,8 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
                           }}
                           onSelectRow={selectNode}
                           onCommitRowLabel={handleCommitRowLabel}
-                          onCommitCardText={commitCardTextOverride}
                         />
+                        </DashboardWidgetFlip>
                       )
                     })}
                   </section>

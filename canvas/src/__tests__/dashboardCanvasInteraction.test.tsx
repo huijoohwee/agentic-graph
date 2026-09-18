@@ -222,7 +222,7 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
   }
 }
 
-export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEditor() {
+export async function testDashboardCanvasCardFlipConfiguration() {
   const { dom, restore } = initJsdomHarness()
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
@@ -260,68 +260,29 @@ export async function testDashboardCanvasCardInlineEditUsesSharedStoryboardEdito
     })
 
     const cardSelector = '[data-kg-dashboard-card="node-types"]'
-    const titleDisplay = container.querySelector(
-      `${cardSelector} [data-kg-dashboard-card-inline-edit="title"] [data-kg-card-inline-edit="1"]`,
-    )
-    if (!(titleDisplay instanceof dom.window.HTMLElement)) {
-      throw new Error('expected Dashboard card title to reuse the shared CardInlineTextEditor display surface')
-    }
-    if (titleDisplay.getAttribute('data-kg-card-inline-edit-activation') !== 'doubleClick') {
-      throw new Error('expected Dashboard card title editing to follow the shared Storyboard double-click activation')
-    }
-
+    if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Configuration must be absent on the front')
+    const front = container.querySelector(cardSelector)!
+    await act(async () => { Simulate.click(front); await waitFrame() })
+    const form = container.querySelector('form[aria-label="Widget configuration"]')!
+    if (!form) throw Error('Click must flip the card to its configuration')
+    const inputs = form.querySelectorAll('input')
+    const titleEditor = inputs[0], noteEditor = form.querySelector('textarea')!
     await act(async () => {
-      titleDisplay.dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true, cancelable: true, detail: 2 }))
+      setEditableValue(dom, titleEditor, 'Edited Node Type Trend'); Simulate.change(titleEditor)
+      setEditableValue(dom, noteEditor, 'Edited dashboard narrative'); Simulate.change(noteEditor)
       await waitFrame()
     })
-
-    const titleEditor = container.querySelector('[role="textbox"][aria-label="Dashboard card title for node-types"]')
-    if (!(titleEditor instanceof dom.window.HTMLElement)) {
-      throw new Error(`expected Dashboard card title to open the shared title editor, found=${container.querySelectorAll('[role="textbox"]').length}`)
-    }
-
-    await act(async () => {
-      setEditableValue(dom, titleEditor, 'Edited Node Type Trend')
-      await waitFrame()
-      Simulate.keyDown(titleEditor, { key: 'Enter' })
-      await waitFrame()
-    })
-
+    await act(async () => { Simulate.submit(form); await waitFrame() })
     await waitForSavedDisplay(() => !!container.querySelector(cardSelector)?.textContent?.includes('Edited Node Type Trend'))
-    const editedCard = container.querySelector(cardSelector)
-    if (!editedCard?.textContent?.includes('Edited Node Type Trend')) {
-      throw new Error('expected Dashboard card title edit to commit through the shared card text override path')
-    }
+    if (!container.querySelector(cardSelector)?.textContent?.includes('Edited dashboard narrative')) throw Error('Backside edits must reach the front')
+    if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Save must return to the front')
+    await act(async () => { Simulate.keyDown(container.querySelector('[data-dashboard-widget="graph:node-types"]')!, { key: 'Enter' }); await waitFrame() })
+    const reopened = container.querySelector('form[aria-label="Widget configuration"]')!
+    if (!reopened) throw Error('Keyboard must open configuration')
+    await act(async () => { Simulate.keyDown(reopened, { key: 'Escape' }); await waitFrame() })
+    if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Escape must cancel configuration')
+    if (useGraphStore.getState().graphData?.nodes[0].label !== 'Source') throw Error('Display edits cannot change source graph data')
 
-    const footnoteDisplay = container.querySelector(
-      `${cardSelector} [data-kg-dashboard-card-inline-edit="footnote"] [data-kg-card-inline-edit="1"]`,
-    )
-    if (!(footnoteDisplay instanceof dom.window.HTMLElement)) {
-      throw new Error('expected Dashboard card note to expose the shared Storyboard multiline editor surface')
-    }
-
-    await act(async () => {
-      footnoteDisplay.dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true, cancelable: true, detail: 2 }))
-      await waitFrame()
-    })
-
-    const footnoteEditor = container.querySelector('[role="textbox"][aria-label="Dashboard card footnote for node-types"]')
-    if (!(footnoteEditor instanceof dom.window.HTMLElement)) {
-      throw new Error(`expected Dashboard card note to open the shared multiline editor, found=${container.querySelectorAll('[role="textbox"]').length}`)
-    }
-
-    await act(async () => {
-      setEditableValue(dom, footnoteEditor, 'YTD Trend\nEdited dashboard narrative')
-      await waitFrame()
-      Simulate.keyDown(footnoteEditor, { key: 'Enter', metaKey: true })
-      await waitFrame()
-    })
-
-    await waitForSavedDisplay(() => !!container.querySelector(cardSelector)?.textContent?.includes('Edited dashboard narrative'))
-    const editedNarrativeCard = container.querySelector(cardSelector)
-    if (!editedNarrativeCard?.textContent?.includes('Edited dashboard narrative')) {
-      throw new Error('expected Dashboard card note edit to commit through the shared Storyboard multiline editor path')
-    }
   } finally {
     await act(async () => {
       root.unmount()
