@@ -10,7 +10,33 @@ import {
 import { readChangedPaths, ownerInputDigest } from './ci-evidence-inputs.mjs'
 export { readChangedPaths, readGitText } from './ci-evidence-inputs.mjs'
 
-export const main = async () => {
+export function readExecutionPartition(args = []) {
+  if (args.length === 0) return 'all'
+  if (args.length === 1 && /^--partition=(standard|extended)$/u.test(args[0])) {
+    return args[0].slice('--partition='.length)
+  }
+  throw new Error('affected validation accepts only --partition=standard or --partition=extended')
+}
+
+// Keep selection at the contract owner. A longer declared command budget places
+// that command in the extended native validation group, separate from the standard
+// group's 15-minute ceiling. Every selected command belongs to exactly one group.
+export function partitionAffectedCommands(commands, contract) {
+  const partitions = { standard: [], extended: [] }
+  const seen = new Set()
+  for (const command of commands) {
+    const key = JSON.stringify(command)
+    if (seen.has(key)) throw new Error('affected validation selected a duplicate command')
+    seen.add(key)
+    const partition = resolveCiCommandTimeoutMs(command, contract) > contract.ci_command_timeout_ms
+      ? 'extended' : 'standard'
+    partitions[partition].push(command)
+  }
+  return partitions
+}
+
+export const main = async (args = process.argv.slice(2)) => {
+  const partition = readExecutionPartition(args)
   const contract = await readContract()
   let baseRevision
   if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') {
@@ -28,10 +54,7 @@ export const main = async () => {
 
   if (plan.commands.length) {
     const { runValidationStages, recordCiStageReuse } = await import('../node_modules/agentic-os/bin/agentic-os-validation-stages.mjs')
-    const stages = plan.commands.map(command => ({
-      id: `check-${command.join('-').toLowerCase().replace(/[^a-z0-9.-]+/gu, '-').slice(0, 60)}-${createHash('sha256').update(JSON.stringify(command)).digest('hex').slice(0, 12)}`,
-      command, timeoutMs: resolveCiCommandTimeoutMs(command, contract),
-    }))
+    const partitions = partitionAffectedCommands(plan.commands, contract)
     let reuse = null
     const directory = process.env.AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR
     if (directory && process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME === 'push'
@@ -45,10 +68,19 @@ export const main = async () => {
         { ...process.env, AGENTIC_OS_CI_OWNER_INPUTS: await ownerInputDigest() })
       } catch { console.log('[agentic-graph] source reuse unavailable; executing original plan') }
     }
-    if (reuse?.reused === true) {
-      recordCiStageReuse(repoRoot, stages, reuse)
-      console.log(`[agentic-graph] reused ${stages.length} source checks from ${reuse.runUrl}`)
-    } else await runValidationStages(repoRoot, stages)
+    for (const [name, commands] of Object.entries(partitions)) {
+      if (partition !== 'all' && partition !== name) continue
+      console.log(`[agentic-graph] ${name} partition: ${commands.length}/${plan.commands.length} selected checks`)
+      if (commands.length === 0) continue
+      const stages = commands.map(command => ({
+        id: `check-${command.join('-').toLowerCase().replace(/[^a-z0-9.-]+/gu, '-').slice(0, 60)}-${createHash('sha256').update(JSON.stringify(command)).digest('hex').slice(0, 12)}`,
+        command, timeoutMs: resolveCiCommandTimeoutMs(command, contract),
+      }))
+      if (reuse?.reused === true) {
+        recordCiStageReuse(repoRoot, stages, reuse)
+        console.log(`[agentic-graph] reused ${stages.length} source checks from ${reuse.runUrl}`)
+      } else await runValidationStages(repoRoot, stages)
+    }
   }
   console.log('[agentic-graph] affected CI checks passed')
 }

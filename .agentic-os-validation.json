@@ -4,20 +4,41 @@
   "broadInputs": [],
   "always": [],
   "fallback": [
-    "graph-owner-plan"
+    "graph-standard-plan",
+    "graph-extended-plan"
   ],
   "checks": [
     {
-      "id": "graph-owner-plan",
+      "id": "graph-standard-plan",
       "command": [
         "npm",
         "run",
-        "ci:affected:source"
+        "ci:affected:source",
+        "--",
+        "--partition=standard"
       ],
       "inputs": [
         "*"
       ],
       "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "graph-extended-plan",
+      "command": [
+        "npm",
+        "run",
+        "ci:affected:source",
+        "--",
+        "--partition=extended"
+      ],
+      "inputs": [
+        "*"
+      ],
+      "requires": [
+        "graph-standard-plan"
+      ],
       "reuse": "never",
       "timeoutMs": 900000
     }

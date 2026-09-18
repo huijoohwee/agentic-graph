@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 53
+contract_version: 54
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -357,6 +357,7 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 - Affected CI expands declared composite commands through `ci_command_expansions` before exact-argv deduplication. Verified expansions must exactly match the root package script and cannot omit npm lifecycle hooks; drift blocks selection. The manual focused command remains unchanged, while shared prerequisites such as `npm run check` execute once and each expanded component retains the canonical per-command timeout. The pinned agentic-os process runner bounds output, cancels process groups, and emits numeric progress every 30 seconds; progress never grants passing or release authority.
 - `ci_command_timeout_overrides` carries the rare longer-running commands that need a stricter per-command bound than the global default. XR browser smoke uses a 15-minute cap because first-run Playwright downloads can consume a material slice of CI time on fresh GitHub runners.
 - Every affected-scope command has the canonical bounded timeout; non-terminating checks fail closed instead of freezing the gate.
+- Native validation runs the complete affected selection in two disjoint groups: `standard` contains commands within `ci_command_timeout_ms`, and `extended` contains commands with a larger declared timeout. Both groups are required, retain their existing per-command limits, and each has a 15-minute native check budget. The extended group requires the standard group; the default source command runs both. CI exports the aggregate native receipt so the last group's result cannot hide an earlier failure.
 - Unknown changed paths fail safe through `fallback_commands`.
 - `npm test` and `ci:affected` enter the pinned Agentic OS validation runner. This contract remains the only affected-command map, consumed by `ci:affected:source`; no second command map is introduced. The shared runner binds exact source inputs and fresh CI event context. Its receipt covers the selected owner plan, never full-suite parity.
 - Local selection includes committed `origin/main...HEAD`, staged/unstaged changes and untracked files. PR, push and merge-group selection uses the event-bound exact base resolved by Agentic OS. The already-verified protected refresh retains its declared base-ref behavior. `npm run test:all` preserves the explicit full Canvas suite; known baseline failures stay visible.
