@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { readChangedPaths, readExecutionPartition, partitionAffectedCommands } from '../run-affected-ci.mjs'
+import { readChangedPaths, readExecutionPartition, partitionAffectedCommands, validateExecutionPartitions } from '../run-affected-ci.mjs'
 import { readContract, selectAffectedCommands, validateContract } from '../collaboration-contract.mjs'
 import { selectValidationChecks, validateValidationPolicy } from '../../node_modules/agentic-os/bin/agentic-os-validation-policy.mjs'
 
@@ -28,7 +28,7 @@ test('verified event base replaces moving refs and previous-commit guesses', () 
   }
 })
 
-test('default and protected affected validation share one owner command map', () => {
+test('default and protected affected validation share one owner command map', async () => {
   const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url)))
   const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
   assert.equal(pkg.scripts.test, 'npm run ci:affected')
@@ -37,9 +37,11 @@ test('default and protected affected validation share one owner command map', ()
   assert.equal(pkg.scripts['ci:affected:source'], 'node ./scripts/run-affected-ci.mjs')
   assert.ok(pkg.scripts['ci:integration'].endsWith('npm run ci:affected'))
   validateValidationPolicy(policy)
-  assert.deepEqual(policy.fallback, ['graph-standard-plan', 'graph-extended-plan'])
-  assert.equal(policy.checks.length, 2)
-  for (const [index, partition] of ['standard', 'extended'].entries()) {
+  const partitions = partitionAffectedCommands([], await readContract())
+  validateExecutionPartitions(partitions, policy)
+  assert.deepEqual(policy.fallback, Object.keys(partitions).map(name => `graph-${name}-plan`))
+  assert.equal(policy.checks.length, Object.keys(partitions).length)
+  for (const [index, partition] of Object.keys(partitions).entries()) {
     const check = policy.checks[index]
     assert.deepEqual(check.command, ['npm', 'run', 'ci:affected:source', '--', `--partition=${partition}`])
     assert.equal(check.reuse, 'never')
@@ -48,8 +50,11 @@ test('default and protected affected validation share one owner command map', ()
   for (const paths of [['canvas/src/scene.ts'], ['unmatched-input'], ['.github/workflows/integration.yml']]) {
     assert.deepEqual(selectValidationChecks(policy, paths).checks.map(check => check.id), policy.fallback)
   }
-  assert.deepEqual(selectValidationChecks(policy, ['canvas/src/scene.ts'], { only: ['graph-extended-plan'] })
-    .checks.map(check => check.id), policy.fallback, 'extended validation cannot omit its standard prerequisite')
+  for (const check of policy.checks.slice(1)) {
+    assert.deepEqual(selectValidationChecks(policy, ['canvas/src/scene.ts'], { only: [check.id] })
+      .checks.map(check => check.id), [policy.checks[0].id, check.id],
+    'extended validation cannot omit its standard prerequisite')
+  }
 })
 
 test('execution groups preserve every affected check once and retain contract timeout ownership', async () => {
@@ -61,6 +66,9 @@ test('execution groups preserve every affected check once and retain contract ti
     const { commands } = selectAffectedCommands(paths, contract)
     const before = JSON.stringify(commands)
     const partitions = partitionAffectedCommands(commands, contract)
+    for (const [name, group] of Object.entries(partitions)) {
+      if (name !== 'standard') assert.ok(group.length <= 1, 'long command budgets must never share an aggregate check')
+    }
     const actual = Object.values(partitions).flat().map(command => JSON.stringify(command))
     assert.equal(new Set(actual).size, commands.length)
     assert.deepEqual(actual.sort(), commands.map(command => JSON.stringify(command)).sort())
@@ -69,20 +77,41 @@ test('execution groups preserve every affected check once and retain contract ti
     assert.deepEqual(nativePolicy.checks.map(check => readExecutionPartition(check.command.slice(4))), Object.keys(partitions))
   }
   const browser = ['node', 'canvas/scripts/run_agent_mission_browser_smoke.mjs']
-  assert.deepEqual(partitionAffectedCommands([browser], contract), { standard: [], extended: [browser] })
+  const groups = partitionAffectedCommands([browser], contract)
+  assert.deepEqual(groups.standard, [])
+  assert.deepEqual(groups['extended-5bcce945a301'], [browser])
+  assert.deepEqual(partitionAffectedCommands([browser], {
+    ...contract, ci_command_timeout_overrides: [...contract.ci_command_timeout_overrides].reverse(),
+  }), groups, 'selectors remain bound to exact commands when declarations are reordered')
   const ordinary = structuredClone(contract)
   ordinary.ci_command_timeout_overrides = []
   validateContract(ordinary)
-  assert.deepEqual(partitionAffectedCommands([browser], ordinary), { standard: [browser], extended: [] })
+  assert.deepEqual(partitionAffectedCommands([browser], ordinary), { standard: [browser] })
   assert.throws(() => partitionAffectedCommands([browser, browser], contract), /duplicate/)
 })
 
 test('affected CLI defaults to all checks and rejects misspelled or repeated partitions', () => {
   assert.equal(readExecutionPartition([]), 'all')
-  for (const value of ['standard', 'extended']) assert.equal(readExecutionPartition([`--partition=${value}`]), value)
-  for (const args of [['--partition=none'], ['--partition=standard', '--partition=extended'], ['--skip-browser']]) {
+  for (const value of ['standard', 'extended-5bcce945a301']) assert.equal(readExecutionPartition([`--partition=${value}`]), value)
+  for (const args of [['--partition=none'], ['--partition=extended'], ['--partition=standard', '--partition=extended-5bcce945a301'], ['--skip-browser']]) {
     assert.throws(() => readExecutionPartition(args), /accepts only/)
   }
+})
+
+test('native partition drift fails before any affected check can be omitted', async () => {
+  const contract = await readContract()
+  const groups = partitionAffectedCommands([], contract)
+  const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
+  for (const checks of [policy.checks.slice(0, -1), [...policy.checks, policy.checks[0]]]) {
+    assert.throws(() => validateExecutionPartitions(groups, { ...policy, checks }), /exactly once/)
+  }
+  const extra = structuredClone(contract)
+  extra.ci_command_timeout_overrides.push({ command: ['npm', 'run', 'runtime:test:core'], timeout_ms: 600000 })
+  validateContract(extra)
+  assert.throws(() => validateExecutionPartitions(partitionAffectedCommands([], extra), policy), /exactly once/)
+  const foreign = structuredClone(policy)
+  foreign.checks[0].command = ['npm', 'run', 'unrelated', '--', '--partition=standard']
+  assert.throws(() => validateExecutionPartitions(groups, foreign), /source owner/)
 })
 
 test('Launch Copilot test-only changes select their executable owner checks', async () => {

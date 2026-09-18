@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
@@ -12,32 +13,59 @@ export { readChangedPaths, readGitText } from './ci-evidence-inputs.mjs'
 
 export function readExecutionPartition(args = []) {
   if (args.length === 0) return 'all'
-  if (args.length === 1 && /^--partition=(standard|extended)$/u.test(args[0])) {
+  if (args.length === 1 && /^--partition=(standard|extended-[a-f0-9]{12})$/u.test(args[0])) {
     return args[0].slice('--partition='.length)
   }
-  throw new Error('affected validation accepts only --partition=standard or --partition=extended')
+  throw new Error('affected validation accepts only --partition=standard or --partition=extended-<command-digest>')
 }
 
-// Keep selection at the contract owner. A longer declared command budget places
-// that command in the extended native validation group, separate from the standard
-// group's 15-minute ceiling. Every selected command belongs to exactly one group.
+const extendedPartition = command => `extended-${createHash('sha256')
+  .update(JSON.stringify(command)).digest('hex').slice(0, 12)}`
+
+// Each longer-budget command gets its own native check. Declared command digests
+// bind the stable selectors without duplicating the contract's command catalog.
 export function partitionAffectedCommands(commands, contract) {
-  const partitions = { standard: [], extended: [] }
+  const partitions = { standard: [] }
+  for (const { command, timeout_ms } of contract.ci_command_timeout_overrides ?? []) {
+    if (timeout_ms <= contract.ci_command_timeout_ms) continue
+    const partition = extendedPartition(command)
+    if (Object.hasOwn(partitions, partition)) throw new Error('duplicate extended command partition')
+    partitions[partition] = []
+  }
   const seen = new Set()
   for (const command of commands) {
     const key = JSON.stringify(command)
     if (seen.has(key)) throw new Error('affected validation selected a duplicate command')
     seen.add(key)
     const partition = resolveCiCommandTimeoutMs(command, contract) > contract.ci_command_timeout_ms
-      ? 'extended' : 'standard'
+      ? extendedPartition(command) : 'standard'
+    if (!Object.hasOwn(partitions, partition)) throw new Error('undeclared extended command partition')
     partitions[partition].push(command)
   }
   return partitions
 }
 
+export function validateExecutionPartitions(partitions, policy) {
+  const selectors = policy.checks.map(check => {
+    if (JSON.stringify(check.command.slice(0, 4)) !== JSON.stringify(['npm', 'run', 'ci:affected:source', '--'])) {
+      throw new Error('native validation command does not bind the affected source owner')
+    }
+    return readExecutionPartition(check.command.slice(4))
+  })
+  if (JSON.stringify(selectors.sort()) !== JSON.stringify(Object.keys(partitions).sort())) {
+    throw new Error('native validation partitions must cover every declared command partition exactly once')
+  }
+}
+
 export const main = async (args = process.argv.slice(2)) => {
   const partition = readExecutionPartition(args)
   const contract = await readContract()
+  const declaredPartitions = partitionAffectedCommands([], contract)
+  validateExecutionPartitions(declaredPartitions,
+    JSON.parse(readFileSync(new URL('../.agentic-os-validation.json', import.meta.url), 'utf8')))
+  if (partition !== 'all' && !Object.hasOwn(declaredPartitions, partition)) {
+    throw new Error('unknown affected validation partition')
+  }
   let baseRevision
   if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') {
     const { resolveValidationCi } = await import('../node_modules/agentic-os/bin/agentic-os-validation.mjs')

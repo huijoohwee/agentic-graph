@@ -5,7 +5,10 @@
   "always": [],
   "fallback": [
     "graph-standard-plan",
-    "graph-extended-plan"
+    "graph-extended-5bcce945a301-plan",
+    "graph-extended-3e3f3a4b27b1-plan",
+    "graph-extended-b3f5d613d844-plan",
+    "graph-extended-d04d48d4e921-plan"
   ],
   "checks": [
     {
@@ -25,13 +28,67 @@
       "timeoutMs": 900000
     },
     {
-      "id": "graph-extended-plan",
+      "id": "graph-extended-5bcce945a301-plan",
       "command": [
         "npm",
         "run",
         "ci:affected:source",
         "--",
-        "--partition=extended"
+        "--partition=extended-5bcce945a301"
+      ],
+      "inputs": [
+        "*"
+      ],
+      "requires": [
+        "graph-standard-plan"
+      ],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "graph-extended-3e3f3a4b27b1-plan",
+      "command": [
+        "npm",
+        "run",
+        "ci:affected:source",
+        "--",
+        "--partition=extended-3e3f3a4b27b1"
+      ],
+      "inputs": [
+        "*"
+      ],
+      "requires": [
+        "graph-standard-plan"
+      ],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "graph-extended-b3f5d613d844-plan",
+      "command": [
+        "npm",
+        "run",
+        "ci:affected:source",
+        "--",
+        "--partition=extended-b3f5d613d844"
+      ],
+      "inputs": [
+        "*"
+      ],
+      "requires": [
+        "graph-standard-plan"
+      ],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "graph-extended-d04d48d4e921-plan",
+      "command": [
+        "npm",
+        "run",
+        "ci:affected:source",
+        "--",
+        "--partition=extended-d04d48d4e921"
       ],
       "inputs": [
         "*"
