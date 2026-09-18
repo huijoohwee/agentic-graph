@@ -28,14 +28,17 @@ export function agentMissionWorkspace(trace?: RunTrace | null, codebase?: Missio
       workflowId: id, memberId: member.id, manifest: member.manifest, digest: member.digest,
       source: member.source, context: member.context, coverage: member.coverage, missing: member.missing })
   }
+  if (manifest) {
+    const path = `${root}/codebase-index.ref.json`
+    entries.push(entry(path, root, 'codebase-index.ref.json', 'file'))
+    references.set(path, codebase?.reference?.value ?? { schema: 'agentic-graph-codebase-index-reference/v1',
+      authority: false, workflowId: id, status: 'unobserved', path: null, graphId: null, snapshotDigest: null,
+      reason: 'No retained native Codebase graph index is linked in this browser workspace.' })
+  }
   if (codebase) {
     const indexPath = `${root}/codebase-index.manifest.json`
     entries.push(entry(indexPath, root, 'codebase-index.manifest.json', 'file'))
     references.set(indexPath, codebase.index.value)
-    if (codebase.reference) {
-      entries.push(entry(codebase.reference.path, root, 'codebase-index.ref.json', 'file'))
-      references.set(codebase.reference.path, codebase.reference.value)
-    }
   }
   return { id, root, manifestPath, markdownPath, entries, references,
     folders: entries.filter(row => row.kind === 'folder').map(row => row.path) }
