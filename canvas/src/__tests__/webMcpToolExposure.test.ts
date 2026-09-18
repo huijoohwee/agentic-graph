@@ -63,7 +63,7 @@ export async function testWebMcpActiveWorkspaceScopes() {
     await context.tools.find(tool => tool.name === WEB_MCP_SCOPE_TOOL_NAME)!.execute({ scope: 'storage' })
     useGraphStore.setState({ markdownDocumentName: 'unrelated-update' })
     if (String(document.documentElement.dataset.kgWebmcpScope) !== 'storage') throw Error('unrelated updates must not restart discovery')
-    activateAgentRunWorkspace('tree', 'editor', '/.workspace/previous/agent-mission.md')
+    activateAgentRunWorkspace('tree', 'canvas', '/.workspace/previous/agent-mission.md')
     if (readAgentRunWorkspace()?.source !== '/.workspace/previous/agent-mission.md') throw Error('explicit source selection must remain available')
     activateAgentRunWorkspace('tree')
     if (readAgentRunWorkspace()?.source !== undefined) throw Error('fresh invocation must resolve the current mission manifest')
