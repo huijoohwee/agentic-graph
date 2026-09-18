@@ -43,24 +43,24 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
       if (props.template !== 'tree' && !source) { setError('Choose a data source.'); return }
       const id = selected || `graph:widget-${crypto.randomUUID()}`
       const settings = Object.fromEntries(Object.entries({ ...draft, ...(props.template === 'tree' ? {} : { source: sourceId }),
-        title: draft.title ?? source?.title ?? props.title, subtitle: draft.subtitle ?? source?.subtitle ?? '',
+        title: draft.title ?? source?.title ?? props.title, subtitle: draft.subtitle ?? source?.subtitle ?? (props.template === 'tree' ? 'Agent Mission · selected run' : ''),
         visible: draft.visible !== false }).filter(([, value]) => value !== undefined))
       void run(() => updateDashboardWidget(id, settings))
     }}>
     <header className="flex items-center justify-between gap-2"><h4 className="text-sm font-semibold">Configure {props.title}</h4><button type="button" className={button} disabled={busy} onClick={props.onClose}>Cancel</button></header>
-    {!props.widgetId && props.template !== 'tree' && <label className="block text-xs">Widget<select className={control} value={selected} onChange={event => choose(event.target.value)}>
+    {!props.widgetId && props.template !== 'tree' && <label className="block text-xs">Widget<select aria-label="Widget" className={control} value={selected} onChange={event => choose(event.target.value)}>
       <option value="">New widget</option>{existing.map(id => <option key={id} value={id}>{widgetSettings(config.document, id).title ?? sources.find(source => source.id === (widgetSettings(config.document, id).source ?? id))?.title ?? id}{widgetSettings(config.document, id).visible === false ? ' (hidden)' : ''}</option>)}
     </select></label>}
-    {props.template !== 'tree' && <label className="block text-xs">Data source<select className={control} value={sourceId} required onChange={event => change({ source: event.target.value })}>
+    {props.template !== 'tree' && <label className="block text-xs">Data source<select aria-label="Data source" className={control} value={sourceId} required onChange={event => change({ source: event.target.value })}>
       <option value="">Choose a data source</option>{sources.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
     </select></label>}
     <label className="block text-xs">Title<input ref={titleInput} className={control} maxLength={256} value={draft.title ?? source?.title ?? props.title} onChange={event => change({ title: event.target.value })} /></label>
-    <label className="block text-xs">Description<input className={control} maxLength={256} value={draft.subtitle ?? source?.subtitle ?? ''} onChange={event => change({ subtitle: event.target.value })} /></label>
+    <label className="block text-xs">Description<input className={control} maxLength={256} value={draft.subtitle ?? source?.subtitle ?? (props.template === 'tree' ? 'Agent Mission · selected run' : '')} onChange={event => change({ subtitle: event.target.value })} /></label>
     {props.template !== 'metric' && <label className="block text-xs">Note<textarea className={control} maxLength={256} value={draft.footnote ?? ''} onChange={event => change({ footnote: event.target.value })} /></label>}
-    {props.template !== 'metric' && props.template !== 'tree' && <label className="block text-xs">Display<select className={control} value={draft.kind ?? (source as DashboardCard)?.kind ?? props.template} onChange={event => change({ kind: event.target.value as DashboardCard['kind'] })}>
+    {props.template !== 'metric' && props.template !== 'tree' && <label className="block text-xs">Display<select aria-label="Display" className={control} value={draft.kind ?? (source as DashboardCard)?.kind ?? props.template} onChange={event => change({ kind: event.target.value as DashboardCard['kind'] })}>
       {['bar', 'line', 'area', 'table'].map(kind => <option key={kind}>{kind}</option>)}
     </select></label>}
-    <label className="block text-xs">Color<select className={control} value={draft.tone ?? source?.tone ?? 'blue'} onChange={event => change({ tone: event.target.value as DashboardCard['tone'] })}>
+    <label className="block text-xs">Color<select aria-label="Color" className={control} value={draft.tone ?? source?.tone ?? 'blue'} onChange={event => change({ tone: event.target.value as DashboardCard['tone'] })}>
       {['blue', 'green', 'amber', 'rose', 'slate'].map(tone => <option key={tone}>{tone}</option>)}
     </select></label>
     {props.template !== 'tree' && <label className="block text-xs">Order<input className={control} type="number" min={-10000} max={10000} step={1} value={draft.order ?? 0} onChange={event => change({ order: Number(event.target.value) })} /></label>}

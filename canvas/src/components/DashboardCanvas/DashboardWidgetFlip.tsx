@@ -19,7 +19,7 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
   const [turned, setTurned] = React.useState(false)
   const frame = React.useRef<HTMLDivElement>(null)
   const dragged = React.useRef(false)
-  const close = () => { setFlipped(false); requestAnimationFrame(() => frame.current?.focus()) }
+  const close = () => { setFlipped(false); frame.current?.focus({ preventScroll: true }) }
   const open = () => { setTurned(true); setFlipped(true) }
   return <div ref={frame} className="min-w-0 h-full" tabIndex={flipped ? -1 : 0} role="group"
     aria-label={`Configure ${props.title}`} aria-expanded={flipped} data-dashboard-widget={props.widgetId ?? `template:${props.template}`}
