@@ -138,7 +138,7 @@ async function verifyWorkspace(label, revoke = false) {
     await evidence.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption(key)
     await evidence.locator('#agent-run-view-' + key + '-panel').waitFor({ state: 'visible' })
     await waitText(evidence, 'Selected span: draft-2')
-    if (key === 'table') assert.ok(await evidence.locator('tr').filter({ hasText: 'draft-2' }).isVisible())
+    if (key === 'table') await evidence.locator('tr').filter({ hasText: 'draft-2' }).waitFor({ state: 'visible' })
     if (key === 'tree') {
       const tree = evidence.getByRole('tree', { name: 'Span hierarchy' })
       assert.ok(await tree.isVisible())
