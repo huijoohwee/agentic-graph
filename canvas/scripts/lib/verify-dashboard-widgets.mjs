@@ -14,12 +14,16 @@ export async function verifyFullCanvas(page) {
 export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored) {
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: false }))
   const shell = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
-  // The first native Editor mount loads its module graph on a cold CI server.
-  await shell.waitFor({ state: 'visible', timeout: 60000 })
-  await shell.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check()
+  // Cold module loading may remount the shell before the source inventory is ready.
+  // Share one existing startup budget across the shell and its complete inventory.
+  const deadline = Date.now() + 60000
+  const remaining = () => Math.max(1, deadline - Date.now())
+  await shell.waitFor({ state: 'visible', timeout: remaining() })
+  await shell.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check({ timeout: remaining() })
   const files = shell.getByRole('region', { name: 'Source Files content', exact: true })
-  await files.getByRole('button', { name: 'Folder agent-mission', exact: true }).waitFor()
-  await files.getByRole('button', { name: 'Folder docs', exact: true }).waitFor()
+  await Promise.all(['agent-mission', 'docs'].map(name => files.getByRole('button', {
+    name: `Folder ${name}`, exact: true,
+  }).waitFor({ state: 'visible', timeout: remaining() })))
   await verifyFullCanvas(page)
   const before = await authoredSnapshot()
   await files.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).click()

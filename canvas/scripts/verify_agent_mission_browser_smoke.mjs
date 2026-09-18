@@ -394,7 +394,7 @@ try {
     console.log('Focused Apex activation and workspace stream passed; full mission lifecycle remains a separate check.')
   } else {
   await page.clock.install({ time: new Date() })
-  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
+  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F&openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const initialPanelOpen = await page.evaluate(async () => {
