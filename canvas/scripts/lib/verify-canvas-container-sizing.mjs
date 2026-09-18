@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 
 export async function verifyCanvasContainerSizing(page) {
+  await page.getByRole('region', { name: 'Markdown Workspace', exact: true })
+    .getByRole('checkbox', { name: 'Show Canvas pane', exact: true }).check()
   const container = page.locator('[data-kg-canvas-view-container]')
   const editor = page.locator('[data-kg-workspace-left-pane="1"]')
   const frame = page.locator('[data-kg-canvas-container-frame="1"]')
