@@ -48,6 +48,7 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     const leaders = dashboard.locator('[data-kg-dashboard-card="degree-leaders"]')
     const leader = leaders.locator('[data-kg-dashboard-table-row]').filter({ hasText: 'workspace-check-1' })
     await leader.click()
+    await tree.locator('[role="treeitem"][aria-selected="true"]').filter({ hasText: 'workspace-check-1' }).waitFor()
     assert.equal(await tree.getByRole('treeitem', { name: /workspace-check-1/ }).getAttribute('aria-selected'), 'true', 'Shared Dashboard rows select observed spans')
     await leader.dblclick()
     assert.equal(await leaders.locator('input, textarea, [contenteditable="true"]').count(), 0, 'Observed span labels are read-only')
