@@ -483,6 +483,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
                     onClick={(e) => {
                       const el = e.target as HTMLElement | null
                       if (el?.closest('a,button,input,select,textarea')) return
+                      if (!canMutate) return
                       e.preventDefault()
                       e.stopPropagation()
                       startEdit(r.id, c.id, value, e.currentTarget)
