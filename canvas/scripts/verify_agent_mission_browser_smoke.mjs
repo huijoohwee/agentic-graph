@@ -279,7 +279,7 @@ async function verifyApexActivation(width) {
   const overlay = page.locator('[data-kg-live-canvas-hero-editorial="overlay"]')
   assert.equal(await overlay.evaluate(element => getComputedStyle(element).position), 'absolute', 'Catalog must reuse the existing translucent overlay')
   assert.ok(dashboardBounds.width > width * .9, 'Observability dashboard must use the full Canvas width')
-  await page.getByRole('button', { name: 'Import local file', exact: true }).waitFor()
+  await page.locator('button[data-kg-live-canvas-hero-import-embed="true"]').waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
   await page.screenshot({ path: resolve(output, `apex-${width}-catalog-overlay.png`) })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
