@@ -5,6 +5,7 @@ import { agentGraphSourceGroup, agentGraphGroupColor, agentGraphEdgeCertainty } 
 import { impactSourcePath } from '@/features/graph-inspector/lib/nodeImpact'
 import NodeImpactInspector from '@/features/graph-inspector/ui/NodeImpactInspector'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { normalizeAgentGraphObservation } from '../../../../../contracts/agent-graph-observation.mjs'
 
 /** Native source evidence has no inferred text communities or similarity scores. */
 export default function NativeGraphStatsSection() {
@@ -30,6 +31,9 @@ export default function NativeGraphStatsSection() {
   if (!graph || !effectiveGraph || !summary) return null
   const projection = graph.metadata?.agentGraphProjection as Record<string, unknown> | undefined
   const counts = projection?.counts as Record<string, unknown> | undefined
+  let observation
+  try { observation = normalizeAgentGraphObservation(projection?.observation) } catch { /* Retained invalid measurements stay unknown. */ }
+  const measured = (value: number | null | undefined, unit = '') => typeof value === 'number' ? `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}${unit}` : 'Unknown'
   const count = (key: string) => typeof counts?.[key] === 'number' ? String(counts[key]) : 'Unknown'
   const focus = (nodeIds: string[]) => {
     useGraphStore.getState().selectNodesExpanded({ nodeIds, edgeIds: [], activeNodeId: nodeIds[0] || null, forceMulti: true })
@@ -40,6 +44,17 @@ export default function NativeGraphStatsSection() {
     <p>Captured snapshot: {count('sources')} files · {count('nodes')} nodes · {count('edges')} edges.</p>
     <p role="status">Loaded graph: {graph.nodes.length} nodes / {graph.edges.length} edges. Rendered: {renderedGraph?.nodes.length ?? 0} nodes / {renderedGraph?.edges.length ?? 0} edges.</p>
     <p>Inspection uses the loaded projection. Canvas limits do not delete source evidence; partial projections cannot describe the full repository.</p>
+    <details className="my-3"><summary>Import execution</summary>
+      {observation ? <>
+        <p>Elapsed: {measured(observation.elapsedMs, ' ms')} · Host CPU: {measured(observation.cpu.totalMs, ' ms')}.</p>
+        <p>Host memory (RSS): {measured(observation.memory.rssBeforeBytes, ' bytes')} → {measured(observation.memory.rssAfterBytes, ' bytes')}.</p>
+        <p>Host JS heap: {measured(observation.memory.heapUsedBeforeBytes, ' bytes')} → {measured(observation.memory.heapUsedAfterBytes, ' bytes')}.</p>
+        <p>Parsed: {measured(observation.sources.parsed)} files · Reused: {measured(observation.sources.reused)} files · Admitted: {measured(observation.sources.admittedBytes, ' bytes')}.</p>
+        <p>Result: {measured(observation.output.bytes, ' bytes')} before measurement metadata.</p>
+        <p>Native model calls: 0 · Model tokens: 0 · Native model cost: $0.</p>
+        <p>CPU and memory cover the host process, may include concurrent work, and exclude parser subprocesses. Memory is sampled at the start and end; peak use is unknown. Model cost excludes adapters and infrastructure.</p>
+      </> : <p>Execution measurements are unavailable for this captured import.</p>}
+    </details>
     <div role="group" aria-label="Stats scope" className="my-2 flex gap-2">
       {(['auto', 'dataset', 'selection'] as const).map(scope => <button type="button" key={scope}
         aria-pressed={statsScope === scope} className={`App-toolbar__btn ${UI_THEME_TOKENS.button.hoverBg}`}

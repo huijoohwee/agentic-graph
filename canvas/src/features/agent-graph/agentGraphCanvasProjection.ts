@@ -4,6 +4,9 @@ import type {
   WorkspaceAgentGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { normalizeAgentGraphObservation } from '../../../../contracts/agent-graph-observation.mjs'
+import { hasSameReadOnlyAgentGraphProjectionIdentity } from './agentGraphProjectionPolicy'
+import { persistGraphDataToLocalStorage } from '@/hooks/store/graphDataPersistence'
 import { styleAgentGraphNode, styleAgentGraphProjection } from './agentGraphVisualEvidence'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import {
@@ -337,6 +340,7 @@ export function buildAgentGraphCanvasProjection(
         graphId,
         snapshotDigest: snapshotDigest.toLowerCase(),
         parserRegistryDigest: parserRegistryDigest.toLowerCase(),
+        ...(result.observation ? { observation: normalizeAgentGraphObservation(result.observation) } : {}),
         ...(result.acquisition ? { acquisition: result.acquisition } : {}),
         projectionToken,
         complete: result.complete,
@@ -356,7 +360,6 @@ export function buildAgentGraphCanvasProjection(
   }
   return validateGraphData(styleAgentGraphProjection(projected), counts, AGENT_GRAPH_CANVAS_MAX_BYTES)
 }
-
 /** Source grouping is view metadata, derived equally for new and retained projections. */
 export function cloneAgentGraphNodeWithDirectory(node: GraphNode): GraphNode {
   return styleAgentGraphNode(cloneNode(node))
@@ -429,7 +432,6 @@ export function prepareAgentGraphCanvasView(options: { activateSource?: boolean 
     )
   }
 }
-
 export type AgentGraphCanvasPreviewSession = { apply: (progress: WorkspaceAgentGraphImportProgress) => GraphData; commit: (result: WorkspaceAgentGraphImportResult) => GraphData; rollback: () => void }
 
 /** Keeps a bounded verified visual preview; the final immutable snapshot replaces it atomically. */
@@ -576,11 +578,17 @@ export function createAgentGraphCanvasPreviewSession(): AgentGraphCanvasPreviewS
     },
   }
 }
-
 export function applyAgentGraphCanvasProjection(
   result: WorkspaceAgentGraphImportResult,
   setGraphData: (graphData: GraphData) => void = graphData => {
     prepareAgentGraphCanvasView({ activateSource: true })
+    const current = useGraphStore.getState().graphData
+    if (current && hasSameReadOnlyAgentGraphProjectionIdentity(current, graphData)) {
+      const refreshed = { ...current, metadata: { ...current.metadata, agentGraphProjection: graphData.metadata!.agentGraphProjection } }
+      useGraphStore.setState(state => ({ graphData: refreshed, graphDataRevision: state.graphDataRevision + 1 }))
+      persistGraphDataToLocalStorage(refreshed)
+      return
+    }
     useGraphStore.getState().setGraphData(graphData)
   },
 ): GraphData {

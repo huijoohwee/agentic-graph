@@ -3,11 +3,11 @@ schema: "agentic-graph-runtime-contract/v1"
 title: "agentic-graph Deterministic Agent-Graph Runtime"
 doc_type: "Runtime Contract"
 id: "agentic-graph-deterministic-agent-graph-runtime"
-version: "1.5.0"
-date: "2026-09-17"
+version: "1.6.0"
+date: "2026-09-18"
 status: "active"
 created: "2026-07-22"
-updated: "2026-09-17"
+updated: "2026-09-18"
 author: "airvio / joohwee"
 domain: "agentic-graph"
 lang: "en-US"
@@ -17,8 +17,8 @@ local_rung: "runtime-ready"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
-agent_id: "codex:graph_frontmatter_and_docs"
+worktree_id: "device-cba000d3779d--native-graph-economics"
+agent_id: "codex"
 doc_path: "docs/documents/agentic-graph-deterministic-agent-graph-runtime.md"
 guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.4.0"
 production_release_authorized: false
@@ -293,3 +293,49 @@ Actions access allows retrieval of the bound artifact; no write or deployment pe
 MVP: validate merge/input/provider drift, fallback, fresh preflight and original-run attribution.
 GTM: measure verified reuse, avoided source commands and lookup overhead on the first protected
 PR-to-main transition. Do not claim avoided CPU/token/cash amounts from missing measurements.
+
+## Native graph execution economics (AG-ECON-001@0.1.0)
+
+PRD / AG-ECON-001: a solo builder inspecting code for an agent service, marketplace or payment
+workflow needs to distinguish source parsing, source reuse and context output size before choosing
+an optimization. Role/Subject: solo builder. Action/Verb: inspect. Outcome/Object: one source-bound
+execution observation. The existing AST parsers, import controls, graph queries and D3 renderer stay
+the owning implementation. Acceptance: each ingest/query/explain result reports its own measurements;
+unchanged reingestion retains the snapshot digest; malformed optional measurements cannot enter the
+browser; older captured imports show measurements as unavailable.
+
+TAD / AG-ECON-001: `mcp/agent-graph/operation-observation.mjs` samples the native operation boundary.
+`contracts/agent-graph-observation.mjs` owns the portable, bounded allowlist used by the existing host
+sanitizer, browser adapter, Canvas projection and native statistics view. Success carries optional
+`observation`; failure keeps the existing exact envelope and adds `error.details.observation`.
+The installed OS MCP client preserves both shapes; Canvas's source-owned consumer stays compatible.
+No consumer policy, parser, graph, telemetry store or production mirror is duplicated.
+
+Elapsed milliseconds use a monotonic clock and include waiting within the operation. CPU milliseconds
+are the current Node process's user/system deltas over that interval. RSS and JS heap bytes are two
+endpoint samples, not peak measurements. Concurrent work may contribute; parser subprocesses are
+not measured. Missing or backwards readings stay null. Output bytes are the UTF-8 JSON result before
+adding the observation; they exclude transport framing and serialization time. Parsed/reused file
+counts and admitted bytes reuse ingest counters; query/explain leave them null. Native model calls,
+model tokens and native model cost are zero with no model identity. Configured converter/adapter
+cost, network/infrastructure cost, billed savings and total cost remain outside this observation.
+
+ADR / AG-ECON-001: reuse on-demand native execution and the existing statistics surface. Keep variable
+measurements outside content-addressed source shards, manifests and snapshot identity. Constraints
+require offline operation and honest attribution; argumentation rejects a watcher, vector store,
+external instrumentation dependency and fabricated exclusive CPU or peak memory; outranking selects
+two process samples and compact result metadata. Rollback reverts this source increment; existing
+snapshots remain readable. Measurements grant no execution, evaluation, payment or release authority.
+
+MVP / AG-ECON-001: one isolated Graph lane, at most 12 source/test/doc files, 40 KiB authored changes,
+no new dependencies or always-loaded prompt content. Verify the producer and installed OS client with
+`node --test mcp/__tests__/agent-graph-operation-observation.test.mjs`; verify sanitizer-to-projection
+and the actual statistics component with the existing projection/inspector tests. Run
+`npm run agent-graph:check`, `npm run check` and affected integration checks for the final candidate.
+The eight-repository ownership scan remains the existing OS fleet check. Production still requires
+the protected release workflow and exact candidate authorization.
+
+GTM / AG-ECON-001: run a first local import, unchanged reimport and bounded query against the same
+source, and retain their measurements and snapshot identity. Ask pilot solo builders whether visible
+reuse and context size reduce discovery rework on their shipping task. WTP, conversion and performance
+savings remain unvalidated; two different process windows are observations, not a causal benchmark.
