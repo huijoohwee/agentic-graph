@@ -61,7 +61,7 @@ const refreshMission = async () => {
 }
 const choose = async id => {
   await refreshMission()
-  const row = mission.locator('tr').filter({ hasText: id }); await row.focus(); await page.keyboard.press('Enter')
+  const row = mission.locator('tr').filter({ hasText: id }); await row.focus(); await page.keyboard.press('Enter'); await showEvidence()
   await selected.getByRole('heading', { name: 'Run ' + id, exact: true }).waitFor({ state: 'visible' })
 }
 async function authoredSnapshot() {
@@ -411,7 +411,7 @@ try {
   await verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored)
   await openDashboard()
   await waitText(mission, '2 retained matches')
-  await verifyDashboardWidgets(page)
+  await showEvidence(); await verifyDashboardWidgets(page)
   assert.equal(await mission.getByText('private-run', { exact: true }).count(), 0)
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   const before = await authoredSnapshot()

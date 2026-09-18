@@ -5,12 +5,14 @@ export async function readWorkspaceObservation(signal: AbortSignal, request: typ
   signal = AbortSignal.any([signal, AbortSignal.timeout(30000)])
   const response = await request('/api/agent-swarm/workspace-source', { method: 'POST', signal,
     headers: { 'content-type': 'application/json' }, body: '{}' })
+  const text = await response.text()
+  signal.throwIfAborted()
   if (response.status === 404) return null
   if (!response.ok || !response.headers.get('cache-control')?.includes('no-store'))
     throw Error('The selected .workspace observation is unavailable. Check its native manifest binding.')
-  const text = await response.text()
   if (new TextEncoder().encode(text).length > 64000) throw Error('Workspace source exceeds its bound.')
   const source = JSON.parse(text)
+  if (source.code === 'workspace_source_unselected') return null
   if (source.schema !== 'agentic-graph/workspace-observation-source/v1' || source.authority !== false
     || typeof source.manifestText !== 'string' || !/^[a-f0-9]{64}$/u.test(source.manifestDigest)
     || typeof source.manifestPath !== 'string' || !/^\.artifacts\/workflows\/[a-f0-9]{24}\/[a-f0-9]{64}\/manifest\.json$/u.test(source.manifestPath))

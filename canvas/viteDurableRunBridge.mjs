@@ -80,7 +80,7 @@ export function createDurableRunBridgePlugin({ env = process.env, repoRoot = pro
           const { readWorkspaceObservationSource } = require('./viteWorkspaceObservationBridge.mjs')
           try {
             const source = await readWorkspaceObservationSource(repoRoot, input)
-            return json(response, source ? 200 : 404, source ?? { code: 'workspace_source_unselected' })
+            return json(response, 200, source ?? { code: 'workspace_source_unselected' })
           } catch { return json(response, 422, { code: 'workspace_source_unavailable' }) }
         }
         if (operation === 'workflow-trace') {
