@@ -367,7 +367,7 @@ async function verifyApexActivation(width) {
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
   await waitText(editor.getByRole('region', { name: 'JSON Editor', exact: true }), 'validation-fixture')
   await editor.getByRole('checkbox', { name: 'Show Markdown editor pane', exact: true }).check()
-  await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }), 'Agent run')
+  await waitText(editor.getByRole('region', { name: 'Markdown Editor', exact: true }).first(), 'Agent run')
   await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.language === 'markdown' && model.uri.startsWith('inmemory://agent-run/') && model.value.includes('check-0')))
   assert.equal(requests.length, beforeLocalRequests, 'Local validation inspection must never call the authenticated runtime')
 
