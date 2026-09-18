@@ -74,6 +74,7 @@ const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.
 
 export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntimeInteractionStatusBindings & MarkdownWorkspaceExplorerPresentationArgs & {
   active: boolean
+  readOnly?: boolean
   activePathRef: React.MutableRefObject<WorkspacePath | null>
   activeTextRef: React.MutableRefObject<string>
   viewerInlineEditActiveRef: React.MutableRefObject<boolean>
@@ -137,9 +138,9 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   const refreshOnce = React.useCallback(async (opts?: { silent?: boolean }): Promise<WorkspaceRefreshSnapshot> => {
     const runtime = runtimeRef.current
     const silent = !!opts?.silent
-    const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
+    const finishSeedSyncTask = runtime.readOnly ? null : beginWorkspaceSeedSyncTask()
     if (!finishSeedSyncTask) {
-      workspaceRefreshDeferredRef.current = true
+      workspaceRefreshDeferredRef.current = !runtime.readOnly
       try {
         const fs = await getFs()
         const snapshot = await readWorkspaceExplorerReadOnlySnapshot({
@@ -252,7 +253,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     } finally {
       finishSeedSyncTask()
     }
-  }, [getFs, scheduleApplyComposedFromSourceFiles])
+  }, [args.readOnly, getFs, scheduleApplyComposedFromSourceFiles])
 
   const refresh = React.useCallback(async (opts?: { silent?: boolean }): Promise<WorkspaceRefreshSnapshot> => {
     if (refreshInFlightRef.current) {

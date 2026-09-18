@@ -366,6 +366,10 @@ const runNodeOnlyUiTests = async (results: TestResult[]) => {
     const modWebMcpExposure = await import('../__tests__/webMcpToolExposure.test')
     const modMissionWorkspace = await import('../__tests__/agentMissionWorkspace.test')
     await execTest(results, 'agentReady.mission.workspaceLifecycle', modMissionWorkspace.testAgentMissionWorkspaceLifecycle)
+    const modMissionInventory = await importNodeOnlyUiTestModule<typeof import('../__tests__/markdownWorkspaceReadOnlyInventory.test')>('../__tests__/markdownWorkspaceReadOnlyInventory.test')
+    await execTest(results, 'agentReady.mission.readOnlyInventory', modMissionInventory.testMarkdownWorkspaceReadOnlyInventorySettles)
+    const modMissionMenu = await importNodeOnlyUiTestModule<typeof import('../__tests__/markdownFileTreeRowButton.test')>('../__tests__/markdownFileTreeRowButton.test')
+    await execTest(results, 'agentReady.mission.readOnlyContextMenu', modMissionMenu.testMarkdownFileTreeReadOnlyContextMenuCopiesPaths)
     await execTest(results, 'agentReady.webMcpRuntime.scope.budgets', modWebMcpExposure.testWebMcpExposureBudgetsAndValidation)
     await execTest(results, 'agentReady.webMcpRuntime.scope.workspace', modWebMcpExposure.testWebMcpActiveWorkspaceScopes)
 

@@ -27,7 +27,7 @@ test('Flight seed-sync suspension lets Explorer read the existing local Folder d
       parentPath: '/docs',
       kind: 'file',
       name: 'flight.md',
-      text: '',
+      // An absent inline snapshot is hydrated; an empty string is already authored content.
       updatedAtMs: 1,
     },
   ]
@@ -85,7 +85,7 @@ test('deferred Explorer refresh hydrates local state but reserves seed and Sourc
   assert.match(snapshot, /hydrateWorkspaceEntriesInlineText/)
   assert.match(snapshot, /pruneWorkspaceEntriesForInlineSnapshot/)
   assert.doesNotMatch(snapshot, /ensureSeed|mergeWorkspaceEntriesIntoSourceFiles|scheduleApplyComposedGraphFromSourceFiles/)
-  assert.match(deferredBranch, /workspaceRefreshDeferredRef\.current = true/)
+  assert.match(deferredBranch, /workspaceRefreshDeferredRef\.current = !runtime\.readOnly/)
   assert.match(deferredBranch, /readWorkspaceExplorerReadOnlySnapshot/)
   assert.match(deferredBranch, /currentRuntime\.setEntries/)
   assert.match(deferredBranch, /currentRuntime\.setSourcesByPath/)

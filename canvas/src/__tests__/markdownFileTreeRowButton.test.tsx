@@ -90,3 +90,36 @@ export async function testMarkdownFileTreeRevealsActiveSourceWithoutStealingFocu
     restore()
   }
 }
+
+export async function testMarkdownFileTreeReadOnlyContextMenuCopiesPaths() {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container), copied: string[] = []
+  const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (text: string) => { copied.push(text) } } })
+  const path = '/.workspace/workflow-test/agent-mission.manifest.json'
+  try {
+    await act(async () => { root.render(<MarkdownFileTree readOnly entries={[
+      { path, parentPath: '/', kind: 'file', name: 'agent-mission.manifest.json', updatedAtMs: 1 },
+    ]} expandedPaths={new Set()} activePath={path} toggleExpanded={() => {}} onSelectFile={() => {}}
+      onRenameEntry={() => { throw Error('Read-only rename') }} onDeleteEntry={() => { throw Error('Read-only delete') }} />) })
+    const row = container.querySelector('button[aria-label="File agent-mission.manifest.json"]')!
+    for (const label of ['Copy Path', 'Copy Relative Path']) {
+      await act(async () => { row.dispatchEvent(new dom.window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })) })
+      const items = Array.from(container.querySelectorAll('.kg-data-view-floating-menu button')) as HTMLButtonElement[]
+      if (items.map(item => item.textContent).join(',') !== 'Share URL,Share canvas embed,Reveal in Finder,Copy Path,Copy Relative Path,New file,Clear,Rename,Delete') throw Error('Read-only menu must retain the shared file menu and order')
+      if (items.filter(item => !item.disabled).map(item => item.textContent).join(',') !== 'Copy Path,Copy Relative Path') throw Error('Only applicable path actions may be enabled')
+      await act(async () => { items.filter(item => item.disabled).forEach(item => item.click()) })
+      if (!container.querySelector('.kg-data-view-floating-menu')) throw Error('Disabled actions must not dismiss the menu or execute')
+      await act(async () => { (items.find(item => item.textContent === label) as HTMLButtonElement).click() })
+      if (container.querySelector('.kg-data-view-floating-menu')) throw Error('Path action must close the menu')
+    }
+    if (copied.join(',') !== `${path},${path.slice(1)}`) throw Error('Both path actions must copy the selected manifest path')
+  } finally {
+    await act(async () => { root.unmount() })
+    if (originalClipboard) Object.defineProperty(navigator, 'clipboard', originalClipboard)
+    else Reflect.deleteProperty(navigator, 'clipboard')
+    restore()
+  }
+}

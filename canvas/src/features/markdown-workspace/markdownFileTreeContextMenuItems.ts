@@ -7,11 +7,13 @@ export type MarkdownFileTreeContextMenuItem = {
   key: 'shareUrl' | 'shareCanvasEmbed' | 'reveal' | 'copyPath' | 'copyRelativePath' | 'newFile' | 'clear' | 'rename' | 'delete'
   label: string
   tone?: 'default' | 'danger'
+  disabled?: boolean
   onSelect: () => void | Promise<void>
 }
 
 type BuildMarkdownFileTreeContextMenuItemsArgs = {
   entry: WorkspaceEntry
+  readOnly?: boolean
   copyToClipboard: (text: string) => Promise<boolean>
   buildShareUrl?: (entry: WorkspaceEntry) => string | null | Promise<string | null>
   buildCanvasEmbedUrl?: (entry: WorkspaceEntry) => string | null | Promise<string | null>
@@ -121,7 +123,7 @@ export function buildMarkdownFileTreeContextMenuItems(
     })
   }
 
-  if (args.onCreateNewFile) {
+  if (args.onCreateNewFile || args.readOnly) {
     items.push({
       key: 'newFile',
       label: 'New file',
@@ -135,7 +137,7 @@ export function buildMarkdownFileTreeContextMenuItems(
     })
   }
 
-  if (args.entry.kind === 'file' && args.onClearFile) {
+  if (args.entry.kind === 'file' && (args.onClearFile || args.readOnly)) {
     items.push({
       key: 'clear',
       label: 'Clear',
@@ -176,7 +178,9 @@ export function buildMarkdownFileTreeContextMenuItems(
     })
   }
 
-  return items
+  // Keep the shared menu discoverable; virtual evidence cannot be mutated or published.
+  return args.readOnly ? items.map(item => item.key === 'copyPath' || item.key === 'copyRelativePath'
+    ? item : { ...item, disabled: true, onSelect: () => {} }) : items
 }
 
 async function resolveAndShareUrl(args: {

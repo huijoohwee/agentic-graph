@@ -21,12 +21,12 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   await shell.waitFor({ state: 'visible', timeout: remaining() })
   await shell.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check({ timeout: remaining() })
   const files = shell.getByRole('region', { name: 'Source Files content', exact: true })
-  await Promise.all(['agent-mission', 'docs'].map(name => files.getByRole('button', {
+  await Promise.all(['.workspace', 'docs'].map(name => files.getByRole('button', {
     name: `Folder ${name}`, exact: true,
   }).waitFor({ state: 'visible', timeout: remaining() })))
   await verifyFullCanvas(page)
   const before = await authoredSnapshot()
-  await files.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).click()
+  await files.getByRole('button', { name: 'File agent-mission.inspection.json', exact: true }).click()
   const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   assert.equal(await page.getByRole('region', { name: 'Markdown Workspace', exact: true }).count(), 1)
   assert.equal(await page.getByText('Agent observability', { exact: true }).count(), 0)
@@ -36,11 +36,11 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   await verifyFullCanvas(page)
   await editor.getByRole('button', { name: 'Close', exact: true }).click()
   await page.getByRole('button', { name: 'Close run inspection', exact: true }).click()
-  await files.getByRole('button', { name: 'Folder agent-mission', exact: true }).waitFor()
+  await files.getByRole('button', { name: 'Folder .workspace', exact: true }).waitFor()
   assertAuthored(await authoredSnapshot(), before, 'Manifest inspection must preserve the active authored source')
   await editor.getByRole('button', { name: 'Close', exact: true }).click()
   const persisted = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts')).getWorkspaceFs()).listEntries())
-  assert.equal(persisted.some(entry => entry.path.startsWith('/agent-mission/')), false, 'Session evidence must not enter persistent Source Files')
+  assert.equal(persisted.some(entry => entry.path.startsWith('/.workspace/')), false, 'Session evidence must not enter persistent Source Files')
 }
 
 async function configureWidget(frame, keyboard = false) {

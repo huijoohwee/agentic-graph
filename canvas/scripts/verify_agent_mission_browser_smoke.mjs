@@ -112,7 +112,7 @@ async function verifyWorkspace(label, revoke = false) {
   const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
   await editor.waitFor({ state: 'visible', timeout: 60000 }); await verifyFullCanvas(page)
   const explorer = editor.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }); await explorer.check()
-  await editor.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).waitFor()
+  await editor.getByRole('button', { name: 'File agent-mission.inspection.json', exact: true }).waitFor()
   if (page.viewportSize().width <= 768) await explorer.uncheck()
   await editor.getByRole('region', { name: 'Markdown Editor', exact: true }).locator('.view-lines').waitFor({ state: 'visible', timeout: 60000 })
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()

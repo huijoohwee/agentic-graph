@@ -138,6 +138,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
       contextMenu
         ? buildMarkdownFileTreeContextMenuItems({
             entry: contextMenu.entry,
+            readOnly: props.readOnly,
             copyToClipboard,
             buildShareUrl: defaultBuildShareUrl,
             buildCanvasEmbedUrl,
@@ -152,7 +153,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             closeContextMenu,
           })
         : [],
-    [buildCanvasEmbedUrl, closeContextMenu, contextMenu, copyToClipboard, defaultBuildShareUrl, onCanvasEmbedReady, onCanvasEmbedStart, onClearFile, onCreateNewFile, onDeleteEntry, onRenameEntry, onRevealInFinder, onShareCodeReady],
+    [props.readOnly, buildCanvasEmbedUrl, closeContextMenu, contextMenu, copyToClipboard, defaultBuildShareUrl, onCanvasEmbedReady, onCanvasEmbedStart, onClearFile, onCreateNewFile, onDeleteEntry, onRenameEntry, onRevealInFinder, onShareCodeReady],
   )
 
   const renderNode = (node: Node, depth: number) => {
@@ -209,7 +210,6 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             onContextMenu={event => {
               event.preventDefault()
               event.stopPropagation()
-              if (props.readOnly) return
               const pos = clampOverlayTopLeftFullyInViewport({
                 pos: { left: event.clientX, top: event.clientY },
                 size: { width: 220, height: 260 },
@@ -267,9 +267,12 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
               <li key={item.key} className="list-none">
                 <button
                   type="button"
+                  disabled={item.disabled}
+                  title={item.disabled ? 'Unavailable for read-only observation files' : undefined}
                   className={`${UI_RESPONSIVE_MENU_ROW_CLASSNAME} text-left rounded px-2 py-1 ${panelTypography.textSizeClass} ${
-                    item.tone === 'danger' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.button.text
-                  } ${UI_THEME_TOKENS.button.hoverBg}`}
+                    item.disabled ? `${UI_THEME_TOKENS.text.secondary} opacity-40 cursor-not-allowed`
+                      : item.tone === 'danger' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.button.text
+                  } ${item.disabled ? '' : UI_THEME_TOKENS.button.hoverBg}`}
                   onClick={item.onSelect}
                 >
                   {item.label}
