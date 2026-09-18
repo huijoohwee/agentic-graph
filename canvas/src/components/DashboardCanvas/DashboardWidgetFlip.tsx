@@ -11,7 +11,7 @@ export type DashboardWidgetEditorProps = {
   title: string
   defaults?: DashboardWidgetSettings
 }
-const interactive = 'button, input, textarea, select, a, summary, [contenteditable="true"], [role="button"], [role="textbox"], [data-kg-dashboard-table-row]'
+const interactive = 'label, [role="treeitem"], [role="row"], [role="tab"], [role="option"], button, input, textarea, select, a, summary, [contenteditable="true"], [role="button"], [role="textbox"], [data-kg-dashboard-table-row]'
 
 /** The same front/back interaction owns template creation and placed-widget editing. */
 export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & { children: React.ReactNode }) {
@@ -27,9 +27,9 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
     onClickCapture={event => {
       if (!flipped && !props.widgetId && !dragged.current) { event.preventDefault(); event.stopPropagation(); open() }
     }} onClick={event => {
-      if (!flipped && !dragged.current && !(event.target as Element).closest(interactive)) open()
+      if (!event.defaultPrevented && !flipped && !dragged.current && !(event.target as Element).closest(interactive)) open()
     }} onKeyDown={event => {
-      if (flipped || (props.widgetId && (event.target as Element).closest(interactive))) return
+      if (event.defaultPrevented || flipped || (props.widgetId && (event.target as Element).closest(interactive))) return
       if ((event.key === 'Enter' || event.key === ' ') && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) { event.preventDefault(); event.stopPropagation(); open() }
     }}>
     <div key={flipped ? 'back' : 'front'} className={`h-full ${turned ? 'dashboard-widget-turn' : ''}`}>

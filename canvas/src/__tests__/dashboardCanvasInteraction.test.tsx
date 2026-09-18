@@ -4,6 +4,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import DashboardCanvas from '@/components/DashboardCanvas'
+import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
 import { DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
@@ -282,6 +283,20 @@ export async function testDashboardCanvasCardFlipConfiguration() {
     await act(async () => { Simulate.keyDown(reopened, { key: 'Escape' }); await waitFrame() })
     if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Escape must cancel configuration')
     if (useGraphStore.getState().graphData?.nodes[0].label !== 'Source') throw Error('Display edits cannot change source graph data')
+    let selected = 0
+    await act(async () => {
+      root.render(<DashboardWidgetFlip widgetId="mission:tree" template="tree" title="Span tree">
+        <div role="treeitem" tabIndex={0} onClick={() => { selected++ }} onKeyDown={event => { if (event.key === 'Enter') selected++ }}>Select span</div>
+        <label><input type="checkbox" />Live</label>
+      </DashboardWidgetFlip>); await waitFrame()
+    })
+    await act(async () => {
+      Simulate.click(container.querySelector('[role="treeitem"]')!)
+      Simulate.keyDown(container.querySelector('[role="treeitem"]')!, { key: 'Enter' })
+      Simulate.click(container.querySelector('label')!); await waitFrame()
+    })
+    if (selected !== 2 || container.querySelector('form')) throw Error('Span selection and control labels must not flip their enclosing card')
+
 
   } finally {
     await act(async () => {

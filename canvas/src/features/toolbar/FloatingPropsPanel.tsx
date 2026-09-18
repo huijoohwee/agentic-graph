@@ -22,7 +22,7 @@ export function FloatingPropsPanel() {
     () => (Array.isArray(effectiveWidgetRegistry) ? effectiveWidgetRegistry : []).filter(isPropsPanelWidgetPaletteEntry),
     [effectiveWidgetRegistry],
   )
-  const storyboardRendererActive = canvasRenderMode === '2d' && canvas2dRenderer === 'storyboard'
+  const storyboardRendererActive = !inspection && canvasRenderMode === '2d' && canvas2dRenderer === 'storyboard'
   const widgetDragEnabled = storyboardRendererActive && widgetPaletteEntries.length > 0
 
   const dashboardActive = !!inspection || (canvasRenderMode === '2d' && canvas2dRenderer === 'dashboard')
