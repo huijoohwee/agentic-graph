@@ -1,4 +1,5 @@
 import React from 'react'
+import { XrRehearsalStatus } from './XrRehearsalStatus'
 import { Clapperboard, Eraser, Hand, MapPin, Pause, Play, Target } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
@@ -131,6 +132,7 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
         </h3>
         <output className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>{status}</output>
       </header>
+      <XrRehearsalStatus />
       <section className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-1">
         <label className="grid min-w-0 gap-0.5 text-[9px]">
           <span className={UI_THEME_TOKENS.text.tertiary}>3D / NPC target</span>

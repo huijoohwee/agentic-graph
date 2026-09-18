@@ -1,27 +1,27 @@
 ---
 title: "XR Frame Transport PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.0"
-date: "2026-09-14"
+version: "1.4.0"
+date: "2026-09-18"
 lang: "en-US"
 frontmatter_contract: "required"
 continuity_id: "XR-FRAME-TRANSPORT-001"
-prd_revision: "1.3.0"
-tad_revision: "1.3.0"
-adr_revision: "1.3.0"
-mvp_revision: "1.3.0"
-gtm_revision: "1.3.0"
+prd_revision: "1.4.0"
+tad_revision: "1.4.0"
+adr_revision: "1.4.0"
+mvp_revision: "1.4.0"
+gtm_revision: "1.4.0"
 owner: "agentic-graph"
 status: "implementation"
 load_policy: "on-demand"
-source_revision: "68dc87ee3e42aaa6e09dfeda8c8cd8742737f757"
+source_revision: "dddf1ab47ab0227eb5a21a7cbf49cba45ae8f322"
 ---
 
 # XR frame transport
 
 ## PRD
 
-`XR-FRAME-TRANSPORT-001@1.3.0`: a solo builder rehearses an authored XR product
+`XR-FRAME-TRANSPORT-001@1.4.0`: a solo builder rehearses an authored XR product
 demonstration at quarter speed, pauses on consecutive frames, and reads the same
 position through BottomPanel Timeline and the existing local animation tool.
 The prior shared-store tolerance was 0.001 timeline units: in fractional minutes
@@ -46,9 +46,14 @@ authored scene frames. Outcome: repeatable frame and speed readback.
 | F09 | The canonical Physics Playground seed describes frame controls, local save and canonical refresh; the ownership row does not imply every local store uses IndexedDB or that cloud sync succeeded. | `agentic-graph-physics-playground-demo.md`, `documentRepositoryAuthority.ts`; source authority, ownership projection and browser refresh/readback |
 | F10 | Source Files saves path-keyed records in IndexedDB, imports legacy localStorage atomically once without deleting its bytes, survives database close/reopen, and rejects stale or failed durable writes. Git-backed Markdown remains canonical. | `workspaceFsIndexedDb.ts`, shared `indexedDbCollectionStore.ts`; `workspaceFs.indexedDb` registered migration, reopen, conflict and write-failure cases |
 
+| F11 | Scene cues opens within the existing BottomPanel Timeline. Authored cast/camera marks and animation starts are chronologically ordered; equal-time beats remain distinct and share the active interval. Selecting a beat pauses and seeks its exact time, preserves speed, and uses shared object/mark selection. | [cue projection](../../canvas/src/features/three/xrTimelineSceneProjection.ts), [overview](../../canvas/src/features/three/XrTimelineSceneOverview.tsx); `canvas.xrMode.timeline.sceneCues` |
+| F12 | The same overview lists each authored object once and samples its position and path state at the shared playhead. Object selection leaves playback position unchanged. Empty states and disabled documents are explicit; closing unmounts the overview. | Existing `xrShotTargets.ts` and `xrMotionReferenceSampling.ts`; mounted Timeline regression and desktop/mobile browser checks |
+| F13 | Camera, Motion Control, Animation, Game Mode and Media display the same authored frame, FPS, playback rate and play/pause state. Selecting an overview object clears a prior NPC focus through the existing shared target controller. | [shared readout](../../canvas/src/features/three/XrRehearsalStatus.tsx), `XrSharedAssetControls.tsx`, `XrAnimationFloatingPanelView.tsx`; mounted regression and cross-panel browser checks |
+| F14 | Updating authored XR choreography writes the current plan back to its flow document, so source reparse preserves cues and assignments. Inline and block YAML sections are replaced once; unrelated frontmatter and body remain intact. | `graphDataFrontmatterFlowSync.ts`, extracted `graphDataFrontmatterSections.ts`; `canvas.xrMode.timeline.sourceReparse` |
+
 ## TAD and ADR
 
-TAD `1.3.0` consumes PRD `1.3.0`; ADR `1.3.0` binds that design. F01–F10 share
+TAD `1.4.0` consumes PRD `1.4.0`; ADR `1.4.0` binds that design. F01–F14 share
 the continuity ID above. Keep the existing transport store and panel; extract its
 animation adapter into one helper loaded with the existing XR animation feature.
 Use authored FPS for frame targeting and the shared rate list for validation.
@@ -180,3 +185,56 @@ Apex now lists Physics Playground; Demo opens its canonical source and example
 conversation, and the same animation command accepts quarter-speed playback.
 No copied catalog or fallback source is introduced. The predecessor commit is
 retained while this same-worktree successor supplies the complete source change.
+
+
+## Scene cues increment — 2026-09-18
+
+CID `XR-FRAME-TRANSPORT-001@1.4.0` carries F11–F14 through PRD, TAD,
+ADR, MVP and GTM. Role/Subject: solo builder. Action/Verb: rehearse and inspect.
+Object: authored demonstration beats and scene objects. Outcome: jump to a cue
+and verify the relevant object without repeatedly dragging the ruler.
+
+TAD/ADR: `XrTimelineRehearsalControls` owns a disclosure inside the existing
+Timeline. Its overview is dynamically imported and mounted only while open.
+The native plan owns marks, animation starts and objects; the existing shot-target
+projection deduplicates cast/subject identities, and the existing sampler owns
+positions. The overview owns no timer, persistence schema, asset, engine, network request,
+or replacement panel. Beat selection delegates pause/scrub to the existing
+animation command and selection to the shared target controller and mark owners. This follows existing
+Timeline selection behavior, including preparing an untracked subject for motion
+control through the existing guarded persistence path. Fractional
+beat times are retained instead of rounded to an authored frame. All cues at the
+latest reached time remain highlighted until the next time group. Scene objects
+show authored path state, not live simulation/NPC telemetry or inferred visibility.
+
+MVP: open Physics Playground in the workspace, open BottomPanel Timeline, and
+expand **Scene cues**. Select an authored beat, inspect the selected object,
+step a frame, then collapse the overview. The existing track editors continue to
+own authoring. Long lists scroll within bounded regions; controls have 44 px
+minimum targets and stack at narrow widths. The relevant FloatingPanel views reuse one read-only frame status component. Camera target changes also use the shared selection controller, clearing stale NPC focus without creating another selection owner.
+It subscribes only while mounted; camera capture and gameplay retain their
+existing activation and tick ownership. Native paused physics stepping is
+specified separately in the [physics owner](agentic-graph-native-physics-engines-prd-tad-adr-mvp-gtm.md).
+
+GTM hypothesis: a solo builder can rehearse an agent-commerce product demo with
+fewer manual seeks before presenting an offer. Measure cue-to-verification time
+and buyer commitment in a real pilot; this UI increment proves neither willingness
+to pay nor a payment settlement. No external dependency, account, or paid service
+is introduced. Graph remains the sole runtime owner; fleet consumers and
+production mirrors follow their existing protected promotion path.
+
+Validation: `npm -C canvas run test:ci:unit -- canvas.xrMode.timeline` covers
+fractional seeks, simultaneous beats, camera/cast selection, rate preservation,
+object sampling, end bounds, immutable authored plans, disabled documents,
+empty scenes and lazy mounting. Candidate-wide checks and browser results belong
+in the delivery receipt; protected integration and production require separate evidence.
+
+
+The flow source serializer now projects `kgXrMotionReference` from current graph
+metadata when saving the authored plan. Previously it rewrote flow topology but
+retained the old XR frontmatter section, allowing a later source reparse to restore
+stale cues. The existing YAML section writer is extracted once and reused for
+Timeline and XR sections; inline sections are replaced instead of duplicated.
+This fixes the source owner rather than retaining a private panel cache.
+
+Canonical workspace demo refresh continues to restore repository-authored seed content. Persistence acceptance applies to authored flow documents; it does not override that existing source-authority policy.

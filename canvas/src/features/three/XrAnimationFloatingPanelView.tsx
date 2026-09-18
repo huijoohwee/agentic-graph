@@ -1,4 +1,6 @@
 import React from 'react'
+import { XrRehearsalStatus } from './XrRehearsalStatus'
+import { inspectXrSharedAssetControls, readXrSharedAssetControlRevision, subscribeXrSharedAssetControlRuntime } from './xrSharedAssetControlRuntime'
 import {
   Armchair,
   ArrowUp,
@@ -236,7 +238,8 @@ export function XrAnimationFloatingPanelView() {
     timelinePlaying: state.timelineTransportPlaying,
   })))
   const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
-  const selectedActorId = readBoundXrSelectedActorId()
+  React.useSyncExternalStore(subscribeXrSharedAssetControlRuntime, readXrSharedAssetControlRevision, readXrSharedAssetControlRevision)
+  const selectedActorId = inspectXrSharedAssetControls().selectedKind === 'npc' ? '' : readBoundXrSelectedActorId()
   const animationInspection = inspectLocalAnimation()
   const search = useFloatingPanelCatalogSearch()
   const sceneReady = resolveXrSceneDocumentReady({
@@ -314,6 +317,7 @@ export function XrAnimationFloatingPanelView() {
         ) : null}
       </section> : null}
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-3')}>
+        <XrRehearsalStatus />
         <XrChoreographyInspector
           cameraInvocation={animationInspection.invocationGrammar?.configureCameraMark || animationInspection.webMcpTools.control}
           castInvocation={animationInspection.invocationGrammar?.configureCastMark || animationInspection.webMcpTools.control}

@@ -175,7 +175,7 @@ export function inspectLocalXrSceneAssets() {
       physicsWorld: `${XR_SCENE_INVOCATION_COMMANDS.physics} ${XR_SCENE_INVOCATION_BINDINGS.canvas} ${XR_SCENE_INVOCATION_SEMANTICS.world} operation=play|pause|stop|reset|step|configure`,
       physicsBody: `${XR_SCENE_INVOCATION_COMMANDS.physics} ${XR_SCENE_INVOCATION_BINDINGS.canvas} ${XR_SCENE_INVOCATION_SEMANTICS.body} operation=attach|configure|detach subject=<id>`,
       physicsImpulse: `${XR_SCENE_INVOCATION_COMMANDS.physics} ${XR_SCENE_INVOCATION_BINDINGS.canvas} ${XR_SCENE_INVOCATION_SEMANTICS.impulse} operation=impulse subject=<id> vector=x,y,z`,
-      physicsController: `${XR_SCENE_INVOCATION_COMMANDS.physics} ${XR_SCENE_INVOCATION_BINDINGS.canvas} ${XR_SCENE_INVOCATION_SEMANTICS.controller} operation=develop-run|pause|resume|reset|exit|select mode=ball|rocket`,
+      physicsController: `${XR_SCENE_INVOCATION_COMMANDS.physics} ${XR_SCENE_INVOCATION_BINDINGS.canvas} ${XR_SCENE_INVOCATION_SEMANTICS.controller} operation=develop-run|pause|resume|reset|exit|select|step mode=ball|rocket ticks=<1..240>`,
       present: `${XR_SCENE_INVOCATION_COMMANDS.present} ${XR_SCENE_INVOCATION_BINDINGS.scene} ${XR_SCENE_INVOCATION_SEMANTICS.reticle}`,
     },
     environments: XR_MOTION_REFERENCE_STAGE_PRESETS.map(stage => ({

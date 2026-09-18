@@ -26,7 +26,7 @@ import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from 
 import { motionControlPoseToAnimationPose } from '@/features/three/motionControlPose'
 import { readMotionControlSnapshot, subscribeMotionControl } from '@/features/three/motionControlRuntime'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
-import { selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
+import { controlXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
 import { resolveMotionControlSubjectPose } from '@/features/three/useMotionControlAnimationPose'
 import {
   buildXrPlaceInvocation,
@@ -339,12 +339,11 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
   }, [runControl])
 
   const setSubjectMotionControlTarget = React.useCallback((subjectId: string, subjectLabel: string) => {
-    selectBoundXrShotTarget(subjectId)
-    openMotionControlSurface('motion-control')
+    const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: subjectId })
+    if (result.ok) openMotionControlSurface('motion-control')
     pushUiToast({
       id: 'media:xr-library:motion-control-target',
-      kind: 'success',
-      message: `Motion Control target set to ${subjectLabel}.`,
+      kind: result.ok ? 'success' : 'error', message: result.ok ? `Motion Control target set to ${subjectLabel}.` : result.message,
     })
   }, [pushUiToast])
 

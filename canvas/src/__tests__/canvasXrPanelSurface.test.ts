@@ -416,7 +416,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     'data-kg-media-xr-motion-control-target-button={subject.id}',
     'data-kg-media-xr-motion-control-gesture={motionGestureStatus}',
     "openMotionControlSurface('motion-control')",
-    'selectBoundXrShotTarget(subjectId)',
+    "controlXrSharedAssetControls({ operation: 'select-target', targetId: subjectId })",
   ]) {
     if (!xrMediaLibrary.includes(marker)) throw new Error(`expected Media 3D subject create/update/delete to expose native strict-runtime CRUD through ${marker}`)
   }

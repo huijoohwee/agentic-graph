@@ -1,4 +1,5 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
@@ -17,7 +18,7 @@ import {
 } from '@/features/three/xrMotionReferenceRuntime'
 import type { XrSceneControlInput } from '@/features/three/xrSceneMcpRuntime'
 import type { XrPhysicsControlInput } from '@/features/three/xrSceneInteractiveInvocation'
-import { selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
+import { controlXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
 import { XrV2AuthoringStatusPanel } from '@/features/xr-v2/XrV2AuthoringStatusPanel'
 import { XrNativeControllerDemoControls } from './XrNativeControllerDemoControls'
 
@@ -282,8 +283,9 @@ export function XrSimulationWorkbench({ sceneReady, runControl }: XrSimulationWo
             value={selectedSubject?.id || ''}
             disabled={!subjects.length}
             onChange={event => {
-              setSelectedSubjectId(event.target.value)
-              selectBoundXrShotTarget(event.target.value)
+              const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: event.target.value })
+              if (result.ok) setSelectedSubjectId(event.target.value)
+              else useGraphStore.getState().pushUiToast({ id: 'xr:simulation:select-target', kind: 'error', message: result.message })
             }}
             data-kg-media-xr-simulation-subject="1"
           >

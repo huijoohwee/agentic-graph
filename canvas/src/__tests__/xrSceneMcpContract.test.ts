@@ -344,6 +344,9 @@ export async function assertXrScenePhysicsWebMcpLifecycle(args: Readonly<{
   subjectId: string
 }>): Promise<void> {
   assert(args.subjectId, 'expected a placed XR subject before exercising physics WebMCP')
+  const inspection = await args.inspect() as { invocationGrammar?: { physicsController?: string } }
+  assert(inspection.invocationGrammar?.physicsController?.includes('|step')
+    && inspection.invocationGrammar.physicsController.includes('ticks=<1..240>'), 'scene inspection must advertise bounded controller stepping')
   const transformed = await args.control({ invocation: `/xr.transform @${encodeURIComponent(args.subjectId)} #transform asset=prop-ball position=1,0,-2 rotation=30 scale=1.25 color=#38bdf8` })
   const staged = await args.control({ action: 'stage', stageId: 'tropical-playground' })
   const invalidSemantics = await args.control({ invocation: '/xr.physics @canvas #world #body operation=play' })

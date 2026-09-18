@@ -115,7 +115,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
     'data-kg-xr-shoot-target="scene-or-object"',
     'data-kg-xr-camera-source="1"',
     'aria-label="XR camera source"',
-    'selectBoundXrShotTarget',
+    'controlXrSharedAssetControls',
     'selectedShotTarget.id',
     'data-kg-camera-optics-projection="xr-shoot"',
     'Optics · edit in Camera',
