@@ -1,7 +1,7 @@
 import React from 'react'
 import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
-import { activateAgentRunWorkspace } from './agentRunInspectionStore'
+import { activateAgentRunWorkspace, useAgentRunInspection, useAgentRunWorkspace } from './agentRunInspectionStore'
 
 export const AGENT_MISSION_SOURCE_ROOT = '/agent-mission'
 export const AGENT_MISSION_MANIFEST_PATH = `${AGENT_MISSION_SOURCE_ROOT}/agent-mission.manifest.json`
@@ -15,10 +15,15 @@ export const matchesAgentMissionSource = (search = '') => agentMissionManifestEn
 
 /** A discoverable session source, never a persisted copy of private run evidence. */
 export function AgentMissionSourceFile({ search = '' }: { search?: string }) {
+  const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const [expanded, setExpanded] = React.useState(true)
   if (!matchesAgentMissionSource(search)) return null
-  return <MarkdownFileTree entries={[agentMissionSourceFolder, agentMissionManifestEntry]} readOnly
+  const entries: WorkspaceEntry[] = [agentMissionSourceFolder, agentMissionManifestEntry, ...(inspection ? [{
+    path: `${AGENT_MISSION_SOURCE_ROOT}/agent-mission.md`, parentPath: AGENT_MISSION_SOURCE_ROOT,
+    kind: 'file' as const, name: 'agent-mission.md', updatedAtMs: inspection.trace.observedAt,
+  }] : [])]
+  return <MarkdownFileTree entries={entries} readOnly
     expandedPaths={new Set(expanded || search ? ['/', AGENT_MISSION_SOURCE_ROOT] : ['/'])}
-    toggleExpanded={() => setExpanded(value => !value)} activePath={null}
-    onSelectFile={() => activateAgentRunWorkspace('tree', 'editor', AGENT_MISSION_MANIFEST_PATH)} />
+    toggleExpanded={() => setExpanded(value => !value)} activePath={workspace?.source === null ? null : workspace?.source ?? (inspection ? `${AGENT_MISSION_SOURCE_ROOT}/agent-mission.md` : null)}
+    onSelectFile={path => activateAgentRunWorkspace(workspace?.view ?? 'tree', 'editor', path)} />
 }

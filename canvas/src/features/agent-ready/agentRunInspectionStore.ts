@@ -6,7 +6,7 @@ import { AGENT_RUN_CANVAS_VIEWS, parseCanvasViewInvocation } from '@/lib/canvas/
 export type AgentRunView = Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>
 export type AgentRunInspection = { trace: RunTrace; scope: string; expiresAt: number; spanId: string | null; search: string; view: AgentRunView }
 let snapshot: AgentRunInspection | null = null
-let workspace: { view: AgentRunView; source?: string } | null = null
+let workspace: { view: AgentRunView; source?: string | null } | null = null
 let cleanup: (() => void) | null = null
 let restoreView: (() => void) | null = null
 let timer: number | undefined
@@ -85,6 +85,10 @@ export function updateAgentRunInspection(input: Pick<AgentRunInspection, 'trace'
   if (snapshot.expiresAt <= Date.now()) return closeAgentRunInspection()
   if (input.trace.runId === snapshot.trace.runId && input.trace.observedAt < snapshot.trace.observedAt) return
   snapshot = validated({ ...snapshot, ...input }); scheduleExpiry(); emit()
+}
+export function selectAgentRunSource(source: string | null): void {
+  if (!workspace) return
+  workspace = { ...workspace, source }; emit()
 }
 export function selectAgentRunView(view: string): void {
   if (!workspace || !Object.hasOwn(AGENT_RUN_CANVAS_VIEWS, view)) return

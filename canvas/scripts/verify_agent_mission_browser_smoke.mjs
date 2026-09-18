@@ -111,7 +111,7 @@ async function verifyWorkspace(label, revoke = false) {
   const previousView = returnView
   await selected.getByPlaceholder('Search spans by name, kind or status').fill('draft')
   await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
-  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
   await editor.waitFor({ state: 'visible', timeout: 60000 })
   const explorer = editor.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }); await explorer.check()
@@ -126,7 +126,7 @@ async function verifyWorkspace(label, revoke = false) {
   assert.equal(await editor.getByRole('button', { name: 'Insert slash command trigger', exact: true }).count(), 0)
   assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0, 'Run handoff must leave inspection unobscured')
   await page.screenshot({ path: resolve(output, label + '-workspace.png') })
-  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await editor.getByRole('button', { name: 'Close', exact: true }).click()
   await waitTopology(canvas)
   await canvas.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await waitText(canvas, 'Selected span: draft-2')
@@ -201,16 +201,16 @@ async function verifyWorkspace(label, revoke = false) {
   const stored = await page.evaluate(() => Object.values(localStorage).some(value => String(value).includes('agent-run-inspection/v1')))
   assert.equal(stored, false, 'Run snapshot must not persist in browser storage')
   if (revoke) await page.evaluate(() => window.dispatchEvent(new Event('agentic-os:authority-change')))
-  else await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
-  await editor.waitFor({ state: 'detached' }); await canvas.waitFor({ state: 'detached' })
+  else { await editor.getByRole('button', { name: 'Close', exact: true }).click(); await canvas.getByRole('button', { name: 'Close run inspection', exact: true }).click() }
+  await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor({ state: 'detached' }); await canvas.waitFor({ state: 'detached' })
   assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
   assert.deepEqual(await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] }), previousView)
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   phaseObservation.checkpoint('Mission browser: ' + label + ' workspace panes, Canvas selection, private model disposal and return passed')
 }
 async function verifyLocalTraceImport(label, fromApex = false) {
-  const currentEditor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
-  if (await currentEditor.isVisible()) await currentEditor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  const currentEditor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
+  if (await currentEditor.isVisible()) await currentEditor.getByRole('button', { name: 'Close', exact: true }).click()
   const before = await authoredSnapshot(), beforeRequests = requests.length
   const payload = { schema: 'agent-toolkit-run/v1', authority: false, runId: 'imported-workflow', status: 'completed',
     observedAt: 1000, expiresAt: 2000, spans: [{ spanId: 'checks', parentSpanId: null, kind: 'tool', operation: 'checks', status: 'completed',
@@ -225,7 +225,7 @@ async function verifyLocalTraceImport(label, fromApex = false) {
     await page.getByRole('button', { name: /Import local files/ }).click()
     await (await chooser).setFiles(localFile)
   }
-  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   const canvas = page.getByRole('region', { name: 'Dashboard', exact: true })
   const evidence = canvas.getByRole('region', { name: 'Agent Mission', exact: true })
   if (fromApex) {
@@ -233,7 +233,7 @@ async function verifyLocalTraceImport(label, fromApex = false) {
     assert.ok((await canvas.boundingBox()).width > page.viewportSize().width * .9, 'Apex import must open a full-width Canvas')
   } else {
     await editor.waitFor({ timeout: 60000 })
-    await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+    await editor.getByRole('button', { name: 'Close', exact: true }).click()
   }
   await openRunSource(evidence); await waitText(evidence, 'Imported local trace: workflow.json'); await waitTopology(evidence)
   assert.equal(await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).isDisabled(), true)
@@ -249,12 +249,12 @@ async function verifyLocalTraceImport(label, fromApex = false) {
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
   await waitForAsync(async () => (await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/') && model.value.includes('Selected span: checks')))
   assert.equal(requests.length, beforeRequests, 'Local file inspection must not use runtime sessions, polling or evaluation')
-  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await editor.getByRole('button', { name: 'Close', exact: true }).click()
   await page.getByRole('button', { name: 'Launch', exact: true }).click()
   const replacement = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: /Import local files/ }).click()
   await (await replacement).setFiles({ name: 'replacement.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...payload, runId: 'replacement-workflow' })) })
-  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await editor.getByRole('button', { name: 'Close', exact: true }).click()
   await openRunSource(evidence); await waitText(evidence, 'Imported local trace: replacement.json')
   await evidence.getByRole('heading', { name: 'Run replacement-workflow', exact: true }).waitFor()
   assert.equal(requests.length, beforeRequests, 'Replacing a mounted inspection must not reactivate the runtime')
@@ -321,18 +321,13 @@ async function verifyApexActivation(width) {
   await evidence.locator('#agent-run-view-tree-panel').waitFor()
   await waitText(evidence, '32/34 retained spans')
   await canvas.getByRole('button', { name: 'Show Editor Workspace', exact: true }).click()
-  const editor = page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true })
+  const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   await editor.waitFor({ timeout: 60000 })
-  if (width > 768) {
-    for (const name of ['Show JSON editor pane', 'Show Markdown editor pane', 'Show Viewer preview pane'])
-      assert.equal(await editor.getByRole('checkbox', { name, exact: true }).isChecked(), true)
-  } else {
-    await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
-    await editor.getByRole('checkbox', { name: 'Show Viewer preview pane', exact: true }).check()
-  }
+  for (const name of ['Show JSON editor pane', 'Show Markdown editor pane', 'Show Viewer preview pane'])
+    await editor.getByRole('checkbox', { name, exact: true }).check()
   await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ timeout: 60000 })
   await page.screenshot({ path: resolve(output, `apex-${width}-inspection.png`) })
-  await editor.getByRole('button', { name: 'Show Canvas', exact: true }).click()
+  await editor.getByRole('button', { name: 'Close', exact: true }).click()
   await canvas.waitFor({ state: 'visible' })
   const beforeLocalRequests = requests.length
   const observation = { schema: 'agentic-os/validation-observation/v1', authority: false, exportedAt: Date.now(),
@@ -370,8 +365,8 @@ async function verifyApexActivation(width) {
 
   assertAuthored(await authoredSnapshot(), before, 'Apex activation must preserve authored work')
   assert.ok(requests.slice(beforeEntryRequests).every(item => ['query', 'trace'].includes(item.operation)), 'Activation may only read observations')
-  await editor.getByRole('button', { name: 'Close run inspection', exact: true }).click()
-  await editor.waitFor({ state: 'detached' })
+  await editor.getByRole('button', { name: 'Close', exact: true }).click(); await canvas.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor({ state: 'detached' })
   assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), true)
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(false))
   await page.getByRole('combobox', { name: 'Prompt preset', exact: true }).selectOption('agent-observability')
@@ -526,9 +521,9 @@ try {
   await openDashboard()
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await selected.getByRole('button', { name: 'Open in Editor Workspace' }).click()
-  await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'visible' })
+  await page.getByRole('region', { name: 'Markdown Workspace', exact: true }).waitFor({ state: 'visible' })
   await context.setOffline(true); await page.clock.fastForward(61000)
-  await page.getByRole('region', { name: 'Agent run Editor Workspace inspection', exact: true }).waitFor({ state: 'detached' })
+  await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await page.getByRole('region', { name: 'Dashboard', exact: true }).waitFor({ state: 'detached' })
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await context.setOffline(false)
