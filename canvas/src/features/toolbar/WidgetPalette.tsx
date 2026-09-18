@@ -62,7 +62,7 @@ export default function WidgetPalette(args: {
         <p className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>
           {selectionLinkSession
             ? <>Choose a target Widget to link to “{selectionSummary}”.</>
-            : args.dashboardActive ? 'Click a Dashboard template to configure its back. Switch to Storyboard to drag the other card types.' : 'Drag a widget, card, or flow-editor layout into the canvas.'}
+            : args.dashboardActive ? 'Select a Dashboard template, then use Flip in its floating toolbar to configure. Switch to Storyboard to drag the other card types.' : 'Drag a widget, card, or flow-editor layout into the canvas.'}
         </p>
         {selectionLinkSession ? (
           <button

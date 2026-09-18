@@ -39,6 +39,18 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   assert.equal(persisted.some(entry => entry.path.startsWith('/agent-mission/')), false, 'Session evidence must not enter persistent Source Files')
 }
 
+async function configureWidget(frame, keyboard = false) {
+  if (keyboard) await frame.press('Enter')
+  else await frame.click()
+  assert.equal(await frame.getByRole('form', { name: 'Widget configuration' }).count(), 0, 'Selection must reveal actions, not configuration')
+  const toolbar = frame.locator('nav.kg-dashboard-widget-toolbar[data-kg-bubble-toolbar="1"]')
+  await toolbar.waitFor()
+  const flip = toolbar.getByRole('button', { name: 'Flip to configure', exact: true })
+  if (keyboard) await flip.press('Enter')
+  else await flip.locator('[data-kg-toolbar-action-icon="flip"]').click()
+  await frame.locator('section.kg-dashboard-widget-face[data-kg-widget-face="back"]').waitFor()
+}
+
 /** Templates and placed cards use one configuration back in the original Props palette. */
 export async function verifyDashboardWidgets(page) {
   const dashboard = page.getByRole('region', { name: 'Dashboard', exact: true })
@@ -57,17 +69,17 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(await palette.getByRole('form', { name: 'Widget configuration' }).count(), 0, 'Fronts contain no configuration')
   assert.equal(await palette.getByText('Relationship Types', { exact: true }).count(), 0, 'Template fronts must be unbound')
   const tree = palette.getByRole('listitem', { name: 'Template Span tree', exact: true })
-  await tree.getByRole('group', { name: 'Configure Span tree', exact: true }).click()
+  await configureWidget(tree.getByRole('group', { name: 'Configure Span tree', exact: true }))
   await tree.getByRole('button', { name: 'Remove widget', exact: true }).click()
   await dashboard.locator('[data-kg-dashboard-card="agent-tree"]').waitFor({ state: 'detached' })
-  await tree.getByRole('group', { name: 'Configure Span tree', exact: true }).click()
+  await configureWidget(tree.getByRole('group', { name: 'Configure Span tree', exact: true }))
   await tree.getByLabel('Show on canvas', { exact: true }).check()
   await tree.getByRole('button', { name: 'Save widget', exact: true }).click()
   await dashboard.locator('[data-kg-dashboard-card="agent-tree"]').waitFor()
   const template = palette.getByRole('listitem', { name: 'Template Bar chart', exact: true })
   const templateFront = template.getByRole('group', { name: 'Configure Bar chart', exact: true })
   const templateSize = await templateFront.boundingBox()
-  await templateFront.click()
+  await configureWidget(templateFront)
   const templateBackSize = await templateFront.boundingBox()
   assert.equal(templateBackSize.width, templateSize.width)
   assert.equal(templateBackSize.height, templateSize.height, 'Flipping a template must preserve its dimensions')
@@ -82,7 +94,7 @@ export async function verifyDashboardWidgets(page) {
   await floating.getByRole('button', { name: 'Close', exact: true }).click()
   const cardFrame = dashboard.getByRole('group', { name: 'Configure My node types', exact: true })
   const cardSize = await cardFrame.boundingBox()
-  await cardFrame.press('Enter')
+  await configureWidget(cardFrame, true)
   const cardBackSize = await cardFrame.boundingBox()
   assert.equal(cardBackSize.width, cardSize.width)
   assert.equal(cardBackSize.height, cardSize.height, 'Flipping a placed card must preserve its dimensions')
@@ -95,7 +107,7 @@ export async function verifyDashboardWidgets(page) {
   const metric = palette.getByRole('listitem', { name: 'Template Metric', exact: true })
   const metricFrame = metric.getByRole('group', { name: 'Configure Metric', exact: true })
   const metricSize = await metricFrame.boundingBox()
-  await metricFrame.click()
+  await configureWidget(metricFrame)
   const metricBackSize = await metricFrame.boundingBox()
   assert.equal(metricBackSize.width, metricSize.width)
   assert.equal(metricBackSize.height, metricSize.height, 'Compact metric backs must scroll within the original size')
@@ -104,7 +116,7 @@ export async function verifyDashboardWidgets(page) {
   await metric.getByRole('button', { name: 'Add widget', exact: true }).click()
   await dashboard.getByRole('group', { name: 'Configure My metric', exact: true }).waitFor()
   assert.equal(await dashboard.locator('[data-kg-dashboard-metric]').count(), 6)
-  await metric.getByRole('group', { name: 'Configure Metric', exact: true }).click()
+  await configureWidget(metricFrame)
   await metric.getByLabel('Widget', { exact: true }).selectOption({ label: 'My metric' })
   await metric.getByRole('button', { name: 'Remove widget', exact: true }).click()
   await dashboard.getByRole('group', { name: 'Configure My metric', exact: true }).waitFor({ state: 'detached' })
@@ -112,5 +124,5 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(JSON.parse(source).widgets['graph:node-types'].title, 'Node Types')
   assert.equal(source.includes('agent-run-inspection/v1'), false)
   await floating.getByRole('button', { name: 'Close', exact: true }).click()
-  console.log('Original Props card types, generic templates and shared flip configuration CRUD passed')
+  console.log('Original Props card types, generic templates, shared selectable toolbar and fixed-size flip configuration CRUD passed')
 }

@@ -11,7 +11,7 @@ import { getRichMediaPanelViewTitle } from '@/lib/render/richMediaSsot'
 import { uiToolbarColumnMenuListClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
-import { Copy, Eraser, ExternalLink, GitBranch, GitMerge, HelpCircle, Link, PanelRightOpen, Play, Share2, SplitSquareVertical, Trash2, type LucideIcon } from 'lucide-react'
+import { Copy, Eraser, ExternalLink, FlipHorizontal2, GitBranch, GitMerge, HelpCircle, Link, PanelRightOpen, Play, Share2, SplitSquareVertical, Trash2, type LucideIcon } from 'lucide-react'
 import { ImportUrlPrompt } from '@/features/toolbar/ImportUrlPrompt'
 import { unwrapUserProvidedText } from '@/lib/url'
 
@@ -32,6 +32,7 @@ export type WidgetEditorActionsToolbarProps = {
     onToggle: () => void
   }
   outputVersionControl?: React.ReactNode
+  flipAction?: { flipped: boolean; onFlip: () => void }
   openExternalAction?: WidgetOpenExternalAction
   actionVisibility?: Partial<{
     run: boolean
@@ -64,6 +65,7 @@ export type WidgetEditorActionsToolbarProps = {
 }
 
 type WidgetToolbarActionId =
+  | 'flip'
   | 'run'
   | 'clear-output'
   | 'import-url'
@@ -248,6 +250,17 @@ export const WidgetEditorActionsToolbar = React.memo(function WidgetEditorAction
         }}
         onPointerDownCapture={handleToolbarPointerDownCapture}
       >
+        {args.flipAction ? (
+          <WidgetToolbarActionButton
+            actionId="flip"
+            title={args.flipAction.flipped ? 'Flip to front' : 'Flip to configure'}
+            onClick={args.flipAction.onFlip}
+            className="App-toolbar__btn"
+            icon={FlipHorizontal2}
+            iconSizeClass={iconSizeClass}
+            iconStrokeWidth={iconStrokeWidth}
+          />
+        ) : null}
         {showRunAction ? (
           <WidgetToolbarActionButton
             actionId="run"

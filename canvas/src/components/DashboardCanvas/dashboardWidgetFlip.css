@@ -3,6 +3,7 @@
   to { transform: perspective(900px) rotateY(0deg); opacity: 1; }
 }
 .dashboard-widget-turn { animation: dashboard-widget-turn 180ms ease-out; }
+.kg-dashboard-widget[data-kg-widget-selected="true"] { outline: 1px solid var(--kg-primary, #2563eb); border-radius: 0.5rem; }
 @media (prefers-reduced-motion: reduce) {
   .dashboard-widget-turn { animation: none; }
 }

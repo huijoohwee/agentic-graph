@@ -225,6 +225,8 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
 
 export async function testDashboardCanvasCardFlipConfiguration() {
   const { dom, restore } = initJsdomHarness()
+  // This keyboard contract needs native focus, rather than the harness's body-only getter.
+  delete (dom.window.document as unknown as { activeElement?: Element }).activeElement
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
@@ -264,8 +266,15 @@ export async function testDashboardCanvasCardFlipConfiguration() {
     if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Configuration must be absent on the front')
     const front = container.querySelector(cardSelector)!
     await act(async () => { Simulate.click(front); await waitFrame() })
-    const form = container.querySelector('form[aria-label="Widget configuration"]')!
-    if (!form) throw Error('Click must flip the card to its configuration')
+    const frame = container.querySelector('article.kg-dashboard-widget[data-dashboard-widget="graph:node-types"]')!
+    const toolbar = frame.querySelector('nav.kg-dashboard-widget-toolbar[data-kg-bubble-toolbar="1"]')!
+    if (!toolbar || frame.querySelector('form')) throw Error('Single-click must reveal the shared toolbar without opening settings')
+    const flipButton = toolbar.querySelector('button[data-kg-toolbar-action="flip"]')!
+    const flipIcon = flipButton.querySelector('[data-kg-toolbar-action-icon="flip"][role="img"]')!
+    if (!flipIcon) throw Error('Flip must expose the shared selectable icon surface')
+    await act(async () => { Simulate.click(flipIcon); await waitFrame() })
+    const form = frame.querySelector('form[aria-label="Widget configuration"]')!
+    if (!form || !frame.querySelector('section.kg-dashboard-widget-face[data-kg-widget-face="back"]')) throw Error('Toolbar Flip must reveal the semantic configuration back')
     const inputs = form.querySelectorAll('input')
     const titleEditor = inputs[0], noteEditor = form.querySelector('textarea')!
     await act(async () => {
@@ -278,10 +287,17 @@ export async function testDashboardCanvasCardFlipConfiguration() {
     if (!container.querySelector(cardSelector)?.textContent?.includes('Edited dashboard narrative')) throw Error('Backside edits must reach the front')
     if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Save must return to the front')
     await act(async () => { Simulate.keyDown(container.querySelector('[data-dashboard-widget="graph:node-types"]')!, { key: 'Enter' }); await waitFrame() })
+    const keyboardFlip = frame.querySelector<HTMLButtonElement>('button[data-kg-toolbar-action="flip"]')!
+    if (dom.window.document.activeElement !== keyboardFlip || frame.querySelector('form')) throw Error('Keyboard selection must focus the toolbar, not flip immediately')
+    await act(async () => { Simulate.click(keyboardFlip); await waitFrame() })
     const reopened = container.querySelector('form[aria-label="Widget configuration"]')!
-    if (!reopened) throw Error('Keyboard must open configuration')
+    if (!reopened) throw Error('Toolbar keyboard activation must open configuration')
     await act(async () => { Simulate.keyDown(reopened, { key: 'Escape' }); await waitFrame() })
     if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Escape must cancel configuration')
+    await act(async () => { dom.window.document.body.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true })); await waitFrame() })
+    if (frame.querySelector('nav[data-kg-bubble-toolbar]')) throw Error('Outside selection must dismiss the shared toolbar')
+    await act(async () => { Simulate.dragStart(frame); Simulate.click(frame); await waitFrame() })
+    if (frame.querySelector('nav[data-kg-bubble-toolbar]')) throw Error('Drag completion must not select or flip a card')
     if (useGraphStore.getState().graphData?.nodes[0].label !== 'Source') throw Error('Display edits cannot change source graph data')
     let selected = 0
     await act(async () => {
