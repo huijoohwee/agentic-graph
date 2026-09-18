@@ -94,7 +94,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   const subjectSource = readSource('features', 'three', 'XrSceneLibrarySubject.tsx')
   const retimeCssSource = readSource('features', 'three', 'CameraMotionMarkRetime.css')
   const choreographyControlsSource = readSource('features', 'three', 'XrChoreographyMarkControls.tsx')
-  const runtimeSource = readSource('features', 'three', 'xrMotionReferenceRuntime.ts')
+  const runtimeSource = readSource('features', 'three', 'xrMotionReferenceRuntime.ts') + readSource('features', 'three', 'xrMotionReferenceRuntimeSnapshot.ts')
   const shotTargetSource = readSource('features', 'three', 'xrShotTargets.ts')
   const objectInputOwnershipSource = readSource('features', 'three', 'threeObjectInputOwnership.ts')
   const stageGeometrySource = readSource('features', 'three', 'XrStagePresetGeometry.tsx')

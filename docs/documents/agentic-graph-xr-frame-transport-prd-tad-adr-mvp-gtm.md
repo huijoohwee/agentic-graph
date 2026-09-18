@@ -1,16 +1,16 @@
 ---
 title: "XR Frame Transport PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.4.3"
+version: "1.5.0"
 date: "2026-09-18"
 lang: "en-US"
 frontmatter_contract: "required"
 continuity_id: "XR-FRAME-TRANSPORT-001"
-prd_revision: "1.4.3"
-tad_revision: "1.4.3"
-adr_revision: "1.4.3"
-mvp_revision: "1.4.3"
-gtm_revision: "1.4.3"
+prd_revision: "1.5.0"
+tad_revision: "1.5.0"
+adr_revision: "1.5.0"
+mvp_revision: "1.5.0"
+gtm_revision: "1.5.0"
 owner: "agentic-graph"
 status: "implementation"
 load_policy: "on-demand"
@@ -21,7 +21,7 @@ source_revision: "dddf1ab47ab0227eb5a21a7cbf49cba45ae8f322"
 
 ## PRD
 
-`XR-FRAME-TRANSPORT-001@1.4.3`: a solo builder rehearses an authored XR product
+`XR-FRAME-TRANSPORT-001@1.5.0`: a solo builder rehearses an authored XR product
 demonstration at quarter speed, pauses on consecutive frames, and reads the same
 position through BottomPanel Timeline and the existing local animation tool.
 The prior shared-store tolerance was 0.001 timeline units: in fractional minutes
@@ -53,9 +53,11 @@ authored scene frames. Outcome: repeatable frame and speed readback.
 
 | F16 | Scene, object, Camera, simulation, NPC and animation-effect bars share one Gantt row selection; playback preserves the explicit selection. Scene’s trailing handle resizes the native bounded duration, pauses and clamps playback, and gives all full-scene bars the same endpoint. Scene Save persists the edit through F14. Unsupported and stale resize commands are rejected. | `useXrTimelineLaneSelection.ts`, `xrTimelineCommandAdapter.ts`; mounted `canvas.xrMode.timeline.sceneCues` selection, pointer resize and source-save regression |
 
+| F17 | Scene appearance is authored once in `kgXrMotionReference.appearance`: sky, horizon, ground, water, sunlight, sun direction/strength, haze distance, detail and shadows. Existing Timeline Scene and Media controls share immediate source writes; Editor reparse, every scene/catalog asset, export and authenticated workspace snapshot preserve it. Rejected writes roll back; downloads preserve local conflicts. | [model](../../canvas/src/features/three/xrSceneAppearance.ts), [controls](../../canvas/src/features/three/XrSceneAppearanceControls.tsx), [persistence](../../canvas/src/features/three/xrScenePersistence.ts); `canvas.xrMode.appearance.catalog`, `.source`, `.cloud` |
+
 ## TAD and ADR
 
-TAD `1.4.3` consumes PRD `1.4.3`; ADR `1.4.3` binds that design. F01–F16 share
+TAD `1.5.0` consumes PRD `1.5.0`; ADR `1.5.0` binds that design. F01–F17 share
 the continuity ID above. Keep the existing transport store and panel; extract its
 animation adapter into one helper loaded with the existing XR animation feature.
 Use authored FPS for frame targeting and the shared rate list for validation.
@@ -191,7 +193,7 @@ retained while this same-worktree successor supplies the complete source change.
 
 ## Scene cues increment — 2026-09-18
 
-CID `XR-FRAME-TRANSPORT-001@1.4.3` carries F11–F14 through PRD, TAD,
+CID `XR-FRAME-TRANSPORT-001@1.5.0` carries F11–F14 through PRD, TAD,
 ADR, MVP and GTM. Role/Subject: solo builder. Action/Verb: rehearse and inspect.
 Object: authored demonstration beats and scene objects. Outcome: jump to a cue
 and verify the relevant object without repeatedly dragging the ruler.
@@ -246,3 +248,38 @@ Timeline and XR sections; inline sections are replaced instead of duplicated.
 This fixes the source owner rather than retaining a private panel cache.
 
 Canonical workspace demo refresh continues to restore repository-authored seed content. Persistence acceptance applies to authored flow documents; it does not override that existing source-authority policy.
+
+### Scene appearance authoring and device handoff
+
+CID `XR-FRAME-TRANSPORT-001` / F17 keeps PRD, TAD, ADR, MVP and GTM at `1.5.0`.
+RAO: the scene author configures the existing scene plan; native XR renders that
+plan; Source Files owns local text; the existing authenticated storage service
+transfers workspace snapshots. SVO: author edits scene → shared persistence
+writes source → existing renderer consumes normalized appearance → authenticated
+workspace upload/readback and conflict-preserving download carry the same bytes.
+
+MVP: choose Coast, Golden hour or Studio in the existing Timeline Scene strip;
+open Media → 3D for XR → Scene appearance for individual colours, lighting and
+detail. Use the existing environment selector and Placed Subjects controls to
+swap every catalogued terrain/asset and edit asset transforms and colours. This
+retains scene/collider ownership and native fixture geometry. The low-detail
+mode omits the horizon decoration and shoreline mesh and lowers shadow-map
+resolution. No network assets, additional animation loop or appearance store
+are introduced. Flight training's existing night mission remains authoritative.
+
+Editor Workspace exposes the normalized appearance object in the same Markdown
+frontmatter. Source Files expands the active document’s folders and reveals its
+row without moving keyboard focus; its tooltip retains the complete path. Scene
+metadata edits from panels may write through a settled, matching Editor Workspace
+document. Uncommitted drafts, indexing, read-only projections and transition locks
+retain their mutation fences. Save a working copy before canonical seed refresh. In Settings →
+Workspace sync, enable Online and authenticate to the intended workspace, upload
+the selected scene, then download on another device. A snapshot read-back is the
+cloud acknowledgement; local save alone is not. Git publication and production
+promotion retain their separate protected owners. F17's integration test uses the
+actual storage Worker with fixture D1 and authenticated session membership, plus
+a separate receiving local workspace; it does not establish a live cloud session.
+
+GTM hypothesis: configurable native scene styling reduces time to create a
+client-specific interactive demo. Validate by measuring edit-to-demo time and
+obtaining a buyer commitment; these controls do not establish demand or revenue.

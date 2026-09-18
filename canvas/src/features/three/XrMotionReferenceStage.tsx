@@ -521,7 +521,7 @@ export function XrMotionReferenceStage({
     >
       {!paused ? <XrKeyboardChoreographyRuntime /> : null}
       <XrStagePresetGeometry
-        stage={stage}
+        stage={stage} appearance={runtime.plan.appearance}
         span={span}
         groundY={groundY}
         onFloorPoint={!paused && runtime.castMarkArmed ? placeCastMark : undefined}

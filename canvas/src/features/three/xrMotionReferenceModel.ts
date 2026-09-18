@@ -1,3 +1,4 @@
+import { readXrSceneAppearance, type XrSceneAppearance } from './xrSceneAppearance'
 import type { GraphData, GraphNode, JSONValue } from '@/lib/graph/types'
 import { resolveCameraFramingPose, type CameraFramingPose } from '@/lib/camera/cameraFramingPose'
 import {
@@ -117,6 +118,7 @@ export type XrMotionReferenceSubject = Readonly<{
 export type XrMotionReferencePlan = Readonly<{
   schema: typeof XR_MOTION_REFERENCE_SCHEMA
   stageId: XrMotionReferenceStageId
+  appearance: XrSceneAppearance
   durationSeconds: number
   fps: number
   subjects: readonly XrMotionReferenceSubject[]
@@ -430,6 +432,7 @@ export function readXrMotionReferencePlan(value: unknown, nodes: readonly GraphN
   return Object.freeze({
     schema: XR_MOTION_REFERENCE_SCHEMA,
     stageId,
+    appearance: readXrSceneAppearance(record.appearance),
     durationSeconds,
     fps: normalizeFps(record.fps),
     subjects,
@@ -452,6 +455,7 @@ export function serializeXrMotionReferencePlan(plan: XrMotionReferencePlan): JSO
   return {
     schema: XR_MOTION_REFERENCE_SCHEMA,
     stageId: plan.stageId,
+    appearance: { ...readXrSceneAppearance(plan.appearance) },
     durationSeconds: plan.durationSeconds,
     fps: plan.fps,
     subjects: plan.subjects.map(subject => ({

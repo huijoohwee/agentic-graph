@@ -1,3 +1,6 @@
+import type { XrSceneAppearance } from './xrSceneAppearance'
+import type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
+export type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
 import type { GraphNode } from '@/lib/graph/types'
 import type { StrybldrCameraSettings } from '@/features/strybldr/strybldrCamera'
 import {
@@ -52,19 +55,6 @@ import {
   buildXrMotionReferenceCastAnimationEdit,
 } from './xrMotionReferenceAnimationEdits'
 export type { XrMotionReferenceMarkSelection } from './xrMotionReferenceSelection'
-export type XrMotionReferenceRuntimeSnapshot = Readonly<{
-  sceneKey: string
-  sourceSignature: string
-  plan: XrMotionReferencePlan
-  selectedActorId: string
-  selectedShotTargetId: string
-  selectedCameraRig: XrMotionReferenceCameraRig
-  selectedMark: XrMotionReferenceMarkSelection
-  castMarkArmed: boolean
-  playheadSeconds: number
-  dirty: boolean
-  revision: number
-}>
 type RuntimeListener = () => void
 const listeners = new Set<RuntimeListener>()
 let activeNodes: readonly GraphNode[] = []
@@ -208,6 +198,10 @@ export function setXrMotionReferenceDuration(durationSeconds: number): XrMotionR
     durationSeconds: normalizedDuration,
     cast: rebuildAssignedXrActionPaths({ plan: snapshot.plan, durationSeconds: normalizedDuration }),
   }, undefined, spatialPlanGuard())
+}
+
+export function setXrMotionReferenceAppearance(patch: Partial<XrSceneAppearance>): XrMotionReferenceRuntimeSnapshot {
+  return updatePlan({ ...planRecord(snapshot.plan), appearance: { ...snapshot.plan.appearance, ...patch } })
 }
 
 export function setXrMotionReferenceFps(fps: number): XrMotionReferenceRuntimeSnapshot {

@@ -1,3 +1,5 @@
+import { DEFAULT_XR_SCENE_APPEARANCE, type XrSceneAppearance } from './xrSceneAppearance'
+import { XrPlaygroundHorizon } from './XrPlaygroundHorizon'
 import React from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
@@ -20,10 +22,6 @@ import { XrNativeControllerDemoAerialSetpieces } from './XrNativeControllerDemoA
 import { XrStagePresetGeometry } from './XrStagePresetGeometry'
 import type { XrMotionReferenceStagePreset } from './xrSceneLibrary'
 import {
-  XR_NATIVE_CONTROLLER_FOG_COLOR,
-  XR_NATIVE_CONTROLLER_SKY_COLOR,
-} from './xrNativeControllerPresentation'
-import {
   readFlightSimTrainingScenario,
   resolveFlightSimTrainingMission,
   subscribeFlightSimTrainingScenario,
@@ -40,7 +38,7 @@ export const XR_NATIVE_DYNAMIC_BODY_Y_OFFSETS: Readonly<Record<string, number>> 
 
 type RegisterBodyRef = (subjectId: string, node: Object3D | null) => void
 
-export function XrNativeControllerDemoSceneAtmosphere({ stageScale }: { stageScale: number }) {
+export function XrNativeControllerDemoSceneAtmosphere({ stageScale, appearance = DEFAULT_XR_SCENE_APPEARANCE }: { stageScale: number; appearance?: XrSceneAppearance }) {
   const { scene } = useThree()
   const trainingScenario = React.useSyncExternalStore(
     subscribeFlightSimTrainingScenario,
@@ -51,11 +49,11 @@ export function XrNativeControllerDemoSceneAtmosphere({ stageScale }: { stageSca
   React.useEffect(() => {
     const previousBackground = scene.background
     const previousFog = scene.fog
-    const background = new Color(night ? '#050a1a' : XR_NATIVE_CONTROLLER_SKY_COLOR)
+    const background = new Color(night ? '#050a1a' : appearance.skyColor)
     const fog = new Fog(
-      night ? '#101a30' : XR_NATIVE_CONTROLLER_FOG_COLOR,
-      stageScale * (night ? 24 : 38),
-      stageScale * (night ? 70 : 92),
+      night ? '#101a30' : appearance.fogColor,
+      stageScale * (night ? 24 : appearance.fogDistanceMeters * 0.4),
+      stageScale * (night ? 70 : appearance.fogDistanceMeters),
     )
     scene.background = background
     scene.fog = fog
@@ -63,7 +61,7 @@ export function XrNativeControllerDemoSceneAtmosphere({ stageScale }: { stageSca
       if (scene.background === background) scene.background = previousBackground
       if (scene.fog === fog) scene.fog = previousFog
     }
-  }, [night, scene, stageScale])
+  }, [night, scene, stageScale, appearance])
   return null
 }
 
@@ -398,20 +396,24 @@ function useIrregularIslandShape() {
 function XrNativeControllerTerrainEnvironment({
   objective,
   stage,
+  appearance = DEFAULT_XR_SCENE_APPEARANCE,
 }: {
   objective: XrNativeControllerDemoObjective
   stage: XrMotionReferenceStagePreset
+  appearance?: XrSceneAppearance
 }) {
   return (
     <group name={`agentic_os_xr_native_terrain_${stage.id}`} userData={{ objective, terrainId: stage.id }}>
       <XrStagePresetGeometry
         stage={stage}
+        appearance={appearance}
         span={Math.max(...stage.sizeMeters)}
         showAxes={false}
         showGrid={false}
-        shadows
+        shadows={appearance.shadows}
         minFloorThickness={0.16}
       />
+      <XrPlaygroundHorizon appearance={appearance} stage={stage} />
       <TutorialMarkings />
       <Treasure objective={objective} />
       <Key collected={objective !== 'find-key'} />
@@ -425,25 +427,31 @@ function XrNativeControllerTerrainEnvironment({
 export function XrNativeControllerDemoEnvironment({
   objective,
   stage,
+  appearance = DEFAULT_XR_SCENE_APPEARANCE,
 }: {
   objective: XrNativeControllerDemoObjective
   stage: XrMotionReferenceStagePreset
+  appearance?: XrSceneAppearance
 }) {
   const islandShape = useIrregularIslandShape()
   if (stage.id !== 'tropical-playground') {
-    return <XrNativeControllerTerrainEnvironment objective={objective} stage={stage} />
+    return <XrNativeControllerTerrainEnvironment objective={objective} stage={stage} appearance={appearance} />
   }
   return (
     <group name="agentic_os_xr_native_tropical_playground" userData={{ objective, environmentId: stage.id }}>
       <mesh position={[0, -1.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[180, 180]} />
-        <meshStandardMaterial color="#4fc3e8" roughness={0.5} metalness={0.05} />
+        <meshStandardMaterial color={appearance.waterColor} roughness={0.42} metalness={0.05} />
       </mesh>
       <mesh position={[0, -1.05, 1.25]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.12, 1.05, 1]} receiveShadow castShadow>
         <extrudeGeometry args={[islandShape, { depth: 1.08, steps: 1, bevelEnabled: false }]} />
-        <meshStandardMaterial attach="material-0" color="#e1ead8" roughness={1} flatShading />
-        <meshStandardMaterial attach="material-1" color="#aabca8" roughness={0.96} flatShading />
+        <meshStandardMaterial attach="material-0" color={appearance.groundColor} roughness={1} flatShading />
+        <meshStandardMaterial attach="material-1" color={appearance.groundColor} roughness={0.96} flatShading />
       </mesh>
+      {appearance.detail === 'standard' ? <mesh position={[0, -0.94, 1.25]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.2, 1.13, 1]}>
+        <shapeGeometry args={[islandShape]} /><meshStandardMaterial color={appearance.fogColor} roughness={0.8} />
+      </mesh> : null}
+      <XrPlaygroundHorizon appearance={appearance} stage={stage} />
       <XrNativeControllerDemoAerialSetpieces />
       <TutorialMarkings />
       <Fence />

@@ -5,7 +5,7 @@ import type { HighlightedLineRange, MarkdownPresentationApi } from '@/features/m
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { ancestorPathsForWorkspacePath, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { loadWorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { readMarkdownExplorerChromeState } from '@/features/markdown/ui/markdownExplorerChromePersistence'
 import { readMarkdownExplorerModePreferences } from '@/features/markdown/ui/markdownExplorerModePreferencesPersistence'
@@ -17,6 +17,7 @@ import { SIDEBAR_MAX_PX, SIDEBAR_MIN_PX } from '@/features/markdown-workspace/ma
 import { upsertWorkspaceEntryInlineText } from '@/features/workspace-fs/workspaceInlineText'
 import type { FolderModeContract } from './markdownWorkspaceRuntime.shared'
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
+import { registerWorkspaceSceneMetadataEditor } from '@/features/workspace-table/workspaceSceneMetadataAuthoring'
 
 export function useMarkdownWorkspaceBootstrapState(args: {
   activePath: WorkspacePath | null
@@ -57,6 +58,13 @@ export function useMarkdownWorkspaceBootstrapState(args: {
     const arr = readPersistedMarkdownSourceFolderPaths()
     return new Set((arr || []).map(path => normalizeWorkspacePath(path)))
   })
+  React.useEffect(() => {
+    if (!args.activePath) return
+    const ancestors = ancestorPathsForWorkspacePath(args.activePath)
+    setExpandedPaths(previous => ancestors.every(path => previous.has(path))
+      ? previous
+      : new Set([...previous, ...ancestors]))
+  }, [args.activePath])
 
   const patchWorkspaceEntryInlineText = React.useCallback((path: WorkspacePath, text: string) => {
     setEntries(prev =>
@@ -135,6 +143,12 @@ export function useMarkdownWorkspaceBootstrapState(args: {
   const lastRequestedActivePathRef = React.useRef<{ path: WorkspacePath; atMs: number } | null>(null)
   const activePathRef = React.useRef<WorkspacePath | null>(null)
   activePathRef.current = args.activePath
+  React.useEffect(() => registerWorkspaceSceneMetadataEditor(() => {
+    const path = activePathRef.current
+    const loaded = lastLoadedRef.current
+    if (!path || loaded?.path !== path) return null
+    return { path, text: activeTextRef.current, settled: !viewerInlineEditActiveRef.current && (!userEditedActiveTextRef.current || loaded.text === activeTextRef.current) }
+  }), [])
   const layoutModeRef = React.useRef<MarkdownWorkspaceLayoutMode>(layoutMode)
 
   return {

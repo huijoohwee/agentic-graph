@@ -1,10 +1,9 @@
+import { persistXrScene } from './xrScenePersistence'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { JSONValue } from '@/lib/graph/types'
 import {
-  XR_MOTION_REFERENCE_GRAPH_METADATA_KEY,
   XR_MOTION_REFERENCE_MAX_CAST_TRACKS,
   XR_MOTION_REFERENCE_MAX_SUBJECTS,
-  serializeXrMotionReferencePlan,
 } from './xrMotionReferenceModel'
 import {
   XR_MOTION_REFERENCE_DEFAULT_STAGE_ID,
@@ -17,7 +16,6 @@ import {
 } from './xrSceneLibrary'
 import {
   addXrMotionReferenceSubject,
-  markXrMotionReferenceSaved,
   readXrMotionReferenceRuntime,
   removeXrMotionReferenceSubject,
   restoreXrMotionReferenceRuntimeSnapshot,
@@ -123,22 +121,6 @@ function sameJson(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
-function persistXrScene(includePhysics = false): boolean {
-  const state = useGraphStore.getState()
-  const serializedMotion = serializeXrMotionReferencePlan(readXrMotionReferenceRuntime().plan)
-  const serializedPhysics = serializeXrPhysicsRuntimeWorld() as unknown as JSONValue
-  state.updateGraphMetadata({
-    [XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]: serializedMotion,
-    ...(includePhysics ? { [XR_PHYSICS_GRAPH_METADATA_KEY]: serializedPhysics } : {}),
-  })
-  const metadata = useGraphStore.getState().graphData?.metadata
-  if (metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY] !== serializedMotion) return false
-  if (includePhysics && !sameJson(metadata?.[XR_PHYSICS_GRAPH_METADATA_KEY], serializedPhysics)) return false
-  markXrMotionReferenceSaved(serializedMotion)
-  if (includePhysics) markXrPhysicsRuntimeSaved(metadata?.[XR_PHYSICS_GRAPH_METADATA_KEY])
-  return true
-}
-
 function persistXrPhysicsConfig(): boolean {
   const state = useGraphStore.getState()
   const serialized = serializeXrPhysicsRuntimeWorld() as unknown as JSONValue
@@ -200,6 +182,7 @@ export function inspectLocalXrSceneAssets() {
     })),
     runtime: {
       stageId: runtime.plan.stageId,
+      appearance: runtime.plan.appearance,
       durationSeconds: runtime.plan.durationSeconds,
       fps: runtime.plan.fps,
       subjects: runtime.plan.subjects.map(subject => {

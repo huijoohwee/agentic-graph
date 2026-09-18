@@ -1,6 +1,9 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { useMarkdownWorkspaceBootstrapState } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceBootstrapState'
+import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
+import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { MarkdownFileTreeRowButton } from '@/features/markdown-workspace/MarkdownFileTreeRowButton'
 
 export async function testMarkdownFileTreeRowButtonReusesSharedRowShell() {
@@ -48,6 +51,42 @@ export async function testMarkdownFileTreeRowButtonReusesSharedRowShell() {
     await act(async () => {
       root.unmount()
     })
+    restore()
+  }
+}
+
+export async function testMarkdownFileTreeRevealsActiveSourceWithoutStealingFocus() {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  const revealed: string[] = []
+  dom.window.HTMLElement.prototype.scrollIntoView = function () { revealed.push(this.getAttribute('title') || '') }
+  const entries: WorkspaceEntry[] = [
+    { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+    { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+    { path: '/docs/scenes', parentPath: '/docs', kind: 'folder', name: 'scenes', updatedAtMs: 1 },
+    { path: '/docs/scenes/playground.md', parentPath: '/docs/scenes', kind: 'file', name: 'playground.md', updatedAtMs: 1 },
+  ]
+  function Harness({ activePath }: { activePath: string | null }) {
+    const state = useMarkdownWorkspaceBootstrapState({ activePath, effectiveBottomSurfaceCollapsed: false })
+    return <MarkdownFileTree entries={entries} activePath={activePath} expandedPaths={state.expandedPaths}
+      toggleExpanded={() => {}} onSelectFile={() => {}} />
+  }
+  try {
+    dom.window.localStorage.clear()
+    await act(async () => { root.render(<Harness activePath={null} />) })
+    if (container.querySelector('[aria-current]')) throw new Error('expected no active row before a document opens')
+    const focused = dom.window.document.activeElement
+    await act(async () => { root.render(<Harness activePath="/docs/scenes/playground.md" />) })
+    const active = container.querySelector('[aria-current="page"]')
+    if (active?.getAttribute('title') !== '/docs/scenes/playground.md') throw new Error('expected full source path on the revealed active file')
+    if (revealed.length !== 1 || revealed[0] !== '/docs/scenes/playground.md') throw new Error('expected active document to reveal through collapsed source ancestors once')
+    if (dom.window.document.activeElement !== focused) throw new Error('revealing the source must preserve editor keyboard focus')
+    await act(async () => { root.render(<Harness activePath="/docs/scenes/playground.md" />) })
+    if (revealed.length !== 1) throw new Error('ordinary rerenders must not pull the explorer back to the active row')
+  } finally {
+    await act(async () => { root.unmount() })
     restore()
   }
 }

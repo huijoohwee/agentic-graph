@@ -184,7 +184,7 @@ export function buildXrMotionReferencePackage(args: { plan: XrMotionReferencePla
   const speedWarnings = resolveXrChoreographySpeedWarnings(plan)
   const manifest = {
     schema: XR_MOTION_REFERENCE_SCHEMA,
-    stage: { id: stage.id, label: stage.label, sizeMeters: stage.sizeMeters },
+    stage: { id: stage.id, label: stage.label, sizeMeters: stage.sizeMeters, appearance: plan.appearance },
     timeline,
     castTracks: plan.cast.length,
     placedSubjects: plan.subjects.length,

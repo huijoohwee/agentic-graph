@@ -1,6 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["workspace.sourceFiles.revealActive", "@/__tests__/markdownFileTreeRowButton.test.tsx", "testMarkdownFileTreeRevealsActiveSourceWithoutStealingFocus"],
+  ["canvas.xrMode.appearance.catalog", "@/__tests__/xrSceneAppearance.test.tsx", "testXrSceneAppearanceNormalizesAndPreservesEveryCatalogAsset"],
+  ["canvas.xrMode.appearance.source", "@/__tests__/xrSceneAppearance.test.tsx", "testXrSceneAppearancePanelsAndEditorShareSavedSource"],
+  ["canvas.xrMode.appearance.cloud", "@/__tests__/xrSceneAppearanceCloud.test", "testXrSceneAppearanceAuthenticatedDeviceRoundTrip"],
   ["sourceFiles.cloudSync.downloadPreservesLocalAndDirectoryScope", "@/__tests__/sourceFileCloudTransfer.test", "testSourceFileCloudDownloadPreservesLocalBytesAndDirectoryScope"],
   ["sourceFiles.cloudSync.configurationAndProxyBoundary", "@/__tests__/sourceFileCloudTransfer.test", "testSourceFileCloudConfigurationAndProxyOriginBoundaries"],
   ["canvas.xrMode.timeline.rehearsalControls", "@/__tests__/xrTimelineRehearsalControls.test.tsx", "testXrTimelineRehearsalControlsPreserveSharedTransport"],

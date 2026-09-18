@@ -1,3 +1,5 @@
+import { persistXrScene } from './xrScenePersistence'
+import { XrSceneAppearanceControls } from './XrSceneAppearanceControls'
 import React from 'react'
 import type { VideoSequenceTimelineClipOverlayRenderArgs } from '@/components/timeline/VideoSequenceTimelineRuler'
 import {
@@ -13,13 +15,10 @@ import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useTimelineTransportStoreBinding } from '@/components/timeline/timelineTransport'
 import {
-  XR_MOTION_REFERENCE_GRAPH_METADATA_KEY,
   XR_MOTION_REFERENCE_STAGE_PRESETS,
-  serializeXrMotionReferencePlan,
 } from './xrMotionReferenceModel'
 import { buildXrMotionReferencePackage, xrMotionReferencePackageBlob, xrMotionReferencePackageFilename } from './xrMotionReferencePackage'
 import {
-  markXrMotionReferenceSaved,
   readXrMotionReferenceRuntime,
   setXrMotionReferenceDuration,
   setXrMotionReferenceFps,
@@ -91,7 +90,6 @@ export function XrCameraMotionSection() {
     markdownDocumentText,
     pushUiToast,
     selectedNodeId,
-    updateGraphMetadata,
   } = useGraphStore(
     useShallow(state => ({
       canvas3dMode: state.canvas3dMode,
@@ -101,7 +99,6 @@ export function XrCameraMotionSection() {
       markdownDocumentText: state.markdownDocumentText,
       pushUiToast: state.pushUiToast,
       selectedNodeId: state.selectedNodeId,
-      updateGraphMetadata: state.updateGraphMetadata,
     })),
   )
   const { transportDocumentKey, transportPosition } = useTimelineTransportStoreBinding()
@@ -179,10 +176,7 @@ export function XrCameraMotionSection() {
 
   const savePlan = React.useCallback(() => {
     if (!graphData) return
-    const serialized = serializeXrMotionReferencePlan(readXrMotionReferenceRuntime().plan)
-    updateGraphMetadata({ [XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]: serialized })
-    const savedValue = useGraphStore.getState().graphData?.metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]
-    if (savedValue !== serialized) {
+    if (!persistXrScene()) {
       pushUiToast({
         id: 'xr:motion-reference:save-error',
         kind: 'error',
@@ -190,13 +184,12 @@ export function XrCameraMotionSection() {
       })
       return
     }
-    markXrMotionReferenceSaved(serialized)
     pushUiToast({
       id: 'xr:motion-reference:save',
       kind: 'success',
       message: 'XR motion-reference plan saved to graph metadata.',
     })
-  }, [graphData, pushUiToast, updateGraphMetadata])
+  }, [graphData, pushUiToast])
 
   const exportPackage = React.useCallback(() => {
     if (!graphData) return
@@ -474,6 +467,7 @@ export function XrCameraMotionSection() {
             </option>
           ))}
         </PanelSelect>
+        <XrSceneAppearanceControls compact disabled={!documentLoaded} />
         <span className={cn('xr-timeline-control-status xr-timeline-scene-stage-summary-chip', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-motion-stage-summary="scene-clip">
           {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
         </span>

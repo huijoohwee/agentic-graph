@@ -30,7 +30,7 @@ export function XrCanonicalPhysicsStage({ geospatialComposite = false, paused = 
   }, [stage.id])
   return (
     <>
-      {geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere stageScale={XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE} />}
+      {geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere stageScale={XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE} appearance={runtime.plan.appearance} />}
       <group name="agentic_os_graph_xr_stage">
         <XrNativeControllerDemoStage
           inputEnabled={!paused}
@@ -39,6 +39,7 @@ export function XrCanonicalPhysicsStage({ geospatialComposite = false, paused = 
           groundY={XR_MOTION_STAGE_GROUND_Y}
           retainStage
           stage={stage}
+          appearance={runtime.plan.appearance}
           visualsVisible={!geospatialComposite}
         />
         <XrV2MountedAuthoringScene paused={paused} />

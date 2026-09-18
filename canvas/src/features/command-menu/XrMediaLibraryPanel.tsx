@@ -1,4 +1,5 @@
 import React from 'react'
+import { XrSceneAppearanceControls } from '@/features/three/XrSceneAppearanceControls'
 import { Armchair, Box, Building2, Car, Hand, PawPrint, Trash2, TreePine, UserRound, UsersRound, type LucideIcon } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -76,7 +77,6 @@ import { isXrMediaInvocationMetadataReady } from './xrMediaInvocationMetadata'
 import { buildXrMediaLibraryProjection } from './xrMediaLibrarySearch'
 import { buildXrMediaInvocationControlInput } from './xrMediaInvocationRuntime'
 import { resolveXrSceneDocumentReady } from '@/features/three/xrSceneDocumentReadiness'
-
 type XrSceneLibraryFilter = 'all' | XrSceneLibraryCategory
 
 const CATEGORY_ICONS: Readonly<Record<XrSceneLibraryCategory, LucideIcon>> = {
@@ -427,7 +427,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
           </section>
         ) : null}
       </header>
-
+      <XrSceneAppearanceControls disabled={!sceneReady} />
       <XrSharedAssetControls surface="media" />
 
       <CollapsibleSection

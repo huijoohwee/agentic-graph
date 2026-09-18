@@ -415,7 +415,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     'data-kg-xr-motion-save="1"',
     'data-kg-xr-motion-export="1"',
     "documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'",
-    'updateGraphMetadata',
+    'persistXrScene',
     'downloadBlob',
   ]) {
     if (!xrCameraMotionSource.includes(marker)) throw new Error(`expected consolidated BottomPanel XR motion controls to expose ${marker}`)
@@ -436,7 +436,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   for (const marker of ['/xr.animate', '#travel', '#hold']) {
     if (xrSceneMcpContractSource.includes(marker) || xrSceneMcpRuntimeSource.includes(marker)) throw new Error(`expected first-class Animation to retire legacy XR scene token ${marker}`)
   }
-  for (const marker of ['inspectLocalXrSceneAssets', 'controlLocalXrScene', 'serializeXrMotionReferencePlan', 'activateXrSceneSurface', 'hydrateCanonicalXrMotionReferenceRuntime']) {
+  for (const marker of ['inspectLocalXrSceneAssets', 'controlLocalXrScene', 'persistXrScene', 'activateXrSceneSurface', 'hydrateCanonicalXrMotionReferenceRuntime']) {
     if (!xrSceneMcpRuntimeSource.includes(marker)) throw new Error(`expected browser-local XR MCP control runtime to expose ${marker}`)
   }
   if (xrSceneMcpRuntimeSource.includes("setFloatingPanelView('camera')")) {
@@ -552,7 +552,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   if (!xrCameraMotionSource.includes('disabled={!graphData || !runtime.dirty}')) {
     throw new Error('expected XR plan persistence to fail closed when no graph is available')
   }
-  if (!xrCameraMotionSource.includes('savedValue !== serialized') || !xrCameraMotionSource.includes('save-error')) {
+  if (!readSource('features', 'three', 'xrScenePersistence.ts').includes('metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY] !== serializedMotion') || !xrCameraMotionSource.includes('save-error')) {
     throw new Error('expected XR plan persistence to verify the canonical graph write before clearing dirty state')
   }
   if (!saveSource.includes('export function downloadBlob')) {

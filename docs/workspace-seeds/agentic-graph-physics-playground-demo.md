@@ -126,6 +126,17 @@ game_mode:
 kgXrMotionReference:
   schema: "agentic-graph-xr-motion-reference/v1"
   stageId: "singapore"
+  appearance:
+    skyColor: "#8ed5f3"
+    fogColor: "#c5e8ed"
+    groundColor: "#e7dec1"
+    waterColor: "#229fad"
+    lightColor: "#fff1d0"
+    lightIntensity: 1.8
+    sunAzimuthDegrees: 35
+    fogDistanceMeters: 92
+    detail: "standard"
+    shadows: true
   durationSeconds: 6
   fps: 12
   subjects:
@@ -322,6 +333,20 @@ From the repository root, run `npm run dev`. In agentic-graph, open **Explorer �
 Home Apex (`npm run dev:apex`) consumes this same source through **Demo → Physics Playground**. Open **FloatingPanel → Animation** and **BottomPanel → Timeline** when rehearsing; the default keeps Timeline closed to preserve canvas space. Apply a compatible authored motion, choose **0.25x**, then use the previous/next frame controls to pause on consecutive authored frames. The shared frame/FPS readout follows the authored document and disables stepping at its bounds. This samples authored animation and camera tracks; it does not rewind the live physics simulation or a Game Mode mission.
 
 The native objective HUD shows the key-to-treasure objective and provides **Pause / Resume**, **Reset**, and **Replay** after completion. **Motion Control → Start** enables optional local camera input; **Stop** releases it. Camera frames are neither stored nor synchronized. Game Mode keeps its existing explicit **Save** action for terminal Decisions.
+
+Use **Timeline → SCENE → Scene appearance** for a look preset, or **FloatingPanel
+→ Media → 3D for XR → Scene appearance** for sky, horizon, ground, water,
+sunlight, direction, haze, shadows and detail. These edit `kgXrMotionReference.appearance`
+in this same source; the Editor, both panels and saved scene agree. Low detail
+omits decorative horizon/shore meshes and uses a smaller shadow map. Existing
+terrain and Placed Subjects controls swap catalog scenes/assets and edit colour,
+position, rotation, scale and motion. Interactive fixtures retain their native
+geometry/collision owner. Night flight missions retain their required lighting.
+
+For another device, use the existing **Settings → Workspace sync**: sign in,
+enable Online, upload this scene's selected file scope and verify the read-back,
+then download it in that workspace on the receiving device. Local conflicts are
+retained as separate copies. A local appearance edit alone is not a cloud acknowledgement.
 
 ## Source Files storage and refresh
 
