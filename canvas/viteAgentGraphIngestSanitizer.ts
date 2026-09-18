@@ -1,4 +1,5 @@
 import { SOURCE_PARSER_REGISTRY } from '../mcp/agent-graph/source-parser-registry.mjs'
+import { normalizeAgentGraphObservation } from '../contracts/agent-graph-observation.mjs'
 import { retainedAgentGraphAcquisition } from '../mcp/agent-graph/contract.mjs'
 import {
   fitAgentGraphProjectionRecords,
@@ -116,12 +117,19 @@ export function sanitizeAgentGraphImportResult(
   if (Buffer.byteLength(JSON.stringify(safeProjection)) > MAX_PROJECTION_BYTES) {
     return invalidResult(options, 'The canonical runtime projection exceeded its browser byte limit.')
   }
+  let observation
+  try { observation = normalizeAgentGraphObservation(result.observation) }
+  catch { return invalidResult(options, 'The canonical runtime returned invalid execution measurements.') }
+  if (observation && (observation.operation !== 'ingest' || observation.status !== 'completed')) {
+    return invalidResult(options, 'The canonical runtime returned measurements for a different operation.')
+  }
   return {
     handled: true,
     kind: 'agent-graph',
     graphId,
     snapshotDigest,
     parserRegistryDigest,
+    ...(observation ? { observation } : {}),
     ...(retainedAgentGraphAcquisition(result.acquisition) ? { acquisition: retainedAgentGraphAcquisition(result.acquisition) } : {}),
     complete: result.complete,
     counts: { sources: sourceCount, nodes: nodeCount, edges: edgeCount },

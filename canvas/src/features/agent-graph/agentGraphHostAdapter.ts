@@ -4,6 +4,7 @@ import type {
   WorkspaceAgentGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import type { GraphData } from '@/lib/graph/types'
+import { normalizeAgentGraphObservation } from '../../../../contracts/agent-graph-observation.mjs'
 import {
   normalizeAgentGraphRepositoryUrl as normalizeRepositoryUrl,
   normalizeAgentGraphRepositoryRemoteUrl,
@@ -151,6 +152,9 @@ export function validateAgentGraphHostResult(value: unknown): WorkspaceAgentGrap
   const counts = result?.counts
   const projection = result?.projection
   const acquisition = result?.acquisition
+  let observation
+  try { observation = normalizeAgentGraphObservation(result?.observation) }
+  catch { throw new AgentGraphHostError('invalid-host-result', 'The knowledge graph host returned invalid execution measurements.') }
   if (
     result?.handled !== true
     || result.kind !== 'agent-graph'
@@ -158,6 +162,7 @@ export function validateAgentGraphHostResult(value: unknown): WorkspaceAgentGrap
     || !/^[0-9a-f]{64}$/.test(String(result.snapshotDigest || ''))
     || !/^[0-9a-f]{64}$/.test(String(result.parserRegistryDigest || ''))
     || typeof result.complete !== 'boolean'
+    || (observation !== undefined && (observation.operation !== 'ingest' || observation.status !== 'completed'))
     || (acquisition !== undefined && (acquisition.mode !== 'repository-url' || !/^[a-f0-9]{40}$/.test(acquisition.commitSha) || !/^https:\/\//.test(acquisition.repositoryUrl) || typeof acquisition.subpath !== 'string'))
     || !counts
     || !isNonNegativeInteger(counts.sources)
@@ -179,6 +184,7 @@ export function validateAgentGraphHostResult(value: unknown): WorkspaceAgentGrap
     graphId: result.graphId as string,
     snapshotDigest: result.snapshotDigest as string,
     parserRegistryDigest: result.parserRegistryDigest as string,
+    ...(observation ? { observation } : {}),
     ...(acquisition ? { acquisition } : {}),
     complete: result.complete,
     counts: {

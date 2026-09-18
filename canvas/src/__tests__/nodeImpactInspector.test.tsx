@@ -17,6 +17,7 @@ import NativeGraphStatsSection from '@/features/graph-inspector/ui/NativeGraphSt
 import GraphStatsPanel from '@/features/graph-stats/GraphStatsPanel'
 import OrchestratorSettingsSection from '@/features/panels/views/OrchestratorSettingsSection'
 import * as d3 from 'd3'
+import { startAgentGraphObservation } from '../../../mcp/agent-graph/operation-observation.mjs'
 import { applyZoomRequest } from '@/components/GraphCanvas/zoomController'
 import { useZoomEffects } from '@/components/GraphCanvas/hooks/useZoomEffects'
 
@@ -215,6 +216,7 @@ test('native statistics share module selection, source groups, evidence and stab
     assert.match(container.textContent || '', /2 matching modules/)
     assert.match(container.textContent || '', /Node size/)
     assert.match(container.textContent || '', /Edge provenance/)
+    assert.match(container.textContent || '', /Execution measurements are unavailable/)
     assert.doesNotMatch(container.textContent || '', /No clusters detected|co-occurrence/)
     const moduleButton = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'src/use.ts')!
     await act(async () => { moduleButton.click() })
@@ -223,6 +225,27 @@ test('native statistics share module selection, source groups, evidence and stab
     assert.deepEqual(useGraphStore.getState().graphData!.nodes.map(node => node.properties['visual:nodeSize']), data.nodes.map(node => node.properties['visual:nodeSize']))
     await act(async () => { Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Nodes')!.click() })
     assert.match(container.textContent || '', /5 matching nodes/)
+  } finally { await act(async () => root.unmount()); container.remove(); useGraphStore.setState(before, true); restore() }
+})
+
+test('native statistics render captured measurements with process attribution and unknown values', async () => {
+  const { restore } = initJsdomHarness(), before = useGraphStore.getState()
+  const container = document.createElement('div'); document.body.append(container)
+  const root = createRoot(container)
+  try {
+    const imported = agentGraphResult()
+    const observation = startAgentGraphObservation('ingest', { clock: () => 0,
+      cpu: () => { throw Error('unavailable') }, memory: () => ({ rss: 2048, heapUsed: 1024 }) })({ ok: true, counts: { parsed: 1, reused: 1, admittedBytes: 128 } }).observation
+    const data = buildAgentGraphCanvasProjection({ ...imported, observation })
+    useGraphStore.getState().resetAll()
+    useGraphStore.setState({ graphData: data, graphDataRevision: 45, canvasRenderMode: '2d', canvas2dRenderer: 'd3' })
+    await act(async () => root.render(<NativeGraphStatsSection />))
+    assert.match(container.textContent || '', /Elapsed: 0 ms/)
+    assert.match(container.textContent || '', /Host CPU: Unknown/)
+    assert.match(container.textContent || '', /Parsed: 1 files · Reused: 1 files/)
+    assert.match(container.textContent || '', /exclude parser subprocesses/)
+    assert.match(container.textContent || '', /peak use is unknown/)
+    assert.match(container.textContent || '', /Model cost excludes adapters and infrastructure/)
   } finally { await act(async () => root.unmount()); container.remove(); useGraphStore.setState(before, true); restore() }
 })
 

@@ -84,6 +84,7 @@ export type WorkspaceAgentGraphImportProgress = {
 }
 
 export type WorkspaceAgentGraphImportResult = {
+  observation?: ReturnType<typeof import('../../../../contracts/agent-graph-observation.mjs').normalizeAgentGraphObservation>
   acquisition?: { mode: 'repository-url'; repositoryUrl: string; commitSha: string; subpath: string }
   handled: true
   kind: 'agent-graph'
