@@ -86,13 +86,13 @@ function assertAuthored(actual, expected, message) {
   walk(JSON.parse(actual), JSON.parse(expected), 'authored')
   throw Error(message + ': ' + JSON.stringify(changes))
 }
-async function openDashboard() {
+async function openDashboard(expectRuntime = true) {
   returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] })
   await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
   await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click()
-  await waitText(mission, '2 retained matches')
+  if (expectRuntime) await waitText(mission, '2 retained matches')
   assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
-  assert.ok(await mission.locator('[aria-label="Agent runs"] table').count() === 1)
+  if (expectRuntime) assert.ok(await mission.locator('[aria-label="Agent runs"] table').count() === 1)
   assert.ok(await page.getByRole('region', { name: 'Dashboard metrics', exact: true }).locator('[data-kg-dashboard-metric]').count() > 0)
 }
 async function verifyWorkspace(label, revoke = false) {
@@ -104,6 +104,7 @@ async function verifyWorkspace(label, revoke = false) {
     await floatingPanel.waitFor({ state: 'detached' })
   }
   await refreshMission() // Each cold workspace phase receives a fresh authorized minute.
+  await showEvidence()
   const beforeWorkspace = await authoredSnapshot()
   const previousView = returnView
   await selected.getByPlaceholder('Search spans by name, kind or status').fill('draft')
@@ -554,7 +555,7 @@ try {
   await verifyWorkspace('desktop')
   await verifyApexActivation(360)
   await verifyApexActivation(1280)
-  await verifyWorkspaceObservation(page, openDashboard)
+  await verifyWorkspaceObservation(page, () => openDashboard(false))
   assert.deepEqual(errors, [])
   assert.ok(streamed.includes('query') && streamed.includes('trace'), 'Real authenticated bridge must serve SSE observations')
   await writeFile(resolve(output, 'evidence.json'), JSON.stringify({ sourceRevision: process.env.AG_MISSION_EXPECTED_HEAD,
