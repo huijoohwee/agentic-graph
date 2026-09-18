@@ -6,7 +6,7 @@ import { AGENT_RUN_CANVAS_VIEWS, parseCanvasViewInvocation } from '@/lib/canvas/
 export type AgentRunView = Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>
 export type AgentRunInspection = { trace: RunTrace; scope: string; expiresAt: number; spanId: string | null; search: string; view: AgentRunView }
 let snapshot: AgentRunInspection | null = null
-let workspace: { view: AgentRunView } | null = null
+let workspace: { view: AgentRunView; dashboardTab?: 'mission' | 'graph' } | null = null
 let cleanup: (() => void) | null = null
 let restoreView: (() => void) | null = null
 let timer: number | undefined
@@ -26,7 +26,7 @@ export function activateAgentRunWorkspace(view: AgentRunView = 'topology', surfa
     restoreView = () => useGraphStore.getState().setWorkspaceViewState(previous)
     listenForRevocation()
   }
-  workspace = { view }
+  workspace = { ...workspace, view }
   if (snapshot) snapshot = { ...snapshot, view }
   useGraphStore.getState().setWorkspaceViewState({ mode: surface,
     paneOpen: surface === 'editor' && !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches })
@@ -70,7 +70,7 @@ export function openAgentRunInspection(input: Omit<AgentRunInspection, 'view'> &
     restoreView = onClose ?? null; listenForRevocation()
   }
   snapshot = { ...value, view: input.view ?? workspace.view }
-  workspace = { view: snapshot.view }
+  workspace = { ...workspace, view: snapshot.view }
   scheduleExpiry()
   emit()
 }
@@ -89,7 +89,7 @@ export function updateAgentRunInspection(input: Pick<AgentRunInspection, 'trace'
 export function selectAgentRunView(view: string): void {
   if (!workspace || !Object.hasOwn(AGENT_RUN_CANVAS_VIEWS, view)) return
   if (snapshot && snapshot.expiresAt <= Date.now()) return closeAgentRunInspection()
-  workspace = { view: view as AgentRunView }
+  workspace = { ...workspace, view: view as AgentRunView }
   if (snapshot) snapshot = { ...snapshot, view: view as AgentRunView }
   emit()
 }
@@ -111,4 +111,8 @@ export function activateAgentRunPrompt(prompt: string): void {
   if (optionId === 'renderer:dashboard') { activateAgentRunWorkspace('tree'); return }
   if (!optionId.startsWith('agent-run:')) throw Error('Choose an agent observability view.')
   activateAgentRunWorkspace(optionId.slice('agent-run:'.length) as AgentRunView)
+}
+
+export function selectDashboardTab(dashboardTab: 'mission' | 'graph'): void {
+  if (workspace) { workspace = { ...workspace, dashboardTab }; emit() }
 }
