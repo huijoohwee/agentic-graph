@@ -20,8 +20,8 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
     ? { ...props.defaults, ...widgetSettings(config.document, props.widgetId ?? 'mission:tree') }
     : { kind: props.template === 'metric' ? undefined : props.template, tone: 'blue', visible: true })
   const [error, setError] = React.useState(''), [busy, setBusy] = React.useState(false)
-  const titleInput = React.useRef<HTMLInputElement>(null)
-  React.useEffect(() => { titleInput.current?.focus() }, [])
+  const cancelButton = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => { cancelButton.current?.focus({ preventScroll: true }) }, [])
   const sourceId = draft.source ?? selected
   const source = sources.find(item => item.id === sourceId)
   const existing = [...sources.map(item => item.id), ...Object.entries(config.document.widgets)
@@ -36,7 +36,7 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
     setBusy(true); setError('')
     try { await operation(); props.onClose() } catch (failure) { setError((failure as Error).message); setBusy(false) }
   }
-  return <form aria-label="Widget configuration" className="h-full min-w-0 space-y-3 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-sm"
+  return <form aria-label="Widget configuration" className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain space-y-3 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-sm"
     onKeyDown={event => { if (event.key === 'Escape' && !busy) { event.preventDefault(); props.onClose() } }}
     onSubmit={event => {
       event.preventDefault()
@@ -47,14 +47,14 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
         visible: draft.visible !== false }).filter(([, value]) => value !== undefined))
       void run(() => updateDashboardWidget(id, settings))
     }}>
-    <header className="flex items-center justify-between gap-2"><h4 className="text-sm font-semibold">Configure {props.title}</h4><button type="button" className={button} disabled={busy} onClick={props.onClose}>Cancel</button></header>
+    <header className="flex items-center justify-between gap-2"><h4 className="text-sm font-semibold">Configure {props.title}</h4><button ref={cancelButton} type="button" className={button} disabled={busy} onClick={props.onClose}>Cancel</button></header>
     {!props.widgetId && props.template !== 'tree' && <label className="block text-xs">Widget<select aria-label="Widget" className={control} value={selected} onChange={event => choose(event.target.value)}>
       <option value="">New widget</option>{existing.map(id => <option key={id} value={id}>{widgetSettings(config.document, id).title ?? sources.find(source => source.id === (widgetSettings(config.document, id).source ?? id))?.title ?? id}{widgetSettings(config.document, id).visible === false ? ' (hidden)' : ''}</option>)}
     </select></label>}
     {props.template !== 'tree' && <label className="block text-xs">Data source<select aria-label="Data source" className={control} value={sourceId} required onChange={event => change({ source: event.target.value })}>
       <option value="">Choose a data source</option>{sources.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
     </select></label>}
-    <label className="block text-xs">Title<input ref={titleInput} className={control} maxLength={256} value={draft.title ?? source?.title ?? props.title} onChange={event => change({ title: event.target.value })} /></label>
+    <label className="block text-xs">Title<input className={control} maxLength={256} value={draft.title ?? source?.title ?? props.title} onChange={event => change({ title: event.target.value })} /></label>
     <label className="block text-xs">Description<input className={control} maxLength={256} value={draft.subtitle ?? source?.subtitle ?? (props.template === 'tree' ? 'Agent Mission · selected run' : '')} onChange={event => change({ subtitle: event.target.value })} /></label>
     {props.template !== 'metric' && <label className="block text-xs">Note<textarea className={control} maxLength={256} value={draft.footnote ?? ''} onChange={event => change({ footnote: event.target.value })} /></label>}
     {props.template !== 'metric' && props.template !== 'tree' && <label className="block text-xs">Display<select aria-label="Display" className={control} value={draft.kind ?? (source as DashboardCard)?.kind ?? props.template} onChange={event => change({ kind: event.target.value as DashboardCard['kind'] })}>

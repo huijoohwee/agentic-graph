@@ -17,11 +17,17 @@ const interactive = 'label, [role="treeitem"], [role="row"], [role="tab"], [role
 export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & { children: React.ReactNode }) {
   const [flipped, setFlipped] = React.useState(false)
   const [turned, setTurned] = React.useState(false)
+  const [frontSize, setFrontSize] = React.useState<{ width: number; height: number } | null>(null)
   const frame = React.useRef<HTMLDivElement>(null)
   const dragged = React.useRef(false)
   const close = () => { setFlipped(false); frame.current?.focus({ preventScroll: true }) }
-  const open = () => { setTurned(true); setFlipped(true) }
+  const open = () => {
+    const rect = frame.current?.getBoundingClientRect()
+    if (rect && rect.width > 0 && rect.height > 0) setFrontSize({ width: rect.width, height: rect.height })
+    setTurned(true); setFlipped(true)
+  }
   return <div ref={frame} className="min-w-0 h-full" tabIndex={flipped ? -1 : 0} role="group"
+    style={flipped && frontSize ? { width: frontSize.width, height: frontSize.height, maxWidth: '100%' } : undefined}
     aria-label={`Configure ${props.title}`} aria-expanded={flipped} data-dashboard-widget={props.widgetId ?? `template:${props.template}`}
     onPointerDownCapture={() => { dragged.current = false }} onDragStartCapture={() => { dragged.current = true }}
     onClickCapture={event => {
