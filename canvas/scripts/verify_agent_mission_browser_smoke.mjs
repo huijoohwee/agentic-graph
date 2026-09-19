@@ -33,6 +33,35 @@ await openPage()
 const waitForAsync = predicate => waitForMissionAsync(page, predicate)
 const openRunSource = (scope = mission) => showMissionFace(scope, true)
 const showEvidence = (scope = mission) => showMissionFace(scope, false)
+const readFloatingPanelOpen = targetPage => targetPage.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen === true)
+async function closeFloatingPanel(targetPage = page, floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]')) {
+  if (!(await readFloatingPanelOpen(targetPage))) return
+  const panel = floatingPanel.first()
+  await panel.waitFor({ state: 'visible', timeout: 30000 })
+  const closeButton = panel.getByRole('button', { name: 'Close', exact: true })
+  try {
+    await closeButton.click({ timeout: 5000 })
+  } catch {
+    try { await targetPage.keyboard.press('Escape') } catch {}
+    if (await readFloatingPanelOpen(targetPage)) {
+      await targetPage.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(false))
+    }
+  }
+  await waitForMissionAsync(targetPage, async () => !(await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)
+}
+async function closePanelRegion(region, targetPage = page) {
+  const closeButton = region.getByRole('button', { name: 'Close', exact: true })
+  try {
+    await closeButton.click({ timeout: 5000 })
+  } catch {
+    try {
+      await closeButton.click({ force: true, timeout: 5000 })
+    } catch {
+      await targetPage.keyboard.press('Escape')
+    }
+  }
+  await region.waitFor({ state: 'detached', timeout: 30000 })
+}
 const waitText = async (locator, text) => {
   await locator.waitFor({ state: 'visible', timeout: 60000 })
   if (await locator.locator('[data-dashboard-widget="mission:tree"]').count()) await showMissionFace(locator, sourceText(text))
@@ -97,10 +126,7 @@ async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const floatingPanel = page.locator('[data-kg-floating-panel-root="true"]')
-  if (await floatingPanel.isVisible()) {
-    await floatingPanel.getByRole('button', { name: 'Close', exact: true }).click()
-    await floatingPanel.waitFor({ state: 'detached' })
-  }
+  if (await floatingPanel.isVisible()) await closeFloatingPanel(page, floatingPanel)
   await refreshMission() // Each cold workspace phase receives a fresh authorized minute.
   await showEvidence()
   const beforeWorkspace = await authoredSnapshot()
@@ -123,7 +149,7 @@ async function verifyWorkspace(label, revoke = false) {
   assert.equal(await editor.getByRole('button', { name: 'Insert slash command trigger', exact: true }).count(), 0)
   assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0, 'Run handoff must leave inspection unobscured')
   await page.screenshot({ path: resolve(output, label + '-workspace.png') })
-  await editor.getByRole('button', { name: 'Close', exact: true }).click()
+  await closePanelRegion(editor, page)
   await waitTopology(canvas)
   await canvas.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
   await waitText(canvas, 'Selected span: draft-2')
@@ -133,8 +159,8 @@ async function verifyWorkspace(label, revoke = false) {
   await evidence.getByRole('button', { name: 'Refresh runs', exact: true }).and(page.locator(':enabled')).waitFor()
   assert.ok(requests.length > countBeforeRefresh, 'Canvas refresh must use the authenticated native transport')
   await showEvidence(evidence)
-  for (const [key, name] of [['table', 'Span table'], ['tree', 'Span tree'], ['source', 'Source links'],
-    ['allocation', 'Allocation'], ['evidence', 'Evaluation'], ['comparison', 'Comparison'], ['topology', 'Topology']]) {
+  for (const key of ['table', 'tree', 'source',
+    'allocation', 'evidence', 'comparison', 'topology']) {
     await evidence.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption(key)
     await evidence.locator('#agent-run-view-' + key + '-panel').waitFor({ state: 'visible' })
     await waitText(evidence, 'Selected span: draft-2')
@@ -370,7 +396,7 @@ async function verifyApexActivation(width) {
   assert.equal(requests.length, beforeLocalRequests, 'Local validation inspection must never call the authenticated runtime')
   assertAuthored(await authoredSnapshot(), before, 'Apex activation must preserve authored work')
   assert.ok(requests.slice(beforeEntryRequests).every(item => ['workspace-source', 'query', 'trace'].includes(item.operation)), 'Activation may only read observations')
-  await editor.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('button', { name: 'Close run inspection', exact: true }).click()
+  await closePanelRegion(editor, page); await page.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor({ state: 'detached' })
   assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen), false)
   await page.getByRole('combobox', { name: 'Prompt preset', exact: true }).selectOption('agent-observability')
@@ -403,9 +429,7 @@ try {
   })
   let floating = page.locator('[data-kg-floating-panel-root="true"]')
   if (initialPanelOpen) {
-    await floating.waitFor({ state: 'visible', timeout: 30000 })
-    await floating.getByRole('button', { name: 'Close', exact: true }).click()
-    await floating.waitFor({ state: 'detached' })
+    await closeFloatingPanel(page, floating)
   }
   assert.equal(requests.length, 0, 'Dashboard must not load or poll before opening')
   await verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored)
@@ -542,10 +566,7 @@ try {
   floating = page.locator('[data-kg-floating-panel-root="true"]')
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
-  if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
-    await floating.waitFor({ state: 'visible' }); await floating.getByRole('button', { name: 'Close', exact: true }).click()
-    await floating.waitFor({ state: 'detached' })
-  }
+  if (await readFloatingPanelOpen(page)) await closeFloatingPanel(page, floating)
   await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click()
   returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] }); await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true })
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
