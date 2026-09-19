@@ -38,3 +38,25 @@ arbitrary filesystem path. Invalid selected sources fail visibly rather than swi
 Snapshots expire after 60 seconds and are not persisted into authored documents or browser storage.
 Clear the selection with `git config --local --unset agentic-os.workflowManifest` to use the
 existing hosted-runtime query path. Imported files remain explicit read-only snapshots.
+
+## Explicit Markdown dashboard checkpoints
+
+Dashboard → **Markdown dashboard** uses the registered Mission template in
+`docs/workspace-seeds/agentic-graph-agent-mission-template.md`. Choose the current Mission or import
+a finite JSON/SSE snapshot, select an existing Markdown template path, and save. **Open saved dashboard**
+opens the historical `.md` in Source Files and the shared Dashboard; it does not reconnect the run.
+The report retains resolved scalar/table values and layout. Props, fold, shared drag and resize update
+that document's configuration. Notes outside the generated boundaries remain authored text.
+
+Generic input uses `agentic-graph/dashboard-event/v1`: `sourceId`, nonnegative integer `sequence`,
+`observedAt` in Unix milliseconds, boolean `complete`, and object `data`. The Mission template binds
+`run.id`, `run.status`, `run.spanCount`, `resources` (`label`, `value`) and `spans` (`operation`, `status`,
+`durationMs`, `cpuMs`, `peakMemoryBytes`). Missing scalar measurements display Unknown.
+SSE uses complete JSON events in `data:` frames, optionally ending with `[DONE]`. Input is bounded to
+32 full snapshots / 1 MiB; conflicting replay, source changes, backward revisions and truncated frames
+fail before saving. Patches and continuous reconnect are unsupported in this increment.
+
+Export is deliberate and local; the native manifest and template remain unchanged. Existing Source
+Files authenticated Markdown transfer can upload the report explicitly. It does not transport native
+archives or make saved observations authoritative. See the
+[joined implementation plan](documents/agentic-graph-stream-dashboard-prd-tad-adr-mvp-gtm.md).

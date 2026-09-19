@@ -4,32 +4,47 @@ import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFs
 import { unwrapKeyTypeValue } from '@/lib/graph/keyTypeValue'
 import { parseDashboardWidgets as parseWidgetDocument } from './dashboardWidgetContract.mjs'
 import type { DashboardCard, DashboardMetric } from './dashboardModel'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { readAgentRunWorkspace, useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
+import { readDashboardSnapshot, updateDashboardSnapshotConfiguration, type DashboardSnapshot } from './dashboardMarkdownDocument'
 
-/** Authored display configuration only. Run evidence never enters this source file. */
+/** One owner for authored settings and explicit, historical dashboard documents. */
 import { DASHBOARD_WIDGETS_PATH } from './dashboardWidgetToolContract.mjs'
 export { DASHBOARD_WIDGETS_PATH }
 export type DashboardWidgetSettings = { source?: string; visible?: boolean; expanded?: boolean; title?: string; subtitle?: string; footnote?: string; kind?: DashboardCard['kind']; tone?: DashboardCard['tone']; order?: number; template?: string; markdown?: string; aspectRatio?: '16:9' | '9:16' | 'custom'; width?: number; height?: number; columns?: number; children?: string[] }
 export type DashboardWidgetDocument = { version: 1; widgets: Record<string, DashboardWidgetSettings>; boards?: Record<string, string[][]> }
 const empty = (): DashboardWidgetDocument => ({ version: 1, widgets: {} })
 export const parseDashboardWidgets = (text: string | null): DashboardWidgetDocument => parseWidgetDocument(text, unwrapKeyTypeValue) as DashboardWidgetDocument
-let snapshot = { document: empty(), error: '', ready: false }
+let snapshot: { document: DashboardWidgetDocument; error: string; ready: boolean; sourcePath: string; scope: string; dashboard: DashboardSnapshot | null } = {
+  document: empty(), error: '', ready: false, sourcePath: DASHBOARD_WIDGETS_PATH, scope: '', dashboard: null }
+const sourceScope = () => readAgentRunWorkspace() ? 'mission' : useMarkdownExplorerStore.getState().activePath ?? ''
 const listeners = new Set<() => void>()
 const emit = () => { for (const listener of listeners) listener() }
 let generation = 0, pending: Promise<unknown> = Promise.resolve()
 async function reload() {
-  const ticket = ++generation
+  const ticket = ++generation, scope = sourceScope()
   try {
-    const fs = await getWorkspaceFs(), document = parseDashboardWidgets(await fs.readFileText(DASHBOARD_WIDGETS_PATH))
-    if (ticket === generation) { snapshot = { document, error: '', ready: true }; emit() }
-  } catch (error) { if (ticket === generation) { snapshot = { ...snapshot, ready: true, error: String((error as Error).message) }; emit() } }
+    const fs = await getWorkspaceFs()
+    const selected = scope !== 'mission' && /\.(md|markdown|mdx)$/i.test(scope) ? await fs.readFileText(scope) : null
+    const dashboard = selected ? readDashboardSnapshot(selected) : null
+    const document = dashboard?.configuration ?? parseDashboardWidgets(await fs.readFileText(DASHBOARD_WIDGETS_PATH))
+    if (ticket === generation && scope === sourceScope()) { snapshot = { document, dashboard, sourcePath: dashboard ? scope : DASHBOARD_WIDGETS_PATH, scope, error: '', ready: true }; emit() }
+  } catch (error) { if (ticket === generation) { snapshot = { ...snapshot, scope, ready: true, error: String((error as Error).message) }; emit() } }
 }
 export function useDashboardWidgets() {
+  const activePath = useMarkdownExplorerStore(state => state.activePath), workspace = useAgentRunWorkspace()
+  const scope = workspace ? 'mission' : activePath ?? ''
   const value = useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener) } }, () => snapshot, () => snapshot)
   useEffect(() => {
     void reload()
-    return subscribeWorkspaceFsChanged(detail => { if (!detail.path || detail.path === DASHBOARD_WIDGETS_PATH) void reload() })
-  }, [])
+    return subscribeWorkspaceFsChanged(detail => { if (!detail.path || detail.path === DASHBOARD_WIDGETS_PATH || detail.path === scope) void reload() })
+  }, [scope])
   return value
+}
+export async function readDashboardWidgetConfiguration() {
+  await reload()
+  if (!snapshot.ready || snapshot.error || snapshot.scope !== sourceScope()) throw Error(snapshot.error || 'Dashboard source changed. Inspect it again.')
+  return snapshot
 }
 export function updateDashboardWidget(id: string, update: DashboardWidgetSettings): Promise<void> {
   return updateDashboardWidgets({ [id]: update })
@@ -42,15 +57,22 @@ export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSe
   })
 }
 export function mutateDashboardWidgets(edit: (document: DashboardWidgetDocument) => DashboardWidgetDocument): Promise<void> {
+  const scope = sourceScope()
   const operation = pending.then(async () => {
-    const fs = await getWorkspaceFs(), before = await fs.readFileText(DASHBOARD_WIDGETS_PATH), document = edit(parseDashboardWidgets(before))
-    const text = JSON.stringify(parseDashboardWidgets(JSON.stringify(document)), null, 2) + '\n'
+    const current = await readDashboardWidgetConfiguration(), sourcePath = current.sourcePath
+    if (current.scope !== scope || sourceScope() !== scope) throw Error('Dashboard source changed or is invalid. Reopen the card before editing.')
+    const fs = await getWorkspaceFs(), before = await fs.readFileText(sourcePath)
+    const portable = before && sourcePath !== DASHBOARD_WIDGETS_PATH ? readDashboardSnapshot(before) : null
+    if (sourcePath !== DASHBOARD_WIDGETS_PATH && !portable) throw Error('Dashboard document was replaced.')
+    const document = edit(portable?.configuration ?? parseDashboardWidgets(before))
+    const validated = parseDashboardWidgets(JSON.stringify(document))
+    const text = portable ? updateDashboardSnapshotConfiguration(before!, validated) : JSON.stringify(validated, null, 2) + '\n'
     // Read immediately before write; never replace concurrent Editor edits with a stale form.
-    if (await fs.readFileText(DASHBOARD_WIDGETS_PATH) !== before) throw Error('Dashboard configuration changed. Retry this edit.')
+    if (await fs.readFileText(sourcePath) !== before || sourceScope() !== scope) throw Error('Dashboard configuration changed. Retry this edit.')
     if (before === null) {
       if (!(await fs.listEntries()).some(entry => entry.path === '/notes' && entry.kind === 'folder')) await fs.createFolder({ parentPath: '/', name: 'notes', mirrorToHost: false })
       await fs.createFile({ parentPath: '/notes', name: 'dashboard.widgets.json', text, mirrorToHost: false })
-    } else await fs.writeFileText(DASHBOARD_WIDGETS_PATH, text, { mirrorToHost: false })
+    } else await fs.writeFileText(sourcePath, text, { mirrorToHost: false })
     await reload()
   })
   pending = operation.catch(error => { snapshot = { ...snapshot, error: String(error.message) }; emit() })

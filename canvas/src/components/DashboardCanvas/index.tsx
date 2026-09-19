@@ -29,6 +29,8 @@ type DashboardCanvasProps = {
 }
 
 const DASHBOARD_CONTENT_STYLE = buildResponsiveViewportFitContentStyle()
+const DashboardSnapshotView = React.lazy(() => import('./DashboardSnapshotView'))
+const AgentMissionDashboardExport = React.lazy(() => import('@/features/agent-ready/AgentMissionDashboardExport'))
 
 export default function DashboardCanvas(props: DashboardCanvasProps) {
   const widgetConfiguration = useDashboardWidgets()
@@ -91,6 +93,8 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
           style={DASHBOARD_CONTENT_STYLE}
           data-kg-dashboard-responsive-width="1"
         >
+          <React.Suspense fallback={null}><AgentMissionDashboardExport /></React.Suspense>
+          {widgetConfiguration.dashboard && !readOnly ? <React.Suspense fallback={<p>Opening saved dashboard…</p>}><DashboardSnapshotView /></React.Suspense> : <>
           <header className="kg-dashboard-header grid min-w-0 grid-cols-1 items-center gap-3 border-b border-[var(--kg-border)] pb-3 lg:grid-cols-[minmax(0,1fr)_minmax(200px,28%)]">
             <section className="min-w-0">
               <DashboardMarkdown text={widgetConfiguration.document.widgets['graph:header']?.markdown ?? `Dashboard\n\n## ${widgetConfiguration.document.widgets['graph:header']?.title ?? model.title}\n\n${widgetConfiguration.document.widgets['graph:header']?.subtitle ?? model.subtitle}`} label="Dashboard heading and description" />
@@ -128,6 +132,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
           </section>
           <DashboardDocumentWidgets sourceIds={[...model.metrics.map(item => `graph:${item.id}`), ...model.sections.flatMap(section => section.cards.map(card => `graph:${card.id}`))]} />
           {props.children}
+          </>}
         </section>
       </section>
     </section>

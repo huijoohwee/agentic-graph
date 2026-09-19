@@ -5,6 +5,7 @@ import { buildDashboardCanvasModel, type DashboardCard } from './dashboardModel'
 import { authoredDashboardWidgets, useDashboardWidgets, updateDashboardWidget, updateDashboardWidgets, widgetSettings, type DashboardWidgetSettings } from './dashboardWidgetConfiguration'
 import { dashboardTableMarkdown, DashboardMarkdown } from './DashboardMarkdown'
 import type { DashboardWidgetEditorProps } from './DashboardWidgetFlip'
+import { dashboardWidgetMarkdown } from './dashboardMarkdownDocument'
 
 const control = 'w-full min-w-0 rounded border border-[var(--kg-border)] bg-[var(--kg-surface)] px-2 py-1.5 text-xs'
 const button = 'rounded border border-[var(--kg-border)] px-2 py-1.5 text-xs'
@@ -14,7 +15,10 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
   const config = useDashboardWidgets()
   const model = React.useMemo(() => buildDashboardCanvasModel(graph, schema), [graph, schema])
   const structural = ['heading', 'text', 'divider', 'container', 'disclosure'].includes(props.template)
-  const dataSources = props.template === 'metric'
+  const dataSources = config.dashboard ? Object.entries(config.dashboard.values)
+    .filter(([, value]) => props.template === 'metric' ? Object.hasOwn(value, 'value') : !!value.rows)
+    .map(([id, value]) => ({ id, title: config.document.widgets[id].title ?? id, subtitle: config.document.widgets[id].subtitle,
+      tone: config.document.widgets[id].tone, markdown: dashboardWidgetMarkdown({}, value) })) : props.template === 'metric'
     ? model.metrics.map(metric => ({ id: `graph:${metric.id}`, title: metric.label, subtitle: metric.detail, tone: metric.tone }))
     : model.sections.flatMap(section => section.cards.map(card => ({ ...card, id: `graph:${card.id}` })))
   const sources = structural ? (props.template === 'container' ? model.sections.map(section => ({ id: `graph:container-${section.id}`, title: section.title, subtitle: section.cadence, tone: 'slate' })) : props.template === 'heading' ? [{ id: 'graph:header', title: model.title, subtitle: model.subtitle, tone: 'slate' }] : []) : dataSources
@@ -79,7 +83,7 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
     </select></label>}
     {(structural || props.template === 'table') && <section aria-label="Widget Markdown editor" className="rounded border p-2">
       <p className="mb-2 text-xs">Markdown · click a block to edit; click outside to return to View.</p>
-      <DashboardMarkdown label="Widget Markdown" text={draft.markdown ?? (props.template === 'table' && source && 'rows' in source ? dashboardTableMarkdown(source as DashboardCard) : selected === 'graph:header' ? `Dashboard\n\n## ${model.title}\n\n${model.subtitle}` : props.template === 'heading' ? '## Heading' : props.template === 'divider' ? '---' : 'Write Markdown here.')}
+      <DashboardMarkdown label="Widget Markdown" text={draft.markdown ?? (source && 'markdown' in source && typeof source.markdown === 'string' ? source.markdown : props.template === 'table' && source && 'rows' in source ? dashboardTableMarkdown(source as DashboardCard) : selected === 'graph:header' ? `Dashboard\n\n## ${model.title}\n\n${model.subtitle}` : props.template === 'heading' ? '## Heading' : props.template === 'divider' ? '---' : 'Write Markdown here.')}
         onChange={markdown => change({ markdown })} />
     </section>}
     {props.template === 'container' && <><label className="block text-xs">Columns<input aria-label="Container columns" className={control} type="number" min={1} max={12} value={draft.columns ?? 2} onChange={event => change({ columns: Number(event.target.value) })} /></label>
