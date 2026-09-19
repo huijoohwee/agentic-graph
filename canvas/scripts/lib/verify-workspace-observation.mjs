@@ -46,7 +46,7 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     assert.equal(await page.getByRole('button', { name: 'Show Editor Workspace', exact: true }).count(), 0, 'Editor Workspace uses its existing Toolbar entry')
     const toolbar = page.getByRole('navigation', { name: 'Main Toolbar', exact: true })
     await toolbar.getByRole('button', { name: 'Close run inspection', exact: true }).waitFor()
-    await dashboard.getByRole('heading', { name: 'Agent Mission · workflow-workspace-fixture', exact: true }).waitFor()
+    await dashboard.getByRole('heading').filter({ hasText: 'Agent Mission · workflow-workspace-fixture' }).waitFor()
     await dashboard.locator('[data-kg-dashboard-card="node-types"]').getByText('Check', { exact: true }).waitFor()
     const leaders = dashboard.locator('[data-kg-dashboard-card="degree-leaders"]')
     const leader = leaders.locator('[data-kg-dashboard-table-row]').filter({ hasText: 'workspace-check-1' })

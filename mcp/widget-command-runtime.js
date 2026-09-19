@@ -1,5 +1,5 @@
 import { applyDashboardWidgetCommand, buildDashboardWidgetToolContract } from '../canvas/src/components/DashboardCanvas/dashboardWidgetContract.mjs';
-export const WIDGET_COMMAND_TOOL = 'agentic-graph.control_local_widget';
+export const WIDGET_COMMAND_TOOL = buildDashboardWidgetToolContract().webName;
 export const buildWidgetCommandToolDefinition = () => {
   const contract = buildDashboardWidgetToolContract();
   return { ...contract, name: WIDGET_COMMAND_TOOL,

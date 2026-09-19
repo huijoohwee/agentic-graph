@@ -49,6 +49,7 @@ export const AGENTIC_OS_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   agenticCanvasOsDocsInvoke: "agentic-graph.agentic_canvas_os.docs.invoke",
   skillEvolve: "agentic-graph.skill.evolve",
   repositoryPack: "agentic-graph.repository.pack",
+  controlLocalWidget: `agentic-graph.${AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalWidget}`,
   workspaceArtifactPlan: "agentic-graph.workspace_artifact.plan",
   workspaceArtifactApply: "agentic-graph.workspace_artifact.apply",
   implementationRunPlan: "agentic-graph.implementation_run.plan",
