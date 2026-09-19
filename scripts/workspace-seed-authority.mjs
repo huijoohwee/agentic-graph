@@ -16,8 +16,8 @@ import {
 export const WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH = 'docs/workspace-seeds'
 export const PHYSICS_SEED_BASENAME = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
 export const PHYSICS_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${PHYSICS_SEED_BASENAME}`
-export const XR_V2_SEED_BASENAME = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
-export const XR_V2_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${XR_V2_SEED_BASENAME}`
+export const XR_V2_SEED_BASENAME = PHYSICS_SEED_BASENAME
+export const XR_V2_SEED_RELATIVE_PATH = PHYSICS_SEED_RELATIVE_PATH
 export const FLIGHT_SEED_BASENAME = 'agentic-graph-game-flight-sim-demo.md'
 export const FLIGHT_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${FLIGHT_SEED_BASENAME}`
 export const FLIGHT_COMPANION_BASENAME = 'agentic-graph-game-flight-sim-demo.companion.md'
@@ -62,9 +62,7 @@ export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze(['agentic-graph-game
 export const AGENTIC_OS_WORKSPACE_SEED_INVENTORY = Object.freeze(JSON.parse(
   await readFile(new URL('../config/workspace-seed-inventory.json', import.meta.url), 'utf8'),
 ))
-export const AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY = Object.freeze([
-  PHYSICS_SEED_BASENAME,
-])
+export const AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY = Object.freeze([PHYSICS_SEED_BASENAME])
 const DRAFT_IMPLEMENTED_RUNTIME_KEYS = Object.freeze(['native_flight_demo', 'asset_pipeline', 'motion_control', 'flight_sim', 'native_mmorpg_demo', 'asset_provenance_pipeline', 'mmorpg_world', 'runtime_validation', 'mcp_control'])
 const XR_EDITED_MEDIA_PROVEN = Object.freeze(['canonical ECS projection including entity zero', 'real standalone Three.js material application', 'mounted canonical Timeline command routing', 'same-origin browser-native edited-media export', 'non-empty Blob, decoded metadata, and bounded playback', 'media teardown and object-URL revocation without observed page or media errors', 'clean-room dependency and source enforcement'])
 const XR_EDITED_MEDIA_BLOCKED = Object.freeze(['mounted-renderer material wiring', 'live depth model and quality', 'reference-device frame budget', 'camera permission and lifecycle on named physical devices', 'physical-headset XR behavior', 'Production availability', 'deployment authority'])
@@ -72,10 +70,10 @@ const XR_EDITED_MEDIA_EVIDENCE_KEYS = Object.freeze(['scope', 'projection_role',
 const XR_EDITED_MEDIA_MAIN_PROOF_KEYS = Object.freeze(['workflow', 'run_id', 'check', 'conclusion', 'completed_at', 'affected_scope', 'focused_gate', 'browser_observation_schema', 'browser_observation'])
 const XR_EDITED_MEDIA_RUNTIME_RECONCILIATION_KEYS = Object.freeze(['integration_result_schema', 'integration_status', 'readiness_schema', 'feature_runtime_source_revision', 'feature_runtime_agentic_canvas_os_revision', 'feature_runtime_evidence_digest', 'feature_runtime_verified_at'])
 const XR_EDITED_MEDIA_PROOF_NODE_ID = 'xr_edited_media_proof'
-const XR_EDITED_MEDIA_PROOF_NODE_KEYS = Object.freeze(['id', 'type', 'label', 'pos', 'properties'])
+const XR_EDITED_MEDIA_PROOF_NODE_KEYS = Object.freeze(['id', 'type', 'label', 'position', 'broaderXrState', 'canonicalDeliveryState', 'flow:widgetFormId', 'frontmatter:autoSeededPos', 'frontmatter:primitive', 'graph:degree', 'graph:inDegree', 'graph:outDegree', 'graph:structuralDegree', 'output', 'properties', 'role', 'scope', 'sourceSnapshotState', 'visual:importance', 'visual:nodeSize', 'visual:xIndex', 'visual:yIndex'])
 const XR_EDITED_MEDIA_PROOF_POSITION_KEYS = Object.freeze(['x', 'y'])
 const XR_EDITED_MEDIA_PROOF_PROPERTIES_KEYS = Object.freeze(['role', 'scope', 'sourceSnapshotState', 'canonicalDeliveryState', 'broaderXrState', 'output'])
-const XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS = Object.freeze(['source', 'target', 'label'])
+const XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS = Object.freeze(['id', 'source', 'sourceHandle', 'target', 'targetHandle', 'label'])
 
 export const resolveWorkspaceSeedSiblingRootsFromGitCommonDir = gitCommonDirRaw => {
   const gitCommonDir = path.resolve(String(gitCommonDirRaw || '').trim())
@@ -169,7 +167,7 @@ const requirePhysicsEditedMediaEvidence = source => {
     }
   }
 
-  requireValue('kgBottomPanelOpen', readBooleanPreset(frontmatter.kgBottomPanelOpen), false)
+  requireValue('kgBottomPanelOpen', readBooleanPreset(frontmatter.kgBottomPanelOpen), true)
   requireExactKeys('evidence', evidence, XR_EDITED_MEDIA_EVIDENCE_KEYS)
   requireExactKeys('canonical_main_proof', mainProof, XR_EDITED_MEDIA_MAIN_PROOF_KEYS)
   requireExactKeys(
@@ -235,7 +233,7 @@ const requirePhysicsEditedMediaEvidence = source => {
     missing.push(`flow.nodes=exactly one ${XR_EDITED_MEDIA_PROOF_NODE_ID}`)
   } else {
     const proofNode = proofNodes[0]
-    const position = isRecord(proofNode.pos) ? proofNode.pos : {}
+    const position = isRecord(proofNode.position) ? proofNode.position : {}
     const properties = isRecord(proofNode.properties) ? proofNode.properties : {}
     requireExactKeys('proof_node', proofNode, XR_EDITED_MEDIA_PROOF_NODE_KEYS)
     requireExactKeys('proof_node.pos', position, XR_EDITED_MEDIA_PROOF_POSITION_KEYS)
@@ -247,8 +245,8 @@ const requirePhysicsEditedMediaEvidence = source => {
     requireValue('proof_node.id', proofNode.id, XR_EDITED_MEDIA_PROOF_NODE_ID)
     requireValue('proof_node.type', proofNode.type, 'XrDemoValidation')
     requireValue('proof_node.label', proofNode.label, 'Scoped Edited-media Proof')
-    requireValue('proof_node.pos.x', position.x, 880)
-    requireValue('proof_node.pos.y', position.y, 300)
+    requireValue('proof_node.position.x', position.x, 720)
+    requireValue('proof_node.position.y', position.y, 520)
     requireValue(
       'proof_node.properties.role',
       properties.role,
@@ -284,8 +282,11 @@ const requirePhysicsEditedMediaEvidence = source => {
       proofConnection,
       XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS,
     )
+    requireValue('proof_connection.id', proofConnection.id, 'flow-e05')
     requireValue('proof_connection.source', proofConnection.source, 'xr_demo_entry')
+    requireValue('proof_connection.sourceHandle', proofConnection.sourceHandle, 'output')
     requireValue('proof_connection.target', proofConnection.target, XR_EDITED_MEDIA_PROOF_NODE_ID)
+    requireValue('proof_connection.targetHandle', proofConnection.targetHandle, 'input')
     requireValue('proof_connection.label', proofConnection.label, 'inspect scoped proof')
   }
   for (const marker of [

@@ -118,6 +118,7 @@ export type XrMotionReferenceSubject = Readonly<{
 export type XrMotionReferencePlan = Readonly<{
   schema: typeof XR_MOTION_REFERENCE_SCHEMA
   stageId: XrMotionReferenceStageId
+  castSource: 'graph+subjects' | 'subjects-only'
   appearance: XrSceneAppearance
   durationSeconds: number
   fps: number
@@ -225,6 +226,11 @@ function normalizeStageId(value: unknown): XrMotionReferenceStageId {
   return XR_MOTION_REFERENCE_STAGE_PRESETS.some(preset => preset.id === id)
     ? id as XrMotionReferenceStageId
     : XR_MOTION_REFERENCE_DEFAULT_STAGE_ID
+}
+
+function normalizeCastSource(value: unknown): 'graph+subjects' | 'subjects-only' {
+  const normalized = String(value || '').trim().toLowerCase()
+  return normalized === 'subjects-only' ? 'subjects-only' : 'graph+subjects'
 }
 
 function normalizeAnimationAssignment(
@@ -353,12 +359,13 @@ function resolveCast(
   value: unknown,
   durationSeconds: number,
   subjects: readonly XrMotionReferenceSubject[],
+  castSource: 'graph+subjects' | 'subjects-only',
 ): readonly XrMotionReferenceCastTrack[] {
   const savedRecords = (Array.isArray(value) ? value : [])
     .map(item => asRecord(item))
     .filter(item => String(item.actorId || '').trim())
   const savedById = new Map(savedRecords.map(item => [String(item.actorId || '').trim(), item] as const))
-  const graphActors = nodes.map(node => ({
+  const graphActors = castSource === 'subjects-only' ? [] : nodes.map(node => ({
     actorId: String(node.id || '').trim(),
     label: String(node.label || '').trim(),
   }))
@@ -415,9 +422,10 @@ function normalizeSubjects(value: unknown): readonly XrMotionReferenceSubject[] 
 export function readXrMotionReferencePlan(value: unknown, nodes: readonly GraphNode[] = []): XrMotionReferencePlan {
   const record = asRecord(value)
   const stageId = normalizeStageId(record.stageId)
+  const castSource = normalizeCastSource(record.castSource)
   const durationSeconds = normalizeDuration(record.durationSeconds)
   const subjects = normalizeSubjects(record.subjects)
-  const sourceCast = resolveCast(nodes, record.cast, durationSeconds, subjects)
+  const sourceCast = resolveCast(nodes, record.cast, durationSeconds, subjects, castSource)
   const stage = resolveXrMotionReferenceStage(stageId)
   const cast = Object.freeze(sourceCast.map(track => {
     if (track.animation?.kind !== 'action-path') return track
@@ -440,6 +448,7 @@ export function readXrMotionReferencePlan(value: unknown, nodes: readonly GraphN
   return Object.freeze({
     schema: XR_MOTION_REFERENCE_SCHEMA,
     stageId,
+    castSource,
     appearance: readXrSceneAppearance(record.appearance),
     durationSeconds,
     fps: normalizeFps(record.fps),

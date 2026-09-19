@@ -72,8 +72,6 @@ try {
   )
   await seedRow.click()
 
-  const panel = page.locator('[data-kg-motion-control-floating-panel="1"]')
-  await panel.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const runtime = page.locator('[data-kg-xr-v2-authoring-runtime="1"]')
   await runtime.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const readiness = page.locator('[data-kg-xr-v2-workspace-readiness="1"]')
@@ -170,6 +168,15 @@ try {
     await readiness.locator('[data-kg-xr-v2-ac="AC-7"]').getAttribute('data-kg-xr-v2-ac-local-evidence'),
     'browser-observed',
   )
+  await page.waitForFunction(() => {
+    const runtimeNode = document.querySelector('[data-kg-xr-v2-authoring-runtime="1"]')
+    return runtimeNode?.getAttribute('data-kg-xr-v2-ecs-status') === 'ready'
+      && document.querySelectorAll('[data-kg-xr-document-loaded="1"]').length > 0
+  }, undefined, { timeout: coldStartTimeoutMs })
+  await page.waitForTimeout(3000)
+  await page.getByRole('button', { name: 'Motion Control', exact: true }).click()
+  const panel = page.locator('[data-kg-motion-control-floating-panel="1"]')
+  await panel.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const startCamera = page.locator('[data-kg-motion-control-start="1"]')
   const stopCamera = page.locator('[data-kg-motion-control-stop="1"]')
   const enableSensors = page.locator('[data-kg-motion-control-enable-sensors="1"]')
@@ -404,8 +411,10 @@ try {
   assert.equal(await connectedViewer.getAttribute('data-kg-xr-v2-preview-revision'), '1')
   const reloadedPanel = page.locator('[data-kg-motion-control-floating-panel="1"]')
   const reloadedImmersive = page.locator('[data-kg-xr-v2-immersive-session]')
-  assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-runtime'), 'off')
-  assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  if (await reloadedPanel.count()) {
+    assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-runtime'), 'off')
+    assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  }
   assert.equal(await reloadedImmersive.getAttribute('data-kg-xr-v2-immersive-permission-requested'), 'false')
   assert.deepEqual(browserErrors, [])
   await page.close()
@@ -465,8 +474,10 @@ try {
   ), undefined, { timeout: savedAssetObservationTimeoutMs })
   const secondMotion = secondPage.locator('[data-kg-motion-control-floating-panel="1"]')
   const secondImmersive = secondPage.locator('[data-kg-xr-v2-immersive-session]')
-  assert.equal(await secondMotion.getAttribute('data-kg-motion-control-runtime'), 'off')
-  assert.equal(await secondMotion.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  if (await secondMotion.count()) {
+    assert.equal(await secondMotion.getAttribute('data-kg-motion-control-runtime'), 'off')
+    assert.equal(await secondMotion.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  }
   assert.equal(await secondImmersive.getAttribute('data-kg-xr-v2-immersive-permission-requested'), 'false')
   assert.ok(storageFixture.events.includes('manifest-list'))
   assert.equal(storageFixture.events.filter(event => event.startsWith('blob-read:')).length, 2)
