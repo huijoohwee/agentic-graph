@@ -24,7 +24,7 @@ export default function DashboardDocumentWidgets({ sourceIds }: { sourceIds: str
   })
   return <section className="min-w-0 space-y-4" aria-label="Added Dashboard widgets">
     <DashboardWidgetBoard id="authored" items={items.filter(item => !contained.has(item.id))} />
-    {containers.map(([id, config]) => <DashboardWidgetContainer key={id} id={id.slice(6)} title={config.title ?? 'Container'} subtitle={config.subtitle} columns={config.columns ?? 2}
+    {containers.map(([id, config]) => <DashboardWidgetContainer key={id} id={id.slice(6)} widgetId={id} title={config.title ?? 'Container'} subtitle={config.subtitle} columns={config.columns ?? 2}
       items={(config.children ?? []).flatMap(child => { const item = items.find(item => item.id === child); return item ? [item] : [] })} />)}
   </section>
 }

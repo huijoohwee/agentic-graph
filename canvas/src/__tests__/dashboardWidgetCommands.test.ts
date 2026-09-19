@@ -8,6 +8,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { controlDashboardWidget } from '@/components/DashboardCanvas/dashboardWidgetTools'
 import { DASHBOARD_WIDGETS_PATH, parseDashboardWidgets } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
 import DashboardWidgetDisclosure from '@/components/DashboardCanvas/DashboardWidgetDisclosure'
+import DashboardWidgetContainer from '@/components/DashboardCanvas/DashboardWidgetContainer'
 import DashboardLayoutPanel from '@/components/DashboardCanvas/DashboardLayoutPanel'
 import DashboardDocumentWidgets from '@/components/DashboardCanvas/DashboardDocumentWidgets'
 import { dashboardTableMarkdown } from '@/components/DashboardCanvas/DashboardMarkdown'
@@ -30,7 +31,7 @@ export async function testDashboardWidgetCommands() {
     await controlDashboardWidget({ invocation, settings })
     assert.equal(Object.keys((await read()).widgets).length, 1)
     await assert.rejects(() => controlDashboardWidget({ operation: 'remove', id: 'graph:notes', document: { version: 1, widgets: {} } }), /expected widget document changed/)
-    await act(async () => { root.render(React.createElement(React.Fragment, null, React.createElement(DashboardLayoutPanel), React.createElement(DashboardDocumentWidgets, { sourceIds: [] }), React.createElement(DashboardWidgetDisclosure, { id: 'mission:index-economics', title: 'Index economics', children: React.createElement('span', { 'data-evidence': 'retained' }, 'Retained snapshot') }))); await pause() })
+    await act(async () => { root.render(React.createElement(React.Fragment, null, React.createElement(DashboardLayoutPanel), React.createElement(DashboardDocumentWidgets, { sourceIds: [] }), React.createElement(DashboardWidgetDisclosure, { id: 'mission:index-economics', title: 'Index economics', children: React.createElement('span', { 'data-evidence': 'retained' }, 'Retained snapshot') }), React.createElement(DashboardWidgetContainer, { id: 'structure', title: 'Structure', subtitle: 'Selected run · retained observation', items: [{ id: 'graph:retained', cardId: 'retained', content: React.createElement('input', { 'aria-label': 'Retained card state', defaultValue: 'Retained state' }) }] }))); await pause() })
     await until(() => !!host.querySelector('main article h2') && !!host.querySelector('table th') && !!host.querySelector('hr'))
     assert.equal(host.querySelector('main article h2')?.textContent, 'Evidence')
     assert.equal(host.querySelector('table th')?.textContent, 'Name')
@@ -72,6 +73,27 @@ export async function testDashboardWidgetCommands() {
     await until(() => !host.querySelector('[contenteditable="true"]'), 'color editor to return to View')
     assert.match((await read()).widgets['graph:notes'].markdown!, /#EF4444:meaning/)
 
+    // The native Markdown heading folds the whole container through the same saved setting as tools and Props.
+    const container = host.querySelector<HTMLElement>('[data-kg-dashboard-section="structure"]')!
+    const cards = container.querySelector<HTMLElement>('[data-kg-dashboard-section-cards]')!
+    const description = container.querySelector<HTMLElement>('header > p')!
+    const cardState = cards.querySelector('input')!
+    cardState.value = 'Unsaved card state'
+    assert.equal(description.textContent, 'Selected run · retained observation')
+    assert.equal(description.previousElementSibling?.getAttribute('aria-label'), 'Structure heading')
+    await act(async () => { container.querySelector<HTMLButtonElement>('article button[aria-label="Collapse section"]')!.click(); await pause() })
+    await until(() => cards.hidden && description.hidden, 'heading to fold its subtitle and cards')
+    assert.equal((await read()).widgets['graph:container-structure'].expanded, false)
+    assert.equal(cards.querySelector('input'), cardState, 'folding keeps the card mounted')
+    await act(async () => { await controlDashboardWidget({ operation: 'upsert', id: 'graph:container-structure', settings: { markdown: '### Updated **structure**' } }) })
+    assert(container.querySelector('article button[aria-label="Expand section"]'), 'renaming a folded heading preserves expansion state')
+    await act(async () => { await controlDashboardWidget({ operation: 'expand', id: 'graph:container-structure' }) })
+    assert.equal(cards.hidden, false); assert.equal(description.hidden, false)
+    await act(async () => { await controlDashboardWidget({ operation: 'collapse', id: 'graph:container-structure' }) })
+    await act(async () => { container.querySelector<HTMLButtonElement>('article button[aria-label="Expand section"]')!.click(); await pause() })
+    await until(() => !cards.hidden, 'heading to expand after a tool collapse')
+    assert.equal(cardState.value, 'Unsaved card state')
+
     const retained = host.querySelector('[data-evidence="retained"]')
     await act(async () => { await controlDashboardWidget({ invocation: '/canvas.widget #widget @dashboard operation=collapse id=mission:index-economics' }) })
     assert.equal(host.querySelector<HTMLDetailsElement>('[data-dashboard-disclosure]')?.open, false)
@@ -99,6 +121,12 @@ export async function testDashboardWidgetCommands() {
     assert.deepEqual((await read()).boards?.mission, [['mission:codebase', 'mission:tree']])
     assert.equal(useGraphStore.getState().graphData, state.graphData, 'widget configuration never mutates evidence')
     assert.match(dashboardTableMarkdown({ id: 't', title: 'Table', subtitle: '', kind: 'table', tone: 'slate', series: [], rows: [{ id: 'x', label: 'a|b', value: '**value**' }] }), /a\\\|b/)
+    await act(async () => { await controlDashboardWidget({ operation: 'upsert', id: 'graph:custom-group', template: 'container', settings: { title: 'Custom group', children: ['graph:notes'], expanded: false } }) })
+    const customCards = host.querySelector<HTMLElement>('[data-kg-dashboard-section="custom-group"] [data-kg-dashboard-section-cards]')!
+    assert.equal(customCards.hidden, true, 'authored containers use their own configuration identity')
+    await act(async () => { await controlDashboardWidget({ operation: 'expand', id: 'graph:custom-group' }) })
+    assert.equal(customCards.hidden, false)
+    assert.equal((await read()).widgets['graph:container-custom-group'], undefined, 'no duplicate container configuration')
     // The native receipt, not a guess at newly added nodes, completes registry commands.
     useGraphStore.setState({ canvas2dRenderer: 'storyboard', graphData: { ...state.graphData, nodes: [], edges: [], metadata: { source: 'widget-command-test', kind: 'authored' } } })
     host.setAttribute('data-kg-canvas-viewport', '1')
