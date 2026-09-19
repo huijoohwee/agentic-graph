@@ -13,10 +13,13 @@ const helperPaths = [
 ]
 const HELP = `${repoLabel} release:common
 
-Default path:
+Primary human release path:
   npm run release:common -- start <scope> --write=<paths> [--plan=<committed-plan>]
   npm run release:common -- publish --message="<message>" [--title="<title>"] [--body-file=<file>]
   npm run release:common -- finish --ref=<lane>
+
+Underlying execution chain:
+  doctor -> status -> lane -> land -> finish
 
 Exception path:
   npm run release:common -- successor <scope> --expected-head=<published-head> [--write=<paths>]
