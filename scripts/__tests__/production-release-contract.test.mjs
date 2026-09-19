@@ -433,6 +433,7 @@ test('verified production mirror is published only after live smoke', () => {
     'Physics runtime running with', 'Beach Ball', 'AGENTIC_OS_WORKSPACE_SEED_INVENTORY', 'waitForWorkspaceSeedInventory',
     'aside[aria-label="Markdown Explorer"]', 'section[aria-label="Source Files"]', "name: 'Workspace View'", "name: 'Editor Workspace'", "openWorkspaceFolder(sourceFilesContent, 'docs')",
     "openWorkspaceFolder(sourceFilesContent, 'workspace-seeds')", 'Explorer Source Files workspace-seeds inventory mismatch',
+    '?kgPath=%2Fagentic-graph%2F&openEditorWorkspace=1&kgReleaseProof=${expectedSourceRevision}',
     'page.frames().filter', "url.searchParams.get('kgPreview') === '1'", 'evidenceByTarget.reduce', 'browserHeadless', 'heavyRuntimeIntents', 'bodyTextTail', "page.locator('body')", 'Validation seed fallback',
     '__kgHomeSourceAuthorityEvidence', 'prematureSceneMounts', 'waitForHomeSourceAuthority', 'documentLoadedRootCount',
     'data-kg-xr-document-loaded', 'data-kg-xr-scene-media-drop', 'data-kg-xr-empty-world', '--use-gl=angle',
