@@ -8,6 +8,7 @@ const rest = args.slice(1)
 const repoLabel = 'agentic-graph'
 const helperPaths = [
   resolve(process.cwd(), '../agentic-os/bin/agentic-os-release-common-wrapper.mjs'),
+  resolve(process.cwd(), '../../../agentic-os/bin/agentic-os-release-common-wrapper.mjs'),
   resolve(process.cwd(), 'node_modules/agentic-os/bin/agentic-os-release-common-wrapper.mjs'),
 ]
 const HELP = `${repoLabel} release:common
