@@ -16,8 +16,8 @@ kgCanvasSurfaceMode: 3d
 kgCanvasRenderMode: 3d
 kgCanvas3dMode: 3d
 kgFloatingPanelOpen: true
-kgFloatingPanelView: motionControl
-kgBottomPanelOpen: false
+kgFloatingPanelView: animation
+kgBottomPanelOpen: true
 kgBottomPanelTab: timeline
 kgDocumentSemanticMode: document
 kgFrontmatterModeEnabled: true
@@ -242,54 +242,302 @@ game_mode:
   malformed_hydration: "preserve bytes and block Start and Restart until explicit Reset"
   validation_input_forbid_hardcode_in_repo: true
 kgXrMotionReference:
-  schema: "agentic-graph-xr-motion-reference/v1"
-  stageId: "singapore"
+  schema: agentic-graph-xr-motion-reference/v1
+  castSource: subjects-only
+  stageId: singapore
   appearance:
-    skyColor: "#8ed5f3"
-    fogColor: "#c5e8ed"
-    groundColor: "#e7dec1"
-    waterColor: "#229fad"
-    lightColor: "#fff1d0"
-    lightIntensity: 1.8
-    sunAzimuthDegrees: 35
-    fogDistanceMeters: 92
-    detail: "standard"
+    skyColor: '#cddbe6'
+    fogColor: '#dce5eb'
+    groundColor: '#a9bac6'
+    waterColor: '#6a96ad'
+    lightColor: '#ffffff'
+    lightIntensity: 1.3
+    sunAzimuthDegrees: -35
+    fogDistanceMeters: 120
+    detail: low
     shadows: true
-  durationSeconds: 6
+  durationSeconds: 28
   fps: 12
   subjects:
-    - id: "xr-subject:vehicle-helicopter:1"
-      assetId: "vehicle-helicopter"
-      label: "Helicopter"
-      color: "#f59e0b"
-      position: [7.2, 0.55, 2.1]
-      rotationYDegrees: -31.5
-      scale: 0.42
-    - id: "xr-subject:vehicle-sedan:1"
-      assetId: "vehicle-sedan"
-      label: "Car"
-      color: "#60a5fa"
-      position: [-5.6, 0.15, 3.8]
-      rotationYDegrees: -24
-      scale: 0.82
+    - id: xr-subject:wolf:1
+      assetId: person-adult
+      label: The Wolf
+      color: '#7c3aed'
+      position:
+        - -7.4
+        - 0
+        - 2.6
+      rotationYDegrees: 24
+      scale: 1.12
+    - id: xr-subject:first-pig:1
+      assetId: person-child
+      label: First Pig
+      color: '#f97316'
+      position:
+        - -3.5
+        - 0
+        - 1.8
+      rotationYDegrees: -18
+      scale: 1
+    - id: xr-subject:second-pig:1
+      assetId: person-child
+      label: Second Pig
+      color: '#fb7185'
+      position:
+        - 0.8
+        - 0
+        - -0.9
+      rotationYDegrees: -30
+      scale: 1
+    - id: xr-subject:third-pig:1
+      assetId: person-child
+      label: Third Pig
+      color: '#38bdf8'
+      position:
+        - 4.8
+        - 0
+        - -4.4
+      rotationYDegrees: -150
+      scale: 1
+    - id: xr-subject:straw-house:1
+      assetId: prop-crate
+      label: Straw House
+      color: '#fde68a'
+      position:
+        - -3.9
+        - 0
+        - 1.6
+      rotationYDegrees: 8
+      scale: 1.55
+    - id: xr-subject:stick-house:1
+      assetId: prop-crate
+      label: Stick House
+      color: '#c08457'
+      position:
+        - 0.8
+        - 0
+        - -0.8
+      rotationYDegrees: -12
+      scale: 1.65
+    - id: xr-subject:brick-house:1
+      assetId: prop-crate
+      label: Brick House
+      color: '#b45309'
+      position:
+        - 4.8
+        - 0
+        - -4.2
+      rotationYDegrees: 0
+      scale: 1.85
+    - id: xr-subject:oak:1
+      assetId: prop-tree
+      label: Oak
+      color: '#84cc16'
+      position:
+        - -8.4
+        - 0
+        - 1.4
+      rotationYDegrees: 0
+      scale: 1.15
+    - id: xr-subject:soup-pot:1
+      assetId: prop-crate
+      label: Soup Pot
+      color: '#64748b'
+      position:
+        - 5.4
+        - 0
+        - -3.3
+      rotationYDegrees: 0
+      scale: 0.55
   cast:
-    - actorId: "xr-subject:vehicle-helicopter:1"
-      label: "Helicopter"
+    - actorId: xr-subject:wolf:1
+      label: The Wolf
       animation: null
       marks:
         - timeSeconds: 0
-          position: [7.2, 0.55, 2.1]
-          transition: "hold"
-          gait: "flight"
-    - actorId: "xr-subject:vehicle-sedan:1"
-      label: "Car"
+          position:
+            - -7.4
+            - 0
+            - 2.6
+          transition: hold
+          gait: walk
+        - timeSeconds: 3.5
+          position:
+            - -4.9
+            - 0
+            - 2
+          transition: linear
+          gait: walk
+        - timeSeconds: 7.8
+          position:
+            - -0.7
+            - 0
+            - -0.2
+          transition: linear
+          gait: walk
+        - timeSeconds: 12.4
+          position:
+            - 3.7
+            - 0
+            - -3.5
+          transition: linear
+          gait: walk
+        - timeSeconds: 20.2
+          position:
+            - 4.9
+            - 0
+            - -3.9
+          transition: hold
+          gait: walk
+        - timeSeconds: 25.6
+          position:
+            - 7.6
+            - 0
+            - -1.6
+          transition: linear
+          gait: run
+    - actorId: xr-subject:first-pig:1
+      label: First Pig
       animation: null
       marks:
         - timeSeconds: 0
-          position: [-5.6, 0.15, 3.8]
-          transition: "hold"
-          gait: "wheeled"
-  camera: []
+          position:
+            - -3.5
+            - 0
+            - 1.8
+          transition: hold
+          gait: walk
+        - timeSeconds: 4.2
+          position:
+            - -0.2
+            - 0
+            - 0.5
+          transition: linear
+          gait: run
+        - timeSeconds: 7.8
+          position:
+            - 2.2
+            - 0
+            - -1.8
+          transition: linear
+          gait: run
+    - actorId: xr-subject:second-pig:1
+      label: Second Pig
+      animation: null
+      marks:
+        - timeSeconds: 0
+          position:
+            - 0.8
+            - 0
+            - -0.9
+          transition: hold
+          gait: walk
+        - timeSeconds: 8.4
+          position:
+            - 2.4
+            - 0
+            - -2.4
+          transition: linear
+          gait: run
+        - timeSeconds: 12.4
+          position:
+            - 4
+            - 0
+            - -3.7
+          transition: hold
+          gait: walk
+    - actorId: xr-subject:third-pig:1
+      label: Third Pig
+      animation: null
+      marks:
+        - timeSeconds: 0
+          position:
+            - 4.8
+            - 0
+            - -4.4
+          transition: hold
+          gait: walk
+        - timeSeconds: 20.2
+          position:
+            - 4.8
+            - 0
+            - -4.4
+          transition: hold
+          gait: walk
+        - timeSeconds: 25.6
+          position:
+            - 4.8
+            - 0
+            - -4.4
+          transition: linear
+          gait: walk
+  camera:
+    - timeSeconds: 0
+      anchorId: xr-subject:first-pig:1
+      moveId: drone-follow
+      rig: dolly
+      easing: hold
+      settings:
+        shot: medium
+        orbitX: -0.18
+        orbitY: -0.12
+        focalLengthMm: 42
+        focusDistanceMeters: 6
+    - timeSeconds: 4.2
+      anchorId: xr-subject:wolf:1
+      moveId: orbit-clockwise
+      rig: handheld
+      easing: linear
+      settings:
+        shot: medium
+        orbitX: 0.34
+        orbitY: 0.02
+        focalLengthMm: 50
+        focusDistanceMeters: 5.5
+    - timeSeconds: 8.4
+      anchorId: xr-subject:second-pig:1
+      moveId: drone-follow
+      rig: steadicam
+      easing: linear
+      settings:
+        shot: medium
+        orbitX: -0.22
+        orbitY: -0.08
+        focalLengthMm: 46
+        focusDistanceMeters: 6.2
+    - timeSeconds: 12.4
+      anchorId: xr-subject:third-pig:1
+      moveId: crane-rise
+      rig: crane
+      easing: linear
+      settings:
+        shot: wide
+        orbitX: -0.04
+        orbitY: -0.46
+        focalLengthMm: 35
+        focusDistanceMeters: 8.5
+    - timeSeconds: 20.2
+      anchorId: xr-subject:wolf:1
+      moveId: crane-descend
+      rig: handheld
+      easing: linear
+      settings:
+        shot: close-up
+        orbitX: 0.12
+        orbitY: 0.36
+        focalLengthMm: 72
+        focusDistanceMeters: 4.5
+    - timeSeconds: 25.6
+      anchorId: xr-subject:third-pig:1
+      moveId: drone-follow
+      rig: dolly
+      easing: hold
+      settings:
+        shot: wide
+        orbitX: -0.16
+        orbitY: -0.18
+        focalLengthMm: 32
+        focusDistanceMeters: 9
 runtime_validation:
   baseline_local_candidate_commit: "067ed16d0a8c77d1c612d6f63aa791ae02fba19c"
   baseline_local_verified_at: "2026-07-21T07:01:46Z"
@@ -370,6 +618,11 @@ mcp_control:
   reset: "/xr.physics @canvas #controller operation=reset"
 animation_rehearsal:
   control_tool: "agentic-graph.control_local_animation"
+  playable: true
+  default_floating_panel_view: "animation"
+  default_bottom_panel_tab: "timeline"
+  synchronized_asides: true
+  playable_script_id: "three-little-pigs-long-sea-journey"
   quarter_speed: "/animation.control @canvas operation=play rate=0.25"
   next_frame: "/animation.control @canvas operation=scrub frame=next"
   previous_frame: "/animation.control @canvas operation=scrub frame=previous"
@@ -383,211 +636,629 @@ flow:
     - id: {key: id, type: string, value: "xr_demo_entry"}
       type: {key: type, type: string, value: "XrDemoControl"}
       label: {key: label, type: string, value: "Develop and Run"}
-      pos: {key: pos, type: object, value: {"x":-420,"y":0}}
+      position: {key: position, type: object, value: {"x":0,"y":0}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_demo_entry"}
+      "frontmatter:autoSeededPos": {key: "frontmatter:autoSeededPos", type: boolean, value: true}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 3}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 3}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Apply this Source Files document to launch the native demo, then switch controllers without resetting motion."}
       properties: {key: properties, type: object, value: {"role":"lifecycle","state":"runtime-ready","output":"Apply this Source Files document to launch the native demo, then switch controllers without resetting motion."}}
+      role: {key: role, type: string, value: "lifecycle"}
+      state: {key: state, type: string, value: "runtime-ready"}
+      "visual:importance": {key: "visual:importance", type: number, value: 24}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 16.928203230275507}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 0}
     - id: {key: id, type: string, value: "xr_ball_controller"}
       type: {key: type, type: string, value: "XrDemoController"}
       label: {key: label, type: string, value: "Ball Controller"}
-      pos: {key: pos, type: object, value: {"x":0,"y":-180}}
+      position: {key: position, type: object, value: {"x":360,"y":260}}
+      controllerId: {key: controllerId, type: string, value: "ball"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_ball_controller"}
+      "frontmatter:autoSeededPos": {key: "frontmatter:autoSeededPos", type: boolean, value: true}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Roll, jump, steer in air, and apply modifier torque."}
       properties: {key: properties, type: object, value: {"role":"controller","controllerId":"ball","output":"Roll, jump, steer in air, and apply modifier torque."}}
+      role: {key: role, type: string, value: "controller"}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 1}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 1}
     - id: {key: id, type: string, value: "xr_rocket_controller"}
       type: {key: type, type: string, value: "XrDemoController"}
       label: {key: label, type: string, value: "Rocket Controller"}
-      pos: {key: pos, type: object, value: {"x":0,"y":180}}
+      position: {key: position, type: object, value: {"x":360,"y":0}}
+      controllerId: {key: controllerId, type: string, value: "rocket"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_rocket_controller"}
+      "frontmatter:autoSeededPos": {key: "frontmatter:autoSeededPos", type: boolean, value: true}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Thrust, tilt, steer laterally, and stabilize with the modifier."}
       properties: {key: properties, type: object, value: {"role":"controller","controllerId":"rocket","output":"Thrust, tilt, steer laterally, and stabilize with the modifier."}}
+      role: {key: role, type: string, value: "controller"}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 1}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 0}
     - id: {key: id, type: string, value: "xr_runtime_gate"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "Native Runtime Gate"}
-      pos: {key: pos, type: object, value: {"x":440,"y":0}}
+      position: {key: position, type: object, value: {"x":720,"y":260}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_runtime_gate"}
+      "frontmatter:autoSeededPos": {key: "frontmatter:autoSeededPos", type: boolean, value: true}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 2}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Verify deterministic stepping, controller switching, camera follow, keyboard input, and gamepad input."}
       properties: {key: properties, type: object, value: {"role":"validation","state":"runtime-ready","output":"Verify deterministic stepping, controller switching, camera follow, keyboard input, and gamepad input."}}
+      role: {key: role, type: string, value: "validation"}
+      state: {key: state, type: string, value: "runtime-ready"}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 2}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 1}
     - id: {key: id, type: string, value: "xr_edited_media_proof"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "Scoped Edited-media Proof"}
-      pos: {key: pos, type: object, value: {"x":880,"y":300}}
+      position: {key: position, type: object, value: {"x":720,"y":520}}
+      broaderXrState: {key: broaderXrState, type: string, value: "blocked"}
+      canonicalDeliveryState: {key: canonicalDeliveryState, type: string, value: "runtime-ready"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_edited_media_proof"}
+      "frontmatter:autoSeededPos": {key: "frontmatter:autoSeededPos", type: boolean, value: true}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 1}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Inspect the protected-main XR v2 review gate and canonical runtime receipt; applying this seed does not rerun the browser smoke."}
       properties: {key: properties, type: object, value: {"role":"downstream canonical-main evidence projection","scope":"xr-authoring-edited-media-delivery","sourceSnapshotState":"source-ready","canonicalDeliveryState":"runtime-ready","broaderXrState":"blocked","output":"Inspect the protected-main XR v2 review gate and canonical runtime receipt; applying this seed does not rerun the browser smoke."}}
+      role: {key: role, type: string, value: "downstream canonical-main evidence projection"}
+      scope: {key: scope, type: string, value: "xr-authoring-edited-media-delivery"}
+      sourceSnapshotState: {key: sourceSnapshotState, type: string, value: "source-ready"}
+      "visual:importance": {key: "visual:importance", type: number, value: 16}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 14}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 2}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 2}
     - id: {key: id, type: string, value: "schema:XrParticleEmitter"}
       type: {key: type, type: string, value: "EcsComponentSchema"}
       label: {key: label, type: string, value: "XrParticleEmitter"}
       position: {key: position, type: object, value: {"x":0,"y":-2760}}
+      ecsComponent: {key: ecsComponent, type: object, value: {"name":"XrParticleEmitter","fields":{"rate":"f32","lifetime":"f32","ceiling":"u16","size":"f32","color":"u32"}}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:schema:XrParticleEmitter"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 0}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"ecsComponent":{"name":"XrParticleEmitter","fields":{"rate":"f32","lifetime":"f32","ceiling":"u16","size":"f32","color":"u32"}}}}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -13}
     - id: {key: id, type: string, value: "schema:XrRenderable"}
       type: {key: type, type: string, value: "EcsComponentSchema"}
       label: {key: label, type: string, value: "XrRenderable"}
       position: {key: position, type: object, value: {"x":0,"y":-2520}}
+      ecsComponent: {key: ecsComponent, type: object, value: {"name":"XrRenderable","fields":{"geometryKind":"u8","visible":"u8"}}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:schema:XrRenderable"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 0}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"ecsComponent":{"name":"XrRenderable","fields":{"geometryKind":"u8","visible":"u8"}}}}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -12}
     - id: {key: id, type: string, value: "schema:XrRig"}
       type: {key: type, type: string, value: "EcsComponentSchema"}
       label: {key: label, type: string, value: "XrRig"}
       position: {key: position, type: object, value: {"x":0,"y":-2280}}
+      ecsComponent: {key: ecsComponent, type: object, value: {"name":"XrRig","fields":{"enabled":"u8"}}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:schema:XrRig"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 0}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"ecsComponent":{"name":"XrRig","fields":{"enabled":"u8"}}}}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -11}
     - id: {key: id, type: string, value: "schema:XrTransform"}
       type: {key: type, type: string, value: "EcsComponentSchema"}
       label: {key: label, type: string, value: "XrTransform"}
       position: {key: position, type: object, value: {"x":0,"y":-2040}}
+      ecsComponent: {key: ecsComponent, type: object, value: {"name":"XrTransform","fields":{"px":"f32","py":"f32","pz":"f32","qx":"f32","qy":"f32","qz":"f32","qw":"f32","sx":"f32","sy":"f32","sz":"f32"}}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:schema:XrTransform"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 0}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"ecsComponent":{"name":"XrTransform","fields":{"px":"f32","py":"f32","pz":"f32","qx":"f32","qy":"f32","qz":"f32","qw":"f32","sx":"f32","sy":"f32","sz":"f32"}}}}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -10}
     - id: {key: id, type: string, value: "entity:scene.hero"}
       type: {key: type, type: string, value: "EcsEntity"}
       label: {key: label, type: string, value: "Hero"}
       position: {key: position, type: object, value: {"x":0,"y":-1800}}
+      ecsEntity: {key: ecsEntity, type: object, value: {"entityRef":"scene.hero","components":{"XrTransform":{"px":0,"py":0,"pz":0,"qx":0,"qy":0,"qz":0,"qw":1,"sx":1,"sy":1,"sz":1},"XrRenderable":{"geometryKind":0,"visible":1},"XrParticleEmitter":{"rate":12,"lifetime":0.75,"ceiling":64,"size":0.06,"color":6737151},"XrRig":{"enabled":1}}}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:entity:scene.hero"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 0}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"ecsEntity":{"entityRef":"scene.hero","components":{"XrTransform":{"px":0,"py":0,"pz":0,"qx":0,"qy":0,"qz":0,"qw":1,"sx":1,"sy":1,"sz":1},"XrRenderable":{"geometryKind":0,"visible":1},"XrParticleEmitter":{"rate":12,"lifetime":0.75,"ceiling":64,"size":0.06,"color":6737151},"XrRig":{"enabled":1}}}}}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -9}
     - id: {key: id, type: string, value: "entity:scene.marker"}
       type: {key: type, type: string, value: "EcsEntity"}
       label: {key: label, type: string, value: "Marker"}
       position: {key: position, type: object, value: {"x":0,"y":-1560}}
+      ecsEntity: {key: ecsEntity, type: object, value: {"entityRef":"scene.marker","components":{"XrTransform":{"px":-1.5,"py":-0.5,"pz":0,"qx":0,"qy":0,"qz":0,"qw":1,"sx":1,"sy":1,"sz":1}}}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:entity:scene.marker"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 0}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"ecsEntity":{"entityRef":"scene.marker","components":{"XrTransform":{"px":-1.5,"py":-0.5,"pz":0,"qx":0,"qy":0,"qz":0,"qw":1,"sx":1,"sy":1,"sz":1}}}}}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -8}
     - id: {key: id, type: string, value: "action:hero:burst"}
       type: {key: type, type: string, value: "XrBehaviorAction"}
       label: {key: label, type: string, value: "Burst particles"}
       position: {key: position, type: object, value: {"x":0,"y":-1320}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:action:hero:burst"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 1}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"xrBehaviorAction":{"actionId":"hero-burst","kind":"emit-particle-burst","targetEntityRef":"scene.hero","parameters":{"count":8}}}}
+      "visual:importance": {key: "visual:importance", type: number, value: 16}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 14}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -6}
+      xrBehaviorAction: {key: xrBehaviorAction, type: object, value: {"actionId":"hero-burst","kind":"emit-particle-burst","targetEntityRef":"scene.hero","parameters":{"count":8}}}
     - id: {key: id, type: string, value: "behavior:hero:select"}
       type: {key: type, type: string, value: "XrBehaviorTrigger"}
       label: {key: label, type: string, value: "Select hero"}
       position: {key: position, type: object, value: {"x":0,"y":-1080}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:behavior:hero:select"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 1}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"xrBehaviorTrigger":{"behaviorId":"hero-select","trigger":"select","sourceEntityRef":"scene.hero"}}}
+      "visual:importance": {key: "visual:importance", type: number, value: 16}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 14}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -5}
+      xrBehaviorTrigger: {key: xrBehaviorTrigger, type: object, value: {"behaviorId":"hero-select","trigger":"select","sourceEntityRef":"scene.hero"}}
     - id: {key: id, type: string, value: "xr_v2_demo_entry"}
       type: {key: type, type: string, value: "XrDemoControl"}
       label: {key: label, type: string, value: "Run XR v2 Browser Demo"}
       position: {key: position, type: object, value: {"x":0,"y":-840}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_demo_entry"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 1}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Apply this source document, then run npm run xr-v2:review-ready for the clean browser evidence gate."}
       properties: {key: properties, type: object, value: {"role":"lifecycle","state":"browser-demo-ready","output":"Apply this source document, then run npm run xr-v2:review-ready for the clean browser evidence gate."}}
+      role: {key: role, type: string, value: "lifecycle"}
+      state: {key: state, type: string, value: "browser-demo-ready"}
+      "visual:importance": {key: "visual:importance", type: number, value: 16}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 14}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -4}
     - id: {key: id, type: string, value: "xr_v2_ac_01"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-1 Capability detection"}
       position: {key: position, type: object, value: {"x":0,"y":-600}}
+      criterion: {key: criterion, type: string, value: "AC-1"}
+      evidenceState: {key: evidenceState, type: string, value: "source-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_01"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Resolve exactly one pinned capability tier; physical matrix remains external certification."}
       properties: {key: properties, type: object, value: {"criterion":"AC-1","evidenceState":"source-backed","output":"Resolve exactly one pinned capability tier; physical matrix remains external certification."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -3}
     - id: {key: id, type: string, value: "xr_v2_ac_02"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-2 Live capture default"}
       position: {key: position, type: object, value: {"x":0,"y":-360}}
+      criterion: {key: criterion, type: string, value: "AC-2"}
+      evidenceState: {key: evidenceState, type: string, value: "browser-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_02"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "After explicit camera Start, sample the canonical stream through local depth inference and render live DIBR stereo previews; named-device frame budget remains external proof."}
       properties: {key: properties, type: object, value: {"criterion":"AC-2","evidenceState":"browser-backed","output":"After explicit camera Start, sample the canonical stream through local depth inference and render live DIBR stereo previews; named-device frame budget remains external proof."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -2}
     - id: {key: id, type: string, value: "xr_v2_ac_03"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-3 Post-process fallback"}
       position: {key: position, type: object, value: {"x":0,"y":-120}}
+      criterion: {key: criterion, type: string, value: "AC-3"}
+      evidenceState: {key: evidenceState, type: string, value: "browser-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_03"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "On consecutive frame-budget breaches, continue raw capture and atomically persist the flat asset plus one typed post-process job on save."}
       properties: {key: properties, type: object, value: {"criterion":"AC-3","evidenceState":"browser-backed","output":"On consecutive frame-budget breaches, continue raw capture and atomically persist the flat asset plus one typed post-process job on save."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: -1}
     - id: {key: id, type: string, value: "xr_v2_ac_04"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-4 Progressive viewer"}
       position: {key: position, type: object, value: {"x":0,"y":120}}
+      criterion: {key: criterion, type: string, value: "AC-4"}
+      evidenceState: {key: evidenceState, type: string, value: "browser-observable-after-saved-asset-render"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_04"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence."}
       properties: {key: properties, type: object, value: {"criterion":"AC-4","evidenceState":"browser-observable-after-saved-asset-render","output":"Keep evidence not-observed until a persisted capture survives reload and explicit open, then two distinct timestamped frames render on an attached depth/Three surface or raw-video playback time advances; listing, selection, canplay, or session entry alone is never evidence."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 0}
     - id: {key: id, type: string, value: "xr_v2_ac_05"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-5 iOS constraint"}
       position: {key: position, type: object, value: {"x":0,"y":360}}
+      criterion: {key: criterion, type: string, value: "AC-5"}
+      evidenceState: {key: evidenceState, type: string, value: "source-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_05"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Fail closed from WebXR tiers when platform facts disallow WebXR; named iOS proof remains external."}
       properties: {key: properties, type: object, value: {"criterion":"AC-5","evidenceState":"source-backed","output":"Fail closed from WebXR tiers when platform facts disallow WebXR; named iOS proof remains external."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 1}
     - id: {key: id, type: string, value: "xr_v2_ac_06"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-6 ECS composition"}
       position: {key: position, type: object, value: {"x":0,"y":600}}
+      criterion: {key: criterion, type: string, value: "AC-6"}
+      evidenceState: {key: evidenceState, type: string, value: "browser-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_06"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Project the mounted fixture entities and component schemas without duplicate query results."}
       properties: {key: properties, type: object, value: {"criterion":"AC-6","evidenceState":"browser-backed","output":"Project the mounted fixture entities and component schemas without duplicate query results."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 2}
     - id: {key: id, type: string, value: "xr_v2_ac_07"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-7 Material graph"}
       position: {key: position, type: object, value: {"x":0,"y":840}}
+      criterion: {key: criterion, type: string, value: "AC-7"}
+      evidenceState: {key: evidenceState, type: string, value: "browser-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_07"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Compile and apply the checker material graph to the Hero target."}
       properties: {key: properties, type: object, value: {"criterion":"AC-7","evidenceState":"browser-backed","output":"Compile and apply the checker material graph to the Hero target."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 3}
     - id: {key: id, type: string, value: "xr_v2_ac_08"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-8 Behavior graph"}
       position: {key: position, type: object, value: {"x":0,"y":1080}}
+      criterion: {key: criterion, type: string, value: "AC-8"}
+      evidenceState: {key: evidenceState, type: string, value: "source-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_08"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Dispatch the wired Hero select action exactly once and keep unwired triggers inert."}
       properties: {key: properties, type: object, value: {"criterion":"AC-8","evidenceState":"source-backed","output":"Dispatch the wired Hero select action exactly once and keep unwired triggers inert."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 4}
     - id: {key: id, type: string, value: "xr_v2_ac_09"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-9 Particles"}
       position: {key: position, type: object, value: {"x":0,"y":1320}}
+      criterion: {key: criterion, type: string, value: "AC-9"}
+      evidenceState: {key: evidenceState, type: string, value: "source-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_09"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Keep the Hero emitter within rate, lifetime, and ceiling bounds."}
       properties: {key: properties, type: object, value: {"criterion":"AC-9","evidenceState":"source-backed","output":"Keep the Hero emitter within rate, lifetime, and ceiling bounds."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 6}
     - id: {key: id, type: string, value: "xr_v2_ac_10"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-10 Timeline"}
       position: {key: position, type: object, value: {"x":0,"y":1560}}
+      criterion: {key: criterion, type: string, value: "AC-10"}
+      evidenceState: {key: evidenceState, type: string, value: "source-backed"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_10"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Interpolate the Hero Arm bone-pose track at the mounted playhead."}
       properties: {key: properties, type: object, value: {"criterion":"AC-10","evidenceState":"source-backed","output":"Interpolate the Hero Arm bone-pose track at the mounted playhead."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 7}
     - id: {key: id, type: string, value: "xr_v2_ac_11"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-11 Packaging"}
       position: {key: position, type: object, value: {"x":0,"y":1800}}
+      criterion: {key: criterion, type: string, value: "AC-11"}
+      evidenceState: {key: evidenceState, type: string, value: "browser-observable-after-explicit-action"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_11"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances."}
       properties: {key: properties, type: object, value: {"criterion":"AC-11","evidenceState":"browser-observable-after-explicit-action","output":"Use Verify packaging on the explicitly opened identity-bound capture; evidence appears only after every pre-mux encoded source sample decodes, the mux preserves exact codec/count/payload bytes, and the mounted WebM advances."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 8}
     - id: {key: id, type: string, value: "xr_v2_ac_12"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "AC-12 Connected preview"}
       position: {key: position, type: object, value: {"x":0,"y":2040}}
+      criterion: {key: criterion, type: string, value: "AC-12"}
+      evidenceState: {key: evidenceState, type: string, value: "browser-observable-after-explicit-action"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_ac_12"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 2}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 1}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload."}
       properties: {key: properties, type: object, value: {"criterion":"AC-12","evidenceState":"browser-observable-after-explicit-action","output":"Use Run local preview; evidence appears only after an exact mounted-scene edit crosses real WebRTC peers, paints the attached viewer canvas in a later frame, and is then acknowledged within the bound without reload."}}
+      "visual:importance": {key: "visual:importance", type: number, value: 20}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 15.65685424949238}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 9}
     - id: {key: id, type: string, value: "xr_v2_certification_boundary"}
       type: {key: type, type: string, value: "XrDemoValidation"}
       label: {key: label, type: string, value: "External Physical-device Certification"}
       position: {key: position, type: object, value: {"x":0,"y":2280}}
+      browserDemoState: {key: browserDemoState, type: string, value: "runtime-ready"}
+      browserLocalMountState: {key: browserLocalMountState, type: string, value: "mounted"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:xr_v2_certification_boundary"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 1}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 1}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
+      output: {key: output, type: string, value: "Browser demo proof never substitutes for named camera, sensor, headset, device, or Production certification."}
+      physicalDeviceState: {key: physicalDeviceState, type: string, value: "external-required"}
+      pinnedContractState: {key: pinnedContractState, type: string, value: "partial"}
+      productionState: {key: productionState, type: string, value: "not-claimed"}
       properties: {key: properties, type: object, value: {"role":"promotion-boundary","browserDemoState":"runtime-ready","browserLocalMountState":"mounted","pinnedContractState":"partial","physicalDeviceState":"external-required","productionState":"not-claimed","output":"Browser demo proof never substitutes for named camera, sensor, headset, device, or Production certification."}}
+      role: {key: role, type: string, value: "promotion-boundary"}
+      "visual:importance": {key: "visual:importance", type: number, value: 16}
+      "visual:nodeSize": {key: "visual:nodeSize", type: number, value: 14}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 10}
     - id: {key: id, type: string, value: "material:hero"}
       type: {key: type, type: string, value: "XrMaterialGraph"}
       label: {key: label, type: string, value: "Hero checker material"}
       position: {key: position, type: object, value: {"x":0,"y":2520}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:material:hero"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 0}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"xrMaterialGraph":{"schema":"agentic-graph-xr-material-graph/v1","nodes":[{"id":"albedo","type":"color","value":"#336699"},{"id":"surface","type":"texture-2d","assetId":"builtin:checker-v1"},{"id":"roughness","type":"number","value":0.35},{"id":"output","type":"mesh-standard-output","bindings":{"color":"albedo","map":"surface","roughness":"roughness"}}]}}}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 11}
+      xrMaterialGraph: {key: xrMaterialGraph, type: object, value: {"schema":"agentic-graph-xr-material-graph/v1","nodes":[{"id":"albedo","type":"color","value":"#336699"},{"id":"surface","type":"texture-2d","assetId":"builtin:checker-v1"},{"id":"roughness","type":"number","value":0.35},{"id":"output","type":"mesh-standard-output","bindings":{"color":"albedo","map":"surface","roughness":"roughness"}}]}}
     - id: {key: id, type: string, value: "timeline:hero"}
       type: {key: type, type: string, value: "XrTimelineSequence"}
       label: {key: label, type: string, value: "Hero arm animation"}
       position: {key: position, type: object, value: {"x":0,"y":2760}}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:timeline:hero"}
+      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
+      "graph:degree": {key: "graph:degree", type: number, value: 0}
+      "graph:inDegree": {key: "graph:inDegree", type: number, value: 0}
+      "graph:outDegree": {key: "graph:outDegree", type: number, value: 0}
+      "graph:structuralDegree": {key: "graph:structuralDegree", type: number, value: 0}
       properties: {key: properties, type: object, value: {"xrTimelineSequence":{"schema":"agentic-graph-xr-timeline-sequence/v1","durationSeconds":2,"loop":false,"tracks":[{"id":"arm-pose","kind":"bone-pose","targetName":"Arm","keyframes":[{"timeSeconds":0,"value":{"translation":[0,0,0],"rotation":[0,0,0,1],"scale":[1,1,1]}},{"timeSeconds":2,"value":{"translation":[0,1,0],"rotation":[0,1,0,0],"scale":[1,1,1]}}]}]}}}
+      "visual:xIndex": {key: "visual:xIndex", type: number, value: 0}
+      "visual:yIndex": {key: "visual:yIndex", type: number, value: 12}
+      xrTimelineSequence: {key: xrTimelineSequence, type: object, value: {"schema":"agentic-graph-xr-timeline-sequence/v1","durationSeconds":2,"loop":false,"tracks":[{"id":"arm-pose","kind":"bone-pose","targetName":"Arm","keyframes":[{"timeSeconds":0,"value":{"translation":[0,0,0],"rotation":[0,0,0,1],"scale":[1,1,1]}},{"timeSeconds":2,"value":{"translation":[0,1,0],"rotation":[0,1,0,0],"scale":[1,1,1]}}]}]}}
   edges:
-    - source: {key: source, type: string, value: "xr_demo_entry"}
+    - id: {key: id, type: string, value: "flow-e01"}
+      source: {key: source, type: string, value: "xr_demo_entry"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_ball_controller"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "select ball"}
-    - source: {key: source, type: string, value: "xr_demo_entry"}
+    - id: {key: id, type: string, value: "flow-e02"}
+      source: {key: source, type: string, value: "xr_demo_entry"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_rocket_controller"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "select rocket"}
-    - source: {key: source, type: string, value: "xr_ball_controller"}
+    - id: {key: id, type: string, value: "flow-e03"}
+      source: {key: source, type: string, value: "xr_ball_controller"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_runtime_gate"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate"}
-    - source: {key: source, type: string, value: "xr_rocket_controller"}
+    - id: {key: id, type: string, value: "flow-e04"}
+      source: {key: source, type: string, value: "xr_rocket_controller"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_runtime_gate"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate"}
-    - source: {key: source, type: string, value: "xr_demo_entry"}
+    - id: {key: id, type: string, value: "flow-e05"}
+      source: {key: source, type: string, value: "xr_demo_entry"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_edited_media_proof"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "inspect scoped proof"}
-    - source: {key: source, type: string, value: "material:hero"}
+    - id: {key: id, type: string, value: "flow-e06"}
+      source: {key: source, type: string, value: "material:hero"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "entity:scene.hero"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "xr-material-target"}
-    - source: {key: source, type: string, value: "behavior:hero:select"}
+      properties: {key: properties, type: object, value: {"graph:endpointState":"unresolved"}}
+    - id: {key: id, type: string, value: "flow-e07"}
+      source: {key: source, type: string, value: "behavior:hero:select"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "action:hero:burst"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "xr-behavior-wire"}
-    - source: {key: source, type: string, value: "timeline:hero"}
+    - id: {key: id, type: string, value: "flow-e08"}
+      source: {key: source, type: string, value: "timeline:hero"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "entity:scene.hero"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "xr-timeline-target"}
-    - source: {key: source, type: string, value: "xr_v2_demo_entry"}
+      properties: {key: properties, type: object, value: {"graph:endpointState":"unresolved"}}
+    - id: {key: id, type: string, value: "flow-e09"}
+      source: {key: source, type: string, value: "xr_v2_demo_entry"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_01"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-1"}
-    - source: {key: source, type: string, value: "xr_v2_ac_01"}
+    - id: {key: id, type: string, value: "flow-e10"}
+      source: {key: source, type: string, value: "xr_v2_ac_01"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_02"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-2"}
-    - source: {key: source, type: string, value: "xr_v2_ac_02"}
+    - id: {key: id, type: string, value: "flow-e11"}
+      source: {key: source, type: string, value: "xr_v2_ac_02"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_03"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-3"}
-    - source: {key: source, type: string, value: "xr_v2_ac_03"}
+    - id: {key: id, type: string, value: "flow-e12"}
+      source: {key: source, type: string, value: "xr_v2_ac_03"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_04"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-4"}
-    - source: {key: source, type: string, value: "xr_v2_ac_04"}
+    - id: {key: id, type: string, value: "flow-e13"}
+      source: {key: source, type: string, value: "xr_v2_ac_04"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_05"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-5"}
-    - source: {key: source, type: string, value: "xr_v2_ac_05"}
+    - id: {key: id, type: string, value: "flow-e14"}
+      source: {key: source, type: string, value: "xr_v2_ac_05"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_06"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-6"}
-    - source: {key: source, type: string, value: "xr_v2_ac_06"}
+    - id: {key: id, type: string, value: "flow-e15"}
+      source: {key: source, type: string, value: "xr_v2_ac_06"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_07"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-7"}
-    - source: {key: source, type: string, value: "xr_v2_ac_07"}
+    - id: {key: id, type: string, value: "flow-e16"}
+      source: {key: source, type: string, value: "xr_v2_ac_07"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_08"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-8"}
-    - source: {key: source, type: string, value: "xr_v2_ac_08"}
+    - id: {key: id, type: string, value: "flow-e17"}
+      source: {key: source, type: string, value: "xr_v2_ac_08"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_09"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-9"}
-    - source: {key: source, type: string, value: "xr_v2_ac_09"}
+    - id: {key: id, type: string, value: "flow-e18"}
+      source: {key: source, type: string, value: "xr_v2_ac_09"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_10"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-10"}
-    - source: {key: source, type: string, value: "xr_v2_ac_10"}
+    - id: {key: id, type: string, value: "flow-e19"}
+      source: {key: source, type: string, value: "xr_v2_ac_10"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_11"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-11"}
-    - source: {key: source, type: string, value: "xr_v2_ac_11"}
+    - id: {key: id, type: string, value: "flow-e20"}
+      source: {key: source, type: string, value: "xr_v2_ac_11"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_ac_12"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "validate AC-12"}
-    - source: {key: source, type: string, value: "xr_v2_ac_12"}
+    - id: {key: id, type: string, value: "flow-e21"}
+      source: {key: source, type: string, value: "xr_v2_ac_12"}
+      sourceHandle: {key: sourceHandle, type: string, value: "output"}
       target: {key: target, type: string, value: "xr_v2_certification_boundary"}
+      targetHandle: {key: targetHandle, type: string, value: "input"}
       label: {key: label, type: string, value: "stop at external certification"}
 ---
 
@@ -669,6 +1340,29 @@ validation and make no automatic network, permission, camera, sensor, or
 immersive-session request. This seed claims neither Production availability nor
 deployment authority.
 
+## Solopreneur MVP loop
+
+This seed is the fastest source-backed path to rehearse the current solo-builder
+loop without adding infrastructure: author one XR scene, inspect it in the
+workspace, rehearse it from Home Apex, and keep publication, storage, and
+commercial proof as separate explicit steps. `npm run dev` owns the authoring
+workspace, while `npm run dev:apex` owns the Home-first rehearsal that reuses
+this same Physics Playground as the canonical background.
+
+The loop stays lean and fail-closed. This document owns the world, camera,
+controller, Motion Control, Timeline rehearsal, and Game Mode overlay for the
+shared XR surface. It does not authorize Cloudflare publish, shared-storage
+promotion, checkout, settlement, wallet movement, or marketplace mutation.
+Those remain separately owned product and release flows with their own evidence.
+
+| Concern | Current owner | Boundary |
+| --- | --- | --- |
+| Shared lifecycle, invocation grammar, and workspace governance | `agentic-os` | Source-time policy and validation only |
+| XR world, Home Apex background, `81rv10` entry background, and Pages publication | `agentic-graph` | Canonical runtime and release owner |
+| Generated production artifact mirror | `huijoohwee` | Artifact-only; never patch downstream |
+| Spatial standalone frontend | `GameXR` | Separate frontend owner; this seed stays the shared authored world |
+| Checkout, settlement replay, and marketplace proof | Existing commerce and payment owners | Never inferred from this local XR demo |
+
 ## Physics Playground
 
 The same Source Files document activates a playable XR physics playground inside the normal agentic-graph workspace. The default Singapore waterfront terrain, player presentations, physics stepping, inputs, controller switching, objective loop, and selectable camera source are owned by agentic-graph runtime modules and need no remote service or downloaded asset.
@@ -694,6 +1388,130 @@ For another device, use the existing **Settings → Workspace sync**: sign in,
 enable Online, upload this scene's selected file scope and verify the read-back,
 then download it in that workspace on the receiving device. Local conflicts are
 retained as separate copies. A local appearance edit alone is not a cloud acknowledgement.
+
+### Native staged encounter slice
+
+The next native enhancement slice for this seed is one compact staged encounter
+that stays inside the current repo owners: two visible performers, one authored
+set-piece cluster, one clear world-state change, and one deterministic replay
+path. The repo already has the right primitives for that loop without adding a
+second renderer, scene owner, storage path, or external runtime.
+
+| Native primitive | Existing owner in this repo | Staged-use role |
+| --- | --- | --- |
+| Timeline frame stepping, camera marks, and `0.25x` rehearsal | Timeline plus Animation panels | Beat-by-beat blocking, pause, inspect, and retry |
+| Placed Subjects plus the existing procedural asset library | Shared XR scene owner in this seed | Performer and set-piece casting with persistent IDs |
+| `agentic-os-behavior-graph/v1` and exact-once dispatch | Seed-authored behavior graph plus native runtime bridge | Trigger one visible world reaction from one bounded event |
+| Key, treasure, barrels, bowling pins, cannonballs, and controller swap | Existing deterministic collision world | Escalation, payoff, and reset inside one authored mission |
+| Home Apex, workspace XR surface, and `81rv10` background reuse | `agentic-graph` publish/runtime boundary | Rehearse one source-backed demo across Dev and Prod surfaces |
+
+For MVP, keep the authored scene to a small sequence: approach, pressure,
+impact, escape, and reset. Express pacing with the existing Timeline and camera
+controls, express actor identity through Placed Subjects and the current asset
+catalog, and express the world-state change through one behavior-graph event
+plus the current objective HUD and Replay action. This keeps the demo source-
+backed, local-first, and reviewable under the same `npm run dev`,
+`npm run dev:apex`, and `npm run xr-v2:review-ready` workflow.
+
+For GTM, treat that staged encounter as a reusable proof surface for Home Apex,
+the canonical workspace, and the generated `81rv10` entry. The commercial step
+is still separate: use the scene to demonstrate an agentic product loop, but
+keep checkout, settlement, marketplace mutation, and paid evidence with their
+existing owners.
+
+### Timeline and choreography asides
+
+The next UI-facing enhancement for this seed is to make the rehearsal surfaces
+playable as two cooperating asides rather than readable as one generic
+transport plus one generic preset panel. Keep the current owners: BottomPanel
+Timeline remains the time and selection owner, while FloatingPanel Animation
+remains the cast, camera, and choreography owner. Neither panel creates a
+second clock, scene, or runtime authority.
+
+| Aside | Native owner | Must show | Must not claim |
+| --- | --- | --- | --- |
+| BottomPanel Timeline aside | `TimelineBottomPanelView` -> `XrCameraMotionSection` -> `XrTimelineRehearsalControls` plus `xrTimelineCueRuntime` and the XR timeline command/runtime owners | ordered beat-like rows, current time, selected cast/camera/object lane, parallel actions at the same time, frame stepping, replay path, click-to-jump cue behavior, and visible current-row state | gameplay authority, hidden state mutation, or a second transport |
+| FloatingPanel Animation/Choreography aside | `XrAnimationFloatingPanelView` -> `XrChoreographyInspector` plus `xrMotionReferenceRuntime` and `xrSharedAssetControlRuntime` | current cast target, current camera path, selected mark metadata, compatible motions, stage-state warnings, active object targets, and notes that change with the selected cue | publication, export proof, or timeline-time ownership |
+
+For MVP, the BottomPanel aside should play as a performance rail for the active
+scene: one ordered list of timed actions with the current row always visible,
+parallel rows grouped by identical time, and each row naming the actor or
+camera target plus the action in source terms already present in this seed.
+Selecting a row should immediately pause, scrub, and focus the corresponding
+cast mark, camera mark, or scene event through the existing Timeline selection
+bridge and `jumpToXrTimelineCue` path. The current `0.25x`, previous-frame,
+next-frame, Pause, Resume, Reset, and Replay controls remain the bounded
+transport around that rail, so the aside is directly playable rather than a
+static checklist.
+
+For MVP, the FloatingPanel aside should play as the stage-state summary for the
+same moment in time: who is currently active, which set pieces or object targets
+matter to the selected cue, what the current cast and camera paths are, and
+whether any choreography speed warnings need attention. Populate it from the
+existing `runtime.plan.cast`, `runtime.plan.camera`, selected actor binding,
+shot targets, shared asset controls, and the selected mark metadata that the
+rehearsal runtime already exposes. Treat notes as authored operator hints or
+diagnostics only; they never widen runtime authority.
+
+For GTM, these two asides become the fastest way to explain the current source-
+backed demo to a solo operator or prospect: the BottomPanel answers “what
+happens next and when,” and the FloatingPanel answers “who and what are in
+play right now.” The value is rehearsal clarity and demonstration speed on the
+existing XR surface, Home Apex background, and `81rv10` entry background, not a
+new content format or separate runtime. The playable contract is simple:
+choose a cue in the BottomPanel, observe the scene jump, then verify the
+FloatingPanel updates to the same moment without inventing a second state owner.
+
+#### Playable script: The Three Little Pigs and the Long Sea Journey
+
+Use the following script as the native rehearsal slice for the BottomPanel
+Timeline aside and the FloatingPanel Animation/Choreography aside. It should be
+treated as one staged sequence with explicit cast, prop, and cue ownership that
+can be stepped, replayed, and inspected through the existing XR timeline and
+choreography surfaces.
+
+**Story script**
+
+Once upon a time, three little pigs sailed far across the sea to find new
+homes.
+
+The first pig built a house of **straw**. A big, hungry wolf came and went
+"HUFF and PUFF!" and blew it down. The pig ran away, fast, fast, fast.
+
+The second pig built a house of **sticks**. The wolf came again, "HUFF and
+PUFF!", and blew it down too.
+
+The third pig was the cleverest sailor of them all. He built a house of
+**brick**, strong and solid, right by the sea. The wolf huffed. The wolf
+puffed. But the house did not move, not even a little bit.
+
+So the wolf tried to sneak down the chimney. But the clever pig called out,
+"My name is Nobody!" and dropped him straight into a big pot of hot soup.
+Splash. The wolf jumped up and ran away, and never, ever came back.
+
+The three pigs lived happily together in the brick house by the sea.
+
+**Playable staging contract**
+
+| Slice | BottomPanel Timeline aside | FloatingPanel Animation/Choreography aside |
+| --- | --- | --- |
+| Sea arrival | establish opening cue, sea-travel motion, shoreline landing, and home-selection beats | show active cast, vessel or shoreline set pieces, and opening camera path |
+| Straw house failure | show wolf approach, huff/puff cue, collapse cue, and first-pig escape path | show straw-house state, collapse target, and first-pig motion target |
+| Stick house failure | show second approach, repeated huff/puff cue, collapse cue, and second-pig escape path | show stick-house state, wolf pressure cue, and second-pig path update |
+| Brick house stand | show wolf approach, huff/puff attempt, no-collapse outcome, and hold beat on the intact house | show brick-house state, chimney readiness, and intact-structure confirmation |
+| Chimney and soup payoff | show chimney descent cue, "My name is Nobody!" line, soup-drop impact, wolf escape, and end-state beat | show chimney target, soup prop, impact state, and final cast arrangement |
+
+For MVP, keep the sequence under one minute and author it as a bounded cue rail:
+arrival, straw failure, stick failure, brick stand, chimney payoff, and final
+safe-state reset. The BottomPanel aside should let the operator jump directly to
+each beat group, while the FloatingPanel aside should update the live cast,
+prop, and structure state for the same selected moment.
+
+For TAD and ADR continuity, this script does not add a second narrative engine,
+scene graph, or storage shape. It is only a source-backed playable script that
+reuses the current Timeline selection, cue jumping, choreography inspection,
+cast state, camera state, and object-target owners already present in
+`agentic-canvas` and `agentic-graph`.
 
 ## Source Files storage and refresh
 

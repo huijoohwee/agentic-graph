@@ -120,6 +120,15 @@ export function XrShootCameraSection() {
     })
   }, [publishShotFraming, pushUiToast, selectedShotTarget])
 
+  const armCastMarkPlacement = React.useCallback(() => {
+    if (!selectedShotTarget || !selectedTrack) return
+    const state = useGraphStore.getState()
+    state.setBottomSurfaceTab('timeline')
+    state.setBottomSurfaceCollapsed(false)
+    state.setMermaidDiagramSelectedRowKey('gantt', `xr-lane:object:${selectedShotTarget.id}`)
+    setXrMotionReferenceCastMarkArmed(true)
+  }, [selectedShotTarget, selectedTrack])
+
   const dropCameraMark = React.useCallback(() => {
     if (!selectedShotTarget) return
     const current = readCameraFramingRuntime()
@@ -211,7 +220,13 @@ export function XrShootCameraSection() {
         className={cn('App-toolbar__btn flex w-full items-center justify-center gap-2', uiSelectedRowStateClassName(runtime.castMarkArmed))}
         aria-pressed={runtime.castMarkArmed}
         disabled={!selectedTrack}
-        onClick={() => toggleXrMotionReferenceCastMarkArmed()}
+        onClick={() => {
+          if (runtime.castMarkArmed) {
+            setXrMotionReferenceCastMarkArmed(false)
+            return
+          }
+          armCastMarkPlacement()
+        }}
         data-kg-xr-shoot-cast-mark="1"
       >
         <MapPin className="size-3.5" aria-hidden />
