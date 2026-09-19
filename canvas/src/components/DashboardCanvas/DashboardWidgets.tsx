@@ -1,4 +1,7 @@
 import React from 'react'
+import { DashboardMarkdown } from './DashboardMarkdown'
+import { useDashboardCardDrag } from './DashboardWidgetBoard'
+import { WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import { UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME, buildResponsiveViewportFitGridStyle } from '@/lib/ui/responsiveViewportFitGrid'
 import { buildKanbanCardDropIntentLabel } from '@/features/markdown/ui/kanban/kanbanDragIntent'
 import { getKanbanCardDragVisualState } from '@/features/markdown/ui/kanban/kanbanDragVisualState'
@@ -30,9 +33,11 @@ export function DashboardMetricTile(input: {
   onCommitMetricLabel?: (metricId: string, nextValue: string) => void
   onCommitMetricDetail?: (metricId: string, nextValue: string) => void
 }) {
+  const shared = useDashboardCardDrag(input.metric.id)
   const props = { canEdit: false, cardDragProps: { draggable: false } as KanbanCardDragProps, cardDropProps: {} as KanbanCardDropProps,
     draggingMetricId: null, dragOverMetricId: null, commitFlashMetricId: null, dragOverPosition: 'before' as KanbanDropPosition,
-    registerMetricElement: noop, onCommitMetricLabel: noop, onCommitMetricDetail: noop, ...input }
+    registerMetricElement: noop, onCommitMetricLabel: noop, onCommitMetricDetail: noop,
+    ...(shared ? { cardDragProps: shared.cardDragProps, cardDropProps: shared.cardDropProps, draggingMetricId: shared.dragging, dragOverMetricId: shared.over, dragOverPosition: shared.position, commitFlashMetricId: shared.flash, registerMetricElement: shared.register } : {}), ...input }
   const { cardDragProps, cardDropProps, dragOverMetricId, dragOverPosition, draggingMetricId, metric } = props
   const colors = TONE_COLORS[metric.tone]
   const dragging = draggingMetricId === metric.id
@@ -48,6 +53,7 @@ export function DashboardMetricTile(input: {
       className={[
         'relative min-h-[78px] min-w-0 rounded-md border px-3 py-2 shadow-sm transition-transform duration-150',
         colors.chip,
+        WIDGET_SELECTION_SURFACE_CLASS_NAME,
         metricDragVisualState.className,
       ].join(' ')}
       style={metricDragVisualState.style}
@@ -128,15 +134,16 @@ function DashboardTableRows(props: {
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-y-auto pr-1" data-kg-dashboard-card-scrollable="1">
+      <table className="w-full text-left text-xs"><thead><tr><th scope="col">Label</th><th scope="col">Value</th></tr></thead><tbody>
       {rows.map(row => {
         const rowMovable = row.id !== EMPTY_DASHBOARD_ROW.id
         const selected = props.selectedNodeId === row.id
         const dragging = draggingRowId === row.id
         return (
-        <section
+        <tr
           key={row.id}
           className={[
-            'grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--kg-border)] px-2 py-2 last:border-b-0',
+            'border-b border-[var(--kg-border)] px-2 py-2 last:border-b-0',
             rowMovable ? 'cursor-grab select-none active:cursor-grabbing' : '',
             selected ? 'rounded border-b-transparent bg-blue-50/80' : '',
             dragging ? 'opacity-45' : '',
@@ -179,9 +186,10 @@ function DashboardTableRows(props: {
             setDraggingRowId(null)
           }}
         >
-          <section className="min-w-0">
+          <td className="min-w-0 px-2 py-2">
             <CardInlineTextEditor
               value={row.label}
+              markdownPreview="auto"
               ariaLabel={`Dashboard row label for ${row.id}`}
               placeholder="Add label"
               canEdit={props.canEditRows && rowMovable}
@@ -190,11 +198,12 @@ function DashboardTableRows(props: {
               editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} text-xs font-medium leading-5`}
             />
             {row.detail ? <p className="m-0 mt-0.5 truncate text-[11px] text-[var(--kg-text-tertiary)]" title={row.detail}>{row.detail}</p> : null}
-          </section>
-          <span className="shrink-0 text-sm font-semibold text-[var(--kg-text-primary)]">{row.value}</span>
-        </section>
+          </td>
+          <td className="px-2 py-2 text-sm font-semibold"><DashboardMarkdown text={row.value} /></td>
+        </tr>
         )
       })}
+      </tbody></table>
     </section>
   )
 }
@@ -218,10 +227,12 @@ export function DashboardCardView(input: {
   onCommitCardText?: (cardId: string, field: DashboardCardTextField, nextValue: string) => void
   children?: React.ReactNode
 }) {
+  const shared = useDashboardCardDrag(input.card.id)
   const props = { canEditRows: false, canEditCardText: false, gridEnabled: false, selectedNodeId: '', sectionLabel: 'Dashboard',
     cardDragProps: { draggable: false } as KanbanCardDragProps, cardDropProps: {} as KanbanCardDropProps,
     draggingCardId: null, dragOverCardId: null, commitFlashCardId: null,
-    dragOverPosition: 'before' as KanbanDropPosition, registerCardElement: noop, ...input }
+    dragOverPosition: 'before' as KanbanDropPosition, registerCardElement: noop,
+    ...(shared ? { cardDragProps: shared.cardDragProps, cardDropProps: shared.cardDropProps, draggingCardId: shared.dragging, dragOverCardId: shared.over, dragOverPosition: shared.position, commitFlashCardId: shared.flash, registerCardElement: shared.register } : {}), ...input }
   const { card, cardDragProps, cardDropProps, dragOverCardId, dragOverPosition, draggingCardId, gridEnabled } = props
   const dragging = draggingCardId === card.id
   const dropTarget = dragOverCardId === card.id
@@ -237,6 +248,7 @@ export function DashboardCardView(input: {
       className={[
         `relative min-w-0 rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-4 shadow-sm`,
         'transition-transform duration-150',
+        WIDGET_SELECTION_SURFACE_CLASS_NAME,
         cardDragVisualState.className,
       ].join(' ')}
       style={cardDragVisualState.style}
@@ -286,8 +298,8 @@ export function DashboardCardView(input: {
           />
         </section>
       </header>
-      <section className={props.children ? "min-w-0 overflow-auto" : "h-[178px] min-w-0 overflow-hidden"}>
-        {props.children ?? (card.kind === 'table' ? (
+      <section data-kg-dashboard-card-body="1" className={props.children ? "min-w-0 overflow-auto" : "h-[178px] min-w-0 overflow-hidden"}>
+        {props.children ?? (card.markdown ? <DashboardMarkdown text={card.markdown} /> : card.kind === 'table' ? (
           <DashboardTableRows
             card={card}
             selectedNodeId={props.selectedNodeId}

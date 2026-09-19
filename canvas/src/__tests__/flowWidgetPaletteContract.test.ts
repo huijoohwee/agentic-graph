@@ -98,7 +98,7 @@ export function testFlowWidgetPaletteConsolidatesMediaWidgetsIntoRichMediaPanel(
   ]) {
     if (!palettePreviewText.includes(snippet)) throw new Error(`expected widget palette layout preview snippet: ${snippet}`)
   }
-  if (!floatingPanelText.includes("const storyboardRendererActive = canvasRenderMode === '2d' && canvas2dRenderer === 'storyboard'")
+  if (!floatingPanelText.includes("const storyboardRendererActive = !inspection && canvasRenderMode === '2d' && canvas2dRenderer === 'storyboard'")
     || !floatingPanelText.includes('const widgetDragEnabled = storyboardRendererActive && widgetPaletteEntries.length > 0')
     || !floatingPanelText.includes('Switch 2D Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.')) {
     throw new Error('expected floating props panel widget drag to be available only on the 2D Storyboard renderer with explicit guidance elsewhere')
@@ -106,7 +106,8 @@ export function testFlowWidgetPaletteConsolidatesMediaWidgetsIntoRichMediaPanel(
   if (!floatingPanelText.includes('filter(isPropsPanelWidgetPaletteEntry)')) {
     throw new Error('expected FloatingPanel Props Panel to filter palette entries through the shared neutral palette helper')
   }
-  if (!floatingPanelText.includes('<WidgetPalette entries={widgetPaletteEntries} dragEnabled={widgetDragEnabled} />')
+  if (!floatingPanelText.includes('<WidgetPalette entries={widgetPaletteEntries} dragEnabled={widgetDragEnabled} dashboardActive={dashboardActive}>')
+    || !floatingPanelText.includes('<DashboardWidgetPalette />')
     || !floatingPanelText.includes('data-kg-props-panel-surface="widget-palette"')) {
     throw new Error('expected FloatingPanel Props Panel to delegate to the shared WidgetPalette as a palette-only surface')
   }
@@ -356,7 +357,7 @@ export function testFlowWidgetPaletteConsolidatesMediaWidgetsIntoRichMediaPanel(
   }
   const pointerWidgetDropStart = widgetDropBridgeText.indexOf('const commitFlowWidgetPointerDrop =')
   const pointerWidgetDropAwait = widgetDropBridgeText.indexOf("if (!pos) return 'await-transform'", pointerWidgetDropStart)
-  const pointerWidgetDropDedupe = widgetDropBridgeText.indexOf('if (args.shouldDedupeWidgetDrop(dropKey))', pointerWidgetDropStart)
+  const pointerWidgetDropDedupe = widgetDropBridgeText.indexOf('if (!session.command && args.shouldDedupeWidgetDrop(dropKey))', pointerWidgetDropStart)
   if (pointerWidgetDropStart < 0 || pointerWidgetDropAwait < pointerWidgetDropStart || pointerWidgetDropDedupe < pointerWidgetDropAwait) {
     throw new Error('expected pointer widget drops to await an empty-canvas transform before recording the committed drop dedupe key')
   }

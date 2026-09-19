@@ -16,7 +16,6 @@ import { EdgeTypesRendererSettings } from '@/features/toolbar/ui/EdgeTypesRender
 import { RendererGraphTopologySummary } from '@/features/toolbar/ui/RendererGraphTopologySummary'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { readGlobalEdgeType, type GlobalEdgeType, withGlobalEdgeType } from '@/lib/graph/edgeTypes'
-import { LayoutModeRendererSettings } from '@/features/toolbar/ui/LayoutModeRendererSettings'
 import { readLayoutMode2d, type LayoutMode2d } from '@/lib/graph/layoutMode'
 import { cancelWorkspaceSyncTask, scheduleWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
 import {
@@ -24,6 +23,7 @@ import {
   WORKSPACE_SYNC_TASK_RENDERER_EDGE_TYPE_VIEW_STATE,
 } from '@/lib/async/workspaceSyncKeys'
 import { isFlowchartCanvas2dRenderer, isD3Like2dRenderer } from '@/lib/config.render'
+import { useRendererInspectionGraph } from './floatingPanelBridge'
 
 const WorkspaceTableModeControlLazy = React.lazy(async () => {
   const module = await import('@/features/workspace-table/ui/WorkspaceTableModeControl')
@@ -39,6 +39,7 @@ export function ToolbarToolMenuRendererView(props: {
   }) => void
 }) {
   const onRegisterActions = props.onRegisterActions
+  const inspectionGraph = useRendererInspectionGraph()
   const {
     sections: renderSections,
     allSectionsCollapsed: allRenderSectionsCollapsed,
@@ -148,8 +149,8 @@ export function ToolbarToolMenuRendererView(props: {
     workspaceViewMode === 'editor' && canvasRenderMode === '2d' && canvas2dRenderer === 'd3'
   const showDesignWireframeUi = canvasRenderMode === '2d' && canvas2dRenderer === 'design'
   const showFlowchartUi = canvasRenderMode === '2d' && isFlowchartCanvas2dRenderer(canvas2dRenderer)
-  const showRadarGalaxyUi = canvasRenderMode === '2d' && isD3Like2dRenderer(canvas2dRenderer)
-  const allowLayoutModeSelection = isD3Like2dRenderer(canvas2dRenderer)
+  const showRadarGalaxyUi = !inspectionGraph && canvasRenderMode === '2d' && isD3Like2dRenderer(canvas2dRenderer)
+  const allowLayoutModeSelection = !!inspectionGraph || isD3Like2dRenderer(canvas2dRenderer)
 
   React.useEffect(() => {
     if (allowLayoutModeSelection) return
@@ -183,16 +184,35 @@ export function ToolbarToolMenuRendererView(props: {
 
   return (
     <section className="flex flex-col gap-2">
-      <RendererGraphTopologySummary />
+      <RendererGraphTopologySummary graph={inspectionGraph ?? undefined} />
       <React.Suspense fallback={null}>
         <WorkspaceTableModeControlLazy />
       </React.Suspense>
       <RendererPaletteSettings />
       <RendererHoverSettings />
-      <LayoutModeRendererSettings
-        selectedLayoutMode={layoutModeDraft}
-        onSelectLayoutMode={setLayoutModeDraft}
-        disabled={!allowLayoutModeSelection}
+      <RenderSettingsSection
+        inspection={!!inspectionGraph}
+        layoutSettings={{ selectedLayoutMode: layoutModeDraft, onSelectLayoutMode: setLayoutModeDraft, disabled: !allowLayoutModeSelection }}
+        threeGroupsCollapsed={{
+          links: renderLinksCollapsed,
+          layout: renderLayoutCollapsed,
+          backgroundFog: renderBackgroundFogCollapsed,
+          starfield: renderStarfieldCollapsed,
+          camera: renderCameraCollapsed,
+          selection: renderSelectionCollapsed,
+        }}
+        onToggleThreeGroup={(group, next) => {
+          if (group === 'links') setRenderLinksCollapsed(next)
+          else if (group === 'layout') setRenderLayoutCollapsed(next)
+          else if (group === 'backgroundFog') setRenderBackgroundFogCollapsed(next)
+          else if (group === 'starfield') setRenderStarfieldCollapsed(next)
+          else if (group === 'camera') setRenderCameraCollapsed(next)
+          else if (group === 'selection') setRenderSelectionCollapsed(next)
+        }}
+        presetsCollapsed={renderPresetsCollapsed}
+        onTogglePresets={setRenderPresetsCollapsed}
+        codebaseIndexCollapsed={renderCodebaseIndexCollapsed}
+        onToggleCodebaseIndex={setRenderCodebaseIndexCollapsed}
       />
       <EdgeTypesRendererSettings
         selectedEdgeType={edgeTypeDraft}
@@ -249,28 +269,7 @@ export function ToolbarToolMenuRendererView(props: {
           {UI_LABELS.expandAll}
         </button>
       </section>
-      <RenderSettingsSection
-        threeGroupsCollapsed={{
-          links: renderLinksCollapsed,
-          layout: renderLayoutCollapsed,
-          backgroundFog: renderBackgroundFogCollapsed,
-          starfield: renderStarfieldCollapsed,
-          camera: renderCameraCollapsed,
-          selection: renderSelectionCollapsed,
-        }}
-        onToggleThreeGroup={(group, next) => {
-          if (group === 'links') setRenderLinksCollapsed(next)
-          else if (group === 'layout') setRenderLayoutCollapsed(next)
-          else if (group === 'backgroundFog') setRenderBackgroundFogCollapsed(next)
-          else if (group === 'starfield') setRenderStarfieldCollapsed(next)
-          else if (group === 'camera') setRenderCameraCollapsed(next)
-          else if (group === 'selection') setRenderSelectionCollapsed(next)
-        }}
-        presetsCollapsed={renderPresetsCollapsed}
-        onTogglePresets={setRenderPresetsCollapsed}
-        codebaseIndexCollapsed={renderCodebaseIndexCollapsed}
-        onToggleCodebaseIndex={setRenderCodebaseIndexCollapsed}
-      />
+
     </section>
   )
 }

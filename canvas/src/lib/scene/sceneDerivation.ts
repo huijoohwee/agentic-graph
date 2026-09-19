@@ -180,6 +180,7 @@ export const deriveSceneDisplayGraph = (args: {
   const displayLookup = getCachedGraphLookup({
     cacheScope: 'scene-derivation-display-graph',
     graphData: displayGraphData,
+    preferCurrentGraphDataRefs: true, // Layout changes preserve identity but replace live node coordinates.
   })
   const displayNodeIdSet = new Set<string>()
   const nodeIndexById = new Map<string, number>()

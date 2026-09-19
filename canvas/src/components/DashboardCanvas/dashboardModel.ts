@@ -31,6 +31,7 @@ export type DashboardMetric = {
 export type DashboardCardKind = 'bar' | 'line' | 'area' | 'table'
 
 export type DashboardCard = {
+  markdown?: string
   id: string
   title: string
   subtitle: string

@@ -2,73 +2,86 @@ import { useEffect, useSyncExternalStore } from 'react'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
 import { unwrapKeyTypeValue } from '@/lib/graph/keyTypeValue'
+import { parseDashboardWidgets as parseWidgetDocument } from './dashboardWidgetContract.mjs'
 import type { DashboardCard, DashboardMetric } from './dashboardModel'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { readAgentRunWorkspace, useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
+import { readDashboardSnapshot, updateDashboardSnapshotConfiguration, type DashboardSnapshot } from './dashboardMarkdownDocument'
 
-/** Authored display configuration only. Run evidence never enters this source file. */
-export const DASHBOARD_WIDGETS_PATH = '/notes/dashboard.widgets.json'
-export type DashboardWidgetSettings = { source?: string; visible?: boolean; title?: string; subtitle?: string; footnote?: string; kind?: DashboardCard['kind']; tone?: DashboardCard['tone']; order?: number }
-export type DashboardWidgetDocument = { version: 1; widgets: Record<string, DashboardWidgetSettings> }
+/** One owner for authored settings and explicit, historical dashboard documents. */
+import { DASHBOARD_WIDGETS_PATH } from './dashboardWidgetToolContract.mjs'
+export { DASHBOARD_WIDGETS_PATH }
+export type DashboardWidgetSettings = { source?: string; visible?: boolean; expanded?: boolean; title?: string; subtitle?: string; footnote?: string; kind?: DashboardCard['kind']; tone?: DashboardCard['tone']; order?: number; template?: string; markdown?: string; aspectRatio?: '16:9' | '9:16' | 'custom'; width?: number; height?: number; columns?: number; children?: string[] }
+export type DashboardWidgetDocument = { version: 1; widgets: Record<string, DashboardWidgetSettings>; boards?: Record<string, string[][]> }
 const empty = (): DashboardWidgetDocument => ({ version: 1, widgets: {} })
-const object = (input: unknown): Record<string, unknown> => {
-  const value = unwrapKeyTypeValue(input)
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('Expected a Dashboard widget object.')
-  return value as Record<string, unknown>
-}
-export function parseDashboardWidgets(text: string | null): DashboardWidgetDocument {
-  if (text === null) return empty()
-  if (text.length > 65536) throw Error('Dashboard widget configuration exceeds 64 KiB.')
-  const doc = object(JSON.parse(text)), entries = Object.entries(object(unwrapKeyTypeValue(doc.widgets, 'widgets')))
-  if (unwrapKeyTypeValue(doc.version, 'version') !== 1 || entries.length > 128) throw Error('Unsupported Dashboard widget configuration.')
-  const widgets: Record<string, DashboardWidgetSettings> = {}
-  for (const [id, raw] of entries) {
-    if (!/^(graph|mission):[a-zA-Z0-9_-]{1,80}$/.test(id)) throw Error('Invalid Dashboard widget identity.')
-    const item = object(raw), next: DashboardWidgetSettings = {}
-    for (const [key, value] of Object.entries(item).map(([key, value]) => [key, unwrapKeyTypeValue(value, key)] as const)) {
-      if (key === 'source' && typeof value === 'string' && /^graph:[a-zA-Z0-9_-]{1,80}$/.test(value)) next.source = value
-      else if (key === 'visible' && typeof value === 'boolean') next.visible = value
-      else if (['title', 'subtitle', 'footnote'].includes(key) && typeof value === 'string' && value.length <= 256) Object.assign(next, { [key]: value })
-      else if (key === 'kind' && ['bar', 'line', 'area', 'table'].includes(String(value))) next.kind = value as DashboardCard['kind']
-      else if (key === 'tone' && ['blue', 'green', 'amber', 'rose', 'slate'].includes(String(value))) next.tone = value as DashboardCard['tone']
-      else if (key === 'order' && typeof value === 'number' && Number.isSafeInteger(value) && Math.abs(value) <= 10000) next.order = value
-      else throw Error(`Invalid setting ${key} for ${id}.`)
-    }
-    widgets[id] = next
-  }
-  return { version: 1, widgets }
-}
-let snapshot = { document: empty(), error: '', ready: false }
+export const parseDashboardWidgets = (text: string | null): DashboardWidgetDocument => parseWidgetDocument(text, unwrapKeyTypeValue) as DashboardWidgetDocument
+let snapshot: { document: DashboardWidgetDocument; error: string; ready: boolean; sourcePath: string; scope: string; dashboard: DashboardSnapshot | null } = {
+  document: empty(), error: '', ready: false, sourcePath: DASHBOARD_WIDGETS_PATH, scope: '', dashboard: null }
+const sourceScope = () => readAgentRunWorkspace() ? 'mission' : useMarkdownExplorerStore.getState().activePath ?? ''
 const listeners = new Set<() => void>()
 const emit = () => { for (const listener of listeners) listener() }
 let generation = 0, pending: Promise<unknown> = Promise.resolve()
 async function reload() {
-  const ticket = ++generation
+  const ticket = ++generation, scope = sourceScope()
   try {
-    const fs = await getWorkspaceFs(), document = parseDashboardWidgets(await fs.readFileText(DASHBOARD_WIDGETS_PATH))
-    if (ticket === generation) { snapshot = { document, error: '', ready: true }; emit() }
-  } catch (error) { if (ticket === generation) { snapshot = { ...snapshot, ready: true, error: String((error as Error).message) }; emit() } }
+    const fs = await getWorkspaceFs()
+    let selectedPath = scope
+    let selected = scope !== 'mission' && /\.(md|markdown|mdx|json)$/i.test(scope) ? await fs.readFileText(scope) : null
+    if (selected && /\.json$/i.test(scope)) {
+      let output: unknown
+      try { output = JSON.parse(selected).dashboard_output } catch { /* Ordinary JSON has no report association. */ }
+      if (typeof output === 'string' && output.startsWith('/docs/dashboards/') && output.endsWith('.md') && !output.split('/').includes('..')) {
+        selectedPath = output; selected = await fs.readFileText(output)
+      } else selected = null
+    }
+    const dashboard = selected ? readDashboardSnapshot(selected) : null
+    if (dashboard && selectedPath !== scope && dashboard.files?.input !== scope) throw Error('Dashboard input/output association changed.')
+    const document = dashboard?.configuration ?? parseDashboardWidgets(await fs.readFileText(DASHBOARD_WIDGETS_PATH))
+    if (ticket === generation && scope === sourceScope()) { snapshot = { document, dashboard, sourcePath: dashboard ? selectedPath : DASHBOARD_WIDGETS_PATH, scope, error: '', ready: true }; emit() }
+  } catch (error) { if (ticket === generation) { snapshot = { ...snapshot, scope, ready: true, error: String((error as Error).message) }; emit() } }
 }
 export function useDashboardWidgets() {
+  const activePath = useMarkdownExplorerStore(state => state.activePath), workspace = useAgentRunWorkspace()
+  const scope = workspace ? 'mission' : activePath ?? ''
   const value = useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener) } }, () => snapshot, () => snapshot)
   useEffect(() => {
     void reload()
-    return subscribeWorkspaceFsChanged(detail => { if (!detail.path || detail.path === DASHBOARD_WIDGETS_PATH) void reload() })
-  }, [])
+    return subscribeWorkspaceFsChanged(detail => { if (!detail.path || detail.path === DASHBOARD_WIDGETS_PATH || detail.path === scope || detail.path === snapshot.sourcePath) void reload() })
+  }, [scope])
   return value
+}
+export async function readDashboardWidgetConfiguration() {
+  await reload()
+  if (!snapshot.ready || snapshot.error || snapshot.scope !== sourceScope()) throw Error(snapshot.error || 'Dashboard source changed. Inspect it again.')
+  return snapshot
 }
 export function updateDashboardWidget(id: string, update: DashboardWidgetSettings): Promise<void> {
   return updateDashboardWidgets({ [id]: update })
 }
-export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSettings | null>): Promise<void> {
-  const operation = pending.then(async () => {
-    const fs = await getWorkspaceFs(), before = await fs.readFileText(DASHBOARD_WIDGETS_PATH), document = parseDashboardWidgets(before)
+export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSettings | null>, boards?: Record<string, string[][]>): Promise<void> {
+  return mutateDashboardWidgets(document => {
     for (const [id, update] of Object.entries(updates)) { if (update === null) delete document.widgets[id]; else document.widgets[id] = { ...document.widgets[id], ...update } }
-    const text = JSON.stringify(parseDashboardWidgets(JSON.stringify(document)), null, 2) + '\n'
+    if (boards) document.boards = { ...document.boards, ...boards }
+    return document
+  })
+}
+export function mutateDashboardWidgets(edit: (document: DashboardWidgetDocument) => DashboardWidgetDocument): Promise<void> {
+  const scope = sourceScope()
+  const operation = pending.then(async () => {
+    const current = await readDashboardWidgetConfiguration(), sourcePath = current.sourcePath
+    if (current.scope !== scope || sourceScope() !== scope) throw Error('Dashboard source changed or is invalid. Reopen the card before editing.')
+    const fs = await getWorkspaceFs(), before = await fs.readFileText(sourcePath)
+    const portable = before && sourcePath !== DASHBOARD_WIDGETS_PATH ? readDashboardSnapshot(before) : null
+    if (sourcePath !== DASHBOARD_WIDGETS_PATH && !portable) throw Error('Dashboard document was replaced.')
+    const document = edit(portable?.configuration ?? parseDashboardWidgets(before))
+    const validated = parseDashboardWidgets(JSON.stringify(document))
+    const text = portable ? updateDashboardSnapshotConfiguration(before!, validated) : JSON.stringify(validated, null, 2) + '\n'
     // Read immediately before write; never replace concurrent Editor edits with a stale form.
-    if (await fs.readFileText(DASHBOARD_WIDGETS_PATH) !== before) throw Error('Dashboard configuration changed. Retry this edit.')
+    if (await fs.readFileText(sourcePath) !== before || sourceScope() !== scope) throw Error('Dashboard configuration changed. Retry this edit.')
     if (before === null) {
       if (!(await fs.listEntries()).some(entry => entry.path === '/notes' && entry.kind === 'folder')) await fs.createFolder({ parentPath: '/', name: 'notes', mirrorToHost: false })
       await fs.createFile({ parentPath: '/notes', name: 'dashboard.widgets.json', text, mirrorToHost: false })
-    } else await fs.writeFileText(DASHBOARD_WIDGETS_PATH, text, { mirrorToHost: false })
+    } else await fs.writeFileText(sourcePath, text, { mirrorToHost: false })
     await reload()
   })
   pending = operation.catch(error => { snapshot = { ...snapshot, error: String(error.message) }; emit() })
@@ -100,4 +113,9 @@ export function configureDashboardMetrics(document: DashboardWidgetDocument, met
     const config = widgetSettings(document, `graph:${metric.id}`)
     return { ...metric, label: config.title ?? metric.label, detail: config.subtitle ?? metric.detail, tone: config.tone ?? metric.tone }
   }).sort((a, b) => (widgetSettings(document, `graph:${a.id}`).order ?? 0) - (widgetSettings(document, `graph:${b.id}`).order ?? 0))
+}
+
+export function authoredDashboardWidgets(document: DashboardWidgetDocument, sourceIds: string[] = []) {
+  return Object.entries(document.widgets).filter(([id, config]) => id.startsWith('graph:') && !sourceIds.includes(id)
+    && !id.startsWith('graph:container-') && id !== 'graph:header' && config.template && !config.source && config.visible !== false)
 }

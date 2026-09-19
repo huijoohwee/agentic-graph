@@ -15,7 +15,9 @@ const subscribe = (listener: () => void) => { listeners.add(listener); return ()
 const emit = () => { for (const listener of listeners) listener() }
 const read = () => snapshot
 export const useAgentRunInspection = () => useSyncExternalStore(subscribe, read, () => null)
-export const useAgentRunWorkspace = () => useSyncExternalStore(subscribe, () => workspace, () => null)
+export const readAgentRunWorkspace = () => workspace
+export const subscribeAgentRunWorkspace = subscribe
+export const useAgentRunWorkspace = () => useSyncExternalStore(subscribe, readAgentRunWorkspace, () => null)
 
 /** Explicit entry can discover runs without holding private evidence or executing work. */
 export function activateAgentRunWorkspace(view: AgentRunView = 'topology', surface: 'editor' | 'canvas' = 'canvas', source?: string): void {
@@ -26,7 +28,8 @@ export function activateAgentRunWorkspace(view: AgentRunView = 'topology', surfa
     restoreView = () => useGraphStore.getState().setWorkspaceViewState(previous)
     listenForRevocation()
   }
-  workspace = { ...workspace, view, ...(source ? { source } : {}) }
+  // A fresh invocation resolves the current manifest; file selection supplies an explicit source.
+  workspace = { ...workspace, view, source }
   if (snapshot) snapshot = { ...snapshot, view }
   useGraphStore.getState().setWorkspaceViewState({ mode: surface,
     paneOpen: surface === 'editor' && !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches })

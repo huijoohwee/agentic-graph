@@ -96,21 +96,51 @@ belong to the install contract's sole endpoint Invocation Register and a non-own
 | Surface | Source owner | Contract | Local rung | Delivered rung |
 |---|---|---|---|---|
 | Pages HTTP MCP | `cloudflare/pages/agentic-graph-agent-ready.mjs` | exactly 7 read-only tools | `spec-complete` | `undocumented` |
-| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` plus shared contract | exactly 50 tools: 31 read-only and 19 guarded controls | `spec-complete` | `undocumented` |
+| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` plus shared contract | bounded core plus active workspace group; shared catalog retained internally | `spec-complete` | `undocumented` |
+| Mission workspace | `canvas/src/features/agent-ready/agentMissionWorkspace.ts` | one workflow under `.workspace`, exact native root plus `.worktrees` and codebase-index references; START-WORKFLOW/RELEASE-WORKFLOW retain identity and archive history; read-only path actions and settled source inventory | `spec-complete` | `undocumented` |
 | Local stdio MCP | `mcp/server.js`, `mcp/local-tool-contract.js` | broad descriptor/executor catalog; configuration-gated per tool | `spec-complete` | `undocumented` |
 | Control-plane MCP | `cloudflare/workers/agentic-graph-mcp/tool-registry.mjs` | separate 10-tool registry | `spec-complete` | `undocumented` |
-| Source materialization | `canvas/src/features/source-files/` and parser owners | source-backed workspace/canvas path | `spec-complete` | `undocumented` |
+| Source materialization | `canvas/src/features/source-files/` and parser owners | source-backed workspace/canvas path; share actions require the existing browser session before upload and reuse account recovery | `spec-complete` | `undocumented` |
 | Release controller | `.github/workflows/release.yml` | exact candidate, protected approval, verification | `spec-complete` | `undocumented` |
 
 Source presence is not a delivery claim. The release workflow does not deploy the separate
 control-plane Worker.
+
+### Embedded discovery and default dashboard
+
+OS [START-WORKFLOW](https://github.com/huijoohwee/agentic-os/blob/main/docs/START-WORKFLOW.md)
+owns default interactive launch/reuse policy. Graph reuses its existing query bootstrap and Dashboard
+view to open Agent Mission. Opening the view executes no indexing, model, evaluation or validation job;
+observations retain source/run identity and unavailable resource measurements remain unknown.
+
+The operator needs browser discovery to remain usable as the shared catalog grows. The embedded
+adapter advertises core navigation/identity tools plus one active workspace group. Its browser-only
+scope selector changes discovery without executing domain work; discovery must be refreshed after
+selection. Workspace transitions replace the prior group. Unrelated state changes and repeated
+startup preserve registrations. Each non-core shared tool belongs to one group; full internal
+MCP and `/`, `#`, `@` routing retain their shared contracts and guarded executors.
+
+[`webMcpToolExposure.mjs`](../../canvas/src/features/agent-ready/webMcpToolExposure.mjs) owns this
+transport policy: at most 16 descriptors and 32 KiB serialized metadata per scope. These are project
+regression budgets, not undocumented host limits. Browser descriptors retain complete input schemas,
+annotations and validated executors; output schemas and server metadata remain in the internal
+registry. Group implementations load on first execution. Existing lifecycle AbortControllers remove
+inactive registrations while preserving core and foreign tools. Invalid or oversized exposure fails
+before registration; a foreign name collision is not treated as an owned success.
+
+Validate catalog partition/budgets, input rejection, workspace transitions, repeated startup,
+registration teardown and both native/fallback browser discovery through the existing WebMCP tests.
+The local pilot must call the browser host's discovery API and open the actual dashboard. Host support
+is observed per tested runtime, not inferred from a payload budget. No new service, dependency,
+index, vector store or measurement ledger is introduced; adoption and willingness to pay remain
+unmeasured. Reverting the embedded adapter restores prior discovery without changing stored sources.
 
 ### Runtime contracts
 
 | Contract | End state | Failure behavior |
 |---|---|---|
 | Public-read | only the seven owned read tools are described and invoked | unsupported/mutating request rejected |
-| Embedded | current 50-tool contract is registered page-locally | unsupported page capability returns typed unavailable state |
+| Embedded | core plus one selected workspace group is registered page-locally | unsupported page capability returns typed unavailable state |
 | Local stdio | descriptor and executor availability are reported separately | missing adapter/credential fails closed |
 | Control-plane | ten-tool registry is protected by bearer authorization and MCP session semantics | missing runtime secret yields unavailable; invalid bearer yields unauthorized |
 | Structured content | validated content reaches the existing source/workspace/canvas owner | invalid content never bypasses parsing/validation |

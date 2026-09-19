@@ -274,7 +274,7 @@ export async function testSourceShareReadOnlyMemberCannotPublishOrWrite() {
     assert.equal(session.env.DB.documents.size, 0)
     assert.equal(session.env.DB.documentPublications.size, 0)
     assert.equal(publications, 0, 'failed sync authorization stops before publication')
-    assert.equal((await (await getAgenticGraphStorageDb()).collections.documents.find().exec()).length, 1, 'the local document survives denied remote write')
+    assert.equal((await (await getAgenticGraphStorageDb()).collections.documents.find().exec()).length, 0, 'denied membership stops before preparing an upload')
   })
 }
 
@@ -322,4 +322,29 @@ export async function testSourceShareBacklogStopsBeforeUnsentDocumentPublication
     assert.equal([...session.env.DB.documents.values()].filter(row => !row.deleted).length, 51)
     assert.equal(await (await readPublic(session, workspaceId)).text(), entry.text)
   })
+}
+
+export async function testSourceShareRequestsSessionBeforeQueueingUpload() {
+  const { AgenticGraphStorageSignInRequiredError } = await import('@/lib/storage/agentic-graph-storage-browser-session')
+  for (const status of [401, 403, 503]) {
+    await withBrowser(`session-${status}`, async (session, workspaceId) => {
+      const calls: Request[] = []
+      await assert.rejects(publishWorkspaceEntryShareUrl({ ...argsFor(session, workspaceId), fetchImpl: async (input, init) => {
+        const request = createStorageWorkerRequest(input, init)
+        calls.push(request)
+        assert.equal(new URL(request.url).pathname, AGENTIC_OS_STORAGE_ROUTE_PATHS.browserSession)
+        assert.equal(request.method, 'GET')
+        assert.equal(request.credentials, 'same-origin')
+        assert.equal(request.headers.has('authorization'), false)
+        return Response.json({ ok: false }, { status })
+      } }), error => status === 503
+        ? error instanceof Error && error.message.includes('unavailable')
+        : error instanceof AgenticGraphStorageSignInRequiredError)
+      assert.equal(calls.length, 1, 'Session failure must not be retried or upload document bytes')
+      const db = await getAgenticGraphStorageDb()
+      assert.equal((await db.collections.documents.find().exec()).length, 0)
+      assert.equal((await db.collections.syncOutbox.find().exec()).length, 0)
+      assert.equal(session.env.DB.documentPublications.size, 0)
+    })
+  }
 }

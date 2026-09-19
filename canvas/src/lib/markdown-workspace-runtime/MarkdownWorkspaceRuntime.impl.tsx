@@ -208,7 +208,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
   })
   const commitActiveTextBeforeSelectionRef = React.useRef<(() => Promise<boolean>) | null>(null)
   const explorerState = useMarkdownWorkspaceExplorerState({
-    active,
+    active, readOnly: Boolean(missionDocument.sourcePath),
     activePathRef,
     activeTextRef,
     viewerInlineEditActiveRef,
@@ -456,7 +456,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     }),
   )
   const shellState = useMarkdownWorkspaceShell({
-    active,
+    active: props.active !== false,
     refreshWorkspace: explorerState.refresh,
     highlightedLineRange,
     setHighlightedLineRange,

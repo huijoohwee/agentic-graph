@@ -1,3 +1,4 @@
+import { DASHBOARD_WIDGET_TOOL_ID } from '../../components/DashboardCanvas/dashboardWidgetToolContract.mjs'
 import { XR_SCENE_WEB_MCP_TOOL_IDS } from '../three/xrSceneMcpContract.mjs'
 import { CAMERA_WEB_MCP_TOOL_IDS } from '../strybldr/cameraMcpContract.mjs'
 import { XR_ANIMATION_WEB_MCP_TOOL_IDS } from '../three/xrAnimationMcpContract.mjs'
@@ -41,6 +42,7 @@ export const AGENTIC_OS_AGENT_READY_TOOL_IDS = Object.freeze({
   ...CITY_SIM_AGENT_READY_TOOL_IDS,
   ...STORAGE_SYNC_AGENT_READY_TOOL_IDS,
   ...GROUP_PANEL_AGENT_READY_TOOL_IDS,
+  controlLocalWidget: DASHBOARD_WIDGET_TOOL_ID,
   ...IMPORT_URL_AGENT_READY_TOOL_IDS,
   ...CANVAS_VIEW_AGENT_READY_TOOL_IDS,
   ...CANVAS_INTERACTION_AGENT_READY_TOOL_IDS,

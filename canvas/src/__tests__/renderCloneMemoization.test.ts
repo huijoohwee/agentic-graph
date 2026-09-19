@@ -38,5 +38,12 @@ export function testSceneDisplayDerivationReusesDisplayNodesForStableGraphObject
   if (a.displayNodes !== b.displayNodes) {
     throw new Error('expected displayNodes array to be reused for stable graphData object')
   }
+  const moved = { ...cloned, nodes: cloned.nodes.map(node => ({ ...node, x: 123, y: 456 })) }
+  const next = deriveSceneDisplayGraph({ graphData: moved })!
+  if (next.nodeById.get('a') !== next.displayNodes[0] || next.nodeById.get('a')?.x !== 123) {
+    throw new Error('same-identity layout changes must resolve edges against current display nodes')
+  }
+  if (a.nodeById.get('a') !== a.displayNodes[0] || a.nodeById.get('a')?.x === 123) {
+    throw new Error('a newer scene must not replace a retained scene node lookup')
+  }
 }
-

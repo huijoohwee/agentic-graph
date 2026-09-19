@@ -1,0 +1,10 @@
+.kg-widget-selection-outline,
+.kg-widget-selection-surface:focus,
+.kg-widget-selection-surface:focus-within,
+.kg-widget-selection-surface :focus-visible,
+[data-kg-dashboard-chart-hit]:focus,
+[data-kg-dashboard-row-selected="true"] {
+  /* One line outside each surface, so nested card faces cannot cover it. */
+  outline: 1px solid var(--kg-primary, #2563eb);
+  outline-offset: 0;
+}

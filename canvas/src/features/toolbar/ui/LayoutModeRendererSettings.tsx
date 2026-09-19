@@ -44,6 +44,8 @@ export function LayoutModeRendererSettings(props: {
   selectedLayoutMode?: LayoutMode2d
   onSelectLayoutMode?: (next: LayoutMode2d) => void
   disabled?: boolean
+  embedded?: boolean
+  inspection?: boolean
 }) {
   const onSelectLayoutModeProp = props.onSelectLayoutMode
   const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
@@ -70,7 +72,7 @@ export function LayoutModeRendererSettings(props: {
   const layoutMode = readLayoutMode2d(schema)
   const selectedLayoutMode = props.selectedLayoutMode ?? layoutMode
   const disabled = props.disabled === true
-  const showFrontmatterFlowControls = canvas2dRenderer === 'storyboard' || frontmatterModeEnabled
+  const showFrontmatterFlowControls = !props.inspection && (canvas2dRenderer === 'storyboard' || frontmatterModeEnabled)
   const fitReferenceFrame = React.useMemo(() => resolveFitReferenceFrame({
     referenceWidth: viewportFitReferenceWidth,
     referenceHeight: viewportFitReferenceHeight,
@@ -139,8 +141,7 @@ export function LayoutModeRendererSettings(props: {
     setLayoutMode(next)
   }, [onSelectLayoutModeProp, setLayoutMode])
 
-  return (
-    <CollapsibleSection title="Layout" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>
+  const controls = (
       <section className={uiToolbarSettingsPanelBodyClassName}>
         <section className={`text-[10px] ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Global layout mode shared across 2D/3D renderers and semantic views.
@@ -159,7 +160,7 @@ export function LayoutModeRendererSettings(props: {
         </ResponsiveSelectRow>
         <section className={uiToolbarSettingsPanelSubsectionClassName}>
           <section className={`text-[10px] ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
-            Shared fit frame for Pin, Fit to View, Fit to Screen, and Zoom to Selection. Frame is clamped upstream against the live viewport.
+            {props.inspection ? 'Fit fill applies to the retained D3 viewport. Reference dimensions apply to the workspace canvas.' : 'Shared fit frame for Pin, Fit to View, Fit to Screen, and Zoom to Selection. Frame is clamped upstream against the live viewport.'}
           </section>
           <ResponsiveNumberRow
             label="Fit fill"
@@ -176,7 +177,7 @@ export function LayoutModeRendererSettings(props: {
             min={320}
             max={7680}
             value={viewportFitReferenceWidth}
-            disabled={disabled}
+            disabled={disabled || props.inspection}
             onChange={setViewportFitReferenceWidth}
           />
           <ResponsiveNumberRow
@@ -185,7 +186,7 @@ export function LayoutModeRendererSettings(props: {
             min={180}
             max={4320}
             value={viewportFitReferenceHeight}
-            disabled={disabled}
+            disabled={disabled || props.inspection}
             onChange={setViewportFitReferenceHeight}
           />
           <section className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary} leading-snug text-right`}>
@@ -250,6 +251,6 @@ export function LayoutModeRendererSettings(props: {
           </section>
         ) : null}
       </section>
-    </CollapsibleSection>
   )
+  return props.embedded ? controls : <CollapsibleSection title="Layout" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>{controls}</CollapsibleSection>
 }

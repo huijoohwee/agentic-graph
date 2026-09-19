@@ -1,4 +1,5 @@
 import React from 'react'
+const WidgetCommandPanel = React.lazy(() => import('@/components/DashboardCanvas/DashboardWidgetCommandPanel'))
 
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -76,6 +77,7 @@ export default function WidgetPalette(args: {
       </header>
       <nav className="min-h-0 overflow-auto p-2" aria-label="Palette items">
         <menu className={uiToolbarColumnMenuListClassName} aria-label="Widget entries">
+          {!args.dashboardActive && <li><React.Suspense fallback={null}><WidgetCommandPanel /></React.Suspense></li>}
           {args.children}
           {layoutVariants.length === 0 ? (
             <li className={`px-2 py-2 ${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>No enabled entries.</li>

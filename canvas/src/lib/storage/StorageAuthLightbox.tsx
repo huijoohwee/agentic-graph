@@ -67,6 +67,7 @@ function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: str
         fetch(url, { credentials: 'same-origin', headers: { accept: 'application/json' }, signal: controller.signal }),
         readSession({ signal: controller.signal }),
       ])
+      if (response.status === 400) throw new Error('Sign-in is not enabled for ' + url.origin + '. Use an enabled app address or ask your workspace owner to enable this address.')
       if (!response.ok) throw new Error('Sign-in is unavailable (' + response.status + '). Your local files remain available.')
       const text = await readResponseTextWithDeadline(response, { maxBytes: 16_384, timeoutMs: 5000, fatalUtf8: true })
       const providers = parseOptions(JSON.parse(text), url.origin)

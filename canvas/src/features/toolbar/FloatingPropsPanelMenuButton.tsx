@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { cn } from '@/lib/utils'
 
 export default function FloatingPropsPanelMenuButton({
   onClick,
@@ -29,7 +30,7 @@ export default function FloatingPropsPanelMenuButton({
   uiPanelKeyValueTextSizeClass: string
   uiPanelTextFontClass: string
 }) {
-  const interactiveClassName = `block w-full text-left px-3 py-2 ${UI_THEME_TOKENS.table.rowHover} ${disabled ? 'opacity-50 cursor-not-allowed' : draggable ? 'cursor-grab active:cursor-grabbing' : ''} ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-normal ${UI_THEME_TOKENS.text.primary} ${className || ''}`
+  const interactiveClassName = cn(`block w-full text-left px-3 py-2 ${UI_THEME_TOKENS.table.rowHover} ${disabled ? 'opacity-50 cursor-not-allowed' : draggable ? 'cursor-grab active:cursor-grabbing' : ''} ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-normal ${UI_THEME_TOKENS.text.primary}`, className)
   const handleKeyDown = (ev: React.KeyboardEvent<HTMLElement>) => {
     if (disabled || !onClick) return
     if (ev.key !== 'Enter' && ev.key !== ' ') return

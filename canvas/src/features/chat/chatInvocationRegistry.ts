@@ -316,6 +316,12 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
     kind: 'skill' as const,
     keywords: option.keywords,
   })),
+  ...(['/', '#', '@'] as const).map((prefix): ChatInvocationCatalogEntry => ({
+    id: `native:widget:${prefix}`, label: 'Widget Cards', token: prefix === '/' ? '/canvas.widget' : prefix === '#' ? '#widget' : '@dashboard',
+    summary: 'Configure reusable Widget Cards, Markdown and row/column layouts.', group: 'Native workspace action', kind: prefix === '/' ? 'command' : prefix === '#' ? 'semantic' : 'binding',
+    sourcePath: 'canvas/src/components/DashboardCanvas/dashboardWidgetContract.mjs', keywords: ['widget', 'layout', 'markdown', 'aspect', 'resize'],
+    insertionText: '/canvas.widget #widget @dashboard operation=inspect', mcpTool: 'agentic-graph.control_local_widget',
+  })),
   NATIVE_IMPORT_URL_CATALOG_ENTRY,
   NATIVE_CRAWLER_CATALOG_ENTRY,
   IMAGE_TO_THREEJS_PROMPT_PRESET_COMMAND_ENTRY,

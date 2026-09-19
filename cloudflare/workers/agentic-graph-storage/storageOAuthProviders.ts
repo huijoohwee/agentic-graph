@@ -34,10 +34,36 @@ export class OAuthFailure extends Error {
   constructor(readonly status: number, message: string) { super(message) }
 }
 export type OAuthFetch = typeof fetch
-const boundedJson = async (response: Response): Promise<Record<string, unknown>> => {
-  if (!response.ok) {
+const providerRejection = (error: unknown, provider: OAuthProvider, status: number): OAuthFailure => {
+  const name = provider === 'google' ? 'Google' : 'GitHub'
+  // Only fixed protocol codes select copy. Never reflect error_description or provider bytes.
+  switch (error) {
+    case 'invalid_client':
+    case 'incorrect_client_credentials':
+      return new OAuthFailure(503, `${name} rejected the configured client ID or secret. The workspace owner must correct the sign-in configuration (invalid_client).`)
+    case 'redirect_uri_mismatch':
+      return new OAuthFailure(503, `${name} rejected the callback address. The workspace owner must correct the registered sign-in callback (redirect_uri_mismatch).`)
+    case 'unauthorized_client':
+    case 'deleted_client':
+      return new OAuthFailure(503, `${name} sign-in is not enabled for this client. The workspace owner must correct the provider configuration.`)
+    case 'invalid_grant':
+    case 'bad_verification_code':
+      return new OAuthFailure(401, `${name} rejected the authorization code. Return to sign-in to obtain a fresh authorization (invalid_grant).`)
+    case 'invalid_request':
+    case 'unsupported_grant_type':
+      return new OAuthFailure(502, `${name} rejected the sign-in request format. The workspace owner must check the OAuth integration.`)
+    case 'temporarily_unavailable':
+    case 'server_error':
+      return new OAuthFailure(503, `${name} sign-in is temporarily unavailable. Try again later.`)
+    default:
+      return status >= 500 ? new OAuthFailure(502, `${name} sign-in is unavailable. Try again later.`)
+        : new OAuthFailure(401, `${name} sign-in was not accepted.`)
+  }
+}
+const boundedJson = async (response: Response, provider: OAuthProvider): Promise<Record<string, unknown>> => {
+  if (response.status === 429) {
     await response.body?.cancel()
-    throw new OAuthFailure(response.status === 429 || response.status === 403 ? 429 : 502, 'Sign-in provider unavailable. Try again later.')
+    throw new OAuthFailure(429, 'Sign-in provider quota reached. Try again later.')
   }
   if (response.headers.get('x-ratelimit-remaining') === '0' || response.headers.has('retry-after')) {
     await response.body?.cancel()
@@ -62,12 +88,14 @@ const boundedJson = async (response: Response): Promise<Record<string, unknown>>
   let offset = 0
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
   const value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
-  if (!value || typeof value !== 'object' || Array.isArray(value) || value.error) throw new OAuthFailure(401, 'Sign-in was not accepted.')
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new OAuthFailure(502, 'Invalid sign-in provider response.')
+  if (value.error) throw providerRejection(value.error, provider, response.status)
+  if (!response.ok) throw new OAuthFailure(response.status === 403 ? 429 : 502, 'Sign-in provider unavailable. Try again later.')
   return value
 }
-const providerJson = async (url: string, init: RequestInit, fetcher: OAuthFetch): Promise<Record<string, unknown>> => {
+const providerJson = async (url: string, init: RequestInit, fetcher: OAuthFetch, provider: OAuthProvider): Promise<Record<string, unknown>> => {
   try {
-    return await boundedJson(await fetcher(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(5000) }))
+    return await boundedJson(await fetcher(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(5000) }), provider)
   } catch (error) {
     if (error instanceof OAuthFailure) throw error
     throw new OAuthFailure(502, 'Sign-in provider unavailable. Try again later.')
@@ -89,14 +117,14 @@ export const exchangeOAuthIdentity = async (state: OAuthState, code: string, con
     method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ client_id: client.id, client_secret: client.secret, code,
       redirect_uri: state.origin + CALLBACK, code_verifier: state.verifier, grant_type: 'authorization_code' }),
-  }, fetcher)
+  }, fetcher, state.provider)
   if (state.provider === 'github') {
     if (typeof token.access_token !== 'string' || !/^ghu_[A-Za-z0-9_]{16,512}$/.test(token.access_token)
       || token.token_type !== 'bearer' || token.scope !== '') throw new OAuthFailure(401, 'A GitHub App user token is required.')
     const user = await providerJson('https://api.github.com/user', { headers: {
       accept: 'application/vnd.github+json', authorization: `Bearer ${token.access_token}`,
       'user-agent': 'agentic-storage', 'x-github-api-version': '2022-11-28',
-    } }, fetcher)
+    } }, fetcher, state.provider)
     if (!Number.isSafeInteger(user.id) || Number(user.id) < 1) throw new OAuthFailure(401, 'Invalid GitHub identity.')
     return String(user.id)
   }

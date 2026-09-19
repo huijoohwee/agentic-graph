@@ -9,6 +9,7 @@ const readOnly = new Set(require('agentic-os/catalog/invocation.json').entries
   .filter(entry => entry.action === 'run' && entry.semantic === 'read-only').map(entry => entry.argv[0]))
 operations.add('workflow-trace'); operations.add('workspace-source')
 readOnly.add('workflow-trace'); readOnly.add('workspace-source')
+operations.add('workspace-codebase'); readOnly.add('workspace-codebase')
 const loopback = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 const json = (response, status, body) => {
   response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
@@ -76,10 +77,11 @@ export function createDurableRunBridgePlugin({ env = process.env, repoRoot = pro
         let input
         try { input = await body(request, AbortSignal.timeout(5000)) }
         catch { return json(response, 400, { code: 'invalid_run_input' }) }
-        if (operation === 'workspace-source') {
-          const { readWorkspaceObservationSource } = require('./viteWorkspaceObservationBridge.mjs')
+        if (operation === 'workspace-source' || operation === 'workspace-codebase') {
+          const { readWorkspaceObservationSource, readWorkspaceCodebaseIndex } = require('./viteWorkspaceObservationBridge.mjs')
           try {
-            const source = await readWorkspaceObservationSource(repoRoot, input)
+            const source = operation === 'workspace-codebase' ? await readWorkspaceCodebaseIndex(repoRoot, input)
+              : await readWorkspaceObservationSource(repoRoot, input)
             return json(response, 200, source ?? { code: 'workspace_source_unselected' })
           } catch { return json(response, 422, { code: 'workspace_source_unavailable' }) }
         }

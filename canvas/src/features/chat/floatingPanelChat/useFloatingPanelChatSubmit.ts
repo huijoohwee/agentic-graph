@@ -34,6 +34,13 @@ export const useFloatingPanelChatSubmit = (
     ev.preventDefault()
     const trimmed = normalizeInvocationTokenSpacing(args.input.trim())
     if (!trimmed || args.isLoading) return
+    if (/^\/canvas\.widget(?:\s|$)/.test(trimmed)) {
+      try {
+        await (await import('@/components/DashboardCanvas/dashboardWidgetTools')).controlDashboardWidget({ invocation: trimmed })
+        args.setErrorText(''); args.setInput('')
+      } catch (error) { args.setErrorText(error instanceof Error ? error.message : 'Widget configuration is unavailable.') }
+      return
+    }
     if (/^\/canvas\.view\.set(?:\s|$)/.test(trimmed)) {
       try {
         const { activateAgentRunPrompt } = await import('@/features/agent-ready/agentRunInspectionStore')

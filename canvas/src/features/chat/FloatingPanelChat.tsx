@@ -786,7 +786,7 @@ export default function FloatingPanelChat() {
     requestHistorySubTab,
     setStreamingInsights,
   })
-  const nativeImportUrlInputReady = isNativeImportUrlInvocationAttempt(input)
+  const nativeImportUrlInputReady = isNativeImportUrlInvocationAttempt(input) || /^\/canvas\.widget(?:\s|$)/.test(input.trim())
 
   return (
     <section className="h-full flex flex-col">

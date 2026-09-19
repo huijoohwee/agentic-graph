@@ -2,7 +2,7 @@ import { resolveMarkdownWorkspaceInitialPaneVisibility } from '@/features/markdo
 
 export function testMarkdownWorkspaceAbsoluteDocumentPathsOpenMatchingPane() {
   const cases = [
-    { path: '/agent-mission/agent-mission.manifest.json', expected: { json: true, markdown: false, viewer: false, html: false } },
+    { path: '/.workspace/workflow-test/agent-mission.manifest.json', expected: { json: true, markdown: false, viewer: false, html: false } },
     { path: 'workspace:/notes/rows.json?revision=1#section', expected: { json: true, markdown: false, viewer: false, html: false } },
     { path: '/docs/table.csv', expected: { json: false, markdown: false, viewer: true, html: false } },
   ]

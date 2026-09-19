@@ -11,6 +11,7 @@ import { RENDER_PANEL_SECTION_COPY } from '@/features/panels/config'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import RenderPresetSection from '@/features/panels/views/RenderPresetSection'
 import ThreeViewTuningSection from '@/features/panels/views/ThreeViewTuningSection'
+import { LayoutModeRendererSettings } from '@/features/toolbar/ui/LayoutModeRendererSettings'
 import MediaNodesSection from '@/features/panels/views/MediaNodesSection'
 import { isVoxelModeApplicable } from '@/lib/canvas/canvas3dMode'
 import { uiToolbarButtonMutedClassName } from '@/features/toolbar/ui/toolbarStyles'
@@ -30,6 +31,8 @@ interface ThreeGroupsCollapsed {
 }
 
 interface RenderSettingsSectionProps {
+  layoutSettings?: React.ComponentProps<typeof LayoutModeRendererSettings>
+  inspection?: boolean
   threeGroupsCollapsed?: ThreeGroupsCollapsed
   onToggleThreeGroup?: (group: keyof ThreeGroupsCollapsed, next: boolean) => void
   presetsCollapsed?: boolean
@@ -39,6 +42,8 @@ interface RenderSettingsSectionProps {
 }
 
 export default function RenderSettingsSection({
+  layoutSettings,
+  inspection = false,
   threeGroupsCollapsed,
   onToggleThreeGroup,
   presetsCollapsed,
@@ -109,8 +114,6 @@ export default function RenderSettingsSection({
     activeClassName: UI_THEME_TOKENS.table.rowHoverHighlight,
   } as const
 
-  const layoutMode: NonNullable<NonNullable<GraphSchema['layout']>['mode']> =
-    schema.layout?.mode === 'block' ? 'block' : 'radial'
   const voxelApplicable = isVoxelModeApplicable({
     canvas2dRenderer,
     documentSemanticMode,
@@ -118,16 +121,6 @@ export default function RenderSettingsSection({
     multiDimTableModeEnabled,
     schema,
   })
-
-  const setLayoutMode = React.useCallback(
-    (mode: NonNullable<NonNullable<GraphSchema['layout']>['mode']>) => {
-      const current = schema
-      const curLayout = current.layout || {}
-      setSchema({ ...current, layout: { ...curLayout, mode } })
-    },
-    [schema, setSchema],
-  )
-
 
   const setHideLabelsBelowScale = React.useCallback(
     (scale: number) => {
@@ -294,33 +287,6 @@ export default function RenderSettingsSection({
     [schema, setSchema],
   )
 
-  const applyPresentation3dPreset = React.useCallback(() => {
-    setCanvasRenderMode('3d')
-    setThreeConfig({
-      linkOpacity: 0.45,
-      linkDirectionalArrowLength: 7,
-      linkCurvature: 0.16,
-      linkCurveRotation: 0,
-      linkDirectionalArrowRelPos: 0.85,
-      linkDirectionalParticles: 0,
-      linkDirectionalParticleSpeed: 0.4,
-      nodeMotionIntensity: 0.15,
-      fogColor: '',
-      fogNear: 130,
-      fogFar: 310,
-      cameraDampingFactor: 0.18,
-      cameraRotateSpeed: 0.38,
-      cameraZoomSpeed: 0.65,
-      cameraPanSpeed: 0.45,
-      selection: {
-        selectedNodeGlowIntensity: 1.15,
-        dimmedNodeOpacity: 0.32,
-        dimmedEdgeOpacity: 0.32,
-        selectedEdgeWidth: 2.8,
-      },
-    })
-  }, [setCanvasRenderMode, setThreeConfig])
-
   const handleRunCodebaseIndexPipeline = React.useCallback(async () => {
     await runMarkdownPipelineWithStatus(setPipelineStatus)
   }, [])
@@ -420,6 +386,7 @@ export default function RenderSettingsSection({
         collapsed={presetsCollapsed}
         onToggle={onTogglePresets}
       >
+        <LayoutModeRendererSettings embedded {...layoutSettings} inspection={inspection} />
         <section className="mt-2 space-y-2">
           <section className={RENDER_SETTINGS_PRESETS_GRID_CLASS_NAME}>
             <section className="flex items-center justify-between gap-2">
@@ -428,6 +395,7 @@ export default function RenderSettingsSection({
               </section>
               <select
                 className={uiPanelKeyValueInputClass}
+                disabled={inspection}
                 value={canvasRenderMode}
                 onChange={e => {
                   if (!ensureBaselineUnlocked()) return
@@ -444,6 +412,7 @@ export default function RenderSettingsSection({
               </section>
               <select
                 className={uiPanelKeyValueInputClass}
+                disabled={inspection}
                 value={viewportControlsPreset || 'map'}
                 onChange={e => {
                   const raw = e.target.value
@@ -461,7 +430,7 @@ export default function RenderSettingsSection({
               <select
                 className={uiPanelKeyValueInputClass}
                 value={canvas3dMode}
-                disabled={canvasRenderMode !== '3d'}
+                disabled={inspection || canvasRenderMode !== '3d'}
                 onChange={e => {
                   if (!ensureBaselineUnlocked()) return
                   const raw = e.target.value
@@ -481,6 +450,7 @@ export default function RenderSettingsSection({
               </section>
               <select
                 className={uiPanelKeyValueInputClass}
+                disabled={inspection}
                 value={(schema.behavior?.selectMode ?? 'single') as GraphSelectMode}
                 onChange={e => {
                   if (!ensureBaselineUnlocked()) return
@@ -501,6 +471,7 @@ export default function RenderSettingsSection({
               </section>
               <select
                 className={uiPanelKeyValueInputClass}
+                disabled={inspection}
                 value={(schema.behavior?.createMode ?? 'shift-drag') as GraphCreateMode}
                 onChange={e => {
                   if (!ensureBaselineUnlocked()) return
@@ -517,52 +488,13 @@ export default function RenderSettingsSection({
                 <option value="panel-only">panel-only</option>
               </select>
             </section>
-            <section className="flex items-center justify-between gap-2">
-              <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
-                Preset
-              </section>
-              <button
-                type="button"
-                className={[
-                  neutralToolbarButtonClassName,
-                  uiPanelKeyValueTextSizeClass,
-                  uiPanelTextFontClass,
-                ].join(' ')}
-                onClick={applyPresentation3dPreset}
-              >
-                Presentation 3D
-              </button>
-            </section>
+
           </section>
           <section className="pt-1">
             <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold ${UI_THEME_TOKENS.text.primary}`}>
-              2D layout
+              Spacing and labels
             </section>
             <section className="mt-1 grid grid-cols-1 gap-1">
-              <KeyTypeValueStaticRow
-                layout="keyValue"
-                keyNode={<span className={uiPanelMonospaceTextClass}>graph.layout.mode</span>}
-                valueNode={(
-                  <RightAlignedValueCell>
-                    <select
-                      className={uiPanelKeyValueInputClass}
-                      value={layoutMode}
-                      onChange={e => {
-                        if (!ensureBaselineUnlocked()) return
-                        const raw = e.target.value
-                        const next: typeof layoutMode =
-                          raw === 'block' ? 'block' : 'radial'
-                        setLayoutMode(next)
-                        if (next === 'block') setCanvasRenderMode('2d')
-                      }}
-                    >
-                      <option value="radial">radial</option>
-                      <option value="block">block</option>
-                    </select>
-                  </RightAlignedValueCell>
-                )}
-                {...compactStaticRowProps}
-              />
               <KeyTypeValueStaticRow
                 layout="keyValue"
                 keyNode={<span className={uiPanelMonospaceTextClass}>graph.layout.fitPadding</span>}
@@ -745,6 +677,7 @@ export default function RenderSettingsSection({
           </section>
         </section>
         <RenderPresetSection
+          inspection={inspection}
           schema={schema}
           setSchema={setSchema}
           setCanvasRenderMode={setCanvasRenderMode}
@@ -755,12 +688,12 @@ export default function RenderSettingsSection({
           updateEdgeStyle={updateEdgeStyle}
           setEdgeArrow={setEdgeArrow}
         />
-        <ThreeViewTuningSection
+        {!inspection && <ThreeViewTuningSection
           schema={schema}
           setThreeConfig={setThreeConfig}
           threeGroupsCollapsed={threeGroupsCollapsed}
           onToggleThreeGroup={onToggleThreeGroup}
-        />
+        />}
       </CollapsibleSection>
       <MediaNodesSection toolbarAligned />
       <CollapsibleSection

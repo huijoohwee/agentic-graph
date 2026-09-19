@@ -1,8 +1,8 @@
 export const createWebMcpLifecycleController = (args = {}) => {
   const root = args.root
   const lifecycleState = args.state
-  const tools = Array.isArray(args.tools) ? args.tools : []
-  const toolNames = Array.isArray(args.toolNames) ? args.toolNames : []
+  let tools = Array.isArray(args.tools) ? args.tools : []
+  let toolNames = tools.map(tool => tool.name)
   const lateBindingRetryDelayMs = Number(args.lateBindingRetryDelayMs || 500)
   const lateBindingMaxAttempts = Number(args.lateBindingMaxAttempts || 20)
   const markRuntimeState = typeof args.markRuntimeState === 'function' ? args.markRuntimeState : () => {}
@@ -12,8 +12,6 @@ export const createWebMcpLifecycleController = (args = {}) => {
   if (!root || !lifecycleState || typeof lifecycleState !== 'object') {
     throw new Error('root and state are required')
   }
-
-  const normalizeString = (value) => String(value || '').trim()
 
   const readGlobalNavigator = () => {
     const windowNavigator = root.window && root.window.navigator
@@ -47,6 +45,9 @@ export const createWebMcpLifecycleController = (args = {}) => {
     const created = {
       registeredToolNames: new Set(),
       abortControllers: new Map(),
+      ownedTools: new Map(),
+      toolSet: null,
+      installed: false,
     }
     lifecycleState.registrations.set(context, created)
     return created
@@ -81,28 +82,34 @@ export const createWebMcpLifecycleController = (args = {}) => {
         }, { once: true })
       }
     }
-    context.provideContext({ tools })
     return context
   }
 
-  const isDuplicateToolRegistrationError = (error) => {
-    if (!error || typeof error !== 'object') return false
-    return normalizeString(error.name) === 'InvalidStateError'
+  const releaseTools = (context, registrationState, keep = new Set()) => {
+    for (const [name, tool] of registrationState.ownedTools) {
+      if (keep.has(tool)) continue
+      registrationState.abortControllers.get(name)?.abort()
+      if (Array.isArray(context.tools)) {
+        const index = context.tools.indexOf(tool)
+        if (index >= 0) context.tools.splice(index, 1)
+      }
+      registrationState.abortControllers.delete(name)
+      registrationState.registeredToolNames.delete(name)
+      registrationState.ownedTools.delete(name)
+    }
   }
-
   const releasePreviousRegisteredContext = (nextContext) => {
     const active = lifecycleState.activeRegisteredContext
-    if (!active || active === nextContext) {
-      lifecycleState.activeRegisteredContext = nextContext
-      return
+    if (active && active !== nextContext) {
+      const registrationState = lifecycleState.registrations.get(active)
+      if (registrationState) {
+        releaseTools(active, registrationState)
+        if (typeof active.registerTool !== 'function' && typeof active.provideContext === 'function') {
+          try { active.provideContext({ tools: Array.isArray(active.tools) ? active.tools : [] }) } catch { /* Host is gone. */ }
+        }
+      }
+      lifecycleState.registrations.delete(active)
     }
-    const registrationState = lifecycleState.registrations.get(active)
-    if (registrationState) {
-      registrationState.abortControllers.forEach((controller) => {
-        if (controller && typeof controller.abort === 'function') controller.abort()
-      })
-    }
-    lifecycleState.registrations.delete(active)
     lifecycleState.activeRegisteredContext = nextContext
   }
 
@@ -114,48 +121,45 @@ export const createWebMcpLifecycleController = (args = {}) => {
 
   const installToolsIntoModelContext = (context) => {
     const registrationState = getRegistrationState(context)
-    let providedContext = false
-    if (typeof context.provideContext === 'function') {
+    if (registrationState.toolSet === tools) return registrationState.installed
+    releasePreviousRegisteredContext(context)
+    releaseTools(context, registrationState, new Set(tools))
+    registrationState.toolSet = tools
+    registrationState.installed = false
+    if (context === lifecycleState.fallbackContext
+      || (typeof context.registerTool !== 'function' && typeof context.provideContext === 'function')) {
       try {
-        context.provideContext({ tools })
-        providedContext = true
-      } catch {
-        void 0
-      }
-    }
-    if (providedContext) {
-      releasePreviousRegisteredContext(context)
-      return true
-    }
-    if (typeof context.registerTool === 'function') {
+        const foreign = Array.isArray(context.tools)
+          ? context.tools.filter(tool => registrationState.ownedTools.get(tool.name) !== tool && !tools.includes(tool)) : []
+        if (foreign.some(tool => tools.some(owned => owned.name === tool.name))) return false
+        context.provideContext({ tools: [...foreign, ...tools] })
+        tools.forEach(tool => registrationState.ownedTools.set(tool.name, tool))
+        registrationState.installed = true
+      } catch { return false }
+    } else if (typeof context.registerTool === 'function') {
       for (const tool of tools) {
-        if (registrationState.registeredToolNames.has(tool.name)) continue
+        if (registrationState.ownedTools.get(tool.name) === tool) continue
         const controller = typeof AbortController === 'function' ? new AbortController() : null
+        if (!controller) return false // A changing catalog requires removable registrations.
         try {
-          context.registerTool(tool, controller ? { signal: controller.signal } : {})
+          context.registerTool(tool, { signal: controller.signal })
           registrationState.registeredToolNames.add(tool.name)
           registrationState.abortControllers.set(tool.name, controller)
-        } catch (error) {
-          if (!isDuplicateToolRegistrationError(error)) continue
-          registrationState.registeredToolNames.add(tool.name)
-          registrationState.abortControllers.set(tool.name, null)
-        }
+          registrationState.ownedTools.set(tool.name, tool)
+        } catch { controller.abort(); return false } // Never claim a foreign duplicate.
       }
-    }
-    if (Array.isArray(context.tools)) {
+      registrationState.installed = true
+    } else if (Array.isArray(context.tools)) {
       for (const tool of tools) {
-        if (!context.tools.some((entry) => entry && entry.name === tool.name)) context.tools.push(tool)
+        if (context.tools.includes(tool)) continue
+        if (context.tools.some(entry => entry?.name === tool.name)) return false
+        context.tools.push(tool)
+        registrationState.ownedTools.set(tool.name, tool)
       }
+      registrationState.installed = true
     }
-    const allToolsRegistered = tools.every((tool) =>
-      registrationState.registeredToolNames.has(tool.name)
-      || (Array.isArray(context.tools) && context.tools.some((entry) => entry && entry.name === tool.name))
-    )
-    if (allToolsRegistered) {
-      releasePreviousRegisteredContext(context)
-      return true
-    }
-    return providedContext && typeof context.registerTool !== 'function' && !Array.isArray(context.tools)
+    if (registrationState.installed) releasePreviousRegisteredContext(context)
+    return registrationState.installed
   }
 
   const tryInstallLateBoundModelContext = (nav) => {
@@ -298,11 +302,23 @@ export const createWebMcpLifecycleController = (args = {}) => {
       return
     }
     if (!nav.modelContext) defineFallbackModelContext(nav, createFallbackModelContext())
+    if (nav.modelContext === lifecycleState.fallbackContext) installToolsIntoModelContext(nav.modelContext)
     publishFallbackReadiness(nav)
+  }
+
+  const updateTools = (nextTools) => {
+    if (!Array.isArray(nextTools) || nextTools.some(tool => !tool?.name || typeof tool.execute !== 'function')
+      || new Set(nextTools.map(tool => tool.name)).size !== nextTools.length) throw new Error('Invalid WebMCP tool catalog')
+    if (tools.length === nextTools.length && tools.every((tool, index) => tool === nextTools[index])) return
+    tools = nextTools
+    toolNames = tools.map(tool => tool.name)
+    // Catalog changes reconcile current bindings; they never restart the late-host retry cycle.
+    install()
   }
 
   return {
     install,
+    updateTools,
     clearLateBindingRetry,
     installToolsIntoModelContext,
     tryInstallLateBoundModelContext,

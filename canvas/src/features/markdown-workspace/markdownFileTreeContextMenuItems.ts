@@ -2,16 +2,19 @@ import { buildCanvasEmbedIframeMarkup } from '@/features/canvas/canvasEmbedIfram
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { isInitializationWorkspacePath } from '@/features/workspace-fs/workspaceFs'
 import { WORKSPACE_ROOT_PATH } from '@/features/workspace-fs/path'
+import { AgenticGraphStorageSignInRequiredError, beginAgenticGraphStorageBrowserSignIn } from '@/lib/storage/agentic-graph-storage-browser-session'
 
 export type MarkdownFileTreeContextMenuItem = {
   key: 'shareUrl' | 'shareCanvasEmbed' | 'reveal' | 'copyPath' | 'copyRelativePath' | 'newFile' | 'clear' | 'rename' | 'delete'
   label: string
   tone?: 'default' | 'danger'
+  disabled?: boolean
   onSelect: () => void | Promise<void>
 }
 
 type BuildMarkdownFileTreeContextMenuItemsArgs = {
   entry: WorkspaceEntry
+  readOnly?: boolean
   copyToClipboard: (text: string) => Promise<boolean>
   buildShareUrl?: (entry: WorkspaceEntry) => string | null | Promise<string | null>
   buildCanvasEmbedUrl?: (entry: WorkspaceEntry) => string | null | Promise<string | null>
@@ -43,7 +46,7 @@ export function buildMarkdownFileTreeContextMenuItems(
       key: 'shareUrl',
       label: 'Share URL',
       onSelect: () => {
-        void resolveAndShareUrl({
+        const sharing = resolveAndShareUrl({
           buildUrl: () => args.buildShareUrl?.(args.entry) || null,
           copyToClipboard: args.copyToClipboard,
           promptShareUrl: args.promptShareUrl,
@@ -58,6 +61,7 @@ export function buildMarkdownFileTreeContextMenuItems(
           allowNativeShare: false,
         })
         args.closeContextMenu()
+        return sharing
       },
     },
     {
@@ -105,7 +109,7 @@ export function buildMarkdownFileTreeContextMenuItems(
       label: 'Share canvas embed',
       onSelect: () => {
         args.onCanvasEmbedStart?.(args.entry)
-        void resolveAndShareUrl({
+        const sharing = resolveAndShareUrl({
           buildUrl: () => args.buildCanvasEmbedUrl?.(args.entry) || null,
           copyToClipboard: args.copyToClipboard,
           promptShareUrl: args.promptShareUrl,
@@ -117,11 +121,12 @@ export function buildMarkdownFileTreeContextMenuItems(
           promptTitle: 'Copy canvas iframe embed',
         })
         args.closeContextMenu()
+        return sharing
       },
     })
   }
 
-  if (args.onCreateNewFile) {
+  if (args.onCreateNewFile || args.readOnly) {
     items.push({
       key: 'newFile',
       label: 'New file',
@@ -135,7 +140,7 @@ export function buildMarkdownFileTreeContextMenuItems(
     })
   }
 
-  if (args.entry.kind === 'file' && args.onClearFile) {
+  if (args.entry.kind === 'file' && (args.onClearFile || args.readOnly)) {
     items.push({
       key: 'clear',
       label: 'Clear',
@@ -176,7 +181,9 @@ export function buildMarkdownFileTreeContextMenuItems(
     })
   }
 
-  return items
+  // Keep the shared menu discoverable; virtual evidence cannot be mutated or published.
+  return args.readOnly ? items.map(item => item.key === 'copyPath' || item.key === 'copyRelativePath'
+    ? item : { ...item, disabled: true, onSelect: () => {} }) : items
 }
 
 async function resolveAndShareUrl(args: {
@@ -208,6 +215,10 @@ async function resolveAndShareUrl(args: {
     })
     args.onResolved?.(url)
   } catch (error) {
+    if (error instanceof AgenticGraphStorageSignInRequiredError) {
+      try { beginAgenticGraphStorageBrowserSignIn({ baseUrl: error.baseUrl }); return }
+      catch (signInError) { notifyShareUrlError(args.onShareUrlError, args.unavailableMessage, signInError); return }
+    }
     notifyShareUrlError(args.onShareUrlError, args.unavailableMessage, error)
   }
 }

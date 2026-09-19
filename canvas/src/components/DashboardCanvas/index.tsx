@@ -1,24 +1,21 @@
 import React from 'react'
-import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics, updateDashboardWidgets } from './dashboardWidgetConfiguration'
+import { useDashboardWidgets, configureDashboardCards, configureDashboardMetrics } from './dashboardWidgetConfiguration'
 import DashboardWidgetFlip from './DashboardWidgetFlip'
 import { DashboardLineAreaChart } from './DashboardCharts'
 import { DashboardCardView, DashboardMetricTile } from './DashboardWidgets'
 import { useDashboardSource } from './useDashboardSource'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useContainerDims } from '@/hooks/useContainerDims'
-import { areKanbanRowIdsEqual } from '@/features/markdown/ui/kanban/kanbanOrderState'
-import { reorderKanbanRowIds } from '@/features/markdown/ui/kanban/kanbanReorder'
-import {
-  useKanbanDragAndDrop,
-} from '@/features/markdown/ui/kanban/useKanbanDragAndDrop'
+import DashboardWidgetContainer from './DashboardWidgetContainer'
+import DashboardDocumentWidgets from './DashboardDocumentWidgets'
+import { DashboardMarkdown } from './DashboardMarkdown'
+import DashboardWidgetBoard from './DashboardWidgetBoard'
 import { CanvasGridOverlaySurface } from '@/components/CanvasGridOverlaySurface'
 import { readCanvasGridRenderConfigFromSchema } from '@/lib/canvas/canvasGridConfig'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import {
   UI_RESPONSIVE_VIEWPORT_FIT_CONTENT_CLASSNAME,
-  UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME,
   buildResponsiveViewportFitContentStyle,
-  buildResponsiveViewportFitGridStyle,
 } from '@/lib/ui/responsiveViewportFitGrid'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
@@ -27,19 +24,23 @@ import {
 
 type DashboardCanvasProps = {
   active?: boolean
+  retainedSpanId?: string | null
+  onRetainedSpan?: (id: string | null) => void
   children?: React.ReactNode
+  overview?: React.ReactNode
 }
 
-const DASHBOARD_METRICS_GROUP_KEY = 'dashboard-metrics'
 const DASHBOARD_CONTENT_STYLE = buildResponsiveViewportFitContentStyle()
-const DASHBOARD_METRICS_GRID_STYLE = buildResponsiveViewportFitGridStyle()
+const DashboardSnapshotView = React.lazy(() => import('./DashboardSnapshotView'))
+const AgentMissionDashboardExport = React.lazy(() => import('@/features/agent-ready/AgentMissionDashboardExport'))
 
 export default function DashboardCanvas(props: DashboardCanvasProps) {
   const widgetConfiguration = useDashboardWidgets()
   const active = props.active !== false
   const containerRef = React.useRef<HTMLElement | null>(null)
-  const { graphData, selectedNodeId, selectNode, readOnly } = useDashboardSource(active)
-  const schema = useGraphStore(state => state.schema)
+  const { graphData, selectedNodeId, selectNode, readOnly } = useDashboardSource(active, props.retainedSpanId, props.onRetainedSpan)
+  const currentSchema = useGraphStore(state => state.schema)
+  const schema = widgetConfiguration.dashboard?.mission?.schema ?? currentSchema
   const resolvedThemeMode = useGraphStore(state => state.resolvedThemeMode || 'light')
   const updateNode = useGraphStore(state => state.updateNode)
   const dims = useContainerDims(containerRef)
@@ -58,28 +59,6 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
   const displaySections = React.useMemo(() => model.sections.map(section => ({ ...section,
     cards: configureDashboardCards(widgetConfiguration.document, section.cards, model.sections.flatMap(item => item.cards)),
   })).filter(section => section.cards.length > 0), [widgetConfiguration.document, model.sections])
-  const orderedIds = (group: string) => group === DASHBOARD_METRICS_GROUP_KEY ? displayMetrics.map(item => item.id)
-    : displaySections.find(section => section.id === group)?.cards.map(item => item.id) ?? []
-  const dashboardDrag = useKanbanDragAndDrop({
-    enabled: active,
-    isNoOpMove: move => {
-      if (move.sourceGroupKey !== move.targetGroupKey) return true
-      const ids = orderedIds(move.targetGroupKey)
-      return !ids.includes(move.rowId) || areKanbanRowIdsEqual(ids, reorderKanbanRowIds({ orderedRowIds: ids, availableRowIds: ids,
-        rowIdToGroupKey: new Map(ids.map(id => [id, move.targetGroupKey])), draggedRowId: move.rowId,
-        targetGroupKey: move.targetGroupKey, targetRowId: move.targetRowId, position: move.position }))
-    },
-    onCommitMove: move => {
-      if (move.sourceGroupKey !== move.targetGroupKey) return
-      const ids = orderedIds(move.targetGroupKey)
-      if (!ids.includes(move.rowId)) return
-      const next = reorderKanbanRowIds({ orderedRowIds: ids, availableRowIds: ids,
-        rowIdToGroupKey: new Map(ids.map(id => [id, move.targetGroupKey])), draggedRowId: move.rowId,
-        targetGroupKey: move.targetGroupKey, targetRowId: move.targetRowId, position: move.position })
-      void updateDashboardWidgets(Object.fromEntries(next.map((id, order) => [`graph:${id}`, { order }]))).catch(() => undefined)
-    },
-  })
-
   const handleCommitRowLabel = React.useCallback((rowId: string, nextValue: string) => {
     const nodeId = String(rowId || '').trim()
     if (!nodeId || readOnly) return
@@ -117,93 +96,47 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
           style={DASHBOARD_CONTENT_STYLE}
           data-kg-dashboard-responsive-width="1"
         >
+          <React.Suspense fallback={null}><AgentMissionDashboardExport /></React.Suspense>
+          {widgetConfiguration.dashboard && !readOnly ? <React.Suspense fallback={<p>Opening saved dashboard…</p>}><DashboardSnapshotView /></React.Suspense> : <>
           <header className="kg-dashboard-header grid min-w-0 grid-cols-1 items-center gap-3 border-b border-[var(--kg-border)] pb-3 lg:grid-cols-[minmax(0,1fr)_minmax(200px,28%)]">
             <section className="min-w-0">
-              <p className={`m-0 text-xs font-medium ${UI_THEME_TOKENS.text.tertiary}`}>Dashboard</p>
-              <h2 className="m-0 mt-1 truncate text-xl font-semibold leading-tight" title={model.title}>{model.title}</h2>
-              <p className={`m-0 mt-1 truncate text-xs ${UI_THEME_TOKENS.text.secondary}`} title={model.subtitle}>{model.subtitle}</p>
+              <DashboardMarkdown text={widgetConfiguration.document.widgets['graph:header']?.markdown ?? `Dashboard\n\n## ${widgetConfiguration.document.widgets['graph:header']?.title ?? model.title}\n\n${widgetConfiguration.document.widgets['graph:header']?.subtitle ?? model.subtitle}`} label="Dashboard heading and description" />
             </section>
             <section className="h-[72px] min-w-0 lg:h-[96px]">
               <DashboardLineAreaChart series={model.heroSeries} tone="blue" gridEnabled={model.grid.enabled} area />
             </section>
           </header>
 
+          {widgetConfiguration.dashboard?.mission && <p className="text-xs">Historical snapshot · {new Date(widgetConfiguration.dashboard.source.observedAt).toISOString()}</p>}
+          {props.overview}
+
           <section className="min-w-0" aria-label="Dashboard metrics" data-kg-dashboard-metrics-board="1">
-            <section
-              className={UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME}
-              style={DASHBOARD_METRICS_GRID_STYLE}
-              data-kg-dashboard-metrics-cards="1"
-              {...dashboardDrag.createLaneDropProps(DASHBOARD_METRICS_GROUP_KEY)}
-            >
-              {displayMetrics.map(metric => {
-                const metricDragProps = dashboardDrag.createCardDragProps({ rowId: metric.id, groupKey: DASHBOARD_METRICS_GROUP_KEY })
-                const metricDropProps = dashboardDrag.createCardDropProps({ rowId: metric.id, groupKey: DASHBOARD_METRICS_GROUP_KEY })
-                return (
-                  <DashboardWidgetFlip key={metric.id} widgetId={`graph:${metric.id}`} template="metric" title={metric.label} defaults={{ title: metric.label, subtitle: metric.detail, tone: metric.tone }}>
-                  <DashboardMetricTile
-                    metric={metric}
-                    cardDragProps={metricDragProps}
-                    cardDropProps={metricDropProps}
-                    draggingMetricId={dashboardDrag.draggingRowId}
-                    dragOverMetricId={dashboardDrag.dragOverRowId}
-                    dragOverPosition={dashboardDrag.dragOverPosition}
-                    commitFlashMetricId={dashboardDrag.commitFlashRowId}
-                    registerMetricElement={(metricId, element) => {
-                      dashboardDrag.registerFocusableRowElement({ rowId: metricId, element })
-                    }}
-                  />
-                  </DashboardWidgetFlip>
-                )
-              })}
-            </section>
+            <DashboardWidgetBoard id="dashboard-metrics" columns={5} items={displayMetrics.map(metric => ({
+              id: `graph:${metric.id}`, cardId: metric.id,
+              content: <DashboardWidgetFlip widgetId={`graph:${metric.id}`} template="metric" title={metric.label} defaults={{ title: metric.label, subtitle: metric.detail, tone: metric.tone }}>
+                <DashboardMetricTile metric={metric} />
+              </DashboardWidgetFlip>,
+            }))} />
           </section>
 
           <section className="min-w-0" data-kg-dashboard-sections-board="1">
             <section className="grid min-w-0 grid-cols-1 gap-5">
               {displaySections.map(section => (
-                <section key={section.id} className="min-w-0" data-kg-dashboard-section={section.id}>
-                  <header className="mb-3 flex min-w-0 items-center gap-3">
-                    <h3 className="m-0 shrink-0 text-base font-semibold">{section.title}</h3>
-                    <div className="h-px min-w-0 flex-1 bg-[var(--kg-border)]" aria-hidden="true" />
-                    <span className={`shrink-0 text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{section.cadence}</span>
-                  </header>
-                  <section
-                    className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-3"
-                    data-kg-dashboard-section-cards="1"
-                    {...dashboardDrag.createLaneDropProps(section.id)}
-                  >
-                    {section.cards.map(card => {
-                      const cardDragProps = dashboardDrag.createCardDragProps({ rowId: card.id, groupKey: section.id })
-                      const cardDropProps = dashboardDrag.createCardDropProps({ rowId: card.id, groupKey: section.id })
-                      return (
-                        <DashboardWidgetFlip key={card.id} widgetId={`graph:${card.id}`} template={card.kind} title={card.title} defaults={{ title: card.title, subtitle: card.subtitle, footnote: card.footnote, kind: card.kind, tone: card.tone }}>
-                        <DashboardCardView
-                          sectionLabel={section.title}
-                          card={card}
-                          gridEnabled={model.grid.enabled}
-                          selectedNodeId={selectedNodeId}
-                          canEditRows={!readOnly && typeof updateNode === 'function'}
-                          cardDragProps={cardDragProps}
-                          cardDropProps={cardDropProps}
-                          draggingCardId={dashboardDrag.draggingRowId}
-                          dragOverCardId={dashboardDrag.dragOverRowId}
-                          dragOverPosition={dashboardDrag.dragOverPosition}
-                          commitFlashCardId={dashboardDrag.commitFlashRowId}
-                          registerCardElement={(cardId, element) => {
-                            dashboardDrag.registerFocusableRowElement({ rowId: cardId, element })
-                          }}
-                          onSelectRow={selectNode}
-                          onCommitRowLabel={handleCommitRowLabel}
-                        />
-                        </DashboardWidgetFlip>
-                      )
-                    })}
-                  </section>
-                </section>
+                <DashboardWidgetContainer key={section.id} id={section.id} title={section.title} subtitle={section.cadence}
+                    columns={3} items={section.cards.map(card => ({
+                      id: `graph:${card.id}`, cardId: card.id,
+                      content: <DashboardWidgetFlip widgetId={`graph:${card.id}`} template={card.kind} title={card.title} defaults={{ title: card.title, subtitle: card.subtitle, footnote: card.footnote, kind: card.kind, tone: card.tone }}>
+                        <DashboardCardView sectionLabel={section.title} card={card} gridEnabled={model.grid.enabled}
+                          selectedNodeId={selectedNodeId} canEditRows={!readOnly && typeof updateNode === 'function'}
+                          onSelectRow={selectNode} onCommitRowLabel={handleCommitRowLabel} />
+                      </DashboardWidgetFlip>,
+                    }))} />
               ))}
             </section>
           </section>
+          <DashboardDocumentWidgets sourceIds={[...model.metrics.map(item => `graph:${item.id}`), ...model.sections.flatMap(section => section.cards.map(card => `graph:${card.id}`))]} />
           {props.children}
+          </>}
         </section>
       </section>
     </section>

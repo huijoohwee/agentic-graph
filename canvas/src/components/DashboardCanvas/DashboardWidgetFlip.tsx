@@ -6,9 +6,12 @@ import DashboardWidgetConfiguration from './DashboardWidgetBack'
 import { useDashboardWidgetToolbarDock } from './useDashboardWidgetToolbarDock'
 import type { DashboardWidgetSettings } from './dashboardWidgetConfiguration'
 import type { DashboardCardKind } from './dashboardModel'
+import { getStoryboardWidgetPanelSelectionChromeClassName, WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
+import { useDashboardWidgetExpansion } from './DashboardWidgetDisclosure'
+import { useDashboardWidgetSize } from './useDashboardWidgetSize'
 import './dashboardWidgetFlip.css'
 
-export type DashboardTemplate = DashboardCardKind | 'metric' | 'tree'
+export type DashboardTemplate = DashboardCardKind | 'metric' | 'tree' | 'codebase' | 'heading' | 'text' | 'divider' | 'container' | 'disclosure'
 export type DashboardWidgetEditorProps = {
   widgetId?: string
   template: DashboardTemplate
@@ -32,6 +35,8 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
   const [toolbarVisible, setToolbarVisible] = React.useState(false)
   const [frontSize, setFrontSize] = React.useState<{ width: number; height: number } | null>(null)
   const frame = React.useRef<HTMLElement>(null)
+  const expansion = useDashboardWidgetExpansion(props.widgetId)
+  const sizing = useDashboardWidgetSize(props.widgetId, frame, !flipped && expansion.expanded)
   const dragged = React.useRef(false)
   const keyboardSelection = React.useRef(false)
   const toolbarTop = useDashboardWidgetToolbarDock(frame, toolbarVisible)
@@ -50,8 +55,9 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
     setTurned(true); setFlipped(true)
   }
   const select = () => setToolbarVisible(true)
-  return <article ref={frame} className="kg-dashboard-widget relative min-w-0 h-full" tabIndex={flipped ? -1 : 0} role="group"
-    style={flipped && frontSize ? { width: frontSize.width, height: frontSize.height, maxWidth: '100%' } : undefined}
+  return <article ref={frame} className={`kg-dashboard-widget relative min-w-0 ${props.widgetId ? 'kg-dashboard-widget-sized' : 'h-full'} ${WIDGET_SELECTION_SURFACE_CLASS_NAME} ${getStoryboardWidgetPanelSelectionChromeClassName(toolbarVisible)}`} tabIndex={flipped ? -1 : 0} role="group"
+    style={flipped && frontSize ? { width: frontSize.width, height: frontSize.height, maxWidth: '100%' } : expansion.expanded ? sizing.style : { width: sizing.style?.width, maxWidth: '100%' }}
+    data-widget-aspect={props.widgetId ? sizing.aspect : undefined}
     aria-label={`Configure ${props.title}`} aria-expanded={flipped}
     data-dashboard-widget={props.widgetId ?? `template:${props.template}`} data-kg-widget-selected={toolbarVisible ? 'true' : 'false'}
     onPointerDownCapture={() => { dragged.current = false }} onDragStartCapture={() => { dragged.current = true; setToolbarVisible(false) }}
@@ -75,9 +81,11 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
       navStyle={{ ...toolbarPresentation.navStyle, top: toolbarTop }}
       flipAction={{ flipped, onFlip: flip }} onRun={noop} onDuplicate={noop} onClearOutput={noop}
       onHelp={noop} onRemove={noop} onConvertToLoopNode={noop} />
-    <section key={flipped ? 'back' : 'front'} data-kg-widget-face={flipped ? 'back' : 'front'}
+    {!flipped && !expansion.expanded && props.template !== 'disclosure' && <button type="button" className="w-full rounded border p-3 text-left text-sm" aria-expanded={false} onClick={() => expansion.setExpanded(true)}>▸ {props.title}</button>}
+    <section hidden={!flipped && !expansion.expanded && props.template !== 'disclosure'} key={flipped ? 'back' : 'front'} data-kg-widget-face={flipped ? 'back' : 'front'}
       className={`kg-dashboard-widget-face h-full ${turned ? 'dashboard-widget-turn' : ''}`}>
       {flipped ? <DashboardWidgetConfiguration {...props} onClose={close} /> : props.children}
     </section>
+    {sizing.handle}
   </article>
 }

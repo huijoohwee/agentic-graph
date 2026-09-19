@@ -64,34 +64,17 @@ type KanbanBlockedMoveReason =
 
 export const useKanbanDragAndDrop = (args: {
   enabled: boolean
+  resolveCardDropPosition?: (point: { x: number; y: number }, rect: DOMRect) => KanbanDropPosition
   getBoardScrollElement?: () => HTMLElement | null
   getLaneScrollElement?: (groupKey: string) => HTMLElement | null
-  isNoOpMove?: (move: {
-    rowId: string
-    sourceGroupKey: string
-    targetGroupKey: string
-    targetRowId: string | null
-    position: KanbanDropPosition
-  }) => boolean
+  isNoOpMove?: (move: KanbanCommittedMove) => boolean
   buildOutcomeMessage?: (args: {
     kind: 'blocked' | 'cancelled' | 'no-op' | 'committed'
-    move?: {
-      rowId: string
-      sourceGroupKey: string
-      targetGroupKey: string
-      targetRowId: string | null
-      position: KanbanDropPosition
-    }
+    move?: KanbanCommittedMove
     sourceGroupKey?: string | null
     blockedReason?: KanbanBlockedMoveReason | null
   }) => string
-  onCommitMove: (move: {
-    rowId: string
-    sourceGroupKey: string
-    targetGroupKey: string
-    targetRowId: string | null
-    position: KanbanDropPosition
-  }) => void
+  onCommitMove: (move: KanbanCommittedMove) => void
 }) => {
   const [draggingRowId, setDraggingRowId] = React.useState<string | null>(null)
   const [dragOutcomeMessage, setDragOutcomeMessage] = React.useState('')
@@ -295,13 +278,15 @@ export const useKanbanDragAndDrop = (args: {
     updateAutoScrollTargets(target.clientX, target.clientY, target.groupKey)
     const currentGroupKey = dragOverGroupKeyRef.current
     const lastAppliedPointer = lastAppliedTargetPointerRef.current
+    const withinTargetHysteresis = lastAppliedPointer &&
+      Math.abs(target.clientY - lastAppliedPointer.y) < KANBAN_CARD_TARGET_HYSTERESIS_PX &&
+      (!args.resolveCardDropPosition || Math.abs(target.clientX - lastAppliedPointer.x) < KANBAN_CARD_TARGET_HYSTERESIS_PX)
     if (
       currentGroupKey === target.groupKey &&
       dragOverRowIdRef.current != null &&
       target.rowId != null &&
       dragOverRowIdRef.current !== target.rowId &&
-      lastAppliedPointer &&
-      Math.abs(target.clientY - lastAppliedPointer.y) < KANBAN_CARD_TARGET_HYSTERESIS_PX
+      withinTargetHysteresis
     ) {
       return true
     }
@@ -309,8 +294,7 @@ export const useKanbanDragAndDrop = (args: {
       currentGroupKey === target.groupKey &&
       dragOverRowIdRef.current === target.rowId &&
       target.rowId != null &&
-      lastAppliedPointer &&
-      Math.abs(target.clientY - lastAppliedPointer.y) < KANBAN_CARD_TARGET_HYSTERESIS_PX
+      withinTargetHysteresis
     ) {
       target = {
         ...target,
@@ -348,7 +332,7 @@ export const useKanbanDragAndDrop = (args: {
       updateAutoScrollTargets(nextTarget.clientX, nextTarget.clientY, nextTarget.groupKey)
     }, dwellMs)
     return true
-  }, [applyDropTarget, clearPendingLaneHover, updateAutoScrollTargets])
+  }, [applyDropTarget, args.resolveCardDropPosition, clearPendingLaneHover, updateAutoScrollTargets])
 
   const resetDragState = React.useCallback(() => {
     clearPendingLaneHover()
@@ -535,8 +519,10 @@ export const useKanbanDragAndDrop = (args: {
       if (!rowId || rowId === card.rowId) return false
       const rect = event.currentTarget.getBoundingClientRect()
       const midpointY = rect.top + rect.height / 2
-      const position: KanbanDropPosition = event.clientY >= midpointY ? 'after' : 'before'
+      const position = args.resolveCardDropPosition?.({ x: event.clientX, y: event.clientY }, rect)
+        ?? (event.clientY >= midpointY ? 'after' : 'before')
       event.preventDefault()
+      event.stopPropagation()
       event.dataTransfer.dropEffect = 'move'
       return resolveDropTarget({
         groupKey: card.groupKey,
@@ -568,7 +554,8 @@ export const useKanbanDragAndDrop = (args: {
         const sourceGroupKey = resolveDraggedGroupKey(event)
         const rect = event.currentTarget.getBoundingClientRect()
         const midpointY = rect.top + rect.height / 2
-        const position: KanbanDropPosition = event.clientY >= midpointY ? 'after' : 'before'
+        const position = args.resolveCardDropPosition?.({ x: event.clientX, y: event.clientY }, rect)
+          ?? (event.clientY >= midpointY ? 'after' : 'before')
         event.preventDefault()
         event.stopPropagation()
         if (rowId && rowId !== card.rowId && sourceGroupKey) {
@@ -584,7 +571,7 @@ export const useKanbanDragAndDrop = (args: {
         resetDragState()
       },
     }
-  }, [args.enabled, commitMove, resetDragState, resolveDraggedGroupKey, resolveDraggedRowId, resolveDropTarget])
+  }, [args.enabled, args.resolveCardDropPosition, commitMove, resetDragState, resolveDraggedGroupKey, resolveDraggedRowId, resolveDropTarget])
 
   const createLaneDropProps = React.useCallback((groupKey: string): KanbanLaneDropProps => {
     if (!args.enabled) return {}
