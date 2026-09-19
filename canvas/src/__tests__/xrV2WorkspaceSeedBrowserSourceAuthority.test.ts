@@ -68,17 +68,14 @@ test('XR v2 workspace smoke activates only through the actual Explorer row', () 
   assert.match(verifier, /name: 'Folder workspace-seeds'/u)
   assert.match(verifier, /name: 'File agentic-graph-ar-vr-xr-runtime-readiness-demo\.md'/u)
   const selection = verifier.indexOf('await seedRow.click()')
-  const runtimeObservation = verifier.indexOf("const panel = page.locator('[data-kg-motion-control-floating-panel=\"1\"]')")
+  const runtimeObservation = verifier.indexOf("const runtime = page.locator('[data-kg-xr-v2-authoring-runtime=\"1\"]')")
   assert.ok(selection >= 0, 'workspace smoke must click the Explorer seed row')
   assert.ok(runtimeObservation > selection, 'workspace runtime observation must follow Explorer selection')
   for (const marker of [
     'data-kg-three-canvas-owner',
     'data-kg-xr-document-loaded',
     'data-kg-xr-v2-authoring-runtime',
-    'data-kg-motion-control-runtime',
-    'data-kg-motion-control-device-sensors',
-    'data-kg-motion-control-start',
-    'data-kg-motion-control-enable-sensors',
+    'data-kg-xr-v2-workspace-readiness',
     'data-kg-xr-v2-immersive-enter',
   ]) assert.match(verifier, new RegExp(marker, 'u'))
   assert.match(verifier, /data-kg-xr-camera-aspect-mask/u)

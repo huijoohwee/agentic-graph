@@ -66,6 +66,9 @@ import {
 } from './xrMotionReferencePackage'
 import { XrChoreographyInspector } from './XrChoreographyInspector'
 import { resolveXrSceneDocumentReady } from './xrSceneDocumentReadiness'
+import { XrV2AuthoringStatusPanel } from '@/features/xr-v2/XrV2AuthoringStatusPanel'
+import { isXrV2RunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { XrV2WorkspaceReadinessPanel } from '@/features/xr-v2/XrV2WorkspaceReadinessPanel'
 
 const XR_ANIMATION_GRAMMAR_SIGILS = ['/', '#', '@'] as const
 const XR_ANIMATION_REQUIRED_METADATA_TOKENS = Object.freeze([
@@ -255,6 +258,7 @@ export function XrAnimationFloatingPanelView() {
     markdownDocumentName,
     markdownDocumentText,
   })
+  const xrV2DemoActive = isXrV2RunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const visiblePresets = React.useMemo(() => XR_ANIMATION_PRESETS.filter(preset => matchesFloatingPanelCatalogSearch(search.normalizedSearchQuery, [preset.id, preset.label, preset.kind, preset.description, ...preset.keywords])), [search.normalizedSearchQuery])
   const visibleKeys = React.useMemo(() => visiblePresets.map(preset => preset.id), [visiblePresets])
   const { allCollapsed, collapseAll, collapsedKeys, expandAll, setCollapsed } = useCollapsibleSectionGroup(visibleKeys)
@@ -325,6 +329,8 @@ export function XrAnimationFloatingPanelView() {
       </section> : null}
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-3')}>
         <XrRehearsalStatus />
+        {xrV2DemoActive ? <XrV2AuthoringStatusPanel sceneReady={sceneReady} /> : null}
+        {xrV2DemoActive ? <XrV2WorkspaceReadinessPanel /> : null}
         <XrSharedAssetControls surface="animation" />
         <XrChoreographyInspector
           cameraInvocation={animationInspection.invocationGrammar?.configureCameraMark || animationInspection.webMcpTools.control}

@@ -72,8 +72,6 @@ try {
   )
   await seedRow.click()
 
-  const panel = page.locator('[data-kg-motion-control-floating-panel="1"]')
-  await panel.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const runtime = page.locator('[data-kg-xr-v2-authoring-runtime="1"]')
   await runtime.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const readiness = page.locator('[data-kg-xr-v2-workspace-readiness="1"]')
