@@ -104,11 +104,11 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   }
   if (
     meta.kgFloatingPanelOpen !== true
-    || meta.kgFloatingPanelView !== 'motionControl'
-    || meta.kgBottomPanelOpen !== false
+    || meta.kgFloatingPanelView !== 'animation'
+    || meta.kgBottomPanelOpen !== true
     || meta.kgBottomPanelTab !== 'timeline'
   ) {
-    throw new Error('expected standalone mode to open canonical Motion Control while retaining the Timeline target')
+    throw new Error('expected standalone mode to open canonical Animation and Timeline for playable rehearsal')
   }
 
   const runReady = asRecord(meta.run_ready_demo, 'run_ready_demo')
@@ -171,15 +171,31 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     throw new Error('expected XR motion hydration to fall back to the source-authored frontmatter plan')
   }
   const sourcePlan = readXrMotionReferencePlan(sourceSeedValue, parsed.graphData.nodes)
-  const selectableVehicleIds = [
-    'xr-subject:vehicle-helicopter:1',
-    'xr-subject:vehicle-sedan:1',
+  const storySubjectIds = [
+    'xr-subject:wolf:1',
+    'xr-subject:first-pig:1',
+    'xr-subject:second-pig:1',
+    'xr-subject:third-pig:1',
+    'xr-subject:straw-house:1',
+    'xr-subject:stick-house:1',
+    'xr-subject:brick-house:1',
+    'xr-subject:oak:1',
+    'xr-subject:soup-pot:1',
   ]
+  const storyCastIds = [
+    'xr-subject:wolf:1',
+    'xr-subject:first-pig:1',
+    'xr-subject:second-pig:1',
+    'xr-subject:third-pig:1',
+  ]
+  const forbiddenGraphCastIds = ['xr_demo_entry', 'xr_ball_controller', 'xr_rocket_controller', 'xr_runtime_gate']
   if (sourcePlan.stageId !== 'singapore'
-    || sourcePlan.subjects.length !== selectableVehicleIds.length
-    || selectableVehicleIds.some(id => !sourcePlan.subjects.some(subject => subject.id === id))
-    || selectableVehicleIds.some(id => !sourcePlan.cast.some(track => track.actorId === id))) {
-    throw new Error(`expected the source document to seed three selectable Singapore vehicle subjects, got ${JSON.stringify(sourcePlan)}`)
+    || sourcePlan.castSource !== 'subjects-only'
+    || sourcePlan.subjects.length !== storySubjectIds.length
+    || storySubjectIds.some(id => !sourcePlan.subjects.some(subject => subject.id === id))
+    || storyCastIds.some(id => !sourcePlan.cast.some(track => track.actorId === id))
+    || forbiddenGraphCastIds.some(id => sourcePlan.cast.some(track => track.actorId === id))) {
+    throw new Error(`expected the source document to seed a source-authored rehearsal cast and props, got ${JSON.stringify(sourcePlan)}`)
   }
   const persistedEmptyPlan = { ...sourceSeedValue, subjects: [], cast: [] }
   const topLevelMetadata = {

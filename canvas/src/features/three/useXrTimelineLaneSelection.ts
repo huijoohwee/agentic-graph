@@ -18,10 +18,16 @@ export function useXrTimelineLaneSelection(code: string, targetId: string, share
   React.useEffect(() => {
     const runtime = readXrMotionReferenceRuntime()
     const currentKey = useGraphStore.getState().mermaidDiagramSelectedRowKeyByKind.gantt || ''
+    const currentLane = currentKey === sceneKey
+      ? 'scene'
+      : currentKey.startsWith(prefix)
+        ? currentKey.slice(prefix.length) as XrTimelineLaneSelection
+        : null
     if (resolveXrTimelineAnimationTrack(runtime.plan, currentKey)?.actorId === targetId && sharedKind !== 'npc') return
+    if (currentLane === 'camera' && sharedKind !== 'npc' && runtime.selectedMark?.kind !== 'cast') return
     setLane(sharedKind === 'npc' && sharedId ? `npc:${sharedId}` : runtime.selectedMark?.kind === 'camera' ? 'camera'
       : targetId === XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID ? 'scene' : `object:${targetId}`)
-  }, [targetId, sharedKind, sharedId, markKey, setLane])
+  }, [markKey, sceneKey, setLane, sharedId, sharedKind, targetId])
   const lane = rowKey === sceneKey ? 'scene' : rowKey.startsWith(prefix) ? rowKey.slice(prefix.length) as XrTimelineLaneSelection : null
   return [lane, setLane] as const
 }
