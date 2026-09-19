@@ -2,12 +2,12 @@
 title: "Stream to Markdown Dashboard — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-STREAM-DASHBOARD-001"
-version: "1.0.0"
-prd_revision: "1.0.0"
-tad_revision: "1.0.0"
-adr_revision: "1.0.0"
-mvp_revision: "1.0.0"
-gtm_revision: "1.0.0"
+version: "1.1.0"
+prd_revision: "1.1.0"
+tad_revision: "1.1.0"
+adr_revision: "1.1.0"
+mvp_revision: "1.1.0"
+gtm_revision: "1.1.0"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "implemented-local"
@@ -19,7 +19,7 @@ reviewed_source_revision: "2fd02312fd9caf145184f9e5d9fc8b28b612917d"
 
 # Stream to Markdown Dashboard — reference implementation
 
-All five roles consume GRAPH-STREAM-DASHBOARD-001@1.0.0. The user's explicit instruction
+All five roles consume GRAPH-STREAM-DASHBOARD-001@1.1.0. The user's explicit instruction
 “UPDATE agentic-os, prd-tad-adr-mvp-gtm md, then IMPLEMENT” authorizes this implementation.
 The [Agentic OS contract](https://github.com/huijoohwee/agentic-os/blob/main/guides/STREAM-DASHBOARDS.md)
 owns the observation/presentation boundary. This document owns product behavior, not a new lifecycle.
@@ -45,13 +45,19 @@ Flow: framed JSON → bounded snapshot validation → declared template bindings
 revision and completeness accompany the resolved output. The existing Mission SSE reader and
 observation owner remain unchanged; a Mission adapter supplies the same template projection input.
 
-The template is registered in the existing workspace seed inventory. Frontmatter stores the existing
+The source selector reuses the native `.workspace` observation reader; a workspace-backed Mission
+defaults to that source. Its manifest opens in the existing Editor. Upload is a separate explicit
+source choice, with the same bounded JSON/SSE decoder.
+
+The template is authored only in `huijoohwee.github.io/template/`, consumed at an exact commit and
+SHA-256 digest, and cached in the existing browser workspace after first online use. A user-edited
+cache is never overwritten; local variations use an explicit alternate path. Frontmatter stores the existing
 widget configuration shape plus explicit value/table bindings. A saved document stores resolved data
 and the validated configuration; its readable generated block uses ordinary headings and tables.
 The settings owner selects either that document or its existing JSON sidecar, never both. Saves read
 the latest source and compare before writing. Rendering and shared drag/resize remain presentation.
 
-MVP limits: 32 snapshot events / 1 MiB per imported stream; 128 widgets; 2,048 table rows; 2 MiB output.
+MVP limits: 32 snapshot events / 1 MiB per imported stream; 128 widgets; 2,048 table rows; 1 MiB resolved values; 2 MiB output.
 Initial events are full snapshots, not patches. No network endpoint discovery, reconnect loop, automatic
 cloud transfer or new model invocation. The existing authenticated Source Files Markdown transfer can
 sync an explicitly saved document. Native archive portability remains a separate producer capability.
@@ -72,7 +78,7 @@ sync an explicitly saved document. Native archive portability remains a separate
 The implementer owns SD-01–05 and the evaluator records exact checks. Demo: select Mission or import
 JSON/SSE → choose the Mission template → save dashboard Markdown → open it from Source Files → move
 and resize a card → reopen and verify values/layout/notes. Shared Props and Editor supply controls.
-Budget: 60–90 active minutes initially, 20 changed modules / 120 KB source, zero new dependencies or
+Budget: 60–90 active minutes initially; 20–30 additional minutes for shared template ownership, 24 changed files across three repositories / 120 KB source, zero new dependencies or
 model calls. Refresh estimates on drift. Target first local value is one save/reopen within a minute
 after a complete observation is available; measured UX time and deployment remain unverified.
 Rollback reverts this source change while retaining saved documents and native run archives.
@@ -86,20 +92,32 @@ Local behavior tests do not establish public availability or cloud deployment re
 
 ## Validation record
 
-SD-01/02: `agentReady.missionControl.dashboardMarkdown` passed split UTF-8/SSE framing, replay,
+SD-01/02: `agentReady.missionControl.projection.dashboardMarkdown` passed split UTF-8/SSE framing, replay,
 ordering, input bounds, abort, malformed templates, zero/unknown values and literal-data checks.
-SD-03/04: `agentReady.missionControl.dashboardMarkdownPersistence` passed workspace save/reopen,
+SD-03/04: `agentReady.missionControl.projection.dashboardMarkdownPersistence` passed workspace save/reopen,
 shared widget commands, layout/aspect/fold persistence, notes preservation, unchanged global settings
 and a concurrent-write conflict. The existing `pipeline.2dRenderer.dashboardWidgets.sourceCrud`
 regression passed, including shared WYSIWYG controls. Both new cases use the existing Mission CI filter.
 SD-05: local browser testing at port 4188 saved the current Mission, reopened its four cards, edited a
 title and portrait aspect through shared Props, then reloaded the page with both changes retained.
+A direct `.workspace` save also passed after adding the explicit workspace source selector.
 This is local browser evidence, not protected candidate, offline-network or cloud-transfer proof.
 
 Agentic OS `npm run check` and Graph `npm run check` passed. Fleet ownership passed across eight
 repositories with no findings. The upstream contract is OS `da0f7ce70ab5a4390009e6e8c179130d6f5bfa23`;
+the template ownership guide is OS `32b1ccbba6fb1dfa8c4978d1664a694a8113edea` (PR #212);
 the guideline baseline is OS `5a91c7356b3d0372675d4126fee623cf081d1177`. No OS runtime pin change is
-required for this contract-only addition. Graph's successor publication remains blocked by its
+required for this contract-only addition. The existing Mission browser integration check passed at local `abdfe59e`; subsequent projection
+bounds and CI-selection changes require their own focused checks. Graph's successor publication remains blocked by its
 pre-existing merge history (`blocked-successor-merge`); preserve the local implementation and original
 published ref until that owning lifecycle issue is resolved. Deployment and continuous reconnect are
 not delivered. Exact commit-bound integration results belong to the native check/review receipts.
+
+Template ownership update: the operator explicitly selected `huijoohwee.github.io/template/`.
+The template is website commit `3bc612b4e421484a6bf99883a0368073e369f5e4` (PR #234).
+Graph removes its authored seed copy; Agentic OS defines the ownership boundary in its on-demand guide.
+The cached template retains URL provenance and passes a digest check before use. Tests cover first
+fetch, offline cache reuse, changed bytes, size bounds and preservation of edited local copies.
+Browser saving through the pinned public GitHub source succeeded. OS PR #212 and website PR #234
+passed their required CI; the source guide and template remain review candidates. Saved dashboards
+remain self-contained and do not need a template download to reopen.

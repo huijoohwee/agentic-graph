@@ -1,15 +1,24 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
+import { DASHBOARD_TEMPLATE_SOURCE, DASHBOARD_TEMPLATE_PATH, DASHBOARD_TEMPLATE_URL, fetchDashboardTemplate, readDashboardTemplate } from '@/components/DashboardCanvas/dashboardTemplateSource'
 import { DASHBOARD_EVENT_SCHEMA, projectDashboardMarkdown, readDashboardSnapshot, updateDashboardSnapshotConfiguration } from '../components/DashboardCanvas/dashboardMarkdownDocument'
 import { readDashboardSnapshotStream } from '../components/DashboardCanvas/dashboardSnapshotStream'
 
 const cases: { name: string; run: () => unknown }[] = []
 const test = (name: string, run: () => unknown) => { cases.push({ name, run }) }
 export async function testDashboardMarkdownPipeline() {
+  await loadTemplateFixture()
   for (const item of cases) { try { await item.run() } catch (error) { throw new Error(item.name, { cause: error }) } }
 }
 
-const template = readFileSync(new URL('../../../docs/workspace-seeds/agentic-graph-agent-mission-template.md', import.meta.url), 'utf8')
+let template = ''
+async function loadTemplateFixture() {
+  if (template) return
+  try { template = execFileSync('git', ['-C', resolveSiblingFixturePath('huijoohwee.github.io', '.'), 'show', `${DASHBOARD_TEMPLATE_SOURCE.revision}:${DASHBOARD_TEMPLATE_SOURCE.path}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }) }
+  catch { template = await fetchDashboardTemplate() }
+  assert.equal(await fetchDashboardTemplate(async () => new Response(template)), template)
+}
 const event = { schema: DASHBOARD_EVENT_SCHEMA, sourceId: 'run-1', sequence: 1, observedAt: 1780000000000, complete: false,
   data: { run: { id: 'run-1', status: 'running', spanCount: 1 }, resources: [{ label: 'CPU', value: 0 }],
     spans: [{ operation: 'compile', status: 'running', durationMs: null, cpuMs: 0, peakMemoryBytes: null }] } }
@@ -76,9 +85,13 @@ test('invalid template bindings and unsupported values fail before output', () =
   assert.throws(() => projectDashboardMarkdown(template.replace('template_version:', 'removed_version:'), event), /template identity/)
   assert.throws(() => projectDashboardMarkdown(template, { ...event, data: { ...event.data, resources: Array(2049).fill({ label: 'x', value: 1 }) } }), /2,048/)
   assert.throws(() => projectDashboardMarkdown(template, { ...event, observedAt: Number.MAX_SAFE_INTEGER }), /identity/)
+  const repeated = template.replace('      - {label: Value, path: value}', Array(4).fill('      - {label: Value, path: value}').join('\n'))
+  assert.throws(() => projectDashboardMarkdown(repeated, { ...event, data: { ...event.data,
+    resources: Array(1000).fill({ label: 'Bounded input', value: 'x'.repeat(600) }) } }), /projection exceeds/)
 })
 
 export async function testDashboardMarkdownWorkspacePersistence() {
+  await loadTemplateFixture()
   const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
   const { restore } = initJsdomHarness()
   const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
@@ -87,8 +100,23 @@ export async function testDashboardMarkdownWorkspacePersistence() {
   const { DASHBOARD_WIDGETS_PATH, readDashboardWidgetConfiguration, mutateDashboardWidgets } = await import('@/components/DashboardCanvas/dashboardWidgetConfiguration')
   const fs = await getWorkspaceFs(), explorer = useMarkdownExplorerStore.getState(), path = `/dashboard-test-${crypto.randomUUID()}.md`
   const globalBefore = await fs.readFileText(DASHBOARD_WIDGETS_PATH), readFile = fs.readFileText.bind(fs)
+  const templateBefore = await fs.readFileText(DASHBOARD_TEMPLATE_PATH)
   const original = projectDashboardMarkdown(template, event) + 'Authored **notes** survive.\n'
   try {
+    await fs.deleteEntry(DASHBOARD_TEMPLATE_PATH, { mirrorToHost: false })
+    let requests = 0
+    const request: typeof fetch = async (url, init) => {
+      requests++; assert.equal(url, DASHBOARD_TEMPLATE_URL); assert.equal(init?.credentials, 'omit')
+      return new Response(template)
+    }
+    assert.equal(await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, request), template)
+    assert.equal(requests, 1)
+    assert.equal(await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, async () => { throw Error('offline') }), template)
+    await fs.writeFileText(DASHBOARD_TEMPLATE_PATH, template + '\nUser edit\n', { mirrorToHost: false })
+    await assert.rejects(readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, request), /pinned source/)
+    assert.ok((await fs.readFileText(DASHBOARD_TEMPLATE_PATH))!.endsWith('User edit\n'))
+    await assert.rejects(fetchDashboardTemplate(async () => new Response('unexpected HTML')), /pinned source/)
+    await assert.rejects(fetchDashboardTemplate(async () => new Response('x'.repeat(128 * 1024 + 1))), /exceeds 131072 bytes/)
     await fs.createFile({ parentPath: '/', name: path.slice(1), text: original, mirrorToHost: false })
     useMarkdownExplorerStore.getState().setActivePath(path)
     assert.equal((await controlDashboardWidget({ operation: 'inspect' })).path, path)
@@ -123,6 +151,8 @@ export async function testDashboardMarkdownWorkspacePersistence() {
     assert.equal((await readDashboardWidgetConfiguration()).document.widgets['graph:run-status'].width, 612)
   } finally {
     fs.readFileText = readFile
+    if (templateBefore !== null) await fs.writeFileText(DASHBOARD_TEMPLATE_PATH, templateBefore, { mirrorToHost: false })
+    else await fs.deleteEntry(DASHBOARD_TEMPLATE_PATH, { mirrorToHost: false })
     useMarkdownExplorerStore.getState().setActivePath(explorer.activePath)
     await fs.deleteEntry(path, { mirrorToHost: false })
     await readDashboardWidgetConfiguration()

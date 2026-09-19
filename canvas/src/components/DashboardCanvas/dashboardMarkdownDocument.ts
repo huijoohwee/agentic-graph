@@ -120,15 +120,22 @@ export function projectDashboardMarkdown(templateText: string, input: unknown, s
   }
   for (const id of Object.keys(configuration.boards ?? {})) if (settings?.boards?.[id]) configuration.boards![id] = settings.boards[id]
   const values: Record<string, DashboardValue> = {}
+  let projectedBytes = 0
+  const bindScalar = (input: unknown) => {
+    const value = scalar(input)
+    projectedBytes += new TextEncoder().encode(JSON.stringify(value)).length + 1
+    if (projectedBytes > DASHBOARD_DOCUMENT_LIMIT / 2) throw Error('Dashboard projection exceeds its value byte limit.')
+    return value
+  }
   for (const [id, raw] of Object.entries(object(meta.bindings))) {
     if (!Object.hasOwn(configuration.widgets, id)) throw Error('Template binding references an unknown widget.')
     const binding = object(raw) as Binding, value: DashboardValue = {}
-    if (binding.value !== undefined) value.value = scalar(readPath(event.data, binding.value))
+    if (binding.value !== undefined) value.value = bindScalar(readPath(event.data, binding.value))
     if (binding.rows !== undefined) {
       const rows = readPath(event.data, binding.rows)
       if (!Array.isArray(rows) || rows.length > 2048 || !Array.isArray(binding.columns) || !binding.columns.length || binding.columns.length > 16) throw Error('Template table requires at most 2,048 rows and 16 columns.')
       value.columns = binding.columns.map(column => column.label)
-      value.rows = rows.map(row => binding.columns!.map(column => scalar(readPath(row, column.path))))
+      value.rows = rows.map(row => binding.columns!.map(column => bindScalar(readPath(row, column.path))))
     }
     values[id] = value
   }
@@ -137,7 +144,7 @@ export function projectDashboardMarkdown(templateText: string, input: unknown, s
   let rendered = body
   for (const token of parseMarkdownVariableTokens(body).reverse()) {
     const value = token.declaredValue ?? readPath(event.data, token.key) ?? token.fallback ?? null
-    rendered = rendered.slice(0, token.start) + dashboardLiteral(scalar(value)) + rendered.slice(token.end)
+    rendered = rendered.slice(0, token.start) + dashboardLiteral(bindScalar(value)) + rendered.slice(token.end)
   }
   if (rendered.includes(START) || rendered.includes(END)) throw Error('Template body contains reserved dashboard boundaries.')
   return serialize({ schema: DASHBOARD_SNAPSHOT_SCHEMA, title: meta.title ?? meta.template_id,

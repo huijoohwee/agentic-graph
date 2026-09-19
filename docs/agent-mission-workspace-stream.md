@@ -42,8 +42,10 @@ existing hosted-runtime query path. Imported files remain explicit read-only sna
 ## Explicit Markdown dashboard checkpoints
 
 Dashboard → **Markdown dashboard** uses the registered Mission template in
-`docs/workspace-seeds/agentic-graph-agent-mission-template.md`. Choose the current Mission or import
-a finite JSON/SSE snapshot, select an existing Markdown template path, and save. **Open saved dashboard**
+`huijoohwee.github.io/template/agentic-graph-agent-mission-template.md`. Choose **Workspace · .workspace** to read the host-selected native archive through the existing
+validated observation reader, **Current Mission** to save the loaded inspection, or **Imported snapshot**
+for a finite JSON/SSE upload. Workspace-backed Missions default to the workspace source; **Inspect current
+Mission source** opens its read-only manifest in the shared Editor. Select a Markdown template path and save. **Open saved dashboard**
 opens the historical `.md` in Source Files and the shared Dashboard; it does not reconnect the run.
 The report retains resolved scalar/table values and layout. Props, fold, shared drag and resize update
 that document's configuration. Notes outside the generated boundaries remain authored text.
