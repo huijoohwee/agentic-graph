@@ -444,10 +444,11 @@ try {
   const canvas = selected.locator('svg[role="img"]')
   await canvas.scrollIntoViewIfNeeded()
   const point = await canvas.evaluate(element => {
-    const box = element.getBoundingClientRect()
-    const x = (Math.max(0, box.left) + Math.min(innerWidth, box.right)) / 2
-    const y = (Math.max(0, box.top) + Math.min(innerHeight, box.bottom)) / 2
-    if (!element.contains(document.elementFromPoint(x, y))) throw Error('Topology drag target is obscured')
+    const box = element.getBoundingClientRect(), clips = [box, { left: 0, top: 0, right: innerWidth, bottom: innerHeight }]
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) if (/(auto|scroll|hidden|clip)/.test(getComputedStyle(parent).overflow)) clips.push(parent.getBoundingClientRect())
+    const left = Math.max(...clips.map(rect => rect.left)), right = Math.min(...clips.map(rect => rect.right))
+    const top = Math.max(...clips.map(rect => rect.top)), bottom = Math.min(...clips.map(rect => rect.bottom)), x = (left + right) / 2, y = (top + bottom) / 2
+    if (right - left < 40 || bottom - top < 40 || !element.contains(document.elementFromPoint(x, y))) throw Error('Topology drag target is obscured')
     return { x, y }
   })
   await page.mouse.move(point.x, point.y); await page.mouse.down()
