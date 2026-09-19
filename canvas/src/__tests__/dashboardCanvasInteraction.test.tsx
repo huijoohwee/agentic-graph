@@ -1,3 +1,4 @@
+import { testDashboardMissionCardColumns } from './dashboardWidgetLayout.test'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { DASHBOARD_WIDGETS_PATH } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
 import React, { act } from 'react'
@@ -229,6 +230,7 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
     if (previousConfiguration !== null) await fs.createFile({ parentPath: '/notes', name: 'dashboard.widgets.json', text: previousConfiguration, mirrorToHost: false })
     restore()
   }
+  await testDashboardMissionCardColumns()
 }
 
 export async function testDashboardCanvasCardFlipConfiguration() {

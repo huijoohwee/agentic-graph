@@ -12,7 +12,8 @@ export const buildKanbanCardDropIntentLabel = (args: {
 }): string => {
   const targetCardLabel = normalizeLabel(args.targetCardLabel, 'item')
   const targetLaneLabel = normalizeLabel(args.targetLaneLabel, 'lane')
-  const action = args.position === 'before' ? 'Drop to place before' : 'Drop to place after'
+  const action = args.position === 'left' ? 'Drop to the left of' : args.position === 'right' ? 'Drop to the right of'
+    : args.position === 'before' ? 'Drop to place before' : 'Drop to place after'
   return `${action} ${targetCardLabel} in ${targetLaneLabel}`
 }
 

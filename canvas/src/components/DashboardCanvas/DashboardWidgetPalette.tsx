@@ -1,4 +1,5 @@
 import React from 'react'
+import { WidgetPaletteCardLayoutPreview } from '@/features/toolbar/WidgetPaletteCardLayoutPreview'
 import { DashboardCardView, DashboardMetricTile } from './DashboardWidgets'
 import DashboardWidgetFlip, { type DashboardTemplate } from './DashboardWidgetFlip'
 import type { DashboardCard } from './dashboardModel'
@@ -20,7 +21,8 @@ export default function DashboardWidgetPalette() {
     return <li key={kind} aria-label={`Template ${title}`} className="min-w-0">
       <DashboardWidgetFlip template={kind} title={title}>
         {kind === 'metric' ? <DashboardMetricTile metric={{ id: 'template-metric', label: title, value: '—', detail: 'Select, then Flip to configure', tone: 'slate' }} />
-          : <DashboardCardView card={card}>{kind === 'tree' ? <p className="text-xs">Agent Mission · selected run</p> : kind === 'codebase' ? <p className="text-xs">Current Mission codebase index · native D3 traversal and source evidence</p> : undefined}</DashboardCardView>}
+          : kind === 'codebase' ? <WidgetPaletteCardLayoutPreview variant={{ id: 'dashboard-codebase', label: title, aspectRatio: '16:9', layoutKind: 'card-media' }} />
+          : <DashboardCardView card={card}>{kind === 'tree' ? <p className="text-xs">Agent Mission · selected run</p> : undefined}</DashboardCardView>}
       </DashboardWidgetFlip>
     </li>
   })}</>

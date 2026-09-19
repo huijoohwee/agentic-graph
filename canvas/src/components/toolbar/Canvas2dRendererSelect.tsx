@@ -148,7 +148,8 @@ export function Canvas2dRendererSelect({
       activateAgentRunWorkspace(id === 'renderer:dashboard' ? inspection?.view ?? 'tree' : id.slice('agent-run:'.length) as Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>); return
     }
     if (!baselineGuard()) return
-    if (inspection) closeAgentRunInspection()
+    // Presentation controls configure the current Mission; only navigation leaves it.
+    if (inspection && /^(renderer|surface|document):/.test(id)) closeAgentRunInspection()
     applyCanvasViewSelection({
       id,
       ensureBaselineUnlocked: baselineGuard,

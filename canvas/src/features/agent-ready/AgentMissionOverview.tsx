@@ -1,5 +1,6 @@
 import React from 'react'
 import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
+import DashboardWidgetBoard from '@/components/DashboardCanvas/DashboardWidgetBoard'
 import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
 import { useDashboardWidgets, widgetSettings } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
 import { WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
@@ -72,7 +73,7 @@ function CodebaseExplorer({ codebase, span }: { codebase: MissionCodebaseIndex; 
 }
 
 /** Mission adds an evidence overview to the existing Dashboard; graph rendering stays with D3. */
-export default function AgentMissionOverview() {
+export default function AgentMissionOverview({ children }: { children?: React.ReactNode }) {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
   const widgetConfiguration = useDashboardWidgets()
@@ -86,7 +87,12 @@ export default function AgentMissionOverview() {
     const frame = requestAnimationFrame(() => explorer.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
     return () => cancelAnimationFrame(frame)
   }, [inspection?.spanId])
-  if (!inspection || !workspace) return null
+  // Keep the single Mission observer mounted while its first snapshot loads or expires.
+  // The stable keyed board also preserves the trace component when evidence arrives.
+  const missionItem = children ? [{ id: 'mission:tree', cardId: 'agent-tree', content: children }] : []
+  if (!inspection || !workspace) return <section aria-label="Mission evidence loop" className="min-w-0 space-y-3">
+    <section key="widgets" ref={explorer}><DashboardWidgetBoard id="mission" items={missionItem} /></section>
+  </section>
   const trace = inspection.trace, data = codebase.data, model = agentMissionOverviewModel(trace, data?.index)
   const files = agentMissionWorkspace(trace, data), source = workflowSourceLink(trace)
   const openFile = (path: string) => activateAgentRunWorkspace(workspace.view, 'editor', path)
@@ -120,8 +126,10 @@ export default function AgentMissionOverview() {
           <button className={button} onClick={() => openView('evidence')}>Evaluation evidence</button></div>
       </li>
     </ol>
-    {data && exploring && <section ref={explorer}>
-      <DashboardWidgetFlip widgetId="mission:codebase" template="codebase" title={codebaseWidget.title ?? 'Codebase knowledge graph'}
+    <section key="widgets" ref={explorer}>
+      <DashboardWidgetBoard id="mission" items={[
+        ...(data && exploring ? [{ id: 'mission:codebase', cardId: 'mission-codebase', content: (
+<DashboardWidgetFlip widgetId="mission:codebase" template="codebase" title={codebaseWidget.title ?? 'Codebase knowledge graph'}
         defaults={{ title: 'Codebase knowledge graph', subtitle: 'Retained native snapshot · read only', tone: 'blue' }}
         configuration={<p className="text-xs">Uses the current Mission’s linked native codebase index. Renderer settings configure its retained D3 visualization.</p>}>
         <DashboardCardView card={{ id: 'mission-codebase', title: codebaseWidget.title ?? 'Codebase knowledge graph', subtitle: codebaseWidget.subtitle ?? 'Retained native snapshot · read only', footnote: codebaseWidget.footnote, kind: 'table', tone: codebaseWidget.tone ?? 'blue', series: [], rows: [] }}>
@@ -130,7 +138,10 @@ export default function AgentMissionOverview() {
           <AgentMissionCodebaseGraphButton codebase={data} />
         </DashboardCardView>
       </DashboardWidgetFlip>
-    </section>}
+        ) }] : []),
+        ...missionItem,
+      ]} />
+    </section>
 
     <details className="rounded border p-3" open><summary className="cursor-pointer text-sm font-semibold">Indexing economics · {model.model}</summary>
       <DashboardMetricGrid metrics={model.indexMetrics} />

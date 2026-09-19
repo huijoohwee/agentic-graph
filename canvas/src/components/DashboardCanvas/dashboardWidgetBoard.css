@@ -1,0 +1,7 @@
+.kg-dashboard-widget-board { container: dashboard-widgets / inline-size; }
+.kg-dashboard-widget-rows { display: flex; flex-wrap: wrap; align-items: flex-start; }
+.kg-dashboard-widget-cell { width: 100%; flex: 0 0 100%; }
+.kg-dashboard-widget-row-break { flex: 0 0 100%; height: 0; }
+@container dashboard-widgets (min-width: 640px) {
+  .kg-dashboard-widget-cell { width: var(--kg-dashboard-column-width); flex-basis: var(--kg-dashboard-column-width); }
+}

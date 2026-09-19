@@ -116,7 +116,7 @@ export default function GraphCanvasInspection({ graph, selectedNodeId, onSelect,
       <button type="button" onClick={fit} className={button}>Fit topology</button>
       {rendererControls && <button type="button" onClick={configure} className={button}>Renderer settings</button>}
     </div>
-    <div {...selectionProps} ref={parent} tabIndex={rendererControls ? 0 : undefined} className={`w-full min-w-0 overflow-hidden rounded border ${WIDGET_SELECTION_SURFACE_CLASS_NAME} ${getStoryboardWidgetPanelSelectionChromeClassName(rendererControls && focusedGraph === graph)}`} style={{ height: 'clamp(360px, 60vh, 720px)' }}>
+    <div {...selectionProps} data-kg-card-media-interactive="1" ref={parent} tabIndex={rendererControls ? 0 : undefined} className={`w-full min-w-0 overflow-hidden rounded border ${WIDGET_SELECTION_SURFACE_CLASS_NAME} ${getStoryboardWidgetPanelSelectionChromeClassName(rendererControls && focusedGraph === graph)}`} style={{ height: 'clamp(360px, 60vh, 720px)' }}>
       <svg ref={svg} role="img" aria-label={description}
         onClickCapture={event => { if (event.shiftKey || event.ctrlKey || event.metaKey) { event.preventDefault(); event.stopPropagation() } }}
         style={{ width: '100%', height: '100%', touchAction: 'none' }} />

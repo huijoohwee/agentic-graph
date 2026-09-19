@@ -1,4 +1,4 @@
-export type KanbanDropPosition = 'before' | 'after' | 'end'
+export type KanbanDropPosition = 'before' | 'after' | 'end' | 'left' | 'right'
 
 export const resolveKanbanGroupOrder = (args: {
   configuredGroupOrder?: readonly string[] | null
@@ -62,7 +62,7 @@ export const reorderKanbanRowIds = (args: {
   if (args.targetRowId && args.targetRowId !== args.draggedRowId) {
     const targetIndex = baseIds.indexOf(args.targetRowId)
     if (targetIndex >= 0) {
-      const insertIndex = args.position === 'after' ? targetIndex + 1 : targetIndex
+      const insertIndex = args.position === 'after' || args.position === 'right' ? targetIndex + 1 : targetIndex
       baseIds.splice(insertIndex, 0, args.draggedRowId)
       return baseIds
     }

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useDashboardCardDrag } from './DashboardWidgetBoard'
 import { WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import { UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME, buildResponsiveViewportFitGridStyle } from '@/lib/ui/responsiveViewportFitGrid'
 import { buildKanbanCardDropIntentLabel } from '@/features/markdown/ui/kanban/kanbanDragIntent'
@@ -31,9 +32,11 @@ export function DashboardMetricTile(input: {
   onCommitMetricLabel?: (metricId: string, nextValue: string) => void
   onCommitMetricDetail?: (metricId: string, nextValue: string) => void
 }) {
+  const shared = useDashboardCardDrag(input.metric.id)
   const props = { canEdit: false, cardDragProps: { draggable: false } as KanbanCardDragProps, cardDropProps: {} as KanbanCardDropProps,
     draggingMetricId: null, dragOverMetricId: null, commitFlashMetricId: null, dragOverPosition: 'before' as KanbanDropPosition,
-    registerMetricElement: noop, onCommitMetricLabel: noop, onCommitMetricDetail: noop, ...input }
+    registerMetricElement: noop, onCommitMetricLabel: noop, onCommitMetricDetail: noop,
+    ...(shared ? { cardDragProps: shared.cardDragProps, cardDropProps: shared.cardDropProps, draggingMetricId: shared.dragging, dragOverMetricId: shared.over, dragOverPosition: shared.position, commitFlashMetricId: shared.flash, registerMetricElement: shared.register } : {}), ...input }
   const { cardDragProps, cardDropProps, dragOverMetricId, dragOverPosition, draggingMetricId, metric } = props
   const colors = TONE_COLORS[metric.tone]
   const dragging = draggingMetricId === metric.id
@@ -220,10 +223,12 @@ export function DashboardCardView(input: {
   onCommitCardText?: (cardId: string, field: DashboardCardTextField, nextValue: string) => void
   children?: React.ReactNode
 }) {
+  const shared = useDashboardCardDrag(input.card.id)
   const props = { canEditRows: false, canEditCardText: false, gridEnabled: false, selectedNodeId: '', sectionLabel: 'Dashboard',
     cardDragProps: { draggable: false } as KanbanCardDragProps, cardDropProps: {} as KanbanCardDropProps,
     draggingCardId: null, dragOverCardId: null, commitFlashCardId: null,
-    dragOverPosition: 'before' as KanbanDropPosition, registerCardElement: noop, ...input }
+    dragOverPosition: 'before' as KanbanDropPosition, registerCardElement: noop,
+    ...(shared ? { cardDragProps: shared.cardDragProps, cardDropProps: shared.cardDropProps, draggingCardId: shared.dragging, dragOverCardId: shared.over, dragOverPosition: shared.position, commitFlashCardId: shared.flash, registerCardElement: shared.register } : {}), ...input }
   const { card, cardDragProps, cardDropProps, dragOverCardId, dragOverPosition, draggingCardId, gridEnabled } = props
   const dragging = draggingCardId === card.id
   const dropTarget = dragOverCardId === card.id

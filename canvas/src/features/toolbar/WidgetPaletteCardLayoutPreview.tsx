@@ -130,7 +130,7 @@ function LayoutByKind(props: { layoutKind: WidgetPaletteLayoutKind }) {
   return <FlowEditorLayout />
 }
 
-export function WidgetPaletteCardLayoutPreview(props: { variant: WidgetPaletteLayoutVariant }) {
+export function WidgetPaletteCardLayoutPreview(props: { variant: Pick<WidgetPaletteLayoutVariant, 'id' | 'label' | 'aspectRatio' | 'layoutKind'> }) {
   const { variant } = props
   return (
     <article

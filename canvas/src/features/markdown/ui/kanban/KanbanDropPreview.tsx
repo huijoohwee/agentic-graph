@@ -21,6 +21,13 @@ export function KanbanLaneDragOverIndicator() {
 
 export function KanbanCardDropPreview(props: { position: KanbanDropPosition; label?: string }) {
   if (props.position === 'end') return null
+  if (props.position === 'left' || props.position === 'right') return <section aria-hidden="true"
+    className={`pointer-events-none absolute inset-y-0 z-10 w-1 ${props.position === 'left' ? 'left-0' : 'right-0'}`}
+    style={{ backgroundColor: UI_COLOR_PRIMARY_BLUE_INDICATOR }}>
+    <span className={`absolute top-2 whitespace-nowrap rounded border bg-[var(--kg-panel-bg)] p-1 text-[10px] ${props.position === 'left' ? 'left-1' : 'right-1'}`}>
+      {props.label || `Insert ${props.position}`}
+    </span>
+  </section>
   const top = props.position === 'before'
   const Icon = top ? ArrowUpToLine : ArrowDownToLine
   const label = props.label || (top ? 'Insert before' : 'Insert after')

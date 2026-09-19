@@ -1,3 +1,4 @@
+import { testMissionDisplayControlsKeepInspection } from './dashboardWidgetLayout.test'
 import { readFileSync } from 'node:fs'
 import { applyCanvasViewSelection } from '@/components/toolbar/canvasViewActions'
 import { buildCanvasViewOptions, getCanvasViewRendererOptions } from '@/components/toolbar/canvasViewMenu'
@@ -97,7 +98,8 @@ export function testStoryboardMinimapDisplayControlIsDisabled() {
   }
 }
 
-export function testDashboardRendererGridToggleUsesSharedDisplayControl() {
+export async function testDashboardRendererGridToggleUsesSharedDisplayControl() {
+  await testMissionDisplayControlsKeepInspection()
   const displayControls = buildCanvasViewOptions(
     {
       canvas2dRenderer: 'dashboard',

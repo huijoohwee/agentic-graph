@@ -10,9 +10,10 @@ export default function DashboardSurface({ active = true, preview = false, onOpe
 }) {
   const workspace = useAgentRunWorkspace()
   if (!active) return null
+  const mission = <React.Suspense fallback={<p role="status">Loading Mission widgets…</p>}><Mission workspace={!!workspace} preview={preview || !workspace} onOpenWorkspace={onOpenWorkspace} /></React.Suspense>
   return <section aria-label="Dashboard" data-renderer="dashboard" className="relative h-full min-h-0 min-w-0">
-    <DashboardCanvas active overview={workspace ? <React.Suspense fallback={<p role="status">Loading Mission evidence…</p>}><MissionOverview /></React.Suspense> : undefined}>
-      <React.Suspense fallback={<p role="status">Loading Mission widgets…</p>}><Mission workspace={!!workspace} preview={preview || !workspace} onOpenWorkspace={onOpenWorkspace} /></React.Suspense>
+    <DashboardCanvas active overview={workspace ? <React.Suspense fallback={<p role="status">Loading Mission evidence…</p>}><MissionOverview>{mission}</MissionOverview></React.Suspense> : undefined}>
+      {!workspace && mission}
     </DashboardCanvas>
   </section>
 }

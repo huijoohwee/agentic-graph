@@ -7,7 +7,8 @@ import type { DashboardCard, DashboardMetric } from './dashboardModel'
 /** Authored display configuration only. Run evidence never enters this source file. */
 export const DASHBOARD_WIDGETS_PATH = '/notes/dashboard.widgets.json'
 export type DashboardWidgetSettings = { source?: string; visible?: boolean; title?: string; subtitle?: string; footnote?: string; kind?: DashboardCard['kind']; tone?: DashboardCard['tone']; order?: number }
-export type DashboardWidgetDocument = { version: 1; widgets: Record<string, DashboardWidgetSettings> }
+export type DashboardWidgetDocument = { version: 1; widgets: Record<string, DashboardWidgetSettings>; boards?: Record<string, string[][]> }
+const widgetIdentity = /^(graph|mission):[a-zA-Z0-9_-]{1,80}$/
 const empty = (): DashboardWidgetDocument => ({ version: 1, widgets: {} })
 const object = (input: unknown): Record<string, unknown> => {
   const value = unwrapKeyTypeValue(input)
@@ -21,7 +22,7 @@ export function parseDashboardWidgets(text: string | null): DashboardWidgetDocum
   if (unwrapKeyTypeValue(doc.version, 'version') !== 1 || entries.length > 128) throw Error('Unsupported Dashboard widget configuration.')
   const widgets: Record<string, DashboardWidgetSettings> = {}
   for (const [id, raw] of entries) {
-    if (!/^(graph|mission):[a-zA-Z0-9_-]{1,80}$/.test(id)) throw Error('Invalid Dashboard widget identity.')
+    if (!widgetIdentity.test(id)) throw Error('Invalid Dashboard widget identity.')
     const item = object(raw), next: DashboardWidgetSettings = {}
     for (const [key, value] of Object.entries(item).map(([key, value]) => [key, unwrapKeyTypeValue(value, key)] as const)) {
       if (key === 'source' && typeof value === 'string' && /^graph:[a-zA-Z0-9_-]{1,80}$/.test(value)) next.source = value
@@ -34,7 +35,23 @@ export function parseDashboardWidgets(text: string | null): DashboardWidgetDocum
     }
     widgets[id] = next
   }
-  return { version: 1, widgets }
+  const boards: Record<string, string[][]> = {}
+  if (doc.boards !== undefined) {
+    const entries = Object.entries(object(doc.boards))
+    if (entries.length > 32) throw Error('Too many Dashboard boards.')
+    for (const [id, rows] of entries) {
+      if (!/^[a-z][a-z0-9-]{0,79}$/.test(id) || !Array.isArray(rows) || rows.length > 128) throw Error('Invalid Dashboard board.')
+      const seen = new Set<string>()
+      boards[id] = rows.map(row => {
+        if (!Array.isArray(row) || !row.length || row.length > 12) throw Error('Invalid Dashboard columns.')
+        return row.map(item => {
+          if (typeof item !== 'string' || !widgetIdentity.test(item) || seen.has(item) || seen.size >= 128) throw Error('Invalid Dashboard placement.')
+          seen.add(item); return item
+        })
+      })
+    }
+  }
+  return { version: 1, widgets, ...(doc.boards === undefined ? {} : { boards }) }
 }
 let snapshot = { document: empty(), error: '', ready: false }
 const listeners = new Set<() => void>()
@@ -58,10 +75,11 @@ export function useDashboardWidgets() {
 export function updateDashboardWidget(id: string, update: DashboardWidgetSettings): Promise<void> {
   return updateDashboardWidgets({ [id]: update })
 }
-export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSettings | null>): Promise<void> {
+export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSettings | null>, boards?: Record<string, string[][]>): Promise<void> {
   const operation = pending.then(async () => {
     const fs = await getWorkspaceFs(), before = await fs.readFileText(DASHBOARD_WIDGETS_PATH), document = parseDashboardWidgets(before)
     for (const [id, update] of Object.entries(updates)) { if (update === null) delete document.widgets[id]; else document.widgets[id] = { ...document.widgets[id], ...update } }
+    if (boards) document.boards = { ...document.boards, ...boards }
     const text = JSON.stringify(parseDashboardWidgets(JSON.stringify(document)), null, 2) + '\n'
     // Read immediately before write; never replace concurrent Editor edits with a stale form.
     if (await fs.readFileText(DASHBOARD_WIDGETS_PATH) !== before) throw Error('Dashboard configuration changed. Retry this edit.')

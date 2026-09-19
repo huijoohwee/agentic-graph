@@ -1,7 +1,9 @@
+import { testDashboardWidgetLayoutModel } from './dashboardWidgetLayout.test'
 import assert from 'node:assert/strict'
 import { parseDashboardWidgets, configureDashboardCards, configureDashboardMetrics } from '@/components/DashboardCanvas/dashboardWidgetConfiguration'
 
 export function testDashboardWidgetSourceConfiguration() {
+  testDashboardWidgetLayoutModel()
   const source = parseDashboardWidgets(JSON.stringify({ version: { key: 'version', type: 'number', value: 1 }, widgets: {
     'graph:a': { visible: false }, 'graph:b': { title: 'Edited', kind: 'table', tone: 'green', order: -1 }, 'mission:tree': { title: 'Execution spans' }, 'mission:codebase': { title: 'Source context', visible: true },
   } }))
