@@ -1,3 +1,5 @@
+import type { MissionDashboardSnapshot } from './agentMissionDashboardSnapshot'
+import type { AgentRunView } from './agentRunInspectionStore'
 import { readWorkspaceObservation } from './workspaceObservation'
 import DashboardWidgetFlip from '@/components/DashboardCanvas/DashboardWidgetFlip'
 import React from 'react'
@@ -27,14 +29,14 @@ const inputStyle = { minWidth: 0, maxWidth: '100%', border: '1px solid var(--kg-
 type Selection = { runId: string | null; spanId: string | null }
 const emptySelection: Selection = { runId: null, spanId: null }
 
-export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false, preview = false }: { onOpenWorkspace?: () => void; workspace?: boolean; preview?: boolean }) {
+export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = false, preview = false, retained, retainedSpanId, onRetainedSpan, retainedView, onRetainedView }: { onOpenWorkspace?: () => void; workspace?: boolean; preview?: boolean; retained?: MissionDashboardSnapshot; retainedSpanId?: string | null; onRetainedSpan?: (id: string | null) => void; retainedView?: AgentRunView; onRetainedView?: (view: AgentRunView) => void }) {
   const widgetConfig = useDashboardWidgets()
   const viewSettings = widgetSettings(widgetConfig.document, 'mission:tree')
   const inspection = useAgentRunInspection(), workspaceSession = useAgentRunWorkspace(), initial = workspace ? inspection : null
   const inspectionRef = React.useRef(inspection)
   inspectionRef.current = inspection
   const scopeExpiry = React.useRef(initial?.expiresAt ?? 0)
-  const [index, setIndex] = React.useState<RunIndex | null>(null), [trace, setTrace] = React.useState<RunTrace | null>(initial?.trace ?? null)
+  const [index, setIndex] = React.useState<RunIndex | null>(null), [trace, setTrace] = React.useState<RunTrace | null>(retained?.trace ?? initial?.trace ?? null)
   const [selection, setSelection] = React.useState<Selection>(initial ? { runId: initial.trace.runId, spanId: initial.spanId } : emptySelection), selected = React.useRef(selection)
   selected.current = selection
   const scope = React.useRef<string | null>(initial?.scope ?? null), active = React.useRef<AbortController | null>(null)
@@ -43,7 +45,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const [topologyDetail, setTopologyDetail] = React.useState<'all' | 'agents'>('agents')
   const [spanMetrics, setSpanMetrics] = React.useState<SpanMetric[]>(DEFAULT_SPAN_METRICS)
   const [localView, setLocalView] = React.useState('tree'), [localSearch, setLocalSearch] = React.useState(''), [live, setLive] = React.useState(false)
-  const requestedView = workspace ? workspaceSession?.view ?? 'topology' : localView, setView = workspace ? selectAgentRunView : setLocalView
+  const requestedView = retained ? retainedView ?? 'tree' : workspace ? workspaceSession?.view ?? 'topology' : localView, setView = retained ? (view: string) => onRetainedView?.(view as AgentRunView) : workspace ? selectAgentRunView : setLocalView
   const view = views.some(item => item.key === requestedView) ? requestedView : 'tree'
   const search = workspace ? inspection?.search ?? '' : localSearch, setSearch = workspace ? filterAgentRunInspection : setLocalSearch
   const [online, setOnline] = React.useState(navigator.onLine), [visible, setVisible] = React.useState(!document.hidden)
@@ -53,7 +55,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   const [localReport, setLocalReport] = React.useState<ValidationObservation | null>(initial?.trace.localObservation ?? null)
   const importAttempt = React.useRef(0)
   const workspaceFeed = Boolean(trace?.workspaceObservation)
-  const local = Boolean(trace?.localObservation || trace?.localImport)
+  const local = Boolean(retained || trace?.localObservation || trace?.localImport)
   React.useEffect(() => () => { importAttempt.current++ }, [])
   const stop = React.useCallback(() => {
     if (mutating.current && active.current) setNotice('Evaluation may have been accepted. Refresh its evidence before another action.')
@@ -65,7 +67,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     setLocalReport(null); setIndex(null); setTrace(null); setSelection(emptySelection); setBaseline(null); setComparison(null); setExpiry(0)
   }, [workspace])
   const perform = React.useCallback(async (operation: (signal: AbortSignal) => Promise<void>, mutation = false) => {
-    if (active.current || !navigator.onLine || document.hidden) return
+    if (retained || active.current || !navigator.onLine || document.hidden) return
     const controller = new AbortController(); active.current = controller; mutating.current = mutation; setBusy(true); setError('')
     try {
       await operation(controller.signal)
@@ -79,7 +81,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     } finally {
       if (active.current === controller) { active.current = null; mutating.current = false; setBusy(false) }
     }
-  }, [clear])
+  }, [clear, retained])
   const call = async (operation: RunOperation, input: Record<string, unknown>, signal: AbortSignal, observe?: ObservationListener) => {
     const result = await invokeDurableRun(operation, input, signal, value => { signal.throwIfAborted(); observe?.(value) }); signal.throwIfAborted()
     const value = record(result)
@@ -140,8 +142,9 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     setLive(false); setError(''); setNotice('')
   }, [workspace, inspection?.scope, stop])
   // Existing evidence opens without fetching; explicit empty activation discovers authorized runs.
-  React.useEffect(() => { if (!preview && (!workspace || !initial)) { stop(); clear(); void refresh() } }, [query, workspace, preview])
+  React.useEffect(() => { if (!retained && !preview && (!workspace || !initial)) { stop(); clear(); void refresh() } }, [query, workspace, preview])
   React.useEffect(() => {
+    if (retained) return
     const change = () => {
       setOnline(navigator.onLine); setVisible(!document.hidden)
       if (!navigator.onLine || document.hidden) stop()
@@ -161,7 +164,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     return () => window.clearTimeout(timer)
   }, [preview, local, workspaceFeed, live, online, visible, busy, backoff, refresh])
   React.useEffect(() => {
-    if (!expiry) return
+    if (retained || !expiry) return
     const timer = window.setTimeout(() => { stop(); clear(); setNotice('Snapshot expired. Refresh to reauthorize inspection.') }, Math.max(0, expiry - Date.now()))
     return () => window.clearTimeout(timer)
   }, [expiry, stop, clear])
@@ -171,13 +174,14 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     void perform(signal => loadTrace(runId, signal))
   }
   const chooseSpan = (spanId: string | null) => {
-    if (workspace) selectAgentRunInspection(spanId)
+    if (retained) onRetainedSpan?.(spanId); else if (workspace) selectAgentRunInspection(spanId)
     setSelection(current => ({ ...current, spanId }))
   }
   React.useEffect(() => {
     if (workspace && inspection?.trace.runId === selected.current.runId)
       setSelection(current => current.spanId === inspection.spanId ? current : { ...current, spanId: inspection.spanId })
   }, [workspace, inspection?.spanId, inspection?.trace.runId])
+  React.useEffect(() => { if (retained) setSelection({ runId: retained.trace.runId, spanId: retainedSpanId ?? null }) }, [retained, retainedSpanId])
   const spans = React.useMemo(() => visibleSpanTree(trace?.spans ?? [], search), [trace, search])
   const topology = React.useMemo(() => trace ? traceGraph(trace, search, topologyDetail) : null, [trace, search, topologyDetail])
   const span = trace?.spans.find(s => s.spanId === selection.spanId) ?? null
@@ -202,7 +206,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     }, signal)))
   }
   const exportMetadata = () => {
-    if (!trace || expiry <= Date.now()) return
+    if (!trace || !retained && expiry <= Date.now()) return
     const url = URL.createObjectURL(new Blob([trace.localObservation ? JSON.stringify(trace.localObservation, null, 2) : agentRunInspectionJson(trace, selection.spanId, expiry)], { type: 'application/json' }))
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = trace.localObservation ? 'validation-observation.json' : 'agent-run-metadata.json'; anchor.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
@@ -287,7 +291,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
   </>
   if (viewSettings.visible === false) return null
   return <section aria-label="Agent Mission" data-agent-mission-mode={preview ? 'preview' : workspace ? 'workspace' : 'panel'} className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
-    <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings} configuration={sourceConfiguration}>
+    <DashboardWidgetFlip widgetId="mission:tree" template="tree" title={viewSettings.title ?? 'Span tree'} defaults={viewSettings} configuration={retained ? <p className="text-xs">Historical report. Data comes from its saved input snapshot.</p> : sourceConfiguration}>
     <DashboardCardView card={{ id: 'agent-tree', title: viewSettings.title ?? 'Span tree', subtitle: viewSettings.subtitle ?? 'Agent Mission · selected run', footnote: viewSettings.footnote, kind: 'table', tone: viewSettings.tone ?? 'blue', series: [], rows: [] }}>
 
     {!trace && <section aria-label="Observation dashboard" className="py-3 text-sm">
@@ -295,7 +299,8 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     </section>}
     {trace && <section aria-label="Selected run evidence" className="min-w-0">
 
-      {workspaceFeed && <p className="pb-2 text-xs" role="status">.workspace stream · {!online ? 'offline' : !visible ? 'paused while hidden' : error ? 'refresh unavailable' : live ? 'live' : 'paused'}</p>}
+      {retained && <p className="pb-2 text-xs" role="status">Saved observation · read only · offline</p>}
+      {!retained && workspaceFeed && <p className="pb-2 text-xs" role="status">.workspace stream · {!online ? 'offline' : !visible ? 'paused while hidden' : error ? 'refresh unavailable' : live ? 'live' : 'paused'}</p>}
       <h3 className="font-semibold">Run {trace.runId}</h3>
       <p className="text-xs">Selected span: {selection.spanId || "Whole run"}</p>
       <p className="text-xs">Observed state: {trace.status} · {trace.spans.length}/{trace.total} retained spans on this page · expected {numberLabel(trace.expected)} · dropped {numberLabel(trace.dropped)}{trace.partial ? ' · Partial trace' : ''}</p>
@@ -331,18 +336,18 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         <input className="h-9" aria-label="Search spans by name, kind or status" placeholder="Search spans by name, kind or status" value={search} onChange={event => setSearch(event.target.value)} style={inputStyle} />
       </section>
       <div id={`agent-run-view-${view}-panel`} role="region" aria-label={views.find(item => item.key === view)!.label} className="min-w-0 py-2">
-      {context && (!workspace || view === "source") && <details open={workspace || undefined}><summary>Source ownership</summary><p>{context.plan.continuityId}</p>
+      {context && ((!workspace && !retained) || view === "source") && <details open={workspace || undefined}><summary>Source ownership</summary><p>{context.plan.continuityId}</p>
         {planUrl ? <a href={planUrl} target="_blank" rel="noreferrer" className="underline">{context.plan.path} @ {context.plan.revision}</a> : <p>{context.plan.repository} / {context.plan.path} @ {context.plan.revision}</p>}
         <p className="text-xs">Digest {context.plan.digest}</p><pre className="overflow-auto text-xs">{JSON.stringify(context.plan.revisions, null, 2)}</pre>
         <p className="text-xs">Receipt reference: {JSON.stringify(context.receipt)}</p>
       </details>}
-      {workflowUrl && (!workspace || view === 'source') && <section aria-label="Workflow receipt sources" className="my-3 rounded border p-3">
+      {workflowUrl && ((!workspace && !retained) || view === 'source') && <section aria-label="Workflow receipt sources" className="my-3 rounded border p-3">
         <a className="underline" target="_blank" rel="noreferrer" href={workflowUrl}>Workflow source revision</a>
         <p className="text-xs">Receipt coverage is observation only; it grants no release or payment authority.</p>
         <p className="text-xs">Missing phases: {Array.isArray(workflow.missing) && workflow.missing.length ? workflow.missing.map(String).join(', ') : 'None reported'}</p>
         <pre className="max-h-72 overflow-auto text-xs">{JSON.stringify({ phases: workflow.phases, measurementScope: workflow.measurementScope }, null, 2)}</pre>
       </section>}
-      {(!workspace || view === "allocation") && (resources ? <div aria-label="Resource allocation" className="my-3 rounded border p-3">
+      {((!workspace && !retained) || view === "allocation") && (resources ? <div aria-label="Resource allocation" className="my-3 rounded border p-3">
         <h4 className="font-semibold">Project allocation · {String(resources.status)}</h4>
         <p className="text-xs">{String(record(resources.policy).windowId)} · zero incremental provider spend required · machine cost unknown</p>
         <GraphDataTableDomTableView tableId="nodes" columns={['Resource', 'Limit', 'Used', 'Reserved', 'Remaining'].map((name, order) => ({ ...RUN_COLUMNS[0]!, pk: `agentic-os/allocation/${name}`, columnId: name, name, order }))}
@@ -369,9 +374,9 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         {localReport && trace.offset + 32 < trace.total && <button className={button} onClick={() => showLocalReport(localReport, trace.offset + 32)}>Next stage page</button>}
         <button className={button} onClick={() => chooseSpan(null)}>Select whole run</button>
         <button className={button} onClick={exportMetadata}>Export metadata</button>
-        {!workspace && <button className={button} disabled={expiry <= Date.now()} onClick={openWorkspace}>Open in Editor Workspace</button>}
+        {!workspace && !retained && <button className={button} disabled={expiry <= Date.now()} onClick={openWorkspace}>Open in Editor Workspace</button>}
       </div>
-      {(!workspace || view === "evidence" || view === "comparison") && <section aria-label="Subject evaluation" className="rounded border p-3">
+      {((!workspace && !retained) || view === "evidence" || view === "comparison") && <section aria-label="Subject evaluation" className="rounded border p-3">
         <h4 className="font-semibold">{selection.spanId ? `Span ${selection.spanId}` : 'Whole run'} · {evaluated?.status ?? 'unevaluated'}</h4>
         <p className="text-xs">{selection.spanId && !span ? 'Selected span is outside this page; return to its page to evaluate.' : `Score: ${evaluated?.score ?? 'Unknown'} ${evaluated?.reason ?? ''}`}</p>
         <div className="flex flex-wrap gap-2 py-2">

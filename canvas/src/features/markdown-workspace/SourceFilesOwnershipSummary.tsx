@@ -4,6 +4,7 @@ import { DOCUMENT_REPOSITORY_DISPLAY_ROOTS } from 'grph-shared/collaboration/doc
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { DASHBOARD_TEMPLATE_DISPLAY_ROOT } from '@/components/DashboardCanvas/dashboardTemplateSource'
 
 const OWNERSHIP_ROWS = [
   {
@@ -25,6 +26,12 @@ const OWNERSHIP_ROWS = [
     Icon: ShieldCheck,
   },
   {
+    id: 'templates',
+    label: 'Templates',
+    root: DASHBOARD_TEMPLATE_DISPLAY_ROOT,
+    Icon: ShieldCheck,
+  },
+  {
     id: 'offline',
     label: 'Offline',
     root: DOCUMENT_REPOSITORY_DISPLAY_ROOTS.offlineFallback,
@@ -32,7 +39,7 @@ const OWNERSHIP_ROWS = [
   },
 ] as const
 
-export function SourceFilesOwnershipSummary() {
+export function SourceFilesOwnershipSummary({ onOpenTemplate, templateBusy = false }: { onOpenTemplate?: () => void; templateBusy?: boolean } = {}) {
   const typography = usePanelTypography()
   return (
     <section
@@ -45,7 +52,9 @@ export function SourceFilesOwnershipSummary() {
             <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />
             <dt className={`w-14 shrink-0 ${UI_THEME_TOKENS.text.secondary}`}>{label}</dt>
             <dd className={`m-0 min-w-0 flex-1 ${UI_TEXT_TRUNCATE} ${UI_THEME_TOKENS.text.primary}`} title={root}>
-              {root}
+              {id === 'templates' && onOpenTemplate ? <button type="button" disabled={templateBusy}
+                className="block max-w-full truncate text-left underline disabled:opacity-50" onClick={onOpenTemplate}
+                aria-label={`Open ${root}`}>{root}</button> : root}
             </dd>
           </div>
         ))}

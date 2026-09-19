@@ -25,10 +25,19 @@ async function reload() {
   const ticket = ++generation, scope = sourceScope()
   try {
     const fs = await getWorkspaceFs()
-    const selected = scope !== 'mission' && /\.(md|markdown|mdx)$/i.test(scope) ? await fs.readFileText(scope) : null
+    let selectedPath = scope
+    let selected = scope !== 'mission' && /\.(md|markdown|mdx|json)$/i.test(scope) ? await fs.readFileText(scope) : null
+    if (selected && /\.json$/i.test(scope)) {
+      let output: unknown
+      try { output = JSON.parse(selected).dashboard_output } catch { /* Ordinary JSON has no report association. */ }
+      if (typeof output === 'string' && output.startsWith('/docs/dashboards/') && output.endsWith('.md') && !output.split('/').includes('..')) {
+        selectedPath = output; selected = await fs.readFileText(output)
+      } else selected = null
+    }
     const dashboard = selected ? readDashboardSnapshot(selected) : null
+    if (dashboard && selectedPath !== scope && dashboard.files?.input !== scope) throw Error('Dashboard input/output association changed.')
     const document = dashboard?.configuration ?? parseDashboardWidgets(await fs.readFileText(DASHBOARD_WIDGETS_PATH))
-    if (ticket === generation && scope === sourceScope()) { snapshot = { document, dashboard, sourcePath: dashboard ? scope : DASHBOARD_WIDGETS_PATH, scope, error: '', ready: true }; emit() }
+    if (ticket === generation && scope === sourceScope()) { snapshot = { document, dashboard, sourcePath: dashboard ? selectedPath : DASHBOARD_WIDGETS_PATH, scope, error: '', ready: true }; emit() }
   } catch (error) { if (ticket === generation) { snapshot = { ...snapshot, scope, ready: true, error: String((error as Error).message) }; emit() } }
 }
 export function useDashboardWidgets() {
@@ -37,7 +46,7 @@ export function useDashboardWidgets() {
   const value = useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener) } }, () => snapshot, () => snapshot)
   useEffect(() => {
     void reload()
-    return subscribeWorkspaceFsChanged(detail => { if (!detail.path || detail.path === DASHBOARD_WIDGETS_PATH || detail.path === scope) void reload() })
+    return subscribeWorkspaceFsChanged(detail => { if (!detail.path || detail.path === DASHBOARD_WIDGETS_PATH || detail.path === scope || detail.path === snapshot.sourcePath) void reload() })
   }, [scope])
   return value
 }

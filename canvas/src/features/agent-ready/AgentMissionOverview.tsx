@@ -1,3 +1,6 @@
+import type { MissionDashboardSnapshot } from './agentMissionDashboardSnapshot'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import DashboardWidgetDisclosure from '@/components/DashboardCanvas/DashboardWidgetDisclosure'
 import React from 'react'
 import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
@@ -21,10 +24,11 @@ const GraphInspection = React.lazy(() => import('@/components/GraphCanvas/GraphC
 const button = `rounded border px-3 py-2 text-xs disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
 
 
-function CodebaseExplorer({ codebase, span }: { codebase: MissionCodebaseIndex; span: TraceSpan | null }) {
-  const [graph, setGraph] = React.useState<GraphData | null>(null), [error, setError] = React.useState('')
+function CodebaseExplorer({ codebase, span, retainedGraph, onClear }: { codebase: MissionCodebaseIndex; span: TraceSpan | null; retainedGraph?: GraphData; onClear?: () => void }) {
+  const [graph, setGraph] = React.useState<GraphData | null>(retainedGraph ?? null), [error, setError] = React.useState('')
   const [selected, setSelected] = React.useState<string | null>(null), [search, setSearch] = React.useState('')
   React.useEffect(() => {
+    if (retainedGraph) { setGraph(retainedGraph); return }
     let current = true
     const { value } = codebase.index
     void import('@/features/agent-graph/agentGraphWorkspaceArtifact').then(owner =>
@@ -33,7 +37,7 @@ function CodebaseExplorer({ codebase, span }: { codebase: MissionCodebaseIndex; 
       .then(graph => { if (current) { setGraph(graph); setSelected(graph.nodes[0]?.id ?? null) } })
       .catch(() => { if (current) setError('Retained projection unavailable. Inspect the linked index manifest.') })
     return () => { current = false }
-  }, [codebase.index.path])
+  }, [codebase.index.path, retainedGraph])
   const lookup = React.useMemo(() => getCachedGraphLookup({ cacheScope: 'mission-codebase', graphData: graph }), [graph])
   const impact = React.useMemo(() => agentMissionSpanImpact(span, graph), [span, graph])
   React.useEffect(() => { if (span) setSelected(impact.nodeIds[0] ?? null) }, [span, impact])
@@ -42,7 +46,7 @@ function CodebaseExplorer({ codebase, span }: { codebase: MissionCodebaseIndex; 
   if (!graph) return <p role="status" className="py-3 text-sm">{error || 'Loading retained D3 projection…'}</p>
   return <section aria-label="Codebase traversal and context" className="min-w-0 space-y-3 pt-3">
     <div role="status" aria-label="Codebase context" tabIndex={0} className={`rounded border p-3 text-xs ${WIDGET_SELECTION_SURFACE_CLASS_NAME}`}><p>{span ? `Selected span: ${span.operation}` : 'Codebase context'}</p><p>{impact.reason}</p>
-      {span && <button className={`${button} mt-2`} onClick={() => selectAgentRunInspection(null)}>Clear span focus</button>}
+      {span && <button className={`${button} mt-2`} onClick={() => onClear ? onClear() : selectAgentRunInspection(null)}>Clear span focus</button>}
     </div>
     <label className="grid gap-1 text-xs">Find a node in this projection
       <input className={`rounded border bg-transparent p-2 ${WIDGET_SELECTION_SURFACE_CLASS_NAME}`} value={search} onChange={event => setSearch(event.target.value)} placeholder="Source path or symbol" />
@@ -74,31 +78,38 @@ function CodebaseExplorer({ codebase, span }: { codebase: MissionCodebaseIndex; 
 }
 
 /** Mission adds an evidence overview to the existing Dashboard; graph rendering stays with D3. */
-export default function AgentMissionOverview({ children }: { children?: React.ReactNode }) {
+export default function AgentMissionOverview({ children, retained, retainedSpanId, onRetainedSpan, onRetainedView }: { children?: React.ReactNode; retained?: MissionDashboardSnapshot; retainedSpanId?: string | null; onRetainedSpan?: (id: string | null) => void; onRetainedView?: (view: 'tree' | 'source' | 'evidence') => void }) {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
-  const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
+  const liveCodebase = useAgentMissionCodebaseIndex(inspection?.trace, !retained)
+  const codebase = retained ? { data: retained.codebase, error: undefined } : liveCodebase
+  const selectedSpanId = retained ? retainedSpanId : inspection?.spanId
   const widgetConfiguration = useDashboardWidgets()
   const codebaseWidget = widgetSettings(widgetConfiguration.document, 'mission:codebase')
   const [exploring, setExploring] = React.useState(false)
   React.useEffect(() => { if (typeof codebaseWidget.visible === 'boolean') setExploring(codebaseWidget.visible) }, [codebaseWidget.visible])
   const explorer = React.useRef<HTMLElement | null>(null)
   React.useEffect(() => {
-    if (!inspection?.spanId) return
+    if (!selectedSpanId) return
     setExploring(true)
     const frame = requestAnimationFrame(() => explorer.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
     return () => cancelAnimationFrame(frame)
-  }, [inspection?.spanId])
+  }, [selectedSpanId])
   // Keep the single Mission observer mounted while its first snapshot loads or expires.
   // The stable keyed board also preserves the trace component when evidence arrives.
   const missionItem = children ? [{ id: 'mission:tree', cardId: 'agent-tree', content: children }] : []
-  if (!inspection || !workspace) return <section aria-label="Mission evidence loop" className="min-w-0 space-y-3">
+  if (!retained && (!inspection || !workspace)) return <section aria-label="Mission evidence loop" className="min-w-0 space-y-3">
     <section key="widgets" ref={explorer}><DashboardWidgetBoard id="mission" items={missionItem} /></section>
   </section>
-  const trace = inspection.trace, data = codebase.data, model = agentMissionOverviewModel(trace, data?.index)
+  const trace = retained?.trace ?? inspection!.trace, data = codebase.data, model = agentMissionOverviewModel(trace, data?.index)
   const files = agentMissionWorkspace(trace, data), source = workflowSourceLink(trace)
-  const openFile = (path: string) => activateAgentRunWorkspace(workspace.view, 'editor', path)
+  const openFile = (path: string) => {
+    if (retained) {
+      const input = widgetConfiguration.dashboard?.files?.input
+      if (input) { useMarkdownExplorerStore.getState().setActivePath(input); useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true }) }
+    } else activateAgentRunWorkspace(workspace!.view, 'editor', path)
+  }
   const openView = (view: 'tree' | 'source' | 'evidence') => {
-    selectAgentRunView(view)
+    if (retained) onRetainedView?.(view); else selectAgentRunView(view)
     document.querySelector(`[data-agent-mission-mode]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
   return <section aria-label="Mission evidence loop" className="min-w-0 space-y-3">
@@ -135,8 +146,8 @@ export default function AgentMissionOverview({ children }: { children?: React.Re
         configuration={<p className="text-xs">Uses the current Mission’s linked native codebase index. Renderer settings configure its retained D3 visualization.</p>}>
         <DashboardCardView card={{ id: 'mission-codebase', title: codebaseWidget.title ?? 'Codebase knowledge graph', subtitle: codebaseWidget.subtitle ?? 'Retained native snapshot · read only', footnote: codebaseWidget.footnote, kind: 'table', tone: codebaseWidget.tone ?? 'blue', series: [], rows: [] }}>
           <p className="text-xs">This explorer traverses the retained projection. Full-index queries use the same graph and snapshot identity from the index manifest.</p>
-          <CodebaseExplorer key={data.index.path} codebase={data} span={trace.spans.find(span => span.spanId === inspection.spanId) ?? null} />
-          <AgentMissionCodebaseGraphButton codebase={data} />
+          <CodebaseExplorer key={data.index.path} codebase={data} retainedGraph={retained?.graph} onClear={retained ? () => onRetainedSpan?.(null) : undefined} span={trace.spans.find(span => span.spanId === selectedSpanId) ?? null} />
+          {!retained && <AgentMissionCodebaseGraphButton codebase={data} />}
         </DashboardCardView>
       </DashboardWidgetFlip>
         ) }] : []),

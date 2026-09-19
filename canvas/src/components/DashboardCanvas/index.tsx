@@ -24,6 +24,8 @@ import {
 
 type DashboardCanvasProps = {
   active?: boolean
+  retainedSpanId?: string | null
+  onRetainedSpan?: (id: string | null) => void
   children?: React.ReactNode
   overview?: React.ReactNode
 }
@@ -36,8 +38,9 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
   const widgetConfiguration = useDashboardWidgets()
   const active = props.active !== false
   const containerRef = React.useRef<HTMLElement | null>(null)
-  const { graphData, selectedNodeId, selectNode, readOnly } = useDashboardSource(active)
-  const schema = useGraphStore(state => state.schema)
+  const { graphData, selectedNodeId, selectNode, readOnly } = useDashboardSource(active, props.retainedSpanId, props.onRetainedSpan)
+  const currentSchema = useGraphStore(state => state.schema)
+  const schema = widgetConfiguration.dashboard?.mission?.schema ?? currentSchema
   const resolvedThemeMode = useGraphStore(state => state.resolvedThemeMode || 'light')
   const updateNode = useGraphStore(state => state.updateNode)
   const dims = useContainerDims(containerRef)
@@ -104,6 +107,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
             </section>
           </header>
 
+          {widgetConfiguration.dashboard?.mission && <p className="text-xs">Historical snapshot · {new Date(widgetConfiguration.dashboard.source.observedAt).toISOString()}</p>}
           {props.overview}
 
           <section className="min-w-0" aria-label="Dashboard metrics" data-kg-dashboard-metrics-board="1">

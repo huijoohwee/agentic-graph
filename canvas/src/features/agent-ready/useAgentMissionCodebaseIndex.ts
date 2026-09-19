@@ -6,20 +6,17 @@ import type { RunTrace } from './missionControlProjection'
 export type MissionCodebaseIndex = { index: WorkspaceCodebaseIndex; reference?: { path: string; value: Record<string, unknown> } }
 const pending = new Map<string, Promise<MissionCodebaseIndex | undefined>>()
 
-/** Discover retained native indexes on demand. Workflow refreshes do not parse or re-import code. */
-export function useAgentMissionCodebaseIndex(trace?: RunTrace | null) {
-  const identity = useGraphStore(state => state.graphData?.metadata?.agentGraphProjection) as Record<string, unknown> | undefined
+/** One retained index reader for live Mission and explicit historical checkpoints. */
+export function readAgentMissionCodebaseIndex(trace?: RunTrace | null): Promise<MissionCodebaseIndex | undefined> {
+  const identity = useGraphStore.getState().graphData?.metadata?.agentGraphProjection as Record<string, unknown> | undefined
   const nativeReference = (trace?.workflowManifest?.value.codebaseIndex as Record<string, unknown> | undefined)?.snapshot as Record<string, unknown> | undefined
   const nativeDigest = trace?.workspaceObservation && typeof nativeReference?.digest === 'string' ? nativeReference.digest : ''
   const manifestDigest = trace?.workspaceObservation?.manifestDigest ?? ''
   const graphKey = !nativeDigest && identity?.complete === true ? `${identity.graphId}:${identity.snapshotDigest}` : ''
   const workflowId = typeof trace?.workflowManifest?.value.id === 'string' ? trace.workflowManifest.value.id : ''
-  const [state, setState] = useState<{ key: string; data?: MissionCodebaseIndex; error?: string }>({ key: '' })
   const key = `${workflowId}:${nativeDigest || graphKey}`
-  useEffect(() => {
-    let active = true
-    let request = pending.get(key)
-    if (!request) {
+  let request = pending.get(key)
+  if (!request) {
       request = (async () => {
         const owner = await import('@/features/agent-graph/agentGraphWorkspaceIndex')
         let snapshotPath: string | undefined
@@ -53,9 +50,26 @@ export function useAgentMissionCodebaseIndex(trace?: RunTrace | null) {
       pending.set(key, request)
       void request.finally(() => { if (pending.get(key) === request) pending.delete(key) }).catch(() => undefined)
     }
+  return request
+}
+
+/** Discover retained native indexes on demand; saved reports never enter this reader. */
+export function useAgentMissionCodebaseIndex(trace?: RunTrace | null, enabled = true) {
+  const identity = useGraphStore(state => state.graphData?.metadata?.agentGraphProjection) as Record<string, unknown> | undefined
+  const nativeReference = (trace?.workflowManifest?.value.codebaseIndex as Record<string, unknown> | undefined)?.snapshot as Record<string, unknown> | undefined
+  const nativeDigest = trace?.workspaceObservation && typeof nativeReference?.digest === 'string' ? nativeReference.digest : ''
+  const manifestDigest = trace?.workspaceObservation?.manifestDigest ?? ''
+  const graphKey = !nativeDigest && identity?.complete === true ? `${identity.graphId}:${identity.snapshotDigest}` : ''
+  const workflowId = typeof trace?.workflowManifest?.value.id === 'string' ? trace.workflowManifest.value.id : ''
+  const [state, setState] = useState<{ key: string; data?: MissionCodebaseIndex; error?: string }>({ key: '' })
+  const key = `${workflowId}:${nativeDigest || graphKey}`
+  useEffect(() => {
+    if (!enabled) return
+    let active = true
+    const request = readAgentMissionCodebaseIndex(trace)
     void request.then(data => { if (active) setState({ key, data }) })
       .catch(() => { if (active) setState({ key, error: 'Codebase index unavailable. Reopen its retained native graph to inspect the source identity.' }) })
     return () => { active = false }
-  }, [key, graphKey, workflowId, nativeDigest, manifestDigest])
-  return state.key === key ? state : { key }
+  }, [key, enabled, manifestDigest])
+  return enabled && state.key === key ? state : { key }
 }

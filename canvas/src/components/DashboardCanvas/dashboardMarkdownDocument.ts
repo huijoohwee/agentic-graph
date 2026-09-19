@@ -1,3 +1,4 @@
+import { readMissionDashboardSnapshot, type MissionDashboardSnapshot, type DashboardFilePaths } from '@/features/agent-ready/agentMissionDashboardSnapshot'
 import { dump } from 'js-yaml'
 import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 import { getObjectPath } from '@/lib/data/objectPath'
@@ -19,6 +20,8 @@ export type DashboardSnapshot = {
   source: Omit<DashboardEvent, 'data' | 'schema'>
   configuration: DashboardWidgetDocument
   values: Record<string, DashboardValue>
+  mission?: MissionDashboardSnapshot
+  files?: DashboardFilePaths
 }
 type Binding = { value?: string; rows?: string; columns?: { label: string; path: string }[] }
 const object = (value: unknown): Record<string, unknown> => {
@@ -83,7 +86,11 @@ function validateSnapshot(input: unknown): DashboardSnapshot {
     }
     values[id] = next
   }
-  return { template: { id: template.id, version: template.version }, source: { sourceId: event.sourceId,
+  const mission = value.mission === undefined ? undefined : readMissionDashboardSnapshot(value.mission)
+  if (mission && (mission.trace.runId !== event.sourceId || mission.trace.observedAt !== event.observedAt)) throw Error('Mission evidence differs from the dashboard source.')
+  const files = value.files === undefined ? undefined : object(value.files)
+  if (files && ['input', 'template', 'output'].some(key => typeof files[key] !== 'string' || !(files[key] as string).startsWith('/') || (files[key] as string).split('/').includes('..'))) throw Error('Dashboard file paths must name workspace files.')
+  return { ...(mission ? { mission } : {}), ...(files ? { files: files as DashboardFilePaths } : {}), template: { id: template.id, version: template.version }, source: { sourceId: event.sourceId,
     sequence: event.sequence, observedAt: event.observedAt, complete: event.complete }, configuration, values }
 }
 export function readDashboardSnapshot(text: string): DashboardSnapshot | null {
@@ -110,10 +117,15 @@ export function dashboardWidgetMarkdown(config: DashboardWidgetSettings, value?:
 function serialize(meta: Record<string, unknown>, body: string) {
   return bounded(`---\n${dump(meta, { noRefs: true, lineWidth: -1, sortKeys: false })}---\n${body.replace(/^\n*/, '\n')}`)
 }
-export function projectDashboardMarkdown(templateText: string, input: unknown, settings?: DashboardWidgetDocument): string {
+export function projectDashboardMarkdown(templateText: string, input: unknown, settings?: DashboardWidgetDocument, files?: DashboardFilePaths): string {
   const event = validateDashboardEvent(input), { meta, body } = parseDocument(bounded(templateText, 128 * 1024))
   if (meta.schema !== DASHBOARD_TEMPLATE_SCHEMA) throw Error('Choose a dashboard Markdown template.')
+  const mission = meta.mission_snapshot === undefined ? undefined : readMissionDashboardSnapshot(readPath(event.data, String(meta.mission_snapshot)))
   const configuration = parseDashboardWidgets(JSON.stringify(meta.dashboard)) as DashboardWidgetDocument
+  if (mission && settings) {
+    for (const [id, config] of Object.entries(settings.widgets)) configuration.widgets[id] = { ...configuration.widgets[id], ...config }
+    configuration.boards = { ...configuration.boards, ...settings.boards }
+  }
   for (const [id, config] of Object.entries(configuration.widgets)) {
     const override = settings?.widgets[id]
     if (override) configuration.widgets[id] = { ...config, ...override }
@@ -140,7 +152,7 @@ export function projectDashboardMarkdown(templateText: string, input: unknown, s
     values[id] = value
   }
   const snapshot = validateSnapshot({ template: { id: meta.template_id, version: String(meta.template_version) },
-    source: event, configuration, values })
+    source: event, configuration, values, ...(mission ? { mission } : {}), ...(files ? { files } : {}) })
   let rendered = body
   for (const token of parseMarkdownVariableTokens(body).reverse()) {
     const value = token.declaredValue ?? readPath(event.data, token.key) ?? token.fallback ?? null

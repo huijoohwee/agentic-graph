@@ -44,16 +44,30 @@ existing hosted-runtime query path. Imported files remain explicit read-only sna
 Dashboard → **Markdown dashboard** uses the registered Mission template in
 `huijoohwee.github.io/template/agentic-graph-agent-mission-template.md`. Choose **Workspace · .workspace** to read the host-selected native archive through the existing
 validated observation reader, **Current Mission** to save the loaded inspection, or **Imported snapshot**
-for a finite JSON/SSE upload. Workspace-backed Missions default to the workspace source; **Inspect current
-Mission source** opens its read-only manifest in the shared Editor. Select a Markdown template path and save. **Open saved dashboard**
-opens the historical `.md` in Source Files and the shared Dashboard; it does not reconnect the run.
-The report retains resolved scalar/table values and layout. Props, fold, shared drag and resize update
-that document's configuration. Notes outside the generated boundaries remain authored text.
+for a finite JSON/SSE upload. Workspace-backed Missions default to the workspace source.
+The **Source Files** box shows three paths together, each with an **Open** action:
+
+- **Input JSON snapshot**: `/docs/dashboards/dashboard-<timestamp>-<id>.input.json` after saving;
+  before saving, the current Mission's read-only `.workspace` manifest can be inspected there.
+- **Markdown template path**: `/huijoohwee.github.io/template/agentic-graph-agent-mission-template.md`.
+  **Source Files → Templates** opens the same file and expands its folder. Its canonical owner is
+  `GitHub/huijoohwee.github.io/template`, with an exact revision and digest verified by the loader.
+- **Dashboard Markdown output**: `/docs/dashboards/dashboard-<timestamp>-<id>.md`.
+
+The output reuses the full Mission dashboard: overview, span hierarchy, codebase projection,
+economics, metrics, Structure and Signals. Its snapshot retains the original manifest bytes,
+complete loaded trace, codebase identity, presentation schema and configured row/column layout.
+Selecting the associated input JSON also displays this saved dashboard while the Editor shows
+its source. Reopening does not reconnect a run or renew authority; recorded partial coverage and
+unknown/reused measurements remain explicit. Props, fold, shared drag and resize update that
+Markdown document's configuration. Notes outside generated boundaries remain authored text.
 
 Generic input uses `agentic-graph/dashboard-event/v1`: `sourceId`, nonnegative integer `sequence`,
-`observedAt` in Unix milliseconds, boolean `complete`, and object `data`. The Mission template binds
-`run.id`, `run.status`, `run.spanCount`, `resources` (`label`, `value`) and `spans` (`operation`, `status`,
-`durationMs`, `cpuMs`, `peakMemoryBytes`). Missing scalar measurements display Unknown.
+`observedAt` in Unix milliseconds, boolean `complete`, and object `data`. Custom templates continue
+to bind declared scalar and table fields. The Mission v2 template additionally requires `data.mission`
+containing the full retained `trace` and presentation `schema`; when a codebase index exists, its
+matching `codebase` and `graph` are retained too. The existing Mission adapter supplies the data and
+derives readable Markdown tables using the same overview, graph and metric models as the dashboard.
 SSE uses complete JSON events in `data:` frames, optionally ending with `[DONE]`. Input is bounded to
 32 full snapshots / 1 MiB; conflicting replay, source changes, backward revisions and truncated frames
 fail before saving. Patches and continuous reconnect are unsupported in this increment.

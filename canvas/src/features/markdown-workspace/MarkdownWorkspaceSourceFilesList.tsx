@@ -20,6 +20,9 @@ import {
 } from './SourceFileCloudSyncIndicator'
 import { SourceFilesOwnershipSummary } from './SourceFilesOwnershipSummary'
 import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourceFiles'
+import { DASHBOARD_TEMPLATE_PATH, DASHBOARD_TEMPLATE_ROOT, readDashboardTemplate } from '@/components/DashboardCanvas/dashboardTemplateSource'
+import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 
 type MarkdownWorkspaceSourceFilesListProps = {
   search?: string
@@ -61,10 +64,23 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     renderFileRight,
   } = props
   const cloudSync = useSourceFileCloudSync(entries)
+  const [templateBusy, setTemplateBusy] = React.useState(false)
+  const [templateError, setTemplateError] = React.useState('')
+  const openTemplate = async () => {
+    setTemplateBusy(true); setTemplateError('')
+    try {
+      const fs = await getWorkspaceFs()
+      await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH)
+      await applyWorkspaceImportToCanvas({ fs, createdPaths: [DASHBOARD_TEMPLATE_PATH], opts: { applyToGraph: false, skipComposedGraphApply: true } })
+      for (const path of ['/huijoohwee.github.io', DASHBOARD_TEMPLATE_ROOT]) if (!expandedPaths.has(path)) toggleExpanded(path)
+      onSelectFile(DASHBOARD_TEMPLATE_PATH)
+    } catch (error) { setTemplateError((error as Error).message) }
+    finally { setTemplateBusy(false) }
+  }
 
   const renderFileStatusRight = React.useCallback((args: { entry: WorkspaceEntry; isActive: boolean }) => {
     const existing = renderFileRight?.(args)
-    if (args.entry.kind !== 'file') return existing
+    if (args.entry.kind !== 'file' || args.entry.path === DASHBOARD_TEMPLATE_PATH) return existing
     return (
       <span className="inline-flex items-center gap-0.5">
         {existing}
@@ -118,7 +134,8 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
 
   return (
     <>
-      <SourceFilesOwnershipSummary />
+      <SourceFilesOwnershipSummary onOpenTemplate={() => void openTemplate()} templateBusy={templateBusy} />
+      {templateError && <p role="status" className={`px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>{templateError}</p>}
       <AgentMissionSourceFile search={props.search} />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>

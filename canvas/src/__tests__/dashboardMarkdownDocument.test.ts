@@ -1,3 +1,6 @@
+import { agentMissionDashboardEvent } from '@/features/agent-ready/agentMissionDashboardDocument'
+import { readRunTrace } from '@/features/agent-ready/missionControlProjection'
+import { defaultSchema } from '@/lib/graph/schema'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
@@ -9,20 +12,59 @@ const cases: { name: string; run: () => unknown }[] = []
 const test = (name: string, run: () => unknown) => { cases.push({ name, run }) }
 export async function testDashboardMarkdownPipeline() {
   await loadTemplateFixture()
-  for (const item of cases) { try { await item.run() } catch (error) { throw new Error(item.name, { cause: error }) } }
+  for (const item of cases) { try { await item.run() } catch (error) { throw new Error(`${item.name}: ${(error as Error).message}`, { cause: error }) } }
 }
 
-let template = ''
+let template = '', referenceTemplate = ''
 async function loadTemplateFixture() {
   if (template) return
-  try { template = execFileSync('git', ['-C', resolveSiblingFixturePath('huijoohwee.github.io', '.'), 'show', `${DASHBOARD_TEMPLATE_SOURCE.revision}:${DASHBOARD_TEMPLATE_SOURCE.path}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }) }
-  catch { template = await fetchDashboardTemplate() }
-  assert.equal(await fetchDashboardTemplate(async () => new Response(template)), template)
+  try { referenceTemplate = execFileSync('git', ['-C', resolveSiblingFixturePath('huijoohwee.github.io', '.'), 'show', `${DASHBOARD_TEMPLATE_SOURCE.revision}:${DASHBOARD_TEMPLATE_SOURCE.path}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }) }
+  catch { referenceTemplate = await fetchDashboardTemplate() }
+  assert.equal(await fetchDashboardTemplate(async () => new Response(referenceTemplate)), referenceTemplate)
+  // Compatibility coverage consumes the immutable previous owner revision, not an authored copy.
+  const previous = '3bc612b4e421484a6bf99883a0368073e369f5e4'
+  try { template = execFileSync('git', ['-C', resolveSiblingFixturePath('huijoohwee.github.io', '.'), 'show', `${previous}:${DASHBOARD_TEMPLATE_SOURCE.path}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }) }
+  catch { const result = await fetch(`https://raw.githubusercontent.com/${DASHBOARD_TEMPLATE_SOURCE.repository}/${previous}/${DASHBOARD_TEMPLATE_SOURCE.path}`, { signal: AbortSignal.timeout(8000) }); assert.ok(result.ok); template = await result.text() }
 }
 const event = { schema: DASHBOARD_EVENT_SCHEMA, sourceId: 'run-1', sequence: 1, observedAt: 1780000000000, complete: false,
   data: { run: { id: 'run-1', status: 'running', spanCount: 1 }, resources: [{ label: 'CPU', value: 0 }],
     spans: [{ operation: 'compile', status: 'running', durationMs: null, cpuMs: 0, peakMemoryBytes: null }] } }
 const response = (events: unknown[]) => new Response(events.map(value => `data: ${JSON.stringify(value)}\n\n`).join(''), { headers: { 'content-type': 'text/event-stream' } })
+
+function missionFixture() {
+  const trace = readRunTrace({ schema: 'agent-toolkit-run/v1', authority: false, runId: 'run-1', status: 'completed',
+    observedAt: 1780000000000, expiresAt: 1780000060000, profile: { workflow: { members: [{ id: 'worker-a' }] } },
+    coverage: { partial: false, expectedSpans: 2 }, page: { total: 2 }, evaluation: { status: 'reported', score: 1, reasonCode: 'retained evidence' },
+    spans: [{ spanId: 'root', kind: 'workflow', operation: 'Parent', status: 'completed', timing: { inclusiveMs: 42 } },
+      { spanId: 'child', parentSpanId: 'root', kind: 'check', operation: 'Reused check', status: 'reused', timing: { inclusiveMs: 20, startOffsetMs: 3, scope: 'worker-a' },
+        historicalResources: { cpuMs: 0, peakMemoryBytes: 1024, tokens: 3, costUsd: 0 }, links: [{ spanId: 'root', kind: 'observed' }],
+        evaluation: { status: 'reported', reasonCode: 'source reason' } }] }, 'run-1')
+  const manifest = { schema: 'agentic-os/workflow-group/v1', id: 'workflow-fixture', sequence: 9, boundary: 'end', unknownFutureField: { preserved: true } }
+  trace.workflowManifest = { value: manifest, text: JSON.stringify(manifest, null, 2), digest: 'a'.repeat(64) }
+  return { trace, schema: defaultSchema }
+}
+
+test('Mission v2 retains the complete reference and file associations through configuration edits', () => {
+  const mission = missionFixture(), input = agentMissionDashboardEvent(mission.trace, mission)
+  const files = { input: '/docs/dashboards/reference.input.json', template: DASHBOARD_TEMPLATE_PATH, output: '/docs/dashboards/reference.md' }
+  const settings = { version: 1 as const, widgets: { 'mission:index-economics': { expanded: false }, 'mission:tree': { aspectRatio: 'custom' as const, width: 612, height: 411 } },
+    boards: { mission: [['mission:tree', 'mission:codebase']] } }
+  const markdown = projectDashboardMarkdown(referenceTemplate, input, settings, files), snapshot = readDashboardSnapshot(markdown)!
+  assert.deepEqual(snapshot.mission?.trace, mission.trace)
+  assert.deepEqual(snapshot.mission?.schema, JSON.parse(JSON.stringify(mission.schema)))
+  assert.deepEqual(snapshot.files, files)
+  assert.deepEqual(snapshot.configuration.boards?.mission, settings.boards.mission)
+  assert.equal(snapshot.configuration.widgets['mission:index-economics'].expanded, false)
+  assert.equal(snapshot.configuration.widgets['mission:tree'].width, 612)
+  assert.match(markdown, /Reused check/)
+  assert.match(markdown, /Indexing economics/)
+  assert.match(markdown, /Numeric Fields/)
+  const updated = updateDashboardSnapshotConfiguration(markdown, { ...snapshot.configuration, widgets: { ...snapshot.configuration.widgets, 'mission:tree': { ...snapshot.configuration.widgets['mission:tree'], title: 'Saved tree' } } })
+  assert.deepEqual(readDashboardSnapshot(updated)!.mission, snapshot.mission)
+  assert.deepEqual(readDashboardSnapshot(updated)!.files, files)
+  assert.throws(() => projectDashboardMarkdown(referenceTemplate, { ...input, sourceId: 'another-run' }), /differs/)
+  assert.throws(() => projectDashboardMarkdown(referenceTemplate, event), /Mission evidence/)
+})
 
 test('template produces a portable report with zero, unknown, coverage and exact layout', () => {
   const markdown = projectDashboardMarkdown(template, event), snapshot = readDashboardSnapshot(markdown)!
@@ -107,12 +149,14 @@ export async function testDashboardMarkdownWorkspacePersistence() {
     let requests = 0
     const request: typeof fetch = async (url, init) => {
       requests++; assert.equal(url, DASHBOARD_TEMPLATE_URL); assert.equal(init?.credentials, 'omit')
-      return new Response(template)
+      return new Response(referenceTemplate)
     }
-    assert.equal(await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, request), template)
+    assert.equal(await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, request), referenceTemplate)
     assert.equal(requests, 1)
-    assert.equal(await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, async () => { throw Error('offline') }), template)
-    await fs.writeFileText(DASHBOARD_TEMPLATE_PATH, template + '\nUser edit\n', { mirrorToHost: false })
+    await fs.writeFileText(DASHBOARD_TEMPLATE_PATH, template, { mirrorToHost: false })
+    assert.equal(await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, request), referenceTemplate)
+    assert.equal(await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, async () => { throw Error('offline') }), referenceTemplate)
+    await fs.writeFileText(DASHBOARD_TEMPLATE_PATH, referenceTemplate + '\nUser edit\n', { mirrorToHost: false })
     await assert.rejects(readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH, request), /pinned source/)
     assert.ok((await fs.readFileText(DASHBOARD_TEMPLATE_PATH))!.endsWith('User edit\n'))
     await assert.rejects(fetchDashboardTemplate(async () => new Response('unexpected HTML')), /pinned source/)
@@ -133,6 +177,21 @@ export async function testDashboardMarkdownWorkspacePersistence() {
     assert.match(saved, /## graph&#58;status-copy|## graph:status-copy/)
     assert.equal((await controlDashboardWidget({ operation: 'export' })).markdown, saved)
     assert.equal(await fs.readFileText(DASHBOARD_WIDGETS_PATH), globalBefore)
+
+    const { ensureWorkspaceFolderTreeIfMissing } = await import('@/features/workspace-fs/ensureFolderTreeIfMissing')
+    await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: '/docs/dashboards' })
+    const linked = `/docs/dashboards/${crypto.randomUUID()}`
+    const paths = { input: `${linked}.input.json`, output: `${linked}.md`, template: DASHBOARD_TEMPLATE_PATH }
+    const mission = missionFixture(), full = projectDashboardMarkdown(referenceTemplate, agentMissionDashboardEvent(mission.trace, mission), undefined, paths)
+    await fs.createFile({ parentPath: '/docs/dashboards', name: paths.output.split('/').pop()!, text: full, mirrorToHost: false })
+    await fs.createFile({ parentPath: '/docs/dashboards', name: paths.input.split('/').pop()!, text: JSON.stringify({ dashboard_output: paths.output }), mirrorToHost: false })
+    try {
+      useMarkdownExplorerStore.getState().setActivePath(paths.input)
+      assert.equal((await readDashboardWidgetConfiguration()).sourcePath, paths.output)
+      await controlDashboardWidget({ operation: 'collapse', id: 'mission:index-economics' })
+      assert.equal(readDashboardSnapshot((await fs.readFileText(paths.output))!)!.configuration.widgets['mission:index-economics'].expanded, false)
+      assert.deepEqual(readDashboardSnapshot((await fs.readFileText(paths.output))!)!.mission?.trace, mission.trace)
+    } finally { await fs.deleteEntry(paths.input, { mirrorToHost: false }); await fs.deleteEntry(paths.output, { mirrorToHost: false }); useMarkdownExplorerStore.getState().setActivePath(path); await readDashboardWidgetConfiguration() }
 
     // Source edits between read and write must survive instead of being replaced by stale Props.
     let reads = 0

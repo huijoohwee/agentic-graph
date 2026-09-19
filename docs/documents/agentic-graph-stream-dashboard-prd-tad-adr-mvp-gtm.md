@@ -2,12 +2,12 @@
 title: "Stream to Markdown Dashboard — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-STREAM-DASHBOARD-001"
-version: "1.1.0"
-prd_revision: "1.1.0"
-tad_revision: "1.1.0"
-adr_revision: "1.1.0"
-mvp_revision: "1.1.0"
-gtm_revision: "1.1.0"
+version: "2.0.0"
+prd_revision: "2.0.0"
+tad_revision: "2.0.0"
+adr_revision: "2.0.0"
+mvp_revision: "2.0.0"
+gtm_revision: "2.0.0"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "implemented-local"
@@ -19,7 +19,7 @@ reviewed_source_revision: "2fd02312fd9caf145184f9e5d9fc8b28b612917d"
 
 # Stream to Markdown Dashboard — reference implementation
 
-All five roles consume GRAPH-STREAM-DASHBOARD-001@1.1.0. The user's explicit instruction
+All five roles consume GRAPH-STREAM-DASHBOARD-001@2.0.0. The user's explicit instruction
 “UPDATE agentic-os, prd-tad-adr-mvp-gtm md, then IMPLEMENT” authorizes this implementation.
 The [Agentic OS contract](https://github.com/huijoohwee/agentic-os/blob/main/guides/STREAM-DASHBOARDS.md)
 owns the observation/presentation boundary. This document owns product behavior, not a new lifecycle.
@@ -28,7 +28,7 @@ owns the observation/presentation boundary. This document owns product behavior,
 
 The operator currently receives run JSON but must reconstruct a dashboard to share or reopen it.
 The operator applies a reusable Markdown template to a complete observation and saves one readable,
-portable dashboard with its metric values, span table, aspect ratios and rows/columns intact.
+portable dashboard with its complete retained Mission evidence, codebase projection, metric values, span hierarchy, aspect ratios and rows/columns intact. The input JSON, shared template Markdown and output Markdown each have a visible path and Open action in one Source Files box.
 
 | Acceptance | Given / when / then | Owner and check |
 |---|---|---|
@@ -36,6 +36,8 @@ portable dashboard with its metric values, span table, aspect ratios and rows/co
 | SD-02 | Given a versioned Markdown template and validated data, when projected, then only declared fields bind, repeated rows use the shared table serializer, zero remains zero and missing values remain Unknown. | Template projection tests, literal markup/sigil payloads, no execution callback. |
 | SD-03 | Given a saved dashboard Markdown document, when reopened offline, then the same values and widget layout render through existing cards and Viewer. | Parser round-trip and shared-card browser check. |
 | SD-04 | Given a dashboard in Props, when moved, resized, folded or configured, then the selected Markdown document is updated through the existing settings owner; global settings and authored text outside generated blocks survive. | Configuration and persistence conflict checks. |
+| SD-06 | Given the native Mission reference, when saved and reopened, then its full observation, manifest, codebase projection, economics, Structure and Signals reuse the same components; source IDs, hierarchy, zero/unknown and reused measurements survive. | Full-evidence round-trip, linked JSON selection and browser comparison. |
+| SD-07 | Given Source Files, when Templates is opened, then the pinned shared Markdown appears under `huijoohwee.github.io/template`; saved input JSON and output Markdown appear under `docs/dashboards`. | Registered source root, local input ownership and browser file selection. |
 | SD-05 | Given current Mission evidence, when explicitly saved, then a historical Markdown copy appears in Source Files without renewing authority, changing the native manifest or uploading to cloud. | Mission export/save/reopen tests and browser flow. |
 
 ## TAD
@@ -46,15 +48,15 @@ revision and completeness accompany the resolved output. The existing Mission SS
 observation owner remain unchanged; a Mission adapter supplies the same template projection input.
 
 The source selector reuses the native `.workspace` observation reader; a workspace-backed Mission
-defaults to that source. Its manifest opens in the existing Editor. Upload is a separate explicit
+defaults to that source. Its manifest opens in the existing Editor. Saving retains a separate full JSON checkpoint without changing that native source. Upload is a separate explicit
 source choice, with the same bounded JSON/SSE decoder.
 
 The template is authored only in `huijoohwee.github.io/template/`, consumed at an exact commit and
 SHA-256 digest, and cached in the existing browser workspace after first online use. A user-edited
 cache is never overwritten; local variations use an explicit alternate path. Frontmatter stores the existing
-widget configuration shape plus explicit value/table bindings. A saved document stores resolved data
+widget configuration shape plus explicit value/table bindings. The v2 Mission template additionally declares `mission_snapshot: mission`. This retains the validated RunTrace, native manifest bytes, matching codebase index and bounded projection, and presentation schema. The shared Mission renderer consumes that historical evidence with network polling and runtime actions disabled. A saved document stores this evidence, resolved data
 and the validated configuration; its readable generated block uses ordinary headings and tables.
-The settings owner selects either that document or its existing JSON sidecar, never both. Saves read
+The settings owner selects either that document or its existing JSON sidecar, never both. An input checkpoint links to its output through `dashboard_output`; the output confirms its input path before selection. File associations survive configuration edits. All three paths appear together, and Source Files exposes the shared template root even before the first save through an explicit Open action. Saves read
 the latest source and compare before writing. Rendering and shared drag/resize remain presentation.
 
 MVP limits: 32 snapshot events / 1 MiB per imported stream; 128 widgets; 2,048 table rows; 1 MiB resolved values; 2 MiB output.
@@ -75,11 +77,11 @@ sync an explicitly saved document. Native archive portability remains a separate
 
 ## MVP
 
-The implementer owns SD-01–05 and the evaluator records exact checks. Demo: select Mission or import
+The implementer owns SD-01–07 and the evaluator records exact checks. Demo: select Mission or import
 JSON/SSE → choose the Mission template → save dashboard Markdown → open it from Source Files → move
 and resize a card → reopen and verify values/layout/notes. Shared Props and Editor supply controls.
 Budget: 60–90 active minutes initially; 20–30 additional minutes for shared template ownership, 24 changed files across three repositories / 120 KB source, zero new dependencies or
-model calls. Refresh estimates on drift. Target first local value is one save/reopen within a minute
+model calls. The full-reference and three-file refinement adds approximately 35–50 active minutes and 20 Graph files, with no new dependencies. Refresh estimates on drift. Target first local value is one save/reopen within a minute
 after a complete observation is available; measured UX time and deployment remain unverified.
 Rollback reverts this source change while retaining saved documents and native run archives.
 
@@ -121,3 +123,16 @@ fetch, offline cache reuse, changed bytes, size bounds and preservation of edite
 Browser saving through the pinned public GitHub source succeeded. OS PR #212 and website PR #234
 passed their required CI; the source guide and template remain review candidates. Saved dashboards
 remain self-contained and do not need a template download to reopen.
+
+## Full-reference template and file ownership (2.0.0)
+
+The authored template is website commit `722e2858b9db27011538f1bb863dc16c1079d2e4` (PR #235),
+SHA-256 `7a0f3eeb0f6a5849acc07d06010f84046aba07985e390a123aa0a7084cbe5bca`.
+Known unedited v1 cache bytes can upgrade; authored variations remain untouched. The template is
+a cached source from its website owner, not an upload target in the workspace document repository.
+Input JSON and output Markdown are explicitly owned local files under `/docs/dashboards/`.
+A saved report reopens without fetching its template or native archive. Complete retained evidence
+means everything in the captured reference, including its recorded partial coverage; it does not
+claim observations beyond that reference. Old four-card reports remain valid and are not rewritten.
+
+Current local evidence: focused projection, persistence and Source Files ownership tests pass (3/3); `npm run check` passes. Browser validation saved `/docs/dashboards/dashboard-1789786616449-01b8aed9.input.json` and its sibling `.md`, opened the shared template through Source Files, and confirmed the saved 159-span tree, 8,121 sources, economics, Structure and Signals. Input and output selection both retain the historical Mission. Website PR #235 passes both required checks; fleet ownership reports eight repositories and no findings. The broader Mission archive and projection checks pass; its browser runner requires a clean committed source and is recorded separately in the handoff receipt.
