@@ -168,6 +168,15 @@ try {
     await readiness.locator('[data-kg-xr-v2-ac="AC-7"]').getAttribute('data-kg-xr-v2-ac-local-evidence'),
     'browser-observed',
   )
+  await page.waitForFunction(() => {
+    const runtimeNode = document.querySelector('[data-kg-xr-v2-authoring-runtime="1"]')
+    return runtimeNode?.getAttribute('data-kg-xr-v2-ecs-status') === 'ready'
+      && document.querySelectorAll('[data-kg-xr-document-loaded="1"]').length > 0
+  }, undefined, { timeout: coldStartTimeoutMs })
+  await page.waitForTimeout(3000)
+  await page.getByRole('button', { name: 'Motion Control', exact: true }).click()
+  const panel = page.locator('[data-kg-motion-control-floating-panel="1"]')
+  await panel.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const startCamera = page.locator('[data-kg-motion-control-start="1"]')
   const stopCamera = page.locator('[data-kg-motion-control-stop="1"]')
   const enableSensors = page.locator('[data-kg-motion-control-enable-sensors="1"]')
