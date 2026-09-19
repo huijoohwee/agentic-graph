@@ -44,7 +44,11 @@ export async function testPropsPanelRendersWidgetPaletteOnlySurface() {
 
     useGraphStore.setState({ canvasRenderMode: '2d', canvas2dRenderer: 'dashboard' })
     await renderAndFlush(root, React.createElement(FloatingPropsPanel))
-    if (surface.querySelectorAll('[data-kg-widget-palette-layout]').length !== 5) throw Error('Dashboard must retain all five original Widget Card Types')
+    const dashboardLayouts = [...surface.querySelectorAll('[data-kg-widget-palette-layout]')].map(item => item.getAttribute('data-kg-widget-palette-layout'))
+    for (const layout of layouts) {
+      if (!dashboardLayouts.includes(layout.getAttribute('data-kg-widget-palette-layout'))) throw Error('Dashboard must retain every original Widget Card Type')
+    }
+    if (dashboardLayouts.length !== 6 || !dashboardLayouts.includes('dashboard-codebase')) throw Error('Dashboard must add one shared Codebase Graph preview alongside the original Widget Card Types')
     const text = String(container.textContent || '')
     for (const expected of [
       'Group Panel',
