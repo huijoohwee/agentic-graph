@@ -1,4 +1,5 @@
 import React from 'react'
+import { DashboardMarkdown } from './DashboardMarkdown'
 import { useDashboardCardDrag } from './DashboardWidgetBoard'
 import { WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import { UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME, buildResponsiveViewportFitGridStyle } from '@/lib/ui/responsiveViewportFitGrid'
@@ -133,15 +134,16 @@ function DashboardTableRows(props: {
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-y-auto pr-1" data-kg-dashboard-card-scrollable="1">
+      <table className="w-full text-left text-xs"><thead><tr><th scope="col">Label</th><th scope="col">Value</th></tr></thead><tbody>
       {rows.map(row => {
         const rowMovable = row.id !== EMPTY_DASHBOARD_ROW.id
         const selected = props.selectedNodeId === row.id
         const dragging = draggingRowId === row.id
         return (
-        <section
+        <tr
           key={row.id}
           className={[
-            'grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[var(--kg-border)] px-2 py-2 last:border-b-0',
+            'border-b border-[var(--kg-border)] px-2 py-2 last:border-b-0',
             rowMovable ? 'cursor-grab select-none active:cursor-grabbing' : '',
             selected ? 'rounded border-b-transparent bg-blue-50/80' : '',
             dragging ? 'opacity-45' : '',
@@ -184,9 +186,10 @@ function DashboardTableRows(props: {
             setDraggingRowId(null)
           }}
         >
-          <section className="min-w-0">
+          <td className="min-w-0 px-2 py-2">
             <CardInlineTextEditor
               value={row.label}
+              markdownPreview="auto"
               ariaLabel={`Dashboard row label for ${row.id}`}
               placeholder="Add label"
               canEdit={props.canEditRows && rowMovable}
@@ -195,11 +198,12 @@ function DashboardTableRows(props: {
               editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} text-xs font-medium leading-5`}
             />
             {row.detail ? <p className="m-0 mt-0.5 truncate text-[11px] text-[var(--kg-text-tertiary)]" title={row.detail}>{row.detail}</p> : null}
-          </section>
-          <span className="shrink-0 text-sm font-semibold text-[var(--kg-text-primary)]">{row.value}</span>
-        </section>
+          </td>
+          <td className="px-2 py-2 text-sm font-semibold"><DashboardMarkdown text={row.value} /></td>
+        </tr>
         )
       })}
+      </tbody></table>
     </section>
   )
 }
@@ -294,8 +298,8 @@ export function DashboardCardView(input: {
           />
         </section>
       </header>
-      <section className={props.children ? "min-w-0 overflow-auto" : "h-[178px] min-w-0 overflow-hidden"}>
-        {props.children ?? (card.kind === 'table' ? (
+      <section data-kg-dashboard-card-body="1" className={props.children ? "min-w-0 overflow-auto" : "h-[178px] min-w-0 overflow-hidden"}>
+        {props.children ?? (card.markdown ? <DashboardMarkdown text={card.markdown} /> : card.kind === 'table' ? (
           <DashboardTableRows
             card={card}
             selectedNodeId={props.selectedNodeId}

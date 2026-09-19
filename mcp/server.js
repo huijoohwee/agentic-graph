@@ -1,3 +1,4 @@
+import { WIDGET_COMMAND_TOOL, runWidgetCommand } from "./widget-command-runtime.js";
 import fs from "node:fs/promises"; import path from "node:path"; import process from "node:process";
 import { spawn } from "node:child_process"; import net from "node:net";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -63,10 +64,8 @@ const LOCAL_PUBLISHED_SOURCE_TOOL_EXECUTORS = createPublishedAgentReadyToolExecu
   fetchStorageMarkdownResponse: (storagePath) =>
     fetchPublishedStoragePath(storagePath),
 });
-
 /** @type {null | { pid: number, host: string, port: number, startedAtMs: number }} */
 let canvasDevServer = null;
-
 const UI_TARGETS = /** @type {const} */ ({
   canvas: { label: "Canvas", query: "" },
   workspaceEditor: { label: "Workspace Editor", query: "openEditorWorkspace=1" },
@@ -557,6 +556,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       return jsonToolResult(payload, payload.ok === false);
     }
     if (toolName === AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.repositoryPack) { const payload = await runRepositoryPackTool(args, { rootDir: AGENTIC_OS_ROOT, signal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); }
+    if (toolName === WIDGET_COMMAND_TOOL) return jsonToolResult(runWidgetCommand(args));
     if (WORKSPACE_ARTIFACT_RUNTIME.supports(toolName)) { const payload = await WORKSPACE_ARTIFACT_RUNTIME.run(toolName, args); return jsonToolResult(payload, payload.ok === false); }
     if ([AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck].includes(toolName)) return jsonToolResult(await callSealionSidecarTool(toolName, args, { env: process.env }));
     if (typeof toolName === "string" && toolName.startsWith("agentic-graph.showrunner.")) return runShowrunnerLocalTool(toolName, args, { rootDir: AGENTIC_OS_ROOT });

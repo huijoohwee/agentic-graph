@@ -536,6 +536,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...CITY_SIM_WEB_MCP_TOOL_BUILDERS,
   ...STORAGE_SYNC_WEB_MCP_TOOL_BUILDERS,
   ...GROUP_PANEL_WEB_MCP_TOOL_BUILDERS,
+  ...lazyToolBuilders(['control_local_widget'], () => import('@/components/DashboardCanvas/dashboardWidgetTools').then(m => m.buildDashboardWidgetToolBuilders())),
   ...IMPORT_URL_WEB_MCP_TOOL_BUILDERS,
   ...CANVAS_VIEW_WEB_MCP_TOOL_BUILDERS,
   ...CANVAS_INTERACTION_WEB_MCP_TOOL_BUILDERS,

@@ -6,6 +6,9 @@ import { DashboardCardView, DashboardMetricTile } from './DashboardWidgets'
 import { useDashboardSource } from './useDashboardSource'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useContainerDims } from '@/hooks/useContainerDims'
+import DashboardWidgetContainer from './DashboardWidgetContainer'
+import DashboardDocumentWidgets from './DashboardDocumentWidgets'
+import { DashboardMarkdown } from './DashboardMarkdown'
 import DashboardWidgetBoard from './DashboardWidgetBoard'
 import { CanvasGridOverlaySurface } from '@/components/CanvasGridOverlaySurface'
 import { readCanvasGridRenderConfigFromSchema } from '@/lib/canvas/canvasGridConfig'
@@ -90,9 +93,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
         >
           <header className="kg-dashboard-header grid min-w-0 grid-cols-1 items-center gap-3 border-b border-[var(--kg-border)] pb-3 lg:grid-cols-[minmax(0,1fr)_minmax(200px,28%)]">
             <section className="min-w-0">
-              <p className={`m-0 text-xs font-medium ${UI_THEME_TOKENS.text.tertiary}`}>Dashboard</p>
-              <h2 className="m-0 mt-1 truncate text-xl font-semibold leading-tight" title={model.title}>{model.title}</h2>
-              <p className={`m-0 mt-1 truncate text-xs ${UI_THEME_TOKENS.text.secondary}`} title={model.subtitle}>{model.subtitle}</p>
+              <DashboardMarkdown text={widgetConfiguration.document.widgets['graph:header']?.markdown ?? `Dashboard\n\n## ${widgetConfiguration.document.widgets['graph:header']?.title ?? model.title}\n\n${widgetConfiguration.document.widgets['graph:header']?.subtitle ?? model.subtitle}`} label="Dashboard heading and description" />
             </section>
             <section className="h-[72px] min-w-0 lg:h-[96px]">
               <DashboardLineAreaChart series={model.heroSeries} tone="blue" gridEnabled={model.grid.enabled} area />
@@ -113,14 +114,8 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
           <section className="min-w-0" data-kg-dashboard-sections-board="1">
             <section className="grid min-w-0 grid-cols-1 gap-5">
               {displaySections.map(section => (
-                <section key={section.id} className="min-w-0" data-kg-dashboard-section={section.id}>
-                  <header className="mb-3 flex min-w-0 items-center gap-3">
-                    <h3 className="m-0 shrink-0 text-base font-semibold">{section.title}</h3>
-                    <div className="h-px min-w-0 flex-1 bg-[var(--kg-border)]" aria-hidden="true" />
-                    <span className={`shrink-0 text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{section.cadence}</span>
-                  </header>
-                  <section data-kg-dashboard-section-cards="1">
-                    <DashboardWidgetBoard id={section.id} columns={3} items={section.cards.map(card => ({
+                <DashboardWidgetContainer key={section.id} id={section.id} title={section.title} subtitle={section.cadence}
+                    columns={3} items={section.cards.map(card => ({
                       id: `graph:${card.id}`, cardId: card.id,
                       content: <DashboardWidgetFlip widgetId={`graph:${card.id}`} template={card.kind} title={card.title} defaults={{ title: card.title, subtitle: card.subtitle, footnote: card.footnote, kind: card.kind, tone: card.tone }}>
                         <DashboardCardView sectionLabel={section.title} card={card} gridEnabled={model.grid.enabled}
@@ -128,11 +123,10 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
                           onSelectRow={selectNode} onCommitRowLabel={handleCommitRowLabel} />
                       </DashboardWidgetFlip>,
                     }))} />
-                  </section>
-                </section>
               ))}
             </section>
           </section>
+          <DashboardDocumentWidgets sourceIds={[...model.metrics.map(item => `graph:${item.id}`), ...model.sections.flatMap(section => section.cards.map(card => `graph:${card.id}`))]} />
           {props.children}
         </section>
       </section>

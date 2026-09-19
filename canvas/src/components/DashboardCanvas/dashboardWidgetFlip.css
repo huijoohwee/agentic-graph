@@ -7,3 +7,8 @@
 @media (prefers-reduced-motion: reduce) {
   .dashboard-widget-turn { animation: none; }
 }
+
+.kg-dashboard-widget-sized > .kg-dashboard-widget-face { height: 100%; min-height: 0; overflow: auto; }
+.kg-dashboard-widget-sized > .kg-dashboard-widget-face > [data-kg-dashboard-card] { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.kg-dashboard-widget-sized [data-kg-dashboard-card-body] { height: auto; min-height: 0; flex: 1; overflow: auto; }
+.kg-dashboard-widget-sized [data-kg-dashboard-metric] { height: 100%; }

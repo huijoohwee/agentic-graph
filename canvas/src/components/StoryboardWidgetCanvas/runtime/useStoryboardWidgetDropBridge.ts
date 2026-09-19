@@ -1,5 +1,4 @@
 import React from 'react'
-
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { createUniqueId } from '@/lib/ids'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
@@ -109,7 +108,6 @@ function readStoryboardWidgetDropRect(args: {
     toJSON: () => ({}),
   } as DOMRect
 }
-
 function sameWidgetRegistryShape(
   entry: WidgetRegistryEntry,
   payload: Pick<FlowWidgetDragPayloadV1, 'nodeTypeId' | 'widgetTypeId' | 'formId'>,
@@ -124,7 +122,6 @@ function sameWidgetRegistryShape(
     && String(entry.widgetTypeId || '').trim() === widgetTypeId
     && String(entry.formId || '').trim() === formId
 }
-
 export function resolveWidgetRegistryEntryForDrop(
   registry: ReadonlyArray<WidgetRegistryEntry>,
   payload: Pick<FlowWidgetDragPayloadV1, 'registryEntryId' | 'nodeTypeId' | 'widgetTypeId' | 'formId'>,
@@ -135,7 +132,6 @@ export function resolveWidgetRegistryEntryForDrop(
   if (byId) return byId
   return entries.find(entry => entry && entry.isEnabled && sameWidgetRegistryShape(entry, payload)) || null
 }
-
 export function useStoryboardWidgetDropBridge(args: {
   active: boolean
   widgetDropCaptureEnabled?: boolean
@@ -310,7 +306,7 @@ export function useStoryboardWidgetDropBridge(args: {
   }, [args.baseGraphData, args.draftGraphDataRef])
 
   const addNodeFromRegistryAtWorld = React.useCallback(
-    (payload: { entry: WidgetRegistryEntry; layoutVariantId?: unknown; x: number; y: number }) => {
+    (payload: { entry: WidgetRegistryEntry; layoutVariantId?: unknown; x: number; y: number; commandId?: string }) => {
       disableAutoZoomModesForUserGesture(useGraphStore.getState())
       const insertionPlacement = captureInsertionPlacement()
       const insertionCameraAuthority = captureInsertionCameraAuthority()
@@ -320,6 +316,7 @@ export function useStoryboardWidgetDropBridge(args: {
       const layoutSeed = entry.nodeTypeId === FLOW_TEXT_GENERATION_NODE_TYPE_ID ? buildWidgetCardLayoutSeed(payload.layoutVariantId) : null
       const label = layoutSeed?.label || getWidgetRegistryEntryLabel(entry)
       const properties: Record<string, unknown> = {
+        ...(payload.commandId ? { 'widget:commandId': payload.commandId } : {}),
         [FLOW_WIDGET_TYPE_ID_KEY]: entry.widgetTypeId,
         [FLOW_WIDGET_FORM_ID_KEY]: entry.formId,
       }
@@ -839,7 +836,7 @@ export function useStoryboardWidgetDropBridge(args: {
       return Math.hypot(dx, dy) >= minPointerDragDistancePx
     }
     const commitFlowWidgetPointerDrop = (
-      session: Pick<FlowWidgetPointerDragSession, 'registryEntryId' | 'nodeTypeId' | 'widgetTypeId' | 'formId' | 'layoutVariantId'>,
+      session: Pick<FlowWidgetPointerDragSession, 'registryEntryId' | 'nodeTypeId' | 'widgetTypeId' | 'formId' | 'layoutVariantId' | 'command'>,
       clientX: number,
       clientY: number,
       opts?: { allowNeutralFallback?: boolean },
@@ -854,9 +851,11 @@ export function useStoryboardWidgetDropBridge(args: {
       if (!Number.isFinite(sx) || !Number.isFinite(sy) || sx < 0 || sy < 0 || sx > rect.width || sy > rect.height) return 'rejected'
       if (!pos) return 'await-transform'
       const dropKey = `${session.registryEntryId}:${session.layoutVariantId || 'default'}:${Math.round(sx)}:${Math.round(sy)}`
-      if (args.shouldDedupeWidgetDrop(dropKey)) return 'rejected'
+      if (!session.command && args.shouldDedupeWidgetDrop(dropKey)) return 'rejected'
       args.setCanvasWindowOffsetFromRect(rect)
-      addNodeFromRegistryAtWorld({ entry, layoutVariantId: session.layoutVariantId, x: pos.x, y: pos.y })
+      const existing = session.command && (args.draftGraphDataRef.current ?? args.baseGraphData)?.nodes.find(node => node.properties?.['widget:commandId'] === session.command!.id)
+      const nodeId = existing?.id || addNodeFromRegistryAtWorld({ entry, layoutVariantId: session.layoutVariantId, x: pos.x, y: pos.y, commandId: session.command?.id })
+      session.command?.onCreated(nodeId)
       args.upsertUiToast({
         id: 'storyboard-widget-drop-widget',
         kind: 'neutral',
@@ -899,7 +898,7 @@ export function useStoryboardWidgetDropBridge(args: {
     const onFlowWidgetPointerDragDropCapture = (event: Event) => {
       const detail = (event as CustomEvent<FlowWidgetPointerDragDropDetail>).detail
       if (!detail || isFlowWidgetPointerDragDropClaimed(detail)) return
-      if (!isFlowWidgetPointerDropDistanceAccepted(detail, detail.clientX, detail.clientY)) return
+      if (!detail.command && !isFlowWidgetPointerDropDistanceAccepted(detail, detail.clientX, detail.clientY)) return
       const commitWidget = (opts?: { allowNeutralFallback?: boolean }): 'committed' | 'await-transform' | 'rejected' => (
         commitFlowWidgetPointerDrop(detail, detail.clientX, detail.clientY, opts)
       )

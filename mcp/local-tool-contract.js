@@ -1,3 +1,4 @@
+import { buildWidgetCommandToolDefinition } from "./widget-command-runtime.js";
 import { BROWSER_API_TOOL } from "./browser-api-runtime.js"; import { buildOsStatusToolDefinition } from "./os-status-contract.js";
 import { buildLocalAgentRuntimeToolDefinition } from "./local-agent-tool-contract.js";
 import { buildAgentGraphToolDefinitions } from "./agent-graph-tool-contract.js";
@@ -440,6 +441,7 @@ export const buildAgenticGraphLocalMcpToolDefinitions = (args = {}) => {
       ...REPOSITORY_PACK_TOOL_DEFINITION,
       name: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.repositoryPack,
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
+    buildWidgetCommandToolDefinition(),
     ...WORKSPACE_ARTIFACT_TOOL_DEFINITIONS.map((definition) => withLocalMcpDescriptorDefaults(definition, definition.annotations)),
     ...buildLocalRunToolDefinitions({ toolNames: AGENTIC_OS_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     withLocalMcpDescriptorDefaults({

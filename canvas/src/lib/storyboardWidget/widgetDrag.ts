@@ -15,7 +15,9 @@ export type FlowWidgetDragPayloadV1 = {
   layoutVariantId?: string
 }
 
+export type FlowWidgetCommandReceipt = { id: string; onCreated: (nodeId: string) => void }
 export type FlowWidgetPointerDragSession = {
+  command?: FlowWidgetCommandReceipt
   registryEntryId: string
   nodeTypeId?: string
   widgetTypeId?: string
@@ -72,6 +74,7 @@ export function buildFlowWidgetDragPayload(args: {
 }
 
 export function beginFlowWidgetPointerDragSession(args: {
+  command?: FlowWidgetCommandReceipt
   registryEntryId: string
   nodeTypeId?: string | null
   widgetTypeId?: string | null
@@ -91,6 +94,7 @@ export function beginFlowWidgetPointerDragSession(args: {
   const formId = readOptionalDragShapeValue(args.formId)
   const layoutVariantId = readOptionalDragShapeValue(args.layoutVariantId)
   activePointerDragSession = {
+    command: args.command,
     registryEntryId,
     ...(nodeTypeId ? { nodeTypeId } : {}),
     ...(widgetTypeId ? { widgetTypeId } : {}),

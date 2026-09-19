@@ -1,3 +1,4 @@
+import DashboardWidgetDisclosure from '@/components/DashboardCanvas/DashboardWidgetDisclosure'
 import React from 'react'
 import { DashboardCardView, DashboardMetricGrid } from '@/components/DashboardCanvas/DashboardWidgets'
 import DashboardWidgetBoard from '@/components/DashboardCanvas/DashboardWidgetBoard'
@@ -143,15 +144,15 @@ export default function AgentMissionOverview({ children }: { children?: React.Re
       ]} />
     </section>
 
-    <details className="rounded border p-3" open><summary className="cursor-pointer text-sm font-semibold">Indexing economics · {model.model}</summary>
+    <DashboardWidgetDisclosure id="mission:index-economics" title={`Indexing economics · ${model.model}`}>
       <DashboardMetricGrid metrics={model.indexMetrics} />
       <p className="text-xs">{model.modelCalls} captured model calls. These are retained import measurements; opening this dashboard does not repeat indexing.</p>
-    </details>
-    <details className="rounded border p-3" open><summary className="cursor-pointer text-sm font-semibold">Agent execution economics</summary>
+    </DashboardWidgetDisclosure>
+    <DashboardWidgetDisclosure id="mission:execution-economics" title="Agent execution economics">
       <DashboardMetricGrid metrics={model.workflowMetrics} />
       <p className="text-xs">Retained span coverage; reused stages are excluded from current consumption. Missing measurements remain unknown. Indexing and run values are not added together.</p>
       <div className="flex flex-wrap gap-2 pt-2"><button className={button} onClick={() => openView('tree')}>Trace spans</button>
         <button className={button} onClick={() => openView('source')}>Workflow context</button></div>
-    </details>
+    </DashboardWidgetDisclosure>
   </section>
 }

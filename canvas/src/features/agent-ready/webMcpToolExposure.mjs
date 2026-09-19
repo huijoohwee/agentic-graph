@@ -3,7 +3,7 @@ import { AGENTIC_OS_AGENT_READY_TOOL_IDS as ids } from './agenticGraphAgentReady
 // Browser discovery policy only. Shared contracts/executors remain the invocation authority.
 export const WEB_MCP_CORE_TOOL_IDS = Object.freeze([
   ids.controlLocalToolbarAction, ids.controlLocalWorkspaceLaunch,
-  ids.controlLocalCanvasView, ids.readLocalRuntimeIdentity,
+  ids.controlLocalCanvasView, ids.readLocalRuntimeIdentity, ids.controlLocalWidget,
 ])
 export const WEB_MCP_TOOL_SCOPES = Object.freeze(Object.fromEntries(Object.entries({
   graph: [ids.controlLocalImportUrl, ids.controlLocalCanvasInteraction, ids.inspectLocalCanvasTopology,

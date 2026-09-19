@@ -24,7 +24,6 @@ export function AgentMissionSourceFile({ search = '' }: { search?: string }) {
       const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next
     })} activePath={resolveAgentMissionSource(inspection?.trace, workspace?.source, codebase.data)}
     onSelectFile={path => activateAgentRunWorkspace(workspace?.view ?? 'tree', 'editor', path)} />
-    {codebase.data ? <AgentMissionCodebaseGraphButton codebase={codebase.data} /> : null}
     {codebase.error ? <p role="status">{codebase.error}</p> : null}</>
 }
 

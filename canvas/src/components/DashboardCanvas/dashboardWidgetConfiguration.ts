@@ -2,57 +2,16 @@ import { useEffect, useSyncExternalStore } from 'react'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
 import { unwrapKeyTypeValue } from '@/lib/graph/keyTypeValue'
+import { parseDashboardWidgets as parseWidgetDocument } from './dashboardWidgetContract.mjs'
 import type { DashboardCard, DashboardMetric } from './dashboardModel'
 
 /** Authored display configuration only. Run evidence never enters this source file. */
-export const DASHBOARD_WIDGETS_PATH = '/notes/dashboard.widgets.json'
-export type DashboardWidgetSettings = { source?: string; visible?: boolean; title?: string; subtitle?: string; footnote?: string; kind?: DashboardCard['kind']; tone?: DashboardCard['tone']; order?: number }
+import { DASHBOARD_WIDGETS_PATH } from './dashboardWidgetToolContract.mjs'
+export { DASHBOARD_WIDGETS_PATH }
+export type DashboardWidgetSettings = { source?: string; visible?: boolean; expanded?: boolean; title?: string; subtitle?: string; footnote?: string; kind?: DashboardCard['kind']; tone?: DashboardCard['tone']; order?: number; template?: string; markdown?: string; aspectRatio?: '16:9' | '9:16' | 'custom'; width?: number; height?: number; columns?: number; children?: string[] }
 export type DashboardWidgetDocument = { version: 1; widgets: Record<string, DashboardWidgetSettings>; boards?: Record<string, string[][]> }
-const widgetIdentity = /^(graph|mission):[a-zA-Z0-9_-]{1,80}$/
 const empty = (): DashboardWidgetDocument => ({ version: 1, widgets: {} })
-const object = (input: unknown): Record<string, unknown> => {
-  const value = unwrapKeyTypeValue(input)
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('Expected a Dashboard widget object.')
-  return value as Record<string, unknown>
-}
-export function parseDashboardWidgets(text: string | null): DashboardWidgetDocument {
-  if (text === null) return empty()
-  if (text.length > 65536) throw Error('Dashboard widget configuration exceeds 64 KiB.')
-  const doc = object(JSON.parse(text)), entries = Object.entries(object(unwrapKeyTypeValue(doc.widgets, 'widgets')))
-  if (unwrapKeyTypeValue(doc.version, 'version') !== 1 || entries.length > 128) throw Error('Unsupported Dashboard widget configuration.')
-  const widgets: Record<string, DashboardWidgetSettings> = {}
-  for (const [id, raw] of entries) {
-    if (!widgetIdentity.test(id)) throw Error('Invalid Dashboard widget identity.')
-    const item = object(raw), next: DashboardWidgetSettings = {}
-    for (const [key, value] of Object.entries(item).map(([key, value]) => [key, unwrapKeyTypeValue(value, key)] as const)) {
-      if (key === 'source' && typeof value === 'string' && /^graph:[a-zA-Z0-9_-]{1,80}$/.test(value)) next.source = value
-      else if (key === 'visible' && typeof value === 'boolean') next.visible = value
-      else if (['title', 'subtitle', 'footnote'].includes(key) && typeof value === 'string' && value.length <= 256) Object.assign(next, { [key]: value })
-      else if (key === 'kind' && ['bar', 'line', 'area', 'table'].includes(String(value))) next.kind = value as DashboardCard['kind']
-      else if (key === 'tone' && ['blue', 'green', 'amber', 'rose', 'slate'].includes(String(value))) next.tone = value as DashboardCard['tone']
-      else if (key === 'order' && typeof value === 'number' && Number.isSafeInteger(value) && Math.abs(value) <= 10000) next.order = value
-      else throw Error(`Invalid setting ${key} for ${id}.`)
-    }
-    widgets[id] = next
-  }
-  const boards: Record<string, string[][]> = {}
-  if (doc.boards !== undefined) {
-    const entries = Object.entries(object(doc.boards))
-    if (entries.length > 32) throw Error('Too many Dashboard boards.')
-    for (const [id, rows] of entries) {
-      if (!/^[a-z][a-z0-9-]{0,79}$/.test(id) || !Array.isArray(rows) || rows.length > 128) throw Error('Invalid Dashboard board.')
-      const seen = new Set<string>()
-      boards[id] = rows.map(row => {
-        if (!Array.isArray(row) || !row.length || row.length > 12) throw Error('Invalid Dashboard columns.')
-        return row.map(item => {
-          if (typeof item !== 'string' || !widgetIdentity.test(item) || seen.has(item) || seen.size >= 128) throw Error('Invalid Dashboard placement.')
-          seen.add(item); return item
-        })
-      })
-    }
-  }
-  return { version: 1, widgets, ...(doc.boards === undefined ? {} : { boards }) }
-}
+export const parseDashboardWidgets = (text: string | null): DashboardWidgetDocument => parseWidgetDocument(text, unwrapKeyTypeValue) as DashboardWidgetDocument
 let snapshot = { document: empty(), error: '', ready: false }
 const listeners = new Set<() => void>()
 const emit = () => { for (const listener of listeners) listener() }
@@ -76,10 +35,15 @@ export function updateDashboardWidget(id: string, update: DashboardWidgetSetting
   return updateDashboardWidgets({ [id]: update })
 }
 export function updateDashboardWidgets(updates: Record<string, DashboardWidgetSettings | null>, boards?: Record<string, string[][]>): Promise<void> {
-  const operation = pending.then(async () => {
-    const fs = await getWorkspaceFs(), before = await fs.readFileText(DASHBOARD_WIDGETS_PATH), document = parseDashboardWidgets(before)
+  return mutateDashboardWidgets(document => {
     for (const [id, update] of Object.entries(updates)) { if (update === null) delete document.widgets[id]; else document.widgets[id] = { ...document.widgets[id], ...update } }
     if (boards) document.boards = { ...document.boards, ...boards }
+    return document
+  })
+}
+export function mutateDashboardWidgets(edit: (document: DashboardWidgetDocument) => DashboardWidgetDocument): Promise<void> {
+  const operation = pending.then(async () => {
+    const fs = await getWorkspaceFs(), before = await fs.readFileText(DASHBOARD_WIDGETS_PATH), document = edit(parseDashboardWidgets(before))
     const text = JSON.stringify(parseDashboardWidgets(JSON.stringify(document)), null, 2) + '\n'
     // Read immediately before write; never replace concurrent Editor edits with a stale form.
     if (await fs.readFileText(DASHBOARD_WIDGETS_PATH) !== before) throw Error('Dashboard configuration changed. Retry this edit.')
@@ -118,4 +82,9 @@ export function configureDashboardMetrics(document: DashboardWidgetDocument, met
     const config = widgetSettings(document, `graph:${metric.id}`)
     return { ...metric, label: config.title ?? metric.label, detail: config.subtitle ?? metric.detail, tone: config.tone ?? metric.tone }
   }).sort((a, b) => (widgetSettings(document, `graph:${a.id}`).order ?? 0) - (widgetSettings(document, `graph:${b.id}`).order ?? 0))
+}
+
+export function authoredDashboardWidgets(document: DashboardWidgetDocument, sourceIds: string[] = []) {
+  return Object.entries(document.widgets).filter(([id, config]) => id.startsWith('graph:') && !sourceIds.includes(id)
+    && !id.startsWith('graph:container-') && id !== 'graph:header' && config.template && !config.source && config.visible !== false)
 }
