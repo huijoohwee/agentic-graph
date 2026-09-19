@@ -48,7 +48,7 @@ import { readXrPhysicsRuntime, readXrPhysicsRuntimeFrame } from './xrPhysicsRunt
 import { resolveXrSubjectMotion } from './xrSubjectMotionConstraints'
 
 export const XR_SHARED_ASSET_CONTROL_SCHEMA = 'agentic-graph-xr-shared-asset-controls/v1' as const
-export type XrSharedAssetControlSurface = 'media' | 'motion-control' | 'timeline' | 'game-mode'
+export type XrSharedAssetControlSurface = 'animation' | 'media' | 'motion-control' | 'timeline' | 'game-mode'
 export type XrSharedAssetControlOperation =
   | 'select-target'
   | 'apply-animation'

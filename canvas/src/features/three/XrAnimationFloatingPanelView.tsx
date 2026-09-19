@@ -58,6 +58,7 @@ import {
   readXrMotionReferenceRuntime,
   subscribeXrMotionReferenceRuntime,
 } from './xrMotionReferenceRuntime'
+import { XrSharedAssetControls } from './XrSharedAssetControls'
 import { readBoundXrSelectedActorId } from './xrSelectedActorBinding'
 import {
   xrMotionReferencePackageBlob,
@@ -324,6 +325,7 @@ export function XrAnimationFloatingPanelView() {
       </section> : null}
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-3')}>
         <XrRehearsalStatus />
+        <XrSharedAssetControls surface="animation" />
         <XrChoreographyInspector
           cameraInvocation={animationInspection.invocationGrammar?.configureCameraMark || animationInspection.webMcpTools.control}
           castInvocation={animationInspection.invocationGrammar?.configureCastMark || animationInspection.webMcpTools.control}

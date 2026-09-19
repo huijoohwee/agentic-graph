@@ -150,7 +150,7 @@ test('XR source gates reject malformed or partially typed KTV graph fields', () 
 })
 test('rejects drift in the scoped XR edited-media evidence projection', async t => {
   const mutations = [
-    ['opened XR bottom panel', 'kgBottomPanelOpen: false', 'kgBottomPanelOpen: true'],
+    ['closed XR bottom panel', 'kgBottomPanelOpen: true', 'kgBottomPanelOpen: false'],
     ['promoted source snapshot', 'source_snapshot_status: "source-ready"', 'source_snapshot_status: "runtime-ready"'],
     ['wrong canonical status', 'canonical_delivery_status: "runtime-ready"', 'canonical_delivery_status: "source-ready"'],
     ['wrong runtime owner', 'runtime_owner: "canvas/src/components/timeline; canvas/src/features/gitgraph"', 'runtime_owner: "alternate/runtime"'],
@@ -183,21 +183,21 @@ test('rejects drift in the scoped XR edited-media evidence projection', async t 
       '    - id: {key: id, type: string, value: "xr_edited_media_proof"}',
       '    - id: {key: id, type: string, value: "xr_edited_media_proof"}\n      extraNodeState: {key: extraNodeState, type: string, value: "forbidden"}'],
     ['extra proof position key',
-      'value: {"x":880,"y":300}', 'value: {"x":880,"y":300,"z":0}'],
+      'value: {"x":720,"y":520}', 'value: {"x":720,"y":520,"z":0}'],
     ['extra proof properties key',
       '"role":"downstream canonical-main evidence projection"',
       '"role":"downstream canonical-main evidence projection","deploymentState":"none"'],
     ['extra proof edge key',
       '      target: {key: target, type: string, value: "xr_edited_media_proof"}',
       '      target: {key: target, type: string, value: "xr_edited_media_proof"}\n      extraEdgeState: {key: extraEdgeState, type: string, value: "forbidden"}'],
-    ['duplicate proof node', '  edges:\n    - source: {key:',
-      '    - id: {key: id, type: string, value: "xr_edited_media_proof"}\n      type: {key: type, type: string, value: "Duplicate"}\n  edges:\n    - source: {key:'],
+    ['duplicate proof node', '  edges:\n    - id: {key: id, type: string, value: "flow-e01"}',
+      '    - id: {key: id, type: string, value: "xr_edited_media_proof"}\n      type: {key: type, type: string, value: "Duplicate"}\n  edges:\n    - id: {key: id, type: string, value: "flow-e01"}'],
     ['extra incident proof edge',
       '      label: {key: label, type: string, value: "inspect scoped proof"}\n',
-      '      label: {key: label, type: string, value: "inspect scoped proof"}\n    - source: {key: source, type: string, value: "xr_edited_media_proof"}\n      target: {key: target, type: string, value: "xr_demo_entry"}\n      label: {key: label, type: string, value: "return"}\n'],
+      '      label: {key: label, type: string, value: "inspect scoped proof"}\n    - id: {key: id, type: string, value: "flow-e22"}\n      source: {key: source, type: string, value: "xr_edited_media_proof"}\n      sourceHandle: {key: sourceHandle, type: string, value: "output"}\n      target: {key: target, type: string, value: "xr_demo_entry"}\n      targetHandle: {key: targetHandle, type: string, value: "input"}\n      label: {key: label, type: string, value: "return"}\n'],
     ['wrong proof topology',
-      '    - source: {key: source, type: string, value: "xr_demo_entry"}\n      target: {key: target, type: string, value: "xr_edited_media_proof"}',
-      '    - source: {key: source, type: string, value: "xr_runtime_gate"}\n      target: {key: target, type: string, value: "xr_edited_media_proof"}'],
+      '    - id: {key: id, type: string, value: "flow-e05"}\n      source: {key: source, type: string, value: "xr_demo_entry"}\n      sourceHandle: {key: sourceHandle, type: string, value: "output"}\n      target: {key: target, type: string, value: "xr_edited_media_proof"}',
+      '    - id: {key: id, type: string, value: "flow-e05"}\n      source: {key: source, type: string, value: "xr_runtime_gate"}\n      sourceHandle: {key: sourceHandle, type: string, value: "output"}\n      target: {key: target, type: string, value: "xr_edited_media_proof"}'],
   ]
   for (const [label, from, to] of mutations) {
     await t.test(label, async t => {

@@ -177,6 +177,7 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     const componentSource = source('features', 'three', 'XrSharedAssetControls.tsx')
     const sharedRuntimeSource = source('features', 'three', 'xrSharedAssetControlRuntime.ts')
     const mediaSource = source('features', 'command-menu', 'XrMediaLibraryPanel.tsx')
+    const animationSource = source('features', 'three', 'XrAnimationFloatingPanelView.tsx')
     const motionSource = source('features', 'three', 'MotionControlTargetCards.tsx')
     const motionRuntimeSource = source('features', 'three', 'xrMotionReferenceRuntime.ts')
     const timelineSource = source('features', 'three', 'XrCameraMotionSection.tsx')
@@ -320,12 +321,13 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     for (const aggregateTimelineLane of ["id: 'xr-asset-control'", 'data-kg-xr-timeline-control-lane="shared-asset"', 'data-kg-xr-timeline-control-lane-label="shared-asset"', '<XrSharedAssetControls surface="timeline"']) {
       if (timelineSource.includes(aggregateTimelineLane)) throw new Error(`expected BottomPanel Timeline to remove aggregate XR asset action lane, found ${aggregateTimelineLane}`)
     }
-    if (!mediaSource.includes('<XrSharedAssetControls surface="media" />')
+    if (!animationSource.includes('<XrSharedAssetControls surface="animation" />')
+      || mediaSource.includes('<XrSharedAssetControls surface="media" />')
       || !motionSource.includes('<XrSharedAssetControls surface="motion-control" />')
       || !motionSource.includes("controlXrSharedAssetControls({ operation: 'select-target', targetId })")
       || !gameModeSource.includes('<XrSharedAssetControls surface="game-mode" embedded />')
       || !retimeSource.includes('data-kg-xr-shared-asset-actions="individual-lane"')) {
-      throw new Error('expected Media, Motion Control, grounded Game Mode, and individual BottomPanel Timeline lanes to mount the shared XR asset control bridge')
+      throw new Error('expected Animation, Motion Control, grounded Game Mode, and individual BottomPanel Timeline lanes to mount the shared XR asset control bridge while Media owns authoring only')
     }
     for (const separatePresetLane of ['compatibleSharedAssetPresets.map(preset => {', 'data-kg-xr-shared-asset-preset-lane={preset.id}', 'data-kg-xr-shared-asset-preset-lane-label={preset.id}', "id: `xr-preset:${preset.id}`"]) {
       if (timelineSource.includes(separatePresetLane)) throw new Error(`expected XR animation presets to remain tied to individual XR asset lanes, found separate lane marker ${separatePresetLane}`)
