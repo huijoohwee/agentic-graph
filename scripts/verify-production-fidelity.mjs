@@ -462,7 +462,10 @@ try {
   assert.equal(recoveredSourceAuthority.gameStageCount, 0, 'stale Home source recovery must never mount Game fallback')
 
   const app = await context.newPage()
-  await app.goto(`${browserOrigin}/agentic-graph?kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+  // The root-alias graph route is the documented way to suppress Home's live
+  // canvas hero before opening the Editor Workspace.  `kgReleaseProof` alone
+  // is Home-owned, so it retains the hero and leaves the workspace unavailable.
+  await app.goto(`${browserOrigin}/?kgPath=%2Fagentic-graph%2F&openEditorWorkspace=1&kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
   const appText = await waitForCanvas(() => app.locator('body'))
   assert.match(appText, PHYSICS_PLAYGROUND_PATTERN)
   assert.match(appText, /Beach Ball/)
