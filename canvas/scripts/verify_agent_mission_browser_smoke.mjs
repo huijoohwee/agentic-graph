@@ -1,5 +1,6 @@
 import { configureMissionPage, verifyWorkspaceObservation } from './lib/verify-workspace-observation.mjs'
 import { showMissionFace, sourceText, waitForMissionAsync, openEditorWorkspace } from './lib/mission-card-face.mjs'
+import { closeFloatingPanel, closePanelRegion } from './lib/panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -33,35 +34,6 @@ await openPage()
 const waitForAsync = predicate => waitForMissionAsync(page, predicate)
 const openRunSource = (scope = mission) => showMissionFace(scope, true)
 const showEvidence = (scope = mission) => showMissionFace(scope, false)
-const readFloatingPanelOpen = targetPage => targetPage.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen === true)
-async function closeFloatingPanel(targetPage = page, floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]')) {
-  if (!(await readFloatingPanelOpen(targetPage))) return
-  const panel = floatingPanel.first()
-  await panel.waitFor({ state: 'visible', timeout: 30000 })
-  const closeButton = panel.getByRole('button', { name: 'Close', exact: true })
-  try {
-    await closeButton.click({ timeout: 5000 })
-  } catch {
-    try { await targetPage.keyboard.press('Escape') } catch {}
-    if (await readFloatingPanelOpen(targetPage)) {
-      await targetPage.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setFloatingPanelOpen(false))
-    }
-  }
-  await waitForMissionAsync(targetPage, async () => !(await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)
-}
-async function closePanelRegion(region, targetPage = page) {
-  const closeButton = region.getByRole('button', { name: 'Close', exact: true })
-  try {
-    await closeButton.click({ timeout: 5000 })
-  } catch {
-    try {
-      await closeButton.click({ force: true, timeout: 5000 })
-    } catch {
-      await targetPage.keyboard.press('Escape')
-    }
-  }
-  await region.waitFor({ state: 'detached', timeout: 30000 })
-}
 const waitText = async (locator, text) => {
   await locator.waitFor({ state: 'visible', timeout: 60000 })
   if (await locator.locator('[data-dashboard-widget="mission:tree"]').count()) await showMissionFace(locator, sourceText(text))
@@ -566,7 +538,9 @@ try {
   floating = page.locator('[data-kg-floating-panel-root="true"]')
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
-  if (await readFloatingPanelOpen(page)) await closeFloatingPanel(page, floating)
+  if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
+    await closeFloatingPanel(page, floating)
+  }
   await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click()
   returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] }); await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true })
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
