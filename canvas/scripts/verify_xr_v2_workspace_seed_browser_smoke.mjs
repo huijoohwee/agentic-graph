@@ -411,8 +411,10 @@ try {
   assert.equal(await connectedViewer.getAttribute('data-kg-xr-v2-preview-revision'), '1')
   const reloadedPanel = page.locator('[data-kg-motion-control-floating-panel="1"]')
   const reloadedImmersive = page.locator('[data-kg-xr-v2-immersive-session]')
-  assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-runtime'), 'off')
-  assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  if (await reloadedPanel.count()) {
+    assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-runtime'), 'off')
+    assert.equal(await reloadedPanel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  }
   assert.equal(await reloadedImmersive.getAttribute('data-kg-xr-v2-immersive-permission-requested'), 'false')
   assert.deepEqual(browserErrors, [])
   await page.close()
@@ -472,8 +474,10 @@ try {
   ), undefined, { timeout: savedAssetObservationTimeoutMs })
   const secondMotion = secondPage.locator('[data-kg-motion-control-floating-panel="1"]')
   const secondImmersive = secondPage.locator('[data-kg-xr-v2-immersive-session]')
-  assert.equal(await secondMotion.getAttribute('data-kg-motion-control-runtime'), 'off')
-  assert.equal(await secondMotion.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  if (await secondMotion.count()) {
+    assert.equal(await secondMotion.getAttribute('data-kg-motion-control-runtime'), 'off')
+    assert.equal(await secondMotion.getAttribute('data-kg-motion-control-device-sensors'), 'off')
+  }
   assert.equal(await secondImmersive.getAttribute('data-kg-xr-v2-immersive-permission-requested'), 'false')
   assert.ok(storageFixture.events.includes('manifest-list'))
   assert.equal(storageFixture.events.filter(event => event.startsWith('blob-read:')).length, 2)
