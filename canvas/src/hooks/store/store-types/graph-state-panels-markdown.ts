@@ -276,7 +276,7 @@ export interface GraphStatePanelsMarkdown {
   applyMarkdownDocumentToGraph: (
     name: string,
     text: string,
-    opts?: { force?: boolean; preset?: CanvasWorkspaceFrontmatterPreset | null; applyViewPreset?: boolean; requireActiveMarkdownDocument?: boolean },
+    opts?: { force?: boolean; preset?: CanvasWorkspaceFrontmatterPreset | null; applyViewPreset?: boolean; requireActiveMarkdownDocument?: boolean; preserveLiveSharedXrSurface?: boolean },
   ) => Promise<boolean>;
   setJsonSourceDocument: (name: string | null, text: string | null) => void;
   setMarkdownDocumentSourceUrl: (url: string | null) => void;

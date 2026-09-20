@@ -199,20 +199,27 @@ function XrLibraryCard({
 function XrAssetRow({
   asset,
   disabled,
+  selectedSubjectId,
   subjectLabel,
   transition,
   onTransitionChange,
   onPlace,
+  onSwap,
 }: {
   asset: XrSceneLibraryAsset
   disabled: boolean
+  selectedSubjectId: string
   subjectLabel: string
   transition: XrSceneTransition
   onTransitionChange: (transition: XrSceneTransition) => void
   onPlace: (invocation: string) => void
+  onSwap: (invocation: string) => void
 }) {
   const Icon = CATEGORY_ICONS[asset.category]
   const invocation = buildXrPlaceInvocation(asset.id, asset.mobile ? transition : 'hold', subjectLabel)
+  const swapInvocation = selectedSubjectId
+    ? buildXrTransformInvocation(selectedSubjectId, { assetId: asset.id })
+    : ''
   return (
     <XrLibraryCard
       Icon={Icon}
@@ -239,6 +246,11 @@ function XrAssetRow({
               <option value="linear">Travel</option>
               <option value="hold">Hold</option>
             </PanelSelect>
+          ) : null}
+          {selectedSubjectId ? (
+            <span data-kg-media-xr-swap-asset={asset.id} data-kg-media-xr-swap-subject={selectedSubjectId}>
+              <XrInvocationButton invocation={swapInvocation} disabled={disabled} onInvoke={onSwap} />
+            </span>
           ) : null}
           <XrInvocationButton invocation={invocation} disabled={disabled} onInvoke={onPlace} />
         </>
@@ -350,6 +362,10 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
     return runControl({ action: 'transform', subjectId, ...transform }).ok
   }, [runControl])
 
+  const selectedSubjectId = runtime.plan.subjects.some(subject => subject.id === runtime.selectedShotTargetId)
+    ? runtime.selectedShotTargetId
+    : ''
+
   const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId }), [categoryFilter, searchText, selectedAssetId])
   const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments } = catalog
 
@@ -449,7 +465,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                   color={active ? '#38bdf8' : '#94a3b8'}
                   label={stage.label}
                   description={stage.description}
-                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.sizeMeters.join(' × ')} m · grey-box stage`}
+                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'procedural island' : stage.id === 'singapore' ? 'procedural city' : 'grey-box stage'}`}
                   dragPayload={buildXrStageMediaDragPayload(stage)}
                   active={active}
                   dataAttributes={{ 'data-kg-media-xr-environment': stage.id }}
@@ -483,7 +499,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
               })}
             </nav>
           </header>
-          <section className="grid gap-1">{visibleAssets.map(asset => <XrAssetRow key={asset.id} asset={asset} disabled={!sceneReady} subjectLabel={nextLabel} transition={assetTransitions[asset.id] || 'linear'} onTransitionChange={transition => setAssetTransitions(current => ({ ...current, [asset.id]: transition }))} onPlace={placeAsset} />)}</section>
+          <section className="grid gap-1">{visibleAssets.map(asset => <XrAssetRow key={asset.id} asset={asset} disabled={!sceneReady} selectedSubjectId={selectedSubjectId} subjectLabel={nextLabel} transition={assetTransitions[asset.id] || 'linear'} onTransitionChange={transition => setAssetTransitions(current => ({ ...current, [asset.id]: transition }))} onPlace={placeAsset} onSwap={runInvocation} />)}</section>
           {runtime.plan.subjects.length ? (
             <section className="grid gap-2 border-t pt-2" aria-label="Placed XR subjects" data-kg-media-xr-placed-subjects="subjects-props">
               <header className="flex items-center justify-between gap-2">

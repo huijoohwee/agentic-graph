@@ -39,7 +39,11 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   const xrSceneLibrarySubject = readSource('features', 'three', 'XrSceneLibrarySubject.tsx')
   const xrProceduralBall = readSource('features', 'three', 'XrProceduralBallGeometry.tsx')
   const xrProceduralVehicle = readSource('features', 'three', 'XrProceduralVehicleGeometry.tsx')
+  const xrProceduralHouse = readSource('features', 'three', 'XrProceduralHouseGeometry.tsx')
+  const xrSceneSkyAtmosphere = readSource('features', 'three', 'XrSceneSkyAtmosphere.tsx')
   const xrSingaporeTerrain = readSource('features', 'three', 'XrSingaporeTerrainGeometry.tsx')
+  const xrTropicalPlaygroundTerrain = readSource('features', 'three', 'XrTropicalPlaygroundTerrain.tsx')
+  const xrTropicalPlaygroundLandmarks = readSource('features', 'three', 'XrTropicalPlaygroundLandmarks.tsx')
   const xrTerrainPerimeter = readSource('features', 'three', 'xrTerrainPerimeter.ts')
   const xrNativeAuthoredSubjects = readSource('features', 'three', 'XrNativeControllerAuthoredSubjects.tsx')
   const mediaDragPayload = readSource('lib', 'ui', 'mediaDragPayload.ts')
@@ -409,6 +413,9 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     'data-kg-media-xr-featured-asset-selector="1"',
     'data-kg-media-xr-subject-asset={subject.id}',
     "setSubjectTransform(subject.id, { assetId: event.target.value })",
+    'XR_SCENE_LIBRARY_ASSETS.map(asset => <option key={asset.id} value={asset.id}>{asset.label}</option>)',
+    'data-kg-media-xr-swap-asset={asset.id}',
+    'buildXrTransformInvocation(selectedSubjectId, { assetId: asset.id })',
     'buildXrTransformInvocation(subject.id, subject)',
     'readMotionControlSnapshot',
     'motionControlPoseToAnimationPose(motionControl.pose)',
@@ -425,6 +432,29 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     || !xrSceneLibrarySubject.includes('accentColor={effectiveColor}')
     || !xrProceduralBall.includes('agentic_os_xr_procedural_ball_geometry')) {
     throw new Error('expected the asset-library Ball and native controller Ball to reuse one procedural geometry owner')
+  }
+  if (!xrSceneLibrarySubject.includes('<XrProceduralHouseGeometry')
+    || !xrSceneLibrarySubject.includes('label={subject.label}')
+    || !xrSceneLibrarySubject.includes("silhouette={resolveCharacterSilhouette(label)}")) {
+    throw new Error('expected crate and character subjects to keep native silhouettes through the shared library geometry')
+  }
+  for (const marker of [
+    'agentic_os_xr_procedural_straw_house',
+    'agentic_os_xr_procedural_stick_house',
+    'agentic_os_xr_procedural_brick_house',
+    'agentic_os_xr_procedural_soup_pot',
+  ]) {
+    if (!xrProceduralHouse.includes(marker)) throw new Error(`expected native house geometry to expose ${marker}`)
+  }
+  if (!xrSceneLibrarySubject.includes('agentic_os_xr_procedural_tree')
+    || !xrSceneLibrarySubject.includes('rotation={[Math.PI / 2, 0, 0]}')
+    || !xrSceneLibrarySubject.includes('scale={[1.08, 1.08, 0.78]}')) {
+    throw new Error('expected tree props to stand upright in crate Z-up space with a broad canopy')
+  }
+  if (!xrSceneSkyAtmosphere.includes('agentic_os_xr_scene_sky_dome')
+    || !xrSceneSkyAtmosphere.includes('agentic_os_xr_scene_sky_horizon')
+    || !xrSceneSkyAtmosphere.includes('xrSceneSunPosition')) {
+    throw new Error('expected the shared XR sky owner to keep a native dome and sun disc')
   }
   for (const marker of ['requestXrSimulationWorkbenchOpen()', "activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })"]) {
     if (!xrCameraMotion.includes(marker)) throw new Error(`expected the XR Simulation Timeline lane to route through the canonical Media workbench owner via ${marker}`)
@@ -493,8 +523,20 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   for (const marker of ['<XrSingaporeTerrainGeometry', 'stage={stage}', "stage.id === 'singapore'"]) {
     if (!xrStagePresetGeometry.includes(marker)) throw new Error(`expected canonical stage geometry to project Singapore through ${marker}`)
   }
+  for (const marker of ['<XrTropicalPlaygroundTerrain', "stage.id === 'tropical-playground'", '<XrTropicalPlaygroundLandmarks', '<XrNativeControllerDemoAerialSetpieces']) {
+    if (!xrStagePresetGeometry.includes(marker)) throw new Error(`expected canonical stage geometry to project Tropical Playground through ${marker}`)
+  }
+  for (const marker of ['agentic_os_xr_tropical_playground_landmarks', 'agentic_os_xr_playground_skull_grotto', 'agentic_os_xr_playground_fence', 'agentic_os_xr_playground_wood_ramp']) {
+    if (!xrTropicalPlaygroundLandmarks.includes(marker)) throw new Error(`expected Tropical Playground landmarks to expose ${marker}`)
+  }
   for (const marker of ['XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.map', '<XrRegionalPoiSurfaceGeometry', 'resolveXrTerrainPerimeter', 'selectable: false']) {
     if (!xrSingaporeTerrain.includes(marker)) throw new Error(`expected native Singapore presentation to expose ${marker}`)
+  }
+  for (const marker of ['agentic_os_xr_tropical_playground_terrain', 'agentic_os_xr_tropical_playground_island', 'agentic_os_xr_tropical_playground_ocean', 'selectable: false']) {
+    if (!xrTropicalPlaygroundTerrain.includes(marker)) throw new Error(`expected native Tropical Playground presentation to expose ${marker}`)
+  }
+  if (xrTropicalPlaygroundTerrain.includes('XrSceneLibraryAssetGeometry') || xrTropicalPlaygroundTerrain.includes('showcaseSubjects')) {
+    throw new Error('expected fixed Tropical Playground terrain to leave mobile assets to canonical Media CRUD')
   }
   if (xrSingaporeTerrain.includes('XrSceneLibraryAssetGeometry') || xrSingaporeTerrain.includes('showcaseSubjects')) {
     throw new Error('expected fixed Singapore terrain to leave mobile Helicopter/Car assets to canonical Media CRUD')

@@ -104,6 +104,7 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     assert.ok(container.querySelector('[aria-label="XR frame rehearsal"]')!.closest('.timeline-player'))
     assert.equal(container.querySelectorAll('[data-kg-xr-lane-cast-mark]').length, 3)
     assert.equal(container.querySelectorAll('[data-kg-xr-lane-camera-mark]').length, 1)
+    assert.equal(container.querySelectorAll('[data-kg-xr-lane-scene-beat]').length, 1)
     const castMark = () => container.querySelector<HTMLElement>('[data-kg-xr-choreography-cast-lane="actor"] [data-kg-xr-lane-cast-mark="1"]')!
     const cameraMark = () => container.querySelector<HTMLElement>('[data-kg-xr-lane-camera-mark="1"]')!
     await act(async () => { controlLocalAnimation({ invocation: '/animation.control @canvas operation=play rate=0.25' }) })

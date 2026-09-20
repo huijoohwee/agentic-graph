@@ -479,17 +479,112 @@ export async function testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels() 
   }
 }
 
+export async function testLiveXrSurfaceSurvivesTropicalStageAnd3dHostReplay() {
+  const { completeSourceFilesBootstrap } = await import('@/features/source-files/sourceFilesBootstrapReadiness')
+  const { controlLocalXrScene } = await import('@/features/three/xrSceneMcpRuntime')
+  completeSourceFilesBootstrap()
+  const store = useGraphStore.getState()
+  store.resetAll()
+  completeSourceFilesBootstrap()
+  const threeDHostText = [
+    '---',
+    'kgCanvasSurfaceMode: "3d"',
+    'kgCanvasRenderMode: "3d"',
+    'kgCanvas3dMode: "3d"',
+    '---',
+    '',
+    '# XR scene',
+  ].join('\n')
+  try {
+    useGraphStore.setState({
+      markdownDocumentName: 'XR scene.md',
+      markdownDocumentText: threeDHostText,
+      graphData: {
+        type: 'Graph',
+        nodes: [{ id: 'scene', label: 'Scene', type: 'Note', properties: {} }],
+        edges: [],
+        metadata: {},
+      },
+      canvasRenderMode: '3d',
+      canvas3dMode: 'xr',
+      floatingPanelOpen: true,
+      floatingPanelView: 'media',
+      schema: BLOCK_SCHEMA,
+    } as never)
+    const staged = controlLocalXrScene({ action: 'stage', stageId: 'tropical-playground' })
+    const afterStage = useGraphStore.getState()
+    if (afterStage.canvasRenderMode !== '3d' || afterStage.canvas3dMode !== 'xr') {
+      throw new Error(`expected Tropical Playground restaging to keep Surface Mode on XR, got ${JSON.stringify({
+        ok: staged.ok,
+        message: staged.message,
+        canvasRenderMode: afterStage.canvasRenderMode,
+        canvas3dMode: afterStage.canvas3dMode,
+      })}`)
+    }
+    if (!staged.ok || staged.scene?.runtime?.stageId !== 'tropical-playground') {
+      throw new Error(`expected Tropical Playground to stage in XR Mode, got ${JSON.stringify({
+        ok: staged.ok,
+        message: staged.message,
+        stageId: staged.scene?.runtime?.stageId,
+      })}`)
+    }
+    applyCanvasFrontmatterPreset({ rawText: threeDHostText })
+    const preserved = useGraphStore.getState()
+    if (preserved.canvasRenderMode !== '3d' || preserved.canvas3dMode !== 'xr') {
+      throw new Error(`expected a 3d-host frontmatter replay not to steal a live XR surface, got ${JSON.stringify({
+        canvasRenderMode: preserved.canvasRenderMode,
+        canvas3dMode: preserved.canvas3dMode,
+      })}`)
+    }
+    await useGraphStore.getState().setActiveMarkdownDocument({
+      name: 'XR scene.md',
+      text: threeDHostText,
+      applyViewPreset: true,
+    })
+    const afterSameDocumentApply = useGraphStore.getState()
+    if (afterSameDocumentApply.canvasRenderMode !== '3d' || afterSameDocumentApply.canvas3dMode !== 'xr') {
+      throw new Error(`expected same-document 3d-host apply not to steal a live XR surface, got ${JSON.stringify({
+        canvasRenderMode: afterSameDocumentApply.canvasRenderMode,
+        canvas3dMode: afterSameDocumentApply.canvas3dMode,
+      })}`)
+    }
+    applyCanvasFrontmatterPreset({
+      rawText: [
+        '---',
+        'kgCanvasSurfaceMode: "2d"',
+        'kgCanvasRenderMode: "2d"',
+        'kgCanvas2dRenderer: "flow"',
+        '---',
+        '',
+        '# Design surface',
+      ].join('\n'),
+    })
+    const demoted = useGraphStore.getState()
+    if (demoted.canvasRenderMode !== '2d' || demoted.canvas3dMode === 'xr') {
+      throw new Error(`expected an explicit 2d landing to leave XR, got ${JSON.stringify({
+        canvasRenderMode: demoted.canvasRenderMode,
+        canvas3dMode: demoted.canvas3dMode,
+      })}`)
+    }
+  } finally {
+    useGraphStore.getState().resetAll()
+  }
+}
+
 export function testXrSceneSurfaceOwnershipSourceBoundaries() {
   const toolbar = readSource('lib/toolbar/ToolbarToolMenu.impl.tsx')
   const toolbarRouting = readSource('features/three/toolbarXrScenePanelRouting.ts')
   const surfaceRuntime = readSource('features/three/xrSceneSurfaceRuntime.ts')
   const rendererSelect = readSource('components/toolbar/Canvas2dRendererSelect.tsx')
   const frontmatter = readSource('features/parsers/canvasFrontmatterPreset.ts')
+  const composedImport = readSource('features/source-files/applyComposedGraphFromSourceFiles.ts')
+  const documentActions = readSource('hooks/store/graph-data-slice/graphDataDocumentActions.ts')
   const physicsRuntime = readSource('features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
   const canvasSlice = readSource('hooks/store/canvasSlice.ts')
   const surfaceOwnership = readSource('lib/canvas/canvasSurfaceOwnershipRuntime.ts')
   if (!['media', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera'].every(view => surfaceRuntime.includes(`'${view}'`))
     || !surfaceRuntime.includes('activateCanvasGraphSurfaceMode')
+    || !surfaceRuntime.includes('if (!alreadyXr) {')
     || !surfaceRuntime.includes("input.floatingPanelView === 'skillsCommands'")
     || !surfaceRuntime.includes('registerXrSceneGameplayMode')
     || surfaceRuntime.includes('XR_GAMEPLAY_SURFACE_IDS')
@@ -532,6 +627,13 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
     ? frontmatter.slice(frontmatterXrStart, frontmatterXrEnd)
     : ''
   if (!frontmatter.includes('xrSceneSurfaceRuntime')
+    || !frontmatter.includes('preserveLiveSharedXrSurface')
+    || !frontmatter.includes('retainLiveSharedXrSurface')
+    || !composedImport.includes('preserveLiveSharedXrSurface')
+    || !documentActions.includes('preserveLiveSharedXrSurface')
+    || !documentActions.includes('readPreserveLiveSharedXrSurface')
+    || !frontmatter.includes('incomingLeavesSharedXrSurface')
+    || !frontmatter.includes('if (!(retainLiveSharedXrSurface && !sharedXrSurfaceRouted))')
     || !frontmatter.includes('XR_SCENE_FLOATING_PANEL_VIEWS.find')
     || !frontmatter.includes('const sharedXrSurfaceRouted = sharedXrSurfaceRequested || sharedXrPanelRequested')
     || !frontmatterXrSelection.includes('activateXrSceneSurface({')

@@ -39,6 +39,11 @@ type PendingMarkdownApplyRequest = {
   applyViewPreset: boolean
   preset?: CanvasWorkspaceFrontmatterPreset | null
   requireActiveMarkdownDocument: boolean
+  preserveLiveSharedXrSurface?: boolean
+}
+
+function readPreserveLiveSharedXrSurface(state: ReturnType<GetGraph>): boolean {
+  return state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr'
 }
 
 const markdownApplyRequestQueue = new MarkdownApplyRequestQueue<PendingMarkdownApplyRequest>()
@@ -264,6 +269,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
       if (!currentDocumentMatchesExpectation && !incomingDocumentIsCurrent) return false
     }
     const didSwitchActiveDocument = previousState.markdownDocumentName !== name
+    const preserveLiveSharedXrSurface = !didSwitchActiveDocument && readPreserveLiveSharedXrSurface(previousState)
     const canonicalText = typeof args?.canonicalMarkdownText === 'string'
       ? args.canonicalMarkdownText
       : previousState.markdownDocumentName === name
@@ -314,6 +320,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           graphData: get().graphData,
           rawText: text,
           preset: parsedTextPreset || undefined,
+          ...(preserveLiveSharedXrSurface ? { preserveLiveSharedXrSurface: true } : {}),
         })
         await waitForCanvasFrontmatterSurfaceTransition()
       } catch {
@@ -370,6 +377,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           graphData: active.graphData,
           rawText: text,
           preset: parsedTextPreset || undefined,
+          ...(preserveLiveSharedXrSurface ? { preserveLiveSharedXrSurface: true } : {}),
         })
         await waitForCanvasFrontmatterSurfaceTransition()
       }
@@ -396,6 +404,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           preset: parsedTextPreset,
           applyViewPreset: applyViewPresetForSwitch,
           requireActiveMarkdownDocument: true,
+          ...(preserveLiveSharedXrSurface ? { preserveLiveSharedXrSurface: true } : {}),
         })
         await replayActiveDocumentCanvasPreset()
         if (graphApplied) {
@@ -423,7 +432,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
     return true
   },
 
-  applyMarkdownDocumentToGraph: async (name: string, text: string, opts?: { force?: boolean; preset?: CanvasWorkspaceFrontmatterPreset | null; applyViewPreset?: boolean; requireActiveMarkdownDocument?: boolean }) => {
+  applyMarkdownDocumentToGraph: async (name: string, text: string, opts?: { force?: boolean; preset?: CanvasWorkspaceFrontmatterPreset | null; applyViewPreset?: boolean; requireActiveMarkdownDocument?: boolean; preserveLiveSharedXrSurface?: boolean }) => {
     const runApply = async (request: PendingMarkdownApplyRequest): Promise<boolean> => {
       const nextName = String(request.name || '').trim()
       const nextText = String(request.text || '')
@@ -486,6 +495,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           graphData,
           rawText: nextText,
           preset: parsedTextPreset || undefined,
+          ...(request.preserveLiveSharedXrSurface === true ? { preserveLiveSharedXrSurface: true } : {}),
         })
         await waitForCanvasFrontmatterSurfaceTransition()
       }
@@ -501,6 +511,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           resetWidgetLayout: request.applyViewPreset,
           preset: parsedTextPreset,
           rawText: nextText,
+          ...(request.preserveLiveSharedXrSurface === true ? { preserveLiveSharedXrSurface: true } : {}),
         })
         await applyMarkdownDocumentCanvasPreset(reusedGraph)
         resetFrontmatterFlowWidgetRuntimeState(get, reusedGraph)
@@ -521,6 +532,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           resetWidgetLayout: request.applyViewPreset,
           preset: parsedTextPreset,
           rawText: nextText,
+          ...(request.preserveLiveSharedXrSurface === true ? { preserveLiveSharedXrSurface: true } : {}),
         })
         await applyMarkdownDocumentCanvasPreset(parsedGraph)
         resetFrontmatterFlowWidgetRuntimeState(get, parsedGraph)
@@ -535,6 +547,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
       applyViewPreset: opts?.applyViewPreset !== false,
       preset: opts?.preset === undefined ? parseCanvasWorkspaceFrontmatterPreset(String(text || '')) : opts.preset,
       requireActiveMarkdownDocument: opts?.requireActiveMarkdownDocument === true,
+      ...(opts?.preserveLiveSharedXrSurface === true ? { preserveLiveSharedXrSurface: true } : {}),
     }
     const requestKey = buildMarkdownApplyRequestSemanticKey(request)
     if (isCompletedMarkdownApplyRequestCurrent(get, request, requestKey)) return true
