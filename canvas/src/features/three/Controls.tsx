@@ -75,11 +75,7 @@ export function Controls({
     readXrMotionReferenceRuntime,
   )
   const objectInputOwnership = useThreeObjectInputOwnership()
-  const cameraOwnershipArgs = {
-    mode,
-    xrEmptyWorld,
-    cameraMarkCount: xrRuntime.plan.camera.length,
-  }
+  const cameraOwnershipArgs = { mode, xrEmptyWorld, cameraMarkCount: xrRuntime.plan.camera.length }
   const choreographyCanDriveCamera = xrChoreographyCanDriveCamera(cameraOwnershipArgs)
   const choreographyOwnsCamera = xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
   const cameraMarkPlaybackOwnsFraming = xrCameraMarkPlaybackOwnsFraming({ ...cameraOwnershipArgs, cameraMarkSelected: xrRuntime.selectedMark?.kind === 'camera', timelinePlaying: timelineTransportPlaying })
