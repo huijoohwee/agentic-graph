@@ -11,7 +11,7 @@ import {
   serializeXrMotionReferencePlan,
 } from '@/features/three/xrMotionReferenceModel'
 import { buildXrMotionReferencePackage } from '@/features/three/xrMotionReferencePackage'
-import { xrChoreographyCanDriveCamera, xrChoreographyOwnsCamera } from '@/features/three/xrCameraControlOwnership'
+import { xrCameraMarkPlaybackOwnsFraming, xrChoreographyCanDriveCamera, xrChoreographyOwnsCamera } from '@/features/three/xrCameraControlOwnership'
 import { controlLocalCamera, inspectLocalCamera } from '@/features/strybldr/cameraMcpRuntime'
 import {
   publishCameraFramingRuntime,
@@ -54,11 +54,10 @@ function buildShootGraph(): GraphData {
 }
 function resetToNativeCameraGrammar() { resetAgenticOsRemoteGrammarCatalogForTests() }
 export function testXrShootWorkflowMarksRigsRetimeAndExports() {
-  resetToNativeCameraGrammar()
-  const ownershipArgs = { mode: 'xr', xrEmptyWorld: false, cameraMarkCount: 1 } as const
+  resetToNativeCameraGrammar(); const ownershipArgs = { mode: 'xr', xrEmptyWorld: false, cameraMarkCount: 1 } as const
   if (!xrChoreographyCanDriveCamera(ownershipArgs)
     || xrChoreographyOwnsCamera({ ...ownershipArgs, timelinePlaying: false })
-    || !xrChoreographyOwnsCamera({ ...ownershipArgs, timelinePlaying: true })) {
+    || !xrChoreographyOwnsCamera({ ...ownershipArgs, timelinePlaying: true }) || xrCameraMarkPlaybackOwnsFraming({ ...ownershipArgs, timelinePlaying: false, cameraMarkSelected: false }) || !xrCameraMarkPlaybackOwnsFraming({ ...ownershipArgs, timelinePlaying: false, cameraMarkSelected: true })) {
     throw new Error('expected Camera choreography to drive scrub previews while reserving exclusive ownership for active playback')
   }
   if (shouldApplySharedCameraFramingRevision({ appliedRevision: 4, appliedContextKey: 'xr:graph', revision: 4, contextKey: 'xr:graph', forcedReapply: false })
@@ -268,6 +267,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
     || !playbackSource.includes('camera.focus = settings.focusDistanceMeters')
     || !samplingSource.includes('focusDistanceMeters: left.settings.focusDistanceMeters')
     || !playbackSource.includes('requestXrMotionReferenceCameraPlaybackReapply')
+    || !['resolveXrSceneCameraWorldScale', 'resolveXrSceneCameraMinimumY', 'xrCameraMarkPlaybackOwnsFraming', 'cameraMarkPlaybackOwnsFraming'].every(marker => playbackSource.includes(marker) || controlsSource.includes(marker))
     || !['prePlaybackPoseRef', "mode !== 'free-orbit'", 'camera.position.copy(snapshot.position)', 'controls.target.copy(snapshot.target)'].every(marker => playbackSource.includes(marker))
     || !controlsSource.includes('pendingCameraSceneResetRef')
     || !controlsSource.includes("if (mode === 'xr')")) {

@@ -70,8 +70,9 @@ function NorthHorizon() {
       </mesh>
       <mesh position={[0, 13.81, -0.2]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[1.15, 12]} />
-        <meshStandardMaterial color="#342f39" roughness={1} />
+        <meshStandardMaterial color="#7a2e18" roughness={0.7} emissive="#d97706" emissiveIntensity={0.55} />
       </mesh>
+      <pointLight position={[0, 13.4, -0.2]} color="#fb923c" intensity={2.4} distance={9} />
       {[-13, -10.8, -8.6, -6.3, 6.2, 8.4, 10.8, 13].map((x, index) => (
         <mesh key={x} position={[x, 1.05 + index % 2 * 0.35, 1.6]} scale={[1.55, 1 + index % 3 * 0.16, 0.82]}>
           <dodecahedronGeometry args={[1.25, 0]} />

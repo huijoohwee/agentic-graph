@@ -278,6 +278,8 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   const aerialSetpieces = source('features', 'three', 'XrNativeControllerDemoAerialSetpieces.tsx')
   const authoredSubjects = source('features', 'three', 'XrNativeControllerAuthoredSubjects.tsx')
   const singaporeTerrain = source('features', 'three', 'XrSingaporeTerrainGeometry.tsx')
+  const tropicalTerrain = source('features', 'three', 'XrTropicalPlaygroundTerrain.tsx')
+  const tropicalLandmarks = source('features', 'three', 'XrTropicalPlaygroundLandmarks.tsx')
   const terrainColliders = source('features', 'three', 'xrNativeControllerDemoTerrain.ts')
   const terrainPerimeter = source('features', 'three', 'xrTerrainPerimeter.ts')
   const vehicleGeometry = source('features', 'three', 'XrProceduralVehicleGeometry.tsx')
@@ -317,7 +319,7 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
     && !camera.includes('camera.up.copy')
     && !camera.includes('camera.up.set'), 'shared R3F camera owner must remain Flight-relative while MapLibre owns geospatial framing')
   assert(camera.includes('controls.enableRotate = false') && !camera.includes('frame.player.velocity'), 'world-relative controller input must retain a fixed-yaw hero camera')
-  assert(cameraFraming.includes('AERIAL_FOV_DEGREES') && camera.includes('aerialFactor') && camera.includes('XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE'), 'Rocket altitude must widen one fixed-scale camera owner into the aerial island view')
+  assert(cameraFraming.includes('AERIAL_FOV_DEGREES') && camera.includes('aerialFactor') && camera.includes('XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE') && cameraFraming.includes('resolveXrSceneCameraWorldScale'), 'Rocket altitude must widen one fixed-scale camera owner into the aerial island view')
   assert(camera.includes("readXrNativeControllerCamera().mode === 'fixed-follow'")
     && !camera.includes('authoredSubjectSelected')
     && !cameraRuntime.includes('xrMotionReferenceRuntime'), 'camera selection must remain explicit and independent from selected 3D Objects/Assets')
@@ -333,10 +335,23 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   assert(XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE === 'fixed-follow'
     && JSON.stringify(XR_NATIVE_CONTROLLER_CAMERA_OPTIONS.map(option => [option.id, option.label]))
       === JSON.stringify([['fixed-follow', 'Fixed Follow'], ['free-orbit', 'Free Orbit']]), 'Physics and Flight must share one exact Camera catalog')
-  for (const landmark of ['agentic_os_xr_playground_skull_grotto', 'agentic_os_xr_playground_treasure', 'agentic_os_xr_playground_key', 'agentic_os_xr_playground_moving_hazards', 'BowlingPin']) {
+  for (const landmark of ['agentic_os_xr_playground_treasure', 'agentic_os_xr_playground_key', 'BowlingPin', 'BarrelStack']) {
     assert(environment.includes(landmark), `procedural playground must include ${landmark}`)
   }
+  for (const landmark of ['agentic_os_xr_playground_skull_grotto', 'agentic_os_xr_playground_moving_hazards', 'agentic_os_xr_playground_fence', 'agentic_os_xr_playground_wood_ramp', 'agentic_os_xr_playground_palm']) {
+    assert(tropicalLandmarks.includes(landmark), `procedural Tropical Playground landmarks must include ${landmark}`)
+  }
+  assert(environment.includes('function BarrelStack()')
+    && environment.includes('<cylinderGeometry args={[0.38, 0.44, 0.92, 14]}')
+    && !environment.includes('<torusGeometry args={[0.53, 0.22, 5, 10]}'), 'playground barrels must be upright cylinders with hoops, not stacked rings')
   assert(environment.includes('<XrNativeControllerDemoAerialSetpieces'), 'playground environment must mount its clean-room aerial composition')
+  assert(environment.includes('<XrTropicalPlaygroundTerrain')
+    && environment.includes('<XrTropicalPlaygroundLandmarks'), 'playground environment must mount the shared tropical island terrain and landmarks')
+  assert(tropicalTerrain.includes('agentic_os_xr_tropical_playground_terrain')
+    && tropicalTerrain.includes('agentic_os_xr_tropical_playground_island')
+    && tropicalTerrain.includes('selectable: false')
+    && !tropicalTerrain.includes('XrSceneLibraryAssetGeometry')
+    && !tropicalTerrain.includes('showcaseSubjects'), 'procedural Tropical Playground must remain a fixed native island')
   assert(singaporeTerrain.includes('XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.map')
     && singaporeTerrain.includes('<XrRegionalPoiSurfaceGeometry'), 'procedural Singapore terrain must render the source-derived regional POI plan')
   const regionalPoiEntries = XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.flatMap(
@@ -380,7 +395,11 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
     ['features', 'three', 'XrNativeControllerDemoVehicles.tsx'],
     ['features', 'three', 'XrNativeControllerAuthoredSubjects.tsx'],
     ['features', 'three', 'XrSingaporeTerrainGeometry.tsx'],
+    ['features', 'three', 'XrTropicalPlaygroundTerrain.tsx'],
+    ['features', 'three', 'XrTropicalPlaygroundLandmarks.tsx'],
     ['features', 'three', 'XrProceduralVehicleGeometry.tsx'],
+    ['features', 'three', 'XrProceduralHouseGeometry.tsx'],
+    ['features', 'three', 'XrSceneSkyAtmosphere.tsx'],
     ['features', 'three', 'XrNativeControllerDemoHud.tsx'],
     ['features', 'three', 'useXrNativeControllerDemoCamera.ts'],
     ['features', 'three', 'xrNativeControllerCameraCatalog.ts'],

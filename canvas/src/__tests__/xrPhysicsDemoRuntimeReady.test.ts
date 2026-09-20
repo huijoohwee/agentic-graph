@@ -22,6 +22,10 @@ import {
   readXrMotionReferencePlan,
 } from '@/features/three/xrMotionReferenceModel'
 import { resolveXrMotionReferencePersistedValue } from '@/features/three/xrMotionReferencePersistedValue'
+import {
+  resolveXrRehearsalTimelineBeats,
+  resolveXrTimelineObjectPathCaption,
+} from '@/features/three/xrRehearsalTimelineBeats'
 
 type PlainRecord = Record<string, unknown>
 
@@ -196,6 +200,49 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     || storyCastIds.some(id => !sourcePlan.cast.some(track => track.actorId === id))
     || forbiddenGraphCastIds.some(id => sourcePlan.cast.some(track => track.actorId === id))) {
     throw new Error(`expected the source document to seed a source-authored rehearsal cast and props, got ${JSON.stringify(sourcePlan)}`)
+  }
+  const stickHouse = sourcePlan.subjects.find(subject => subject.id === 'xr-subject:stick-house:1')
+  const stickBeat = sourcePlan.camera.find(mark => mark.timeSeconds === 10.2)
+  const secondPig = sourcePlan.cast.find(track => track.actorId === 'xr-subject:second-pig:1')
+  if (sourcePlan.appearance.detail !== 'standard'
+    || sourcePlan.appearance.skyColor !== '#8ed5f3'
+    || stickHouse?.scale !== 1.78
+    || stickHouse?.label !== 'Stick House'
+    || stickBeat?.anchorId !== 'xr-subject:second-pig:1'
+    || stickBeat?.settings.shot !== 'close-up'
+    || secondPig?.animation?.presetId !== 'jump'
+    || !markdownText.includes('hold the stick house as the readable midpoint of the journey')) {
+    throw new Error('expected the rehearsal seed to keep coast light, the stick-house midpoint beat, and the playable script')
+  }
+  const stickHouseTrack = sourcePlan.cast.find(track => track.actorId === 'xr-subject:stick-house:1')
+  const strawHouseTrack = sourcePlan.cast.find(track => track.actorId === 'xr-subject:straw-house:1')
+  const wolfTrack = sourcePlan.cast.find(track => track.actorId === 'xr-subject:wolf:1')
+  const sceneBeats = resolveXrRehearsalTimelineBeats(sourcePlan)
+  if (!stickHouseTrack?.marks.some(mark => mark.timeSeconds === 8.4)
+    || !stickHouseTrack.marks.some(mark => mark.timeSeconds === 10.2)
+    || !strawHouseTrack?.marks.some(mark => mark.timeSeconds === 4.2)
+    || !wolfTrack?.marks.some(mark => mark.timeSeconds === 4.2)
+    || !wolfTrack?.marks.some(mark => mark.timeSeconds === 8.4)
+    || sceneBeats.map(beat => beat.label).join(' → ') !== [
+      'Waterfront landing',
+      'Straw threshold',
+      'Stick house',
+      'Stick house midpoint',
+      'Brick house',
+      'Chimney soup pot',
+      'Journey end',
+    ].join(' → ')
+    || resolveXrTimelineObjectPathCaption({ label: 'The Wolf', motion: 'walk', beatLabel: 'Straw threshold' }) !== 'huffs at threshold'
+    || resolveXrTimelineObjectPathCaption({ label: 'First Pig', motion: 'hold', beatLabel: 'Waterfront landing' }) !== 'lands on the waterfront'
+    || resolveXrTimelineObjectPathCaption({ label: 'Second Pig', motion: 'hold', beatLabel: 'Stick house midpoint' }) !== 'stick house midpoint'
+    || resolveXrTimelineObjectPathCaption({ label: 'Stick House', motion: 'hold', beatLabel: 'Stick house midpoint' }) !== 'Stick house midpoint'
+    || stickBeat?.settings.orbitY >= 0) {
+    throw new Error(`expected BottomPanel Timeline beats to follow the playable script, got ${JSON.stringify({
+      sceneBeats,
+      strawMarks: strawHouseTrack?.marks.map(mark => mark.timeSeconds),
+      wolfMarks: wolfTrack?.marks.map(mark => mark.timeSeconds),
+      stickOrbitY: stickBeat?.settings.orbitY,
+    })}`)
   }
   const persistedEmptyPlan = { ...sourceSeedValue, subjects: [], cast: [] }
   const topLevelMetadata = {

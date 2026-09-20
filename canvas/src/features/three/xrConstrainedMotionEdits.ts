@@ -257,6 +257,15 @@ export function buildXrConstrainedSubjectAssetTransformEdit(input: Readonly<{
 }>): XrConstrainedSubjectTransformResult {
   const assetEdit = buildXrMotionReferenceSubjectAssetEdit(input.plan, input.args)
   if (!assetEdit) return Object.freeze({ edit: null, reason: 'invalid-target', motion: null })
+  const transformRequested = Boolean(
+    input.args.position
+    || input.args.rotationYDegrees !== undefined
+    || input.args.scale !== undefined
+    || input.args.color,
+  )
+  if (!transformRequested) {
+    return Object.freeze({ edit: assetEdit, reason: 'applied' as const, motion: null })
+  }
   const assetPlan = readXrMotionReferencePlan(assetEdit.value, input.activeNodes)
   const assetSubject = assetPlan.subjects.find(candidate => candidate.id === input.args.subjectId)
   if (!assetSubject) return Object.freeze({ edit: null, reason: 'invalid-target', motion: null })

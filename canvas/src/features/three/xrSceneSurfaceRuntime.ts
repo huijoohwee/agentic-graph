@@ -181,11 +181,13 @@ export function activateXrSceneSurface(
     canvasRenderModeIsAuto: state.canvasRenderModeIsAuto,
   })
   const activeState = runCanvasSurfaceOwnershipTransaction(() => {
-    activateCanvasGraphSurfaceMode({
-      mode: 'xr',
-      setCanvas3dMode: state.setCanvas3dMode,
-      setCanvasRenderMode: state.setCanvasRenderMode,
-    })
+    if (!alreadyXr) {
+      activateCanvasGraphSurfaceMode({
+        mode: 'xr',
+        setCanvas3dMode: state.setCanvas3dMode,
+        setCanvasRenderMode: state.setCanvasRenderMode,
+      })
+    }
     const nextState = useGraphStore.getState()
     if (nextState.canvasRenderMode === '3d' && nextState.canvas3dMode === 'xr') return nextState
     nextState.setCanvas3dMode(previousSurface.canvas3dMode)

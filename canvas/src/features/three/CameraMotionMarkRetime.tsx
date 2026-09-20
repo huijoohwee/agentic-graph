@@ -30,6 +30,7 @@ import { buildXrShotTargets } from './xrShotTargets'
 import { readMotionControlSnapshot, subscribeMotionControl } from './motionControlRuntime'
 import { xrMotionReferenceTimelineDocumentKey } from './xrMotionReferenceTimeline'
 import { formatCameraOptics } from '@/features/strybldr/cameraOptics'
+import { resolveXrRehearsalBeatLabelAt, resolveXrRehearsalTimelineBeats } from './xrRehearsalTimelineBeats'
 import { createXrTimelineCastMark, jumpToXrTimelineCue } from './xrTimelineCueRuntime'
 import './CameraMotionMarkRetime.css'
 
@@ -165,6 +166,10 @@ export function CameraMotionMarkRetime({
   const selectedActorId = readBoundXrSelectedActorId()
   const shotTargetLabelById = React.useMemo(
     () => new Map(buildXrShotTargets(runtime.plan).map(target => [target.id, target.label])),
+    [runtime.plan],
+  )
+  const rehearsalBeatsByMarkId = React.useMemo(
+    () => new Map(resolveXrRehearsalTimelineBeats(runtime.plan).map(beat => [beat.markId, beat.label])),
     [runtime.plan],
   )
   const selectedTrack = runtime.plan.cast.find(track => track.actorId === selectedActorId)
@@ -369,6 +374,7 @@ export function CameraMotionMarkRetime({
           const selected = runtime.selectedMark?.kind === 'cast'
             && runtime.selectedMark.actorId === track.actorId
             && runtime.selectedMark.markId === mark.id
+          const beatLabel = resolveXrRehearsalBeatLabelAt(runtime.plan, mark.timeSeconds)
           const selectMark = () => { suppressMarkClick.current = false; selectXrMotionReferenceCastMark(track.actorId, mark.id) }
           const jumpToMark = () => jumpToXrTimelineCue({ kind: 'cast', targetId: track.actorId, markId: mark.id, timeSeconds: mark.timeSeconds })
           return (
@@ -377,8 +383,8 @@ export function CameraMotionMarkRetime({
               laneStyle="video"
               className="xr-camera-motion-retime-lane-mark"
               style={{ ...markAxisStyle(mark.timeSeconds, scaleDurationSeconds), '--kg-xr-ruler-mark-color': track.color } as React.CSSProperties}
-              title={`${track.label} · ${mark.timeSeconds}s · ${mark.gait} · ${mark.transition} · click to seek; drag to retime`}
-              aria-label={`${track.label} mark ${index + 1} at ${mark.timeSeconds} seconds`}
+              title={`${beatLabel ? `${beatLabel} · ` : ''}${track.label} · ${mark.timeSeconds}s · ${mark.gait} · ${mark.transition} · click to seek; drag to retime`}
+              aria-label={`${track.label} mark ${index + 1} at ${mark.timeSeconds} seconds${beatLabel ? ` · ${beatLabel}` : ''}`}
               aria-pressed={selected}
               role="button"
               tabIndex={0}
@@ -424,6 +430,7 @@ export function CameraMotionMarkRetime({
         {runtime.plan.camera.map((mark, index) => {
           const selected = runtime.selectedMark?.kind === 'camera' && runtime.selectedMark.markId === mark.id
           const targetLabel = shotTargetLabelById.get(mark.anchorId) || 'Unbound target'
+          const beatLabel = rehearsalBeatsByMarkId.get(mark.id)
           const selectMark = () => { suppressMarkClick.current = false; selectXrMotionReferenceCameraMark(mark.id) }
           const jumpToMark = () => jumpToXrTimelineCue({ kind: 'camera', targetId: mark.anchorId, markId: mark.id, timeSeconds: mark.timeSeconds })
           return (
@@ -432,7 +439,7 @@ export function CameraMotionMarkRetime({
               laneStyle="audio"
               className="xr-camera-motion-retime-lane-mark xr-camera-motion-retime-lane-mark--camera"
               style={markAxisStyle(mark.timeSeconds, scaleDurationSeconds)}
-              title={`${targetLabel} · ${resolveXrCameraMoveLabel(mark.moveId)} · ${mark.rig} · ${formatCameraOptics(mark.settings)} · ${mark.timeSeconds}s · click to seek; drag to retime`}
+              title={`${beatLabel ? `${beatLabel} · ` : ''}${targetLabel} · ${resolveXrCameraMoveLabel(mark.moveId)} · ${mark.rig} · ${formatCameraOptics(mark.settings)} · ${mark.timeSeconds}s · click to seek; drag to retime`}
               aria-label={`Camera mark ${index + 1} linked to ${targetLabel} at ${mark.timeSeconds} seconds · ${resolveXrCameraMoveLabel(mark.moveId)} · ${mark.rig} · ${formatCameraOptics(mark.settings)}`}
               aria-pressed={selected}
               role="button"

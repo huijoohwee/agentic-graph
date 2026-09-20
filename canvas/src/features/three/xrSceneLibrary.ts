@@ -65,7 +65,7 @@ export const XR_MOTION_REFERENCE_STAGE_PRESETS: readonly XrMotionReferenceStageP
   {
     id: 'tropical-playground',
     label: 'Tropical Playground',
-    description: 'Procedural island terrain for the native treasure, cannon, rolling-ball, and rocket physics playground.',
+    description: 'Procedural tropical island with sand, lagoon, palms, palisade, skull grotto, treasure, cannons, and rolling-ball physics.',
     environmentKind: 'terrain',
     sizeMeters: [28, 26],
     structures: [],

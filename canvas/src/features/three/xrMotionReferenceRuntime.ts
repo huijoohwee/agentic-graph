@@ -188,7 +188,7 @@ export function setXrMotionReferenceStage(stageId: XrMotionReferenceStageId): Xr
     ...planRecord(snapshot.plan),
     stageId,
     cast: rebuildAssignedXrActionPaths({ plan: snapshot.plan, durationSeconds: snapshot.plan.durationSeconds }),
-  }, undefined, spatialPlanGuard())
+  })
 }
 
 export function setXrMotionReferenceDuration(durationSeconds: number): XrMotionReferenceRuntimeSnapshot {
@@ -256,7 +256,7 @@ export function setXrMotionReferenceSubjectAssetAndTransform(args: Readonly<{
     plan: snapshot.plan,
     sceneKey: snapshot.sceneKey,
   })
-  return applySubjectEdit(result.edit, spatialPlanGuard())
+  const transformRequested = Boolean(args.position || args.rotationYDegrees !== undefined || args.scale !== undefined || args.color); return applySubjectEdit(result.edit, transformRequested ? spatialPlanGuard() : undefined)
 }
 
 export function setXrMotionReferenceSubjectTransform(args: Readonly<{

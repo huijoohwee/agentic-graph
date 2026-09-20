@@ -25,16 +25,19 @@ function computeXrSceneMediaCameraPlacement(
 ): XrSceneMediaCameraPlacement {
   if (projection.entityKind === 'environment') {
     const stage = resolveXrMotionReferenceStage(projection.entityId as XrMotionReferenceStageId)
+    const tropical = stage.id === 'tropical-playground'
     const scale = XR_MEDIA_STAGE_SPAN / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
     const width = stage.sizeMeters[0] * scale
     const depth = stage.sizeMeters[1] * scale
-    const structureHeight = stage.structures.reduce((max, structure) => (
-      Math.max(max, (structure.position[1] + structure.size[1] / 2) * scale)
-    ), 1)
-    const radius = Math.max(width, depth, structureHeight * 1.6, 4)
+    const structureHeight = tropical
+      ? 5.4
+      : stage.structures.reduce((max, structure) => (
+        Math.max(max, (structure.position[1] + structure.size[1] / 2) * scale)
+      ), 1)
+    const radius = Math.max(width, depth, structureHeight * 1.6, tropical ? 8 : 4)
     return {
-      position: [radius * 0.82, Math.max(radius * 0.62, structureHeight * 1.2), radius * 0.92],
-      target: [0, Math.max(0.5, structureHeight * 0.3), 0],
+      position: [radius * 0.82, Math.max(radius * (tropical ? 0.72 : 0.62), structureHeight * 1.2), radius * 0.92],
+      target: [0, Math.max(0.5, structureHeight * (tropical ? 0.18 : 0.3)), tropical ? -1.2 : 0],
       minDistance: Math.max(1, radius * 0.16),
       maxDistance: radius * 6,
     }
@@ -104,6 +107,7 @@ function XrSceneMediaCameraControls({ projection }: { projection: XrSceneMediaDr
 function XrSceneMediaContent({ projection }: { projection: XrSceneMediaDragProjection }) {
   if (projection.entityKind === 'environment') {
     const stage = resolveXrMotionReferenceStage(projection.entityId as XrMotionReferenceStageId)
+    const tropical = stage.id === 'tropical-playground'
     return (
       <XrStagePresetGeometry
         stage={stage}
@@ -111,6 +115,8 @@ function XrSceneMediaContent({ projection }: { projection: XrSceneMediaDragProje
         minAxesSize={0.8}
         minFloorThickness={0.08}
         shadows
+        showAxes={!tropical}
+        showGrid={!tropical}
       />
     )
   }
@@ -139,6 +145,7 @@ export function XrSceneMediaSurface({
   title: string
   onReady?: () => void
 }) {
+  const tropicalKit = projection.entityKind === 'environment' && projection.entityId === 'tropical-playground'
   return (
     <section
       aria-label={`${projection.label} 3D for XR preview`}
@@ -156,7 +163,9 @@ export function XrSceneMediaSurface({
         event.stopPropagation()
       }}
       style={{
-        background: 'radial-gradient(circle at 48% 30%, rgba(224,242,254,0.88), rgba(71,85,105,0.24))',
+        background: tropicalKit
+          ? 'radial-gradient(circle at 48% 18%, #c8eef8 0%, #4eb6c9 52%, #1a6d82 100%)'
+          : 'radial-gradient(circle at 48% 30%, rgba(224,242,254,0.88), rgba(71,85,105,0.24))',
         pointerEvents: 'auto',
       }}
     >
@@ -175,10 +184,10 @@ export function XrSceneMediaSurface({
         style={{ pointerEvents: 'auto' }}
       >
         <XrSceneMediaCameraControls projection={projection} />
-        <ambientLight intensity={1.15} />
-        <hemisphereLight args={['#e0f2fe', '#334155', 1.05]} />
-        <directionalLight position={[8, 12, 9]} intensity={2.1} castShadow />
-        <directionalLight position={[-7, 5, -6]} intensity={0.55} />
+        <ambientLight intensity={tropicalKit ? 1.28 : 1.15} />
+        <hemisphereLight args={tropicalKit ? ['#b8ecff', '#d7c39a', 1.18] : ['#e0f2fe', '#334155', 1.05]} />
+        <directionalLight position={[8, 12, 9]} intensity={tropicalKit ? 2.35 : 2.1} castShadow />
+        <directionalLight position={[-7, 5, -6]} intensity={tropicalKit ? 0.72 : 0.55} />
         <XrSceneMediaContent projection={projection} />
       </Canvas>
       <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-5rem)] truncate rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-[10px] font-medium tracking-wide text-sky-100">

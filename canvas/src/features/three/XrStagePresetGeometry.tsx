@@ -5,6 +5,9 @@ import type { Object3D } from 'three'
 import type { XrMotionReferenceStagePreset } from './xrSceneLibrary'
 import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
 import { XrSingaporeTerrainGeometry } from './XrSingaporeTerrainGeometry'
+import { XrTropicalPlaygroundTerrain } from './XrTropicalPlaygroundTerrain'
+import { XrTropicalPlaygroundLandmarks } from './XrTropicalPlaygroundLandmarks'
+import { XrNativeControllerDemoAerialSetpieces } from './XrNativeControllerDemoAerialSetpieces'
 
 const STRUCTURE_TONES = {
   light: '#94a3b8',
@@ -43,6 +46,8 @@ export function XrStagePresetGeometry({
   const floorHeight = stage.sizeMeters[1] * scale
   const floorThickness = Math.max(minFloorThickness, scale * 0.08)
   const singapore = stage.id === 'singapore'
+  const tropical = stage.id === 'tropical-playground'
+  const nativeTerrain = singapore || tropical
   return (
     <group name={`agentic_os_xr_stage_preset_${stage.id}`} userData={{ stageId: stage.id }}>
       <mesh
@@ -63,11 +68,12 @@ export function XrStagePresetGeometry({
       >
         <boxGeometry args={[floorWidth, floorThickness, floorHeight]} />
         <meshStandardMaterial
-          color={appearance?.groundColor || (singapore ? '#cfe2c5' : '#475569')}
+          color={appearance?.groundColor || (singapore ? '#cfe2c5' : tropical ? '#e7dec1' : '#475569')}
           roughness={1}
           metalness={0}
-          transparent={!appearance && !singapore}
-          opacity={appearance || singapore ? 1 : 0.68}
+          transparent={tropical || (!appearance && !nativeTerrain)}
+          opacity={tropical ? 0 : appearance || nativeTerrain ? 1 : 0.68}
+          depthWrite={!tropical}
         />
       </mesh>
       {showGrid ? (
@@ -93,8 +99,15 @@ export function XrStagePresetGeometry({
           shadows={shadows}
         />
       ) : null}
+      {tropical ? (
+        <group position={[0, groundY, 0]} scale={scale}>
+          <XrTropicalPlaygroundTerrain appearance={appearance} shadows={shadows} />
+          <XrTropicalPlaygroundLandmarks displayChest />
+          <XrNativeControllerDemoAerialSetpieces />
+        </group>
+      ) : null}
       <group name={`agentic_os_xr_motion_stage_preset_${stage.id}`}>
-        {!singapore ? stage.structures.map(structure => {
+        {!nativeTerrain ? stage.structures.map(structure => {
           const position = xrMotionReferenceWorldPosition(structure.position, scale, groundY)
           return (
             <mesh

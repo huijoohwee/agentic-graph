@@ -87,7 +87,7 @@ function XrRegionalPoiPolygonExtrusion({
         castShadow={shadows}
         receiveShadow={shadows}
       >
-        <SurfaceMaterial color={surface.color} metalness={0.08} roughness={0.58} />
+        <SurfaceMaterial color={surface.color} metalness={0.06} roughness={0.52} />
       </mesh>
       <lineSegments geometry={resources.edgeGeometry} renderOrder={1}>
         <lineBasicMaterial

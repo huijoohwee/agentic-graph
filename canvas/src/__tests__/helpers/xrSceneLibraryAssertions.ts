@@ -134,6 +134,26 @@ export function assertXrSubjectAssetSwapCrud(): void {
   }
 }
 
+export function assertXrPackedSubjectAssetsRemainSwappable(): void {
+  hydrateXrMotionReferenceRuntime({ sceneKey: 'packed-swap-scene', nodes: [], persistedValue: null })
+  addXrMotionReferenceSubject({ assetId: 'prop-crate', label: 'Straw House' })
+  addXrMotionReferenceSubject({ assetId: 'prop-crate', label: 'Stick House' })
+  const [left, right] = readXrMotionReferenceRuntime().plan.subjects
+  if (!left || !right) throw new Error('expected two packed subjects for asset swap coverage')
+  setXrMotionReferenceSubjectTransform({ subjectId: left.id, position: [0, 0, 0] })
+  setXrMotionReferenceSubjectTransform({ subjectId: right.id, position: [0.45, 0, 0] })
+  for (const asset of XR_SCENE_LIBRARY_ASSETS) {
+    setXrMotionReferenceSubjectAsset({ subjectId: left.id, assetId: asset.id })
+    if (readXrMotionReferenceRuntime().plan.subjects.find(subject => subject.id === left.id)?.assetId !== asset.id) {
+      throw new Error(`expected a packed placed subject to swap to ${asset.id}`)
+    }
+    setXrMotionReferenceSubjectAsset({ subjectId: right.id, assetId: asset.id })
+    if (readXrMotionReferenceRuntime().plan.subjects.find(subject => subject.id === right.id)?.assetId !== asset.id) {
+      throw new Error(`expected every packed neighbor object to swap to ${asset.id}`)
+    }
+  }
+}
+
 export function assertXrTerrainAssetsAreCleanRoom(sources: readonly string[]): void {
   const implementation = sources.join('\n').toLowerCase()
   for (const forbidden of ['8thwall', '8thwall.org', 'https://', 'http://', '.glb', '.gltf', 'cdn.']) {

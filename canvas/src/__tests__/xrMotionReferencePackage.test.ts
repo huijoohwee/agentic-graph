@@ -29,7 +29,7 @@ import {
   setXrMotionReferenceStage,
   setXrMotionReferenceSubjectLabel,
 } from '@/features/three/xrMotionReferenceRuntime'
-import { assertXrDefaultTerrain, assertXrSceneCatalogAndVehiclePlacements, assertXrSubjectAssetSwapCrud, assertXrTerrainAssetsAreCleanRoom } from '@/__tests__/helpers/xrSceneLibraryAssertions'
+import { assertXrDefaultTerrain, assertXrSceneCatalogAndVehiclePlacements, assertXrSubjectAssetSwapCrud, assertXrPackedSubjectAssetsRemainSwappable, assertXrTerrainAssetsAreCleanRoom } from '@/__tests__/helpers/xrSceneLibraryAssertions'
 import { assertXrMotionReferenceStageSurfaceContracts } from '@/__tests__/helpers/xrMotionReferenceSourceAssertions'
 import {
   XR_MOTION_STAGE_CAMERA_POSITION,
@@ -359,7 +359,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   removeXrMotionReferenceSubject(staticSubject.id)
   if (readXrMotionReferenceRuntime().plan.subjects.length !== 1) throw new Error('expected placed static subjects to be removable')
 
-  assertXrSubjectAssetSwapCrud()
+  assertXrSubjectAssetSwapCrud(); assertXrPackedSubjectAssetsRemainSwappable()
 
   const stageSource = readSource('features', 'three', 'XrMotionReferenceStage.tsx')
   const runtimeBridgeSource = readSource('features', 'three', 'XrMotionReferenceRuntimeBridge.tsx')
@@ -397,7 +397,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     'data-kg-xr-timeline-player="1"',
     'data-kg-xr-timeline-transport="reused-gantt-player"',
     'renderClipOverlay={renderXrSceneStageClipOverlay}',
-    "if (!args.selected || selectedTimelineLaneId !== 'scene') return null",
+    "if (!args.selected || selectedTimelineLaneId !== 'scene') return beatMarks",
     'data-kg-xr-motion-scene-controls="click-appear"',
     'data-kg-xr-motion-scene-control-strip="click-appear"',
     'className="xr-camera-motion-mark-selection-controls xr-camera-motion-mark-selection-controls--lane xr-timeline-scene-stage-control xr-timeline-scene-stage-control--selected"',
@@ -442,8 +442,8 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   if (xrSceneMcpRuntimeSource.includes("setFloatingPanelView('camera')")) {
     throw new Error('expected XR scene control to preserve the operator-selected FloatingPanel view')
   }
-  if (!runtimeSource.includes('setXrMotionReferenceCastTransition')
-    || !constrainedMotionEditsSource.includes('travelMeters')
+  if (!runtimeSource.includes('setXrMotionReferenceCastTransition') || !runtimeSource.includes('transformRequested ? spatialPlanGuard()')
+    || !constrainedMotionEditsSource.includes('travelMeters') || !constrainedMotionEditsSource.includes('transformRequested')
     || !constrainedMotionEditsSource.includes('resolveXrSubjectMotion({')) {
     throw new Error('expected XR path interpolation controls to own real bounded cast-track motion')
   }

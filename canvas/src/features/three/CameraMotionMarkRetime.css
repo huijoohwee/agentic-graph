@@ -208,9 +208,35 @@
 
 .xr-timeline-scene-selection-label {
   flex: 0 0 auto;
-  max-width: 72px;
+  max-width: 148px;
   color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 82%, var(--kg-text-primary, #0f172a));
   font-weight: 800;
+}
+
+.timeline-video-sequence-ruler-content [data-kg-gantt-timeline-track-row-key*="xr_stage_scene"] .xr-camera-motion-retime-lane--scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.timeline-video-sequence-ruler-content [data-kg-gantt-timeline-track-row-key*="xr_stage_scene"] .xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark {
+  position: absolute;
+  top: 50%;
+  left: var(--kg-xr-retime-mark-left);
+  z-index: 2;
+  display: grid;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  max-width: 16px;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .xr-timeline-scene-stage-select {

@@ -207,9 +207,14 @@ function applyComposedSourceImportModes(
       explorerActivePath,
     })
     if (signature && lastAppliedComposedImportModesSignature === signature) return
-    applyFrontmatterFlowImportModes(graphData)
+    const preserveLiveSharedXrSurface = store.canvasRenderMode === '3d' && store.canvas3dMode === 'xr'
+    applyFrontmatterFlowImportModes(graphData, { preserveLiveSharedXrSurface })
     if (rawText) {
-      applyCanvasFrontmatterPreset({ graphData, rawText })
+      applyCanvasFrontmatterPreset({
+        graphData,
+        rawText,
+        preserveLiveSharedXrSurface,
+      })
     }
     lastAppliedComposedImportModesSignature = signature
   } catch {

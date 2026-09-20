@@ -181,6 +181,7 @@ export function applyCanvasFrontmatterPreset(args: {
   defaultMultiDimTableModeEnabled?: boolean
   defaultDocumentStructureBaselineLock?: boolean
   disableMultiDimTableMode?: boolean
+  preserveLiveSharedXrSurface?: boolean
 }): boolean {
   const preset = resolveCanvasFrontmatterPreset(args)
   const store = useGraphStore.getState()
@@ -276,26 +277,43 @@ export function applyCanvasFrontmatterPreset(args: {
     )) changed = true
     return activated
   }
+  const liveSharedXrSurface = useGraphStore.getState().canvasRenderMode === '3d'
+    && useGraphStore.getState().canvas3dMode === 'xr'
+  const incomingLeavesSharedXrSurface = canvasRenderMode === '2d' || canvas3dMode === 'voxel'
+  const retainLiveSharedXrSurface = liveSharedXrSurface
+    && !incomingLeavesSharedXrSurface
+    && (args.preserveLiveSharedXrSurface === true || canvas3dMode !== 'xr')
   if (typeof geospatialModeEnabled === 'boolean') {
-    void requestCanvasFrontmatterGeospatialSurface(
-      geospatialModeEnabled,
-      {
-        isCurrent: isCurrentSurfaceRequest,
-        ...(sharedXrSurfaceRouted
-          ? { afterCommit: activateSharedXrSurface }
-          : {}),
-      },
-    )
+    if (!(retainLiveSharedXrSurface && !sharedXrSurfaceRouted)) {
+      void requestCanvasFrontmatterGeospatialSurface(
+        geospatialModeEnabled,
+        {
+          isCurrent: isCurrentSurfaceRequest,
+          ...(sharedXrSurfaceRouted
+            ? { afterCommit: activateSharedXrSurface }
+            : {}),
+        },
+      )
+    }
     if (sharedXrSurfaceRouted) changed = true
   } else if (sharedXrSurfaceRouted) {
     activateSharedXrSurface()
   }
   if (!sharedXrSurfaceRouted) {
-    if (canvasRenderMode === '3d' && canvas3dMode && useGraphStore.getState().canvas3dMode !== canvas3dMode) {
+    if (
+      canvasRenderMode === '3d'
+      && canvas3dMode
+      && useGraphStore.getState().canvas3dMode !== canvas3dMode
+      && !(retainLiveSharedXrSurface && canvas3dMode !== 'xr')
+    ) {
       store.setCanvas3dMode(canvas3dMode)
       changed = true
     }
-    if (canvasRenderMode && store.canvasRenderMode !== canvasRenderMode) {
+    if (
+      canvasRenderMode
+      && store.canvasRenderMode !== canvasRenderMode
+      && !retainLiveSharedXrSurface
+    ) {
       if (store.documentStructureBaselineLock === true && documentStructureBaselineLock !== true) {
         store.setDocumentStructureBaselineLock(false)
       }
@@ -303,7 +321,11 @@ export function applyCanvasFrontmatterPreset(args: {
       if (useGraphStore.getState().canvasRenderMode === canvasRenderMode) changed = true
     }
   }
-  if (canvas3dMode === '3d' && store.canvas3dMode !== '3d') {
+  if (
+    canvas3dMode === '3d'
+    && store.canvas3dMode !== '3d'
+    && !retainLiveSharedXrSurface
+  ) {
     store.setCanvas3dMode('3d')
     changed = true
   }
@@ -380,7 +402,12 @@ export function applyCanvasFrontmatterPreset(args: {
     }
   }
 
-  if (!sharedXrSurfaceRequested && canvas3dMode && useGraphStore.getState().canvas3dMode !== canvas3dMode) {
+  if (
+    !sharedXrSurfaceRequested
+    && canvas3dMode
+    && useGraphStore.getState().canvas3dMode !== canvas3dMode
+    && !retainLiveSharedXrSurface
+  ) {
     store.setCanvas3dMode(canvas3dMode)
     changed = true
   }

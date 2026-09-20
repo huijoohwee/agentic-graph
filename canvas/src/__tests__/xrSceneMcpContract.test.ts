@@ -309,6 +309,8 @@ function assertExpandedCleanRoomBoundary(): void {
     'src/features/three/useXrStageMotionControlCleanup.ts',
     'src/features/three/XrMotionReferenceStage.tsx',
     'src/features/three/XrStagePresetGeometry.tsx',
+    'src/features/three/XrTropicalPlaygroundTerrain.tsx',
+    'src/features/three/XrTropicalPlaygroundLandmarks.tsx',
     'src/features/three/SpatialCaptureManifestStage.tsx',
     'src/features/three/xrSceneInteractiveInvocation.ts',
     'src/features/three/xrSceneMcpContract.mjs',

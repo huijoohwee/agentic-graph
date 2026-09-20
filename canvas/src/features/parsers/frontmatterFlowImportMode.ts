@@ -29,6 +29,7 @@ export const applyFrontmatterFlowImportModes = (
     resetWidgetLayout?: boolean
     preset?: CanvasWorkspaceFrontmatterPreset | null
     rawText?: string | null
+    preserveLiveSharedXrSurface?: boolean
   } = {},
 ): boolean => {
   if (!graphData || !isFrontmatterFlowGraph(graphData)) return false
@@ -42,6 +43,7 @@ export const applyFrontmatterFlowImportModes = (
       defaultDocumentSemanticMode: FRONTMATTER_FLOW_DOCUMENT_MODE,
       defaultFrontmatterModeEnabled: true,
       disableMultiDimTableMode: true,
+      ...(opts.preserveLiveSharedXrSurface === true ? { preserveLiveSharedXrSurface: true } : {}),
     })
     syncFrontmatterFlowSchemaEdgeType(graphData)
   }

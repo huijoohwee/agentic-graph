@@ -1,4 +1,9 @@
-import type { XrMotionReferenceStageId } from './xrSceneLibrary'
+import {
+  XR_MOTION_STAGE_MIN_CAMERA_Y,
+  XR_MOTION_STAGE_SPAN,
+} from './xrMotionReferenceCoordinates'
+import { XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE } from './xrNativeControllerDemoRuntime'
+import { resolveXrMotionReferenceStage, type XrMotionReferenceStageId } from './xrSceneLibrary'
 
 const DEFAULT_FOLLOW_OFFSET_METERS = Object.freeze([0, 6.6, 9.5] as const)
 const SINGAPORE_FOLLOW_OFFSET_METERS = Object.freeze([0, 7.4, 11.8] as const)
@@ -16,6 +21,26 @@ export type XrNativeControllerFollowFraming = Readonly<{
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
+}
+
+export function resolveXrSceneCameraWorldScale(args: Readonly<{
+  nativeControllerDemo: boolean
+  stageId: XrMotionReferenceStageId
+}>): number {
+  if (args.nativeControllerDemo) return XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE
+  const size = resolveXrMotionReferenceStage(args.stageId).sizeMeters
+  return XR_MOTION_STAGE_SPAN / Math.max(size[0], size[1], 1)
+}
+
+export function resolveXrSceneCameraMinimumY(args: Readonly<{
+  stageId: XrMotionReferenceStageId
+  worldScale: number
+}>): number {
+  const motionScale = resolveXrSceneCameraWorldScale({
+    nativeControllerDemo: false,
+    stageId: args.stageId,
+  })
+  return XR_MOTION_STAGE_MIN_CAMERA_Y * (args.worldScale / Math.max(motionScale, 1e-6))
 }
 
 /**
