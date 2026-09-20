@@ -18,16 +18,21 @@ export async function closeFloatingPanel(
     try {
       await targetPage.keyboard.press('Escape')
     } catch {}
-    if (await readFloatingPanelOpen(targetPage)) {
-      await targetPage.evaluate(async () => {
-        const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
-        useGraphStore.getState().setFloatingPanelOpen(false)
-      })
-    }
   }
+  const closeStore = async () => {
+    await targetPage.evaluate(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      useGraphStore.getState().setFloatingPanelOpen(false)
+    })
+  }
+  if (await readFloatingPanelOpen(targetPage)) await closeStore()
   await waitForMissionAsync(
     targetPage,
-    async () => !(await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen,
+    async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      if (useGraphStore.getState().floatingPanelOpen) useGraphStore.getState().setFloatingPanelOpen(false)
+      return !useGraphStore.getState().floatingPanelOpen
+    },
   )
 }
 
