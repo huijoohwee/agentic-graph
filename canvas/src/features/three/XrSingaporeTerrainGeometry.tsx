@@ -141,7 +141,7 @@ export function XrSingaporeTerrainGeometry({
           0.36,
           perimeter.depthMeters + oceanMarginMeters * 2,
         ]} />
-        <meshStandardMaterial color={appearance?.waterColor || "#2aaac2"} roughness={0.34} metalness={0.12} />
+        <meshStandardMaterial color={appearance?.waterColor || "#2aaac2"} roughness={0.18} metalness={0.28} />
       </mesh>
       <group name="agentic_os_xr_singapore_perimeter" userData={FIXED_TERRAIN_USER_DATA}>
         {perimeter.edges.map(edge => edge.side === 'north' ? (
@@ -156,8 +156,20 @@ export function XrSingaporeTerrainGeometry({
       </mesh>
       <mesh name="agentic_os_xr_singapore_transit_spine" position={[0, 0.09, 0.35]} receiveShadow={shadows}>
         <boxGeometry args={[5.8, 0.18, transitDepthMeters]} />
-        <SurfaceMaterial color="#364b5b" roughness={0.9} />
+        <SurfaceMaterial color="#2a3948" roughness={0.82} />
       </mesh>
+      {[-2.55, 2.55].map(x => (
+        <mesh key={x} position={[x, 0.12, 0.35]} receiveShadow={shadows}>
+          <boxGeometry args={[0.18, 0.12, transitDepthMeters]} />
+          <SurfaceMaterial color="#d6c7ae" roughness={0.9} />
+        </mesh>
+      ))}
+      {[-2.72, 2.72].map(x => (
+        <mesh key={`edge:${x}`} position={[x, 0.195, 0.35]}>
+          <boxGeometry args={[0.06, 0.02, transitDepthMeters * 0.96]} />
+          <meshBasicMaterial color="#f8fafc" />
+        </mesh>
+      ))}
       <mesh position={[-7.4, 0.075, 2.5]} receiveShadow={shadows}>
         <boxGeometry args={[8.9, 0.15, 5.8]} />
         <SurfaceMaterial color="#dce9d2" roughness={0.96} />

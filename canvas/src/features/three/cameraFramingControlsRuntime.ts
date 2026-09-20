@@ -28,11 +28,7 @@ import {
   type ModelAssetCameraFit,
   type ModelAssetCameraPose,
 } from './modelAssetCameraPose'
-import {
-  XR_MOTION_STAGE_MIN_CAMERA_Y,
-  XR_MOTION_STAGE_SPAN,
-  xrMotionReferenceWorldPosition,
-} from './xrMotionReferenceCoordinates'
+import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
 import {
   XR_MOTION_REFERENCE_CAMERA_BASELINE_METERS,
   resolveXrMotionReferenceStage,
@@ -43,6 +39,8 @@ import {
 } from './xrMotionReferenceRuntime'
 import { resolveXrShotTarget, resolveXrShotTargetPosition } from './xrShotTargets'
 import { xrChoreographyCanDriveCamera, xrChoreographyOwnsCamera } from './xrCameraControlOwnership'
+import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { resolveXrSceneCameraMinimumY, resolveXrSceneCameraWorldScale } from './xrNativeControllerCameraFraming'
 import { useThreeObjectInputOwnership } from './threeObjectInputOwnership'
 import {
   claimThreeViewportInputOwnership,
@@ -303,6 +301,12 @@ export function useCameraFramingControlsRuntime({
     readXrMotionReferenceRuntime,
   )
   const timelineTransportPlaying = useGraphStore(state => state.timelineTransportPlaying)
+  const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
+  const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
+  const nativeControllerDemo = isXrPhysicsRunReadyDemoActive(
+    markdownDocumentName,
+    markdownDocumentText,
+  )
   const objectInputOwnership = useThreeObjectInputOwnership()
   const viewportInputOwnership = useThreeViewportInputOwnership()
   const viewportInputOwnerId = `orbit-controls:${React.useId()}`
@@ -333,8 +337,14 @@ export function useCameraFramingControlsRuntime({
     : { revision: 0, contextKey: '' })
   const ownershipBaselineRevisionRef = React.useRef<number | null>(choreographyOwnsCamera ? framing.revision : null)
   const immediateCanvasPublishRef = React.useRef<ImmediateCanvasPublish | null>(null)
+  const xrWorldScale = mode === 'xr' && !xrEmptyWorld
+    ? resolveXrSceneCameraWorldScale({
+      nativeControllerDemo,
+      stageId: xrRuntime.plan.stageId,
+    })
+    : 1
   const minimumY = mode === 'xr' && !xrEmptyWorld && !modelAssetFit
-    ? XR_MOTION_STAGE_MIN_CAMERA_Y
+    ? resolveXrSceneCameraMinimumY({ stageId: xrRuntime.plan.stageId, worldScale: xrWorldScale })
     : undefined
 
   const runProgrammaticPose = React.useCallback((apply: () => void) => {
@@ -353,7 +363,10 @@ export function useCameraFramingControlsRuntime({
       const shotTarget = resolveXrShotTarget(runtime.plan, framing.anchorId)
       if (shotTarget) {
         const stage = resolveXrMotionReferenceStage(runtime.plan.stageId)
-        const scale = XR_MOTION_STAGE_SPAN / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
+        const scale = resolveXrSceneCameraWorldScale({
+          nativeControllerDemo,
+          stageId: stage.id,
+        })
         const sampled = resolveXrShotTargetPosition(runtime.plan, shotTarget.id, runtime.playheadSeconds)
         const targetHeight = shotTarget.kind === 'object' ? 1.2 : 0
         const target = xrMotionReferenceWorldPosition([sampled[0], sampled[1] + targetHeight, sampled[2]], scale)
@@ -376,7 +389,7 @@ export function useCameraFramingControlsRuntime({
       up: [camera.up.x, camera.up.y, camera.up.z],
       baseDistance: graphBaseDistanceRef.current,
     }
-  }, [camera, controls, framing.anchorId, mode, modelAssetFit, modelAssetRenderKey])
+  }, [camera, controls, framing.anchorId, mode, modelAssetFit, modelAssetRenderKey, nativeControllerDemo])
 
   const publishCanvasPose = React.useCallback((pose: CameraFramingCanvasPose): boolean => {
     if (paused || choreographyOwnsCamera || objectInputOwnership.active || !sharedCameraFramingEnabled) return false

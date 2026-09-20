@@ -4,6 +4,7 @@ import { getVoxelLabelTexture } from '@/features/three/voxelLabelTexture'
 import { THREE_RENDER_ORDER } from '@/features/three/renderOrder'
 import { resolveXrSceneLibraryAsset } from '@/features/three/xrSceneLibrary'
 import { XrProceduralBallGeometry } from '@/features/three/XrProceduralBallGeometry'
+import { XrProceduralHouseGeometry } from '@/features/three/XrProceduralHouseGeometry'
 import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
 import {
   XR_MOTION_REFERENCE_SELECTION_COLOR,
@@ -48,10 +49,27 @@ function resolveXrSceneSubjectIdentificationBounds(
 }
 
 function Material({ color }: { color: string }) {
-  return <meshStandardMaterial color={color} roughness={0.9} metalness={0.02} />
+  return <meshStandardMaterial color={color} roughness={0.78} metalness={0.04} />
 }
 
-function Humanoid({ color, pose, size }: { color: string; pose?: XrAnimationPoseSample | null; size: readonly [number, number, number] }) {
+function resolveCharacterSilhouette(label?: string): 'pig' | 'wolf' | 'person' {
+  const text = String(label || '').toLowerCase()
+  if (text.includes('pig')) return 'pig'
+  if (text.includes('wolf')) return 'wolf'
+  return 'person'
+}
+
+function Humanoid({
+  color,
+  pose,
+  size,
+  silhouette = 'person',
+}: {
+  color: string
+  pose?: XrAnimationPoseSample | null
+  size: readonly [number, number, number]
+  silhouette?: 'pig' | 'wolf' | 'person'
+}) {
   const [width, height, depth] = size
   const crouchOffset = (pose?.crouch || 0) * height * 0.18
   const degrees = THREE.MathUtils.degToRad
@@ -64,7 +82,7 @@ function Humanoid({ color, pose, size }: { color: string; pose?: XrAnimationPose
         position={[side * width * 0.48, 0, height * 0.68 - crouchOffset]}
         rotation={[degrees(pitch), degrees(roll), 0]}
       >
-        <mesh position={[0, 0, -height * 0.16]}><boxGeometry args={[width * 0.16, depth * 0.58, height * 0.34]} /><Material color={color} /></mesh>
+        <mesh position={[0, 0, -height * 0.16]} castShadow><boxGeometry args={[width * 0.16, depth * 0.58, height * 0.34]} /><Material color={color} /></mesh>
         {side > 0 && pose?.propCue === 'cup' ? <mesh position={[0, -depth * 0.2, -height * 0.38]}><cylinderGeometry args={[width * 0.11, width * 0.09, height * 0.16, 12]} /><meshStandardMaterial color="#e2e8f0" roughness={0.55} /></mesh> : null}
         {side > 0 && pose?.propCue === 'cards' ? <group position={[0, -depth * 0.22, -height * 0.36]}>{[-1, 0, 1].map(index => <mesh key={index} position={[index * width * 0.08, 0, Math.abs(index) * height * 0.018]} rotation={[0, 0, index * 0.16]}><boxGeometry args={[width * 0.13, depth * 0.035, height * 0.18]} /><meshStandardMaterial color="#f8fafc" roughness={0.72} /></mesh>)}</group> : null}
         {side > 0 && pose?.propCue === 'squirt-gun' ? <group position={[0, -depth * 0.26, -height * 0.36]}><mesh><boxGeometry args={[width * 0.18, depth * 0.34, height * 0.15]} /><meshStandardMaterial color="#22d3ee" roughness={0.5} /></mesh><mesh position={[0, -depth * 0.25, 0]}><cylinderGeometry args={[width * 0.035, width * 0.035, depth * 0.38, 8]} /><meshStandardMaterial color="#0ea5e9" roughness={0.5} /></mesh></group> : null}
@@ -73,12 +91,41 @@ function Humanoid({ color, pose, size }: { color: string; pose?: XrAnimationPose
   }
   return (
     <group>
-      <mesh position={[0, 0, height * 0.55 - crouchOffset]}><boxGeometry args={[width * 0.72, depth, height * 0.54]} /><Material color={color} /></mesh>
-      <mesh position={[0, 0, height * 0.9 - crouchOffset]}><sphereGeometry args={[width * 0.3, 16, 12]} /><Material color={color} /></mesh>
+      <mesh position={[0, 0, height * 0.55 - crouchOffset]} castShadow receiveShadow><boxGeometry args={[width * 0.72, depth, height * 0.54]} /><Material color={color} /></mesh>
+      <mesh position={[0, 0, height * 0.9 - crouchOffset]} castShadow><sphereGeometry args={[width * 0.3, 16, 12]} /><Material color={color} /></mesh>
+      {[-0.11, 0.11].map(x => (
+        <mesh key={x} position={[x * width, depth * 0.22, height * 0.94 - crouchOffset]}>
+          <sphereGeometry args={[width * 0.045, 8, 6]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.4} />
+        </mesh>
+      ))}
+      {silhouette !== 'person' ? (
+        <mesh position={[0, depth * 0.38, height * 0.86 - crouchOffset]} rotation={[-0.85, 0, 0]} castShadow>
+          <coneGeometry args={[width * (silhouette === 'wolf' ? 0.11 : 0.13), height * (silhouette === 'wolf' ? 0.2 : 0.16), 8]} />
+          <Material color={color} />
+        </mesh>
+      ) : null}
+      {silhouette === 'pig' ? (
+        <mesh position={[0, -depth * 0.34, height * 0.52 - crouchOffset]} rotation={[0.55, 0, 0]} castShadow>
+          <cylinderGeometry args={[width * 0.05, width * 0.03, depth * 0.28, 6]} />
+          <Material color={color} />
+        </mesh>
+      ) : null}
+      {silhouette !== 'person' ? [-1, 1].map(side => (
+        <mesh
+          key={side}
+          position={[side * width * (silhouette === 'wolf' ? 0.16 : 0.18), 0, height * 1.08 - crouchOffset]}
+          rotation={[Math.PI / 2, 0, side * (silhouette === 'wolf' ? 0.55 : 0.35)]}
+          castShadow
+        >
+          <coneGeometry args={[width * (silhouette === 'wolf' ? 0.08 : 0.1), height * (silhouette === 'wolf' ? 0.16 : 0.12), 6]} />
+          <Material color={color} />
+        </mesh>
+      )) : null}
       {arm(-1)}
       {arm(1)}
-      <mesh position={[-width * 0.2, 0, height * 0.2 - crouchOffset * 0.3]} rotation={[degrees((pose?.crouch || 0) * 42), 0, 0]}><boxGeometry args={[width * 0.2, depth * 0.62, height * 0.4]} /><Material color={color} /></mesh>
-      <mesh position={[width * 0.2, 0, height * 0.2 - crouchOffset * 0.3]} rotation={[degrees((pose?.crouch || 0) * 42), 0, 0]}><boxGeometry args={[width * 0.2, depth * 0.62, height * 0.4]} /><Material color={color} /></mesh>
+      <mesh position={[-width * 0.2, 0, height * 0.2 - crouchOffset * 0.3]} rotation={[degrees((pose?.crouch || 0) * 42), 0, 0]} castShadow><boxGeometry args={[width * 0.2, depth * 0.62, height * 0.4]} /><Material color={color} /></mesh>
+      <mesh position={[width * 0.2, 0, height * 0.2 - crouchOffset * 0.3]} rotation={[degrees((pose?.crouch || 0) * 42), 0, 0]} castShadow><boxGeometry args={[width * 0.2, depth * 0.62, height * 0.4]} /><Material color={color} /></mesh>
     </group>
   )
 }
@@ -175,10 +222,51 @@ function Cart({ color, size }: { color: string; size: readonly [number, number, 
 
 function Tree({ color, size }: { color: string; size: readonly [number, number, number] }) {
   const [width, height, depth] = size
+  const crown = Math.min(width, depth) * 0.48
+  const bark = '#6b4423'
   return (
-    <group>
-      <mesh position={[0, 0, height * 0.34]}><cylinderGeometry args={[width * 0.11, width * 0.16, height * 0.68, 10]} /><meshStandardMaterial color="#854d0e" roughness={1} /></mesh>
-      <mesh position={[0, 0, height * 0.76]}><sphereGeometry args={[Math.min(width, depth) * 0.5, 16, 12]} /><Material color={color} /></mesh>
+    <group name="agentic_os_xr_procedural_tree">
+      <mesh position={[0, 0, height * 0.06]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[width * 0.16, width * 0.24, height * 0.12, 8]} />
+        <meshStandardMaterial color="#5c3b1f" roughness={1} />
+      </mesh>
+      <mesh position={[0, 0, height * 0.28]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[width * 0.07, width * 0.12, height * 0.48, 10]} />
+        <meshStandardMaterial color={bark} roughness={1} />
+      </mesh>
+      {([-0.9, 0.85] as const).map(side => (
+        <mesh
+          key={side}
+          position={[side * width * 0.08, depth * 0.02, height * 0.46]}
+          rotation={[Math.PI / 2, 0, side * 0.55]}
+          castShadow
+        >
+          <cylinderGeometry args={[width * 0.028, width * 0.04, width * 0.22, 6]} />
+          <meshStandardMaterial color={bark} roughness={1} />
+        </mesh>
+      ))}
+      <group position={[0, 0, height * 0.72]} scale={[1.08, 1.08, 0.78]}>
+        <mesh castShadow>
+          <sphereGeometry args={[crown, 16, 12]} />
+          <Material color={color} />
+        </mesh>
+        <mesh position={[crown * 0.42, crown * 0.16, crown * 0.18]} castShadow>
+          <sphereGeometry args={[crown * 0.62, 14, 10]} />
+          <Material color={color} />
+        </mesh>
+        <mesh position={[-crown * 0.38, -crown * 0.14, crown * 0.22]} castShadow>
+          <sphereGeometry args={[crown * 0.56, 14, 10]} />
+          <Material color={color} />
+        </mesh>
+        <mesh position={[crown * 0.08, -crown * 0.36, crown * 0.06]} castShadow>
+          <sphereGeometry args={[crown * 0.5, 12, 10]} />
+          <Material color={color} />
+        </mesh>
+        <mesh position={[-crown * 0.12, crown * 0.34, crown * 0.1]} castShadow>
+          <sphereGeometry args={[crown * 0.46, 12, 8]} />
+          <Material color={color} />
+        </mesh>
+      </group>
     </group>
   )
 }
@@ -187,7 +275,10 @@ function Lamp({ color, size }: { color: string; size: readonly [number, number, 
   const [width, height] = size
   return (
     <group>
-      <mesh position={[0, 0, height * 0.48]}><cylinderGeometry args={[width * 0.08, width * 0.12, height * 0.96, 10]} /><meshStandardMaterial color="#475569" roughness={0.8} /></mesh>
+      <mesh position={[0, 0, height * 0.48]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[width * 0.08, width * 0.12, height * 0.96, 10]} />
+        <meshStandardMaterial color="#475569" roughness={0.8} />
+      </mesh>
       <mesh position={[0, 0, height]}><sphereGeometry args={[width * 0.3, 12, 8]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25} /></mesh>
     </group>
   )
@@ -197,8 +288,14 @@ function Umbrella({ color, size }: { color: string; size: readonly [number, numb
   const [width, height] = size
   return (
     <group>
-      <mesh position={[0, 0, height * 0.48]}><cylinderGeometry args={[width * 0.025, width * 0.035, height * 0.96, 10]} /><meshStandardMaterial color="#475569" /></mesh>
-      <mesh position={[0, 0, height * 0.94]}><coneGeometry args={[width * 0.5, height * 0.25, 18, 1, true]} /><meshStandardMaterial color={color} roughness={0.9} side={THREE.DoubleSide} /></mesh>
+      <mesh position={[0, 0, height * 0.48]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[width * 0.025, width * 0.035, height * 0.96, 10]} />
+        <meshStandardMaterial color="#475569" />
+      </mesh>
+      <mesh position={[0, 0, height * 0.94]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[width * 0.5, height * 0.25, 18, 1, true]} />
+        <meshStandardMaterial color={color} roughness={0.9} side={THREE.DoubleSide} />
+      </mesh>
     </group>
   )
 }
@@ -207,15 +304,17 @@ export function XrSceneLibraryAssetGeometry({
   assetId,
   color,
   animationPose,
+  label,
 }: {
   assetId: string
   color?: string
   animationPose?: XrAnimationPoseSample | null
+  label?: string
 }) {
   const asset = resolveXrSceneLibraryAsset(assetId)
   const size = asset.dimensionsMeters
   const effectiveColor = color || asset.defaultColor
-  if (asset.shape === 'humanoid') return <Humanoid color={effectiveColor} pose={animationPose} size={size} />
+  if (asset.shape === 'humanoid') return <Humanoid color={effectiveColor} pose={animationPose} size={size} silhouette={resolveCharacterSilhouette(label)} />
   if (asset.shape === 'quadruped') return <Quadruped color={effectiveColor} size={size} />
   if (asset.shape === 'car') return <XrProceduralVehicleGeometry kind="car" color={effectiveColor} size={size} />
   if (asset.shape === 'bicycle') return <Bicycle color={effectiveColor} size={size} />
@@ -229,7 +328,7 @@ export function XrSceneLibraryAssetGeometry({
   if (asset.shape === 'tree') return <Tree color={effectiveColor} size={size} />
   if (asset.shape === 'lamp') return <Lamp color={effectiveColor} size={size} />
   if (asset.shape === 'umbrella') return <Umbrella color={effectiveColor} size={size} />
-  return <mesh position={[0, 0, size[1] * 0.5]}><boxGeometry args={[size[0], size[2], size[1]]} /><Material color={effectiveColor} /></mesh>
+  return <XrProceduralHouseGeometry color={effectiveColor} label={label} size={size} />
 }
 
 function SubjectLabel({
@@ -336,7 +435,7 @@ export function XrSceneLibrarySubject({
         rotation={rootRotation.map(THREE.MathUtils.degToRad) as [number, number, number]}
       >
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <XrSceneLibraryAssetGeometry assetId={subject.assetId} color={subject.color} animationPose={animationPose} />
+          <XrSceneLibraryAssetGeometry assetId={subject.assetId} color={subject.color} animationPose={animationPose} label={subject.label} />
           {identificationBounds ? (
             <mesh
               name={identificationBounds.name}

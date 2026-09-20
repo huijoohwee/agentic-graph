@@ -24,7 +24,7 @@ import { buildVoxelCameraIntroPoses, readVoxelCameraConfig } from './voxelCamera
 import { XR_MOTION_STAGE_CAMERA_POSITION, XR_MOTION_STAGE_CAMERA_TARGET } from './xrMotionReferenceCoordinates'
 import { useXrMotionReferenceCameraPlayback } from './xrCameraPlaybackControlsRuntime'
 import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
-import { xrChoreographyCanDriveCamera, xrChoreographyOwnsCamera } from './xrCameraControlOwnership'
+import { xrCameraMarkPlaybackOwnsFraming, xrChoreographyCanDriveCamera, xrChoreographyOwnsCamera } from './xrCameraControlOwnership'
 import { readThreeObjectInputOwnership, useThreeObjectInputOwnership } from './threeObjectInputOwnership'
 import { useThreeObjectCameraInputOwnership } from './useThreeObjectCameraInputOwnership'
 import { useXrNativeControllerDemoCamera } from './useXrNativeControllerDemoCamera'
@@ -82,6 +82,11 @@ export function Controls({
   }
   const choreographyCanDriveCamera = xrChoreographyCanDriveCamera(cameraOwnershipArgs)
   const choreographyOwnsCamera = xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
+  const cameraMarkPlaybackOwnsFraming = xrCameraMarkPlaybackOwnsFraming({
+    ...cameraOwnershipArgs,
+    cameraMarkSelected: xrRuntime.selectedMark?.kind === 'camera',
+    timelinePlaying: timelineTransportPlaying,
+  })
   useThreeObjectCameraInputOwnership({
     camera: perspectiveCamera,
     controls,
@@ -95,7 +100,7 @@ export function Controls({
     flightSimActive,
     renderer: gl,
     suspended: !!paused || mode !== 'xr' || xrEmptyWorld
-      || choreographyOwnsCamera || objectInputOwnership.active,
+      || cameraMarkPlaybackOwnsFraming || objectInputOwnership.active,
   })
   const expansionCfg = schema.behavior?.expansion || {}
   const zoomOnSelectionEnabled = expansionCfg.enabled !== false && expansionCfg.zoomOnSelection !== false

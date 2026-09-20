@@ -15,3 +15,10 @@ export function xrChoreographyOwnsCamera(args: XrCameraControlOwnershipArgs & Re
 }>): boolean {
   return args.timelinePlaying && xrChoreographyCanDriveCamera(args)
 }
+
+export function xrCameraMarkPlaybackOwnsFraming(args: XrCameraControlOwnershipArgs & Readonly<{
+  cameraMarkSelected: boolean
+  timelinePlaying: boolean
+}>): boolean {
+  return xrChoreographyCanDriveCamera(args) && (args.timelinePlaying || args.cameraMarkSelected)
+}

@@ -5,10 +5,10 @@ import type { Canvas3dModeId } from '@/lib/config'
 import { resolveCameraVerticalFovDegrees } from '@/lib/camera/cameraFramingPose'
 import { applyCameraFramingPose } from './cameraFramingControlsRuntime'
 import {
-  XR_MOTION_STAGE_MIN_CAMERA_Y,
-  XR_MOTION_STAGE_SPAN,
   xrMotionReferenceWorldPosition,
 } from './xrMotionReferenceCoordinates'
+import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   resolveXrMotionReferenceStage,
   sampleXrMotionReferenceCameraPose,
@@ -19,6 +19,7 @@ import {
   subscribeXrMotionReferenceRuntime,
 } from './xrMotionReferenceRuntime'
 import { xrChoreographyCanDriveCamera } from './xrCameraControlOwnership'
+import { resolveXrSceneCameraMinimumY, resolveXrSceneCameraWorldScale } from './xrNativeControllerCameraFraming'
 import { readXrNativeControllerCamera } from './xrNativeControllerCameraRuntime'
 import { useThreeViewportInputOwnership } from './threeViewportInputOwnership'
 
@@ -73,6 +74,12 @@ export function useXrMotionReferenceCameraPlayback({
     readCameraPlaybackReapplyRevision,
   )
   const viewportInputOwnership = useThreeViewportInputOwnership()
+  const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
+  const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
+  const nativeControllerDemo = isXrPhysicsRunReadyDemoActive(
+    markdownDocumentName,
+    markdownDocumentText,
+  )
   const previousPlayingRef = React.useRef(false)
   const prePlaybackPoseRef = React.useRef<FreeOrbitPlaybackSnapshot | null>(null)
   const cameraTrackAvailable = xrChoreographyCanDriveCamera({
@@ -99,7 +106,10 @@ export function useXrMotionReferenceCameraPlayback({
     const settings = sampleXrMotionReferenceCameraSettings(runtime.plan.camera, runtime.playheadSeconds)
     if (!pose || !settings) return
     const stage = resolveXrMotionReferenceStage(runtime.plan.stageId)
-    const scale = XR_MOTION_STAGE_SPAN / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
+    const scale = resolveXrSceneCameraWorldScale({
+      nativeControllerDemo,
+      stageId: stage.id,
+    })
     camera.fov = resolveCameraVerticalFovDegrees(settings.focalLengthMm, settings.sensorId)
     camera.focus = settings.focusDistanceMeters
     applyCameraFramingPose({
@@ -110,9 +120,9 @@ export function useXrMotionReferenceCameraPlayback({
         target: xrMotionReferenceWorldPosition(pose.target, scale),
         up: pose.up,
       },
-      minimumY: XR_MOTION_STAGE_MIN_CAMERA_Y,
+      minimumY: resolveXrSceneCameraMinimumY({ stageId: stage.id, worldScale: scale }),
     })
-  }, [camera, cameraTrackAvailable, controls, paused, runtime.plan.camera, runtime.plan.cast, runtime.plan.stageId, runtime.plan.subjects, runtime.playheadSeconds, viewportInputOwnership.blocksProgrammaticCamera])
+  }, [camera, cameraTrackAvailable, controls, nativeControllerDemo, paused, runtime.plan.camera, runtime.plan.cast, runtime.plan.stageId, runtime.plan.subjects, runtime.playheadSeconds, viewportInputOwnership.blocksProgrammaticCamera])
 
   React.useEffect(() => {
     applyTrackedPose()

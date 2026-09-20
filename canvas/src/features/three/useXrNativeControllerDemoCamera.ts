@@ -8,14 +8,13 @@ import { readFlightSimSnapshot } from '@/features/game-flight-sim/flightSimRunti
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { resolveXrMotionReferenceStage } from './xrSceneLibrary'
-import { XR_MOTION_STAGE_SPAN } from './xrMotionReferenceCoordinates'
 import { readXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
 import {
   XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE,
   readSharedXrNativeControllerDemoFrame,
   readXrNativeControllerDemo,
 } from './xrNativeControllerDemoRuntime'
-import { resolveXrNativeControllerFollowFraming } from './xrNativeControllerCameraFraming'
+import { resolveXrNativeControllerFollowFraming, resolveXrSceneCameraWorldScale } from './xrNativeControllerCameraFraming'
 import { readXrNativeControllerCamera } from './xrNativeControllerCameraRuntime'
 
 const AERIAL_ALTITUDE_START_METERS = 3
@@ -53,7 +52,7 @@ function readPhysicsFollowTarget(
   const stage = resolveXrMotionReferenceStage(motionRuntime.plan.stageId)
   const stageScale = runReadyDemo
     ? XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE
-    : XR_MOTION_STAGE_SPAN / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
+    : resolveXrSceneCameraWorldScale({ nativeControllerDemo: false, stageId: stage.id })
   const altitude = Math.max(0, frame.player.position[1])
   const aerialFactor = frame.mode === 'rocket'
     ? clamp01(

@@ -186,9 +186,9 @@ export function XrNativeControllerDemoStage({
       {inputEnabled ? <XrSharedObjectMotionControlRuntime /> : null}
       {stageVisible ? (
         <>
-          <ambientLight intensity={night ? 0.13 : 0.4} />
+          <ambientLight intensity={night ? 0.1 : 0.22} />
           <hemisphereLight
-            args={night ? ['#182a56', '#090d17', 0.22] : ['#dff4ff', '#d9b978', 0.55]}
+            args={night ? ['#182a56', '#090d17', 0.22] : ['#e7f6ff', '#c9a36a', 0.62]}
           />
           <directionalLight
             key={appearance.detail}
@@ -196,14 +196,25 @@ export function XrNativeControllerDemoStage({
             intensity={night ? 0.5 : appearance.lightIntensity}
             color={night ? '#9db7ff' : appearance.lightColor}
             castShadow={appearance.shadows}
-            shadow-mapSize-width={appearance.detail === 'low' ? 1024 : 2048}
-            shadow-mapSize-height={appearance.detail === 'low' ? 1024 : 2048}
+            shadow-mapSize-width={appearance.detail === 'low' ? 1024 : 4096}
+            shadow-mapSize-height={appearance.detail === 'low' ? 1024 : 4096}
+            shadow-radius={appearance.detail === 'low' ? 1 : 2}
+            shadow-bias={-0.00018}
             shadow-camera-left={stageScale * -16}
             shadow-camera-right={stageScale * 16}
             shadow-camera-top={stageScale * 15}
             shadow-camera-bottom={stageScale * -15}
             shadow-camera-far={stageScale * 55}
-            shadow-bias={-0.0002}
+          />
+          <directionalLight
+            position={[stageScale * -10, stageScale * 8, stageScale * -9]}
+            intensity={night ? 0.12 : 0.38}
+            color={night ? '#6d7db8' : '#fff7ed'}
+          />
+          <directionalLight
+            position={[stageScale * 6, stageScale * 4, stageScale * 14]}
+            intensity={night ? 0.08 : 0.22}
+            color={night ? '#94a3b8' : '#bfdbfe'}
           />
         </>
       ) : null}
