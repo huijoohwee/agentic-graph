@@ -82,11 +82,7 @@ export function Controls({
   }
   const choreographyCanDriveCamera = xrChoreographyCanDriveCamera(cameraOwnershipArgs)
   const choreographyOwnsCamera = xrChoreographyOwnsCamera({ ...cameraOwnershipArgs, timelinePlaying: timelineTransportPlaying })
-  const cameraMarkPlaybackOwnsFraming = xrCameraMarkPlaybackOwnsFraming({
-    ...cameraOwnershipArgs,
-    cameraMarkSelected: xrRuntime.selectedMark?.kind === 'camera',
-    timelinePlaying: timelineTransportPlaying,
-  })
+  const cameraMarkPlaybackOwnsFraming = xrCameraMarkPlaybackOwnsFraming({ ...cameraOwnershipArgs, cameraMarkSelected: xrRuntime.selectedMark?.kind === 'camera', timelinePlaying: timelineTransportPlaying })
   useThreeObjectCameraInputOwnership({
     camera: perspectiveCamera,
     controls,

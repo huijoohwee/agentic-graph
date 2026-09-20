@@ -256,13 +256,7 @@ export function setXrMotionReferenceSubjectAssetAndTransform(args: Readonly<{
     plan: snapshot.plan,
     sceneKey: snapshot.sceneKey,
   })
-  const transformRequested = Boolean(
-    args.position
-    || args.rotationYDegrees !== undefined
-    || args.scale !== undefined
-    || args.color,
-  )
-  return applySubjectEdit(result.edit, transformRequested ? spatialPlanGuard() : undefined)
+  const transformRequested = Boolean(args.position || args.rotationYDegrees !== undefined || args.scale !== undefined || args.color); return applySubjectEdit(result.edit, transformRequested ? spatialPlanGuard() : undefined)
 }
 
 export function setXrMotionReferenceSubjectTransform(args: Readonly<{

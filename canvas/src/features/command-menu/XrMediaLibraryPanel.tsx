@@ -1,15 +1,11 @@
 import React from 'react'
 import { XrSceneAppearanceControls } from '@/features/three/XrSceneAppearanceControls'
-import { Armchair, Box, Building2, Car, Hand, PawPrint, Trash2, TreePine, UserRound, UsersRound, type LucideIcon } from 'lucide-react'
+import { Building2, Hand, Trash2, TreePine, UsersRound } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
-import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
-import type { MediaDragPayload } from '@/lib/ui/mediaDragPayload'
-import { UI_INLINE_CHIP_GROUP_CLASSNAME } from '@/lib/ui/textLayout'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import {
@@ -20,7 +16,6 @@ import {
   XR_SCENE_LIBRARY_DEFAULT_ASSET_ID,
   XR_SCENE_LIBRARY_ASSETS,
   XR_SCENE_LIBRARY_CATEGORY_LABELS,
-  type XrSceneLibraryAsset,
   type XrSceneLibraryCategory,
 } from '@/features/three/xrSceneLibrary'
 import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
@@ -47,29 +42,20 @@ import {
 } from './xrMediaAuthoringDrafts'
 import {
   XR_SCENE_MEDIA_DROP_COMMITTED_EVENT,
-  buildXrAssetMediaDragPayload,
   buildXrStageMediaDragPayload,
   type XrSceneMediaDropCommittedDetail,
 } from '@/features/three/xrSceneMediaDrag'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButton'
 import { useCollapsibleSectionGroup } from '@/features/panels/ui/useCollapsibleSectionGroup'
-import {
-  continueMediaMouseDrag,
-  continueMediaPointerDrag,
-  finishMediaDrag,
-  isMediaRowControlTarget,
-  mediaListItemClassName,
-  mediaListThumbnailFrameClassName,
-  primeMediaMouseDrag,
-  primeMediaPointerDrag,
-  shouldHandleMediaRowPointer,
-  shouldPrimeMediaRowDragPayload,
-  startMediaDrag,
-  startMediaMouseDrag,
-  startMediaPointerDrag,
-} from './mediaCatalogShared'
 import { XrCatalogThumb } from './XrMediaCatalogThumbs'
+import {
+  XR_MEDIA_XR_MEDIA_CATEGORY_ICONS,
+  XrAssetRow,
+  XrInvocationButton,
+  XrLibraryCard,
+} from './XrMediaLibraryCards'
+export { XrInvocationButton }
 import { XrEnvironmentGeoButton } from './XrEnvironmentGeoButton'
 import { XrMediaLibrarySummary } from './XrMediaLibraryHeader'
 import { isXrMediaInvocationMetadataReady } from './xrMediaInvocationMetadata'
@@ -78,186 +64,8 @@ import { buildXrMediaInvocationControlInput } from './xrMediaInvocationRuntime'
 import { resolveXrSceneDocumentReady } from '@/features/three/xrSceneDocumentReadiness'
 type XrSceneLibraryFilter = 'all' | XrSceneLibraryCategory
 
-const CATEGORY_ICONS: Readonly<Record<XrSceneLibraryCategory, LucideIcon>> = {
-  people: UserRound,
-  animals: PawPrint,
-  vehicles: Car,
-  furniture: Armchair,
-  props: Box,
-}
-
 const XR_LIBRARY_SECTION_KEYS = ['environments', 'subjects-props', 'simulation'] as const
 const XR_SCENE_GRAMMAR_SIGILS = ['/', '#', '@'] as const
-function XrMediaCatalogThumb({ Icon, color, label }: { Icon: LucideIcon; color: string; label: string }) {
-  return (
-    <span
-      className={mediaListThumbnailFrameClassName('items-center justify-center cursor-grab active:cursor-grabbing')}
-      style={{ color }}
-      role="img"
-      aria-label={`${label} procedural grey-box preview`}
-      data-kg-media-xr-thumbnail="media-card"
-    >
-      <Icon className="size-7" strokeWidth={1.6} aria-hidden />
-    </span>
-  )
-}
-
-export function XrInvocationButton({ invocation, disabled, onInvoke }: { invocation: string; disabled: boolean; onInvoke: (invocation: string) => void }) {
-  return (
-    <button
-      type="button"
-      className={cn('App-toolbar__btn', UI_INLINE_CHIP_GROUP_CLASSNAME, 'max-w-full overflow-hidden')}
-      disabled={disabled}
-      title={`Invoke ${invocation}`}
-      aria-label={`Invoke ${invocation}`}
-      onClick={() => onInvoke(invocation)}
-      data-kg-media-xr-invocation={invocation}
-      data-kg-media-xr-invocation-chip-renderer="shared-markdown-sigil"
-    >
-      {renderMarkdownSigilInlineText(invocation, {
-        renderKeywordChip: ({ value, className }) => renderAgenticOsInvocationKeywordChip({ value, className, sourceLink: false }),
-      })}
-    </button>
-  )
-}
-
-function XrLibraryCard({
-  Icon,
-  color,
-  label,
-  description,
-  metadata,
-  footer,
-  dragPayload,
-  active = false,
-  dataAttributes,
-}: {
-  Icon: LucideIcon
-  color: string
-  label: string
-  description: string
-  metadata: string
-  footer: React.ReactNode
-  dragPayload: MediaDragPayload
-  active?: boolean
-  dataAttributes?: Record<string, string>
-}) {
-  return (
-    <article
-      draggable={true}
-      className={cn(mediaListItemClassName(), active ? UI_THEME_TOKENS.button.activeBg : '')}
-      title={`Drag ${label} onto the Canvas`}
-      aria-label={`${label}. Drag onto the Canvas.`}
-      data-kg-media-draggable="1"
-      data-kg-media-drag-affordance="frame"
-      data-kg-media-xr-draggable="1"
-      data-kg-media-list-row-layout="3-rows"
-      data-kg-media-xr-card-layout="media-3-rows"
-      onDragStart={event => startMediaDrag(event, dragPayload)}
-      onDragEnd={finishMediaDrag}
-      onPointerDownCapture={event => {
-        if (!shouldPrimeMediaRowDragPayload(event)) return
-        primeMediaPointerDrag(event, dragPayload)
-      }}
-      onPointerDown={event => {
-        if (!shouldHandleMediaRowPointer(event)) return
-        startMediaPointerDrag(event, dragPayload)
-      }}
-      onPointerMove={event => {
-        if (isMediaRowControlTarget(event.target)) return
-        continueMediaPointerDrag(event, dragPayload)
-      }}
-      onMouseDownCapture={event => {
-        if (!shouldPrimeMediaRowDragPayload(event)) return
-        primeMediaMouseDrag(event, dragPayload)
-      }}
-      onMouseDown={event => {
-        if (isMediaRowControlTarget(event.target)) return
-        startMediaMouseDrag(event, dragPayload)
-      }}
-      onMouseMove={event => {
-        if (isMediaRowControlTarget(event.target)) return
-        continueMediaMouseDrag(event, dragPayload)
-      }}
-      {...dataAttributes}
-    >
-      <XrMediaCatalogThumb Icon={Icon} color={color} label={label} />
-      <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${label} XR media summary`}>
-        <header className="flex min-w-0 items-center justify-between gap-2" data-kg-media-list-row-section="title">
-          <h4 className="truncate text-xs font-semibold" title={label}>{label}</h4>
-        </header>
-        <section className="grid min-w-0 gap-0.5" data-kg-media-list-row-section="meta">
-          <p className={cn('m-0 line-clamp-2 text-[11px]', UI_THEME_TOKENS.text.secondary)} title={description}>{description}</p>
-          <p className={cn('m-0 truncate text-[10px] uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary)} title={metadata}>{metadata}</p>
-        </section>
-        <footer className="flex min-w-0 items-center gap-1" data-kg-media-list-row-section="description">{footer}</footer>
-      </section>
-    </article>
-  )
-}
-
-function XrAssetRow({
-  asset,
-  disabled,
-  selectedSubjectId,
-  subjectLabel,
-  transition,
-  onTransitionChange,
-  onPlace,
-  onSwap,
-}: {
-  asset: XrSceneLibraryAsset
-  disabled: boolean
-  selectedSubjectId: string
-  subjectLabel: string
-  transition: XrSceneTransition
-  onTransitionChange: (transition: XrSceneTransition) => void
-  onPlace: (invocation: string) => void
-  onSwap: (invocation: string) => void
-}) {
-  const Icon = CATEGORY_ICONS[asset.category]
-  const invocation = buildXrPlaceInvocation(asset.id, asset.mobile ? transition : 'hold', subjectLabel)
-  const swapInvocation = selectedSubjectId
-    ? buildXrTransformInvocation(selectedSubjectId, { assetId: asset.id })
-    : ''
-  return (
-    <XrLibraryCard
-      Icon={Icon}
-      color={asset.defaultColor}
-      label={asset.label}
-      description={asset.description}
-      metadata={`${asset.category} · ${asset.dimensionsMeters.join(' × ')} m · ${asset.mobile ? 'markable cast' : 'static reference'}${asset.id === XR_SCENE_LIBRARY_DEFAULT_ASSET_ID ? ' · default' : ''}`}
-      dragPayload={buildXrAssetMediaDragPayload(asset, transition, subjectLabel)}
-      dataAttributes={{
-        'data-kg-media-xr-asset': asset.id,
-        'data-kg-media-xr-asset-category': asset.category,
-        'data-kg-media-xr-asset-default': asset.id === XR_SCENE_LIBRARY_DEFAULT_ASSET_ID ? '1' : '0',
-      }}
-      footer={(
-        <>
-          {asset.mobile ? (
-            <PanelSelect
-              className="w-20 shrink-0 text-[10px]"
-              aria-label={`Path interpolation for ${asset.label}`}
-              value={transition}
-              onChange={event => onTransitionChange(event.target.value as XrSceneTransition)}
-              data-kg-media-xr-asset-transition={asset.id}
-            >
-              <option value="linear">Travel</option>
-              <option value="hold">Hold</option>
-            </PanelSelect>
-          ) : null}
-          {selectedSubjectId ? (
-            <span data-kg-media-xr-swap-asset={asset.id} data-kg-media-xr-swap-subject={selectedSubjectId}>
-              <XrInvocationButton invocation={swapInvocation} disabled={disabled} onInvoke={onSwap} />
-            </span>
-          ) : null}
-          <XrInvocationButton invocation={invocation} disabled={disabled} onInvoke={onPlace} />
-        </>
-      )}
-    />
-  )
-}
 
 export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
@@ -493,7 +301,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
           <header className="grid gap-2">
             <nav className="flex max-w-full gap-1 overflow-x-auto pb-1" aria-label="XR library categories">
               {(['all', 'people', 'animals', 'vehicles', 'furniture', 'props'] as const).map(category => {
-                const Icon = category === 'all' ? UsersRound : CATEGORY_ICONS[category]
+                const Icon = category === 'all' ? UsersRound : XR_MEDIA_CATEGORY_ICONS[category]
                 const label = category === 'all' ? 'All' : XR_SCENE_LIBRARY_CATEGORY_LABELS[category]
                 return <button key={category} type="button" className={cn('App-toolbar__btn inline-flex shrink-0 items-center gap-1', categoryFilter === category ? UI_THEME_TOKENS.button.activeBg : '')} aria-pressed={categoryFilter === category} onClick={() => setCategoryFilter(category)} data-kg-media-xr-category={category}><Icon className="size-3" aria-hidden />{label}</button>
               })}
@@ -524,7 +332,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                     data-kg-media-xr-motion-control-gesture={motionGestureStatus}
                     data-kg-media-xr-motion-control-asset-shape={subjectAsset?.shape || 'box'}
                   >
-                    <XrCatalogThumb Icon={CATEGORY_ICONS[subject.category]} color={subject.color} />
+                    <XrCatalogThumb Icon={XR_MEDIA_CATEGORY_ICONS[subject.category]} color={subject.color} />
                     <label className="grid min-w-0 gap-0.5 text-[10px]"><span className={UI_THEME_TOKENS.text.tertiary}>{subject.assetId}</span><PanelTextInput value={subjectLabelDrafts[subject.id] ?? subject.label} maxLength={80} onChange={event => setSubjectLabelDrafts(current => ({ ...current, [subject.id]: event.target.value }))} onBlur={() => commitSubjectLabel(subject.id)} aria-label={`Label ${subject.label}`} data-kg-media-xr-subject-label={subject.id} /></label>
                     {runtime.plan.cast.some(track => track.actorId === subject.id) ? <PanelSelect className="w-20 text-[10px]" aria-label={`Path interpolation for ${subject.label}`} value={runtime.plan.cast.find(track => track.actorId === subject.id)?.marks[0]?.transition === 'hold' ? 'hold' : 'linear'} onChange={event => setSubjectTransition(subject.id, event.target.value as XrSceneTransition)} data-kg-media-xr-subject-transition={subject.id}><option value="linear">Travel</option><option value="hold">Hold</option></PanelSelect> : <span className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Static</span>}
                     <section className="flex shrink-0 items-center gap-1">

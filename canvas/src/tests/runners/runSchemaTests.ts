@@ -7,6 +7,7 @@ const modCanvas3dMode = () => import('@/__tests__/canvas3dMode.test')
 const modCanvasXrSessionPolicy = () => import('@/__tests__/canvasXrSessionPolicy.test')
 const modCanvasXrPanelSurface = () => import('@/__tests__/canvasXrPanelSurface.test')
 const modCanvasXrSharedSurfaceOwnership = () => import('@/__tests__/canvasXrSharedSurfaceOwnership.test')
+const modCanvasXrTropicalPlaygroundSurface = () => import('@/__tests__/canvasXrTropicalPlaygroundSurface.test')
 const modXrAgenticEcsComposition = () => import('@/__tests__/xrAgenticEcsComposition.test')
 const modXrMotionReferencePackage = () => import('@/__tests__/xrMotionReferencePackage.test')
 const modXrCameraMoves = () => import('@/__tests__/xrCameraMoves.test')
@@ -342,8 +343,12 @@ export const runSchemaTests = async (results: TestResult[]) => {
     await mod.testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels()
   })
   await execTest(results, 'canvas.frontmatter.liveXrSurvivesTropicalStageReplay', async () => {
-    const mod = await modCanvasXrSharedSurfaceOwnership()
+    const mod = await modCanvasXrTropicalPlaygroundSurface()
     await mod.testLiveXrSurfaceSurvivesTropicalStageAnd3dHostReplay()
+  })
+  await execTest(results, 'canvas.xr.tropicalPlaygroundNativeSurface', async () => {
+    const mod = await modCanvasXrTropicalPlaygroundSurface()
+    mod.testTropicalPlaygroundNativeSurfaceOwners()
   })
   await execTest(results, 'canvas.renderSettings.xrModeSelect', async () => {
     const mod = await modCanvas3dMode()

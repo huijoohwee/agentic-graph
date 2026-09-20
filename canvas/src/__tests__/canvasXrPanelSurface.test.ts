@@ -23,7 +23,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   const spatialAssetTools = readSource('features', 'three', 'SpatialAssetToolsPanel.tsx')
   const mediaCatalog = readSource('features', 'command-menu', 'MediaCatalogPanelView.tsx')
   const mediaCatalogModeRuntime = readSource('features', 'command-menu', 'mediaCatalogModeRuntime.ts')
-  const xrMediaLibrary = readSource('features', 'command-menu', 'XrMediaLibraryPanel.tsx')
+  const xrMediaLibrarySource = `${readSource('features', 'command-menu', 'XrMediaLibraryPanel.tsx')}\n${readSource('features', 'command-menu', 'XrMediaLibraryCards.tsx')}`
   const xrSimulationOpenRequest = readSource('features', 'command-menu', 'xrSimulationWorkbenchOpenRequest.ts')
   const xrSceneMediaDrag = readSource('features', 'three', 'xrSceneMediaDrag.ts')
   const xrSceneMediaDrop = readSource('features', 'three', 'useXrSceneMediaDrop.ts')
@@ -39,11 +39,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   const xrSceneLibrarySubject = readSource('features', 'three', 'XrSceneLibrarySubject.tsx')
   const xrProceduralBall = readSource('features', 'three', 'XrProceduralBallGeometry.tsx')
   const xrProceduralVehicle = readSource('features', 'three', 'XrProceduralVehicleGeometry.tsx')
-  const xrProceduralHouse = readSource('features', 'three', 'XrProceduralHouseGeometry.tsx')
-  const xrSceneSkyAtmosphere = readSource('features', 'three', 'XrSceneSkyAtmosphere.tsx')
   const xrSingaporeTerrain = readSource('features', 'three', 'XrSingaporeTerrainGeometry.tsx')
-  const xrTropicalPlaygroundTerrain = readSource('features', 'three', 'XrTropicalPlaygroundTerrain.tsx')
-  const xrTropicalPlaygroundLandmarks = readSource('features', 'three', 'XrTropicalPlaygroundLandmarks.tsx')
   const xrTerrainPerimeter = readSource('features', 'three', 'xrTerrainPerimeter.ts')
   const xrNativeAuthoredSubjects = readSource('features', 'three', 'XrNativeControllerAuthoredSubjects.tsx')
   const mediaDragPayload = readSource('lib', 'ui', 'mediaDragPayload.ts')
@@ -324,7 +320,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (!mediaCatalogModeRuntime.includes("let snapshot: MediaCatalogMode = 'media'") || !mediaCatalogModeRuntime.includes('for (const listener of listeners) listener()')) {
     throw new Error('expected Media and 3D for XR to share one observable catalog mode owner')
   }
-  if (!xrMediaLibrary.includes('<SpatialAssetToolsPanel />')) throw new Error('expected Media 3D to retain spatial asset tooling')
+  if (!xrMediaLibrarySource.includes('<SpatialAssetToolsPanel />')) throw new Error('expected Media 3D to retain spatial asset tooling')
   const featuredLabels = XR_SCENE_LIBRARY_FEATURED_ASSET_IDS.map(assetId => XR_SCENE_LIBRARY_ASSETS.find(asset => asset.id === assetId)?.label)
   if (XR_MOTION_REFERENCE_DEFAULT_STAGE_ID !== 'singapore'
     || XR_SCENE_LIBRARY_DEFAULT_ASSET_ID !== 'vehicle-helicopter'
@@ -388,15 +384,15 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     throw new Error('expected strict agent-ready output schema for scene-derived Motion Control object identification')
   }
   if (
-    (xrMediaLibrary.match(/<XrLibraryCard/g) || []).length < 2
-    || !xrMediaLibrary.includes('data-kg-media-xr-card-layout="media-3-rows"')
-    || !xrMediaLibrary.includes('mediaListItemClassName()')
-    || !xrMediaLibrary.includes('mediaListThumbnailFrameClassName(')
+    (xrMediaLibrarySource.match(/<XrLibraryCard/g) || []).length < 2
+    || !xrMediaLibrarySource.includes('data-kg-media-xr-card-layout="media-3-rows"')
+    || !xrMediaLibrarySource.includes('mediaListItemClassName()')
+    || !xrMediaLibrarySource.includes('mediaListThumbnailFrameClassName(')
   ) {
     throw new Error('expected Environment Kits and Subjects & Props to reuse the Media three-row card layout owner')
   }
-  assertSingaporeEnvironmentCardSemantics(xrMediaLibrary)
-  if (xrMediaLibrary.includes('sm:grid-cols-2')) throw new Error('expected Environment Kits to remove the stale two-column tile layout')
+  assertSingaporeEnvironmentCardSemantics(xrMediaLibrarySource)
+  if (xrMediaLibrarySource.includes('sm:grid-cols-2')) throw new Error('expected Environment Kits to remove the stale two-column tile layout')
   for (const marker of [
     "runControl({ action: 'transform'",
     'return runControl({ action: \'transform\'',
@@ -413,9 +409,6 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     'data-kg-media-xr-featured-asset-selector="1"',
     'data-kg-media-xr-subject-asset={subject.id}',
     "setSubjectTransform(subject.id, { assetId: event.target.value })",
-    'XR_SCENE_LIBRARY_ASSETS.map(asset => <option key={asset.id} value={asset.id}>{asset.label}</option>)',
-    'data-kg-media-xr-swap-asset={asset.id}',
-    'buildXrTransformInvocation(selectedSubjectId, { assetId: asset.id })',
     'buildXrTransformInvocation(subject.id, subject)',
     'readMotionControlSnapshot',
     'motionControlPoseToAnimationPose(motionControl.pose)',
@@ -425,7 +418,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     "openMotionControlSurface('motion-control')",
     "controlXrSharedAssetControls({ operation: 'select-target', targetId: subjectId })",
   ]) {
-    if (!xrMediaLibrary.includes(marker)) throw new Error(`expected Media 3D subject create/update/delete to expose native strict-runtime CRUD through ${marker}`)
+    if (!xrMediaLibrarySource.includes(marker)) throw new Error(`expected Media 3D subject create/update/delete to expose native strict-runtime CRUD through ${marker}`)
   }
   if (!xrSceneLibrarySubject.includes("asset.shape === 'ball'")
     || !xrSceneLibrarySubject.includes('<XrProceduralBallGeometry')
@@ -433,34 +426,11 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     || !xrProceduralBall.includes('agentic_os_xr_procedural_ball_geometry')) {
     throw new Error('expected the asset-library Ball and native controller Ball to reuse one procedural geometry owner')
   }
-  if (!xrSceneLibrarySubject.includes('<XrProceduralHouseGeometry')
-    || !xrSceneLibrarySubject.includes('label={subject.label}')
-    || !xrSceneLibrarySubject.includes("silhouette={resolveCharacterSilhouette(label)}")) {
-    throw new Error('expected crate and character subjects to keep native silhouettes through the shared library geometry')
-  }
-  for (const marker of [
-    'agentic_os_xr_procedural_straw_house',
-    'agentic_os_xr_procedural_stick_house',
-    'agentic_os_xr_procedural_brick_house',
-    'agentic_os_xr_procedural_soup_pot',
-  ]) {
-    if (!xrProceduralHouse.includes(marker)) throw new Error(`expected native house geometry to expose ${marker}`)
-  }
-  if (!xrSceneLibrarySubject.includes('agentic_os_xr_procedural_tree')
-    || !xrSceneLibrarySubject.includes('rotation={[Math.PI / 2, 0, 0]}')
-    || !xrSceneLibrarySubject.includes('scale={[1.08, 1.08, 0.78]}')) {
-    throw new Error('expected tree props to stand upright in crate Z-up space with a broad canopy')
-  }
-  if (!xrSceneSkyAtmosphere.includes('agentic_os_xr_scene_sky_dome')
-    || !xrSceneSkyAtmosphere.includes('agentic_os_xr_scene_sky_horizon')
-    || !xrSceneSkyAtmosphere.includes('xrSceneSunPosition')) {
-    throw new Error('expected the shared XR sky owner to keep a native dome and sun disc')
-  }
   for (const marker of ['requestXrSimulationWorkbenchOpen()', "activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })"]) {
     if (!xrCameraMotion.includes(marker)) throw new Error(`expected the XR Simulation Timeline lane to route through the canonical Media workbench owner via ${marker}`)
   }
   for (const marker of ['subscribeXrSimulationWorkbenchOpenRequest', 'readXrSimulationWorkbenchOpenRevision']) {
-    if (!mediaCatalog.includes(marker) || !xrMediaLibrary.includes(marker)) throw new Error(`expected Media catalog and its XR library to consume the shared Simulation workbench intent via ${marker}`)
+    if (!mediaCatalog.includes(marker) || !xrMediaLibrarySource.includes(marker)) throw new Error(`expected Media catalog and its XR library to consume the shared Simulation workbench intent via ${marker}`)
   }
   for (const marker of ['xrSimulationWorkbenchOpenRevision += 1', 'window.dispatchEvent', 'window.addEventListener']) {
     if (!xrSimulationOpenRequest.includes(marker)) throw new Error(`expected the shared Simulation workbench request owner to expose ${marker}`)
@@ -477,7 +447,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     'buildXrAssetMediaDragPayload(asset, transition, subjectLabel)',
     'setNextLabel(current => reconcileNextSubjectLabelAfterDrop(current, detail.subjectLabel))',
   ]) {
-    if (!xrMediaLibrary.includes(marker)) throw new Error(`expected Media 3D cards to reuse shared Media drag behavior through ${marker}`)
+    if (!xrMediaLibrarySource.includes(marker)) throw new Error(`expected Media 3D cards to reuse shared Media drag behavior through ${marker}`)
   }
   for (const marker of ['buildXrStageMediaDragPayload', 'buildXrAssetMediaDragPayload', 'controlXrSceneMediaDrop', 'XR_SCENE_MEDIA_DRAG_SCHEMA', 'XR_SCENE_MEDIA_DROP_COMMITTED_EVENT', 'label: projection.subjectLabel']) {
     if (!xrSceneMediaDrag.includes(marker)) throw new Error(`expected typed XR Media projection to expose ${marker}`)
@@ -523,20 +493,8 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   for (const marker of ['<XrSingaporeTerrainGeometry', 'stage={stage}', "stage.id === 'singapore'"]) {
     if (!xrStagePresetGeometry.includes(marker)) throw new Error(`expected canonical stage geometry to project Singapore through ${marker}`)
   }
-  for (const marker of ['<XrTropicalPlaygroundTerrain', "stage.id === 'tropical-playground'", '<XrTropicalPlaygroundLandmarks', '<XrNativeControllerDemoAerialSetpieces']) {
-    if (!xrStagePresetGeometry.includes(marker)) throw new Error(`expected canonical stage geometry to project Tropical Playground through ${marker}`)
-  }
-  for (const marker of ['agentic_os_xr_tropical_playground_landmarks', 'agentic_os_xr_playground_skull_grotto', 'agentic_os_xr_playground_fence', 'agentic_os_xr_playground_wood_ramp']) {
-    if (!xrTropicalPlaygroundLandmarks.includes(marker)) throw new Error(`expected Tropical Playground landmarks to expose ${marker}`)
-  }
   for (const marker of ['XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.map', '<XrRegionalPoiSurfaceGeometry', 'resolveXrTerrainPerimeter', 'selectable: false']) {
     if (!xrSingaporeTerrain.includes(marker)) throw new Error(`expected native Singapore presentation to expose ${marker}`)
-  }
-  for (const marker of ['agentic_os_xr_tropical_playground_terrain', 'agentic_os_xr_tropical_playground_island', 'agentic_os_xr_tropical_playground_ocean', 'selectable: false']) {
-    if (!xrTropicalPlaygroundTerrain.includes(marker)) throw new Error(`expected native Tropical Playground presentation to expose ${marker}`)
-  }
-  if (xrTropicalPlaygroundTerrain.includes('XrSceneLibraryAssetGeometry') || xrTropicalPlaygroundTerrain.includes('showcaseSubjects')) {
-    throw new Error('expected fixed Tropical Playground terrain to leave mobile assets to canonical Media CRUD')
   }
   if (xrSingaporeTerrain.includes('XrSceneLibraryAssetGeometry') || xrSingaporeTerrain.includes('showcaseSubjects')) {
     throw new Error('expected fixed Singapore terrain to leave mobile Helicopter/Car assets to canonical Media CRUD')
@@ -569,7 +527,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     if (!xrStageLifecycle.includes(marker)) throw new Error(`expected XR cleanup to survive StrictMode remounts through ${marker}`)
   }
   for (const marker of ['CollapsibleSection', 'ExpandCollapseAllButton', 'useCollapsibleSectionGroup', 'defaultCollapsed={false}', 'headerClassName="px-0"']) {
-    if (!xrMediaLibrary.includes(marker)) throw new Error(`expected Media 3D sections to reuse shared disclosure behavior through ${marker}`)
+    if (!xrMediaLibrarySource.includes(marker)) throw new Error(`expected Media 3D sections to reuse shared disclosure behavior through ${marker}`)
   }
   if (existsSync(resolve(process.cwd(), 'src', 'components', 'toolbar', 'Canvas3dModeSelect.tsx'))) {
     throw new Error('expected Canvas View Surface Mode to remain the only mounted 3D/XR selector')
@@ -649,7 +607,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   ) {
     throw new Error(`expected persisted XR metadata to hydrate the live Rich Media renderer, got ${JSON.stringify(richMediaState?.xrScene)}`)
   }
-  const implementationText = [spatialAssetTools, mediaCatalog, xrMediaLibrary, xrSceneMediaDrag, xrSceneMediaDrop, sharedCameraFraming, cameraFramingRuntime, cameraFramingPose, cameraFramingControls, xrPanelModel, cameraPanel, cameraModel, floatingPanel, xrProceduralBall, xrProceduralVehicle, xrSingaporeTerrain, xrNativeAuthoredSubjects].join('\n')
+  const implementationText = [spatialAssetTools, mediaCatalog, xrMediaLibrarySource, xrSceneMediaDrag, xrSceneMediaDrop, sharedCameraFraming, cameraFramingRuntime, cameraFramingPose, cameraFramingControls, xrPanelModel, cameraPanel, cameraModel, floatingPanel, xrProceduralBall, xrProceduralVehicle, xrSingaporeTerrain, xrNativeAuthoredSubjects].join('\n')
   for (const token of [['super', 'splat'].join(''), ['play', 'canvas'].join(''), ['pc', 'ui'].join(''), ['splat', 'Data'].join('')]) {
     if (implementationText.toLowerCase().includes(token.toLowerCase())) {
       throw new Error(`expected XR panel implementation to avoid copied external runtime token ${token}`)

@@ -1,5 +1,4 @@
 import { persistXrScene } from './xrScenePersistence'
-import { XrSceneAppearanceControls } from './XrSceneAppearanceControls'
 import React from 'react'
 import type { VideoSequenceTimelineClipOverlayRenderArgs } from '@/components/timeline/VideoSequenceTimelineRuler'
 import {
@@ -9,15 +8,11 @@ import {
 import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
 import { requestXrSimulationWorkbenchOpen } from '@/features/command-menu/xrSimulationWorkbenchOpenRequest'
 import { useShallow } from 'zustand/react/shallow'
-import { TimelineTransportTimeAxisClip, TimelineTransportTimeAxisMark } from '@/components/timeline/TimelineTransportControls'
+import { TimelineTransportTimeAxisClip } from '@/components/timeline/TimelineTransportControls'
 import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useTimelineTransportStoreBinding } from '@/components/timeline/timelineTransport'
-import {
-  XR_MOTION_REFERENCE_SELECTION_COLOR,
-  XR_MOTION_REFERENCE_STAGE_PRESETS,
-} from './xrMotionReferenceModel'
 import { buildXrMotionReferencePackage, xrMotionReferencePackageBlob, xrMotionReferencePackageFilename } from './xrMotionReferencePackage'
 import {
   readXrMotionReferenceRuntime,
@@ -36,12 +31,14 @@ import {
 import { buildXrMotionReferenceTimelineCode, xrMotionReferenceTimelineDocumentKey } from './xrMotionReferenceTimeline'
 import { CameraMotionMarkRetime, createXrTimelineMarkOnDoubleClick } from './CameraMotionMarkRetime'
 import { controlLocalAnimation } from './xrAnimationMcpRuntime'
-import { jumpToXrTimelineCue, selectXrTimelineRow } from './xrTimelineCueRuntime'
+import { selectXrTimelineRow } from './xrTimelineCueRuntime'
 import {
   resolveXrRehearsalTimelineBeatAt,
   resolveXrRehearsalTimelineBeats,
   resolveXrTimelineObjectPathCaption,
 } from './xrRehearsalTimelineBeats'
+import { XrRehearsalTimelineBeatMarks } from './XrRehearsalTimelineBeatMarks'
+import { XrTimelineSceneStageControls } from './XrTimelineSceneStageControls'
 import { sampleXrTimelineSceneObject } from './xrTimelineSceneProjection'
 import { useXrTimelineLaneSelection, type XrTimelineLaneSelection } from './useXrTimelineLaneSelection'
 import { xrTimelineCommandAdapter } from './xrTimelineCommandAdapter'
@@ -430,107 +427,35 @@ export function XrCameraMotionSection() {
     if (!args.span.rowKey.includes('xr_stage_scene')) return null
     const durationSeconds = runtime.plan.durationSeconds
     const beatMarks = (
-      <section
-        className="xr-camera-motion-retime-lane xr-camera-motion-retime-lane--scene"
-        aria-label="Playable rehearsal beats"
-        data-kg-xr-choreography-lane-axis="1"
-        data-kg-xr-rehearsal-beats="1"
-      >
-        {rehearsalBeats.map((beat, index) => {
-          const active = currentRehearsalBeat?.markId === beat.markId
-          const percent = durationSeconds > 0 ? Math.min(100, Math.max(0, beat.timeSeconds / durationSeconds * 100)) : 0
-          return (
-            <TimelineTransportTimeAxisMark
-              key={beat.markId}
-              laneStyle="video"
-              className="xr-camera-motion-retime-lane-mark"
-              style={{ '--kg-xr-retime-mark-left': `${percent}%` } as React.CSSProperties}
-              title={`${beat.label} · ${beat.timeSeconds}s · click to seek`}
-              aria-label={`${beat.label} at ${beat.timeSeconds} seconds`}
-              aria-pressed={active}
-              role="button"
-              tabIndex={0}
-              onClick={event => {
-                event.stopPropagation()
-                jumpToXrTimelineCue({
-                  kind: 'camera',
-                  targetId: beat.anchorId,
-                  markId: beat.markId,
-                  timeSeconds: beat.timeSeconds,
-                })
-              }}
-              data-kg-xr-lane-scene-beat={index + 1}
-              data-kg-xr-lane-mark-shape="circle-only"
-            >
-              <span style={{ backgroundColor: active ? XR_MOTION_REFERENCE_SELECTION_COLOR : '#64748b' }}>{index + 1}</span>
-            </TimelineTransportTimeAxisMark>
-          )
-        })}
-      </section>
+      <XrRehearsalTimelineBeatMarks
+        beats={rehearsalBeats}
+        activeMarkId={currentRehearsalBeat?.markId}
+        durationSeconds={durationSeconds}
+      />
     )
     if (!args.selected || selectedTimelineLaneId !== 'scene') return beatMarks
     return (
       <>
         {beatMarks}
-        <section
-          className="xr-camera-motion-mark-selection-controls xr-camera-motion-mark-selection-controls--lane xr-timeline-scene-stage-control xr-timeline-scene-stage-control--selected"
-          style={sceneEditorStyle}
-          aria-label="XR scene stage selector"
-          data-kg-xr-motion-stage-field="scene-clip"
-          data-kg-xr-motion-scene-controls="click-appear"
-          data-kg-xr-motion-scene-control-strip="click-appear"
-          data-kg-xr-timeline-control-bar="scene-clip"
-          data-kg-xr-timeline-control-lane="scene-clip"
-          data-kg-xr-timeline-player-controls="1"
-          onClick={event => event.stopPropagation()}
-          onPointerDown={event => event.stopPropagation()}
-        >
-          <output
-            className="xr-camera-motion-mark-selection-label xr-timeline-scene-selection-label"
-            aria-label="XR timeline scene or 3D object shot target"
-            data-kg-camera-target="scene-or-object"
-            data-kg-xr-timeline-shot-target="scene-clip"
-          >
-            {currentRehearsalBeat?.label || (runtime.plan.stageId === 'tropical-playground' ? 'Tropical Playground' : 'SCENE')}
-          </output>
-          <label className="xr-timeline-control-field" data-kg-xr-timeline-playhead-control="scene-clip">
-            <PanelTextInput
-              className="h-5 w-12 px-1 py-0 text-[9px]"
-              type="number"
-              min={0}
-              max={runtime.plan.durationSeconds}
-              step={1 / runtime.plan.fps}
-              value={runtime.playheadSeconds}
-              onChange={event => scrubPlayhead(Number(event.target.value))}
-              aria-label="XR timeline playhead seconds"
-              data-kg-xr-timeline-playhead-input="scene-clip"
-            />
-          </label>
-          <PanelSelect
-            className="xr-timeline-scene-stage-select"
-            aria-label="XR scene stage"
-            value={runtime.plan.stageId}
-            onChange={event => applyStage(event.target.value)}
-            data-kg-xr-motion-stage-select="scene-clip"
-            data-kg-xr-motion-stage-select-lane="scene"
-          >
-            {XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (
-              <option key={preset.id} value={preset.id}>
-                {preset.label}
-              </option>
-            ))}
-          </PanelSelect>
-          <XrSceneAppearanceControls compact disabled={!documentLoaded} />
-          <span className={cn('xr-timeline-control-status xr-timeline-scene-stage-summary-chip', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-motion-stage-summary="scene-clip">
-            {documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'} · {runtime.plan.camera.length} camera marks · {speedWarnings.length ? `${speedWarnings.length} speed warnings` : 'speed sane'}
-          </span>
-          <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!graphData || !runtime.dirty} onClick={savePlan} data-kg-xr-motion-save="1">
-            Save
-          </button>
-          <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!graphData} onClick={exportPackage} data-kg-xr-motion-export="1">
-            Export
-          </button>
-        </section>
+        <XrTimelineSceneStageControls
+          applyStage={applyStage}
+          beatLabel={currentRehearsalBeat?.label || (runtime.plan.stageId === 'tropical-playground' ? 'Tropical Playground' : 'SCENE')}
+          cameraMarkCount={runtime.plan.camera.length}
+          documentLoaded={documentLoaded}
+          durationSeconds={runtime.plan.durationSeconds}
+          edges={edges}
+          exportPackage={exportPackage}
+          fps={runtime.plan.fps}
+          graphReady={Boolean(graphData)}
+          objectCount={objectTargets.length}
+          playheadSeconds={runtime.playheadSeconds}
+          saveDisabled={!graphData || !runtime.dirty}
+          savePlan={savePlan}
+          sceneEditorStyle={sceneEditorStyle}
+          scrubPlayhead={scrubPlayhead}
+          speedWarningCount={speedWarnings.length}
+          stageId={runtime.plan.stageId}
+        />
       </>
     )
   }, [applyStage, currentRehearsalBeat, documentLoaded, edges, exportPackage, graphData, objectTargets.length, rehearsalBeats, runtime.dirty, runtime.plan.camera.length, runtime.plan.durationSeconds, runtime.plan.fps, runtime.plan.stageId, runtime.playheadSeconds, savePlan, sceneEditorStyle, scrubPlayhead, selectedTimelineLaneId, speedWarnings.length])

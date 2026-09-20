@@ -359,8 +359,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   removeXrMotionReferenceSubject(staticSubject.id)
   if (readXrMotionReferenceRuntime().plan.subjects.length !== 1) throw new Error('expected placed static subjects to be removable')
 
-  assertXrSubjectAssetSwapCrud()
-  assertXrPackedSubjectAssetsRemainSwappable()
+  assertXrSubjectAssetSwapCrud(); assertXrPackedSubjectAssetsRemainSwappable()
 
   const stageSource = readSource('features', 'three', 'XrMotionReferenceStage.tsx')
   const runtimeBridgeSource = readSource('features', 'three', 'XrMotionReferenceRuntimeBridge.tsx')
@@ -443,10 +442,8 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   if (xrSceneMcpRuntimeSource.includes("setFloatingPanelView('camera')")) {
     throw new Error('expected XR scene control to preserve the operator-selected FloatingPanel view')
   }
-  if (!runtimeSource.includes('setXrMotionReferenceCastTransition')
-    || !runtimeSource.includes('transformRequested ? spatialPlanGuard()')
-    || !constrainedMotionEditsSource.includes('travelMeters')
-    || !constrainedMotionEditsSource.includes('transformRequested')
+  if (!runtimeSource.includes('setXrMotionReferenceCastTransition') || !runtimeSource.includes('transformRequested ? spatialPlanGuard()')
+    || !constrainedMotionEditsSource.includes('travelMeters') || !constrainedMotionEditsSource.includes('transformRequested')
     || !constrainedMotionEditsSource.includes('resolveXrSubjectMotion({')) {
     throw new Error('expected XR path interpolation controls to own real bounded cast-track motion')
   }
