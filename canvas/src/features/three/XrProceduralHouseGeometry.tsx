@@ -1,7 +1,7 @@
 import React from 'react'
 
 type PropSize = readonly [number, number, number]
-const UPRIGHT: readonly [number, number, number] = [Math.PI / 2, 0, 0]
+const UPRIGHT: [number, number, number] = [Math.PI / 2, 0, 0]
 
 function Wall({ color, roughness = 0.86, metalness = 0.02 }: { color: string; roughness?: number; metalness?: number }) {
   return <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />

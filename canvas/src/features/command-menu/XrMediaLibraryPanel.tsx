@@ -50,7 +50,7 @@ import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButto
 import { useCollapsibleSectionGroup } from '@/features/panels/ui/useCollapsibleSectionGroup'
 import { XrCatalogThumb } from './XrMediaCatalogThumbs'
 import {
-  XR_MEDIA_XR_MEDIA_CATEGORY_ICONS,
+  XR_MEDIA_CATEGORY_ICONS,
   XrAssetRow,
   XrInvocationButton,
   XrLibraryCard,
