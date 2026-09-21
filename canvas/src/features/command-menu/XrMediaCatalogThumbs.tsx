@@ -45,7 +45,7 @@ export function XrCatalogArtwork({ assetId = '', label = '', color, Icon }: {
   else if (/palm/.test(key)) artwork = <><path d="M44 64Q53 36 45 22" fill="none" stroke="#9e7048" strokeWidth="7" /><path d="M45 22Q12 1 14 34Q25 20 45 22Q30 0 58 4Q47 13 45 22Q77 1 86 34Q66 20 45 22" fill="#45936c" /></>
   else if (/rock|grotto/.test(key)) artwork = <><path d="M10 58L17 31L38 12L68 17L87 49L78 62Z" fill="#71838a" /><path d="M17 31L49 27L38 12M49 27L63 60L87 49" fill="#88989c" /></>
   else if (/tree|oak/.test(key)) artwork = <><path d="M43 61V31H52V61Z" fill="#946243" /><circle cx="47" cy="28" r="23" fill={color} /><circle cx="29" cy="35" r="14" fill="#5c9e64" /><circle cx="65" cy="34" r="15" fill="#75ad63" /></>
-  else return <Icon className="size-7" strokeWidth={1.6} aria-hidden />
+  else return <Icon className="size-7 max-h-full max-w-full" strokeWidth={1.6} aria-hidden />
   return <svg viewBox="0 0 96 72" className="h-full w-full rounded" role="img" aria-label={`${label || assetId} native illustration`} data-kg-xr-catalog-artwork={assetId || label}>
     <rect width="96" height="72" rx="6" fill="#edf4ed" />{artwork}
   </svg>
