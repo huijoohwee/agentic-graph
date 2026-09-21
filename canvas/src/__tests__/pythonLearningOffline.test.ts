@@ -72,7 +72,8 @@ test('corruption fails closed and recovery verifies prior membership before chan
   const state = await env.state(), cache = env.caches.get(state.active.cache)!
   await cache.put(scope + `assets/${second}/pythonWorker.js`, new Response('tampered'))
   assert.equal((await two.request('verify')).ok, false)
-  assert.equal((await two.navigate()).status, 503)
+  const blocked = await two.navigate(); assert.equal(blocked.status, 503)
+  assert.match(await blocked.text(), /Open previous verified installation/, 'cold offline failure offers a verified recovery link')
   assert.equal((await env.state()).active.cache, state.active.cache)
   assert.equal((await two.request('recover')).ok, true)
   assert.equal((await two.navigate(first)).status, 200)

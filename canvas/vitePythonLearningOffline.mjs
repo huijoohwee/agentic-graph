@@ -144,7 +144,21 @@ export function installLearningOfflineOwner(owner, sourceRevision) {
       const file = manifest.files.find(item => item.path === (navigation ? 'index.html' : url.pathname.slice(scope.pathname.length)))
       if (!file) { if (navigation) failure('Offline shell is missing.'); return null }
       return await checkedMember(cache, file)
-    } catch (error) { return new Response(String(error.message || error) + '\nUse the Python pane online to verify or recover the previous installation. Your workspace source and debriefs are preserved.', { status: 503, headers: { 'content-type': 'text/plain' } }) }
+    } catch (error) {
+      const message = String(error.message || error)
+      if (!navigation) return new Response(message, { status: 503, headers: { 'content-type': 'text/plain' } })
+      const escape = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character])
+      let recovery = ''
+      for (const version of [state.active, state.previous]) {
+        if (!version || version.revision === url.searchParams.get('python-learning-offline')) continue
+        try {
+          await verify(version)
+          const target = new URL(scope); target.searchParams.set('python-learning-offline', version.revision); target.searchParams.set('openEditorWorkspace', '1')
+          recovery = `<p><a href="${escape(target.href)}">Open previous verified installation</a></p>`; break
+        } catch { /* A recovery link is offered only after full readback. */ }
+      }
+      return new Response(`<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline installation unavailable</title><body><h1>Offline installation unavailable</h1><p>${escape(message)}</p>${recovery}<p>Your workspace source and debriefs are preserved. Reconnect to reinstall from the Python pane if no complete version remains.</p></body></html>`, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } })
+    }
   }
   const message = event => {
     if (event.data?.type !== 'AG_PYTHON_LEARNING_OFFLINE' || !event.ports?.[0]) return
