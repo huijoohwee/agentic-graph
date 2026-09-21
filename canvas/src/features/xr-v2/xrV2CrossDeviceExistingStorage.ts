@@ -29,16 +29,18 @@ export async function publishXrV2ManifestThroughExistingStorage(input: Readonly<
   baseUrl: string
   fetchImpl: typeof fetch
 }>): Promise<XrV2ExistingStorageManifestPublishReceipt> {
-  const written = await writeWorkspaceTextArtifactAtPath({
-    absolutePath: input.workspacePath,
-    text: input.text,
-  })
-  if (written !== input.workspacePath) return Object.freeze({ status: 'rejected' })
-
-  const storage = await getAgenticGraphStorageDb()
   const sourceFileId = `share:${hashStringToHex(`${input.workspaceId}:${input.canonicalPath}`)}`
   const documentId = `sf:${sourceFileId}`
-  const existingDoc = await storage.collections.documents.findOne(documentId).exec()
+  // Preparing the document store is independent of the workspace-file write.
+  // Await both before queuing the manifest or allowing any transport effects.
+  const [written, { storage, existingDoc }] = await Promise.all([
+    writeWorkspaceTextArtifactAtPath({ absolutePath: input.workspacePath, text: input.text }),
+    getAgenticGraphStorageDb().then(async storage => ({
+      storage,
+      existingDoc: await storage.collections.documents.findOne(documentId).exec(),
+    })),
+  ])
+  if (written !== input.workspacePath) return Object.freeze({ status: 'rejected' })
   const existing = existingDoc?.toJSON() as KgDocumentLocalRecord | undefined
   const nowMs = Date.now()
   const record: KgDocumentLocalRecord = {

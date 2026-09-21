@@ -118,9 +118,7 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
   }
 
   if (persistenceState.mode === 'indexeddb') {
-    // Share one readonly transaction so a cold open does not pay one browser
-    // transaction round trip per collection. Keep query failures isolated and
-    // restore the memory shadow in declaration order, as before.
+    // Share a read transaction, isolating query failures and restoring in declaration order.
     const restored = await raw.transaction('r', raw.records, () =>
       Promise.allSettled(args.collectionNames.map(async collectionName =>
         raw.records.where('collection').equals(String(collectionName)).toArray(),
@@ -143,15 +141,9 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
         })
       }
     }
-    if (persistenceState.failedRecordTypes.length > 0) {
-      persistenceState = {
-        ...persistenceState,
-        mode: 'memory',
-        status: 'degraded',
-        error: 'One or more IndexedDB record types could not be restored.',
-      }
-    }
-    publishState()
+    if (persistenceState.failedRecordTypes.length > 0)
+      degradeToMemory('One or more IndexedDB record types could not be restored.')
+    else publishState()
   }
 
   const runWriteWithRetry = async (operation: () => Promise<void>): Promise<boolean> => {
