@@ -52,3 +52,97 @@ export function testDesignTokenSummaryReusesSemanticKeyedCache() {
   const second = summarizeDesignTokens({ graphData: graph, graphRevision: 7, maxEntries: 8 })
   if (first !== second) throw new Error('expected unchanged graph revision to reuse semantic-keyed token summary cache')
 }
+
+export async function testDesignContextReviewProvenance() {
+  const assert = (await import('node:assert/strict')).default
+  const { buildDesignContext, serializeDesignContext } = await import('@/features/design/designContext')
+  const graph: GraphData = { type: 'Graph', nodes: [{ id: 'card', type: 'Frame', properties: {
+    fill: '#ffffff', color: '#777777', backgroundColor: '#ffffff', opacity: 1,
+    designTokens: { fill: 'canvas-accent', missing: 'unknown-token' },
+  } }], edges: [] }
+  const before = JSON.stringify(graph)
+  const args = { active: true, graphData: graph, graphRevision: 1, theme: 'light' as const,
+    documentName: 'review.md', markdown: '---\ndesign:\n  intent: Clear reading order\n---\n# Review' }
+  const context = buildDesignContext(args)
+  assert.ok(context.available)
+  assert.equal(context.intent.intent, 'Clear reading order')
+  assert.equal(context.intent.motion, null)
+  assert.ok(context.unresolved.includes('motion'))
+  assert.equal(context.tokens.length, 38)
+  for (const rule of ['token-reference', 'token-value', 'declared-contrast']) {
+    assert.ok(context.audit.findings.some(f => f.rule === rule && f.nodeId === 'card' && f.path && f.action))
+  }
+  assert.ok(context.audit.matches.some(match => match.path === 'properties.fill'))
+  assert.equal(JSON.stringify(graph), before, 'Inspection must not mutate graph data')
+  assert.deepEqual(JSON.parse(serializeDesignContext(context, 'json', context.semanticKey)), context)
+  assert.ok(serializeDesignContext(context, 'markdown', context.semanticKey).includes(context.tokenRevision))
+  assert.throws(() => serializeDesignContext(context, 'json', 'stale'), /changed/)
+  assert.throws(() => serializeDesignContext(context, 'css' as 'json', context.semanticKey), /Unsupported/)
+  const dark = buildDesignContext({ ...args, theme: 'dark' })
+  assert.ok(dark.available)
+  assert.notEqual(dark.semanticKey, context.semanticKey)
+  const changedIntent = buildDesignContext({ ...args, markdown: '---\ndesign:\n  intent: Touch navigation\n---' })
+  assert.ok(changedIntent.available)
+  assert.notEqual(changedIntent.semanticKey, context.semanticKey)
+  graph.nodes[0].properties!.fill = '#000000'
+  const changedValue = buildDesignContext(args)
+  assert.ok(changedValue.available)
+  assert.notEqual(changedValue.semanticKey, context.semanticKey, 'Changed source content must invalidate even without a revision bump')
+  const unsupported = buildDesignContext({ ...args, graphData: { type: 'Graph', nodes: [{ id: 'unknown', properties: {
+    color: '#fff', backgroundColor: '#000', opacity: 0.5,
+  } }], edges: [] } })
+  assert.ok(unsupported.available)
+  assert.equal(unsupported.audit.status, 'unassessed')
+  assert.ok(unsupported.audit.findings.some(f => f.severity === 'unassessed'))
+  const opaque = buildDesignContext({ ...args, graphData: { type: 'Graph', nodes: [{ id: 'opaque', properties: {
+    color: '#fff', backgroundColor: '#000', opacity: 1,
+  } }], edges: [] } })
+  assert.ok(opaque.available)
+  assert.equal(opaque.audit.checked, 1)
+  assert.equal(opaque.audit.findings.length, 0)
+  const hostile = '</script><img src=x onerror=alert(1)> ``` [link](https://invalid.example)'
+  const escaped = buildDesignContext({ ...args, markdown: `---\ndesign:\n  intent: ${JSON.stringify(hostile)}\n---` })
+  assert.ok(escaped.available)
+  const markdown = serializeDesignContext(escaped, 'markdown', escaped.semanticKey)
+  assert.ok(!markdown.includes('<img') && !markdown.includes('```') && !markdown.includes('[link]('))
+  assert.ok(!serializeDesignContext(escaped, 'json', escaped.semanticKey).includes('</script>'))
+}
+
+export async function testDesignContextBoundsAndInvalidation() {
+  const assert = (await import('node:assert/strict')).default
+  const { buildDesignContext, serializeDesignContext } = await import('@/features/design/designContext')
+  const args = { active: true, graphData: makeGraph(), graphRevision: 1, theme: 'light' as const }
+  const empty = buildDesignContext({ ...args, graphData: null })
+  assert.ok(empty.available)
+  assert.equal(empty.audit.status, 'unassessed')
+  assert.equal(empty.audit.checked, 0)
+  const inactive = buildDesignContext({ ...args, active: false })
+  assert.equal(inactive.status, 'inactive')
+  assert.throws(() => serializeDesignContext(inactive, 'json', ''), /inactive/)
+  for (const markdown of [
+    '---\ndesign: []\n---', '---\ndesign:\n  unknown: field\n---',
+    '---\ndesign:\n  intent: 123\n---', '---\ndesign:\n  intent: ' + 'x'.repeat(513) + '\n---',
+    '---\ndesign:\n  intent: [\n---', '---\n' + 'x'.repeat(8192),
+  ]) assert.equal(buildDesignContext({ ...args, markdown }).status, 'invalid', markdown.slice(0, 80))
+  const many: GraphData = { type: 'Graph', nodes: Array.from({ length: 2001 }, (_, i) => ({ id: `n${i}`, properties: {} })), edges: [] }
+  const summary = summarizeDesignTokens({ graphData: many, graphRevision: 5 })
+  assert.equal(summary.scannedNodes, 2000)
+  assert.equal(summary.nodeCount, 2001)
+  assert.equal(summary.truncated, true)
+  assert.notEqual(summarizeDesignTokens({ graphData: many, graphRevision: 5 }), summary, 'Partial scans must not be cached as complete')
+  const wide: GraphData = { type: 'Graph', nodes: [{ id: 'wide', properties: Object.fromEntries(
+    Array.from({ length: 10001 }, (_, i) => [`field${i}`, i])) }], edges: [] }
+  const bounded = summarizeDesignTokens({ graphData: wide })
+  assert.ok(bounded.visitedProperties <= 10000)
+  assert.ok(bounded.observations.length <= 256)
+  assert.equal(bounded.totalProperties, null)
+  assert.equal(bounded.truncated, true)
+  const cyclic: Record<string, unknown> = {}; cyclic.self = cyclic
+  const cycle = summarizeDesignTokens({ graphData: { type: 'Graph', nodes: [{ id: 'cycle', properties: cyclic }], edges: [] } as GraphData })
+  assert.equal(cycle.truncated, true)
+  const excessive: GraphData = { type: 'Graph', nodes: Array.from({ length: 150 }, (_, i) => ({ id: `n${i}`, properties: { fill: 'var(--kg-missing)' } })), edges: [] }
+  const context = buildDesignContext({ ...args, graphData: excessive })
+  assert.ok(context.available)
+  assert.ok(context.audit.findings.length <= 100)
+  assert.equal(context.audit.truncated, true)
+}
