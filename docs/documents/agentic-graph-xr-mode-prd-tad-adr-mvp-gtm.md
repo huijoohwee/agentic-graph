@@ -571,3 +571,21 @@ The shared catalog supplies native subjects, props, and environments as canonica
 `/fix #widget-media-source-preservation @huijoohwee` extends the same serializer check to HTML-encoded media URL query parameters. Match the rendered URL after entity decoding while retaining the original embed bytes; keep this repair within the serializer, regression test, and plan owners.
 
 `/fix #shared-media-thumbnail-alignment @huijoohwee` centers every media pill's leading thumbnail through the shared pill class, including XR reference illustrations that lack raster-media attributes. Remove the narrower attribute-specific selector, constrain native fallback artwork to its wrapper, and verify both Viewer and Widget edit/view centers. Three owner files; no new component or dependency.
+
+### XR publication responsiveness
+
+`/fix #xr-publish-responsiveness @huijoohwee` addresses the separate XR browser CI deadline failure.
+An eightfold CPU-throttled local profile attributes about 26 seconds of sampled JavaScript to physics
+step and collision geometry while a saved capture publishes through existing storage. The solver
+repeated narrow-phase contact calculations inside every sort comparison and again after unrelated
+contacts. Cache contact times within one simulation step, retain deterministic time/ID ordering, and
+recalculate every remaining contact involving a body whose position changed during resolution.
+No contact, sensor event, storage acknowledgement, visual feature, or deadline is removed.
+
+Acceptance: existing swept-contact and interaction tests; a dense sensor fixture bounding geometry
+reads and proving next-step invalidation; exact old/new state comparison across 1,280 deterministic
+steps; and the existing capture, reload, publish, and second-device reopen browser contract. The local
+differential audit matched all states and measured 5,750 ms before versus 332 ms after for its solver
+workload; this is not a provider CI or production performance claim. Scope: three existing owner files,
+under 10 KB added source, no module, dependency, service, or always-load guidance change. Protected
+integration and recoverable closeout require their own exact-candidate receipts.
