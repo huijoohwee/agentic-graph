@@ -2,6 +2,7 @@ import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { resolveInitializedWorkspaceFs } from '@/features/workspace-fs/workspaceFsInitialization'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
+import { runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
 
 export const ensureWorkspaceFolderPathExists = async (folderPath: string): Promise<string> => {
   const normalized = normalizeWorkspacePath(folderPath)
@@ -14,7 +15,7 @@ export const writeWorkspaceFileTextEnsuringFile = async (args: {
   fs?: WorkspaceFs
   path: string
   text: string
-}): Promise<void> => {
+}): Promise<void> => runWorkspaceFsChangedBatch(async () => {
   const normalized = normalizeWorkspacePath(args.path)
   const fs = await resolveInitializedWorkspaceFs(args.fs)
   const existing = await fs.readFileText(normalized)
@@ -37,4 +38,4 @@ export const writeWorkspaceFileTextEnsuringFile = async (args: {
   if (persistedText !== args.text) {
     throw new Error(`Workspace text artifact persistence verification failed for ${normalized}`)
   }
-}
+})
