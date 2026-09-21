@@ -14,7 +14,7 @@ export async function testMarkdownViewerReferenceEditParity() {
   const initial = `---\n# Preserve unrelated YAML bytes\nkeep: 'unchanged'\nkgXrMotionReference: ${JSON.stringify(model)}\n---\n\n${body}`
   let source = initial, commits = 0, external: ((text: string) => void) | undefined
   const env = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
-  const container = env.dom.window.document.getElementById('root')!, root = createRoot(container)
+  const container = env.dom.window.document.getElementById('root') as HTMLElement, root = createRoot(container)
   function Viewer() {
     const [text, setText] = React.useState(source)
     const [, setEditing] = React.useState(false)

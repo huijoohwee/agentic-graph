@@ -1,4 +1,5 @@
 import React from 'react'
+import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { Token, TokensParagraph, TokensGeneric, TokensLink, TokensImage, TokensText } from './MarkdownTokens'
 import type { TokenWithLines } from '@/features/markdown/ui/markdownPreviewLex'
 import { getLinkDisplayMode } from './linkDisplayMode'
