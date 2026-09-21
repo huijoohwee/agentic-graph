@@ -118,10 +118,17 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
   }
 
   if (persistenceState.mode === 'indexeddb') {
-    for (const collectionName of args.collectionNames) {
+    // Start independent reads together so a cold open does not pay one browser
+    // transaction round trip per collection. Keep failures isolated and restore
+    // the memory shadow in declaration order, as before.
+    const restored = await Promise.allSettled(args.collectionNames.map(async collectionName =>
+      raw.records.where('collection').equals(String(collectionName)).toArray(),
+    ))
+    for (const [index, collectionName] of args.collectionNames.entries()) {
       try {
-        const persisted = await raw.records.where('collection').equals(String(collectionName)).toArray()
-        for (const record of persisted) {
+        const result = restored[index]
+        if (result.status === 'rejected') throw result.reason
+        for (const record of result.value) {
           await memory.collections[collectionName].incrementalUpsert(
             cloneValue(record.value) as Collections[typeof collectionName],
           )
