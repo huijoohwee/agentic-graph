@@ -38,11 +38,12 @@ export async function testMarkdownViewerReferenceEditParity() {
   try {
     await mountReactRoot(root, <Viewer />); await settle()
     const ordinary = Array.from(container.querySelectorAll('p')).find(p => p.textContent?.startsWith('Use '))!
-    const codeBefore = Array.from(ordinary.querySelectorAll('code')).map(c => c.outerHTML)
+    const codeBefore = Array.from(ordinary.querySelectorAll('code')).map(c => ({ text: c.textContent, className: c.className }))
+    const invocationCount = ordinary.querySelectorAll('code [data-kg-agentic-os-invocation-chip]').length
     await click(ordinary.querySelector('[data-kg-paragraph-content]')!)
     let editor = container.querySelector('[contenteditable="true"]') as HTMLElement
-    assert.deepEqual(Array.from(editor.querySelectorAll('code')).map(c => c.outerHTML), codeBefore, 'opening must retain the mounted inline code representation')
-    assert.equal(editor.querySelector('[data-kg-inline-invocation-edit-token]'), null, 'code must not become command pills')
+    assert.deepEqual(Array.from(editor.querySelectorAll('code')).map(c => ({ text: c.textContent, className: c.className })), codeBefore, 'opening must retain the mounted inline code representation')
+    assert.equal(editor.querySelectorAll('code [data-kg-inline-invocation-edit-token]').length, invocationCount, 'opening must retain the same invocation projection')
     await input(editor, ' Continue.'); await key('Enter')
     assert.ok(source.endsWith(`${body}\n`.trimEnd() + ' Continue.'), 'ordinary edits retain code syntax')
     const beforeCaption = source

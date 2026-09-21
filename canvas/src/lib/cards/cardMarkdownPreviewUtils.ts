@@ -8,7 +8,7 @@ import { UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME } from '@/lib/ui/responsiveE
 import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 export { normalizeCardInlineMediaSoftLineBreaks } from '@/lib/cards/cardInlineTextViewerDraftProjection'
 
-const CARD_MARKDOWN_STRUCTURAL_PATTERN = /(^|\n)\s*(?:>+|```|\|[^\n]*\|)|!\[[^\]]*]\([^)]+?\)|(?<!!)\[[^\]]+]\([^)]+?\)|(^|[^\\])\$[^$\n]+\$|<\s*(?:iframe|img|video)\b/i
+const CARD_MARKDOWN_STRUCTURAL_PATTERN = /`[^`\n]+`|(^|\n)\s*(?:>+|```|\|[^\n]*\|)|!\[[^\]]*]\([^)]+?\)|(?<!!)\[[^\]]+]\([^)]+?\)|(^|[^\\])\$[^$\n]+\$|<\s*(?:iframe|img|video)\b/i
 
 export const CARD_MARKDOWN_PREVIEW_FRAME_CLASS_NAME = 'overflow-y-auto overflow-x-hidden max-h-full'
 export const CARD_MARKDOWN_PREVIEW_BLOCK_SPACING_CLASS_NAME = 'm-0'

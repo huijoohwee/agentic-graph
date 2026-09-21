@@ -258,8 +258,8 @@ export const rewriteRenderedInlineMediaForEditorHtml = (html: string): string =>
 // Keep the mounted Viewer presentation; annotate only atomic references for round-trip serialization.
 export const prepareRenderedParagraphEditHtml = (html: string): string => {
   const root = new DOMParser().parseFromString(`<section>${html}</section>`, 'text/html').body.firstElementChild as HTMLElement
-  root.querySelectorAll('[data-kg-variable-invocation],[data-kg-var-raw]').forEach(node => {
-    const raw = node.getAttribute('data-kg-var-raw')
+  root.querySelectorAll(`[data-kg-variable-invocation],[data-kg-var-raw],[${AGENTIC_OS_INVOCATION_CHIP_ATTR}='1']`).forEach(node => {
+    const raw = node.getAttribute('data-kg-var-raw') || node.getAttribute(AGENTIC_OS_INVOCATION_TOKEN_ATTR)
     if (!raw) return
     const token = root.ownerDocument.createElement('span')
     token.className = node.className
