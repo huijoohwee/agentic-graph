@@ -1,3 +1,4 @@
+import { buildAgenticOsInvocationSourceTitle } from '@/features/agentic-os/agenticOsDocInvocations'
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { AtSign, Hash, Slash } from 'lucide-react'
@@ -205,6 +206,7 @@ export function CardInlineTextCommandMenus(props: {
         label: entry.token,
         group: entry.group,
         description: entry.summary,
+        title: buildAgenticOsInvocationSourceTitle(entry),
         keywords: [entry.label, entry.sourcePath || '', ...entry.keywords].filter(Boolean),
         onSelect: () => replaceCommandSelection(resolveChatInvocationCatalogEntryInsertionText(entry), { closeAfterApply: Boolean(entry.promptPresetId), insertAsBlock: Boolean(entry.promptPresetId) }),
       }))
@@ -237,42 +239,6 @@ export function CardInlineTextCommandMenus(props: {
       if (shouldRouteToExternalMediaTarget) onMediaCommandSelect(candidate)
       return
     }
-    if (shouldRouteToExternalMediaTarget) {
-      const selection = commandSelectionRef.current
-      const selected = text.slice(
-        Math.max(0, Math.min(text.length, selection.start)),
-        Math.max(0, Math.min(text.length, selection.end)),
-      )
-      const tokenRange = findInlineCommandTokenRange({ text, selection, sigil: '@' })
-      const replaceRange = selected && !/^@[A-Za-z0-9_.-]{0,96}$/.test(selected)
-        ? { start: selection.end, end: selection.end }
-        : tokenRange
-      const replacement = buildInlineMediaEmbed({
-        kind: candidate.kind,
-        url: candidate.url,
-        thumbnailUrl: candidate.thumbnailUrl,
-        label: candidate.label,
-        selectedText: selected,
-        sourceKey: candidate.sourceKey,
-      })
-      const next = insertMarkdownBlockRange({
-        text,
-        start: replaceRange.start,
-        end: replaceRange.end,
-        block: replacement,
-      })
-      setDraft(next.text)
-      onCommandDraftChange?.(next.text)
-      setCommandMode(null)
-      setCommandQuery('')
-      focusCardInlineTextInputSelectionSoon(inputRef.current, next.cursor, next.cursor, focusSelection)
-      if (options?.closeAfterApply === true) onCommandDraftApplied?.(next.text)
-      // Keep the text-owner commit ahead of the graph-owner media mutation so
-      // a freshly inserted @ chip cannot be overwritten by a stale snapshot.
-      onMediaCommandSelect(candidate)
-      return
-    }
-    if (candidate.url) onMediaCommandSelect?.(candidate)
     const selection = commandSelectionRef.current
     const selected = text.slice(
       Math.max(0, Math.min(text.length, selection.start)),
@@ -301,6 +267,7 @@ export function CardInlineTextCommandMenus(props: {
     setCommandMode(null)
     setCommandQuery('')
     if (options?.closeAfterApply === true) onCommandDraftApplied?.(next.text)
+    if (candidate.url) onMediaCommandSelect?.(candidate)
   }, [commandSelectionRef, draft, focusSelection, inputRef, mediaCommandMode, onCommandDraftApplied, onCommandDraftChange, onMediaCommandSelect, setCommandMode, setCommandQuery, setDraft, sourceDraft])
   const uploadMediaCommand = React.useCallback(async (fileList: FileList | null) => {
     const results = await uploadFilesToUploadedMediaPanel({
@@ -391,7 +358,7 @@ export function CardInlineTextCommandMenus(props: {
     const mediaCandidates = applyCommandMenuMediaNameDraftsToInlineCandidates(mergeInlineMediaCommandCandidates([
       ...uploadedMediaCommandCandidates,
       ...collectInlineMediaCommandCandidates({
-        draftText: [commandContextText, draft].filter(Boolean).join('\n'),
+        draftText: [commandQuery, commandContextText, draft].filter(Boolean).join('\n'),
       }),
     ]), mediaNameDrafts).slice(0, 12)
     const mediaCandidateItems = mediaCandidates

@@ -1,3 +1,4 @@
+import { findChatInvocationCatalogEntryByToken } from '@/features/chat/chatInvocationRegistry'
 import React from 'react'
 import {
   buildAgenticOsInvocationSourceTitle,
@@ -23,21 +24,23 @@ export function resolveAgenticOsInvocationToken(value: string): { invocation: Ag
 }
 
 export function buildAgenticOsInvocationChipAttrs(token: string): Record<string, string> | null {
-  const resolved = resolveAgenticOsInvocationToken(token)
-  if (!resolved) return null
+  const entry = findChatInvocationCatalogEntryByToken(token)
+  if (!entry) return null
   return {
     [AGENTIC_OS_INVOCATION_CHIP_ATTR]: '1',
-    [AGENTIC_OS_INVOCATION_TOKEN_ATTR]: resolved.token,
-    [AGENTIC_OS_INVOCATION_SOURCE_ATTR]: resolved.invocation.sourcePath,
+    [AGENTIC_OS_INVOCATION_TOKEN_ATTR]: token,
+    [AGENTIC_OS_INVOCATION_SOURCE_ATTR]: entry.sourcePath || '',
+    ...(entry.insertionText ? { 'data-kg-invocation-text': entry.insertionText } : {}),
+    ...(entry.mcpTool ? { 'data-kg-invocation-mcp-tool': entry.mcpTool } : {}),
   }
 }
 
 export function buildAgenticOsInvocationChipTitle(token: string): string {
-  const resolved = resolveAgenticOsInvocationToken(token)
-  if (resolved) return buildAgenticOsInvocationSourceTitle(resolved.invocation)
+  const entry = findChatInvocationCatalogEntryByToken(token)
+  if (entry) return buildAgenticOsInvocationSourceTitle(entry)
   const kind = readAgenticOsInvocationTokenKind(token)
   if (!kind) return token
-  return `${token}\n${kind === 'slash' ? 'Command' : kind === 'binding' ? 'Target or context binding' : 'Semantic keyword'}`
+  return buildAgenticOsInvocationSourceTitle({ token, label: kind === 'slash' ? 'Command' : kind === 'binding' ? 'Target or context binding' : 'Semantic keyword' })
 }
 
 export function renderAgenticOsInvocationAnchor(args: {
@@ -55,7 +58,7 @@ export function renderAgenticOsInvocationAnchor(args: {
       target="_blank"
       rel="noopener noreferrer"
       className={args.className}
-      title={buildAgenticOsInvocationSourceTitle(resolved.invocation)}
+      title={buildAgenticOsInvocationChipTitle(resolved.token)}
       data-kg-card-inline-keyword-pill="1"
       {...attrs}
     >
@@ -73,16 +76,17 @@ export function renderAgenticOsInvocationKeywordChip(args: {
 }): React.ReactNode | null {
   const token = String(args.value || '').trim()
   const resolved = resolveAgenticOsInvocationToken(token)
-  if (!resolved && !args.allowUnresolved) return null
+  const catalogAttrs = buildAgenticOsInvocationChipAttrs(token)
+  if (!resolved && !catalogAttrs && !args.allowUnresolved) return null
   if (args.sourceLink === false || !resolved) {
-    const attrs = buildAgenticOsInvocationChipAttrs(token) || {
+    const attrs = catalogAttrs || {
       [AGENTIC_OS_INVOCATION_CHIP_ATTR]: '1',
       [AGENTIC_OS_INVOCATION_TOKEN_ATTR]: token,
     }
     return (
       <span
         className={`${args.className} ${UI_INLINE_CHIP_SHELL_15CH_CLASSNAME}`}
-        title={resolved ? buildAgenticOsInvocationSourceTitle(resolved.invocation) : args.fallbackTitle || buildAgenticOsInvocationChipTitle(token)}
+        title={catalogAttrs ? buildAgenticOsInvocationChipTitle(token) : args.fallbackTitle || buildAgenticOsInvocationChipTitle(token)}
         data-kg-card-inline-keyword-pill="1"
         {...attrs}
       >

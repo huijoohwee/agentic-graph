@@ -1,3 +1,5 @@
+import { NATIVE_XR_MEDIA_INVOCATIONS } from '@/lib/command-menu/inlineNativeMediaCandidates'
+import { getAgenticOsRemoteGrammarCatalogSnapshot } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { AGENTIC_OS_MEMORY_LAYER_MCP_TOOL_NAMES } from '@/features/memory/aiAgentsMemoryLayerContract.mjs'
 import {
   getAgenticOsBindingInvocations,
@@ -307,12 +309,14 @@ export const resolveChatInvocationCatalogEntryInsertionText = (entry: ChatInvoca
 )
 
 export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntry[] => dedupeCatalogEntriesByToken([
+  ...NATIVE_XR_MEDIA_INVOCATIONS,
   ...CHAT_SKILL_OPTIONS.map(option => ({
     id: option.id,
     label: option.label,
     token: option.slashCommand,
     summary: option.summary,
     group: 'Chat skill',
+    sourcePath: 'canvas/src/features/chat/chatSkillRegistry.ts',
     kind: 'skill' as const,
     keywords: option.keywords,
   })),
@@ -361,7 +365,8 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
         ? 'Agentic OS semantic dictionary'
         : 'Runtime invocation',
     kind: option.slashCommand && option.atToken ? 'doc' as const : option.sourcePath ? 'semantic' as const : 'runtime' as const,
-    sourcePath: option.sourcePath,
+    sourcePath: option.sourcePath || 'canvas/src/features/chat/chatInvocationRegistry.ts',
+    mcpTool: option.toolName,
     keywords: [option.slashCommand || '', option.atToken || '', option.toolName || '', ...option.keywords],
   })),
   ...getAgenticOsBindingInvocations().map(invocation => ({
@@ -373,6 +378,10 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
     kind: invocation.kind,
     sourcePath: invocation.sourcePath,
     keywords: invocation.keywords,
+    mcpTool: invocation.mcpTool,
+    mcpTools: invocation.mcpTools,
+    semantics: invocation.semantics,
+    bindings: invocation.bindings,
   })),
   IMAGE_TO_THREEJS_BINDING_CATALOG_ENTRY,
   IMAGE_TO_GLB_BINDING_CATALOG_ENTRY,
@@ -387,6 +396,20 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
     keywords: [doc.slashCommand, doc.hashToken, ...doc.keywords],
   })),
 ])
+
+let indexedCatalogVersion = -1
+let indexedCatalog = new Map<string, ChatInvocationCatalogEntry>()
+
+// Reuse the Skills & Commands owner; rebuild only when its source catalog changes.
+export function findChatInvocationCatalogEntryByToken(token: string): ChatInvocationCatalogEntry | null {
+  const version = getAgenticOsRemoteGrammarCatalogSnapshot().version
+  if (version !== indexedCatalogVersion) {
+    const next = new Map(buildChatInvocationCatalog().map(entry => [entry.token.toLowerCase(), entry]))
+    indexedCatalog = next
+    indexedCatalogVersion = version
+  }
+  return indexedCatalog.get(token.trim().toLowerCase()) || null
+}
 
 const matchesChatInvocationCatalogPrefix = (
   entry: ChatInvocationCatalogEntry,

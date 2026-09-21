@@ -1,6 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["ui.invocation.hoverSourceParity", "@/__tests__/invocationHoverSourceParity.test.tsx", "testInvocationHoverSourceParity"],
+  ["ui.card.viewer.mediaSerializationParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaSerializationParity"],
+  ["ui.card.viewer.mediaInsertParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaInsertParity"],
   ["ui.tooltip.nativeDelegation", "@/__tests__/nativeTitleTooltip.test.tsx", "testNativeTitleTooltipDelegation"],
   ["ui.tooltip.explicitOwner", "@/__tests__/nativeTitleTooltip.test.tsx", "testNativeTitleTooltipExplicitOwner"],
   ["markdown.viewer.invocationCatalogParity", "@/__tests__/markdownViewerInvocationCatalogParity.test.tsx", "testMarkdownViewerInvocationCatalogParity"],
