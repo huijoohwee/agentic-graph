@@ -1,6 +1,8 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["markdown.workspace.indexing.viewerStability", "@/__tests__/markdownWorkspaceIndexingStability.test.tsx", "testMarkdownWorkspaceIndexingSettlesAcrossViewerRenders"],
+  ["markdown.workspace.viewer.storyParagraphEditing", "@/__tests__/markdownWorkspaceIndexingStability.test.tsx", "testMarkdownWorkspaceStoryParagraphEditing"],
   ["markdown.viewer.sharedInvocations", "@/__tests__/markdownVariableInvocations.test.tsx", "testMarkdownViewerSharedInvocations"],
   ["canvas.xrMode.choreographyOwnership", "@/__tests__/xrChoreographyOwnership.test.tsx", "testXrChoreographyOwnership"],
   ["canvas.xrMode.selectionBounds", "@/__tests__/xrChoreographyOwnership.test.tsx", "testXrSelectionBoundsFollowGeometry"],

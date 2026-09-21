@@ -548,6 +548,8 @@ The rehearsal body uses existing `{{key}}` references to frontmatter scene field
 
 ### Viewer invocations and Timeline parameters
 
+`/fix #viewer-edit-stability @huijoohwee` keeps the shared workspace status owner and Viewer edit notifier stable across renders. Inactive blocks must not replay their state when a parent callback changes. Indexing state changes and Viewer edits must not cancel and restart an unchanged document job; status destinations still rebind when their toast ID changes. Validate indexing completion, subsequent editing, and the mounted Viewer with XR present without nested-update warnings.
+
 `/refactor #xr-viewer-shared-invocations @huijoohwee` projects the existing native XR catalog into Viewer reference chips and the shared searchable Variable commands menu. Stage and asset selections use the existing `/xr.stage @stage` and `/xr.transform @subject #transform asset=asset` builders and `control_local_xr_scene` controller, shared with MCP and WebMCP. There is no Viewer choice schema or independent frontmatter writer. Authored role labels, subject IDs, marks, cues and camera anchors remain stable. Nested caption references resolve catalog words with bounded cycle handling; read-only viewers display values without mutation controls.
 
 Timeline remains the sole mark parameter editor (easing, gait, position and time); Animation keeps presets and mark summaries synchronized with Motion Control. Validation covers shared-menu keyboard selection, canonical invocation routing, persisted source, pending-editor rejection and read-only references. Budget: 30 minutes of implementation and local checks, at most 20 touched files and 60 KB of changes; CI waits are separate.
