@@ -113,11 +113,13 @@ export function parseProceduralAssetRecipe(input: unknown): ProceduralAssetRecip
       requireValid(typeof track.partId === 'string' && parts.has(track.partId) && !tracked.has(track.partId), 'duplicate or missing track part')
       tracked.add(track.partId)
       requireValid(Array.isArray(track.keys) && track.keys.length >= 2 && track.keys.length <= PROCEDURAL_ASSET_LIMITS.keys, 'invalid key count')
-      let previous = -1
+      let previous = -1, previousFloat = -1
       for (const key of track.keys) {
         requireValid(object(key), 'invalid keyframe')
         keysOnly(key, ['time', 'rotation'])
         requireValid(finite(key.time, 0, clip.duration) && key.time > previous && vector(key.rotation, -Math.PI, Math.PI), 'invalid keyframe time or rotation')
+        requireValid(Math.fround(key.time) > previousFloat, 'keyframe times must remain distinct in Float32 tracks')
+        previousFloat = Math.fround(key.time)
         previous = key.time
       }
       requireValid(track.keys[0].time === 0 && previous === clip.duration, 'tracks must cover the complete clip')
