@@ -108,11 +108,11 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   }
   if (
     meta.kgFloatingPanelOpen !== true
-    || meta.kgFloatingPanelView !== 'animation'
+    || meta.kgFloatingPanelView !== 'motionControl'
     || meta.kgBottomPanelOpen !== true
     || meta.kgBottomPanelTab !== 'timeline'
   ) {
-    throw new Error('expected standalone mode to open canonical Animation and Timeline for playable rehearsal')
+    throw new Error('expected standalone mode to open canonical Motion Control and Timeline for playable rehearsal')
   }
 
   const runReady = asRecord(meta.run_ready_demo, 'run_ready_demo')

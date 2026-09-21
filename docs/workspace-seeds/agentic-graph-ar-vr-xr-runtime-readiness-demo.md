@@ -16,7 +16,7 @@ kgCanvasSurfaceMode: 3d
 kgCanvasRenderMode: 3d
 kgCanvas3dMode: 3d
 kgFloatingPanelOpen: true
-kgFloatingPanelView: animation
+kgFloatingPanelView: motionControl
 kgBottomPanelOpen: true
 kgBottomPanelTab: timeline
 kgDocumentSemanticMode: document
@@ -88,15 +88,21 @@ acceptance_criteria:
   - {"id":AC-1, "evidence":source-backed, "promotion_boundary":named physical capability matrix}
   - {"id":AC-2, "evidence":browser-backed, "promotion_boundary":named reference-device frame budget}
   - {"id":AC-3, "evidence":browser-backed, "promotion_boundary":'named-device quota, interruption, and resume run'}
-  - {"id":AC-4, "evidence":browser-observable-after-selected-saved-asset render, "promotion_boundary":'physical four-tier viewer matrix, hardened shared storage, and two-device reopen'}
+  - id: AC-4
+    evidence: browser-observable-after-selected-saved-asset render
+    promotion_boundary: physical four-tier viewer matrix, hardened shared storage, and two-device reopen
   - {"id":AC-5, "evidence":source-backed, "promotion_boundary":named iOS device/browser pass}
   - {"id":AC-6, "evidence":browser-backed, "promotion_boundary":complete mounted scene rendering proof}
   - {"id":AC-7, "evidence":browser-backed, "promotion_boundary":texture and shader graph on the canonical target mesh}
   - {"id":AC-8, "evidence":source-backed, "promotion_boundary":none for deterministic exact-once behavior}
   - {"id":AC-9, "evidence":source-backed, "promotion_boundary":mounted GPU authoring surface}
   - {"id":AC-10, "evidence":source-backed, "promotion_boundary":rigged mounted playback}
-  - {"id":AC-11, "evidence":browser-observable-after-explicit-package-and-play action, "promotion_boundary":target-browser user-capture track and codec preservation}
-  - {"id":AC-12, "evidence":browser-observable-after-explicit-local-connected-preview action, "promotion_boundary":physical two-device transport and measured latency}
+  - id: AC-11
+    evidence: browser-observable-after-explicit-package-and-play action
+    promotion_boundary: target-browser user-capture track and codec preservation
+  - id: AC-12
+    evidence: browser-observable-after-explicit-local-connected-preview action
+    promotion_boundary: physical two-device transport and measured latency
 behavior_graph_interface: agentic-os-behavior-graph/v1
 behavior_graph_contract:
   graph_id: xr-v2:hero
@@ -378,6 +384,9 @@ flow:
 # AR/VR/XR Runtime-readiness Demo
 
 This Source Files document is the dedicated workspace demo for the immutable v3.0.0 AR/VR/XR authority. It stays source-backed, local-first, and bounded to AC-1 through AC-12 browser proof while AC-14 remains source-only.
+
+The pinned authority's source identity is commit
+`1272bae345edf0d132e6fc750d5c5c7eade00b29`; its path and content digests are recorded in `pinned_source` above.
 
 ## Run the browser demo
 

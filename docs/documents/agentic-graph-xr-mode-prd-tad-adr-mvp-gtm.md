@@ -518,3 +518,21 @@ camera beat with all three pigs aboard the sailboat, caption projection and coll
 in the native playground. This is local browser evidence, not device or production proof. The
 28-second choreography retains nine visible speed sanity warnings for intentionally compressed
 travel; no warning threshold was changed. Protected integration remains a separate provider gate.
+
+### Playground selection and Timeline inspector follow-up
+
+The 2026-09-21 browser comments authorize `/change #xr-playground-selection-ready @huijoohwee`.
+PS-1: native cannons, landmarks, palms, rocks, treasure and simulated bodies select through the
+existing shot-target owner without spawning authored copies. Hidden story geometry must not intercept
+picking. PS-2: in-scene Subjects & Props reuse the environment card layout and native illustrations;
+keyboard selection opens the same Timeline target. PS-3: authored name, asset, XYZ, rotation, scale,
+color and path interpolation have one editor in BottomPanel Timeline. Environment and simulation
+objects expose their ownership and position there; their existing runtime retains placement authority.
+
+The implementation extends the existing scene catalog, shot-target resolver and rendered geometry;
+there is no second scene, physics world, transport or persistence model. Native targets have no
+animatable cast binding, so commands cannot fall through to a previously selected pig or wolf.
+Cast edits and retiming preserve presentation cues. Regression coverage exercises all native targets,
+no-copy/no-mutation selection, explicit command rejection, hidden geometry, rendered card accessibility,
+Timeline transforms and cue preservation. The follow-up cap is 26 source/document files and 80 KB added bytes;
+verification includes the seed's pinned-source and default-panel contracts, with provider waits reported separately.

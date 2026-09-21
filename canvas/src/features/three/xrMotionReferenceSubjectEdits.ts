@@ -98,9 +98,8 @@ export function buildXrMotionReferenceSubjectAssetEdit(
       ...castTrackRecord(track),
       label: nextLabel,
       marks: track.marks.map(mark => ({
-        timeSeconds: mark.timeSeconds,
+        ...mark,
         position: [...mark.position],
-        transition: mark.transition,
         gait: mark.gait === previousDefaultGait ? nextDefaultGait : mark.gait,
       })),
     } : castTrackRecord(track))
@@ -150,12 +149,10 @@ export function buildXrMotionReferenceSubjectTransformEdit(
   const cast = planValue.cast.map(track => ({
     ...castTrackRecord(track),
     marks: track.marks.map(mark => ({
-      timeSeconds: mark.timeSeconds,
+      ...mark,
       position: track.actorId === subjectId
         ? [mark.position[0] + delta[0], mark.position[1] + delta[1], mark.position[2] + delta[2]]
         : [...mark.position],
-      transition: mark.transition,
-      gait: mark.gait,
     })),
   }))
   return { value: { ...planRecord(planValue), subjects, cast } }

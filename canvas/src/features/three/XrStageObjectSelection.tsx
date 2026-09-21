@@ -3,17 +3,18 @@ import { useFrame } from '@react-three/fiber'
 import { Box3, Box3Helper, Matrix4, type Group } from 'three'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
-import { selectBoundXrShotTarget } from './xrSelectedActorBinding'
+import { controlXrSharedAssetControls } from './xrSharedAssetControlRuntime'
 import { resolveXrStageObjects } from './xrSceneLibrary'
 
 /** Select the existing stage object; selection never creates or persists a second subject. */
 export function selectXrStageObject(targetId: string): boolean {
   const before = readXrMotionReferenceRuntime()
   if (!resolveXrStageObjects(before.plan.stageId).some(object => object.id === targetId)) return false
-  const selected = selectBoundXrShotTarget(targetId)
-  if (selected.selectedShotTargetId !== targetId) return false
+  const selected = controlXrSharedAssetControls({ operation: 'select-target', targetId })
+  if (!selected.ok || selected.snapshot.selectedTargetId !== targetId) return false
   const state = useGraphStore.getState()
   state.setBottomSurfaceTab('timeline')
+  state.setBottomSurfaceCollapsed(false)
   state.setMermaidDiagramSelectedRowKey('gantt', `xr-lane:object:${targetId}`)
   return true
 }

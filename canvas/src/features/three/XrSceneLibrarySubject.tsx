@@ -386,6 +386,7 @@ export function XrSceneLibrarySubject({
   showIdentificationBounds?: boolean
   onSelect?: () => void
 }) {
+  if (presentation?.visible === false) return null
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
   const identificationBounds = resolveXrSceneSubjectIdentificationBounds(subject, showIdentificationBounds)
   const selectionRadius = Math.max(asset.dimensionsMeters[0], asset.dimensionsMeters[2], 0.8) * 0.72
@@ -394,7 +395,6 @@ export function XrSceneLibrarySubject({
   return (
     <group
       name={`agentic_os_xr_scene_subject_${subject.id}`}
-      visible={presentation?.visible !== false}
       position={position}
       rotation={[0, THREE.MathUtils.degToRad(subject.rotationYDegrees) + facingYRadians, 0]}
       scale={stageScale * subject.scale}

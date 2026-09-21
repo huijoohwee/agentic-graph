@@ -445,13 +445,12 @@ function persistMotionPlan(previousRuntime: XrMotionReferenceRuntimeSnapshot): b
 }
 
 function selectedActorId(runtime: XrMotionReferenceRuntimeSnapshot, targetIdValue = ''): string {
-  const targetId = String(targetIdValue || '').trim()
-  const sharedTarget = resolveSharedAssetTarget(runtime, targetId)
-  if (sharedTarget?.kind === 'npc') return ''
-  const target = targetId ? resolveXrShotTarget(runtime.plan, targetId) : null
+  const targetId = String(targetIdValue || runtime.selectedShotTargetId || '').trim()
+  if (resolveSharedAssetTarget(runtime, targetId)?.kind === 'npc') return ''
+  const target = resolveXrShotTarget(runtime.plan, targetId)
   if (target?.castActorId) return target.castActorId
   if (target?.kind === 'object' && runtime.plan.subjects.some(subject => subject.id === target.id)) return target.id
-  if (targetId && runtime.plan.cast.some(track => track.actorId === targetId)) return targetId
+  if (target?.kind === 'object') return ''
   return readBoundXrSelectedActorId()
 }
 

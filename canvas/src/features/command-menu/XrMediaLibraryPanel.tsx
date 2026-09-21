@@ -325,6 +325,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                     onSelect={() => {
                       controlXrSharedAssetControls({ operation: 'select-target', targetId: subject.id })
                       useGraphStore.getState().setBottomSurfaceTab('timeline')
+                      useGraphStore.getState().setBottomSurfaceCollapsed(false)
                     }}
                     dataAttributes={{ 'data-kg-media-xr-asset': subject.assetId, 'data-kg-media-xr-placed-subject': subject.id,
                       'data-kg-media-xr-motion-control-gesture': motionGestureStatus }}
@@ -332,6 +333,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                       <button type="button" className="App-toolbar__btn" onClick={() => {
                         controlXrSharedAssetControls({ operation: 'select-target', targetId: subject.id })
                         useGraphStore.getState().setBottomSurfaceTab('timeline')
+                      useGraphStore.getState().setBottomSurfaceCollapsed(false)
                       }} aria-label={`Edit ${subject.label} in Timeline`}>Timeline</button>
                     <section className="flex shrink-0 items-center gap-1">
                       <button

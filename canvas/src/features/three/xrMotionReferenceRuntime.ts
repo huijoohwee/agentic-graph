@@ -484,7 +484,7 @@ export function removeXrMotionReferenceCastMark(actorIdValue: string, markId: st
     animation: track.actorId === actorId && track.animation?.kind === 'action-path' ? null : track.animation,
     marks: track.marks
       .filter(mark => track.actorId !== actorId || mark.id !== markId)
-      .map(mark => ({ timeSeconds: mark.timeSeconds, position: [...mark.position], transition: mark.transition, gait: mark.gait })),
+      .map(mark => ({ ...mark, position: [...mark.position] })),
   }))
   return updatePlan({ ...plan, cast }, undefined, spatialPlanGuard([actorId]))
 }
@@ -506,10 +506,9 @@ export function retimeXrMotionReferenceCastMark(
     ...castTrackRecord(track),
     animation: track.actorId === actorId && track.animation?.kind === 'action-path' ? null : track.animation,
     marks: track.marks.map(mark => ({
+      ...mark,
       timeSeconds: track.actorId === actorId && mark.id === markId ? timeSeconds : mark.timeSeconds,
       position: [...mark.position],
-      transition: mark.transition,
-      gait: mark.gait,
     })),
   }))
   return updatePlan(
@@ -547,14 +546,7 @@ export function removeXrMotionReferenceCameraMark(markId: string): XrMotionRefer
   const plan = planRecord(snapshot.plan)
   const camera = snapshot.plan.camera
     .filter(mark => mark.id !== markId)
-    .map(mark => ({
-      timeSeconds: mark.timeSeconds,
-      anchorId: mark.anchorId,
-      moveId: mark.moveId,
-      rig: mark.rig,
-      easing: mark.easing,
-      settings: { ...mark.settings },
-    }))
+    .map(mark => ({ ...mark, settings: { ...mark.settings } }))
   return updatePlan({ ...plan, camera })
 }
 
@@ -564,11 +556,8 @@ export function retimeXrMotionReferenceCameraMark(markId: string, timeSeconds: n
   const targetTimeSeconds = Math.min(snapshot.plan.durationSeconds, Math.max(0, Number(timeSeconds) || 0))
   const plan = planRecord(snapshot.plan)
   const camera = snapshot.plan.camera.map(mark => ({
+    ...mark,
     timeSeconds: mark.id === markId ? timeSeconds : mark.timeSeconds,
-    anchorId: mark.anchorId,
-    moveId: mark.moveId,
-    rig: mark.rig,
-    easing: mark.easing,
     settings: { ...mark.settings },
   }))
   return updatePlan({ ...plan, camera }, preserveSelection ? nextPlan => resolveRetimedCameraMarkSelection(nextPlan, targetTimeSeconds) : undefined)

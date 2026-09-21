@@ -81,13 +81,6 @@ function XrMediaCatalogThumb({ Icon, color, label, assetId }: { Icon: LucideIcon
   )
 }
 
-function DraggableLibraryCard(props: React.HTMLAttributes<HTMLElement>) {
-  return <article draggable={true} {...props} />
-}
-function SceneLibraryCard(props: React.HTMLAttributes<HTMLElement>) {
-  return <article draggable={false} {...props} />
-}
-
 export function XrLibraryCard({
   Icon,
   color,
@@ -111,9 +104,9 @@ export function XrLibraryCard({
   active?: boolean
   dataAttributes?: Record<string, string>
 }) {
-  const Card = dragPayload ? DraggableLibraryCard : SceneLibraryCard
   return (
-    <Card
+    <article
+      draggable={Boolean(dragPayload)}
       className={cn(mediaListItemClassName(), active ? UI_THEME_TOKENS.button.activeBg : '')}
       title={dragPayload ? `Drag ${label} onto the Canvas` : `Select ${label} in Timeline`}
       tabIndex={onSelect ? 0 : undefined}
@@ -164,7 +157,7 @@ export function XrLibraryCard({
         </section>
         <footer className="flex min-w-0 items-center gap-1" data-kg-media-list-row-section="description">{footer}</footer>
       </section>
-    </Card>
+    </article>
   )
 }
 
@@ -241,8 +234,8 @@ export function XrSubjectTransformCard({ subject, sceneReady, runControl }: {
   }
   const runInvocation = (invocation: string) => runControl(buildXrMediaInvocationControlInput(invocation))
   return (
-  <section className={cn('grid gap-2', UI_THEME_TOKENS.panel.border)} aria-label={`${subject.label} 3D object transform`} data-kg-media-xr-subject-transform={subject.id}>
-    <header className="flex min-w-0 items-center justify-between gap-2">
+  <section className={cn('grid gap-2 sm:grid-cols-3', UI_THEME_TOKENS.panel.border)} aria-label={`${subject.label} 3D object transform`} data-kg-media-xr-subject-transform={subject.id}>
+    <header className="flex min-w-0 items-center justify-between gap-2 sm:col-span-3">
       <span className={cn('text-[9px] font-semibold uppercase', UI_THEME_TOKENS.text.tertiary)}>3D Object / Asset Transform</span>
       <details className="min-w-0 max-w-[50%]"><summary className="text-[10px] cursor-pointer">Command</summary><XrInvocationButton
         invocation={buildXrTransformInvocation(subject.id, subject)}
