@@ -19,6 +19,6 @@
   .python-learning-mobile-views { display:flex; }
   .python-learning-code,.python-learning-result { flex:1; }
   .python-learning-body[data-mobile-view="code"]>.python-learning-result,.python-learning-body[data-mobile-view="result"]>.python-learning-code { display:none; }
-  .python-learning button,.python-learning select { min-height:44px; }
+  .python-learning button,.python-learning select,.python-learning summary { min-height:44px; }
   .python-learning-controls label,.python-learning-controls select { max-width:100%; }
 }

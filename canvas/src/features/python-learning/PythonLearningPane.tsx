@@ -7,6 +7,7 @@ import { pythonLearningRuntime as runtime } from './learningRuntime'
 import { PYTHON_LIMITS, PYTHON_RUNTIME_REVISION, sourceBytes } from './pythonModel'
 import { LearningScene } from './LearningScene'
 import { LearningDebriefControls } from './LearningDebriefControls'
+import { LearningOfflineControls } from './LearningOfflineControls'
 import './pythonLearning.css'
 
 export default function PythonLearningPane(props: {
@@ -74,6 +75,7 @@ export default function PythonLearningPane(props: {
         {snapshot.hint > 0 ? <ol aria-label="Progressive hints">{lesson.hints.slice(0, snapshot.hint).map(hint => <li key={hint}>{hint}</li>)}</ol> : null}
         <details><summary>Worked solution</summary><pre>{lesson.solution}</pre></details>
         <LearningDebriefControls readOnly={props.readOnly} onRestore={(source, lessonId) => { setLessonId(lessonId); props.onChange(source) }} />
+        <LearningOfflineControls />
         <small>{PYTHON_RUNTIME_REVISION} · local worker · no model calls</small>
       </section>
     </div>

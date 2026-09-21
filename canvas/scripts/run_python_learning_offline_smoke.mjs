@@ -1,0 +1,115 @@
+import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { readFile, mkdir, writeFile } from 'node:fs/promises'
+import { dirname, resolve, join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
+import { preview } from 'vite'
+import { chromium } from 'playwright'
+import { tsImport } from 'tsx/esm/api'
+
+const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
+const revision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+const sourceState = () => execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' })
+const before = sourceState(), output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-offline-${revision.slice(0, 12)}`))
+const { LEARNING_LESSONS: lessons } = await tsImport('../src/features/python-learning/learningLessons.ts', import.meta.url)
+const manifest = JSON.parse(await readFile(join(canvas, 'dist', `learning-offline-manifest-${revision}.json`), 'utf8'))
+for (const file of manifest.files) {
+  const bytes = await readFile(join(canvas, 'dist', file.path))
+  assert.equal(bytes.length, file.bytes); assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256)
+}
+let server, browser, page
+try {
+  await mkdir(output, { recursive: true })
+  server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port: 4198, strictPort: true } })
+  const origin = 'http://127.0.0.1:4198', base = origin + '/agentic-graph/'
+  browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+  const context = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
+  const errors = [], remote = [], failedRequests = []
+  await context.route('**/*', route => {
+    const url = new URL(route.request().url())
+    if (url.origin === origin || !['http:', 'https:'].includes(url.protocol)) return route.continue()
+    remote.push(url.origin + url.pathname); return route.abort()
+  })
+  page = await context.newPage(); page.on('pageerror', error => errors.push(error.message))
+  page.on('requestfailed', request => failedRequests.push(new URL(request.url()).pathname))
+  await page.goto(base + '?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
+  await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
+  await page.locator('input[type="file"][accept*=".py"]').setInputFiles({ name: 'learning.py', mimeType: 'text/plain', buffer: Buffer.from(lessons[0].solution) })
+  const pane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
+  await pane.waitFor({ timeout: 60000 })
+  if (await page.getByLabel('Show Explorer pane', { exact: true }).isChecked()) await page.getByLabel('Show Explorer pane', { exact: true }).uncheck()
+  assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'native import never executes')
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
+  await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
+  await pane.getByText('Offline lessons', { exact: true }).click()
+  const installStart = performance.now()
+  await pane.getByRole('button', { name: 'Install offline lessons', exact: true }).click()
+  await pane.getByText(/^Verified \d+ files/).waitFor({ timeout: 190000 })
+  const installMs = Math.round(performance.now() - installStart)
+  await pane.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click()
+  await page.waitForURL(url => url.searchParams.get('python-learning-offline') === revision)
+  await context.setOffline(true)
+  const reloadStart = performance.now()
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
+  await pane.waitFor({ timeout: 60000 })
+  const reloadMs = Math.round(performance.now() - reloadStart)
+  assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
+  const editor = pane.getByRole('textbox', { name: 'Python source text', exact: true })
+  const awaitSource = expected => page.waitForFunction(value => document.querySelector('textarea[aria-label="Python source text"]')?.value === value, expected, { timeout: 30000 })
+  await pane.getByRole('button', { name: 'Code', exact: true }).click()
+  await awaitSource(lessons[0].solution)
+  assert.equal(await editor.inputValue(), lessons[0].solution)
+  const outcomes = []
+  for (const lesson of lessons) {
+    await pane.getByLabel('Python lesson', { exact: true }).selectOption(lesson.id)
+    await pane.getByRole('button', { name: 'Code', exact: true }).click(); await editor.fill(lesson.solution)
+    await pane.getByRole('button', { name: 'Run', exact: true }).click()
+    await page.locator('.python-learning[data-learning-state="completed"]').waitFor({ timeout: 15000 })
+    await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
+    await pane.getByText('Lesson passed', { exact: false }).waitFor()
+    await pane.getByRole('button', { name: 'Save debrief', exact: true }).click()
+    await pane.getByText('Saved locally:', { exact: false }).waitFor()
+    outcomes.push({ lesson: lesson.id, passed: true })
+  }
+  await page.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
+  await page.screenshot({ path: join(output, 'offline-mobile.png'), fullPage: true })
+  await writeFile(join(output, 'accessible-workspace.txt'), await pane.ariaSnapshot())
+  assert.ok(await pane.locator('button:visible,select:visible,summary:visible').evaluateAll(elements => elements.every(element => element.getBoundingClientRect().height >= 44)))
+  await pane.getByRole('button', { name: 'Hint', exact: true }).focus(); await page.keyboard.press('Enter')
+  await pane.getByLabel('Progressive hints', { exact: true }).waitFor()
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1))
+  await page.reload({ waitUntil: 'domcontentloaded' }); await pane.waitFor({ timeout: 60000 })
+  assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
+  await awaitSource(lessons.at(-1).solution)
+  assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'native autosave survives offline reload')
+  await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
+  await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
+  await pane.getByText('3 matching debriefs', { exact: false }).waitFor()
+  // A missing admitted worker must block offline navigation even if another runtime cache has it.
+  const missing = await page.evaluate(async () => {
+    const stateCache = await caches.open('kg-python-learning-v1-state')
+    const pointer = await (await stateCache.match(new URL('__learning_state__', location.href).href)).json()
+    const cache = await caches.open(pointer.active.cache), key = (await cache.keys()).find(request => request.url.includes('/pythonWorker-'))
+    if (!key) throw new Error('No admitted Python worker')
+    const response = await cache.match(key), bytes = [...new Uint8Array(await response.arrayBuffer())], type = response.headers.get('content-type')
+    await cache.delete(key); return { name: pointer.active.cache, url: key.url, bytes, type }
+  })
+  const rejected = await page.reload({ waitUntil: 'domcontentloaded' }); assert.equal(rejected.status(), 503)
+  await page.getByText('Offline asset', { exact: false }).waitFor()
+  await page.evaluate(async value => (await caches.open(value.name)).put(value.url, new Response(new Uint8Array(value.bytes), { headers: { 'content-type': value.type } })), missing)
+  await page.reload({ waitUntil: 'domcontentloaded' }); await pane.waitFor({ timeout: 60000 })
+  assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
+  await awaitSource(lessons.at(-1).solution)
+  assert.equal(await editor.inputValue(), lessons.at(-1).solution)
+  assert.deepEqual(errors, [])
+  assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
+  const evidence = { revision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
+    installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
+    pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
+  await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
+} catch (error) {
+  if (page) { console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
+  throw error
+} finally { await browser?.close(); await new Promise(resolve => server?.httpServer.close(resolve) || resolve()) }

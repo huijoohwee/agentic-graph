@@ -3,6 +3,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge'
 import { VitePWA } from 'vite-plugin-pwa'
+import { createPythonLearningOfflinePlugin } from './vitePythonLearningOffline.mjs'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -47,6 +48,7 @@ import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './vit
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
+import { learningOfflineNavigationPlugin } from './vitePwaRuntimeCachePolicy'
 import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
@@ -6785,7 +6787,7 @@ export default defineConfig(({ command, mode }) => {
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
-    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision),
+    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: null,
@@ -6858,6 +6860,12 @@ export default defineConfig(({ command, mode }) => {
         globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
         globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'],
         runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) => request.mode === 'navigate' && url.origin === self.location.origin
+              && url.searchParams.has('python-learning-offline'),
+            handler: 'CacheOnly',
+            options: { cacheName: 'kg-python-learning-navigation', plugins: [learningOfflineNavigationPlugin] },
+          },
           {
             urlPattern: ({ request, url }) =>
               request.method === 'GET'
