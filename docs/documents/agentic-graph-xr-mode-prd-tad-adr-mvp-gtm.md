@@ -590,11 +590,9 @@ workload; this is not a provider CI or production performance claim. Scope: thre
 under 10 KB added source, no module, dependency, service, or always-load guidance change. Protected
 integration and recoverable closeout require their own exact-candidate receipts.
 
-The publication follow-up reuses `runWorkspaceFsChangedBatch` in the shared workspace text writer.
-Creating an artifact and its missing parent folders is one logical write: notify observers once after
-the exact persistence readback, rather than refreshing the Explorer for each intermediate folder.
+The publication follow-up reuses `runWorkspaceFsChangedBatch` in the shared workspace text writer. Creating an artifact
+and its missing parent folders is one logical write: notify observers once after the exact persistence readback.
 Failed readback still rejects and releases one notification for any partial mutation. Existing update,
 source refresh, blob acknowledgement and publication deadline behavior remain intact. Regression
 coverage checks creation, update, failure notification and batch release. Scope: three existing files,
-under 4 KB added, no new module or dependency. An instrumented local browser probe measured about
-49 seconds versus an earlier 54-second baseline; this provisional comparison is not provider CI proof.
+under 4 KB added, no new module or dependency. An instrumented local browser probe measured about 49 seconds versus an earlier 54-second baseline; this provisional comparison is not provider CI proof.
