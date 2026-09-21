@@ -39,7 +39,7 @@ function bounded(text: string | null, limit: number, label: string): string {
 export async function saveProceduralAssetWorkspace(args: {
   session: ProceduralAssetSession; fs: WorkspaceFs; parentPath: string
   signal?: AbortSignal; isCurrent?: () => boolean
-}): Promise<ProceduralAssetWorkspacePaths> {
+}): Promise<ProceduralAssetWorkspacePaths & { modelDataUrl: string }> {
   const parent = safePath(args.parentPath)
   const ticket = args.session.begin()
   const assertCurrent = () => {
@@ -88,7 +88,7 @@ export async function saveProceduralAssetWorkspace(args: {
   assertCurrent()
   if (await args.fs.readFileText(manifestPath) !== text) throw new Error('Procedural manifest readback failed')
   assertCurrent()
-  return { manifestPath, documentPath: paths.document, recipePath: paths.recipe, sourcePath: paths.source, modelPath: paths.model, documentId: snapshot.documentId, revision: snapshot.revision }
+  return { modelDataUrl: dataUrl, manifestPath, documentPath: paths.document, recipePath: paths.recipe, sourcePath: paths.source, modelPath: paths.model, documentId: snapshot.documentId, revision: snapshot.revision }
 }
 
 /** Integrity checks detect incomplete/corrupt companions, not external provenance or authority. */

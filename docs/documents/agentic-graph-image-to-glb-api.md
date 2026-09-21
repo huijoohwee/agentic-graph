@@ -65,8 +65,16 @@ clips; recipe/source companions preserve procedural editability separately.
 MVP proof: text → recipe → control edit → serialize/reopen → GLB reimport with
 stable nodes and sampled motion. Reject malformed hierarchy, values, recipes,
 budget overflow and stale export before publication. Image export regression is
-required. Cross-surface entry wiring and joined XR planning reconciliation remain
-dependent on the existing XR owner's release and are not claimed by this increment.
+required. The native Card Run action accepts an explicit `/asset.create` or
+`#procedural-asset` invocation, with connected prompt/seed values or a
+`proceduralRecipe` JSON property. It preserves the input Card and publishes one
+owned model panel with stable identity. The existing property editor provides
+local dimension, colour, detail and visibility controls, reset, recipe editing,
+recovery and GLB download. Creation and edits use the same validated construction
+and workspace save path. A source/graph change cancels pending publication.
+Registered WebMCP entry wiring, XR selection/transport integration and joined XR
+planning reconciliation remain dependent on their existing owners' release and
+are not claimed by this increment.
 GTM: test the editable asset workflow against manual primitive assembly; record
 editing time and export success. Demand and revenue remain unvalidated.
 

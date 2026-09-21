@@ -7,6 +7,7 @@ import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { resolveImageToThreeJsRunInput } from '@/features/image-to-threejs/imageToThreeJsContract'
 import { resolveImageToGlbRunInput } from '@/features/image-to-glb/imageToGlbContract'
+import { hasProceduralAssetRunInvocation } from '@/features/image-to-glb/proceduralAssetWorkflowContract'
 
 function findGraphNodeById(graphData: GraphData | null | undefined, nodeId: string): GraphNode | null {
   const id = String(nodeId || '').trim()
@@ -25,7 +26,7 @@ export function resolveStoryboardWidgetAutoRunNodeIds(args: {
   const node = findGraphNodeById(args.graphData, id)
   if (!node) return [id]
   const shouldScopeToChangedProperties = Array.isArray(args.changedPropertyKeys)
-  if (!shouldScopeToChangedProperties && (resolveImageToGlbRunInput({ node }) || resolveImageToThreeJsRunInput({ node }))) {
+  if (!shouldScopeToChangedProperties && (hasProceduralAssetRunInvocation(node.properties) || resolveImageToGlbRunInput({ node }) || resolveImageToThreeJsRunInput({ node }))) {
     return [id]
   }
   const changedPropertyKeySet = new Set(
