@@ -59,7 +59,8 @@ export default function DesignTokensPanel({ active }: { active: boolean }) {
   const exportReview = () => {
     try {
       const current = freshContext()
-      if (!context.available || !current.available) throw new Error(current.available ? 'Design context is unavailable.' : current.message)
+      if (current.available === false) throw new Error(current.message)
+      if (context.available === false) throw new Error(context.message)
       if (current.semanticKey !== context.semanticKey) throw new Error('The document changed. Inspect the current review before export.')
       const isContext = format.startsWith('context-')
       const target = format.split('-')[1] as 'markdown' | 'json' | 'css' | 'typescript'
@@ -70,7 +71,7 @@ export default function DesignTokensPanel({ active }: { active: boolean }) {
       setMessage('Exported locally.')
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Export failed.') }
   }
-  if (!context.available) return <section aria-label="Design Tokens" className={cn('px-3 py-2 text-xs', UI_THEME_TOKENS.text.secondary)}>
+  if (context.available === false) return <section aria-label="Design Tokens" className={cn('px-3 py-2 text-xs', UI_THEME_TOKENS.text.secondary)}>
     <p role={context.status === 'invalid' ? 'alert' : 'status'}>{context.message}</p>
   </section>
   return <section className={cn(UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME, 'min-w-0 space-y-3 px-3 py-2', panelTypography.panelTextClass)}
