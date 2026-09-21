@@ -38,9 +38,15 @@ import {
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { createThreeFrameResolutionBudget } from './threeRendererLifecycle'
 
 export function OverlayFrameSync({ enabled, scheduleRef }: { enabled: boolean; scheduleRef: React.MutableRefObject<(() => void) | null> }) {
-  useFrame(() => {
+  const resolutionBudget = React.useMemo(createThreeFrameResolutionBudget, [])
+  useFrame((state, delta) => {
+    const ratio = resolutionBudget.sample(delta, state.viewport.dpr, state.viewport.initialDpr,
+      state.gl.xr.enabled && !state.gl.xr.isPresenting && state.frameloop === 'always'
+      && (typeof document === 'undefined' || document.visibilityState === 'visible'))
+    if (ratio !== null) state.setDpr(ratio)
     if (!enabled) return
     try {
       scheduleRef.current?.()

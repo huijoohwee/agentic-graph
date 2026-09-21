@@ -4,6 +4,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import {
+  createThreeFrameResolutionBudget,
   resolveThreeRendererLifecycleKey,
   resolveThreeCanvasSurfaceLifecycle,
   shouldMountThreeRenderer,
@@ -315,4 +316,45 @@ test('Three renderer lifecycle still rejects unsupported and empty non-XR surfac
     hasRenderableScene: false,
     webglSupported: true,
   }), false)
+})
+
+
+test('XR resolution keeps fast frames and isolated stalls at the requested quality', () => {
+  const budget = createThreeFrameResolutionBudget()
+  assert.equal(budget.sample(0.25, 2, 2, true), null)
+  for (let frame = 0; frame < 600; frame += 1) {
+    assert.equal(budget.sample(1 / 60, 2, 2, true), null)
+  }
+})
+
+test('XR resolution bounds sustained pixel work and recovers only after sustained headroom', () => {
+  const budget = createThreeFrameResolutionBudget()
+  let ratio = 1
+  const changes: number[] = []
+  const sample = (seconds: number) => {
+    const next = budget.sample(seconds, ratio, 1, true)
+    if (next !== null) { ratio = next; changes.push(next) }
+  }
+  for (let frame = 0; frame < 100; frame += 1) sample(0.08)
+  assert.deepEqual(changes, [0.75, 0.5])
+  assert.equal(budget.sample(1 / 60, 1, 1, true), 0.5, 'parent renders retain the admitted pixel budget')
+  for (let frame = 0; frame < 500; frame += 1) sample(0.02)
+  assert.equal(ratio, 0.5, 'marginal performance must not oscillate quality')
+  for (let frame = 0; frame < 2_000; frame += 1) sample(1 / 60)
+  assert.equal(ratio, 1)
+  assert.deepEqual(changes, [0.75, 0.5, 0.75, 1])
+})
+
+test('XR resolution excludes paused, hidden and immersive frames and resets across renderer changes', () => {
+  const budget = createThreeFrameResolutionBudget()
+  for (let frame = 0; frame < 7; frame += 1) assert.equal(budget.sample(0.2, 1, 1, true), null)
+  assert.equal(budget.sample(0.2, 1, 1, false), null)
+  assert.equal(budget.sample(0.2, 1, 1, true), null, 'ineligible frames reset the measurement window')
+  for (const delta of [Number.NaN, Number.POSITIVE_INFINITY, 0, -1, 2]) {
+    assert.equal(budget.sample(delta, 1, 1, true), null)
+  }
+  for (let frame = 0; frame < 8; frame += 1) budget.sample(0.2, 1, 1, true)
+  assert.equal(budget.sample(1 / 60, 2, 2, true), null, 'new resolution limits start a fresh window')
+  const low = createThreeFrameResolutionBudget()
+  for (let frame = 0; frame < 20; frame += 1) assert.equal(low.sample(0.2, 0.25, 0.25, true), null)
 })

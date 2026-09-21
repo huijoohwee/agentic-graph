@@ -575,24 +575,25 @@ The shared catalog supplies native subjects, props, and environments as canonica
 ### XR publication responsiveness
 
 `/fix #xr-publish-responsiveness @huijoohwee` addresses the separate XR browser CI deadline failure.
-An eightfold CPU-throttled local profile attributes about 26 seconds of sampled JavaScript to physics
-step and collision geometry while a saved capture publishes through existing storage. The solver
-repeated narrow-phase contact calculations inside every sort comparison and again after unrelated
-contacts. Cache contact times within one simulation step, retain deterministic time/ID ordering, and
-recalculate every remaining contact involving a body whose position changed during resolution.
-No contact, sensor event, storage acknowledgement, visual feature, or deadline is removed.
+Cache narrow-phase contact times within one simulation step, retain deterministic time/ID ordering,
+and invalidate every remaining contact involving a body moved by resolution. Swept-contact tests and
+1,280 differential states match; the dense local fixture measured 5,750 ms before versus 332 ms after.
+This is not provider CI or production performance proof. No contact, sensor event or deadline is removed.
+The three-file solver change adds under 10 KB, with no new module, dependency or always-load guidance.
 
-Acceptance: existing swept-contact and interaction tests; a dense sensor fixture bounding geometry
-reads and proving next-step invalidation; exact old/new state comparison across 1,280 deterministic
-steps; and the existing capture, reload, publish, and second-device reopen browser contract. The local
-differential audit matched all states and measured 5,750 ms before versus 332 ms after for its solver
-workload; this is not a provider CI or production performance claim. Scope: three existing owner files,
-under 10 KB added source, no module, dependency, service, or always-load guidance change. Protected
-integration and recoverable closeout require their own exact-candidate receipts.
+The shared workspace text writer reuses `runWorkspaceFsChangedBatch`: artifact creation and missing
+folders notify observers once after exact persistence readback. A failed readback still rejects and
+releases one notification for partial mutation. Creation, update, failure and batch-release tests pass.
+The three-file follow-up adds under 4 KB; an instrumented local publication measured about 49 seconds
+versus an earlier 54-second baseline. Neither improvement alone resolved provider CI.
 
-The publication follow-up reuses `runWorkspaceFsChangedBatch` in the shared workspace text writer. Creating an artifact
-and its missing parent folders is one logical write: notify observers once after the exact persistence readback.
-Failed readback still rejects and releases one notification for any partial mutation. Existing update,
-source refresh, blob acknowledgement and publication deadline behavior remain intact. Regression
-coverage checks creation, update, failure notification and batch release. Scope: three existing files,
-under 4 KB added, no new module or dependency. An instrumented local browser probe measured about 49 seconds versus an earlier 54-second baseline; this provisional comparison is not provider CI proof.
+`/fix #xr-adaptive-resolution @huijoohwee` bounds pixel work in the existing XR frame owner. At least
+one second and eight frames establish sustained pressure below 30 fps; pixel ratio decreases toward
+0.5. Ten fast windows restore one quality step, bounded by the renderer's initial ratio. This changes
+render resolution only: authored geometry, physics, Timeline time, storage acknowledgements and
+publication deadlines remain intact. Hidden, paused, stalled and native immersive frames are excluded.
+No second loop, timer, dependency or renderer is introduced. Scope: four existing files, under 8 KB.
+Acceptance: deterministic pressure/recovery/reset tests and the existing full browser capture, reload,
+publish and second-device reopen contract. One eightfold-throttled diagnostic measured 49.2 seconds
+at full resolution versus 38.5 seconds at half resolution; this is provisional local evidence only.
+Exact protected integration and recoverable closeout retain separate receipts.
