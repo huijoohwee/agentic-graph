@@ -1,6 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["canvas.xrMode.choreographyOwnership", "@/__tests__/xrChoreographyOwnership.test.tsx", "testXrChoreographyOwnership"],
+  ["canvas.xrMode.selectionBounds", "@/__tests__/xrChoreographyOwnership.test.tsx", "testXrSelectionBoundsFollowGeometry"],
+  ["markdown.frontmatter.referencesFollowSource", "@/__tests__/markdownVariableReferences.test.ts", "testMarkdownFrontmatterReferencesFollowSource"],
   ["canvas.xrMode.playgroundSelection", "@/__tests__/xrPlaygroundSelection.test.tsx", "testXrPlaygroundSelection"],
   ["canvas.xrMode.seaJourney.story", "@/__tests__/xrSeaJourney.test.tsx", "testXrSeaJourneyStory"],
   ["canvas.xrMode.seaJourney.replay", "@/__tests__/xrSeaJourney.test.tsx", "testXrSeaJourneyReplay"],

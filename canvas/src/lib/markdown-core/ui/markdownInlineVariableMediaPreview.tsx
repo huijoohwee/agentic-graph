@@ -3,6 +3,7 @@ import {
   buildMarkdownVariableSsotAnchorId,
   collectMarkdownVariableBrowseRows,
   collectMarkdownVariableSsotEntries,
+  parseMarkdownVariableTokens,
 } from '@/features/markdown/ui/markdownVariableReferences'
 import { DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME } from '@/features/markdown/ui/dataViewChipStyles'
 import type { InlineRenderOpts, MarkdownVariablePreview } from '@/features/markdown/ui/MarkdownRendererTypes'
@@ -68,6 +69,9 @@ export function renderMarkdownVariableReferenceChip(args: {
   const mediaPreview = resolveVariableMediaPreview(args.key, args.opts)
   const sourceText = readVariableSourceText(args.key, args.opts, mediaPreview)
   const atToken = `@${args.key}`
+  const token = parseMarkdownVariableTokens(args.raw)[0]
+  const value = args.opts.markdownVariablePreviewByKey?.[normalizePreviewKey(args.key)]?.value
+    ?? token?.declaredValue ?? token?.fallback
   return (
     <a
       key={args.baseKey}
@@ -85,7 +89,7 @@ export function renderMarkdownVariableReferenceChip(args: {
           <InlineMediaCommandThumbnail kind={mediaPreview.kind} thumbnailUrl={mediaPreview.thumbnailUrl} variant="inline" />
           <span className={CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_LABEL_CLASS_NAME}>{atToken}</span>
         </>
-      ) : renderMarkdownSigilInlineText(atToken, { keywordChipClassName: DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME })}
+      ) : value != null ? <span data-kg-var-rendered-value={args.key}>{value}</span> : renderMarkdownSigilInlineText(atToken, { keywordChipClassName: DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME })}
     </a>
   )
 }

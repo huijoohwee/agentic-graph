@@ -538,3 +538,10 @@ Timeline transforms and cue preservation. The follow-up cap is 26 source/documen
 verification includes the seed's pinned-source and default-panel contracts, with provider waits reported separately.
 The inventory validator now delegates to the existing XR runtime seed contract, removing contradictory
 Animation/Motion Control defaults while retaining the inventory's explicit browser-proof claim boundary.
+
+
+### Shared choreography and source references
+
+`/change #xr-shared-choreography-references @huijoohwee` consolidates the existing XR authoring flow. All selected subjects, props, and native stage objects use one geometry-following yellow bounding box. FloatingPanel Animation owns cast/camera movement fields and character presets. BottomPanel Timeline retains timing, static transforms, selection and transport; Motion Control projects that same selected target, mark and assigned motion. No extra clock or scene is introduced.
+
+The rehearsal body uses existing `{{key}}` references to frontmatter scene fields and camera captions. Dotted array paths resolve their current values in Markdown preview; source tokens remain editable references. Captions are authored once in frontmatter. This local pass is capped at 20 touched files and 80 KB of added source; existing generated/runtime-readiness and release boundaries remain in force.

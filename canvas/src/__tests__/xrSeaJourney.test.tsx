@@ -50,7 +50,7 @@ export function testXrSeaJourneyReplay() {
   assert.match(resolveXrRehearsalTimelineBeatAt(reopened, 20.2)?.caption || '', /My name is Nobody/)
   assert.match(resolveXrRehearsalTimelineBeatAt(reopened, 0)?.caption || '', /sailed far across the sea/)
   assert.match(resolveXrRehearsalTimelineBeatAt(reopened, 28)?.caption || '', /happily together.*The End/)
-  assert.match(source, /\*\*The End\.\*\* 🐷⛵🌊/)
+  assert.match(source, /\{\{kgXrMotionReference.camera.6.caption\}\}/)
 }
 
 export function testXrSeaJourneyLegacy() {

@@ -212,7 +212,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     || stickBeat?.anchorId !== 'xr-subject:second-pig:1'
     || stickBeat?.settings.shot !== 'close-up'
     || secondPig?.animation?.presetId !== 'jump'
-    || !markdownText.includes('hold the stick house as the readable midpoint of the journey')) {
+    || !markdownText.includes('{{kgXrMotionReference.camera.3.caption}}')) {
     throw new Error('expected the rehearsal seed to keep coast light, the stick-house midpoint beat, and the playable script')
   }
   const stickHouseTrack = sourcePlan.cast.find(track => track.actorId === 'xr-subject:stick-house:1')

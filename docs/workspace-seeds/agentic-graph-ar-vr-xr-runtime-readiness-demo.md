@@ -1,5 +1,6 @@
 ---
 title: agentic-graph AR/VR/XR Runtime-readiness Demo
+rehearsal_title: The Three Little Pigs and the Long Sea Journey
 doc_type: Workspace Demo
 status: runtime-ready
 runtime_status: browser-local-runtime-ready
@@ -414,27 +415,25 @@ Game Mode remains an overlay, not a second world. It opens with `/game.mode @can
 
 BottomPanel Timeline is the time/selection owner, while FloatingPanel Animation is the cast/camera/choreography owner. The playable rehearsal slice stays under one minute and is stepped through the existing transport, cue selection, and mark inspection owners.
 
-### Playable script: The Three Little Pigs and the Long Sea Journey
+### Playable script
 
-Three pigs land on the waterfront, raise straw, stick, and brick homes in place, and hold the stick house as the readable midpoint of the journey. The wolf walks the same path, huffs at each threshold, and the third pig ends at the chimney soup pot. Coast light, native house silhouettes, and the existing transport/cast/camera owners remain the runtime source of truth for this rehearsal slice.
+**{{rehearsal_title}}**
 
-**The Three Little Pigs and the Long Sea Journey**
+Scene: {{kgXrMotionReference.stageId}} · Duration: {{kgXrMotionReference.durationSeconds}} seconds · {{kgXrMotionReference.fps}} fps.
 
-Once upon a time, three little pigs sailed far across the sea to find new homes.
+{{kgXrMotionReference.camera.0.caption}}
 
-The first pig built a house of **straw**. A big, hungry wolf came and went *"HUFF and PUFF!"* — and blew it down! The pig ran away, fast, fast, fast.
+{{kgXrMotionReference.camera.1.caption}}
 
-The second pig built a house of **sticks**. The wolf came again — *"HUFF and PUFF!"* — and blew it down too!
+{{kgXrMotionReference.camera.2.caption}} {{kgXrMotionReference.camera.3.caption}}
 
-The third pig was the cleverest sailor of them all. He built a house of **brick**, strong and solid, right by the sea. The wolf huffed. The wolf puffed. But the house did not move — not even a little bit!
+{{kgXrMotionReference.camera.4.caption}}
 
-So the wolf tried to sneak down the chimney. But the clever pig called out, *"My name is Nobody!"* — and dropped him straight into a big pot of hot soup! Splash! The wolf jumped up and ran away, and never, ever came back.
+{{kgXrMotionReference.camera.5.caption}}
 
-The three pigs lived happily together in the brick house by the sea.
+{{kgXrMotionReference.camera.6.caption}}
 
-**The End.** 🐷⛵🌊
-
-The seven camera beats carry the script captions. At 0–2.5 seconds the pigs sail to the dock; straw collapses at 4.8 seconds, sticks at 10.8, and brick withstands the wolf. At 20.2 seconds the wolf reaches the chimney; soup splashes at 21.3, followed by escape and reunion at 25.6. Seek backward to restore every cue deterministically. Animation shows the current caption, and BottomPanel Timeline owns playback, speed, seek and frame-step. Motion Control targets the same selected cast; Camera keeps the same anchors; Game Mode suspends and restores the shared world.
+These placeholders read the source-authored frontmatter directly. Edit scene data, subjects, props, and camera captions there; the body stays unchanged. Animation owns choreography and character motions. Timeline owns static transforms, mark timing, playback, speed, seek, and frame-step. Motion Control uses the same selected target and mark; Camera keeps the same anchors; Game Mode suspends and restores the shared world.
 
 Media → Subjects & Props now switches between **In scene** and **Add from library** under one category/search filter. Story performers, houses, sailboat, soup pot and Tropical Playground use native visual illustrations. No camera/microphone, network asset or paid service is required.
 

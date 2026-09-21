@@ -396,7 +396,7 @@ function resolveCast(
     const subject = subjects.find(candidate => candidate.id === actorId) || null
     return Object.freeze({
       actorId,
-      label: String(actor.label || saved.label || actorId).trim().slice(0, 80) || actorId,
+      label: String(subject?.label || actor.label || saved.label || actorId).trim().slice(0, 80) || actorId,
       color: CAST_COLORS[index % CAST_COLORS.length],
       animation: normalizeAnimationAssignment(saved.animation, durationSeconds, subject),
       marks: normalizeMarks(saved.marks, actorId, durationSeconds, fallbackPosition, defaultXrChoreographyGait(subject || undefined)),

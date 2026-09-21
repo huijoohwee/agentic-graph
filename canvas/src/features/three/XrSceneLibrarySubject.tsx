@@ -1,3 +1,4 @@
+import { XrSelectionBounds } from './XrSelectionBounds'
 import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
 import { XrStoryCharacter, XrSailboatGeometry, XrStoryEffect } from './XrProceduralStoryGeometry'
 import type { XrStoryPresentation } from './xrStoryPresentation'
@@ -388,8 +389,7 @@ export function XrSceneLibrarySubject({
 }) {
   if (presentation?.visible === false) return null
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
-  const identificationBounds = resolveXrSceneSubjectIdentificationBounds(subject, showIdentificationBounds)
-  const selectionRadius = Math.max(asset.dimensionsMeters[0], asset.dimensionsMeters[2], 0.8) * 0.72
+  const identificationBounds = resolveXrSceneSubjectIdentificationBounds(subject, showIdentificationBounds && !selected)
   const rootOffset = animationPose?.rootOffsetMeters || [0, 0, 0]
   const rootRotation = animationPose?.rootRotationDegrees || [0, 0, 0]
   return (
@@ -414,39 +414,16 @@ export function XrSceneLibrarySubject({
         onSelect()
       } : undefined}
     >
-      {selected ? (
-        <mesh
-          name={`agentic_os_xr_scene_subject_selected_${subject.id}`}
-          position={[0, 0.04, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          renderOrder={THREE_RENDER_ORDER.overlays}
-          userData={{
-            subjectId: subject.id,
-            selected: true,
-            kgXrSharedAssetTarget: subject.id,
-            kgXrSharedAssetSelected: true,
-            kgXrTimelineHighlight: 'shared-asset',
-          }}
-        >
-          <ringGeometry args={[selectionRadius * 0.72, selectionRadius, 32]} />
-          <meshBasicMaterial
-            color={XR_MOTION_REFERENCE_SELECTION_COLOR}
-            transparent
-            opacity={0.98}
-            depthTest={false}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      ) : null}
       <group
         scale={presentation?.cue === 'build' ? Math.max(0.02, presentation.progress) : 1}
         position={rootOffset}
         rotation={rootRotation.map(THREE.MathUtils.degToRad) as [number, number, number]}
       >
         <group rotation={[-Math.PI / 2, 0, 0]}>
+          <XrSelectionBounds selected={selected} targetId={subject.id}>
           {presentation?.cue !== 'collapse' ? <XrSceneLibraryAssetGeometry assetId={subject.assetId} color={subject.color} animationPose={animationPose} label={subject.label} /> : null}
           {presentation ? <XrStoryEffect presentation={presentation} size={asset.dimensionsMeters} color={subject.color} /> : null}
+          </XrSelectionBounds>
           {identificationBounds ? (
             <mesh
               name={identificationBounds.name}
@@ -465,7 +442,7 @@ export function XrSceneLibrarySubject({
               />
             </mesh>
           ) : null}
-          <SubjectLabel label={subject.label} heightMeters={asset.dimensionsMeters[1]} selected={selected} />
+          <SubjectLabel label={subject.label} heightMeters={asset.dimensionsMeters[1]} selected={false} />
         </group>
       </group>
     </group>

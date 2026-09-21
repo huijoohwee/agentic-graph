@@ -360,7 +360,7 @@ export function selectXrMotionReferenceCameraMark(markIdValue: string): XrMotion
   if (snapshot.selectedMark?.kind === 'camera'
     && snapshot.selectedMark.markId === markId
     && snapshot.selectedShotTargetId === selectedShotTargetId) return snapshot
-  return publish({ ...snapshot, selectedShotTargetId, selectedMark: Object.freeze({ kind: 'camera', markId }) })
+  return publish({ ...snapshot, selectedShotTargetId, selectedActorId: snapshot.plan.cast.some(track => track.actorId === selectedShotTargetId) ? selectedShotTargetId : '', selectedMark: Object.freeze({ kind: 'camera', markId }) })
 }
 
 export function setXrMotionReferenceCameraRig(rig: XrMotionReferenceCameraRig): XrMotionReferenceRuntimeSnapshot {

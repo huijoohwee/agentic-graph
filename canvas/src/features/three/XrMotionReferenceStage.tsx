@@ -1,3 +1,4 @@
+import { XrSelectionBounds } from './XrSelectionBounds'
 import React from 'react'
 import * as THREE from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
@@ -349,31 +350,7 @@ function CastTrack({
           kgXrTimelineHighlight: selectedActor ? 'shared-asset' : '',
         }}
       >
-        {selectedActor ? (
-          <mesh
-            name={`agentic_os_xr_motion_cast_live_highlight_${track.actorId}`}
-            position={[0, scale * 0.04, 0]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            renderOrder={THREE_RENDER_ORDER.overlays}
-            userData={{
-              actorId: track.actorId,
-              selected: true,
-              kgXrSharedAssetTarget: track.actorId,
-              kgXrSharedAssetSelected: true,
-              kgXrTimelineHighlight: 'shared-asset',
-            }}
-          >
-            <ringGeometry args={[scale * 0.54, scale * 0.88, 32]} />
-            <meshBasicMaterial
-              color={XR_MOTION_REFERENCE_SELECTION_COLOR}
-              transparent
-              opacity={0.98}
-              depthTest={false}
-              depthWrite={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        ) : null}
+        <XrSelectionBounds selected={selectedActor} targetId={track.actorId}>
         <mesh position={[0, scale * (0.92 - pose.crouch * 0.18), 0]}>
           <boxGeometry args={[scale * 0.54, scale * 1.25, scale * 0.36]} />
           <meshStandardMaterial color={track.color} roughness={0.92} metalness={0} />
@@ -393,6 +370,7 @@ function CastTrack({
         <mesh position={[-scale * 0.4, scale * 1.18, 0]} rotation={[degrees(pose.leftArmPitchDegrees), 0, degrees(pose.leftArmRollDegrees)]}><boxGeometry args={[scale * 0.16, scale * 0.66, scale * 0.18]} /><meshStandardMaterial color={track.color} roughness={0.92} metalness={0} /></mesh>
         <mesh position={[scale * 0.4, scale * 1.18, 0]} rotation={[degrees(pose.rightArmPitchDegrees), 0, degrees(pose.rightArmRollDegrees)]}><boxGeometry args={[scale * 0.16, scale * 0.66, scale * 0.18]} /><meshStandardMaterial color={track.color} roughness={0.92} metalness={0} /></mesh>
         <GraphCastPropCue pose={pose} scale={scale} />
+        </XrSelectionBounds>
       </group></CastMarkControl> : null}
     </group>
   )

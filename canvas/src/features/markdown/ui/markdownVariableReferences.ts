@@ -141,7 +141,7 @@ const collectInlineDeclarationMap = (text: string): Map<string, string> => {
 const resolveVariableValue = (args: { frontmatter: Record<string, unknown>; inlineDeclMap: Map<string, string>; key: string }): MarkdownVariableBrowseRow => {
   const key = String(args.key || '').trim()
   if (!key) return { key: '', value: null, source: 'unresolved' }
-  const fmValue = getObjectPath(args.frontmatter, key)
+  const fmValue = getObjectPath(args.frontmatter, key.replace(/\.(\d+)(?=\.|$)/g, '[$1]'))
   const fmString = stringifyVariableValue(fmValue)
   if (fmString != null) return { key, value: fmString, source: 'frontmatter' }
   const inlineValue = args.inlineDeclMap.get(key.toLowerCase())
