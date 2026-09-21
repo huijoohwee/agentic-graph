@@ -4,8 +4,11 @@ import { readGraphTopologySummary, withGraphTopologyMetadata } from '@/lib/graph
 import { DEFAULT_CANVAS_2D_RENDERER, isFrontmatterOnlyPolicyActive, resolveCanvas2dRendererId } from '@/lib/config.render'
 import { readSubgraphs } from '@/lib/graph/subgraphs'
 import { deriveFlowchartFrontmatterActiveViewGraph, deriveGraphDataForActiveView } from '@/hooks/active-graph-data/activeViewGraph'
+import { buildDesignContext } from '@/features/design/designContext'
+import { getKgThemeFromDom, type KgTheme } from '@/lib/ui/tokens-ssot'
 
 type LocalCanvasTopologyInspectionArgs = {
+  theme?: KgTheme
   graphData: GraphData | null | undefined
   graphDataRevision: number | null | undefined
   markdownDocumentName?: unknown
@@ -85,10 +88,14 @@ export const inspectLocalCanvasTopology = (args: LocalCanvasTopologyInspectionAr
     : 0
   const selectedNodeId = normalizeString(args.selectedNodeId) || null
   const selectedEdgeId = normalizeString(args.selectedEdgeId) || null
+  const design = buildDesignContext({ active: canvasRenderMode === '2d' && canvas2dRenderer === 'design',
+    graphData, graphRevision: graphDataRevision, documentName, markdown: markdownText ?? '',
+    theme: args.theme ?? getKgThemeFromDom() })
 
   if (!graphData) {
     return {
       available: false,
+      design,
       sourceKind: 'browser-local-canvas',
       graphScope: 'none',
       documentName: documentName || '',
@@ -142,6 +149,7 @@ export const inspectLocalCanvasTopology = (args: LocalCanvasTopologyInspectionAr
 
   return {
     available: true,
+    design,
     sourceKind: 'browser-local-canvas',
     graphScope,
     activeViewAccurate: documentSemanticMode !== 'keyword',

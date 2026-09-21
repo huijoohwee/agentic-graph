@@ -2,6 +2,7 @@ import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_SURFACE_CARD } from '@/lib/ui'
 import { cn } from '@/lib/utils'
+import { DESIGN_REVIEW_GUIDANCE } from '@/features/design/designContext'
 
 type TabKey = 'workspace' | 'viewers' | 'tables'
 
@@ -86,6 +87,10 @@ export default function DesignSystemHub() {
           <li>Generated CSS is treated as read-only; changes flow through token definitions.</li>
           <li>Surfaces must consume semantic tokens and shared utilities instead of hardcoded colors/sizes.</li>
         </ul>
+      </Card>
+      <Card title="Design review">
+        <ul className="m-0 pl-5 text-sm">{DESIGN_REVIEW_GUIDANCE.map(line => <li key={line}>{line}</li>)}</ul>
+        <p className="text-sm">Open Design → Tokens to inspect authored tokens, observed document values and source findings, or export a local design context.</p>
       </Card>
 
       <Card title="Adoption status">

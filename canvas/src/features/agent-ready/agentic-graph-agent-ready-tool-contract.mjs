@@ -421,8 +421,13 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology),
           title: 'Inspect Local Canvas Topology',
-          description: 'Inspect the active browser-local agentic-graph canvas topology summary from the app runtime without calling published storage or Pages MCP routes.',
+          description: 'Inspect browser-local canvas topology and bounded Design context, token provenance and declared-property findings. Inactive Design is explicit; this read never activates a renderer or calls published storage.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+          outputSchema: { type: 'object', required: ['available', 'design'], properties: {
+            available: { type: 'boolean' }, design: { type: 'object', required: ['available', 'status'], properties: {
+              available: { type: 'boolean' }, status: { enum: ['inactive', 'invalid', 'ready'] },
+            } },
+          } },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot,
