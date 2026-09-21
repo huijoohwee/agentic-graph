@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { load } from 'js-yaml'
 import React from 'react'
@@ -16,7 +15,7 @@ const frontmatter = load(source.split('---')[1]) as { kgXrMotionReference: unkno
 const plan = readXrMotionReferencePlan(frontmatter.kgXrMotionReference)
 const track = (name: string) => plan.cast.find(candidate => candidate.actorId === `xr-subject:${name}:1`)!
 
-test('the source-authored journey sails, collapses two houses, preserves brick and returns home', () => {
+export function testXrSeaJourneyStory() {
   assert.equal(plan.stageId, 'tropical-playground')
   assert.equal(plan.durationSeconds, 28)
   assert.equal(plan.castSource, 'subjects-only')
@@ -37,9 +36,9 @@ test('the source-authored journey sails, collapses two houses, preserves brick a
     const final = sampleXrMotionReferenceMarks(track(name).marks, 28)
     assert.ok(final[0] >= 3 && final[0] <= 6 && final[2] === -0.8)
   }
-})
+}
 
-test('seek/replay is deterministic and cues/captions survive save and hydration', () => {
+export function testXrSeaJourneyReplay() {
   const saved = serializeXrMotionReferencePlan(plan)
   const reopened = readXrMotionReferencePlan(saved)
   assert.deepEqual(serializeXrMotionReferencePlan(reopened), saved)
@@ -52,22 +51,22 @@ test('seek/replay is deterministic and cues/captions survive save and hydration'
   assert.match(resolveXrRehearsalTimelineBeatAt(reopened, 0)?.caption || '', /sailed far across the sea/)
   assert.match(resolveXrRehearsalTimelineBeatAt(reopened, 28)?.caption || '', /happily together.*The End/)
   assert.match(source, /\*\*The End\.\*\* 🐷⛵🌊/)
-})
+}
 
-test('legacy plans stay neutral and invalid presentation input fails closed', () => {
+export function testXrSeaJourneyLegacy() {
   const legacy = readXrMotionReferencePlan({ subjects: [{ id: 'prop', assetId: 'prop-crate' }], cast: [{ actorId: 'prop', marks: [{ timeSeconds: 0, cue: '<script>' }] }] })
   assert.equal(legacy.cast[0]?.marks[0]?.cue, undefined)
   assert.deepEqual(sampleXrStoryPresentation([], NaN), { cue: 'idle', elapsed: 0, progress: 0, visible: true })
   const dirty = readXrMotionReferencePlan({ camera: [{ label: 'a'.repeat(100), caption: 'b'.repeat(1000) }] })
   assert.equal(dirty.camera[0]?.label?.length, 80)
   assert.equal(dirty.camera[0]?.caption?.length, 800)
-})
+}
 
-test('story and terrain previews are native SVG illustrations, without remote resources', () => {
+export function testXrSeaJourneyPreviews() {
   for (const assetId of ['tropical-playground', 'character-pig', 'character-wolf', 'vehicle-sailboat', 'prop-house-straw', 'prop-house-stick', 'prop-house-brick', 'prop-soup-pot']) {
     const html = renderToStaticMarkup(<XrCatalogArtwork assetId={assetId} label={assetId} color="#f97316" Icon={Box} />)
     assert.ok(html.includes(`data-kg-xr-catalog-artwork="${assetId}"`))
     assert.ok(!/https?:|<image|<script/.test(html))
     assert.ok(html.includes('role="img"'))
   }
-})
+}

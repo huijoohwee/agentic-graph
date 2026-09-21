@@ -185,6 +185,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     'xr-subject:brick-house:1',
     'xr-subject:oak:1',
     'xr-subject:soup-pot:1',
+    'xr-subject:sailboat:1',
   ]
   const storyCastIds = [
     'xr-subject:wolf:1',
@@ -193,7 +194,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     'xr-subject:third-pig:1',
   ]
   const forbiddenGraphCastIds = ['xr_demo_entry', 'xr_ball_controller', 'xr_rocket_controller', 'xr_runtime_gate']
-  if (sourcePlan.stageId !== 'singapore'
+  if (sourcePlan.stageId !== 'tropical-playground'
     || sourcePlan.castSource !== 'subjects-only'
     || sourcePlan.subjects.length !== storySubjectIds.length
     || storySubjectIds.some(id => !sourcePlan.subjects.some(subject => subject.id === id))

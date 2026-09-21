@@ -510,3 +510,11 @@ seed edit is preserved and is not adopted into this lane. Earlier integrated reh
 Budget: 60 minutes for source/verification, at most 18 changed source files and 80 KB added bytes;
 new dependencies, paid services, remote media and always-load guidance delta: zero. CI/provider waits
 require an observed condition and recheck rather than an ETA. No deployment or production claim.
+
+Local verification (2026-09-21): the affected planner selected five owner partitions and all passed;
+nine registered journey/seed/Timeline/camera tests passed; seed authority and changed-file hygiene
+passed. Browser checks exercised Surface Mode → XR, both Subjects & Props views, the opening
+camera beat with all three pigs aboard the sailboat, caption projection and collapsed-house replay
+in the native playground. This is local browser evidence, not device or production proof. The
+28-second choreography retains nine visible speed sanity warnings for intentionally compressed
+travel; no warning threshold was changed. Protected integration remains a separate provider gate.

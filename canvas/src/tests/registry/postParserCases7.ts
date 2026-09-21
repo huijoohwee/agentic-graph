@@ -1,6 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["canvas.xrMode.seaJourney.story", "@/__tests__/xrSeaJourney.test.tsx", "testXrSeaJourneyStory"],
+  ["canvas.xrMode.seaJourney.replay", "@/__tests__/xrSeaJourney.test.tsx", "testXrSeaJourneyReplay"],
+  ["canvas.xrMode.seaJourney.legacy", "@/__tests__/xrSeaJourney.test.tsx", "testXrSeaJourneyLegacy"],
+  ["canvas.xrMode.seaJourney.previews", "@/__tests__/xrSeaJourney.test.tsx", "testXrSeaJourneyPreviews"],
   ["workspace.sourceFiles.revealActive", "@/__tests__/markdownFileTreeRowButton.test.tsx", "testMarkdownFileTreeRevealsActiveSourceWithoutStealingFocus"],
   ["canvas.xrMode.appearance.catalog", "@/__tests__/xrSceneAppearance.test.tsx", "testXrSceneAppearanceNormalizesAndPreservesEveryCatalogAsset"],
   ["canvas.xrMode.appearance.source", "@/__tests__/xrSceneAppearance.test.tsx", "testXrSceneAppearancePanelsAndEditorShareSavedSource"],
