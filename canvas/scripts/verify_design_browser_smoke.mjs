@@ -80,6 +80,8 @@ async function verify() {
       assert.ok(projection.audit.findings.some(f => f.nodeId === 'design-card'))
       const dimensions = await review.evaluate(el => ({ scroll: el.scrollWidth, client: el.clientWidth }))
       assert.ok(dimensions.scroll <= dimensions.client + 1, 'Design review must not overflow horizontally')
+      const viewport = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: innerWidth }))
+      assert.ok(viewport.scroll <= viewport.width + 1, 'Design review must not cause page-level horizontal overflow')
       const format = review.getByRole('combobox', { name: 'Export format' })
       await format.selectOption('context-json')
       const button = review.getByRole('button', { name: 'Export locally' })
