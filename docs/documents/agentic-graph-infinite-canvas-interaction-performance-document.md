@@ -87,6 +87,31 @@ It is strictly code-backed: it documents the current behavior and forbids duplic
 - Low-end devices: gate background renderer warm-mount/prefetch by `navigator.deviceMemory`, `navigator.hardwareConcurrency`, and `navigator.connection` (`saveData`, `effectiveType`); skip prefetch of non-active heavy 2D/3D renderers when memory/CPU are low or `saveData`/`2g` is detected so Canvas entry and Toolbar stay responsive.
 - Heavy feature surfaces (Monaco editor, MapLibre GeoJSON previews, Mermaid diagrams, GLTF exporter) must be lazy-loaded per feature surface, and entry/vendor preloads must not auto-mount these modules on page load, especially on low-end or mobile devices.
 
+## Incremental execution guidelines
+
+Apply the shared [incremental work contract](https://github.com/huijoohwee/huijoohwee.github.io/blob/main/guidelines/token-performance-economics-guidelines.md#incremental-work-contract)
+through the existing Graph owners. The obligations below guide changes; they are
+not a claim that every existing surface has passed a performance audit.
+
+- Forbid costly recomputation or rerendering for unchanged inputs. Canvas, Viewer,
+  Widget Cards and FloatingPanel must share their current source and render owners;
+  an unrelated selection or Timeline tick must not rebuild the document, catalog,
+  scene hierarchy or full list. Keep selectors and effect dependencies stable.
+- Layout, picking and physics reuse derived work for an explicit input identity and
+  lifetime. Precompute expensive sort keys and invalidate only affected contacts or
+  nodes after mutation. Physics resolution moving either body invalidates its
+  contact times; a new simulation step starts with fresh step-local inputs.
+- Timeline remains the clock for authored motion; render loops do not create a
+  second transport. Batch owner updates, bound queued work and reject stale results
+  after document/scene switches. Hidden optional previews release or suspend visual
+  work without silently interrupting source persistence or required simulation.
+- Verify one changed subject, unchanged state, edit/view parity, cold reload,
+  deterministic events and teardown through affected checks. Compare compute/render
+  counts, frame/CPU time and retained memory under the same workload; no deadline
+  extension, omitted contact or weaker storage acknowledgement counts as a speedup.
+  Keep profiling bounded and optional; record source, context and resource evidence
+  separately from CI waits, protected integration and production readiness.
+
 ## Implementation Pointers
 
 - Floating Panel shell + views: `agentic-graph/canvas/src/features/toolbar/ToolbarToolMenu.tsx`
