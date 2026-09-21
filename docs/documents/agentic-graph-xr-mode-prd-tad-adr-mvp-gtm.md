@@ -521,7 +521,7 @@ travel; no warning threshold was changed. Protected integration remains a separa
 
 ### Playground selection and Timeline inspector follow-up
 
-The 2026-09-21 browser comments authorize `/change #xr-playground-selection-ready @huijoohwee`.
+The 2026-09-21 browser comments authorize `/change #xr-playground-contract-ready @huijoohwee`.
 PS-1: native cannons, landmarks, palms, rocks, treasure and simulated bodies select through the
 existing shot-target owner without spawning authored copies. Hidden story geometry must not intercept
 picking. PS-2: in-scene Subjects & Props reuse the environment card layout and native illustrations;
@@ -536,3 +536,5 @@ Cast edits and retiming preserve presentation cues. Regression coverage exercise
 no-copy/no-mutation selection, explicit command rejection, hidden geometry, rendered card accessibility,
 Timeline transforms and cue preservation. The follow-up cap is 26 source/document files and 80 KB added bytes;
 verification includes the seed's pinned-source and default-panel contracts, with provider waits reported separately.
+The inventory validator now delegates to the existing XR runtime seed contract, removing contradictory
+Animation/Motion Control defaults while retaining the inventory's explicit browser-proof claim boundary.
