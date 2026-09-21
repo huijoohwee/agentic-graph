@@ -215,7 +215,7 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     if (typeof sourceMarkdownText !== 'string' || !sourceMarkdownText) return []
     return sourceMarkdownText.split(/\r?\n/)
   }, [sourceMarkdownText, viewerInlineEditingEnabled])
-  const { entries: variableSsotEntries, previewByKey: markdownVariablePreviewByKey } = useMarkdownVariablePreviewSource(sourceMarkdownText, onReplaceLineRange, MARKDOWN_VARIABLE_SSOT_SCAN_MAX_CHARS, activeDocumentPath)
+  const { entries: variableSsotEntries, previewByKey: markdownVariablePreviewByKey } = useMarkdownVariablePreviewSource(sourceMarkdownText, Boolean(onReplaceLineRange), MARKDOWN_VARIABLE_SSOT_SCAN_MAX_CHARS, activeDocumentPath)
   const frontmatterMeta = React.useMemo(() => {
     if (!frontmatterMetaProp || typeof frontmatterMetaProp !== 'object' || Array.isArray(frontmatterMetaProp)) {
       return {} as Record<string, unknown>

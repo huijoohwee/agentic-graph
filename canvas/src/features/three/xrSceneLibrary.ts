@@ -228,6 +228,7 @@ export type XrSceneLibraryShape = 'humanoid' | 'quadruped' | 'car' | 'bicycle' |
 export type XrSceneLibraryAsset = Readonly<{
   id: string
   label: string
+  referenceLabel?: string
   category: XrSceneLibraryCategory
   description: string
   shape: XrSceneLibraryShape
@@ -253,14 +254,14 @@ export const XR_SCENE_LIBRARY_FEATURED_ASSET_IDS = Object.freeze([
 ] as const)
 
 export const XR_SCENE_LIBRARY_ASSETS: readonly XrSceneLibraryAsset[] = [
-  {"id": "character-pig", "label": "Pig performer", "category": "people", "description": "Round snout, curled tail and colorful overalls.", "shape": "humanoid", "dimensionsMeters": [0.82, 1.3, 0.6], "defaultColor": "#eb8c43", "mobile": true, "keywords": ["pig", "sailor", "story"]},
-  {"id": "character-wolf", "label": "Wolf performer", "category": "people", "description": "Pointed ears, long muzzle and an expressive storybook silhouette.", "shape": "humanoid", "dimensionsMeters": [0.8, 1.9, 0.68], "defaultColor": "#526b85", "mobile": true, "keywords": ["wolf", "story"]},
-  {"id": "character-monkey", "label": "Monkey performer", "category": "people", "description": "Round ears, a warm muzzle and a long curled tail.", "shape": "humanoid", "dimensionsMeters": [0.85, 1.55, 0.68], "defaultColor": "#9b6542", "mobile": true, "keywords": ["monkey", "story"]},
+  {"id": "character-pig", "referenceLabel": "pig", "label": "Pig performer", "category": "people", "description": "Round snout, curled tail and colorful overalls.", "shape": "humanoid", "dimensionsMeters": [0.82, 1.3, 0.6], "defaultColor": "#eb8c43", "mobile": true, "keywords": ["pig", "sailor", "story"]},
+  {"id": "character-wolf", "referenceLabel": "wolf", "label": "Wolf performer", "category": "people", "description": "Pointed ears, long muzzle and an expressive storybook silhouette.", "shape": "humanoid", "dimensionsMeters": [0.8, 1.9, 0.68], "defaultColor": "#526b85", "mobile": true, "keywords": ["wolf", "story"]},
+  {"id": "character-monkey", "referenceLabel": "monkey", "label": "Monkey performer", "category": "people", "description": "Round ears, a warm muzzle and a long curled tail.", "shape": "humanoid", "dimensionsMeters": [0.85, 1.55, 0.68], "defaultColor": "#9b6542", "mobile": true, "keywords": ["monkey", "story"]},
   {"id": "vehicle-sailboat", "label": "Sailboat", "category": "vehicles", "description": "Wooden hull, cream sail and deck for a sea journey.", "shape": "sailboat", "dimensionsMeters": [3.4, 4, 5.2], "defaultColor": "#a66743", "mobile": true, "keywords": ["boat", "sea", "journey"]},
-  {"id": "prop-house-straw", "label": "Straw house", "category": "props", "description": "Golden thatch and bundled straw walls.", "shape": "crate", "dimensionsMeters": [2, 2.3, 2], "defaultColor": "#eec86d", "mobile": false, "keywords": ["straw", "house", "story"]},
-  {"id": "prop-house-stick", "label": "Stick house", "category": "props", "description": "Timber posts, log walls and pitched wooden roof.", "shape": "crate", "dimensionsMeters": [2, 2.3, 2], "defaultColor": "#bb8050", "mobile": false, "keywords": ["stick", "house", "story"]},
-  {"id": "prop-house-brick", "label": "Brick house", "category": "props", "description": "Brick courses, solid roof and a chimney by the sea.", "shape": "crate", "dimensionsMeters": [2.2, 2.4, 2.2], "defaultColor": "#c66b50", "mobile": false, "keywords": ["brick", "house", "story"]},
-  {"id": "prop-soup-pot", "label": "Soup pot", "category": "props", "description": "Open metal pot with warm soup and a rim.", "shape": "crate", "dimensionsMeters": [1.8, 1.6, 1.8], "defaultColor": "#445464", "mobile": false, "keywords": ["soup", "pot", "story"]},
+  {"id": "prop-house-straw", "referenceLabel": "straw", "label": "Straw house", "category": "props", "description": "Golden thatch and bundled straw walls.", "shape": "crate", "dimensionsMeters": [2, 2.3, 2], "defaultColor": "#eec86d", "mobile": false, "keywords": ["straw", "house", "story"]},
+  {"id": "prop-house-stick", "referenceLabel": "sticks", "label": "Stick house", "category": "props", "description": "Timber posts, log walls and pitched wooden roof.", "shape": "crate", "dimensionsMeters": [2, 2.3, 2], "defaultColor": "#bb8050", "mobile": false, "keywords": ["stick", "house", "story"]},
+  {"id": "prop-house-brick", "referenceLabel": "brick", "label": "Brick house", "category": "props", "description": "Brick courses, solid roof and a chimney by the sea.", "shape": "crate", "dimensionsMeters": [2.2, 2.4, 2.2], "defaultColor": "#c66b50", "mobile": false, "keywords": ["brick", "house", "story"]},
+  {"id": "prop-soup-pot", "referenceLabel": "pot of hot soup", "label": "Soup pot", "category": "props", "description": "Open metal pot with warm soup and a rim.", "shape": "crate", "dimensionsMeters": [1.8, 1.6, 1.8], "defaultColor": "#445464", "mobile": false, "keywords": ["soup", "pot", "story"]},
   { id: 'person-adult', label: 'Adult', category: 'people', description: 'Neutral standing performer at human scale.', shape: 'humanoid', dimensionsMeters: [0.65, 1.75, 0.45], defaultColor: '#38bdf8', mobile: true, keywords: ['cast', 'actor', 'human'] },
   { id: 'person-child', label: 'Child', category: 'people', description: 'Smaller neutral performer for family blocking.', shape: 'humanoid', dimensionsMeters: [0.52, 1.25, 0.38], defaultColor: '#f97316', mobile: true, keywords: ['cast', 'actor', 'human'] },
   { id: 'animal-dog', label: 'Dog', category: 'animals', description: 'Medium quadruped with a clear facing direction.', shape: 'quadruped', dimensionsMeters: [0.45, 0.72, 1.05], defaultColor: '#a78bfa', mobile: true, keywords: ['pet', 'cast'] },

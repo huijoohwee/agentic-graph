@@ -1,6 +1,6 @@
 import React from 'react'
 import { buildMarkdownVariablePreviewByKey } from '@/lib/markdown-core/ui/markdownInlineVariableMediaPreview'
-import { resolveMarkdownVariableText } from '@/features/markdown/ui/markdownVariableChoices'
+import { resolveMarkdownVariableText } from '@/features/markdown/ui/markdownVariableText'
 import { resolveXrRehearsalTimelineBeatAt } from './xrRehearsalTimelineBeats'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readXrAnimationTransport } from './xrAnimationTransportRuntime'
