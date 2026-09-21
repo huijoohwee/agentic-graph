@@ -1,6 +1,11 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
+  ["proceduralAsset.workflowInvocation", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowInvocationAndConnectedValues"],
+  ["proceduralAsset.workflowPublication", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowPublishesOwnedModel"],
+  ["proceduralAsset.workflowCancellation", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowRejectsStaleAndUnavailablePublication"],
+  ["proceduralAsset.workflowSourceFence", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowSourceFenceRejectsDocumentReuse"],
+  ["proceduralAsset.controlsUI", "@/features/image-to-glb/ProceduralAssetControls.test.tsx", "testProceduralControlsRetainInvalidDraftAndPriorModel"],
   ["proceduralAsset.workspaceRoundTrip", "@/features/image-to-glb/proceduralAssetWorkspace.test.ts", "testProceduralAssetWorkspaceRoundTripAndFidelity"],
   ["proceduralAsset.workspaceCancellation", "@/features/image-to-glb/proceduralAssetWorkspace.test.ts", "testProceduralAssetWorkspaceCancellation"],
   ["proceduralAsset.workspaceFailure", "@/features/image-to-glb/proceduralAssetWorkspace.test.ts", "testProceduralAssetWorkspaceFailurePreservesCommittedGeneration"],

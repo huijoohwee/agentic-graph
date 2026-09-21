@@ -27,6 +27,9 @@ import { PANEL_FRAME_EMBEDDED_SURFACE_STYLE } from '@/lib/ui/panelFrame'
 import type { SharedChatModelSelect } from '@/features/chat/chatModelCredentialResolver'
 import type { WidgetCompactPreviewViewModel } from '@/features/storyboard-widget-manager/widgetCompactPreview'
 import type { ImageToThreeJsRenderMode } from '@/features/image-to-threejs/imageToThreeJsContract'
+import { isProceduralAssetOutputPanel } from '@/features/image-to-glb/proceduralAssetWorkflowContract'
+
+const ProceduralAssetControls = React.lazy(() => import('@/features/image-to-glb/ProceduralAssetControls').then(module => ({ default: module.ProceduralAssetControls })))
 
 type WidgetEditorFormContentProps = {
   active: boolean
@@ -198,6 +201,9 @@ export function WidgetEditorFormContent(props: WidgetEditorFormContentProps) {
       onScrollCapture={() => handleWidgetInnerPanelScrollCapture(emitInteractionFrame)}
       onWheelCapture={e => handleWidgetInnerPanelWheelCapture(e, emitInteractionFrame)}
     >
+      {active && isProceduralAssetOutputPanel(propertiesSnapshot) ? <React.Suspense fallback={<p role="status">Loading model controls…</p>}>
+        <ProceduralAssetControls nodeId={String(node.id)} properties={propertiesSnapshot} inputClassName={keyValueInputClass} onPatchProperties={onPatchProperties} />
+      </React.Suspense> : null}
       <section className="min-w-0" aria-label={UI_LABELS.flowWidgetNodeLegend}>
         <WidgetEditorKvTable
           ariaLabel={UI_LABELS.flowWidgetNodeLegend}

@@ -9,6 +9,9 @@ import { ensureEditorCanvasLandingForDuration } from '@/lib/toolbar/workspaceLan
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { UI_COPY, FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config'
 import { readGraphDataRevision } from '@/lib/graph/documentMetadata'
+import { captureWorkspaceSourceTextRevision } from '@/features/workspace-fs/workspaceSourceTextTransaction'
+import { hasProceduralAssetRunInvocation } from '@/features/image-to-glb/proceduralAssetWorkflowContract'
+import { createProceduralAssetSourceFence } from '@/features/image-to-glb/proceduralAssetWorkflow'
 import { resolveWidgetRegistryEntry } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
 import { resolveRichMediaWidgetKind } from '@/features/chat/richMediaRun'
 import { getCachedStoryboardWidgetWorkflowNodeResolutionContext, resolveStoryboardWidgetWorkflowNodeByIdAcrossGraphs, resolveStoryboardWidgetWorkflowRunTarget } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
@@ -48,6 +51,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
     let runAnchorNode: GraphNode | null = null
     let publishedRunGraphData: GraphData | null = null
     let suppressDraftPersistence = false
+    let runSourcePersistence = runOptions?.sourcePersistence
     const commitPublishedRunGraphData = args.commitPublishedGraphData
       ? (graphData: GraphData) => {
           publishedRunGraphData = graphData
@@ -246,6 +250,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
         publishMediaRunOutputToRichMediaPanel,
         publishImageToThreeJsRunOutputToRichMediaPanel,
         publishImageToGlbRunOutputToRichMediaPanel,
+        publishProceduralAssetRunOutputToRichMediaPanel,
         restoreImageToThreeJsInputProjection,
         resolveImageToThreeJsOwnedOutputPanelRunInput,
         publishAnnotationRunOutputToRichMediaPanel,
@@ -282,7 +287,21 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
         upsertUiToast: args.upsertUiToast,
       })) return
 
-      const mediaNodeHandled = await runStoryboardWidgetMediaWorkflowNode({
+      const proceduralRequested = hasProceduralAssetRunInvocation(rawNodeProperties)
+      if (proceduralRequested) suppressDraftPersistence = true
+      const sourceFence = proceduralRequested ? createProceduralAssetSourceFence({
+        read: () => {
+          const current = useGraphStore.getState(), graph = args.readDraftGraphData()
+          return { documentId: String(current.markdownDocumentName || ''), documentText: String(current.markdownDocumentText || ''), graph, revision: readGraphDataRevision(graph), sourceRevision: captureWorkspaceSourceTextRevision(activeWorkspacePath).revision }
+        },
+        subscribe: listener => useGraphStore.subscribe(listener),
+        onInvalidate: () => { suppressDraftPersistence = true },
+      }) : null
+      if (sourceFence && (!activeWorkspacePath || store.markdownDocumentName !== activeWorkspacePath)) {
+        sourceFence.release(); throw new Error('Open the source workspace document before creating a procedural asset')
+      }
+      let mediaNodeHandled: boolean
+      try { mediaNodeHandled = await runStoryboardWidgetMediaWorkflowNode({
         id,
         node,
         rawNodeProperties,
@@ -304,13 +323,22 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
         publishMediaRunOutputToRichMediaPanel,
         publishImageToThreeJsRunOutputToRichMediaPanel,
         publishImageToGlbRunOutputToRichMediaPanel,
+        publishProceduralAssetRunOutputToRichMediaPanel,
+        proceduralContext: sourceFence ? {
+          documentId: activeWorkspacePath, parentPath: activeWorkspacePath.slice(0, activeWorkspacePath.lastIndexOf('/')) || '/',
+          signal: sourceFence.signal, isCurrent: sourceFence.isCurrent, beforePublish: sourceFence.release,
+          onPublished: () => {
+            suppressDraftPersistence = false
+            runSourcePersistence = { ...runOptions?.sourcePersistence, sourceOwner: { documentName: activeWorkspacePath, documentText: String(store.markdownDocumentText || '') } }
+          },
+        } : undefined,
         restoreImageToThreeJsInputProjection,
         resolveImageToThreeJsOwnedOutputPanelRunInput,
         publishAnnotationRunOutputToRichMediaPanel,
         upsertUiToast: args.upsertUiToast,
         propagateErrors: runOptions?.propagateErrors === true,
         requireDurableMediaPersistence: runOptions?.requireDurableMediaPersistence === true,
-      })
+      }) } finally { sourceFence?.release() }
       if (mediaNodeHandled) return
 
       const resolveTextGenerationRunContext = () => resolveStoryboardWidgetTextGenerationRunContext({
@@ -481,7 +509,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
     const durableGraph = currentDurableGraph && runAnchorNode ? preserveStoryboardWidgetWorkflowInputTopology({ graphData: currentDurableGraph, anchorNode: runAnchorNode }) : currentDurableGraph
     try {
       if (durableGraph && !suppressDraftPersistence) {
-        await args.persistDraftGraphData(durableGraph, runOptions?.sourcePersistence)
+        await args.persistDraftGraphData(durableGraph, runSourcePersistence)
       }
     } catch (error) {
       const detail = error && typeof error === 'object' && 'message' in error ? String((error as { message?: unknown }).message || '').trim() : ''
