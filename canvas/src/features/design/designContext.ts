@@ -100,6 +100,8 @@ export function serializeDesignContext(context: DesignContext, target: 'markdown
   if (target !== 'markdown') throw new Error('Unsupported design context export target.')
   const lines = ['# Design context', '',
     `Source: ${escapeMarkdown(context.documentName || 'unnamed document')}`, `Theme: ${context.theme}`,
+    `Graph revision: ${context.graphRevision}`, `Intent source: ${escapeMarkdown(context.intentSource)}`,
+    `Observation source: ${context.observationSource}`,
     `Token owner: ${context.tokenSource}`, `Token revision: ${context.tokenRevision}`, `Context: ${context.semanticKey}`,
     '', context.dataPolicy, '', '## Authored intent', '',
     ...DESIGN_INTENT_FIELDS.map(key => `- ${key}: ${escapeMarkdown(context.intent[key] ?? 'Unresolved')}`),
