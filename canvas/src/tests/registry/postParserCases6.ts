@@ -1,6 +1,8 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
+  ["proceduralAsset.presetCardGate", "@/__tests__/proceduralAssetPromptPreset.test.ts", "testProceduralAssetPresetRequiresCardExecutionGate"],
+  ["proceduralAsset.presetCardInsertion", "@/__tests__/proceduralAssetPromptPreset.test.ts", "testProceduralAssetPresetInsertsIntoCardWithoutExecution"],
   ["proceduralAsset.workflowInvocation", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowInvocationAndConnectedValues"],
   ["proceduralAsset.workflowPublication", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowPublishesOwnedModel"],
   ["proceduralAsset.workflowCancellation", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowRejectsStaleAndUnavailablePublication"],
