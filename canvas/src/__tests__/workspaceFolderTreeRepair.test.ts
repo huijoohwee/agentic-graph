@@ -80,7 +80,7 @@ export async function testEnsureWorkspaceFolderTreeIfMissingCreatesNestedSeedFol
     }
     notifications.length = 0
     notifyWorkspaceFsChanged({ op: 'writeFileText', path })
-    if (notifications.length !== 1 || notifications[0]?.op !== 'writeFileText') {
+    if (notifications.length !== 1 || String(notifications[0]?.op) !== 'writeFileText') {
       throw new Error('a failed artifact write must release the shared notification batch')
     }
   } finally {
