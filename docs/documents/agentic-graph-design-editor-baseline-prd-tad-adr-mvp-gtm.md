@@ -494,23 +494,23 @@ property paths to authored token names, for example `{ "fill": "canvas-accent" }
 values are candidate matches only. Declared contrast checks require an opaque color/background pair
 and explicit opacity `1`; rendered layout, ancestor compositing, focus and motion remain unassessed.
 
-Passed: isolated token-contract behavior checks (aliases, deterministic exports, missing/cyclic/type
-references, injection and size failures), strict TypeScript checking of that standalone contract,
-syntax transpilation of 15 changed TypeScript modules, JavaScript syntax checks, changed-file hygiene,
-collaboration contract, worktree policy and whitespace checks. No full application typecheck, N1–N6
-acceptance suite, browser result, protected merge, production or buyer evidence is claimed.
+Passed: isolated token-contract behavior and strict TypeScript checks, changed-module syntax and
+hygiene, 116 collaboration-contract tests, 10 integration-policy tests, 11 existing Design regressions,
+one frontmatter-bound regression and four parser compatibility checks. The shared parser now bounds
+Design traversal to 1,024 nodes / depth 16 and preserves prototype-shaped keys as data. Token bundle
+size includes its envelope. The browser verifier labels preference emulation separately from rendered
+motion assessment. No full application typecheck, N1–N6 acceptance suite, browser result, protected
+merge, production or buyer evidence is claimed.
 
-Blocked source join: native disjoint-reservation preflight reports `blocked-write-scope-overlap` for
-`grph-shared/src/ui/kgTokens.ts`, currently reserved by `widget-media-source-parity`. Its retained
-predecessor PR #1138 at `695dc145b916106fb8b5f7568369ab2e3da06bea` has a failed Integration Gate.
-Do not edit that path or substitute a downstream token catalog. The shared definitions still need
-their typed name/purpose metadata, explicit dark alias, public contract exports and the legacy-order
-CSS wrapper; consumers in this checkpoint therefore remain incomplete and are not release eligible.
+The shared definitions still need typed name/purpose metadata, explicit dark alias, public contract
+exports and the legacy-order CSS wrapper. Their path remains reserved by the XR owner; its successor
+PR #1142 at `5e7bbd7d54f798bc879fd19950aa0094c54035ae` failed run `35609033224` at the publication
+deadline. User-authorized coordination has not released that reservation. Preserve its palette and
+retained refs; do not take the path or substitute a downstream catalog. Continue independent covered
+work; observe handoff only after material change or a work milestone, without idle polling loops.
 
-Resume after the owner lane releases the path: refresh origin/source/claims, admit the exact token
-path through the native successor workflow, preserve integrated token values, finish that owner join,
-then run focused `design.editor`, `design.layers`, Canvas View invocation tests, CSS byte parity,
-application typecheck and `node canvas/scripts/verify_design_browser_smoke.mjs`. The browser verifier
-is authored but unexecuted. Run the canonical affected plan and protected release only after those
-pass. Keep this checkpoint and its refs; authoring is stopped at the overlap boundary, with no source
-integration, retirement, cleanup or deployment receipt. External wait has no completion ETA.
+After the owner releases the path: refresh source/claims, admit it through the native successor,
+finish the source join, then verify focused Design/Canvas tests, CSS byte parity, application typecheck
+and `node canvas/scripts/verify_design_browser_smoke.mjs`. Run the affected plan and protected release
+after those pass. Browser proof remains unexecuted; no integration, retirement, cleanup or deployment
+receipt is claimed. External dependency: eligible owner handoff; no completion ETA.
