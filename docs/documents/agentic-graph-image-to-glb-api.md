@@ -46,6 +46,16 @@ reviewable companion; the application never evaluates it. Invalid, cancelled or
 stale-document results cannot replace the last valid document. Existing workspace
 source and XR selection/transport remain the integration owners.
 
+Workspace persistence uses the existing WorkspaceFs owner. Each save creates a
+fresh revision folder containing the full recoverable document, recipe, generated
+source and native GLB document. Readback and byte digests precede a final manifest;
+only a current, successfully read-back result may become the caller's output.
+Reopen verifies companion names, bounds, digests, identity and generated source
+before reconstructing trusted geometry. Hashes detect corruption, not external
+provenance. Failed or cancelled writes retain earlier generations; an interrupted
+save may leave an unreferenced partial folder and never claims transactional
+rollback. These local source files do not imply host or remote publication.
+
 Decision: use trusted box, sphere, cylinder and cone constructors, bounded to 48
 parts, 32 controls, 8 clips, 32 keys per track, 64 kB of recipe JSON and 120,000
 triangles. Local controls use zero provider calls. No new package/service is
