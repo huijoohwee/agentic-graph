@@ -81,6 +81,46 @@ test('stop, reset, read-only changes and malformed/replayed messages cannot publ
   } finally { f.runtime.dispose() }
 })
 
+test('Pause and hidden-tab signals during hashing prevent execution until explicit visible resume', async () => {
+  for (const pause of ['manual', 'hidden'] as const) {
+    const pending: Array<(value: string) => void> = []
+    const f = fixture(() => new Promise<string>(resolve => pending.push(resolve)))
+    try {
+      f.bind('print("resumed")'); const start = f.runtime.control('run')
+      assert.equal(f.runtime.read().state, 'validating')
+      if (pause === 'hidden') f.runtime.setHidden(true)
+      else await f.runtime.control('pause')
+      pending.forEach(resolve => resolve('a'.repeat(64))); await start
+      assert.equal(f.runtime.read().state, 'ready'); assert.equal(f.runtime.read().result!.output, '')
+      assert.equal(f.runtime.read().result!.scene.ticks, 0)
+      if (pause === 'hidden') {
+        await assert.rejects(f.runtime.control('run'), /tab is hidden/)
+        await assert.rejects(f.runtime.control('step'), /tab is hidden/)
+        const state = f.runtime.read(); f.runtime.setHidden(false); await tick()
+        assert.equal(f.runtime.read(), state, 'visibility restoration cannot resume execution')
+      }
+      await f.runtime.control('run'); await until(() => f.runtime.read().state === 'completed')
+      assert.equal(f.runtime.read().result!.output, 'resumed\n'); assert.equal(f.ports.length, 1)
+    } finally { f.runtime.dispose() }
+  }
+})
+
+test('hidden execution is rejected before allocation and active work pauses at a statement boundary', async () => {
+  const f = fixture(); f.bind('drive(1, 3600)\nprint("after pause")')
+  try {
+    f.runtime.setHidden(true)
+    await assert.rejects(f.runtime.start('run'), /tab is hidden/)
+    await assert.rejects(f.runtime.control('step'), /tab is hidden/)
+    assert.equal(f.ports.length, 0); assert.equal(f.runtime.read().state, 'idle')
+    f.runtime.setHidden(false); await f.runtime.control('run'); f.runtime.setHidden(true)
+    await until(() => f.runtime.read().state === 'paused')
+    assert.equal(f.runtime.read().result!.output, '')
+    const state = f.runtime.read(); f.runtime.setHidden(false); await tick(); assert.equal(f.runtime.read(), state)
+    await f.runtime.control('run'); await until(() => f.runtime.read().state === 'completed')
+    assert.equal(f.runtime.read().result!.output, 'after pause\n')
+  } finally { f.runtime.dispose() }
+})
+
 test('pause and resume use the same worker; terminating while a native simulation yields is fenced', async () => {
   const f = fixture(); f.bind('drive(1, 3600)')
   try {
@@ -122,6 +162,25 @@ test('a timed-out agent start cannot execute after its source hash finishes late
     assert.equal(f.runtime.read().state, 'cancelled')
     pending.forEach(resolve => resolve('a'.repeat(64))); await tick()
     assert.equal(f.ports.length, 0); assert.equal(f.runtime.readIdentity(), null)
+  } finally { f.runtime.dispose() }
+})
+
+test('inspection has a two-second deadline without cancelling or mutating the active run', async () => {
+  const { createLearningToolExecutor } = await import('../features/python-learning/learningWebMcp')
+  const pending: Array<(value: string) => void> = [], f = fixture()
+  const tools = createLearningToolExecutor(f.runtime, () => new Promise<string>(resolve => pending.push(resolve)))
+  try {
+    f.bind('print(1)'); await f.runtime.control('validate')
+    const state = f.runtime.read(), identity = f.runtime.readIdentity(), started = performance.now()
+    const inspection = tools.inspect()
+    await assert.rejects(inspection, /two seconds/)
+    assert.ok(performance.now() - started < 2500, 'inspection must reject within its bounded acknowledgement window')
+    assert.equal(f.runtime.read(), state); assert.equal(f.runtime.readIdentity(), identity); assert.equal(f.terminated(), 0)
+    pending.forEach(resolve => resolve('a'.repeat(64))); await tick()
+    await assert.rejects(inspection, /two seconds/)
+    assert.equal(f.runtime.read(), state); assert.equal(f.ports.length, 1)
+    await f.runtime.control('run'); await until(() => f.runtime.read().state === 'completed')
+    assert.equal(f.runtime.read().result!.output, '1\n')
   } finally { f.runtime.dispose() }
 })
 

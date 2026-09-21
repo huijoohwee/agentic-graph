@@ -48,6 +48,19 @@ try {
   const editor = page.getByRole('textbox', { name: 'Python source text', exact: true })
   const lessons = await page.evaluate(() => window.__pythonLearningProof.lessons)
   const outcomes = []
+  try {
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await page.getByRole('button', { name: 'Run', exact: true }).click()
+    const notice = page.getByText('Execution is paused while this tab is hidden.', { exact: false })
+    assert.equal(await notice.isVisible(), true, 'hidden-tab denial is visible in mobile Code view')
+    assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
+  } finally {
+    await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')) })
+  }
+  assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'returning visible cannot auto-run')
   for (const lesson of lessons) {
     await page.getByLabel('Python lesson', { exact: true }).selectOption(lesson.id)
     await page.getByRole('button', { name: 'Code', exact: true }).click()
@@ -106,6 +119,7 @@ try {
   assert.deepEqual(errors, [])
   const evidence = { revision, sourceState: execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' }),
     kind: 'native-component-development-smoke', offlineReloadProven: false, toolRegistrationProven: false,
+    simulatedHiddenTabDenied: true, visibleReturnDoesNotRun: true, physicalBackgroundProven: false,
     elapsedMs: Math.round(performance.now() - started), outcomes, pageErrors: errors, remoteRequestsBlocked: remote }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
   console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))

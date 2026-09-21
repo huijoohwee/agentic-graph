@@ -28,6 +28,8 @@ export class LearningRuntime {
   private sequence = 0
   private deadline: ReturnType<typeof setTimeout> | null = null
   private pausedExpiry: ReturnType<typeof setTimeout> | null = null
+  private hidden = false
+  private pauseBeforeStart = false
   constructor(private readonly workerFactory = createLearningWorker, private readonly digest = digestLearningSource) {}
   read = (): LearningRuntimeSnapshot => this.snapshot
   readIdentity = (): LearningRunIdentity | null => this.identity
@@ -38,7 +40,12 @@ export class LearningRuntime {
     if (this.pausedExpiry !== null) clearTimeout(this.pausedExpiry)
     this.deadline = null; this.pausedExpiry = null
   }
-  private terminate() { this.generation++; this.clearTimers(); this.worker?.terminate(); this.worker = null; this.identity = null }
+  private terminate() { this.generation++; this.clearTimers(); this.worker?.terminate(); this.worker = null; this.identity = null; this.pauseBeforeStart = false }
+  private pause() {
+    if (this.snapshot.state === 'validating') this.pauseBeforeStart = true
+    if (this.worker && this.identity) this.worker.postMessage({ kind: 'control', runId: this.identity.runId, generation: this.identity.generation, operation: 'pause' })
+  }
+  setHidden(hidden: boolean): void { this.hidden = hidden; if (hidden) this.pause() }
   private watchdog() {
     this.clearTimers()
     this.deadline = setTimeout(() => {
@@ -76,6 +83,7 @@ export class LearningRuntime {
   private fail(error: unknown) { this.terminate(); this.publish({ state: 'failed', error: pythonError(error) }) }
   async start(mode: 'run' | 'step' | 'validate', signal?: AbortSignal): Promise<void> {
     if (signal?.aborted) throw new Error('Request was cancelled.')
+    if (this.hidden && mode !== 'validate') throw new Error('Execution is paused while this tab is hidden. Return to the tab and choose Run or Step.')
     const document = this.snapshot.document
     if (!document || document.readOnly) throw new Error('An editable Python document must be active.')
     if (sourceBytes(document.source) > PYTHON_LIMITS.sourceBytes) throw new Error('Source exceeds 32 KiB.')
@@ -93,7 +101,7 @@ export class LearningRuntime {
       this.sequence = 0; this.worker = this.workerFactory()
       this.worker.onmessage = event => this.receive(event.data, generation)
       this.worker.onerror = event => { if (generation === this.generation) this.fail(new Error(event.message || 'Python worker failed.')) }
-      this.worker.postMessage({ kind: 'start', identity: this.identity, source: document.source, mode })
+      this.worker.postMessage({ kind: 'start', identity: this.identity, source: document.source, mode: this.hidden || this.pauseBeforeStart ? 'validate' : mode })
     } catch (error) { if (generation === this.generation) this.fail(error) }
     finally { signal?.removeEventListener('abort', cancel) }
   }
@@ -106,10 +114,8 @@ export class LearningRuntime {
       this.publish({ hint: Math.min(this.snapshot.hint + 1, learningLesson(this.snapshot.document.lessonId).hints.length) }); return
     }
     if (operation === 'validate') return this.start('validate', options.signal)
-    if (operation === 'pause') {
-      if (this.worker && this.identity) this.worker.postMessage({ kind: 'control', runId: this.identity.runId, generation: this.identity.generation, operation })
-      return
-    }
+    if (operation === 'pause') { this.pause(); return }
+    if (this.hidden) throw new Error('Execution is paused while this tab is hidden. Return to the tab and choose Run or Step.')
     if (this.worker && this.identity && (this.snapshot.state === 'paused' || this.snapshot.state === 'ready') && !this.snapshot.stale) {
       this.watchdog(); this.worker.postMessage({ kind: 'control', runId: this.identity.runId, generation: this.identity.generation, operation }); return
     }
@@ -119,6 +125,6 @@ export class LearningRuntime {
   stop(message?: string): void {
     this.terminate(); this.publish({ state: 'cancelled', stale: !!this.snapshot.result, error: message ? { code: 'cancelled', message, span: this.snapshot.result?.span || { line: 1, column: 1 } } : null })
   }
-  dispose(): void { this.terminate(); this.publish({ document: null, state: 'idle', result: null, stale: false, error: null, hint: 0 }); this.listeners.clear() }
+  dispose(): void { this.terminate(); this.hidden = false; this.publish({ document: null, state: 'idle', result: null, stale: false, error: null, hint: 0 }); this.listeners.clear() }
 }
 export const pythonLearningRuntime = new LearningRuntime()

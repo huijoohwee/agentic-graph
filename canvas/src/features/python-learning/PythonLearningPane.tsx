@@ -26,9 +26,10 @@ export default function PythonLearningPane(props: {
     runtime.bind({ workspaceId: 'local-editor-workspace', documentId: props.documentId, source: props.source, lessonId, readOnly: props.readOnly })
   }, [props.documentId, props.source, props.readOnly, lessonId])
   React.useEffect(() => {
-    const hidden = () => { if (document.hidden) void runtime.control('pause') }
+    const hidden = () => runtime.setHidden(document.hidden)
     const leaving = () => runtime.stop()
     document.addEventListener('visibilitychange', hidden); window.addEventListener('pagehide', leaving)
+    hidden()
     return () => { document.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', leaving); runtime.dispose() }
   }, [])
   const control = async (operation: Parameters<typeof runtime.control>[0]) => {
@@ -52,6 +53,8 @@ export default function PythonLearningPane(props: {
         onClick={() => void control(operation)}>{operation[0].toUpperCase() + operation.slice(1)}</button>)}
     </div>
     <p className="python-learning-objective">{lesson.objective}</p>
+    {notice ? <p role="status">{notice}</p> : null}
+    {snapshot.error ? <p role="alert"><button onClick={() => props.editorRef.current?.revealLine?.(snapshot.error!.span.line)}>Line {snapshot.error.span.line}</button>: {snapshot.error.message}</p> : null}
     <div className="python-learning-mobile-views" role="group" aria-label="Python workspace view">
       <button aria-pressed={mobileView === 'code'} onClick={() => setMobileView('code')}>Code</button>
       <button aria-pressed={mobileView === 'result'} onClick={() => setMobileView('result')}>Scene and results</button>
@@ -70,8 +73,6 @@ export default function PythonLearningPane(props: {
       <section className="python-learning-result" aria-label="Python scene and results">
         <LearningScene lesson={lesson} scene={!snapshot.stale ? result?.scene : undefined} />
         <p role="status">{snapshot.state}{snapshot.stale ? ' · previous result is stale' : ''}{result && !snapshot.stale ? ` · line ${result.span.line} · tick ${result.scene.ticks}` : ''}</p>
-        {notice ? <p role="status">{notice}</p> : null}
-        {snapshot.error ? <p role="alert"><button onClick={() => props.editorRef.current?.revealLine?.(snapshot.error!.span.line)}>Line {snapshot.error.span.line}</button>: {snapshot.error.message}</p> : null}
         {result && !snapshot.stale ? <>
           <p>{result.grade.passed ? 'Lesson passed' : 'Keep exploring'} · {result.grade.criteria.filter(c => c.passed).length}/4 criteria</p>
           <ul>{result.grade.criteria.map(c => <li key={c.id}>{c.passed ? '✓' : '○'} {c.label}</li>)}</ul>

@@ -1,6 +1,6 @@
 ---
 title: "Offline Python Learning Workspace — implementation evidence"
-version: "0.2.1"
+version: "0.2.2"
 status: "implementation-in-progress"
 date: "2026-09-22"
 continuity_id: "OFFLINE-PYTHON-LEARNING-WORKSPACE-001"
@@ -21,7 +21,7 @@ The implementation binds the committed `docs/documents/prd-tad-adr-mvp-gtm-offli
 - The three original procedural lessons run a bounded Python AST evaluator in a disposable worker. This is a documented language subset, not unrestricted Python or a claim of CPython/package compatibility. It does not execute JavaScript source, invoke a host interpreter, import packages, or expose filesystem/network/DOM capabilities.
 - The preview occupies the existing Python pane and reuses native procedural vehicle geometry, the spatial physics engine and ECS World. It does not change the global Canvas mode; no mode restoration or competing global scene controller is needed. This is a scoped refinement of A3's provisional mode-switch design.
 - Source retains the existing workspace file owner. Explicit debrief save uses the native `world_tick_result` Decision type and existing durable IndexedDB workspace adapter. The local adapter suppresses mirror/seed refresh and propagates errors; it introduces no database, SQL service, volatile fallback or account.
-- The module cap is replanned from 24 to **36 changed runtime/test modules**, retaining **180 KiB added authored source**, <600 lines per new file, <500 kB per new chunk, no dependency additions and no always-load guidance growth. Separate protocol, persistence UI and test boundaries require more files than the provisional estimate. Existing oversized Monaco code shrinks by extracting its language loader. This adjustment removes no Must acceptance criterion.
+- The module cap is replanned from 24 to **36 changed runtime/test modules**, with **196 KiB added authored source**, <600 lines per new file, <500 kB per new chunk, no dependency additions and no always-load guidance growth. Separate protocol, persistence UI and test boundaries require more files than the provisional estimate. The 16 KiB source increase closes reproduced lifecycle races and adds their regressions; the module cap is unchanged. Existing oversized Monaco code shrinks by extracting its language loader. These adjustments remove no Must acceptance criterion.
 - The admitted `python-learning-offline` successor preserves the published execution/editor head `4906970fd59a969fd972eb327ac9901790465a13` (PR #1149) and extends the native Vite, Workbox and service-worker revision owners. Installation is explicit: a bounded same-origin manifest enumerates the final emitted shell, lazy editor/language/worker code, fonts and procedural scenes. SHA-256 download/readback precedes one atomic active-pointer write under a browser-wide lock. Every admitted navigation verifies complete membership; cached asset reads also verify their bytes. The prior complete pack remains available for explicit recovery, including through service-worker activation. No other service worker, database or global navigation fallback is added.
 - Offline navigation is opt-in through `python-learning-offline=<source revision>`. Ordinary application navigation keeps its HTTP authority. Missing, evicted or corrupt installed files produce an explicit failure. Source/debrief storage is separate and retained. Unsupported locking/service-worker capabilities fail visibly; an uncached first visit still needs a local distribution or connection.
 
@@ -71,6 +71,15 @@ No whole-slice acceptance, protected merge, production deployment, production ru
 Graph PR #1150 failed its changed-source hygiene gate because the new offline route grew the existing oversized `vite.config.ts` by eight lines. The admitted `python-learning-integration` successor preserves that published head and moves the unchanged ordered runtime-cache rules into the existing `vitePwaRuntimeCachePolicy.ts` owner. Vite shrinks by 47 lines relative to the plan base; no budget, required check or cache rule is waived. The native hygiene check passes after extraction. Changed build inputs require one refreshed production build, revision-authority check and full offline browser proof; unchanged evaluator and persistence receipts remain reusable.
 
 Continuation cap: 12 affected integration files / 40 KiB incremental source, within the prior runtime source budget. Shared-file reservations block only their dependent registration and pin effects. Complete registration additionally requires contract/schema/builder parity, focused CI registration, and the registered browser path. The pending owner handoff patch is preparation, not authority or a registration receipt.
+
+## Lifecycle continuation
+
+Intent: `/fix #python.learning.lifecycle @codex-python-learning-runtime`.
+The clean predecessor `7e12aa80af4db441a3cf530168c6561a2c96011f` reproduced two gaps: Pause during asynchronous source hashing still executed the program, and inspection remained pending beyond 2,500 ms when hashing stalled. The existing runtime now retains Pause through hashing, pauses on hidden-tab signals, rejects hidden Run/Step before allocation or resume, and requires explicit visible Run/Step. Returning visible never starts work. The existing pane binds visibility on mount, and its error/status notices remain visible in mobile Code view.
+
+Inspection and control now share the adapter's two-second deadline. Inspection timeout leaves the run and worker unchanged; late hashes cannot turn its rejected result into success. Thirty-two focused evaluator, lifecycle, persistence, offline and service-worker tests pass, including delayed hashing, hidden execution, active pause and read-timeout regressions. The component browser adds a simulated visibility signal and visible-denial check; physical-device background behavior remains unobserved. Build-affecting source requires fresh clean-candidate build, PWA and offline evidence before publication.
+
+This continuation remains within six changed files / 20 KiB incremental source. Runtime registration and shared dictionaries retain their existing owner reservations.
 
 ## Semantic references
 
