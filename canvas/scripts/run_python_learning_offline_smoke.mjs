@@ -96,7 +96,7 @@ try {
   await page.setViewportSize({ width: 375, height: 812 })
   // A missing admitted worker must block offline navigation even if another runtime cache has it.
   const missing = await page.evaluate(async () => {
-    const stateCache = await caches.open('kg-python-learning-v1-state')
+    const stateCache = await caches.open('kg-python-learning-v1-' + encodeURIComponent('/agentic-graph/') + '-state')
     const pointer = await (await stateCache.match(new URL('__learning_state__', location.href).href)).json()
     const cache = await caches.open(pointer.active.cache), key = (await cache.keys()).find(request => request.url.includes('/pythonWorker-'))
     if (!key) throw new Error('No admitted Python worker')

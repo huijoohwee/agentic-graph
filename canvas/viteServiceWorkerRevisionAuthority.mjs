@@ -27,7 +27,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
     for (const cacheName of await caches.keys()) {
       // Explicitly admitted learning packs retain their prior complete revision for recovery.
       // Their own manifest/pointer owner verifies every served byte and bounds cleanup.
-      if (/^kg-python-learning-v1-(?:state|[0-9a-f]{40}-[0-9a-f]{64})$/.test(cacheName)) continue
+      if (cacheName.startsWith('kg-python-learning-v1-')) continue
       const cache = await caches.open(cacheName)
       const isAgenticGraphOwnedCache = runtimeCacheNames.has(cacheName)
         || (cacheName.startsWith('workbox-precache') && cacheName.includes(scopeUrl.toString()))

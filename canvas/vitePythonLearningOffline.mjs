@@ -25,7 +25,7 @@ export const createPythonLearningOfflinePlugin = revision => ({
 // Serialized into the existing revision authority, never installed as another service worker.
 // The same native owner supplies Workbox cache reads and explicit installation messages.
 export function installLearningOfflineOwner(owner, sourceRevision) {
-  const scope = new URL(owner.registration.scope), prefix = 'kg-python-learning-v1-', meta = prefix + 'state'
+  const scope = new URL(owner.registration.scope), prefix = 'kg-python-learning-v1-' + encodeURIComponent(scope.pathname) + '-', meta = prefix + 'state'
   const pointerUrl = new URL('__learning_state__', scope).href, manifestKey = new URL('__learning_manifest__', scope).href
   const sha = /^[0-9a-f]{64}$/, revisionPattern = /^[0-9a-f]{40}$/
   const failure = message => { throw new Error(message) }

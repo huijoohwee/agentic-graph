@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { installLearningOfflineOwner, createPythonLearningOfflinePlugin } from '../../vitePythonLearningOffline.mjs'
 
-const scope = 'https://local.test/app/', prefix = 'kg-python-learning-v1-', first = '1'.repeat(40), second = '2'.repeat(40)
+const scope = 'https://local.test/app/', prefix = 'kg-python-learning-v1-%2Fapp%2F-', first = '1'.repeat(40), second = '2'.repeat(40)
 const digest = async (bytes: Uint8Array) => Buffer.from(await webcrypto.subtle.digest('SHA-256', bytes)).toString('hex')
 class CacheFixture {
   values = new Map<string, Response>()
@@ -104,6 +104,10 @@ test('concurrent installers serialize, retain two complete packs and leave ordin
   assert.equal([...env.caches.keys()].filter(name => name !== prefix + 'state').length, 2)
   assert.equal((await three.navigate(first)).status, 503)
   assert.equal(await three.owner.__agLearningOffline!.read({ url: scope, mode: 'navigate' }), null)
+  const anotherScope = 'kg-python-learning-v1-%2Fanother%2F-state'
+  env.caches.set(anotherScope, new CacheFixture(() => false))
+  const fourth = '4'.repeat(40); await env.publish(fourth); await env.ownerFor(fourth).request('install')
+  assert.ok(env.caches.has(anotherScope), 'installation cleanup cannot delete another application scope')
 })
 
 test('native build inventory includes HTML, worker and lazy language bytes with exact hashes', async () => {
