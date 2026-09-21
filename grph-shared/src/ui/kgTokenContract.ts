@@ -106,14 +106,15 @@ export function resolveKgTokens(input: readonly KgTokenDef[]) {
 export function buildKgTokenBundle(definitions: readonly KgTokenDef[]) {
   const tokens = resolveKgTokens(definitions)
   const canonical = JSON.stringify(tokens)
-  boundKgTokenOutput(canonical)
-  return {
+  const bundle = {
     schema: 'agentic-graph/design-tokens/v1' as const,
     source: KG_TOKEN_SOURCE,
     // Cache/provenance fingerprint only; never a signature or an authorization receipt.
     revision: `fnv1a32:${hashStringToHex(canonical)}`,
     tokens,
   }
+  boundKgTokenOutput(JSON.stringify(bundle))
+  return bundle
 }
 export type KgTokenBundle = ReturnType<typeof buildKgTokenBundle>
 

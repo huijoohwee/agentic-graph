@@ -138,7 +138,7 @@ async function verify() {
     assert.deepEqual(errors, [], 'No browser runtime errors')
     assert.deepEqual(externalRequests, [], 'Design review must make zero external requests')
     await writeFile(join(output, 'receipt.json'), JSON.stringify({ head: process.env.AG_DESIGN_EXPECTED_HEAD,
-      receipts, invalidInput: true, revisionInvalidation: true, cachedOffline: true, touchSelection: true, undoRedo: true, reducedMotion: true,
+      receipts, invalidInput: true, revisionInvalidation: true, cachedOffline: true, touchSelection: true, undoRedo: true, reducedMotionPreferenceObserved: true, renderedMotionAssessment: 'unassessed',
       externalRequests, runtimeErrors: errors, scope: 'local candidate; no production or complete accessibility claim' }, null, 2) + '\n')
     console.log('Design browser smoke passed:', output)
   } finally { await context.close(); await browser.close() }

@@ -77,6 +77,12 @@ export async function testKgTokenExportsAreDeterministicAndBounded() {
   const excessive = Array.from({ length: 256 }, (_, i) => ({ ...AG_TOKEN_DEFS[0], name: `token-${i}`,
     cssVar: `--kg-token-${i}` as const, purpose: 'x'.repeat(512) }))
   assert.throws(() => serializeKgTokens(excessive, 'json'), /64 KiB/)
+  const boundary = Array.from({ length: 93 }, (_, i) => ({ name: `token-${i}`,
+    cssVar: `--kg-token-${i}` as `--kg-${string}`, type: 'color' as const, purpose: 'x'.repeat(512),
+    light: '#ffffff', dark: '#000000' }))
+  assert.equal(new TextEncoder().encode(JSON.stringify(buildKgTokenBundle(boundary))).length, 65485)
+  boundary[92] = { ...boundary[92], name: 'z'.repeat(80), cssVar: `--kg-${'z'.repeat(80)}` }
+  assert.throws(() => buildKgTokenBundle(boundary), /64 KiB/)
   const generated = ['light', 'dark'].map(theme => buildKgTokensCssText(theme as 'light' | 'dark', {
     selector: theme === 'light' ? ':root' : ':root.dark',
   })).join('')
