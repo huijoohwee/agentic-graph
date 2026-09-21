@@ -2,12 +2,13 @@ import { parseProceduralAssetRecipe, updateProceduralAssetControl, type AssetCon
 import { buildProceduralAsset, disposeProceduralAsset, type ProceduralAssetBuild } from './proceduralAssetBuilder'
 
 export type ProceduralAssetDocument = { documentId: string; revision: number; lastValid: ProceduralAssetRecipe; draft: string | null; error: string | null }
-export type ProceduralAssetTicket = { documentId: string; revision: number; generation: number }
+export type ProceduralAssetTicket = { documentId: string; revision: number; generation: number; sessionId: symbol }
 /** Document-bound construction helper, not an XR selection store or animation clock. */
 export class ProceduralAssetSession {
   private state: ProceduralAssetDocument
   private build: ProceduralAssetBuild
   private generation = 0
+  private readonly sessionId = Symbol('procedural-asset-session')
   private disposed = false
   constructor(documentId: string, recipe: unknown, revision = 0) {
     if (!documentId.trim() || documentId.length > 1024 || !Number.isSafeInteger(revision) || revision < 0) throw new Error('Invalid procedural document identity')
@@ -22,10 +23,10 @@ export class ProceduralAssetSession {
   private assertActive(): void { if (this.disposed) throw new Error('Procedural document is closed') }
   begin(): ProceduralAssetTicket {
     this.assertActive()
-    return { documentId: this.state.documentId, revision: this.state.revision, generation: ++this.generation }
+    return { documentId: this.state.documentId, revision: this.state.revision, generation: ++this.generation, sessionId: this.sessionId }
   }
   isCurrent(ticket: ProceduralAssetTicket): boolean {
-    return !this.disposed && ticket.documentId === this.state.documentId && ticket.revision === this.state.revision && ticket.generation === this.generation
+    return !this.disposed && ticket.sessionId === this.sessionId && ticket.documentId === this.state.documentId && ticket.revision === this.state.revision && ticket.generation === this.generation
   }
   cancel(): void { this.generation += 1 }
   /** Admission completes before replacing owned GPU resources or persisted state. */

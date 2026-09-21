@@ -1,6 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
+  ["proceduralAsset.contract", "@/__tests__/proceduralAssetAuthoring.test.ts", "testProceduralAssetRejectsUnsafeAndMalformedRecipes"],
+  ["proceduralAsset.recovery", "@/__tests__/proceduralAssetAuthoring.test.ts", "testProceduralAssetControlsAndRecovery"],
+  ["proceduralAsset.source", "@/__tests__/proceduralAssetAuthoring.test.ts", "testProceduralAssetGeneratedSourceReconstructsEditedScene"],
+  ["proceduralAsset.glb", "@/__tests__/proceduralAssetAuthoring.test.ts", "testProceduralAssetGlbPreservesEditedHierarchyAndMotion"],
   ["ui.graphCanvas.frozenNodes.presentationRefresh","@/__tests__/graphCanvasFrozenNodesPresentation.test","testFrozenCircleNodesKeepPositionsOnPresentationRefresh"],
   ["groupBoxNoStickRegression.clearanceX","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseX"],
   ["groupBoxNoStickRegression.clearanceY","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseY"],

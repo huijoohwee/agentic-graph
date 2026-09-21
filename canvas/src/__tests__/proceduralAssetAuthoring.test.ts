@@ -22,6 +22,7 @@ export function testProceduralAssetRejectsUnsafeAndMalformedRecipes() {
     (r: typeof recipe) => { r.parts[0].size[0] = Infinity },
     (r: typeof recipe) => { r.parts[0].id = r.parts[1].id },
     (r: typeof recipe) => { r.clips[0].tracks[0].keys[1].time = 0 },
+    (r: typeof recipe) => { r.clips[0].tracks[0].keys[2].time = 0.5000000001 },
     (r: typeof recipe) => { r.controls[0].target = 'color' },
     (r: typeof recipe) => { r.values.color = 'url(https://example.invalid)' },
     (r: typeof recipe) => { Object.assign(r, { source: 'globalThis.pwned=true' }) },
@@ -39,6 +40,11 @@ export function testProceduralAssetRejectsUnsafeAndMalformedRecipes() {
 export function testProceduralAssetControlsAndRecovery() {
   const session = new ProceduralAssetSession('workspace:one', createProceduralAssetFromText('green sphere'))
   const stale = session.begin()
+  const reopened = ProceduralAssetSession.restore(session.serialize())
+  const fresh = reopened.begin()
+  assert.equal(fresh.generation, stale.generation)
+  assert.equal(reopened.isCurrent(stale), false, 'a ticket cannot cross document sessions even at identical revisions')
+  reopened.dispose()
   assert.equal(session.setControl('width', 2), true)
   assert.equal(session.apply(JSON.stringify(createProceduralAssetFromText('table')), stale), false)
   const first = session.current.scene.getObjectByName('Part-body') as THREE.Mesh
