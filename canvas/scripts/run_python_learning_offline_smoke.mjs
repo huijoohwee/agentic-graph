@@ -87,6 +87,13 @@ try {
   await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
   await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
   await pane.getByText('3 matching debriefs', { exact: false }).waitFor()
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const richEditor = pane.getByRole('button', { name: 'Load rich editor', exact: true })
+  if (await richEditor.isVisible()) await richEditor.click()
+  await pane.locator('.monaco-editor .view-lines').waitFor({ timeout: 30000 })
+  assert.ok(await pane.locator('.monaco-editor .view-lines').evaluate(element => new Set([...element.querySelectorAll('span')].map(span => span.className).filter(name => /^mtk/.test(name))).size > 1), 'offline Python highlighting must load')
+  await page.screenshot({ path: join(output, 'offline-desktop.png'), fullPage: true })
+  await page.setViewportSize({ width: 375, height: 812 })
   // A missing admitted worker must block offline navigation even if another runtime cache has it.
   const missing = await page.evaluate(async () => {
     const stateCache = await caches.open('kg-python-learning-v1-state')
