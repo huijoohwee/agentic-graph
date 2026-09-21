@@ -250,12 +250,16 @@ export const rewriteRenderedInlineMediaForEditorHtml = (html: string, sourceMark
     if (token) node.replaceWith(token)
   })
   // Preserve each authored embed verbatim, including controls, poster, and closing tag.
-  const authoredMedia = collectFloatingPanelChatMediaTokens(sourceMarkdown || '')
+  const authoredMedia = collectFloatingPanelChatMediaTokens(sourceMarkdown || '').map(media => {
+    const url = doc.createElement('textarea')
+    url.innerHTML = String(media.sourceUrl || '').replace(/</g, '&lt;')
+    return { ...media, renderedSourceUrl: url.value }
+  })
   const used = new Set<number>()
   root.querySelectorAll(`[${INLINE_MEDIA_EDIT_TOKEN_ATTR}]`).forEach(node => {
     const serialized = node.getAttribute(INLINE_MEDIA_EDIT_MARKDOWN_ATTR) || ''
     const sourceUrl = collectFloatingPanelChatMediaTokens(serialized)[0]?.sourceUrl
-    const index = authoredMedia.findIndex((media, index) => !used.has(index) && !!sourceUrl && media.sourceUrl === sourceUrl)
+    const index = authoredMedia.findIndex((media, index) => !used.has(index) && !!sourceUrl && media.renderedSourceUrl === sourceUrl)
     if (index < 0) return
     used.add(index)
     const media = authoredMedia[index]!

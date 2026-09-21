@@ -56,7 +56,7 @@ export async function testCardViewerMediaSerializationParity() {
   try {
     for (const kind of ['image', 'audio', 'video'] as const) {
       const ext = { image: 'png', audio: 'mp3', video: 'mp4' }[kind]
-      const candidate = { kind, url: `https://media.example.test/clip.${ext}`, label: 'Authored asset', thumbnailUrl: 'https://media.example.test/poster.png' }
+      const candidate = { kind, url: `https://media.example.test/clip.${ext}?one=1&two=2`, label: 'Authored asset', thumbnailUrl: 'https://media.example.test/poster.png' }
       const embed = buildInlineMediaEmbed(candidate)
       if (embed !== buildCardInlineTextMediaEmbed(candidate)) throw new Error('Divergent media builders')
       const root = dom.window.document.createElement('section')
