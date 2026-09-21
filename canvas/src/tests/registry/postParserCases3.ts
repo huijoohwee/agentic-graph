@@ -88,6 +88,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["design.editor.tokens.contract","@/__tests__/kgTokenSsot.test","testKgTokenValidationAndAliases"],
   ["design.editor.tokens.exports","@/__tests__/kgTokenSsot.test","testKgTokenExportsAreDeterministicAndBounded"],
   ["design.editor.tokens.boundedContext","@/__tests__/designTokenSummary.test","testDesignContextBoundsAndInvalidation"],
+  ["design.editor.tokens.frontmatterBounds","@/__tests__/designTokenSummary.test","testDesignFrontmatterTraversalBounds"],
   ["design.editor.tokens.provenance","@/__tests__/designTokenSummary.test","testDesignContextReviewProvenance"],
   ["design.editor.tokens.agentParity","@/__tests__/canvasViewWebMcpTools.test","testDesignInspectionParity"],
   ["design.editor.tokens.extractsSummary","@/__tests__/designTokenSummary.test","testDesignTokenSummaryExtractsDesignTokens"],

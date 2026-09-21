@@ -39,7 +39,10 @@ const isYamlFrontmatterFenceLine = (line: string): boolean => /^---\s*$/.test(St
 
 export const parseMarkdownFrontmatter = (
   lines: string[],
+  limits?: { maxNodes: number; maxDepth: number },
 ): MarkdownFrontmatterParseResult => {
+  if (limits && (!Number.isSafeInteger(limits.maxNodes) || limits.maxNodes < 1
+    || !Number.isSafeInteger(limits.maxDepth) || limits.maxDepth < 0)) throw new Error('Invalid frontmatter traversal limits')
   if (!lines.length) return { meta: {}, startIndex: 0, warnings: [] }
   if (!isYamlFrontmatterFenceLine(lines[0] || '')) return { meta: {}, startIndex: 0, warnings: [] }
   let endIndex = -1
@@ -79,13 +82,19 @@ export const parseMarkdownFrontmatter = (
     }
     return ''
   }
-  const sanitizeYamlValue = (value: unknown): unknown => {
+  let visitedNodes = 0
+  const sanitizeYamlValue = (value: unknown, depth = 0): unknown => {
+    if (limits && (++visitedNodes > limits.maxNodes || depth > limits.maxDepth)) {
+      throw new Error('Markdown frontmatter traversal limit exceeded')
+    }
     if (value instanceof Date) return value.toISOString()
-    if (Array.isArray(value)) return value.map(v => sanitizeYamlValue(v))
+    if (Array.isArray(value)) return value.map(v => sanitizeYamlValue(v, depth + 1))
     if (value && typeof value === 'object') {
       const record = value as Record<string, unknown>
       const out: Record<string, unknown> = {}
-      for (const key of Object.keys(record)) out[key] = sanitizeYamlValue(record[key])
+      for (const key of Object.keys(record)) Object.defineProperty(out, key, {
+        value: sanitizeYamlValue(record[key], depth + 1), enumerable: true, writable: true, configurable: true,
+      })
       return out
     }
     return value

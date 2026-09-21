@@ -106,6 +106,9 @@ export async function testDesignContextReviewProvenance() {
   const markdown = serializeDesignContext(escaped, 'markdown', escaped.semanticKey)
   assert.ok(!markdown.includes('<img') && !markdown.includes('```') && !markdown.includes('[link]('))
   assert.ok(!serializeDesignContext(escaped, 'json', escaped.semanticKey).includes('</script>'))
+  const inherited = buildDesignContext({ ...args, markdown: '---\n__proto__: { design: { intent: Inherited } }\n---' })
+  assert.ok(inherited.available)
+  assert.equal(inherited.intent.intent, null)
 }
 
 export async function testDesignContextBoundsAndInvalidation() {
@@ -123,6 +126,7 @@ export async function testDesignContextBoundsAndInvalidation() {
     '---\ndesign:\n  intent: Text\n---invalid', '---\ndesign: 2026-09-21\n---',
     '---\ndesign:\n  intent: 123\n---', '---\ndesign:\n  intent: ' + 'x'.repeat(513) + '\n---',
     '---\ndesign:\n  intent: [\n---', '---\n' + 'x'.repeat(8192),
+    '---\na: &a [1, 1, 1, 1]\nb: &b [*a, *a, *a, *a]\nc: &c [*b, *b, *b, *b]\nd: &d [*c, *c, *c, *c]\ne: &e [*d, *d, *d, *d]\nf: [*e, *e, *e, *e]\n---',
   ]) assert.equal(buildDesignContext({ ...args, markdown }).status, 'invalid', markdown.slice(0, 80))
   const many: GraphData = { type: 'Graph', nodes: Array.from({ length: 2001 }, (_, i) => ({ id: `n${i}`, label: `Node ${i}`, type: 'Frame', properties: {} })), edges: [] }
   const summary = summarizeDesignTokens({ graphData: many, graphRevision: 5 })
@@ -145,4 +149,31 @@ export async function testDesignContextBoundsAndInvalidation() {
   assert.ok(context.available)
   assert.ok(context.audit.findings.length <= 100)
   assert.equal(context.audit.truncated, true)
+}
+
+export async function testDesignFrontmatterTraversalBounds() {
+  const { parseMarkdownFrontmatter } = await import('@/lib/markdown')
+  const limits = { maxNodes: 64, maxDepth: 16 }
+  const lines = ['---', 'a: &a [1, 1, 1, 1]']
+  for (let i = 1; i < 7; i++) {
+    const name = String.fromCharCode(97 + i), prior = String.fromCharCode(96 + i)
+    lines.push(`${name}: &${name} [*${prior}, *${prior}, *${prior}, *${prior}]`)
+  }
+  lines.push('---')
+  assert.equal(parseMarkdownFrontmatter(lines).warnings.length, 0, 'Existing callers retain their normal parsing contract')
+  for (const input of [lines, ['---', 'a: &a { self: *a }', '---']]) {
+    const bounded = parseMarkdownFrontmatter(input, limits)
+    assert.deepEqual(bounded.meta, {})
+    assert.ok(bounded.warnings.some(warning => warning.includes('traversal limit')))
+  }
+  const valid = parseMarkdownFrontmatter(['---', 'design:', '  intent: Local review', '---'], limits)
+  assert.deepEqual(valid.meta, { design: { intent: 'Local review' } })
+  assert.deepEqual(valid.warnings, [])
+  const shallow = parseMarkdownFrontmatter(['---', 'design: { intent: Local review }', '---'], { ...limits, maxDepth: 1 })
+  assert.ok(shallow.warnings.some(warning => warning.includes('traversal limit')))
+  const data = parseMarkdownFrontmatter(['---', '__proto__: { design: { intent: Inherited } }', '---'], limits).meta
+  assert.equal(Object.getPrototypeOf(data), Object.prototype)
+  assert.equal(Object.hasOwn(data, '__proto__'), true)
+  assert.equal(data.design, undefined, 'Prototype-shaped data must not invent authored Design intent')
+  assert.throws(() => parseMarkdownFrontmatter([], { maxNodes: Infinity, maxDepth: 16 }), /Invalid/)
 }
