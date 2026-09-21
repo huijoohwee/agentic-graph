@@ -21,6 +21,7 @@ async function verify() {
   const page = await context.newPage(), errors = [], externalRequests = []
   page.setDefaultTimeout(30000)
   page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') console.error('Browser console:', message.text()) })
   const base = process.env.AG_DESIGN_SMOKE_BASE_URL
   await page.route('**/*', async route => {
     const url = new URL(route.request().url())
@@ -29,6 +30,8 @@ async function verify() {
     }
     await route.continue()
   })
+  await page.route('**/api/agent-swarm/workspace-source', route => route.fulfill({ contentType: 'application/json',
+    headers: { 'cache-control': 'no-store' }, body: '{"code":"workspace_source_unselected"}' }))
   try {
     await page.goto(base, { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: /^Canvas View Mode:/ }).first().waitFor({ timeout: 120000 })
@@ -83,6 +86,8 @@ async function verify() {
       const box = await button.boundingBox(); assert.ok(box && box.height >= 44 && box.width >= 44)
       await button.focus()
       assert.equal(await button.evaluate(el => el === document.activeElement), true)
+      await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab')
+      assert.equal(await button.evaluate(el => el.matches(':focus-visible')), true)
       const downloadPromise = page.waitForEvent('download')
       await page.keyboard.press('Enter')
       const download = await downloadPromise
@@ -91,6 +96,20 @@ async function verify() {
       receipts.push({ width, theme, context: projection.semanticKey, overflow: false, keyboardExport: true })
     }
     assert.deepEqual(await geometry(), initialGeometry, 'Readback and export must preserve geometry and history')
+    const beforeRevision = (await inspect()).design.semanticKey
+    await page.evaluate(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      useGraphStore.setState({ markdownDocumentText: '---\ndesign: []\n---', graphDataRevision: 101 })
+    })
+    await review.getByRole('alert').waitFor()
+    assert.equal((await inspect()).design.status, 'invalid')
+    assert.equal(await review.getByRole('button', { name: 'Export locally' }).count(), 0)
+    await page.evaluate(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      useGraphStore.setState({ markdownDocumentText: '---\ndesign:\n  intent: Updated local review\n---', graphDataRevision: 102 })
+    })
+    await review.getByRole('heading', { name: 'Design token review' }).waitFor()
+    assert.notEqual((await inspect()).design.semanticKey, beforeRevision)
     await page.setViewportSize({ width: 360, height: 800 })
     // Modules are now cached. No server or provider is available during these interactions.
     await context.setOffline(true)
@@ -117,7 +136,7 @@ async function verify() {
     assert.deepEqual(errors, [], 'No browser runtime errors')
     assert.deepEqual(externalRequests, [], 'Design review must make zero external requests')
     await writeFile(join(output, 'receipt.json'), JSON.stringify({ head: process.env.AG_DESIGN_EXPECTED_HEAD,
-      receipts, cachedOffline: true, touchSelection: true, undoRedo: true, reducedMotion: true,
+      receipts, invalidInput: true, revisionInvalidation: true, cachedOffline: true, touchSelection: true, undoRedo: true, reducedMotion: true,
       externalRequests, runtimeErrors: errors, scope: 'local candidate; no production or complete accessibility claim' }, null, 2) + '\n')
     console.log('Design browser smoke passed:', output)
   } finally { await context.close(); await browser.close() }

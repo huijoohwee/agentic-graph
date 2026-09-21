@@ -42,7 +42,9 @@ function validLiteral(type: KgTokenType, value: string): boolean {
   if (type === 'number') return numeric.test(value) && Number.isFinite(Number(value))
   if (type === 'dimension') return dimension.test(value) && Number.isFinite(parseFloat(value))
   const shadow = /^(?:inset )?((?:-?(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em)? ){2,4})(.+)$/.exec(value)
-  return !!shadow && shadow[1].trim().split(' ').every(v => v === '0' || dimension.test(v) && Number.isFinite(parseFloat(v)))
+  const lengths = shadow?.[1].trim().split(' ') ?? []
+  return !!shadow && lengths.every(v => v === '0' || dimension.test(v) && Number.isFinite(parseFloat(v)))
+    && (lengths.length < 3 || parseFloat(lengths[2]) >= 0)
     && parseKgColor(shadow[2]) !== null
 }
 

@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -24,7 +25,6 @@ export const testKgTokenSsotIndexCssDefinesAllVars = () => {
 
 
 export async function testKgTokenValidationAndAliases() {
-  const assert = (await import('node:assert/strict')).default
   const { resolveKgTokens, buildKgTokenBundle } = await import('@/lib/ui/tokens-ssot')
   const base = { name: 'base', cssVar: '--kg-base' as const, type: 'color' as const,
     purpose: 'Base surface', light: '#ffffff', dark: '#000000' }
@@ -45,6 +45,7 @@ export async function testKgTokenValidationAndAliases() {
     [[{ ...alias, light: 'var(--kg-base-bad)' }, base], /disagree/],
     [[{ ...base, cssVar: '--kg-other' }], /match name/],
     [[{ ...base, purpose: '' }], /purpose/],
+    [[{ ...base, type: 'shadow', light: '0 0 -1px #fff', dark: '0 0 #000' }], /invalid literal/],
     [[{ ...base, references: { wrong: 'base' } }], /references/],
     [Array.from({ length: 257 }, () => base), /1..256/],
   ] as const) assert.throws(() => resolveKgTokens(definitions as unknown as typeof AG_TOKEN_DEFS), message)
@@ -54,7 +55,6 @@ export async function testKgTokenValidationAndAliases() {
 }
 
 export async function testKgTokenExportsAreDeterministicAndBounded() {
-  const assert = (await import('node:assert/strict')).default
   const { serializeKgTokens, buildKgTokenBundle, buildKgTokensCssText } = await import('@/lib/ui/tokens-ssot')
   const reversed = [...AG_TOKEN_DEFS].reverse()
   for (const target of ['css', 'json', 'typescript'] as const) {
