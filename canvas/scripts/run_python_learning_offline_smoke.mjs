@@ -58,6 +58,18 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   const editor = pane.getByRole('textbox', { name: 'Python source text', exact: true })
   const awaitSource = expected => page.waitForFunction(value => document.querySelector('textarea[aria-label="Python source text"]')?.value === value, expected, { timeout: 30000 })
+  const awaitStoredSource = expected => page.waitForFunction(async value => {
+    const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
+    if (!name) return false
+    return new Promise((resolve, reject) => {
+      const opening = indexedDB.open(name); opening.onerror = () => reject(opening.error)
+      opening.onsuccess = () => {
+        const db = opening.result, transaction = db.transaction('records', 'readonly'), request = transaction.objectStore('records').getAll()
+        request.onerror = () => { db.close(); reject(request.error) }
+        request.onsuccess = () => { db.close(); resolve(request.result.some(record => record.collection === 'entries' && record.value.path?.endsWith('/learning.py') && record.value.text === value)) }
+      }
+    })
+  }, expected, { polling: 100, timeout: 15000 })
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await awaitSource(lessons[0].solution)
   assert.equal(await editor.inputValue(), lessons[0].solution)
@@ -80,6 +92,8 @@ try {
   await pane.getByRole('button', { name: 'Hint', exact: true }).focus(); await page.keyboard.press('Enter')
   await pane.getByLabel('Progressive hints', { exact: true }).waitFor()
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1))
+  // Debrief save and the editor's debounced source autosave are separate native receipts.
+  await awaitStoredSource(lessons.at(-1).solution)
   await page.reload({ waitUntil: 'domcontentloaded' }); await pane.waitFor({ timeout: 60000 })
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   await awaitSource(lessons.at(-1).solution)
@@ -117,6 +131,6 @@ try {
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
 } catch (error) {
-  if (page) { console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
+  if (page) { console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
   throw error
 } finally { await browser?.close(); await new Promise(resolve => server?.httpServer.close(resolve) || resolve()) }

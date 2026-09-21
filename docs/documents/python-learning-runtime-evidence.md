@@ -54,6 +54,8 @@ Commands run from the implementation lane unless noted. Each browser runner reco
 
 Browser artifacts are emitted to `PYTHON_LEARNING_PROOF_DIR` or an OS temporary proof directory and include source state, timings and screenshots. They use a fresh browser profile and authored fixtures. The component runner distinguishes its fixture tool executor from registration; the production-build runner separately records offline reload/corruption results and denies deployment/learner-session proof.
 
+Source file save and debrief save have distinct receipts. The debrief includes its exact source snapshot; the existing editor separately debounces source autosave by 450 ms. The offline browser runner waits for the native IndexedDB source readback before reloading. An earlier harness reloaded immediately after the debrief acknowledgement and intermittently preceded that source commit; it is not retained as a passing source-reopen result.
+
 No dependency or lockfile was added. Reused local dependency metadata identifies React/React DOM 18.3.1, Three 0.170.0, React Three Fiber 8.18.0, Monaco 0.53.0, Workbox core 7.4.1 and Vite 6.4.3 as MIT. Their existing distributions retain their license notices. This scoped inventory is not a new license audit of every unrelated application feature.
 
 ## Outstanding acceptance and ownership
