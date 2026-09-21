@@ -1,3 +1,6 @@
+import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
+import { XrStoryCharacter, XrSailboatGeometry, XrStoryEffect } from './XrProceduralStoryGeometry'
+import type { XrStoryPresentation } from './xrStoryPresentation'
 import React from 'react'
 import * as THREE from 'three'
 import { getVoxelLabelTexture } from '@/features/three/voxelLabelTexture'
@@ -314,6 +317,9 @@ export function XrSceneLibraryAssetGeometry({
   const asset = resolveXrSceneLibraryAsset(assetId)
   const size = asset.dimensionsMeters
   const effectiveColor = color || asset.defaultColor
+  const character = asset.id === 'character-pig' ? 'pig' : asset.id === 'character-wolf' ? 'wolf' : resolveCharacterSilhouette(label)
+  if (asset.shape === 'humanoid' && character !== 'person') return <XrStoryCharacter kind={character} color={effectiveColor} pose={animationPose} size={size} />
+  if (asset.shape === 'sailboat') return <XrSailboatGeometry color={effectiveColor} size={size} />
   if (asset.shape === 'humanoid') return <Humanoid color={effectiveColor} pose={animationPose} size={size} silhouette={resolveCharacterSilhouette(label)} />
   if (asset.shape === 'quadruped') return <Quadruped color={effectiveColor} size={size} />
   if (asset.shape === 'car') return <XrProceduralVehicleGeometry kind="car" color={effectiveColor} size={size} />
@@ -328,7 +334,7 @@ export function XrSceneLibraryAssetGeometry({
   if (asset.shape === 'tree') return <Tree color={effectiveColor} size={size} />
   if (asset.shape === 'lamp') return <Lamp color={effectiveColor} size={size} />
   if (asset.shape === 'umbrella') return <Umbrella color={effectiveColor} size={size} />
-  return <XrProceduralHouseGeometry color={effectiveColor} label={label} size={size} />
+  return <XrProceduralHouseGeometry color={effectiveColor} label={asset.id.startsWith('prop-house-') ? asset.id : asset.id === 'prop-soup-pot' ? 'Soup Pot' : label} size={size} />
 }
 
 function SubjectLabel({
@@ -361,6 +367,7 @@ function SubjectLabel({
 
 export function XrSceneLibrarySubject({
   animationPose,
+  presentation,
   facingYRadians = 0,
   subject,
   position,
@@ -370,6 +377,7 @@ export function XrSceneLibrarySubject({
   onSelect,
 }: {
   animationPose?: XrAnimationPoseSample | null
+  presentation?: XrStoryPresentation
   facingYRadians?: number
   subject: XrMotionReferenceSubject
   position: readonly [number, number, number]
@@ -386,6 +394,7 @@ export function XrSceneLibrarySubject({
   return (
     <group
       name={`agentic_os_xr_scene_subject_${subject.id}`}
+      visible={presentation?.visible !== false}
       position={position}
       rotation={[0, THREE.MathUtils.degToRad(subject.rotationYDegrees) + facingYRadians, 0]}
       scale={stageScale * subject.scale}
@@ -431,11 +440,13 @@ export function XrSceneLibrarySubject({
         </mesh>
       ) : null}
       <group
+        scale={presentation?.cue === 'build' ? Math.max(0.02, presentation.progress) : 1}
         position={rootOffset}
         rotation={rootRotation.map(THREE.MathUtils.degToRad) as [number, number, number]}
       >
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <XrSceneLibraryAssetGeometry assetId={subject.assetId} color={subject.color} animationPose={animationPose} label={subject.label} />
+          {presentation?.cue !== 'collapse' ? <XrSceneLibraryAssetGeometry assetId={subject.assetId} color={subject.color} animationPose={animationPose} label={subject.label} /> : null}
+          {presentation ? <XrStoryEffect presentation={presentation} size={asset.dimensionsMeters} color={subject.color} /> : null}
           {identificationBounds ? (
             <mesh
               name={identificationBounds.name}
@@ -458,5 +469,72 @@ export function XrSceneLibrarySubject({
         </group>
       </group>
     </group>
+  )
+}
+
+export function PathSegment({
+  left,
+  right,
+  scale,
+  groundY,
+  color,
+  thickness,
+}: {
+  left: readonly [number, number, number]
+  right: readonly [number, number, number]
+  scale: number
+  groundY: number
+  color: string
+  thickness: number
+}) {
+  const start = xrMotionReferenceWorldPosition(left, scale, groundY)
+  const end = xrMotionReferenceWorldPosition(right, scale, groundY)
+  const dx = end[0] - start[0]
+  const dy = end[1] - start[1]
+  const dz = end[2] - start[2]
+  const length = Math.hypot(dx, dy, dz)
+  if (length < 0.001) return null
+  const direction = new THREE.Vector3(dx, dy, dz).normalize()
+  const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), direction)
+  return (
+    <mesh
+      position={[(start[0] + end[0]) / 2, (start[1] + end[1]) / 2, (start[2] + end[2]) / 2]}
+      quaternion={quaternion}
+    >
+      <boxGeometry args={[length, thickness, thickness]} />
+      <meshBasicMaterial color={color} transparent opacity={0.66} depthWrite={false} />
+    </mesh>
+  )
+}
+
+export function MarkNumberSprite({
+  number,
+  color,
+  position,
+  selected,
+  size,
+}: {
+  number: number
+  color: string
+  position: readonly [number, number, number]
+  selected: boolean
+  size: number
+}) {
+  const label = React.useMemo(() => {
+    if (typeof document === 'undefined') return null
+    return getVoxelLabelTexture({
+      text: String(number),
+      fontSizePx: 24,
+      textColor: selected ? '#0f172a' : '#ffffff',
+      bgColor: selected ? XR_MOTION_REFERENCE_SELECTION_COLOR : color,
+      bgOpacity: selected ? 1 : 0.96,
+    })
+  }, [color, number, selected])
+  if (!label) return null
+  const aspect = label.widthPx / Math.max(1, label.heightPx)
+  return (
+    <sprite position={position} scale={[size * (selected ? 1.9 : 1.45) * aspect, size * (selected ? 1.9 : 1.45), 1]} renderOrder={THREE_RENDER_ORDER.overlays}>
+      <spriteMaterial map={label.texture} transparent depthTest={false} depthWrite={false} />
+    </sprite>
   )
 }

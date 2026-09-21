@@ -2,7 +2,7 @@
 title: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KXR-001"
-version: "0.6.2"
+version: "0.6.3"
 status: "Harmonized with current Dev implementation"
 date: "2026-09-12"
 local_rung: "undocumented"
@@ -37,12 +37,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.6.1"
-prd_revision: "0.6.2"
-tad_revision: "0.6.2"
-adr_revision: "0.6.2"
-mvp_revision: "0.6.2"
-gtm_revision: "0.6.2"
+previous_document_version: "0.6.2"
+prd_revision: "0.6.3"
+tad_revision: "0.6.3"
+adr_revision: "0.6.3"
+mvp_revision: "0.6.3"
+gtm_revision: "0.6.3"
 ---
 
 # agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
@@ -462,7 +462,7 @@ SPZ rendering, phone-video asset publication, Production, or Cloudflare.
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.6.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.6.3`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0](https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -486,3 +486,27 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/__tests__/xrAssetConversionHarness.test.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/__tests__/xrAssetConversionHarness.test.ts), [`canvas/src/features/parsers/canvasFrontmatterPreset.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/parsers/canvasFrontmatterPreset.ts), [`canvas/src/lib/canvas/canvasSurfaceOwnershipRuntime.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/canvas/canvasSurfaceOwnershipRuntime.ts). Their existence does not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+## Sea journey increment — reference implementation
+
+All five roles join the same continuity ID at **0.6.3**. This bounded increment is authorized by the
+2026-09-21 request to enhance the existing XR panels and runtime-readiness demo with the supplied story.
+Source baseline: `b242ab5d82c49155808a86b45565c797f8e04f61`; invocation: `/change #xr-sea-journey @huijoohwee`.
+Prior evidence above retains its recorded revision; this increment claims no new delivered rung.
+
+| Role | Increment and acceptance |
+|---|---|
+| PRD | An author needs recognizable cast/props and a complete reproducible story. SJ-1: sail, straw/stick collapse, brick resistance, chimney/soup, escape and reunion follow the supplied script. SJ-2: one Subjects & Props surface includes catalog and placed-instance controls with visual previews. SJ-3: pause, seek, frame-step, replay, camera and Motion Control retain the shared Timeline and selected-target owners. |
+| TAD | Extend `xrMotionReferenceModel` marks with optional bounded presentation cues and camera captions; sample them deterministically in `xrStoryPresentation`. Reuse `XrSceneLibrarySubject`, native procedural geometry, Media cards, rehearsal status and the existing seed. No second clock, physics engine, camera owner, service or transport. |
+| ADR | Keep seven existing camera beat times and the 28-second demo. Explicit asset IDs and authored cues drive new story visuals; old documents remain valid. Effects illustrate authored events rather than claiming physical structural simulation. Recovery is reverting this scoped source change and reapplying the prior Git-backed seed. |
+| MVP | Existing Surface Mode → XR, Source Files seed apply, Animation, Motion Control, Camera, Media and Game Mode routes remain entry points. SJ-1/SJ-3: parsed-seed, cue sampling, serialization, backward seek and panel/runtime tests. SJ-2: rendered preview and filtered placed-instance checks. Run the repository affected planner and its selected checks; browser and protected integration results must be recorded separately. |
+| GTM | First pain hypothesis: educators/story authors spend time translating a script into readable choreography. Closest built solution: this existing local rehearsal surface. Test a $1 optional authored-story pilot only after a user observes the complete loop; demand, willingness to pay and revenue remain unvalidated. The free local core remains available. |
+
+Grounding: **confirmed** native shared transport, selectable subjects, Tropical Playground and procedural
+houses at the source baseline; **absent** authored collapse/splash cues, explicit story assets and visual
+catalog previews; **unverified** physical-device behavior and buyer demand. The pre-existing canonical
+seed edit is preserved and is not adopted into this lane. Earlier integrated rehearsal source is reused.
+
+Budget: 60 minutes for source/verification, at most 18 changed source files and 80 KB added bytes;
+new dependencies, paid services, remote media and always-load guidance delta: zero. CI/provider waits
+require an observed condition and recheck rather than an ETA. No deployment or production claim.

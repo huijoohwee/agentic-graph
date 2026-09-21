@@ -1,3 +1,4 @@
+import { XrCatalogArtwork } from './XrMediaCatalogThumbs'
 import React from 'react'
 import { Armchair, Box, Car, PawPrint, UserRound, type LucideIcon } from 'lucide-react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
@@ -61,16 +62,16 @@ export function XrInvocationButton({ invocation, disabled, onInvoke }: { invocat
   )
 }
 
-function XrMediaCatalogThumb({ Icon, color, label }: { Icon: LucideIcon; color: string; label: string }) {
+function XrMediaCatalogThumb({ Icon, color, label, assetId }: { Icon: LucideIcon; color: string; label: string; assetId?: string }) {
   return (
     <span
       className={mediaListThumbnailFrameClassName('items-center justify-center cursor-grab active:cursor-grabbing')}
       style={{ color }}
       role="img"
-      aria-label={`${label} procedural grey-box preview`}
+      aria-label={`${label} preview`}
       data-kg-media-xr-thumbnail="media-card"
     >
-      <Icon className="size-7" strokeWidth={1.6} aria-hidden />
+      <XrCatalogArtwork Icon={Icon} color={color} label={label} assetId={assetId} />
     </span>
   )
 }
@@ -135,7 +136,7 @@ export function XrLibraryCard({
       }}
       {...dataAttributes}
     >
-      <XrMediaCatalogThumb Icon={Icon} color={color} label={label} />
+      <XrMediaCatalogThumb Icon={Icon} color={color} label={label} assetId={dataAttributes?.['data-kg-media-xr-asset'] || dataAttributes?.['data-kg-media-xr-environment']} />
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${label} XR media summary`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-media-list-row-section="title">
           <h4 className="truncate text-xs font-semibold" title={label}>{label}</h4>

@@ -1,3 +1,4 @@
+import { readXrPresentationCue, type XrPresentationCue } from './xrStoryPresentation'
 import { readXrSceneAppearance, type XrSceneAppearance } from './xrSceneAppearance'
 import type { GraphData, GraphNode, JSONValue } from '@/lib/graph/types'
 import { resolveCameraFramingPose, type CameraFramingPose } from '@/lib/camera/cameraFramingPose'
@@ -83,6 +84,7 @@ export type XrMotionReferenceMark = Readonly<{
   position: XrMotionReferenceVector
   transition: XrChoreographyEasing
   gait: XrChoreographyGait
+  cue?: XrPresentationCue
 }>
 
 export type XrMotionReferenceCastTrack = Readonly<{
@@ -97,6 +99,8 @@ export type XrMotionReferenceCameraMark = Readonly<{
   id: string
   timeSeconds: number
   anchorId: string
+  label?: string
+  caption?: string
   moveId: XrCameraMoveId
   rig: XrMotionReferenceCameraRig
   easing: XrChoreographyEasing
@@ -295,6 +299,7 @@ function normalizeMarks(
       position: normalizeVector(record.position, fallbackPosition),
       transition: readXrChoreographyEasing(record.easing ?? record.transition),
       gait: readXrChoreographyGait(record.gait, defaultGait),
+      ...(readXrPresentationCue(record.cue) ? { cue: readXrPresentationCue(record.cue) } : {}),
       index,
     })
   })
@@ -305,6 +310,7 @@ function normalizeMarks(
       position: fallbackPosition,
       transition: 'linear' as const,
       gait: defaultGait,
+      cue: undefined,
       index: 0,
     }))
   }
@@ -338,6 +344,8 @@ function normalizeCameraMarks(
       id: stableMarkId('camera', timeSeconds),
       timeSeconds,
       anchorId,
+      ...(typeof record.label === 'string' ? { label: record.label.trim().slice(0, 80) } : {}),
+      ...(typeof record.caption === 'string' ? { caption: record.caption.trim().slice(0, 800) } : {}),
       moveId: readXrCameraMoveId(record.moveId),
       rig,
       easing: readXrChoreographyEasing(record.easing || defaultXrCameraEasing(rig)),
@@ -472,6 +480,7 @@ export function serializeXrMotionReferencePlan(plan: XrMotionReferencePlan): JSO
   return {
     schema: XR_MOTION_REFERENCE_SCHEMA,
     stageId: plan.stageId,
+    castSource: plan.castSource,
     appearance: { ...readXrSceneAppearance(plan.appearance) },
     durationSeconds: plan.durationSeconds,
     fps: plan.fps,
@@ -498,11 +507,14 @@ export function serializeXrMotionReferencePlan(plan: XrMotionReferencePlan): JSO
         position: [...mark.position],
         transition: mark.transition,
         gait: mark.gait,
+        ...(mark.cue ? { cue: mark.cue } : {}),
       })),
     })),
     camera: plan.camera.map(mark => ({
       timeSeconds: mark.timeSeconds,
       anchorId: mark.anchorId,
+      ...(mark.label ? { label: mark.label } : {}),
+      ...(mark.caption ? { caption: mark.caption } : {}),
       moveId: mark.moveId,
       rig: mark.rig,
       easing: mark.easing,
