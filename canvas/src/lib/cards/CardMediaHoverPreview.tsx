@@ -68,7 +68,8 @@ export function CardMediaHoverPreview(props: {
       autoFocus={false}
       className={[
         `${UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME} [--kg-anchor-preview-overlay-width:20rem] overflow-hidden rounded border shadow-xl`,
-        UI_THEME_TOKENS.panel.bg,
+        UI_THEME_TOKENS.tooltip.bg,
+        UI_THEME_TOKENS.tooltip.text,
         UI_THEME_TOKENS.panel.border,
       ].join(' ')}
     >
@@ -80,7 +81,7 @@ export function CardMediaHoverPreview(props: {
         data-kg-card-media-hover-preview-kind={props.kind}
         data-kg-canvas-pointer-ignore="true"
         data-kg-canvas-wheel-ignore="true"
-        className={`${UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_BODY_CLASSNAME} pointer-events-none bg-black/5`}
+        className={`${UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_BODY_CLASSNAME} pointer-events-none`}
         style={{
           width: 320,
           maxWidth: '100%',

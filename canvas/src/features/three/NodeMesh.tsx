@@ -295,7 +295,7 @@ export function NodeMesh({
     if (!shouldShowVoxelLabel) return null
     if (typeof document === 'undefined') return null
     const textColor = resolveCssVar('--kg-canvas-label-fill', '#111827')
-    const bgColor = resolveCssVar('--kg-tooltip-bg', '#111827')
+    const bgColor = resolveCssVar('--kg-tooltip-bg', '#000000')
     const { texture, widthPx, heightPx } = getVoxelLabelTexture({
       text: labelText,
       fontSizePx: voxelLabelFontSizePx,

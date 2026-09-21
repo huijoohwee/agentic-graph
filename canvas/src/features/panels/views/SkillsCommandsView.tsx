@@ -23,7 +23,6 @@ import {
   floatingPanelCatalogCompactRowMetaClassName,
   floatingPanelCatalogCompactRowTitleClassName,
 } from '@/lib/ui/floatingPanelCatalogLayout'
-import { UI_TEXT_TRUNCATE_CHIP } from '@/lib/ui/textLayout'
 import { cn } from '@/lib/utils'
 import {
   resolveSkillsCommandsGrammarProjection,
@@ -81,7 +80,8 @@ function renderSkillsCommandsTokenChip(entry: SkillsCommandsCatalogEntry): React
     'data-kg-skill-command-token-chip': '1',
   }
   const className = buildSkillsCommandsTokenChipClassName(entry.token)
-  const invocationChip = renderAgenticOsInvocationKeywordChip({ value: entry.token, className })
+  const invocationChip = renderAgenticOsInvocationKeywordChip({ value: entry.token, className, allowUnresolved: true,
+    fallbackTitle: [entry.token, entry.label, entry.summary, entry.sourcePath].filter(Boolean).join('\n') })
   if (React.isValidElement<{ className?: string }>(invocationChip)) {
     const chip = invocationChip as React.ReactElement<{ className?: string }>
     return React.cloneElement(chip, {
@@ -89,16 +89,7 @@ function renderSkillsCommandsTokenChip(entry: SkillsCommandsCatalogEntry): React
       className: cn(chip.props.className, 'shrink-0'),
     })
   }
-  return (
-    <span
-      className={cn(className, 'shrink-0')}
-      title={entry.token}
-      data-kg-card-inline-keyword-pill="1"
-      {...attrs}
-    >
-      <span className={UI_TEXT_TRUNCATE_CHIP}>{entry.token}</span>
-    </span>
-  )
+  return null
 }
 
 function resolveSkillsCommandsRenderEntries(

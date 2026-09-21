@@ -34,7 +34,10 @@ export function buildAgenticOsInvocationChipAttrs(token: string): Record<string,
 
 export function buildAgenticOsInvocationChipTitle(token: string): string {
   const resolved = resolveAgenticOsInvocationToken(token)
-  return resolved ? buildAgenticOsInvocationSourceTitle(resolved.invocation) : ''
+  if (resolved) return buildAgenticOsInvocationSourceTitle(resolved.invocation)
+  const kind = readAgenticOsInvocationTokenKind(token)
+  if (!kind) return token
+  return `${token}\n${kind === 'slash' ? 'Command' : kind === 'binding' ? 'Target or context binding' : 'Semantic keyword'}`
 }
 
 export function renderAgenticOsInvocationAnchor(args: {
@@ -66,6 +69,7 @@ export function renderAgenticOsInvocationKeywordChip(args: {
   className: string
   sourceLink?: boolean
   allowUnresolved?: boolean
+  fallbackTitle?: string
 }): React.ReactNode | null {
   const token = String(args.value || '').trim()
   const resolved = resolveAgenticOsInvocationToken(token)
@@ -78,7 +82,7 @@ export function renderAgenticOsInvocationKeywordChip(args: {
     return (
       <span
         className={`${args.className} ${UI_INLINE_CHIP_SHELL_15CH_CLASSNAME}`}
-        title={resolved ? buildAgenticOsInvocationSourceTitle(resolved.invocation) : token}
+        title={resolved ? buildAgenticOsInvocationSourceTitle(resolved.invocation) : args.fallbackTitle || buildAgenticOsInvocationChipTitle(token)}
         data-kg-card-inline-keyword-pill="1"
         {...attrs}
       >
