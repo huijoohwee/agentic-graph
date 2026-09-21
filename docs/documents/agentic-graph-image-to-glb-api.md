@@ -23,7 +23,44 @@ copy_policy: "conceptual inspiration only; forbid external code, prompt, schema,
 
 The lane is code-only. It does not admit a serialized mesh, baked vertex payload, model checkpoint, network loader, external runtime, or hidden asset download.
 
-## Reference contract
+## Text-native procedural extension — implementation contract
+
+The same source owner also admits text-native recipes through
+`/asset.create @text #procedural-asset`. This extension does not relax the image
+contract below. Text carries intent and construction evidence; it has no image
+reference digest, silhouette score, or observed-surface claim.
+
+Product acceptance: authors can construct original bounded primitive assemblies,
+edit dimensions, colours, detail and visibility locally, retain stable part,
+pivot and socket identities, and recover the last valid recipe after a rejected
+draft. Offline text interpretation explicitly supports robot/character, tree/palm,
+chair/table and box/sphere/cylinder; other requests require a validated typed
+recipe from the connected agent, not guessed general-generation capability.
+
+Architecture: `proceduralAssetContract`, `proceduralAssetBuilder`, and the text
+recipe/session/export modules remain under the existing procedural source owner.
+They share native snapshot/export machinery with image generation while keeping
+image quality gates separate. Each recipe persists intent, deterministic seed,
+parts, control schema/values, and optional rigid clips. Generated JavaScript is a
+reviewable companion; the application never evaluates it. Invalid, cancelled or
+stale-document results cannot replace the last valid document. Existing workspace
+source and XR selection/transport remain the integration owners.
+
+Decision: use trusted box, sphere, cylinder and cone constructors, bounded to 48
+parts, 32 controls, 8 clips, 32 keys per track, 64 kB of recipe JSON and 120,000
+triangles. Local controls use zero provider calls. No new package/service is
+required. GLB exports edited visible geometry, materials, hierarchy and supported
+clips; recipe/source companions preserve procedural editability separately.
+
+MVP proof: text → recipe → control edit → serialize/reopen → GLB reimport with
+stable nodes and sampled motion. Reject malformed hierarchy, values, recipes,
+budget overflow and stale export before publication. Image export regression is
+required. Cross-surface entry wiring and joined XR planning reconciliation remain
+dependent on the existing XR owner's release and are not claimed by this increment.
+GTM: test the editable asset workflow against manual primitive assembly; record
+editing time and export success. Demand and revenue remain unvalidated.
+
+## Image reference contract
 
 The reference reader samples at a bounded maximum dimension of 192 pixels. Analysis records:
 
