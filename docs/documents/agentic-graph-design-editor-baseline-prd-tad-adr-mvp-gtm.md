@@ -26,9 +26,9 @@ gtm_revision: "0.4.0"
 
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
-Current planning revision: **0.4.0**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.4.0**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
-implementation proposal, with no new runtime or delivery claim.
+implementation in progress, with no new runtime or delivery claim.
 
 **Document Version**: 0.3.0  
 **Date**: 2026-05-29  
@@ -256,10 +256,10 @@ design review to a consistent, reusable local deliverable. Directive: enhance th
 Design panel and agent inspection owners. Role/Subject: product implementer. Action/Verb: connect.
 Object: native token definitions, agent context and Design inspection. Outcome: N1–N6 below.
 
-**Authorization:** this revision prepares the concrete scope for review. Feature implementation is
-pending the user's scope decision under Agentic OS `guides/PRD-TAD-ADR-MVP-GTM.md`, Native feature
-inspiration default, steps 2–4. Record the decision against this revision in existing task evidence;
-reuse it thereafter. No new authorization schema, approval service or standing runtime permission.
+**Authorization:** on 2026-09-21 the user selected “Authorize implementation of this v0.4.0 scope,
+N1–N6” and instructed “IMPLEMENT”. That decision authorizes this exact scoped implementation and is
+reused throughout the task. It does not establish acceptance, integration or production evidence.
+No new authorization schema, approval service or standing runtime permission.
 
 ### Codebase grounding and dispositions
 
@@ -452,7 +452,7 @@ conformance. This plan does not replace the broader product specification or ven
 | C05 architecture/data | Covered; shared-token and Design owners; TAD ownership, five flows and bounds. |
 | C06 quality/security/AI | Covered; validator; local fallback, escaped imported data, explicit unknowns, no new spend/dependency. |
 | C07 tradeoffs | Covered; architecture owner; ADR and consumer-driven revisit trigger. |
-| C08 validated slice | Deferred; implementer; scope is specified, acceptance evidence awaits implementation authorization and N1–N6. |
+| C08 validated slice | Deferred; implementer; implementation is authorized, acceptance evidence awaits N1–N6. |
 | C09 acquisition/retention | Deferred; operator; experiment defined, channels/conversion/repeat demand await actual pilot. |
 | C10 operations | Deferred; operator; support/capacity evidence depends on pilot; record support minutes and recovery failures. |
 | C11 obligations | Deferred; product owner; no new dependency selected; review data/IP/collection obligations before buyer delivery. |
@@ -478,3 +478,39 @@ measured; no savings claim is made. This task used no new package installation, 
 product model call. Preserve the admitted lane as the review checkpoint with authoring stopped pending
 the scope decision. Recheck current ownership, source and exact accepted paths before implementation;
 do not retire the lane or overwrite another task's changes to obtain a clean frontier.
+
+### Implementation checkpoint — 2026-09-21
+
+The user authorized N1–N6. The isolated implementation lane contains the shared validation/export
+contract, bounded observations/audit/context, existing panel and token explorer changes, shared agent
+readback, registered behavior cases and a local browser verifier. These are authored changes awaiting
+integration and acceptance, not delivered functionality. Four modules were added; no package or
+always-load guidance was added. Generated token CSS and canonical checkout bytes remain untouched.
+
+Document intent uses the existing frontmatter parser: optional `design` mapping, with text fields
+`intent`, `hierarchy`, `typography`, `spacing`, `colorRoles`, `interaction`, `accessibility`, `motion`.
+Missing fields stay unresolved. An explicit `node.properties.designTokens` mapping binds relative
+property paths to authored token names, for example `{ "fill": "canvas-accent" }`. Equal observed
+values are candidate matches only. Declared contrast checks require an opaque color/background pair
+and explicit opacity `1`; rendered layout, ancestor compositing, focus and motion remain unassessed.
+
+Passed: isolated token-contract behavior checks (aliases, deterministic exports, missing/cyclic/type
+references, injection and size failures), strict TypeScript checking of that standalone contract,
+syntax transpilation of 15 changed TypeScript modules, JavaScript syntax checks, changed-file hygiene,
+collaboration contract, worktree policy and whitespace checks. No full application typecheck, N1–N6
+acceptance suite, browser result, protected merge, production or buyer evidence is claimed.
+
+Blocked source join: native disjoint-reservation preflight reports `blocked-write-scope-overlap` for
+`grph-shared/src/ui/kgTokens.ts`, currently reserved by `widget-media-source-parity`. Its retained
+predecessor PR #1138 at `695dc145b916106fb8b5f7568369ab2e3da06bea` has a failed Integration Gate.
+Do not edit that path or substitute a downstream token catalog. The shared definitions still need
+their typed name/purpose metadata, explicit dark alias, public contract exports and the legacy-order
+CSS wrapper; consumers in this checkpoint therefore remain incomplete and are not release eligible.
+
+Resume after the owner lane releases the path: refresh origin/source/claims, admit the exact token
+path through the native successor workflow, preserve integrated token values, finish that owner join,
+then run focused `design.editor`, `design.layers`, Canvas View invocation tests, CSS byte parity,
+application typecheck and `node canvas/scripts/verify_design_browser_smoke.mjs`. The browser verifier
+is authored but unexecuted. Run the canonical affected plan and protected release only after those
+pass. Keep this checkpoint and its refs; authoring is stopped at the overlap boundary, with no source
+integration, retirement, cleanup or deployment receipt. External wait has no completion ETA.

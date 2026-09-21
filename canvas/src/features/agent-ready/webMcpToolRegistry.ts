@@ -393,6 +393,7 @@ const buildInspectLocalCanvasTopologyTool = (): WebMcpTool => ({
   title: INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT.title,
   description: INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT.description,
   inputSchema: INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT.inputSchema,
+  outputSchema: INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT.outputSchema,
   annotations: INSPECT_LOCAL_CANVAS_TOPOLOGY_TOOL_CONTRACT.annotations,
   execute: async () => {
     const state = useGraphStore.getState()
