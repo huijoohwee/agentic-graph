@@ -36,7 +36,7 @@ export function MarkdownVariableInvocationChip({ variableKey, preview, sourceTex
   const asset = XR_SCENE_LIBRARY_ASSETS.find(asset => asset.id === preview.value)
   return <>
     <button ref={anchorRef} type="button" aria-label={`Change ${label}`} aria-haspopup="listbox" aria-expanded={open}
-      title={sourceText} data-kg-variable-invocation={variableKey} className={`${CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_PILL_CLASS_NAME} cursor-pointer`}
+      title={sourceText} data-kg-variable-invocation={variableKey} data-kg-var-raw={`{{${variableKey}}}`} className={`${CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_PILL_CLASS_NAME} cursor-pointer`}
       onPointerDown={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}
       onClick={event => { event.stopPropagation(); setOpen(value => !value); setQuery('') }}>
       <span className="inline-flex h-4 w-5 shrink-0" aria-hidden="true"><XrCatalogArtwork assetId={preview.value ?? ''} label={label} color={asset?.defaultColor ?? '#64748b'} Icon={Box} /></span>

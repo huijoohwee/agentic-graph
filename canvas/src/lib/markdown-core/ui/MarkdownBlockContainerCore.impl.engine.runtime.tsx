@@ -9,7 +9,7 @@ import { useMarkdownBlockContainerEdgeTrim } from './markdownBlockContainerCore.
 import { useMarkdownBlockContainerVariableActions } from './markdownBlockContainerCore.variableActions'
 import { useMarkdownBlockContainerHtmlFormatting } from './markdownBlockContainerCore.htmlFormatting'
 import { useMarkdownBlockContainerMarkdownFormatting } from './markdownBlockContainerCore.markdownFormatting'
-import { useMarkdownBlockContainerEditOpenCaretProbe } from './markdownBlockContainerCore.editOpenCaretProbe'
+import { useMarkdownBlockContainerEditOpenCaretProbe, type MarkdownEditOpenSnapshot } from './markdownBlockContainerCore.editOpenCaretProbe'
 import { useMarkdownBlockContainerSelectionToolbarSync } from './markdownBlockContainerCore.selectionToolbarSync'
 import { useMarkdownBlockContainerEditInitialization } from './markdownBlockContainerCore.editInitialization'
 import { MarkdownBlockContainerEditSurfaceView } from './markdownBlockContainerCore.editSurfaceView'
@@ -121,8 +121,8 @@ export const MarkdownBlockContainer = React.forwardRef<HTMLElement, MarkdownBloc
   const textSelectionWidgetLink = useTextSelectionWidgetLinkAction()
   const [sessionEditLineRange, setSessionEditLineRange] = React.useState<{ startLine: number; endLine: number } | null>(null)
   const inlineEditRangeToken = React.useMemo(
-    () => toMarkdownBlockInlineEditRangeToken(startLine, endLine),
-    [endLine, startLine],
+    () => `${id || ''}:${toMarkdownBlockInlineEditRangeToken(startLine, endLine)}`,
+    [endLine, startLine, id],
   )
   const inlineEditStateScheduleKey = React.useMemo(
     () => toMarkdownBlockInlineEditStateTaskKey(inlineEditRangeToken),
@@ -160,10 +160,7 @@ export const MarkdownBlockContainer = React.forwardRef<HTMLElement, MarkdownBloc
   const hostRef = React.useRef<HTMLElement | null>(null)
   const editTypographySnapshotRef = React.useRef<React.CSSProperties | null>(null)
   const editSpacingSnapshotRef = React.useRef<React.CSSProperties | null>(null)
-  const parityProbeSnapshotRef = React.useRef<{
-    source: HTMLElement
-    sourceMetrics: Record<string, string>
-  } | null>(null)
+  const parityProbeSnapshotRef = React.useRef<MarkdownEditOpenSnapshot | null>(null)
   const initialEditorHtmlRef = React.useRef('')
   const lastSerializedEditorHtmlRef = React.useRef('')
   const initialPresentTextRef = React.useRef('')
@@ -657,6 +654,7 @@ export const MarkdownBlockContainer = React.forwardRef<HTMLElement, MarkdownBloc
     probe,
   })
   useMarkdownBlockContainerEditInitialization({
+    renderedInlineHtml: parityProbeSnapshotRef.current?.inlineHtml,
     editing,
     initialText,
     editStripLinePrefix,

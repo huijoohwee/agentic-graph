@@ -167,7 +167,7 @@ const rewriteTextNodeInvocationsForEditor = (root: HTMLElement): void => {
     const parent = (node as Text).parentElement
     if (
       !parent?.closest(
-        `${INLINE_MARKDOWN_EDIT_TOKEN_SELECTOR},[${INLINE_MARKDOWN_ZERO_LENGTH_TOKEN_ATTR}="1"],[data-kg-inline-code-token="1"]`,
+        `code,pre,${INLINE_MARKDOWN_EDIT_TOKEN_SELECTOR},[${INLINE_MARKDOWN_ZERO_LENGTH_TOKEN_ATTR}="1"],[data-kg-inline-code-token="1"]`,
       )
     ) textNodes.push(node as Text)
     node = walker.nextNode()
@@ -252,6 +252,23 @@ export const rewriteRenderedInlineMediaForEditorHtml = (html: string): string =>
     if (token) node.replaceWith(token)
   })
   rewriteTextNodeInvocationsForEditor(root)
+  return root.innerHTML
+}
+
+// Keep the mounted Viewer presentation; annotate only atomic references for round-trip serialization.
+export const prepareRenderedParagraphEditHtml = (html: string): string => {
+  const root = new DOMParser().parseFromString(`<section>${html}</section>`, 'text/html').body.firstElementChild as HTMLElement
+  root.querySelectorAll('[data-kg-variable-invocation],[data-kg-var-raw]').forEach(node => {
+    const raw = node.getAttribute('data-kg-var-raw')
+    if (!raw) return
+    const token = root.ownerDocument.createElement('span')
+    token.className = node.className
+    token.innerHTML = node.innerHTML
+    token.setAttribute(INLINE_INVOCATION_EDIT_TOKEN_ATTR, '1')
+    token.setAttribute(INLINE_INVOCATION_EDIT_MARKDOWN_ATTR, raw)
+    token.setAttribute('contenteditable', 'false')
+    node.replaceWith(token)
+  })
   return root.innerHTML
 }
 

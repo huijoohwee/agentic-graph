@@ -3,6 +3,8 @@ import { ensureWordSelectionInRoot, expandSelectionSegmentAt, findFirstSelectabl
 import { reportMarkdownEditParityProbe } from './markdownEditParityProbe'
 import { readMarkdownContentEditableCaretRangeFromPoint } from './markdownContentEditableSurface'
 
+export type MarkdownEditOpenSnapshot = { source: HTMLElement; sourceMetrics: Record<string, string>; inlineHtml?: string }
+
 export const useMarkdownBlockContainerEditOpenCaretProbe = (args: {
   editable: boolean
   typographySelector: string
@@ -16,7 +18,7 @@ export const useMarkdownBlockContainerEditOpenCaretProbe = (args: {
   setEditing: React.Dispatch<React.SetStateAction<boolean>>
   editTypographySnapshotRef: React.MutableRefObject<React.CSSProperties | null>
   editSpacingSnapshotRef: React.MutableRefObject<React.CSSProperties | null>
-  parityProbeSnapshotRef: React.MutableRefObject<{ source: HTMLElement; sourceMetrics: Record<string, string> } | null>
+  parityProbeSnapshotRef: React.MutableRefObject<MarkdownEditOpenSnapshot | null>
   editSessionIdRef: React.MutableRefObject<number>
   editOpenBlurGuardUntilRef: React.MutableRefObject<number>
   editMinHeightPxRef: React.MutableRefObject<number>
@@ -157,6 +159,7 @@ export const useMarkdownBlockContainerEditOpenCaretProbe = (args: {
       args.parityProbeSnapshotRef.current = {
         source: sourceSurface,
         sourceMetrics,
+        inlineHtml: Array.from(event.currentTarget.children).find(child => child.hasAttribute('data-kg-paragraph-content'))?.innerHTML,
       }
     } catch {
       args.editTypographySnapshotRef.current = null

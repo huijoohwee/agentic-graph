@@ -19,6 +19,7 @@ import { isLikelyImageUrl } from '@/lib/url'
 import { renderInlineTokens } from '@/lib/markdown-core/ui/MarkdownInlineRenderer.impl'
 import { MediaWrapper, MediaIframe, MediaVideo, MediaImage, MediaWebpageSnapshot } from '@/lib/markdown-core/ui/MarkdownMediaUi.impl'
 import type { RenderOpts } from './MarkdownRendererTypes'
+import { renderReferencedParagraph } from '@/lib/markdown-core/ui/MarkdownReferencedParagraph'
 import { MarkdownBlockContainer } from './MarkdownBlockContainer'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getIconSizeClass } from '@/lib/ui'
@@ -30,7 +31,7 @@ import {
   MarkdownBlockGutterControls,
   useMarkdownLineBlockDnD,
 } from './MarkdownBlockGutter'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { extractLinkText, extractDomain, StandaloneLinkCard, getStandaloneLinkedImageParagraph } from '@/lib/markdown-core/ui/MarkdownStandaloneLinkCard'
 import { MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS } from './markdownEditSurfaceLayout'
 import { readStandaloneParagraphUrlToken } from './standaloneMediaBudget'
 import {
@@ -38,83 +39,6 @@ import {
   CARD_MARKDOWN_PREVIEW_MEDIA_CHROME_CLASS_NAME,
 } from '@/lib/cards/cardMarkdownPreviewUtils'
 import { extractUpstreamUrlFromMarkdownLocalProxyUrl, normalizeMarkdownLocalProxyUrl } from '@/lib/markdown-core/ui/mediaProxyUrl'
-const extractLinkText = (token: Token): string => {
-  const p = token as unknown as TokensParagraph
-  const inner = Array.isArray(p.tokens) ? p.tokens : []
-  for (const t of inner) {
-    const tt = t as unknown as { type?: unknown }
-    if (String(tt.type || '') === 'link') {
-      const link = t as unknown as TokensLink
-      const children = Array.isArray(link.tokens) ? link.tokens : []
-      return children.map(c => String((c as unknown as TokensText).text || '')).join('').trim()
-    }
-  }
-  return ''
-}
-
-const extractDomain = (href: string): string => {
-  try {
-    const u = new URL(href)
-    return u.hostname || ''
-  } catch {
-    return ''
-  }
-}
-
-type StandaloneLinkCardProps = {
-  href: string
-  title: string
-  domain: string
-  opts: RenderOpts
-}
-
-const StandaloneLinkCard = React.memo(function StandaloneLinkCard({ href, title, domain }: StandaloneLinkCardProps) {
-  const [imgError, setImgError] = React.useState(false)
-  const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : ''
-  const displayTitle = title || domain || href
-  const truncatedUrl = href.length > 60 ? `${href.slice(0, 57)}...` : href
-
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`sm:flex ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border} border rounded-xl shadow-sm hover:shadow-md transition-shadow no-underline text-inherit block`}
-      onClick={e => e.stopPropagation()}
-    >
-      <section className="shrink-0 relative w-full rounded-t-xl overflow-hidden sm:rounded-s-xl sm:rounded-se-none sm:max-w-20 bg-gray-100 dark:bg-gray-800">
-        {!imgError && faviconUrl ? (
-          <img
-            className="size-full absolute top-0 start-0 object-contain p-2"
-            src={faviconUrl}
-            alt=""
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <section className="flex items-center justify-center h-16 sm:h-full text-[color:var(--kg-text-tertiary)] text-xs font-mono">
-            {domain ? domain.charAt(0).toUpperCase() : '?'}
-          </section>
-        )}
-      </section>
-      <section className="flex flex-wrap min-w-0">
-        <section className="p-3 flex flex-col h-full sm:p-4 min-w-0">
-          <h3 className={`font-semibold ${UI_THEME_TOKENS.text.primary} text-sm leading-snug truncate`}>
-            {displayTitle}
-          </h3>
-          <p className={`mt-1 ${UI_THEME_TOKENS.text.secondary} text-xs truncate`}>
-            {truncatedUrl}
-          </p>
-          <section className="mt-2 sm:mt-auto">
-            <p className={`text-[10px] ${UI_THEME_TOKENS.text.secondary} font-mono`}>
-              {domain}
-            </p>
-          </section>
-        </section>
-      </section>
-    </a>
-  )
-})
-
 type MarkdownParagraphBlockProps = {
   token: TokenWithLines
   highlightClass: string
@@ -127,44 +51,6 @@ type MarkdownParagraphBlockProps = {
   fragmentClassNames?: string[]
   fragmentTags?: string[]
 }
-
-const getStandaloneLinkedImageParagraph = (
-  token: Token,
-): { linkHref: string; imageHref: string; imageAlt: string } | null => {
-  const p = token as unknown as TokensParagraph
-  const inner = Array.isArray(p.tokens) ? p.tokens : []
-  const meaningful = inner.filter(t => {
-    const type = String((t as unknown as { type?: unknown }).type || '')
-    if (type === 'space' || type === 'br' || type === 'softbreak') return false
-    if (type === 'text') return String((t as unknown as TokensText).text || '').trim().length > 0
-    return true
-  })
-  if (meaningful.length !== 1) return null
-  const only = meaningful[0] as unknown as TokensGeneric
-  if (only.type !== 'link') return null
-  const link = only as unknown as TokensLink
-  const linkHref = String(link.href || '').trim()
-  if (!linkHref || !isAbsoluteWebUrl(linkHref) || !isSafeHref(linkHref)) return null
-  const linkTokens = Array.isArray(link.tokens) ? link.tokens : []
-  const mediaTokens = linkTokens.filter(t => {
-    const type = String((t as unknown as { type?: unknown }).type || '')
-    if (type === 'space' || type === 'br' || type === 'softbreak') return false
-    if (type === 'text') return String((t as unknown as TokensText).text || '').trim().length > 0
-    return true
-  })
-  if (mediaTokens.length !== 1) return null
-  const media = mediaTokens[0] as unknown as TokensGeneric
-  if (media.type !== 'image') return null
-  const image = media as unknown as TokensImage
-  const imageHref = String(image.href || '').trim()
-  if (!imageHref || !isSafeHref(imageHref)) return null
-  return {
-    linkHref,
-    imageHref,
-    imageAlt: String(image.text || '').trim() || imageHref,
-  }
-}
-
 const isBlockHtmlToken = (t: Token): boolean => {
   const tt = t as unknown as { type?: unknown; text?: unknown; raw?: unknown }
   if (tt.type !== 'html') return false
@@ -200,7 +86,6 @@ const isBlockHtmlToken = (t: Token): boolean => {
   if (!lower.includes(`</${tag}`) && !/\/\s*>$/.test(lower)) return false
   return true
 }
-
 const containsBlockHtml = (tokens: Token[] | undefined): boolean => {
   const list = Array.isArray(tokens) ? tokens : []
   for (const t of list) {
@@ -623,6 +508,11 @@ export const MarkdownParagraphBlock = React.memo(function MarkdownParagraphBlock
   const baseClassName = ['mt-2 mb-2', baseTextClass, commonBlockClass]
     .filter(Boolean)
     .join(' ')
+  const referenced = blockControlsAllowed && wrapperAs === 'p' ? renderReferencedParagraph({
+    source: opts.markdownSourceLines?.slice(t.startLine - 1, t.endLine).join('\n') || '', opts,
+    startLine: t.startLine, endLine: t.endLine, className: `${baseClassName} ${highlightClass} ${gutterEnabled ? `${MARKDOWN_BLOCK_GUTTER_PADDING_LEFT_CLASS} ${MARKDOWN_BLOCK_GUTTER_PADDING_RIGHT_CLASS}` : ''}`, style: highlightStyle,
+  }) : null
+  if (referenced) return referenced
   return (
     <MarkdownBlockContainer
       as={wrapperAs}
@@ -662,7 +552,7 @@ export const MarkdownParagraphBlock = React.memo(function MarkdownParagraphBlock
           />
         </>
       )}
-      {renderInlineTokens(p.tokens, {
+      <span data-kg-paragraph-content="1">{renderInlineTokens(p.tokens, {
         activeDocumentPath: opts.activeDocumentPath,
         uiPanelTextFontClass: opts.uiPanelTextFontClass,
         uiPanelMonospaceTextClass: opts.uiPanelMonospaceTextClass,
@@ -678,7 +568,7 @@ export const MarkdownParagraphBlock = React.memo(function MarkdownParagraphBlock
                 tags: fragmentTags || [],
               }
             : null,
-      })}
+      })}</span>
     </MarkdownBlockContainer>
   )
 })
