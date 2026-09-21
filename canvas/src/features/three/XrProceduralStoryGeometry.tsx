@@ -9,11 +9,11 @@ const Material = ({ color }: { color: string }) => <meshStandardMaterial color={
 
 /** All geometry is authored locally, in the library's Z-up coordinates. */
 export function XrStoryCharacter({ kind, color, size, pose }: {
-  kind: 'pig' | 'wolf'; color: string; size: Size; pose?: XrAnimationPoseSample | null
+  kind: 'pig' | 'wolf' | 'monkey'; color: string; size: Size; pose?: XrAnimationPoseSample | null
 }) {
   const [w, h, d] = size
-  const skin = kind === 'pig' ? '#f5a3b7' : '#71859a'
-  const snout = kind === 'pig' ? '#ee839f' : '#aab7c4'
+  const skin = kind === 'pig' ? '#f5a3b7' : kind === 'monkey' ? '#9b6542' : '#71859a'
+  const snout = kind === 'pig' ? '#ee839f' : kind === 'monkey' ? '#e9bd8b' : '#aab7c4'
   const crouch = (pose?.crouch || 0) * h * 0.12
   return <group name={`agentic_os_xr_story_${kind}`}>
     <mesh position={[0, 0, h * 0.46 - crouch]} scale={[1, 0.8, 1.15]} castShadow>
@@ -23,12 +23,12 @@ export function XrStoryCharacter({ kind, color, size, pose }: {
       <sphereGeometry args={[w * 0.48, 16, 12]} /><Material color={skin} />
     </mesh>
     <mesh position={[0, d * 0.54, h * 0.74 - crouch]} rotation={[0, 0, 0]} castShadow>
-      {kind === 'pig' ? <cylinderGeometry args={[w * 0.23, w * 0.25, d * 0.25, 16]} /> : <coneGeometry args={[w * 0.24, d * 0.85, 8]} />}
+      {kind === 'monkey' ? <sphereGeometry args={[w * 0.25, 12, 8]} /> : kind === 'pig' ? <cylinderGeometry args={[w * 0.23, w * 0.25, d * 0.25, 16]} /> : <coneGeometry args={[w * 0.24, d * 0.85, 8]} />}
       <Material color={snout} />
     </mesh>
     {[-1, 1].map(side => <group key={side}>
-      <mesh position={[side * w * 0.29, 0, h * 1.02 - crouch]} rotation={[Math.PI / 2, side * 0.25, 0]} castShadow>
-        <coneGeometry args={[w * 0.17, h * (kind === 'wolf' ? 0.25 : 0.15), 3]} /><Material color={skin} />
+      <mesh position={[side * w * (kind === 'monkey' ? 0.5 : 0.29), 0, h * (kind === 'monkey' ? 0.82 : 1.02) - crouch]} rotation={[Math.PI / 2, side * 0.25, 0]} castShadow>
+        {kind === 'monkey' ? <sphereGeometry args={[w * 0.2, 12, 8]} /> : <coneGeometry args={[w * 0.17, h * (kind === 'wolf' ? 0.25 : 0.15), 3]} />}<Material color={skin} />
       </mesh>
       <mesh position={[side * w * 0.17, d * 0.47, h * 0.87 - crouch]}>
         <sphereGeometry args={[w * 0.075, 10, 8]} /><Material color="#fffaf2" />
@@ -52,7 +52,7 @@ export function XrStoryCharacter({ kind, color, size, pose }: {
         <sphereGeometry args={[w * 0.14, 10, 8]} /><Material color="#344453" />
       </mesh>
     </group>)}
-    {kind === 'pig' ? <mesh position={[0, -d * 0.53, h * 0.42]} rotation={UPRIGHT}>
+    {kind === 'monkey' ? <mesh position={[0, -d * 0.7, h * 0.36]} rotation={[Math.PI / 2, Math.PI / 2, 0]}><torusGeometry args={[h * 0.24, w * 0.045, 6, 18, Math.PI * 1.65]} /><Material color={skin} /></mesh> : kind === 'pig' ? <mesh position={[0, -d * 0.53, h * 0.42]} rotation={UPRIGHT}>
       <torusGeometry args={[w * 0.1, w * 0.025, 6, 12, Math.PI * 1.65]} /><Material color={skin} />
     </mesh> : <mesh position={[0, -d * 0.5, h * 0.3]} rotation={[0.7, 0, 0]}>
       <coneGeometry args={[w * 0.15, h * 0.45, 8]} /><Material color={skin} />

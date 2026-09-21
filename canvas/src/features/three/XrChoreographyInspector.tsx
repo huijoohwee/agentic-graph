@@ -1,5 +1,4 @@
 import React from 'react'
-import { useGraphStore } from '@/hooks/useGraphStore'
 import { Camera, Footprints, type LucideIcon } from 'lucide-react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import {
@@ -13,9 +12,7 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { resolveXrAnimationPreset } from './xrAnimationCatalog'
 import { resolveXrChoreographySpeedWarnings } from './xrChoreographyDiagnostics'
-import { selectXrMotionReferenceCastMark, selectXrMotionReferenceCameraMark, setXrMotionReferenceCameraMarkChoreography, type XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntime'
-import { XrChoreographyMarkControls } from './XrChoreographyMarkControls'
-import { applyXrConstrainedCastMarkChoreography } from './xrConstrainedCastMarkRuntime'
+import { selectXrMotionReferenceCastMark, selectXrMotionReferenceCameraMark, type XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntime'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 
 function ChoreographyCard({
@@ -61,7 +58,7 @@ function ChoreographyCard({
         <footer className="flex min-w-0 items-center gap-1 overflow-x-auto" data-kg-xr-choreography-card-row="action">{footer}</footer>
       </section>
       <section className={cn('col-span-2 grid gap-1 border-t pt-2', UI_THEME_TOKENS.panel.border)} data-kg-xr-choreography-card-row="controls">
-        {controls}
+        {controls || <span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Edit parameters in BottomPanel Timeline</span>}
         <output
           className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'font-mono text-[9px]', UI_THEME_TOKENS.text.tertiary)}
           title={invocation}
@@ -124,7 +121,7 @@ export function XrChoreographyInspector({
       <header className="flex items-center justify-between gap-2">
         <section className="min-w-0">
           <h2 className="text-[11px] font-semibold uppercase">Choreography</h2>
-          <p className={cn('m-0 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>One mark model for cast and camera · Timeline owns time</p>
+          <p className={cn('m-0 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>One mark model · Configure selected marks in Timeline</p>
         </section>
         <section className="grid shrink-0 justify-items-end gap-0.5">
           <output className={cn('text-[9px]', warnings.length ? 'text-amber-700 dark:text-amber-300' : UI_THEME_TOKENS.text.tertiary)} data-kg-xr-speed-warning-count={warnings.length}>{warnings.length ? `${warnings.length} speed warning${warnings.length === 1 ? '' : 's'}` : 'Speed sane'}</output>
@@ -143,11 +140,10 @@ export function XrChoreographyInspector({
           Icon={Footprints}
           target="cast"
           title={track.label}
-          description="Edit movement here, drag its numbered stage mark, or use WASD or arrow keys with Shift for 0.05 m precision. Timeline selects and retimes the same marks."
+          description="Configure easing, gait and position in BottomPanel Timeline. Drag numbered stage marks or use WASD or arrow keys with Shift for 0.05 m precision."
           invocation={projectedCastInvocation}
           metadata={`${track.animation ? `${resolveXrAnimationPreset(track.animation.presetId).label} · ` : 'Authored path · '}${track.marks.length} mark${track.marks.length === 1 ? '' : 's'} · mark ${castMarkIndex + 1} · ${castMark.timeSeconds}s`}
           footer={<PanelSelect aria-label="Cast choreography mark" value={castMark.id} onChange={event => selectXrMotionReferenceCastMark(track.actorId, event.target.value)}>{track.marks.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
-          controls={<XrChoreographyMarkControls target={{ kind: 'cast', actorId: track.actorId, mark: castMark }} warning={warnings.find(warning => warning.targetKind === 'cast' && warning.fromMarkId === castMark.id)} onChange={update => { if (update.kind === 'cast') { selectXrMotionReferenceCastMark(update.actorId, update.markId); const result = applyXrConstrainedCastMarkChoreography(update); if (!result.applied && result.reason !== 'unchanged') useGraphStore.getState().pushUiToast({ id: 'xr:choreography:blocked', kind: 'warning', message: `Movement was not applied: ${result.reason}.` }) } }} />}
         />
       ) : (
         <ChoreographyCard Icon={Footprints} target="cast" title="Cast path" description="Select a cast actor to edit its path choreography." invocation={castInvocation || controlTool} metadata="No cast target selected" footer={<span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Choose a cast target above.</span>} />
@@ -157,11 +153,10 @@ export function XrChoreographyInspector({
           Icon={Camera}
           target="camera"
           title="Camera path"
-          description="Edit easing here; Timeline selects and retimes the same camera marks. Frame in Camera → SHOOT."
+          description="Configure easing and timing in BottomPanel Timeline. Frame in Camera → SHOOT."
           invocation={projectedCameraInvocation}
           metadata={`${runtime.plan.camera.length} mark${runtime.plan.camera.length === 1 ? '' : 's'} · ${cameraMark.rig} · mark ${cameraMarkIndex + 1} · ${cameraMark.timeSeconds}s`}
           footer={<PanelSelect aria-label="Camera choreography mark" value={cameraMark.id} onChange={event => selectXrMotionReferenceCameraMark(event.target.value)}>{runtime.plan.camera.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
-          controls={<XrChoreographyMarkControls target={{ kind: 'camera', mark: cameraMark }} warning={warnings.find(warning => warning.targetKind === 'camera' && warning.fromMarkId === cameraMark.id)} onChange={update => { if (update.easing) { selectXrMotionReferenceCameraMark(update.markId); setXrMotionReferenceCameraMarkChoreography({ markId: update.markId, easing: update.easing }) } }} />}
         />
       ) : (
         <ChoreographyCard Icon={Camera} target="camera" title="Camera path" description="Add camera marks in Camera → SHOOT; edit them in BottomPanel Timeline." invocation={cameraInvocation || controlTool} metadata="0 marks · Timeline owns time" footer={<span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>No camera marks yet.</span>} />

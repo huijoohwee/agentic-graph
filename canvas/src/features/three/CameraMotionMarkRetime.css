@@ -359,7 +359,7 @@
   min-width: max-content;
   max-width: calc(100% - 28px);
   transform: translate(var(--kg-xr-mark-editor-translate-x, 12px), -50%);
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid var(--kg-canvas-accent, #2563eb);
   border-radius: 5px;
   background: transparent;
@@ -406,9 +406,8 @@
 }
 
 .xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] [data-kg-xr-choreography-mark-controls="cast"] {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   gap: 3px;
-  overflow: hidden;
 }
 
 .xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] [data-kg-xr-choreography-mark-controls="cast"] select {

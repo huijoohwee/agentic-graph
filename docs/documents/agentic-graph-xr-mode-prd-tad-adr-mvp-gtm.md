@@ -542,6 +542,12 @@ Animation/Motion Control defaults while retaining the inventory's explicit brows
 
 ### Shared choreography and source references
 
-`/change #xr-choreography-source-ready @huijoohwee` consolidates the existing XR authoring flow. All selected subjects, props, and native stage objects use one geometry-following yellow bounding box. FloatingPanel Animation owns cast/camera movement fields and character presets. BottomPanel Timeline retains timing, static transforms, selection and transport; Motion Control projects that same selected target, mark and assigned motion. No extra clock or scene is introduced.
+`/change #xr-choreography-source-ready @huijoohwee` consolidates the existing XR authoring flow. All selected subjects, props, and native stage objects use one geometry-following yellow bounding box. FloatingPanel Animation owns path and character presets. BottomPanel Timeline owns mark easing, gait, position, timing, static transforms, selection and transport; Motion Control projects that same selected target, mark and assigned motion. No extra clock or scene is introduced.
 
 The rehearsal body uses existing `{{key}}` references to frontmatter scene fields and camera captions. Dotted array paths resolve their current values in Markdown preview; source tokens remain editable references. Captions are authored once in frontmatter. This local pass is capped at 30 touched files and 80 KB of added source; existing generated/runtime-readiness and release boundaries remain in force.
+
+### Viewer choices and Timeline parameters
+
+`/change #xr-viewer-choices-timeline @huijoohwee` adds inline Viewer choices declared in `markdownVariableChoices`. Each choice binds an existing string field and optional existing string fields in the same frontmatter; no remote lookup, new clock or independent scene state is created. Caption references expand recursively with a cycle/depth bound, render as escaped text, and preserve source templates. Changing the visitor from wolf to monkey updates its native asset and label while preserving stable subject IDs, marks, cues and camera anchors. Scene and house/prop choices use the same source edit. Read-only viewers display selected labels without mutation controls.
+
+Timeline is the sole mark parameter editor (easing, gait, position and time); Animation keeps presets and mark summaries synchronized with Motion Control. Validation covers source patches, unknown-option rejection, cycle safety, rendered dropdown edits and shared runtime synchronization. Budget: 30 minutes of implementation and local checks, at most 24 touched files and 80 KB of changes; CI waits are separate.

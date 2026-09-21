@@ -30,7 +30,7 @@ export async function testXrChoreographyOwnership() {
   function Panels() {
     const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
     return <><XrChoreographyInspector runtime={runtime} selectedActorId={runtime.selectedActorId} cameraInvocation="/animation.configure" castInvocation="/animation.configure" controlTool="animation" invocationReady />
-      <section data-test-timeline><CameraMotionMarkRetime layout="lane" laneTarget={{ kind: 'cast', actorId: 'pig' }} /></section>
+      <section data-test-timeline><CameraMotionMarkRetime layout="lane" laneTarget={{ kind: 'cast', actorId: 'pig' }} /><CameraMotionMarkRetime layout="lane" laneTarget={{ kind: 'camera' }} /></section>
       <XrSharedAssetControls surface="motion-control" /></>
   }
   try {
@@ -57,7 +57,8 @@ export async function testXrChoreographyOwnership() {
     assert.equal(readXrMotionReferenceRuntime().plan.cast[0]!.marks[1]!.transition, 'hold')
     assert.equal(readXrMotionReferenceRuntime().plan.cast[0]!.marks[1]!.cue, 'huff')
     assert.ok(container.querySelector('[aria-label="Renamed pig mark 2 time"]'), 'Animation selection reaches Timeline')
-    assert.equal(container.querySelector('[data-test-timeline] [data-kg-xr-mark-gait]'), null, 'Timeline does not duplicate motion editing')
+    assert.ok(container.querySelector('[data-test-timeline] [data-kg-xr-mark-gait]'), 'Timeline owns motion parameters')
+    assert.equal(container.querySelector('[data-kg-xr-choreography-inspector] [data-kg-xr-choreography-mark-controls]'), null, 'FloatingPanel does not duplicate Timeline parameters')
     const motion = container.querySelector('[data-kg-xr-shared-asset-controls="motion-control"]')!
     assert.equal(motion.getAttribute('data-kg-xr-shared-asset-target'), 'pig')
     assert.equal(motion.querySelector('[data-kg-xr-shared-asset-preset-selector]'), null)

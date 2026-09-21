@@ -318,7 +318,7 @@ export function XrSceneLibraryAssetGeometry({
   const asset = resolveXrSceneLibraryAsset(assetId)
   const size = asset.dimensionsMeters
   const effectiveColor = color || asset.defaultColor
-  const character = asset.id === 'character-pig' ? 'pig' : asset.id === 'character-wolf' ? 'wolf' : resolveCharacterSilhouette(label)
+  const character = asset.id === 'character-pig' ? 'pig' : asset.id === 'character-wolf' ? 'wolf' : asset.id === 'character-monkey' ? 'monkey' : resolveCharacterSilhouette(label)
   if (asset.shape === 'humanoid' && character !== 'person') return <XrStoryCharacter kind={character} color={effectiveColor} pose={animationPose} size={size} />
   if (asset.shape === 'sailboat') return <XrSailboatGeometry color={effectiveColor} size={size} />
   if (asset.shape === 'humanoid') return <Humanoid color={effectiveColor} pose={animationPose} size={size} silhouette={resolveCharacterSilhouette(label)} />
