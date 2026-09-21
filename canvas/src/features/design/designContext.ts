@@ -29,7 +29,7 @@ function readIntent(markdown: string) {
   if (/^---\s*\r?\n/.test(markdown) && !header) throw new Error('design: missing or oversized frontmatter fence (8 KiB limit)')
   if (header && !/^[ \t]*(?:\r?\n|$)/.test(markdown.slice(header.rawBlock.length))) throw new Error('design: invalid closing frontmatter fence')
   if (header && new TextEncoder().encode(header.rawBlock).length > 8192) throw new Error('design: frontmatter exceeds 8 KiB')
-  const parsed = parseMarkdownFrontmatter(splitMarkdownLines(header?.rawBlock ?? ''))
+  const parsed = parseMarkdownFrontmatter(splitMarkdownLines(header?.rawBlock ?? ''), { maxNodes: 1024, maxDepth: 16 })
   if (parsed.warnings.length) throw new Error('design: repair or invalid frontmatter requires source correction')
   const raw = parsed.meta.design
   if (raw !== undefined && (!raw || typeof raw !== 'object' || Array.isArray(raw)
