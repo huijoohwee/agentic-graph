@@ -8,6 +8,7 @@ import { PYTHON_LIMITS, PYTHON_RUNTIME_REVISION, sourceBytes } from './pythonMod
 import { LearningScene } from './LearningScene'
 import { LearningDebriefControls } from './LearningDebriefControls'
 import { LearningOfflineControls } from './LearningOfflineControls'
+import { getMarkdownWorkspaceActionBridge } from '../markdown-explorer/workspaceActionBridge'
 import './pythonLearning.css'
 
 export default function PythonLearningPane(props: {
@@ -41,6 +42,11 @@ export default function PythonLearningPane(props: {
         {LEARNING_LESSONS.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
       </select></label>
       <button disabled={disabled || running} onClick={() => { props.onChange(lesson.starter); setNotice('Starter placed in this file. Run when ready.'); }}>Replace source with starter</button>
+      <button disabled={props.readOnly} onClick={() => {
+        const save = getMarkdownWorkspaceActionBridge().save
+        if (!save) { setNotice('File saving is unavailable in this embedded editor.'); return }
+        save(); setNotice('Source save requested through Editor Workspace. Check its save status before closing.')
+      }}>Save source</button>
       {(['validate', 'run', 'step', 'pause', 'stop', 'reset', 'hint'] as const).map(operation => <button key={operation}
         disabled={operation === 'hint' ? false : operation === 'stop' || operation === 'reset' ? false : operation === 'pause' ? !running : disabled || running}
         onClick={() => void control(operation)}>{operation[0].toUpperCase() + operation.slice(1)}</button>)}

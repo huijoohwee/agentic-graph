@@ -76,7 +76,15 @@ try {
   const outcomes = []
   for (const lesson of lessons) {
     await pane.getByLabel('Python lesson', { exact: true }).selectOption(lesson.id)
-    await pane.getByRole('button', { name: 'Code', exact: true }).click(); await editor.fill(lesson.solution)
+    await pane.getByRole('button', { name: 'Code', exact: true }).click()
+    if (await editor.inputValue() !== lesson.solution) {
+      const saved = page.getByText('Saved', { exact: true })
+      await saved.waitFor({ state: 'hidden', timeout: 15000 })
+      await editor.fill(lesson.solution)
+      await pane.getByRole('button', { name: 'Save source', exact: true }).click()
+      await saved.waitFor({ timeout: 15000 })
+      await awaitStoredSource(lesson.solution)
+    }
     await pane.getByRole('button', { name: 'Run', exact: true }).click()
     await page.locator('.python-learning[data-learning-state="completed"]').waitFor({ timeout: 15000 })
     await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
