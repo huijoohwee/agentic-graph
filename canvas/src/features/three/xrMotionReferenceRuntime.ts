@@ -471,7 +471,8 @@ export function clearXrMotionReferenceCastAnimation(actorIdValue: string): XrMot
     plan: snapshot.plan,
     playheadSeconds: snapshot.playheadSeconds,
   })
-  return edit ? updatePlan(edit, undefined, spatialPlanGuard([actorId])) : snapshot
+  // Stop at the current pose even when a changed stage now overlaps it. Clearing creates no movement.
+  return edit ? updatePlan(edit) : snapshot
 }
 
 export function removeXrMotionReferenceCastMark(actorIdValue: string, markId: string): XrMotionReferenceRuntimeSnapshot {

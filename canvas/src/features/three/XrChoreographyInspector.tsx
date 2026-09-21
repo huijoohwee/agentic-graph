@@ -1,4 +1,5 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { Camera, Footprints, type LucideIcon } from 'lucide-react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import {
@@ -81,6 +82,7 @@ function ChoreographyCard({
 
 export function XrChoreographyInspector({
   cameraInvocation,
+  children,
   castInvocation,
   controlTool,
   invocationReady,
@@ -88,6 +90,7 @@ export function XrChoreographyInspector({
   selectedActorId,
 }: {
   cameraInvocation: string
+  children?: React.ReactNode
   castInvocation: string
   controlTool: string
   invocationReady: boolean
@@ -140,11 +143,11 @@ export function XrChoreographyInspector({
           Icon={Footprints}
           target="cast"
           title={track.label}
-          description="Edit movement here or drag its numbered stage mark. Timeline selects and retimes the same marks."
+          description="Edit movement here, drag its numbered stage mark, or use WASD or arrow keys with Shift for 0.05 m precision. Timeline selects and retimes the same marks."
           invocation={projectedCastInvocation}
           metadata={`${track.animation ? `${resolveXrAnimationPreset(track.animation.presetId).label} · ` : 'Authored path · '}${track.marks.length} mark${track.marks.length === 1 ? '' : 's'} · mark ${castMarkIndex + 1} · ${castMark.timeSeconds}s`}
           footer={<PanelSelect aria-label="Cast choreography mark" value={castMark.id} onChange={event => selectXrMotionReferenceCastMark(track.actorId, event.target.value)}>{track.marks.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
-          controls={<XrChoreographyMarkControls target={{ kind: 'cast', actorId: track.actorId, mark: castMark }} warning={warnings.find(warning => warning.targetKind === 'cast' && warning.fromMarkId === castMark.id)} onChange={update => { if (update.kind === 'cast') { selectXrMotionReferenceCastMark(update.actorId, update.markId); applyXrConstrainedCastMarkChoreography(update) } }} />}
+          controls={<XrChoreographyMarkControls target={{ kind: 'cast', actorId: track.actorId, mark: castMark }} warning={warnings.find(warning => warning.targetKind === 'cast' && warning.fromMarkId === castMark.id)} onChange={update => { if (update.kind === 'cast') { selectXrMotionReferenceCastMark(update.actorId, update.markId); const result = applyXrConstrainedCastMarkChoreography(update); if (!result.applied && result.reason !== 'unchanged') useGraphStore.getState().pushUiToast({ id: 'xr:choreography:blocked', kind: 'warning', message: `Movement was not applied: ${result.reason}.` }) } }} />}
         />
       ) : (
         <ChoreographyCard Icon={Footprints} target="cast" title="Cast path" description="Select a cast actor to edit its path choreography." invocation={castInvocation || controlTool} metadata="No cast target selected" footer={<span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Choose a cast target above.</span>} />
@@ -163,6 +166,7 @@ export function XrChoreographyInspector({
       ) : (
         <ChoreographyCard Icon={Camera} target="camera" title="Camera path" description="Add camera marks in Camera → SHOOT; edit them in BottomPanel Timeline." invocation={cameraInvocation || controlTool} metadata="0 marks · Timeline owns time" footer={<span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>No camera marks yet.</span>} />
       )}
+      {children}
     </section>
   )
 }

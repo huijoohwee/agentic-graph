@@ -26,7 +26,7 @@ export async function testXrChoreographyOwnership() {
   ], cast: [
     { actorId: 'pig', label: 'Stale name', marks: [{ timeSeconds: 0, position: [0, 0, 0] }, { timeSeconds: 2, position: [1, 0, 0], cue: 'huff' }] },
     { actorId: 'boat', label: 'Stale boat', marks: [{ timeSeconds: 0, position: [0, 0, 5] }] },
-  ], camera: [{ timeSeconds: 0, anchorId: 'boat', easing: 'hold' }] })
+  ], camera: [{ timeSeconds: 0, anchorId: 'boat', easing: 'hold', label: 'Arrival', caption: 'The crew arrives.' }] })
   function Panels() {
     const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
     return <><XrChoreographyInspector runtime={runtime} selectedActorId={runtime.selectedActorId} cameraInvocation="/animation.configure" castInvocation="/animation.configure" controlTool="animation" invocationReady />
@@ -62,6 +62,9 @@ export async function testXrChoreographyOwnership() {
     assert.equal(motion.getAttribute('data-kg-xr-shared-asset-target'), 'pig')
     assert.equal(motion.querySelector('[data-kg-xr-shared-asset-preset-selector]'), null)
     await act(async () => { selectXrMotionReferenceCameraMark(readXrMotionReferenceRuntime().plan.camera[0]!.id) })
+    await change('Camera mark easing', 'linear')
+    assert.equal(readXrMotionReferenceRuntime().plan.camera[0]!.caption, 'The crew arrives.')
+    assert.equal(readXrMotionReferenceRuntime().plan.camera[0]!.label, 'Arrival')
     assert.equal(inspectXrSharedAssetControls().selectedTargetId, 'boat', 'camera mark updates the shared target')
     assert.equal(motion.getAttribute('data-kg-xr-shared-asset-target'), 'boat')
     assert.match(container.querySelector('[data-kg-xr-choreography-card="cast"]')!.textContent!, /Sea Journey/)

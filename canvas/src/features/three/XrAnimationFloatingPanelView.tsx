@@ -335,9 +335,11 @@ export function XrAnimationFloatingPanelView() {
           invocationReady={nativeInvocationReady}
           runtime={runtime}
           selectedActorId={selectedActorId}
-        />
-        {visibleCharacter.length ? <section className="grid gap-2" aria-label="Character motions" data-kg-animation-group="character-motion"><header className="flex items-center justify-between"><h2 className="text-[11px] font-semibold uppercase">Character motions</h2><output className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visibleCharacter.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visibleCharacter} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
+        >
         {visiblePaths.length ? <section className="grid gap-2" aria-label="Action paths" data-kg-animation-group="action-path"><header className="flex items-center justify-between"><h2 className="text-[11px] font-semibold uppercase">Action paths</h2><output className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visiblePaths.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visiblePaths} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
+        </XrChoreographyInspector>
+        {visibleCharacter.length ? <section className="grid gap-2" aria-label="Character motions" data-kg-animation-group="character-motion"><header className="flex items-center justify-between"><h2 className="text-[11px] font-semibold uppercase">Character motions</h2><output className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visibleCharacter.length}</output></header><PresetGroup collapsedKeys={collapsedKeys} disabled={panelDisabled} onApply={applyPreset} onToggle={setCollapsed} presets={visibleCharacter} runtime={runtime} selectedActorId={selectedActorId} /></section> : null}
+
         {!visiblePresets.length ? <p className={cn('p-3 text-xs', UI_THEME_TOKENS.text.tertiary)}>No animation presets match this search.</p> : null}
         {xrV2DemoActive ? <XrV2AuthoringStatusPanel sceneReady={sceneReady} /> : null}
         {xrV2DemoActive ? <XrV2WorkspaceReadinessPanel /> : null}

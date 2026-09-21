@@ -97,6 +97,7 @@ export async function testMarkdownVariableReferencesBuildTokenByMode() {
 }
 
 export function testMarkdownFrontmatterReferencesFollowSource() {
+  const opts = { activeDocumentPath: '', uiPanelTextFontClass: '', uiPanelMonospaceTextClass: '', markdownPresentationMode: false }
   const render = (caption: string) => {
     const source = `---
 scene: {subjects: [{label: Pig}], camera: [{caption: '${caption}'}]}
@@ -104,10 +105,10 @@ scene: {subjects: [{label: Pig}], camera: [{caption: '${caption}'}]}
 {{scene.camera.0.caption}}`
     const values = buildMarkdownVariablePreviewByKey(source)
     assert.equal(values['scene.subjects.0.label']?.value, 'Pig')
-    return renderToStaticMarkup(renderMarkdownVariableReferenceChip({ baseKey: 'caption', key: 'scene.camera.0.caption', raw: '{{scene.camera.0.caption}}', opts: { markdownVariablePreviewByKey: values } }))
+    return renderToStaticMarkup(renderMarkdownVariableReferenceChip({ baseKey: 'caption', key: 'scene.camera.0.caption', raw: '{{scene.camera.0.caption}}', opts: { ...opts, markdownVariablePreviewByKey: values } }))
   }
   assert.match(render('Sail to the dock.'), />Sail to the dock.</)
   assert.match(render('The renamed crew arrives.'), />The renamed crew arrives.</)
   assert.ok(!render('<script>alert(1)</script>').includes('<script>'))
-  assert.match(renderToStaticMarkup(renderMarkdownVariableReferenceChip({ baseKey: 'missing', key: 'missing', raw: '{{missing|No caption}}', opts: {} })), />No caption</)
+  assert.match(renderToStaticMarkup(renderMarkdownVariableReferenceChip({ baseKey: 'missing', key: 'missing', raw: '{{missing|No caption}}', opts })), />No caption</)
 }

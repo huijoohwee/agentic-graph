@@ -72,7 +72,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   const cameraOpticsSource = readSource('features', 'strybldr', 'StrybldrCameraOpticsSection.tsx')
   const cameraOpticsModelSource = readSource('features', 'strybldr', 'cameraOptics.ts')
   const retimeSource = readSource('features', 'three', 'CameraMotionMarkRetime.tsx')
-  const timelineSource = readSource('features', 'three', 'XrCameraMotionSection.tsx')
+  const timelineSource = readSource('features', 'three', 'XrCameraMotionSection.tsx') + readSource('features', 'three', 'XrTimelineSceneStageControls.tsx')
   const timelineChromeSource = readSource('components', 'timeline', 'TimelineTransportControls.tsx')
   const timelineChromeGanttCssSource = readSource('components', 'timeline', 'TimelineTransportControlsMermaidGantt.css')
   const timelineRulerSource = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx')
@@ -162,7 +162,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   for (const marker of ['data-kg-xr-timeline-retime="1"', 'retimeXrMotionReferenceCastMark', 'retimeXrMotionReferenceCameraMark', '<TimelineTransportTimeAxisMark', 'laneStyle="video"', 'laneStyle="audio"', 'data-kg-xr-lane-cast-mark', 'data-kg-xr-lane-camera-mark', 'data-kg-xr-lane-mark-shape="circle-only"', 'selectXrMotionReferenceCastMark', 'aria-pressed={selected}', 'data-kg-xr-stage-highlight-target']) {
     if (!retimeSource.includes(marker)) throw new Error(`expected Camera choreography retiming to expose ${marker}`)
   }
-  for (const marker of ["laneTarget?.kind === 'cast'", "laneTarget?.kind === 'camera'", 'data-kg-xr-choreography-cast-lane', 'data-kg-xr-choreography-camera-lane', 'data-kg-xr-choreography-lane-axis', 'beginRulerMarkDrag', 'resolveVideoSequenceRulerInsetPixelMetrics', 'XrChoreographyMarkControls', 'compact showPosition', 'applyXrConstrainedCastMarkChoreography', 'setXrMotionReferenceCameraMarkChoreography', 'data-kg-xr-ruler-mark-editor', 'data-kg-xr-speed-warning-count', 'XR_ANIMATION_PRESETS.filter(preset => xrAnimationPresetCompatible', "controlXrSharedAssetControls({", 'applyXrTimelineCastAnimationPreset', 'data-kg-xr-mark-animation-presets="click-appear"', 'data-kg-xr-mark-animation-preset-select={selectedCastMark.id}', '<PanelSelect', '<option key={preset.id} value={preset.id}>', 'data-kg-xr-shared-asset-actions="individual-lane"', 'data-kg-xr-shared-asset-action-cluster="individual-lane"', 'data-kg-xr-shared-asset-animate="individual-lane"', 'data-kg-xr-shared-asset-clear-animation="individual-lane"', 'data-kg-xr-shared-asset-gesture-mark="individual-lane"', 'data-kg-xr-shared-asset-hand-keyframe="individual-lane"', 'data-kg-xr-shared-asset-playback="individual-lane"', 'data-kg-xr-shared-asset-playback-owner="individual-lane"', "runSelectedCastSharedAssetAction('capture-hand-pose')", 'xrMotionReferenceTimelineDocumentKey']) {
+  for (const marker of ["laneTarget?.kind === 'cast'", "laneTarget?.kind === 'camera'", 'data-kg-xr-choreography-cast-lane', 'data-kg-xr-choreography-camera-lane', 'data-kg-xr-choreography-lane-axis', 'beginRulerMarkDrag', 'resolveVideoSequenceRulerInsetPixelMetrics', 'data-kg-xr-ruler-mark-editor', 'data-kg-xr-speed-warning-count', "controlXrSharedAssetControls({", 'data-kg-xr-shared-asset-actions="individual-lane"', 'data-kg-xr-shared-asset-action-cluster="individual-lane"', 'data-kg-xr-shared-asset-gesture-mark="individual-lane"', 'data-kg-xr-shared-asset-hand-keyframe="individual-lane"', 'data-kg-xr-shared-asset-playback="individual-lane"', 'data-kg-xr-shared-asset-playback-owner="individual-lane"', "runSelectedCastSharedAssetAction('capture-hand-pose')", 'xrMotionReferenceTimelineDocumentKey']) {
     if (!retimeSource.includes(marker)) throw new Error(`expected each cast and Camera track to expose the shared per-mark choreography model through ${marker}`)
   }
   if (retimeSource.includes('data-kg-xr-mark-animation-preset={preset.id}')) {
@@ -239,7 +239,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   for (const marker of ['<XrSceneLibrarySubject', "selected={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === subject.id}", 'selectBoundXrShotTarget(subjectId)']) {
     if (!stageSource.includes(marker)) throw new Error(`expected timeline, SHOOT, and stage asset selection to share shot-target state through ${marker}`)
   }
-  for (const marker of ['agentic_os_xr_scene_subject_selected_', 'onClick={onSelect ? event => {', 'onSelect()', 'event.stopPropagation()', 'XR_MOTION_REFERENCE_SELECTION_COLOR']) {
+  for (const marker of ['<XrSelectionBounds selected={selected} targetId={subject.id}>', 'onClick={onSelect ? event => {', 'onSelect()', 'event.stopPropagation()', 'XR_MOTION_REFERENCE_SELECTION_COLOR']) {
     if (!subjectSource.includes(marker)) throw new Error(`expected selectable XR assets to expose a visible stage highlight through ${marker}`)
   }
   for (const marker of ['selectedMark: XrMotionReferenceMarkSelection', 'selectedShotTargetId: string', 'selectXrMotionReferenceShotTarget', 'selectXrMotionReferenceCastMark', 'selectXrMotionReferenceCameraMark', 'resolveExistingXrMotionReferenceMarkSelection']) {

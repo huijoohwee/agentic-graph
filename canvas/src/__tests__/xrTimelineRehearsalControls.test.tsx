@@ -219,22 +219,18 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     await act(async () => { controlLocalAnimation({ operation: 'scrub', timeSeconds: 0 }) })
     await mountReactRoot(root, <><XrCameraMotionSection /><XrAnimationFloatingPanelView /></>)
     await act(async () => { castMark().click() })
-    const presetSelect = () => container.querySelector<HTMLSelectElement>('[aria-label="XR animation preset"]')!
-    await act(async () => {
-      presetSelect().value = 'helicopter-orbit'
-      presetSelect().dispatchEvent(new env.dom.window.Event('change', { bubbles: true }))
-    })
-    assert.equal(presetSelect().value, 'helicopter-orbit')
+    assert.equal(container.querySelector('[aria-label="XR animation preset"]'), null, 'motion presets are authored in Animation')
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-kg-animation-card-apply="helicopter-orbit"]')!.click() })
     assert.equal(container.querySelector('[data-kg-animation-card="helicopter-orbit"]')!.getAttribute('data-kg-animation-card-applied'), '1')
     assert.match(container.querySelector('[data-kg-xr-choreography-card="cast"]')!.textContent!, /Helicopter orbit/)
     assert.equal(readXrMotionReferenceRuntime().selectedMark?.kind, 'cast', 'replacement path retains an editable Timeline mark')
     const pathCount = readXrMotionReferenceRuntime().plan.cast[0]!.marks.length
     assert.ok(pathCount > 1)
     await act(async () => { container.querySelector<HTMLButtonElement>('[data-kg-animation-clear="selected-actor"]')!.click() })
-    assert.equal(presetSelect().value, '')
+    assert.equal(readXrMotionReferenceRuntime().plan.cast[0]!.animation, null)
     assert.equal(container.querySelector('[data-kg-animation-card="helicopter-orbit"]')!.getAttribute('data-kg-animation-card-applied'), '0')
     await act(async () => { container.querySelector<HTMLButtonElement>('[data-kg-animation-card-apply="helicopter-orbit"]')!.click() })
-    assert.equal(presetSelect().value, 'helicopter-orbit', 'FloatingPanel apply updates the existing Timeline preset')
+    assert.equal(readXrMotionReferenceRuntime().plan.cast[0]!.animation?.presetId, 'helicopter-orbit', 'Animation updates the existing Timeline track')
     assert.equal(readXrMotionReferenceRuntime().plan.cast[0]!.marks.length, pathCount)
     assert.equal(inspectLocalAnimation().runtime.transport.timeSeconds, 0, 'assignment preserves the shared playhead')
     await loadPlan(plan)
