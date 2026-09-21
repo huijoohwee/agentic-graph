@@ -4,6 +4,7 @@ import { useMermaidGanttDocument } from './useMermaidGanttDocument'
 import { useStoryboardWidgetDiagramSelectionBridge } from './useStoryboardWidgetDiagramSelectionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { XrCameraMotionSection } from '@/features/three/XrCameraMotionSection'
+import { XrSubjectTransformEditor } from '@/features/three/XrSubjectTransformEditor'
 
 function MediaTimelineBottomPanelView({ compact }: { compact: boolean }) {
   const { code: mediaGanttCode, ganttModel, graphData } = useMermaidGanttDocument({ purpose: 'media' })
@@ -18,7 +19,7 @@ export function TimelineBottomPanelView({
 }) {
   const xrTimelineContext = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
 
-  if (xrTimelineContext) return <XrCameraMotionSection />
+  if (xrTimelineContext) return <><XrSubjectTransformEditor /><XrCameraMotionSection /></>
 
   return <MediaTimelineBottomPanelView compact={compact} />
 }

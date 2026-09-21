@@ -300,3 +300,59 @@ export function isXrSceneLibraryAssetId(assetId: unknown): boolean {
   const normalized = String(assetId || '').trim()
   return XR_SCENE_LIBRARY_ASSETS.some(asset => asset.id === normalized)
 }
+
+export const XR_PLAYGROUND_PALMS = [
+  [-8.8, -8.8, 1.25, -0.08],
+  [7.5, -9, 1.05, 0.1],
+  [11.2, -6.6, 1.18, -0.1],
+  [-12.1, 3.6, 0.95, 0.14],
+  [12.2, 3.3, 0.88, -0.12],
+  [-10.4, -4.2, 0.82, 0.09],
+  [9.6, 6.1, 0.78, -0.07],
+  [-5.6, 8.4, 0.7, 0.11],
+  [4.8, 8.8, 0.66, -0.09],
+  [-3.2, -9.6, 0.92, 0.05],
+  [1.4, -10.2, 0.74, -0.06],
+  [13.1, -1.8, 0.8, 0.08],
+] as const
+
+export const XR_PLAYGROUND_ROCKS = [
+  [-6.8, 1.25, -9.5, 3.1, 1.8, 1.4, '#66747a'],
+  [0, 1.35, -10, 4.3, 2.1, 1.25, '#66747a'],
+  [6.4, 1.2, -9.6, 2.4, 1.8, 1.5, '#66747a'],
+  [11.8, 0.8, -1.5, 1.45, 1.1, 1.25, '#77817c'],
+  [-12.3, 0.7, -1.2, 1.2, 1, 1.4, '#77817c'],
+  [-9.4, 0.42, 8.8, 1.05, 0.62, 0.88, '#7d8680'],
+  [8.6, 0.38, 9.4, 0.92, 0.55, 0.78, '#7d8680'],
+] as const
+
+export type XrStageObject = Readonly<{
+  id: string; label: string; position: XrMotionReferenceVector; size: XrMotionReferenceVector
+  category: XrSceneLibraryCategory; color: string; nativeBodyId?: string
+}>
+const stageObject = (id: string, label: string, position: XrMotionReferenceVector, size: XrMotionReferenceVector,
+  category: XrSceneLibraryCategory = 'props', nativeBodyId?: string): XrStageObject => Object.freeze({
+  id: `xr-stage:${id}`, label, position, size, category, color: '#9b7653', ...(nativeBodyId ? { nativeBodyId } : {}),
+})
+export const XR_PLAYGROUND_OBJECTS: readonly XrStageObject[] = Object.freeze([
+  stageObject('cannon-left', 'Left Cannon', [1.6, 0, -6.25], [1.8, 1.5, 2.7]),
+  stageObject('cannon-right', 'Right Cannon', [4.15, 0, -6.25], [1.8, 1.5, 2.7]),
+  stageObject('chest', 'Treasure Chest', [0, 0, 0], [2.4, 2, 1.6]),
+  stageObject('key', 'Treasure Key', [0, 0, 0], [1.8, 0.8, 0.3]),
+  stageObject('fence', 'Palisade', [0, 0, -9.35], [21, 2.6, 0.7]),
+  stageObject('ramp', 'Wooden Ramp', [-8.8, 0, -0.4], [4, 1.4, 3.5]),
+  stageObject('grotto', 'Skull Grotto', [-11, 0, -7.6], [6.5, 5, 5.6]),
+  stageObject('skeleton', 'Skeleton', [8.2, 0.18, -6.8], [2, 0.8, 3]),
+  stageObject('hazards', 'Moving Platforms', [0, 3.3, -8.35], [12, 1.8, 2]),
+  stageObject('ship', 'Pirate Ship', [17.3, -0.55, -2.2], [5, 7, 10], 'vehicles'),
+  stageObject('tentacles', 'Sea Tentacles', [20.7, -0.85, -1.7], [5, 8, 12], 'animals'),
+  stageObject('player', 'Playground Player', [0, 0, 0], [1.2, 1.2, 1.2], 'vehicles', 'native-controller'),
+  ...XR_PLAYGROUND_PALMS.map(([x, z, scale], i) => stageObject(`palm-${i + 1}`, `Palm ${i + 1}`, [x, 0, z], [3 * scale, 5 * scale, 3 * scale])),
+  ...XR_PLAYGROUND_ROCKS.map(([x, y, z, sx, sy, sz], i) => stageObject(`rock-${i + 1}`, `Rock ${i + 1}`, [x, y, z], [sx * 2, sy * 2, sz * 2])),
+  ...['a', 'b', 'c'].map((name, i) => stageObject(`barrel-${name}`, `Barrel ${i + 1}`, [0, 0, 0], [1.6, 1.8, 1.6], 'props', `native-crate-${name}`)),
+  ...['left', 'right'].map(side => stageObject(`cannonball-${side}`, `${side === 'left' ? 'Left' : 'Right'} Cannonball`, [0, 0, 0], [0.55, 0.55, 0.55], 'props', `native-cannonball-${side}`)),
+  ...Array.from({length: 6}, (_, i) => stageObject(`pin-${i + 1}`, `Bowling Pin ${i + 1}`, [0, 0, 0], [0.5, 1.2, 0.5], 'props', `native-pin-${i + 1}`)),
+])
+export function resolveXrStageObjects(stageId: string): readonly XrStageObject[] {
+  return stageId === 'tropical-playground' ? XR_PLAYGROUND_OBJECTS : []
+}

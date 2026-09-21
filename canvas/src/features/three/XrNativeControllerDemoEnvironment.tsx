@@ -1,3 +1,4 @@
+import { XrStageObjectSelection } from './XrStageObjectSelection'
 import { DEFAULT_XR_SCENE_APPEARANCE, type XrSceneAppearance } from './xrSceneAppearance'
 import { XrPlaygroundHorizon } from './XrPlaygroundHorizon'
 import { XrSceneSkyAtmosphere } from './XrSceneSkyAtmosphere'
@@ -218,8 +219,8 @@ function XrNativeControllerTerrainEnvironment({
       />
       <XrPlaygroundHorizon appearance={appearance} stage={stage} />
       <TutorialMarkings />
-      <Treasure objective={objective} />
-      <Key collected={objective !== 'find-key'} />
+      <XrStageObjectSelection objectId="chest"><Treasure objective={objective} /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="key"><Key collected={objective !== 'find-key'} /></XrStageObjectSelection>
       <XrPlaygroundCannon position={[1.6, 0, -6.25]} />
       <XrPlaygroundCannon position={[4.15, 0, -6.25]} />
       {stage.id === 'singapore' ? (
@@ -250,8 +251,8 @@ export function XrNativeControllerDemoEnvironment({
       <XrNativeControllerDemoAerialSetpieces />
       <TutorialMarkings />
       <XrTropicalPlaygroundLandmarks />
-      <Treasure objective={objective} />
-      <Key collected={objective !== 'find-key'} />
+      <XrStageObjectSelection objectId="chest"><Treasure objective={objective} /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="key"><Key collected={objective !== 'find-key'} /></XrStageObjectSelection>
     </group>
   )
 }
@@ -310,18 +311,18 @@ export function XrNativeControllerDynamicProps({ registerBodyRef }: { registerBo
     <group name="agentic_os_xr_playground_dynamic_props">
       {barrels.map(([subjectId, scale]) => (
         <group key={subjectId} ref={node => registerBodyRef(subjectId, node)} scale={scale}>
-          <BarrelStack />
+          <XrStageObjectSelection objectId={`barrel-${subjectId.slice(-1)}`}><BarrelStack /></XrStageObjectSelection>
         </group>
       ))}
       {['left', 'right'].map(side => (
-        <mesh key={side} ref={node => registerBodyRef(`native-cannonball-${side}`, node)} castShadow>
+        <group key={side} ref={node => registerBodyRef(`native-cannonball-${side}`, node)}><XrStageObjectSelection objectId={`cannonball-${side}`}><mesh castShadow>
           <sphereGeometry args={[0.26, 14, 10]} />
           <meshStandardMaterial color="#3f444a" roughness={0.46} metalness={0.18} />
-        </mesh>
+        </mesh></XrStageObjectSelection></group>
       ))}
       {Array.from({ length: 6 }, (_, index) => (
         <group key={index} ref={node => registerBodyRef(`native-pin-${index + 1}`, node)}>
-          <BowlingPin />
+          <XrStageObjectSelection objectId={`pin-${index + 1}`}><BowlingPin /></XrStageObjectSelection>
         </group>
       ))}
     </group>

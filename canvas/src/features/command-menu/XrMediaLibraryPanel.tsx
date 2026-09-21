@@ -1,3 +1,5 @@
+import { selectXrStageObject } from '@/features/three/XrStageObjectSelection'
+import { resolveXrStageObjects } from '@/features/three/xrSceneLibrary'
 import React from 'react'
 import { XrSceneAppearanceControls } from '@/features/three/XrSceneAppearanceControls'
 import { Building2, Hand, Trash2, TreePine, UsersRound } from 'lucide-react'
@@ -38,7 +40,6 @@ import {
 } from './xrSimulationWorkbenchOpenRequest'
 import {
   reconcileNextSubjectLabelAfterDrop,
-  reconcileXrTransformNumberDraft,
 } from './xrMediaAuthoringDrafts'
 import {
   XR_SCENE_MEDIA_DROP_COMMITTED_EVENT,
@@ -48,7 +49,6 @@ import {
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButton'
 import { useCollapsibleSectionGroup } from '@/features/panels/ui/useCollapsibleSectionGroup'
-import { XrCatalogThumb } from './XrMediaCatalogThumbs'
 import {
   XR_MEDIA_CATEGORY_ICONS,
   XrAssetRow,
@@ -93,7 +93,6 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
   const [nextLabel, setNextLabel] = React.useState('')
   const [selectedAssetId, setSelectedAssetId] = React.useState<string>(XR_SCENE_LIBRARY_DEFAULT_ASSET_ID)
   const [assetTransitions, setAssetTransitions] = React.useState<Record<string, XrSceneTransition>>({})
-  const [subjectLabelDrafts, setSubjectLabelDrafts] = React.useState<Record<string, string>>({})
   const {
     allCollapsed: allLibrarySectionsCollapsed,
     collapseAll: collapseAllLibrarySections,
@@ -144,18 +143,8 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
     if (result.ok) setNextLabel('')
   }, [runInvocation])
 
-  const commitSubjectLabel = React.useCallback((subjectId: string) => {
-    const nextValue = String(subjectLabelDrafts[subjectId] || '').trim()
-    if (!nextValue) return
-    runControl({ action: 'label', subjectId, label: nextValue })
-  }, [runControl, subjectLabelDrafts])
-
   const removeSubject = React.useCallback((subjectId: string) => {
     runControl({ action: 'remove', subjectId })
-  }, [runControl])
-
-  const setSubjectTransition = React.useCallback((subjectId: string, transition: XrSceneTransition) => {
-    runControl({ action: 'transition', subjectId, transition })
   }, [runControl])
 
   const setSubjectMotionControlTarget = React.useCallback((subjectId: string, subjectLabel: string) => {
@@ -167,16 +156,14 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
     })
   }, [pushUiToast])
 
-  const setSubjectTransform = React.useCallback((subjectId: string, transform: Pick<XrSceneControlInput, 'assetId' | 'position' | 'rotationYDegrees' | 'scale' | 'color'>) => {
-    return runControl({ action: 'transform', subjectId, ...transform }).ok
-  }, [runControl])
-
   const selectedSubjectId = runtime.plan.subjects.some(subject => subject.id === runtime.selectedShotTargetId)
     ? runtime.selectedShotTargetId
     : ''
 
   const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId }), [categoryFilter, searchText, selectedAssetId])
   const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments } = catalog
+  const stageObjects = resolveXrStageObjects(runtime.plan.stageId).filter(object => (categoryFilter === 'all' || object.category === categoryFilter) && object.label.toLowerCase().includes(searchText.trim().toLowerCase()))
+  const sceneObjectCount = runtime.plan.subjects.length + resolveXrStageObjects(runtime.plan.stageId).length
   const visibleSubjects = runtime.plan.subjects.filter(subject => (categoryFilter === 'all' || subject.category === categoryFilter)
     && `${subject.label} ${subject.assetId}`.toLowerCase().includes(searchText.trim().toLowerCase()))
 
@@ -292,7 +279,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length : visibleAssets.length}</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('subjects-props')}
         onToggle={collapsed => setLibrarySectionCollapsed('subjects-props', collapsed)}
         defaultCollapsed={false}
@@ -302,7 +289,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
       >
         <section className="grid gap-2" aria-label="XR subject library" data-kg-media-xr-subject-library="1">
           <nav className="flex gap-2" aria-label="Subjects and props view">
-            {(['scene', 'catalog'] as const).map(view => <button key={view} type="button" className="App-toolbar__btn" aria-pressed={subjectView === view} onClick={() => setSubjectView(view)}>{view === 'scene' ? `In scene (${runtime.plan.subjects.length})` : 'Add from library'}</button>)}
+            {(['scene', 'catalog'] as const).map(view => <button key={view} type="button" className="App-toolbar__btn" aria-pressed={subjectView === view} onClick={() => setSubjectView(view)}>{view === 'scene' ? `In scene (${sceneObjectCount})` : 'Add from library'}</button>)}
           </nav>
           <header className="grid gap-2">
             <nav className="flex max-w-full gap-1 overflow-x-auto pb-1" aria-label="XR library categories">
@@ -316,7 +303,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
           {subjectView === 'catalog' ? <section className="grid gap-1">{visibleAssets.map(asset => <XrAssetRow key={asset.id} asset={asset} disabled={!sceneReady} selectedSubjectId={selectedSubjectId} subjectLabel={nextLabel} transition={assetTransitions[asset.id] || 'linear'} onTransitionChange={transition => setAssetTransitions(current => ({ ...current, [asset.id]: transition }))} onPlace={placeAsset} onSwap={runInvocation} />)}</section> : null}
           {subjectView === 'scene' ? (
             <section className="grid gap-2 border-t pt-2" aria-label="Placed XR subjects" data-kg-media-xr-placed-subjects="subjects-props">
-              {!visibleSubjects.length ? <p className="text-xs opacity-70">No matching subjects in this scene. Add from the library or change the filter.</p> : null}
+              {!visibleSubjects.length && !stageObjects.length ? <p className="text-xs opacity-70">No matching subjects in this scene. Add from the library or change the filter.</p> : null}
               {visibleSubjects.map(subject => {
                 const subjectAsset = XR_SCENE_LIBRARY_ASSETS.find(asset => asset.id === subject.assetId)
                 const motionTargetSelected = runtime.selectedShotTargetId === subject.id
@@ -327,17 +314,25 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                     ? motionControl.cameraActive ? 'waiting-for-pose' : 'selected'
                     : 'available'
                 return (
-                  <article
+                  <XrLibraryCard
                     key={subject.id}
-                    className={cn('grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
-                    data-kg-media-xr-placed-subject={subject.id}
-                    data-kg-media-xr-motion-control-target={motionTargetSelected ? 'selected' : 'available'}
-                    data-kg-media-xr-motion-control-gesture={motionGestureStatus}
-                    data-kg-media-xr-motion-control-asset-shape={subjectAsset?.shape || 'box'}
-                  >
-                    <XrCatalogThumb Icon={XR_MEDIA_CATEGORY_ICONS[subject.category]} color={subject.color} assetId={subject.assetId} label={subject.label} />
-                    <label className="grid min-w-0 gap-0.5 text-[10px]"><span className={UI_THEME_TOKENS.text.tertiary}>{subject.assetId}</span><PanelTextInput value={subjectLabelDrafts[subject.id] ?? subject.label} maxLength={80} onChange={event => setSubjectLabelDrafts(current => ({ ...current, [subject.id]: event.target.value }))} onBlur={() => commitSubjectLabel(subject.id)} aria-label={`Label ${subject.label}`} data-kg-media-xr-subject-label={subject.id} /></label>
-                    {runtime.plan.cast.some(track => track.actorId === subject.id) ? <PanelSelect className="w-20 text-[10px]" aria-label={`Path interpolation for ${subject.label}`} value={runtime.plan.cast.find(track => track.actorId === subject.id)?.marks[0]?.transition === 'hold' ? 'hold' : 'linear'} onChange={event => setSubjectTransition(subject.id, event.target.value as XrSceneTransition)} data-kg-media-xr-subject-transition={subject.id}><option value="linear">Travel</option><option value="hold">Hold</option></PanelSelect> : <span className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Static</span>}
+                    Icon={XR_MEDIA_CATEGORY_ICONS[subject.category]}
+                    color={subject.color}
+                    label={subject.label}
+                    description={subjectAsset?.description || 'Authored scene subject'}
+                    metadata={`${subject.category} · ${subjectAsset?.label || subject.assetId}`}
+                    active={motionTargetSelected}
+                    onSelect={() => {
+                      controlXrSharedAssetControls({ operation: 'select-target', targetId: subject.id })
+                      useGraphStore.getState().setBottomSurfaceTab('timeline')
+                    }}
+                    dataAttributes={{ 'data-kg-media-xr-asset': subject.assetId, 'data-kg-media-xr-placed-subject': subject.id,
+                      'data-kg-media-xr-motion-control-gesture': motionGestureStatus }}
+                    footer={<>
+                      <button type="button" className="App-toolbar__btn" onClick={() => {
+                        controlXrSharedAssetControls({ operation: 'select-target', targetId: subject.id })
+                        useGraphStore.getState().setBottomSurfaceTab('timeline')
+                      }} aria-label={`Edit ${subject.label} in Timeline`}>Timeline</button>
                     <section className="flex shrink-0 items-center gap-1">
                       <button
                         type="button"
@@ -353,108 +348,17 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                       </button>
                       <button type="button" className="App-toolbar__btn" aria-label={`Remove ${subject.label}`} title={`Remove ${subject.label}`} onClick={() => removeSubject(subject.id)} data-kg-media-xr-remove-subject={subject.id}><Trash2 className="size-3.5" aria-hidden /></button>
                     </section>
-                    <section className={cn('col-span-4 grid gap-2 border-t pt-2', UI_THEME_TOKENS.panel.border)} aria-label={`${subject.label} 3D object transform`} data-kg-media-xr-subject-transform={subject.id}>
-                      <header className="flex min-w-0 items-center justify-between gap-2">
-                        <span className={cn('text-[9px] font-semibold uppercase', UI_THEME_TOKENS.text.tertiary)}>3D Object / Asset Transform</span>
-                        <XrInvocationButton
-                          invocation={buildXrTransformInvocation(subject.id, subject)}
-                          disabled={!sceneReady}
-                          onInvoke={runInvocation}
-                        />
-                      </header>
-                      <label className="grid gap-1 text-[9px]">
-                        <span className={UI_THEME_TOKENS.text.tertiary}>3D Object / Asset</span>
-                        <PanelSelect
-                          value={subject.assetId}
-                          aria-label={`Change 3D object or asset for ${subject.label}`}
-                          data-kg-media-xr-subject-asset={subject.id}
-                          onChange={event => setSubjectTransform(subject.id, { assetId: event.target.value })}
-                        >
-                          {XR_SCENE_LIBRARY_ASSETS.map(asset => <option key={asset.id} value={asset.id}>{asset.label}</option>)}
-                        </PanelSelect>
-                      </label>
-                      <fieldset className="grid grid-cols-3 gap-1 border-0 p-0" data-kg-media-xr-subject-position={subject.id}>
-                        <legend className={cn('col-span-3 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Position · meters</legend>
-                        {(['X', 'Y', 'Z'] as const).map((axis, index) => (
-                          <label key={axis} className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>{axis}</span><PanelTextInput
-                            key={`${subject.id}:${axis}:${subject.position[index]}`}
-                            type="number"
-                            min={index === 1 ? 0 : -50}
-                            max={50}
-                            step={0.1}
-                            defaultValue={subject.position[index]}
-                            aria-label={`${subject.label} ${axis} position`}
-                            data-kg-media-xr-subject-position-axis={axis.toLowerCase()}
-                            onBlur={event => {
-                              const input = event.currentTarget
-                              input.value = reconcileXrTransformNumberDraft({
-                                draftValue: input.value,
-                                persistedValue: subject.position[index],
-                                minimum: Number(input.min),
-                                maximum: Number(input.max),
-                                commit: value => {
-                                  const position = [...subject.position] as [number, number, number]
-                                  position[index] = value
-                                  return setSubjectTransform(subject.id, { position })
-                                },
-                              })
-                            }}
-                          /></label>
-                        ))}
-                      </fieldset>
-                      <section className="grid grid-cols-3 gap-1">
-                        <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Rotation Y°</span><PanelTextInput
-                          key={`${subject.id}:rotation:${subject.rotationYDegrees}`}
-                          type="number"
-                          min={-180}
-                          max={180}
-                          step={1}
-                          defaultValue={subject.rotationYDegrees}
-                          aria-label={`${subject.label} Y rotation degrees`}
-                          data-kg-media-xr-subject-rotation={subject.id}
-                          onBlur={event => {
-                            const input = event.currentTarget
-                            input.value = reconcileXrTransformNumberDraft({
-                              draftValue: input.value,
-                              persistedValue: subject.rotationYDegrees,
-                              minimum: Number(input.min),
-                              maximum: Number(input.max),
-                              commit: value => setSubjectTransform(subject.id, { rotationYDegrees: value }),
-                            })
-                          }}
-                        /></label>
-                        <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Scale</span><PanelTextInput
-                          key={`${subject.id}:scale:${subject.scale}`}
-                          type="number"
-                          min={0.25}
-                          max={4}
-                          step={0.05}
-                          defaultValue={subject.scale}
-                          aria-label={`${subject.label} scale`}
-                          data-kg-media-xr-subject-scale={subject.id}
-                          onBlur={event => {
-                            const input = event.currentTarget
-                            input.value = reconcileXrTransformNumberDraft({
-                              draftValue: input.value,
-                              persistedValue: subject.scale,
-                              minimum: Number(input.min),
-                              maximum: Number(input.max),
-                              commit: value => setSubjectTransform(subject.id, { scale: value }),
-                            })
-                          }}
-                        /></label>
-                        <label className="grid gap-0.5 text-[9px]"><span className={UI_THEME_TOKENS.text.tertiary}>Color</span><PanelTextInput
-                          type="color"
-                          value={subject.color}
-                          aria-label={`${subject.label} color`}
-                          data-kg-media-xr-subject-color={subject.id}
-                          onChange={event => setSubjectTransform(subject.id, { color: event.target.value })}
-                        /></label>
-                      </section>
-                    </section>
-                  </article>
+
+                    </>}
+                  />
                 )
               })}
+              {stageObjects.map(object => <XrLibraryCard key={object.id} Icon={XR_MEDIA_CATEGORY_ICONS[object.category]} color={object.color}
+                label={object.label} description="Playground object · controlled by the environment or simulation"
+                metadata={`${object.category} · ${object.nativeBodyId ? 'physics' : 'environment'}`}
+                active={runtime.selectedShotTargetId === object.id} onSelect={() => selectXrStageObject(object.id)}
+                dataAttributes={{'data-kg-media-xr-stage-object': object.id, 'data-kg-media-xr-asset': object.id}}
+                footer={<button type="button" className="App-toolbar__btn" onClick={() => selectXrStageObject(object.id)} aria-label={`Select ${object.label} in Timeline`}>Timeline</button>} />)}
             </section>
           ) : null}
         </section>

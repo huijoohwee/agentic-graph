@@ -293,7 +293,6 @@ export function selectXrMotionReferenceActor(actorId: string): XrMotionReference
     : snapshot.selectedMark
   return publish({ ...snapshot, selectedActorId: normalized, selectedShotTargetId: normalized, selectedMark })
 }
-
 export function selectXrMotionReferenceShotTarget(targetIdValue: string): XrMotionReferenceRuntimeSnapshot {
   const targetId = String(targetIdValue || '').trim()
   if (!resolveXrShotTarget(snapshot.plan, targetId) || targetId === snapshot.selectedShotTargetId) return snapshot
@@ -301,9 +300,9 @@ export function selectXrMotionReferenceShotTarget(targetIdValue: string): XrMoti
     && snapshot.plan.camera.some(mark => mark.id === snapshot.selectedMark?.markId && mark.anchorId === targetId)
     ? snapshot.selectedMark
     : null
-  return publish({ ...snapshot, selectedShotTargetId: targetId, selectedMark })
+  return publish({ ...snapshot, selectedShotTargetId: targetId, selectedMark,
+    selectedActorId: snapshot.plan.cast.some(track => track.actorId === targetId) ? targetId : '', castMarkArmed: false })
 }
-
 export function ensureXrMotionReferenceCastTrackForSubject(subjectIdValue: string): XrMotionReferenceRuntimeSnapshot {
   const subjectId = String(subjectIdValue || '').trim()
   const subject = snapshot.plan.subjects.find(candidate => candidate.id === subjectId)

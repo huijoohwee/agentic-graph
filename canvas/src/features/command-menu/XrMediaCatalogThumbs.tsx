@@ -37,6 +37,13 @@ export function XrCatalogArtwork({ assetId = '', label = '', color, Icon }: {
     <path d="M25 36Q25 66 48 66Q71 66 71 36" fill={color} /><ellipse cx="48" cy="36" rx="23" ry="8" fill="#384857" />
     <ellipse cx="48" cy="35" rx="18" ry="5" fill="#efb956" /><path d="M22 40H15V50H26M73 40H81V50H71M35 24Q26 17 36 9M49 22Q40 14 50 6M63 24Q54 17 64 9" fill="none" stroke="#a9bdc4" strokeWidth="3" />
   </>
+  else if (/cannonball/.test(key)) artwork = <><ellipse cx="48" cy="61" rx="25" ry="5" fill="#d4e4df" /><circle cx="48" cy="36" r="22" fill="#37464b" /><circle cx="40" cy="28" r="7" fill="#657b80" /></>
+  else if (/cannon/.test(key)) artwork = <><path d="M18 48H78V61H18Z" fill="#986c48" /><circle cx="30" cy="55" r="9" fill="#4a3830" /><circle cx="67" cy="55" r="9" fill="#4a3830" /><path d="M26 45L38 22L80 12L85 33L50 47Z" fill="#46555b" /><ellipse cx="79" cy="23" rx="7" ry="11" fill="#233439" /></>
+  else if (/chest/.test(key)) artwork = <><path d="M19 31Q19 12 48 12Q77 12 77 31V60H19Z" fill="#a36e42" /><path d="M19 34H77M33 16V60M64 16V60" fill="none" stroke="#e2bb61" strokeWidth="5" /><path d="M42 31H54V45H42Z" fill="#f1d179" /></>
+  else if (/key/.test(key)) artwork = <><circle cx="31" cy="29" r="15" fill="none" stroke="#e2ba45" strokeWidth="8" /><path d="M41 40L70 63M58 51L65 42M67 58L76 49" stroke="#e2ba45" strokeWidth="8" /></>
+  else if (/barrel/.test(key)) artwork = <><path d="M30 12Q12 36 30 62H67Q84 36 67 12Z" fill="#a67a49" /><ellipse cx="48" cy="13" rx="19" ry="6" fill="#c59b63" /><path d="M23 26H74M23 49H74" stroke="#4c5858" strokeWidth="6" /></>
+  else if (/palm/.test(key)) artwork = <><path d="M44 64Q53 36 45 22" fill="none" stroke="#9e7048" strokeWidth="7" /><path d="M45 22Q12 1 14 34Q25 20 45 22Q30 0 58 4Q47 13 45 22Q77 1 86 34Q66 20 45 22" fill="#45936c" /></>
+  else if (/rock|grotto/.test(key)) artwork = <><path d="M10 58L17 31L38 12L68 17L87 49L78 62Z" fill="#71838a" /><path d="M17 31L49 27L38 12M49 27L63 60L87 49" fill="#88989c" /></>
   else if (/tree|oak/.test(key)) artwork = <><path d="M43 61V31H52V61Z" fill="#946243" /><circle cx="47" cy="28" r="23" fill={color} /><circle cx="29" cy="35" r="14" fill="#5c9e64" /><circle cx="65" cy="34" r="15" fill="#75ad63" /></>
   else return <Icon className="size-7" strokeWidth={1.6} aria-hidden />
   return <svg viewBox="0 0 96 72" className="h-full w-full rounded" role="img" aria-label={`${label || assetId} native illustration`} data-kg-xr-catalog-artwork={assetId || label}>
