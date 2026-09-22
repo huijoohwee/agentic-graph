@@ -66,10 +66,18 @@ export async function verifyXrSceneMp4(
     // Native fragmented MP4 may omit a finite duration in the initial moov box.
     // Decode to the actual end rather than treating the requested duration as evidence.
     if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
-      const ended = waitForMedia(video, 'ended', signal, expectedDuration * 1_000 + 8_000)
-      void ended.catch(() => undefined)
-      await video.play()
-      await ended
+      const playback = new AbortController()
+      const abortPlayback = () => playback.abort()
+      signal?.addEventListener('abort', abortPlayback, { once: true })
+      if (signal?.aborted) abortPlayback()
+      const ended = waitForMedia(video, 'ended', playback.signal, expectedDuration * 1_000 + 8_000)
+      try {
+        // Observe timeout/abort even if the browser never settles the play request.
+        await Promise.all([ended, Promise.resolve().then(() => video.play())])
+      } finally {
+        playback.abort()
+        signal?.removeEventListener('abort', abortPlayback)
+      }
       durationSeconds = video.currentTime
     }
     if (!Number.isFinite(durationSeconds) || durationSeconds <= 0
