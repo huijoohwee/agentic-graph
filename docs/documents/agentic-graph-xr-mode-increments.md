@@ -2,7 +2,7 @@
 title: "agentic-graph XR Mode Increment and Evidence History"
 doc_type: "Increment and Evidence Companion"
 doc_id: "KXR-001-HISTORY"
-version: "0.7.0"
+version: "0.7.1"
 date: "2026-09-22"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -14,7 +14,7 @@ lane: "authoring"
 universal_scope: false
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
 parent: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
-parent_version: "0.7.0"
+parent_version: "0.7.1"
 parent_source: "agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md"
 worktree_id: "device-0232231d4a19--xr-character-authoring"
 agent_id: "codex-01a0c491"
@@ -30,7 +30,7 @@ This companion preserves the preceding owner's evidence and increment tail verba
 Its internal revisions, check results, scopes and links retain their historical
 meaning; they do not satisfy newly added authoring criteria or renew release authority.
 The [joined owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) defines current
-requirements, architecture, decisions, MVP and GTM at version 0.7.0. Extraction
+requirements, architecture, decisions, MVP and GTM at version 0.7.1. Extraction
 keeps both documents below 600 lines without deleting earlier authored evidence.
 
 <!-- preserved-history-begin -->
@@ -211,3 +211,11 @@ publish and second-device reopen contract. One eightfold-throttled diagnostic me
 at full resolution versus 38.5 seconds at half resolution; this is provisional local evidence only.
 Exact protected integration and recoverable closeout retain separate receipts.
 `/workspace.refresh #incremental-work @workspace` reads the local inventory after filesystem mutations and seed-sync completion, without reconciling seeds twice. Explicit refresh and the seed lifecycle still reconcile; coalescing preserves any queued full refresh. Mixed-path batches remain observable. Acceptance covers mounted mutation/explicit refresh, unchanged identity, queue priority and the unmodified XR publication deadline. Scope: three existing files, under 8 KB, no new module or dependency; local timing is diagnostic, not provider proof. `/xr.publish #atomic-storage @workspace` prepares the existing store during uploads, then conditionally commits the manifest document, retained revision and outbox together after verified workspace persistence. A changed local revision returns conflict; cancellation retains any committed pair and prevents late transport. The 60-second deadline and upload acknowledgements remain unchanged. Motion Control subscribes only to its consumed readiness primitives, and static UI tool labels read the canonical contract instead of constructing full runtime inspections. Target inspection reads its existing source owners directly without building unused scene and animation inventories. Scope: eight existing files, under 12 KB, no new module, dependency or cache; rollback restores the preceding owners. Tests cover transaction rollback, concurrent revision changes and cancellation; exact-head browser/provider proof remains required.
+
+### Subject draft source fidelity — 0.7.1
+
+`/fix #xr-subject-draft-fence @huijoohwee` advances A01/A06 independently of part construction. Existing Timeline subject inputs bind drafts to document text, source and authored plan identity; matching subject IDs in another document confer no write authority. Source replacement resets the input; stale commits reject before existing scene controls/persistence. Playhead publications retain the same plan and must not invalidate a draft.
+
+Acceptance: duplicate-ID document switch, same-document reparse, valid edit/save/reparse, and seek-preserved drafts/selection. Scope is the existing editor, one draft helper and two focused tests, plus these joined documents; ten active minutes, six files, no dependency, builder, rig schema, clock or renderer. Full model/rig/agent/export acceptance remains open. Focused and affected verification must be recorded separately; no runtime completion is claimed by this planning entry.
+
+Focused draft-context and mounted-editor regressions passed locally, including persisted Markdown/Source Files reparse and a Timeline seek that preserves the edited input. Full affected checks and browser proof remain pending; these focused results do not complete A01/A06 or the other acceptance criteria.

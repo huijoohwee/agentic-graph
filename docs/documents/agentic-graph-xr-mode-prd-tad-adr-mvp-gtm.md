@@ -2,7 +2,7 @@
 title: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KXR-001"
-version: "0.7.0"
+version: "0.7.1"
 status: "spec-complete"
 date: "2026-09-22"
 local_rung: "spec-complete"
@@ -41,12 +41,12 @@ adlc_source_revision: "2a86d4321edbcc34ea38f3f4718fd4e49b80d153"
 adlc_guide_sha256: "7b2c0a4c85879647c36766fad3e686899c43d219e6d57e39adfdace308dca686"
 increment_history: "agentic-graph-xr-mode-increments.md"
 reviewed_source_revision: "620471f120ddb31c7aab6ffcc8296f7be6eb3144"
-previous_document_version: "0.6.3"
-prd_revision: "0.7.0"
-tad_revision: "0.7.0"
-adr_revision: "0.7.0"
-mvp_revision: "0.7.0"
-gtm_revision: "0.7.0"
+previous_document_version: "0.7.0"
+prd_revision: "0.7.1"
+tad_revision: "0.7.1"
+adr_revision: "0.7.1"
+mvp_revision: "0.7.1"
+gtm_revision: "0.7.1"
 ---
 
 # agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
@@ -434,7 +434,7 @@ Historical proof remains at the [unchanged evidence section](agentic-graph-xr-mo
 <a id="planning-revision--reference-implementation"></a>
 ## Native authoring increment — reference implementation
 
-All five roles join `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.7.0`.
+All five roles join `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.7.1`.
 PRD criteria below extend Part A; TAD consumes those exact criteria; ADR-007-009
 bind the design; MVP and GTM consume all three. Historical E1-E4 proof and earlier
 increments are preserved in the [evidence companion](agentic-graph-xr-mode-increments.md).
@@ -524,6 +524,7 @@ The topology stays the existing renderer diagram with the admitted recipe feedin
 
 | Step / role-action-outcome | Prerequisite and bounded outcome | Cap / evidence gate |
 |---|---|---|
+| S0 Authoring maintainer fences existing subject drafts | Independently protect A01/A06 using document/source/plan identity; duplicate subject IDs cannot move a stale draft between documents. Timeline seeks keep valid drafts. Reuse existing controls and persistence; no recipe or rig added. | Ten active minutes, six reserved files, one small runtime helper; focused draft/reparse/UI tests, then affected validation. |
 | S1 Authoring maintainer integrates native model/rig | Exact protected procedural pipeline and admitted paths; editable parts, pivots, hierarchy and persistent controls, A01-A02/B01-B05. | First sprint: 45 active minutes, at most 12 implementation modules and 80 KB added source. Time is an estimate, not completion proof. |
 | S2 Runtime maintainer integrates animation/export | A08 MP4 capture of an existing XR scene may proceed now from protected `620471f120ddb31c7aab6ffcc8296f7be6eb3144` in admitted disjoint scope, using its shared Timeline, camera and lifecycle; it does not require S1. Articulated animation/GLB work (A04/A06/A07/B06) requires valid saved S1 source. | Shared S2 budget across both paths: at most 45 active minutes, 12 modules and 80 KB; refresh estimates from each measured slice. |
 | S3 Integration maintainer verifies agent/surface/demo parity | Tool/direct-Canvas ownership released and exact pins admitted; A03/A05/A09/B07-B08 plus all earlier criteria. | At most 45 active minutes, 12 modules and 80 KB per sprint; every criterion still required. |
@@ -561,7 +562,7 @@ external dependencies on integrated source or released ownership, with no invent
 
 ### Coverage and remaining findings
 
-Product maintainers own each disposition at this exact 0.7.0 revision. The checks
+Product maintainers own each disposition at this exact 0.7.1 revision. The checks
 below revisit coverage before MVP acceptance and any buyer/audience handoff.
 
 | Domain | Disposition / exact section join | Evidence gap and next check |
