@@ -525,7 +525,7 @@ The topology stays the existing renderer diagram with the admitted recipe feedin
 | Step / role-action-outcome | Prerequisite and bounded outcome | Cap / evidence gate |
 |---|---|---|
 | S1 Authoring maintainer integrates native model/rig | Exact protected procedural pipeline and admitted paths; editable parts, pivots, hierarchy and persistent controls, A01-A02/B01-B05. | First sprint: 45 active minutes, at most 12 implementation modules and 80 KB added source. Time is an estimate, not completion proof. |
-| S2 Runtime maintainer integrates animation/export | Valid saved S1 source; A04/A06-A08/B06 share Timeline, camera and immutable export. | Next bounded sprint: at most 45 active minutes, 12 modules and 80 KB; refresh estimate from S1 measurements. |
+| S2 Runtime maintainer integrates animation/export | A08 MP4 capture of an existing XR scene may proceed now from protected `620471f120ddb31c7aab6ffcc8296f7be6eb3144` in admitted disjoint scope, using its shared Timeline, camera and lifecycle; it does not require S1. Articulated animation/GLB work (A04/A06/A07/B06) requires valid saved S1 source. | Shared S2 budget across both paths: at most 45 active minutes, 12 modules and 80 KB; refresh estimates from each measured slice. |
 | S3 Integration maintainer verifies agent/surface/demo parity | Tool/direct-Canvas ownership released and exact pins admitted; A03/A05/A09/B07-B08 plus all earlier criteria. | At most 45 active minutes, 12 modules and 80 KB per sprint; every criterion still required. |
 
 Every source file stays below 600 lines and every chunk below 500 kB. New dependencies,
