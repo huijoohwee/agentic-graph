@@ -183,7 +183,7 @@ if (!process.argv.includes('--verify')) {
         root.unmount()
       }
     })])
-    report('assert-evidence')
+    reportPhase('assert-evidence')
     assert.equal(pageErrors.length, 0)
     if (evidence.status === 'captured') {
       assert.ok(evidence.byteSize > 0)
@@ -196,9 +196,13 @@ if (!process.argv.includes('--verify')) {
       assert.equal(evidence.documentSwitchVerified, true)
     } else assert.equal(evidence.status, 'unsupported')
     console.log(JSON.stringify({ schema: 'agentic-graph.xr-scene-mp4-browser/v1', evidence }, null, 2))
+  } catch (error) {
+    console.error(JSON.stringify({ verifierError: error.stack || error.message, phase }))
+    throw error
   } finally {
     reportPhase('browser-cleanup')
+    const forceClose = setTimeout(() => { void browserServer?.kill() }, 3_000)
     try { await browserServer?.close() } catch { await browserServer?.kill() }
-    finally { clearTimeout(watchdog) }
+    finally { clearTimeout(forceClose); clearTimeout(watchdog) }
   }
 }
