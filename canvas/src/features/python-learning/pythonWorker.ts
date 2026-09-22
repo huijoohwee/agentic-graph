@@ -10,12 +10,18 @@ type Job = {
   identity: LearningRunIdentity; simulation: LearningSimulation; evaluator: PythonEvaluator
   iterator: AsyncGenerator<SourceSpan, void, void>; state: LearningRunState; sequence: number
   span: SourceSpan; busy: boolean; continuous: boolean; disposed: boolean; computeMs: number; segmentStart: number
+  pauseRequested: boolean; resume: (() => void) | null
 }
 const waitTurn = () => new Promise<void>(resolve => setTimeout(resolve, 0))
 export function createPythonWorkerHost(post: (snapshot: LearningWorkerSnapshot | { kind: 'protocol-error'; message: string }) => void, now = () => performance.now()) {
   let current: Job | null = null
   const active = (job: Job) => current === job && !job.disposed
-  const dispose = () => { if (current) { current.disposed = true; current.simulation.dispose(); current = null } }
+  const dispose = () => {
+    if (!current) return
+    const job = current
+    job.disposed = true; job.simulation.dispose(); current = null
+    const resume = job.resume; job.resume = null; resume?.()
+  }
   const checkBudget = (job: Job) => {
     if (!active(job)) throw new PythonLearningError('cancelled', 'Run was superseded.', job.span)
     if (job.computeMs + now() - job.segmentStart > PYTHON_LIMITS.computeMs) throw new PythonLearningError('limit-exceeded', 'Active compute exceeded five seconds.', job.span)
@@ -36,6 +42,13 @@ export function createPythonWorkerHost(post: (snapshot: LearningWorkerSnapshot |
     publish(job)
     await waitTurn()
     job.segmentStart = now(); checkBudget(job)
+    while (job.pauseRequested) {
+      job.state = 'paused'
+      // Retain the in-flight iterator/physics statement; paused wall time is not active compute.
+      await new Promise<void>(resolve => { job.resume = resolve; publish(job) })
+      job.segmentStart = now(); checkBudget(job)
+    }
+    job.state = 'running'
   }
   const pump = async (job: Job) => {
     if (job.busy || !active(job)) return
@@ -72,18 +85,22 @@ export function createPythonWorkerHost(post: (snapshot: LearningWorkerSnapshot |
         const evaluator = new PythonEvaluator(request.source, { call: (name, args, span) => job.simulation.call(name, args, span) })
         const simulation = new LearningSimulation(lesson, async () => {
           checkBudget(job)
-          if (now() - job.segmentStart >= PYTHON_LIMITS.batchMs) await yieldTurn(job)
+          if (job.pauseRequested || now() - job.segmentStart >= PYTHON_LIMITS.batchMs) await yieldTurn(job)
         })
-        job = { identity, simulation, evaluator, iterator: evaluator.run(), state: 'ready', sequence: 0, span: { line: 1, column: 1 }, busy: false, continuous: request.mode === 'run', disposed: false, computeMs: 0, segmentStart: now() }
+        job = { identity, simulation, evaluator, iterator: evaluator.run(), state: 'ready', sequence: 0, span: { line: 1, column: 1 }, busy: false, continuous: request.mode === 'run', pauseRequested: false, resume: null, disposed: false, computeMs: 0, segmentStart: now() }
         current = job; publish(job)
         if (request.mode !== 'validate') void pump(job)
       } else if (request.kind === 'control') {
         const job = current
         if (!job || request.runId !== job.identity.runId || request.generation !== job.identity.generation) throw new Error('Stale worker command.')
         if (!['run', 'step', 'pause'].includes(request.operation)) throw new Error('Unknown worker operation.')
-        if (request.operation === 'pause') { job.continuous = false; return }
+        if (request.operation === 'pause') { job.continuous = false; job.pauseRequested = true; return }
+        if (job.resume) {
+          const resume = job.resume; job.resume = null
+          job.pauseRequested = false; job.continuous = request.operation === 'run'; resume(); return
+        }
         if (job.state === 'completed' || job.state === 'failed' || job.busy) throw new Error('Run cannot accept this command.')
-        job.continuous = request.operation === 'run'; void pump(job)
+        job.pauseRequested = false; job.continuous = request.operation === 'run'; void pump(job)
       } else throw new Error('Unknown worker request kind.')
     } catch (error) { post({ kind: 'protocol-error', message: JSON.stringify(pythonError(error)) }) }
   }

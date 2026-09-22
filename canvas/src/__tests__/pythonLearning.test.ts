@@ -64,6 +64,21 @@ test('all declared resource boundaries stop runaway work', async () => {
   assert.throws(() => parseLearningPython('x = ' + '9'.repeat(310)), /Integer literal limit/)
   assert.throws(() => parseLearningPython('x = ' + '('.repeat(40) + '1' + ')'.repeat(40)), /nesting limit/)
 })
+test('actual AST depth includes left-associative expressions and their enclosing statements', () => {
+  const sum = (count: number) => Array(count).fill('1').join(' + ')
+  const depth = PYTHON_LIMITS.parseDepth
+  for (const [accepted, rejected] of [
+    [`value = ${sum(depth - 1)}`, `value = ${sum(depth)}`],
+    [`if True:\n    value = ${sum(depth - 2)}`, `if True:\n    value = ${sum(depth - 1)}`],
+    [`value = ${'abs('.repeat(depth - 2)}1${')'.repeat(depth - 2)}`, `value = ${'abs('.repeat(depth - 1)}1${')'.repeat(depth - 1)}`],
+  ]) {
+    assert.doesNotThrow(() => parseLearningPython(accepted))
+    assert.throws(() => parseLearningPython(rejected), { code: 'limit-exceeded', message: 'AST depth limit.' })
+  }
+  assert.throws(() => new PythonEvaluator(`drive(1, 1)\nvalue = ${sum(40)}`, {
+    call: async () => assert.fail('Invalid AST must be rejected before any simulation capability is invoked.'),
+  }), { code: 'limit-exceeded', message: 'AST depth limit.' })
+})
 test('three original lessons pass, incorrect starters fail, seeded repeat and stepping agree', async () => {
   for (const lesson of LEARNING_LESSONS) {
     const outcomes: string[] = []

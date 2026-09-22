@@ -4,20 +4,21 @@ import { LearningRuntime, digestLearningSource, type LearningWorkerPort } from '
 import { createPythonWorkerHost } from '../features/python-learning/pythonWorker'
 import { validLearningSnapshot, type LearningWorkerSnapshot } from '../features/python-learning/learningProtocol'
 import { LEARNING_LESSONS } from '../features/python-learning/learningLessons'
+import { PythonLearningError, pythonError } from '../features/python-learning/pythonModel'
 
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 1))
 async function until(condition: () => boolean) {
   const deadline = performance.now() + 2500
   while (!condition()) { if (performance.now() > deadline) assert.fail('Runtime condition timed out.'); await tick() }
 }
-function fixture(digest = async (_source: string) => 'a'.repeat(64)) {
+function fixture(digest = async (_source: string) => 'a'.repeat(64), now = () => performance.now()) {
   const messages: LearningWorkerSnapshot[] = [], ports: LearningWorkerPort[] = []
   let terminated = 0
   const runtime = new LearningRuntime(() => {
     const host = createPythonWorkerHost(data => {
       if (data.kind === 'snapshot') messages.push(structuredClone(data))
       port.onmessage?.({ data: structuredClone(data) })
-    })
+    }, now)
     const port: LearningWorkerPort = { onmessage: null, onerror: null, postMessage: host.receive, terminate: () => { terminated++; host.dispose() } }
     ports.push(port); return port
   }, digest)
@@ -105,19 +106,86 @@ test('Pause and hidden-tab signals during hashing prevent execution until explic
   }
 })
 
-test('hidden execution is rejected before allocation and active work pauses at a statement boundary', async () => {
-  const f = fixture(); f.bind('drive(1, 3600)\nprint("after pause")')
+test('manual and hidden pauses freeze unfinished motion until explicit resume without consuming paused compute', async () => {
+  const source = 'drive(1, 3600)\nprint("after pause")', baseline = fixture()
   try {
-    f.runtime.setHidden(true)
-    await assert.rejects(f.runtime.start('run'), /tab is hidden/)
-    await assert.rejects(f.runtime.control('step'), /tab is hidden/)
-    assert.equal(f.ports.length, 0); assert.equal(f.runtime.read().state, 'idle')
-    f.runtime.setHidden(false); await f.runtime.control('run'); f.runtime.setHidden(true)
-    await until(() => f.runtime.read().state === 'paused')
-    assert.equal(f.runtime.read().result!.output, '')
-    const state = f.runtime.read(); f.runtime.setHidden(false); await tick(); assert.equal(f.runtime.read(), state)
-    await f.runtime.control('run'); await until(() => f.runtime.read().state === 'completed')
-    assert.equal(f.runtime.read().result!.output, 'after pause\n')
+    baseline.bind(source); await baseline.runtime.control('run'); await until(() => baseline.runtime.read().state === 'completed')
+    for (const pause of ['manual', 'hidden'] as const) {
+      let clock = 0
+      const f = fixture(undefined, () => clock); f.bind(source)
+      try {
+        if (pause === 'hidden') {
+          f.runtime.setHidden(true)
+          await assert.rejects(f.runtime.start('run'), /tab is hidden/)
+          await assert.rejects(f.runtime.control('step'), /tab is hidden/)
+          assert.equal(f.ports.length, 0); assert.equal(f.runtime.read().state, 'idle')
+          f.runtime.setHidden(false)
+        }
+        await f.runtime.control('run')
+        if (pause === 'hidden') f.runtime.setHidden(true)
+        else await f.runtime.control('pause')
+        await until(() => f.runtime.read().state === 'paused')
+        const frozen = f.runtime.read(), count = f.messages.length
+        assert.ok(frozen.result!.scene.ticks > 0 && frozen.result!.scene.ticks < 3600, 'Pause must suspend inside drive.')
+        assert.equal(frozen.result!.output, '')
+        clock += 6000; await tick(); await tick()
+        assert.equal(f.runtime.read(), frozen); assert.equal(f.messages.length, count)
+        if (pause === 'hidden') {
+          await assert.rejects(f.runtime.control('run'), /tab is hidden/)
+          await assert.rejects(f.runtime.control('step'), /tab is hidden/)
+          f.runtime.setHidden(false); await tick(); assert.equal(f.runtime.read(), frozen)
+        }
+        await f.runtime.control('step')
+        await until(() => f.runtime.read().state === 'paused' && f.runtime.read().result!.scene.ticks === 3600)
+        assert.equal(f.runtime.read().result!.output, '', 'Step finishes the retained statement only.')
+        await f.runtime.control('run'); await until(() => f.runtime.read().state === 'completed')
+        assert.equal(f.ports.length, 1)
+        for (const key of ['scene', 'trace', 'output', 'variables', 'grade', 'metrics'] as const) {
+          assert.deepEqual(f.runtime.read().result![key], baseline.runtime.read().result![key], `${pause}:${key}`)
+        }
+      } finally { f.runtime.dispose() }
+    }
+  } finally { baseline.runtime.dispose() }
+})
+
+test('stopping, switching document or disposing a suspended motion fences its retained continuation', async () => {
+  for (const operation of ['stop', 'bind', 'dispose'] as const) {
+    const f = fixture(undefined, () => 0); f.bind('drive(1, 3600)\nprint("stale")')
+    try {
+      await f.runtime.control('run'); await f.runtime.control('pause')
+      await until(() => f.runtime.read().state === 'paused')
+      const count = f.messages.length
+      if (operation === 'bind') f.bind('print("current")', 'travel', '/current.py')
+      else f.runtime[operation]()
+      const stopped = f.runtime.read(); await tick(); await tick()
+      assert.equal(f.runtime.read(), stopped); assert.equal(f.messages.length, count)
+      assert.equal(f.terminated(), 1)
+      if (operation === 'bind') {
+        await f.runtime.control('run'); await until(() => f.runtime.read().state === 'completed')
+        assert.equal(f.runtime.read().result!.output, 'current\n')
+      }
+    } finally { f.runtime.dispose() }
+  }
+})
+
+test('worker diagnostics retain typed errors while stripping non-serializable AST data from spans', () => {
+  const span = { line: 2, column: 8, kind: 'binary', left: { kind: 'literal', value: 1n }, right: { kind: 'literal', value: 2n } }
+  const error = pythonError(new PythonLearningError('limit-exceeded', 'AST depth limit.', span))
+  assert.deepEqual(JSON.parse(JSON.stringify(error)), {
+    code: 'limit-exceeded', message: 'AST depth limit.', span: { line: 2, column: 8 },
+  })
+})
+
+test('excessive AST depth fails before the worker can publish an allocated scene', async () => {
+  const f = fixture(); f.bind('drive(1, 1)\nvalue = ' + Array(40).fill('1').join(' + '))
+  try {
+    await f.runtime.control('run')
+    assert.equal(f.runtime.read().state, 'failed')
+    assert.equal(f.runtime.read().error?.code, 'limit-exceeded')
+    assert.match(f.runtime.read().error!.message, /AST depth limit/)
+    assert.deepEqual(Object.keys(f.runtime.read().error!.span).sort(), ['column', 'line'])
+    assert.equal(f.messages.length, 0)
+    assert.equal(f.runtime.read().result, null)
   } finally { f.runtime.dispose() }
 })
 

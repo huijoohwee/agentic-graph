@@ -38,6 +38,6 @@ export type PythonProgram = Readonly<{ body: Statement[]; nodeCount: number }>
 export const sourceBytes = (text: string): number => new TextEncoder().encode(text).byteLength
 export function pythonError(error: unknown): Readonly<{ code: string; message: string; span: SourceSpan }> {
   return error instanceof PythonLearningError
-    ? { code: error.code, message: error.message, span: error.span }
+    ? { code: error.code, message: error.message, span: { line: error.span.line, column: error.span.column } }
     : { code: 'runtime-error', message: error instanceof Error ? error.message : String(error), span: { line: 1, column: 1 } }
 }

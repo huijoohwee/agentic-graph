@@ -171,5 +171,25 @@ export function parseLearningPython(source: string): PythonProgram {
   }
   const body: Statement[] = []
   while (!at('eof')) body.push(statement(0, false, 0))
+  // Parser call depth does not bound left-associative trees or combined statement/expression depth.
+  const pending: Array<{ value: Statement | Expression; depth: number }> = body.map(value => ({ value, depth: 1 }))
+  while (pending.length) {
+    const { value, depth } = pending.pop()!
+    if (depth > PYTHON_LIMITS.parseDepth) throw new PythonLearningError('limit-exceeded', 'AST depth limit.', value)
+    let children: Array<Statement | Expression> = []
+    switch (value.kind) {
+      case 'unary': children = [value.value]; break
+      case 'binary': children = [value.left, value.right]; break
+      case 'compare': children = value.values; break
+      case 'call': children = value.args; break
+      case 'assign': case 'expression': children = [value.value]; break
+      case 'return': children = value.value ? [value.value] : []; break
+      case 'if': children = [...value.branches.flatMap(branch => [branch.condition, ...branch.body]), ...value.otherwise]; break
+      case 'while': children = [value.condition, ...value.body]; break
+      case 'for': children = [value.iterable, ...value.body]; break
+      case 'def': children = value.body; break
+    }
+    pending.push(...children.map(value => ({ value, depth: depth + 1 })))
+  }
   return { body, nodeCount }
 }
