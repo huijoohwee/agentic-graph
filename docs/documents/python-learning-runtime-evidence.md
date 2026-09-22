@@ -1,18 +1,18 @@
 ---
 title: "Offline Python Learning Workspace — implementation evidence"
-version: "0.2.2"
+version: "0.3.0"
 status: "implementation-in-progress"
 date: "2026-09-22"
 continuity_id: "OFFLINE-PYTHON-LEARNING-WORKSPACE-001"
 plan_revision: "1.0.0"
-plan_commit: "f69d48f9a862fee6328b7d716d6b79e9fa5d23d4"
-source_base: "b242ab5d82c49155808a86b45565c797f8e04f61"
+plan_commit: "01f43c338477763101e46bce93565bf8af55e75a"
+source_base: "50c7e6f6e040aa44e87da005aa0d05209a2c2b2d"
 ---
 
 # Offline Python learning implementation evidence
 
 Intent: `/change #python.learning.runtime @codex-python-learning-runtime`.
-The implementation binds the committed `docs/documents/prd-tad-adr-mvp-gtm-offline-python-learning-workspace.md` at the plan commit above. That document currently belongs to its separate, preserved specification lane. The user's implementation instruction authorizes this runtime work. This record does not declare the whole MVP accepted, deployed or commercially validated.
+The implementation binds the committed `docs/documents/prd-tad-adr-mvp-gtm-offline-python-learning-workspace.md` at the plan commit above. That exact specification is integrated by PR #1182; its previous branches are preserved. The user's implementation instruction authorizes this runtime work. This record does not declare the whole MVP accepted, deployed or commercially validated.
 
 ## Scope and implementation decisions
 
@@ -21,7 +21,7 @@ The implementation binds the committed `docs/documents/prd-tad-adr-mvp-gtm-offli
 - The three original procedural lessons run a bounded Python AST evaluator in a disposable worker. This is a documented language subset, not unrestricted Python or a claim of CPython/package compatibility. It does not execute JavaScript source, invoke a host interpreter, import packages, or expose filesystem/network/DOM capabilities.
 - The preview occupies the existing Python pane and reuses native procedural vehicle geometry, the spatial physics engine and ECS World. It does not change the global Canvas mode; no mode restoration or competing global scene controller is needed. This is a scoped refinement of A3's provisional mode-switch design.
 - Source retains the existing workspace file owner. Explicit debrief save uses the native `world_tick_result` Decision type and existing durable IndexedDB workspace adapter. The local adapter suppresses mirror/seed refresh and propagates errors; it introduces no database, SQL service, volatile fallback or account.
-- The module cap is replanned from 24 to **36 changed runtime/test modules**, with **196 KiB added authored source**, <600 lines per new file, <500 kB per new chunk, no dependency additions and no always-load guidance growth. Separate protocol, persistence UI and test boundaries require more files than the provisional estimate. The 16 KiB source increase closes reproduced lifecycle races and adds their regressions; the module cap is unchanged. Existing oversized Monaco code shrinks by extracting its language loader. These adjustments remove no Must acceptance criterion.
+- The module cap is replanned from 24 to **37 changed runtime/test modules**, with **196 KiB added authored source**, <600 lines per new file, <500 kB per new chunk, no dependency additions and no always-load guidance growth. Separate protocol, persistence UI and test boundaries require more files than the provisional estimate. The 16 KiB source increase closes reproduced lifecycle races and adds their regressions; the registration continuation adds the existing discovery-policy owner without creating a module. Existing oversized Monaco code shrinks by extracting its language loader. These adjustments remove no Must acceptance criterion.
 - The admitted `python-learning-offline` successor preserves the published execution/editor head `4906970fd59a969fd972eb327ac9901790465a13` (PR #1149) and extends the native Vite, Workbox and service-worker revision owners. Installation is explicit: a bounded same-origin manifest enumerates the final emitted shell, lazy editor/language/worker code, fonts and procedural scenes. SHA-256 download/readback precedes one atomic active-pointer write under a browser-wide lock. Every admitted navigation verifies complete membership; cached asset reads also verify their bytes. The prior complete pack remains available for explicit recovery, including through service-worker activation. No other service worker, database or global navigation fallback is added.
 - Offline navigation is opt-in through `python-learning-offline=<source revision>`. Ordinary application navigation keeps its HTTP authority. Missing, evicted or corrupt installed files produce an explicit failure. Source/debrief storage is separate and retained. Unsupported locking/service-worker capabilities fail visibly; an uncached first visit still needs a local distribution or connection.
 
@@ -61,8 +61,8 @@ No dependency or lockfile was added. Reused local dependency metadata identifies
 ## Outstanding acceptance and ownership
 
 1. **Q5 candidate proof:** two clean production-build browser runs passed at `891181a79a47d3776e7e4518fa82ed0e8501d2d6`, including all three lessons, explicit native source Save, durable source/debrief reopen, offline desktop highlighting and missing-worker rejection. The repeat measured 3,499 ms install / 724 ms initial reload over 27,737,700 bytes / 838 members, with no page errors. Browser eviction remains detectable, not preventable; portable debrief export is available. A build-affecting successor must refresh this exact-candidate proof.
-2. **Q6 production registration:** `learningToolContract.mjs` and `learningWebMcp.ts` implement the two bounded operations over the same runtime, rubric and persistence. They remain unregistered. Lane admission rejected overlap with `design-review-bounds` for the central agent-ready contract and WebMCP registry. Do not edit those files until their owner releases or hands them off. OS's shared command/semantic dictionaries are reserved by `procedural-asset-invocation`; Canvas package pins and generated dictionaries are reserved by `procedural-asset-contract`. Canvas's disjoint `PYTHON-LEARNING.md` and harness entry are published in PR #940 and pass the native docs contract, but do not establish runtime registration.
-3. **Q1/Q7 release proof:** refresh exact-candidate checks. Automated mobile geometry, accessible names, keyboard activation and static procedural rendering cover part of accessibility; a screen-reader/manual device session is unobserved. A timed learner session and buyer/demand evidence remain unmeasured. The new focused tests run explicitly; adding them to the shared affected-check contract awaits its current owner.
+2. **Q6 application registration:** the canonical browser contract and lazy registry now expose `inspect_local_python_learning` and `control_local_python_learning` over the existing runtime. Python files in Editor select a separate `pythonLearning` discovery scope: two learning tools, five core tools and one scope selector, preserving the 16-tool/32-KiB project budget. The native schema validator runs before executor effects. The full production-build browser runner supplies a controlled `registerTool` host, verifies actual application registration, rejects missing/extra/stale bindings, checks request replay, and executes Run and explicit debrief Save while offline. This is application integration proof when its exact-candidate receipt passes; it is not browser-vendor API availability or a live external agent session. OS/Canvas invocation catalogs remain separate owners.
+3. **Q1/Q7 release proof:** refresh exact-candidate checks. Automated mobile geometry, accessible names, keyboard activation and static procedural rendering cover part of accessibility; a screen-reader/manual device session is unobserved. A timed learner session and buyer/demand evidence remain unmeasured. The shared affected-check contract now selects the three focused Python suites, existing discovery-budget/workspace regressions, component browser and full offline production-build browser. Exact-candidate results remain bound to their emitted receipts.
 
 No whole-slice acceptance, protected merge, production deployment, production runtime proof, zero-cost-of-operation savings, learning efficacy or revenue claim follows from the current checks.
 
@@ -70,7 +70,7 @@ No whole-slice acceptance, protected merge, production deployment, production ru
 
 Graph PR #1150 failed its changed-source hygiene gate because the new offline route grew the existing oversized `vite.config.ts` by eight lines. The admitted `python-learning-integration` successor preserves that published head and moves the unchanged ordered runtime-cache rules into the existing `vitePwaRuntimeCachePolicy.ts` owner. Vite shrinks by 47 lines relative to the plan base; no budget, required check or cache rule is waived. The native hygiene check passes after extraction. Changed build inputs require one refreshed production build, revision-authority check and full offline browser proof; unchanged evaluator and persistence receipts remain reusable.
 
-Continuation cap: 12 affected integration files / 40 KiB incremental source, within the prior runtime source budget. Shared-file reservations block only their dependent registration and pin effects. Complete registration additionally requires contract/schema/builder parity, focused CI registration, and the registered browser path. The pending owner handoff patch is preparation, not authority or a registration receipt.
+Continuation cap: 12 affected integration files / 40 KiB incremental source, within the prior runtime source budget. Design PR #1183 released the shared Graph owners. The admitted `python-learning-registered` successor preserves PR #1184 and all earlier published heads; the current canonical source is merged into its unpublished branch without rewriting predecessor ancestry. The registration increment is limited to eight existing files and 40 KiB, with zero new modules or dependencies.
 
 ## Lifecycle continuation
 
@@ -79,7 +79,7 @@ The clean predecessor `7e12aa80af4db441a3cf530168c6561a2c96011f` reproduced two 
 
 Inspection and control now share the adapter's two-second deadline. Inspection timeout leaves the run and worker unchanged; late hashes cannot turn its rejected result into success. Thirty-two focused evaluator, lifecycle, persistence, offline and service-worker tests pass, including delayed hashing, hidden execution, active pause and read-timeout regressions. The component browser adds a simulated visibility signal and visible-denial check; physical-device background behavior remains unobserved. Build-affecting source requires fresh clean-candidate build, PWA and offline evidence before publication.
 
-This continuation remains within six changed files / 20 KiB incremental source. Runtime registration and shared dictionaries retain their existing owner reservations.
+This continuation remains within six changed files / 20 KiB incremental source. The subsequent registration continuation uses newly admitted Graph reservations; shared dictionaries retain their separate owner contracts.
 
 ## Semantic references
 

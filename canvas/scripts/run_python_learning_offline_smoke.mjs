@@ -13,6 +13,7 @@ const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = re
 const revision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
 const sourceState = () => execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' })
 const before = sourceState(), output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-offline-${revision.slice(0, 12)}`))
+if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 const { LEARNING_LESSONS: lessons } = await tsImport('../src/features/python-learning/learningLessons.ts', import.meta.url)
 const manifest = JSON.parse(await readFile(join(canvas, 'dist', `learning-offline-manifest-${revision}.json`), 'utf8'))
 for (const file of manifest.files) {
@@ -26,6 +27,20 @@ try {
   const origin = 'http://127.0.0.1:4198', base = origin + '/agentic-graph/'
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
+  // Controlled browser-host surface; production registers its actual validated lazy tools.
+  // This proves application registration, not an experimental browser vendor API.
+  await context.addInitScript(() => {
+    const tools = new Map()
+    window.__registeredLearningTools = tools
+    Object.defineProperty(navigator, 'modelContext', { configurable: true, value: {
+      registerTool(tool, { signal } = {}) {
+        if (tools.has(tool.name)) throw new Error('Duplicate tool registration: ' + tool.name)
+        if (!signal || signal.aborted) throw new Error('Live registration signal required')
+        tools.set(tool.name, tool)
+        signal.addEventListener('abort', () => tools.delete(tool.name), { once: true })
+      },
+    } })
+  })
   const errors = [], remote = [], failedRequests = []
   await context.route('**/*', route => {
     const url = new URL(route.request().url())
@@ -39,6 +54,24 @@ try {
   await page.locator('input[type="file"][accept*=".py"]').setInputFiles({ name: 'learning.py', mimeType: 'text/plain', buffer: Buffer.from(lessons[0].solution) })
   const pane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
   await pane.waitFor({ timeout: 60000 })
+  const invoke = (name, input = {}) => page.evaluate(async ({ name, input }) => {
+    const tool = window.__registeredLearningTools.get('agentic-graph.' + name)
+    if (!tool) throw new Error('Missing registered tool: ' + name)
+    return tool.execute(input)
+  }, { name, input })
+  const inspect = () => invoke('inspect_local_python_learning')
+  const control = input => invoke('control_local_python_learning', input)
+  await page.waitForFunction(() => document.documentElement.dataset.kgWebmcpScope === 'pythonLearning')
+  const discovery = await page.evaluate(() => ({ scope: document.documentElement.dataset.kgWebmcpScope,
+    names: [...window.__registeredLearningTools.keys()], bytes: Number(document.documentElement.dataset.kgWebmcpBytes) }))
+  assert.equal(discovery.names.length, 8); assert.ok(discovery.bytes <= 32 * 1024)
+  const initial = await inspect()
+  await assert.rejects(() => control({ operation: 'run', requestId: 'missing-binding' }))
+  await assert.rejects(() => control({ ...initial.binding, operation: 'run', requestId: 'unknown-field', extra: true }))
+  await assert.rejects(() => control({ ...initial.binding, documentId: '/stale.py', operation: 'run', requestId: 'stale-binding' }), /stale-input/)
+  const hint = { ...initial.binding, operation: 'hint', requestId: 'registered-hint' }
+  await control(hint); await control(hint)
+  assert.equal((await inspect()).hintStage, 1, 'request replay must not apply another hint')
   if (await page.getByLabel('Show Explorer pane', { exact: true }).isChecked()) await page.getByLabel('Show Explorer pane', { exact: true }).uncheck()
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'native import never executes')
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
@@ -85,8 +118,22 @@ try {
       await saved.waitFor({ timeout: 15000 })
       await awaitStoredSource(lesson.solution)
     }
-    await pane.getByRole('button', { name: 'Run', exact: true }).click()
+    let registeredRun
+    if (lesson.id === lessons[0].id) {
+      registeredRun = { ...(await inspect()).binding, operation: 'run', requestId: 'offline-registered-run' }
+      const started = performance.now(); await control(registeredRun)
+      assert.ok(performance.now() - started < 2000, 'registered Run must acknowledge within two seconds')
+    } else await pane.getByRole('button', { name: 'Run', exact: true }).click()
     await page.locator('.python-learning[data-learning-state="completed"]').waitFor({ timeout: 15000 })
+    const observed = await inspect()
+    assert.equal(observed.result.grade.passed, true); assert.equal(observed.costLog.model, 'none')
+    assert.equal(observed.costLog.prompt_tokens + observed.costLog.completion_tokens, 0)
+    if (registeredRun) {
+      await control(registeredRun)
+      assert.equal((await inspect()).binding.expectedRunId, observed.binding.expectedRunId, 'replay cannot allocate another run')
+      const saved = await control({ ...observed.binding, operation: 'save', requestId: 'offline-registered-save' })
+      assert.equal(saved.status, 'saved')
+    }
     await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
     await pane.getByText('Lesson passed', { exact: false }).waitFor()
     await pane.getByRole('button', { name: 'Save debrief', exact: true }).click()
@@ -135,6 +182,7 @@ try {
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
   const evidence = { revision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
+    toolRegistrationProven: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))

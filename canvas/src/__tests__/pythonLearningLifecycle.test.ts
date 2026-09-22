@@ -5,6 +5,16 @@ import { createPythonWorkerHost } from '../features/python-learning/pythonWorker
 import { validLearningSnapshot, type LearningWorkerSnapshot } from '../features/python-learning/learningProtocol'
 import { LEARNING_LESSONS } from '../features/python-learning/learningLessons'
 import { PythonLearningError, pythonError } from '../features/python-learning/pythonModel'
+import { resolveWebMcpToolScope } from '../features/agent-ready/webMcpToolExposure.mjs'
+
+test('Python discovery follows the active editor document without capturing other workspace groups', () => {
+  const state = { workspaceViewMode: 'editor', markdownDocumentName: '/workspace/lesson.PY' }
+  assert.equal(resolveWebMcpToolScope(state), 'pythonLearning')
+  assert.equal(resolveWebMcpToolScope({ ...state, markdownDocumentName: '/notes.md' }), 'editor')
+  assert.equal(resolveWebMcpToolScope({ ...state, workspaceViewMode: 'canvas' }), 'graph')
+  assert.equal(resolveWebMcpToolScope({ ...state, floatingPanelOpen: true, floatingPanelView: 'chat' }), 'chat')
+  assert.equal(resolveWebMcpToolScope(state, true), 'mission')
+})
 
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 1))
 async function until(condition: () => boolean) {
