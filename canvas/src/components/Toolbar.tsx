@@ -290,6 +290,8 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
       </IconButton>
       {isMainPanelOpen && (
         <section
+          data-kg-main-panel-shell="true"
+          data-kg-main-panel-requested-tab={mainPanelRequestedTab}
           className={`${effectiveMainPanelPinned ? 'fixed inset-0 z-[2000]' : 'fixed inset-0 z-[80]'} ${(isNarrowViewport || effectiveMainPanelPinned) ? 'pointer-events-auto' : 'pointer-events-none'}`}
         >
           {isNarrowViewport ? (

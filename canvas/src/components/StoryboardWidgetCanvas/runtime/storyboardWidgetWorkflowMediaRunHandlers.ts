@@ -14,6 +14,9 @@ import {
   resolveImageToThreeJsRunInput,
 } from '@/features/image-to-threejs/imageToThreeJsContract'
 import { resolveImageToGlbRunInput } from '@/features/image-to-glb/imageToGlbContract'
+import { hasProceduralAssetRunInvocation, resolveProceduralAssetRunInput } from '@/features/image-to-glb/proceduralAssetWorkflowContract'
+import { runProceduralAssetWorkflow, type ProceduralAssetWorkflowContext } from '@/features/image-to-glb/proceduralAssetWorkflow'
+import type { ProceduralAssetOutputPublisher } from '@/features/image-to-glb/proceduralAssetPanelPublication'
 import {
   generateReviewedImageToGlbScene,
   type ReviewedImageToGlbScene,
@@ -75,6 +78,8 @@ export async function runStoryboardWidgetMediaWorkflowNode(args: {
   publishMediaRunOutputToRichMediaPanel: StoryboardWidgetMediaRunOutputPublisher
   publishImageToThreeJsRunOutputToRichMediaPanel: StoryboardWidgetImageToThreeJsRunOutputPublisher
   publishImageToGlbRunOutputToRichMediaPanel?: StoryboardWidgetImageToGlbRunOutputPublisher
+  publishProceduralAssetRunOutputToRichMediaPanel?: ProceduralAssetOutputPublisher
+  proceduralContext?: ProceduralAssetWorkflowContext
   generateImageToGlbScene?: (args: { sourceUrl: string }) => Promise<ReviewedImageToGlbScene>
   restoreImageToThreeJsInputProjection?: StoryboardWidgetImageToThreeJsInputRecovery
   resolveImageToThreeJsOwnedOutputPanelRunInput?: StoryboardWidgetImageToThreeJsOutputInputResolver
@@ -218,6 +223,20 @@ export async function runStoryboardWidgetMediaWorkflowNode(args: {
     writableNodeId: args.writableNodeId,
     registry: args.widgetRegistry,
   })
+  if (hasProceduralAssetRunInvocation(args.rawNodeProperties)) {
+    try {
+      const input = resolveProceduralAssetRunInput({ node: imageToThreeJsNode, connectedValuesBySchemaPath: connectedValuesInput?.connectedValuesByNodeId.get(connectedValuesInput.targetNodeId) })!
+      const publish = args.publishProceduralAssetRunOutputToRichMediaPanel
+      const context = args.proceduralContext
+      if (!context || !publish) throw new Error('Procedural asset creation requires the active source document and output publisher')
+      await runProceduralAssetWorkflow({ node: args.node, input, fs: await getWorkspaceFs(), context, publish })
+      args.upsertUiToast({ id: `storyboard-widget-run-${args.id}`, kind: 'success', message: 'Created an editable native asset. Open its properties to adjust geometry and export.', ttlMs: 3200 })
+    } catch (error) {
+      if (args.propagateErrors) throw error
+      args.upsertUiToast({ id: `storyboard-widget-run-${args.id}`, kind: 'error', message: error instanceof Error ? error.message : 'Procedural asset creation failed.', ttlMs: 4200 })
+    }
+    return true
+  }
   const imageToGlbRunInput = resolveImageToGlbRunInput({
     node: imageToThreeJsNode,
     connectedValuesBySchemaPath: connectedValuesInput?.connectedValuesByNodeId.get(connectedValuesInput.targetNodeId),

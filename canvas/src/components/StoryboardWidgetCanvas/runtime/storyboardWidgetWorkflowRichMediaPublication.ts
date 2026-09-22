@@ -1,4 +1,5 @@
 import { buildTextWidgetOutputPatch, clearRichMediaOutputProperties, isRichMediaOutputTargetNode } from '@/features/chat/richMediaRun'
+import { createProceduralAssetPanelPublisher, type ProceduralAssetOutputPublisher } from '@/features/image-to-glb/proceduralAssetPanelPublication'
 import {
   clearLegacyImageToThreeJsDerivedOutputProperties,
   IMAGE_TO_THREEJS_OUTPUT_PANEL_ANCHOR_ID_PROPERTY,
@@ -129,6 +130,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
   publishMediaRunOutputToRichMediaPanel: StoryboardWidgetMediaRunOutputPublisher
   publishImageToThreeJsRunOutputToRichMediaPanel: StoryboardWidgetImageToThreeJsRunOutputPublisher
   publishImageToGlbRunOutputToRichMediaPanel: StoryboardWidgetImageToGlbRunOutputPublisher
+  publishProceduralAssetRunOutputToRichMediaPanel: ProceduralAssetOutputPublisher
   restoreImageToThreeJsInputProjection: StoryboardWidgetImageToThreeJsInputRecovery
   resolveImageToThreeJsOwnedOutputPanelRunInput: StoryboardWidgetImageToThreeJsOutputInputResolver
   publishAnnotationRunOutputToRichMediaPanel: StoryboardWidgetAnnotationRunOutputPublisher
@@ -465,7 +467,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
     })
   }
 
-  const publishImageDerivedOutputToRichMediaPanel = (params: {
+  const publishAssetDerivedOutputToRichMediaPanel = (params: {
     panelArgs: { anchorNode: GraphNode; patch: Record<string, unknown> }
     ensureOutputEdge: (edgeArgs: {
       anchorNode: GraphNode
@@ -490,8 +492,8 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
       }) => string
     }) => string | null
     onPublished?: (anchorNode: GraphNode) => void
-  }): void => {
-    args.withRunLayoutMutationGuard(() => {
+  }): boolean => {
+    return args.withRunLayoutMutationGuard(() => {
       const transaction = createStoryboardWidgetWorkflowPublicationTransaction({
         readLiveDraftGraphData: args.readLiveDraftGraphData,
         commitDraftGraphDataUpdate: args.commitDraftGraphDataUpdate,
@@ -500,7 +502,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
         appendWorkflowOutputEdge: args.appendWorkflowOutputEdge,
         scheduleWorkflowOutputEdgeRefresh: args.scheduleWorkflowOutputEdgeRefresh,
       })
-      if (!transaction) return
+      if (!transaction) return false
       const panelNodeId = params.ensureOutputPanelNodeId({
         context: args.context,
         graphForRun: args.graphForRun,
@@ -509,7 +511,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
         readLiveDraftGraphData: transaction.readDraftGraphData,
         appendDraftNode: transaction.appendDraftNode,
       })
-      if (!panelNodeId) return
+      if (!panelNodeId) return false
       const existingPanelBeforePatch = transaction.readDraftGraphData().nodes.find(node => String(node?.id || '').trim() === panelNodeId) || null
       const existingPanelBeforePatchProps = (existingPanelBeforePatch?.properties || {}) as Record<string, unknown>
       const rawPatch = {
@@ -534,17 +536,18 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
         commitDraftGraphDataUpdate: transaction.commitDraftGraphDataUpdate,
         scheduleWorkflowOutputEdgeRefresh: () => undefined,
       })
-      transaction.finish({
+      const published = transaction.finish({
         preferPublishedGraphCommit: true,
         updatedNodeIds: [panelNodeId],
         appendedEdges: outputEdge ? [outputEdge] : [],
       })
       params.onPublished?.(params.panelArgs.anchorNode)
+      return published
     })
   }
 
   const publishImageToThreeJsRunOutputToRichMediaPanel: StoryboardWidgetImageToThreeJsRunOutputPublisher = panelArgs => {
-    publishImageDerivedOutputToRichMediaPanel({
+    publishAssetDerivedOutputToRichMediaPanel({
       panelArgs,
       ensureOutputPanelNodeId: ensureStoryboardWidgetImageToThreeJsOutputPanelNodeId,
       ensureOutputEdge: ensureStoryboardWidgetImageToThreeJsOutputEdge,
@@ -553,7 +556,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
   }
 
   const publishImageToGlbRunOutputToRichMediaPanel: StoryboardWidgetImageToGlbRunOutputPublisher = panelArgs => {
-    publishImageDerivedOutputToRichMediaPanel({
+    publishAssetDerivedOutputToRichMediaPanel({
       panelArgs,
       ensureOutputPanelNodeId: ensureStoryboardWidgetImageToGlbOutputPanelNodeId,
       ensureOutputEdge: ensureStoryboardWidgetImageToGlbOutputEdge,
@@ -580,6 +583,7 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
     publishMediaRunOutputToRichMediaPanel,
     publishImageToThreeJsRunOutputToRichMediaPanel,
     publishImageToGlbRunOutputToRichMediaPanel,
+    publishProceduralAssetRunOutputToRichMediaPanel: createProceduralAssetPanelPublisher(publishAssetDerivedOutputToRichMediaPanel),
     restoreImageToThreeJsInputProjection: restoreLegacyImageToThreeJsInputProjection,
     resolveImageToThreeJsOwnedOutputPanelRunInput,
     publishAnnotationRunOutputToRichMediaPanel,

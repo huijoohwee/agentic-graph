@@ -18,7 +18,7 @@ import { getWidgetRegistryEntryLabel } from '@/features/storyboard-widget-manage
 import { applyConnectedValuesToNodeForRender, hasConnectedValuesBySchemaPath } from '@/lib/render/effectiveMediaNode'
 import {
   buildRichMediaPanelOverlayState,
-  isMarkerOwnedImageDerivedOutputPanel,
+  isMarkerOwnedAssetOutputPanel,
   type RichMediaPanelOverlayState,
 } from '@/lib/render/richMediaPanelState'
 import { shouldUseWebpageAssetPathProxyUrl } from '@/lib/url'
@@ -33,6 +33,7 @@ import {
   isImageToGlbOutputPanel,
 } from '@/features/image-to-glb/imageToGlbContract'
 import type { NodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
+import { isProceduralAssetOutputPanel } from '@/features/image-to-glb/proceduralAssetWorkflowContract'
 import { isRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 
@@ -140,7 +141,7 @@ function extractStandaloneMarkdownLinkUrlFromText(rawText: unknown): string {
 
 function chooseOpenUrl(node: GraphNode, specUrl: string): string {
   const props = (node.properties || {}) as Record<string, unknown>
-  if (isImageToGlbOutputPanel(props)) return String(specUrl || '').trim()
+  if (isImageToGlbOutputPanel(props) || isProceduralAssetOutputPanel(props)) return String(specUrl || '').trim()
   const fromOutputSourceUrl = typeof props.outputSourceUrl === 'string' ? String(props.outputSourceUrl || '').trim() : ''
   if (fromOutputSourceUrl) return fromOutputSourceUrl
   const fromUrl = typeof props.url === 'string' ? String(props.url || '').trim() : ''
@@ -341,7 +342,7 @@ export function listMediaOverlayNodes(args: {
     // outputs are authoritative publications, so recover their authored node
     // from the graph lookup before deriving the media spec.
     const authoredNode = externalNodeById?.get(id)
-    const n0 = authoredNode && isMarkerOwnedImageDerivedOutputPanel(authoredNode)
+    const n0 = authoredNode && isMarkerOwnedAssetOutputPanel(authoredNode)
       ? authoredNode
       : renderNode
 
@@ -357,7 +358,7 @@ export function listMediaOverlayNodes(args: {
     const baseSpec = getNodeMediaSpec(n0) || buildRichMediaPanelFallbackSpec({ node: n0, panel })
     const nodeForSpec = (() => {
       if (!hasConnectedValuesBySchemaPath(connectedValuesBySchemaPath)) return n0
-      if (isMarkerOwnedImageDerivedOutputPanel(n0)) return n0
+      if (isMarkerOwnedAssetOutputPanel(n0)) return n0
       if (!isRichMediaPanel && baseSpec) return n0
       const connectedNode = applyConnectedValuesToNodeForRender({ node: n0, connectedValuesBySchemaPath })
       const connectedPanel = isRichMediaPanel

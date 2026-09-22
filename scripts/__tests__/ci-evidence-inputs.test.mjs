@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { test } from 'node:test'
 import { load } from 'js-yaml'
-import { ownerInputs } from '../ci-evidence-inputs.mjs'
+import { ownerInputs, toolVersion } from '../ci-evidence-inputs.mjs'
 import { readContract } from '../collaboration-contract.mjs'
 import { captureCiInputs, validateCiEvidencePolicy } from '../../node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs'
 
@@ -19,6 +19,43 @@ const sample = (event, paths, extra = {}) => ownerInputs({ contract,
   environment: { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: event },
   gitText: () => paths.map(p => `${p}\0`).join(''),
   resolveCi: () => ({ base: 'a'.repeat(40) }), versions: { python: '3.11', chrome: '140' }, ...extra })
+
+test('version evidence retries one bounded timeout and returns the exact observed version', () => {
+  const calls = []
+  const result = toolVersion('google-chrome', ['--version'], { execute: (...args) => {
+    calls.push(args)
+    if (calls.length === 1) throw Object.assign(new Error('cold probe'), { code: 'ETIMEDOUT' })
+    return 'Google Chrome 140.0.7339.185\n'
+  } })
+  assert.equal(result, 'Google Chrome 140.0.7339.185')
+  assert.equal(calls.length, 2)
+  assert.deepEqual(calls[0], calls[1])
+  assert.equal(calls[0][2].timeout, 5000)
+  assert.equal(calls[0][2].maxBuffer, 4096)
+  assert.equal(calls[0][2].killSignal, 'SIGKILL')
+})
+
+test('repeated timeout and non-timeout probe failures cannot become reusable evidence', () => {
+  for (const [code, attempts] of [['ETIMEDOUT', 2], ['ENOENT', 1], ['ENOBUFS', 1], [undefined, 1]]) {
+    let calls = 0
+    const failure = Object.assign(new Error('probe failed'), { code })
+    assert.throws(() => toolVersion('google-chrome', ['--version'], { execute: () => {
+      calls += 1
+      throw failure
+    } }), error => error === failure)
+    assert.equal(calls, attempts)
+  }
+})
+
+test('successful probes are not repeated and empty output is not version evidence', () => {
+  for (const [output, expected] of [['Python 3.11.16\n', 'Python 3.11.16'], [' \n', null]]) {
+    let calls = 0
+    const read = () => toolVersion('python', ['--version'], { execute: () => { calls += 1; return output } })
+    if (expected) assert.equal(read(), expected)
+    else assert.throws(read, /no version evidence/)
+    assert.equal(calls, 1)
+  }
+})
 
 test('protected evidence captures the native docs checkout and rejects its dirty bytes', () => {
   const fixture = mkdtempSync(join(tmpdir(), 'ci-native-docs-owner-'))

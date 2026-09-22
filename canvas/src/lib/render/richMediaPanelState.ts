@@ -4,6 +4,7 @@ import { applyConnectedValuesToNodeForRender, hasConnectedValuesBySchemaPath } f
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { isImageToThreeJsOutputPanel } from '@/features/image-to-threejs/imageToThreeJsContract'
 import { isImageToGlbOutputPanel } from '@/features/image-to-glb/imageToGlbContract'
+import { isProceduralAssetOutputPanel } from '@/features/image-to-glb/proceduralAssetWorkflowContract'
 import { readNodeFieldBoolean, readNodeFieldString } from '@/lib/canvas/graph-elements/mediaSpecNodeFields'
 import { normalizeXrSceneMediaDragProjection, type XrSceneMediaDragProjection } from '@/lib/ui/mediaDragPayload'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
@@ -173,15 +174,15 @@ export function resolveRichMediaPanelRenderNode(args: {
   connectedValuesBySchemaPath?: FlowConnectedValuesBySchemaPath
 }): GraphNode {
   const baseNode = args.node
-  if (isMarkerOwnedImageDerivedOutputPanel(baseNode)) return baseNode
+  if (isMarkerOwnedAssetOutputPanel(baseNode)) return baseNode
   const connectedValuesBySchemaPath = args.connectedValuesBySchemaPath
   if (!hasConnectedValuesBySchemaPath(connectedValuesBySchemaPath)) return baseNode
   return applyConnectedValuesToNodeForRender({ node: baseNode, connectedValuesBySchemaPath })
 }
 
-export function isMarkerOwnedImageDerivedOutputPanel(node: GraphNode): boolean {
+export function isMarkerOwnedAssetOutputPanel(node: GraphNode): boolean {
   const properties = (node.properties || {}) as Record<string, unknown>
-  return isImageToThreeJsOutputPanel(properties) || isImageToGlbOutputPanel(properties)
+  return isImageToThreeJsOutputPanel(properties) || isImageToGlbOutputPanel(properties) || isProceduralAssetOutputPanel(properties)
 }
 
 export function buildRichMediaPanelOverlayState(args: {
@@ -192,7 +193,7 @@ export function buildRichMediaPanelOverlayState(args: {
 }): RichMediaPanelOverlayState | undefined {
   const baseNode = args.node
   if (String(baseNode.type || '').trim() !== FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID) return undefined
-  const connectedValuesBySchemaPath = isMarkerOwnedImageDerivedOutputPanel(baseNode)
+  const connectedValuesBySchemaPath = isMarkerOwnedAssetOutputPanel(baseNode)
     ? undefined
     : args.connectedValuesBySchemaPath
   const nodeForState = args.renderNode || resolveRichMediaPanelRenderNode({ node: baseNode, connectedValuesBySchemaPath })
