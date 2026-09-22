@@ -180,7 +180,7 @@ test('XR failed transaction rolls back all publication state', async () => {
       assert.deepEqual(mutations.map(item => item.collectionName), ['documents', 'syncOutbox'])
       const [document, outbox] = mutations
       assert.ok(document.kind === 'upsert' && document.collectionName === 'documents')
-      assert.ok(outbox.kind === 'upsert')
+      assert.ok(outbox.kind === 'upsert' && outbox.collectionName === 'syncOutbox')
       documentId = document.record.id
       assert.equal(outbox.record.recordId, documentId)
       // Abort after both writes.
