@@ -12,6 +12,8 @@ class Recorder extends EventTarget {
   state: RecordingState = 'inactive'
   mimeType = 'video/mp4'
   start() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('start'))) }
+  pause() { this.state = 'paused'; queueMicrotask(() => this.dispatchEvent(new Event('pause'))) }
+  resume() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('resume'))) }
   requestData() {
     const event = new Event('dataavailable')
     Object.defineProperty(event, 'data', { value: new Blob(['test bytes']) })
@@ -42,7 +44,7 @@ async function fixture(run: (value: {
         if (this.width !== 32) { copiedSourceWidths.push(source.width); recordedDimensions.push([this.width, this.height]) }
       },
       getImageData: () => {
-        assert.equal(Recorder.last?.state, 'inactive', 'GPU readback must occur after recorder stop')
+        assert.notEqual(Recorder.last?.state, 'recording', 'GPU readback must occur while recording is paused or stopped')
         return { data: new Uint8ClampedArray(32 * 32 * 4).fill(this.pixel) }
       },
     } }
@@ -74,9 +76,11 @@ async function fixture(run: (value: {
     await run({
       capture: options => captureXrSceneMp4({ canvas: source as unknown as HTMLCanvasElement, scene,
         isCurrent: () => current, binding, ...options,
-        verify: async (_blob, _duration, _signal, finalFrame) => {
+        verify: async (_blob, _duration, _signal, finalFrame, initialFrame) => {
+          assert.equal(initialFrame?.[0], 200, 'the opening reference must retain the warmed zero pose')
           assert.equal(finalFrame?.[0], 80, 'the retained reference must precede camera restoration')
-          return { durationSeconds: 0.08, decodedFrames: 3, width: 160, height: 90, sampleHashes: ['a', 'b', 'c'], finalFrameVerified: true, finalFrameMeanError: 0 }
+          return { durationSeconds: 0.08, decodedFrames: 3, width: 160, height: 90, sampleHashes: ['a', 'b', 'c'],
+            initialFrameVerified: true, initialFrameMeanError: 0, finalFrameVerified: true, finalFrameMeanError: 0 }
         } }),
       binding, advanceWithoutRender: () => { renderEnabled = false; time = 0.08; for (const listener of listeners) listener() },
       resumeRendering: () => { renderEnabled = true },
@@ -120,8 +124,69 @@ test('final authored image survives faster rendering, slow recorder sampling and
     assert.equal((await value.capture()).status, 'captured')
     assert.ok(value.sampledPixels().length >= 2)
     assert.ok(value.sampledPixels().slice(-2).every(pixel => pixel === 80))
-    assert.equal(value.frameRequests(), automaticOnly ? 0 : 1)
+    assert.equal(value.frameRequests(), automaticOnly ? 0 : 2)
   })
+})
+
+test('delayed Timeline startup keeps recording paused and requests the retained opening image on first advance', async () => {
+  await fixture(async value => {
+    const play = value.binding.play
+    let ready: () => void = () => {}
+    const requested = new Promise<void>(resolve => { ready = resolve })
+    value.binding.play = () => { assert.equal(Recorder.last?.state, 'paused'); ready() }
+    const capture = value.capture()
+    await requested
+    await new Promise(resolve => setTimeout(resolve, 30))
+    assert.equal(Recorder.last?.state, 'paused')
+    assert.equal(value.frameRequests(), 0)
+    play()
+    assert.equal((await capture).status, 'captured')
+    assert.equal(value.sampledPixels()[0], 200)
+  })
+})
+
+test('first native transport advance larger than one authored frame rejects before resuming', async () => {
+  await fixture(async value => {
+    let requested = false
+    value.binding.play = () => { requested = true }
+    value.binding.transportTime = () => requested ? 0.04 : 0
+    await assert.rejects(value.capture(), /skipped the opening frame/)
+    assert.equal(value.frameRequests(), 0)
+    assert.equal(value.stopped(), 1)
+    acquireVideoSequenceRecorderLease()()
+  })
+})
+
+test('clock jump between readiness and resume still rejects before recording resumes', async () => {
+  await fixture(async value => {
+    let reads = 0
+    value.binding.play = () => {}
+    value.binding.transportTime = () => ++reads === 1 ? 0.02 : 0.05
+    await assert.rejects(value.capture(), /before MP4 resume/)
+    assert.equal(value.frameRequests(), 0)
+    assert.equal(value.stopped(), 1)
+  })
+})
+
+test('cancellation while waiting for pause, clock advance or resume releases the recorder', async () => {
+  for (const phase of ['pause', 'clock', 'resume'] as const) {
+    const pause = Recorder.prototype.pause
+    const resume = Recorder.prototype.resume
+    try {
+      if (phase === 'pause') Recorder.prototype.pause = function () { this.state = 'paused' }
+      if (phase === 'resume') Recorder.prototype.resume = function () { this.state = 'recording' }
+      await fixture(async value => {
+        const controller = new AbortController()
+        if (phase !== 'resume') value.binding.play = () => {}
+        const timer = setTimeout(() => controller.abort(), 30)
+        try { await assert.rejects(value.capture({ signal: controller.signal }), { name: 'AbortError' }) }
+        finally { clearTimeout(timer) }
+        assert.equal(value.stopped(), 1)
+        assert.equal(value.scene.onAfterRender, value.initialHook)
+        acquireVideoSequenceRecorderLease()()
+      })
+    } finally { Recorder.prototype.pause = pause; Recorder.prototype.resume = resume }
+  }
 })
 
 test('cancellation during the final sampler interval releases tracks and the shared lease', async () => {

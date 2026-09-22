@@ -107,6 +107,21 @@ test('localized wrong endpoint pixels reject even when the whole-frame average i
   })
 })
 
+test('decoded opening pose is required independently of a matching final frame', async () => {
+  await decoderFixture(false, async () => {
+    const result = await verifyXrSceneMp4(new Blob([container()]), 2, undefined,
+      new Uint8ClampedArray(32 * 32 * 4).fill(3), new Uint8ClampedArray(32 * 32 * 4).fill(1))
+    assert.equal(result.initialFrameVerified, true)
+    assert.equal(result.initialFrameMeanError, 0)
+    assert.equal(result.finalFrameVerified, true)
+  })
+  await decoderFixture(false, async cleanup => {
+    await assert.rejects(verifyXrSceneMp4(new Blob([container()]), 2, undefined,
+      new Uint8ClampedArray(32 * 32 * 4).fill(3), new Uint8ClampedArray(32 * 32 * 4).fill(120)), /authored opening pose/)
+    assert.equal(cleanup(), 2)
+  })
+})
+
 test('fragmented decode cancels while the browser play promise never settles', async () => {
   const controller = new AbortController()
   await decoderFixture(false, async (cleanup, pendingEndedListeners) => {
