@@ -56,10 +56,10 @@ export function summarizeDesignTokens(args: {
     add(types, text(node.type).slice(0, 128), nodeId)
     const ancestors = new WeakSet<object>()
     const walk = (value: unknown, path: string, depth: number): void => {
-      if (visitedProperties >= DESIGN_SCAN_LIMITS.properties || depth > DESIGN_SCAN_LIMITS.depth || path.length > 256) {
-        truncated = true; return
-      }
+      if (visitedProperties >= DESIGN_SCAN_LIMITS.properties) { truncated = true; return }
       visitedProperties += 1
+      // Rejected paths still consume work; otherwise wide malformed siblings bypass the cap.
+      if (depth > DESIGN_SCAN_LIMITS.depth || path.length > 256) { truncated = true; return }
       if (object(value)) {
         if (ancestors.has(value)) { truncated = true; return }
         ancestors.add(value)
