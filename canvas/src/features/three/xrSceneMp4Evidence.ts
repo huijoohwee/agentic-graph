@@ -5,6 +5,23 @@ export const XR_MP4_FRAME_SAMPLE_SIZE = 32
 export type XrMp4DecodedEvidence = {
   durationSeconds: number; decodedFrames: number; width: number; height: number; sampleHashes: string[]
   finalFrameVerified?: boolean; finalFrameMeanError?: number
+  initialFrameVerified?: boolean; initialFrameMeanError?: number
+}
+function comparePose(pixels: Uint8ClampedArray, reference: Uint8ClampedArray, pose: 'initial' | 'final'): number {
+  if (reference.length !== pixels.length) throw new Error(`MP4 ${pose} reference has invalid dimensions.`)
+  let error = 0; let mismatchedPixels = 0
+  for (let index = 0; index < pixels.length; index += 4) {
+    const distance = Math.abs(pixels[index] - reference[index])
+      + Math.abs(pixels[index + 1] - reference[index + 1])
+      + Math.abs(pixels[index + 2] - reference[index + 2])
+    error += distance
+    if (distance / 3 > 32) mismatchedPixels++
+  }
+  const meanError = error / (pixels.length / 4 * 3)
+  if (meanError > 12 || mismatchedPixels > pixels.length / 4 * 0.08) {
+    throw new Error(`MP4 ${pose} decoded frame does not match the ${pose === 'initial' ? 'authored opening pose' : 'authored endpoint'} (meanError=${meanError}, mismatchedPixels=${mismatchedPixels}).`)
+  }
+  return meanError
 }
 export function assertXrMp4Container(bytes: ArrayBuffer): void {
   if (bytes.byteLength < 32 || bytes.byteLength > XR_MP4_MAX_BYTES) throw new Error('MP4 output has an invalid byte size.')
@@ -53,6 +70,7 @@ function waitForMedia(video: HTMLVideoElement, eventName: string, signal?: Abort
 /** Decode the actual recorder bytes; MIME labels and an ftyp box alone are not proof. */
 export async function verifyXrSceneMp4(
   blob: Blob, expectedDuration: number, signal?: AbortSignal, expectedFinalFrame?: Uint8ClampedArray,
+  expectedInitialFrame?: Uint8ClampedArray,
 ): Promise<XrMp4DecodedEvidence> {
   if (signal?.aborted) throw new DOMException('MP4 export cancelled.', 'AbortError')
   if (blob.size > XR_MP4_MAX_BYTES) throw new Error('MP4 export exceeds the 64 MB limit.')
@@ -94,6 +112,7 @@ export async function verifyXrSceneMp4(
     if (!context) throw new Error('MP4 frame verification is unavailable.')
     const sampleHashes: string[] = []
     let finalFrameMeanError: number | undefined
+    let initialFrameMeanError: number | undefined
     for (const time of [0, durationSeconds / 2, Math.max(0, durationSeconds - 0.001)]) {
       if (signal?.aborted) throw new DOMException('MP4 export cancelled.', 'AbortError')
       if (Math.abs(video.currentTime - time) > 0.001) {
@@ -111,25 +130,14 @@ export async function verifyXrSceneMp4(
       }
       if (!alpha) throw new Error('MP4 output has an empty decoded frame.')
       sampleHashes.push((hash >>> 0).toString(16))
+      if (expectedInitialFrame && sampleHashes.length === 1) initialFrameMeanError = comparePose(pixels, expectedInitialFrame, 'initial')
       if (expectedFinalFrame && sampleHashes.length === 3) {
-        if (expectedFinalFrame.length !== pixels.length) throw new Error('MP4 endpoint reference has invalid dimensions.')
-        let error = 0; let mismatchedPixels = 0
-        for (let index = 0; index < pixels.length; index += 4) {
-          const distance = Math.abs(pixels[index] - expectedFinalFrame[index])
-            + Math.abs(pixels[index + 1] - expectedFinalFrame[index + 1])
-            + Math.abs(pixels[index + 2] - expectedFinalFrame[index + 2])
-          error += distance
-          if (distance / 3 > 32) mismatchedPixels++
-        }
-        finalFrameMeanError = error / (pixels.length / 4 * 3)
-        // Lossy codec/chroma conversion is allowed; a different camera image is not.
-        if (finalFrameMeanError > 12 || mismatchedPixels > pixels.length / 4 * 0.08) {
-          throw new Error(`MP4 final decoded frame does not match the authored endpoint (meanError=${finalFrameMeanError}, mismatchedPixels=${mismatchedPixels}).`)
-        }
+        finalFrameMeanError = comparePose(pixels, expectedFinalFrame, 'final')
       }
     }
     return { durationSeconds, decodedFrames: sampleHashes.length, width: video.videoWidth, height: video.videoHeight, sampleHashes,
-      ...(expectedFinalFrame ? { finalFrameVerified: true, finalFrameMeanError } : {}) }
+      ...(expectedFinalFrame ? { finalFrameVerified: true, finalFrameMeanError } : {}),
+      ...(expectedInitialFrame ? { initialFrameVerified: true, initialFrameMeanError } : {}) }
   } finally {
     video.pause(); video.removeAttribute('src'); video.load(); URL.revokeObjectURL(url)
   }

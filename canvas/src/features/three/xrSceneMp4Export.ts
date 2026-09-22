@@ -16,6 +16,7 @@ export type XrMp4SourceBinding = {
   fps: number
   current: () => boolean
   time: () => number
+  transportTime?: () => number
   prepare: () => void
   play: () => void
   pause: () => void
@@ -41,6 +42,7 @@ export function createXrMp4SourceBinding(): XrMp4SourceBinding {
   return {
     durationSeconds: motion.plan.durationSeconds, fps: motion.plan.fps, current,
     time: () => readXrMotionReferenceRuntime().playheadSeconds,
+    transportTime: () => readXrAnimationTransport().timeSeconds,
     prepare: () => {
       pause()
       state.setBottomSurfaceTab('timeline'); state.setBottomSurfaceCollapsed(false)
@@ -168,6 +170,30 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     bytes += event.data.size
     if (bytes > XR_MP4_MAX_BYTES) { failure = new Error('MP4 recording exceeds the 64 MB limit.'); check() }
   }
+  const recorderEvent = (name: 'pause' | 'resume', action: () => void) => new Promise<void>((resolve, reject) => {
+    const activeRecorder = recorder!
+    const finish = (error?: Error) => {
+      clearTimeout(timer); activeRecorder.removeEventListener(name, done)
+      verificationAbort.signal.removeEventListener('abort', aborted)
+      if (error) reject(error); else resolve()
+    }
+    const done = () => { try { assertCurrent(); finish() } catch (error) { finish(error as Error) } }
+    const aborted = () => finish(failure || abortError())
+    const timer = setTimeout(() => finish(new Error(`MP4 recorder did not acknowledge ${name}.`)), 5_000)
+    activeRecorder.addEventListener(name, done, { once: true })
+    verificationAbort.signal.addEventListener('abort', aborted, { once: true })
+    try { assertCurrent(); action() } catch (error) { finish(error as Error) }
+  })
+  const sampleRetainedImage = () => {
+    const sample = document.createElement('canvas')
+    sample.width = XR_MP4_FRAME_SAMPLE_SIZE; sample.height = XR_MP4_FRAME_SAMPLE_SIZE
+    try {
+      const context = sample.getContext('2d', { willReadFrequently: true })
+      if (!context) throw new Error('MP4 pose verification is unavailable.')
+      context.drawImage(captureSurface, 0, 0, sample.width, sample.height)
+      return context.getImageData(0, 0, sample.width, sample.height).data
+    } finally { sample.width = 0; sample.height = 0 }
+  }
   try {
     assertCurrent()
     args.scene.onAfterRender = afterRender
@@ -184,8 +210,22 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     recorder.addEventListener('error', check)
     output = collectVideoSequenceRecorderOutput(recorder)
     void output.chunks.catch(error => { failure = error as Error; check() })
-    recorder.start(250)
+    // Exclude React/Timeline startup from recording; state alone is not the
+    // recorder's pause acknowledgement. The retained surface is the zero pose.
+    await recorderEvent('pause', () => { recorder!.start(250); recorder!.pause() })
+    const expectedInitialFrame = sampleRetainedImage()
     binding.play()
+    await waitRendered(() => {
+      const time = binding.transportTime?.() ?? binding.time()
+      if (time > 1 / binding.fps + 1e-7) throw new Error('The XR clock skipped the opening frame during MP4 startup.')
+      return time > 0
+    }, 5_000)
+    await recorderEvent('resume', () => {
+      const time = binding.transportTime?.() ?? binding.time()
+      if (!(time > 0 && time <= 1 / binding.fps + 1e-7)) throw new Error('The XR clock skipped the opening frame before MP4 resume.')
+      recorder!.resume()
+      ;(stream!.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack).requestFrame?.()
+    })
     await waitRendered(() => {
       if (!recorder || recorder.state !== 'recording' || output?.hasStopped()) throw new Error('MP4 recorder stopped before the scene finished.')
       const progress = Math.floor(Math.min(95, renderedTime / binding.durationSeconds * 95))
@@ -216,16 +256,10 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     stopVideoSequenceCaptureTracks(stream); stream = null
     // Readback may synchronize the GPU. Do it after recording ends so its cost
     // cannot extend the encoded duration; the retained surface is still frozen.
-    const finalSample = document.createElement('canvas')
-    finalSample.width = XR_MP4_FRAME_SAMPLE_SIZE; finalSample.height = XR_MP4_FRAME_SAMPLE_SIZE
-    const finalContext = finalSample.getContext('2d', { willReadFrequently: true })
-    if (!finalContext) throw new Error('MP4 endpoint verification is unavailable.')
-    finalContext.drawImage(captureSurface, 0, 0, finalSample.width, finalSample.height)
-    const expectedFinalFrame = finalContext.getImageData(0, 0, finalSample.width, finalSample.height).data
-    finalSample.width = 0; finalSample.height = 0
+    const expectedFinalFrame = sampleRetainedImage()
     const blob = new Blob(chunks, { type: recorder.mimeType || plan.mimeType })
-    const evidence = await (args.verify || verifyXrSceneMp4)(blob, binding.durationSeconds, verificationAbort.signal, expectedFinalFrame)
-    if (!evidence.finalFrameVerified) throw new Error('MP4 endpoint was not verified.')
+    const evidence = await (args.verify || verifyXrSceneMp4)(blob, binding.durationSeconds, verificationAbort.signal, expectedFinalFrame, expectedInitialFrame)
+    if (!evidence.initialFrameVerified || !evidence.finalFrameVerified) throw new Error('MP4 opening pose or endpoint was not verified.')
     assertCurrent()
     args.onProgress?.(1)
     return { status: 'captured', blob, evidence: { ...evidence, renderedFrames } }
