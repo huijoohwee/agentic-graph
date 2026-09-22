@@ -191,7 +191,8 @@ test('XR v2 browser source rejects weakened explicit AC-11/AC-12 evidence flow',
   assert.doesNotThrow(() => verifyXrV2BrowserSmokeSourceContract(REPOSITORY_ROOT))
   const mutations = [
     ['software WebGL GL backend', "'--use-gl=angle'", "'--disable-gpu'"],
-    ['software WebGL ANGLE backend', "'--use-angle=swiftshader-webgl'", "'--use-angle=default'"],
+    ['software GLES ANGLE driver', "'--use-angle=swiftshader'", "'--use-angle=default'"],
+    ['software WebGL fallback regression', "'--use-angle=swiftshader'", "'--use-angle=swiftshader-webgl'"],
     ['explicit SwiftShader admission', "'--enable-unsafe-swiftshader'", "'--disable-software-rasterizer'"],
     ['initial cold navigation timeout', 'timeout: coldStartTimeoutMs,\n  })', 'timeout: 30_000,\n  })'],
     ['local-first scope', "'data-kg-xr-v2-saved-asset-scope'), 'local-first-explicit-existing-storage'", "'data-kg-xr-v2-saved-asset-scope'), 'cross-device'"],
