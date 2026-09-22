@@ -1,3 +1,4 @@
+import { XrSubjectAuthoringControls } from './XrSubjectAuthoringControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { XrSubjectTransformCard } from '@/features/command-menu/XrMediaLibraryCards'
@@ -30,7 +31,8 @@ export function XrSubjectTransformEditor() {
   const runControl = (input: XrSceneControlInput) => {
     const current = isXrSubjectDraftCurrent(draft.current, readContext())
       && hydrateCanonicalXrMotionReferenceRuntime() && isXrSubjectDraftCurrent(draft.current, readContext())
-    const result = current ? controlLocalXrScene(input) : { ok: false, message: 'This object draft belongs to an earlier scene or selection. Review the current object and edit again.' }
+    const catalogOnlyChange = subject?.construction && ((input.assetId !== undefined && input.assetId !== subject.assetId) || (input.color !== undefined && input.color !== subject.color))
+    const result = current && catalogOnlyChange ? { ok: false, message: 'Edit this subject’s parts and materials in Construction recipe or its procedural controls.' } : current ? controlLocalXrScene(input) : { ok: false, message: 'This object draft belongs to an earlier scene or selection. Review the current object and edit again.' }
     useGraphStore.getState().pushUiToast({ id: 'xr:timeline:transform', kind: result.ok ? 'success' : 'error', message: result.message })
     return result
   }
@@ -49,6 +51,7 @@ export function XrSubjectTransformEditor() {
 
       </section>
       <XrSubjectTransformCard subject={subject} sceneReady={readXrSceneDocumentReady()} runControl={runControl} />
+      <XrSubjectAuthoringControls subject={subject} context={context} />
     </section> : <section className="mt-2 grid gap-2 text-xs">
       <p>{stageObject!.nativeBodyId ? 'Position is controlled by the playground simulation.' : 'Placement belongs to the Tropical Playground environment.'} Select this object as a camera target or inspect its Timeline lane.</p>
       <output aria-label={`${label} position`}>Position · {resolveXrShotTargetPosition(runtime.plan, stageObject!.id, runtime.playheadSeconds).map(value => value.toFixed(2)).join(', ')} m</output>

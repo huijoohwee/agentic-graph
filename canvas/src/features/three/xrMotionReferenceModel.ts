@@ -1,3 +1,4 @@
+import { readXrSubjectConstruction, type XrSubjectConstruction } from './xrSubjectAuthoring'
 import { readXrPresentationCue, type XrPresentationCue } from './xrStoryPresentation'
 import { readXrSceneAppearance, type XrSceneAppearance } from './xrSceneAppearance'
 import type { GraphData, GraphNode, JSONValue } from '@/lib/graph/types'
@@ -109,6 +110,7 @@ export type XrMotionReferenceCameraMark = Readonly<{
 }>
 
 export type XrMotionReferenceSubject = Readonly<{
+  construction?: XrSubjectConstruction
   id: string
   assetId: string
   category: 'people' | 'animals' | 'vehicles' | 'furniture' | 'props'
@@ -416,6 +418,7 @@ function normalizeSubjects(value: unknown): readonly XrMotionReferenceSubject[] 
     byId.set(id, Object.freeze({
       id,
       assetId: asset.id,
+      ...(record.construction === undefined ? {} : { construction: readXrSubjectConstruction(record.construction) }),
       category: asset.category,
       label: String(record.label || asset.label).trim().slice(0, 80) || asset.label,
       color: /^#[0-9a-f]{6}$/i.test(rawColor) ? rawColor.toLowerCase() : asset.defaultColor,
@@ -487,6 +490,7 @@ export function serializeXrMotionReferencePlan(plan: XrMotionReferencePlan): JSO
     subjects: plan.subjects.map(subject => ({
       id: subject.id,
       assetId: subject.assetId,
+      ...(subject.construction ? { construction: { ...subject.construction } } : {}),
       label: subject.label,
       color: subject.color,
       position: [...subject.position],

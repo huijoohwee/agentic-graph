@@ -1,5 +1,9 @@
+import * as THREE from 'three'
+import { ProceduralAssetSession } from '@/features/image-to-glb/proceduralAssetSession'
+import { createProceduralAssetFromText, PROCEDURAL_ASSET_TEXT_SUBJECTS } from '@/features/image-to-glb/proceduralAssetTextRecipe'
+import { resolveXrSubjectFootprint } from './xrMotionReferenceSubjectPlacement'
 import assert from 'node:assert/strict'
-import { captureXrSubjectDraftContext, isXrSubjectDraftCurrent } from './xrSubjectAuthoring'
+import { captureXrSubjectDraftContext, isXrSubjectDraftCurrent, XR_SUBJECT_GROUND_EPSILON_METERS, XrSubjectConstructionError } from './xrSubjectAuthoring'
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from './xrMotionReferenceModel'
 import type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
 
@@ -19,4 +23,70 @@ export function testXrSubjectDraftBindsDocumentPlanAndSelectionWithoutTransport(
   assert.equal(isXrSubjectDraftCurrent(draft, capture(source, { ...runtime, selectedShotTargetId: 'other' })), false)
   assert.equal(isXrSubjectDraftCurrent(draft, capture(source, { ...runtime, playheadSeconds: 2, revision: 93 })), true, 'Transport publication is not authored source replacement')
   assert.equal(isXrSubjectDraftCurrent(draft, capture(source, { ...runtime, plan: { ...plan, subjects: [] } })), false)
+
+  const session = new ProceduralAssetSession('/a.md#same-subject', createProceduralAssetFromText('blue robot', 7))
+  try {
+    assert.equal(session.setControl('width', 1.6), true)
+    const beforeInvalid = session.snapshot.lastValid
+    assert.equal(session.apply('{"arbitrary":"source"}'), false)
+    const construction = { proceduralAssetDocument: session.serialize(), proceduralAssetManifestPath: '/models/r1/manifest.json',
+      proceduralAssetWorkspaceParent: '/models', proceduralAssetSourcePath: '/a.md' }
+    const authored = readXrMotionReferencePlan({ subjects: [{ ...plan.subjects[0], construction }] })
+    const reloaded = readXrMotionReferencePlan(JSON.parse(JSON.stringify(serializeXrMotionReferencePlan(authored))))
+    assert.deepEqual(reloaded.subjects[0].construction, construction, 'Native document, recipe identity, controls and recoverable draft survive scene round-trip')
+    assert.equal(reloaded.subjects[0].id, 'same-subject')
+    assert.equal(reloaded.subjects[0].assetId, 'prop-crate', 'Catalog fallback identity is retained')
+    const restored = ProceduralAssetSession.restore(reloaded.subjects[0].construction!.proceduralAssetDocument)
+    try {
+      assert.deepEqual(restored.snapshot.lastValid, beforeInvalid)
+      assert.equal(restored.snapshot.draft, '{"arbitrary":"source"}')
+      const scene = restored.current.scene, mixer = new THREE.AnimationMixer(scene)
+      mixer.clipAction(scene.animations[0]).play()
+      const arm = scene.getObjectByName('Pivot-arm-left')!
+      mixer.setTime(0); const start = arm.quaternion.clone()
+      mixer.setTime(0.5); assert.ok(start.angleTo(arm.quaternion) > 0.4, 'Native joint clip samples shared seconds')
+      mixer.setTime(0); assert.ok(start.angleTo(arm.quaternion) < 1e-6, 'Backward scrubbing is deterministic')
+      mixer.stopAllAction(); mixer.uncacheRoot(scene)
+      assert.ok(resolveXrSubjectFootprint(reloaded.subjects[0]).sizeMeters[0] >= 1.6)
+    } finally { restored.dispose() }
+    const malformed = JSON.parse(construction.proceduralAssetDocument)
+    malformed.lastValid.parts[0].parentId = malformed.lastValid.parts[0].id
+    assert.throws(() => readXrMotionReferencePlan({ subjects: [{ ...plan.subjects[0], construction: { ...construction, proceduralAssetDocument: JSON.stringify(malformed) } }] }), /cycle|parent|hierarchy/i)
+    assert.throws(() => readXrMotionReferencePlan({ subjects: [{ ...plan.subjects[0], construction: { ...construction, proceduralAssetManifestPath: '/models/../outside' } }] }), /workspace path/)
+    assert.equal(readXrMotionReferencePlan(serializeXrMotionReferencePlan(plan)).subjects[0].construction, undefined)
+  } finally { session.dispose() }
+
+  const subjectFromSession = (native: ProceduralAssetSession, scale = 1) => readXrMotionReferencePlan({ subjects: [{
+    ...plan.subjects[0], scale, construction: { proceduralAssetDocument: native.serialize(),
+      proceduralAssetManifestPath: '/models/r1/manifest.json', proceduralAssetWorkspaceParent: '/models', proceduralAssetSourcePath: '/a.md' },
+  }] }).subjects[0]
+  for (const name of PROCEDURAL_ASSET_TEXT_SUBJECTS) {
+    const native = new ProceduralAssetSession(`/defaults.md#${name}`, createProceduralAssetFromText(name))
+    try {
+      const exactDocument = native.serialize()
+      const bounds = new THREE.Box3().setFromObject(native.current.scene)
+      const subject = subjectFromSession(native, 2)
+      const footprint = resolveXrSubjectFootprint(subject)
+      assert.ok(bounds.min.y >= -XR_SUBJECT_GROUND_EPSILON_METERS, `${name} remains a supported native default`)
+      assert.ok(Math.abs(footprint.sizeMeters[1] - bounds.max.y * 2) < 1e-10, `${name} height spans the ground origin to its scaled top`)
+      assert.equal(footprint.halfY, footprint.sizeMeters[1] / 2)
+      assert.equal(subject.construction!.proceduralAssetDocument, exactDocument, 'Ground admission does not translate or rewrite the recipe')
+    } finally { native.dispose() }
+  }
+  const elevated = createProceduralAssetFromText('box')
+  elevated.parts[0].position[1] = 2
+  const positiveSession = new ProceduralAssetSession('/a.md#elevated', elevated)
+  try { assert.equal(resolveXrSubjectFootprint(subjectFromSession(positiveSession)).sizeMeters[1], 2.5, 'Floating geometry conservatively includes its gap above the ground') }
+  finally { positiveSession.dispose() }
+  for (const [offset, accepted] of [[-XR_SUBJECT_GROUND_EPSILON_METERS / 2, true], [-XR_SUBJECT_GROUND_EPSILON_METERS * 2, false], [-1, false]] as const) {
+    const recipe = createProceduralAssetFromText('box')
+    recipe.parts[0].position[1] += offset
+    const native = new ProceduralAssetSession('/a.md#ground-boundary', recipe)
+    try {
+      const before = native.serialize()
+      if (accepted) assert.ok(subjectFromSession(native).construction, 'Only floating-point scale ground noise is tolerated')
+      else assert.throws(() => subjectFromSession(native), error => error instanceof XrSubjectConstructionError && /below its ground origin/.test(error.message))
+      assert.equal(native.serialize(), before, 'Admission rejection preserves the editable native document')
+    } finally { native.dispose() }
+  }
 }

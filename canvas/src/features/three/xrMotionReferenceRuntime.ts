@@ -1,3 +1,4 @@
+import { readXrSubjectConstruction } from './xrSubjectAuthoring'
 import type { XrSceneAppearance } from './xrSceneAppearance'
 import type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
 export type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
@@ -144,6 +145,7 @@ export function hydrateXrMotionReferenceRuntime(args: {
 }): XrMotionReferenceRuntimeSnapshot {
   const nextSourceSignature = sourceSignature(args.sceneKey, args.nodes, args.persistedValue)
   if (snapshot.sourceSignature === nextSourceSignature) return snapshot
+  const sourcePlan = readXrMotionReferencePlan(args.persistedValue, args.nodes)
   activeNodes = args.nodes.slice()
   if (snapshot.sceneKey === String(args.sceneKey || '') && snapshot.dirty) {
     archiveCast(snapshot.plan)
@@ -164,7 +166,7 @@ export function hydrateXrMotionReferenceRuntime(args: {
     })
   }
   dirtyCastArchive.clear()
-  const plan = readXrMotionReferencePlan(args.persistedValue, activeNodes)
+  const plan = sourcePlan
   const selectedActorId = plan.cast.some(track => track.actorId === snapshot.selectedActorId)
     ? snapshot.selectedActorId
     : plan.cast[0]?.actorId || ''
@@ -586,4 +588,11 @@ export function markXrMotionReferenceSaved(persistedValue: unknown): XrMotionRef
   const nextSourceSignature = sourceSignature(snapshot.sceneKey, activeNodes, persistedValue)
   dirtyCastArchive.clear()
   return publish({ ...snapshot, sourceSignature: nextSourceSignature, dirty: false })
+}
+
+/** Uses the existing plan transaction and spatial gate; no subject or transport store. */
+export function setXrSubjectConstruction(subjectId: string, value: unknown): XrMotionReferenceRuntimeSnapshot {
+  if (!snapshot.plan.subjects.some(subject => subject.id === subjectId)) throw new Error('Select an existing subject')
+  const construction = readXrSubjectConstruction(value)
+  return updatePlan({ ...planRecord(snapshot.plan), subjects: snapshot.plan.subjects.map(subject => subject.id === subjectId ? { ...subject, construction } : subject) }, undefined, spatialPlanGuard([subjectId]))
 }

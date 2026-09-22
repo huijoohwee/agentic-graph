@@ -219,3 +219,58 @@ Exact protected integration and recoverable closeout retain separate receipts.
 Acceptance: duplicate-ID document switch, same-document reparse, valid edit/save/reparse, and seek-preserved drafts/selection. Scope is the existing editor, one draft helper and two focused tests, plus these joined documents; ten active minutes, six files, no dependency, builder, rig schema, clock or renderer. Full model/rig/agent/export acceptance remains open. Focused and affected verification must be recorded separately; no runtime completion is claimed by this planning entry.
 
 Focused draft-context and mounted-editor regressions passed locally, including persisted Markdown/Source Files reparse and a Timeline seek that preserves the edited input. Full affected checks and browser proof remain pending; these focused results do not complete A01/A06 or the other acceptance criteria.
+
+
+### Selected-subject construction — S1 implementation checkpoint, 0.7.1
+
+`/change #xr.subject-authoring @codex` consumes protected Graph
+`795581f138393e4a89169d1373a9f3e2161cb63e` in the existing admitted private
+character lane. This checkpoint remains part of the 0.7.1 join; prior version
+and parent-version declarations remain unchanged. Twenty active minutes, two
+already-reserved helper modules, no additional checkout, dependency or service.
+
+The selected subject can use the existing bounded text constructor and native
+procedural controls. Its optional construction attachment retains the native
+session document byte-for-byte, including identity, intent, seed, stable part
+IDs, control schema/values, clips, last-valid recipe and rejected draft. The
+attachment stores existing workspace companion paths; it does not embed a
+second GLB or a second recipe schema. Native workspace/export prepares immutable
+companions before the existing scene metadata persistence commits the reference.
+Failed or stale completion cannot replace the subject; partial companions follow
+the existing workspace writer's recovery behavior. Scene normalization admits
+construction through the existing session parser and builder, and its derived
+bounds feed the existing placement gate. Catalog subjects retain their previous
+serialization/rendering when no attachment exists.
+
+Rendering reuses native parts/pivots and samples the first authored clip from the
+existing shared playhead. There is no second scene store, selection or clock.
+The native controls expose dimensions/materials and validated JSON for hierarchy,
+pivots and clips. Arbitrary code does not execute. Default catalog asset/color
+changes on an authored subject reject with guidance to its construction controls;
+per-field disable/visibility belongs to `XrMediaLibraryCards` outside this slice.
+The preview's first-clip sampling is not full clip selection/keyframe editing or
+new joint lanes. Bounds currently describe the admitted construction pose.
+
+The existing registered subject tests gain native-document round-trip, invalid
+hierarchy/path rejection, retained last-valid/draft, catalog preservation,
+backward joint sampling, mounted controls and seek-preserved editor assertions.
+They have not been run for this checkpoint: installed dependencies must first
+match this source. No runtime/browser/export acceptance is claimed. Next proof is
+focused subject plus existing procedural regressions, affected owner checks and
+real save/reopen/controls/shared-playhead browser inspection. A01-A09/B01-B08
+remain open; visual part selection/rig UI, multi-clip/keyframe Timeline projection,
+shared agent/WebMCP execution, full scene animated GLB, MP4 and cross-surface/demo
+parity still need their admitted owners and exact evidence.
+
+
+S1 repair checkpoint: construction controls now use captured context generations.
+Accepting a scene commit gives subsequent edits a fresh generation; old requests
+retain their invalidated generation even after selection/source returns to the
+same values. Context retirement aborts creation and remounts native controls.
+Workspace parent resolution uses the existing ancestor helper, including bare
+filenames at root. Mounted regressions cover create, second edit, pending
+selection-away-and-back rejection, and a fresh edit after rejection; not yet run.
+Malformed attachments now raise `XrSubjectConstructionError` before hydration
+mutates prior runtime state. The existing runtime bridge does not catch that
+new typed error: user-facing recovery still requires the unreserved
+`XrMotionReferenceRuntimeBridge.tsx` owner before this slice is release-ready.

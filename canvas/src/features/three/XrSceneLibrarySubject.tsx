@@ -1,3 +1,5 @@
+import { XrAuthoredSubjectGeometry } from './XrAuthoredSubjectGeometry'
+import { resolveXrSubjectConstructionBounds } from './xrSubjectAuthoring'
 import { XrSelectionBounds } from './XrSelectionBounds'
 import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
 import { XrStoryCharacter, XrSailboatGeometry, XrStoryEffect } from './XrProceduralStoryGeometry'
@@ -36,10 +38,11 @@ function resolveXrSceneSubjectIdentificationBounds(
 ): XrSceneSubjectIdentificationBounds | null {
   if (!enabled) return null
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
-  const [width, height, depth] = asset.dimensionsMeters
+  const bounds = subject.construction ? resolveXrSubjectConstructionBounds(subject.construction) : null
+  const [width, height, depth] = bounds ? bounds.max.map((value, index) => value - bounds.min[index]) : asset.dimensionsMeters
   return Object.freeze({
     name: `agentic_os_xr_scene_subject_identification_bounds_${subject.id}`,
-    position: Object.freeze([0, 0, height / 2] as const),
+    position: Object.freeze(bounds ? [(bounds.min[0] + bounds.max[0]) / 2, -(bounds.min[2] + bounds.max[2]) / 2, (bounds.min[1] + bounds.max[1]) / 2] as const : [0, 0, height / 2] as const),
     size: [width, depth, height] as [number, number, number],
     color: subject.color,
     userData: Object.freeze({
@@ -421,7 +424,7 @@ export function XrSceneLibrarySubject({
       >
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <XrSelectionBounds selected={selected} targetId={subject.id}>
-          {presentation?.cue !== 'collapse' ? <XrSceneLibraryAssetGeometry assetId={subject.assetId} color={subject.color} animationPose={animationPose} label={subject.label} /> : null}
+          {presentation?.cue !== 'collapse' ? subject.construction ? <XrAuthoredSubjectGeometry construction={subject.construction} /> : <XrSceneLibraryAssetGeometry assetId={subject.assetId} color={subject.color} animationPose={animationPose} label={subject.label} /> : null}
           {presentation ? <XrStoryEffect presentation={presentation} size={asset.dimensionsMeters} color={subject.color} /> : null}
           </XrSelectionBounds>
           {identificationBounds ? (
@@ -442,7 +445,7 @@ export function XrSceneLibrarySubject({
               />
             </mesh>
           ) : null}
-          <SubjectLabel label={subject.label} heightMeters={asset.dimensionsMeters[1]} selected={false} />
+          <SubjectLabel label={subject.label} heightMeters={subject.construction ? resolveXrSubjectConstructionBounds(subject.construction).max[1] : asset.dimensionsMeters[1]} selected={false} />
         </group>
       </group>
     </group>
