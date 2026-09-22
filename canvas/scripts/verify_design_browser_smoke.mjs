@@ -58,6 +58,9 @@ async function verify() {
       useGraphStore.getState().setFloatingPanelView('design')
       useGraphStore.getState().setFloatingPanelOpen(true)
     })
+    // The existing mobile Timeline covers other panels until closed through its own control.
+    const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
+    await timeline.getByRole('button', { name: 'Close', exact: true }).click()
     const panel = page.locator('[data-kg-floating-panel-root="true"]').getByRole('region', { name: 'Design panel', exact: true })
     await panel.getByRole('button', { name: 'Open Tokens', exact: true }).click()
     const review = panel.getByRole('region', { name: 'Design Tokens', exact: true })
@@ -143,7 +146,7 @@ async function verify() {
     assert.deepEqual(errors, [], 'No browser runtime errors')
     assert.deepEqual(externalRequests, [], 'Design review must make zero external requests')
     await writeFile(join(output, 'receipt.json'), JSON.stringify({ head: process.env.AG_DESIGN_EXPECTED_HEAD,
-      receipts, invalidInput: true, revisionInvalidation: true, cachedOffline: true, touchSelection: true, undoRedo: true, reducedMotionPreferenceObserved: true, renderedMotionAssessment: 'unassessed',
+      receipts, invalidInput: true, revisionInvalidation: true, cachedOffline: true, touchSelection: true, timelineClosedThroughUi: true, undoRedo: true, reducedMotionPreferenceObserved: true, renderedMotionAssessment: 'unassessed',
       externalRequests, runtimeErrors: errors, scope: 'local candidate; no production or complete accessibility claim' }, null, 2) + '\n')
     console.log('Design browser smoke passed:', output)
   } catch (error) {
