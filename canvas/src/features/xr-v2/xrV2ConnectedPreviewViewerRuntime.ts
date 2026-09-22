@@ -74,7 +74,8 @@ export function createXrV2ConnectedPreviewCanvasSession(
   }
   canvas.width = Math.max(96, canvas.width || 0)
   canvas.height = Math.max(64, canvas.height || 0)
-  const context = canvas.getContext('2d', { alpha: false })
+  // Every acknowledged edit reads pixels; keep this small surface off the shared GPU queue.
+  const context = canvas.getContext('2d', { alpha: false, willReadFrequently: true })
   if (!context) throw new Error('Connected preview viewer could not acquire a render context')
   const requestFrame = dependencies.requestFrame || scheduleXrV2ConnectedPreviewPaint
   const cancelFrame = dependencies.cancelFrame || (handle => {
