@@ -68,7 +68,7 @@ ci_scopes:
   design_review:
     roots: ["grph-shared/src/ui/kgToken", "canvas/src/lib/ui/tokens-ssot.ts", "canvas/src/lib/markdown.ts", "canvas/src/cli/gen-kg-tokens-css.ts", "canvas/src/features/design/", "canvas/src/features/design-system/", "canvas/src/features/agent-ready/localCanvasTopologyInspection.ts", "canvas/src/__tests__/designTokenSummary.test.ts", "canvas/src/__tests__/kgTokenSsot.test.ts", "canvas/scripts/verify_design_browser_smoke.mjs"]
     commands:
-      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "design.editor", "design.layers", "canvasView", "markdown.frontmatterParse", "markdown.frontmatter.parsesCanvasWorkspacePreset", "markdown.frontmatter.cachesPresetByFrontmatterBlock"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "design.editor", "design.layers", "ui.tokens.ssot", "ui.designTokens", "ui.designSystem", "canvasView", "markdown.frontmatterParse", "markdown.frontmatter.parsesCanvasWorkspacePreset", "markdown.frontmatter.cachesPresetByFrontmatterBlock"]
       - ["node", "canvas/scripts/verify_design_browser_smoke.mjs"]
   node_impact_inspector:
     roots: ["canvas/src/features/graph-inspector/", "canvas/src/__tests__/nodeImpactInspector.test.tsx", "canvas/src/features/panels/views/OrchestratorSettingsSection.tsx", "canvas/src/features/agent-graph/agentGraphVisualEvidence.ts", "mcp/agent-graph/neighborhood.mjs", "mcp/agent-graph/query-core.mjs"]

@@ -118,12 +118,12 @@ export function buildKgTokenBundle(definitions: readonly KgTokenDef[]) {
 }
 export type KgTokenBundle = ReturnType<typeof buildKgTokenBundle>
 
-export function renderKgTokensCss(definitions: readonly KgTokenDef[], theme: KgTheme, selector: string, preserveOrder = false): string {
+export function renderKgTokensCss(definitions: readonly KgTokenDef[], theme: KgTheme, selector: string, legacy = false): string {
   if (!themes.includes(theme)) fail('theme', 'unsupported theme')
-  if (![':root', ':root.dark', ':root[data-theme="dark"]', ':root.dark, :root[data-theme="dark"]'].includes(selector)) fail('selector', 'unsupported selector')
+  if (![':root', ":root[data-theme='dark']", ':root.dark', ':root[data-theme="dark"]', ':root.dark, :root[data-theme="dark"]'].includes(selector)) fail('selector', 'unsupported selector')
   const bundle = buildKgTokenBundle(definitions)
-  const ordered = preserveOrder ? definitions.map(t => bundle.tokens.find(resolved => resolved.name === t.name)!) : bundle.tokens
-  return boundKgTokenOutput(`${selector} {\n${ordered.map(t => `  ${t.cssVar}: ${t.css[theme]};`).join('\n')}\n}\n`)
+  const ordered = legacy ? definitions.map(t => bundle.tokens.find(resolved => resolved.name === t.name)!) : bundle.tokens
+  return boundKgTokenOutput(`${selector}${legacy ? '' : ' '}{\n${ordered.map(t => `  ${t.cssVar}: ${t.css[theme]};`).join('\n')}\n}\n`)
 }
 
 export function serializeKgTokens(definitions: readonly KgTokenDef[], target: 'css' | 'json' | 'typescript'): string {

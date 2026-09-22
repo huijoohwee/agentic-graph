@@ -11,8 +11,8 @@ const output = args.find(arg => arg.startsWith('--output='))?.slice(9)
 // Complete validation and serialization before opening any output file.
 const next = format ? serializeKgTokens(AG_TOKEN_DEFS, format) : [
   buildKgTokensCssText('light', { selector: ':root' }),
-  buildKgTokensCssText('dark', { selector: ':root.dark' }),
-].join('')
+  buildKgTokensCssText('dark', { selector: ":root[data-theme='dark']" }),
+].join('\n')
 const outPath = output ? path.resolve(output) : format ? null : path.resolve('src/styles/kgTokens.generated.css')
 if (args.includes('--check')) {
   if (!outPath || fs.readFileSync(outPath, 'utf8') !== next) throw new Error('Generated token output differs from its source')
