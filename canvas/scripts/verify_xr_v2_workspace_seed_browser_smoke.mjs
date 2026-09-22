@@ -19,7 +19,8 @@ const browser = await chromium.launch({
   ...(executablePath ? { executablePath } : {}),
   args: [
     '--use-gl=angle',
-    '--use-angle=swiftshader-webgl',
+    // Driver mode avoids blocking software-compositor pixel readback on every frame.
+    '--use-angle=swiftshader',
     '--enable-unsafe-swiftshader',
     '--use-fake-device-for-media-stream',
     '--use-fake-ui-for-media-stream',

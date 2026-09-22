@@ -50,9 +50,11 @@ test('exact main recovery runs the existing read-only gate without PR metadata',
   assert.equal(authorization.if, "${{ github.event_name == 'workflow_dispatch' }}")
   assert.equal(steps.find(step => step.name === 'Load exact protected refresh pull request metadata').if,
     "${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'protected-head-refresh' }}")
-  for (const name of ['Create immutable app docs catalog manifest', 'Run canonical integration gate', 'Run XR v2 runtime review-candidate gate']) {
+  for (const name of ['Create immutable app docs catalog manifest', 'Run canonical integration gate', 'Select XR runtime gate from native source inputs']) {
     assert.equal(steps.find(step => step.name === name).if, undefined, `${name} must remain unconditional`)
   }
+  assert.equal(steps.find(step => step.name === 'Run XR v2 runtime review-candidate gate').if,
+    "steps.xr_gate.outputs.required != 'false'")
 })
 
 test('main recovery rejects wrong refs, revisions, PR context and unknown operations', () => {

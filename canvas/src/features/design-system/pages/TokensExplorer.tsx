@@ -1,5 +1,7 @@
 import React from 'react'
-import { AG_TOKEN_DEFS, resolveCssVarWithKgFallback } from '@/lib/ui/tokens-ssot'
+import { AG_TOKEN_DEFS, resolveCssVarWithKgFallback, serializeKgTokens } from '@/lib/ui/tokens-ssot'
+import { useThemeDetector } from '@/hooks/useThemeDetector'
+import { downloadBlob } from '@/lib/graph/save'
 import type { KgTokenDef } from 'grph-shared/ui/kgTokens'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_FOCUS_RING, UI_SURFACE_CARD } from '@/lib/ui'
@@ -40,11 +42,13 @@ const copyText = async (text: string): Promise<boolean> => {
 
 function TokenDetail({ token }: { token: TokenRow | null }) {
   if (!token) return null
-  const cssSnippet = `color: var(${token.cssVar});`
+  const property = { color: 'color', dimension: 'gap', number: 'opacity', shadow: 'box-shadow' }[token.type]
+  const cssSnippet = `${property}: var(${token.cssVar});`
   const tsSnippet = `resolveCssVarWithKgFallback('${token.cssVar}')`
   return (
     <aside className={cn('p-4', UI_SURFACE_CARD)} aria-label="Token details">
       <h3 className="m-0 text-sm font-semibold">{token.cssVar}</h3>
+      <p className="text-xs">{token.type} · {token.purpose}</p>
       <dl className={DESIGN_SYSTEM_TOKEN_DETAIL_GRID_CLASS_NAME}>
         <dt className={cn('m-0', UI_THEME_TOKENS.text.secondary)}>Current</dt>
         <dd className="m-0">{token.current}</dd>
@@ -74,6 +78,8 @@ function TokenDetail({ token }: { token: TokenRow | null }) {
 }
 
 export default function TokensExplorer() {
+  const theme = useThemeDetector()
+  const [exportStatus, setExportStatus] = React.useState('')
   const [query, setQuery] = React.useState('')
   const [selected, setSelected] = React.useState<TokenRow | null>(null)
 
@@ -85,7 +91,7 @@ export default function TokensExplorer() {
         return String(t.cssVar || '').toLowerCase().includes(q)
       })
       .map(t => ({ ...t, current: resolveCssVarWithKgFallback(t.cssVar) }))
-  }, [query])
+  }, [query, theme])
 
   React.useEffect(() => {
     if (!selected) return
@@ -97,6 +103,18 @@ export default function TokensExplorer() {
   return (
     <article className={DESIGN_SYSTEM_TOKENS_GRID_CLASS_NAME} aria-label="Tokens and themes">
       <section className={cn('p-4', UI_SURFACE_CARD)} aria-label="Token filters">
+        <section aria-label="Export authored tokens" className="mb-3 flex flex-wrap gap-2">
+          {(['css', 'json', 'typescript'] as const).map(target => <button type="button" key={target}
+            className={cn('min-h-11 rounded border px-3 py-2 text-xs', UI_THEME_TOKENS.panel.border, UI_FOCUS_RING)}
+            onClick={() => {
+              try {
+                const output = serializeKgTokens(AG_TOKEN_DEFS, target)
+                downloadBlob(new Blob([output], { type: target === 'json' ? 'application/json' : 'text/plain;charset=utf-8' }), `design-tokens.${target === 'typescript' ? 'ts' : target}`)
+                setExportStatus('Exported locally.')
+              } catch (error) { setExportStatus(error instanceof Error ? error.message : 'Token export failed.') }
+            }}>Export {target === 'typescript' ? 'TypeScript' : target.toUpperCase()}</button>)}
+          <p role="status" className="m-0 text-xs">{exportStatus}</p>
+        </section>
         <label className="block">
           <span className={cn('text-xs font-medium', UI_THEME_TOKENS.text.secondary)}>Search</span>
           <input

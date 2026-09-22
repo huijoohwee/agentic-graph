@@ -2,9 +2,9 @@
 title: "agentic-graph Game Flight Sim PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-game-flight-sim-prd-tad"
 author: "airvio / joohwee"
-date: "2026-09-12"
-updated: "2026-07-29"
-version: "1.5.1"
+date: "2026-09-22"
+updated: "2026-09-22"
+version: "1.5.2"
 status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
 evidence_status: "exact-head source and browser proof required at every handoff"
@@ -61,17 +61,17 @@ local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-cba000d3779d--planning-v27"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--offline-learning-plan"
+agent_id: "codex-offline-learning-plan"
 guideline_revision: "2.7.0"
 guideline_source: "$GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "1.5.0"
-prd_revision: "1.5.1"
-tad_revision: "1.5.1"
-adr_revision: "1.5.1"
-mvp_revision: "1.5.1"
-gtm_revision: "1.5.1"
+previous_document_version: "1.5.1"
+prd_revision: "1.5.2"
+tad_revision: "1.5.2"
+adr_revision: "1.5.2"
+mvp_revision: "1.5.2"
+gtm_revision: "1.5.2"
 ---
 
 # agentic-graph Game Flight Sim PRD-TAD-ADR-MVP-GTM
@@ -438,7 +438,7 @@ This module is local-runtime-ready; every review candidate must re-establish tha
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.1`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The guideline is [v2.7.0]($GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md); the shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The historical review used guideline v2.7.0; the new proposal below records its current authoring input separately. The shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -462,3 +462,94 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/features/game-flight-sim/flightSimRuntime.ts`](../../canvas/src/features/game-flight-sim/flightSimRuntime.ts), [`canvas/src/features/game-flight-sim/flightSimMcpRuntime.ts`](../../canvas/src/features/game-flight-sim/flightSimMcpRuntime.ts), [`packages/apple-spatial-input/src/flight.ts`](../../packages/apple-spatial-input/src/flight.ts). Their existence does not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+## Offline learning proposal - reference implementation
+
+**Scope and authority.** PRD, TAD, ADR, MVP and GTM below join this document's `1.5.2` revision.
+This proposal records the earlier structured-control alternative. The separately authored offline Python learning specification now requires Python execution; this alternative does not satisfy that requirement and does not authorize a competing evaluator. Its L01–L05 criteria remain historical proposal evidence, not implemented acceptance. Accepted Kiro requirements stay unchanged. Any future Flight-specific implementation must update `.kiro/specs/agentic-graph-game-flight-sim/{requirements,design,tasks}.md`
+at its normative owner before implementation, and this derived document together.
+Do not modify the shared XR workbench while another active lane owns it.
+
+### Grounding and selection
+
+Inspected source: Graph `b242ab5d82c49155808a86b45565c797f8e04f61`, Canvas
+`997ecfe8ed4e779eba3bd3d6a0b70b7254a2d4a0` and OS `e0a07e9b594285b409b9a4192e3d208a3ebbf446`.
+Authoring uses shared guidelines v3.1.0 at site revision `993eb0e28a6d2e9427364df98c39c8a5e10910b4`,
+SHA-256 `cc49896776a70e372a34d54fb81582ae1a46d46e2f527e2dfd3108cc07a0b1ef`.
+
+| Disposition | Native evidence and implication |
+|---|---|
+| Confirmed by source inspection | `flightSimTrainingScenario.ts` owns three missions/failures; `flightSimTrainingRuntime.ts` owns scores, coaching and outcome Decisions. |
+| Confirmed by source inspection | `flightSimReplay.ts` owns fixed-step replay; `flightSimWebMcpTools.ts` owns cancellation and a 2,000 ms deadline. |
+| Confirmed by source inspection | `features/parsers/python/index.ts` dispatches graph parsing, not Python execution. |
+| Absent in inspected owners | No bounded program evaluator, versioned rubric, worked-solution gate or progressive hints found in Flight/agent-ready/parser owners. |
+| Contradicted as a blanket claim | Geo retains provider style/tile reads; Flight dynamics do not prove offline map coverage. |
+| Unverified | Current browser behavior, caches, solvability, efficacy, demand and payment. Historical readiness excludes this extension. |
+
+Tutor pain is unvalidated. Rank native bounded practice before a general language sandbox, then
+desktop packaging: native reuse offers the smallest estimated browser/mobile delta and no new service.
+
+### PRD - proposed criteria
+
+DIR-L01: Given existing local training/replay owners, help a learner write a small procedure, observe
+its exact result, use a grounded hint and retry offline. Role: engineer. Action: extend native training. Outcome: L01-L05 pass for one candidate/lesson revision.
+
+| ID | Given / when / then and constraints | TAD owner and verification condition |
+|---|---|---|
+| L01 | Given a starter program, when Run is chosen, then only supported sequential controls and bounded repetition execute; malformed, oversized or unknown instructions fail before any run/save effect. | Native input/replay adapter; focused positive and negative fixtures, including nonfinite values, duplicate keys, invalid controls and limits. |
+| L02 | Given identical program, lesson, scene and seed, when UI and agent evaluate it, then canonical traces and criterion verdicts agree; one changed input invalidates prior evidence. | Existing replay and training evaluator; independent replay comparison, wrong-revision refusal, deliberately failing program and every authored solution. |
+| L03 | Given the application and local lesson assets are installed/cached, when network is disabled, then the learner can edit, run, inspect a local trace, request hints and retry on a 375 px viewport. | Existing editor and shared training projection; browser reload with egress denied, keyboard/touch completion and visible errors. First-ever offline install is excluded. |
+| L04 | Given a current run, when an assistant inspects or requests a hint, then it receives the same rubric and measured result as the UI; run/save require explicit invocation, cancellation prevents late effects, and missing results are unavailable. | Existing Flight WebMCP tools and invocation contract; UI/tool parity, unsupported API fallback, supersession/deadline tests and no automatic save. |
+| L05 | Given a terminal run, when the learner explicitly saves and reopens it, then validated existing Decisions restore its debrief with program/lesson identity; failure preserves prior bytes and allows retry. | Existing Decision store and WorkspaceFs; save/readback/idempotency/corruption tests, local-only identity with no inferred learner profile. |
+
+### TAD - owner changes and flows
+
+Reuse `features/game-flight-sim/` for execution, training, replay and persistence; reuse the shared
+`FlightSimTrainingSurfaceProjection.tsx` for lesson controls and an optional local trace view. Source
+Files/editor remains the program authoring surface. Add at most two small pure modules inside Flight:
+bounded program validation/expansion and lesson-specific criterion evaluation. They must call existing
+mission/input primitives; no second physics engine, renderer, grader for agents, store or global registry.
+Use source-authored lesson data beside the existing scenario owner. Ship three lessons only when their worked solutions pass their own rubric through the public
+evaluator. Repair failed lessons; keep criteria intact. Reveal hints on explicit request.
+
+Proposed program format: native structured instructions for normalized controls over fixed ticks plus
+bounded repeat; this is procedural learning, not Python execution or Python compatibility. Cap source
+at 16 KiB, expanded instructions at 256 and total simulated ticks at 3,600; repeat count at 32 and depth
+at two. Reject overflow before allocating a World. Run against an isolated replay World, dispose it on
+cancel/error, and commit no live Flight state. Yield to the browser between bounded batches; retain the
+existing WebMCP deadline and return a typed incomplete result rather than a fabricated grade on timeout.
+
+Five flows: **data** program + lesson/scene revision + seed -> normalized inputs -> trace/verdict;
+**control** select -> edit -> explicit Run -> hint/retry -> explicit Save; **state** idle/running/
+completed/failed/cancelled -> existing debrief Decision; **error** validation failure before execution,
+deadline/cancel disposal, stale evidence refusal, persistence retry; **delivery** normative spec ->
+Graph implementation/checks -> Canvas discovery references -> protected integration -> authorized
+product deploy/readback/rollback. Canvas consumes `CANVAS-CONTROL-SURFACE-001@1.0.2`; OS retains lifecycle.
+
+### ADR-L01 - proposed bounded native procedure
+
+Choose the structured native control program for the first increment. General Python execution would
+require a separately reviewed language/runtime/sandbox and package budget; the existing parser is not
+that runtime. Defer desktop GUI/SQL, accounts, paid AI, remote execution and curriculum alignment. Copy no
+reference code, prose, curriculum, assets or branding.
+The local trace does not prove offline map coverage. Full offline scenery needs a separate decision.
+Recovery disables the new lesson path, preserving controls and Decisions.
+
+### MVP, GTM and execution evidence
+
+**MVP:** L01-L05; estimate three 90-minute sprints,
+at most eight runtime/test modules, 48 KiB added source, zero packages/services, <600 lines per file,
+<500 kB per chunk, always-load delta zero; refresh after normative design and selected offline surface.
+Stop after two non-improving refinement cycles; recheck lane ownership.
+Planning cap: two existing plans, 12 KiB added, no runtime changes.
+Use `npm run game-flight-sim:runtime-ready` and `npm run game-flight-sim:browser-smoke` for the eventual
+exact candidate, extending their existing fixtures for L01-L05. Run the owner-selected affected checks
+first. These commands were not run for this proposal and no criterion is marked passed.
+
+**GTM:** test a guided tutor session before hosting. Measure first success, retries, hint usefulness,
+grading disagreements and support minutes. A priced workshop is the first-dollar hypothesis; demand,
+revenue, cash and repeat use are unvalidated. Outreach/payment is not authorized. Runtime spend target
+is zero; development cost and savings are unmeasured.
+
+**Handoff:** document checks prove no runtime or release outcome; each effect retains its receipt.
+Future Flight acceptance must name its exact normative revision. Python learning implementation follows its separate specification and source owners; this historical proposal grants no language or full-offline-scenery decision.
