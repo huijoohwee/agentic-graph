@@ -58,7 +58,7 @@ async function verify() {
       useGraphStore.getState().setFloatingPanelView('design')
       useGraphStore.getState().setFloatingPanelOpen(true)
     })
-    const panel = page.getByRole('region', { name: 'Design panel', exact: true })
+    const panel = page.locator('[data-kg-floating-panel-root="true"]').getByRole('region', { name: 'Design panel', exact: true })
     await panel.getByRole('button', { name: 'Open Tokens', exact: true }).click()
     const review = panel.getByRole('region', { name: 'Design Tokens', exact: true })
     await review.getByRole('heading', { name: 'Design token review' }).waitFor()
@@ -118,6 +118,8 @@ async function verify() {
     await page.setViewportSize({ width: 360, height: 800 })
     // Modules are now cached. No server or provider is available during these interactions.
     await context.setOffline(true)
+    await panel.getByRole('button', { name: 'Open Overview', exact: true }).tap()
+    await panel.getByRole('button', { name: 'Open Tokens', exact: true }).tap()
     const source = review.getByRole('button', { name: 'Inspect finding source' }).first()
     await source.tap()
     assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().selectedNodeId), 'design-card')
@@ -145,6 +147,7 @@ async function verify() {
       externalRequests, runtimeErrors: errors, scope: 'local candidate; no production or complete accessibility claim' }, null, 2) + '\n')
     console.log('Design browser smoke passed:', output)
   } catch (error) {
+    await mkdir(output, { recursive: true }); await page.screenshot({ path: join(output, 'failure.png') }).catch(() => {})
     console.error('Design browser state:', await page.locator('body').innerText().then(text => text.slice(0, 2500)).catch(() => 'unavailable'))
     throw error
   } finally { await context.close(); await browser.close() }
