@@ -23,6 +23,43 @@ export type RichMediaTimelineTransportFrame = {
   sourcePlayback: boolean
 }
 
+/** Local-only startup control; never stored or sent across BroadcastChannel. */
+export type RichMediaTimelineClockStart = {
+  signal: AbortSignal
+  hold: (ready: Promise<void>) => boolean
+}
+export type RichMediaTimelineLocalFrame = RichMediaTimelineTransportFrame & {
+  clockStart?: RichMediaTimelineClockStart
+}
+
+export function publishRichMediaTimelineClockStart(
+  payload: RichMediaTimelineTransportFrame, signal: AbortSignal,
+): Promise<void> | void {
+  let ready: Promise<void> | undefined
+  let accepting = true
+  publishRichMediaTimelineTransportFrame(payload, {
+    signal,
+    hold: promise => {
+      if (!accepting || ready || signal.aborted) return false
+      ready = promise
+      return true
+    },
+  })
+  accepting = false
+  if (!ready) return
+  return new Promise<void>((resolve, reject) => {
+    const finish = (ok: boolean, error?: unknown) => {
+      clearTimeout(timer); signal.removeEventListener('abort', aborted)
+      if (ok) resolve(); else reject(error)
+    }
+    const aborted = () => finish(false, new DOMException('Timeline startup cancelled.', 'AbortError'))
+    const timer = setTimeout(() => finish(false, new Error('Timeline startup acknowledgement timed out.')), 5_000)
+    signal.addEventListener('abort', aborted, { once: true })
+    void ready!.then(() => finish(true), error => finish(false, error))
+    if (signal.aborted) aborted()
+  })
+}
+
 const cleanTimelineTransportKey = (value: unknown): string => String(value || '').trim()
 
 export function buildRichMediaTimelineTransportFrame(args: {
@@ -71,11 +108,11 @@ export function buildRichMediaTimelineTransportFrame(args: {
   }
 }
 
-export function publishRichMediaTimelineTransportFrame(payload: RichMediaTimelineTransportFrame): void {
+export function publishRichMediaTimelineTransportFrame(payload: RichMediaTimelineTransportFrame, clockStart?: RichMediaTimelineClockStart): void {
   if (typeof window === 'undefined') return
   try {
     ;(window as unknown as Record<string, unknown>)[RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY] = payload
-    window.dispatchEvent(new CustomEvent(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, { detail: payload }))
+    window.dispatchEvent(new CustomEvent(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, { detail: clockStart ? { ...payload, clockStart } : payload }))
   } catch {
     void 0
   }

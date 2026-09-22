@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Scene } from 'three'
+import { startTimelineTransportPlayback } from '@/components/timeline/timelineTransport'
+import { publishRichMediaTimelineClockStart, publishRichMediaTimelineTransportFrame, RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY, type RichMediaTimelineLocalFrame } from '@/lib/render/richMediaTimelineSync'
 import { acquireVideoSequenceRecorderLease } from '@/components/timeline/videoSequenceRecorderLifecycle'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { captureXrSceneMp4, createXrMp4SourceBinding, type XrMp4SourceBinding } from '@/features/three/xrSceneMp4Export'
@@ -26,11 +28,16 @@ async function fixture(run: (value: {
   capture: (options?: { signal?: AbortSignal; onProgress?: (fraction: number) => void }) => ReturnType<typeof captureXrSceneMp4>
   binding: XrMp4SourceBinding; advanceWithoutRender: () => void; resumeRendering: () => void; stale: () => void; stopped: () => number; restored: () => number; scene: Scene; initialHook: Scene['onAfterRender']
   resizeSource: () => void; recordedDimensions: () => number[][]; copiedSourceWidths: () => number[]
+  suspendRendering: () => void
   automaticFramesOnly: () => void; sampledPixels: () => number[]; frameRequests: () => number
 }) => Promise<void>) {
   const priorRecorder = Object.getOwnPropertyDescriptor(globalThis, 'MediaRecorder')
   const priorCanvas = Object.getOwnPropertyDescriptor(globalThis, 'HTMLCanvasElement')
   const priorDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: new EventTarget() })
+  const clockLifetime = new AbortController()
+  let clockRequested = false; let clockReleased = false
   let stopped = 0; let restored = 0; let time = 0; let playing = false; let current = true; let renderEnabled = true
   const listeners = new Set<() => void>()
   const scene = new Scene(); const initialHook = scene.onAfterRender
@@ -61,13 +68,19 @@ async function fixture(run: (value: {
   Object.defineProperty(globalThis, 'MediaRecorder', { configurable: true, value: Recorder })
   Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: () => new Canvas() } })
   const binding: XrMp4SourceBinding = {
-    durationSeconds: 0.08, fps: 30, current: () => current, time: () => time,
-    prepare: () => { time = 0 }, play: () => { playing = true }, pause: () => { playing = false },
+    documentKey: 'fixture#xr-motion', durationSeconds: 0.08, fps: 30, current: () => current, time: () => time,
+    prepare: () => { time = 0 }, play: () => { playing = true; clockRequested = true }, pause: () => { playing = false },
     restoreTransport: () => { restored++; playing = false }, restoreCameraAndPlayback: () => { restored++ },
     subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener) } },
   }
   const timer = setInterval(() => {
-    if (playing) time = Math.min(0.08, time + 0.02)
+    if (playing && clockRequested) {
+      clockRequested = false
+      const ready = publishRichMediaTimelineClockStart({ type: 'agentic-graph:timeline-transport-frame',
+        documentKey: binding.documentKey, position: 0, timeMs: 0, playing: true, playbackRate: 1, sourcePlayback: false }, clockLifetime.signal)
+      void Promise.resolve(ready).then(() => { clockReleased = true }, () => { playing = false })
+    }
+    if (playing && clockReleased) time = Math.min(0.08, time + 0.02)
     if (!renderEnabled) return
     source.pixel = playing ? Math.round(time * 1_000) : 200
     scene.onAfterRender({ xr: { isPresenting: false } } as never, scene, {} as never, undefined as never, undefined as never, undefined as never)
@@ -77,13 +90,13 @@ async function fixture(run: (value: {
       capture: options => captureXrSceneMp4({ canvas: source as unknown as HTMLCanvasElement, scene,
         isCurrent: () => current, binding, ...options,
         verify: async (_blob, _duration, _signal, finalFrame, initialFrame) => {
-          assert.equal(initialFrame?.[0], 200, 'the opening reference must retain the warmed zero pose')
+          assert.equal(initialFrame?.[0], 0, 'the opening reference must be rendered after the playing clock zero acknowledgement')
           assert.equal(finalFrame?.[0], 80, 'the retained reference must precede camera restoration')
           return { durationSeconds: 0.08, decodedFrames: 3, width: 160, height: 90, sampleHashes: ['a', 'b', 'c'],
             initialFrameVerified: true, initialFrameMeanError: 0, finalFrameVerified: true, finalFrameMeanError: 0 }
         } }),
       binding, advanceWithoutRender: () => { renderEnabled = false; time = 0.08; for (const listener of listeners) listener() },
-      resumeRendering: () => { renderEnabled = true },
+      resumeRendering: () => { renderEnabled = true }, suspendRendering: () => { renderEnabled = false },
       stale: () => { current = false; for (const listener of listeners) listener() },
       stopped: () => stopped, restored: () => restored, scene, initialHook,
       resizeSource: () => { source.width = 80; source.height = 44 },
@@ -91,7 +104,8 @@ async function fixture(run: (value: {
       automaticFramesOnly: () => { automaticOnly = true }, sampledPixels: () => sampledPixels, frameRequests: () => frameRequests,
     })
   } finally {
-    clearInterval(timer)
+    clearInterval(timer); clockLifetime.abort()
+    if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
     if (priorRecorder) Object.defineProperty(globalThis, 'MediaRecorder', priorRecorder); else Reflect.deleteProperty(globalThis, 'MediaRecorder')
     if (priorCanvas) Object.defineProperty(globalThis, 'HTMLCanvasElement', priorCanvas); else Reflect.deleteProperty(globalThis, 'HTMLCanvasElement')
     if (priorDocument) Object.defineProperty(globalThis, 'document', priorDocument); else Reflect.deleteProperty(globalThis, 'document')
@@ -128,7 +142,7 @@ test('final authored image survives faster rendering, slow recorder sampling and
   })
 })
 
-test('delayed Timeline startup keeps recording paused and requests the retained opening image on first advance', async () => {
+test('delayed Timeline startup holds at zero until the fresh opening image and recorder resume', async () => {
   await fixture(async value => {
     const play = value.binding.play
     let ready: () => void = () => {}
@@ -141,31 +155,34 @@ test('delayed Timeline startup keeps recording paused and requests the retained 
     assert.equal(value.frameRequests(), 0)
     play()
     assert.equal((await capture).status, 'captured')
-    assert.equal(value.sampledPixels()[0], 200)
+    assert.ok(value.sampledPixels().includes(0), 'the playing-camera opening image was requested')
   })
 })
 
-test('first native transport advance larger than one authored frame rejects before resuming', async () => {
+test('native transport advancement without an acknowledged startup hold rejects before resuming', async () => {
   await fixture(async value => {
     let requested = false
     value.binding.play = () => { requested = true }
     value.binding.transportTime = () => requested ? 0.04 : 0
-    await assert.rejects(value.capture(), /skipped the opening frame/)
+    await assert.rejects(value.capture(), /advanced before the opening frame/)
     assert.equal(value.frameRequests(), 0)
     assert.equal(value.stopped(), 1)
     acquireVideoSequenceRecorderLease()()
   })
 })
 
-test('clock jump between readiness and resume still rejects before recording resumes', async () => {
-  await fixture(async value => {
-    let reads = 0
-    value.binding.play = () => {}
-    value.binding.transportTime = () => ++reads === 1 ? 0.02 : 0.05
-    await assert.rejects(value.capture(), /before MP4 resume/)
-    assert.equal(value.frameRequests(), 0)
-    assert.equal(value.stopped(), 1)
-  })
+test('clock advancement during recorder resume rejects instead of dropping the opening time', async () => {
+  const resume = Recorder.prototype.resume
+  try {
+    await fixture(async value => {
+      Recorder.prototype.resume = function () {
+        value.binding.transportTime = () => 0.04
+        resume.call(this)
+      }
+      await assert.rejects(value.capture(), /advanced during MP4 resume/)
+      assert.equal(value.stopped(), 1)
+    })
+  } finally { Recorder.prototype.resume = resume }
 })
 
 test('cancellation while waiting for pause, clock advance or resume releases the recorder', async () => {
@@ -296,4 +313,212 @@ test('native binding restores its prior BottomPanel state but preserves a subseq
     binding.restoreTransport(); binding.restoreCameraAndPlayback()
     assert.equal(useGraphStore.getState().bottomSurfaceTab, 'history')
   } finally { useGraphStore.setState(prior) }
+})
+
+function nativeClockFixture(onPlaybackStart?: (position: number, signal: AbortSignal) => Promise<void> | void) {
+  let now = 0; let nextId = 0; let current = true; let ended = 0
+  const queue = new Map<number, FrameRequestCallback>()
+  const positions: number[] = []
+  const frames: number[] = []
+  const state = { position: 0, max: 2, unitsPerMs: 0.001, playbackRate: 1,
+    onPositionChange: (position: number) => positions.push(position),
+    onPlaybackFrame: (position: number) => frames.push(position),
+    onPlaybackEnd: () => { ended++ }, onPlaybackStart }
+  const stop = startTimelineTransportPlayback({ readState: () => state,
+    requestFrame: callback => { queue.set(++nextId, callback); return nextId }, cancelFrame: id => { queue.delete(id) },
+    now: () => now, isCurrent: () => current })
+  return { state, positions, frames, stop, queued: () => queue.size, ended: () => ended,
+    replaceDocument: () => { current = false }, setNow: (value: number) => { now = value },
+    tick: (timestamp: number) => {
+      now = timestamp
+      const entry = queue.entries().next().value
+      assert.ok(entry, 'the native clock must have scheduled this frame')
+      queue.delete(entry[0]); entry[1](timestamp)
+    } }
+}
+
+test('native RAF acknowledges unchanged zero, holds without scheduling, and excludes startup latency', async () => {
+  let release: () => void = () => {}; let signal: AbortSignal | undefined
+  const held = new Promise<void>(resolve => { release = resolve })
+  const clock = nativeClockFixture((position, lifetime) => { assert.equal(position, 0); signal = lifetime; return held })
+  clock.tick(10)
+  assert.deepEqual(clock.positions, [0]); assert.deepEqual(clock.frames, [0])
+  assert.equal(clock.queued(), 0)
+  clock.setNow(2_000); release(); await Promise.resolve()
+  assert.equal(clock.queued(), 1)
+  clock.tick(2_020)
+  assert.deepEqual(clock.positions, [0, 0.02], 'elapsed time begins at release, not the delayed initial RAF')
+  clock.stop(); assert.equal(signal?.aborted, true); assert.equal(clock.queued(), 0)
+})
+
+test('ordinary native playback retains its elapsed-time behavior without a startup claimant', () => {
+  const clock = nativeClockFixture()
+  clock.tick(10); clock.tick(30)
+  assert.deepEqual(clock.positions, [0, 0.02]); assert.equal(clock.queued(), 1)
+  clock.stop()
+})
+
+test('clock cleanup aborts a pending startup and late release cannot schedule another RAF', async () => {
+  let release: () => void = () => {}; let signal: AbortSignal | undefined
+  const clock = nativeClockFixture((_position, lifetime) => {
+    signal = lifetime; return new Promise<void>(resolve => { release = resolve })
+  })
+  clock.tick(1); clock.stop(); release(); await Promise.resolve()
+  assert.equal(signal?.aborted, true); assert.equal(clock.queued(), 0); assert.equal(clock.ended(), 0)
+})
+
+test('document replacement fences late startup success and failure without mutating the next document', async () => {
+  for (const reject of [false, true]) {
+    let finish: () => void = () => {}
+    const clock = nativeClockFixture(() => new Promise<void>((resolve, fail) => {
+      finish = reject ? () => fail(new Error('old capture cancelled')) : resolve
+    }))
+    clock.tick(1); clock.replaceDocument(); finish(); await Promise.resolve()
+    assert.equal(clock.queued(), 0); assert.equal(clock.ended(), 0)
+    assert.deepEqual(clock.positions, [0]); clock.stop()
+  }
+})
+
+test('rejected startup stops the current clock and handles the rejection', async () => {
+  const clock = nativeClockFixture(() => Promise.reject(new Error('recorder failed')))
+  clock.tick(1); await Promise.resolve()
+  assert.equal(clock.queued(), 0); assert.equal(clock.ended(), 1); clock.stop()
+})
+
+test('startup control stays local while parent storage and broadcast contain serializable frames only', async () => {
+  const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const priorChannel = Object.getOwnPropertyDescriptor(globalThis, 'BroadcastChannel')
+  const target = new EventTarget() as EventTarget & Record<string, unknown>
+  const broadcast: unknown[] = []
+  const lifetime = new AbortController()
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: target })
+  Object.defineProperty(globalThis, 'BroadcastChannel', { configurable: true, value: class {
+    postMessage(value: unknown) { broadcast.push(structuredClone(value)) }
+    close() {}
+  } })
+  try {
+    let release: () => void = () => {}; let ordinaryFrames = 0
+    target.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, event => {
+      const frame = (event as CustomEvent<RichMediaTimelineLocalFrame>).detail
+      if (!frame.clockStart) { ordinaryFrames++; return }
+      assert.equal(frame.clockStart.hold(new Promise<void>(resolve => { release = resolve })), true)
+      assert.equal(frame.clockStart.hold(Promise.resolve()), false, 'only one capture can claim startup')
+    })
+    const frame = { type: 'agentic-graph:timeline-transport-frame' as const, documentKey: 'native#xr-motion',
+      position: 0, timeMs: 0, playing: true, playbackRate: 1, sourcePlayback: false }
+    publishRichMediaTimelineTransportFrame(frame)
+    assert.equal(ordinaryFrames, 1)
+    const pending = publishRichMediaTimelineClockStart(frame, lifetime.signal)
+    assert.ok(pending)
+    assert.deepEqual(target[RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY], frame)
+    assert.deepEqual(broadcast, [frame, frame])
+    release(); await pending
+    const cancelled = publishRichMediaTimelineClockStart(frame, lifetime.signal)
+    lifetime.abort()
+    await assert.rejects(cancelled!, { name: 'AbortError' })
+  } finally {
+    lifetime.abort()
+    if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
+    if (priorChannel) Object.defineProperty(globalThis, 'BroadcastChannel', priorChannel); else Reflect.deleteProperty(globalThis, 'BroadcastChannel')
+  }
+})
+
+
+test('actual clock zero acknowledgement still waits for the fresh rendered opening image', async () => {
+  await fixture(async value => {
+    let acknowledged: () => void = () => {}
+    const ready = new Promise<void>(resolve => { acknowledged = resolve })
+    const observe = (event: Event) => {
+      if (!(event as CustomEvent<RichMediaTimelineLocalFrame>).detail.clockStart) return
+      value.suspendRendering(); acknowledged()
+    }
+    window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe)
+    try {
+      const capture = value.capture()
+      await ready; await new Promise(resolve => setTimeout(resolve, 25))
+      assert.equal(Recorder.last?.state, 'paused'); assert.equal(value.binding.time(), 0)
+      assert.equal(value.frameRequests(), 0)
+      value.resumeRendering()
+      assert.equal((await capture).status, 'captured')
+    } finally { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe) }
+  })
+})
+
+test('source replacement during a held zero frame cancels without restoring the old document', async () => {
+  await fixture(async value => {
+    let acknowledged: () => void = () => {}
+    const ready = new Promise<void>(resolve => { acknowledged = resolve })
+    const observe = (event: Event) => {
+      if (!(event as CustomEvent<RichMediaTimelineLocalFrame>).detail.clockStart) return
+      value.suspendRendering(); acknowledged()
+    }
+    window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe)
+    try {
+      const capture = value.capture()
+      await ready; value.stale()
+      await assert.rejects(capture, /source, document or canvas changed/)
+      assert.equal(value.stopped(), 1); assert.equal(value.restored(), 0)
+      assert.equal(value.scene.onAfterRender, value.initialHook)
+      acquireVideoSequenceRecorderLease()()
+    } finally { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe) }
+  })
+})
+
+test('local startup claims are synchronous and an unresponsive claimant has a bounded deadline', async context => {
+  const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const target = new EventTarget()
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: target })
+  context.mock.timers.enable({ apis: ['setTimeout'] })
+  const lifetime = new AbortController()
+  try {
+    let control: RichMediaTimelineLocalFrame['clockStart']
+    let claim = false
+    target.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, event => {
+      control = (event as CustomEvent<RichMediaTimelineLocalFrame>).detail.clockStart
+      if (claim) control!.hold(new Promise<void>(() => {}))
+    })
+    const frame = { type: 'agentic-graph:timeline-transport-frame' as const, documentKey: 'native#xr-motion',
+      position: 0, timeMs: 0, playing: true, playbackRate: 1, sourcePlayback: false }
+    assert.equal(publishRichMediaTimelineClockStart(frame, lifetime.signal), undefined)
+    assert.equal(control!.hold(Promise.resolve()), false, 'late claims must not claim an already advancing clock')
+    claim = true
+    const pending = publishRichMediaTimelineClockStart(frame, lifetime.signal)
+    const rejected = assert.rejects(pending!, /acknowledgement timed out/)
+    context.mock.timers.tick(5_000)
+    await rejected
+  } finally {
+    lifetime.abort(); context.mock.timers.reset()
+    if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
+  }
+})
+
+
+test('synchronous document changes from a frame listener prevent stale startup and scheduling', () => {
+  let started = false
+  const clock = nativeClockFixture(() => { started = true })
+  clock.state.onPlaybackFrame = () => clock.replaceDocument()
+  clock.tick(1)
+  assert.equal(started, false); assert.equal(clock.queued(), 0); assert.equal(clock.ended(), 0)
+  clock.stop()
+})
+
+test('startup preserves rejection even when a claimant rejects with undefined or null', async () => {
+  const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const target = new EventTarget()
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: target })
+  let reason: unknown
+  const observe = (event: Event) => {
+    ;(event as CustomEvent<RichMediaTimelineLocalFrame>).detail.clockStart!.hold(Promise.reject(reason))
+  }
+  target.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe)
+  try {
+    for (reason of [undefined, null]) {
+      const pending = publishRichMediaTimelineClockStart({ type: 'agentic-graph:timeline-transport-frame',
+        documentKey: 'native#xr-motion', position: 0, timeMs: 0, playing: true, playbackRate: 1, sourcePlayback: false }, new AbortController().signal)
+      await assert.rejects(pending!)
+    }
+  } finally {
+    target.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe)
+    if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
+  }
 })

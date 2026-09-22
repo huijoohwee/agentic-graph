@@ -1,6 +1,7 @@
 import type { Scene } from 'three'
 import type { CanvasVideoCaptureOptions, CanvasVideoCaptureResult } from '@/hooks/store/store-types/core'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, type RichMediaTimelineLocalFrame } from '@/lib/render/richMediaTimelineSync'
 import {
   acquireVideoSequenceRecorderLease, collectVideoSequenceRecorderOutput,
   finishVideoSequenceRecorderOutput, flushVideoSequenceRecorderOutput, stopVideoSequenceCaptureTracks,
@@ -12,6 +13,7 @@ import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from 
 import { verifyXrSceneMp4, XR_MP4_MAX_BYTES, XR_MP4_FRAME_SAMPLE_SIZE } from './xrSceneMp4Evidence'
 
 export type XrMp4SourceBinding = {
+  documentKey: string
   durationSeconds: number
   fps: number
   current: () => boolean
@@ -40,7 +42,7 @@ export function createXrMp4SourceBinding(): XrMp4SourceBinding {
   }
   const pause = () => updateXrAnimationTransport({ operation: 'pause', timeSeconds: 0 })
   return {
-    durationSeconds: motion.plan.durationSeconds, fps: motion.plan.fps, current,
+    documentKey: transport.documentKey, durationSeconds: motion.plan.durationSeconds, fps: motion.plan.fps, current,
     time: () => readXrMotionReferenceRuntime().playheadSeconds,
     transportTime: () => readXrAnimationTransport().timeSeconds,
     prepare: () => {
@@ -109,6 +111,12 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   let recorder: MediaRecorder | null = null
   let output: VideoSequenceRecorderOutput | null = null
   let detach = () => {}
+  let detachClock = () => {}
+  let releaseClock: (() => void) | null = null
+  let rejectClock: ((reason: Error) => void) | null = null
+  let clockStarted = false
+  let clockStartFrames = 0
+  let startupImageFrozen = false
   let renderedFrames = 0
   let prepared = false
   let lastProgress = -1
@@ -134,7 +142,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   }
   const afterRender: Scene['onAfterRender'] = function (...renderArgs) {
     previousAfterRender.apply(this, renderArgs)
-    if (!finalImageFrozen && (!recorder || recorder.state === 'recording')) {
+    if (!finalImageFrozen && !startupImageFrozen) {
       try { captureContext.drawImage(args.canvas, 0, 0, captureSurface.width, captureSurface.height) }
       catch (error) { failure = error as Error }
     }
@@ -213,19 +221,46 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     // Exclude React/Timeline startup from recording; state alone is not the
     // recorder's pause acknowledgement. The retained surface is the zero pose.
     await recorderEvent('pause', () => { recorder!.start(250); recorder!.pause() })
-    const expectedInitialFrame = sampleRetainedImage()
+    const held = new Promise<void>((resolve, reject) => { releaseClock = resolve; rejectClock = reject })
+    void held.catch(() => {})
+    const onClockStart = (event: Event) => {
+      const frame = (event as CustomEvent<RichMediaTimelineLocalFrame>).detail
+      if (!frame?.clockStart || frame.documentKey !== binding.documentKey || clockStarted) return
+      try {
+        assertCurrent()
+        if (frame.position !== 0 || frame.timeMs !== 0 || !frame.playing) throw new Error('The XR clock did not start at the opening frame.')
+        if (!frame.clockStart.hold(held)) throw new Error('The XR clock startup is already held or cancelled.')
+        clockStarted = true; clockStartFrames = observedFrames
+        const signal = frame.clockStart.signal
+        const aborted = () => {
+          failure = new Error('The XR clock was cancelled during MP4 startup.'); check()
+        }
+        signal.addEventListener('abort', aborted, { once: true })
+        detachClock = () => { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, onClockStart); signal.removeEventListener('abort', aborted) }
+        if (signal.aborted) aborted()
+      } catch (error) { failure = error as Error; check() }
+    }
+    window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, onClockStart)
+    detachClock = () => window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, onClockStart)
     binding.play()
     await waitRendered(() => {
       const time = binding.transportTime?.() ?? binding.time()
-      if (time > 1 / binding.fps + 1e-7) throw new Error('The XR clock skipped the opening frame during MP4 startup.')
-      return time > 0
+      if (time !== 0) throw new Error('The XR clock advanced before the opening frame was acknowledged.')
+      return clockStarted && observedFrames > clockStartFrames && renderedTime === 0
     }, 5_000)
+    // This is the rendered playing-camera zero pose, after the actual clock acknowledgement.
+    startupImageFrozen = true
+    const expectedInitialFrame = sampleRetainedImage()
     await recorderEvent('resume', () => {
-      const time = binding.transportTime?.() ?? binding.time()
-      if (!(time > 0 && time <= 1 / binding.fps + 1e-7)) throw new Error('The XR clock skipped the opening frame before MP4 resume.')
+      if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced before MP4 resume.')
       recorder!.resume()
       ;(stream!.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack).requestFrame?.()
     })
+    assertCurrent()
+    if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced during MP4 resume.')
+    detachClock(); detachClock = () => {}
+    startupImageFrozen = false
+    releaseClock!(); releaseClock = null; rejectClock = null
     await waitRendered(() => {
       if (!recorder || recorder.state !== 'recording' || output?.hasStopped()) throw new Error('MP4 recorder stopped before the scene finished.')
       const progress = Math.floor(Math.min(95, renderedTime / binding.durationSeconds * 95))
@@ -264,6 +299,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     args.onProgress?.(1)
     return { status: 'captured', blob, evidence: { ...evidence, renderedFrames } }
   } finally {
+    detachClock(); rejectClock?.(failure || abortError())
     detach(); args.signal?.removeEventListener('abort', check)
     if (recorder) {
       recorder.removeEventListener('dataavailable', onData); recorder.removeEventListener('error', check)

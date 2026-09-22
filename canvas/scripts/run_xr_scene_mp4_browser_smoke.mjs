@@ -106,6 +106,7 @@ if (!process.argv.includes('--verify')) {
       const { applyXrCameraMove } = await importSource('features/three/xrCameraMoveRuntime.ts')
       const { readXrAnimationTransport, updateXrAnimationTransport } = await importSource('features/three/xrAnimationTransportRuntime.ts')
       const { readXrMotionReferenceRuntime } = await importSource('features/three/xrMotionReferenceRuntime.ts')
+      const { RICH_MEDIA_TIMELINE_TRANSPORT_EVENT } = await importSource('lib/render/richMediaTimelineSync.ts')
       const plan = { fps: 30, durationSeconds: 2, stageId: 'tropical-playground',
         subjects: [{ id: 'mp4-performer', label: 'MP4 performer', assetId: 'character-pig', category: 'people',
           position: [0, 0, 0], rotationYDegrees: 0, scale: 1, color: '#de784b' }],
@@ -127,6 +128,14 @@ if (!process.argv.includes('--verify')) {
       const originalCapture = HTMLCanvasElement.prototype.captureStream
       const originalStart = MediaRecorder.prototype.start
       const originalStop = MediaRecorder.prototype.stop
+      const originalResume = MediaRecorder.prototype.resume
+      let clockStarts = 0; let resumedAtZero = false
+      const observeClockStart = event => {
+        if (!event.detail.clockStart) return
+        if (event.detail.position !== 0 || event.detail.timeMs !== 0) throw new Error('Native startup did not acknowledge zero.')
+        clockStarts++; report('native-clock-zero-acknowledged')
+      }
+      window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observeClockStart)
       const originalReadPixels = CanvasRenderingContext2D.prototype.getImageData
       MediaRecorder.prototype.start = function (...args) {
         report('recorder-start-request')
@@ -134,6 +143,13 @@ if (!process.argv.includes('--verify')) {
         return originalStart.apply(this, args)
       }
       MediaRecorder.prototype.stop = function (...args) { report('recorder-stop'); return originalStop.apply(this, args) }
+      MediaRecorder.prototype.resume = function (...args) {
+        this.addEventListener('resume', () => {
+          resumedAtZero = clockStarts > 0 && readXrAnimationTransport().timeSeconds === 0
+          report('recorder-resume-acknowledged')
+        }, { once: true })
+        return originalResume.apply(this, args)
+      }
       CanvasRenderingContext2D.prototype.getImageData = function (...args) {
         report('pixel-read'); return originalReadPixels.apply(this, args)
       }
@@ -164,6 +180,8 @@ if (!process.argv.includes('--verify')) {
         } })
         report(`capture-result:${result.status}`)
         if (result.status === 'unsupported') return result
+        const startupHandshakeVerified = clockStarts === 1 && resumedAtZero
+        if (!startupHandshakeVerified) throw new Error('Native clock did not hold zero through recorder resume.')
         if (tracks.some(track => track.readyState !== 'ended')) throw new Error('A recording track survived successful export.')
         if (JSON.stringify(readXrMotionReferenceRuntime().plan) !== source) throw new Error('Export changed the authored source.')
         if (readXrAnimationTransport().timeSeconds !== before.timeSeconds) throw new Error('Export did not restore the playhead.')
@@ -194,12 +212,14 @@ if (!process.argv.includes('--verify')) {
         await waitFor('document-switch-teardown', () => !getMarkdownWorkspaceActionBridge().export?.cancelMediaExport)
         if (useGraphStore.getState().timelineTransportPosition !== 0.01) throw new Error('Stale export restored into the next document.')
         if (tracks.some(track => track.readyState !== 'ended')) throw new Error('A recording track survived document switching.')
-        return { nativeMenuCancellationVerified: true, documentSwitchVerified: true, status: result.status, byteSize: result.blob.size, mimeType: result.blob.type, ...result.evidence, cancellationVerified: true }
+        return { startupHandshakeVerified, nativeMenuCancellationVerified: true, documentSwitchVerified: true, status: result.status, byteSize: result.blob.size, mimeType: result.blob.type, ...result.evidence, cancellationVerified: true }
       } finally {
         report('fixture-unmount')
         HTMLCanvasElement.prototype.captureStream = originalCapture
         MediaRecorder.prototype.start = originalStart
         MediaRecorder.prototype.stop = originalStop
+        MediaRecorder.prototype.resume = originalResume
+        window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observeClockStart)
         CanvasRenderingContext2D.prototype.getImageData = originalReadPixels
         root.unmount()
       }
@@ -215,6 +235,9 @@ if (!process.argv.includes('--verify')) {
       assert.equal(evidence.cancellationVerified, true)
       assert.equal(evidence.nativeMenuCancellationVerified, true)
       assert.equal(evidence.documentSwitchVerified, true)
+      assert.equal(evidence.startupHandshakeVerified, true)
+      assert.equal(evidence.initialFrameVerified, true)
+      assert.ok(evidence.initialFrameMeanError <= 12)
       assert.equal(evidence.finalFrameVerified, true)
       assert.ok(evidence.finalFrameMeanError <= 12)
     } else assert.equal(evidence.status, 'unsupported')
