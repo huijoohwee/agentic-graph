@@ -33,8 +33,9 @@ async function verify() {
   await page.route('**/api/agent-swarm/workspace-source', route => route.fulfill({ contentType: 'application/json',
     headers: { 'cache-control': 'no-store' }, body: '{"code":"workspace_source_unselected"}' }))
   try {
-    await page.goto(base, { waitUntil: 'domcontentloaded' })
+    await page.goto(base + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: /^Canvas View Mode:/ }).first().waitFor({ timeout: 120000 })
+    console.log('Design browser: canvas ready')
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
       useGraphStore.setState({ workspaceViewMode: 'canvas', canvasRenderMode: '2d', canvas2dRenderer: 'd3',
@@ -65,6 +66,7 @@ async function verify() {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts'), state = useGraphStore.getState()
       return { positions: state.designFramePosById, sizes: state.designFrameSizeById, history: state.designHistoryByGraphMetaKey }
     })
+    console.log('Design browser: review ready')
     const initialGeometry = await geometry()
     const receipts = []
     for (const [width, theme] of [[360, 'light'], [360, 'dark'], [1280, 'light'], [1280, 'dark']]) {
@@ -95,6 +97,7 @@ async function verify() {
       const download = await downloadPromise
       assert.deepEqual(JSON.parse(await readFile(await download.path(), 'utf8')), projection)
       await download.delete()
+      console.log(`Design browser: ${width}px ${theme} export passed`)
       receipts.push({ width, theme, context: projection.semanticKey, overflow: false, keyboardExport: true })
     }
     assert.deepEqual(await geometry(), initialGeometry, 'Readback and export must preserve geometry and history')
@@ -141,6 +144,9 @@ async function verify() {
       receipts, invalidInput: true, revisionInvalidation: true, cachedOffline: true, touchSelection: true, undoRedo: true, reducedMotionPreferenceObserved: true, renderedMotionAssessment: 'unassessed',
       externalRequests, runtimeErrors: errors, scope: 'local candidate; no production or complete accessibility claim' }, null, 2) + '\n')
     console.log('Design browser smoke passed:', output)
+  } catch (error) {
+    console.error('Design browser state:', await page.locator('body').innerText().then(text => text.slice(0, 2500)).catch(() => 'unavailable'))
+    throw error
   } finally { await context.close(); await browser.close() }
 }
 
