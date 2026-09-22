@@ -95,6 +95,13 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     return { status: 'unsupported', reason: 'MP4 recording requires a scene between 0 and 120 seconds.' }
   }
   if (!args.canvas.width || !args.canvas.height) return { status: 'unsupported', reason: 'The XR canvas has no rendered dimensions.' }
+  // Adaptive DPR and panel layout can resize the live WebGL canvas. The encoder
+  // receives a stable surface copied only after that same renderer finishes a frame.
+  const captureSurface = document.createElement('canvas')
+  captureSurface.width = Math.max(2, Math.floor(args.canvas.width / 2) * 2)
+  captureSurface.height = Math.max(2, Math.floor(args.canvas.height / 2) * 2)
+  const captureContext = captureSurface.getContext('2d', { alpha: false })
+  if (!captureContext) return { status: 'unsupported', reason: 'A stable XR recording surface is unavailable.' }
   const release = acquireVideoSequenceRecorderLease()
   let stream: MediaStream | null = null
   let recorder: MediaRecorder | null = null
@@ -110,6 +117,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   let observedFrames = 0
   let renderedTime = -1
   let stableTimeFrames = 0
+  let finalFrameRequested = false
   let wake: (() => void) | null = null
   const current = () => args.isCurrent() && binding.current()
   const assertCurrent = () => {
@@ -123,19 +131,29 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   }
   const afterRender: Scene['onAfterRender'] = function (...renderArgs) {
     previousAfterRender.apply(this, renderArgs)
+    if (!recorder || recorder.state === 'recording') {
+      try { captureContext.drawImage(args.canvas, 0, 0, captureSurface.width, captureSurface.height) }
+      catch (error) { failure = error as Error }
+    }
     observedFrames += 1
     const frameTime = binding.time()
     stableTimeFrames = renderedTime === frameTime ? stableTimeFrames + 1 : 1
     renderedTime = frameTime
     // The native camera owner restores free orbit when playback ends. Reapply
     // the authored final camera through that same owner before the final acknowledgement.
-    if (recorder?.state === 'recording' && frameTime >= binding.durationSeconds && stableTimeFrames === 1) binding.refreshFinalFrame?.()
+    // The existing ruler projects seconds to six-decimal minutes (at most 30µs
+    // rounding). Request the exact authored endpoint; completion still requires
+    // that exact time to be rendered twice, never the rounded transport value.
+    if (recorder?.state === 'recording' && !finalFrameRequested && frameTime >= binding.durationSeconds - 0.000031) {
+      finalFrameRequested = true
+      binding.refreshFinalFrame?.()
+    }
     if (recorder?.state === 'recording') renderedFrames += 1
     if (renderArgs[0].xr?.isPresenting) failure = new Error('Exit immersive XR before exporting the authored camera.')
     check()
   }
   const waitRendered = (ready: () => boolean, timeoutMs: number): Promise<void> => new Promise((resolve, reject) => {
-    const timer = setTimeout(() => finish(new Error('XR render or Timeline stalled during MP4 export.')), timeoutMs)
+    const timer = setTimeout(() => finish(new Error(`XR render or Timeline stalled during MP4 export (rendered=${renderedTime}, transport=${binding.time()}, duration=${binding.durationSeconds}, frames=${renderedFrames}, stable=${stableTimeFrames}).`)), timeoutMs)
     const finish = (error?: Error) => {
       clearTimeout(timer); wake = null
       if (error) reject(error); else resolve()
@@ -158,7 +176,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     binding.prepare()
     const warmFrames = observedFrames
     await waitRendered(() => observedFrames >= warmFrames + 2 && renderedTime === 0 && stableTimeFrames >= 2, 5_000)
-    stream = args.canvas.captureStream(Math.min(60, Math.max(1, binding.fps)))
+    stream = captureSurface.captureStream(Math.min(60, Math.max(1, binding.fps)))
     if (!stream.getVideoTracks().length) throw new Error('XR canvas produced no video track.')
     recorder = new MediaRecorder(stream, { mimeType: plan.mimeType })
     recorder.addEventListener('dataavailable', onData)
@@ -205,6 +223,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
       }
     } finally {
       if (args.scene.onAfterRender === afterRender) args.scene.onAfterRender = previousAfterRender
+      captureSurface.width = 0; captureSurface.height = 0
       release()
     }
   }

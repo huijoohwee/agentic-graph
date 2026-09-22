@@ -23,18 +23,24 @@ class Recorder extends EventTarget {
 async function fixture(run: (value: {
   capture: (options?: { signal?: AbortSignal; onProgress?: (fraction: number) => void }) => ReturnType<typeof captureXrSceneMp4>
   binding: XrMp4SourceBinding; advanceWithoutRender: () => void; resumeRendering: () => void; stale: () => void; stopped: () => number; restored: () => number; scene: Scene; initialHook: Scene['onAfterRender']
+  resizeSource: () => void; recordedDimensions: () => number[][]; copiedSourceWidths: () => number[]
 }) => Promise<void>) {
   const priorRecorder = Object.getOwnPropertyDescriptor(globalThis, 'MediaRecorder')
   const priorCanvas = Object.getOwnPropertyDescriptor(globalThis, 'HTMLCanvasElement')
+  const priorDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
   let stopped = 0; let restored = 0; let time = 0; let playing = false; let current = true; let renderEnabled = true
   const listeners = new Set<() => void>()
   const scene = new Scene(); const initialHook = scene.onAfterRender
+  const recordedDimensions: number[][] = []; const copiedSourceWidths: number[] = []
   class Canvas {
     width = 160; height = 90
-    captureStream() { return { getVideoTracks: () => [{}], getTracks: () => [{ stop: () => { stopped++ } }] } as unknown as MediaStream }
+    getContext() { return { drawImage: (source: Canvas) => { copiedSourceWidths.push(source.width); recordedDimensions.push([this.width, this.height]) } } }
+    captureStream() { recordedDimensions.push([this.width, this.height]); return { getVideoTracks: () => [{}], getTracks: () => [{ stop: () => { stopped++ } }] } as unknown as MediaStream }
   }
+  const source = new Canvas()
   Object.defineProperty(globalThis, 'HTMLCanvasElement', { configurable: true, value: Canvas })
   Object.defineProperty(globalThis, 'MediaRecorder', { configurable: true, value: Recorder })
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: () => new Canvas() } })
   const binding: XrMp4SourceBinding = {
     durationSeconds: 0.08, fps: 30, current: () => current, time: () => time,
     prepare: () => { time = 0 }, play: () => { playing = true }, pause: () => { playing = false },
@@ -48,18 +54,21 @@ async function fixture(run: (value: {
   }, 5)
   try {
     await run({
-      capture: options => captureXrSceneMp4({ canvas: new Canvas() as unknown as HTMLCanvasElement, scene,
+      capture: options => captureXrSceneMp4({ canvas: source as unknown as HTMLCanvasElement, scene,
         isCurrent: () => current, binding, ...options,
         verify: async () => ({ durationSeconds: 0.08, decodedFrames: 3, width: 160, height: 90, sampleHashes: ['a', 'b', 'c'] }) }),
       binding, advanceWithoutRender: () => { renderEnabled = false; time = 0.08; for (const listener of listeners) listener() },
       resumeRendering: () => { renderEnabled = true },
       stale: () => { current = false; for (const listener of listeners) listener() },
       stopped: () => stopped, restored: () => restored, scene, initialHook,
+      resizeSource: () => { source.width = 80; source.height = 44 },
+      recordedDimensions: () => recordedDimensions, copiedSourceWidths: () => copiedSourceWidths,
     })
   } finally {
     clearInterval(timer)
     if (priorRecorder) Object.defineProperty(globalThis, 'MediaRecorder', priorRecorder); else Reflect.deleteProperty(globalThis, 'MediaRecorder')
     if (priorCanvas) Object.defineProperty(globalThis, 'HTMLCanvasElement', priorCanvas); else Reflect.deleteProperty(globalThis, 'HTMLCanvasElement')
+    if (priorDocument) Object.defineProperty(globalThis, 'document', priorDocument); else Reflect.deleteProperty(globalThis, 'document')
   }
 }
 
@@ -79,6 +88,15 @@ test('user cancellation tears down tracks and restores the same document', async
     await assert.rejects(value.capture({ signal: controller.signal, onProgress: () => controller.abort() }), { name: 'AbortError' })
     assert.equal(value.stopped(), 1); assert.equal(value.restored(), 2)
     assert.equal(value.scene.onAfterRender, value.initialHook)
+  })
+})
+
+test('adaptive renderer resizing preserves encoder dimensions while copying the current rendered source', async () => {
+  await fixture(async value => {
+    assert.equal((await value.capture({ onProgress: () => value.resizeSource() })).status, 'captured')
+    assert.ok(value.copiedSourceWidths().includes(160))
+    assert.ok(value.copiedSourceWidths().includes(80))
+    assert.ok(value.recordedDimensions().every(([width, height]) => width === 160 && height === 90))
   })
 })
 
@@ -113,6 +131,18 @@ test('final Timeline publication cannot complete capture until the final time is
     assert.equal(complete, false)
     value.resumeRendering()
     assert.equal((await result).status, 'captured')
+  })
+})
+
+test('rounded Timeline endpoint requests and renders the exact authored final time', async () => {
+  await fixture(async value => {
+    const readTime = value.binding.time
+    let finalRequests = 0
+    value.binding.time = () => finalRequests ? readTime() : Math.min(readTime(), 0.07998)
+    value.binding.refreshFinalFrame = () => { finalRequests++ }
+    assert.equal((await value.capture()).status, 'captured')
+    assert.equal(finalRequests, 1)
+    assert.equal(value.binding.time(), value.binding.durationSeconds)
   })
 })
 
