@@ -3,11 +3,15 @@ import { closeFloatingPanel } from './panel-close-helpers.mjs'
 import { waitForMissionAsync } from './mission-card-face.mjs'
 
 const SETTINGS_BODY_CONTROL = '#main-panel-settings-panel button[aria-label="Expand all sections"], #main-panel-settings-panel button[aria-label="Collapse all sections"]'
+const MAIN_PANEL_SHELL = '[data-kg-main-panel-shell="true"]'
 
 async function installEntryObservation(page) {
   await page.evaluate(() => {
     const startedAt = performance.now(), entries = []
     const snapshot = () => ({
+      mainPanelShells: document.querySelectorAll('[data-kg-main-panel-shell="true"]').length,
+      requestedMainPanelTabs: Array.from(document.querySelectorAll('[data-kg-main-panel-shell="true"]')).slice(0, 4)
+        .map(shell => shell.getAttribute('data-kg-main-panel-requested-tab')),
       settingsSelected: document.querySelector('#main-panel-settings-tab')?.getAttribute('aria-selected'),
       settingsBodyMounted: !!document.querySelector('#main-panel-settings-panel button[aria-label="Expand all sections"], #main-panel-settings-panel button[aria-label="Collapse all sections"]'),
       dashboardSelected: document.querySelector('#main-panel-dashboard-tab')?.getAttribute('aria-selected'),
@@ -62,11 +66,19 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
   await installEntryObservation(page)
   let status = 'failed'
   try {
-    await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click()
-    // The global ready flag only registers an event listener. The tab and lazy body
-    // must both be mounted before testing the following pointer transition.
-    await page.locator('#main-panel-settings-tab[aria-selected="true"]').waitFor({ state: 'visible' })
-    await page.locator(SETTINGS_BODY_CONTROL).waitFor({ state: 'visible', timeout: 60000 })
+    await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click({ timeout: 15000 })
+    // The immediate shell acknowledges the open state before either lazy panel mounts.
+    await page.locator(`${MAIN_PANEL_SHELL}[data-kg-main-panel-requested-tab="settings"]`)
+      .waitFor({ state: 'attached', timeout: 15000 })
+    assert.equal(await page.locator(MAIN_PANEL_SHELL).count(), 1, 'Settings opens one MainPanel shell')
+    await page.evaluate(() => window.__AG_MISSION_DASHBOARD_ENTRY__.record('settings-shell-open'))
+    // Both lazy boundaries share one readiness budget; pointer deadlines stay unchanged.
+    const settingsReadyDeadline = performance.now() + 60000
+    for (const selector of ['#main-panel-settings-tab[aria-selected="true"]', SETTINGS_BODY_CONTROL]) {
+      const timeout = settingsReadyDeadline - performance.now()
+      assert.ok(timeout > 0, 'Settings lazy readiness deadline elapsed')
+      await page.locator(selector).waitFor({ state: 'visible', timeout })
+    }
     await page.evaluate(() => window.__AG_MISSION_DASHBOARD_ENTRY__.record('settings-body-ready'))
     const returnView = await page.evaluate(async () => {
       const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
@@ -76,9 +88,11 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
     await page.evaluate(() => window.__AG_MISSION_DASHBOARD_ENTRY__.record('dashboard-pointer-returned'))
     await waitForMission()
     await page.locator('#main-panel-dashboard-tab').waitFor({ state: 'detached' })
+    await page.locator(MAIN_PANEL_SHELL).waitFor({ state: 'detached', timeout: 15000 })
     assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1, 'Settings opens one native Dashboard')
     assert.equal(await page.getByRole('region', { name: 'Agent Mission', exact: true }).count(), 1, 'Settings opens one Mission')
     assert.equal(await page.locator('[aria-label="Main panel"]').count(), 0, 'Dashboard entry closes MainPanel')
+    assert.equal(await page.locator(MAIN_PANEL_SHELL).count(), 0, 'Dashboard entry closes MainPanel shell')
     assertAuthored(await authoredSnapshot(), before, 'Settings Dashboard entry preserves authored state')
     status = 'passed'
     return returnView
