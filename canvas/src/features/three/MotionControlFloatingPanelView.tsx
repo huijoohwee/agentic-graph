@@ -35,13 +35,13 @@ import {
   buildMotionControlInvocation,
   buildMotionControlShareInvocation,
   controlLocalMotionControl,
-  inspectLocalMotionControl,
   type MotionControlOperation,
 } from './motionControlMcpRuntime'
 import {
   MOTION_CONTROL_INVOCATION_BINDINGS,
   MOTION_CONTROL_INVOCATION_COMMANDS,
   MOTION_CONTROL_INVOCATION_SEMANTICS,
+  MOTION_CONTROL_WEB_MCP_TOOL_IDS,
 } from './motionControlMcpContract.mjs'
 import {
   bindMotionControlPreview,
@@ -178,6 +178,9 @@ function drawPoseOverlay(canvas: HTMLCanvasElement, state: MotionControlSnapshot
   })
 }
 
+const readXrCanOfferUserActions = () => readXrV2WorkspaceReadiness().canOfferUserActions
+const readXrCapabilityTier = () => readXrV2WorkspaceReadiness().capabilityTier
+
 export function MotionControlFloatingPanelView() {
   const documentName = useGraphStore(store => store.markdownDocumentName)
   const documentText = useGraphStore(store => store.markdownDocumentText)
@@ -185,12 +188,17 @@ export function MotionControlFloatingPanelView() {
   const grammarAutoHydrationAllowed = useAgenticOsRemoteGrammarAutoHydration()
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: MOTION_CONTROL_GRAMMAR_SIGILS })
   const state = React.useSyncExternalStore(subscribeMotionControl, readMotionControlSnapshot, readMotionControlSnapshot)
-  const xrReadiness = React.useSyncExternalStore(
+  const xrCanOfferUserActions = React.useSyncExternalStore(
     subscribeXrV2WorkspaceReadiness,
-    readXrV2WorkspaceReadiness,
-    readXrV2WorkspaceReadiness,
+    readXrCanOfferUserActions,
+    readXrCanOfferUserActions,
   )
-  const xrActionsReady = !xrV2DemoActive || xrReadiness.canOfferUserActions
+  const xrCapabilityTier = React.useSyncExternalStore(
+    subscribeXrV2WorkspaceReadiness,
+    readXrCapabilityTier,
+    readXrCapabilityTier,
+  )
+  const xrActionsReady = !xrV2DemoActive || xrCanOfferUserActions
   const xrSpatialCapture = React.useSyncExternalStore(
     subscribeXrV2SpatialCapture,
     readXrV2SpatialCapture,
@@ -344,13 +352,11 @@ export function MotionControlFloatingPanelView() {
     })
   }, [pushUiToast])
 
-  const inspection = inspectLocalMotionControl()
   const sourceMetadataReady = grammarCatalog.hydration.status === 'fresh'
     && MOTION_CONTROL_REQUIRED_METADATA_TOKENS.every(required => grammarCatalog.entries.some(entry => entry.token === required.token && entry.kind === required.kind))
   const sourceMetadataDeferred = !grammarAutoHydrationAllowed && grammarCatalog.hydration.status === 'idle'
   const sourceMetadataLoading = !sourceMetadataDeferred
     && (grammarCatalog.hydration.status === 'idle' || grammarCatalog.hydration.status === 'loading')
-  const nativeInvocationReady = Boolean(inspection.invocationGrammar)
   const runtimeBusy = state.phase === 'requesting-camera' || state.phase === 'loading-model' || state.phase === 'running'
   const canStop = startPending || runtimeBusy || state.cameraActive
     || capture.sources.length > 0 || capture.recording.status === 'recording' || peerSharing.enabled
@@ -375,9 +381,9 @@ export function MotionControlFloatingPanelView() {
             <output
               className="px-1 text-[9px] font-semibold"
               aria-live="polite"
-              data-kg-xr-v2-header-capability-tier={xrReadiness.capabilityTier || 'detecting'}
+              data-kg-xr-v2-header-capability-tier={xrCapabilityTier || 'detecting'}
             >
-              XR tier: {xrReadiness.capabilityTier || 'detecting'}
+              XR tier: {xrCapabilityTier || 'detecting'}
             </output>
           ) : null}
           <button type="button" className="App-toolbar__btn" disabled={!xrActionsReady || startPending || stopPending || runtimeBusy} onClick={() => void runControl('start')} data-kg-motion-control-start="1">
@@ -483,10 +489,10 @@ export function MotionControlFloatingPanelView() {
           {!sourceMetadataReady ? (
             <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
               {sourceMetadataDeferred
-                ? `ACOS Motion Control invocation metadata is deferred for offline XR.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`
+                ? 'ACOS Motion Control invocation metadata is deferred for offline XR. Native Motion Control remains ready.'
                 : sourceMetadataLoading
-                ? `ACOS Motion Control invocation metadata is loading.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`
-                : `ACOS Motion Control invocation metadata is unavailable.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`}
+                ? 'ACOS Motion Control invocation metadata is loading. Native Motion Control remains ready.'
+                : 'ACOS Motion Control invocation metadata is unavailable. Native Motion Control remains ready.'}
             </p>
           ) : null}
           <MotionInvocation operation="start" backend={backend} />
@@ -500,7 +506,7 @@ export function MotionControlFloatingPanelView() {
           <MotionInvocationChip invocation={buildMotionControlExportInvocation('csv')} operation="export-csv" />
           <MotionInvocationChip invocation={buildMotionControlShareInvocation(true)} operation="share-enable" />
           <MotionInvocationChip invocation={buildMotionControlShareInvocation(false)} operation="share-disable" />
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP: {inspection.webMcpTools.control}</p>
+          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP: {`agentic-graph.${MOTION_CONTROL_WEB_MCP_TOOL_IDS.control}`}</p>
         </section>
 
         <section className={cn('grid gap-1 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>

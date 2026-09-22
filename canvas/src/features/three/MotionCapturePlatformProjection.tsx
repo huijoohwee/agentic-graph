@@ -13,7 +13,8 @@ import {
   subscribeMediaCatalogMode,
 } from '@/features/command-menu/mediaCatalogModeRuntime'
 import type { MotionCaptureExportFormat, MotionCaptureSourceState } from './motionCapturePlatformContract'
-import { buildMotionControlExportInvocation, buildMotionControlInvocation, inspectLocalMotionControl } from './motionControlMcpRuntime'
+import { buildMotionControlExportInvocation, buildMotionControlInvocation } from './motionControlMcpRuntime'
+import { MOTION_CONTROL_WEB_MCP_TOOL_IDS } from './motionControlMcpContract.mjs'
 import { motionCapturePlatformUiAdapter } from './motionCapturePlatformUiAdapter'
 import { motionControlCaptureSurfaceIsOpen } from './motionControlSurfaceRuntime'
 
@@ -92,7 +93,7 @@ export function MotionCapturePlatformProjection({
   const evidence = session.evidence
   const recording = session.recording
   const exportReady = recording.status === 'stopped' && recording.sampleCount > 0
-  const webMcpControlTool = inspectLocalMotionControl().webMcpTools.control
+  const webMcpControlTool = `agentic-graph.${MOTION_CONTROL_WEB_MCP_TOOL_IDS.control}`
 
   const runAction = React.useCallback((id: string, action: () => void, successMessage: string) => {
     try {

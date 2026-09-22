@@ -5,10 +5,11 @@ import {
 import {
   buildXrAnimationInvocation,
   buildXrAnimationTransportInvocation,
-  inspectLocalAnimation,
 } from './xrAnimationMcpRuntime'
-import { buildXrPhysicsInvocation } from './xrSceneMcpContract.mjs'
-import { inspectLocalXrSceneAssets } from './xrSceneMcpRuntime'
+import { XR_ANIMATION_WEB_MCP_TOOL_IDS } from './xrAnimationMcpContract.mjs'
+import { buildXrPhysicsInvocation, XR_SCENE_WEB_MCP_TOOL_IDS } from './xrSceneMcpContract.mjs'
+import { readXrSceneDocumentReady } from './xrSceneDocumentReadiness'
+import { readXrNativeControllerDemo } from './xrNativeControllerDemoRuntime'
 import { readXrPhysicsRuntime, type XrPhysicsRuntimeSnapshot } from './xrPhysicsRuntime'
 import type { XrMotionReferenceSubject } from './xrMotionReferenceModel'
 import { readXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
@@ -77,12 +78,11 @@ export function buildMotionControlAnimationTarget(input: Readonly<{
 
 export function inspectMotionControlTargets() {
   const runtime = readXrMotionReferenceRuntime()
-  const scene = inspectLocalXrSceneAssets()
+  const sceneReady = readXrSceneDocumentReady()
   const physics = readXrPhysicsRuntime()
-  const animation = inspectLocalAnimation()
   const gameMode = readGameModeSnapshot()
   const gameMission = readGameFpsSnapshot()
-  const controller = scene.physics.controllerDemo
+  const controller = readXrNativeControllerDemo()
   const actorId = readBoundXrSelectedActorId()
   const track = runtime.plan.cast.find(candidate => candidate.actorId === actorId)
   const subject = runtime.plan.subjects.find(candidate => candidate.id === actorId)
@@ -122,22 +122,22 @@ export function inspectMotionControlTargets() {
     surfaces: {
       xr3d: {
         ...MOTION_CONTROL_SURFACE_CATALOG['xr-3d'],
-        sceneReady: scene.sceneReady,
+        sceneReady,
         subjectCount: objectIdentification.counts.total,
         objectIdentification,
         controllerMode: controller.mode,
         controllerPhase: controller.phase,
         invocation: buildMotionControlXrControllerInvocation(controller),
-        webMcpTool: scene.webMcpTools.control,
+        webMcpTool: `agentic-graph.${XR_SCENE_WEB_MCP_TOOL_IDS.control}`,
       },
       animation: {
         ...MOTION_CONTROL_SURFACE_CATALOG.animation,
-        sceneReady: animation.sceneReady,
+        sceneReady,
         selectedTarget: animationTarget,
         invocation: animationPreset
           ? buildXrAnimationInvocation(animationPreset.id)
           : buildXrAnimationTransportInvocation('play'),
-        webMcpTool: animation.webMcpTools.control,
+        webMcpTool: `agentic-graph.${XR_ANIMATION_WEB_MCP_TOOL_IDS.control}`,
       },
       gameMode: {
         ...MOTION_CONTROL_SURFACE_CATALOG['game-mode'],
