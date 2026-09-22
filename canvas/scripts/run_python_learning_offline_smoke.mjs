@@ -61,7 +61,13 @@ try {
   }, { name, input })
   const inspect = () => invoke('inspect_local_python_learning')
   const control = input => invoke('control_local_python_learning', input)
-  await page.waitForFunction(() => document.documentElement.dataset.kgWebmcpScope === 'pythonLearning')
+  const selectPython = async () => {
+    await page.waitForFunction(() => window.__registeredLearningTools.has('agentic-graph.select_local_tool_scope'))
+    await invoke('select_local_tool_scope', { scope: 'pythonLearning' })
+    assert.equal(await page.locator('html').getAttribute('data-kg-webmcp-scope'), 'pythonLearning')
+  }
+  // A restored floating panel keeps its own discovery priority; agents select the requested group.
+  await selectPython()
   const discovery = await page.evaluate(() => ({ scope: document.documentElement.dataset.kgWebmcpScope,
     names: [...window.__registeredLearningTools.keys()], bytes: Number(document.documentElement.dataset.kgWebmcpBytes) }))
   assert.equal(discovery.names.length, 8); assert.ok(discovery.bytes <= 32 * 1024)
@@ -87,6 +93,7 @@ try {
   const reloadStart = performance.now()
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
   await pane.waitFor({ timeout: 60000 })
+  await selectPython()
   const reloadMs = Math.round(performance.now() - reloadStart)
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   const editor = pane.getByRole('textbox', { name: 'Python source text', exact: true })
