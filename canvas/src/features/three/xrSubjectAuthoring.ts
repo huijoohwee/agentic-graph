@@ -75,10 +75,24 @@ export type XrSubjectConstruction = Readonly<{
   proceduralAssetManifestPath: string
   proceduralAssetWorkspaceParent: string
   proceduralAssetSourcePath: string
+  playback?: Readonly<{ clipId: string | null; loop: boolean }>
 }>
 // Float32 mesh bounds can differ from the authored ground plane by sub-micrometer rounding.
 export const XR_SUBJECT_GROUND_EPSILON_METERS = 1e-6
-const constructionBounds = new Map<string, Readonly<{ min: readonly number[]; max: readonly number[] }>>()
+const constructionBounds = new Map<string, Readonly<{ min: readonly number[]; max: readonly number[]; clips: readonly { id: string; duration: number }[] }>>()
+
+export function readXrSubjectPlayback(construction: XrSubjectConstruction): { clipId: string | null; loop: boolean; clips: readonly { id: string; duration: number }[] } {
+  const { clips } = resolveXrSubjectConstructionBounds(construction)
+  const value: unknown = construction.playback
+  if (value === undefined) return { clipId: clips[0]?.id ?? null, loop: true, clips }
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || Reflect.ownKeys(value).some(key => key !== 'clipId' && key !== 'loop')) throw new Error('Invalid subject playback settings')
+  const playback = value as Record<string, unknown>
+  if (!Object.hasOwn(playback, 'clipId') || !Object.hasOwn(playback, 'loop') || typeof playback.loop !== 'boolean'
+    || !(playback.clipId === null || typeof playback.clipId === 'string')) throw new Error('Invalid subject playback settings')
+  if (playback.clipId !== null && !clips.some(clip => clip.id === playback.clipId)) throw new Error('Selected subject clip is missing from the construction')
+  return { clipId: playback.clipId as string | null, loop: playback.loop, clips }
+}
 
 export class XrSubjectConstructionError extends Error {
   readonly code = 'invalid-subject-construction'
@@ -93,7 +107,7 @@ export function readXrSubjectConstruction(value: unknown): XrSubjectConstruction
 function admitXrSubjectConstruction(value: unknown): XrSubjectConstruction {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid subject construction')
   const record = value as Record<string, unknown>
-  const result = {} as Record<keyof XrSubjectConstruction, string>
+  const result = {} as { -readonly [K in keyof XrSubjectConstruction]: XrSubjectConstruction[K] }
   for (const key of ['proceduralAssetDocument', 'proceduralAssetManifestPath', 'proceduralAssetWorkspaceParent', 'proceduralAssetSourcePath'] as const) {
     const field = record[key]
     if (typeof field !== 'string' || !field.trim()) throw new Error(`Missing subject construction ${key}`)
@@ -101,6 +115,10 @@ function admitXrSubjectConstruction(value: unknown): XrSubjectConstruction {
     if (key !== 'proceduralAssetDocument' && (result[key].length > 4096 || /[\\\u0000-\u001f]/.test(result[key]) || result[key].split('/').some(part => part === '.' || part === '..'))) throw new Error('Invalid subject workspace path')
   }
   resolveXrSubjectConstructionBounds(result)
+  if (record.playback !== undefined) {
+    const { clipId, loop } = readXrSubjectPlayback({ ...result, playback: record.playback as XrSubjectConstruction['playback'] })
+    result.playback = Object.freeze({ clipId, loop })
+  }
   return Object.freeze(result)
 }
 
@@ -113,7 +131,8 @@ export function resolveXrSubjectConstructionBounds(construction: XrSubjectConstr
     const box = new THREE.Box3().setFromObject(session.current.scene)
     if (box.isEmpty() || ![...box.min.toArray(), ...box.max.toArray()].every(Number.isFinite)) throw new Error('Subject construction has no finite bounds')
     if (box.min.y < -XR_SUBJECT_GROUND_EPSILON_METERS) throw new Error('Subject construction extends below its ground origin; move its parts above Y = 0 before applying')
-    const bounds = Object.freeze({ min: Object.freeze(box.min.toArray()), max: Object.freeze(box.max.toArray()) })
+    const clips = Object.freeze(session.snapshot.lastValid.clips.map(clip => Object.freeze({ id: clip.id, duration: clip.duration })))
+    const bounds = Object.freeze({ min: Object.freeze(box.min.toArray()), max: Object.freeze(box.max.toArray()), clips })
     // Repeated metadata normalization reuses admission; this cache owns no GPU resources.
     if (constructionBounds.size >= 8) constructionBounds.delete(constructionBounds.keys().next().value!)
     constructionBounds.set(document, bounds)

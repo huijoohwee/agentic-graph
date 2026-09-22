@@ -297,3 +297,26 @@ The added selected-model export/reimport proof expands this slice's authored-byt
 cap from 20 KB to 22 KB; the file, module, checkout and dependency caps are unchanged.
 Review, focused part/save/reimport/cancellation cases and Canvas 5.8.3 type checking
 passed locally. Real browser UI and whole-scene export remain unverified.
+
+### S1 authored clip playback — admitted continuation
+
+`/change #xr.subject.current-base @codex` continues in seven existing reserved
+files, with a 20-active-minute checkpoint, at most 18 KB of added source and zero
+new modules, checkouts, dependencies or services. Persist a selected native clip
+or explicit rest pose and repeat/hold behavior in the subject construction's
+scene attachment. Legacy attachments retain their first-clip repeat behavior.
+The renderer samples only the shared Timeline playhead, including backward seeks
+and exact non-looping endpoints. Native recipe clips and exported GLB remain
+unmodified; scene playback configuration is not claimed as baked GLB behavior.
+Unknown or removed clip references reject without replacing last-valid source.
+Review before focused admission, actual sampler and mounted persistence checks;
+then use the locked Canvas compiler once. Native Timeline rows, keyframe UI,
+bridge recovery, agent parity and whole-scene export remain outside this slice.
+
+Independent review found no actionable defects. Mounted clip save/reopen plus
+existing GLB/cancellation passed in 1793 ms. The actual mixer regression passed
+in 214 ms after replacing an unsuitable angle comparison on identical non-unit
+Float32 quaternions with exact array equality; no tolerance was widened and the
+sampler was unchanged. A nullable return type annotation was corrected after
+Canvas type checking; final compiler validation is recorded in the task receipt.
+This proves focused behavior, not browser/mobile or full Timeline acceptance.

@@ -123,6 +123,11 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     await save('Create editable model')
     assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction?.proceduralAssetWorkspaceParent, '/', 'Bare document names use the native workspace root')
     const createdDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
+    const recipeField = container.querySelector<HTMLTextAreaElement>('textarea')!
+    const twoClips = JSON.parse(recipeField.value)
+    twoClips.clips.push({ ...twoClips.clips[0], id: 'salute' })
+    await act(async () => Simulate.change(recipeField, { target: { value: JSON.stringify(twoClips) } } as never))
+    await save('Apply recipe')
     await act(async () => Simulate.change(container.querySelector('input[type="number"]')!, { target: { valueAsNumber: 1.1 } } as never))
     await save('Apply controls')
     let editedDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
@@ -163,6 +168,39 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument, editedDocument)
     await act(async () => Simulate.click(button('Reset part draft')))
     assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Parent part"]')!.value, '')
+
+    const clipField = () => container.querySelector<HTMLSelectElement>('[aria-label="Authored clip"]')!
+    assert.equal(clipField().value, 'walk', 'Legacy construction selects its first clip')
+    assert.deepEqual([...clipField().options].map(option => option.value), ['', 'walk', 'salute'])
+    await changeField('Authored clip', 'salute')
+    await changeField('At clip end', 'hold')
+    const pendingClipField = clipField()
+    await act(async () => { setXrMotionReferencePlayhead(3); setXrMotionReferencePlayhead(1) })
+    assert.equal(clipField(), pendingClipField, 'Transport seeks retain the unsaved clip choice')
+    await act(async () => Simulate.click(button('Apply playback')))
+    const clipSource = useGraphStore.getState().markdownDocumentText!
+    const clipMetadata = yaml.load(extractYamlFrontmatterBlock(clipSource)!.yamlText) as Record<string, unknown>
+    const reopenedClip = readXrMotionReferencePlan(clipMetadata.kgXrMotionReference).subjects[0].construction!
+    assert.deepEqual(reopenedClip.playback, { clipId: 'salute', loop: false }, 'Playback is saved to the actual scene source')
+    assert.equal(reopenedClip.proceduralAssetDocument, editedDocument, 'Clip choices never regenerate editable model or GLB companions')
+    assert.equal(readXrMotionReferenceRuntime().playheadSeconds, 1)
+    assert.equal(readXrMotionReferenceRuntime().selectedShotTargetId, 'shared-id')
+    await act(async () => { hydrateCanonicalXrMotionReferenceRuntime(); selectXrMotionReferenceShotTarget('shared-id') })
+    assert.equal(clipField().value, 'salute', 'Source rehydration restores clip selection')
+    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="At clip end"]')!.value, 'hold')
+    const beforeMissingClip = readXrMotionReferenceRuntime()
+    assert.throws(() => setXrSubjectConstruction('shared-id', { ...reopenedClip, playback: { clipId: 'missing', loop: true } }), XrSubjectConstructionError)
+    assert.equal(readXrMotionReferenceRuntime(), beforeMissingClip)
+    assert.equal(useGraphStore.getState().markdownDocumentText, clipSource)
+    await changeField('Authored clip', '')
+    await act(async () => Simulate.click(button('Apply playback')))
+    assert.deepEqual(readXrMotionReferenceRuntime().plan.subjects[0].construction!.playback, { clipId: null, loop: false })
+    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="At clip end"]')!.disabled, true)
+    await changeField('Authored clip', 'walk')
+    await changeField('At clip end', 'repeat')
+    await act(async () => Simulate.click(button('Apply playback')))
+    assert.deepEqual(readXrMotionReferenceRuntime().plan.subjects[0].construction!.playback, { clipId: 'walk', loop: true })
+    await openParts()
 
     let finishFs: (() => void) | undefined
     resolveFs = () => new Promise(resolve => { finishFs = () => resolve(fs) })

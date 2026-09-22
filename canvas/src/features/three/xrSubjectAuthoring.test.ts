@@ -3,7 +3,8 @@ import { ProceduralAssetSession } from '@/features/image-to-glb/proceduralAssetS
 import { createProceduralAssetFromText, PROCEDURAL_ASSET_TEXT_SUBJECTS } from '@/features/image-to-glb/proceduralAssetTextRecipe'
 import { resolveXrSubjectFootprint } from './xrMotionReferenceSubjectPlacement'
 import assert from 'node:assert/strict'
-import { captureXrSubjectDraftContext, isXrSubjectDraftCurrent, readXrSubjectPart, editXrSubjectPart, XR_SUBJECT_GROUND_EPSILON_METERS, XrSubjectConstructionError } from './xrSubjectAuthoring'
+import { captureXrSubjectDraftContext, isXrSubjectDraftCurrent, readXrSubjectPart, editXrSubjectPart, readXrSubjectConstruction, readXrSubjectPlayback, XR_SUBJECT_GROUND_EPSILON_METERS, XrSubjectConstructionError } from './xrSubjectAuthoring'
+import { sampleXrSubjectPlayback } from './XrAuthoredSubjectGeometry'
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from './xrMotionReferenceModel'
 import type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
 
@@ -33,6 +34,53 @@ export function testXrSubjectDraftBindsDocumentPlanAndSelectionWithoutTransport(
   assert.equal(JSON.stringify(recipe), original, 'Success and rejection leave the original recipe immutable')
 
   const plan = readXrMotionReferencePlan({ subjects: [{ id: 'same-subject', assetId: 'prop-crate', label: 'Crate' }] })
+  const clipsRecipe = createProceduralAssetFromText('blue robot', 9)
+  clipsRecipe.clips.push({ id: 'wave', duration: 1, tracks: [{ partId: 'arm-right', keys: [
+    { time: 0, rotation: [0, 0, 0] }, { time: 1, rotation: [0, 0, 1] },
+  ] }] })
+  const clipsSession = new ProceduralAssetSession('/clips.md#subject', clipsRecipe)
+  const clipsDocument = clipsSession.serialize()
+  const legacy = { proceduralAssetDocument: clipsDocument, proceduralAssetManifestPath: '/models/clips/manifest.json',
+    proceduralAssetWorkspaceParent: '/models', proceduralAssetSourcePath: '/clips.md' }
+  let clipMixer: THREE.AnimationMixer | null = null
+  try {
+    assert.deepEqual(readXrSubjectPlayback(legacy), { clipId: 'walk', loop: true, clips: [{ id: 'walk', duration: 2 }, { id: 'wave', duration: 1 }] })
+    assert.equal(Object.hasOwn(readXrSubjectConstruction(legacy)!, 'playback'), false, 'Legacy bytes stay implicit')
+    assert.deepEqual(readXrSubjectConstruction({ ...legacy, playback: undefined }), legacy, 'Undefined optional settings normalize to legacy absence')
+    for (const playback of [{ clipId: 'wave', loop: false }, { clipId: null, loop: true }]) {
+      const construction = readXrSubjectConstruction({ ...legacy, playback })!
+      const authored = readXrMotionReferencePlan({ subjects: [{ ...plan.subjects[0], construction }] })
+      const roundtrip = readXrMotionReferencePlan(JSON.parse(JSON.stringify(serializeXrMotionReferencePlan(authored))))
+      assert.deepEqual(roundtrip.subjects[0].construction, construction)
+      assert.deepEqual(readXrSubjectPlayback(construction), { ...playback, clips: readXrSubjectPlayback(legacy).clips })
+    }
+    for (const playback of [null, [], {}, { clipId: 'missing', loop: true }, { clipId: 'wave', loop: 'once' },
+      { clipId: 1, loop: false }, { clipId: null, loop: false, speed: 2 }]) {
+      assert.throws(() => readXrSubjectConstruction({ ...legacy, playback }), /playback|clip/)
+    }
+    const removed = JSON.parse(clipsDocument)
+    removed.lastValid.clips = removed.lastValid.clips.filter((clip: { id: string }) => clip.id !== 'wave')
+    assert.throws(() => readXrSubjectConstruction({ ...legacy, proceduralAssetDocument: JSON.stringify(removed), playback: { clipId: 'wave', loop: false } }), /missing/)
+    assert.equal(clipsSession.serialize(), clipsDocument, 'Rejected settings/source leave the valid document unchanged')
+    const scene = clipsSession.current.scene, left = scene.getObjectByName('Pivot-arm-left')!, right = scene.getObjectByName('Pivot-arm-right')!
+    const restLeft = left.quaternion.clone(), restRight = right.quaternion.clone()
+    clipMixer = new THREE.AnimationMixer(scene)
+    const sample = (clipId: string | null, loop: boolean, seconds: number) => sampleXrSubjectPlayback(scene, clipMixer!, { clipId, loop }, seconds)
+    sample('walk', true, 0.5); assert.ok(left.quaternion.angleTo(restLeft) > 0.4)
+    sample('wave', true, 0.25)
+    assert.ok(left.quaternion.angleTo(restLeft) < 1e-6, 'Switching clips restores untargeted joints')
+    const quarter = right.quaternion.clone()
+    assert.ok(Math.abs(quarter.angleTo(restRight) - 0.25) < 1e-6)
+    sample('wave', true, 2.25); assert.deepEqual(right.quaternion.toArray(), quarter.toArray(), 'Repeat samples the selected duration exactly')
+    sample('wave', false, 2); assert.ok(Math.abs(right.quaternion.angleTo(restRight) - 1) < 1e-6, 'Once holds the final pose')
+    sample('wave', false, 0.25); assert.deepEqual(right.quaternion.toArray(), quarter.toArray(), 'Backward seek clears a previous clamp exactly')
+    sample(null, false, 99); assert.ok(right.quaternion.angleTo(restRight) < 1e-6); assert.ok(left.quaternion.angleTo(restLeft) < 1e-6)
+    sample('walk', true, 0.5); assert.ok(left.quaternion.angleTo(restLeft) > 0.4, 'Resume after rest reuses the mixer')
+    assert.throws(() => sample('missing', true, 0), /missing/)
+    assert.throws(() => sample('wave', true, NaN), /Invalid/)
+    assert.equal(clipsSession.serialize(), clipsDocument, 'Sampling never rewrites the native recipe')
+  } finally { clipMixer?.stopAllAction(); if (clipMixer) clipMixer.uncacheRoot(clipsSession.current.scene); clipsSession.dispose() }
+
   const runtime: XrMotionReferenceRuntimeSnapshot = { sceneKey: 'scene-a', sourceSignature: 'source-a', plan,
     selectedActorId: '', selectedShotTargetId: 'same-subject', selectedCameraRig: 'dolly', selectedMark: null,
     castMarkArmed: false, playheadSeconds: 0, dirty: false, revision: 1 }

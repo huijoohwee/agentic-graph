@@ -10,7 +10,7 @@ import { prepareProceduralAssetOutput } from '@/features/image-to-glb/procedural
 import { exportProceduralAsset } from '@/features/image-to-glb/proceduralAssetRuntimeExport'
 import { downloadBlob } from '@/lib/graph/save'
 import type { AssetPart, ProceduralAssetRecipe } from '@/features/image-to-glb/proceduralAssetContract'
-import { captureXrSubjectDraftContext, editXrSubjectPart, isXrSubjectDraftCurrent, readXrSubjectConstruction, readXrSubjectPart, type XrSubjectDraftContext } from './xrSubjectAuthoring'
+import { captureXrSubjectDraftContext, editXrSubjectPart, isXrSubjectDraftCurrent, readXrSubjectConstruction, readXrSubjectPart, readXrSubjectPlayback, type XrSubjectConstruction, type XrSubjectDraftContext } from './xrSubjectAuthoring'
 import { readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot, setXrSubjectConstruction, subscribeXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
 import { persistXrScene } from './xrScenePersistence'
 import type { XrMotionReferenceSubject } from './xrMotionReferenceModel'
@@ -80,6 +80,12 @@ export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceF
     }
   }
   const create = () => save(() => new ProceduralAssetSession(`${context.documentName}#${subject.id}`, createProceduralAssetFromText(intent)))
+  const applyPlayback = (playback: NonNullable<XrSubjectConstruction['playback']>) => {
+    if (busy || !current()) return
+    setError('')
+    try { commit({ playback }) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : 'Unable to save clip playback') }
+  }
   const applyPart = (partId: string, patch: Omit<AssetPart, 'id'>) => save(() => {
     if (!subject.construction) throw new Error('Select an editable subject first')
     const session = ProceduralAssetSession.restore(subject.construction.proceduralAssetDocument)
@@ -114,8 +120,9 @@ export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceF
   }
   return <section aria-label="Subject construction" className="grid gap-2 border-t pt-2">
     {subject.construction ? <>
-      <p className="text-xs">Rigid parts, pivots and hierarchy remain editable. The first authored clip follows the shared Timeline playhead.</p>
+      <p className="text-xs">Rigid parts, pivots and hierarchy remain editable. The selected clip follows the shared Timeline playhead.</p>
       <XrSubjectPartEditor key={`parts:${binding.generation}`} document={subject.construction.proceduralAssetDocument} busy={busy} onApply={applyPart} />
+      <XrSubjectPlaybackEditor key={`playback:${binding.generation}`} construction={subject.construction} busy={busy} onApply={applyPlayback} />
       <fieldset disabled={busy} className="min-w-0">
         <ProceduralAssetControls key={binding.generation} resolveWorkspaceFs={resolveWorkspaceFs} nodeId={subject.id} properties={{ ...subject.construction, proceduralAssetSourcePath: context.documentName }} onPatchProperties={commit} />
       </fieldset>
@@ -129,6 +136,28 @@ export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceF
     {busy ? <div role="status" className="text-xs">{activity} <button type="button" onClick={() => binding.pending?.abort()}>Cancel</button></div> : null}
     {error ? <p role="alert" className="text-xs text-red-500">{error}</p> : null}
   </section>
+}
+
+function XrSubjectPlaybackEditor({ construction, busy, onApply }: {
+  construction: XrSubjectConstruction; busy: boolean; onApply: (playback: NonNullable<XrSubjectConstruction['playback']>) => void
+}) {
+  const current = React.useMemo(() => readXrSubjectPlayback(construction), [construction])
+  const [clipId, setClipId] = React.useState(current.clipId)
+  const [loop, setLoop] = React.useState(current.loop)
+  return <fieldset disabled={busy} className="grid min-w-0 gap-2 border-t pt-2">
+    <legend className="text-xs font-medium">Clip playback</legend>
+    <label className="grid gap-1 text-xs">Authored clip<select aria-label="Authored clip" className="min-h-9 rounded border bg-transparent px-2" value={clipId || ''}
+      onChange={event => setClipId(event.currentTarget.value || null)}>
+      <option value="">Rest pose</option>
+      {current.clips.map(clip => <option key={clip.id} value={clip.id}>{clip.id} · {clip.duration} s</option>)}
+    </select></label>
+    <label className="grid gap-1 text-xs">At clip end<select aria-label="At clip end" className="min-h-9 rounded border bg-transparent px-2" value={loop ? 'repeat' : 'hold'} disabled={!clipId}
+      onChange={event => setLoop(event.currentTarget.value === 'repeat')}>
+      <option value="repeat">Repeat</option><option value="hold">Hold final pose</option>
+    </select></label>
+    <p className="text-xs opacity-70">Clips start at scene time zero. Use the Timeline to play or seek. Playback choices stay with the scene; model GLB includes all authored clips.</p>
+    <button type="button" className="min-h-9 rounded border px-3 text-xs" onClick={() => onApply({ clipId, loop })}>Apply playback</button>
+  </fieldset>
 }
 
 /** A local form projection of the selected subject's native recipe; no second selection store. */
