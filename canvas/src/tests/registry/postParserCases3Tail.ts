@@ -180,6 +180,8 @@ export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
   ["xr.spatialCaptureFallback.browserSmokeContract","@/__tests__/xrSpatialCaptureFallbackBrowserSmokeContract.test","testXrSpatialCaptureFallbackBrowserSmokeContract"],
   ["xr.spatialCaptureFallback.readiness","@/__tests__/xrSpatialCaptureFallbackReadiness.test","testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBoundary"],
   ["xr.spatialCaptureFallback.runtimeReady","@/__tests__/xrSpatialCaptureFallbackRuntimeReady.test","testXrSpatialCaptureFallbackRuntimeReadyKeepsRepoOwnedLocalAcceptance"],
+  ["xr.subject.draft.sourceAndSelectionFence","@/features/three/xrSubjectAuthoring.test","testXrSubjectDraftBindsDocumentPlanAndSelectionWithoutTransport"],
+  ["xr.subject.editor.documentFenceAndPersistence","@/__tests__/xrSubjectAuthoring.test.tsx","testXrSubjectEditorFencesDuplicateDocumentsAndPersistsValidDraft"],
   ["strybldr.markdown.workspaceStructuredGraphFeedsStoryboardRenderers","@/__tests__/strybldr.test","testStrybldrWorkspaceStructuredGraphFeedsStoryboardRenderers"],
   ["strybldr.markdown.appendElementPersistsToStructuredPayload","@/__tests__/strybldr.test","testStrybldrStoryboardAppendElementPersistsToStructuredPayload"],
   ["strybldr.markdown.removeElementPersistsToStructuredPayload","@/__tests__/strybldr.test","testStrybldrStoryboardRemoveElementPersistsToStructuredPayload"],
