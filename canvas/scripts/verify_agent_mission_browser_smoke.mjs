@@ -9,6 +9,7 @@ import { chromium } from 'playwright'
 import { verifyAgentMissionSourceFiles, verifyDashboardWidgets, verifyFullCanvas } from './lib/verify-dashboard-widgets.mjs'
 import { verifyCanvasContainerSizing } from './lib/verify-canvas-container-sizing.mjs'
 import { createMissionPhaseObservation } from './lib/mission-phase-observation.mjs'
+import { verifyMissionDashboardEntry } from './lib/verify-mission-dashboard-entry.mjs'
 const phaseObservation = createMissionPhaseObservation()
 const output = resolve(process.env.AG_MISSION_ARTIFACT_DIR || '../data/outputs/agent-mission-browser-smoke')
 const browser = await chromium.launch({ headless: true })
@@ -93,6 +94,13 @@ async function openDashboard(expectRuntime = true) {
   assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
   if (expectRuntime) assert.ok(await mission.locator('[aria-label="Agent runs"] table').count() === 1)
   assert.ok(await page.getByRole('region', { name: 'Dashboard metrics', exact: true }).locator('[data-kg-dashboard-metric]').count() > 0)
+}
+async function openDesktopDashboard() {
+  await context.close()
+  context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
+  await openPage()
+  returnView = await verifyMissionDashboardEntry(page, { baseUrl: process.env.AG_MISSION_SMOKE_BASE_URL,
+    authoredSnapshot, assertAuthored, waitForMission: () => waitText(mission, '2 retained matches') })
 }
 async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
@@ -384,7 +392,11 @@ async function switchPrincipal(id) {
 }
 try {
   await mkdir(output, { recursive: true })
-  if (process.env.AG_MISSION_ACTIVATION_ONLY === '1') {
+  if (process.env.AG_MISSION_DASHBOARD_ENTRY_ONLY === '1') {
+    await openDesktopDashboard(); await choose('candidate-run')
+    assert.deepEqual(errors, [])
+    console.log('Focused cold Settings Dashboard pointer entry passed; full mission lifecycle remains a separate check.')
+  } else if (process.env.AG_MISSION_ACTIVATION_ONLY === '1') {
     await verifyApexActivation(360)
     await verifyApexActivation(1280)
     await verifyWorkspaceObservation(page, () => openDashboard(false))
@@ -531,18 +543,7 @@ try {
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await context.setOffline(false)
   phaseObservation.checkpoint('Mission browser: mobile offline workspace expiry passed')
-  await context.close()
-  context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
-  await openPage()
-  await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded', timeout: 120000 })
-  floating = page.locator('[data-kg-floating-panel-root="true"]')
-  await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
-  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
-  if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
-    await closeFloatingPanel(page, floating)
-  }
-  await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click()
-  returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] }); await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true })
+  await openDesktopDashboard()
   await waitText(mission, '2 retained matches'); await choose('candidate-run')
   await page.getByRole('combobox', { name: 'Inspect run details', exact: true }).selectOption('topology')
   await waitTopology(selected)
