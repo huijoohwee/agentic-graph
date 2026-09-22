@@ -20,4 +20,3 @@ export const loadMonacoLanguageContribution = async (language: string): Promise<
     await import('monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution')
   }
 }
-
