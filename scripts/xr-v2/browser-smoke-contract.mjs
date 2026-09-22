@@ -92,7 +92,7 @@ const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
   ['explicit Chromium override', /process\.env\.AG_XR_V2_CHROMIUM_EXECUTABLE/u],
   ['bundled Chromium preference', /chromium\.executablePath\(\)/u],
   ['software WebGL GL backend', /'--use-gl=angle'/u],
-  ['software WebGL ANGLE backend', /'--use-angle=swiftshader-webgl'/u],
+  ['software GLES ANGLE driver', /'--use-angle=swiftshader'/u],
   ['explicit SwiftShader admission', /'--enable-unsafe-swiftshader'/u],
   ['bounded initial cold navigation', /await page\.goto\([\s\S]*?waitUntil: 'domcontentloaded',[\s\S]*?timeout: coldStartTimeoutMs,[\s\S]*?\}\)/u],
   ['stable mounted readiness', /__kgXrV2StableReadinessFrames\s*>=\s*12/u],
