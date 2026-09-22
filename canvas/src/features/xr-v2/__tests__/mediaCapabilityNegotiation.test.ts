@@ -43,3 +43,9 @@ test('recorder negotiation fails closed when capture or MIME support is absent',
   assert.equal(capabilities.canvasCaptureStreamAvailable, true)
   assert.equal(capabilities.isMimeTypeSupported('video/webm'), false)
 })
+
+test('an explicit MP4 request never substitutes supported WebM', () => {
+  assert.deepEqual(negotiateBrowserRecordingPlan({ mediaRecorderAvailable: true, canvasCaptureStreamAvailable: true,
+    isMimeTypeSupported: mime => mime.startsWith('video/webm'),
+  }, { source: 'canvas', preferredContainer: 'mp4', includeAudio: false }), { status: 'unsupported', reason: 'container-unavailable' })
+})

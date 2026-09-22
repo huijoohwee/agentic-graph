@@ -111,3 +111,19 @@ test('an unexpected pause before the source range ends is a runtime failure', as
     error => resolveVideoSequenceExportErrorCode(error) === 'runtime-failed',
   )
 })
+
+test('XR and edited media share an exclusive recorder lease', async () => {
+  const { acquireVideoSequenceRecorderLease } = await import('../videoSequenceRecorderLifecycle')
+  const release = acquireVideoSequenceRecorderLease()
+  assert.throws(() => acquireVideoSequenceRecorderLease(), /Another media export/)
+  release(); release()
+  acquireVideoSequenceRecorderLease()()
+})
+
+test('recorder disposal detaches pending listeners and settles waiters', async () => {
+  const output = collectVideoSequenceRecorderOutput(new MockMediaRecorder() as unknown as MediaRecorder)
+  const waiting = output.waitForNonEmptyData()
+  output.dispose()
+  assert.equal(await waiting, false)
+  await assert.rejects(output.chunks)
+})

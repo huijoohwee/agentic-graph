@@ -1,10 +1,11 @@
 import type { MutableRefObject } from 'react'
 import type { Scene as ThreeScene } from 'three'
+import type { CanvasSnapshotFns } from '@/hooks/store/store-types/core'
 
 export function registerThreeGraphSnapshotFns(args: {
   glCanvasRef: MutableRefObject<HTMLCanvasElement | null>
   threeSceneRef: MutableRefObject<ThreeScene | null>
-  registerCanvasSnapshotFns: (id: string, fns: { capturePng: (pixelRatio?: number) => Promise<Blob | null> } | null) => void
+  registerCanvasSnapshotFns: (id: string, fns: CanvasSnapshotFns | null) => void
   registerThreeGlbSnapshotFns: (fns: { captureGlb: () => Promise<Blob | null>; captureGltf: () => Promise<Blob | null> } | null) => void
 }) {
   const { glCanvasRef, threeSceneRef, registerCanvasSnapshotFns, registerThreeGlbSnapshotFns } = args
@@ -36,7 +37,17 @@ export function registerThreeGraphSnapshotFns(args: {
       return null
     }
   }
-  registerCanvasSnapshotFns('3d', { capturePng })
+  registerCanvasSnapshotFns('3d', {
+    capturePng,
+    captureVideo: async options => {
+      const canvas = glCanvasRef.current
+      const scene = threeSceneRef.current
+      if (!canvas || !scene) return { status: 'unsupported', reason: 'No XR canvas is mounted.' }
+      const { captureXrSceneMp4 } = await import('@/features/three/xrSceneMp4Export')
+      return captureXrSceneMp4({ ...options, canvas, scene,
+        isCurrent: () => glCanvasRef.current === canvas && threeSceneRef.current === scene })
+    },
+  })
   registerThreeGlbSnapshotFns({
     captureGlb: async () => {
       try {
