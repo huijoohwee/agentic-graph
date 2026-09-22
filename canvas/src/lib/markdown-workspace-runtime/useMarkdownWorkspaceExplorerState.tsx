@@ -54,14 +54,14 @@ import {
 } from './markdownWorkspaceRuntime.shared'
 import type { MarkdownWorkspaceRuntimeInteractionStatusBindings } from './markdownWorkspaceRuntimeStatus'
 import { applyMarkdownWorkspaceErrorStatus, applyMarkdownWorkspaceInfoStatus } from './markdownWorkspaceStatusTransitions'
-import {
-  buildWorkspaceEntriesIndex,
-} from './workspaceEntriesIndex'
+import { buildWorkspaceEntriesIndex } from './workspaceEntriesIndex'
 import {
   resolveWorkspaceFolderContractDocumentPath,
   resolveWorkspaceFolderContractTargetPath,
 } from './workspaceFolderContractTarget'
 import { readWorkspaceExplorerReadOnlySnapshot } from './workspaceExplorerReadOnlySnapshot'
+
+type ExplorerRefreshOptions = { silent?: boolean; reconcileSeed?: boolean }
 
 const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
   const list = Array.isArray(sourceFiles) ? sourceFiles : []
@@ -88,7 +88,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
 }) {
   const workspaceFsRef = React.useRef<Awaited<ReturnType<typeof getWorkspaceFs>> | null>(null)
   const refreshInFlightRef = React.useRef(false)
-  const refreshQueuedRef = React.useRef(false)
+  const refreshQueuedRef = React.useRef<ExplorerRefreshOptions | null>(null)
   const workspaceRefreshDeferredRef = React.useRef(false)
   const seedSyncInFlightRef = React.useRef(false)
   const workspaceSeedSyncSignatureRef = React.useRef('')
@@ -135,7 +135,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     }
   }, [])
 
-  const refreshOnce = React.useCallback(async (opts?: { silent?: boolean }): Promise<WorkspaceRefreshSnapshot> => {
+  const refreshOnce = React.useCallback(async (opts?: ExplorerRefreshOptions): Promise<WorkspaceRefreshSnapshot> => {
     const runtime = runtimeRef.current
     const silent = !!opts?.silent
     const finishSeedSyncTask = runtime.readOnly ? null : beginWorkspaceSeedSyncTask()
@@ -173,7 +173,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     try {
       const currentActivePath = runtime.activePathRef.current
       const fs = await getFs()
-      await fs.ensureSeed()
+      if (opts?.reconcileSeed !== false) await fs.ensureSeed()
       const list = await fs.listEntries()
       const hydratedList = await hydrateWorkspaceEntriesInlineText({
         fs,
@@ -255,21 +255,20 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     }
   }, [args.readOnly, getFs, scheduleApplyComposedFromSourceFiles])
 
-  const refresh = React.useCallback(async (opts?: { silent?: boolean }): Promise<WorkspaceRefreshSnapshot> => {
-    if (refreshInFlightRef.current) {
-      refreshQueuedRef.current = true
-      return buildWorkspaceRefreshSnapshot({
-        entries: runtimeRef.current.entries,
-      })
+  const refresh = React.useCallback(async (opts?: ExplorerRefreshOptions): Promise<WorkspaceRefreshSnapshot> => {
+    // Coalesce requests without letting local mutation reads downgrade an explicit refresh.
+    refreshQueuedRef.current = {
+      silent: !!opts?.silent && (refreshQueuedRef.current?.silent ?? true),
+      reconcileSeed: opts?.reconcileSeed !== false || refreshQueuedRef.current?.reconcileSeed === true,
     }
+    if (refreshInFlightRef.current) return buildWorkspaceRefreshSnapshot({ entries: runtimeRef.current.entries })
     refreshInFlightRef.current = true
-    let snapshot: WorkspaceRefreshSnapshot = buildWorkspaceRefreshSnapshot({
-      entries: runtimeRef.current.entries,
-    })
+    let snapshot = buildWorkspaceRefreshSnapshot({ entries: runtimeRef.current.entries })
     try {
       do {
-        refreshQueuedRef.current = false
-        snapshot = await refreshOnce({ silent: !!opts?.silent })
+        const next = refreshQueuedRef.current
+        refreshQueuedRef.current = null
+        snapshot = await refreshOnce(next)
       } while (refreshQueuedRef.current)
       return snapshot
     } finally {
@@ -306,7 +305,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       if (isDirty && (!changedPath || changedPath === activePath)) return
       if (operation === 'writeFileText' && activePath && changedPath && changedPath !== activePath) return
       scheduleMarkdownWorkspaceRefreshSync(() => {
-        void refresh({ silent: true })
+        void refresh({ silent: true, reconcileSeed: false })
       }, {
         activePath,
         changedPath,
@@ -386,7 +385,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
           const isDirty = !!(activePath && last?.path === activePath && last.text !== runtime.activeTextRef.current)
           if (!isDirty && workspaceAutoRefreshEnabled && effectiveChanged) {
             scheduleMarkdownWorkspaceRefreshSync(() => {
-              void refresh({ silent: true })
+              void refresh({ silent: true, reconcileSeed: false })
             }, {
               activePath,
               changedPath: null,

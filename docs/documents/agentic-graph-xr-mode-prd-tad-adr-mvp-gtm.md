@@ -584,8 +584,7 @@ The three-file solver change adds under 10 KB, with no new module, dependency or
 The shared workspace text writer reuses `runWorkspaceFsChangedBatch`: artifact creation and missing
 folders notify observers once after exact persistence readback. A failed readback still rejects and
 releases one notification for partial mutation. Creation, update, failure and batch-release tests pass.
-The three-file follow-up adds under 4 KB; an instrumented local publication measured about 49 seconds
-versus an earlier 54-second baseline. Neither improvement alone resolved provider CI.
+The three-file follow-up adds under 4 KB; local publication measured about 49 seconds versus 54 before. Neither improvement alone resolved provider CI.
 
 `/fix #xr-adaptive-resolution @huijoohwee` bounds pixel work in the existing XR frame owner. At least
 one second and eight frames establish sustained pressure below 30 fps; pixel ratio decreases toward
@@ -597,3 +596,4 @@ Acceptance: deterministic pressure/recovery/reset tests and the existing full br
 publish and second-device reopen contract. One eightfold-throttled diagnostic measured 49.2 seconds
 at full resolution versus 38.5 seconds at half resolution; this is provisional local evidence only.
 Exact protected integration and recoverable closeout retain separate receipts.
+`/workspace.refresh #incremental-work @workspace` reads the local inventory after filesystem mutations and seed-sync completion, without reconciling seeds twice. Explicit refresh and the seed lifecycle still reconcile; coalescing preserves any queued full refresh. Mixed-path batches remain observable. Acceptance covers mounted mutation/explicit refresh, unchanged identity, queue priority and the unmodified XR publication deadline. Scope: three existing files, under 8 KB, no new module or dependency; local timing is diagnostic, not provider proof.
