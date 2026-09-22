@@ -17,7 +17,7 @@ import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/storyboardWidget/richM
 import { sampleXrAnimationPose } from '@/features/three/xrAnimationCatalog'
 import { resolveMotionControlSubjectPose } from '@/features/three/useMotionControlAnimationPose'
 import { buildMotionControlAnimationTarget, buildMotionControlObjectIdentification } from '@/features/three/motionControlTargetRuntime'
-import { assertSingaporeEnvironmentCardSemantics } from './helpers/xrEnvironmentCardSemantics'
+import { assertSingaporeEnvironmentCardSemantics } from './xrPlaygroundSelection.test'
 function readSource(...parts: string[]): string { return readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8') }
 export function testXrModeUsesCanonicalFloatingPanel() {
   const spatialAssetTools = readSource('features', 'three', 'SpatialAssetToolsPanel.tsx')
@@ -58,7 +58,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   const spatialCaptureTools = readSource('features', 'three', 'xrSpatialCaptureTools.ts')
   const bottomPanel = readSource('features', 'strybldr', 'StrybldrTimelineBottomPanel.tsx')
   const timelineBottomPanel = readSource('features', 'gitgraph', 'TimelineBottomPanelView.tsx')
-  const xrCameraMotion = readSource('features', 'three', 'XrCameraMotionSection.tsx')
+  const xrCameraMotion = ['XrCameraMotionSection.tsx', 'XrTimelineSceneStageControls.tsx', 'XrTimelineRehearsalControls.tsx'].map(file => readSource('features', 'three', file)).join('\n')
   const xrAnimationPanel = readSource('features', 'three', 'XrAnimationFloatingPanelView.tsx')
   const motionControlPanel = readSource('features', 'three', 'MotionControlFloatingPanelView.tsx')
   const motionCaptureProjection = readSource('features', 'three', 'MotionCapturePlatformProjection.tsx')
@@ -391,7 +391,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   ) {
     throw new Error('expected Environment Kits and Subjects & Props to reuse the Media three-row card layout owner')
   }
-  assertSingaporeEnvironmentCardSemantics(xrMediaLibrarySource)
+  assertSingaporeEnvironmentCardSemantics()
   if (xrMediaLibrarySource.includes('sm:grid-cols-2')) throw new Error('expected Environment Kits to remove the stale two-column tile layout')
   for (const marker of [
     "runControl({ action: 'transform'",
@@ -414,7 +414,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     'motionControlPoseToAnimationPose(motionControl.pose)',
     'resolveMotionControlSubjectPose(subject, runtime.selectedShotTargetId, motionControlPose)',
     'data-kg-media-xr-motion-control-target-button={subject.id}',
-    'data-kg-media-xr-motion-control-gesture={motionGestureStatus}',
+    "'data-kg-media-xr-motion-control-gesture': motionGestureStatus",
     "openMotionControlSurface('motion-control')",
     "controlXrSharedAssetControls({ operation: 'select-target', targetId: subjectId })",
   ]) {
@@ -436,8 +436,8 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     if (!xrSimulationOpenRequest.includes(marker)) throw new Error(`expected the shared Simulation workbench request owner to expose ${marker}`)
   }
   for (const marker of [
-    'draggable={true}',
-    'data-kg-media-xr-draggable="1"',
+    'draggable={Boolean(dragPayload)}',
+    "data-kg-media-xr-draggable={dragPayload ? '1' : undefined}",
     'startMediaDrag(event, dragPayload)',
     'primeMediaPointerDrag(event, dragPayload)',
     'primeMediaMouseDrag(event, dragPayload)',

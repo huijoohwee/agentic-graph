@@ -269,7 +269,7 @@ type EnsureImageDerivedOutputPanelArgs = ImageDerivedOutputPanelArgs & {
   }) => string
 }
 
-function ensureStoryboardWidgetImageDerivedOutputPanelNodeId(
+export function ensureStoryboardWidgetAssetDerivedOutputPanelNodeId(
   args: EnsureImageDerivedOutputPanelArgs,
   marker: ImageDerivedOutputPanelMarker,
 ): string | null {
@@ -315,11 +315,11 @@ export function resolveStoryboardWidgetImageToGlbOutputPanelNodeId(args: ImageDe
 }
 
 export function ensureStoryboardWidgetImageToThreeJsOutputPanelNodeId(args: EnsureImageDerivedOutputPanelArgs): string | null {
-  return ensureStoryboardWidgetImageDerivedOutputPanelNodeId(args, IMAGE_TO_THREEJS_OUTPUT_MARKER)
+  return ensureStoryboardWidgetAssetDerivedOutputPanelNodeId(args, IMAGE_TO_THREEJS_OUTPUT_MARKER)
 }
 
 export function ensureStoryboardWidgetImageToGlbOutputPanelNodeId(args: EnsureImageDerivedOutputPanelArgs): string | null {
-  return ensureStoryboardWidgetImageDerivedOutputPanelNodeId(args, IMAGE_TO_GLB_OUTPUT_MARKER)
+  return ensureStoryboardWidgetAssetDerivedOutputPanelNodeId(args, IMAGE_TO_GLB_OUTPUT_MARKER)
 }
 
 type ImageDerivedOutputEdgeMarker = {
@@ -329,7 +329,7 @@ type ImageDerivedOutputEdgeMarker = {
   targetIdProperty: string
 }
 
-function ensureStoryboardWidgetImageDerivedOutputEdge(args: {
+export function ensureStoryboardWidgetAssetDerivedOutputEdge(args: {
   anchorNode: GraphNode
   outputPanelNodeId: string
   readLiveDraftGraphData: () => GraphData | null
@@ -379,7 +379,7 @@ export function ensureStoryboardWidgetImageToThreeJsOutputEdge(args: {
   commitDraftGraphDataUpdate: (currentDraft: GraphData, nextDraft: GraphData) => void
   scheduleWorkflowOutputEdgeRefresh: () => void
 }): GraphEdge | null {
-  return ensureStoryboardWidgetImageDerivedOutputEdge(args, {
+  return ensureStoryboardWidgetAssetDerivedOutputEdge(args, {
     anchorIdProperty: IMAGE_TO_THREEJS_OUTPUT_PANEL_ANCHOR_ID_PROPERTY,
     edgeLabel: IMAGE_TO_THREEJS_OUTPUT_EDGE_LABEL,
     edgeProperty: IMAGE_TO_THREEJS_OUTPUT_EDGE_PROPERTY,
@@ -394,7 +394,7 @@ export function ensureStoryboardWidgetImageToGlbOutputEdge(args: {
   commitDraftGraphDataUpdate: (currentDraft: GraphData, nextDraft: GraphData) => void
   scheduleWorkflowOutputEdgeRefresh: () => void
 }): GraphEdge | null {
-  return ensureStoryboardWidgetImageDerivedOutputEdge(args, {
+  return ensureStoryboardWidgetAssetDerivedOutputEdge(args, {
     anchorIdProperty: IMAGE_TO_GLB_OUTPUT_PANEL_ANCHOR_ID_PROPERTY,
     edgeLabel: IMAGE_TO_GLB_OUTPUT_EDGE_LABEL,
     edgeProperty: IMAGE_TO_GLB_OUTPUT_EDGE_PROPERTY,

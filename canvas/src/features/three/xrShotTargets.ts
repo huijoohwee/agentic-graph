@@ -3,7 +3,9 @@ import type {
   XrMotionReferenceVector,
 } from './xrMotionReferenceModel'
 import { sampleXrMotionReferenceMarks } from './xrMotionReferenceSampling'
-import { resolveXrMotionReferenceStage } from './xrSceneLibrary'
+import { resolveXrStageObjects, resolveXrMotionReferenceStage } from './xrSceneLibrary'
+
+import { readSharedXrNativeControllerDemoFrame, XR_NATIVE_CONTROLLER_DEMO_KEY_POSITION, XR_NATIVE_CONTROLLER_DEMO_CHEST_POSITION } from './xrNativeControllerDemoRuntime'
 
 export const XR_MOTION_REFERENCE_SCENE_SHOT_TARGET_ID = 'xr-shot:scene'
 
@@ -41,7 +43,10 @@ export function buildXrShotTargets(plan: XrMotionReferencePlan): readonly XrShot
       color: track.color,
       castActorId: track.actorId,
     }))
-  return Object.freeze([stage, ...subjects, ...graphObjects])
+  const stageObjects = resolveXrStageObjects(plan.stageId).filter(object => !subjectIds.has(object.id)).map(object => Object.freeze<XrShotTarget>({
+    id: object.id, label: object.label, color: object.color, kind: 'object', castActorId: null,
+  }))
+  return Object.freeze([stage, ...subjects, ...graphObjects, ...stageObjects])
 }
 
 export function resolveXrShotTarget(plan: XrMotionReferencePlan, targetIdValue: string): XrShotTarget | null {
@@ -69,5 +74,14 @@ export function resolveXrShotTargetPosition(
   const targetId = String(targetIdValue || '').trim()
   const track = plan.cast.find(candidate => candidate.actorId === targetId)
   if (track) return sampleXrMotionReferenceMarks(track.marks, timeSeconds)
-  return plan.subjects.find(subject => subject.id === targetId)?.position || [0, 0, 0]
+  const subject = plan.subjects.find(subject => subject.id === targetId)
+  if (subject) return subject.position
+  const object = resolveXrStageObjects(plan.stageId).find(object => object.id === targetId)
+  if (object?.id === 'xr-stage:key') return XR_NATIVE_CONTROLLER_DEMO_KEY_POSITION
+  if (object?.id === 'xr-stage:chest') return XR_NATIVE_CONTROLLER_DEMO_CHEST_POSITION
+  if (object?.nativeBodyId) {
+    const frame = readSharedXrNativeControllerDemoFrame()
+    return (object.nativeBodyId === 'native-controller' ? frame.player : frame.bodies.find(body => body.subjectId === object.nativeBodyId))?.position || object.position
+  }
+  return object?.position || [0, 0, 0]
 }

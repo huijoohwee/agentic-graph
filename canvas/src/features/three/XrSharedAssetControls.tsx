@@ -100,12 +100,13 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
   const canApply = Boolean(targetReady && selectedPreset)
   const canClear = Boolean(targetReady && (snapshot.assignedPresetId || snapshot.livePoseActive))
   const canCaptureHandPose = Boolean(targetReady && snapshot.selectedMarkId && motionControl.pose)
+  const authorsMotion = surface === 'game-mode'
   const gameModeOwnsPlayback = surface === 'game-mode'
   const status = snapshot.assignedPresetId
     ? `${snapshot.selectedLabel} · ${presetLabel(snapshot.assignedPresetId)}`
     : targetReady
-      ? `${snapshot.selectedLabel} · ${snapshot.livePoseActive ? 'live hand pose' : snapshot.livePoseEligible ? 'hand pose ready' : 'animation ready'}`
-      : 'Select a 3D for XR object'
+      ? `${snapshot.selectedLabel} · ${snapshot.livePoseActive ? 'live hand pose' : snapshot.livePoseEligible ? 'hand pose ready' : 'authored path'}`
+      : snapshot.selectedLabel || 'Select a 3D for XR object'
 
   return (
     <section
@@ -133,7 +134,7 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
         <output className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>{status}</output>
       </header>
       <XrRehearsalStatus />
-      <section className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-1">
+      <section className={cn("grid min-w-0 gap-1", authorsMotion ? "grid-cols-2" : "grid-cols-1")}>
         <label className="grid min-w-0 gap-0.5 text-[9px]">
           <span className={UI_THEME_TOKENS.text.tertiary}>3D / NPC target</span>
           <PanelSelect
@@ -149,7 +150,7 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
             ))}
           </PanelSelect>
         </label>
-        <label className="grid min-w-0 gap-0.5 text-[9px]">
+        {authorsMotion ? <label className="grid min-w-0 gap-0.5 text-[9px]">
           <span className={UI_THEME_TOKENS.text.tertiary}>Motion</span>
           <PanelSelect
             value={selectedPreset}
@@ -163,10 +164,10 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
               <option key={preset.id} value={preset.id}>{preset.label}</option>
             ))}
           </PanelSelect>
-        </label>
+        </label> : surface !== 'animation' ? <button type="button" className="App-toolbar__btn justify-start" onClick={() => { const state = useGraphStore.getState(); state.setFloatingPanelView('animation'); state.setFloatingPanelOpen(true) }} data-kg-xr-animation-editor-link={surface}><Clapperboard className="size-3.5" aria-hidden /> Edit choreography and motions</button> : null}
       </section>
       <section className="flex min-w-0 flex-wrap items-center gap-1" aria-label="Shared XR asset actions">
-        <button
+        {authorsMotion ? <><button
           type="button"
           className="App-toolbar__btn"
           disabled={!canApply}
@@ -185,7 +186,7 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
           data-kg-xr-shared-asset-clear-animation={surface}
         >
           <Eraser className="size-3.5" aria-hidden /> Clear
-        </button>
+        </button></> : null}
         <button
           type="button"
           className={cn('App-toolbar__btn', snapshot.castMarkArmed ? UI_THEME_TOKENS.button.activeBg : '')}

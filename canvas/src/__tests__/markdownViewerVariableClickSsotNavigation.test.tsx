@@ -49,11 +49,11 @@ export async function testMarkdownViewerVariableClickNavigatesToSsotLine() {
     if (!variableLink.getAttribute('data-kg-var-source')?.includes('Source: frontmatter line 2') || !variableLink.getAttribute('title')?.includes('@venue - Markdown variable')) {
       throw new Error(`expected Viewer variable chip to expose @-aligned source metadata, got ${JSON.stringify(variableLink.outerHTML)}`)
     }
-    if (variableLink.getAttribute('data-kg-var-token') !== '@venue' || !String(variableLink.textContent || '').includes('@venue') || String(variableLink.textContent || '').includes('{{venue}}')) {
-      throw new Error(`expected Viewer variable chip to render the actual @ token instead of raw moustache syntax, got ${JSON.stringify(variableLink.outerHTML)}`)
+    if (variableLink.getAttribute('data-kg-var-token') !== '@venue' || !String(variableLink.textContent || '').includes('Singapore') || String(variableLink.textContent || '').includes('{{venue}}')) {
+      throw new Error(`expected Viewer variable chip to render the current frontmatter value instead of raw moustache syntax, got ${JSON.stringify(variableLink.outerHTML)}`)
     }
-    if (!variableLink.querySelector('[data-kg-card-inline-keyword-pill="1"]')) {
-      throw new Error(`expected plain Viewer variable chip to reuse shared sigil chip utility, got ${JSON.stringify(variableLink.outerHTML)}`)
+    if (!variableLink.querySelector('[data-kg-var-rendered-value="venue"]')) {
+      throw new Error(`expected plain Viewer variable chip to retain an identifiable source reference, got ${JSON.stringify(variableLink.outerHTML)}`)
     }
     const mediaVariableLink = dom.window.document.querySelector('[data-kg-var-key="1920s_Singapore_Malaya_202606190937.jpeg"]') as HTMLAnchorElement | null
     if (!mediaVariableLink) throw new Error('expected media variable link')

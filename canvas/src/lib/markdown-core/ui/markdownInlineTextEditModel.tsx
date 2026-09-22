@@ -318,7 +318,7 @@ export function buildMarkdownInlineTextEditHtml(args: {
     : args.value
   return buildMarkdownInlineTextEditSegments({ ...args, value })
     .map(segment => segment.kind === 'text'
-      ? rewriteRenderedInlineMediaForEditorHtml(renderTextSegment(segment.value))
+      ? rewriteRenderedInlineMediaForEditorHtml(renderTextSegment(segment.value), segment.value)
       : buildVirtualMediaChipHtml({
         label: segment.chip.displayLabel,
         markdown: segment.markdown,

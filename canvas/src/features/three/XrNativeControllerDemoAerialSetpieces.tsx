@@ -1,3 +1,4 @@
+import { XrStageObjectSelection } from './XrStageObjectSelection'
 import React from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
@@ -195,8 +196,8 @@ export function XrNativeControllerDemoAerialSetpieces() {
   return (
     <group name="agentic_os_xr_playground_aerial_setpieces">
       <NorthHorizon />
-      <PirateShip />
-      <DeterministicTentacles />
+      <XrStageObjectSelection objectId="ship"><PirateShip /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="tentacles"><DeterministicTentacles /></XrStageObjectSelection>
     </group>
   )
 }

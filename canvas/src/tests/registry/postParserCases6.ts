@@ -1,6 +1,21 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
+  ["proceduralAsset.presetCardGate", "@/__tests__/proceduralAssetPromptPreset.test.ts", "testProceduralAssetPresetRequiresCardExecutionGate"],
+  ["proceduralAsset.presetCardInsertion", "@/__tests__/proceduralAssetPromptPreset.test.ts", "testProceduralAssetPresetInsertsIntoCardWithoutExecution"],
+  ["proceduralAsset.workflowInvocation", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowInvocationAndConnectedValues"],
+  ["proceduralAsset.workflowPublication", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowPublishesOwnedModel"],
+  ["proceduralAsset.workflowCancellation", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowRejectsStaleAndUnavailablePublication"],
+  ["proceduralAsset.workflowSourceFence", "@/features/image-to-glb/proceduralAssetWorkflow.test.ts", "testProceduralWorkflowSourceFenceRejectsDocumentReuse"],
+  ["proceduralAsset.controlsUI", "@/features/image-to-glb/ProceduralAssetControls.test.tsx", "testProceduralControlsRetainInvalidDraftAndPriorModel"],
+  ["proceduralAsset.workspaceRoundTrip", "@/features/image-to-glb/proceduralAssetWorkspace.test.ts", "testProceduralAssetWorkspaceRoundTripAndFidelity"],
+  ["proceduralAsset.workspaceCancellation", "@/features/image-to-glb/proceduralAssetWorkspace.test.ts", "testProceduralAssetWorkspaceCancellation"],
+  ["proceduralAsset.workspaceFailure", "@/features/image-to-glb/proceduralAssetWorkspace.test.ts", "testProceduralAssetWorkspaceFailurePreservesCommittedGeneration"],
+  ["proceduralAsset.workspaceIntegrity", "@/features/image-to-glb/proceduralAssetWorkspace.test.ts", "testProceduralAssetWorkspaceRejectsCompanionTampering"],
+  ["proceduralAsset.contract", "@/__tests__/proceduralAssetAuthoring.test.ts", "testProceduralAssetRejectsUnsafeAndMalformedRecipes"],
+  ["proceduralAsset.recovery", "@/__tests__/proceduralAssetAuthoring.test.ts", "testProceduralAssetControlsAndRecovery"],
+  ["proceduralAsset.source", "@/__tests__/proceduralAssetAuthoring.test.ts", "testProceduralAssetGeneratedSourceReconstructsEditedScene"],
+  ["proceduralAsset.glb", "@/__tests__/proceduralAssetAuthoring.test.ts", "testProceduralAssetGlbPreservesEditedHierarchyAndMotion"],
   ["ui.graphCanvas.frozenNodes.presentationRefresh","@/__tests__/graphCanvasFrozenNodesPresentation.test","testFrozenCircleNodesKeepPositionsOnPresentationRefresh"],
   ["groupBoxNoStickRegression.clearanceX","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseX"],
   ["groupBoxNoStickRegression.clearanceY","@/__tests__/groupBoxNoStickRegression.test","testClearanceBroadphaseY"],

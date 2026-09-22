@@ -16,6 +16,12 @@ import {
   IMAGE_TO_GLB_PROMPT_PRESET_ID,
   isImageToGlbPromptPreset,
 } from '@/features/image-to-glb/imageToGlbPromptPreset'
+import {
+  isProceduralAssetPromptPreset,
+  PROCEDURAL_ASSET_PENDING_SURFACES,
+  PROCEDURAL_ASSET_PRESET_CHAT_ROUTE,
+  PROCEDURAL_ASSET_PROMPT_PRESET_ID,
+} from '@/features/image-to-glb/proceduralAssetPromptPreset'
 import { parseNativeCrawlerInvocation } from './nativeCrawlerInvocation'
 import { parseXrInteractiveInvocation } from '@/features/three/xrSceneInteractiveInvocation'
 import {
@@ -59,7 +65,9 @@ export type PromptPreset = {
   description: string
   activation: PromptPresetActivation
   invocationModes: readonly [PromptPresetResponseMode, 'mcp-invocation']
-  chatRoute: typeof PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE | typeof PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE
+  chatRoute: typeof PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE | typeof PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE | typeof PROCEDURAL_ASSET_PRESET_CHAT_ROUTE
+  executionSurface?: 'card-run'
+  pendingSurfaces?: typeof PROCEDURAL_ASSET_PENDING_SURFACES
   mcpTool: typeof AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME
   mcpToken: `/${string}`
   prompt: string
@@ -118,7 +126,7 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     || !label
     || !slashCommand
     || !runtimeCommand
-    || (!slashCommand.endsWith('-prompt-preset') && id !== IMAGE_TO_THREEJS_PROMPT_PRESET_ID && id !== IMAGE_TO_GLB_PROMPT_PRESET_ID)
+    || (!slashCommand.endsWith('-prompt-preset') && ![IMAGE_TO_THREEJS_PROMPT_PRESET_ID, IMAGE_TO_GLB_PROMPT_PRESET_ID, PROCEDURAL_ASSET_PROMPT_PRESET_ID].some(presetId => id === presetId))
     || !description
     || !prompt
     || (activation !== 'source-backed-canvas' && activation !== 'chat-agent' && activation !== 'card-inline')
@@ -126,11 +134,13 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     || (responseMode !== 'llm-chat-response' && responseMode !== 'native-chat-response')
     || invocationModes[1] !== 'mcp-invocation'
     || (responseMode === 'llm-chat-response' && chatRoute !== PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE)
-    || (responseMode === 'native-chat-response' && chatRoute !== PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE)
+    || (responseMode === 'native-chat-response' && chatRoute !== (id === PROCEDURAL_ASSET_PROMPT_PRESET_ID ? PROCEDURAL_ASSET_PRESET_CHAT_ROUTE : PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE))
     || mcpTool !== AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME
     || mcpToken !== runtimeCommand
   ) return null
-  if (id === 'xr-physics') {
+  if (id === PROCEDURAL_ASSET_PROMPT_PRESET_ID) {
+    if (responseMode !== 'native-chat-response' || !isProceduralAssetPromptPreset(value)) return null
+  } else if (id === 'xr-physics') {
     const invocation = parseXrInteractiveInvocation(prompt)
     if (runtimeCommand !== '/xr.physics' || activation !== 'source-backed-canvas'
       || responseMode !== 'native-chat-response' || invocation?.action !== 'physics'
@@ -170,7 +180,7 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     const invocation = parseChatSkillSlashInvocation(prompt)
     if (!invocation || invocation.skill.slashCommand !== runtimeCommand || activation !== 'chat-agent') return null
   }
-  const typedChatRoute = responseMode === 'llm-chat-response'
+  const typedChatRoute = id === PROCEDURAL_ASSET_PROMPT_PRESET_ID ? PROCEDURAL_ASSET_PRESET_CHAT_ROUTE : responseMode === 'llm-chat-response'
     ? PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE
     : PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE
   return {
@@ -185,6 +195,7 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     mcpTool: AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
     mcpToken,
     prompt,
+    ...(id === PROCEDURAL_ASSET_PROMPT_PRESET_ID ? { executionSurface: 'card-run' as const, pendingSurfaces: PROCEDURAL_ASSET_PENDING_SURFACES } : {}),
   }
 }
 

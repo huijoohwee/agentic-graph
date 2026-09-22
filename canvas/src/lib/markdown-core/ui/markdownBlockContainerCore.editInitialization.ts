@@ -3,13 +3,14 @@ import { getMarkdownItFastHtml } from '@/features/markdown/markdownIt'
 import { normalizeEscapedInlineMediaMarkdown } from '@/features/markdown/ui/inlineMediaMarkdown'
 import { normalizeInlineCommentRangeIndicatorsInPlace, rewriteInlineCodeSigilsToPlainTextHtml, rewriteInlineCodeSigilsToStyledSpansHtml } from '@/features/markdown/ui/markdownSigil'
 import { rewriteInlineEditorCommentIndicatorsHtml } from './markdownBlockContainerCore.draftCommit'
-import { rewriteRenderedInlineMediaForEditorHtml } from './markdownBlockContainerCore.inlineMediaEditHtml'
+import { rewriteRenderedInlineMediaForEditorHtml, prepareRenderedParagraphEditHtml } from './markdownBlockContainerCore.inlineMediaEditHtml'
 import { useIsomorphicLayoutEffect } from '@/lib/react/useIsomorphicLayoutEffect'
 
 const EDIT_HTML_CACHE_MAX_ENTRIES = 12
 
 export const useMarkdownBlockContainerEditInitialization = (args: {
   editing: boolean
+  renderedInlineHtml?: string
   initialText: string
   editStripLinePrefix?: (line: string) => { prefix: string; content: string }
   editKeepLinePrefixesInEditor: boolean
@@ -46,8 +47,9 @@ export const useMarkdownBlockContainerEditInitialization = (args: {
     return rewriteRenderedInlineMediaForEditorHtml(sigilHtml)
   }, [args.editSigilRenderMode])
   const normalizeLiveEditHtmlRoot = React.useCallback((el: HTMLElement) => {
+    if (args.renderedInlineHtml != null) el.innerHTML = prepareRenderedParagraphEditHtml(args.renderedInlineHtml)
     normalizeInlineCommentRangeIndicatorsInPlace(el, el.ownerDocument)
-  }, [])
+  }, [args.renderedInlineHtml])
   const editHtmlCacheRef = React.useRef<Map<string, string>>(new Map())
   const initializedEditSessionIdRef = React.useRef<number>(-1)
   const readCachedOrComputeEditHtml = React.useCallback((cacheKey: string, compute: () => string): string => {

@@ -1,3 +1,4 @@
+import { collectFloatingPanelChatMediaTokens } from '@/lib/ui/textareaMediaTokens'
 import {
   CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_LABEL_CLASS_NAME,
   CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_PILL_CLASS_NAME,
@@ -6,15 +7,12 @@ import {
 import { INLINE_MEDIA_COMMAND_THUMBNAIL_ATTR, INLINE_MEDIA_COMMAND_THUMBNAIL_IMAGE_CLASS_NAME, readInlineMediaCommandThumbnailClassName } from '@/lib/command-menu/InlineMediaCommandThumbnail'
 import { normalizeEscapedInlineMediaMarkdown } from '@/features/markdown/ui/inlineMediaMarkdown'
 import {
-  buildAgenticOsInvocationSourceTitle,
-  findAgenticOsInvocationByToken,
-} from '@/features/agentic-os/agenticOsDocInvocations'
-import {
   readInlineKeywordChipLabel,
   resolveInlineInvocationChipClassName,
 } from '@/features/markdown/ui/dataViewChipStyles'
 import { normalizeRuntimeStorageMediaAccessUrl } from '@/lib/storage/runtimeMediaUrl'
 import {
+  buildAgenticOsInvocationChipTitle,
   AGENTIC_OS_INVOCATION_CHIP_ATTR,
   AGENTIC_OS_INVOCATION_TOKEN_ATTR,
 } from '@/features/agentic-os/agenticOsInvocationChips'
@@ -101,11 +99,10 @@ const readRenderedMediaPillMarkdown = (node: HTMLElement): string => {
 }
 
 const buildInlineInvocationEditTokenHtml = (token: string): string => {
-  const invocation = findAgenticOsInvocationByToken(token)
   const className = resolveInlineInvocationChipClassName({ value: token })
   return [
     `<span class="${escapeHtmlAttr(className)}"`,
-    ` title="${escapeHtmlAttr(invocation ? buildAgenticOsInvocationSourceTitle(invocation) : token)}"`,
+    ` title="${escapeHtmlAttr(buildAgenticOsInvocationChipTitle(token))}"`,
     ` ${INLINE_INVOCATION_EDIT_TOKEN_ATTR}="1"`,
     ` ${INLINE_INVOCATION_EDIT_MARKDOWN_ATTR}="${escapeHtmlAttr(token)}"`,
     ' contenteditable="false">',
@@ -149,7 +146,7 @@ const rewriteRenderedInvocationChipsForEditor = (root: HTMLElement): void => {
   const nodes = Array.from(root.querySelectorAll(selector)) as HTMLElement[]
   nodes.forEach(node => {
     const token = String(node.getAttribute(AGENTIC_OS_INVOCATION_TOKEN_ATTR) || '').trim()
-    if (!findAgenticOsInvocationByToken(token)) return
+    if (!token) return
     const wrapper = root.ownerDocument.createElement('span')
     wrapper.innerHTML = buildInlineInvocationEditTokenHtml(token)
     const editToken = wrapper.firstElementChild
@@ -167,7 +164,7 @@ const rewriteTextNodeInvocationsForEditor = (root: HTMLElement): void => {
     const parent = (node as Text).parentElement
     if (
       !parent?.closest(
-        `${INLINE_MARKDOWN_EDIT_TOKEN_SELECTOR},[${INLINE_MARKDOWN_ZERO_LENGTH_TOKEN_ATTR}="1"],[data-kg-inline-code-token="1"]`,
+        `code,pre,${INLINE_MARKDOWN_EDIT_TOKEN_SELECTOR},[${INLINE_MARKDOWN_ZERO_LENGTH_TOKEN_ATTR}="1"],[data-kg-inline-code-token="1"]`,
       )
     ) textNodes.push(node as Text)
     node = walker.nextNode()
@@ -202,7 +199,7 @@ const rewriteSemanticInlineCodeTokensForEditor = (root: HTMLElement): void => {
   })
 }
 
-export const rewriteRenderedInlineMediaForEditorHtml = (html: string): string => {
+export const rewriteRenderedInlineMediaForEditorHtml = (html: string, sourceMarkdown?: string): string => {
   const raw = String(html || '')
   if (!raw.trim() || typeof DOMParser === 'undefined') return raw
   let doc: Document
@@ -240,6 +237,7 @@ export const rewriteRenderedInlineMediaForEditorHtml = (html: string): string =>
   rewriteSemanticInlineCodeTokensForEditor(root)
   const mediaNodes = Array.from(root.querySelectorAll('img,video,audio')) as HTMLElement[]
   mediaNodes.forEach(node => {
+    if (node.closest(`[${INLINE_MEDIA_EDIT_TOKEN_ATTR}]`)) return
     const tag = String(node.tagName || '').toLowerCase()
     const kind = tag === 'audio' ? 'audio' : tag === 'video' ? 'video' : 'image'
     const src = String(node.getAttribute('src') || '').trim()
@@ -251,7 +249,42 @@ export const rewriteRenderedInlineMediaForEditorHtml = (html: string): string =>
     const token = wrapper.firstElementChild
     if (token) node.replaceWith(token)
   })
+  // Preserve each authored embed verbatim, including controls, poster, and closing tag.
+  const authoredMedia = collectFloatingPanelChatMediaTokens(sourceMarkdown || '').map(media => {
+    const url = doc.createElement('textarea')
+    url.innerHTML = String(media.sourceUrl || '').replace(/</g, '&lt;')
+    return { ...media, renderedSourceUrl: url.value }
+  })
+  const used = new Set<number>()
+  root.querySelectorAll(`[${INLINE_MEDIA_EDIT_TOKEN_ATTR}]`).forEach(node => {
+    const serialized = node.getAttribute(INLINE_MEDIA_EDIT_MARKDOWN_ATTR) || ''
+    const sourceUrl = collectFloatingPanelChatMediaTokens(serialized)[0]?.sourceUrl
+    const index = authoredMedia.findIndex((media, index) => !used.has(index) && !!sourceUrl && media.renderedSourceUrl === sourceUrl)
+    if (index < 0) return
+    used.add(index)
+    const media = authoredMedia[index]!
+    node.setAttribute(INLINE_MEDIA_EDIT_MARKDOWN_ATTR, media.raw)
+    node.setAttribute('title', `${media.label} - ${media.mediaKind}\nSource: ${media.sourceUrl}`)
+  })
   rewriteTextNodeInvocationsForEditor(root)
+  return root.innerHTML
+}
+
+// Keep the mounted Viewer presentation; annotate only atomic references for round-trip serialization.
+export const prepareRenderedParagraphEditHtml = (html: string): string => {
+  const root = new DOMParser().parseFromString(`<section>${html}</section>`, 'text/html').body.firstElementChild as HTMLElement
+  root.querySelectorAll(`[data-kg-variable-invocation],[data-kg-var-raw],[${AGENTIC_OS_INVOCATION_CHIP_ATTR}='1']`).forEach(node => {
+    const raw = node.getAttribute('data-kg-var-raw') || node.getAttribute(AGENTIC_OS_INVOCATION_TOKEN_ATTR)
+    if (!raw) return
+    const token = root.ownerDocument.createElement('span')
+    token.className = node.className
+    token.innerHTML = node.innerHTML
+    token.setAttribute(INLINE_INVOCATION_EDIT_TOKEN_ATTR, '1')
+    token.setAttribute(INLINE_INVOCATION_EDIT_MARKDOWN_ATTR, raw)
+    token.setAttribute('contenteditable', 'false')
+    token.setAttribute('title', node.getAttribute('title') || buildAgenticOsInvocationChipTitle(raw))
+    node.replaceWith(token)
+  })
   return root.innerHTML
 }
 

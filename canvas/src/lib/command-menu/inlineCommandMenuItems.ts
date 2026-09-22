@@ -16,6 +16,7 @@ export type InlineCommandMenuItemSpec = {
   label: string
   group: string
   description?: string
+  title?: string
   keywords?: readonly (string | null | undefined)[]
   thumbnailKind?: MarkdownInlineCommandMenuItem['thumbnailKind']
   thumbnailUrl?: string
@@ -30,6 +31,7 @@ export function buildInlineCommandMenuItem(spec: InlineCommandMenuItemSpec): Mar
     label: spec.label,
     group: spec.group,
     description: spec.description,
+    title: spec.title,
     keywords: (spec.keywords || []).filter(Boolean) as string[],
     thumbnailKind: spec.thumbnailKind,
     thumbnailUrl: spec.thumbnailUrl,

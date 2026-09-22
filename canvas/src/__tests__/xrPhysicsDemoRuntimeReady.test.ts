@@ -108,11 +108,11 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   }
   if (
     meta.kgFloatingPanelOpen !== true
-    || meta.kgFloatingPanelView !== 'animation'
+    || meta.kgFloatingPanelView !== 'motionControl'
     || meta.kgBottomPanelOpen !== true
     || meta.kgBottomPanelTab !== 'timeline'
   ) {
-    throw new Error('expected standalone mode to open canonical Animation and Timeline for playable rehearsal')
+    throw new Error('expected standalone mode to open canonical Motion Control and Timeline for playable rehearsal')
   }
 
   const runReady = asRecord(meta.run_ready_demo, 'run_ready_demo')
@@ -185,6 +185,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     'xr-subject:brick-house:1',
     'xr-subject:oak:1',
     'xr-subject:soup-pot:1',
+    'xr-subject:sailboat:1',
   ]
   const storyCastIds = [
     'xr-subject:wolf:1',
@@ -193,7 +194,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     'xr-subject:third-pig:1',
   ]
   const forbiddenGraphCastIds = ['xr_demo_entry', 'xr_ball_controller', 'xr_rocket_controller', 'xr_runtime_gate']
-  if (sourcePlan.stageId !== 'singapore'
+  if (sourcePlan.stageId !== 'tropical-playground'
     || sourcePlan.castSource !== 'subjects-only'
     || sourcePlan.subjects.length !== storySubjectIds.length
     || storySubjectIds.some(id => !sourcePlan.subjects.some(subject => subject.id === id))
@@ -211,7 +212,7 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     || stickBeat?.anchorId !== 'xr-subject:second-pig:1'
     || stickBeat?.settings.shot !== 'close-up'
     || secondPig?.animation?.presetId !== 'jump'
-    || !markdownText.includes('hold the stick house as the readable midpoint of the journey')) {
+    || !markdownText.includes('{{kgXrMotionReference.camera.3.caption}}')) {
     throw new Error('expected the rehearsal seed to keep coast light, the stick-house midpoint beat, and the playable script')
   }
   const stickHouseTrack = sourcePlan.cast.find(track => track.actorId === 'xr-subject:stick-house:1')

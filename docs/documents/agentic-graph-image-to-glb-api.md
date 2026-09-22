@@ -23,7 +23,62 @@ copy_policy: "conceptual inspiration only; forbid external code, prompt, schema,
 
 The lane is code-only. It does not admit a serialized mesh, baked vertex payload, model checkpoint, network loader, external runtime, or hidden asset download.
 
-## Reference contract
+## Text-native procedural extension — implementation contract
+
+The same source owner also admits text-native recipes through
+`/asset.create @text #procedural-asset`. This extension does not relax the image
+contract below. Text carries intent and construction evidence; it has no image
+reference digest, silhouette score, or observed-surface claim.
+
+Product acceptance: authors can construct original bounded primitive assemblies,
+edit dimensions, colours, detail and visibility locally, retain stable part,
+pivot and socket identities, and recover the last valid recipe after a rejected
+draft. Offline text interpretation explicitly supports robot/character, tree/palm,
+chair/table and box/sphere/cylinder; other requests require a validated typed
+recipe from the connected agent, not guessed general-generation capability.
+
+Architecture: `proceduralAssetContract`, `proceduralAssetBuilder`, and the text
+recipe/session/export modules remain under the existing procedural source owner.
+They share native snapshot/export machinery with image generation while keeping
+image quality gates separate. Each recipe persists intent, deterministic seed,
+parts, control schema/values, and optional rigid clips. Generated JavaScript is a
+reviewable companion; the application never evaluates it. Invalid, cancelled or
+stale-document results cannot replace the last valid document. Existing workspace
+source and XR selection/transport remain the integration owners.
+
+Workspace persistence uses the existing WorkspaceFs owner. Each save creates a
+fresh revision folder containing the full recoverable document, recipe, generated
+source and native GLB document. Readback and byte digests precede a final manifest;
+only a current, successfully read-back result may become the caller's output.
+Reopen verifies companion names, bounds, digests, identity and generated source
+before reconstructing trusted geometry. Hashes detect corruption, not external
+provenance. Failed or cancelled writes retain earlier generations; an interrupted
+save may leave an unreferenced partial folder and never claims transactional
+rollback. These local source files do not imply host or remote publication.
+
+Decision: use trusted box, sphere, cylinder and cone constructors, bounded to 48
+parts, 32 controls, 8 clips, 32 keys per track, 64 kB of recipe JSON and 120,000
+triangles. Local controls use zero provider calls. No new package/service is
+required. GLB exports edited visible geometry, materials, hierarchy and supported
+clips; recipe/source companions preserve procedural editability separately.
+
+MVP proof: text → recipe → control edit → serialize/reopen → GLB reimport with
+stable nodes and sampled motion. Reject malformed hierarchy, values, recipes,
+budget overflow and stale export before publication. Image export regression is
+required. The native Card Run action accepts an explicit `/asset.create` or
+`#procedural-asset` invocation, with connected prompt/seed values or a
+`proceduralRecipe` JSON property. It preserves the input Card and publishes one
+owned model panel with stable identity. The existing property editor provides
+local dimension, colour, detail and visibility controls, reset, recipe editing,
+recovery and GLB download. Creation and edits use the same validated construction
+and workspace save path. A source/graph change cancels pending publication.
+Registered WebMCP entry wiring, XR selection/transport integration and joined XR
+planning reconciliation remain dependent on their existing owners' release and
+are not claimed by this increment.
+GTM: test the editable asset workflow against manual primitive assembly; record
+editing time and export success. Demand and revenue remain unvalidated.
+
+## Image reference contract
 
 The reference reader samples at a bounded maximum dimension of 192 pixels. Analysis records:
 

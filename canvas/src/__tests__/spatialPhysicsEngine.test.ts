@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import test from 'node:test'
 import { SpatialPhysicsEngine } from '../features/physics/spatialPhysicsEngine'
+import { stepSpatialPhysicsState, type SpatialStepState } from '../features/physics/spatialPhysicsStep'
 import type {
   SpatialBodySpec,
   SpatialColliderSpec,
@@ -363,3 +364,34 @@ test('spatial engine sweeps cuboids and resolves the earliest collider or ground
 test('spatial engine accumulates overlaps and buffers filtered sensor-ground events', testOverlapAccumulationAndSensorGroundLifecycle)
 test('spatial engine exposes point, overlap, and ordered ray queries', testQueriesAndSortedBufferedEvents)
 test('spatial engine remains dependency-free and within source budgets', testCleanRoomSourceBoundary)
+
+test('stationary terrain contacts retain events without repeated narrow-phase work', () => {
+  const state: SpatialStepState = {
+    bodies: new Map(), colliders: new Map(), ground: null, gravity: [0, 0, 0],
+    activeInteractions: new Map(), pendingEvents: [], tick: 0,
+  }
+  let shapeReads = 0
+  const count = 24, pairs = count * (count - 1) / 2
+  for (let index = 0; index < count; index += 1) {
+    const id = `terrain-${index}`
+    state.bodies.set(id, {
+      id, motion: 'static', position: [0, 0, 0], linearVelocity: [0, 0, 0], mass: 1,
+      linearDamping: 0, grounded: false, contactIds: new Set(),
+      sweepStartPosition: null, startOverlapResolved: false,
+    })
+    state.colliders.set(id, {
+      id, bodyId: id, sensor: true, collisionLayer: 1, collisionMask: 1,
+      friction: 0, restitution: 0,
+      get shape() { shapeReads += 1; return { kind: 'sphere' as const, radius: 1 } },
+    })
+  }
+  stepSpatialPhysicsState(state, 1 / 60)
+  assert(state.activeInteractions.size === pairs, 'static sensor interactions must remain observable')
+  assert(state.pendingEvents.length === pairs, 'every new sensor contact must publish exactly once')
+  assert(shapeReads <= pairs * 4, 'unchanged contacts must be evaluated only for scheduling and resolution')
+  state.pendingEvents.length = 0
+  state.bodies.get('terrain-0')!.position = [10, 0, 0]
+  stepSpatialPhysicsState(state, 1 / 60)
+  assert(state.activeInteractions.size === pairs - (count - 1), 'a later step must use fresh body positions')
+  assert(state.pendingEvents.length === count - 1, 'ended contacts must be retained after a body moves')
+})

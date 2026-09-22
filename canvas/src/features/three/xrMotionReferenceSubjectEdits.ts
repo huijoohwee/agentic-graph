@@ -90,17 +90,18 @@ export function buildXrMotionReferenceSubjectAssetEdit(
     label: nextLabel,
     color: nextColor,
   } : candidate)
+  // Story props have authored build/collapse/splash cues even when the asset is static.
+  const preserveCues = existingTrack?.marks.some(mark => mark.cue) === true
   let cast: readonly Record<string, unknown>[]
-  if (!nextAsset.mobile) {
+  if (!nextAsset.mobile && !preserveCues) {
     cast = planValue.cast.filter(track => track.actorId !== subjectId).map(castTrackRecord)
   } else if (existingTrack) {
     cast = planValue.cast.map(track => track.actorId === subjectId ? {
       ...castTrackRecord(track),
       label: nextLabel,
       marks: track.marks.map(mark => ({
-        timeSeconds: mark.timeSeconds,
+        ...mark,
         position: [...mark.position],
-        transition: mark.transition,
         gait: mark.gait === previousDefaultGait ? nextDefaultGait : mark.gait,
       })),
     } : castTrackRecord(track))
@@ -117,7 +118,7 @@ export function buildXrMotionReferenceSubjectAssetEdit(
   }
   return {
     value: { ...planRecord(planValue), subjects, cast },
-    clearArchivedActorId: nextAsset.mobile ? undefined : subjectId,
+    clearArchivedActorId: nextAsset.mobile || preserveCues ? undefined : subjectId,
   }
 }
 
@@ -150,12 +151,10 @@ export function buildXrMotionReferenceSubjectTransformEdit(
   const cast = planValue.cast.map(track => ({
     ...castTrackRecord(track),
     marks: track.marks.map(mark => ({
-      timeSeconds: mark.timeSeconds,
+      ...mark,
       position: track.actorId === subjectId
         ? [mark.position[0] + delta[0], mark.position[1] + delta[1], mark.position[2] + delta[2]]
         : [...mark.position],
-      transition: mark.transition,
-      gait: mark.gait,
     })),
   }))
   return { value: { ...planRecord(planValue), subjects, cast } }

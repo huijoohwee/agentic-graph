@@ -8,7 +8,7 @@ import { UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME } from '@/lib/ui/responsiveE
 import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 export { normalizeCardInlineMediaSoftLineBreaks } from '@/lib/cards/cardInlineTextViewerDraftProjection'
 
-const CARD_MARKDOWN_STRUCTURAL_PATTERN = /(^|\n)\s*(?:>+|```|\|[^\n]*\|)|!\[[^\]]*]\([^)]+?\)|(?<!!)\[[^\]]+]\([^)]+?\)|(^|[^\\])\$[^$\n]+\$|<\s*(?:iframe|img|video)\b/i
+const CARD_MARKDOWN_STRUCTURAL_PATTERN = /`[^`\n]+`|(^|\n)\s*(?:>+|```|\|[^\n]*\|)|!\[[^\]]*]\([^)]+?\)|(?<!!)\[[^\]]+]\([^)]+?\)|(^|[^\\])\$[^$\n]+\$|<\s*(?:iframe|img|video|audio)\b/i
 
 export const CARD_MARKDOWN_PREVIEW_FRAME_CLASS_NAME = 'overflow-y-auto overflow-x-hidden max-h-full'
 export const CARD_MARKDOWN_PREVIEW_BLOCK_SPACING_CLASS_NAME = 'm-0'
@@ -20,7 +20,7 @@ export const CARD_MARKDOWN_PREVIEW_INLINE_TEXT_TOKEN_CHIP_CLASS_NAME =
 export const CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_CLASS_NAME =
   'inline-block !h-3 !w-3 shrink-0 rounded-full object-cover'
 export const CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_PILL_CLASS_NAME =
-  `${CARD_MARKDOWN_PREVIEW_CHIP_CLASS_NAME} mr-1 max-w-full overflow-hidden`
+  `${CARD_MARKDOWN_PREVIEW_CHIP_CLASS_NAME} !items-baseline [&>:first-child]:self-center max-w-full overflow-hidden`
 export const CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_LABEL_CLASS_NAME =
   `min-w-0 ${UI_INLINE_CHIP_LABEL_15CH_CLASSNAME} [line-height:inherit]`
 export const CARD_MARKDOWN_PREVIEW_MEDIA_CHROME_CLASS_NAME = 'bg-transparent'

@@ -172,7 +172,10 @@ export function useWorkspaceStatusHelpers(opts?: { toastId?: string }): StatusHe
     lastToastSigById.delete(toastId)
   }, [toastId])
 
-  return { setStatusInfo, setStatusWarning, setStatusError, setStatusProgress, clearStatus, buildWebpageImportStageLabel }
+  // Consumers bind asynchronous workspace jobs to this owner. A fresh wrapper
+  // on every render cancels and restarts indexing when indexing updates state.
+  return React.useMemo(() => ({ setStatusInfo, setStatusWarning, setStatusError, setStatusProgress, clearStatus, buildWebpageImportStageLabel }),
+    [setStatusInfo, setStatusWarning, setStatusError, setStatusProgress, clearStatus, buildWebpageImportStageLabel])
 }
 
 export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): {

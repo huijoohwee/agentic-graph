@@ -1,3 +1,4 @@
+import { buildAgenticOsInvocationSourceTitle } from '@/features/agentic-os/agenticOsDocInvocations'
 /* eslint-disable react-refresh/only-export-components */
 import React from 'react'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
@@ -23,7 +24,6 @@ import {
   floatingPanelCatalogCompactRowMetaClassName,
   floatingPanelCatalogCompactRowTitleClassName,
 } from '@/lib/ui/floatingPanelCatalogLayout'
-import { UI_TEXT_TRUNCATE_CHIP } from '@/lib/ui/textLayout'
 import { cn } from '@/lib/utils'
 import {
   resolveSkillsCommandsGrammarProjection,
@@ -81,7 +81,8 @@ function renderSkillsCommandsTokenChip(entry: SkillsCommandsCatalogEntry): React
     'data-kg-skill-command-token-chip': '1',
   }
   const className = buildSkillsCommandsTokenChipClassName(entry.token)
-  const invocationChip = renderAgenticOsInvocationKeywordChip({ value: entry.token, className })
+  const invocationChip = renderAgenticOsInvocationKeywordChip({ value: entry.token, className, allowUnresolved: true,
+    fallbackTitle: buildAgenticOsInvocationSourceTitle(entry) })
   if (React.isValidElement<{ className?: string }>(invocationChip)) {
     const chip = invocationChip as React.ReactElement<{ className?: string }>
     return React.cloneElement(chip, {
@@ -89,16 +90,7 @@ function renderSkillsCommandsTokenChip(entry: SkillsCommandsCatalogEntry): React
       className: cn(chip.props.className, 'shrink-0'),
     })
   }
-  return (
-    <span
-      className={cn(className, 'shrink-0')}
-      title={entry.token}
-      data-kg-card-inline-keyword-pill="1"
-      {...attrs}
-    >
-      <span className={UI_TEXT_TRUNCATE_CHIP}>{entry.token}</span>
-    </span>
-  )
+  return null
 }
 
 function resolveSkillsCommandsRenderEntries(
@@ -268,7 +260,7 @@ export default function SkillsCommandsView({
                 <section className="grid min-w-0 gap-1" data-kg-skills-commands-grammar-group-rows={group.key}>
                   {group.entries.map(({ grammar, option }) => {
                     const iconKey = resolveMainPanelInvocationSubjectIconKey(option)
-                    const metaLabel = [option.group, option.summary, option.sourcePath].filter(Boolean).join(' | ')
+                    const sourceTitle = buildAgenticOsInvocationSourceTitle(option)
                     const highlighted = highlightedTokenSet.has(option.token.toLowerCase())
                     return (
                       <article
@@ -293,9 +285,7 @@ export default function SkillsCommandsView({
                         role="button"
                         tabIndex={0}
                         aria-label={`${option.kind === 'command' && onCommandActivate ? 'Select' : 'Insert'} ${option.token}`}
-                        title={option.promptPresetId
-                          ? `Load ${option.promptPresetId} prompt preset`
-                          : `${option.kind === 'command' && onCommandActivate ? 'Select' : 'Insert'} ${option.token}`}
+                        title={sourceTitle}
                         onMouseDown={event => {
                           event.preventDefault()
                         }}
@@ -328,10 +318,10 @@ export default function SkillsCommandsView({
                           />
                         </span>
                         <section className="min-w-0" aria-label={`${option.label} invocation summary`}>
-                          <h3 className={floatingPanelCatalogCompactRowTitleClassName()} title={option.label}>
+                          <h3 className={floatingPanelCatalogCompactRowTitleClassName()} title={sourceTitle}>
                             {option.label}
                           </h3>
-                          <p className={floatingPanelCatalogCompactRowMetaClassName()} title={metaLabel}>
+                          <p className={floatingPanelCatalogCompactRowMetaClassName()} title={sourceTitle}>
                             {option.group}
                           </p>
                         </section>

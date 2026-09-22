@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { buildMarkdownVariablePreviewByKey, renderMarkdownVariableReferenceChip } from '@/lib/markdown-core/ui/markdownInlineVariableMediaPreview'
 import {
   buildMarkdownVariableSsotAnchorId,
   buildMarkdownVariableToken,
@@ -57,6 +60,7 @@ export async function testMarkdownVariableReferencesCollectSuggestionsFromFrontm
   if (!venueRow || venueRow.value !== 'Singapore' || venueRow.source !== 'frontmatter') {
     throw new Error('expected browse rows to resolve frontmatter key values')
   }
+  assert.equal(browseRows.find(row => row.key === 'authors.0')?.value, 'A. Author 1')
   const placeRow = browseRows.find(r => r.key === 'place')
   if (!placeRow || placeRow.value !== 'airport' || placeRow.source !== 'inline') {
     throw new Error('expected browse rows to resolve inline declaration values')
@@ -90,4 +94,21 @@ export async function testMarkdownVariableReferencesBuildTokenByMode() {
     throw new Error('expected place ssot to resolve to inline declaration line')
   }
   await Promise.resolve()
+}
+
+export function testMarkdownFrontmatterReferencesFollowSource() {
+  const opts = { activeDocumentPath: '', uiPanelTextFontClass: '', uiPanelMonospaceTextClass: '', markdownPresentationMode: false }
+  const render = (caption: string) => {
+    const source = `---
+scene: {subjects: [{label: Pig}], camera: [{caption: '${caption}'}]}
+---
+{{scene.camera.0.caption}}`
+    const values = buildMarkdownVariablePreviewByKey(source)
+    assert.equal(values['scene.subjects.0.label']?.value, 'Pig')
+    return renderToStaticMarkup(renderMarkdownVariableReferenceChip({ baseKey: 'caption', key: 'scene.camera.0.caption', raw: '{{scene.camera.0.caption}}', opts: { ...opts, markdownVariablePreviewByKey: values } }))
+  }
+  assert.match(render('Sail to the dock.'), />Sail to the dock.</)
+  assert.match(render('The renamed crew arrives.'), />The renamed crew arrives.</)
+  assert.ok(!render('<script>alert(1)</script>').includes('<script>'))
+  assert.match(renderToStaticMarkup(renderMarkdownVariableReferenceChip({ baseKey: 'missing', key: 'missing', raw: '{{missing|No caption}}', opts })), />No caption</)
 }

@@ -9,6 +9,8 @@ import {
   type PromptPresetSelectionRuntime,
 } from '@/features/chat/promptPresetSelectionRuntime'
 import { openFloatingPanelChatWithSeedWhenReady } from '@/features/chat/floatingPanelChat/floatingPanelChatOpenSeed'
+import { PROCEDURAL_ASSET_PROMPT_TOKENS } from '@/features/image-to-glb/proceduralAssetPromptPreset'
+import { insertTextIntoActiveCardInlineTextEditor } from '@/lib/cards/cardInlineTextExternalCommands'
 import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { resolveInlineInvocationChipClassName } from '@/features/markdown/ui/dataViewChipStyles'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
@@ -116,6 +118,12 @@ export function FloatingPanelPromptPresetsView({
   const invokePreset = React.useCallback(async (preset: PromptPreset) => {
     if (invokingId) return
     setInvocationError('')
+    if (preset.executionSurface === 'card-run') {
+      if (!insertTextIntoActiveCardInlineTextEditor(PROCEDURAL_ASSET_PROMPT_TOKENS)) {
+        setInvocationError('Select an editable Card to insert this preset. Use Card Run to create the asset.')
+      }
+      return
+    }
     setInvokingId(preset.id)
     try {
       const result = await runtime.loadPrompt(preset.id)
@@ -141,7 +149,7 @@ export function FloatingPanelPromptPresetsView({
     >
       <FloatingPanelCatalogHeader
         title="Prompt Presets"
-        subtitle="Source-backed Chat response and MCP invocation catalog"
+        subtitle="Source-backed prompts and invocation discovery"
         actionsLabel="Prompt Presets actions"
         dataAttributes={{ 'data-kg-floating-panel-prompt-presets-header': '1' }}
         searchControl={(
@@ -188,13 +196,13 @@ export function FloatingPanelPromptPresetsView({
               type="button"
               className={floatingPanelCatalogCompactRowClassName()}
               disabled={Boolean(invokingId)}
-              aria-label={`Use ${preset.label} in Chat`}
-              title={`${preset.description} Use in Chat without submitting.`}
+              aria-label={`Use ${preset.label} in ${preset.executionSurface === 'card-run' ? 'Card' : 'Chat'}`}
+              title={`${preset.description} ${preset.executionSurface === 'card-run' ? 'Insert into the active Card without running.' : 'Use in Chat without submitting.'}`}
               data-kg-floating-panel-catalog-row="prompt-presets"
               data-kg-floating-panel-catalog-row-layout={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}
               data-kg-prompt-preset-row={preset.id}
               data-kg-prompt-preset-activation={preset.activation}
-              data-kg-prompt-preset-delivery="chat-seed-no-submit"
+              data-kg-prompt-preset-delivery={preset.executionSurface === 'card-run' ? 'card-insert-no-run' : 'chat-seed-no-submit'}
               onClick={() => { void invokePreset(preset) }}
             >
               <span className={floatingPanelCatalogCompactIconFrameClassName()} aria-hidden="true">

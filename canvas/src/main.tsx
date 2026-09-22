@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import NativeTitleTooltip from '@/features/panels/ui/NativeTitleTooltip'
 import './index.css'
 import { installPwaRuntime } from '@/lib/pwa/runtime'
 import { installAgenticGraphWebMcpRuntime } from '@/features/agent-ready/webMcpRuntime'
@@ -55,5 +56,6 @@ if (import.meta.env.PROD) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
+    <NativeTitleTooltip />
   </StrictMode>,
 )

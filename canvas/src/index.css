@@ -56,8 +56,6 @@
   --kg-text-primary: #111827;
   --kg-text-secondary: #4b5563;
   --kg-text-tertiary: #6b7280;
-  --kg-tooltip-bg: #111827;
-  --kg-tooltip-text: #ffffff;
   --kg-code-bg: #f8fafc;
   --kg-code-border: #e2e8f0;
   --kg-code-text: #0f172a;
@@ -167,8 +165,6 @@
   --kg-text-primary: #f3f4f6;
   --kg-text-secondary: #9ca3af;
   --kg-text-tertiary: #6b7280;
-  --kg-tooltip-bg: #0b1220;
-  --kg-tooltip-text: #f3f4f6;
   --kg-code-bg: rgba(2, 6, 23, 0.6);
   --kg-code-border: #1e293b;
   --kg-code-text: #e2e8f0;

@@ -24,6 +24,7 @@ export function buildCastMarkChoreographyEdit(
     ...xrMotionReferenceCastTrackRecord(track),
     animation: track.actorId === args.actorId && track.animation?.kind === 'action-path' ? null : track.animation,
     marks: track.marks.map(mark => ({
+      ...mark,
       timeSeconds: mark.timeSeconds,
       position: track.actorId === args.actorId && mark.id === args.markId && args.position ? [...args.position] : [...mark.position],
       transition: track.actorId === args.actorId && mark.id === args.markId ? readXrChoreographyEasing(args.easing || mark.transition) : mark.transition,
@@ -43,6 +44,7 @@ export function buildCameraMarkChoreographyEdit(
 ): Record<string, unknown> | null {
   if (!plan.camera.some(mark => mark.id === args.markId) || (!args.easing && !args.settings)) return null
   const camera = plan.camera.map(mark => ({
+    ...mark,
     timeSeconds: mark.timeSeconds,
     anchorId: mark.anchorId,
     moveId: mark.moveId,

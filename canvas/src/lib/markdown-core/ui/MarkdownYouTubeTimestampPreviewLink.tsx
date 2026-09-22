@@ -140,7 +140,7 @@ export function YouTubeTimestampPreviewLink({
           data-src={sourceUrl}
           data-kg-canvas-pointer-ignore="true"
           data-kg-canvas-wheel-ignore="true"
-          className={['pointer-events-none fixed', UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME, 'overflow-hidden rounded border shadow-xl', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
+          className={['pointer-events-none fixed', UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME, 'overflow-hidden rounded border shadow-xl', UI_THEME_TOKENS.tooltip.bg, UI_THEME_TOKENS.tooltip.text, UI_THEME_TOKENS.panel.border].join(' ')}
           style={{
             left: previewPosition.left,
             top: previewPosition.top,
@@ -160,7 +160,7 @@ export function YouTubeTimestampPreviewLink({
               style={{ borderRadius: 0 }}
             />
           </span>
-          <span className={`block px-2 py-1 text-[11px] leading-tight ${UI_THEME_TOKENS.text.secondary}`}>
+          <span className={`block px-2 py-1 text-[11px] leading-tight ${UI_THEME_TOKENS.tooltip.text}`}>
             {timestampLabel}
           </span>
         </span>,

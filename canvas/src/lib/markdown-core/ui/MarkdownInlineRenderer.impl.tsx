@@ -703,7 +703,6 @@ export const renderInlineTokens = (tokens: Token[] | undefined, opts: InlineRend
       const inlineCodeInvocationLinks = renderAgenticOsInlineCodeInvocationLinks({
         text: codeText,
         keyValue: key,
-        className: inlineCodeClassName,
       })
       if (inlineCodeInvocationLinks) return inlineCodeInvocationLinks
       const sigil = parseMarkdownSigil(codeText)

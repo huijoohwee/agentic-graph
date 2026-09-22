@@ -118,10 +118,17 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
   }
 
   if (persistenceState.mode === 'indexeddb') {
-    for (const collectionName of args.collectionNames) {
+    // Share a read transaction, isolating query failures and restoring in declaration order.
+    const restored = await raw.transaction('r', raw.records, () =>
+      Promise.allSettled(args.collectionNames.map(async collectionName =>
+        raw.records.where('collection').equals(String(collectionName)).toArray(),
+      )),
+    ).catch(reason => args.collectionNames.map(() => ({ status: 'rejected' as const, reason })))
+    for (const [index, collectionName] of args.collectionNames.entries()) {
       try {
-        const persisted = await raw.records.where('collection').equals(String(collectionName)).toArray()
-        for (const record of persisted) {
+        const result = restored[index]
+        if (result.status === 'rejected') throw result.reason
+        for (const record of result.value) {
           await memory.collections[collectionName].incrementalUpsert(
             cloneValue(record.value) as Collections[typeof collectionName],
           )
@@ -134,15 +141,9 @@ export const createIndexedDbCollectionDb = async <Collections extends StoredReco
         })
       }
     }
-    if (persistenceState.failedRecordTypes.length > 0) {
-      persistenceState = {
-        ...persistenceState,
-        mode: 'memory',
-        status: 'degraded',
-        error: 'One or more IndexedDB record types could not be restored.',
-      }
-    }
-    publishState()
+    if (persistenceState.failedRecordTypes.length > 0)
+      degradeToMemory('One or more IndexedDB record types could not be restored.')
+    else publishState()
   }
 
   const runWriteWithRetry = async (operation: () => Promise<void>): Promise<boolean> => {

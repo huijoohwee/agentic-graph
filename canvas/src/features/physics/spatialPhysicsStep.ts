@@ -409,20 +409,39 @@ export function stepSpatialPhysicsState(state: SpatialStepState, stepSeconds: nu
   }
 
   const nextInteractions = new Map<string, SpatialInteractionSnapshot>()
-  while (potentials.length) {
-    potentials.sort((left, right) => {
-      const byTime = potentialTime(state, left, starts) - potentialTime(state, right, starts)
-      return Number.isNaN(byTime) ? compareSpatialIds(left.key, right.key) : byTime || compareSpatialIds(left.key, right.key)
-    })
-    const potential = potentials.shift()!
-    const time = potentialTime(state, potential, starts)
+  // Contact times depend on start/end positions, not velocities. Keep them for
+  // this step and re-evaluate only contacts incident to a body moved by resolution.
+  // Sorting with narrow-phase calls repeated the same geometry work for every
+  // comparator and again after each unrelated contact in a terrain-heavy scene.
+  const scheduled = potentials.map(potential => ({ potential, time: potentialTime(state, potential, starts) }))
+  while (scheduled.length) {
+    let first = 0
+    for (let index = 1; index < scheduled.length; index += 1) {
+      const candidate = scheduled[index]!, current = scheduled[first]!
+      if (candidate.time < current.time || (candidate.time === current.time
+        && compareSpatialIds(candidate.potential.key, current.potential.key) < 0)) first = index
+    }
+    const { potential, time } = scheduled.splice(first, 1)[0]!
     if (!Number.isFinite(time)) break
+    const affected = (potential.kind === 'ground'
+      ? [potential.collider.bodyId] : [potential.left.bodyId, potential.right.bodyId])
+      .map(id => ({ body: state.bodies.get(id)!, position: mutableVector(state.bodies.get(id)!.position) }))
     recordInteraction(state, nextInteractions, potential)
     if (potential.kind === 'ground') {
       resolveGround(state, potential, time, starts, stepSeconds)
     } else {
       const collision = pairCollision(state, potential, starts)
       if (collision) resolvePair(state, potential, collision, starts, stepSeconds)
+    }
+    const moved = new Set(affected.filter(({ body, position }) =>
+      position.some((value, axis) => value !== body.position[axis]),
+    ).map(({ body }) => body.id))
+    if (moved.size) for (const entry of scheduled) {
+      const contact = entry.potential
+      if (contact.kind === 'ground' ? moved.has(contact.collider.bodyId)
+        : moved.has(contact.left.bodyId) || moved.has(contact.right.bodyId)) {
+        entry.time = potentialTime(state, contact, starts)
+      }
     }
   }
   publishInteractionEvents(state, nextInteractions)

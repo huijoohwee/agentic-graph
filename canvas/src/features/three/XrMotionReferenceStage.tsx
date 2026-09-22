@@ -1,3 +1,4 @@
+import { XrSelectionBounds } from './XrSelectionBounds'
 import React from 'react'
 import * as THREE from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
@@ -23,10 +24,10 @@ import {
 import { selectBoundXrActor, selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
 import { THREE_RENDER_ORDER } from '@/features/three/renderOrder'
 import type { GraphData } from '@/lib/graph/types'
-import { XrSceneLibrarySubject } from '@/features/three/XrSceneLibrarySubject'
+import { XrSceneLibrarySubject, PathSegment, MarkNumberSprite } from '@/features/three/XrSceneLibrarySubject'
 import { xrMotionReferenceWorldPosition } from '@/features/three/xrMotionReferenceCoordinates'
 import { XrStagePresetGeometry } from '@/features/three/XrStagePresetGeometry'
-import { getVoxelLabelTexture } from '@/features/three/voxelLabelTexture'
+import { sampleXrStoryPresentation } from './xrStoryPresentation'
 import { sampleXrAnimationPose } from '@/features/three/xrAnimationCatalog'
 import { XrKeyboardChoreographyRuntime } from '@/features/three/XrKeyboardChoreographyRuntime'
 import { readXrPhysicsRuntime, readXrPhysicsRuntimeFrame } from '@/features/three/xrPhysicsRuntime'
@@ -234,41 +235,6 @@ function GraphCastPropCue({ pose, scale }: { pose: ReturnType<typeof sampleXrAni
   return <group position={[scale * 0.42, scale * 1.02, -scale * 0.3]}><mesh><boxGeometry args={[scale * 0.2, scale * 0.16, scale * 0.36]} /><meshStandardMaterial color="#22d3ee" roughness={0.5} /></mesh><mesh position={[0, 0, -scale * 0.28]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[scale * 0.035, scale * 0.035, scale * 0.4, 8]} /><meshStandardMaterial color="#0ea5e9" roughness={0.5} /></mesh></group>
 }
 
-function PathSegment({
-  left,
-  right,
-  scale,
-  groundY,
-  color,
-  thickness,
-}: {
-  left: readonly [number, number, number]
-  right: readonly [number, number, number]
-  scale: number
-  groundY: number
-  color: string
-  thickness: number
-}) {
-  const start = xrMotionReferenceWorldPosition(left, scale, groundY)
-  const end = xrMotionReferenceWorldPosition(right, scale, groundY)
-  const dx = end[0] - start[0]
-  const dy = end[1] - start[1]
-  const dz = end[2] - start[2]
-  const length = Math.hypot(dx, dy, dz)
-  if (length < 0.001) return null
-  const direction = new THREE.Vector3(dx, dy, dz).normalize()
-  const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), direction)
-  return (
-    <mesh
-      position={[(start[0] + end[0]) / 2, (start[1] + end[1]) / 2, (start[2] + end[2]) / 2]}
-      quaternion={quaternion}
-    >
-      <boxGeometry args={[length, thickness, thickness]} />
-      <meshBasicMaterial color={color} transparent opacity={0.66} depthWrite={false} />
-    </mesh>
-  )
-}
-
 function resolveCastControlMark(track: XrCastTrack, selectedMarkId: string, playheadSeconds: number): XrCastMark | null {
   return track.marks.find(mark => mark.id === selectedMarkId)
     || track.marks.reduce<XrCastMark | null>((closest, mark) => {
@@ -384,31 +350,7 @@ function CastTrack({
           kgXrTimelineHighlight: selectedActor ? 'shared-asset' : '',
         }}
       >
-        {selectedActor ? (
-          <mesh
-            name={`agentic_os_xr_motion_cast_live_highlight_${track.actorId}`}
-            position={[0, scale * 0.04, 0]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            renderOrder={THREE_RENDER_ORDER.overlays}
-            userData={{
-              actorId: track.actorId,
-              selected: true,
-              kgXrSharedAssetTarget: track.actorId,
-              kgXrSharedAssetSelected: true,
-              kgXrTimelineHighlight: 'shared-asset',
-            }}
-          >
-            <ringGeometry args={[scale * 0.54, scale * 0.88, 32]} />
-            <meshBasicMaterial
-              color={XR_MOTION_REFERENCE_SELECTION_COLOR}
-              transparent
-              opacity={0.98}
-              depthTest={false}
-              depthWrite={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        ) : null}
+        <XrSelectionBounds selected={selectedActor} targetId={track.actorId}>
         <mesh position={[0, scale * (0.92 - pose.crouch * 0.18), 0]}>
           <boxGeometry args={[scale * 0.54, scale * 1.25, scale * 0.36]} />
           <meshStandardMaterial color={track.color} roughness={0.92} metalness={0} />
@@ -428,40 +370,9 @@ function CastTrack({
         <mesh position={[-scale * 0.4, scale * 1.18, 0]} rotation={[degrees(pose.leftArmPitchDegrees), 0, degrees(pose.leftArmRollDegrees)]}><boxGeometry args={[scale * 0.16, scale * 0.66, scale * 0.18]} /><meshStandardMaterial color={track.color} roughness={0.92} metalness={0} /></mesh>
         <mesh position={[scale * 0.4, scale * 1.18, 0]} rotation={[degrees(pose.rightArmPitchDegrees), 0, degrees(pose.rightArmRollDegrees)]}><boxGeometry args={[scale * 0.16, scale * 0.66, scale * 0.18]} /><meshStandardMaterial color={track.color} roughness={0.92} metalness={0} /></mesh>
         <GraphCastPropCue pose={pose} scale={scale} />
+        </XrSelectionBounds>
       </group></CastMarkControl> : null}
     </group>
-  )
-}
-
-function MarkNumberSprite({
-  number,
-  color,
-  position,
-  selected,
-  size,
-}: {
-  number: number
-  color: string
-  position: readonly [number, number, number]
-  selected: boolean
-  size: number
-}) {
-  const label = React.useMemo(() => {
-    if (typeof document === 'undefined') return null
-    return getVoxelLabelTexture({
-      text: String(number),
-      fontSizePx: 24,
-      textColor: selected ? '#0f172a' : '#ffffff',
-      bgColor: selected ? XR_MOTION_REFERENCE_SELECTION_COLOR : color,
-      bgOpacity: selected ? 1 : 0.96,
-    })
-  }, [color, number, selected])
-  if (!label) return null
-  const aspect = label.widthPx / Math.max(1, label.heightPx)
-  return (
-    <sprite position={position} scale={[size * (selected ? 1.9 : 1.45) * aspect, size * (selected ? 1.9 : 1.45), 1]} renderOrder={THREE_RENDER_ORDER.overlays}>
-      <spriteMaterial map={label.texture} transparent depthTest={false} depthWrite={false} />
-    </sprite>
   )
 }
 
@@ -561,6 +472,7 @@ export function XrMotionReferenceStage({
           const subjectNode = (
             <XrSceneLibrarySubject
               animationPose={animationPose}
+              presentation={sampleXrStoryPresentation(track?.marks || [], runtime.playheadSeconds)}
               facingYRadians={track ? sampleXrMotionReferenceFacingY(track.marks, runtime.playheadSeconds) : 0}
               key={subject.id}
               subject={subject}
