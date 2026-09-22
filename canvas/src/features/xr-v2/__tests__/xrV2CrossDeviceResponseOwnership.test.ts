@@ -11,6 +11,10 @@ import { createXrV2PublishedSpatialAsset } from '../xrV2SpatialAssetMetadata'
 import { createXrV2MemoryArtifactStore } from '../xrV2MemoryArtifactStore'
 import { sha256XrV2CrossDeviceBytes } from '../xrV2CrossDeviceFrameBundleCodec'
 import { buildAgenticGraphStorageBlobPath } from '@/lib/storage/agentic-graph-storage-sync-contract'
+import { withDurableBrowserStorage } from '@/__tests__/helpers/durable-browser-storage'
+import { createIndexedDbCollectionDb } from '@/lib/storage/indexedDbCollectionStore'
+import { AGENTIC_OS_STORAGE_COLLECTION_NAMES as COLLECTIONS, type AgenticGraphStorageRecordMap as Records } from '@/lib/storage/agentic-graph-storage-db'
+import { publishXrV2ManifestThroughExistingStorage as publishManifest, type XrV2PreparedExistingStorage as PreparedStorage } from '../xrV2CrossDeviceExistingStorage'
 
 const workspaceId = 'workspace:xr-response-ownership'
 const sourceId = '/workspace/xr-response-ownership.md'
@@ -144,4 +148,92 @@ test('XR response ownership cancels ignored late headers before the default cata
       }
     }, operation)
   }
+})
+
+type Storage = Awaited<ReturnType<typeof createIndexedDbCollectionDb<Records>>>
+async function withStorage(name: string, run: (storage: Storage,
+  open: () => Promise<Storage>) => Promise<void>) {
+  await withDurableBrowserStorage(async () => {
+    const databaseName = `xr-publication:${name}`
+    const open = () => createIndexedDbCollectionDb<Records>({ databaseName,
+      collectionNames: [...COLLECTIONS] })
+    const storage = await open()
+    try { await run(storage, open) } finally { await storage.db.remove() }
+  })
+}
+
+function publishInput(storage: Storage, name: string) {
+  let requests = 0
+  return { input: { workspaceId, baseUrl: config.baseUrl, canonicalPath: `xr-assets/${name}.md`,
+    workspacePath: `/xr-assets/${name}.md`, text: '# Atomic XR manifest',
+    preparedStorage: Promise.resolve({ storage }),
+    fetchImpl: (async () => { requests++; throw Error('Unexpected transport') }) as typeof fetch },
+  requests: () => requests }
+}
+
+test('XR failed transaction rolls back all publication state', async () => {
+  await withStorage('rollback', async (storage, open) => {
+    const fixture = publishInput(storage, 'rollback'), compare = storage.compareAndWriteWithRevisions
+    let documentId = '', commits = 0
+    storage.compareAndWriteWithRevisions = async (mutations, revisions, conditions) => {
+      commits++
+      assert.deepEqual(mutations.map(item => item.collectionName), ['documents', 'syncOutbox'])
+      const [document, outbox] = mutations
+      assert.ok(document.kind === 'upsert' && document.collectionName === 'documents')
+      assert.ok(outbox.kind === 'upsert')
+      documentId = document.record.id
+      assert.equal(outbox.record.recordId, documentId)
+      // Abort after both writes.
+      return compare([...mutations, { kind: 'upsert', collectionName: 'documents',
+        record: { ...document.record, id: '' } }], revisions, conditions)
+    }
+    await assert.rejects(publishManifest(fixture.input), /record id is required/)
+    assert.equal(commits, 1)
+    assert.equal(fixture.requests(), 0)
+    const reopened = await open()
+    try {
+      assert.equal((await reopened.collections.documents.find().exec()).length, 0)
+      assert.equal((await reopened.collections.syncOutbox.find().exec()).length, 0)
+      assert.deepEqual(await reopened.revisionHistory.list(workspaceId, documentId), [])
+    } finally { await reopened.db.close() }
+  })
+})
+
+test('XR CAS preserves concurrent writes without transport', async () => {
+  await withStorage('conflict', async storage => {
+    const fixture = publishInput(storage, 'conflict'), compare = storage.compareAndWriteWithRevisions
+    let documentId = ''
+    storage.compareAndWriteWithRevisions = async (mutations, revisions, conditions) => {
+      const document = mutations.find(item => item.collectionName === 'documents')
+      assert.ok(document?.kind === 'upsert' && document.collectionName === 'documents')
+      documentId = document.record.id
+      await storage.collections.documents.incrementalUpsert({ ...document.record,
+        contentMd: '# Concurrent owner', documentRevision: 7 })
+      return compare(mutations, revisions, conditions)
+    }
+    assert.deepEqual(await publishManifest(fixture.input), { status: 'conflict' })
+    assert.equal(fixture.requests(), 0)
+    const winner = (await storage.collections.documents.findOne(documentId).exec())!.toJSON()
+    assert.equal(winner.contentMd, '# Concurrent owner')
+    assert.equal((await storage.collections.syncOutbox.find().exec()).length, 0)
+  })
+})
+
+test('XR cancelled preparation cannot commit or publish late', async () => {
+  await withStorage('cancel', async storage => {
+    const fixture = publishInput(storage, 'cancel'), cancel = new AbortController()
+    let release!: (value: PreparedStorage) => void, commits = 0
+    const preparedStorage = new Promise<PreparedStorage>(resolve => { release = resolve })
+    storage.compareAndWriteWithRevisions = async () => { commits++; return true }
+    const operation = publishManifest({ ...fixture.input,
+      preparedStorage, signal: cancel.signal })
+    await nextTurn()
+    cancel.abort(new DOMException('Cancel held preparation', 'AbortError'))
+    release({ storage })
+    await assert.rejects(bounded(operation), error => error === cancel.signal.reason)
+    assert.equal(commits, 0)
+    assert.equal(fixture.requests(), 0)
+    assert.equal((await storage.collections.documents.find().exec()).length, 0)
+    assert.equal((await storage.collections.syncOutbox.find().exec()).length, 0)
+  })
 })
