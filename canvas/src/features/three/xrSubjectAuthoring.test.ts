@@ -7,6 +7,8 @@ import { captureXrSubjectDraftContext, isXrSubjectDraftCurrent, readXrSubjectPar
 import { sampleXrSubjectPlayback } from './XrAuthoredSubjectGeometry'
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from './xrMotionReferenceModel'
 import type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
+import { hydrateXrMotionReferenceRuntime, markXrMotionReferenceSaved, readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot,
+  selectXrMotionReferenceShotTarget, selectXrSubjectPart, setXrMotionReferencePlayhead } from './xrMotionReferenceRuntime'
 
 export function testXrSubjectDraftBindsDocumentPlanAndSelectionWithoutTransport() {
   const recipe = createProceduralAssetFromText('blue robot', 17), original = JSON.stringify(recipe)
@@ -80,6 +82,84 @@ export function testXrSubjectDraftBindsDocumentPlanAndSelectionWithoutTransport(
     assert.throws(() => sample('wave', true, NaN), /Invalid/)
     assert.equal(clipsSession.serialize(), clipsDocument, 'Sampling never rewrites the native recipe')
   } finally { clipMixer?.stopAllAction(); if (clipMixer) clipMixer.uncacheRoot(clipsSession.current.scene); clipsSession.dispose() }
+
+  const previousRuntime = readXrMotionReferenceRuntime()
+  const selectionSource = { markdownDocumentName: '/parts.md', markdownDocumentText: '# Parts' }
+  const selectionPlan = { subjects: [
+    { id: 'first-subject', assetId: 'prop-crate', construction: legacy },
+    { id: 'second-subject', assetId: 'prop-crate', construction: legacy },
+    { id: 'plain-subject', assetId: 'prop-crate' },
+  ] }
+  const selectionContext = () => captureXrSubjectDraftContext(selectionSource, readXrMotionReferenceRuntime(), 'first-subject')
+  try {
+    hydrateXrMotionReferenceRuntime({ sceneKey: 'parts-a', nodes: [], persistedValue: selectionPlan })
+    selectXrMotionReferenceShotTarget('first-subject')
+    assert.deepEqual(readXrMotionReferenceRuntime().selectedSubjectPart, { sceneKey: 'parts-a', subjectId: 'first-subject', partId: 'body' })
+    const beforeInvalid = readXrMotionReferenceRuntime()
+    assert.throws(() => selectXrSubjectPart('missing'), /existing construction part/)
+    assert.equal(readXrMotionReferenceRuntime(), beforeInvalid)
+    const selected = selectXrSubjectPart('arm-left'), selection = selected.selectedSubjectPart
+    assert.equal(Object.isFrozen(selection), true)
+    assert.equal(selected.dirty, false, 'Selection is ephemeral, not a recipe edit')
+    assert.equal(selectXrSubjectPart('arm-left'), selected, 'Identical selection does not publish')
+    const selectedDraft = selectionContext()
+    assert.equal(selectedDraft.selectedPartId, 'arm-left')
+    setXrMotionReferencePlayhead(0.5)
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart, selection)
+    assert.equal(isXrSubjectDraftCurrent(selectedDraft, selectionContext()), true, 'Seek preserves the part draft')
+    for (let index = 0; index < 9; index++) {
+      const document = JSON.parse(clipsDocument)
+      document.documentId = `/eviction-${index}.md#subject`
+      readXrSubjectConstruction({ ...legacy, proceduralAssetDocument: JSON.stringify(document) })
+    }
+    const restore = ProceduralAssetSession.restore
+    let restorations = 0
+    ProceduralAssetSession.restore = document => { restorations++; return restore(document) }
+    try {
+      for (const seconds of [0.75, 1, 1.25]) setXrMotionReferencePlayhead(seconds)
+      assert.equal(restorations, 0, 'Playhead publication never restores/builds a recipe after cache eviction')
+      assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart, selection)
+      readXrSubjectPlayback(legacy)
+      assert.equal(restorations, 1, 'The construction was evicted and explicit source admission still restores it')
+    } finally { ProceduralAssetSession.restore = restore }
+    const persisted = serializeXrMotionReferencePlan(readXrMotionReferenceRuntime().plan)
+    markXrMotionReferenceSaved(persisted)
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart, selection)
+    const reparsed = JSON.parse(JSON.stringify(persisted))
+    reparsed.durationSeconds = readXrMotionReferenceRuntime().plan.durationSeconds + 1
+    hydrateXrMotionReferenceRuntime({ sceneKey: 'parts-a', nodes: [], persistedValue: reparsed })
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart, selection, 'Same-scene source reparse retains a valid part')
+    assert.equal(JSON.stringify(readXrMotionReferenceRuntime().plan).includes('selectedSubjectPart'), false)
+    const abaDraft = selectionContext()
+    selectXrSubjectPart('arm-right')
+    assert.equal(isXrSubjectDraftCurrent(abaDraft, selectionContext()), false)
+    selectXrSubjectPart('arm-left')
+    assert.equal(isXrSubjectDraftCurrent(abaDraft, selectionContext()), false, 'A-B-A cannot revive an old part draft')
+    selectXrMotionReferenceShotTarget('second-subject')
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart?.partId, 'body')
+    selectXrSubjectPart('head'); selectXrMotionReferenceShotTarget('first-subject')
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart?.partId, 'body', 'No per-subject remembered selection')
+    selectXrMotionReferenceShotTarget('plain-subject')
+    const noConstruction = readXrMotionReferenceRuntime()
+    assert.equal(noConstruction.selectedSubjectPart, null)
+    assert.throws(() => selectXrSubjectPart('body'), /existing construction part/)
+    assert.equal(readXrMotionReferenceRuntime(), noConstruction)
+    const nullSeek = setXrMotionReferencePlayhead(0.25)
+    assert.equal(nullSeek.selectedSubjectPart, null); assert.equal(Object.isFrozen(nullSeek), true)
+    selectXrMotionReferenceShotTarget('first-subject'); selectXrSubjectPart('arm-left')
+    hydrateXrMotionReferenceRuntime({ sceneKey: 'parts-b', nodes: [], persistedValue: selectionPlan })
+    assert.deepEqual(readXrMotionReferenceRuntime().selectedSubjectPart, { sceneKey: 'parts-b', subjectId: 'first-subject', partId: 'body' })
+    selectXrSubjectPart('arm-left')
+    const removed = JSON.parse(clipsDocument)
+    removed.lastValid.parts = removed.lastValid.parts.filter((part: { id: string }) => part.id !== 'arm-left')
+    for (const clip of removed.lastValid.clips) clip.tracks = clip.tracks.filter((track: { partId: string }) => track.partId !== 'arm-left')
+    hydrateXrMotionReferenceRuntime({ sceneKey: 'parts-b', nodes: [], persistedValue: { subjects: [
+      { ...selectionPlan.subjects[0], construction: { ...legacy, proceduralAssetDocument: JSON.stringify(removed) } },
+    ] } })
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart?.partId, 'body', 'Removed parts reset to the first admitted part')
+    hydrateXrMotionReferenceRuntime({ sceneKey: 'parts-b', nodes: [], persistedValue: { subjects: [selectionPlan.subjects[2]] } })
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart, null, 'Removed subjects clear the shared selection')
+  } finally { restoreXrMotionReferenceRuntimeSnapshot(previousRuntime) }
 
   const runtime: XrMotionReferenceRuntimeSnapshot = { sceneKey: 'scene-a', sourceSignature: 'source-a', plan,
     selectedActorId: '', selectedShotTargetId: 'same-subject', selectedCameraRig: 'dolly', selectedMark: null,

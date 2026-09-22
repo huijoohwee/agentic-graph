@@ -11,12 +11,13 @@ import { exportProceduralAsset } from '@/features/image-to-glb/proceduralAssetRu
 import { downloadBlob } from '@/lib/graph/save'
 import type { AssetPart, ProceduralAssetRecipe } from '@/features/image-to-glb/proceduralAssetContract'
 import { captureXrSubjectDraftContext, editXrSubjectPart, isXrSubjectDraftCurrent, readXrSubjectConstruction, readXrSubjectPart, readXrSubjectPlayback, type XrSubjectConstruction, type XrSubjectDraftContext } from './xrSubjectAuthoring'
-import { readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot, setXrSubjectConstruction, subscribeXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
+import { readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot, selectXrSubjectPart, setXrSubjectConstruction, subscribeXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
 import { persistXrScene } from './xrScenePersistence'
 import type { XrMotionReferenceSubject } from './xrMotionReferenceModel'
 
 /** Adapts the existing construction controls to the selected subject's native persistence. */
 export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceFs = getWorkspaceFs, downloadFile = downloadBlob }: { subject: XrMotionReferenceSubject; context: XrSubjectDraftContext; resolveWorkspaceFs?: () => Promise<WorkspaceFs>; downloadFile?: typeof downloadBlob }) {
+  const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
   const [intent, setIntent] = React.useState('blue robot')
   const [busy, setBusy] = React.useState(false)
   const [activity, setActivity] = React.useState('Saving construction…')
@@ -24,18 +25,20 @@ export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceF
   const [epoch, setEpoch] = React.useState(0)
   const serial = React.useRef(0)
   const readContext = () => captureXrSubjectDraftContext(useGraphStore.getState(), readXrMotionReferenceRuntime(), subject.id)
+  // Whole-model drafts belong to the subject; only part edits depend on its selected joint.
+  const modelContext = (value: XrSubjectDraftContext): XrSubjectDraftContext => ({ ...value, selectedPartId: '', selectedPart: null })
   const binding = React.useMemo(() => ({ context, generation: ++serial.current,
-    invalidated: !isXrSubjectDraftCurrent(context, readContext()), pending: null as AbortController | null,
+    invalidated: !isXrSubjectDraftCurrent(modelContext(context), modelContext(readContext())), pending: null as AbortController | null,
   }), [context.documentName, context.documentText, context.sceneKey, context.sourceSignature, context.plan, context.subjectId, context.selectedSubjectId, epoch])
   const latest = React.useRef(binding)
   latest.current = binding
-  const current = () => !binding.invalidated && isXrSubjectDraftCurrent(binding.context, readContext())
+  const current = () => !binding.invalidated && isXrSubjectDraftCurrent(modelContext(binding.context), modelContext(readContext()))
   React.useEffect(() => {
     // A remounted effect gets a fresh generation; its retired lease is never revived.
-    if (binding.invalidated && isXrSubjectDraftCurrent(binding.context, readContext())) setEpoch(value => value + 1)
+    if (binding.invalidated && isXrSubjectDraftCurrent(modelContext(binding.context), modelContext(readContext()))) setEpoch(value => value + 1)
     setBusy(false); setError('')
     const observe = () => {
-      if (!binding.invalidated && !isXrSubjectDraftCurrent(binding.context, readContext())) {
+      if (!binding.invalidated && !isXrSubjectDraftCurrent(modelContext(binding.context), modelContext(readContext()))) {
         binding.invalidated = true; binding.pending?.abort(); setEpoch(value => value + 1)
       }
     }
@@ -53,13 +56,16 @@ export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceF
       if (!persistXrScene()) throw new Error('Unable to save construction to the current scene')
     } catch (caught) { restoreXrMotionReferenceRuntimeSnapshot(previous); throw caught }
   }
-  const save = async (stage: () => ProceduralAssetSession) => {
+  const save = async (stage: () => ProceduralAssetSession, partContext?: XrSubjectDraftContext) => {
     if (busy || !current()) return
     const controller = new AbortController()
     binding.pending?.abort(); binding.pending = controller
     let invalidated = false
-    const unsubscribe = useGraphStore.subscribe(() => { if (!current()) invalidated = true })
     const isCurrent = () => !invalidated && !controller.signal.aborted && current()
+      && (!partContext || isXrSubjectDraftCurrent(partContext, readContext()))
+    const observe = () => { if (!isCurrent()) { invalidated = true; controller.abort() } }
+    const unsubscribeSource = useGraphStore.subscribe(observe), unsubscribeRuntime = subscribeXrMotionReferenceRuntime(observe)
+    const unsubscribe = () => { unsubscribeSource(); unsubscribeRuntime() }
     let session: ProceduralAssetSession | null = null
     setBusy(true); setActivity('Saving construction…'); setError('')
     try {
@@ -80,6 +86,12 @@ export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceF
     }
   }
   const create = () => save(() => new ProceduralAssetSession(`${context.documentName}#${subject.id}`, createProceduralAssetFromText(intent)))
+  const selectPart = (partId: string) => {
+    if (busy || !current()) return
+    setError('')
+    try { selectXrSubjectPart(partId) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : 'Unable to select this part') }
+  }
   const applyPlayback = (playback: NonNullable<XrSubjectConstruction['playback']>) => {
     if (busy || !current()) return
     setError('')
@@ -88,13 +100,14 @@ export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceF
   }
   const applyPart = (partId: string, patch: Omit<AssetPart, 'id'>) => save(() => {
     if (!subject.construction) throw new Error('Select an editable subject first')
+    if (partId !== context.selectedPartId) throw new Error('Part selection changed; review the current part before applying')
     const session = ProceduralAssetSession.restore(subject.construction.proceduralAssetDocument)
     try {
       const recipe = editXrSubjectPart(session.snapshot.lastValid, partId, patch)
       if (!session.apply(JSON.stringify(recipe))) throw new Error(session.snapshot.error || 'Unable to edit this part')
       return session
     } catch (caught) { session.dispose(); throw caught }
-  })
+  }, context)
   const exportGlb = async () => {
     const document = subject.construction?.proceduralAssetDocument
     if (!document || busy || !current()) return
@@ -121,7 +134,9 @@ export function XrSubjectAuthoringControls({ subject, context, resolveWorkspaceF
   return <section aria-label="Subject construction" className="grid gap-2 border-t pt-2">
     {subject.construction ? <>
       <p className="text-xs">Rigid parts, pivots and hierarchy remain editable. The selected clip follows the shared Timeline playhead.</p>
-      <XrSubjectPartEditor key={`parts:${binding.generation}`} document={subject.construction.proceduralAssetDocument} busy={busy} onApply={applyPart} />
+      <XrSubjectPartEditor document={subject.construction.proceduralAssetDocument} generation={binding.generation}
+        selectedPart={runtime.selectedSubjectPart?.subjectId === subject.id ? runtime.selectedSubjectPart : null}
+        busy={busy} onSelect={selectPart} onApply={applyPart} />
       <XrSubjectPlaybackEditor key={`playback:${binding.generation}`} construction={subject.construction} busy={busy} onApply={applyPlayback} />
       <fieldset disabled={busy} className="min-w-0">
         <ProceduralAssetControls key={binding.generation} resolveWorkspaceFs={resolveWorkspaceFs} nodeId={subject.id} properties={{ ...subject.construction, proceduralAssetSourcePath: context.documentName }} onPatchProperties={commit} />
@@ -161,8 +176,9 @@ function XrSubjectPlaybackEditor({ construction, busy, onApply }: {
 }
 
 /** A local form projection of the selected subject's native recipe; no second selection store. */
-function XrSubjectPartEditor({ document, busy, onApply }: {
-  document: string; busy: boolean; onApply: (partId: string, patch: Omit<AssetPart, 'id'>) => Promise<void>
+function XrSubjectPartEditor({ document, generation, selectedPart, busy, onSelect, onApply }: {
+  document: string; generation: number; selectedPart: XrSubjectDraftContext['selectedPart']; busy: boolean; onSelect: (partId: string) => void
+  onApply: (partId: string, patch: Omit<AssetPart, 'id'>) => Promise<void>
 }) {
   const [open, setOpen] = React.useState(false)
   const [recipe, setRecipe] = React.useState<ProceduralAssetRecipe | null>(null)
@@ -174,12 +190,13 @@ function XrSubjectPartEditor({ document, busy, onApply }: {
     try {
       session = ProceduralAssetSession.restore(document)
       const next = session.snapshot.lastValid
+      const selectedPartId = selectedPart?.partId || ''
       setRecipe(next)
-      setDraft(previous => readXrSubjectPart(next, next.parts.some(part => part.id === previous?.id) ? previous!.id : next.parts[0].id))
+      setDraft(readXrSubjectPart(next, next.parts.some(part => part.id === selectedPartId) ? selectedPartId : next.parts[0].id))
       setError('')
     } catch (caught) { setRecipe(null); setDraft(null); setError(caught instanceof Error ? caught.message : 'Unable to inspect parts') }
     finally { session?.dispose() }
-  }, [document, open])
+  }, [document, open, selectedPart, generation])
   const inputClass = 'min-h-9 w-full min-w-0 rounded border bg-transparent px-2 text-xs'
   const vector = (field: 'position' | 'pivot' | 'rotation' | 'size', label: string) => draft && <fieldset className="min-w-0">
     <legend className="text-xs">{label}</legend>
@@ -199,7 +216,7 @@ function XrSubjectPartEditor({ document, busy, onApply }: {
     <summary className="min-h-9 cursor-pointer text-xs font-medium">Parts &amp; rig</summary>
     {recipe && draft ? <fieldset disabled={busy} className="grid min-w-0 gap-2">
       <label className="grid gap-1 text-xs">Part<select aria-label="Part" className={inputClass} value={draft.id}
-        onChange={event => setDraft(readXrSubjectPart(recipe, event.currentTarget.value))}>
+        onChange={event => onSelect(event.currentTarget.value)}>
         {recipe.parts.map(part => <option key={part.id} value={part.id}>{part.id}</option>)}
       </select></label>
       <label className="grid gap-1 text-xs">Parent part<select aria-label="Parent part" className={inputClass} value={draft.parentId || ''}

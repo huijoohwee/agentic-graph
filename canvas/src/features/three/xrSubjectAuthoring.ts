@@ -47,6 +47,8 @@ export type XrSubjectDraftContext = Readonly<{
   plan: XrMotionReferenceRuntimeSnapshot['plan']
   subjectId: string
   selectedSubjectId: string
+  selectedPartId: string
+  selectedPart: XrMotionReferenceRuntimeSnapshot['selectedSubjectPart']
 }>
 
 /** References existing authored state; transport revisions are deliberately excluded. */
@@ -57,7 +59,8 @@ export function captureXrSubjectDraftContext(
 ): XrSubjectDraftContext {
   return Object.freeze({ documentName: document.markdownDocumentName || '', documentText: document.markdownDocumentText || '',
     sceneKey: runtime.sceneKey, sourceSignature: runtime.sourceSignature, plan: runtime.plan,
-    subjectId, selectedSubjectId: runtime.selectedShotTargetId })
+    subjectId, selectedSubjectId: runtime.selectedShotTargetId, selectedPartId: runtime.selectedSubjectPart?.partId || '',
+    selectedPart: runtime.selectedSubjectPart ?? null })
 }
 
 export function isXrSubjectDraftCurrent(draft: XrSubjectDraftContext, current: XrSubjectDraftContext): boolean {
@@ -65,6 +68,7 @@ export function isXrSubjectDraftCurrent(draft: XrSubjectDraftContext, current: X
     && draft.documentName === current.documentName && draft.documentText === current.documentText
     && draft.sceneKey === current.sceneKey && draft.sourceSignature === current.sourceSignature
     && draft.plan === current.plan && draft.subjectId === current.subjectId
+    && draft.selectedPartId === current.selectedPartId && draft.selectedPart === current.selectedPart
     && draft.selectedSubjectId === draft.subjectId && current.selectedSubjectId === draft.subjectId
     && current.plan.subjects.some(subject => subject.id === draft.subjectId))
 }
@@ -79,7 +83,11 @@ export type XrSubjectConstruction = Readonly<{
 }>
 // Float32 mesh bounds can differ from the authored ground plane by sub-micrometer rounding.
 export const XR_SUBJECT_GROUND_EPSILON_METERS = 1e-6
-const constructionBounds = new Map<string, Readonly<{ min: readonly number[]; max: readonly number[]; clips: readonly { id: string; duration: number }[] }>>()
+const constructionBounds = new Map<string, Readonly<{ min: readonly number[]; max: readonly number[]; parts: readonly string[]; clips: readonly { id: string; duration: number }[] }>>()
+
+export function readXrSubjectPartIds(construction: XrSubjectConstruction): readonly string[] {
+  return resolveXrSubjectConstructionBounds(construction).parts
+}
 
 export function readXrSubjectPlayback(construction: XrSubjectConstruction): { clipId: string | null; loop: boolean; clips: readonly { id: string; duration: number }[] } {
   const { clips } = resolveXrSubjectConstructionBounds(construction)
@@ -132,7 +140,8 @@ export function resolveXrSubjectConstructionBounds(construction: XrSubjectConstr
     if (box.isEmpty() || ![...box.min.toArray(), ...box.max.toArray()].every(Number.isFinite)) throw new Error('Subject construction has no finite bounds')
     if (box.min.y < -XR_SUBJECT_GROUND_EPSILON_METERS) throw new Error('Subject construction extends below its ground origin; move its parts above Y = 0 before applying')
     const clips = Object.freeze(session.snapshot.lastValid.clips.map(clip => Object.freeze({ id: clip.id, duration: clip.duration })))
-    const bounds = Object.freeze({ min: Object.freeze(box.min.toArray()), max: Object.freeze(box.max.toArray()), clips })
+    const parts = Object.freeze(session.snapshot.lastValid.parts.map(part => part.id))
+    const bounds = Object.freeze({ min: Object.freeze(box.min.toArray()), max: Object.freeze(box.max.toArray()), parts, clips })
     // Repeated metadata normalization reuses admission; this cache owns no GPU resources.
     if (constructionBounds.size >= 8) constructionBounds.delete(constructionBounds.keys().next().value!)
     constructionBounds.set(document, bounds)

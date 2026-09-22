@@ -320,3 +320,29 @@ Float32 quaternions with exact array equality; no tolerance was widened and the
 sampler was unchanged. A nullable return type annotation was corrected after
 Canvas type checking; final compiler validation is recorded in the task receipt.
 This proves focused behavior, not browser/mobile or full Timeline acceptance.
+
+### S1 shared part selection and model export proof
+
+`/change #xr.subject.current-base @codex` fixes the observed inspector selection
+reset after a part save or remount. Part identity belongs to the existing scene
+runtime snapshot, scoped to document/subject, and is validated against the native
+recipe. No new store or parallel selection is introduced. Preserve valid choice
+across save and seek; reject stale/unknown choices and reset on subject/document
+change or removed parts. Keep pure selection/snapshot normalization in existing
+reserved helpers so the runtime stays below600lines without compressed code.
+Also prove selected-model GLB duration and start/middle/end poses through actual
+reimport in the existing registered case. This remains selected-model evidence,
+not whole-scene Timeline baking. Twenty active minutes to checkpoint, eight
+existing files, at most20KB, zero new modules/checkouts/dependencies/services.
+Review before affected checks; retain already-valid evidence when source is
+unchanged. Bridge, full Timeline rows, tools/surface handoff and complete browser
+journey remain pending their native owners and admission.
+
+Independent review caught a per-tick cache-eviction rebuild before validation.
+The corrected immutable-plan/selection fast path performs no model restoration
+on transport publication; real plan/selection changes still revalidate. Final
+review has no findings. Both existing registered cases passed on their first run
+(208ms helper, 2079ms mounted). They cover selection save/remount/seek, removal,
+part/source/subject retirement, model-draft preservation and actual GLB hierarchy,
+duration and start/middle/end poses. Source and type-check evidence belong to the
+task receipt; this is focused local proof, not complete browser or XR acceptance.

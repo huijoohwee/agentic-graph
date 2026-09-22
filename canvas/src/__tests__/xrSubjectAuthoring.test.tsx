@@ -18,7 +18,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from '@/features/three/xrMotionReferenceModel'
-import { readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot, selectXrMotionReferenceShotTarget, setXrMotionReferencePlayhead, setXrSubjectConstruction, subscribeXrMotionReferenceRuntime, hydrateXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
+import { readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot, selectXrMotionReferenceShotTarget, selectXrSubjectPart, setXrMotionReferencePlayhead, setXrSubjectConstruction, subscribeXrMotionReferenceRuntime, hydrateXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
 import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -125,7 +125,9 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     const createdDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
     const recipeField = container.querySelector<HTMLTextAreaElement>('textarea')!
     const twoClips = JSON.parse(recipeField.value)
-    twoClips.clips.push({ ...twoClips.clips[0], id: 'salute' })
+    twoClips.clips.push({ id: 'salute', duration: 1.5, tracks: [{ partId: 'arm-right', keys: [
+      { time: 0, rotation: [0, 0, 0] }, { time: 0.75, rotation: [0, 0, 0.6] }, { time: 1.5, rotation: [0, 0, 1] },
+    ] }] })
     await act(async () => Simulate.change(recipeField, { target: { value: JSON.stringify(twoClips) } } as never))
     await save('Apply recipe')
     await act(async () => Simulate.change(container.querySelector('input[type="number"]')!, { target: { valueAsNumber: 1.1 } } as never))
@@ -202,8 +204,36 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     assert.deepEqual(readXrMotionReferenceRuntime().plan.subjects[0].construction!.playback, { clipId: 'walk', loop: true })
     await openParts()
 
+    const pendingModelField = container.querySelector<HTMLTextAreaElement>('textarea')!
+    const pendingModelDraft = `${pendingModelField.value}\n `
+    await act(async () => Simulate.change(pendingModelField, { target: { value: pendingModelDraft } } as never))
+    await changeField('Part', 'head')
+    assert.equal(container.querySelector('textarea'), pendingModelField, 'Changing the part retains the whole-model recipe editor')
+    assert.equal(pendingModelField.value, pendingModelDraft, 'Changing the part retains unapplied whole-model draft bytes')
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart?.partId, 'head', 'Part choice belongs to the shared runtime')
+    assert.ok(container.querySelector<HTMLDetailsElement>('details')!.open, 'Selecting a part keeps its inspector open')
+    await changeField('Pivot (m) Y', '0.05')
+    await save('Apply part')
+    editedDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
+    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head', 'Saving a non-first part preserves its selection')
+    assert.equal(JSON.parse(editedDocument).lastValid.parts.find((part: { id: string }) => part.id === 'head').pivot[1], 0.05)
+    const partSelection = readXrMotionReferenceRuntime().selectedSubjectPart
+    await act(async () => { root.render(<ConstructionHarness key="reopened-inspector" />) })
+    await openParts()
+    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head', 'A remounted inspector uses canonical part selection')
+    await act(async () => { setXrMotionReferencePlayhead(1.25); hydrateCanonicalXrMotionReferenceRuntime() })
+    assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart, partSelection, 'Seek and same-document hydration preserve the canonical selection record')
+    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head')
+
     let finishFs: (() => void) | undefined
     resolveFs = () => new Promise(resolve => { finishFs = () => resolve(fs) })
+    await changeField('Pivot (m) Y', '0.07')
+    await act(async () => Simulate.click(button('Apply part')))
+    assert.ok(finishFs)
+    await act(async () => { selectXrSubjectPart('body'); selectXrSubjectPart('head'); finishFs!() })
+    assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument, editedDocument, 'Part away-and-back cannot revive a pending part save')
+    assert.equal(container.querySelector<HTMLInputElement>('[aria-label="Pivot (m) Y"]')!.value, '0.05', 'Part away-and-back retires its unapplied local draft')
+    finishFs = undefined
     await act(async () => Simulate.click(button('Apply part')))
     assert.ok(finishFs, 'The stale operation reached an asynchronous native workspace boundary')
     await act(async () => {
@@ -250,11 +280,23 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
       body.geometry.computeBoundingBox()
       assert.ok(Math.abs(body.geometry.boundingBox!.getSize(new THREE.Vector3()).x - 1.3) < 1e-6)
       assert.equal(body.material.color.getHexString(), '336699')
-      assert.equal(exported.animations[0].name, 'walk')
-      mixer.clipAction(exported.animations[0]).play()
-      const arm = exported.scene.getObjectByName('Pivot-arm-left')!
-      mixer.setTime(0); const first = arm.quaternion.clone()
-      mixer.setTime(0.5); assert.ok(first.angleTo(arm.quaternion) > 0.4, 'Actual exported clip still animates the native rigid joint')
+      assert.equal(exported.scene.getObjectByName('Pivot-arm-left')!.parent!.name, 'Socket-body', 'Reimport retains the authored joint hierarchy')
+      assert.equal(exported.scene.getObjectByName('Part-head')!.position.y, -0.05, 'Reimport retains the edited pivot offset')
+      assert.deepEqual(exported.animations.map(clip => ({ name: clip.name, duration: clip.duration })), [{ name: 'walk', duration: 2 }, { name: 'salute', duration: 1.5 }])
+      for (const [name, part, samples] of [
+        ['walk', 'arm-left', [[0, 0, 0], [0.5, 0.45, 0], [1, 0, 0], [2, 0, 0]]],
+        ['salute', 'arm-right', [[0, 0, 0], [0.75, 0, 0.6], [1.5, 0, 1]]],
+      ] as const) {
+        const clip = exported.animations.find(item => item.name === name)!
+        for (const [time, x, z] of samples) {
+          mixer.stopAllAction()
+          const action = mixer.clipAction(clip).reset().setLoop(THREE.LoopOnce, 1)
+          action.clampWhenFinished = true; action.play(); mixer.setTime(time)
+          const actual = exported.scene.getObjectByName(`Pivot-${part}`)!.quaternion.toArray()
+          const expected = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, 0, z)).toArray()
+          assert.ok(actual.every((component, i) => Math.abs(component - expected[i]) < 1e-6), `${name} retains its actual pose at ${time}s after GLB reimport`)
+        }
+      }
     } finally { mixer.stopAllAction(); mixer.uncacheRoot(exported.scene); disposeProceduralAsset(exported.scene) }
     assert.equal(readXrMotionReferenceRuntime(), afterRecovery, 'Export never replaces or advances the live scene')
 
