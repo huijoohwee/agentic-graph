@@ -3,7 +3,7 @@ title: "agentic-graph Game Flight Sim PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-game-flight-sim-prd-tad"
 author: "airvio / joohwee"
 date: "2026-09-22"
-updated: "2026-07-29"
+updated: "2026-09-22"
 version: "1.5.2"
 status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
@@ -466,7 +466,7 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 ## Offline learning proposal - reference implementation
 
 **Scope and authority.** PRD, TAD, ADR, MVP and GTM below join this document's `1.5.2` revision.
-This proposal awaits a language/display decision; accepted Kiro requirements stay unchanged. After acceptance, update `.kiro/specs/agentic-graph-game-flight-sim/{requirements,design,tasks}.md`
+This proposal records the earlier structured-control alternative. The separately authored offline Python learning specification now requires Python execution; this alternative does not satisfy that requirement and does not authorize a competing evaluator. Its L01–L05 criteria remain historical proposal evidence, not implemented acceptance. Accepted Kiro requirements stay unchanged. Any future Flight-specific implementation must update `.kiro/specs/agentic-graph-game-flight-sim/{requirements,design,tasks}.md`
 at its normative owner before implementation, and this derived document together.
 Do not modify the shared XR workbench while another active lane owns it.
 
@@ -552,5 +552,4 @@ revenue, cash and repeat use are unvalidated. Outreach/payment is not authorized
 is zero; development cost and savings are unmeasured.
 
 **Handoff:** document checks prove no runtime or release outcome; each effect retains its receipt.
-Acceptance must name this revision and choose native procedures/offline trace or mandatory Python
-execution/full offline scenery.
+Future Flight acceptance must name its exact normative revision. Python learning implementation follows its separate specification and source owners; this historical proposal grants no language or full-offline-scenery decision.
