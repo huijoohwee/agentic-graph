@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Scene } from 'three'
 import { startTimelineTransportPlayback } from '@/components/timeline/timelineTransport'
-import { publishRichMediaTimelineClockStart, publishRichMediaTimelineTransportFrame, RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY, type RichMediaTimelineLocalFrame } from '@/lib/render/richMediaTimelineSync'
+import { publishRichMediaTimelineClockAcknowledgement, publishRichMediaTimelineClockStart, publishRichMediaTimelineTransportFrame, RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY, type RichMediaTimelineLocalFrame } from '@/lib/render/richMediaTimelineSync'
 import { acquireVideoSequenceRecorderLease } from '@/components/timeline/videoSequenceRecorderLifecycle'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { captureXrSceneMp4, createXrMp4SourceBinding, type XrMp4SourceBinding } from '@/features/three/xrSceneMp4Export'
@@ -26,7 +26,7 @@ async function fixture(run: (value: {
   capture: (options?: { signal?: AbortSignal; onProgress?: (fraction: number) => void }) => ReturnType<typeof captureXrSceneMp4>
   binding: XrMp4SourceBinding; advanceWithoutRender: () => void; resumeRendering: () => void; stale: () => void; stopped: () => number; restored: () => number; scene: Scene; initialHook: Scene['onAfterRender']
   resizeSource: () => void; recordedDimensions: () => number[][]; copiedSourceWidths: () => number[]
-  suspendRendering: () => void
+  suspendRendering: () => void; isPlaying: () => boolean; exactEndPayload: () => void
   automaticFramesOnly: () => void; sampledPixels: () => number[]; frameRequests: () => number
 }) => Promise<void>) {
   const priorRecorder = Object.getOwnPropertyDescriptor(globalThis, 'MediaRecorder')
@@ -36,7 +36,7 @@ async function fixture(run: (value: {
   const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
   Object.defineProperty(globalThis, 'window', { configurable: true, value: new EventTarget() })
   const clockLifetime = new AbortController()
-  let clockRequested = false; let clockReleased = false
+  let clockRequested = false; let clockReleased = false; let clockEnding = false; let exactEndPayload = false
   let stopped = 0; let restored = 0; let time = 0; let playing = false; let current = true; let renderEnabled = true
   const listeners = new Set<() => void>()
   const scene = new Scene(); const initialHook = scene.onAfterRender
@@ -81,6 +81,13 @@ async function fixture(run: (value: {
       void Promise.resolve(ready).then(() => { clockReleased = true }, () => { playing = false })
     }
     if (playing && clockReleased) time = Math.min(0.08, time + 0.02)
+    if (playing && clockReleased && time >= 0.08 && !clockEnding) {
+      clockEnding = true
+      const ready = publishRichMediaTimelineClockAcknowledgement({ type: 'agentic-graph:timeline-transport-frame',
+        documentKey: binding.documentKey, position: binding.time() / 60, timeMs: (exactEndPayload ? binding.durationSeconds : binding.time()) * 1_000,
+        playing: true, playbackRate: 1, sourcePlayback: false }, clockLifetime.signal, 'end')
+      void Promise.resolve(ready).then(() => binding.pause(), () => binding.pause())
+    }
     if (!renderEnabled) return
     source.pixel = playing ? Math.round(time * 1_000) : 200
     scene.onAfterRender({ xr: { isPresenting: false } } as never, scene, {} as never, undefined as never, undefined as never, undefined as never)
@@ -96,9 +103,9 @@ async function fixture(run: (value: {
             initialFrameVerified: true, initialFrameMeanError: 0, finalFrameVerified: true, finalFrameMeanError: 0 }
         } }),
       binding, advanceWithoutRender: () => { renderEnabled = false; time = 0.08; for (const listener of listeners) listener() },
-      resumeRendering: () => { renderEnabled = true }, suspendRendering: () => { renderEnabled = false },
+      resumeRendering: () => { renderEnabled = true }, suspendRendering: () => { renderEnabled = false }, isPlaying: () => playing,
       stale: () => { current = false; for (const listener of listeners) listener() },
-      stopped: () => stopped, restored: () => restored, scene, initialHook,
+      stopped: () => stopped, restored: () => restored, scene, initialHook, exactEndPayload: () => { exactEndPayload = true },
       resizeSource: () => { source.width = 80; source.height = 44 },
       recordedDimensions: () => recordedDimensions, copiedSourceWidths: () => copiedSourceWidths,
       automaticFramesOnly: () => { automaticOnly = true }, sampledPixels: () => sampledPixels, frameRequests: () => frameRequests,
@@ -236,23 +243,27 @@ test('WebM-only browsers return unsupported before acquiring tracks', async () =
   })
 })
 
-
 test('final Timeline publication cannot complete capture until the final time is rendered', async () => {
   await fixture(async value => {
-    let complete = false
-    let advanced = false
-    const result = value.capture({ onProgress: () => {
-      if (!advanced) { advanced = true; value.advanceWithoutRender() }
+    let complete = false; let advanced = false; let published: () => void = () => {}
+    const endpointPublished = new Promise<void>(resolve => { published = resolve })
+    const result = value.capture({ onProgress: fraction => {
+      // Retain real opening/intermediate renders before withholding the final render.
+      if (!advanced && fraction >= 0.5) { advanced = true; value.advanceWithoutRender(); published() }
     } }).then(result => { complete = true; return result })
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await Promise.race([endpointPublished, result.then(() => { throw new Error('Capture ended before endpoint publication') })])
+    await new Promise(resolve => setTimeout(resolve, 25))
     assert.equal(complete, false)
     value.resumeRendering()
-    assert.equal((await result).status, 'captured')
+    const captured = await result
+    assert.equal(captured.status, 'captured')
+    if (captured.status === 'captured') assert.ok(captured.evidence.renderedFrames >= 3)
   })
 })
 
-test('rounded Timeline endpoint requests and renders the exact authored final time', async () => {
-  await fixture(async value => {
+test('rounded pose playheads are corrected even when terminal event time is already exact', async () => {
+  for (const exactPayload of [false, true]) await fixture(async value => {
+    if (exactPayload) value.exactEndPayload()
     const readTime = value.binding.time
     let finalRequests = 0
     value.binding.time = () => finalRequests ? readTime() : Math.min(readTime(), 0.07998)
@@ -275,7 +286,6 @@ test('restoration exceptions still detach the renderer hook and release the shar
   }
 })
 
-
 test('recorder errors reject immediately, release tracks and allow a later export', async () => {
   await fixture(async value => {
     let failed = false
@@ -287,7 +297,6 @@ test('recorder errors reject immediately, release tracks and allow a later expor
     acquireVideoSequenceRecorderLease()()
   })
 })
-
 
 test('native binding restores its prior BottomPanel state but preserves a subsequent user choice', () => {
   const prior = useGraphStore.getState()
@@ -307,16 +316,17 @@ test('native binding restores its prior BottomPanel state but preserves a subseq
   } finally { useGraphStore.setState(prior) }
 })
 
-function nativeClockFixture(onPlaybackStart?: (position: number, signal: AbortSignal) => Promise<void> | void) {
-  let now = 0; let nextId = 0; let current = true; let ended = 0
+function nativeClockFixture(onPlaybackStart?: (position: number, signal: AbortSignal) => Promise<void> | void,
+  onPlaybackComplete?: (position: number, signal: AbortSignal) => Promise<void> | void, freshSnapshots = false) {
+  let now = 0; let nextId = 0; let current = true; let ended = 0; let projectedPosition = 0
   const queue = new Map<number, FrameRequestCallback>()
   const positions: number[] = []
   const frames: number[] = []
   const state = { position: 0, max: 2, unitsPerMs: 0.001, playbackRate: 1,
-    onPositionChange: (position: number) => positions.push(position),
+    onPositionChange: (position: number) => { positions.push(position); projectedPosition = position },
     onPlaybackFrame: (position: number) => frames.push(position),
-    onPlaybackEnd: () => { ended++ }, onPlaybackStart }
-  const stop = startTimelineTransportPlayback({ readState: () => state,
+    onPlaybackEnd: () => { ended++ }, onPlaybackStart, onPlaybackComplete }
+  const stop = startTimelineTransportPlayback({ readState: () => freshSnapshots ? { ...state, position: projectedPosition } : state,
     requestFrame: callback => { queue.set(++nextId, callback); return nextId }, cancelFrame: id => { queue.delete(id) },
     now: () => now, isCurrent: () => current })
   return { state, positions, frames, stop, queued: () => queue.size, ended: () => ended,
@@ -347,6 +357,7 @@ test('ordinary native playback retains its elapsed-time behavior without a start
   const clock = nativeClockFixture()
   clock.tick(10); clock.tick(30)
   assert.deepEqual(clock.positions, [0, 0.02]); assert.equal(clock.queued(), 1)
+  clock.tick(2_010); assert.equal(clock.ended(), 1); assert.equal(clock.queued(), 0)
   clock.stop()
 })
 
@@ -377,7 +388,7 @@ test('rejected startup stops the current clock and handles the rejection', async
   assert.equal(clock.queued(), 0); assert.equal(clock.ended(), 1); clock.stop()
 })
 
-test('startup control stays local while parent storage and broadcast contain serializable frames only', async () => {
+test('boundary controls stay local while parent storage and broadcast contain serializable frames only', async () => {
   const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
   const priorChannel = Object.getOwnPropertyDescriptor(globalThis, 'BroadcastChannel')
   const target = new EventTarget() as EventTarget & Record<string, unknown>
@@ -392,9 +403,10 @@ test('startup control stays local while parent storage and broadcast contain ser
     let release: () => void = () => {}; let ordinaryFrames = 0
     target.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, event => {
       const frame = (event as CustomEvent<RichMediaTimelineLocalFrame>).detail
-      if (!frame.clockStart) { ordinaryFrames++; return }
-      assert.equal(frame.clockStart.hold(new Promise<void>(resolve => { release = resolve })), true)
-      assert.equal(frame.clockStart.hold(Promise.resolve()), false, 'only one capture can claim startup')
+      const control = frame.clockStart || frame.clockEnd
+      if (!control) { ordinaryFrames++; return }
+      assert.equal(control.hold(new Promise<void>(resolve => { release = resolve })), true)
+      assert.equal(control.hold(Promise.resolve()), false, 'only one capture can claim a boundary')
     })
     const frame = { type: 'agentic-graph:timeline-transport-frame' as const, documentKey: 'native#xr-motion',
       position: 0, timeMs: 0, playing: true, playbackRate: 1, sourcePlayback: false }
@@ -405,6 +417,9 @@ test('startup control stays local while parent storage and broadcast contain ser
     assert.deepEqual(target[RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY], frame)
     assert.deepEqual(broadcast, [frame, frame])
     release(); await pending
+    const ending = publishRichMediaTimelineClockAcknowledgement(frame, lifetime.signal, 'end')
+    assert.ok(ending); assert.deepEqual(target[RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY], frame)
+    assert.deepEqual(broadcast.at(-1), frame); release(); await ending
     const cancelled = publishRichMediaTimelineClockStart(frame, lifetime.signal)
     lifetime.abort()
     await assert.rejects(cancelled!, { name: 'AbortError' })
@@ -414,7 +429,6 @@ test('startup control stays local while parent storage and broadcast contain ser
     if (priorChannel) Object.defineProperty(globalThis, 'BroadcastChannel', priorChannel); else Reflect.deleteProperty(globalThis, 'BroadcastChannel')
   }
 })
-
 
 test('actual clock zero acknowledgement still waits for the fresh rendered opening image', async () => {
   await fixture(async value => {
@@ -456,7 +470,7 @@ test('source replacement during a held zero frame cancels without restoring the 
   })
 })
 
-test('local startup claims are synchronous and an unresponsive claimant has a bounded deadline', async context => {
+test('local boundary claims are synchronous and an unresponsive claimant has a bounded deadline', async context => {
   const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
   const target = new EventTarget()
   Object.defineProperty(globalThis, 'window', { configurable: true, value: target })
@@ -464,26 +478,30 @@ test('local startup claims are synchronous and an unresponsive claimant has a bo
   const lifetime = new AbortController()
   try {
     let control: RichMediaTimelineLocalFrame['clockStart']
+    let phase: 'start' | 'end' = 'start'
     let claim = false
     target.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, event => {
-      control = (event as CustomEvent<RichMediaTimelineLocalFrame>).detail.clockStart
+      const frame = (event as CustomEvent<RichMediaTimelineLocalFrame>).detail
+      control = frame.clockStart || frame.clockEnd
       if (claim) control!.hold(new Promise<void>(() => {}))
     })
     const frame = { type: 'agentic-graph:timeline-transport-frame' as const, documentKey: 'native#xr-motion',
       position: 0, timeMs: 0, playing: true, playbackRate: 1, sourcePlayback: false }
-    assert.equal(publishRichMediaTimelineClockStart(frame, lifetime.signal), undefined)
-    assert.equal(control!.hold(Promise.resolve()), false, 'late claims must not claim an already advancing clock')
-    claim = true
-    const pending = publishRichMediaTimelineClockStart(frame, lifetime.signal)
-    const rejected = assert.rejects(pending!, /acknowledgement timed out/)
-    context.mock.timers.tick(5_000)
-    await rejected
+    for (phase of ['start', 'end'] as const) {
+      claim = false
+      assert.equal(publishRichMediaTimelineClockAcknowledgement(frame, lifetime.signal, phase), undefined)
+      assert.equal(control!.hold(Promise.resolve()), false, 'late claims cannot hold the clock')
+      claim = true
+      const pending = publishRichMediaTimelineClockAcknowledgement(frame, lifetime.signal, phase)
+      const rejected = assert.rejects(pending!, /acknowledgement timed out/)
+      context.mock.timers.tick(5_000)
+      await rejected
+    }
   } finally {
     lifetime.abort(); context.mock.timers.reset()
     if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
   }
 })
-
 
 test('synchronous document changes from a frame listener prevent stale startup and scheduling', () => {
   let started = false
@@ -513,4 +531,65 @@ test('startup preserves rejection even when a claimant rejects with undefined or
     target.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe)
     if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
   }
+})
+
+test('native terminal hold retains the final position without another RAF and ends only after acknowledgement', async () => {
+  let release: () => void = () => {}
+  const clock = nativeClockFixture(undefined, position => {
+    assert.equal(position, 2); return new Promise<void>(resolve => { release = resolve })
+  })
+  clock.tick(1); clock.tick(2_001)
+  assert.equal(clock.state.position, 2); assert.equal(clock.ended(), 0); assert.equal(clock.queued(), 0)
+  release(); await Promise.resolve()
+  assert.equal(clock.ended(), 1); assert.equal(clock.queued(), 0); clock.stop()
+})
+
+test('terminal acknowledgement cannot end a replaced or cancelled document, including late rejection', async () => {
+  for (const replaced of [false, true]) for (const rejected of [false, true]) {
+    let finish: () => void = () => {}; let signal: AbortSignal | undefined
+    const clock = nativeClockFixture(undefined, (_position, lifetime) => {
+      signal = lifetime
+      return new Promise<void>((resolve, reject) => { finish = rejected ? () => reject(new Error('late')) : resolve })
+    })
+    clock.tick(1); clock.tick(2_001)
+    if (replaced) clock.replaceDocument(); else clock.stop()
+    finish(); await Promise.resolve()
+    assert.equal(clock.ended(), 0); assert.equal(clock.queued(), 0); assert.equal(signal?.aborted, true); clock.stop()
+  }
+})
+
+test('terminal render hold keeps the playing camera until its actual image is retained', async () => {
+  await fixture(async value => {
+    let reached: () => void = () => {}
+    const terminal = new Promise<void>(resolve => { reached = resolve })
+    const observe = (event: Event) => {
+      if (!(event as CustomEvent<RichMediaTimelineLocalFrame>).detail.clockEnd) return
+      value.suspendRendering(); reached()
+    }
+    window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe)
+    try {
+      const capture = value.capture(); await terminal
+      await new Promise(resolve => setTimeout(resolve, 25))
+      assert.equal(value.isPlaying(), true); assert.equal(Recorder.last?.state, 'recording')
+      assert.ok(!value.sampledPixels().includes(80), 'publishing the endpoint is not a rendered endpoint')
+      value.resumeRendering(); assert.equal((await capture).status, 'captured')
+      assert.ok(value.sampledPixels().slice(-2).every(pixel => pixel === 80))
+    } finally { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe) }
+  })
+})
+
+test('a rejected current terminal acknowledgement stops once and schedules no further frame', async () => {
+  const clock = nativeClockFixture(undefined, () => Promise.reject(new Error('final render failed')))
+  clock.tick(1); clock.tick(2_001); await Promise.resolve()
+  assert.equal(clock.ended(), 1); assert.equal(clock.queued(), 0); clock.stop()
+})
+
+test('fresh React-like snapshots acknowledge the computed endpoint and retain the end callback receiver', async () => {
+  let endpoint = -1; let ended = false
+  const clock = nativeClockFixture(undefined, position => { endpoint = position; return Promise.resolve() }, true)
+  clock.state.onPlaybackEnd = function (this: { position: number }) { assert.equal(this.position, 2); ended = true }
+  clock.tick(1); clock.tick(1_001); clock.tick(2_001)
+  assert.deepEqual(clock.positions, [0, 1, 2]); assert.equal(clock.state.position, 0, 'setters must not mutate captured projections')
+  assert.equal(endpoint, 2); assert.equal(ended, false)
+  await Promise.resolve(); assert.equal(ended, true); assert.equal(clock.queued(), 0); clock.stop()
 })

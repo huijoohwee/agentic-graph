@@ -114,6 +114,12 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   let detachClock = () => {}
   let releaseClock: (() => void) | null = null
   let rejectClock: ((reason: Error) => void) | null = null
+  let releaseEnd: (() => void) | null = null
+  let rejectEnd: ((reason: Error) => void) | null = null
+  let detachStartAbort = () => {}
+  let detachEndAbort = () => {}
+  let clockEnding = false
+  let clockEndFrames = 0
   let clockStarted = false
   let clockStartFrames = 0
   let startupImageFrozen = false
@@ -127,7 +133,6 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   let observedFrames = 0
   let renderedTime = -1
   let stableTimeFrames = 0
-  let finalFrameRequested = false
   let finalImageFrozen = false
   let wake: (() => void) | null = null
   const current = () => args.isCurrent() && binding.current()
@@ -150,16 +155,10 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     const frameTime = binding.time()
     stableTimeFrames = renderedTime === frameTime ? stableTimeFrames + 1 : 1
     renderedTime = frameTime
-    // The native camera owner restores free orbit when playback ends. Reapply
-    // the authored final camera through that same owner before the final acknowledgement.
-    // The existing ruler projects seconds to six-decimal minutes (at most 30µs
-    // rounding). Request the exact authored endpoint; completion still requires
-    // that exact time to be rendered twice, never the rounded transport value.
-    if (recorder?.state === 'recording' && !finalFrameRequested && frameTime >= binding.durationSeconds - 0.000031) {
-      finalFrameRequested = true
-      binding.refreshFinalFrame?.()
-    }
+    // The terminal clock acknowledgement retains the authored camera until this
+    // exact frame is copied. Later free-orbit renders cannot replace it.
     if (!finalImageFrozen && recorder?.state === 'recording') renderedFrames += 1
+    if (clockEnding && observedFrames > clockEndFrames && frameTime === binding.durationSeconds) finalImageFrozen = true
     if (renderArgs[0].xr?.isPresenting) failure = new Error('Exit immersive XR before exporting the authored camera.')
     check()
   }
@@ -199,11 +198,31 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     await waitRendered(() => observedFrames >= warmFrames + 2 && renderedTime === 0 && stableTimeFrames >= 2, 5_000)
     const held = new Promise<void>((resolve, reject) => { releaseClock = resolve; rejectClock = reject })
     void held.catch(() => {})
-    const onClockStart = (event: Event) => {
+    const ended = new Promise<void>((resolve, reject) => { releaseEnd = resolve; rejectEnd = reject })
+    void ended.catch(() => {})
+    const onClockBoundary = (event: Event) => {
       const frame = (event as CustomEvent<RichMediaTimelineLocalFrame>).detail
-      if (!frame?.clockStart || frame.documentKey !== binding.documentKey || clockStarted) return
+      if (!frame || frame.documentKey !== binding.documentKey) return
       try {
         assertCurrent()
+        if (frame.clockEnd) {
+          if (clockEnding || recorder?.state !== 'recording') return
+          if (!frame.playing || Math.abs(frame.timeMs / 1_000 - binding.durationSeconds) > 0.000031) {
+            throw new Error('The XR clock did not finish at the authored endpoint.')
+          }
+          if (!frame.clockEnd.hold(ended)) throw new Error('The XR clock completion is already held or cancelled.')
+          clockEnding = true; clockEndFrames = observedFrames
+          const signal = frame.clockEnd.signal
+          const aborted = () => { failure = new Error('The XR clock was cancelled before the final render.'); check() }
+          signal.addEventListener('abort', aborted, { once: true })
+          detachEndAbort = () => signal.removeEventListener('abort', aborted)
+          if (signal.aborted) aborted()
+          // Event time is duration-normalized, but the pose owner reads rounded
+          // native minutes. Correct that actual playhead through the same transport.
+          if (binding.time() !== binding.durationSeconds) binding.refreshFinalFrame?.()
+          return
+        }
+        if (!frame.clockStart || clockStarted) return
         if (frame.position !== 0 || frame.timeMs !== 0 || !frame.playing) throw new Error('The XR clock did not start at the opening frame.')
         if (!frame.clockStart.hold(held)) throw new Error('The XR clock startup is already held or cancelled.')
         clockStarted = true; clockStartFrames = observedFrames
@@ -212,12 +231,15 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
           failure = new Error('The XR clock was cancelled during MP4 startup.'); check()
         }
         signal.addEventListener('abort', aborted, { once: true })
-        detachClock = () => { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, onClockStart); signal.removeEventListener('abort', aborted) }
+        detachStartAbort = () => signal.removeEventListener('abort', aborted)
         if (signal.aborted) aborted()
       } catch (error) { failure = error as Error; check() }
     }
-    window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, onClockStart)
-    detachClock = () => window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, onClockStart)
+    window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, onClockBoundary)
+    detachClock = () => {
+      window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, onClockBoundary)
+      detachStartAbort(); detachEndAbort()
+    }
     binding.play()
     await waitRendered(() => {
       const time = binding.transportTime?.() ?? binding.time()
@@ -242,19 +264,19 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     ;(stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack).requestFrame?.()
     assertCurrent()
     if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced while MP4 was starting.')
-    detachClock(); detachClock = () => {}
+    detachStartAbort(); detachStartAbort = () => {}
     startupImageFrozen = false
     releaseClock!(); releaseClock = null; rejectClock = null
     await waitRendered(() => {
       if (!recorder || recorder.state !== 'recording' || output?.hasStopped()) throw new Error('MP4 recorder stopped before the scene finished.')
       const progress = Math.floor(Math.min(95, renderedTime / binding.durationSeconds * 95))
       if (progress !== lastProgress) { lastProgress = progress; args.onProgress?.(progress / 100) }
-      return renderedTime >= binding.durationSeconds && stableTimeFrames >= 2 && renderedFrames >= 3
+      return finalImageFrozen && renderedFrames >= 3
     }, binding.durationSeconds * 1_000 + 8_000)
-    // Freeze before pause restores free-orbit camera. A render callback alone is
-    // not a recorder acknowledgement: retain this image through two sampling slots.
-    finalImageFrozen = true
-    binding.pause()
+    // Only the acknowledged terminal render releases the native playing camera.
+    // Retain its frozen image through two encoder sampling slots before stopping.
+    detachClock(); detachClock = () => {}
+    releaseEnd!(); releaseEnd = null; rejectEnd = null
     const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack
     track.requestFrame?.()
     await new Promise<void>((resolve, reject) => {
@@ -283,7 +305,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     args.onProgress?.(1)
     return { status: 'captured', blob, evidence: { ...evidence, renderedFrames } }
   } finally {
-    detachClock(); rejectClock?.(failure || abortError())
+    detachClock(); rejectClock?.(failure || abortError()); rejectEnd?.(failure || abortError())
     detach(); args.signal?.removeEventListener('abort', check)
     if (recorder) {
       recorder.removeEventListener('dataavailable', onData); recorder.removeEventListener('error', check)

@@ -294,6 +294,7 @@ type TimelinePlaybackState = {
   onPlaybackEnd: () => void
   onPlaybackFrame?: (position: number) => void
   onPlaybackStart?: (position: number, signal: AbortSignal) => Promise<void> | void
+  onPlaybackComplete?: (position: number, signal: AbortSignal) => Promise<void> | void
 }
 
 /** The native Timeline RAF driver, shared by the hook and deterministic lifecycle tests. */
@@ -312,6 +313,18 @@ export function startTimelineTransportPlayback(args: {
     if (args.isCurrent?.() === false) lifetime.abort()
     return !lifetime.signal.aborted
   }
+  const acknowledge = (current: TimelinePlaybackState, position: number, boundary: TimelinePlaybackState['onPlaybackStart'], next: () => void): boolean => {
+    const fail = () => {
+      if (!alive()) return
+      lifetime.abort(); current.onPlaybackEnd()
+    }
+    try {
+      const hold = boundary?.(position, lifetime.signal)
+      if (!hold) return false
+      void hold.then(() => { if (alive()) next() }, fail)
+    } catch { fail() }
+    return true
+  }
   const tick = (timestamp: number) => {
     if (!alive()) return
     const current = args.readState()
@@ -325,26 +338,17 @@ export function startTimelineTransportPlayback(args: {
     if (!alive()) return
     current.onPlaybackFrame?.(nextPosition)
     if (!alive()) return
-    if (nextPosition >= current.max) { current.onPlaybackEnd(); return }
+    if (nextPosition >= current.max) {
+      if (!acknowledge(current, nextPosition, current.onPlaybackComplete, () => current.onPlaybackEnd()) && alive()) current.onPlaybackEnd()
+      return
+    }
     if (firstFrame) {
       firstFrame = false
-      const fail = () => {
-        if (!alive()) return
-        lifetime.abort()
-        current.onPlaybackEnd()
-      }
-      try {
-        const hold = current.onPlaybackStart?.(nextPosition, lifetime.signal)
-        if (hold) {
-          void hold.then(() => {
-            if (!alive()) return
-            // Start elapsed time at the recorder acknowledgement, not the first RAF.
-            previousTimestamp = args.now()
-            frameId = args.requestFrame(tick)
-          }, fail)
-          return
-        }
-      } catch { fail(); return }
+      if (acknowledge(current, nextPosition, current.onPlaybackStart, () => {
+        // Start elapsed time at the recorder acknowledgement, not the first RAF.
+        previousTimestamp = args.now()
+        frameId = args.requestFrame(tick)
+      })) return
     }
     if (alive()) frameId = args.requestFrame(tick)
   }

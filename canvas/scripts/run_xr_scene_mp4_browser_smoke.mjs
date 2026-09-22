@@ -50,6 +50,7 @@ if (!process.argv.includes('--verify')) {
     page.on('console', message => {
       const value = message.text()
       if (value.startsWith('XR_MP4_PHASE:')) reportPhase(value.slice('XR_MP4_PHASE:'.length))
+      else if (value.startsWith('XR_MP4_CLOCK:')) console.log(value.slice('XR_MP4_CLOCK:'.length))
       else if (message.type() === 'error' && consoleErrors++ < 8) console.error(JSON.stringify({ browserError: value, phase }))
     })
     page.on('crash', () => rejectPageError(new Error(`XR MP4 browser page crashed during ${phase}.`)))
@@ -129,20 +130,44 @@ if (!process.argv.includes('--verify')) {
       const originalStart = MediaRecorder.prototype.start
       const originalStop = MediaRecorder.prototype.stop
       let clockStarts = 0; let startedAtZero = false; let openingReadComplete = false
+      const clockFrames = []
+      const copyTimings = []; let copyCount = 0; let copyTotalMs = 0; let copyMaxMs = 0
+      let recordingStartedAt = null
       const observeClockStart = event => {
+        if (recordingStartedAt !== null && event.detail.playing && clockFrames.length < 256) {
+          clockFrames.push({ elapsedMs: Math.round(performance.now() - recordingStartedAt), timeMs: event.detail.timeMs })
+        }
         if (!event.detail.clockStart) return
         if (event.detail.position !== 0 || event.detail.timeMs !== 0) throw new Error('Native startup did not acknowledge zero.')
         clockStarts++; report('native-clock-zero-acknowledged')
       }
       window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observeClockStart)
       const originalReadPixels = CanvasRenderingContext2D.prototype.getImageData
+      const originalDrawImage = CanvasRenderingContext2D.prototype.drawImage
       MediaRecorder.prototype.start = function (...args) {
         startedAtZero = clockStarts > 0 && openingReadComplete && readXrAnimationTransport().timeSeconds === 0
         report('recorder-start-request')
+        copyTimings.length = 0; copyCount = 0; copyTotalMs = 0; copyMaxMs = 0
+        recordingStartedAt = performance.now()
         this.addEventListener('start', () => report('recorder-start-event'), { once: true })
         return originalStart.apply(this, args)
       }
-      MediaRecorder.prototype.stop = function (...args) { report('recorder-stop'); return originalStop.apply(this, args) }
+      MediaRecorder.prototype.stop = function (...args) {
+        report('recorder-stop')
+        console.info(`XR_MP4_CLOCK:${JSON.stringify({ clockFrames, copyTimings, copyCount, copyTotalMs, copyMaxMs, recordingElapsedMs: performance.now() - recordingStartedAt })}`)
+        recordingStartedAt = null
+        return originalStop.apply(this, args)
+      }
+      CanvasRenderingContext2D.prototype.drawImage = function (...args) {
+        if (recordingStartedAt === null || !(args[0] instanceof HTMLCanvasElement)) return originalDrawImage.apply(this, args)
+        const started = performance.now()
+        try { return originalDrawImage.apply(this, args) } finally {
+          const durationMs = performance.now() - started
+          copyCount++; copyTotalMs += durationMs; copyMaxMs = Math.max(copyMaxMs, durationMs)
+          if (copyTimings.length < 128) copyTimings.push({ elapsedMs: Math.round(started - recordingStartedAt), durationMs,
+            source: [args[0].width, args[0].height], target: [this.canvas.width, this.canvas.height] })
+        }
+      }
       CanvasRenderingContext2D.prototype.getImageData = function (...args) {
         report('pixel-read')
         const pixels = originalReadPixels.apply(this, args)
@@ -217,6 +242,7 @@ if (!process.argv.includes('--verify')) {
         MediaRecorder.prototype.stop = originalStop
         window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observeClockStart)
         CanvasRenderingContext2D.prototype.getImageData = originalReadPixels
+        CanvasRenderingContext2D.prototype.drawImage = originalDrawImage
         root.unmount()
       }
     })])
