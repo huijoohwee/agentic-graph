@@ -36,7 +36,9 @@ if (!process.argv.includes('--verify')) {
         return import(path)
       }
       const React = (await dependency('features/three/XrSceneLibrarySubject.tsx', '/react.js')).default
-      const { createRoot } = await dependency('main.tsx', 'react-dom_client')
+      const reactDom = await dependency('main.tsx', 'react-dom_client')
+      const { createRoot } = reactDom.default || reactDom
+      if (typeof createRoot !== 'function') throw new Error('Installed React DOM has no createRoot export.')
       await importSource('index.css')
       const { default: ThreeGraph } = await importSource('lib/three/ThreeGraph.impl.tsx')
       const { useWorkspaceExportBridge } = await importSource('features/markdown-workspace/main/useWorkspaceExportBridge.ts')
