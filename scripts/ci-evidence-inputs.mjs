@@ -71,9 +71,22 @@ export function ownerInputs({ contract, environment, gitText, resolveCi, version
     commands: plan.commands, scopes: plan.scopes, versions }
 }
 
-const toolVersion = (command, args) => execFileSync(command, args, {
-  cwd: repoRoot, encoding: 'utf8', timeout: 5000, maxBuffer: 4096,
-}).trim()
+export function toolVersion(command, args, { execute = execFileSync } = {}) {
+  // A hosted runner can time out before Chrome prints its version. Retry
+  // only that transient probe once; never substitute guessed or absent evidence.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const version = execute(command, args, {
+        cwd: repoRoot, encoding: 'utf8', timeout: 5000, maxBuffer: 4096,
+        killSignal: 'SIGKILL',
+      }).trim()
+      if (!version) throw new Error(`${command} returned no version evidence`)
+      return version
+    } catch (error) {
+      if (error?.code !== 'ETIMEDOUT' || attempt === 1) throw error
+    }
+  }
+}
 
 export async function ownerInputDigest(environment = process.env) {
   const { resolveValidationCi } = await import('../node_modules/agentic-os/bin/agentic-os-validation.mjs')
