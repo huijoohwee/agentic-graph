@@ -288,6 +288,12 @@ test('native Decision storage reopens exact source and rejects quota failures, c
         const loaded = await storage.loadLearningDebriefs('/learning.py', signal, fs)
         assert.equal(loaded.length, 1, JSON.stringify((await fs.listEntries()).map(e => ({ path: e.path, parentPath: e.parentPath, kind: e.kind }))))
         assert.deepEqual(loaded[0], record)
+        assert.equal(await storage.saveLearningDebrief(await storage.captureLearningDebrief(f.runtime.read()), signal, fs), path,
+          'tool and UI saves of the same run reuse the durable record after reopening')
+        assert.equal(await fs.readFileText(path), before, 'repeat save preserves the first immutable debrief bytes')
+        await assert.rejects(storage.saveLearningDebrief({ ...record, result: { ...record.result, output: 'different output' } }, signal, fs), /different debrief/)
+        await assert.rejects(storage.saveLearningDebrief({ ...record, source: 'print(99)' }, signal, fs), /different debrief/)
+        assert.equal(await fs.readFileText(path), before, 'a run-id collision cannot replace the original source or result')
         const rejected = { ...record, result: { ...record.result, identity: { ...record.result.identity, runId: crypto.randomUUID() } } }
         await assert.rejects(storage.saveLearningDebrief(rejected, signal, { ...fs, createFile: async () => { throw new Error('QuotaExceededError') } }), /QuotaExceededError/)
         assert.equal(await fs.readFileText(path), before)

@@ -4,6 +4,7 @@ import { digestLearningSource, type LearningRuntimeSnapshot } from './learningRu
 import { validLearningSnapshot, type LearningWorkerSnapshot } from './learningProtocol'
 import { learningSceneDescriptor } from './learningLessons'
 import { PYTHON_LIMITS, sourceBytes } from './pythonModel'
+import { stableStringifyJson } from '../../../../ecs/agenticOsNodeContract.js'
 
 export const LEARNING_RECORD_ROOT = '/learning-debriefs'
 export const LEARNING_RECORD_BYTES = 2 * 1024 * 1024
@@ -67,7 +68,7 @@ export async function saveLearningDebrief(debrief: LearningDebrief, signal: Abor
   const existing = await store.load({ workspace: fs, signal })
   if (store.read().status === 'error') throw new Error(store.read().error || 'Stored debrief cannot be read.')
   if (existing.length) {
-    if (JSON.stringify(existing[0].payload.result) !== JSON.stringify(debrief.result) || existing[0].payload.source !== debrief.source) throw new Error('A different debrief already occupies this run identifier.')
+    if (stableStringifyJson(existing[0].payload.result) !== stableStringifyJson(debrief.result) || existing[0].payload.source !== debrief.source) throw new Error('A different debrief already occupies this run identifier.')
     return store.savePath
   }
   store.queue([{ decisionId: debrief.result.identity.runId, decisionType: 'world_tick_result', entityRef: debrief.result.identity.documentId, payload: debrief, producedAt: debrief.savedAt }])
