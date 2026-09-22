@@ -19,6 +19,7 @@ export type CanvasVideoCaptureResult =
   | { status: 'unsupported'; reason: string }
   | { status: 'captured'; blob: Blob; evidence: {
       durationSeconds: number; decodedFrames: number; renderedFrames: number; width: number; height: number; sampleHashes: string[]
+      finalFrameVerified?: boolean; finalFrameMeanError?: number
     } }
 
 export type CanvasSnapshotFns = {

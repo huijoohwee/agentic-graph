@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { WORKSPACE_EXPORT_MENU_ITEMS } from '@/lib/toolbar/exportMenuSsot'
 import { resolveLaunchDropdownVisibleExportItems } from '@/lib/toolbar/LaunchDropdownExportMenu'
-import { publishXrMp4Export } from '../exportXrMp4'
+import { publishXrMp4Export } from '@/features/markdown-workspace/main/exports/exportXrMp4'
 
 const result = { status: 'captured' as const, blob: new Blob(['verified fixture']),
   evidence: { durationSeconds: 2, decodedFrames: 3, renderedFrames: 60, width: 320, height: 180, sampleHashes: ['a', 'b', 'c'] } }

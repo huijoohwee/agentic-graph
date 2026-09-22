@@ -32,7 +32,9 @@ if (!process.argv.includes('--verify')) {
     browserServer = await chromium.launchServer({ executablePath: findLocalChromiumExecutable() || undefined,
       headless: true, timeout: 30_000, args: ['--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
     const browser = await chromium.connect(browserServer.wsEndpoint(), { timeout: 10_000 })
-    const page = await browser.newPage({ viewport: { width: 1024, height: 768 } })
+    for (const viewport of [{ name: 'desktop', width: 1024, height: 768 }, { name: 'mobile', width: 390, height: 844 }]) {
+    reportPhase(`viewport:${viewport.name}`)
+    const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } })
     page.setDefaultTimeout(15_000)
     page.setDefaultNavigationTimeout(15_000)
     let rejectPageError
@@ -119,10 +121,22 @@ if (!process.argv.includes('--verify')) {
       const host = document.getElementById('fixture')
       const root = createRoot(host)
       root.render(React.createElement(React.Fragment, null,
-        React.createElement('div', { style: { position: 'relative', width: 640, height: 420 } }, React.createElement(ThreeGraph, { active: true, mode: 'xr' })),
+        React.createElement('div', { style: { position: 'relative', width: '100%', maxWidth: 480, height: 300 } }, React.createElement(ThreeGraph, { active: true, mode: 'xr' })),
         React.createElement(XrCameraMotionSection), React.createElement(ExportMenu)))
       const tracks = []
       const originalCapture = HTMLCanvasElement.prototype.captureStream
+      const originalStart = MediaRecorder.prototype.start
+      const originalStop = MediaRecorder.prototype.stop
+      const originalReadPixels = CanvasRenderingContext2D.prototype.getImageData
+      MediaRecorder.prototype.start = function (...args) {
+        report('recorder-start-request')
+        this.addEventListener('start', () => report('recorder-start-event'), { once: true })
+        return originalStart.apply(this, args)
+      }
+      MediaRecorder.prototype.stop = function (...args) { report('recorder-stop'); return originalStop.apply(this, args) }
+      CanvasRenderingContext2D.prototype.getImageData = function (...args) {
+        report('pixel-read'); return originalReadPixels.apply(this, args)
+      }
       HTMLCanvasElement.prototype.captureStream = function (...args) {
         const stream = originalCapture.apply(this, args); tracks.push(...stream.getTracks()); return stream
       }
@@ -143,7 +157,11 @@ if (!process.argv.includes('--verify')) {
         const source = JSON.stringify(readXrMotionReferenceRuntime().plan)
         const capture = useGraphStore.getState().canvasSnapshotFns['3d'].captureVideo
         report('capture-and-decode')
-        const result = await capture({})
+        let reportedEnd = false
+        const result = await capture({ onProgress: fraction => {
+          if (fraction === 0) report('shared-timeline-playing')
+          if (!reportedEnd && fraction >= 0.95) { reportedEnd = true; report('authored-endpoint-rendered') }
+        } })
         report(`capture-result:${result.status}`)
         if (result.status === 'unsupported') return result
         if (tracks.some(track => track.readyState !== 'ended')) throw new Error('A recording track survived successful export.')
@@ -180,6 +198,9 @@ if (!process.argv.includes('--verify')) {
       } finally {
         report('fixture-unmount')
         HTMLCanvasElement.prototype.captureStream = originalCapture
+        MediaRecorder.prototype.start = originalStart
+        MediaRecorder.prototype.stop = originalStop
+        CanvasRenderingContext2D.prototype.getImageData = originalReadPixels
         root.unmount()
       }
     })])
@@ -194,8 +215,12 @@ if (!process.argv.includes('--verify')) {
       assert.equal(evidence.cancellationVerified, true)
       assert.equal(evidence.nativeMenuCancellationVerified, true)
       assert.equal(evidence.documentSwitchVerified, true)
+      assert.equal(evidence.finalFrameVerified, true)
+      assert.ok(evidence.finalFrameMeanError <= 12)
     } else assert.equal(evidence.status, 'unsupported')
-    console.log(JSON.stringify({ schema: 'agentic-graph.xr-scene-mp4-browser/v1', evidence }, null, 2))
+    console.log(JSON.stringify({ schema: 'agentic-graph.xr-scene-mp4-browser/v1', viewport, evidence }, null, 2))
+    await page.close()
+    }
   } catch (error) {
     console.error(JSON.stringify({ verifierError: error.stack || error.message, phase }))
     throw error

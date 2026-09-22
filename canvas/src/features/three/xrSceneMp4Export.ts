@@ -9,7 +9,7 @@ import {
 import { inspectBrowserRecorderCapabilities, negotiateBrowserRecordingPlan } from '@/features/xr-v2/mediaCapabilityNegotiation'
 import { readXrAnimationTransport, updateXrAnimationTransport } from './xrAnimationTransportRuntime'
 import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
-import { verifyXrSceneMp4, XR_MP4_MAX_BYTES } from './xrSceneMp4Evidence'
+import { verifyXrSceneMp4, XR_MP4_MAX_BYTES, XR_MP4_FRAME_SAMPLE_SIZE } from './xrSceneMp4Evidence'
 
 export type XrMp4SourceBinding = {
   durationSeconds: number
@@ -118,6 +118,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   let renderedTime = -1
   let stableTimeFrames = 0
   let finalFrameRequested = false
+  let finalImageFrozen = false
   let wake: (() => void) | null = null
   const current = () => args.isCurrent() && binding.current()
   const assertCurrent = () => {
@@ -131,7 +132,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   }
   const afterRender: Scene['onAfterRender'] = function (...renderArgs) {
     previousAfterRender.apply(this, renderArgs)
-    if (!recorder || recorder.state === 'recording') {
+    if (!finalImageFrozen && (!recorder || recorder.state === 'recording')) {
       try { captureContext.drawImage(args.canvas, 0, 0, captureSurface.width, captureSurface.height) }
       catch (error) { failure = error as Error }
     }
@@ -148,7 +149,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
       finalFrameRequested = true
       binding.refreshFinalFrame?.()
     }
-    if (recorder?.state === 'recording') renderedFrames += 1
+    if (!finalImageFrozen && recorder?.state === 'recording') renderedFrames += 1
     if (renderArgs[0].xr?.isPresenting) failure = new Error('Exit immersive XR before exporting the authored camera.')
     check()
   }
@@ -191,14 +192,40 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
       if (progress !== lastProgress) { lastProgress = progress; args.onProgress?.(progress / 100) }
       return renderedTime >= binding.durationSeconds && stableTimeFrames >= 2 && renderedFrames >= 3
     }, binding.durationSeconds * 1_000 + 8_000)
+    // Freeze before pause restores free-orbit camera. A render callback alone is
+    // not a recorder acknowledgement: retain this image through two sampling slots.
+    finalImageFrozen = true
     binding.pause()
+    const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack
+    track.requestFrame?.()
+    await new Promise<void>((resolve, reject) => {
+      const finish = (error?: Error) => {
+        clearTimeout(timer); verificationAbort.signal.removeEventListener('abort', aborted)
+        if (error) reject(error); else resolve()
+      }
+      const aborted = () => finish(failure || abortError())
+      const timer = setTimeout(() => finish(), Math.ceil(2_000 / Math.min(60, Math.max(1, binding.fps))))
+      verificationAbort.signal.addEventListener('abort', aborted, { once: true })
+      if (verificationAbort.signal.aborted) aborted()
+    })
+    assertCurrent()
     await flushVideoSequenceRecorderOutput({ recorder, output, signal: args.signal })
     const chunks = await finishVideoSequenceRecorderOutput(recorder, output)
     output = null
     assertCurrent()
     stopVideoSequenceCaptureTracks(stream); stream = null
+    // Readback may synchronize the GPU. Do it after recording ends so its cost
+    // cannot extend the encoded duration; the retained surface is still frozen.
+    const finalSample = document.createElement('canvas')
+    finalSample.width = XR_MP4_FRAME_SAMPLE_SIZE; finalSample.height = XR_MP4_FRAME_SAMPLE_SIZE
+    const finalContext = finalSample.getContext('2d', { willReadFrequently: true })
+    if (!finalContext) throw new Error('MP4 endpoint verification is unavailable.')
+    finalContext.drawImage(captureSurface, 0, 0, finalSample.width, finalSample.height)
+    const expectedFinalFrame = finalContext.getImageData(0, 0, finalSample.width, finalSample.height).data
+    finalSample.width = 0; finalSample.height = 0
     const blob = new Blob(chunks, { type: recorder.mimeType || plan.mimeType })
-    const evidence = await (args.verify || verifyXrSceneMp4)(blob, binding.durationSeconds, verificationAbort.signal)
+    const evidence = await (args.verify || verifyXrSceneMp4)(blob, binding.durationSeconds, verificationAbort.signal, expectedFinalFrame)
+    if (!evidence.finalFrameVerified) throw new Error('MP4 endpoint was not verified.')
     assertCurrent()
     args.onProgress?.(1)
     return { status: 'captured', blob, evidence: { ...evidence, renderedFrames } }
