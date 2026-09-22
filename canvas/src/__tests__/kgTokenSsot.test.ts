@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 
 import { AG_TOKEN_DEFS, extractKgCssVarsFromCssText } from '@/lib/ui/tokens-ssot'
@@ -84,7 +85,9 @@ export async function testKgTokenExportsAreDeterministicAndBounded() {
   boundary[92] = { ...boundary[92], name: 'z'.repeat(80), cssVar: `--kg-${'z'.repeat(80)}` }
   assert.throws(() => buildKgTokenBundle(boundary), /64 KiB/)
   const generated = ['light', 'dark'].map(theme => buildKgTokensCssText(theme as 'light' | 'dark', {
-    selector: theme === 'light' ? ':root' : ':root.dark',
-  })).join('')
+    selector: theme === 'light' ? ':root' : ":root[data-theme='dark']",
+  })).join('\n')
+  assert.equal(AG_TOKEN_DEFS.length, 49)
+  assert.equal(createHash('sha256').update(generated).digest('hex'), 'f9c6c7cbf269d19dc0196534033e914ae8b0e8022607e97ce1e5b245a8123e25')
   assert.equal(generated, readUtf8(path.resolve(process.cwd(), 'src/styles/kgTokens.generated.css')))
 }

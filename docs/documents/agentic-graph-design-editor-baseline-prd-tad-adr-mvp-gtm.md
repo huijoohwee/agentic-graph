@@ -479,38 +479,24 @@ product model call. Preserve the admitted lane as the review checkpoint with aut
 the scope decision. Recheck current ownership, source and exact accepted paths before implementation;
 do not retire the lane or overwrite another task's changes to obtain a clean frontier.
 
-### Implementation checkpoint — 2026-09-21
+### Implementation checkpoint — 2026-09-22
 
-The user authorized N1–N6. The isolated implementation lane contains the shared validation/export
-contract, bounded observations/audit/context, existing panel and token explorer changes, shared agent
-readback, registered behavior cases and a local browser verifier. These are authored changes awaiting
-integration and acceptance, not delivered functionality. Four modules were added; no package or
-always-load guidance was added. Generated token CSS and canonical checkout bytes remain untouched.
+The user authorized N1–N6. The native `design-token-integration` successor preserves
+`bb053670c92c5c50d9d4e7344c1d725ddcdb08b4`. XR integrated as protected
+`620471f120ddb31c7aab6ffcc8296f7be6eb3144` and released its reservation. The admitted shared
+owner now includes all 49 tokens, including the 11 formerly CSS-only colors, typed purposes and the
+explicit dark action alias. The source fallback radius is reconciled from 12px to the existing
+rendered 0.5rem. Black/white tooltip values and legacy CSS order, selector and spacing are preserved;
+exact parity is checked against the protected CSS digest. No new dependency or always-load guidance.
 
-Document intent uses the existing frontmatter parser: optional `design` mapping, with text fields
-`intent`, `hierarchy`, `typography`, `spacing`, `colorRoles`, `interaction`, `accessibility`, `motion`.
-Missing fields stay unresolved. An explicit `node.properties.designTokens` mapping binds relative
-property paths to authored token names, for example `{ "fill": "canvas-accent" }`. Equal observed
-values are candidate matches only. Declared contrast checks require an opaque color/background pair
-and explicit opacity `1`; rendered layout, ancestor compositing, focus and motion remain unassessed.
+Optional document `design` intent fields are `intent`, `hierarchy`, `typography`, `spacing`,
+`colorRoles`, `interaction`, `accessibility`, `motion`. Missing fields remain unresolved. Explicit
+`node.properties.designTokens` maps relative property paths to token names; equal observed values
+are candidates only. Contrast needs declared opaque foreground/background and opacity 1; rendered
+compositing, focus and motion remain unassessed. Parsing caps: 8 KiB frontmatter, 1,024 nodes, depth 16;
+token/context bundles cap at 64 KiB, including envelopes.
 
-Passed: isolated token-contract behavior and strict TypeScript checks, changed-module syntax and
-hygiene, 116 collaboration-contract tests, 10 integration-policy tests, 11 existing Design regressions,
-one frontmatter-bound regression and four parser compatibility checks. The shared parser now bounds
-Design traversal to 1,024 nodes / depth 16 and preserves prototype-shaped keys as data. Token bundle
-size includes its envelope. The browser verifier labels preference emulation separately from rendered
-motion assessment. No full application typecheck, N1–N6 acceptance suite, browser result, protected
-merge, production or buyer evidence is claimed.
-
-The shared definitions still need typed name/purpose metadata, explicit dark alias, public contract
-exports and the legacy-order CSS wrapper. Their path remains reserved by the XR owner; its successor
-PR #1142 at `5e7bbd7d54f798bc879fd19950aa0094c54035ae` failed run `35609033224` at the publication
-deadline. User-authorized coordination has not released that reservation. Preserve its palette and
-retained refs; do not take the path or substitute a downstream catalog. Continue independent covered
-work; observe handoff only after material change or a work milestone, without idle polling loops.
-
-After the owner releases the path: refresh source/claims, admit it through the native successor,
-finish the source join, then verify focused Design/Canvas tests, CSS byte parity, application typecheck
-and `node canvas/scripts/verify_design_browser_smoke.mjs`. Run the affected plan and protected release
-after those pass. Browser proof remains unexecuted; no integration, retirement, cleanup or deployment
-receipt is claimed. External dependency: eligible owner handoff; no completion ETA.
+Prior independent contract/parser checks passed. The shared owner join now requires fresh focused
+Design/token/Canvas tests, application typecheck, generator parity and the local browser verifier.
+Authoring and validation do not establish protected integration, production or buyer outcomes.
+Merge remains coordinated with other eligible lanes; exact PR checks and closeout receipts follow.
