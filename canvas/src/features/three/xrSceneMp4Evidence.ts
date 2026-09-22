@@ -1,8 +1,10 @@
 import { readNativeIsoBmffContainerSummary } from '@/components/timeline/timelineMediaMetadata'
 
 export const XR_MP4_MAX_BYTES = 64 * 1024 * 1024
+export const XR_MP4_FRAME_SAMPLE_SIZE = 32
 export type XrMp4DecodedEvidence = {
   durationSeconds: number; decodedFrames: number; width: number; height: number; sampleHashes: string[]
+  finalFrameVerified?: boolean; finalFrameMeanError?: number
 }
 export function assertXrMp4Container(bytes: ArrayBuffer): void {
   if (bytes.byteLength < 32 || bytes.byteLength > XR_MP4_MAX_BYTES) throw new Error('MP4 output has an invalid byte size.')
@@ -50,7 +52,7 @@ function waitForMedia(video: HTMLVideoElement, eventName: string, signal?: Abort
 
 /** Decode the actual recorder bytes; MIME labels and an ftyp box alone are not proof. */
 export async function verifyXrSceneMp4(
-  blob: Blob, expectedDuration: number, signal?: AbortSignal,
+  blob: Blob, expectedDuration: number, signal?: AbortSignal, expectedFinalFrame?: Uint8ClampedArray,
 ): Promise<XrMp4DecodedEvidence> {
   if (signal?.aborted) throw new DOMException('MP4 export cancelled.', 'AbortError')
   if (blob.size > XR_MP4_MAX_BYTES) throw new Error('MP4 export exceeds the 64 MB limit.')
@@ -82,7 +84,7 @@ export async function verifyXrSceneMp4(
     }
     if (!Number.isFinite(durationSeconds) || durationSeconds <= 0
       || Math.abs(durationSeconds - expectedDuration) > Math.max(0.4, expectedDuration * 0.08)) {
-      throw new Error('MP4 duration does not match the authored scene.')
+      throw new Error(`MP4 duration does not match the authored scene (decoded=${durationSeconds}, authored=${expectedDuration}).`)
     }
     if (!video.videoWidth || !video.videoHeight) throw new Error('MP4 output has no decoded video dimensions.')
     if (video.readyState < 2) await waitForMedia(video, 'loadeddata', signal)
@@ -91,7 +93,8 @@ export async function verifyXrSceneMp4(
     const context = canvas.getContext('2d', { willReadFrequently: true })
     if (!context) throw new Error('MP4 frame verification is unavailable.')
     const sampleHashes: string[] = []
-    for (const time of [0, durationSeconds / 2, Math.max(0, durationSeconds - 0.08)]) {
+    let finalFrameMeanError: number | undefined
+    for (const time of [0, durationSeconds / 2, Math.max(0, durationSeconds - 0.001)]) {
       if (signal?.aborted) throw new DOMException('MP4 export cancelled.', 'AbortError')
       if (Math.abs(video.currentTime - time) > 0.001) {
         const sought = waitForMedia(video, 'seeked', signal)
@@ -108,8 +111,25 @@ export async function verifyXrSceneMp4(
       }
       if (!alpha) throw new Error('MP4 output has an empty decoded frame.')
       sampleHashes.push((hash >>> 0).toString(16))
+      if (expectedFinalFrame && sampleHashes.length === 3) {
+        if (expectedFinalFrame.length !== pixels.length) throw new Error('MP4 endpoint reference has invalid dimensions.')
+        let error = 0; let mismatchedPixels = 0
+        for (let index = 0; index < pixels.length; index += 4) {
+          const distance = Math.abs(pixels[index] - expectedFinalFrame[index])
+            + Math.abs(pixels[index + 1] - expectedFinalFrame[index + 1])
+            + Math.abs(pixels[index + 2] - expectedFinalFrame[index + 2])
+          error += distance
+          if (distance / 3 > 32) mismatchedPixels++
+        }
+        finalFrameMeanError = error / (pixels.length / 4 * 3)
+        // Lossy codec/chroma conversion is allowed; a different camera image is not.
+        if (finalFrameMeanError > 12 || mismatchedPixels > pixels.length / 4 * 0.08) {
+          throw new Error(`MP4 final decoded frame does not match the authored endpoint (meanError=${finalFrameMeanError}, mismatchedPixels=${mismatchedPixels}).`)
+        }
+      }
     }
-    return { durationSeconds, decodedFrames: sampleHashes.length, width: video.videoWidth, height: video.videoHeight, sampleHashes }
+    return { durationSeconds, decodedFrames: sampleHashes.length, width: video.videoWidth, height: video.videoHeight, sampleHashes,
+      ...(expectedFinalFrame ? { finalFrameVerified: true, finalFrameMeanError } : {}) }
   } finally {
     video.pause(); video.removeAttribute('src'); video.load(); URL.revokeObjectURL(url)
   }

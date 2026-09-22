@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { assertXrMp4Container, verifyXrSceneMp4 } from '../xrSceneMp4Evidence'
+import { assertXrMp4Container, verifyXrSceneMp4 } from '@/features/three/xrSceneMp4Evidence'
 
 function box(type: string, content: Uint8Array): Uint8Array {
   const bytes = new Uint8Array(content.length + 8)
@@ -81,6 +81,29 @@ test('empty decoded frames fail and still release verification resources', async
   await decoderFixture(true, async cleanup => {
     await assert.rejects(verifyXrSceneMp4(new Blob([container()]), 2), /empty decoded frame/)
     assert.equal(cleanup(), 2)
+  })
+})
+
+test('decoded endpoint tolerates codec noise but rejects a different retained camera image', async () => {
+  await decoderFixture(false, async cleanup => {
+    const reference = new Uint8ClampedArray(32 * 32 * 4).fill(5)
+    const evidence = await verifyXrSceneMp4(new Blob([container()]), 2, undefined, reference)
+    assert.equal(evidence.finalFrameVerified, true)
+    assert.equal(evidence.finalFrameMeanError, 2)
+    assert.equal(cleanup(), 2)
+  })
+  await decoderFixture(false, async cleanup => {
+    await assert.rejects(verifyXrSceneMp4(new Blob([container()]), 2, undefined,
+      new Uint8ClampedArray(32 * 32 * 4).fill(100)), /does not match the authored endpoint/)
+    assert.equal(cleanup(), 2)
+  })
+})
+
+test('localized wrong endpoint pixels reject even when the whole-frame average is small', async () => {
+  await decoderFixture(false, async () => {
+    const reference = new Uint8ClampedArray(32 * 32 * 4).fill(3)
+    reference.fill(80, 0, Math.floor(reference.length * 0.1))
+    await assert.rejects(verifyXrSceneMp4(new Blob([container()]), 2, undefined, reference), /authored endpoint/)
   })
 })
 

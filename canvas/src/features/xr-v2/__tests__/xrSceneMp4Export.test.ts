@@ -3,7 +3,7 @@ import test from 'node:test'
 import { Scene } from 'three'
 import { acquireVideoSequenceRecorderLease } from '@/components/timeline/videoSequenceRecorderLifecycle'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { captureXrSceneMp4, createXrMp4SourceBinding, type XrMp4SourceBinding } from '../xrSceneMp4Export'
+import { captureXrSceneMp4, createXrMp4SourceBinding, type XrMp4SourceBinding } from '@/features/three/xrSceneMp4Export'
 
 class Recorder extends EventTarget {
   static isTypeSupported = (mime: string) => mime.startsWith('video/mp4')
@@ -11,7 +11,7 @@ class Recorder extends EventTarget {
   constructor(..._args: unknown[]) { super(); Recorder.last = this }
   state: RecordingState = 'inactive'
   mimeType = 'video/mp4'
-  start() { this.state = 'recording' }
+  start() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('start'))) }
   requestData() {
     const event = new Event('dataavailable')
     Object.defineProperty(event, 'data', { value: new Blob(['test bytes']) })
@@ -24,6 +24,7 @@ async function fixture(run: (value: {
   capture: (options?: { signal?: AbortSignal; onProgress?: (fraction: number) => void }) => ReturnType<typeof captureXrSceneMp4>
   binding: XrMp4SourceBinding; advanceWithoutRender: () => void; resumeRendering: () => void; stale: () => void; stopped: () => number; restored: () => number; scene: Scene; initialHook: Scene['onAfterRender']
   resizeSource: () => void; recordedDimensions: () => number[][]; copiedSourceWidths: () => number[]
+  automaticFramesOnly: () => void; sampledPixels: () => number[]; frameRequests: () => number
 }) => Promise<void>) {
   const priorRecorder = Object.getOwnPropertyDescriptor(globalThis, 'MediaRecorder')
   const priorCanvas = Object.getOwnPropertyDescriptor(globalThis, 'HTMLCanvasElement')
@@ -32,10 +33,26 @@ async function fixture(run: (value: {
   const listeners = new Set<() => void>()
   const scene = new Scene(); const initialHook = scene.onAfterRender
   const recordedDimensions: number[][] = []; const copiedSourceWidths: number[] = []
+  const sampledPixels: number[] = []; let frameRequests = 0; let automaticOnly = false
   class Canvas {
-    width = 160; height = 90
-    getContext() { return { drawImage: (source: Canvas) => { copiedSourceWidths.push(source.width); recordedDimensions.push([this.width, this.height]) } } }
-    captureStream() { recordedDimensions.push([this.width, this.height]); return { getVideoTracks: () => [{}], getTracks: () => [{ stop: () => { stopped++ } }] } as unknown as MediaStream }
+    width = 160; height = 90; pixel = 0
+    getContext() { return {
+      drawImage: (source: Canvas) => {
+        this.pixel = source.pixel
+        if (this.width !== 32) { copiedSourceWidths.push(source.width); recordedDimensions.push([this.width, this.height]) }
+      },
+      getImageData: () => {
+        assert.equal(Recorder.last?.state, 'inactive', 'GPU readback must occur after recorder stop')
+        return { data: new Uint8ClampedArray(32 * 32 * 4).fill(this.pixel) }
+      },
+    } }
+    captureStream(fps: number) {
+      recordedDimensions.push([this.width, this.height])
+      const sampler = setInterval(() => sampledPixels.push(this.pixel), 1_000 / fps)
+      const track = { stop: () => { clearInterval(sampler); stopped++ },
+        ...(!automaticOnly ? { requestFrame: () => { frameRequests++; sampledPixels.push(this.pixel) } } : {}) }
+      return { getVideoTracks: () => [track], getTracks: () => [track] } as unknown as MediaStream
+    }
   }
   const source = new Canvas()
   Object.defineProperty(globalThis, 'HTMLCanvasElement', { configurable: true, value: Canvas })
@@ -50,19 +67,24 @@ async function fixture(run: (value: {
   const timer = setInterval(() => {
     if (playing) time = Math.min(0.08, time + 0.02)
     if (!renderEnabled) return
+    source.pixel = playing ? Math.round(time * 1_000) : 200
     scene.onAfterRender({ xr: { isPresenting: false } } as never, scene, {} as never, undefined as never, undefined as never, undefined as never)
   }, 5)
   try {
     await run({
       capture: options => captureXrSceneMp4({ canvas: source as unknown as HTMLCanvasElement, scene,
         isCurrent: () => current, binding, ...options,
-        verify: async () => ({ durationSeconds: 0.08, decodedFrames: 3, width: 160, height: 90, sampleHashes: ['a', 'b', 'c'] }) }),
+        verify: async (_blob, _duration, _signal, finalFrame) => {
+          assert.equal(finalFrame?.[0], 80, 'the retained reference must precede camera restoration')
+          return { durationSeconds: 0.08, decodedFrames: 3, width: 160, height: 90, sampleHashes: ['a', 'b', 'c'], finalFrameVerified: true, finalFrameMeanError: 0 }
+        } }),
       binding, advanceWithoutRender: () => { renderEnabled = false; time = 0.08; for (const listener of listeners) listener() },
       resumeRendering: () => { renderEnabled = true },
       stale: () => { current = false; for (const listener of listeners) listener() },
       stopped: () => stopped, restored: () => restored, scene, initialHook,
       resizeSource: () => { source.width = 80; source.height = 44 },
       recordedDimensions: () => recordedDimensions, copiedSourceWidths: () => copiedSourceWidths,
+      automaticFramesOnly: () => { automaticOnly = true }, sampledPixels: () => sampledPixels, frameRequests: () => frameRequests,
     })
   } finally {
     clearInterval(timer)
@@ -88,6 +110,27 @@ test('user cancellation tears down tracks and restores the same document', async
     await assert.rejects(value.capture({ signal: controller.signal, onProgress: () => controller.abort() }), { name: 'AbortError' })
     assert.equal(value.stopped(), 1); assert.equal(value.restored(), 2)
     assert.equal(value.scene.onAfterRender, value.initialHook)
+  })
+})
+
+test('final authored image survives faster rendering, slow recorder sampling and camera restoration', async () => {
+  for (const automaticOnly of [false, true]) await fixture(async value => {
+    value.binding.fps = 5 // Renderer advances every 5ms; recorder samples every 200ms.
+    if (automaticOnly) value.automaticFramesOnly()
+    assert.equal((await value.capture()).status, 'captured')
+    assert.ok(value.sampledPixels().length >= 2)
+    assert.ok(value.sampledPixels().slice(-2).every(pixel => pixel === 80))
+    assert.equal(value.frameRequests(), automaticOnly ? 0 : 1)
+  })
+})
+
+test('cancellation during the final sampler interval releases tracks and the shared lease', async () => {
+  await fixture(async value => {
+    const controller = new AbortController()
+    value.binding.pause = () => { controller.abort() }
+    await assert.rejects(value.capture({ signal: controller.signal }), { name: 'AbortError' })
+    assert.equal(value.stopped(), 1)
+    acquireVideoSequenceRecorderLease()()
   })
 })
 
