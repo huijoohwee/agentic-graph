@@ -308,8 +308,6 @@ jobs:
 
       - name: Run XR v2 runtime review-candidate gate
         working-directory: agentic-graph
-        env:
-          AG_XR_V2_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
         run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser
 
       - name: Upload XR v2 browser observation
