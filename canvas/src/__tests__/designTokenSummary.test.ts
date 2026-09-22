@@ -68,7 +68,7 @@ export async function testDesignContextReviewProvenance() {
   assert.equal(context.intent.intent, 'Clear reading order')
   assert.equal(context.intent.motion, null)
   assert.ok(context.unresolved.includes('motion'))
-  assert.equal(context.tokens.length, 38)
+  assert.equal(context.tokens.length, 49)
   for (const rule of ['token-reference', 'token-value', 'declared-contrast']) {
     assert.ok(context.audit.findings.some(f => f.rule === rule && f.nodeId === 'card' && f.path && f.action))
   }
