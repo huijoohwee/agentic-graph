@@ -10,7 +10,9 @@ import { chromium } from 'playwright'
 import { tsImport } from 'tsx/esm/api'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
-const revision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+const checkoutRevision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+const { resolveViteRuntimeIdentity } = await tsImport('../viteChatProxyEnv.ts', import.meta.url)
+const { sourceRevision: revision } = resolveViteRuntimeIdentity(root)
 const sourceState = () => execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' })
 const before = sourceState(), output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-offline-${revision.slice(0, 12)}`))
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
@@ -188,7 +190,7 @@ try {
   assert.equal(await editor.inputValue(), lessons.at(-1).solution)
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
-  const evidence = { revision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
+  const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
     toolRegistrationProven: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
