@@ -34,14 +34,26 @@ test('truncated MP4 sample boxes reject instead of creating a successful export'
 })
 
 
-async function decoderFixture(empty: boolean, run: (readCleanup: () => number) => Promise<void>) {
+async function decoderFixture(empty: boolean,
+  run: (readCleanup: () => number, pendingEndedListeners: () => number) => Promise<void>,
+  options: { duration?: number; play?: () => Promise<void> } = {}) {
   const prior = Object.getOwnPropertyDescriptor(globalThis, 'document')
   let cleanup = 0; let draws = 0
+  const endedListeners = new Set<EventListenerOrEventListenerObject>()
   class Video extends EventTarget {
-    duration = 2; videoWidth = 160; videoHeight = 90; readyState = 4; time = 0
+    duration = options.duration ?? 2; videoWidth = 160; videoHeight = 90; readyState = 4; time = 0
     get currentTime() { return this.time }
     set currentTime(value: number) { this.time = value; queueMicrotask(() => this.dispatchEvent(new Event('seeked'))) }
     load() { queueMicrotask(() => this.dispatchEvent(new Event('loadedmetadata'))) }
+    play() { return options.play?.() ?? Promise.resolve() }
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: AddEventListenerOptions | boolean) {
+      if (type === 'ended' && listener) endedListeners.add(listener)
+      super.addEventListener(type, listener, options)
+    }
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: EventListenerOptions | boolean) {
+      if (type === 'ended' && listener) endedListeners.delete(listener)
+      super.removeEventListener(type, listener, options)
+    }
     pause() { cleanup++ }
     removeAttribute() { cleanup++ }
   }
@@ -51,7 +63,7 @@ async function decoderFixture(empty: boolean, run: (readCleanup: () => number) =
         getImageData: () => ({ data: new Uint8ClampedArray(32 * 32 * 4).fill(empty ? 0 : draws) }) }),
     },
   } })
-  try { await run(() => cleanup) }
+  try { await run(() => cleanup, () => endedListeners.size) }
   finally { if (prior) Object.defineProperty(globalThis, 'document', prior); else Reflect.deleteProperty(globalThis, 'document') }
 }
 
@@ -70,4 +82,45 @@ test('empty decoded frames fail and still release verification resources', async
     await assert.rejects(verifyXrSceneMp4(new Blob([container()]), 2), /empty decoded frame/)
     assert.equal(cleanup(), 2)
   })
+})
+
+test('fragmented decode cancels while the browser play promise never settles', async () => {
+  const controller = new AbortController()
+  await decoderFixture(false, async (cleanup, pendingEndedListeners) => {
+    await assert.rejects(verifyXrSceneMp4(new Blob([container()]), 2, controller.signal), { name: 'AbortError' })
+    assert.equal(cleanup(), 2)
+    assert.equal(pendingEndedListeners(), 0)
+  }, { duration: Infinity, play: () => {
+    queueMicrotask(() => controller.abort())
+    return new Promise(() => {})
+  } })
+})
+
+test('fragmented decode times out while the browser play promise never settles', async context => {
+  context.mock.timers.enable({ apis: ['setTimeout'] })
+  let playing!: () => void
+  const playStarted = new Promise<void>(resolve => { playing = resolve })
+  try {
+    await decoderFixture(false, async (cleanup, pendingEndedListeners) => {
+      const verification = verifyXrSceneMp4(new Blob([container()]), 2)
+      const rejected = assert.rejects(verification, /decode verification timed out/)
+      await playStarted
+      context.mock.timers.tick(10_000)
+      await rejected
+      assert.equal(cleanup(), 2)
+      assert.equal(pendingEndedListeners(), 0)
+    }, { duration: Infinity, play: () => { playing(); return new Promise(() => {}) } })
+  } finally { context.mock.timers.reset() }
+})
+
+test('fragmented playback rejection releases its pending ended observation', async context => {
+  context.mock.timers.enable({ apis: ['setTimeout'] })
+  try {
+    await decoderFixture(false, async (cleanup, pendingEndedListeners) => {
+      await assert.rejects(verifyXrSceneMp4(new Blob([container()]), 2), /Playback denied/)
+      context.mock.timers.tick(10_000)
+      assert.equal(cleanup(), 2)
+      assert.equal(pendingEndedListeners(), 0)
+    }, { duration: Infinity, play: () => Promise.reject(new Error('Playback denied')) })
+  } finally { context.mock.timers.reset() }
 })
