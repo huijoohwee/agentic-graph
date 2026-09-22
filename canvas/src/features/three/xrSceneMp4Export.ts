@@ -178,20 +178,6 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     bytes += event.data.size
     if (bytes > XR_MP4_MAX_BYTES) { failure = new Error('MP4 recording exceeds the 64 MB limit.'); check() }
   }
-  const recorderEvent = (name: 'pause' | 'resume', action: () => void) => new Promise<void>((resolve, reject) => {
-    const activeRecorder = recorder!
-    const finish = (error?: Error) => {
-      clearTimeout(timer); activeRecorder.removeEventListener(name, done)
-      verificationAbort.signal.removeEventListener('abort', aborted)
-      if (error) reject(error); else resolve()
-    }
-    const done = () => { try { assertCurrent(); finish() } catch (error) { finish(error as Error) } }
-    const aborted = () => finish(failure || abortError())
-    const timer = setTimeout(() => finish(new Error(`MP4 recorder did not acknowledge ${name}.`)), 5_000)
-    activeRecorder.addEventListener(name, done, { once: true })
-    verificationAbort.signal.addEventListener('abort', aborted, { once: true })
-    try { assertCurrent(); action() } catch (error) { finish(error as Error) }
-  })
   const sampleRetainedImage = () => {
     const sample = document.createElement('canvas')
     sample.width = XR_MP4_FRAME_SAMPLE_SIZE; sample.height = XR_MP4_FRAME_SAMPLE_SIZE
@@ -211,16 +197,6 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     binding.prepare()
     const warmFrames = observedFrames
     await waitRendered(() => observedFrames >= warmFrames + 2 && renderedTime === 0 && stableTimeFrames >= 2, 5_000)
-    stream = captureSurface.captureStream(Math.min(60, Math.max(1, binding.fps)))
-    if (!stream.getVideoTracks().length) throw new Error('XR canvas produced no video track.')
-    recorder = new MediaRecorder(stream, { mimeType: plan.mimeType })
-    recorder.addEventListener('dataavailable', onData)
-    recorder.addEventListener('error', check)
-    output = collectVideoSequenceRecorderOutput(recorder)
-    void output.chunks.catch(error => { failure = error as Error; check() })
-    // Exclude React/Timeline startup from recording; state alone is not the
-    // recorder's pause acknowledgement. The retained surface is the zero pose.
-    await recorderEvent('pause', () => { recorder!.start(250); recorder!.pause() })
     const held = new Promise<void>((resolve, reject) => { releaseClock = resolve; rejectClock = reject })
     void held.catch(() => {})
     const onClockStart = (event: Event) => {
@@ -251,13 +227,21 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     // This is the rendered playing-camera zero pose, after the actual clock acknowledgement.
     startupImageFrozen = true
     const expectedInitialFrame = sampleRetainedImage()
-    await recorderEvent('resume', () => {
-      if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced before MP4 resume.')
-      recorder!.resume()
-      ;(stream!.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack).requestFrame?.()
-    })
+    // Stream timestamps must begin after startup and GPU readback. Pausing an
+    // already-started recorder cannot undo timestamps on queued opening frames.
+    stream = captureSurface.captureStream(Math.min(60, Math.max(1, binding.fps)))
+    if (!stream.getVideoTracks().length) throw new Error('XR canvas produced no video track.')
+    recorder = new MediaRecorder(stream, { mimeType: plan.mimeType })
+    recorder.addEventListener('dataavailable', onData)
+    recorder.addEventListener('error', check)
+    output = collectVideoSequenceRecorderOutput(recorder)
+    void output.chunks.catch(error => { failure = error as Error; check() })
     assertCurrent()
-    if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced during MP4 resume.')
+    if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced before MP4 start.')
+    recorder.start(250)
+    ;(stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack).requestFrame?.()
+    assertCurrent()
+    if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced while MP4 was starting.')
     detachClock(); detachClock = () => {}
     startupImageFrozen = false
     releaseClock!(); releaseClock = null; rejectClock = null

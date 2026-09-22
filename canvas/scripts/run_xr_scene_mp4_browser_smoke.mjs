@@ -128,8 +128,7 @@ if (!process.argv.includes('--verify')) {
       const originalCapture = HTMLCanvasElement.prototype.captureStream
       const originalStart = MediaRecorder.prototype.start
       const originalStop = MediaRecorder.prototype.stop
-      const originalResume = MediaRecorder.prototype.resume
-      let clockStarts = 0; let resumedAtZero = false
+      let clockStarts = 0; let startedAtZero = false; let openingReadComplete = false
       const observeClockStart = event => {
         if (!event.detail.clockStart) return
         if (event.detail.position !== 0 || event.detail.timeMs !== 0) throw new Error('Native startup did not acknowledge zero.')
@@ -138,20 +137,18 @@ if (!process.argv.includes('--verify')) {
       window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observeClockStart)
       const originalReadPixels = CanvasRenderingContext2D.prototype.getImageData
       MediaRecorder.prototype.start = function (...args) {
+        startedAtZero = clockStarts > 0 && openingReadComplete && readXrAnimationTransport().timeSeconds === 0
         report('recorder-start-request')
         this.addEventListener('start', () => report('recorder-start-event'), { once: true })
         return originalStart.apply(this, args)
       }
       MediaRecorder.prototype.stop = function (...args) { report('recorder-stop'); return originalStop.apply(this, args) }
-      MediaRecorder.prototype.resume = function (...args) {
-        this.addEventListener('resume', () => {
-          resumedAtZero = clockStarts > 0 && readXrAnimationTransport().timeSeconds === 0
-          report('recorder-resume-acknowledged')
-        }, { once: true })
-        return originalResume.apply(this, args)
-      }
       CanvasRenderingContext2D.prototype.getImageData = function (...args) {
-        report('pixel-read'); return originalReadPixels.apply(this, args)
+        report('pixel-read')
+        const pixels = originalReadPixels.apply(this, args)
+        openingReadComplete = true
+        report('pixel-read-complete')
+        return pixels
       }
       HTMLCanvasElement.prototype.captureStream = function (...args) {
         const stream = originalCapture.apply(this, args); tracks.push(...stream.getTracks()); return stream
@@ -180,8 +177,8 @@ if (!process.argv.includes('--verify')) {
         } })
         report(`capture-result:${result.status}`)
         if (result.status === 'unsupported') return result
-        const startupHandshakeVerified = clockStarts === 1 && resumedAtZero
-        if (!startupHandshakeVerified) throw new Error('Native clock did not hold zero through recorder resume.')
+        const startupHandshakeVerified = clockStarts === 1 && startedAtZero
+        if (!startupHandshakeVerified) throw new Error('Native clock did not hold zero through opening readback and recorder start.')
         if (tracks.some(track => track.readyState !== 'ended')) throw new Error('A recording track survived successful export.')
         if (JSON.stringify(readXrMotionReferenceRuntime().plan) !== source) throw new Error('Export changed the authored source.')
         if (readXrAnimationTransport().timeSeconds !== before.timeSeconds) throw new Error('Export did not restore the playhead.')
@@ -218,7 +215,6 @@ if (!process.argv.includes('--verify')) {
         HTMLCanvasElement.prototype.captureStream = originalCapture
         MediaRecorder.prototype.start = originalStart
         MediaRecorder.prototype.stop = originalStop
-        MediaRecorder.prototype.resume = originalResume
         window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observeClockStart)
         CanvasRenderingContext2D.prototype.getImageData = originalReadPixels
         root.unmount()

@@ -14,8 +14,6 @@ class Recorder extends EventTarget {
   state: RecordingState = 'inactive'
   mimeType = 'video/mp4'
   start() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('start'))) }
-  pause() { this.state = 'paused'; queueMicrotask(() => this.dispatchEvent(new Event('pause'))) }
-  resume() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('resume'))) }
   requestData() {
     const event = new Event('dataavailable')
     Object.defineProperty(event, 'data', { value: new Blob(['test bytes']) })
@@ -32,6 +30,7 @@ async function fixture(run: (value: {
   automaticFramesOnly: () => void; sampledPixels: () => number[]; frameRequests: () => number
 }) => Promise<void>) {
   const priorRecorder = Object.getOwnPropertyDescriptor(globalThis, 'MediaRecorder')
+  Recorder.last = null
   const priorCanvas = Object.getOwnPropertyDescriptor(globalThis, 'HTMLCanvasElement')
   const priorDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
   const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
@@ -51,7 +50,8 @@ async function fixture(run: (value: {
         if (this.width !== 32) { copiedSourceWidths.push(source.width); recordedDimensions.push([this.width, this.height]) }
       },
       getImageData: () => {
-        assert.notEqual(Recorder.last?.state, 'recording', 'GPU readback must occur while recording is paused or stopped')
+        assert.ok(Recorder.last === null || Recorder.last.state === 'inactive', 'GPU readback must precede recorder construction or follow recorder stop')
+        if (Recorder.last === null) assert.equal(recordedDimensions.length > 0 && sampledPixels.length > 0, false, 'opening readback must precede stream sampling')
         return { data: new Uint8ClampedArray(32 * 32 * 4).fill(this.pixel) }
       },
     } }
@@ -142,16 +142,16 @@ test('final authored image survives faster rendering, slow recorder sampling and
   })
 })
 
-test('delayed Timeline startup holds at zero until the fresh opening image and recorder resume', async () => {
+test('delayed Timeline startup creates no recorder or stream until the fresh opening image is ready', async () => {
   await fixture(async value => {
     const play = value.binding.play
     let ready: () => void = () => {}
     const requested = new Promise<void>(resolve => { ready = resolve })
-    value.binding.play = () => { assert.equal(Recorder.last?.state, 'paused'); ready() }
+    value.binding.play = () => { assert.equal(Recorder.last, null); ready() }
     const capture = value.capture()
     await requested
     await new Promise(resolve => setTimeout(resolve, 30))
-    assert.equal(Recorder.last?.state, 'paused')
+    assert.equal(Recorder.last, null)
     assert.equal(value.frameRequests(), 0)
     play()
     assert.equal((await capture).status, 'captured')
@@ -159,51 +159,43 @@ test('delayed Timeline startup holds at zero until the fresh opening image and r
   })
 })
 
-test('native transport advancement without an acknowledged startup hold rejects before resuming', async () => {
+test('native transport advancement without an acknowledged startup hold rejects before recording', async () => {
   await fixture(async value => {
     let requested = false
     value.binding.play = () => { requested = true }
     value.binding.transportTime = () => requested ? 0.04 : 0
     await assert.rejects(value.capture(), /advanced before the opening frame/)
     assert.equal(value.frameRequests(), 0)
-    assert.equal(value.stopped(), 1)
+    assert.equal(value.stopped(), 0)
     acquireVideoSequenceRecorderLease()()
   })
 })
 
-test('clock advancement during recorder resume rejects instead of dropping the opening time', async () => {
-  const resume = Recorder.prototype.resume
+test('clock advancement during recorder start rejects instead of dropping the opening time', async () => {
+  const start = Recorder.prototype.start
   try {
     await fixture(async value => {
-      Recorder.prototype.resume = function () {
+      Recorder.prototype.start = function () {
         value.binding.transportTime = () => 0.04
-        resume.call(this)
+        start.call(this)
       }
-      await assert.rejects(value.capture(), /advanced during MP4 resume/)
+      await assert.rejects(value.capture(), /advanced while MP4 was starting/)
       assert.equal(value.stopped(), 1)
     })
-  } finally { Recorder.prototype.resume = resume }
+  } finally { Recorder.prototype.start = start }
 })
 
-test('cancellation while waiting for pause, clock advance or resume releases the recorder', async () => {
-  for (const phase of ['pause', 'clock', 'resume'] as const) {
-    const pause = Recorder.prototype.pause
-    const resume = Recorder.prototype.resume
-    try {
-      if (phase === 'pause') Recorder.prototype.pause = function () { this.state = 'paused' }
-      if (phase === 'resume') Recorder.prototype.resume = function () { this.state = 'recording' }
-      await fixture(async value => {
-        const controller = new AbortController()
-        if (phase !== 'resume') value.binding.play = () => {}
-        const timer = setTimeout(() => controller.abort(), 30)
-        try { await assert.rejects(value.capture({ signal: controller.signal }), { name: 'AbortError' }) }
-        finally { clearTimeout(timer) }
-        assert.equal(value.stopped(), 1)
-        assert.equal(value.scene.onAfterRender, value.initialHook)
-        acquireVideoSequenceRecorderLease()()
-      })
-    } finally { Recorder.prototype.pause = pause; Recorder.prototype.resume = resume }
-  }
+test('cancellation while waiting for clock startup creates no recorder or live tracks', async () => {
+  await fixture(async value => {
+    const controller = new AbortController()
+    value.binding.play = () => {}
+    const timer = setTimeout(() => controller.abort(), 30)
+    try { await assert.rejects(value.capture({ signal: controller.signal }), { name: 'AbortError' }) }
+    finally { clearTimeout(timer) }
+    assert.equal(Recorder.last, null); assert.equal(value.stopped(), 0)
+    assert.equal(value.scene.onAfterRender, value.initialHook)
+    acquireVideoSequenceRecorderLease()()
+  })
 })
 
 test('cancellation during the final sampler interval releases tracks and the shared lease', async () => {
@@ -436,7 +428,7 @@ test('actual clock zero acknowledgement still waits for the fresh rendered openi
     try {
       const capture = value.capture()
       await ready; await new Promise(resolve => setTimeout(resolve, 25))
-      assert.equal(Recorder.last?.state, 'paused'); assert.equal(value.binding.time(), 0)
+      assert.equal(Recorder.last, null); assert.equal(value.binding.time(), 0)
       assert.equal(value.frameRequests(), 0)
       value.resumeRendering()
       assert.equal((await capture).status, 'captured')
@@ -457,7 +449,7 @@ test('source replacement during a held zero frame cancels without restoring the 
       const capture = value.capture()
       await ready; value.stale()
       await assert.rejects(capture, /source, document or canvas changed/)
-      assert.equal(value.stopped(), 1); assert.equal(value.restored(), 0)
+      assert.equal(value.stopped(), 0); assert.equal(value.restored(), 0)
       assert.equal(value.scene.onAfterRender, value.initialHook)
       acquireVideoSequenceRecorderLease()()
     } finally { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe) }
