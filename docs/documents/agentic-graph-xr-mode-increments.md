@@ -274,3 +274,26 @@ Malformed attachments now raise `XrSubjectConstructionError` before hydration
 mutates prior runtime state. The existing runtime bridge does not catch that
 new typed error: user-facing recovery still requires the unreserved
 `XrMotionReferenceRuntimeBridge.tsx` owner before this slice is release-ready.
+
+### S1 visual part editing — admitted continuation
+
+`/change #xr.subject.current-base @codex` continues inside the existing private
+character reservation. The part inspector selects a stable native part and edits
+its parent, primitive, local position, pivot, rotation, dimensions, material and
+visibility through the existing recipe/session and workspace publication. Bound
+procedural fields retain their control limits and values. Invalid or stale edits
+retain the last valid subject; a selection/source change retires pending saves.
+No new recipe, scene store, clock or renderer is introduced. Twenty active minutes
+to the first checkpoint; six existing files, zero new modules,
+checkouts, dependencies or services. Review precedes focused tests. Acceptance
+requires part/control agreement, hierarchy rejection, exact save/reparse and
+selection/source cancellation. Selected-model GLB uses the same trusted exporter,
+with authored local parts/clips, validated bytes and a final current-source check
+before native download. It does not claim whole-scene motion or camera export.
+Actual GLB reimport must prove edited geometry/material and joint animation, and
+selection cancellation must suppress late delivery. This advances S1; the bridge, Timeline, agent and
+export acceptance gaps above remain open until their owners are admitted.
+The added selected-model export/reimport proof expands this slice's authored-byte
+cap from 20 KB to 22 KB; the file, module, checkout and dependency caps are unchanged.
+Review, focused part/save/reimport/cancellation cases and Canvas 5.8.3 type checking
+passed locally. Real browser UI and whole-scene export remain unverified.

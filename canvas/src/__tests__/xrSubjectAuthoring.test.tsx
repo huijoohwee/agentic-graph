@@ -4,6 +4,9 @@ import { withGlbExporterFileReader } from '@/tests/lib/glbExporterFileReaderHarn
 import { XrSubjectAuthoringControls } from '@/features/three/XrSubjectAuthoringControls'
 import { captureXrSubjectDraftContext, XrSubjectConstructionError } from '@/features/three/xrSubjectAuthoring'
 import { ProceduralAssetSession } from '@/features/image-to-glb/proceduralAssetSession'
+import { disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
+import { inspectGlbBytes } from '@/lib/assets/gltfFormat'
+import * as THREE from 'three'
 import { createProceduralAssetFromText } from '@/features/image-to-glb/proceduralAssetTextRecipe'
 import { persistXrScene } from '@/features/three/xrScenePersistence'
 import assert from 'node:assert/strict'
@@ -89,11 +92,14 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     // Keep this adapter mounted across accepted commits, without the parent inspector's key.
     const fs = createMemoryWorkspaceFs()
     let resolveFs = async () => fs
+    const downloads: Array<{ blob: Blob; name: string }> = []
+    let onDownload = () => {}
     function ConstructionHarness() {
       const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
       const state = useGraphStore()
       const subject = runtime.plan.subjects[0]
-      return <XrSubjectAuthoringControls subject={subject} context={captureXrSubjectDraftContext(state, runtime, subject.id)} resolveWorkspaceFs={() => resolveFs()} />
+      return <XrSubjectAuthoringControls subject={subject} context={captureXrSubjectDraftContext(state, runtime, subject.id)} resolveWorkspaceFs={() => resolveFs()}
+        downloadFile={(blob, name) => { downloads.push({ blob, name }); onDownload() }} />
     }
     await act(async () => { install('bare.md'); root.render(<ConstructionHarness />) })
     const button = (label: string) => [...container.querySelectorAll('button')].find(element => element.textContent === label)!
@@ -119,20 +125,55 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     const createdDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
     await act(async () => Simulate.change(container.querySelector('input[type="number"]')!, { target: { valueAsNumber: 1.1 } } as never))
     await save('Apply controls')
-    const editedDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
+    let editedDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
     assert.notEqual(editedDocument, createdDocument, 'A fresh accepted context permits the second edit on the same mounted adapter')
     assert.equal(JSON.parse(editedDocument).lastValid.values.width, 1.1)
 
+    const openParts = async () => {
+      const details = [...container.querySelectorAll('details')].find(node => node.querySelector('summary')?.textContent === 'Parts & rig')!
+      await act(async () => { details.open = true; Simulate.toggle(details) })
+      assert.ok(container.querySelector('select[aria-label="Part"]'), 'Part fields are lazily projected from the native document')
+    }
+    const changeField = async (label: string, value: string) => {
+      const input = container.querySelector<HTMLInputElement | HTMLSelectElement>(`[aria-label="${label}"]`)!
+      await act(async () => { input.value = value; Simulate.change(input) })
+    }
+    await openParts()
+    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'body')
+    assert.equal(container.querySelector<HTMLInputElement>('[aria-label="Size (m) X"]')!.value, '1.1', 'Inspector shows the effective procedural value')
+    await changeField('Size (m) X', '1.3')
+    await changeField('Position (m) Y', '1.6')
+    await changeField('Pivot (m) X', '0.1')
+    await changeField('Part color', '#336699')
+    await save('Apply part')
+    editedDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
+    const partRecipe = JSON.parse(editedDocument).lastValid
+    assert.equal(partRecipe.values.width, 1.3, 'Visual editing updates the same bounded control')
+    assert.equal(partRecipe.parts[0].position[1], 1.6)
+    assert.equal(partRecipe.parts[0].pivot[0], 0.1)
+    assert.equal(partRecipe.values.color, '#336699')
+    const partSavedSource = useGraphStore.getState().markdownDocumentText!
+    const partMetadata = yaml.load(extractYamlFrontmatterBlock(partSavedSource)!.yamlText) as Record<string, unknown>
+    assert.equal(readXrMotionReferencePlan(partMetadata.kgXrMotionReference).subjects[0].construction!.proceduralAssetDocument, editedDocument, 'Parts and rig persist through the actual scene source')
+    await openParts()
+    await changeField('Parent part', 'head')
+    await act(async () => Simulate.click(button('Apply part')))
+    assert.match(container.querySelector('[role="alert"]')?.textContent || '', /cyclic|parent/)
+    assert.equal(useGraphStore.getState().markdownDocumentText, partSavedSource, 'A parent cycle retains the exact last valid source')
+    assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument, editedDocument)
+    await act(async () => Simulate.click(button('Reset part draft')))
+    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Parent part"]')!.value, '')
+
     let finishFs: (() => void) | undefined
     resolveFs = () => new Promise(resolve => { finishFs = () => resolve(fs) })
-    await act(async () => Simulate.click(button('Apply controls')))
+    await act(async () => Simulate.click(button('Apply part')))
     assert.ok(finishFs, 'The stale operation reached an asynchronous native workspace boundary')
     await act(async () => {
       selectXrMotionReferenceShotTarget('xr-shot:scene')
       selectXrMotionReferenceShotTarget('shared-id')
       finishFs!()
     })
-    assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument, editedDocument, 'Selection away-and-back cannot revive the pending operation')
+    assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument, editedDocument, 'Selection away-and-back cannot revive the pending part operation')
     resolveFs = async () => fs
     await save('Apply controls')
     const afterRecovery = readXrMotionReferenceRuntime()
@@ -148,21 +189,79 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     })
     assert.equal(readXrMotionReferenceRuntime(), afterRecovery, 'Source away-and-back also retires the pending operation')
 
+    await withGlbExporterFileReader(async () => {
+      await act(async () => {
+        let timeout: ReturnType<typeof setTimeout>
+        const delivered = new Promise<void>((resolve, reject) => {
+          timeout = setTimeout(() => reject(new Error('Selected model GLB was not delivered')), 2000)
+          onDownload = () => { clearTimeout(timeout); resolve() }
+        })
+        Simulate.click(button('Export selected model GLB')); await delivered
+      })
+    })
+    assert.equal(downloads.length, 1)
+    assert.equal(downloads[0].name, 'Crate.glb')
+    const bytes = await downloads[0].blob.arrayBuffer()
+    assert.equal(inspectGlbBytes(bytes).validContainer, true)
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    const exported = await new GLTFLoader().parseAsync(bytes, '')
+    const mixer = new THREE.AnimationMixer(exported.scene)
+    try {
+      assert.equal(exported.scene.getObjectByName('Pivot-body')!.position.y, 1.6, 'Export retains edited local part placement')
+      const body = exported.scene.getObjectByName('Part-body') as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>
+      body.geometry.computeBoundingBox()
+      assert.ok(Math.abs(body.geometry.boundingBox!.getSize(new THREE.Vector3()).x - 1.3) < 1e-6)
+      assert.equal(body.material.color.getHexString(), '336699')
+      assert.equal(exported.animations[0].name, 'walk')
+      mixer.clipAction(exported.animations[0]).play()
+      const arm = exported.scene.getObjectByName('Pivot-arm-left')!
+      mixer.setTime(0); const first = arm.quaternion.clone()
+      mixer.setTime(0.5); assert.ok(first.angleTo(arm.quaternion) > 0.4, 'Actual exported clip still animates the native rigid joint')
+    } finally { mixer.stopAllAction(); mixer.uncacheRoot(exported.scene); disposeProceduralAsset(exported.scene) }
+    assert.equal(readXrMotionReferenceRuntime(), afterRecovery, 'Export never replaces or advances the live scene')
+
+    await withGlbExporterFileReader(async () => {
+      const { GLTFExporter } = await import('three/examples/jsm/exporters/GLTFExporter.js')
+      const originalParse = GLTFExporter.prototype.parseAsync
+      const bounded = async (promise: Promise<void>, label: string) => {
+        let timer: ReturnType<typeof setTimeout> | undefined
+        try { await Promise.race([promise, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(label)), 2000) })]) }
+        finally { clearTimeout(timer) }
+      }
+      let enter!: () => void, release!: () => void, complete!: () => void
+      const entered = new Promise<void>(resolve => { enter = resolve })
+      const resumed = new Promise<void>(resolve => { release = resolve })
+      const finished = new Promise<void>(resolve => { complete = resolve })
+      GLTFExporter.prototype.parseAsync = async function (...args) {
+        enter(); await resumed
+        try { return await originalParse.apply(this, args) } finally { complete() }
+      }
+      try {
+        await act(async () => { Simulate.click(button('Export selected model GLB')); await bounded(entered, 'GLB exporter did not start') })
+        await act(async () => {
+          selectXrMotionReferenceShotTarget('xr-shot:scene'); selectXrMotionReferenceShotTarget('shared-id')
+          release(); await bounded(finished, 'GLB exporter did not finish')
+        })
+        assert.equal(downloads.length, 1, 'Selection away-and-back suppresses a late encoded download')
+      } finally { release(); GLTFExporter.prototype.parseAsync = originalParse }
+    })
+
+    const beforeRejectedEdits = readXrMotionReferenceRuntime()
     const savedSource = useGraphStore.getState().markdownDocumentText
-    const originalConstruction = afterRecovery.plan.subjects[0].construction!
+    const originalConstruction = beforeRejectedEdits.plan.subjects[0].construction!
     const belowGround = JSON.parse(originalConstruction.proceduralAssetDocument)
     belowGround.lastValid.parts[0].position[1] = -1
     assert.throws(() => setXrSubjectConstruction('shared-id', { ...originalConstruction, proceduralAssetDocument: JSON.stringify(belowGround) }),
       error => error instanceof XrSubjectConstructionError && /below its ground origin/.test(error.message))
-    assert.equal(readXrMotionReferenceRuntime(), afterRecovery, 'Ground rejection retains the last valid subject and selection')
+    assert.equal(readXrMotionReferenceRuntime(), beforeRejectedEdits, 'Ground rejection retains the last valid subject and selection')
     assert.equal(useGraphStore.getState().markdownDocumentText, savedSource, 'Ground rejection leaves saved source bytes intact')
     assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction, originalConstruction)
 
-    const malformed = serializeXrMotionReferencePlan(afterRecovery.plan) as Record<string, unknown>
+    const malformed = serializeXrMotionReferencePlan(beforeRejectedEdits.plan) as Record<string, unknown>
     const subjects = malformed.subjects as Array<Record<string, unknown>>
-    subjects[0].construction = { ...afterRecovery.plan.subjects[0].construction, proceduralAssetDocument: '{invalid' }
-    assert.throws(() => hydrateXrMotionReferenceRuntime({ sceneKey: afterRecovery.sceneKey, nodes: [], persistedValue: malformed }), XrSubjectConstructionError)
-    assert.equal(readXrMotionReferenceRuntime(), afterRecovery, 'Malformed construction rejects before replacing runtime state')
+    subjects[0].construction = { ...beforeRejectedEdits.plan.subjects[0].construction, proceduralAssetDocument: '{invalid' }
+    assert.throws(() => hydrateXrMotionReferenceRuntime({ sceneKey: beforeRejectedEdits.sceneKey, nodes: [], persistedValue: malformed }), XrSubjectConstructionError)
+    assert.equal(readXrMotionReferenceRuntime(), beforeRejectedEdits, 'Malformed construction rejects before replacing runtime state')
 
   } finally {
     await unmountReactRoot(root)

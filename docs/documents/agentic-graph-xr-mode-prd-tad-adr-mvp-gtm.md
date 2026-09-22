@@ -543,7 +543,7 @@ Use affected model/rig, Timeline, serialization, lifecycle and GLB reimport chec
 selected owner checks and desktop/mobile browser journey. Preserve image regressions. The historical
 `npm run xr-mode:runtime-ready` E1-E4 gate remains required for its coverage, not proof of new criteria.
 Record exact candidate, command, result, evaluator, surface and evidence for each satisfied row.
-All 17 authoring criteria remain open here. S1 source now adapts native construction/controls to selected subjects; checks await the exact dependency installation. See the historical companion’s S1 checkpoint for implemented boundaries and remaining proof.
+All 17 authoring criteria remain open here. S1 source adapts native construction/controls to selected subjects; the exact installed source has passed its two registered focused cases. Its visual part inspector continuation edits the same recipe/session, preserves control bounds and source fencing, and adds no module or checkout. See the historical companion’s S1 checkpoints for scoped budgets, implemented boundaries and required proof; no full browser/export acceptance is claimed.
 Core Functionality, Innovation, Technical Integration and Agentic Usefulness remain unassessed.
 
 <a id="gtm--reference-implementation"></a>

@@ -3,11 +3,35 @@ import { ProceduralAssetSession } from '@/features/image-to-glb/proceduralAssetS
 import { createProceduralAssetFromText, PROCEDURAL_ASSET_TEXT_SUBJECTS } from '@/features/image-to-glb/proceduralAssetTextRecipe'
 import { resolveXrSubjectFootprint } from './xrMotionReferenceSubjectPlacement'
 import assert from 'node:assert/strict'
-import { captureXrSubjectDraftContext, isXrSubjectDraftCurrent, XR_SUBJECT_GROUND_EPSILON_METERS, XrSubjectConstructionError } from './xrSubjectAuthoring'
+import { captureXrSubjectDraftContext, isXrSubjectDraftCurrent, readXrSubjectPart, editXrSubjectPart, XR_SUBJECT_GROUND_EPSILON_METERS, XrSubjectConstructionError } from './xrSubjectAuthoring'
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from './xrMotionReferenceModel'
 import type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
 
 export function testXrSubjectDraftBindsDocumentPlanAndSelectionWithoutTransport() {
+  const recipe = createProceduralAssetFromText('blue robot', 17), original = JSON.stringify(recipe)
+  const patch = { size: [1.7, 1.2, 0.9] as [number, number, number], color: '#123456', visible: false }
+  const edited = editXrSubjectPart(recipe, 'body', patch), projected = readXrSubjectPart(edited, 'body')
+  assert.deepEqual(projected.size, patch.size); assert.equal(projected.color, patch.color); assert.equal(projected.visible, false)
+  assert.deepEqual(edited.values, { ...recipe.values, width: 1.7, height: 1.2, depth: 0.9, color: '#123456', visible: false })
+  assert.deepEqual(edited.parts, recipe.parts, 'Keep controlled base parts')
+  assert.deepEqual(edited.controls, recipe.controls, 'Keep defaults and bounds')
+  assert.deepEqual(edited.clips, recipe.clips); assert.equal(edited.seed, 17)
+  assert.deepEqual(editXrSubjectPart(recipe, 'body', patch), edited)
+  projected.size[0] = 4; assert.equal(readXrSubjectPart(edited, 'body').size[0], 1.7)
+  const armPatch = { parentId: 'head', primitive: 'cylinder' as const, position: [1, 2, 3] as [number, number, number],
+    rotation: [0, Math.PI / 2, 0] as [number, number, number], pivot: [0, 0.2, 0] as [number, number, number] }
+  const reparented = editXrSubjectPart(edited, 'arm-left', armPatch)
+  assert.deepEqual(readXrSubjectPart(reparented, 'arm-left'), { ...readXrSubjectPart(edited, 'arm-left'), ...armPatch })
+  assert.deepEqual(reparented.values, edited.values); assert.deepEqual(reparented.clips, recipe.clips)
+  assert.deepEqual(reparented.parts.filter(part => part.id !== 'arm-left'), edited.parts.filter(part => part.id !== 'arm-left'))
+  for (const invalid of [{ parentId: 'head' }, { parentId: 'missing' }, { size: [6, 1, 1] },
+    { position: [NaN, 0, 0] }, { rotation: [Infinity, 0, 0] }, { primitive: 'custom' }, { id: 'renamed' }, { unknown: true }]) {
+    assert.throws(() => editXrSubjectPart(recipe, 'body', invalid as Parameters<typeof editXrSubjectPart>[2]))
+  }
+  assert.throws(() => readXrSubjectPart(recipe, 'missing'), /missing/)
+  assert.throws(() => editXrSubjectPart(recipe, 'missing', {}), /missing/)
+  assert.equal(JSON.stringify(recipe), original, 'Success and rejection leave the original recipe immutable')
+
   const plan = readXrMotionReferencePlan({ subjects: [{ id: 'same-subject', assetId: 'prop-crate', label: 'Crate' }] })
   const runtime: XrMotionReferenceRuntimeSnapshot = { sceneKey: 'scene-a', sourceSignature: 'source-a', plan,
     selectedActorId: '', selectedShotTargetId: 'same-subject', selectedCameraRig: 'dolly', selectedMark: null,

@@ -1,6 +1,43 @@
 import * as THREE from 'three'
 import { ProceduralAssetSession } from '@/features/image-to-glb/proceduralAssetSession'
+import { parseProceduralAssetRecipe, updateProceduralAssetControl, type AssetPart, type ProceduralAssetRecipe } from '@/features/image-to-glb/proceduralAssetContract'
 import type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
+
+/** Editable projection with native control values applied. */
+export function readXrSubjectPart(recipe: ProceduralAssetRecipe, partId: string): AssetPart {
+  const source = parseProceduralAssetRecipe(recipe), part = source.parts.find(item => item.id === partId)
+  if (!part) throw new Error('Procedural asset: missing subject part')
+  for (const control of source.controls.filter(item => item.partId === partId)) {
+    const axis = ['width', 'height', 'depth'].indexOf(control.target), value = source.values[control.id]
+    if (axis >= 0) part.size[axis] = value as number
+    else if (control.target === 'color') part.color = value as string
+    else if (control.target === 'visible') part.visible = value as boolean
+  }
+  return part
+}
+
+export function editXrSubjectPart(recipe: ProceduralAssetRecipe, partId: string, patch: Partial<Omit<AssetPart, 'id'>>): ProceduralAssetRecipe {
+  const source = parseProceduralAssetRecipe(recipe), index = source.parts.findIndex(item => item.id === partId)
+  if (index < 0) throw new Error('Procedural asset: missing subject part')
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch) || Reflect.ownKeys(patch).some(key =>
+    !['parentId', 'primitive', 'position', 'rotation', 'size', 'pivot', 'color', 'visible'].includes(String(key)))) throw new Error('Procedural asset: unsupported part patch field')
+  let next = parseProceduralAssetRecipe({ ...source, parts: source.parts.map((part, i) => i === index ? { ...part, ...patch } : part) })
+  const edited = next.parts[index], original = source.parts[index]
+  for (const control of source.controls.filter(item => item.partId === partId)) {
+    const axis = ['width', 'height', 'depth'].indexOf(control.target)
+    if (axis >= 0 && Object.hasOwn(patch, 'size')) {
+      next = updateProceduralAssetControl(next, control.id, edited.size[axis])
+      next.parts[index].size[axis] = original.size[axis]
+    } else if (control.target === 'color' && Object.hasOwn(patch, 'color')) {
+      next = updateProceduralAssetControl(next, control.id, edited.color)
+      next.parts[index].color = original.color
+    } else if (control.target === 'visible' && Object.hasOwn(patch, 'visible')) {
+      next = updateProceduralAssetControl(next, control.id, edited.visible)
+      next.parts[index].visible = original.visible
+    }
+  }
+  return parseProceduralAssetRecipe(next)
+}
 
 export type XrSubjectDraftContext = Readonly<{
   documentName: string
