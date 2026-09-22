@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { summarizeDesignTokens } from '@/features/design/designTokenSummary'
+import { DESIGN_SCAN_LIMITS, summarizeDesignTokens } from '@/features/design/designTokenSummary'
 import type { GraphData } from '@/lib/graph/types'
 
 const makeGraph = (): GraphData => ({
@@ -141,6 +141,24 @@ export async function testDesignContextBoundsAndInvalidation() {
   assert.ok(bounded.observations.length <= 256)
   assert.equal(bounded.totalProperties, null)
   assert.equal(bounded.truncated, true)
+  for (const rejectedBy of ['path', 'depth'] as const) {
+    let reads = 0
+    const siblings: Record<string, unknown> = {}
+    for (let i = 0; i <= DESIGN_SCAN_LIMITS.properties; i++) {
+      const key = rejectedBy === 'path' ? `${'x'.repeat(257)}${i}` : `field${i}`
+      Object.defineProperty(siblings, key, { enumerable: true, get: () => { reads++; return 1 } })
+    }
+    Object.defineProperty(siblings, 'afterBudget', { enumerable: true,
+      get: () => { throw new Error(`${rejectedBy}: read a sibling after the property budget`) } })
+    let properties: Record<string, unknown> = siblings
+    if (rejectedBy === 'depth') for (let i = 0; i < DESIGN_SCAN_LIMITS.depth; i++) properties = { nested: properties }
+    const rejected = summarizeDesignTokens({ graphData: {
+      type: 'Graph', nodes: [{ id: rejectedBy, properties }], edges: [],
+    } as GraphData })
+    assert.ok(reads > 0 && reads < DESIGN_SCAN_LIMITS.properties, `${rejectedBy}: sibling reads are bounded`)
+    assert.equal(rejected.visitedProperties, DESIGN_SCAN_LIMITS.properties)
+    assert.equal(rejected.truncated, true)
+  }
   const cyclic: Record<string, unknown> = {}; cyclic.self = cyclic
   const cycle = summarizeDesignTokens({ graphData: { type: 'Graph', nodes: [{ id: 'cycle', properties: cyclic }], edges: [] } as GraphData })
   assert.equal(cycle.truncated, true)
