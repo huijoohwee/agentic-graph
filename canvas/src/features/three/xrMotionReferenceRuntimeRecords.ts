@@ -26,6 +26,7 @@ export function xrMotionReferenceCastTrackRecord(track: XrMotionReferencePlan['c
       position: [...mark.position],
       transition: mark.transition,
       gait: mark.gait,
+      ...(mark.cue ? { cue: mark.cue } : {}),
     })),
   }
 }

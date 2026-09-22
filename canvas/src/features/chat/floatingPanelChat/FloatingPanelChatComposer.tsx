@@ -1,3 +1,4 @@
+import { buildAgenticOsInvocationSourceTitle } from '@/features/agentic-os/agenticOsDocInvocations'
 import React from 'react'
 import { collectMarkdownVariableBrowseRows, buildMarkdownVariableToken } from '@/features/markdown/ui/markdownVariableReferences'
 import {
@@ -126,6 +127,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
       label: entry.token,
       group: entry.group,
       description: entry.summary,
+      title: buildAgenticOsInvocationSourceTitle(entry),
       keywords: [entry.label, entry.sourcePath || '', ...entry.keywords].filter(Boolean),
       onSelect: () => applyReplacement(`${entry.token} `),
     }))
@@ -186,6 +188,7 @@ export function FloatingPanelChatComposer(props: FloatingPanelChatComposerProps)
       label: entry.token,
       group: entry.group,
       description: entry.summary,
+      title: buildAgenticOsInvocationSourceTitle(entry),
       keywords: [entry.label, entry.sourcePath || '', ...entry.keywords].filter(Boolean),
       onSelect: () => applyReplacement(resolveChatInvocationCatalogEntryInsertionText(entry)),
     }))

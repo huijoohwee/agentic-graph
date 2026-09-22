@@ -11,6 +11,8 @@ const cleanId = (value: unknown): string => String(value || '').trim()
 
 export function readBoundXrSelectedActorId(): string {
   const runtime = readXrMotionReferenceRuntime()
+  const target = resolveXrShotTarget(runtime.plan, runtime.selectedShotTargetId)
+  if (target?.kind === 'object' && !target.castActorId && !runtime.plan.subjects.some(subject => subject.id === target.id)) return ''
   const selectedNodeId = cleanId(useGraphStore.getState().selectedNodeId)
   if (selectedNodeId && runtime.plan.cast.some(track => track.actorId === selectedNodeId)) return selectedNodeId
   const selectedShotTargetId = cleanId(runtime.selectedShotTargetId)

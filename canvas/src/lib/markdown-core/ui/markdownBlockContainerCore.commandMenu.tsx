@@ -1,3 +1,4 @@
+import { buildAgenticOsInvocationChipTitle, readAgenticOsInvocationTokenKind } from '@/features/agentic-os/agenticOsInvocationChips'
 import React from 'react'
 import { Search } from 'lucide-react'
 import { preventDefaultMouseDown } from '@/lib/markdown-core/ui/markdownInlineSelectionToolbarInteractions'
@@ -14,6 +15,7 @@ export type MarkdownInlineCommandMenuItem = {
   label: string
   group: string
   description?: string
+  title?: string
   keywords?: string[]
   thumbnailUrl?: string
   thumbnailKind?: InlineMediaKind
@@ -172,6 +174,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
                   type="button"
                   className={`${className} ${selected ? 'bg-black/5 dark:bg-white/10' : ''}`}
                   disabled={item.disabled}
+                  title={item.title || (readAgenticOsInvocationTokenKind(item.label) ? buildAgenticOsInvocationChipTitle(item.label) : [item.label, item.description].filter(Boolean).join("\n"))}
                   role="option"
                   aria-selected={selected}
                   data-kg-inline-command-menu-item="1"

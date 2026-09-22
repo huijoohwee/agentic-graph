@@ -314,8 +314,10 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   }
   for (const marker of [
     'readBoundXrSelectedActorId()',
-    'inspectLocalXrSceneAssets()',
-    'inspectLocalAnimation()',
+    'readXrSceneDocumentReady()',
+    'readXrNativeControllerDemo()',
+    'XR_SCENE_WEB_MCP_TOOL_IDS.control',
+    'XR_ANIMATION_WEB_MCP_TOOL_IDS.control',
     'buildMotionControlXrControllerInvocation(controller)',
   ]) {
     if (!targetRuntimeSource.includes(marker)) throw new Error(`expected centralized Motion Control target ownership marker ${marker}`)

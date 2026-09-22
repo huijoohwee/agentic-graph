@@ -146,11 +146,20 @@ export const findAgenticOsInvocationByToken = (token: string): AgenticOsResolved
   return value ? invocationCatalogRuntime.findByToken(value) : null
 }
 
-export const buildAgenticOsInvocationSourceTitle = (invocation: AgenticOsResolvedInvocation): string => (
+export const buildAgenticOsInvocationSourceTitle = (invocation: {
+  token: string; label: string; summary?: string; sourcePath?: string
+  mcpTool?: string; mcpTools?: readonly string[]; insertionText?: string
+  semantics?: readonly string[]; bindings?: readonly string[]
+}): string => (
   [
     `${invocation.token} - ${invocation.label}`,
     invocation.summary,
-    `Source: ${invocation.sourcePath}`,
+    invocation.insertionText && invocation.insertionText !== invocation.token ? `Invocation: ${invocation.insertionText}` : '',
+    [...new Set([invocation.mcpTool, ...(invocation.mcpTools || [])].filter(Boolean))].length
+      ? `MCP / WebMCP: ${[...new Set([invocation.mcpTool, ...(invocation.mcpTools || [])].filter(Boolean))].join(', ')}` : '',
+    invocation.semantics?.length ? `Semantics: ${invocation.semantics.join(' ')}` : '',
+    invocation.bindings?.length ? `Bindings: ${invocation.bindings.join(' ')}` : '',
+    `Source: ${invocation.sourcePath || 'Authored invocation; no catalog definition available'}`,
   ].filter(Boolean).join('\n')
 )
 

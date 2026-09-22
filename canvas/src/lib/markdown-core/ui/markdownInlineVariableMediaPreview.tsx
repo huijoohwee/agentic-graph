@@ -1,8 +1,13 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { matchesMarkdownDocumentPath } from 'grph-shared/markdown/documentPath'
+import { getMarkdownXrVariableTarget, getMarkdownXrVariableLabel, getMarkdownXrVariableInvocations } from '@/features/markdown/ui/markdownXrVariableInvocations'
+import { MarkdownVariableInvocationChip } from './MarkdownVariableInvocationChip'
 import {
   buildMarkdownVariableSsotAnchorId,
   collectMarkdownVariableBrowseRows,
   collectMarkdownVariableSsotEntries,
+  parseMarkdownVariableTokens,
 } from '@/features/markdown/ui/markdownVariableReferences'
 import { DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME } from '@/features/markdown/ui/dataViewChipStyles'
 import type { InlineRenderOpts, MarkdownVariablePreview } from '@/features/markdown/ui/MarkdownRendererTypes'
@@ -18,17 +23,48 @@ import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 
 const normalizePreviewKey = (key: string): string => String(key || '').trim().toLowerCase()
 
-export const buildMarkdownVariablePreviewByKey = (sourceMarkdownText: string): Record<string, MarkdownVariablePreview> => {
+export const buildMarkdownVariablePreviewByKey = (sourceMarkdownText: string, onInvoke?: (key: string, invocation: string) => Promise<void>): Record<string, MarkdownVariablePreview> => {
   const rows = collectMarkdownVariableBrowseRows({ sourceLines: String(sourceMarkdownText || '').split(/\r?\n/), draftText: '' })
   const ssotByKey = new Map(collectMarkdownVariableSsotEntries(sourceMarkdownText).map(entry => [normalizePreviewKey(entry.key), entry]))
   const out: Record<string, MarkdownVariablePreview> = {}
-  for (let i = 0; i < rows.length; i += 1) {
-    const row = rows[i]
+  for (const row of rows) {
     if (!row?.key) continue
     const ssot = ssotByKey.get(normalizePreviewKey(row.key))
     out[normalizePreviewKey(row.key)] = { value: row.value, source: row.source, line: ssot?.line ?? null }
   }
+  for (const [key, preview] of Object.entries(out)) {
+    const target = getMarkdownXrVariableTarget(out, key)
+    if (!target) continue
+    preview.displayValue = getMarkdownXrVariableLabel(target, preview.value)
+    preview.invocationTarget = target
+    if (onInvoke) preview.onInvoke = invocation => onInvoke(key, invocation)
+  }
   return out
+}
+
+export function useMarkdownVariablePreviewSource(source: string | undefined, editable: boolean, maxChars: number, activeDocumentPath = '') {
+  const latest = React.useRef({ source, editable, activeDocumentPath })
+  latest.current = { source, editable, activeDocumentPath }
+  const invoke = React.useCallback(async (key: string, invocation: string) => {
+    const requested = latest.current
+    try {
+      // Load the existing MCP/WebMCP controller only for an explicit user action.
+      const { controlLocalXrScene } = await import('@/features/three/xrSceneMcpRuntime')
+      const current = latest.current, state = useGraphStore.getState()
+      if (current.activeDocumentPath !== requested.activeDocumentPath
+        || !current.editable || !current.source || !current.activeDocumentPath || !state.markdownDocumentName
+        || !matchesMarkdownDocumentPath(current.activeDocumentPath, state.markdownDocumentName)) return
+      const target = buildMarkdownVariablePreviewByKey(current.source)[key]?.invocationTarget
+      if (!target || !getMarkdownXrVariableInvocations(target).some(item => item.invocation === invocation)) return
+      const result = controlLocalXrScene({ invocation })
+      if (!result.ok) state.pushUiToast({ id: 'markdown:xr:invoke', kind: 'error', message: result.message })
+    } catch {
+      useGraphStore.getState().pushUiToast({ id: 'markdown:xr:invoke', kind: 'error', message: 'The XR action could not be loaded or applied. Try again.' })
+    }
+  }, [])
+  return React.useMemo(() => !source || source.length > maxChars
+    ? { entries: [], previewByKey: {} }
+    : { entries: collectMarkdownVariableSsotEntries(source), previewByKey: buildMarkdownVariablePreviewByKey(source, editable ? invoke : undefined) }, [source, editable, maxChars, invoke])
 }
 
 function resolveVariableMediaPreview(
@@ -64,10 +100,31 @@ export function renderMarkdownVariableReferenceChip(args: {
   key: string
   raw: string
   opts: InlineRenderOpts
+  visited?: string[]
 }): React.ReactElement {
   const mediaPreview = resolveVariableMediaPreview(args.key, args.opts)
   const sourceText = readVariableSourceText(args.key, args.opts, mediaPreview)
   const atToken = `@${args.key}`
+  const token = parseMarkdownVariableTokens(args.raw)[0]
+  const value = args.opts.markdownVariablePreviewByKey?.[normalizePreviewKey(args.key)]?.value
+    ?? token?.declaredValue ?? token?.fallback
+  const preview = args.opts.markdownVariablePreviewByKey?.[normalizePreviewKey(args.key)]
+  if (preview?.invocationTarget) {
+    return <MarkdownVariableInvocationChip key={args.baseKey} variableKey={args.key} preview={preview} sourceText={sourceText} />
+  }
+  const visited = args.visited || []
+  const nested = value != null && visited.length < 8 && !visited.includes(args.key.toLowerCase()) ? parseMarkdownVariableTokens(value) : []
+  if (value != null && nested.length) {
+    const parts: React.ReactNode[] = []
+    let cursor = 0
+    for (const [index, reference] of nested.entries()) {
+      parts.push(value.slice(cursor, reference.start))
+      parts.push(renderMarkdownVariableReferenceChip({ baseKey: `${args.baseKey}:${index}`, key: reference.key, raw: reference.raw, opts: args.opts, visited: [...visited, args.key.toLowerCase()] }))
+      cursor = reference.end
+    }
+    parts.push(value.slice(cursor))
+    return <span key={args.baseKey} data-kg-var-rendered-value={args.key}>{parts}</span>
+  }
   return (
     <a
       key={args.baseKey}
@@ -85,7 +142,7 @@ export function renderMarkdownVariableReferenceChip(args: {
           <InlineMediaCommandThumbnail kind={mediaPreview.kind} thumbnailUrl={mediaPreview.thumbnailUrl} variant="inline" />
           <span className={CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_LABEL_CLASS_NAME}>{atToken}</span>
         </>
-      ) : renderMarkdownSigilInlineText(atToken, { keywordChipClassName: DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME })}
+      ) : value != null ? <span data-kg-var-rendered-value={args.key}>{value}</span> : renderMarkdownSigilInlineText(atToken, { keywordChipClassName: DATA_VIEW_INLINE_TEXT_CHIP_ROW_CLASSNAME })}
     </a>
   )
 }

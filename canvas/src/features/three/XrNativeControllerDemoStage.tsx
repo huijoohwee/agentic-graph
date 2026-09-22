@@ -1,3 +1,4 @@
+import { XrStageObjectSelection } from './XrStageObjectSelection'
 import { DEFAULT_XR_SCENE_APPEARANCE, xrSceneSunPosition, type XrSceneAppearance } from './xrSceneAppearance'
 import React from 'react'
 import { GameFpsSharedNpcHighlights } from '@/features/game-fps/GameFpsSharedNpcHighlights'
@@ -239,8 +240,8 @@ export function XrNativeControllerDemoStage({
         <XrNativeControllerAuthoredSubjects />
         <GameFpsSharedNpcHighlights />
         <group ref={playerRootRef} name="agentic_os_xr_native_controller_player">
-          <XrNativeControllerBallVisual rootRef={ballRootRef} />
-          <XrNativeControllerRocketVisual rootRef={rocketRootRef} flameRef={flameRef} />
+          <XrStageObjectSelection objectId="player"><XrNativeControllerBallVisual rootRef={ballRootRef} />
+          <XrNativeControllerRocketVisual rootRef={rocketRootRef} flameRef={flameRef} /></XrStageObjectSelection>
         </group>
         <XrNativeControllerDynamicProps registerBodyRef={registerBodyRef} />
       </group>

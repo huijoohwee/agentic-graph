@@ -72,3 +72,36 @@ export function shouldMountThreeRenderer(input: ThreeRendererMountInput): boolea
 export function resolveThreeRendererLifecycleKey(mode: Canvas3dModeId): string {
   return `scene-canvas-${mode}`
 }
+
+/** Pixel work follows sustained frame pressure; simulation and authored state remain untouched. */
+export function createThreeFrameResolutionBudget() {
+  let elapsed = 0, frames = 0, fastWindows = 0, ceiling = 0
+  let target: number | null = null
+  const reset = () => { elapsed = 0; frames = 0; fastWindows = 0; target = null; ceiling = 0 }
+  return {
+    sample(delta: number, current: number, maximum: number, eligible: boolean): number | null {
+      if (!eligible || !Number.isFinite(delta) || delta <= 0 || delta > 1
+        || !Number.isFinite(current) || current <= 0 || !Number.isFinite(maximum) || maximum <= 0) {
+        reset()
+        return null
+      }
+      if (maximum !== ceiling) { reset(); ceiling = maximum }
+      target ??= Math.min(current, maximum)
+      elapsed += delta
+      frames += 1
+      if (elapsed >= 1 && frames >= 8) {
+        const average = elapsed / frames
+        if (average > 1 / 30) {
+          target = Math.max(Math.min(0.5, maximum), Math.floor(target * 3) / 4)
+          fastWindows = 0
+        } else if (average < 0.018) {
+          if (++fastWindows >= 10) { target = Math.min(maximum, target + 0.25); fastWindows = 0 }
+        } else fastWindows = 0
+        elapsed = 0
+        frames = 0
+      }
+      // Canvas reconfiguration may restore its default DPR. Retain this renderer's budget.
+      return target === current ? null : target
+    },
+  }
+}

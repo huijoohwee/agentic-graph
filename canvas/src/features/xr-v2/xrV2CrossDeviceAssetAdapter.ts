@@ -17,7 +17,7 @@ import {
   encodeXrV2CrossDeviceFrameBundle,
   sha256XrV2CrossDeviceBytes,
 } from './xrV2CrossDeviceFrameBundleCodec'
-import { publishXrV2ManifestThroughExistingStorage } from './xrV2CrossDeviceExistingStorage'
+import { prepareXrV2ExistingStorage, publishXrV2ManifestThroughExistingStorage } from './xrV2CrossDeviceExistingStorage'
 import {
   isXrV2PublishedSpatialAsset,
   type XrV2PublishedSpatialAsset,
@@ -302,6 +302,7 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
     try {
       return await runLifecycle(config, input, async signal => {
         const scopedFetch = lifecycleFetch(needFetch(), signal)
+        const preparedStorage = dependencies.publishManifest ? undefined : prepareXrV2ExistingStorage(signal)
         const local = await localPublishParts(input)
         if (local.raw.size < 1 || local.raw.size > config.maxPartBytes) {
           throw new XrV2CrossDeviceAssetError('integrity-failed', 'Local XR raw clip is outside the admitted byte bound')
@@ -366,7 +367,8 @@ export function createXrV2CrossDeviceAssetAdapter(options: Readonly<{
           if (!receipt) return deferred('blob-upload-unconfirmed', paths.manifestCanonicalPath)
           validateUpload(receipt, framePart, config)
         }
-        const publishManifest = dependencies.publishManifest || publishXrV2ManifestThroughExistingStorage
+        const publishManifest: NonNullable<XrV2CrossDeviceAssetAdapterDependencies['publishManifest']> =
+          dependencies.publishManifest || (args => publishXrV2ManifestThroughExistingStorage({ ...args, preparedStorage, signal }))
         signal.throwIfAborted()
         const receipt = await publishManifest({
           workspacePath: paths.manifestWorkspacePath,

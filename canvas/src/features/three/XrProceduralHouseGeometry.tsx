@@ -1,4 +1,5 @@
 import React from 'react'
+import { DoubleSide } from 'three'
 
 type PropSize = readonly [number, number, number]
 const UPRIGHT: [number, number, number] = [Math.PI / 2, 0, 0]
@@ -73,11 +74,11 @@ function StickHouse({ color, size }: { color: string; size: PropSize }) {
           depth * 0.72,
         ))
       ))}
-      <mesh position={[0, 0, height * 0.78]} rotation={[0.42, 0, 0]} castShadow>
+      <mesh position={[0, depth * 0.22, height * 0.78]} rotation={[-0.52, 0, 0]} castShadow>
         <boxGeometry args={[width * 0.98, depth * 0.58, height * 0.08]} />
         <Wall color={bark} roughness={0.88} />
       </mesh>
-      <mesh position={[0, 0, height * 0.78]} rotation={[-0.42, 0, 0]} castShadow>
+      <mesh position={[0, -depth * 0.22, height * 0.78]} rotation={[0.52, 0, 0]} castShadow>
         <boxGeometry args={[width * 0.98, depth * 0.58, height * 0.08]} />
         <Wall color={timber} roughness={0.86} />
       </mesh>
@@ -156,8 +157,8 @@ function SoupPot({ color, size }: { color: string; size: PropSize }) {
   return (
     <group name="agentic_os_xr_procedural_soup_pot">
       <mesh position={[0, 0, radius * 0.72]} rotation={UPRIGHT} castShadow receiveShadow>
-        <cylinderGeometry args={[radius, radius * 0.82, radius * 1.15, 16]} />
-        <Wall color={color} roughness={0.42} metalness={0.28} />
+        <cylinderGeometry args={[radius, radius * 0.82, radius * 1.15, 16, 1, true]} />
+        <meshStandardMaterial color={color} side={DoubleSide} roughness={0.42} metalness={0.28} />
       </mesh>
       <mesh position={[0, 0, radius * 1.28]} rotation={[0, 0, 0]}>
         <torusGeometry args={[radius * 0.92, radius * 0.08, 8, 20]} />
@@ -167,6 +168,7 @@ function SoupPot({ color, size }: { color: string; size: PropSize }) {
         <cylinderGeometry args={[radius * 0.78, radius * 0.78, radius * 0.08, 16]} />
         <meshStandardMaterial color="#f59e0b" emissive="#b45309" emissiveIntensity={0.45} roughness={0.35} />
       </mesh>
+      {[-1, 1].map(side => <mesh key={side} position={[side * radius * 1.05, 0, radius * 0.85]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[radius * 0.26, radius * 0.07, 6, 12]} /><Wall color={color} metalness={0.3} /></mesh>)}
       <pointLight color="#fbbf24" intensity={1.4} distance={2.8} position={[0, 0, radius * 1.4]} />
     </group>
   )

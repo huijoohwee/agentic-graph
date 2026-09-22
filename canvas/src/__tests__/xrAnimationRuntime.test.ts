@@ -339,6 +339,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
 
     const panelSource = readSource('features', 'three', 'XrAnimationFloatingPanelView.tsx')
     const timelineSource = readSource('features', 'three', 'XrCameraMotionSection.tsx')
+    + readSource('features', 'three', 'XrTimelineSceneStageControls.tsx')
     const retimeSource = readSource('features', 'three', 'CameraMotionMarkRetime.tsx')
     const inspectorSource = readSource('features', 'three', 'XrChoreographyInspector.tsx')
     const choreographyControlsSource = readSource('features', 'three', 'XrChoreographyMarkControls.tsx')
@@ -366,24 +367,21 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
       if (!panelSource.includes(marker)) throw new Error(`expected FloatingPanel Animation to project the shared choreography runtime through ${marker}`)
     }
     for (const forbidden of ["operation: 'configure-mark'", 'position: update.position', 'onChange={configureMark}']) {
-      if (panelSource.includes(forbidden)) throw new Error(`expected FloatingPanel Animation to defer mark parameter editing to Timeline, found ${forbidden}`)
+      if (panelSource.includes(forbidden)) throw new Error(`expected FloatingPanel Animation to delegate mark editing to its choreography owner, found ${forbidden}`)
     }
     for (const marker of ['data-kg-xr-timeline-shot-target="scene-clip"', 'aria-label="XR timeline scene or 3D object shot target"', 'data-kg-xr-timeline-playhead-control="scene-clip"', 'aria-label="XR timeline playhead seconds"', "controlLocalAnimation({ operation: 'scrub'"]) {
       if (!timelineSource.includes(marker)) throw new Error(`expected BottomPanel Timeline to own shared animation control ${marker}`)
     }
-    for (const marker of ['data-kg-xr-mark-animation-presets="click-appear"', 'data-kg-xr-mark-animation-preset-select={selectedCastMark.id}', '<PanelSelect', '<option key={preset.id} value={preset.id}>', 'XR_ANIMATION_PRESETS.filter(preset => xrAnimationPresetCompatible', 'applyXrTimelineCastAnimationPreset', 'event.currentTarget.value']) {
-      if (!retimeSource.includes(marker)) throw new Error(`expected BottomPanel Timeline click-appear mark controls to expose XR animation presets through ${marker}`)
-    }
-    if (retimeSource.includes('data-kg-xr-mark-animation-preset={preset.id}')) {
-      throw new Error('expected BottomPanel Timeline click-appear mark controls to expose XR animation presets as a dropdown')
+    if (!retimeSource.includes('data-kg-xr-animation-editor-link="individual-lane"') || !retimeSource.includes('<XrChoreographyMarkControls')) {
+      throw new Error('expected Timeline to own mark controls and link to Animation presets')
     }
     for (const duplicate of ['data-kg-animation-runtime-controls="shared-xr"', 'aria-label="Animation cast target"', 'aria-label="Animation playhead seconds"']) {
       if (panelSource.includes(duplicate)) throw new Error(`expected FloatingPanel Animation to remove duplicate Timeline control ${duplicate}`)
     }
-    for (const marker of ['data-kg-xr-choreography-inspector="shared-runtime"', 'One mark model for cast and camera · Timeline owns time', 'resolveXrChoreographySpeedWarnings', 'floatingPanelCatalogThreeRowClassName', 'floatingPanelCatalogThreeRowThumbnailFrameClassName', 'data-kg-xr-choreography-card={target}', 'data-kg-xr-choreography-card-layout={FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT}', 'data-kg-xr-choreography-card-row="controls"', 'data-kg-xr-choreography-card-row="invocation"', 'data-kg-xr-choreography-invocation={target}', 'projectedCastInvocation', 'projectedCameraInvocation', 'data-kg-xr-choreography-runtime-ready', 'MCP · / @ # ready', 'renderMarkdownSigilInlineText', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'renderMarkdownSigilInlineText(invocation,', 'BottomPanel Timeline', 'data-kg-xr-mark-parameter-chips={target}', 'data-kg-xr-mark-parameter-chip-renderer="shared-markdown-sigil"', 'data-kg-xr-choreography-selection-owner="timeline-cast"', 'data-kg-xr-choreography-selection-owner="timeline-camera"', 'Select marks in the']) {
+    for (const marker of ['data-kg-xr-choreography-inspector="shared-runtime"', 'One mark model · Configure selected marks in Timeline', 'resolveXrChoreographySpeedWarnings', 'floatingPanelCatalogThreeRowClassName', 'floatingPanelCatalogThreeRowThumbnailFrameClassName', 'data-kg-xr-choreography-card={target}', 'data-kg-xr-choreography-card-layout={FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT}', 'data-kg-xr-choreography-card-row="controls"', 'data-kg-xr-choreography-card-row="invocation"', 'data-kg-xr-choreography-invocation={target}', 'projectedCastInvocation', 'projectedCameraInvocation', 'data-kg-xr-choreography-runtime-ready', 'MCP · / @ # ready', 'renderMarkdownSigilInlineText', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'renderMarkdownSigilInlineText(invocation,', 'data-kg-xr-mark-parameter-chips={target}', 'data-kg-xr-mark-parameter-chip-renderer="shared-markdown-sigil"', 'selectXrMotionReferenceCastMark', 'selectXrMotionReferenceCameraMark']) {
       if (!inspectorSource.includes(marker)) throw new Error(`expected Animation choreography inspection to expose ${marker}`)
     }
-    for (const forbidden of ['<XrChoreographyMarkControls', 'MarkParameterChips', 'data-kg-xr-mark-parameter-sigil', 'selectXrMotionReferenceCastMark', 'selectXrMotionReferenceCameraMark', 'aria-label={`Select ${track.label} mark']) {
+    for (const forbidden of ['MarkParameterChips', 'data-kg-xr-mark-parameter-sigil']) {
       if (inspectorSource.includes(forbidden)) throw new Error(`expected FloatingPanel choreography cards to avoid bespoke, duplicate mark controls or selectors, found ${forbidden}`)
     }
     for (const marker of ['data-kg-xr-mark-easing', 'data-kg-xr-mark-gait', 'data-kg-xr-mark-position', 'data-kg-xr-mark-position-axis', "min={axis === 'Y' ? 0 : -XR_MOTION_REFERENCE_MAX_COORDINATE_METERS}", 'max={XR_MOTION_REFERENCE_MAX_COORDINATE_METERS}', 'Mark position · meters', 'XR_CHOREOGRAPHY_EASINGS', 'XR_CHOREOGRAPHY_GAITS', 'showPosition', 'data-kg-xr-mark-position-layout="compact-timeline"', 'XYZ m']) {

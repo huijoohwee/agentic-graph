@@ -293,7 +293,6 @@ export function selectXrMotionReferenceActor(actorId: string): XrMotionReference
     : snapshot.selectedMark
   return publish({ ...snapshot, selectedActorId: normalized, selectedShotTargetId: normalized, selectedMark })
 }
-
 export function selectXrMotionReferenceShotTarget(targetIdValue: string): XrMotionReferenceRuntimeSnapshot {
   const targetId = String(targetIdValue || '').trim()
   if (!resolveXrShotTarget(snapshot.plan, targetId) || targetId === snapshot.selectedShotTargetId) return snapshot
@@ -301,9 +300,9 @@ export function selectXrMotionReferenceShotTarget(targetIdValue: string): XrMoti
     && snapshot.plan.camera.some(mark => mark.id === snapshot.selectedMark?.markId && mark.anchorId === targetId)
     ? snapshot.selectedMark
     : null
-  return publish({ ...snapshot, selectedShotTargetId: targetId, selectedMark })
+  return publish({ ...snapshot, selectedShotTargetId: targetId, selectedMark,
+    selectedActorId: snapshot.plan.cast.some(track => track.actorId === targetId) ? targetId : '', castMarkArmed: false })
 }
-
 export function ensureXrMotionReferenceCastTrackForSubject(subjectIdValue: string): XrMotionReferenceRuntimeSnapshot {
   const subjectId = String(subjectIdValue || '').trim()
   const subject = snapshot.plan.subjects.find(candidate => candidate.id === subjectId)
@@ -361,7 +360,7 @@ export function selectXrMotionReferenceCameraMark(markIdValue: string): XrMotion
   if (snapshot.selectedMark?.kind === 'camera'
     && snapshot.selectedMark.markId === markId
     && snapshot.selectedShotTargetId === selectedShotTargetId) return snapshot
-  return publish({ ...snapshot, selectedShotTargetId, selectedMark: Object.freeze({ kind: 'camera', markId }) })
+  return publish({ ...snapshot, selectedShotTargetId, selectedActorId: snapshot.plan.cast.some(track => track.actorId === selectedShotTargetId) ? selectedShotTargetId : '', selectedMark: Object.freeze({ kind: 'camera', markId }) })
 }
 
 export function setXrMotionReferenceCameraRig(rig: XrMotionReferenceCameraRig): XrMotionReferenceRuntimeSnapshot {
@@ -472,7 +471,8 @@ export function clearXrMotionReferenceCastAnimation(actorIdValue: string): XrMot
     plan: snapshot.plan,
     playheadSeconds: snapshot.playheadSeconds,
   })
-  return edit ? updatePlan(edit, undefined, spatialPlanGuard([actorId])) : snapshot
+  // Stop at the current pose even when a changed stage now overlaps it. Clearing creates no movement.
+  return edit ? updatePlan(edit) : snapshot
 }
 
 export function removeXrMotionReferenceCastMark(actorIdValue: string, markId: string): XrMotionReferenceRuntimeSnapshot {
@@ -485,7 +485,7 @@ export function removeXrMotionReferenceCastMark(actorIdValue: string, markId: st
     animation: track.actorId === actorId && track.animation?.kind === 'action-path' ? null : track.animation,
     marks: track.marks
       .filter(mark => track.actorId !== actorId || mark.id !== markId)
-      .map(mark => ({ timeSeconds: mark.timeSeconds, position: [...mark.position], transition: mark.transition, gait: mark.gait })),
+      .map(mark => ({ ...mark, position: [...mark.position] })),
   }))
   return updatePlan({ ...plan, cast }, undefined, spatialPlanGuard([actorId]))
 }
@@ -507,10 +507,9 @@ export function retimeXrMotionReferenceCastMark(
     ...castTrackRecord(track),
     animation: track.actorId === actorId && track.animation?.kind === 'action-path' ? null : track.animation,
     marks: track.marks.map(mark => ({
+      ...mark,
       timeSeconds: track.actorId === actorId && mark.id === markId ? timeSeconds : mark.timeSeconds,
       position: [...mark.position],
-      transition: mark.transition,
-      gait: mark.gait,
     })),
   }))
   return updatePlan(
@@ -548,14 +547,7 @@ export function removeXrMotionReferenceCameraMark(markId: string): XrMotionRefer
   const plan = planRecord(snapshot.plan)
   const camera = snapshot.plan.camera
     .filter(mark => mark.id !== markId)
-    .map(mark => ({
-      timeSeconds: mark.timeSeconds,
-      anchorId: mark.anchorId,
-      moveId: mark.moveId,
-      rig: mark.rig,
-      easing: mark.easing,
-      settings: { ...mark.settings },
-    }))
+    .map(mark => ({ ...mark, settings: { ...mark.settings } }))
   return updatePlan({ ...plan, camera })
 }
 
@@ -565,11 +557,8 @@ export function retimeXrMotionReferenceCameraMark(markId: string, timeSeconds: n
   const targetTimeSeconds = Math.min(snapshot.plan.durationSeconds, Math.max(0, Number(timeSeconds) || 0))
   const plan = planRecord(snapshot.plan)
   const camera = snapshot.plan.camera.map(mark => ({
+    ...mark,
     timeSeconds: mark.id === markId ? timeSeconds : mark.timeSeconds,
-    anchorId: mark.anchorId,
-    moveId: mark.moveId,
-    rig: mark.rig,
-    easing: mark.easing,
     settings: { ...mark.settings },
   }))
   return updatePlan({ ...plan, camera }, preserveSelection ? nextPlan => resolveRetimedCameraMarkSelection(nextPlan, targetTimeSeconds) : undefined)

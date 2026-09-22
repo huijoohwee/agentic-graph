@@ -3,30 +3,8 @@ import { useFrame } from '@react-three/fiber'
 import { DoubleSide, type Group } from 'three'
 import { readSharedXrNativeControllerDemoFrame } from './xrNativeControllerDemoRuntime'
 
-const PALMS = [
-  [-8.8, -8.8, 1.25, -0.08],
-  [7.5, -9, 1.05, 0.1],
-  [11.2, -6.6, 1.18, -0.1],
-  [-12.1, 3.6, 0.95, 0.14],
-  [12.2, 3.3, 0.88, -0.12],
-  [-10.4, -4.2, 0.82, 0.09],
-  [9.6, 6.1, 0.78, -0.07],
-  [-5.6, 8.4, 0.7, 0.11],
-  [4.8, 8.8, 0.66, -0.09],
-  [-3.2, -9.6, 0.92, 0.05],
-  [1.4, -10.2, 0.74, -0.06],
-  [13.1, -1.8, 0.8, 0.08],
-] as const
-
-const ROCKS = [
-  [-6.8, 1.25, -9.5, 3.1, 1.8, 1.4, '#66747a'],
-  [0, 1.35, -10, 4.3, 2.1, 1.25, '#66747a'],
-  [6.4, 1.2, -9.6, 2.4, 1.8, 1.5, '#66747a'],
-  [11.8, 0.8, -1.5, 1.45, 1.1, 1.25, '#77817c'],
-  [-12.3, 0.7, -1.2, 1.2, 1, 1.4, '#77817c'],
-  [-9.4, 0.42, 8.8, 1.05, 0.62, 0.88, '#7d8680'],
-  [8.6, 0.38, 9.4, 0.92, 0.55, 0.78, '#7d8680'],
-] as const
+import { XR_PLAYGROUND_PALMS as PALMS, XR_PLAYGROUND_ROCKS as ROCKS, XR_PLAYGROUND_OBJECTS } from './xrSceneLibrary'
+import { XrStageObjectSelection } from './XrStageObjectSelection'
 
 export function XrPlaygroundPalm({
   position,
@@ -267,23 +245,23 @@ function DisplayChest() {
 export function XrTropicalPlaygroundLandmarks({ displayChest = false }: { displayChest?: boolean }) {
   return (
     <group name="agentic_os_xr_tropical_playground_landmarks">
-      <Fence />
-      <Ramp />
-      <SkullGrotto />
-      <XrPlaygroundCannon position={[1.6, 0, -6.25]} />
-      <XrPlaygroundCannon position={[4.15, 0, -6.25]} />
-      <Skeleton />
-      <MovingHazards />
-      {PALMS.map(([x, z, scale, lean]) => (
-        <XrPlaygroundPalm key={`${x}:${z}`} position={[x, 0, z]} scale={scale} lean={lean} />
+      <XrStageObjectSelection objectId="fence"><Fence /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="ramp"><Ramp /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="grotto"><SkullGrotto /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="cannon-left"><XrPlaygroundCannon position={[...XR_PLAYGROUND_OBJECTS.find(object => object.id === "xr-stage:cannon-left")!.position]} /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="cannon-right"><XrPlaygroundCannon position={[...XR_PLAYGROUND_OBJECTS.find(object => object.id === "xr-stage:cannon-right")!.position]} /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="skeleton"><Skeleton /></XrStageObjectSelection>
+      <XrStageObjectSelection objectId="hazards"><MovingHazards /></XrStageObjectSelection>
+      {PALMS.map(([x, z, scale, lean], index) => (
+        <XrStageObjectSelection key={`${x}:${z}`} objectId={`palm-${index + 1}`}><XrPlaygroundPalm position={[x, 0, z]} scale={scale} lean={lean} /></XrStageObjectSelection>
       ))}
-      {ROCKS.map(([x, y, z, sx, sy, sz, color]) => (
-        <mesh key={`${x}:${z}`} position={[x, y, z]} scale={[sx, sy, sz]} castShadow receiveShadow>
+      {ROCKS.map(([x, y, z, sx, sy, sz, color], index) => (
+        <XrStageObjectSelection key={`${x}:${z}`} objectId={`rock-${index + 1}`}><mesh position={[x, y, z]} scale={[sx, sy, sz]} castShadow receiveShadow>
           <dodecahedronGeometry args={[1, 0]} />
           <meshStandardMaterial color={color} roughness={0.94} flatShading />
-        </mesh>
+        </mesh></XrStageObjectSelection>
       ))}
-      {displayChest ? <DisplayChest /> : null}
+      {displayChest ? <XrStageObjectSelection objectId="chest"><DisplayChest /></XrStageObjectSelection> : null}
     </group>
   )
 }

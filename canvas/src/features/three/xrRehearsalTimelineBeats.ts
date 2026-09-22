@@ -3,6 +3,7 @@ import type { XrMotionReferencePlan } from './xrMotionReferenceModel'
 export type XrRehearsalTimelineBeat = Readonly<{
   timeSeconds: number
   label: string
+  caption?: string
   anchorId: string
   markId: string
 }>
@@ -18,6 +19,7 @@ function namedSubject(plan: XrMotionReferencePlan, pattern: RegExp) {
 }
 
 function beatLabelForCameraMark(plan: XrMotionReferencePlan, mark: XrMotionReferencePlan['camera'][number]): string {
+  if (mark.label) return mark.label
   const anchor = subjectLabel(plan, mark.anchorId)
   const straw = namedSubject(plan, /straw/i)
   const stick = namedSubject(plan, /stick/i)
@@ -47,6 +49,7 @@ export function resolveXrRehearsalTimelineBeats(plan: XrMotionReferencePlan): re
   return Object.freeze(plan.camera.map(mark => Object.freeze({
     timeSeconds: mark.timeSeconds,
     label: beatLabelForCameraMark(plan, mark),
+    ...(mark.caption ? { caption: mark.caption } : {}),
     anchorId: mark.anchorId,
     markId: mark.id,
   })))

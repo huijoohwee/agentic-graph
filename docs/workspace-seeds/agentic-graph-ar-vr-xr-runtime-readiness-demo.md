@@ -1,5 +1,6 @@
 ---
 title: agentic-graph AR/VR/XR Runtime-readiness Demo
+rehearsal_title: The Three Little Pigs and the Long Sea Journey
 doc_type: Workspace Demo
 status: runtime-ready
 runtime_status: browser-local-runtime-ready
@@ -16,7 +17,7 @@ kgCanvasSurfaceMode: 3d
 kgCanvasRenderMode: 3d
 kgCanvas3dMode: 3d
 kgFloatingPanelOpen: true
-kgFloatingPanelView: animation
+kgFloatingPanelView: motionControl
 kgBottomPanelOpen: true
 kgBottomPanelTab: timeline
 kgDocumentSemanticMode: document
@@ -88,15 +89,21 @@ acceptance_criteria:
   - {"id":AC-1, "evidence":source-backed, "promotion_boundary":named physical capability matrix}
   - {"id":AC-2, "evidence":browser-backed, "promotion_boundary":named reference-device frame budget}
   - {"id":AC-3, "evidence":browser-backed, "promotion_boundary":'named-device quota, interruption, and resume run'}
-  - {"id":AC-4, "evidence":browser-observable-after-selected-saved-asset render, "promotion_boundary":'physical four-tier viewer matrix, hardened shared storage, and two-device reopen'}
+  - id: AC-4
+    evidence: browser-observable-after-selected-saved-asset render
+    promotion_boundary: physical four-tier viewer matrix, hardened shared storage, and two-device reopen
   - {"id":AC-5, "evidence":source-backed, "promotion_boundary":named iOS device/browser pass}
   - {"id":AC-6, "evidence":browser-backed, "promotion_boundary":complete mounted scene rendering proof}
   - {"id":AC-7, "evidence":browser-backed, "promotion_boundary":texture and shader graph on the canonical target mesh}
   - {"id":AC-8, "evidence":source-backed, "promotion_boundary":none for deterministic exact-once behavior}
   - {"id":AC-9, "evidence":source-backed, "promotion_boundary":mounted GPU authoring surface}
   - {"id":AC-10, "evidence":source-backed, "promotion_boundary":rigged mounted playback}
-  - {"id":AC-11, "evidence":browser-observable-after-explicit-package-and-play action, "promotion_boundary":target-browser user-capture track and codec preservation}
-  - {"id":AC-12, "evidence":browser-observable-after-explicit-local-connected-preview action, "promotion_boundary":physical two-device transport and measured latency}
+  - id: AC-11
+    evidence: browser-observable-after-explicit-package-and-play action
+    promotion_boundary: target-browser user-capture track and codec preservation
+  - id: AC-12
+    evidence: browser-observable-after-explicit-local-connected-preview action
+    promotion_boundary: physical two-device transport and measured latency
 behavior_graph_interface: agentic-os-behavior-graph/v1
 behavior_graph_contract:
   graph_id: xr-v2:hero
@@ -163,13 +170,39 @@ game_mode:
 kgXrMotionReference:
   schema: agentic-graph-xr-motion-reference/v1
   castSource: subjects-only
-  stageId: singapore
-  appearance: {"skyColor":'#8ed5f3', "fogColor":'#c5e8ed', "groundColor":'#e7dec1', "waterColor":'#229fad', "lightColor":'#fff1d0', "lightIntensity":1.8, "sunAzimuthDegrees":35, "fogDistanceMeters":92, "detail":standard, "shadows":true}
+  stageId: tropical-playground
+  appearance: {"skyColor":"#8ed5f3","fogColor":"#c5e8ed","groundColor":"#e7dec1","waterColor":"#229fad","lightColor":"#fff1d0","lightIntensity":1.8,"sunAzimuthDegrees":35,"fogDistanceMeters":92,"detail":"standard","shadows":true}
   durationSeconds: 28
   fps: 12
-  subjects: [{"id":xr-subject:wolf:1, "assetId":person-adult, "label":The Wolf, "color":'#6b21a8', "position":[-7.4,0,2.6], "rotationYDegrees":24, "scale":1.16},{"id":xr-subject:first-pig:1, "assetId":person-child, "label":First Pig, "color":'#f97316', "position":[-3.5,0,1.8], "rotationYDegrees":-18, "scale":1},{"id":xr-subject:second-pig:1, "assetId":person-child, "label":Second Pig, "color":'#fb7185', "position":[0.8,0,-0.9], "rotationYDegrees":-30, "scale":1.04},{"id":xr-subject:third-pig:1, "assetId":person-child, "label":Third Pig, "color":'#38bdf8', "position":[4.8,0,-4.4], "rotationYDegrees":-150, "scale":1},{"id":xr-subject:straw-house:1, "assetId":prop-crate, "label":Straw House, "color":'#fde68a', "position":[-3.9,0,1.6], "rotationYDegrees":8, "scale":1.55},{"id":xr-subject:stick-house:1, "assetId":prop-crate, "label":Stick House, "color":'#c08457', "position":[0.8,0,-0.8], "rotationYDegrees":-12, "scale":1.78},{"id":xr-subject:brick-house:1, "assetId":prop-crate, "label":Brick House, "color":'#b45309', "position":[4.8,0,-4.2], "rotationYDegrees":0, "scale":1.85},{"id":xr-subject:oak:1, "assetId":prop-tree, "label":Oak, "color":'#84cc16', "position":[-8.4,0,1.4], "rotationYDegrees":0, "scale":1.22},{"id":xr-subject:soup-pot:1, "assetId":prop-crate, "label":Soup Pot, "color":'#475569', "position":[5.4,0,-3.3], "rotationYDegrees":0, "scale":0.72}]
-  cast: [{"actorId":xr-subject:wolf:1, "label":The Wolf, "animation":{"kind":character-motion, "presetId":fight, "startTimeSeconds":3.2, "loop":true}, "marks":[{"timeSeconds":0, "position":[-7.4,0,2.6], "transition":hold, "gait":walk},{"timeSeconds":3.5, "position":[-4.9,0,2], "transition":linear, "gait":walk},{"timeSeconds":4.2, "position":[-4.1,0,1.85], "transition":hold, "gait":walk},{"timeSeconds":7.8, "position":[-0.7,0,-0.2], "transition":linear, "gait":walk},{"timeSeconds":8.4, "position":[0.15,0,-0.45], "transition":hold, "gait":walk},{"timeSeconds":10.2, "position":[0.2,0,-0.6], "transition":hold, "gait":walk},{"timeSeconds":12.4, "position":[3.7,0,-3.5], "transition":linear, "gait":walk},{"timeSeconds":20.2, "position":[4.9,0,-3.9], "transition":hold, "gait":walk},{"timeSeconds":25.6, "position":[7.6,0,-1.6], "transition":linear, "gait":run}]},{"actorId":xr-subject:first-pig:1, "label":First Pig, "animation":{"kind":character-motion, "presetId":jump, "startTimeSeconds":4, "loop":false}, "marks":[{"timeSeconds":0, "position":[-3.5,0,1.8], "transition":hold, "gait":walk},{"timeSeconds":4.2, "position":[-0.2,0,0.5], "transition":linear, "gait":run},{"timeSeconds":7.8, "position":[2.2,0,-1.8], "transition":linear, "gait":run}]},{"actorId":xr-subject:second-pig:1, "label":Second Pig, "animation":{"kind":character-motion, "presetId":jump, "startTimeSeconds":8.2, "loop":false}, "marks":[{"timeSeconds":0, "position":[0.8,0,-0.9], "transition":hold, "gait":walk},{"timeSeconds":8.4, "position":[2.4,0,-2.4], "transition":linear, "gait":run},{"timeSeconds":12.4, "position":[4,0,-3.7], "transition":hold, "gait":walk}]},{"actorId":xr-subject:third-pig:1, "label":Third Pig, "animation":{"kind":character-motion, "presetId":drink, "startTimeSeconds":20.2, "loop":true}, "marks":[{"timeSeconds":0, "position":[4.8,0,-4.4], "transition":hold, "gait":walk},{"timeSeconds":20.2, "position":[4.8,0,-4.4], "transition":hold, "gait":walk},{"timeSeconds":25.6, "position":[4.8,0,-4.4], "transition":linear, "gait":walk}]},{"actorId":xr-subject:straw-house:1, "label":Straw House, "marks":[{"timeSeconds":0, "position":[-3.9,0,1.6], "transition":hold, "gait":hold},{"timeSeconds":4.2, "position":[-3.9,0,1.6], "transition":hold, "gait":hold}]},{"actorId":xr-subject:stick-house:1, "label":Stick House, "marks":[{"timeSeconds":0, "position":[0.8,0,-0.8], "transition":hold, "gait":hold},{"timeSeconds":8.4, "position":[0.8,0,-0.8], "transition":hold, "gait":hold},{"timeSeconds":10.2, "position":[0.8,0,-0.8], "transition":hold, "gait":hold}]},{"actorId":xr-subject:brick-house:1, "label":Brick House, "marks":[{"timeSeconds":0, "position":[4.8,0,-4.2], "transition":hold, "gait":hold},{"timeSeconds":12.4, "position":[4.8,0,-4.2], "transition":hold, "gait":hold}]},{"actorId":xr-subject:soup-pot:1, "label":Soup Pot, "marks":[{"timeSeconds":0, "position":[5.4,0,-3.3], "transition":hold, "gait":hold},{"timeSeconds":20.2, "position":[5.4,0,-3.3], "transition":hold, "gait":hold}]}]
-  camera: [{"timeSeconds":0, "anchorId":xr-subject:first-pig:1, "moveId":drone-follow, "rig":dolly, "easing":hold, "settings":{"shot":medium, "orbitX":-0.18, "orbitY":-0.18, "focalLengthMm":38, "focusDistanceMeters":7}},{"timeSeconds":4.2, "anchorId":xr-subject:wolf:1, "moveId":orbit-clockwise, "rig":handheld, "easing":linear, "settings":{"shot":medium, "orbitX":0.28, "orbitY":-0.16, "focalLengthMm":46, "focusDistanceMeters":6}},{"timeSeconds":8.4, "anchorId":xr-subject:second-pig:1, "moveId":drone-follow, "rig":steadicam, "easing":linear, "settings":{"shot":medium, "orbitX":-0.18, "orbitY":-0.2, "focalLengthMm":42, "focusDistanceMeters":6.4}},{"timeSeconds":10.2, "anchorId":xr-subject:second-pig:1, "moveId":orbit-clockwise, "rig":handheld, "easing":linear, "settings":{"shot":close-up, "orbitX":0.16, "orbitY":-0.24, "focalLengthMm":52, "focusDistanceMeters":5.2}},{"timeSeconds":12.4, "anchorId":xr-subject:third-pig:1, "moveId":crane-rise, "rig":crane, "easing":linear, "settings":{"shot":wide, "orbitX":-0.04, "orbitY":-0.42, "focalLengthMm":35, "focusDistanceMeters":8.5}},{"timeSeconds":20.2, "anchorId":xr-subject:wolf:1, "moveId":crane-descend, "rig":handheld, "easing":linear, "settings":{"shot":close-up, "orbitX":0.1, "orbitY":-0.12, "focalLengthMm":58, "focusDistanceMeters":5}},{"timeSeconds":25.6, "anchorId":xr-subject:third-pig:1, "moveId":drone-follow, "rig":dolly, "easing":hold, "settings":{"shot":wide, "orbitX":-0.16, "orbitY":-0.22, "focalLengthMm":32, "focusDistanceMeters":9}}]
+  subjects:
+    - {"id":"xr-subject:wolf:1","assetId":"character-wolf","label":"The Wolf","color":"#6b21a8","position":[-7.4,0,2.6],"rotationYDegrees":24,"scale":1.16}
+    - {"id":"xr-subject:first-pig:1","assetId":"character-pig","label":"First Pig","color":"#f97316","position":[-3.5,0,1.8],"rotationYDegrees":-18,"scale":1}
+    - {"id":"xr-subject:second-pig:1","assetId":"character-pig","label":"Second Pig","color":"#fb7185","position":[0.8,0,-0.9],"rotationYDegrees":-30,"scale":1.04}
+    - {"id":"xr-subject:third-pig:1","assetId":"character-pig","label":"Third Pig","color":"#38bdf8","position":[4.8,0,-4.4],"rotationYDegrees":-150,"scale":1}
+    - {"id":"xr-subject:straw-house:1","assetId":"prop-house-straw","label":"Straw House","color":"#fde68a","position":[-3.9,0,1.6],"rotationYDegrees":8,"scale":1.55}
+    - {"id":"xr-subject:stick-house:1","assetId":"prop-house-stick","label":"Stick House","color":"#c08457","position":[0.8,0,-0.8],"rotationYDegrees":-12,"scale":1.78}
+    - {"id":"xr-subject:brick-house:1","assetId":"prop-house-brick","label":"Brick House","color":"#b45309","position":[4.8,0,-4.2],"rotationYDegrees":0,"scale":1.85}
+    - {"id":"xr-subject:oak:1","assetId":"prop-tree","label":"Oak","color":"#84cc16","position":[-8.4,0,1.4],"rotationYDegrees":0,"scale":1.22}
+    - {"id":"xr-subject:soup-pot:1","assetId":"prop-soup-pot","label":"Soup Pot","color":"#475569","position":[6.7,0,-2.3],"rotationYDegrees":0,"scale":1}
+    - {"id":"xr-subject:sailboat:1","assetId":"vehicle-sailboat","label":"The Long Sea Journey","color":"#a66743","position":[-2,0,18],"rotationYDegrees":0,"scale":1}
+  cast:
+    - {"actorId":"xr-subject:wolf:1","label":"The Wolf","animation":null,"marks":[{"timeSeconds":0,"position":[-9,0,4.8],"transition":"hold","gait":"hold","cue":"hidden"},{"timeSeconds":3.2,"position":[-9,0,4.8],"transition":"linear","gait":"walk","cue":"idle"},{"timeSeconds":4.2,"position":[-4.9,0,4.8],"transition":"hold","gait":"hold","cue":"huff"},{"timeSeconds":5.8,"position":[-4.9,0,4.8],"transition":"linear","gait":"walk","cue":"idle"},{"timeSeconds":8.4,"position":[0.15,0,2.8],"transition":"hold","gait":"hold","cue":"huff"},{"timeSeconds":10.2,"position":[0.15,0,2.8],"transition":"linear","gait":"walk","cue":"huff"},{"timeSeconds":12.4,"position":[4.8,0,-0.4],"transition":"hold","gait":"hold","cue":"huff"},{"timeSeconds":16,"position":[4.8,0,-0.4],"transition":"linear","gait":"walk","cue":"huff"},{"timeSeconds":18.8,"position":[5.7,4.5,-4.2],"transition":"hold","gait":"hold"},{"timeSeconds":20.2,"position":[5.7,4.5,-4.2],"transition":"linear","gait":"hold","cue":"idle"},{"timeSeconds":21.3,"position":[6.7,0.5,-2.3],"transition":"linear","gait":"hold"},{"timeSeconds":22,"position":[6.7,2,-2.3],"transition":"linear","gait":"run"},{"timeSeconds":23,"position":[8,0,0],"transition":"linear","gait":"run"},{"timeSeconds":25.6,"position":[18,0,1],"transition":"hold","gait":"hold","cue":"hidden"}]}
+    - {"actorId":"xr-subject:first-pig:1","label":"First Pig","animation":{"kind":"character-motion","presetId":"jump","startTimeSeconds":4,"loop":false},"marks":[{"timeSeconds":0,"position":[-2.8,0.85,18],"transition":"linear","gait":"hold"},{"timeSeconds":2.5,"position":[-2.8,0.85,12.4],"transition":"linear","gait":"walk"},{"timeSeconds":3.8,"position":[-3.5,0,3.5],"transition":"hold","gait":"hold"},{"timeSeconds":4.2,"position":[-3.5,0,3.5],"transition":"linear","gait":"run"},{"timeSeconds":7.8,"position":[1.4,0,2.5],"transition":"hold","gait":"hold"},{"timeSeconds":10.2,"position":[1.4,0,2.5],"transition":"linear","gait":"run"},{"timeSeconds":12.4,"position":[3.5,0,-0.8],"transition":"hold","gait":"hold"},{"timeSeconds":25.6,"position":[3.5,0,-0.8],"transition":"hold","gait":"hold"}]}
+    - {"actorId":"xr-subject:second-pig:1","label":"Second Pig","animation":{"kind":"character-motion","presetId":"jump","startTimeSeconds":8.2,"loop":false},"marks":[{"timeSeconds":0,"position":[-1.3,0.85,18],"transition":"linear","gait":"hold"},{"timeSeconds":2.5,"position":[-1.3,0.85,12.4],"transition":"linear","gait":"walk"},{"timeSeconds":7.8,"position":[0.8,0,1.6],"transition":"hold","gait":"hold"},{"timeSeconds":8.4,"position":[0.8,0,1.6],"transition":"hold","gait":"hold"},{"timeSeconds":10.2,"position":[0.8,0,1.6],"transition":"linear","gait":"run"},{"timeSeconds":12.4,"position":[4.7,0,-0.8],"transition":"hold","gait":"hold"},{"timeSeconds":25.6,"position":[4.7,0,-0.8],"transition":"hold","gait":"hold"}]}
+    - {"actorId":"xr-subject:third-pig:1","label":"Third Pig","animation":{"kind":"character-motion","presetId":"dance","startTimeSeconds":25.6,"loop":true},"marks":[{"timeSeconds":0,"position":[-2,0.85,19],"transition":"linear","gait":"hold"},{"timeSeconds":2.5,"position":[-2,0.85,13.4],"transition":"linear","gait":"walk"},{"timeSeconds":12.4,"position":[5.8,0,-0.8],"transition":"hold","gait":"hold"},{"timeSeconds":20.2,"position":[5.8,0,-0.8],"transition":"hold","gait":"hold"},{"timeSeconds":25.6,"position":[5.8,0,-0.8],"transition":"hold","gait":"hold"}]}
+    - {"actorId":"xr-subject:straw-house:1","label":"Straw House","marks":[{"timeSeconds":0,"position":[-3.9,0,1.6],"transition":"hold","gait":"hold","cue":"hidden"},{"timeSeconds":2.8,"position":[-3.9,0,1.6],"transition":"hold","gait":"hold","cue":"build"},{"timeSeconds":4.2,"position":[-3.9,0,1.6],"transition":"hold","gait":"hold"},{"timeSeconds":4.8,"position":[-3.9,0,1.6],"transition":"hold","gait":"hold","cue":"collapse"}]}
+    - {"actorId":"xr-subject:stick-house:1","label":"Stick House","marks":[{"timeSeconds":0,"position":[0.8,0,-0.8],"transition":"hold","gait":"hold","cue":"hidden"},{"timeSeconds":7.2,"position":[0.8,0,-0.8],"transition":"hold","gait":"hold","cue":"build"},{"timeSeconds":8.4,"position":[0.8,0,-0.8],"transition":"hold","gait":"hold"},{"timeSeconds":10.2,"position":[0.8,0,-0.8],"transition":"hold","gait":"hold"},{"timeSeconds":10.8,"position":[0.8,0,-0.8],"transition":"hold","gait":"hold","cue":"collapse"}]}
+    - {"actorId":"xr-subject:brick-house:1","label":"Brick House","marks":[{"timeSeconds":0,"position":[4.8,0,-4.2],"transition":"hold","gait":"hold","cue":"hidden"},{"timeSeconds":11.4,"position":[4.8,0,-4.2],"transition":"hold","gait":"hold","cue":"build"},{"timeSeconds":12.4,"position":[4.8,0,-4.2],"transition":"hold","gait":"hold"}]}
+    - {"actorId":"xr-subject:soup-pot:1","label":"Soup Pot","marks":[{"timeSeconds":0,"position":[6.7,0,-2.3],"transition":"hold","gait":"hold","cue":"hidden"},{"timeSeconds":20.2,"position":[6.7,0,-2.3],"transition":"hold","gait":"hold","cue":"build"},{"timeSeconds":21.3,"position":[6.7,0,-2.3],"transition":"hold","gait":"hold","cue":"splash"}]}
+    - {"actorId":"xr-subject:sailboat:1","label":"Sailboat","marks":[{"timeSeconds":0,"position":[-2,0,18],"transition":"linear","gait":"hold"},{"timeSeconds":2.5,"position":[-2,0,12.4],"transition":"hold","gait":"hold"}]}
+  camera:
+    - {"timeSeconds":0,"anchorId":"xr-subject:first-pig:1","moveId":"drone-follow","rig":"dolly","easing":"hold","settings":{"shot":"wide","orbitX":-0.18,"orbitY":-0.18,"focalLengthMm":38,"focusDistanceMeters":11},"label":"Waterfront landing","caption":"Once upon a time, three little pigs sailed far across the sea to find new homes."}
+    - {"timeSeconds":4.2,"anchorId":"xr-subject:wolf:1","moveId":"orbit-clockwise","rig":"handheld","easing":"linear","settings":{"shot":"medium","orbitX":0.28,"orbitY":-0.16,"focalLengthMm":46,"focusDistanceMeters":6},"label":"Straw threshold","caption":"The first {{kgXrMotionReference.subjects.1.assetId}} built a house of {{kgXrMotionReference.subjects.4.assetId}}. A big, hungry {{kgXrMotionReference.subjects.0.assetId}} came and went “HUFF and PUFF!” — and blew it down! The pig ran away, fast, fast, fast."}
+    - {"timeSeconds":8.4,"anchorId":"xr-subject:second-pig:1","moveId":"drone-follow","rig":"steadicam","easing":"linear","settings":{"shot":"medium","orbitX":-0.18,"orbitY":-0.2,"focalLengthMm":42,"focusDistanceMeters":6.4},"label":"Stick house","caption":"The second {{kgXrMotionReference.subjects.2.assetId}} built a house of {{kgXrMotionReference.subjects.5.assetId}}."}
+    - {"timeSeconds":10.2,"anchorId":"xr-subject:second-pig:1","moveId":"orbit-clockwise","rig":"handheld","easing":"linear","settings":{"shot":"close-up","orbitX":0.16,"orbitY":-0.24,"focalLengthMm":52,"focusDistanceMeters":5.2},"label":"Stick house midpoint","caption":"The {{kgXrMotionReference.subjects.0.assetId}} came again — “HUFF and PUFF!” — and blew it down too!"}
+    - {"timeSeconds":12.4,"anchorId":"xr-subject:third-pig:1","moveId":"crane-rise","rig":"crane","easing":"linear","settings":{"shot":"wide","orbitX":-0.04,"orbitY":-0.42,"focalLengthMm":35,"focusDistanceMeters":8.5},"label":"Brick house","caption":"The third {{kgXrMotionReference.subjects.3.assetId}} was the cleverest sailor of them all. He built a house of {{kgXrMotionReference.subjects.6.assetId}}, strong and solid, right by the sea. The {{kgXrMotionReference.subjects.0.assetId}} huffed. The {{kgXrMotionReference.subjects.0.assetId}} puffed. But the house did not move — not even a little bit!"}
+    - {"timeSeconds":20.2,"anchorId":"xr-subject:wolf:1","moveId":"crane-descend","rig":"handheld","easing":"linear","settings":{"shot":"close-up","orbitX":0.1,"orbitY":-0.12,"focalLengthMm":58,"focusDistanceMeters":5},"label":"Chimney soup pot","caption":"So the {{kgXrMotionReference.subjects.0.assetId}} tried to sneak down the chimney. But the clever pig called out, “My name is Nobody!” — and dropped him straight into a big {{kgXrMotionReference.subjects.8.assetId}}! Splash! The {{kgXrMotionReference.subjects.0.assetId}} jumped up and ran away, and never, ever came back."}
+    - {"timeSeconds":25.6,"anchorId":"xr-subject:third-pig:1","moveId":"drone-follow","rig":"dolly","easing":"hold","settings":{"shot":"wide","orbitX":-0.16,"orbitY":-0.22,"focalLengthMm":32,"focusDistanceMeters":9},"label":"Journey end","caption":"The three pigs lived happily together in the {{kgXrMotionReference.subjects.6.assetId}} house by the sea. The End. 🐷⛵🌊"}
 runtime_validation:
   baseline_local_candidate_commit: "067ed16d0a8c77d1c612d6f63aa791ae02fba19c"
   baseline_local_verified_at: "2026-07-21T07:01:46Z"
@@ -353,6 +386,9 @@ flow:
 
 This Source Files document is the dedicated workspace demo for the immutable v3.0.0 AR/VR/XR authority. It stays source-backed, local-first, and bounded to AC-1 through AC-12 browser proof while AC-14 remains source-only.
 
+The pinned authority's source identity is commit
+`1272bae345edf0d132e6fc750d5c5c7eade00b29`; its path and content digests are recorded in `pinned_source` above.
+
 ## Run the browser demo
 
 Run `npm run dev`, then apply **Explorer → Source Files → docs → workspace-seeds → agentic-graph-ar-vr-xr-runtime-readiness-demo.md**. The applied document mounts the shared world as a `full-frame-playground` and keeps the same canonical XR owner through the existing runtime adapters. Use `npm run xr-v2:review-ready` for the exact local proof gate.
@@ -367,7 +403,7 @@ This seed is the lean rehearsal loop for Dev and Home Apex: author once, rehears
 
 ## Physics Playground
 
-The XR world remains a `procedural Singapore waterfront terrain` with `Marina Bay towers`, source-authored selectable subjects, and a catalog-driven stable terrain IDs contract. The asset defaults remain `vehicle-helicopter`, `vehicle-sedan`, and `prop-ball`. Placed subjects remain visible while the controller demo runs.
+This story uses the native Tropical Playground island, ocean, palms and dock with source-authored selectable subjects. The catalog-driven stable terrain IDs also retain the procedural Singapore waterfront terrain and Marina Bay towers as selectable alternatives. The asset defaults remain `vehicle-helicopter`, `vehicle-sedan`, and `prop-ball`. Placed subjects remain visible while the controller demo runs.
 
 The objective loop is simple: `collect key then unlock treasure`. The ball keeps `rolling movement`, `grounded jump`, air steering, and modifier torque. The rocket keeps `directional thrust`, bounded tilt, and `modifier stabilization`, plus the bounded aerial composition. Standard gamepad movement remains `standard left stick`.
 
@@ -377,11 +413,29 @@ Game Mode remains an overlay, not a second world. It opens with `/game.mode @can
 
 ## Timeline and choreography asides
 
-BottomPanel Timeline is the time/selection owner, while FloatingPanel Animation is the cast/camera/choreography owner. The playable rehearsal slice stays under one minute and is stepped through the existing transport, cue selection, and mark inspection owners.
+BottomPanel Timeline owns mark timing, easing, gait, position and selection. FloatingPanel Animation owns path and character-motion presets and shows the shared mark summary. The playable rehearsal slice stays under one minute and is stepped through the existing transport, cue selection, and mark inspection owners.
 
-### Playable script: The Three Little Pigs and the Long Sea Journey
+### Playable script
 
-Three pigs land on the waterfront, raise straw, stick, and brick homes in place, and hold the stick house as the readable midpoint of the journey. The wolf walks the same path, huffs at each threshold, and the third pig ends at the chimney soup pot. Coast light, native house silhouettes, and the existing transport/cast/camera owners remain the runtime source of truth for this rehearsal slice.
+**{{rehearsal_title}}**
+
+Scene: {{kgXrMotionReference.stageId}} · Duration: {{kgXrMotionReference.durationSeconds}} seconds · {{kgXrMotionReference.fps}} fps.
+
+{{kgXrMotionReference.camera.0.caption}}
+
+{{kgXrMotionReference.camera.1.caption}}
+
+{{kgXrMotionReference.camera.2.caption}} {{kgXrMotionReference.camera.3.caption}}
+
+{{kgXrMotionReference.camera.4.caption}}
+
+{{kgXrMotionReference.camera.5.caption}}
+
+{{kgXrMotionReference.camera.6.caption}}
+
+Open an inline asset chip to use the existing searchable Variable commands menu. Scene choices invoke `/xr.stage @stage`; subject and prop choices invoke `/xr.transform @subject #transform asset=asset`. The native catalog and the same `control_local_xr_scene` controller used by MCP and WebMCP own validation and frontmatter persistence. Authored role labels and stable subject IDs stay intact; asset words resolve from the catalog. Nested caption references keep this body unchanged. Animation owns path and character-motion presets. Timeline owns static transforms, mark easing, gait, position, timing, playback, speed, seek and frame-step. Motion Control uses the same selected target and mark; Camera keeps the same anchors; Game Mode suspends and restores the shared world.
+
+Media → Subjects & Props now switches between **In scene** and **Add from library** under one category/search filter. Story performers, houses, sailboat, soup pot and Tropical Playground use native visual illustrations. No camera/microphone, network asset or paid service is required.
 
 ## Source Files storage and refresh
 

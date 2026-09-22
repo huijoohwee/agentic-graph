@@ -152,18 +152,20 @@ function assertSceneControlRejectedAtomically(
   assert(afterPersisted === beforePersisted, `${label}: expected no partial graph-metadata persistence`)
 }
 
-function testAssetOnlyLargeVehicleSwapRejectsOverlap(): void {
-  assertSceneControlRejectedAtomically('asset-only-large-vehicle-overlap', {
+function testAssetOnlyLargeVehicleSwapPreservesPlacement(): void {
+  const before = installSceneControlFixture('asset-only-swap.md', {
     stageId: 'tropical-playground',
     subjects: [
       { id: 'swap-target', assetId: 'prop-crate', label: 'Swap target', position: [-2, 0, 0] },
       { id: 'swap-peer', assetId: 'prop-crate', label: 'Swap peer', position: [2, 0, 0] },
     ],
-  }, {
-    action: 'transform',
-    subjectId: 'swap-target',
-    assetId: 'vehicle-helicopter',
   })
+  const result = controlLocalXrScene({ action: 'transform', subjectId: 'swap-target', assetId: 'vehicle-helicopter' })
+  assert(result.ok, `asset-only swap preserves authored placement: ${result.message}`)
+  const after = readXrMotionReferenceRuntime().plan
+  assert(after.subjects[0]?.assetId === 'vehicle-helicopter', 'expected the canonical asset replacement')
+  assert(JSON.stringify(after.subjects.map(subject => subject.position)) === JSON.stringify(before.subjects.map(subject => subject.position)), 'asset-only swaps do not relocate authored subjects')
+  assert(JSON.stringify(after.subjects[1]) === JSON.stringify(before.subjects[1]), 'asset-only swaps preserve neighboring subjects')
 }
 
 function testCombinedAssetTransformRejectsAtomically(): void {
@@ -388,7 +390,7 @@ export function testXrMotionControlAcceptanceConstraints(): void {
     selectedNodeId: previous.selectedNodeId,
   }
   const cases: readonly [string, () => void][] = [
-    ['asset-only large vehicle swap', testAssetOnlyLargeVehicleSwapRejectsOverlap],
+    ['asset-only large vehicle swap', testAssetOnlyLargeVehicleSwapPreservesPlacement],
     ['combined asset and transform', testCombinedAssetTransformRejectsAtomically],
     ['stage rebuild', testStageRebuildFailsClosed],
     ['duration rebuild', testDurationRebuildFailsClosed],

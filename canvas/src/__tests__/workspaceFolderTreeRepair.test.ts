@@ -2,6 +2,8 @@ import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemo
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { resolveInitializedWorkspaceFs } from '@/features/workspace-fs/workspaceFsInitialization'
 import { writeWorkspaceFileTextEnsuringFile } from '@/features/chat/chatWorkspaceFsWrite'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { notifyWorkspaceFsChanged, subscribeWorkspaceFsChanged, type WorkspaceFsChangedDetail } from '@/features/workspace-fs/workspaceFsEvents'
 
 export async function testEnsureWorkspaceFolderTreeIfMissingCreatesNestedSeedFolders() {
   const fs = createMemoryWorkspaceFs()
@@ -49,4 +51,40 @@ export async function testEnsureWorkspaceFolderTreeIfMissingCreatesNestedSeedFol
       path: '/fixtures/test-data/unverified.md', text: 'must verify' })
   } catch { unreadableRejected = true }
   if (!unreadableRejected) throw new Error('artifact writes must still require exact persistence readback')
+
+  const { restore } = initJsdomHarness()
+  const notifications: WorkspaceFsChangedDetail[] = []
+  const unsubscribe = subscribeWorkspaceFsChanged(detail => {
+    if (detail.op !== 'ensureSeed') notifications.push(detail)
+  })
+  try {
+    const path = '/notification-batch/deep/asset.md'
+    await writeWorkspaceFileTextEnsuringFile({ fs: injected, path, text: 'complete' })
+    if (notifications.length !== 1 || notifications[0]?.op !== 'batch'
+      || notifications[0]?.path !== path || await fs.readFileText(path) !== 'complete') {
+      throw new Error('nested artifact creation must publish one final-path notification after verified persistence')
+    }
+    notifications.length = 0
+    await writeWorkspaceFileTextEnsuringFile({ fs: injected, path, text: 'updated' })
+    if (notifications.length !== 1 || await fs.readFileText(path) !== 'updated') {
+      throw new Error('existing artifact updates must remain observable and preserve their exact text')
+    }
+    notifications.length = 0
+    let failed = false
+    try {
+      await writeWorkspaceFileTextEnsuringFile({ fs: { ...injected, readFileText: async () => null },
+        path: '/notification-batch/partial/asset.md', text: 'partial' })
+    } catch { failed = true }
+    if (!failed || notifications.length !== 1 || notifications[0]?.op !== 'batch') {
+      throw new Error('failed readback must still reject and publish the partial filesystem mutation once')
+    }
+    notifications.length = 0
+    notifyWorkspaceFsChanged({ op: 'writeFileText', path })
+    if (notifications.length !== 1 || String(notifications[0]?.op) !== 'writeFileText') {
+      throw new Error('a failed artifact write must release the shared notification batch')
+    }
+  } finally {
+    unsubscribe()
+    restore()
+  }
 }

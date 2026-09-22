@@ -15,6 +15,7 @@ import {
   subscribeXrSharedAssetControlRuntime,
 } from './xrSharedAssetControlRuntime'
 import { selectBoundXrShotTarget } from './xrSelectedActorBinding'
+import { sampleXrStoryPresentation } from './xrStoryPresentation'
 import { XrSceneLibrarySubject } from './XrSceneLibrarySubject'
 import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
 import { resolveMotionControlSubjectPose, useMotionControlAnimationPose } from './useMotionControlAnimationPose'
@@ -58,6 +59,7 @@ export function XrNativeControllerAuthoredSubjects() {
             subject={subject}
             position={xrMotionReferenceWorldPosition(subjectPosition, 1, 0)}
             stageScale={1}
+            presentation={sampleXrStoryPresentation(track?.marks || [], runtime.playheadSeconds)}
             selected={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === subject.id}
             showIdentificationBounds={boundingBoxEnabled}
             onSelect={() => selectSubject(subject.id)}

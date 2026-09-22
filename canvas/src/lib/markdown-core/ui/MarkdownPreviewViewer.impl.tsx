@@ -39,7 +39,7 @@ import {
   getMarkdownPreviewScrollStyle,
 } from './markdownPreviewViewerMode'
 import { useTextSelectionMatchHighlights } from '@/lib/ui/textSelectionMatchHighlights'
-import { buildMarkdownVariablePreviewByKey } from './markdownInlineVariableMediaPreview'
+import { useMarkdownVariablePreviewSource } from './markdownInlineVariableMediaPreview'
 import {
   buildSemanticTextHighlightOverlayStyle,
   getSemanticHighlightSurfaceAttributes,
@@ -215,9 +215,7 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     if (typeof sourceMarkdownText !== 'string' || !sourceMarkdownText) return []
     return sourceMarkdownText.split(/\r?\n/)
   }, [sourceMarkdownText, viewerInlineEditingEnabled])
-  const { entries: variableSsotEntries, previewByKey: markdownVariablePreviewByKey } = React.useMemo(() => (
-    typeof sourceMarkdownText !== 'string' || !sourceMarkdownText || sourceMarkdownText.length > MARKDOWN_VARIABLE_SSOT_SCAN_MAX_CHARS ? { entries: [], previewByKey: {} } : { entries: collectMarkdownVariableSsotEntries(sourceMarkdownText), previewByKey: buildMarkdownVariablePreviewByKey(sourceMarkdownText) }
-  ), [sourceMarkdownText])
+  const { entries: variableSsotEntries, previewByKey: markdownVariablePreviewByKey } = useMarkdownVariablePreviewSource(sourceMarkdownText, Boolean(onReplaceLineRange), MARKDOWN_VARIABLE_SSOT_SCAN_MAX_CHARS, activeDocumentPath)
   const frontmatterMeta = React.useMemo(() => {
     if (!frontmatterMetaProp || typeof frontmatterMetaProp !== 'object' || Array.isArray(frontmatterMetaProp)) {
       return {} as Record<string, unknown>

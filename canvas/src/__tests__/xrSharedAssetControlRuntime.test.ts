@@ -291,7 +291,7 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     assertNpcSelectionHighlightTracksRenderedPose()
     for (const marker of [
       "selectedActor={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === track.actorId}",
-      'agentic_os_xr_motion_cast_live_highlight_',
+      '<XrSelectionBounds selected={selectedActor} targetId={track.actorId}>',
       "kgXrTimelineHighlight: selectedActor ? 'shared-asset' : ''",
     ]) {
       if (!xrMotionStageSource.includes(marker)) throw new Error(`expected graph-only XR cast actors to expose shared timeline highlight metadata through ${marker}`)
@@ -299,15 +299,10 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
     for (const marker of [
       'data-kg-xr-shared-asset-actions="individual-lane"',
       'data-kg-xr-shared-asset-action-cluster="individual-lane"',
-      'data-kg-xr-shared-asset-animate="individual-lane"',
-      'data-kg-xr-shared-asset-clear-animation="individual-lane"',
       'data-kg-xr-shared-asset-gesture-mark="individual-lane"',
       'data-kg-xr-shared-asset-hand-keyframe="individual-lane"',
       'data-kg-xr-shared-asset-playback="individual-lane"',
       'data-kg-xr-shared-asset-playback-owner="individual-lane"',
-      'applyXrTimelineCastAnimationPreset',
-      'onPointerDownCapture={stopTimelineEditorEvent}',
-      'onMouseDownCapture={stopTimelineEditorEvent}',
       "runSelectedCastSharedAssetAction('capture-hand-pose')",
     ]) {
       if (!retimeSource.includes(marker)) throw new Error(`expected individual BottomPanel Timeline lanes to expose ${marker}`)

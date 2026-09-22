@@ -252,7 +252,7 @@ export const useMarkdownBlockContainerVariableActions = (args: {
       ...uploadedMediaCommandCandidates,
       ...collectInlineMediaCommandCandidates({
         sourceLines: args.sourceLines,
-        draftText: args.getDraft(),
+        draftText: [args.variableMenu.query, args.getDraft()].filter(Boolean).join("\n"),
       }),
     ]), mediaNameDrafts)
     if (!query) return all.slice(0, 8)

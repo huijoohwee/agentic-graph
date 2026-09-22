@@ -13,6 +13,9 @@ export type MarkdownVariablePreview = {
   value: string | null
   source?: 'frontmatter' | 'inline' | 'unresolved'
   line?: number | null
+  displayValue?: string
+  invocationTarget?: import('./markdownXrVariableInvocations').MarkdownXrVariableTarget
+  onInvoke?: (invocation: string) => Promise<void>
 }
 
 export type InlineRenderOpts = {

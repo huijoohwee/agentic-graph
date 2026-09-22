@@ -11,6 +11,8 @@ import {
 } from '@/features/panels/ui/tooltipUtils'
 
 interface TooltipProps {
+  id?: string
+  anchorElement?: HTMLElement | null
   content: React.ReactNode
   className?: string
   children: React.ReactNode
@@ -29,7 +31,8 @@ interface TooltipProps {
   interactive?: boolean
 }
 
-export default function Tooltip({ content, className, children, maxWidthFromPrevSibling, maxWidthPx, contentClassName, contentStyle, contentRef, contentOffset, contentSize, contentDataAttrs, open: controlledOpen, anchorStyle, onContentMouseEnter, onContentMouseLeave, interactive = true }: TooltipProps) {
+export default function Tooltip({ id, anchorElement, content, className, children, maxWidthFromPrevSibling, maxWidthPx, contentClassName, contentStyle, contentRef, contentOffset, contentSize, contentDataAttrs, open: controlledOpen, anchorStyle, onContentMouseEnter, onContentMouseLeave, interactive = true }: TooltipProps) {
+  const generatedId = React.useId()
   const anchorRef = React.useRef<HTMLSpanElement | null>(null)
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false)
   const open = typeof controlledOpen === 'boolean' ? controlledOpen : uncontrolledOpen
@@ -56,12 +59,12 @@ export default function Tooltip({ content, className, children, maxWidthFromPrev
   }, [contentRef])
 
   const updatePosition = React.useCallback(() => {
-    const el = anchorRef.current
+    const el = anchorElement || anchorRef.current
     if (!el) return
     constrainedRef.current = false
     setPos(computeTooltipPositionFromAnchor(el, 4))
     setMaxW(computeTooltipMaxWidthPx(el, { maxWidthFromPrevSibling, maxWidthPx, defaultMaxWidthPx: 250 }))
-  }, [maxWidthFromPrevSibling, maxWidthPx])
+  }, [anchorElement, maxWidthFromPrevSibling, maxWidthPx])
 
   const onEnter = React.useCallback(() => {
     if (typeof controlledOpen === 'boolean') {
@@ -138,7 +141,7 @@ export default function Tooltip({ content, className, children, maxWidthFromPrev
     if (!pos) return
     if (constrainedRef.current) return
     const tip = scrollRef.current
-    const anchor = anchorRef.current
+    const anchor = anchorElement || anchorRef.current
     if (!tip || !anchor) return
     const paddingPx = 8
     const viewportW = Math.max(1, window.innerWidth || 1)
@@ -158,7 +161,7 @@ export default function Tooltip({ content, className, children, maxWidthFromPrev
       setPos(next)
     }
     constrainedRef.current = true
-  }, [open, pos])
+  }, [anchorElement, open, pos])
 
   React.useEffect(() => {
     if (!open) {
@@ -171,8 +174,9 @@ export default function Tooltip({ content, className, children, maxWidthFromPrev
 
   return (
     <>
-      <span
+      {!anchorElement && <span
         ref={anchorRef}
+        data-kg-tooltip-anchor="1"
         className={cn('inline-flex items-center', className)}
         style={anchorStyle}
         onMouseEnter={onEnter}
@@ -181,24 +185,30 @@ export default function Tooltip({ content, className, children, maxWidthFromPrev
         onBlurCapture={onLeave}
       >
         {children}
-      </span>
+      </span>}
       {open && pos && createPortal(
         <section
           ref={setContentElement}
           {...contentDataAttrs}
+          id={id || generatedId}
+          role="tooltip"
           data-kg-tooltip-root="1"
           className={cn(`px-2 py-1 text-xs rounded ${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text} whitespace-normal break-words overflow-hidden ${interactive ? 'pointer-events-auto' : 'pointer-events-none'} z-[10000]`, contentClassName)}
           style={{
             ...contentStyle,
+            // All hover surfaces, including rich panels, share the inverse palette.
+            ...({ '--kg-panel-bg': 'var(--kg-tooltip-bg)', '--kg-text-primary': 'var(--kg-tooltip-text)', '--kg-text-secondary': 'var(--kg-tooltip-text)', '--kg-text-tertiary': 'var(--kg-tooltip-text)' } as React.CSSProperties),
+            backgroundColor: 'var(--kg-tooltip-bg)',
+            color: 'var(--kg-tooltip-text)',
             position: 'fixed',
             top: pos.top,
             left: pos.left,
             transform: contentOffset
               ? `translate(calc(-50% + ${contentOffset.x}px), ${contentOffset.y}px)`
               : 'translateX(-50%)',
-            width: contentSize?.width ? `${contentSize.width}px` : undefined,
+            width: contentSize?.width ? `${contentSize.width}px` : 'max-content',
             height: contentSize?.height ? `${contentSize.height}px` : undefined,
-            maxWidth: contentSize?.width ? `${contentSize.width}px` : (maxW ? `${maxW}px` : '250px'),
+            maxWidth: contentSize?.width ? `${contentSize.width}px` : `min(${maxW || 250}px, calc(100vw - 16px))`,
           }}
           onMouseEnter={() => {
             if (!interactive) return
@@ -238,7 +248,7 @@ export default function Tooltip({ content, className, children, maxWidthFromPrev
         >
           {content}
         </section>,
-        getTooltipPortalTarget(anchorRef.current)
+        getTooltipPortalTarget(anchorElement || anchorRef.current)
       )}
     </>
   )

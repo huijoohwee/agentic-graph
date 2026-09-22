@@ -44,11 +44,9 @@ import {
   resolveCameraVerticalFovDegreesForOptics,
   resolveFullFrameEquivalentFocalLengthMm,
 } from '@/features/strybldr/cameraOptics'
-
 function readSource(...parts: string[]): string {
   return readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8')
 }
-
 function buildGraph(): GraphData {
   return {
     type: 'Graph',
@@ -374,13 +372,13 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   const sceneLibrarySource = readSource('features', 'three', 'xrSceneLibrary.ts')
   const sceneSubjectSource = readSource('features', 'three', 'XrSceneLibrarySubject.tsx')
   const mediaCatalogViewSource = readSource('features', 'command-menu', 'MediaCatalogPanelView.tsx')
-  const xrMediaLibrarySource = readSource('features', 'command-menu', 'XrMediaLibraryPanel.tsx')
+  const xrMediaLibrarySource = ['XrMediaLibraryPanel.tsx', 'XrMediaLibraryCards.tsx'].map(file => readSource('features', 'command-menu', file)).join('\n')
   const xrMediaInvocationRuntimeSource = readSource('features', 'command-menu', 'xrMediaInvocationRuntime.ts')
   const xrSceneMcpContractSource = readSource('features', 'three', 'xrSceneMcpContract.mjs')
   const xrSceneMcpRuntimeSource = readSource('features', 'three', 'xrSceneMcpRuntime.ts')
   const timelineBottomPanelSource = readSource('features', 'gitgraph', 'TimelineBottomPanelView.tsx')
   const cameraFloatingSource = readSource('features', 'strybldr', 'StrybldrCameraFloatingPanelView.tsx')
-  const xrCameraMotionSource = readSource('features', 'three', 'XrCameraMotionSection.tsx')
+  const xrCameraMotionSource = ['XrCameraMotionSection.tsx', 'XrTimelineSceneStageControls.tsx'].map(file => readSource('features', 'three', file)).join('\n')
   const xrTimelineProjectionSource = readSource('features', 'three', 'xrMotionReferenceTimeline.ts')
   const ganttTransportPanelSource = readSource('features', 'gitgraph', 'GanttTimelineTransportPanel.tsx')
   const ganttTransportSurfaceSource = readSource('features', 'gitgraph', 'useGanttTimelineTransportSurfaceModel.ts')
@@ -414,7 +412,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     'XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (',
     'data-kg-xr-motion-save="1"',
     'data-kg-xr-motion-export="1"',
-    "documentLoaded ? `${objectTargets.length} objects · ${edges} links` : 'World ready'",
+    "documentLoaded ? `${objectCount} objects · ${edges} links` : 'World ready'",
     'persistXrScene',
     'downloadBlob',
   ]) {
@@ -426,7 +424,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   for (const marker of ['data-kg-media-3d-toggle="1"', '<XrMediaLibraryPanel', '3D for XR', "if (xrSurfaceActive) setMediaCatalogMode('xr-3d')"]) {
     if (!mediaCatalogViewSource.includes(marker)) throw new Error(`expected FloatingPanel Media to expose ${marker}`)
   }
-  for (const marker of ['data-kg-media-xr-environments="1"', 'data-kg-media-xr-subject-library="1"', 'data-kg-media-xr-next-label="1"', 'data-kg-media-xr-assets-mcp=', 'data-kg-media-xr-invocation=', 'data-kg-media-xr-invocation-chip-renderer="shared-markdown-sigil"', 'renderMarkdownSigilInlineText(invocation', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'data-kg-media-xr-asset-transition=', 'data-kg-media-xr-subject-transition=', 'buildXrMediaInvocationControlInput(invocation)', 'onInvoke={runInvocation}', 'controlLocalXrScene']) {
+  for (const marker of ['data-kg-media-xr-environments="1"', 'data-kg-media-xr-subject-library="1"', 'data-kg-media-xr-next-label="1"', 'data-kg-media-xr-assets-mcp=', 'data-kg-media-xr-invocation=', 'data-kg-media-xr-invocation-chip-renderer="shared-markdown-sigil"', 'renderMarkdownSigilInlineText(invocation', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'data-kg-media-xr-asset-transition=', 'buildXrMediaInvocationControlInput(invocation)', 'onInvoke={runInvocation}', 'controlLocalXrScene']) {
     if (!xrMediaLibrarySource.includes(marker)) throw new Error(`expected the native XR Media library to expose ${marker}`)
   }
   if (!xrMediaInvocationRuntimeSource.includes('Object.freeze({ invocation })')) throw new Error('expected XR Media invocation dispatch to carry only the displayed literal')
@@ -540,7 +538,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     || stageSource.includes('hydrateXrMotionReferenceRuntime')) {
     throw new Error('expected one app-root XR choreography hydration owner independent of stage and panel visibility')
   }
-  if (!stageSource.includes('Math.hypot(dx, dy, dz)') || !stageSource.includes('setFromUnitVectors')) {
+  if (!sceneSubjectSource.includes('Math.hypot(dx, dy, dz)') || !sceneSubjectSource.includes('setFromUnitVectors')) {
     throw new Error('expected cast and camera paths to preserve vertical Y-up movement in their 3D segment transform')
   }
   if (!stageSource.includes('xrMotionReferenceWorldPosition(mark.pose.target') || !packageSource.includes('point(mark.pose.target)')) {
@@ -549,7 +547,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   if (xrCameraMotionSource.includes('Capture camera') || xrCameraMotionSource.includes('Mark cast @')) {
     throw new Error('expected stale manual camera/cast capture controls to be removed in favor of canonical Camera SHOOT')
   }
-  if (!xrCameraMotionSource.includes('disabled={!graphData || !runtime.dirty}')) {
+  if (!xrCameraMotionSource.includes('saveDisabled={!graphData || !runtime.dirty}')) {
     throw new Error('expected XR plan persistence to fail closed when no graph is available')
   }
   if (!readSource('features', 'three', 'xrScenePersistence.ts').includes('metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY] !== serializedMotion') || !xrCameraMotionSource.includes('save-error')) {

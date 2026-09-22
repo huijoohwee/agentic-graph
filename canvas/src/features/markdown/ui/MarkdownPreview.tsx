@@ -296,11 +296,14 @@ const MarkdownPreview = React.forwardRef<HTMLElement, MarkdownPreviewProps>(func
   const selectEdge = useGraphStore(s => s.selectEdge)
 
   const inlineEditActiveRef = React.useRef(false)
+  // Blocks share this callback: rebinding it replays inactive signals during an active edit.
+  const inlineEditStateChangeRef = React.useRef(onInlineEditStateChange)
+  React.useEffect(() => { inlineEditStateChangeRef.current = onInlineEditStateChange }, [onInlineEditStateChange])
   const handleInlineEditStateChange = React.useCallback((active: boolean) => {
     if (inlineEditActiveRef.current === active) return
     inlineEditActiveRef.current = active
-    onInlineEditStateChange?.(active)
-  }, [onInlineEditStateChange])
+    inlineEditStateChangeRef.current?.(active)
+  }, [])
 
   const handleShowOnCanvas = React.useCallback(
     (startLine: number, endLine: number) => {

@@ -21,7 +21,7 @@ import {
   readXrPhysicsRuntime,
   subscribeXrPhysicsRuntime,
 } from './xrPhysicsRuntime'
-import { controlXrSharedAssetControls } from './xrSharedAssetControlRuntime'
+import { controlXrSharedAssetControls, inspectXrSharedAssetControls } from './xrSharedAssetControlRuntime'
 import { selectBoundXrShotTarget } from './xrSelectedActorBinding'
 import { inspectMotionControlTargets } from './motionControlTargetRuntime'
 import type { MotionControlCompanionTarget } from './motionControlSurfaceRuntime'
@@ -86,6 +86,7 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
   const selectedObject = objectIdentification.records.find(record => record.selected) || null
   const animation = targets.surfaces.animation
   const gameMode = targets.surfaces.gameMode
+  const sharedAsset = inspectXrSharedAssetControls()
   const animationTarget = animation.selectedTarget
   const animationStatus = !animation.sceneReady
     ? 'Open or create a graph document to control XR animation.'
@@ -93,7 +94,7 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
       ? `${animationTarget.label || animationTarget.actorId} · ${animationTarget.assignedPresetId
         ? (animationTarget.livePoseCompatible ? (livePoseActive ? 'live pose override' : 'authored animation + live pose ready') : 'authored animation ready · live pose unavailable')
         : `animation compatible · assign ${animationTarget.recommendedPresetId}${animationTarget.livePoseCompatible ? ' · live pose ready' : ' · live pose unavailable'}`}`
-      : 'Select an animation-compatible cast target in 3D for XR or Animation.'
+      : sharedAsset.selectedLabel ? `${sharedAsset.selectedLabel} · ${sharedAsset.selectedActorId ? 'authored path · edit in Animation' : 'stage object · select a cast target for motion'}` : 'Select a cast target in Animation.'
   const fineTunePhysics = React.useCallback(() => {
     onOpenTarget('xr-3d')
     requestXrSimulationWorkbenchOpen()
