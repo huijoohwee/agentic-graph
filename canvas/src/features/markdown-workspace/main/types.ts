@@ -5,10 +5,11 @@ import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/w
 import type { HighlightedLineRange, MarkdownPresentationApi } from '../markdownWorkspaceTypes'
 import type { WebpageFrontmatterMeta, WebpageViewMode } from '@/lib/markdown/frontmatter'
 
-export type MarkdownWorkspacePaneVisibility = { json: boolean; markdown: boolean; viewer: boolean; html: boolean }
+export type MarkdownWorkspacePaneVisibility = { json: boolean; markdown: boolean; viewer: boolean; html: boolean; python?: boolean }
 
 export type MarkdownWorkspacePaneAvailability = {
   bin: boolean
+  python?: boolean
   json: boolean
   markdown: boolean
   viewer: boolean
@@ -36,7 +37,7 @@ function extensionLower(nameRaw: string): string {
   return index > 0 ? base.slice(index + 1).toLowerCase() : ''
 }
 
-export type MarkdownWorkspaceDocumentPanePreset = 'viewer' | 'json' | 'markdown' | null
+export type MarkdownWorkspaceDocumentPanePreset = 'viewer' | 'json' | 'markdown' | 'python' | null
 
 export function isMarkdownWorkspaceDelimitedTextPath(activeDocumentKey?: string | null): boolean {
   const ext = extensionLower(String(activeDocumentKey || ''))
@@ -47,13 +48,16 @@ export function resolveMarkdownWorkspaceDocumentPanePreset(activeDocumentKey?: s
   if (isMarkdownWorkspaceDelimitedTextPath(activeDocumentKey)) return 'viewer'
   const ext = extensionLower(String(activeDocumentKey || ''))
   if (ext === 'json' || ext === 'jsonld' || ext === 'geojson') return 'json'
+  if (ext === 'py') return 'python'
   if (ext === 'md' || ext === 'markdown') return 'markdown'
   return null
 }
 
 export function resolveMarkdownWorkspacePaneAvailability(args: {
+  activeDocumentKey?: string | null
   modelAssetFormat?: 'glb' | 'gltf' | null
 }): MarkdownWorkspacePaneAvailability {
+  if (resolveMarkdownWorkspaceDocumentPanePreset(args.activeDocumentKey) === 'python') return { bin: false, python: true, json: false, markdown: false, viewer: false, html: false }
   if (args.modelAssetFormat === 'glb') {
     return { bin: true, json: false, markdown: false, viewer: false, html: false }
   }
@@ -73,6 +77,7 @@ export function resolveMarkdownWorkspaceInitialPaneVisibility(args: {
   if (args.webpageView === 'json') return { json: true, markdown: false, viewer: false, html: false }
   if (args.webpageView === 'html') return { json: false, markdown: false, viewer: true, html: true }
   const documentPreset = resolveMarkdownWorkspaceDocumentPanePreset(args.activeDocumentKey)
+  if (documentPreset === 'python') return { python: true, json: false, markdown: false, viewer: false, html: false }
   if (documentPreset === 'viewer') return { json: false, markdown: false, viewer: true, html: false }
   if (documentPreset === 'json') return { json: true, markdown: false, viewer: false, html: false }
   if (documentPreset === 'markdown') return { json: false, markdown: true, viewer: false, html: false }
@@ -92,6 +97,7 @@ export function resolveMarkdownWorkspacePaneVisibility(args: {
   const forceMarkdownEditorInEditorMode = args.forceMarkdownEditorInEditorMode !== false
 
   return {
+    ...(availability.python ? { python: (isEditor || isSplit) && !!args.splitPaneVisibility.python } : {}),
     json: availability.json && (isEditor || isSplit) && args.splitPaneVisibility.json,
     markdown: availability.markdown && (
       (isEditor && (forceMarkdownEditorInEditorMode || args.splitPaneVisibility.markdown)) ||
