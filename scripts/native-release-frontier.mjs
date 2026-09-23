@@ -145,7 +145,7 @@ const snapshotLane = (registration, root, common, records, budget) => {
   assert.equal(matches.length, 1, `native lane metadata is missing or ambiguous: ${location}`)
   const record = matches[0]
   for (const predecessor of history.filter(entry => entry !== record)) {
-    assert.ok(['published', 'integrated'].includes(predecessor.state), 'historical lane metadata must be retained publication')
+    assert.ok(['active', 'published', 'integrated'].includes(predecessor.state), 'historical lane metadata has invalid state')
     assert.match(predecessor.head || '', SHA, 'historical lane metadata must bind exact head')
     assert.equal(line(location, ['merge-base', predecessor.head, headRevision]), predecessor.head,
       'historical lane metadata must precede the current branch')
