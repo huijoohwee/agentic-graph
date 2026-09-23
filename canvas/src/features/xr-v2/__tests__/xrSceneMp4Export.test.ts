@@ -14,7 +14,7 @@ class Recorder extends EventTarget {
   mimeType = 'video/mp4'
   start() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('start'))) }
   pause() { this.state = 'paused' }
-  resume() { this.state = 'recording' }
+  resume() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('resume'))) }
   requestData() {
     const event = new Event('dataavailable')
     Object.defineProperty(event, 'data', { value: new Blob(['test bytes']) })
