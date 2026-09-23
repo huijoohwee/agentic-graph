@@ -8,7 +8,7 @@ import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { __resetAgenticGraphStorageDbForTests, getAgenticGraphStorageDb } from '@/lib/storage/agentic-graph-storage-db'
-import { readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, syncWorkspaceEntriesToCloudWorkspaceSnapshot, syncWorkspaceEntryToCloudWorkspaceSnapshot, syncWorkspaceEntryToCanonicalCloud } from '@/features/source-files/sourceFileCanonicalCloudSync'
+import { readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, resolveSourceFileCloudWorkspaceTarget, syncWorkspaceEntriesToCloudWorkspaceSnapshot, syncWorkspaceEntryToCloudWorkspaceSnapshot, syncWorkspaceEntryToCanonicalCloud } from '@/features/source-files/sourceFileCanonicalCloudSync'
 import { syncSourceFilesToAgenticGraphStorage } from '@/features/source-files/sourceFilesStorageSync'
 import { SourceFileCloudSyncIndicator, resolveSourceFileCloudSyncStatus } from '@/features/markdown-workspace/SourceFileCloudSyncIndicator'
 import { beginAgenticGraphStorageBrowserSignIn, readAgenticGraphStorageBrowserSession } from '@/lib/storage/agentic-graph-storage-browser-session'
@@ -154,6 +154,15 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     if (batch.length !== 2 || batch.some(item => !item.readBackVerified)
       || events.filter(event => event === 'POST:/api/storage/push').length !== 1
       || events.filter(event => event.startsWith('GET:/api/storage/export/')).length !== 1) throw new Error('Batch upload must verify two documents with one push and one export')
+    const pythonPath = await fs.createFile({ parentPath: '/', name: 'python-learning-demo.py', text: 'print(at_goal())\n' })
+    const pythonEntry = (await fs.listEntries()).find(candidate => candidate.path === pythonPath)
+    if (!pythonEntry) throw new Error('expected Python workspace entry')
+    events.length = 0
+    const pythonSnapshot = await syncWorkspaceEntryToCloudWorkspaceSnapshot({ entry: pythonEntry, workspaceId, fetchImpl: cookieFetch })
+    const pythonExport = await readCanonicalCloudDocumentSnapshot({ workspaceId, fetchImpl: cookieFetch })
+    if (pythonSnapshot.documentKind !== 'python' || !pythonSnapshot.readBackVerified
+      || pythonExport.get(pythonSnapshot.canonicalPath) !== 'print(at_goal())\n'
+      || events.includes('POST:/api/storage/collab/save')) throw new Error('Python must sync only to the authenticated workspace snapshot')
     await __resetAgenticGraphStorageDbForTests()
     events.length = 0
     const result = await syncWorkspaceEntryToCanonicalCloud({ entry, workspaceId, baseUrl: '', sessionToken: SESSION_TOKEN, fetchImpl })
@@ -585,4 +594,17 @@ export function testSourceFileCloudTargetsRespectDocumentRepositoryAuthority() {
   }
   if (staleWorkspaceSeed !== null) throw new Error('expected the duplicate huijoohwee workspace-seeds root to be read-only')
   if (governance !== null) throw new Error('expected Agentic Canvas OS governance docs to remain read-only')
+  const pythonSnapshot = resolveSourceFileCloudWorkspaceTarget('/python-learning-demo.py')
+  if (pythonSnapshot?.documentKind !== 'python' || pythonSnapshot.canonicalPath !== 'python-learning-demo.py'
+    || resolveSourceFileCanonicalCloudTarget('/python-learning-demo.py') !== null) {
+    throw new Error('Python has explicit workspace snapshot support without canonical repository-save authority')
+  }
+  const pythonEntry = { kind: 'file', path: '/python-learning-demo.py', parentPath: '/', name: 'python-learning-demo.py',
+    updatedAtMs: 0, text: 'print(at_goal())\n' } satisfies WorkspaceEntry
+  if (resolveSourceFileCloudSyncStatus({ entry: pythonEntry, snapshotStatus: 'ready',
+    remoteContentByCanonicalPath: new Map() }) !== 'local'
+    || resolveSourceFileCloudSyncStatus({ entry: pythonEntry, snapshotStatus: 'ready',
+      remoteContentByCanonicalPath: new Map([['python-learning-demo.py', pythonEntry.text]]) }) !== 'cloud') {
+    throw new Error('Python Source Files must expose the same explicit local/cloud status as Markdown')
+  }
 }

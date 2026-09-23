@@ -162,6 +162,10 @@ States: idle -> validating -> ready -> running/paused -> completed/failed/cancel
 
 Store source in existing workspace files. Explicitly save completed/failed debriefs as validated Decisions: run identities, seed, criteria, score, hint stage, timestamp/version. Interpreter/frame state is ephemeral; trace export is bounded and explicit. No learner/classroom identity or automatic code upload. Quota/eviction failures disclose missing durability and offer export. Multi-device means portable files and validated import, not automatic sync/parity. Import never executes.
 
+The bundled first-lesson worked example is discoverable from Source Files and creates an editable local `.py` file only when opened. An authenticated learner may explicitly upload Markdown or Python text as a shared workspace snapshot, with remote read-back; download retains conflicting local bytes under a distinct name. Python snapshots do not invoke the canonical GitHub document-save bridge, and no background code upload or cross-device parity is implied.
+
+The lesson stage uses the existing full Canvas renderer and its orbit, pan, and zoom controls beneath the Editor overlay. Resizing the Editor does not resize the Canvas. A file-specific icon at the right edge of the shared toolbar reopens Python code; no lesson-only Canvas or gesture owner is mounted.
+
 ### Offline lessons
 
 Original tasks: L1 variable-controlled travel to a goal; L2 repeated route around local obstacles; L3 function with sensor-conditioned motion. Each binds objective, supported constructs, starter, scene/seed, rubric, staged hints and a worked solution. Correct/incorrect fixtures pass/fail the displayed rubric; source text or agent assertions cannot substitute for simulation evidence.

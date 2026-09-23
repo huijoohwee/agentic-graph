@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { HelpCircle, Settings, Search as SearchIcon, History as HistoryIcon, SunMoon, Plus, Link2, MessageCircle, Play, Download, RotateCcw } from 'lucide-react';
+import { HelpCircle, Settings, Search as SearchIcon, History as HistoryIcon, SunMoon, Plus, Link2, MessageCircle, Play, Download, RotateCcw, FileCode2 } from 'lucide-react';
 import IconButton from '@/components/IconButton';
 import { DropdownPanel } from '@/lib/ui/overlay';
 import { UI_COPY, UI_LABELS } from '@/lib/config';
@@ -13,6 +13,7 @@ import { useCanvasToolbarContext } from '@/components/toolbar/useCanvasToolbarCo
 import { Canvas2dRendererSelect } from '@/components/toolbar/Canvas2dRendererSelect';
 import { EditorWorkspaceSelect } from '@/components/toolbar/EditorWorkspaceSelect';
 import { AgentRunCloseButton } from '@/features/agent-ready/AgentRunCloseButton'
+import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
 import { InteractionModeSelect } from '@/components/toolbar/InteractionModeSelect';
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
@@ -92,6 +93,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
   const pushUiToast = useGraphStore(s => s.pushUiToast)
   const selectedNodeId = useGraphStore(s => s.selectedNodeId)
   const workspaceViewMode = useGraphStore(s => s.workspaceViewMode)
+  const learningDocument = React.useSyncExternalStore(pythonLearningRuntime.subscribe, () => pythonLearningRuntime.read().document, () => null)
   const activeCanvas2dRenderer = useGraphStore(s => s.canvas2dRenderer)
   const requestEdgeCreation = useGraphStore(s => s.requestEdgeCreation)
   const setSelectionSource = useGraphStore(s => s.setSelectionSource)
@@ -506,6 +508,14 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         </IconButton>
       )}
       <AgentRunCloseButton iconSizeClass={iconSizeClass} iconStrokeWidth={iconStrokeWidth} />
+      {learningDocument ? <>
+        <hr className="App-toolbar__divider" aria-hidden="true" />
+        <IconButton className="App-toolbar__btn" title="Edit Python code" ariaLabel="Edit Python code"
+          tooltipContent="Edit Python code" showTooltip
+          onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true })}>
+          <FileCode2 className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+        </IconButton>
+      </> : null}
     </nav>
   );
 }
