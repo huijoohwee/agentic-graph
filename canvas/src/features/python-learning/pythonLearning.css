@@ -4,15 +4,14 @@
 .python-learning button:disabled { opacity:.45; cursor:not-allowed; }
 .python-learning button:focus-visible,.python-learning select:focus-visible,.python-learning summary:focus-visible { outline:2px solid #65baff; outline-offset:2px; }
 .python-learning-objective { padding:4px 10px; margin:0; }
+.python-learning-run-feedback { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:5px 10px; background:var(--kg-panel-bg,transparent); border-block:1px solid var(--kg-border,#667); }
+.python-learning-run-feedback span { min-width:0; overflow-wrap:anywhere; }
 .python-learning-body { flex:1; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); min-height:0; }
 .python-learning-code { display:flex; flex-direction:column; min-width:0; min-height:180px; }
 .python-learning-result { display:block; min-width:0; overflow:auto; padding:8px; }
 .python-learning pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:220px; overflow:auto; }
 .python-learning details { padding:6px; border-top:1px solid var(--kg-border,#667); }
 .python-learning summary { cursor:pointer; min-height:30px; }
-.python-learning-scene { margin:0; width:100%; height:260px; min-height:260px; flex-shrink:0; display:flex; flex-direction:column; }
-.python-learning-scene>div { min-height:0; flex:1; }
-.python-learning-scene figcaption { font-size:12px; padding:5px 0; }
 .python-learning-mobile-views { display:none; gap:6px; padding:6px; }
 @container python-learning (max-width:768px) {
   .python-learning-body { display:flex; flex-direction:column; }
