@@ -1,8 +1,8 @@
 ---
 title: "agentic-graph AR/VR/XR — Device-Agnostic Capture, Viewing, Native In-Repo Spatial Authoring & Game Simulation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "3.0.1"
-date: "2026-09-24"
+version: "3.0.0"
+date: "2026-08-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Solo Founder / AI Orchestrator"
@@ -15,8 +15,6 @@ universal_scope: "false"
 # agentic-graph AR/VR/XR — Device-Agnostic Capture, Viewing, Native In-Repo Spatial Authoring & Game Simulation
 
 **Contents**: Part I — PRD (Feature A: Capture & Viewing · Feature B: Native In-Repo Spatial Authoring Toolkit · Feature C: Native In-Repo Game Simulation Layer) · Part II — TAD · Part III — ADR-1 through ADR-12 · Part IV — Agent-Platform Readiness · Part V — Invocation Register · Part VI — Readiness Gap Matrix · Part VII — Validation Checklist Status
-
-**Recovery checkpoint (v3.0.1, 2026-09-24)**: OS PR #296 merged as `0433c86a3528f2130d952a1b63c9e40feb41fde3`; native XR successor re-admission succeeded in the same checkout. All 40 focused recorder/encoder tests and native desktop/mobile smoke passed: authored two-second outputs survive injected encoder delay, decoded first/final frames match, and cancellation/document switching restore resources. Full affected checks and protected CI remain pending. Existing source, UI panels and Timeline remain the owners. No production deployment or measured resource savings is claimed.
 
 **Revision note (v3.0.0, corrected 2026-08-08)**: supersedes v2.0.0. Feature A and Feature B, and ADR-1 through ADR-9, are carried forward. Feature C records one immediate increment, AC-14 collision-to-behavior routing, by adapting the existing native spatial-physics event stream to the existing behavior dispatcher. AC-13, AC-15, AC-16, and AC-17 remain explicit follow-on slices and carry no implementation or readiness claim here. ADR-10 and ADR-11 correct the ECS and physics ownership record; ADR-12 remains proposed.
 
@@ -1100,14 +1098,14 @@ Same build-hour-vs-license logic as ADR-5: adoption wins for a UI/feature-heavy,
 ---
 
 ### ADR-7: Media Container Muxing Strategy
-**Status**: Accepted for bounded silent XR AVC export; other packaging remains proposed
-**Date**: 2026-09-24
+**Status**: Proposed
+**Date**: 2026-08-03
 
 #### Context
 Feature B's in-browser packaging need (AC-11) is narrow: mux already-encoded WebCodecs output into a standard playable container. It does not need full transcoding, demuxing, or format-conversion breadth.
 
 #### Decision
-Implement a minimal in-repo MP4/WebM box writer over WebCodecs' encoded-chunk output, rather than adopting a general-purpose media-toolkit package. The 2026-09-24 recovery implements `xrSceneMp4Encoder.ts` and `xrSceneMp4Mux.ts`: reuse native Timeline start/end holds, renderer callbacks, the shared recorder lease, encoded-chunk copying and `verifyXrSceneMp4`. Authored timestamps bound duration under encoder delay; the exact endpoint occupies the final authored frame interval. Keep 120 seconds, 7,201 samples, queue 4 and 64 MB limits. Unsupported AVC retains the existing recorder path; failed encoding never silently substitutes format.
+Implement a minimal in-repo MP4/WebM box writer over WebCodecs' encoded-chunk output, rather than adopting a general-purpose media-toolkit package.
 
 #### Alternatives Considered
 1. **General-purpose FOSS media toolkit (FOSS alternative)**: Pros — handles many codecs/containers, actively maintained. Cons — the actively maintained option in this space carries an MPL-2.0 license (its predecessor package is deprecated outright), outside the MIT/Apache-2.0-only gate without an exception; also far broader in scope than this project's narrow muxing-only need.
