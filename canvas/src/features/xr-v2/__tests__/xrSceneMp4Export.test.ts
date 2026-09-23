@@ -14,7 +14,7 @@ class Recorder extends EventTarget {
   mimeType = 'video/mp4'
   start() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('start'))) }
   pause() { this.state = 'paused' }
-  resume() { this.state = 'recording' }
+  resume() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('resume'))) }
   requestData() {
     const event = new Event('dataavailable')
     Object.defineProperty(event, 'data', { value: new Blob(['test bytes']) })
@@ -156,6 +156,25 @@ test('final authored image survives faster rendering, slow recorder sampling and
     assert.ok(value.sampledStates().some(sample => sample.pixel === 80 && sample.state === 'paused'), 'endpoint remains available while paused')
     assert.ok(value.sampledStates().some(sample => sample.pixel === 80 && sample.state === 'recording'), 'endpoint records after resume')
     assert.equal(value.frameRequests(), automaticOnly ? 0 : 3)
+  })
+})
+test('the final frame request waits for recorder resume acknowledgement', async () => {
+  await fixture(async value => {
+    const resume = Recorder.prototype.resume
+    let resumeEvents = 0; let requestsAtFinalResume = -1
+    Recorder.prototype.resume = function () {
+      this.state = 'recording'
+      setTimeout(() => {
+        if (++resumeEvents === 2) requestsAtFinalResume = value.frameRequests()
+        this.dispatchEvent(new Event('resume'))
+      }, 20)
+    }
+    try {
+      assert.equal((await value.capture()).status, 'captured')
+      assert.equal(resumeEvents, 2)
+      assert.equal(requestsAtFinalResume, 2)
+      assert.equal(value.frameRequests(), 3)
+    } finally { Recorder.prototype.resume = resume }
   })
 })
 test('delayed Timeline startup creates no recorder or stream until the fresh opening image is ready', async () => {

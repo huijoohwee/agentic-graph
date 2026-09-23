@@ -333,12 +333,15 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     track.requestFrame?.()
     await waitSamplingSlots(2)
     assertCurrent()
+    let resumed = false
+    recorder.addEventListener('resume', () => { resumed = true; check() }, { once: true })
     recorder.resume()
+    await waitRendered(() => resumed, 5_000)
     const lastPreviewFrame = previewFrames
-    if (previewFrameId !== null) pauseAtPreviewFrame = lastPreviewFrame + 2
+    if (previewFrameId !== null) pauseAtPreviewFrame = lastPreviewFrame + 1
     track.requestFrame?.()
-    if (previewFrameId !== null) await waitRendered(() => previewFrames >= lastPreviewFrame + 2 && recorder!.state === 'paused', 5_000)
-    else { await waitSamplingSlots(2); recorder.pause() }
+    if (previewFrameId !== null) await waitRendered(() => previewFrames > lastPreviewFrame && recorder!.state === 'paused', 5_000)
+    else { await waitSamplingSlots(1); recorder.pause() }
     assertCurrent()
     await flushVideoSequenceRecorderOutput({ recorder, output, signal: args.signal })
     const chunks = await finishVideoSequenceRecorderOutput(recorder, output)
