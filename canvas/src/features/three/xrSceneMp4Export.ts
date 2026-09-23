@@ -111,6 +111,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   let preview: HTMLVideoElement | null = null
   let previewFrames = 0
   let previewFrameId: number | null = null
+  let pauseAtPreviewFrame = 0
   let recorderStarted = false
   let recorder: MediaRecorder | null = null
   let output: VideoSequenceRecorderOutput | null = null
@@ -152,6 +153,10 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   const onRecorderStart = () => { recorderStarted = true; check() }
   const onPreviewFrame = () => {
     previewFrames++
+    if (pauseAtPreviewFrame && previewFrames >= pauseAtPreviewFrame) {
+      pauseAtPreviewFrame = 0
+      try { if (recorder?.state === 'recording') recorder.pause() } catch (error) { failure = error as Error }
+    }
     previewFrameId = preview!.requestVideoFrameCallback(onPreviewFrame)
     check()
   }
@@ -172,7 +177,12 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     // The terminal clock acknowledgement retains the authored camera until this
     // exact frame is copied. Later free-orbit renders cannot replace it.
     if (!finalImageFrozen && recorder?.state === 'recording') renderedFrames += 1
-    if (clockEnding && observedFrames > clockEndFrames && frameTime === binding.durationSeconds) finalImageFrozen = true
+    if (!finalImageFrozen && clockEnding && observedFrames > clockEndFrames && frameTime === binding.durationSeconds) {
+      finalImageFrozen = true
+      // Stop the encoded clock as soon as the authored endpoint is copied.
+      // Preview delivery and encoder readback can stall independently of Timeline.
+      try { if (recorder?.state === 'recording') recorder.pause() } catch (error) { failure = error as Error }
+    }
     if (renderArgs[0].xr?.isPresenting) failure = new Error('Exit immersive XR before exporting the authored camera.')
     check()
   }
@@ -187,6 +197,20 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     }
     wake()
   })
+  const waitSamplingSlots = (count: number): Promise<void> => {
+    const before = previewFrames
+    if (previewFrameId !== null) return waitRendered(() => previewFrames >= before + count, 5_000)
+    return new Promise<void>((resolve, reject) => {
+      const finish = (error?: Error) => {
+        clearTimeout(timer); verificationAbort.signal.removeEventListener('abort', aborted)
+        if (error) reject(error); else resolve()
+      }
+      const aborted = () => finish(failure || abortError())
+      const timer = setTimeout(() => finish(), Math.ceil(count * 1_000 / Math.min(60, Math.max(1, binding.fps))))
+      verificationAbort.signal.addEventListener('abort', aborted, { once: true })
+      if (verificationAbort.signal.aborted) aborted()
+    })
+  }
   const onData = (event: BlobEvent) => {
     bytes += event.data.size
     if (bytes > XR_MP4_MAX_BYTES) { failure = new Error('MP4 recording exceeds the 64 MB limit.'); check() }
@@ -295,29 +319,26 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     startupImageFrozen = false
     releaseClock!(); releaseClock = null; rejectClock = null
     await waitRendered(() => {
-      if (!recorder || recorder.state !== 'recording' || output?.hasStopped()) throw new Error('MP4 recorder stopped before the scene finished.')
+      if (!recorder || recorder.state === 'inactive' || output?.hasStopped()) throw new Error('MP4 recorder stopped before the scene finished.')
       const progress = Math.floor(Math.min(95, renderedTime / binding.durationSeconds * 95))
       if (progress !== lastProgress) { lastProgress = progress; args.onProgress?.(progress / 100) }
-      return finalImageFrozen && renderedFrames >= 3
+      return finalImageFrozen && recorder.state === 'paused' && renderedFrames >= 3
     }, binding.durationSeconds * 1_000 + 8_000)
     // Only the acknowledged terminal render releases the native playing camera.
-    // Retain its frozen image through two encoder sampling slots before stopping.
+    // Let the frozen endpoint reach preview while encoded time is paused, then
+    // record two final samples so the last decodable frame has nonzero duration.
     detachClock(); detachClock = () => {}
     releaseEnd!(); releaseEnd = null; rejectEnd = null
     const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack
-    const endPreviewFrames = previewFrames
     track.requestFrame?.()
-    if (previewFrameId !== null) await waitRendered(() => previewFrames >= endPreviewFrames + 2, 5_000)
-    else await new Promise<void>((resolve, reject) => {
-      const finish = (error?: Error) => {
-        clearTimeout(timer); verificationAbort.signal.removeEventListener('abort', aborted)
-        if (error) reject(error); else resolve()
-      }
-      const aborted = () => finish(failure || abortError())
-      const timer = setTimeout(() => finish(), Math.ceil(2_000 / Math.min(60, Math.max(1, binding.fps))))
-      verificationAbort.signal.addEventListener('abort', aborted, { once: true })
-      if (verificationAbort.signal.aborted) aborted()
-    })
+    await waitSamplingSlots(2)
+    assertCurrent()
+    recorder.resume()
+    const lastPreviewFrame = previewFrames
+    if (previewFrameId !== null) pauseAtPreviewFrame = lastPreviewFrame + 2
+    track.requestFrame?.()
+    if (previewFrameId !== null) await waitRendered(() => previewFrames >= lastPreviewFrame + 2 && recorder!.state === 'paused', 5_000)
+    else { await waitSamplingSlots(2); recorder.pause() }
     assertCurrent()
     await flushVideoSequenceRecorderOutput({ recorder, output, signal: args.signal })
     const chunks = await finishVideoSequenceRecorderOutput(recorder, output)
