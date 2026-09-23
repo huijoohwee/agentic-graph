@@ -44,7 +44,8 @@ test('default and protected affected validation share one owner command map', as
   for (const [index, partition] of Object.keys(partitions).entries()) {
     const check = policy.checks[index]
     assert.deepEqual(check.command, ['npm', 'run', 'ci:affected:source', '--', `--partition=${partition}`])
-    assert.equal(check.reuse, 'never')
+    assert.equal(check.reuse, 'local-plan')
+    assert.deepEqual(check.inputs, ['*'], 'reuse binds the entire source-selected plan')
     assert.equal(check.timeoutMs, 900000)
   }
   for (const paths of [['canvas/src/scene.ts'], ['unmatched-input'], ['.github/workflows/integration.yml']]) {
@@ -150,4 +151,25 @@ test('scope-local mapping preserves unmatched fallback and rejects invalid bound
     changed.ci_exact_path_scopes.runtime.scope_local = value
     assert.throws(() => validateContract(changed), /scope_local must be true/)
   }
+})
+
+test('selected CI control checks run first without adding or repeating catalog commands', async () => {
+  const contract = await readContract()
+  const paths = ['package.json', '.github/workflows/integration.yml', 'scripts/ci-evidence-inputs.mjs']
+  const { commands } = selectAffectedCommands(paths, contract)
+  const controlKeys = new Set(['collaboration', 'protected_ci_evidence'].flatMap(scope =>
+    contract.ci_scopes[scope].commands.map(command => JSON.stringify(command))))
+  const controls = commands.filter(command => controlKeys.has(JSON.stringify(command)))
+  const groups = partitionAffectedCommands(commands, contract)
+  assert.equal(controls.length, 3)
+  assert.deepEqual(groups.standard.slice(0, controls.length), controls)
+  const ordinary = structuredClone(contract)
+  delete ordinary.ci_scopes
+  const original = partitionAffectedCommands(commands, ordinary)
+  assert.deepEqual(groups.standard.slice(controls.length),
+    original.standard.filter(command => !controlKeys.has(JSON.stringify(command))))
+  assert.deepEqual(Object.values(groups).flat().map(JSON.stringify).sort(),
+    commands.map(JSON.stringify).sort())
+  const product = commands.filter(command => !controlKeys.has(JSON.stringify(command)))
+  assert.deepEqual(partitionAffectedCommands(product, contract), partitionAffectedCommands(product, ordinary))
 })
