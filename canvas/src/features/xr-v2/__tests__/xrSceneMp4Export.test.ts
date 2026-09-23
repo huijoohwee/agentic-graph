@@ -153,10 +153,8 @@ test('final authored image survives faster rendering, slow recorder sampling and
     assert.equal((await value.capture()).status, 'captured')
     assert.ok(value.sampledPixels().length >= 2)
     assert.ok(value.sampledPixels().slice(-2).every(pixel => pixel === 80))
-    assert.ok(value.sampledStates().some(sample => sample.pixel === 80 && sample.state === 'paused'),
-      'the endpoint must remain available while encoded time is paused')
-    assert.ok(value.sampledStates().some(sample => sample.pixel === 80 && sample.state === 'recording'),
-      'the endpoint must be recorded after the preview wait')
+    assert.ok(value.sampledStates().some(sample => sample.pixel === 80 && sample.state === 'paused'), 'endpoint remains available while paused')
+    assert.ok(value.sampledStates().some(sample => sample.pixel === 80 && sample.state === 'recording'), 'endpoint records after resume')
     assert.equal(value.frameRequests(), automaticOnly ? 0 : 3)
   })
 })
