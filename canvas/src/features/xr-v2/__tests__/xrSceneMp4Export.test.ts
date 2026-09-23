@@ -314,7 +314,6 @@ test('native binding restores its prior BottomPanel state but preserves a subseq
     assert.equal(useGraphStore.getState().bottomSurfaceTab, 'history')
   } finally { useGraphStore.setState(prior) }
 })
-
 function nativeClockFixture(onPlaybackStart?: (position: number, signal: AbortSignal) => Promise<void> | void,
   onPlaybackComplete?: (position: number, signal: AbortSignal) => Promise<void> | void, freshSnapshots = false) {
   let now = 0; let nextId = 0; let current = true; let ended = 0; let projectedPosition = 0
@@ -337,7 +336,6 @@ function nativeClockFixture(onPlaybackStart?: (position: number, signal: AbortSi
       queue.delete(entry[0]); entry[1](timestamp)
     } }
 }
-
 test('native RAF acknowledges unchanged zero, holds without scheduling, and excludes startup latency', async () => {
   let release: () => void = () => {}; let signal: AbortSignal | undefined
   const held = new Promise<void>(resolve => { release = resolve })
@@ -580,7 +578,6 @@ test('fresh React-like snapshots acknowledge the computed endpoint and retain th
   assert.equal(endpoint, 2); assert.equal(ended, false)
   await Promise.resolve(); assert.equal(ended, true); assert.equal(clock.queued(), 0); clock.stop()
 })
-
 test('recorder startup holds zero until a fresh stream frame is presented', async () => {
   const start = Recorder.prototype.start
   try {
