@@ -339,9 +339,10 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                     </React.Suspense>
                   </section>
 
-                  {workspaceEditorOverlayOpen && !liveCanvasHeroOwnsWorkspace ? (
+                  {(workspaceEditorOverlayOpen || editorShellWarmed && /\.py$/i.test(activePath || '')) && !liveCanvasHeroOwnsWorkspace ? (
                     <section
                       ref={editorOverlayRef}
+                      hidden={!workspaceEditorOverlayOpen}
                       className="absolute inset-0 z-[300] pointer-events-none"
                       aria-label="Workspace editor overlay shell"
                       onPointerDown={() => setToolbarHeaderElevated(false)}

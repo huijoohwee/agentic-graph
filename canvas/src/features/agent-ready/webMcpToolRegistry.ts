@@ -6,6 +6,7 @@ import { IMPORT_URL_AGENT_READY_TOOL_IDS } from './importUrlAgentReadyContract.m
 import { GROUP_PANEL_AGENT_READY_TOOL_IDS } from '@/features/group-panel/groupPanelContract.mjs'
 import { STORAGE_SYNC_AGENT_READY_TOOL_IDS } from './storageSyncAgentReadyContract.mjs'
 import { DURABLE_RUN_AGENT_READY_TOOL_IDS } from './durableRunAgentReadyContract.mjs'
+import { PYTHON_LEARNING_TOOL_IDS } from '../python-learning/learningToolContract.mjs'
 import {
   AGENTIC_OS_STORAGE_DEFAULT_WORKSPACE_ID,
   buildAgenticGraphStorageDefaultDocPath,
@@ -544,6 +545,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...WORKSPACE_LAUNCH_WEB_MCP_TOOL_BUILDERS,
   ...TOOLBAR_ACTION_WEB_MCP_TOOL_BUILDERS,
   ...lazyToolBuilders(Object.values(DURABLE_RUN_AGENT_READY_TOOL_IDS), () => import('./durableRunWebMcpTools').then(m => m.buildDurableRunWebMcpToolBuilders(findWebToolContract))),
+  ...lazyToolBuilders(Object.values(PYTHON_LEARNING_TOOL_IDS), () => import('../python-learning/learningWebMcp').then(m => m.buildPythonLearningWebMcpToolBuilders(findWebToolContract))),
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,

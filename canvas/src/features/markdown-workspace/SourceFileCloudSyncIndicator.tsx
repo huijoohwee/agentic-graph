@@ -1,10 +1,9 @@
 import React from 'react'
-import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
 import { Cloud, CloudOff, HardDrive, LoaderCircle } from 'lucide-react'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import {
   readCanonicalCloudDocumentSnapshot,
-  resolveSourceFileCanonicalCloudTarget,
+  resolveSourceFileCloudWorkspaceTarget,
   syncWorkspaceEntryToCloudWorkspaceSnapshot,
   SOURCE_FILE_CLOUD_SNAPSHOT_VERIFIED_EVENT,
   type SourceFileCloudWorkspaceSnapshotResult,
@@ -64,7 +63,7 @@ const readCloudSnapshotStatusForSession = (
 
 const readSupportedPathSignature = (entries: WorkspaceEntry[]): string =>
   entries
-    .filter(entry => entry.kind === 'file' && resolveSourceFileCanonicalCloudTarget(entry.path))
+    .filter(entry => entry.kind === 'file' && resolveSourceFileCloudWorkspaceTarget(entry.path))
     .map(entry => entry.path)
     .sort()
     .join('|')
@@ -76,7 +75,7 @@ export const resolveSourceFileCloudSyncStatus = (args: {
   actionState?: EntryActionState | null
 }): SourceFileCloudSyncStatus => {
   if (args.entry.kind !== 'file') return 'unsupported'
-  const target = resolveSourceFileCanonicalCloudTarget(args.entry.path)
+  const target = resolveSourceFileCloudWorkspaceTarget(args.entry.path)
   if (!target) return 'unsupported'
   if (args.actionState?.status === 'uploading') return 'uploading'
   if (args.snapshotStatus === 'auth-required') return 'auth-required'
@@ -187,7 +186,7 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
     if (
       !cloudSyncEnabled
       || entry.kind !== 'file'
-      || !resolveSourceFileCanonicalCloudTarget(entry.path)
+      || !resolveSourceFileCloudWorkspaceTarget(entry.path)
     ) return
     const baseUrl = readAgenticGraphStorageBaseUrl()
     const workspaceId = readActiveAgenticGraphStorageWorkspaceId()
@@ -285,9 +284,9 @@ const buildIndicatorLabel = (entry: WorkspaceEntry, status: SourceFileCloudSyncS
   if (status === 'error') return `Cloud sync failed for ${name}. Retry shared cloud upload${error ? `: ${error}` : ''}`
   if (status === 'auth-required') return `Cloud sync requires sign-in for ${name}. This file remains saved locally.`
   if (status === 'access-required') return `Cloud sync access is required for ${name}. This file remains saved locally.`
-  if (status === 'unavailable') return `Local saved copy: ${name}. Configure cloud sync in Settings.`
+  if (status === 'unavailable') return `Local saved copy: ${name}. Sign in to sync this file.`
   if (status === 'checking') return `Checking cloud sync for ${name}`
-  if (status === 'unsupported') return `Local file: ${name}. Cloud upload supports Markdown`
+  if (status === 'unsupported') return `Local file: ${name}. Cloud upload supports Markdown and Python`
   return `Local saved copy: ${name}. Upload a shared cloud snapshot`
 }
 
@@ -331,8 +330,8 @@ export function SourceFileCloudSyncIndicator(props: {
       data-source-file-cloud-status={status}
       disabled={disabled}
       onClick={() => {
-        if (status === 'unavailable' || status === 'access-required') {
-          emitMainPanelOpen({ tab: 'settings', searchQuery: 'storage' })
+        if (status === 'unavailable' || status === 'access-required' || status === 'auth-required') {
+          beginAgenticGraphStorageBrowserSignIn({ baseUrl: readAgenticGraphStorageBaseUrl() })
         } else void props.onUpload(entry)
       }}
     >

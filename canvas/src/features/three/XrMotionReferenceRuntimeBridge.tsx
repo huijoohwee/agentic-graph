@@ -19,6 +19,7 @@ import { hydrateXrPhysicsRuntime } from './xrPhysicsRuntime'
 import { synchronizeBoundXrActorFromGraphSelection } from './xrSelectedActorBinding'
 import { resolveXrMotionReferencePersistedValue } from './xrMotionReferencePersistedValue'
 import { resolveXrSubjectFootprint } from './xrMotionReferenceSubjectPlacement'
+import { XrSubjectConstructionError } from './xrSubjectAuthoring'
 import { resolveXrCanonicalSceneSpatialSource } from './xrCanonicalSceneSpatialSource'
 import { resolveXrSceneDocumentReady } from './xrSceneDocumentReadiness'
 import {
@@ -80,12 +81,18 @@ export function hydrateCanonicalXrMotionReferenceRuntime(): boolean {
     if (!flightSource.ok) return false
     effectivePersistedValue = flightSource.persistedValue
   }
+  try {
+    hydrateXrMotionReferenceRuntime({
+      sceneKey,
+      nodes: graphData?.nodes || [],
+      persistedValue: effectivePersistedValue,
+    })
+  } catch (error) {
+    if (!(error instanceof XrSubjectConstructionError)) throw error
+    state.pushUiToast({ id: 'xr:subject-source:error', kind: 'error', message: error.message })
+    return false
+  }
   resetCameraFramingRuntimeForDocument(sceneKey)
-  hydrateXrMotionReferenceRuntime({
-    sceneKey,
-    nodes: graphData?.nodes || [],
-    persistedValue: effectivePersistedValue,
-  })
   return documentReady
 }
 

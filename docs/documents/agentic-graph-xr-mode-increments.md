@@ -2,8 +2,8 @@
 title: "agentic-graph XR Mode Increment and Evidence History"
 doc_type: "Increment and Evidence Companion"
 doc_id: "KXR-001-HISTORY"
-version: "0.7.0"
-date: "2026-09-22"
+version: "0.7.2"
+date: "2026-09-23"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
@@ -14,7 +14,7 @@ lane: "authoring"
 universal_scope: false
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
 parent: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
-parent_version: "0.7.0"
+parent_version: "0.7.1"
 parent_source: "agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md"
 worktree_id: "device-0232231d4a19--xr-character-authoring"
 agent_id: "codex-01a0c491"
@@ -30,7 +30,7 @@ This companion preserves the preceding owner's evidence and increment tail verba
 Its internal revisions, check results, scopes and links retain their historical
 meaning; they do not satisfy newly added authoring criteria or renew release authority.
 The [joined owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) defines current
-requirements, architecture, decisions, MVP and GTM at version 0.7.0. Extraction
+requirements, architecture, decisions, MVP and GTM at version 0.7.1. Extraction
 keeps both documents below 600 lines without deleting earlier authored evidence.
 
 <!-- preserved-history-begin -->
@@ -211,3 +211,155 @@ publish and second-device reopen contract. One eightfold-throttled diagnostic me
 at full resolution versus 38.5 seconds at half resolution; this is provisional local evidence only.
 Exact protected integration and recoverable closeout retain separate receipts.
 `/workspace.refresh #incremental-work @workspace` reads the local inventory after filesystem mutations and seed-sync completion, without reconciling seeds twice. Explicit refresh and the seed lifecycle still reconcile; coalescing preserves any queued full refresh. Mixed-path batches remain observable. Acceptance covers mounted mutation/explicit refresh, unchanged identity, queue priority and the unmodified XR publication deadline. Scope: three existing files, under 8 KB, no new module or dependency; local timing is diagnostic, not provider proof. `/xr.publish #atomic-storage @workspace` prepares the existing store during uploads, then conditionally commits the manifest document, retained revision and outbox together after verified workspace persistence. A changed local revision returns conflict; cancellation retains any committed pair and prevents late transport. The 60-second deadline and upload acknowledgements remain unchanged. Motion Control subscribes only to its consumed readiness primitives, and static UI tool labels read the canonical contract instead of constructing full runtime inspections. Target inspection reads its existing source owners directly without building unused scene and animation inventories. Scope: eight existing files, under 12 KB, no new module, dependency or cache; rollback restores the preceding owners. Tests cover transaction rollback, concurrent revision changes and cancellation; exact-head browser/provider proof remains required.
+
+### Subject draft source fidelity — 0.7.1
+
+`/fix #xr-subject-draft-fence @huijoohwee` advances A01/A06 independently of part construction. Existing Timeline subject inputs bind drafts to document text, source and authored plan identity; matching subject IDs in another document confer no write authority. Source replacement resets the input; stale commits reject before existing scene controls/persistence. Playhead publications retain the same plan and must not invalidate a draft.
+
+Acceptance: duplicate-ID document switch, same-document reparse, valid edit/save/reparse, and seek-preserved drafts/selection. Scope is the existing editor, one draft helper and two focused tests, plus these joined documents; ten active minutes, six files, no dependency, builder, rig schema, clock or renderer. Full model/rig/agent/export acceptance remains open. Focused and affected verification must be recorded separately; no runtime completion is claimed by this planning entry.
+
+Focused draft-context and mounted-editor regressions passed locally, including persisted Markdown/Source Files reparse and a Timeline seek that preserves the edited input. Full affected checks and browser proof remain pending; these focused results do not complete A01/A06 or the other acceptance criteria.
+
+
+### Selected-subject construction — S1 implementation checkpoint, 0.7.1
+
+`/change #xr.subject-authoring @codex` consumes protected Graph
+`795581f138393e4a89169d1373a9f3e2161cb63e` in the existing admitted private
+character lane. This checkpoint remains part of the 0.7.1 join; prior version
+and parent-version declarations remain unchanged. Twenty active minutes, two
+already-reserved helper modules, no additional checkout, dependency or service.
+
+The selected subject can use the existing bounded text constructor and native
+procedural controls. Its optional construction attachment retains the native
+session document byte-for-byte, including identity, intent, seed, stable part
+IDs, control schema/values, clips, last-valid recipe and rejected draft. The
+attachment stores existing workspace companion paths; it does not embed a
+second GLB or a second recipe schema. Native workspace/export prepares immutable
+companions before the existing scene metadata persistence commits the reference.
+Failed or stale completion cannot replace the subject; partial companions follow
+the existing workspace writer's recovery behavior. Scene normalization admits
+construction through the existing session parser and builder, and its derived
+bounds feed the existing placement gate. Catalog subjects retain their previous
+serialization/rendering when no attachment exists.
+
+Rendering reuses native parts/pivots and samples the first authored clip from the
+existing shared playhead. There is no second scene store, selection or clock.
+The native controls expose dimensions/materials and validated JSON for hierarchy,
+pivots and clips. Arbitrary code does not execute. Default catalog asset/color
+changes on an authored subject reject with guidance to its construction controls;
+per-field disable/visibility belongs to `XrMediaLibraryCards` outside this slice.
+The preview's first-clip sampling is not full clip selection/keyframe editing or
+new joint lanes. Bounds currently describe the admitted construction pose.
+
+The existing registered subject tests gain native-document round-trip, invalid
+hierarchy/path rejection, retained last-valid/draft, catalog preservation,
+backward joint sampling, mounted controls and seek-preserved editor assertions.
+They have not been run for this checkpoint: installed dependencies must first
+match this source. No runtime/browser/export acceptance is claimed. Next proof is
+focused subject plus existing procedural regressions, affected owner checks and
+real save/reopen/controls/shared-playhead browser inspection. A01-A09/B01-B08
+remain open; visual part selection/rig UI, multi-clip/keyframe Timeline projection,
+shared agent/WebMCP execution, full scene animated GLB, MP4 and cross-surface/demo
+parity still need their admitted owners and exact evidence.
+
+
+S1 repair checkpoint: construction controls now use captured context generations.
+Accepting a scene commit gives subsequent edits a fresh generation; old requests
+retain their invalidated generation even after selection/source returns to the
+same values. Context retirement aborts creation and remounts native controls.
+Workspace parent resolution uses the existing ancestor helper, including bare
+filenames at root. Mounted regressions cover create, second edit, pending
+selection-away-and-back rejection, and a fresh edit after rejection; not yet run.
+Malformed attachments now raise `XrSubjectConstructionError` before hydration
+mutates prior runtime state. The existing runtime bridge does not catch that
+new typed error: user-facing recovery still requires the unreserved
+`XrMotionReferenceRuntimeBridge.tsx` owner before this slice is release-ready.
+
+### S1 visual part editing — admitted continuation
+
+`/change #xr.subject.current-base @codex` continues inside the existing private
+character reservation. The part inspector selects a stable native part and edits
+its parent, primitive, local position, pivot, rotation, dimensions, material and
+visibility through the existing recipe/session and workspace publication. Bound
+procedural fields retain their control limits and values. Invalid or stale edits
+retain the last valid subject; a selection/source change retires pending saves.
+No new recipe, scene store, clock or renderer is introduced. Twenty active minutes
+to the first checkpoint; six existing files, zero new modules,
+checkouts, dependencies or services. Review precedes focused tests. Acceptance
+requires part/control agreement, hierarchy rejection, exact save/reparse and
+selection/source cancellation. Selected-model GLB uses the same trusted exporter,
+with authored local parts/clips, validated bytes and a final current-source check
+before native download. It does not claim whole-scene motion or camera export.
+Actual GLB reimport must prove edited geometry/material and joint animation, and
+selection cancellation must suppress late delivery. This advances S1; the bridge, Timeline, agent and
+export acceptance gaps above remain open until their owners are admitted.
+The added selected-model export/reimport proof expands this slice's authored-byte
+cap from 20 KB to 22 KB; the file, module, checkout and dependency caps are unchanged.
+Review, focused part/save/reimport/cancellation cases and Canvas 5.8.3 type checking
+passed locally. Real browser UI and whole-scene export remain unverified.
+
+### S1 authored clip playback — admitted continuation
+
+`/change #xr.subject.current-base @codex` continues in seven existing reserved
+files, with a 20-active-minute checkpoint, at most 18 KB of added source and zero
+new modules, checkouts, dependencies or services. Persist a selected native clip
+or explicit rest pose and repeat/hold behavior in the subject construction's
+scene attachment. Legacy attachments retain their first-clip repeat behavior.
+The renderer samples only the shared Timeline playhead, including backward seeks
+and exact non-looping endpoints. Native recipe clips and exported GLB remain
+unmodified; scene playback configuration is not claimed as baked GLB behavior.
+Unknown or removed clip references reject without replacing last-valid source.
+Review before focused admission, actual sampler and mounted persistence checks;
+then use the locked Canvas compiler once. Native Timeline rows, keyframe UI,
+bridge recovery, agent parity and whole-scene export remain outside this slice.
+
+Independent review found no actionable defects. Mounted clip save/reopen plus
+existing GLB/cancellation passed in 1793 ms. The actual mixer regression passed
+in 214 ms after replacing an unsuitable angle comparison on identical non-unit
+Float32 quaternions with exact array equality; no tolerance was widened and the
+sampler was unchanged. A nullable return type annotation was corrected after
+Canvas type checking; final compiler validation is recorded in the task receipt.
+This proves focused behavior, not browser/mobile or full Timeline acceptance.
+
+### S1 shared part selection and model export proof
+
+`/change #xr.subject.current-base @codex` fixes the observed inspector selection
+reset after a part save or remount. Part identity belongs to the existing scene
+runtime snapshot, scoped to document/subject, and is validated against the native
+recipe. No new store or parallel selection is introduced. Preserve valid choice
+across save and seek; reject stale/unknown choices and reset on subject/document
+change or removed parts. Keep pure selection/snapshot normalization in existing
+reserved helpers so the runtime stays below600lines without compressed code.
+Also prove selected-model GLB duration and start/middle/end poses through actual
+reimport in the existing registered case. This remains selected-model evidence,
+not whole-scene Timeline baking. Twenty active minutes to checkpoint, eight
+existing files, at most20KB, zero new modules/checkouts/dependencies/services.
+Review before affected checks; retain already-valid evidence when source is
+unchanged. Bridge, full Timeline rows, tools/surface handoff and complete browser
+journey remain pending their native owners and admission.
+
+Independent review caught a per-tick cache-eviction rebuild before validation.
+The corrected immutable-plan/selection fast path performs no model restoration
+on transport publication; real plan/selection changes still revalidate. Final
+review has no findings. Both existing registered cases passed on their first run
+(208ms helper, 2079ms mounted). They cover selection save/remount/seek, removal,
+part/source/subject retirement, model-draft preservation and actual GLB hierarchy,
+duration and start/middle/end poses. Source and type-check evidence belong to the
+task receipt; this is focused local proof, not complete browser or XR acceptance.
+
+### S1 malformed-source bridge recovery
+
+The existing canonical motion bridge catches the typed subject-construction
+rejection before resetting camera ownership. Invalid authored source remains
+available to repair, while the last valid scene and camera stay intact. The
+native error toast reports the failure; unrelated exceptions still propagate.
+Physics and selection hydration stop for that rejected document. A later valid
+document can hydrate normally through the same bridge.
+
+The existing mounted regression covers invalid source, exact scene/camera
+preservation, visible error reporting and subsequent valid-document recovery.
+Both existing subject cases are selected by the collaboration CI contract when
+their owners change. Exact candidate results remain in task receipts; this does
+not promote the remaining Timeline, tool parity, whole-scene export, physical
+device or production requirements. Four existing files, at most 12 KB, no new
+modules or dependencies; authored history and earlier review refs remain retained.

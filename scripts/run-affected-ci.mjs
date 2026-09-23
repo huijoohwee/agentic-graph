@@ -42,6 +42,12 @@ export function partitionAffectedCommands(commands, contract) {
     if (!Object.hasOwn(partitions, partition)) throw new Error('undeclared extended command partition')
     partitions[partition].push(command)
   }
+  // Check the selected CI control contracts before costlier product checks.
+  // Commands remain owned by the existing catalog and execute exactly once.
+  const controls = new Set(['collaboration', 'protected_ci_evidence'].flatMap(scope =>
+    (contract.ci_scopes?.[scope]?.commands ?? []).map(command => JSON.stringify(command))))
+  partitions.standard.sort((left, right) =>
+    Number(controls.has(JSON.stringify(right))) - Number(controls.has(JSON.stringify(left))))
   return partitions
 }
 

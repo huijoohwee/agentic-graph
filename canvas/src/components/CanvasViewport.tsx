@@ -1,6 +1,9 @@
 import React from 'react'
 import { CanvasViewContainer } from '@/components/CanvasViewContainer'
 import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
+import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
+import { learningLesson, type LearningLesson, type LearningSceneSnapshot } from '@/features/python-learning/learningLessons'
+import { PythonLearningCanvasStatus } from '@/features/python-learning/LearningCanvasStatus'
 import { useShallow } from 'zustand/react/shallow'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config.render'
 import type { GraphData } from '@/lib/graph/types'
@@ -97,12 +100,20 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
 }
 export function CanvasViewport(props: CanvasViewportProps) {
   const inspection = useAgentRunWorkspace()
+  const learning = React.useSyncExternalStore(pythonLearningRuntime.subscribe, pythonLearningRuntime.read, pythonLearningRuntime.read)
   if (inspection && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
     <CanvasViewContainer><React.Suspense fallback={<p>Loading run canvas…</p>}><DashboardCanvasLazy active /></React.Suspense></CanvasViewContainer>
   </section>
-  return <AuthoredCanvasViewport {...props} />
+  const learningScene = learning.document && props.variant === 'workspace'
+    ? { lesson: learningLesson(learning.document.lessonId), scene: !learning.stale ? learning.result?.scene : undefined, documentId: learning.document.documentId, runId: learning.result?.identity.runId }
+    : undefined
+  return <AuthoredCanvasViewport {...props} canvasRenderMode={learningScene ? '3d' : props.canvasRenderMode}
+    canvas3dMode={learningScene ? '3d' : props.canvas3dMode}
+    geospatialModeEnabled={learningScene ? false : props.geospatialModeEnabled}
+    documentSwitchPending={learningScene ? false : props.documentSwitchPending}
+    learningScene={learningScene} />
 }
-function AuthoredCanvasViewport(props: CanvasViewportProps) {
+function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: { lesson: LearningLesson; scene?: LearningSceneSnapshot; documentId: string; runId?: string } }) {
   useEmbeddedCanvasChatCommandReceiver()
   const {
     variant,
@@ -115,6 +126,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
     documentSwitchPending = false,
     documentSwitchPendingLabel = 'Switching document...',
     onLiveCanvasHeroVisibilityChange,
+    learningScene,
   } = props
   const activeGraphData = useActiveGraphRenderData(true)
   const graphDataRevision = useGraphStore(s => s.graphDataRevision || 0)
@@ -266,7 +278,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
     geospatialOverlayOwnsViewport,
     canvasRenderMode,
   })
-  const heavyRuntimeIntentBlocked = heavyRuntimeIntentSurface !== null && activatedHeavyRuntimeSurfaces[heavyRuntimeIntentSurface] !== true
+  const heavyRuntimeIntentBlocked = !learningScene && heavyRuntimeIntentSurface !== null && activatedHeavyRuntimeSurfaces[heavyRuntimeIntentSurface] !== true
   const threeCanvasSourceAdmissionRef = React.useRef(false)
   threeCanvasSourceAdmissionRef.current = retainThreeCanvasSourceAdmission(threeCanvasSourceAdmissionRef.current, sourceFilesBootstrapReady)
   const threeCanvasSurfaceMountedRef = React.useRef(false)
@@ -328,7 +340,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
                   ? 'Canvas Preview Only'
                   : 'Canvas viewport'}
     >
-      <CanvasViewContainer configurable={variant === 'workspace'}><React.Suspense fallback={null}>
+      <CanvasViewContainer configurable={variant === 'workspace' && !learningScene} sizing={learningScene ? 'full' : undefined}><React.Suspense fallback={null}>
         {liveCanvasHeroVisible && liveCanvasHeroSource ? (
           <LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles}
             visible={liveCanvasHeroVisible} onEnter={dismissLiveCanvasHero} />
@@ -419,8 +431,10 @@ function AuthoredCanvasViewport(props: CanvasViewportProps) {
             geospatialComposite={geospatialXrModeEnabled}
             mode={effectiveCanvas3dMode}
             physicsRunReady={xrPhysicsRuntimeRunReadyDemo}
+            learningScene={learningScene}
           />
         ) : null}
+        {learningScene ? <PythonLearningCanvasStatus {...learningScene} /> : null}
         {!documentSwitchOwnsViewport && geospatialCompositionEnabled && active2dSurface === 'storyboard' ? (
           <section className="absolute inset-0 z-[30] pointer-events-none" aria-hidden="true">
             <StoryboardWidgetDropBridgeLazy active={false} widgetDropCaptureEnabled geospatialWidgetPanelMode />

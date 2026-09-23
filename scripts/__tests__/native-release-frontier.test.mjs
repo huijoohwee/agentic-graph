@@ -128,7 +128,9 @@ test('attached successor uses its exact branch while retaining verified predeces
   assert.deepEqual(f.records, before)
   assert.equal(command(f.attached, 'rev-parse', 'agent/device/attached'), predecessor.head)
   predecessor.state = 'active'
-  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata/)
+  assert.doesNotThrow(() => collectNativeReleaseFrontier(f.options))
+  predecessor.state = 'unknown'
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata has invalid state/)
   predecessor.state = 'published'
   command(f.detached, 'switch', '-c', 'agent/device/unrelated')
   fs.writeFileSync(path.join(f.detached, 'unrelated.md'), 'unrelated source')
@@ -161,7 +163,7 @@ test('detached successor selects its exact head and retains predecessor history 
   assert.throws(() => collectNativeReleaseFrontier(f.options), /metadata is missing or ambiguous/)
   successor.head = head
   predecessor.state = 'active'
-  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata/)
+  assert.doesNotThrow(() => collectNativeReleaseFrontier(f.options))
 })
 
 test('content, index, metadata and registered worktree movement invalidate capture', t => {

@@ -1,3 +1,5 @@
+import { loadMonacoLanguageContribution } from './monacoLanguageContributions'
+export { loadMonacoLanguageContribution } from './monacoLanguageContributions'
 import React from 'react'
 import type * as Monaco from 'monaco-editor/esm/vs/editor/editor.api'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -194,25 +196,6 @@ export const resolveConfiguredMonacoLanguage = (language: string, settings: Mona
   if (normalized === 'sql' && !settings.monacoLanguageSqlEnabled) return 'plaintext'
   if ((normalized === 'yaml' || normalized === 'yml') && !settings.monacoLanguageYamlEnabled) return 'plaintext'
   return normalized
-}
-
-export const loadMonacoLanguageContribution = async (language: string): Promise<void> => {
-  const normalized = String(language || '').trim().toLowerCase()
-  if (normalized === 'markdown') {
-    await import('monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution')
-    return
-  }
-  if (normalized === 'json') {
-    await import('monaco-editor/esm/vs/language/json/monaco.contribution')
-    return
-  }
-  if (normalized === 'sql') {
-    await import('monaco-editor/esm/vs/basic-languages/sql/sql.contribution')
-    return
-  }
-  if (normalized === 'yaml') {
-    await import('monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution')
-  }
 }
 
 export const preloadEagerMonacoLanguageContributions = async (settings: MonacoCapabilitySettings): Promise<void> => {

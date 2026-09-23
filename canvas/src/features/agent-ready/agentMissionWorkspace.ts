@@ -44,9 +44,10 @@ export function agentMissionWorkspace(trace?: RunTrace | null, codebase?: Missio
     folders: entries.filter(row => row.kind === 'folder').map(row => row.path) }
 }
 
-export function resolveAgentMissionSource(trace: RunTrace | null | undefined, source: string | null | undefined, codebase?: MissionCodebaseIndex) {
+export function resolveAgentMissionSource(trace: RunTrace | null | undefined, source: string | null | undefined,
+  codebase?: MissionCodebaseIndex, existing?: ReturnType<typeof agentMissionWorkspace>) {
   if (source === null) return null
-  const projection = agentMissionWorkspace(trace, codebase)
+  const projection = existing ?? agentMissionWorkspace(trace, codebase)
   return projection.entries.some(row => row.kind === 'file' && row.path === source) ? source!
     : trace && !trace.workflowManifest ? projection.markdownPath : projection.manifestPath
 }

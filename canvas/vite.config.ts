@@ -3,6 +3,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge'
 import { VitePWA } from 'vite-plugin-pwa'
+import { createPythonLearningOfflinePlugin } from './vitePythonLearningOffline.mjs'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -47,7 +48,7 @@ import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './vit
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
+import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'; import { buildPwaRuntimeCachingRules } from './vitePwaRuntimeCachePolicy'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
@@ -6785,7 +6786,7 @@ export default defineConfig(({ command, mode }) => {
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
-    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision),
+    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: null,
@@ -6857,55 +6858,7 @@ export default defineConfig(({ command, mode }) => {
         importScripts: [`agentic-graph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agentic-graph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
         globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
         globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'],
-        runtimeCaching: [
-          {
-            urlPattern: ({ request, url }) =>
-              request.method === 'GET'
-              && url.origin === self.location.origin
-              && /\/xr-v2\/(?:models|wasm)\//u.test(url.pathname),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'kg-xr-v2-runtime', plugins: [nonHtmlRuntimeCachePlugin],
-              cacheableResponse: { statuses: [200] },
-              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
-            urlPattern: ({ request }) =>
-              request.destination === 'script'
-              || request.destination === 'style'
-              || request.destination === 'worker',
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'kg-assets', plugins: [nonHtmlRuntimeCachePlugin],
-              expiration: { maxEntries: 160, maxAgeSeconds: 60 * 60 * 24 * 14 },
-            },
-          },
-          {
-            urlPattern: ({ request }) => request.destination === 'image' || request.destination === 'font',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'kg-static', plugins: [nonHtmlRuntimeCachePlugin],
-              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
-            urlPattern: ({ request, url }) =>
-              request.method === 'GET'
-              && url.origin === self.location.origin
-              && !url.pathname.startsWith('/__')
-              && (
-                url.pathname.endsWith('.json')
-                || url.pathname.endsWith('.jsonld')
-                || url.pathname.endsWith('.webmanifest')
-              ),
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'kg-data', plugins: [nonHtmlRuntimeCachePlugin],
-              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 7 },
-            },
-          },
-        ],
+        runtimeCaching: buildPwaRuntimeCachingRules(),
       },
     }),
     ...(command === 'build' ? [] : [

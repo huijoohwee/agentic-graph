@@ -1,3 +1,4 @@
+import { resolveXrSubjectConstructionBounds } from './xrSubjectAuthoring'
 import type { XrMotionReferenceStagePreset, XrMotionReferenceSubject, XrMotionReferenceVector } from './xrMotionReferenceModel'
 import { resolveXrSceneLibraryAsset } from './xrSceneLibrary'
 
@@ -23,9 +24,16 @@ export function resolveXrSubjectFootprint(
   const radians = subject.rotationYDegrees * Math.PI / 180 + facingYRadians
   const cosine = Math.abs(Math.cos(radians))
   const sine = Math.abs(Math.sin(radians))
-  const width = asset.dimensionsMeters[0] * subject.scale
-  const height = asset.dimensionsMeters[1] * subject.scale
-  const depth = asset.dimensionsMeters[2] * subject.scale
+  const bounds = subject.construction ? resolveXrSubjectConstructionBounds(subject.construction) : null
+  // Collision positions are bottom-origin: Y covers ground to the highest point, not ±height.
+  const dimensions = bounds ? [
+    2 * Math.max(Math.abs(bounds.max[0]), Math.abs(bounds.min[0])),
+    Math.max(0, bounds.max[1]),
+    2 * Math.max(Math.abs(bounds.max[2]), Math.abs(bounds.min[2])),
+  ] : asset.dimensionsMeters
+  const width = dimensions[0] * subject.scale
+  const height = dimensions[1] * subject.scale
+  const depth = dimensions[2] * subject.scale
   const sizeMeters: XrMotionReferenceVector = [
     cosine * width + sine * depth,
     height,
@@ -41,7 +49,9 @@ export function resolveXrSubjectFootprint(
 
 export function resolveXrSubjectPlanarRadius(subject: XrMotionReferenceSubject): number {
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
-  return Math.hypot(asset.dimensionsMeters[0], asset.dimensionsMeters[2]) * subject.scale / 2
+  const bounds = subject.construction ? resolveXrSubjectConstructionBounds(subject.construction) : null
+  return bounds ? Math.hypot(Math.max(Math.abs(bounds.min[0]), Math.abs(bounds.max[0])), Math.max(Math.abs(bounds.min[2]), Math.abs(bounds.max[2]))) * subject.scale
+    : Math.hypot(asset.dimensionsMeters[0], asset.dimensionsMeters[2]) * subject.scale / 2
 }
 
 function positionedSubjectFootprint(subject: XrMotionReferenceSubject): PositionedSubjectFootprint {

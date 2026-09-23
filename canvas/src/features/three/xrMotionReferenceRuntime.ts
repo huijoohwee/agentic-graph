@@ -1,5 +1,6 @@
+import { readXrSubjectConstruction, readXrSubjectPartIds } from './xrSubjectAuthoring'
 import type { XrSceneAppearance } from './xrSceneAppearance'
-import type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
+import { createInitialXrMotionReferenceSnapshot, freezeXrMotionReferenceSnapshot as freezeSnapshot, type XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
 export type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
 import type { GraphNode } from '@/lib/graph/types'
 import type { StrybldrCameraSettings } from '@/features/strybldr/strybldrCamera'
@@ -59,24 +60,9 @@ type RuntimeListener = () => void
 const listeners = new Set<RuntimeListener>()
 let activeNodes: readonly GraphNode[] = []
 const dirtyCastArchive = new Map<string, Record<string, unknown>>()
-function freezeSnapshot(value: Omit<XrMotionReferenceRuntimeSnapshot, 'revision'> & { revision: number }): XrMotionReferenceRuntimeSnapshot {
-  return Object.freeze({ ...value })
-}
-let snapshot = freezeSnapshot({
-  sceneKey: '',
-  sourceSignature: '',
-  plan: readXrMotionReferencePlan(null, []),
-  selectedActorId: '',
-  selectedShotTargetId: '',
-  selectedCameraRig: 'dolly',
-  selectedMark: null,
-  castMarkArmed: false,
-  playheadSeconds: 0,
-  dirty: false,
-  revision: 0,
-})
+let snapshot = createInitialXrMotionReferenceSnapshot()
 function publish(next: Omit<XrMotionReferenceRuntimeSnapshot, 'revision'>): XrMotionReferenceRuntimeSnapshot {
-  snapshot = freezeSnapshot({ ...next, revision: snapshot.revision + 1 })
+  snapshot = freezeSnapshot({ ...next, revision: snapshot.revision + 1 }, snapshot)
   for (const listener of [...listeners]) listener()
   return snapshot
 }
@@ -144,6 +130,7 @@ export function hydrateXrMotionReferenceRuntime(args: {
 }): XrMotionReferenceRuntimeSnapshot {
   const nextSourceSignature = sourceSignature(args.sceneKey, args.nodes, args.persistedValue)
   if (snapshot.sourceSignature === nextSourceSignature) return snapshot
+  const sourcePlan = readXrMotionReferencePlan(args.persistedValue, args.nodes)
   activeNodes = args.nodes.slice()
   if (snapshot.sceneKey === String(args.sceneKey || '') && snapshot.dirty) {
     archiveCast(snapshot.plan)
@@ -164,7 +151,7 @@ export function hydrateXrMotionReferenceRuntime(args: {
     })
   }
   dirtyCastArchive.clear()
-  const plan = readXrMotionReferencePlan(args.persistedValue, activeNodes)
+  const plan = sourcePlan
   const selectedActorId = plan.cast.some(track => track.actorId === snapshot.selectedActorId)
     ? snapshot.selectedActorId
     : plan.cast[0]?.actorId || ''
@@ -302,6 +289,12 @@ export function selectXrMotionReferenceShotTarget(targetIdValue: string): XrMoti
     : null
   return publish({ ...snapshot, selectedShotTargetId: targetId, selectedMark,
     selectedActorId: snapshot.plan.cast.some(track => track.actorId === targetId) ? targetId : '', castMarkArmed: false })
+}
+export function selectXrSubjectPart(partId: string): XrMotionReferenceRuntimeSnapshot {
+  const subject = snapshot.plan.subjects.find(item => item.id === snapshot.selectedShotTargetId)
+  if (!snapshot.sceneKey || !subject?.construction || !readXrSubjectPartIds(subject.construction).includes(partId)) throw new Error('Select an existing construction part')
+  if (snapshot.selectedSubjectPart?.partId === partId) return snapshot
+  return publish({ ...snapshot, selectedSubjectPart: { sceneKey: snapshot.sceneKey, subjectId: subject.id, partId } })
 }
 export function ensureXrMotionReferenceCastTrackForSubject(subjectIdValue: string): XrMotionReferenceRuntimeSnapshot {
   const subjectId = String(subjectIdValue || '').trim()
@@ -586,4 +579,11 @@ export function markXrMotionReferenceSaved(persistedValue: unknown): XrMotionRef
   const nextSourceSignature = sourceSignature(snapshot.sceneKey, activeNodes, persistedValue)
   dirtyCastArchive.clear()
   return publish({ ...snapshot, sourceSignature: nextSourceSignature, dirty: false })
+}
+
+/** Uses the existing plan transaction and spatial gate; no subject or transport store. */
+export function setXrSubjectConstruction(subjectId: string, value: unknown): XrMotionReferenceRuntimeSnapshot {
+  if (!snapshot.plan.subjects.some(subject => subject.id === subjectId)) throw new Error('Select an existing subject')
+  const construction = readXrSubjectConstruction(value)
+  return updatePlan({ ...planRecord(snapshot.plan), subjects: snapshot.plan.subjects.map(subject => subject.id === subjectId ? { ...subject, construction } : subject) }, undefined, spatialPlanGuard([subjectId]))
 }

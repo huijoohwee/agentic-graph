@@ -389,6 +389,7 @@ const main = async () => {
     options: {
       repository: { type: 'string' },
       'run-id': { type: 'string' },
+      'agentic-os-root': { type: 'string' },
     },
     strict: true,
   })
@@ -422,7 +423,12 @@ const main = async () => {
       lifecycleCandidate,
     })
     const repositoryRoot = path.resolve(import.meta.dirname, '..')
-    const agenticCanvasOsRoot = path.resolve(repositoryRoot, '..', 'agentic-os')
+    const suppliedDependencyRoot = values['agentic-os-root']
+    if (suppliedDependencyRoot !== undefined && (!path.isAbsolute(suppliedDependencyRoot)
+      || fs.realpathSync(suppliedDependencyRoot) !== suppliedDependencyRoot)) {
+      throw new Error('--agentic-os-root must name a canonical absolute checkout path')
+    }
+    const agenticCanvasOsRoot = suppliedDependencyRoot ?? path.resolve(repositoryRoot, '..', 'agentic-os')
     requireCanonicalRevision(repositoryRoot, run.head_sha, 'agentic-graph')
     const dependencyOptions = { repositoryRoot, agenticCanvasOsRoot,
       sourceRevision: run.head_sha, dependencyRevision: releaseCandidate.agenticCanvasOs.revision }

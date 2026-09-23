@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 56
+contract_version: 58
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -65,6 +65,17 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  xr_subject:
+    roots: ["canvas/src/features/three/XrAuthoredSubjectGeometry.tsx", "canvas/src/features/three/XrSceneLibrarySubject.tsx", "canvas/src/features/three/XrSubject", "canvas/src/features/three/xrSubject", "canvas/src/features/three/xrMotionReferenceModel.ts", "canvas/src/features/three/xrMotionReferenceRuntime", "canvas/src/features/three/xrMotionReferenceSubjectPlacement.ts", "canvas/src/features/three/XrMotionReferenceRuntimeBridge.tsx", "canvas/src/__tests__/xrSubjectAuthoring.test.tsx", "canvas/src/tests/registry/postParserCases3Tail.ts"]
+    commands:
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "xr.subject.draft.sourceAndSelectionFence", "xr.subject.editor.documentFenceAndPersistence"]
+  python_learning:
+    roots: ["canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/pythonLearning.test.ts", "canvas/src/__tests__/pythonLearningLifecycle.test.ts", "canvas/src/__tests__/pythonLearningOffline.test.ts"]
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.webMcpRuntime.scope.budgets", "agentReady.webMcpRuntime.scope.workspace"]
+      - ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
+      - ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
   design_review:
     roots: ["grph-shared/src/ui/kgToken", "canvas/src/lib/ui/tokens-ssot.ts", "canvas/src/lib/markdown.ts", "canvas/src/cli/gen-kg-tokens-css.ts", "canvas/src/features/design/", "canvas/src/features/design-system/", "canvas/src/features/agent-ready/localCanvasTopologyInspection.ts", "canvas/src/__tests__/designTokenSummary.test.ts", "canvas/src/__tests__/kgTokenSsot.test.ts", "canvas/scripts/verify_design_browser_smoke.mjs"]
     commands:
@@ -138,6 +149,10 @@ ci_scopes:
     roots: ["canvas/src/features/xr-v2/", "canvas/src/components/timeline/", "canvas/src/features/gitgraph/", "canvas/src/features/testing/XrV2RuntimeSmokePage.tsx", "canvas/src/features/testing/xrV2BrowserObservationSupport.ts", "canvas/scripts/run_xr_v2_browser_smoke.mjs", "canvas/scripts/verify_xr_v2_browser_smoke.mjs", "scripts/xr-v2/", "scripts/video-editor/", "scripts/run-xr-v2-source-smoke.mjs", "scripts/run-video-editor-source-smoke.mjs", "scripts/__tests__/xr-v2-source-smoke.test.mjs", "scripts/__tests__/video-editor-source-smoke.test.mjs", "docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md", "docs/documents/agentic-graph-xr-v2-runtime-readiness.md", "docs/documents/agentic-graph-2d-renderer-enhancement-design.md", "docs/TESTING.md", "docs/runtime-api.md"]
     commands:
       - ["npm", "run", "xr-v2:review-ready"]
+  xr_mp4_export:
+    roots: ["canvas/src/features/three/", "canvas/src/lib/three/", "canvas/src/features/xr-v2/", "canvas/src/features/markdown-workspace/main/exports/", "canvas/scripts/run_xr_scene_mp4_browser_smoke.mjs", "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"]
+    commands:
+      - ["node", "canvas/scripts/run_xr_scene_mp4_browser_smoke.mjs"]
   surface_policy:
     roots: ["config/surface-registry.json", "config/license-registry.json", "schemas/surface-registry.v1.schema.json", "scripts/surface/", "data/surface/", "docs/discoverability-ip-protection-runtime.md"]
     commands:
