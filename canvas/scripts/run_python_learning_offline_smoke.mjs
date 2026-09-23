@@ -166,11 +166,19 @@ try {
   await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
   await pane.getByText('3 matching debriefs', { exact: false }).waitFor()
   await page.setViewportSize({ width: 1280, height: 900 })
+  const paneWidth = (await pane.boundingBox()).width
+  assert.ok(paneWidth < 768, 'native desktop Editor must exercise a narrow pane')
+  assert.ok(await pane.getByRole('group', { name: 'Python workspace view', exact: true }).isVisible(), 'compact views must follow pane width on desktop')
+  await pane.getByRole('button', { name: 'Code', exact: true }).click()
+  assert.ok((await pane.getByRole('region', { name: 'Python source', exact: true }).boundingBox()).width >= paneWidth - 20, 'source must use the narrow pane width')
   const richEditor = pane.getByRole('button', { name: 'Load rich editor', exact: true })
   if (await richEditor.isVisible()) await richEditor.click()
   await pane.locator('.monaco-editor .view-lines').waitFor({ timeout: 30000 })
   assert.ok(await pane.locator('.monaco-editor .view-lines').evaluate(element => new Set([...element.querySelectorAll('span')].map(span => span.className).filter(name => /^mtk/.test(name))).size > 1), 'offline Python highlighting must load')
   await page.screenshot({ path: join(output, 'offline-desktop.png'), fullPage: true })
+  await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
+  await pane.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
+  await page.screenshot({ path: join(output, 'offline-desktop-scene.png'), fullPage: true })
   await page.setViewportSize({ width: 375, height: 812 })
   // A missing admitted worker must block offline navigation even if another runtime cache has it.
   const missing = await page.evaluate(async () => {
@@ -191,7 +199,7 @@ try {
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
   const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
-    toolRegistrationProven: true, toolHost: 'controlled-registerTool-browser-host', discovery,
+    toolRegistrationProven: true, narrowDesktopPaneProven: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
