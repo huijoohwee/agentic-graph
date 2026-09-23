@@ -372,7 +372,11 @@ try {
   await page.waitForFunction(() => (
     document.querySelector('[data-kg-xr-v2-delivery-validation="1"]')
       ?.getAttribute('data-kg-xr-v2-ac-11-evidence') === 'browser-observed'
+      || document.querySelector('[data-kg-xr-v2-delivery-validation="1"]')
+        ?.getAttribute('data-kg-xr-v2-ac-11-evidence') === 'failed'
   ), undefined, { timeout: coldStartTimeoutMs })
+  assert.equal(await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-11-evidence'), 'browser-observed',
+    await page.locator('[aria-label="AC-11 browser packaging action"] [role="status"]').textContent())
   assert.equal(
     await readiness.locator('[data-kg-xr-v2-ac="AC-11"]').getAttribute('data-kg-xr-v2-ac-local-evidence'),
     'browser-observed',
