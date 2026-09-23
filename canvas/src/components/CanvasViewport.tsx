@@ -100,15 +100,10 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
 export function CanvasViewport(props: CanvasViewportProps) {
   const inspection = useAgentRunWorkspace()
   const learningDocument = React.useSyncExternalStore(pythonLearningRuntime.subscribe, () => pythonLearningRuntime.read().document, () => null)
-  const activePath = useMarkdownExplorerStore(s => s.activePath)
-  const learningActive = learningDocument && (!activePath || activePath === learningDocument.documentId)
-  React.useEffect(() => {
-    if (props.variant === 'workspace' && learningDocument && !learningActive) pythonLearningRuntime.dispose()
-  }, [props.variant, learningDocument, learningActive])
   if (inspection && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
     <CanvasViewContainer><React.Suspense fallback={<p>Loading run canvas…</p>}><DashboardCanvasLazy active /></React.Suspense></CanvasViewContainer>
   </section>
-  if (learningActive && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
+  if (learningDocument && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
     <CanvasViewContainer sizing="inset"><React.Suspense fallback={<p>Loading lesson Canvas…</p>}><PythonLearningCanvasLazy /></React.Suspense></CanvasViewContainer>
   </section>
   return <AuthoredCanvasViewport {...props} />

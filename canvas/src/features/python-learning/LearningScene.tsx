@@ -8,11 +8,6 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 
 export function PythonLearningCanvas() {
   const snapshot = React.useSyncExternalStore(runtime.subscribe, runtime.read, runtime.read)
-  React.useEffect(() => {
-    const hidden = () => runtime.setHidden(document.hidden), leaving = () => runtime.stop()
-    document.addEventListener('visibilitychange', hidden); window.addEventListener('pagehide', leaving); hidden()
-    return () => { document.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', leaving); runtime.dispose() }
-  }, [])
   if (!snapshot.document) return null
   return <section aria-label="Python lesson Canvas" data-learning-document={snapshot.document.documentId} data-learning-run-id={snapshot.result?.identity.runId}
     style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>

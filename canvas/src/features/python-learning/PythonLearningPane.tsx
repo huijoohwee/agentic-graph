@@ -25,8 +25,10 @@ export default function PythonLearningPane(props: {
   React.useLayoutEffect(() => {
     runtime.bind({ workspaceId: 'local-editor-workspace', documentId: props.documentId, source: props.source, lessonId, readOnly: props.readOnly })
   }, [props.documentId, props.source, props.readOnly, lessonId])
-  React.useEffect(() => () => {
-    if (useGraphStore.getState().workspaceViewMode !== 'canvas') runtime.dispose()
+  React.useEffect(() => {
+    const hidden = () => runtime.setHidden(document.hidden), leaving = () => runtime.stop()
+    document.addEventListener('visibilitychange', hidden); window.addEventListener('pagehide', leaving); hidden()
+    return () => { document.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', leaving); runtime.dispose() }
   }, [])
   const control = async (operation: Parameters<typeof runtime.control>[0]) => {
     try { setNotice(''); await runtime.control(operation) } catch (error) { setNotice(error instanceof Error ? error.message : String(error)) }
