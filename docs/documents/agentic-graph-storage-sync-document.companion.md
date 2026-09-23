@@ -367,9 +367,11 @@ This size/ownership companion consumes `PLAN-AGENTIC-GRAPH-STORAGE-SYNC-PRD-TAD-
 
 ## Source Files connection and transfer
 
-Owner: `canvas/src/features/panels/views/DocumentStorageSyncSettingsRows.tsx`.
-The Source Files cloud indicator and Source File Management action open this
-existing Settings section. Online explicitly opts into the same-origin storage
+Owners: `canvas/src/features/markdown-workspace/SourceFileCloudSyncIndicator.tsx`
+for file icons and `canvas/src/features/panels/views/DocumentStorageSyncSettingsRows.tsx`
+for management. A file icon opens the existing account lightbox directly when
+sign-in or access is needed; Source File Management opens Settings. Online
+explicitly opts into the same-origin storage
 service when no deployment switch is supplied; an explicit disabled deployment
 switch stays disabled. The workspace comes from the existing storage contract
 or its configured environment override. Connection readiness requires an active
@@ -532,3 +534,32 @@ native SQLite admission, replay rejection, membership checks, signed Google clai
 provider errors and account linking. `storageCoreReadiness.ts` requires both OAuth
 tables when this mode is selected. Passing source tests is not live provider or
 cloud-transfer proof; those receipts belong to the protected deployment workflow.
+
+### Future roadmap: local browser sign-in
+
+Status: pending operator configuration and live proof. The local Canvas at
+`http://127.0.0.1:4201` currently proxies `/api/storage` to the hosted service
+unless `AGENTIC_OS_STORAGE_DEV_PROXY_TARGET` is set. That service rejects the
+loopback return origin. Opening the account lightbox or passing simulated OAuth
+tests does not enable a local account session.
+
+1. Register `http://127.0.0.1:4201/api/storage/auth/callback` with an existing
+   GitHub App or Google web client. Put its client ID and secret, a signing
+   secret of at least 32 characters, `AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE=oauth`,
+   and `AGENTIC_OS_STORAGE_OAUTH_ORIGINS=["http://127.0.0.1:4201"]` in the
+   storage Worker's ignored `.dev.vars`. Keep all credentials out of Git and chat.
+2. Apply the local D1 migrations, including `0021_storage_oauth_budget.sql`.
+   Start the local storage Worker on `127.0.0.1:8787`; start Canvas on
+   `127.0.0.1:4201` with `AGENTIC_OS_STORAGE_DEV_PROXY_TARGET=http://127.0.0.1:8787`.
+   Reuse the existing identity and membership rules: an enrolled provider ID
+   may enter its authorized workspace; explicit signup creates a private one.
+3. Verify the login options and provider callback on the exact loopback origin,
+   the existing HttpOnly session cookie, workspace selection, file upload and
+   read-back in a separate browser profile on that host, offline retention,
+   and rejection of an unlisted origin or replay. Cross-device proof requires
+   a separately registered, reachable HTTPS development origin. Record a live
+   provider receipt separately from fixture tests before marking local sign-in enabled.
+
+Recheck this roadmap after the operator supplies the callback registration and
+local secrets; no completion date follows from source or simulated tests. Keep
+the existing free-tier/FOSS boundary and authentication checks intact.

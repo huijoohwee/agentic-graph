@@ -29,9 +29,10 @@ import { readThreeObjectInputOwnership, useThreeObjectInputOwnership } from './t
 import { useThreeObjectCameraInputOwnership } from './useThreeObjectCameraInputOwnership'
 import { useXrNativeControllerDemoCamera } from './useXrNativeControllerDemoCamera'
 import { useImmersiveMediaCameraControls } from '@/features/immersive-media/useImmersiveMediaCameraControls'
+import { applyLearningCameraPose } from '@/features/python-learning/learningCameraPose'
 export function Controls({
   schema, positions, paused, mode = '3d', modelAssetRenderKey, modelAssetFit,
-  xrEmptyWorld = false, flightSimActive = false, immersiveMediaActive = false, gameplayCoordinateScale = 1, onControlsChange,
+  xrEmptyWorld = false, flightSimActive = false, immersiveMediaActive = false, gameplayCoordinateScale = 1, onControlsChange, learningSceneId,
 }: {
   schema: GraphSchema
   positions: Record<string, Vec3>
@@ -41,16 +42,15 @@ export function Controls({
   modelAssetFit?: ModelAssetCameraFit | null
   xrEmptyWorld?: boolean; flightSimActive?: boolean; immersiveMediaActive?: boolean
   gameplayCoordinateScale?: number
-  onControlsChange?: () => void
+  onControlsChange?: () => void; learningSceneId?: string
 }) {
-  const { camera, gl, size } = useThree()
-  const perspectiveCamera = camera as PerspectiveCamera
+  const { camera, gl, size } = useThree(); const perspectiveCamera = camera as PerspectiveCamera
   const controls = useMemo(() => {
     const c = new OrbitControls(camera, gl.domElement)
-    c.enableDamping = true
-    c.minDistance = 0.05
+    c.enableDamping = true; c.minDistance = 0.05
     return c
   }, [camera, gl])
+  React.useLayoutEffect(() => { if (learningSceneId) applyLearningCameraPose(perspectiveCamera, controls, gl.domElement) }, [learningSceneId, perspectiveCamera, controls, gl, size.width, size.height])
   const threeCameraRequest = useGraphStore(s => s.threeCameraRequest)
   const data = useGraphStore(s => s.graphData)
   const fitToScreenMode = useGraphStore(s => s.fitToScreenMode)
@@ -262,7 +262,7 @@ export function Controls({
   React.useEffect(() => {
     const objectInputChanged = lastObjectInputRevisionRef.current !== objectInputOwnership.revision
     lastObjectInputRevisionRef.current = objectInputOwnership.revision
-    if (paused || viewPinned || mode === 'xr' || objectInputOwnership.active) return
+    if (paused || viewPinned || mode === 'xr' || objectInputOwnership.active || learningSceneId) return
     if (!fitToScreenMode) {
       lastFitSigRef.current = null
       return
@@ -287,10 +287,10 @@ export function Controls({
     } catch {
       void 0
     }
-  }, [paused, viewPinned, mode, fitToScreenMode, data, requestThreeCamera, schema, size.height, size.width, workspaceGraphMutationBlockKey, objectInputOwnership.active, objectInputOwnership.revision])
+  }, [paused, viewPinned, mode, fitToScreenMode, data, requestThreeCamera, schema, size.height, size.width, workspaceGraphMutationBlockKey, objectInputOwnership.active, objectInputOwnership.revision, learningSceneId])
   const lastSelectionKeyRef = React.useRef<string | null>(null)
   React.useEffect(() => {
-    if (paused || viewPinned || mode === 'xr' || objectInputOwnership.active) return
+    if (paused || viewPinned || mode === 'xr' || objectInputOwnership.active || learningSceneId) return
     if (!zoomToSelectionMode || !zoomOnSelectionEnabled) {
       lastSelectionKeyRef.current = null
       return
@@ -326,6 +326,7 @@ export function Controls({
     requestThreeCamera,
     mode,
     objectInputOwnership.active,
+    learningSceneId,
   ])
   React.useEffect(() => {
     const cfg = getCameraConfig(schema)
@@ -461,7 +462,7 @@ export function Controls({
     camera: perspectiveCamera,
     controls,
     mode,
-    paused: !!paused,
+    paused: !!paused || !!learningSceneId,
     modelAssetRenderKey,
     modelAssetFit,
     xrEmptyWorld,
@@ -524,6 +525,7 @@ export function Controls({
     if (paused || objectInputOwnership.active) return
     const req = threeCameraRequest
     if (!req) return
+    if (learningSceneId && req.type !== 'in' && req.type !== 'out') { if (req.type === 'fit' || req.type === 'reset') applyLearningCameraPose(perspectiveCamera, controls, gl.domElement); useGraphStore.getState().clearThreeCameraRequest(); return }
     if (choreographyOwnsCamera) {
       useGraphStore.getState().clearThreeCameraRequest()
       return
@@ -586,7 +588,7 @@ export function Controls({
     })
     useGraphStore.getState().clearThreeCameraRequest()
     selectionPerfEnd('three', t0)
-  }, [choreographyOwnsCamera, objectInputOwnership.active, paused, viewPinned, threeCameraRequest, data, selectedNodeId, selectedEdgeId, selectedGroupId, selectedNodeIds, selectedEdgeIds, selectedGroupIds, positions, perspectiveCamera, controls, zoomOnSelectionEnabled, mode, modelAssetFit, modelAssetRenderKey])
+  }, [choreographyOwnsCamera, objectInputOwnership.active, paused, viewPinned, threeCameraRequest, data, selectedNodeId, selectedEdgeId, selectedGroupId, selectedNodeIds, selectedEdgeIds, selectedGroupIds, positions, perspectiveCamera, controls, zoomOnSelectionEnabled, mode, modelAssetFit, modelAssetRenderKey, learningSceneId, gl])
   React.useEffect(() => {
     return () => {
       try { controls.dispose() } catch { void 0 }

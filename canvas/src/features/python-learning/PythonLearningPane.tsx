@@ -35,6 +35,11 @@ export default function PythonLearningPane(props: {
   }
   const running = snapshot.state === 'running' || snapshot.state === 'validating'
   const disabled = props.readOnly || sourceBytes(props.source) > PYTHON_LIMITS.sourceBytes
+  const outputPreview = result?.output.trim().split('\n')[0].slice(0, 80) || ''
+  const runFeedback = snapshot.stale ? 'Source changed. Run again to test this code.'
+    : snapshot.state === 'completed' && result
+      ? `${result.grade.passed ? 'Goal reached' : 'Goal not reached'} · ${result.grade.criteria.filter(criterion => criterion.passed).length}/4 checks · position (${result.scene.x.toFixed(2)}, ${result.scene.z.toFixed(2)}) m${outputPreview ? ` · output: ${outputPreview}` : ''}`
+      : running ? 'Running this source…' : ''
   return <section className="python-learning" aria-label="Python learning workspace" data-learning-state={snapshot.state}>
     <div className="python-learning-controls">
       <button onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'canvas' })}>View Canvas</button>
@@ -54,6 +59,10 @@ export default function PythonLearningPane(props: {
     <p className="python-learning-objective">{lesson.objective}</p>
     {notice ? <p role="status">{notice}</p> : null}
     {snapshot.error ? <p role="alert"><button onClick={() => props.editorRef.current?.revealLine?.(snapshot.error!.span.line)}>Line {snapshot.error.span.line}</button>: {snapshot.error.message}</p> : null}
+    {runFeedback ? <div className="python-learning-run-feedback" role="status">
+      <span>{runFeedback}</span>
+      {result && !snapshot.stale ? <button onClick={() => setMobileView('result')}>View results</button> : null}
+    </div> : null}
     <div className="python-learning-mobile-views" role="group" aria-label="Python workspace view">
       <button aria-pressed={mobileView === 'code'} onClick={() => setMobileView('code')}>Code</button>
       <button aria-pressed={mobileView === 'result'} onClick={() => setMobileView('result')}>Results</button>
