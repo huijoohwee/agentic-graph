@@ -1,8 +1,8 @@
 ---
 title: "agentic-graph Choreography Studio"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.1.0"
-date: "2026-09-23"
+version: "1.1.1"
+date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "agentic-graph"
@@ -231,7 +231,7 @@ require their own evidence before readiness advances.
 | Native XR authoring | `implemented-in-part` | Existing modules listed in Source ownership. |
 | Semantic inspection and guided checks | `implemented-in-part` | Local source implementation; exact-head tests and browser proof remain required. |
 | Offline save/reopen | `unverified` | Installed-cache and disconnected browser proof pending. |
-| Focused test evidence | `pending-current-run` | Must be refreshed at the exact change head. |
+| Focused test evidence | `passed-source-only` | At `f7f927466865457fbccdd068d043980963b53765`, semantic/exercises, native inspector and agent save/reopen checks all passed; required affected/browser checks remain separate. |
 | Protected integration | `undocumented` | Requires repository workflow receipts. |
 | Deployment and market proof | `not-requested` | No deployment or commercial claim in this change. |
 
@@ -256,3 +256,14 @@ source. Its minimum proof is the semantic/exercise test, native XR owner tests,
 and a save/reopen browser run. A subsequent sprint may bind a Python learning
 adapter only after its separate runtime owner has protected integration and
 bounded execution proof. Demand, first payment, and deployment remain unknown.
+
+## ADLC continuation checkpoint
+
+2026-09-24: PR #1221 remains the immutable predecessor; native successor
+`agent/device-0232231d4a19/choreography-closeout` reuses the same checkout and
+seven-path reservation. Its failed MP4 duration check is being repaired by the
+upstream XR timestamped-encoding change. Join that protected main revision, run
+affected checks, publish the exact successor, and retain integration/cleanup
+receipts before marking closeout complete. Existing MainPanel, FloatingPanel
+and BottomPanel/Timeline remain the shared UI owners. No deployment is requested.
+Update this checkpoint with exact evidence before ending the next implementation turn.
