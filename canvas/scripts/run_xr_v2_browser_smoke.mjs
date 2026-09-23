@@ -16,7 +16,7 @@ runLocalViteBrowserSmoke({
   verifierFailureLabel: 'XR v2 browser smoke',
   devServerStartMode: 'vite-runner',
   existingServerPolicy: 'forbid',
-}).then(() => import('./run_xr_scene_mp4_browser_smoke.mjs')).catch(error => {
+}).catch(error => {
   console.error(error)
   process.exit(1)
 })

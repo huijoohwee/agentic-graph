@@ -318,6 +318,10 @@ export function createAdlcObservabilityRuntime({
   cacheEntries = MAX_CACHE_ENTRIES,
 } = {}) {
   const cache = new Map();
+  const evaluatorIds = new WeakMap();
+  const projecting = new Map();
+  let nextEvaluatorId = 0;
+  let cachedBytes = 0;
   const maximumCacheEntries = Math.max(
     1,
     Math.min(MAX_CACHE_ENTRIES, Number(cacheEntries) || MAX_CACHE_ENTRIES),
@@ -332,8 +336,29 @@ export function createAdlcObservabilityRuntime({
   }
 
   function cacheSet(key, value) {
-    cache.set(key, value);
-    while (cache.size > maximumCacheEntries) cache.delete(cache.keys().next().value);
+    const bytes = Buffer.byteLength(JSON.stringify({ evaluated: value.evaluated, projection: value.projection }));
+    if (bytes > 400_000) {
+      if (cache.has(key)) { cachedBytes -= cache.get(key).bytes; cache.delete(key); }
+      return;
+    }
+    if (cache.has(key)) cachedBytes -= cache.get(key).bytes;
+    cache.delete(key);
+    cache.set(key, { ...value, bytes });
+    cachedBytes += bytes;
+    while (cache.size > maximumCacheEntries || cachedBytes > 4 * 1024 * 1024) {
+      const oldest = cache.keys().next().value;
+      cachedBytes -= cache.get(oldest).bytes;
+      cache.delete(oldest);
+    }
+  }
+
+  function checkedLedger(canonicalSchema, content) {
+    let ledger;
+    try { ledger = JSON.parse(content); }
+    catch { throw Object.assign(new Error("Canonical ADLC ledger is not valid JSON."), { code: "LEDGER_SCHEMA_INVALID" }); }
+    if (ledger?.schema !== canonicalSchema) throw Object.assign(
+      new Error("Ledger source schema differs from its exact receipt."), { code: "LEDGER_SCHEMA_INVALID" });
+    return ledger;
   }
 
   async function observe(input) {
@@ -369,79 +394,76 @@ export function createAdlcObservabilityRuntime({
         expectedBytes: receipt.bytes,
         requireUtf8: true,
       });
-      let ledger;
-      try {
-        ledger = JSON.parse(artifact.content);
-      } catch {
-        throw Object.assign(
-          new Error("Canonical ADLC ledger is not valid JSON."),
-          { code: "LEDGER_SCHEMA_INVALID" },
-        );
-      }
-      if (ledger?.schema !== canonicalSchema) throw Object.assign(
-        new Error("Ledger source schema differs from its exact receipt."), { code: "LEDGER_SCHEMA_INVALID" });
+      const ledger = checkedLedger(canonicalSchema, artifact.content);
       const evaluator = await evaluatorLoader({
         canonicalSchema,
         agenticCanvasOsRoot: state.spec.agenticCanvasOsRoot,
         expectedRevision: receipt.acosRevision,
         state,
       });
-      const evaluated = evaluateAdlcLedger(ledger, evaluator);
-      if (
-        evaluated.normalizedRun.runId !== receipt.canonicalRunId
-        || evaluated.normalizedRun.schema !== canonicalSchema
-      ) {
-        throw Object.assign(
-          new Error("Canonical ledger identity differs from its immutable receipt."),
-          { code: "LEDGER_SCHEMA_INVALID" },
-        );
-      }
-      const finalState = await store.read(request.runId);
-      if (finalState.revision !== request.expectedRevision
-        || stableJson(readAdlcLedgerBinding(finalState)) !== stableJson(binding)) {
-        throw Object.assign(
-          new Error("Implementation run changed while its canonical ledger was observed."),
-          { code: "REVISION_CONFLICT" },
-        );
-      }
-
       const source = Object.freeze({
         implementationRunId: state.runId,
         implementationRunRevision: state.revision,
         implementationRunState: state.state,
         canonicalRunId: receipt.canonicalRunId,
-        canonicalSchema: evaluated.normalizedRun.schema,
+        canonicalSchema,
         receiptSchema: receipt.schema,
         ledgerArtifact: receipt.artifact,
         ledgerRevision: receipt.ledgerRevision,
         ledgerDigest: receipt.digest,
         acosRevision: receipt.acosRevision,
       });
+      // A freshly admitted evaluator may differ even at the same receipt pin in injected runtimes.
+      const evaluatorObject = evaluator && (typeof evaluator === "object" || typeof evaluator === "function") ? evaluator : null;
+      if (evaluatorObject) {
+        const methods = [evaluator.assertCanonicalRunSchema, evaluator.normalizeCanonicalRun,
+          evaluator.validateExecutionRun, evaluator.stableJson];
+        const prior = evaluatorIds.get(evaluatorObject);
+        if (!prior || methods.some((method, index) => method !== prior.methods[index])) {
+          evaluatorIds.set(evaluatorObject, { id: ++nextEvaluatorId, methods });
+        }
+      }
       const cacheKey = `sha256:${crypto.createHash("sha256").update(stableJson({
         source,
+        evaluatorRoot: state.spec.agenticCanvasOsRoot,
+        evaluatorIdentity: evaluatorObject ? evaluatorIds.get(evaluatorObject).id : null,
         view: request.view,
         cursor: request.cursor,
         limit: request.limit,
         projection: "adlc-canvas-projection/v1",
       })).digest("hex")}`;
-      let projection = cacheGet(cacheKey);
-      const cacheStatus = projection ? "hit" : "miss";
+      const cached = cacheGet(cacheKey);
+      const cacheStatus = cached?.projection ? "hit" : "miss";
+      let evaluated = cached?.evaluated;
+      if (!evaluated) {
+        evaluated = evaluateAdlcLedger(ledger, evaluator);
+        if (evaluated.normalizedRun.runId !== receipt.canonicalRunId
+          || evaluated.normalizedRun.schema !== canonicalSchema) throw Object.assign(
+          new Error("Canonical ledger identity differs from its immutable receipt."), { code: "LEDGER_SCHEMA_INVALID" });
+        cacheSet(cacheKey, { evaluated, projection: null });
+      }
+      const finalState = await store.read(request.runId);
+      if (finalState.revision !== request.expectedRevision
+        || stableJson(readAdlcLedgerBinding(finalState)) !== stableJson(binding)) throw Object.assign(
+          new Error("Implementation run changed while its canonical ledger was observed."), { code: "REVISION_CONFLICT" });
+      let projection = cached?.projection ?? cacheGet(cacheKey)?.projection;
       if (!projection) {
-        projection = await projector({
-          normalizedRun: evaluated.normalizedRun,
-          implementationRun: {
-            id: state.runId,
-            revision: state.revision,
-            state: state.state,
-          },
-          source,
-          conformance: evaluated.conformance,
-          view: request.view,
-          cursor: request.cursor,
-          limit: request.limit,
-        });
-        projection = deepFreeze(projection);
-        cacheSet(cacheKey, projection);
+        let inFlight = projecting.get(cacheKey);
+        if (!inFlight) {
+          const retainFlight = projecting.size < maximumCacheEntries;
+          inFlight = Promise.resolve().then(() => projector({
+            normalizedRun: evaluated.normalizedRun,
+            implementationRun: { id: state.runId, revision: state.revision, state: state.state },
+            source, conformance: evaluated.conformance, view: request.view,
+            cursor: request.cursor, limit: request.limit,
+          })).then(value => {
+            const frozen = deepFreeze(value);
+            cacheSet(cacheKey, { projection: frozen, evaluated });
+            return frozen;
+          }).finally(() => { if (retainFlight && projecting.get(cacheKey) === inFlight) projecting.delete(cacheKey); });
+          if (retainFlight) projecting.set(cacheKey, inFlight);
+        }
+        projection = await inFlight;
       }
       const publicConformance = conformanceSummary(evaluated.conformance);
 
