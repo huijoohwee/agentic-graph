@@ -160,7 +160,10 @@ try {
   await lessonCanvas.locator('canvas').waitFor()
   assert.equal(await pane.isVisible(), false, 'mobile scene uses the full Canvas view')
   assert.equal(await lessonCanvas.getAttribute('data-learning-run-id'), beforeCanvasSwitch.binding.expectedRunId)
-  await page.waitForFunction(() => document.querySelector('[aria-label="Python lesson Canvas"]')?.getBoundingClientRect().width >= 350)
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector('[aria-label="Python lesson Canvas"] canvas')
+    return canvas && canvas.getBoundingClientRect().width >= 350 && canvas.width >= 350
+  })
   await page.screenshot({ path: join(output, 'offline-mobile-canvas.png'), fullPage: true })
   await lessonCanvas.getByRole('button', { name: 'Edit Python code', exact: true }).click()
   await pane.waitFor(); await selectPython()
@@ -199,7 +202,7 @@ try {
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
   await page.waitForFunction(() => {
-    const editor = document.querySelector('.python-learning')?.getBoundingClientRect(), scene = document.querySelector('[aria-label="Python lesson Canvas"]')?.getBoundingClientRect()
+    const editor = document.querySelector('.python-learning')?.getBoundingClientRect(), scene = document.querySelector('[aria-label="Python lesson Canvas"] canvas')?.getBoundingClientRect()
     return editor && scene && scene.left >= editor.right && scene.width >= 400
   })
   await page.screenshot({ path: join(output, 'offline-desktop-scene.png'), fullPage: true })
