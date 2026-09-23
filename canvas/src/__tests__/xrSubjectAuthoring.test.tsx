@@ -16,11 +16,12 @@ import yaml from 'js-yaml'
 import { XrSubjectTransformEditor } from '@/features/three/XrSubjectTransformEditor'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMotionReferenceRuntimeBridge'
+import { XrMotionReferenceRuntimeBridge, hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from '@/features/three/xrMotionReferenceModel'
 import { readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot, selectXrMotionReferenceShotTarget, selectXrSubjectPart, setXrMotionReferencePlayhead, setXrSubjectConstruction, subscribeXrMotionReferenceRuntime, hydrateXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
 import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
+import { publishCameraFramingRuntime, readCameraFramingRuntime, readCameraFramingRuntimeDocumentKey } from '@/features/strybldr/cameraFramingRuntime'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 
@@ -342,6 +343,23 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     subjects[0].construction = { ...beforeRejectedEdits.plan.subjects[0].construction, proceduralAssetDocument: '{invalid' }
     assert.throws(() => hydrateXrMotionReferenceRuntime({ sceneKey: beforeRejectedEdits.sceneKey, nodes: [], persistedValue: malformed }), XrSubjectConstructionError)
     assert.equal(readXrMotionReferenceRuntime(), beforeRejectedEdits, 'Malformed construction rejects before replacing runtime state')
+
+    publishCameraFramingRuntime({ anchorId: 'preserved-camera', settings: {}, source: 'panel' })
+    const camera = readCameraFramingRuntime(), cameraDocument = readCameraFramingRuntimeDocumentKey()
+    const malformedText = `---\n${yaml.dump({ kgXrMotionReference: malformed })}---\n\n# Retain invalid source\n`
+    await act(async () => {
+      useGraphStore.setState({ markdownDocumentName: '/invalid-subject.md', markdownDocumentText: malformedText,
+        graphData: { type: 'Graph', context: 'frontmatter-flow', nodes: [], edges: [], metadata: { kgXrMotionReference: malformed } } })
+      root.render(<XrMotionReferenceRuntimeBridge />)
+    })
+    assert.equal(readXrMotionReferenceRuntime(), beforeRejectedEdits, 'Mounted bridge preserves the last valid scene')
+    assert.equal(readCameraFramingRuntime(), camera, 'Rejected source preserves the exact camera snapshot')
+    assert.equal(readCameraFramingRuntimeDocumentKey(), cameraDocument, 'Rejected source retains camera ownership')
+    assert.equal(useGraphStore.getState().markdownDocumentText, malformedText, 'Invalid authored bytes remain available to repair')
+    assert.ok(useGraphStore.getState().uiToasts.some(toast => toast.id === 'xr:subject-source:error' && toast.kind === 'error'))
+    await act(async () => { install('/recovered-subject.md') })
+    assert.notEqual(readXrMotionReferenceRuntime().sceneKey, beforeRejectedEdits.sceneKey, 'A later valid document hydrates normally')
+    assert.equal(readCameraFramingRuntimeDocumentKey(), readXrMotionReferenceRuntime().sceneKey)
 
   } finally {
     await unmountReactRoot(root)

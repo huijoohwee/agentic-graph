@@ -2,8 +2,8 @@
 title: "agentic-graph XR Mode Increment and Evidence History"
 doc_type: "Increment and Evidence Companion"
 doc_id: "KXR-001-HISTORY"
-version: "0.7.1"
-date: "2026-09-22"
+version: "0.7.2"
+date: "2026-09-23"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
@@ -346,3 +346,20 @@ review has no findings. Both existing registered cases passed on their first run
 part/source/subject retirement, model-draft preservation and actual GLB hierarchy,
 duration and start/middle/end poses. Source and type-check evidence belong to the
 task receipt; this is focused local proof, not complete browser or XR acceptance.
+
+### S1 malformed-source bridge recovery
+
+The existing canonical motion bridge catches the typed subject-construction
+rejection before resetting camera ownership. Invalid authored source remains
+available to repair, while the last valid scene and camera stay intact. The
+native error toast reports the failure; unrelated exceptions still propagate.
+Physics and selection hydration stop for that rejected document. A later valid
+document can hydrate normally through the same bridge.
+
+The existing mounted regression covers invalid source, exact scene/camera
+preservation, visible error reporting and subsequent valid-document recovery.
+Both existing subject cases are selected by the collaboration CI contract when
+their owners change. Exact candidate results remain in task receipts; this does
+not promote the remaining Timeline, tool parity, whole-scene export, physical
+device or production requirements. Four existing files, at most 12 KB, no new
+modules or dependencies; authored history and earlier review refs remain retained.

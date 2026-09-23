@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 57
+contract_version: 58
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -65,6 +65,10 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  xr_subject:
+    roots: ["canvas/src/features/three/XrAuthoredSubjectGeometry.tsx", "canvas/src/features/three/XrSceneLibrarySubject.tsx", "canvas/src/features/three/XrSubject", "canvas/src/features/three/xrSubject", "canvas/src/features/three/xrMotionReferenceModel.ts", "canvas/src/features/three/xrMotionReferenceRuntime", "canvas/src/features/three/xrMotionReferenceSubjectPlacement.ts", "canvas/src/features/three/XrMotionReferenceRuntimeBridge.tsx", "canvas/src/__tests__/xrSubjectAuthoring.test.tsx", "canvas/src/tests/registry/postParserCases3Tail.ts"]
+    commands:
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "xr.subject.draft.sourceAndSelectionFence", "xr.subject.editor.documentFenceAndPersistence"]
   python_learning:
     roots: ["canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
     commands:
