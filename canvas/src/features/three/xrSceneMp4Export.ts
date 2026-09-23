@@ -321,7 +321,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     }, binding.durationSeconds * 1_000 + 8_000)
     // Only the acknowledged terminal render releases the native playing camera.
     // Let the frozen endpoint reach preview while encoded time is paused, then
-    // record two final samples so the last decodable frame has nonzero duration.
+    // record one final sample so the last decodable frame has nonzero duration.
     detachClock(); detachClock = () => {}
     releaseEnd!(); releaseEnd = null; rejectEnd = null
     const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack
@@ -330,7 +330,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     assertCurrent()
     recorder.resume()
     track.requestFrame?.()
-    await waitSamplingSlots(2)
+    await waitSamplingSlots(1)
     assertCurrent()
     await flushVideoSequenceRecorderOutput({ recorder, output, signal: args.signal })
     const chunks = await finishVideoSequenceRecorderOutput(recorder, output)
