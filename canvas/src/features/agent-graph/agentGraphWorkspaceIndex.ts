@@ -11,6 +11,7 @@ const SCHEMA = 'agentic-graph-codebase-index-manifest/v1'
 const MAX_BYTES = 32_000
 export type WorkspaceCodebaseIndex = { path: string; value: Record<string, unknown>; text: string }
 const pending = new WeakMap<WorkspaceFs, Promise<unknown>>()
+const verified = new WeakMap<WorkspaceFs, { path: string; manifest: string; projectionPath: string; projection: string }>()
 
 /** Serialize local references; importing the same snapshot never creates another index. */
 async function serialize<T>(fs: WorkspaceFs, operation: () => Promise<T>): Promise<T> {
@@ -76,18 +77,28 @@ export async function readActiveAgentGraphWorkspaceIndex(snapshotPath?: string):
   if (value.schema !== SCHEMA || value.authority !== false || value.graphId !== `kg:graph:${match[1]}`
     || value.snapshotDigest !== match[2] || retained?.graphId !== value.graphId
     || retained?.snapshotDigest !== value.snapshotDigest) throw Error('Codebase index identity mismatch')
-  const { readAgentGraphWorkspaceProjection } = await import('./agentGraphWorkspaceArtifact')
-  const graph = await readAgentGraphWorkspaceProjection(retained.path, retained)
-  if (JSON.stringify(buildAgentGraphWorkspaceIndex(graph, retained.path).value) !== JSON.stringify(value)) throw Error('Codebase index does not match its retained native projection')
+  const { readAgentGraphWorkspaceProjectionText, parseAgentGraphWorkspaceProjectionText } = await import('./agentGraphWorkspaceArtifact')
+  const projectionText = await readAgentGraphWorkspaceProjectionText(retained.path, retained)
+  const prior = verified.get(fs)
+  if (prior?.path !== reference.path || prior.manifest !== text
+    || prior.projectionPath !== retained.path || prior.projection !== projectionText) {
+    const graph = parseAgentGraphWorkspaceProjectionText(projectionText, retained)
+    if (JSON.stringify(buildAgentGraphWorkspaceIndex(graph, retained.path).value) !== JSON.stringify(value)) throw Error('Codebase index does not match its retained native projection')
+    verified.set(fs, { path: reference.path, manifest: text, projectionPath: retained.path, projection: projectionText })
+  }
   return { path: reference.path, value, text }
 }
 
 /** A workflow retains only a reference to the shared index, never its graph or private run trace. */
-export async function bindAgentGraphWorkspaceIndex(workflowId: string, index: WorkspaceCodebaseIndex) {
+export async function bindAgentGraphWorkspaceIndex(workflowId: string, index: WorkspaceCodebaseIndex,
+  { isCurrent }: { isCurrent?: () => boolean } = {}) {
   const fs = await getWorkspaceFs()
   const path = `/.workspace/${encodeURIComponent(workflowId)}/codebase-index.ref.json`
   const value = { schema: 'agentic-graph-codebase-index-reference/v1', authority: false, workflowId,
     path: index.path, graphId: index.value.graphId, snapshotDigest: index.value.snapshotDigest }
-  await serialize(fs, () => write(fs, path, value))
+  await serialize(fs, () => {
+    if (isCurrent && !isCurrent()) throw Error('Native index selection changed')
+    return write(fs, path, value)
+  })
   return { path, value }
 }
