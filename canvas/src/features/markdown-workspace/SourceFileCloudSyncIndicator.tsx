@@ -1,5 +1,4 @@
 import React from 'react'
-import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
 import { Cloud, CloudOff, HardDrive, LoaderCircle } from 'lucide-react'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import {
@@ -285,7 +284,7 @@ const buildIndicatorLabel = (entry: WorkspaceEntry, status: SourceFileCloudSyncS
   if (status === 'error') return `Cloud sync failed for ${name}. Retry shared cloud upload${error ? `: ${error}` : ''}`
   if (status === 'auth-required') return `Cloud sync requires sign-in for ${name}. This file remains saved locally.`
   if (status === 'access-required') return `Cloud sync access is required for ${name}. This file remains saved locally.`
-  if (status === 'unavailable') return `Local saved copy: ${name}. Configure cloud sync in Settings.`
+  if (status === 'unavailable') return `Local saved copy: ${name}. Sign in to sync this file.`
   if (status === 'checking') return `Checking cloud sync for ${name}`
   if (status === 'unsupported') return `Local file: ${name}. Cloud upload supports Markdown and Python`
   return `Local saved copy: ${name}. Upload a shared cloud snapshot`
@@ -331,8 +330,8 @@ export function SourceFileCloudSyncIndicator(props: {
       data-source-file-cloud-status={status}
       disabled={disabled}
       onClick={() => {
-        if (status === 'unavailable' || status === 'access-required') {
-          emitMainPanelOpen({ tab: 'settings', searchQuery: 'storage' })
+        if (status === 'unavailable' || status === 'access-required' || status === 'auth-required') {
+          beginAgenticGraphStorageBrowserSignIn({ baseUrl: readAgenticGraphStorageBaseUrl() })
         } else void props.onUpload(entry)
       }}
     >

@@ -466,6 +466,14 @@ export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwor
 
 export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUploadsOnClick() {
   const harness = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
+  const previousFetch = globalThis.fetch, previousDialog = Object.getOwnPropertyDescriptor(globalThis, 'HTMLDialogElement')
+  Object.defineProperty(globalThis, 'HTMLDialogElement', { configurable: true, value: harness.dom.window.HTMLDialogElement })
+  harness.dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true }
+  harness.dom.window.HTMLDialogElement.prototype.close = function () { this.open = false }
+  globalThis.fetch = async input => new URL(String(input)).pathname.endsWith('/session')
+    ? Response.json({ ok: false }, { status: 401 })
+    : Response.json({ schema: 'agentic-graph/storage-login-options/v1', mode: 'signin', privacyHref: '/api/storage/auth/privacy',
+      providers: [{ id: 'github', label: 'GitHub', method: 'GET', href: '/api/storage/auth/login?provider=github' }] })
   const container = harness.dom.window.document.getElementById('root')
   if (!container) throw new Error('missing test root')
   const entry: WorkspaceEntry = {
@@ -514,13 +522,8 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
       throw new Error('expected matching remote content to render a cloud-synced indicator')
     }
 
-    const authRequiredStatus = resolveSourceFileCloudSyncStatus({
-      entry,
-      remoteContentByCanonicalPath: new Map(),
-      snapshotStatus: 'auth-required',
-    })
     await act(async () => {
-      root.render(<SourceFileCloudSyncIndicator entry={entry} status={authRequiredStatus} onUpload={() => { uploadCount += 1 }} />)
+      root.render(<SourceFileCloudSyncIndicator entry={entry} status="auth-required" onUpload={() => { uploadCount += 1 }} />)
       await tick()
     })
     const authRequiredButton = container.querySelector('button[data-source-file-cloud-status="auth-required"]') as HTMLButtonElement | null
@@ -533,18 +536,7 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
       throw new Error('expected sign-in-required state to replace the futile retry action')
     }
     await act(async () => {
-      authRequiredButton.dispatchEvent(new harness.dom.window.MouseEvent('click', { bubbles: true }))
-      await tick()
-    })
-    if (Number(uploadCount) !== 2) throw new Error(`expected sign-in-required indicator click to begin sign-in once, got ${uploadCount}`)
-
-    const accessRequiredStatus = resolveSourceFileCloudSyncStatus({
-      entry,
-      remoteContentByCanonicalPath: new Map(),
-      snapshotStatus: 'access-required',
-    })
-    await act(async () => {
-      root.render(<SourceFileCloudSyncIndicator entry={entry} status={accessRequiredStatus} onUpload={() => { uploadCount += 1 }} />)
+      root.render(<SourceFileCloudSyncIndicator entry={entry} status="access-required" onUpload={() => { uploadCount += 1 }} />)
       await tick()
     })
     const accessRequiredButton = container.querySelector('button[data-source-file-cloud-status="access-required"]') as HTMLButtonElement | null
@@ -554,19 +546,26 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
     let opened = 0
     const onOpen = () => { opened += 1 }
     harness.dom.window.addEventListener('kg:mainPanelOpen', onOpen)
-    for (const status of ['unavailable', 'access-required'] as const) {
+    await import('@/lib/storage/StorageAuthLightbox')
+    for (const status of ['unavailable', 'access-required', 'auth-required'] as const) {
       await act(async () => { root.render(<SourceFileCloudSyncIndicator entry={entry} status={status} onUpload={() => { uploadCount += 1 }} />); await tick() })
       const button = container.querySelector('button')!
       if (button.disabled) throw new Error('Cloud setup must remain actionable')
       await act(async () => { button.click(); await tick() })
+      for (let attempt = 0; attempt < 10 && !harness.dom.window.document.querySelector('[data-kg-storage-auth-lightbox]'); attempt++) await act(tick)
+      if (!harness.dom.window.document.querySelector('[data-kg-storage-auth-lightbox]')) throw new Error(`${status} must open sign-in`)
+      await act(async () => { harness.dom.window.document.querySelector<HTMLButtonElement>('[aria-label="Close sign-in"]')!.click(); await tick() })
     }
     harness.dom.window.removeEventListener('kg:mainPanelOpen', onOpen)
-    if (opened !== 2 || Number(uploadCount) !== 2) throw new Error('Setup icons must open Settings without uploading')
+    if (opened !== 0 || Number(uploadCount) !== 1) throw new Error('Sign-in icons must bypass Settings and upload')
   } finally {
     await act(async () => {
       root.unmount()
       await tick()
     })
+    globalThis.fetch = previousFetch
+    if (previousDialog) Object.defineProperty(globalThis, 'HTMLDialogElement', previousDialog)
+    else Reflect.deleteProperty(globalThis, 'HTMLDialogElement')
     harness.restore()
   }
 }
