@@ -124,7 +124,6 @@ try {
       await saved.waitFor({ state: 'hidden', timeout: 15000 })
       await editor.fill(lesson.solution)
       await pane.getByRole('button', { name: 'Save source', exact: true }).click()
-      await saved.waitFor({ timeout: 15000 })
       await awaitStoredSource(lesson.solution)
     }
     let registeredRun
@@ -149,7 +148,8 @@ try {
     await pane.getByText('Saved locally:', { exact: false }).waitFor()
     outcomes.push({ lesson: lesson.id, passed: true })
   }
-  const lessonCanvas = page.getByRole('region', { name: 'Python lesson Canvas', exact: true })
+  const lessonCanvas = page.getByRole('region', { name: 'Canvas viewport', exact: true })
+  const sharedCanvas = lessonCanvas.locator('[data-kg-three-canvas-owner="1"]')
   assert.equal(await pane.locator('canvas').count(), 0, 'Editor must not host the lesson renderer')
   const beforeCanvasSwitch = await inspect()
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
@@ -157,15 +157,19 @@ try {
   for (let offset = 0; offset < 7; offset++) await editor.press('ArrowRight')
   assert.equal(await editor.evaluate(element => element.selectionStart), 7)
   await pane.getByRole('button', { name: 'View Canvas', exact: true }).click()
-  await lessonCanvas.locator('canvas').waitFor()
+  await sharedCanvas.waitFor()
   assert.equal(await pane.isVisible(), false, 'mobile scene uses the full Canvas view')
-  assert.equal(await lessonCanvas.getAttribute('data-learning-run-id'), beforeCanvasSwitch.binding.expectedRunId)
+  assert.equal(await lessonCanvas.locator('[data-learning-run-id]').getAttribute('data-learning-run-id'), beforeCanvasSwitch.binding.expectedRunId)
+  assert.equal(await page.locator('[data-kg-three-canvas-owner="1"]').count(), 1, 'lesson uses the existing Canvas owner once')
+  assert.equal(await page.locator('figure.python-learning-scene').count(), 0, 'no competing lesson viewport')
+  assert.equal(await lessonCanvas.locator('[data-kg-three-viewport-gestures]').getAttribute('data-kg-three-viewport-gestures'), 'orbit-pan-cursor-zoom', 'lesson uses shared Canvas gestures')
   await page.waitForFunction(() => {
-    const canvas = document.querySelector('[aria-label="Python lesson Canvas"] canvas')
-    return canvas && canvas.getBoundingClientRect().width >= 350 && canvas.width >= 350
+    const owner = document.querySelector('[data-kg-three-canvas-owner="1"]')
+    const canvas = owner?.querySelector('canvas')
+    return owner && owner.getBoundingClientRect().width >= 350 && canvas && canvas.width > 0
   })
   await page.screenshot({ path: join(output, 'offline-mobile-canvas.png'), fullPage: true })
-  await lessonCanvas.getByRole('button', { name: 'Edit Python code', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Main Toolbar', exact: true }).getByRole('button', { name: 'Edit Python code', exact: true }).click()
   await pane.waitFor(); await selectPython()
   assert.equal((await inspect()).binding.expectedRunId, beforeCanvasSwitch.binding.expectedRunId, 'view switching must preserve the run')
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'view switching must preserve source')
@@ -198,14 +202,47 @@ try {
   if (await richEditor.isVisible()) await richEditor.click()
   await pane.locator('.monaco-editor .view-lines').waitFor({ timeout: 30000 })
   assert.ok(await pane.locator('.monaco-editor .view-lines').evaluate(element => new Set([...element.querySelectorAll('span')].map(span => span.className).filter(name => /^mtk/.test(name))).size > 1), 'offline Python highlighting must load')
+  await pane.getByLabel('Python lesson', { exact: true }).selectOption(lessons[0].id)
+  const editRichSource = async source => {
+    await pane.locator('.monaco-editor .view-line').first().click()
+    await page.keyboard.press('ControlOrMeta+A')
+    await page.keyboard.insertText(source)
+    assert.equal((await inspect()).binding.sourceDigest, createHash('sha256').update(source).digest('hex'), 'Monaco edit must bind exact source to runtime')
+  }
+  await editRichSource(lessons[0].starter)
+  await pane.getByRole('button', { name: 'Run', exact: true }).click()
+  await page.locator('.python-learning[data-learning-state="completed"]').waitFor()
+  let richRun = await inspect()
+  assert.ok(Math.abs(richRun.result.scene.x - 1) < 1e-6, 'starter edit must move the native Canvas scene one metre')
+  assert.equal(richRun.result.grade.passed, false)
+  await pane.getByText(/Goal not reached · 3\/4 checks · position \(1\.00, 0\.00\) m · output: False/).waitFor()
+  await editRichSource(lessons[0].solution)
+  await pane.getByRole('button', { name: 'Run', exact: true }).click()
+  await page.locator('.python-learning[data-learning-state="completed"]').waitFor()
+  richRun = await inspect()
+  assert.ok(Math.abs(richRun.result.scene.x - 4) < 1e-6, 'revised Monaco source must update the native Canvas scene')
+  assert.equal(richRun.result.grade.passed, true)
+  await pane.getByText(/Goal reached · 4\/4 checks · position \(4\.00, 0\.00\) m · output: True/).waitFor()
+  await pane.getByRole('button', { name: 'Save source', exact: true }).click()
+  await awaitStoredSource(lessons[0].solution)
   await page.screenshot({ path: join(output, 'offline-desktop.png'), fullPage: true })
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
   await page.waitForFunction(() => {
-    const editor = document.querySelector('.python-learning')?.getBoundingClientRect(), scene = document.querySelector('[aria-label="Python lesson Canvas"] canvas')?.getBoundingClientRect()
-    return editor && scene && scene.left >= editor.right && scene.width >= 400
+    const editor = document.querySelector('.python-learning')?.getBoundingClientRect(), scene = document.querySelector('[data-kg-three-canvas-owner="1"]')?.getBoundingClientRect()
+    return editor && scene && scene.left <= editor.left + 1 && scene.width >= innerWidth - 2
   })
   await page.screenshot({ path: join(output, 'offline-desktop-scene.png'), fullPage: true })
+  const beforeResize = await sharedCanvas.boundingBox()
+  const resizeHandle = page.getByRole('separator', { name: 'Resize canvas', exact: true })
+  const handle = await resizeHandle.boundingBox()
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(handle.x + handle.width / 2 + 80, handle.y + handle.height / 2, { steps: 5 })
+  await page.mouse.up()
+  const afterResize = await sharedCanvas.boundingBox()
+  assert.equal(afterResize.x, beforeResize.x, 'Editor resize must not move the Canvas viewport')
+  assert.equal(afterResize.width, beforeResize.width, 'Editor resize must not resize the Canvas viewport')
   await page.setViewportSize({ width: 375, height: 812 })
   // A missing admitted worker must block offline navigation even if another runtime cache has it.
   const missing = await page.evaluate(async () => {
@@ -221,12 +258,12 @@ try {
   await page.evaluate(async value => (await caches.open(value.name)).put(value.url, new Response(new Uint8Array(value.bytes), { headers: { 'content-type': value.type } })), missing)
   await page.reload({ waitUntil: 'domcontentloaded' }); await pane.waitFor({ timeout: 60000 })
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
-  await awaitSource(lessons.at(-1).solution)
-  assert.equal(await editor.inputValue(), lessons.at(-1).solution)
+  await awaitSource(lessons[0].solution)
+  assert.equal(await editor.inputValue(), lessons[0].solution)
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
   const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
-    toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
+    toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))

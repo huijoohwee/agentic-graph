@@ -25,7 +25,7 @@ export function MarkdownFileTreeRowButton(props: MarkdownFileTreeRowButtonProps)
     <button
       ref={rowRef}
       type="button"
-      className={`flex-1 min-w-0 flex items-center gap-1 rounded ${UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME} ${textClassName} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${uiSelectedRowStateClassName(isActive)}`}
+      className={`flex-1 min-w-0 flex items-center gap-1 rounded ${UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME} ${textClassName} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${isActive ? '' : 'border border-transparent'} ${uiSelectedRowStateClassName(isActive)}`}
       style={{ paddingLeft: 6 + indent }}
       onClick={onClick}
       onContextMenu={onContextMenu}

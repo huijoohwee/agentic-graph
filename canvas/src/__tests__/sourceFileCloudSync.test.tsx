@@ -8,7 +8,7 @@ import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { __resetAgenticGraphStorageDbForTests, getAgenticGraphStorageDb } from '@/lib/storage/agentic-graph-storage-db'
-import { readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, syncWorkspaceEntriesToCloudWorkspaceSnapshot, syncWorkspaceEntryToCloudWorkspaceSnapshot, syncWorkspaceEntryToCanonicalCloud } from '@/features/source-files/sourceFileCanonicalCloudSync'
+import { readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, resolveSourceFileCloudWorkspaceTarget, syncWorkspaceEntriesToCloudWorkspaceSnapshot, syncWorkspaceEntryToCloudWorkspaceSnapshot, syncWorkspaceEntryToCanonicalCloud } from '@/features/source-files/sourceFileCanonicalCloudSync'
 import { syncSourceFilesToAgenticGraphStorage } from '@/features/source-files/sourceFilesStorageSync'
 import { SourceFileCloudSyncIndicator, resolveSourceFileCloudSyncStatus } from '@/features/markdown-workspace/SourceFileCloudSyncIndicator'
 import { beginAgenticGraphStorageBrowserSignIn, readAgenticGraphStorageBrowserSession } from '@/lib/storage/agentic-graph-storage-browser-session'
@@ -74,7 +74,6 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     const path = await fs.createFile({ parentPath: '/', name: 'note-cloud-sync.md', text: '# New cloud note\n\nGitHub first, Cloudflare second.' })
     const entry = (await fs.listEntries()).find(candidate => candidate.path === path)
     if (!entry) throw new Error('expected created workspace entry')
-
     globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
       const method = String(init?.method || 'GET').toUpperCase()
       if (method === 'GET') return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404, headers: { 'content-type': 'application/json' } })
@@ -82,7 +81,6 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
       committedText = Buffer.from(String(body.content || ''), 'base64').toString('utf8')
       return new Response(JSON.stringify({ content: { sha: 'content-sha-cloud-sync' }, commit: { sha: 'commit-sha-cloud-sync' } }), { status: 200, headers: { 'content-type': 'application/json' } })
     }) as typeof fetch
-
     const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = withBrowserSessionCookie(input instanceof Request
         ? input
@@ -91,7 +89,6 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
       if (new URL(request.url).pathname === '/api/storage/collab/save') saveAuthorizations.push(String(request.headers.get('authorization') || ''))
       return readStorageWorker().fetch(request, env as never)
     }
-
     const snapshotPath = await fs.createFile({ parentPath: '/', name: 'selected-only.md', text: '# Selected snapshot' })
     const siblingPath = await fs.createFile({ parentPath: '/', name: 'sibling.md', text: '# Sibling snapshot' })
     await fs.createFile({ parentPath: '/', name: 'sibling.json', text: '{"sibling":true}' })
@@ -154,10 +151,17 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     if (batch.length !== 2 || batch.some(item => !item.readBackVerified)
       || events.filter(event => event === 'POST:/api/storage/push').length !== 1
       || events.filter(event => event.startsWith('GET:/api/storage/export/')).length !== 1) throw new Error('Batch upload must verify two documents with one push and one export')
+    const pythonPath = await fs.createFile({ parentPath: '/', name: 'python-learning-demo.py', text: 'print(at_goal())\n' })
+    const pythonEntry = (await fs.listEntries()).find(candidate => candidate.path === pythonPath)
+    if (!pythonEntry) throw new Error('expected Python workspace entry')
+    events.length = 0
+    const pythonSnapshot = await syncWorkspaceEntryToCloudWorkspaceSnapshot({ entry: pythonEntry, workspaceId, fetchImpl: cookieFetch })
+    const pythonExport = await readCanonicalCloudDocumentSnapshot({ workspaceId, fetchImpl: cookieFetch })
+    if (pythonSnapshot.documentKind !== 'python' || !pythonSnapshot.readBackVerified || pythonExport.get(pythonSnapshot.canonicalPath) !== 'print(at_goal())\n'
+      || events.includes('POST:/api/storage/collab/save')) throw new Error('Python must sync only to the authenticated workspace snapshot')
     await __resetAgenticGraphStorageDbForTests()
     events.length = 0
     const result = await syncWorkspaceEntryToCanonicalCloud({ entry, workspaceId, baseUrl: '', sessionToken: SESSION_TOKEN, fetchImpl })
-
     if (result.githubPath !== 'docs/note-cloud-sync.md') {
       throw new Error(`expected root New .md to commit under canonical GitHub docs, got ${result.githubPath}`)
     }
@@ -188,7 +192,6 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
       || events.indexOf('POST:/api/storage/push') <= events.indexOf('POST:/api/storage/collab/save')) {
       throw new Error(`expected a cloud-icon retry to force GitHub and D1 in order, got ${events.join(', ')}`)
     }
-
     const emptyPath = await fs.createFile({ parentPath: '/', name: 'empty-new-note.md', text: '' })
     const emptyEntry = (await fs.listEntries()).find(candidate => candidate.path === emptyPath)
     if (!emptyEntry) throw new Error('expected empty New .md workspace entry')
@@ -463,6 +466,14 @@ export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwor
 
 export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUploadsOnClick() {
   const harness = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
+  const previousFetch = globalThis.fetch, previousDialog = Object.getOwnPropertyDescriptor(globalThis, 'HTMLDialogElement')
+  Object.defineProperty(globalThis, 'HTMLDialogElement', { configurable: true, value: harness.dom.window.HTMLDialogElement })
+  harness.dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true }
+  harness.dom.window.HTMLDialogElement.prototype.close = function () { this.open = false }
+  globalThis.fetch = async input => new URL(String(input)).pathname.endsWith('/session')
+    ? Response.json({ ok: false }, { status: 401 })
+    : Response.json({ schema: 'agentic-graph/storage-login-options/v1', mode: 'signin', privacyHref: '/api/storage/auth/privacy',
+      providers: [{ id: 'github', label: 'GitHub', method: 'GET', href: '/api/storage/auth/login?provider=github' }] })
   const container = harness.dom.window.document.getElementById('root')
   if (!container) throw new Error('missing test root')
   const entry: WorkspaceEntry = {
@@ -511,13 +522,8 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
       throw new Error('expected matching remote content to render a cloud-synced indicator')
     }
 
-    const authRequiredStatus = resolveSourceFileCloudSyncStatus({
-      entry,
-      remoteContentByCanonicalPath: new Map(),
-      snapshotStatus: 'auth-required',
-    })
     await act(async () => {
-      root.render(<SourceFileCloudSyncIndicator entry={entry} status={authRequiredStatus} onUpload={() => { uploadCount += 1 }} />)
+      root.render(<SourceFileCloudSyncIndicator entry={entry} status="auth-required" onUpload={() => { uploadCount += 1 }} />)
       await tick()
     })
     const authRequiredButton = container.querySelector('button[data-source-file-cloud-status="auth-required"]') as HTMLButtonElement | null
@@ -530,18 +536,7 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
       throw new Error('expected sign-in-required state to replace the futile retry action')
     }
     await act(async () => {
-      authRequiredButton.dispatchEvent(new harness.dom.window.MouseEvent('click', { bubbles: true }))
-      await tick()
-    })
-    if (Number(uploadCount) !== 2) throw new Error(`expected sign-in-required indicator click to begin sign-in once, got ${uploadCount}`)
-
-    const accessRequiredStatus = resolveSourceFileCloudSyncStatus({
-      entry,
-      remoteContentByCanonicalPath: new Map(),
-      snapshotStatus: 'access-required',
-    })
-    await act(async () => {
-      root.render(<SourceFileCloudSyncIndicator entry={entry} status={accessRequiredStatus} onUpload={() => { uploadCount += 1 }} />)
+      root.render(<SourceFileCloudSyncIndicator entry={entry} status="access-required" onUpload={() => { uploadCount += 1 }} />)
       await tick()
     })
     const accessRequiredButton = container.querySelector('button[data-source-file-cloud-status="access-required"]') as HTMLButtonElement | null
@@ -551,19 +546,26 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
     let opened = 0
     const onOpen = () => { opened += 1 }
     harness.dom.window.addEventListener('kg:mainPanelOpen', onOpen)
-    for (const status of ['unavailable', 'access-required'] as const) {
+    await import('@/lib/storage/StorageAuthLightbox')
+    for (const status of ['unavailable', 'access-required', 'auth-required'] as const) {
       await act(async () => { root.render(<SourceFileCloudSyncIndicator entry={entry} status={status} onUpload={() => { uploadCount += 1 }} />); await tick() })
       const button = container.querySelector('button')!
       if (button.disabled) throw new Error('Cloud setup must remain actionable')
       await act(async () => { button.click(); await tick() })
+      for (let attempt = 0; attempt < 10 && !harness.dom.window.document.querySelector('[data-kg-storage-auth-lightbox]'); attempt++) await act(tick)
+      if (!harness.dom.window.document.querySelector('[data-kg-storage-auth-lightbox]')) throw new Error(`${status} must open sign-in`)
+      await act(async () => { harness.dom.window.document.querySelector<HTMLButtonElement>('[aria-label="Close sign-in"]')!.click(); await tick() })
     }
     harness.dom.window.removeEventListener('kg:mainPanelOpen', onOpen)
-    if (opened !== 2 || Number(uploadCount) !== 2) throw new Error('Setup icons must open Settings without uploading')
+    if (opened !== 0 || Number(uploadCount) !== 1) throw new Error('Sign-in icons must bypass Settings and upload')
   } finally {
     await act(async () => {
       root.unmount()
       await tick()
     })
+    globalThis.fetch = previousFetch
+    if (previousDialog) Object.defineProperty(globalThis, 'HTMLDialogElement', previousDialog)
+    else Reflect.deleteProperty(globalThis, 'HTMLDialogElement')
     harness.restore()
   }
 }
@@ -585,4 +587,11 @@ export function testSourceFileCloudTargetsRespectDocumentRepositoryAuthority() {
   }
   if (staleWorkspaceSeed !== null) throw new Error('expected the duplicate huijoohwee workspace-seeds root to be read-only')
   if (governance !== null) throw new Error('expected Agentic Canvas OS governance docs to remain read-only')
+  const pythonSnapshot = resolveSourceFileCloudWorkspaceTarget('/python-learning-demo.py')
+  if (pythonSnapshot?.documentKind !== 'python' || pythonSnapshot.canonicalPath !== 'python-learning-demo.py'
+    || resolveSourceFileCanonicalCloudTarget('/python-learning-demo.py') !== null) throw new Error('Python workspace target must not grant repository-save authority')
+  const pythonEntry = { kind: 'file', path: '/python-learning-demo.py', parentPath: '/', name: 'python-learning-demo.py', updatedAtMs: 0, text: 'print(at_goal())\n' } satisfies WorkspaceEntry
+  const pythonStatus = (remoteContentByCanonicalPath: Map<string, string>) => resolveSourceFileCloudSyncStatus({ entry: pythonEntry, snapshotStatus: 'ready', remoteContentByCanonicalPath })
+  if (pythonStatus(new Map()) !== 'local' || pythonStatus(new Map([['python-learning-demo.py', pythonEntry.text]])) !== 'cloud')
+    throw new Error('Python Source Files must expose the same explicit local/cloud status as Markdown')
 }

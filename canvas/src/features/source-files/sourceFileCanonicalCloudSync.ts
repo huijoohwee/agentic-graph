@@ -3,6 +3,7 @@ import type { SourceFile } from '@/hooks/store/types'
 import { normalizeWorkspacePath, workspaceExtLower } from '@/features/workspace-fs/path'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { hashStringToHex } from '@/lib/hash/stringHash'
+import { readPrimaryStorageCanonicalPathForWorkspacePath } from './sourceFilesStoragePaths'
 import {
   AGENTIC_OS_STORAGE_API_VERSION,
   buildAgenticGraphCollaborationSavePath,
@@ -65,7 +66,7 @@ export type SourceFileCloudWorkspaceSnapshotResult = {
   workspaceId: string
   workspacePath: WorkspacePath
   canonicalPath: string
-  documentKind: 'markdown'
+  documentKind: 'markdown' | 'python'
   syncedText: string
   readBackAttempts: number
   readBackVerified: true
@@ -92,6 +93,20 @@ export const resolveSourceFileCanonicalCloudTarget = (
     canonicalPath: authority.canonicalPath,
     documentKind: 'markdown',
   }
+}
+
+/** The shared workspace accepts Python text without granting repository-save authority. */
+export const resolveSourceFileCloudWorkspaceTarget = (
+  workspacePathRaw: WorkspacePath | string,
+): Pick<SourceFileCloudWorkspaceSnapshotResult, 'workspacePath' | 'canonicalPath' | 'documentKind'> | null => {
+  const markdown = resolveSourceFileCanonicalCloudTarget(workspacePathRaw)
+  if (markdown) return markdown
+  const sourcePath = String(workspacePathRaw || '').trim().replace(/\\/g, '/').replace(/^\/+/, '')
+  if (sourcePath.startsWith('huijoohwee/docs/workspace-seeds/')) return null
+  const workspacePath = normalizeWorkspacePath(workspacePathRaw)
+  if (workspacePath.split('/').filter(Boolean)[0] === 'chat-log' || workspaceExtLower(workspacePath) !== 'py') return null
+  const canonicalPath = readPrimaryStorageCanonicalPathForWorkspacePath(workspacePath, { markdownOnly: false })
+  return canonicalPath ? { workspacePath, canonicalPath, documentKind: 'python' } : null
 }
 
 const getFetch = (fetchImpl?: FetchLike): FetchLike => {
@@ -333,7 +348,7 @@ type CloudSnapshotUploadArgs = {
 export const syncWorkspaceEntriesToCloudWorkspaceSnapshot = async (args: CloudSnapshotUploadArgs & {
   entries: WorkspaceEntry[]
 }): Promise<SourceFileCloudWorkspaceSnapshotResult[]> => {
-  if (!args.entries.length) throw new Error('Select at least one Markdown file.')
+  if (!args.entries.length) throw new Error('Select at least one Markdown or Python file.')
   const workspaceId = normalizeString(args.workspaceId) || readActiveAgenticGraphStorageWorkspaceId()
   if (!workspaceId) throw new Error('Cloud workspace is unavailable.')
   const baseUrl = resolveCloudWorkspaceSnapshotBaseUrl(args.baseUrl)
@@ -342,14 +357,14 @@ export const syncWorkspaceEntriesToCloudWorkspaceSnapshot = async (args: CloudSn
   const selected = []
   const canonicalPaths = new Set<string>()
   for (const entry of args.entries) {
-    const target = entry.kind === 'file' ? resolveSourceFileCanonicalCloudTarget(entry.path) : null
-    if (!target) throw new Error('Cloud upload supports Markdown files outside chat-log.')
+    const target = entry.kind === 'file' ? resolveSourceFileCloudWorkspaceTarget(entry.path) : null
+    if (!target) throw new Error('Cloud upload supports Markdown and Python files outside chat-log.')
     if (canonicalPaths.has(target.canonicalPath)) throw new Error(`Multiple local files map to ${target.canonicalPath}. Select one copy.`)
     canonicalPaths.add(target.canonicalPath)
     const text = String((await fs.readFileText(target.workspacePath)) ?? entry.text ?? '')
     selected.push({ target, text, sourceFile: buildCloudWorkspaceSnapshotSourceFile({ entry, workspaceId, canonicalPath: target.canonicalPath, text }) })
   }
-  if (selected.length > SOURCE_FILE_CLOUD_TRANSFER_LIMITS.files || selected.reduce((bytes, item) => bytes + new TextEncoder().encode(item.text).byteLength, 0) > SOURCE_FILE_CLOUD_TRANSFER_LIMITS.bytes) throw new Error('Choose a smaller folder: each transfer allows 50 Markdown files and 5 MiB.')
+  if (selected.length > SOURCE_FILE_CLOUD_TRANSFER_LIMITS.files || selected.reduce((bytes, item) => bytes + new TextEncoder().encode(item.text).byteLength, 0) > SOURCE_FILE_CLOUD_TRANSFER_LIMITS.bytes) throw new Error('Choose a smaller folder: each transfer allows 50 Markdown or Python files and 5 MiB.')
   await syncSourceFilesToAgenticGraphStorage({
     workspaceId,
     sourceFiles: selected.map(item => item.sourceFile),
