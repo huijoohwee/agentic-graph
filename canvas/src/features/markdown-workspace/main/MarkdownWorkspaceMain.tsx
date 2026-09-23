@@ -32,6 +32,7 @@ import { MarkdownWorkspaceViewerSurface } from './viewer/MarkdownWorkspaceViewer
 import { useWorkspaceExportBridge } from './useWorkspaceExportBridge'
 import { workspaceTablePreferencesStore } from '@/features/workspace-table/workspaceTablePreferencesStore'
 import { isWorkspaceEditorOverlayOpen } from '@/features/workspace-table/workspaceTableSsot'
+const PythonLearningPaneLazy = React.lazy(() => import('../../python-learning/PythonLearningPane'))
 const MarkdownWorkspacePresentationSurfaceLazy = React.lazy(
   async (): Promise<{ default: typeof import('./presentation/MarkdownWorkspacePresentationSurface')['MarkdownWorkspacePresentationSurface'] }> =>
     import('./presentation/MarkdownWorkspacePresentationSurface').then(mod => ({ default: mod.MarkdownWorkspacePresentationSurface })),
@@ -99,10 +100,10 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
 
   const frontmatterBlock = React.useMemo(() => extractYamlFrontmatterBlock(activeText), [activeText])
   const modelAsset = React.useMemo(() => parseGlbAssetDocument(activeText), [activeText])
-  const modelAssetFormat = modelAsset?.format || null
+  const modelAssetFormat = resolveMarkdownWorkspaceDocumentPanePreset(activeDocumentKey) === 'python' ? null : modelAsset?.format || null
   const paneAvailability = React.useMemo(
-    () => resolveMarkdownWorkspacePaneAvailability({ modelAssetFormat }),
-    [modelAssetFormat],
+    () => resolveMarkdownWorkspacePaneAvailability({ modelAssetFormat, activeDocumentKey }),
+    [modelAssetFormat, activeDocumentKey],
   )
   const webpageMeta = React.useMemo((): WebpageFrontmatterMeta | null => {
     return deriveWebpageFrontmatterMetaFromBlock(frontmatterBlock)
@@ -122,6 +123,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
     [activeDocumentKey, documentPanePreset, hasJsonSourcePreviewText],
   )
   const forceMarkdownEditorInEditorMode = !modelAssetFormat
+    && documentPanePreset !== 'python'
     && documentPanePreset !== 'json'
     && documentPanePreset !== 'viewer'
     && (!webpageMeta || webpageMeta.view === 'markdown' || typeof editorTextOverride === 'string')
@@ -159,10 +161,10 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
   })
 
   React.useEffect(() => {
-    if (!modelAssetFormat) return
+    if (!modelAssetFormat && documentPanePreset !== 'python') return
     if (layoutMode === 'editor' || layoutMode === 'split') return
     setLayoutMode('editor')
-  }, [layoutMode, modelAssetFormat, setLayoutMode])
+  }, [layoutMode, modelAssetFormat, documentPanePreset, setLayoutMode])
 
   const workspaceEditorMode = React.useSyncExternalStore(
     workspaceTablePreferencesStore.subscribe,
@@ -524,6 +526,11 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
       documentNotice={documentNotice}
       renderMarkdownEditor={renderMarkdownEditorPane}
       renderJsonEditor={renderJsonEditorPane}
+      pythonPane={documentPanePreset === 'python' ? <React.Suspense fallback={<p role="status">Loading Python workspace…</p>}>
+        <PythonLearningPaneLazy source={activeText} onChange={setActiveText} documentId={activeDocumentKey}
+          uri={editorUri} editorRef={editorRef} onCaretLine={onEditorCaretLine} themeMode={themeMode}
+          wordWrap={markdownWordWrap} readOnly={!!disableEditorMutations || !!props.passive} />
+      </React.Suspense> : null}
       binaryPane={binaryPane}
       binaryPaneVisible={binaryPaneVisible}
       splitPaneVisibility={splitPaneVisibility}

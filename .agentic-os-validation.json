@@ -24,7 +24,7 @@
         "*"
       ],
       "requires": [],
-      "reuse": "never",
+      "reuse": "local-plan",
       "timeoutMs": 900000
     },
     {
@@ -42,7 +42,7 @@
       "requires": [
         "graph-standard-plan"
       ],
-      "reuse": "never",
+      "reuse": "local-plan",
       "timeoutMs": 900000
     },
     {
@@ -60,7 +60,7 @@
       "requires": [
         "graph-standard-plan"
       ],
-      "reuse": "never",
+      "reuse": "local-plan",
       "timeoutMs": 900000
     },
     {
@@ -78,7 +78,7 @@
       "requires": [
         "graph-standard-plan"
       ],
-      "reuse": "never",
+      "reuse": "local-plan",
       "timeoutMs": 900000
     },
     {
@@ -96,7 +96,7 @@
       "requires": [
         "graph-standard-plan"
       ],
-      "reuse": "never",
+      "reuse": "local-plan",
       "timeoutMs": 900000
     }
   ],

@@ -17,6 +17,7 @@ import { buildCanvasInteractionAgentReadyToolContracts, } from './canvasInteract
 import { buildWorkspaceLaunchAgentReadyToolContracts, } from './workspaceLaunchAgentReadyContract.mjs'
 import { buildToolbarActionAgentReadyToolContracts, } from './toolbarActionAgentReadyContract.mjs'
 import { buildDurableRunAgentReadyToolContracts, } from './durableRunAgentReadyContract.mjs'
+import { buildPythonLearningToolContracts } from '../python-learning/learningToolContract.mjs'
 import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './agentic-graph-agent-ready-output-schemas.mjs'
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agenticGraphAgentReadyToolIds.mjs'
 export { AGENTIC_OS_AGENT_READY_TOOL_IDS }
@@ -375,7 +376,7 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     ...(includeBrowserOnlyTools
-      ? [{
+      ? [...buildPythonLearningToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness),
           title: 'Inspect Local Settings Chat Readiness',

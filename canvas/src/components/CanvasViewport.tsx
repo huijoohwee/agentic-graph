@@ -1,6 +1,7 @@
 import React from 'react'
 import { CanvasViewContainer } from '@/components/CanvasViewContainer'
 import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
+import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
 import { useShallow } from 'zustand/react/shallow'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config.render'
 import type { GraphData } from '@/lib/graph/types'
@@ -50,6 +51,7 @@ import {
 import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanticMediaSurface'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
+const PythonLearningCanvasLazy = React.lazy(() => import('@/features/python-learning/LearningScene').then(mod => ({ default: mod.PythonLearningCanvas })))
 const LiveCanvasHeroPresetStageLazy = React.lazy(() => import('@/features/agentic-os/LiveCanvasHeroPresetStage').then(mod => ({ default: mod.LiveCanvasHeroPresetStage })))
 const SharedGraphCanvasLazy = React.lazy(() => import('@/components/GraphCanvas'))
 const DashboardCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/DashboardCanvas/Surface'), { retries: 2, retryDelayMs: 50 }))
@@ -97,8 +99,12 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
 }
 export function CanvasViewport(props: CanvasViewportProps) {
   const inspection = useAgentRunWorkspace()
+  const learningDocument = React.useSyncExternalStore(pythonLearningRuntime.subscribe, () => pythonLearningRuntime.read().document, () => null)
   if (inspection && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
     <CanvasViewContainer><React.Suspense fallback={<p>Loading run canvas…</p>}><DashboardCanvasLazy active /></React.Suspense></CanvasViewContainer>
+  </section>
+  if (learningDocument && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
+    <CanvasViewContainer sizing="inset"><React.Suspense fallback={<p>Loading lesson Canvas…</p>}><PythonLearningCanvasLazy /></React.Suspense></CanvasViewContainer>
   </section>
   return <AuthoredCanvasViewport {...props} />
 }

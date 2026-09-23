@@ -54,7 +54,7 @@ test('exact main recovery runs the existing read-only gate without PR metadata',
     assert.equal(steps.find(step => step.name === name).if, undefined, `${name} must remain unconditional`)
   }
   assert.equal(steps.find(step => step.name === 'Run XR v2 runtime review-candidate gate').if,
-    "steps.xr_gate.outputs.required != 'false'")
+    "steps.xr_gate.outputs.execute != 'false'")
 })
 
 test('main recovery rejects wrong refs, revisions, PR context and unknown operations', () => {

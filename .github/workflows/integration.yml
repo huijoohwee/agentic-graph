@@ -312,7 +312,7 @@ jobs:
         run: node scripts/ci-evidence-inputs.mjs --xr-gate >> "$GITHUB_OUTPUT"
 
       - name: Run XR v2 runtime review-candidate gate
-        if: steps.xr_gate.outputs.required != 'false'
+        if: steps.xr_gate.outputs.execute != 'false'
         working-directory: agentic-graph
         run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser
 

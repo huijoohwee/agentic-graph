@@ -11,7 +11,7 @@ import type {
   XrV2ConnectedPreviewBrowserObservation,
 } from '../browserRuntimeEvidence'
 import type { XrV2SavedSpatialAssetResource } from '../xrV2SavedAssetCatalog'
-import type { XrV2SavedAssetEncodedTrackFixture } from '../xrV2SavedAssetPackagingRuntime'
+import { createXrV2SavedAssetEncodedTrackSet, type XrV2SavedAssetEncodedTrackFixture } from '../xrV2SavedAssetPackagingRuntime'
 import type { XrV2ConnectedPreviewViewerSession } from '../xrV2ConnectedPreviewViewerRuntime'
 import { readXrV2CrossDeviceAssetConfig } from '../xrV2CrossDeviceAssetManifest'
 import {
@@ -96,6 +96,88 @@ function savedResource(): XrV2SavedSpatialAssetResource {
     frameBundle: { sessionId: 'saved-capture', snapshot: { sessionId: 'saved-capture' }, frames: [{}] },
   } as unknown as XrV2SavedSpatialAssetResource
 }
+
+test('capture encoding preserves source bytes and sample timing without a canvas surface', async t => {
+  const source = savedResource()
+  const frames = Array.from({ length: 3 }, (_, frameIndex) => ({
+    frameIndex, capturedAtMs: frameIndex * 100,
+    frame: { width: 2, height: 2, data: new Uint8ClampedArray([
+      frameIndex, 20, 30, 255, 40, 50, 60, 255,
+      70, 80, 90, 255, 100, 110, 120, 255,
+    ]) }, estimate: null,
+  }))
+  const resource = { ...source, frameBundle: { ...source.frameBundle!, frames } }
+  const originalBytes = frames.map(item => item.frame.data.slice())
+  const submitted: { data: Uint8ClampedArray; init: VideoFrameBufferInit; closed: boolean }[] = []
+  let encoderClosed = 0
+  let decoderClosed = 0
+  let failEncoding = false
+  const globals = {
+    VideoFrame: class {
+      closed = false
+      constructor(public data: Uint8ClampedArray, public init: VideoFrameBufferInit) {
+        assert.ok(data instanceof Uint8ClampedArray)
+        submitted.push(this)
+      }
+      close() { this.closed = true }
+    },
+    VideoEncoder: class {
+      state = 'configured'
+      constructor(private handlers: VideoEncoderInit) {}
+      static async isConfigSupported(config: VideoEncoderConfig) { return { supported: true, config } }
+      configure() {}
+      encode(frame: { data: Uint8ClampedArray; init: VideoFrameBufferInit }, options: VideoEncoderEncodeOptions) {
+        if (failEncoding) throw new Error('encoder rejected frame')
+        const data = frame.data.slice()
+        this.handlers.output({ type: options.keyFrame ? 'key' : 'delta',
+          timestamp: frame.init.timestamp, duration: frame.init.duration, byteLength: data.length,
+          copyTo: (target: Uint8Array) => target.set(data),
+        } as unknown as EncodedVideoChunk)
+      }
+      async flush() {}
+      close() { this.state = 'closed'; encoderClosed += 1 }
+    },
+    EncodedVideoChunk: class { constructor(public init: EncodedVideoChunkInit) {} },
+    VideoDecoder: class {
+      state = 'configured'
+      constructor(private handlers: VideoDecoderInit) {}
+      static async isConfigSupported(config: VideoDecoderConfig) { return { supported: true, config } }
+      configure() {}
+      decode() { this.handlers.output({ close() {} } as VideoFrame) }
+      async flush() {}
+      close() { this.state = 'closed'; decoderClosed += 1 }
+    },
+  }
+  for (const [name, value] of Object.entries(globals)) {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, name)
+    Object.defineProperty(globalThis, name, { value, configurable: true })
+    t.after(() => {
+      if (previous) Object.defineProperty(globalThis, name, previous)
+      else Reflect.deleteProperty(globalThis, name)
+    })
+  }
+  const result = await createXrV2SavedAssetEncodedTrackSet(resource, new AbortController().signal)
+  assert.deepEqual(result.decodedSourceFrameCounts, [3])
+  assert.deepEqual(result.tracks[0].samples.map(sample => sample.timestampUs), [0, 100_000, 200_000])
+  assert.deepEqual(result.tracks[0].samples.map(sample => sample.durationUs), [100_000, 100_000, 100_000])
+  for (const [index, frame] of submitted.entries()) {
+    assert.deepEqual(frame.data, originalBytes[index])
+    assert.deepEqual(frame.init, { format: 'RGBA', codedWidth: 2, codedHeight: 2,
+      timestamp: index * 100_000, duration: 100_000 })
+    assert.equal(frame.closed, true)
+    assert.deepEqual(frames[index].frame.data, originalBytes[index])
+  }
+  assert.equal(encoderClosed, 1)
+  assert.equal(decoderClosed, 1)
+  failEncoding = true
+  await assert.rejects(createXrV2SavedAssetEncodedTrackSet(resource, new AbortController().signal), /encoder rejected frame/)
+  assert.equal(submitted.at(-1)?.closed, true)
+  assert.equal(encoderClosed, 2)
+  const cancelled = new AbortController()
+  cancelled.abort()
+  await assert.rejects(createXrV2SavedAssetEncodedTrackSet(resource, cancelled.signal), /cancelled/)
+  assert.equal(encoderClosed, 2)
+})
 
 function connectedEvidence(overrides: Partial<XrV2ConnectedPreviewBrowserObservation> = {}): XrV2ConnectedPreviewBrowserObservation {
   return {

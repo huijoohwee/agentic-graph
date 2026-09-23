@@ -21,7 +21,8 @@ export function areMarkdownWorkspacePaneVisibilitiesEqual(
   a: MarkdownWorkspacePaneVisibility,
   b: MarkdownWorkspacePaneVisibility,
 ): boolean {
-  return a.json === b.json
+  return !!a.python === !!b.python
+    && a.json === b.json
     && a.markdown === b.markdown
     && a.viewer === b.viewer
     && a.html === b.html
@@ -72,6 +73,7 @@ export function useInitialWorkspacePaneVisibility(args: UseInitialWorkspacePaneV
     args.activeDocumentKey,
     args.modelAssetFormat,
     args.setSplitPaneVisibility,
+    args.splitPaneVisibility.python,
     args.splitPaneVisibility.html,
     args.splitPaneVisibility.json,
     args.splitPaneVisibility.markdown,
