@@ -83,7 +83,7 @@ try {
   if (await page.getByLabel('Show Explorer pane', { exact: true }).isChecked()) await page.getByLabel('Show Explorer pane', { exact: true }).uncheck()
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'native import never executes')
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
-  await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
+  await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByText('Offline lessons', { exact: true }).click()
   const installStart = performance.now()
   await pane.getByRole('button', { name: 'Install offline lessons', exact: true }).click()
@@ -143,12 +143,28 @@ try {
       const saved = await control({ ...observed.binding, operation: 'save', requestId: 'offline-registered-save' })
       assert.equal(saved.status, 'saved')
     }
-    await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
+    await pane.getByRole('button', { name: 'Results', exact: true }).click()
     await pane.getByText('Lesson passed', { exact: false }).waitFor()
     await pane.getByRole('button', { name: 'Save debrief', exact: true }).click()
     await pane.getByText('Saved locally:', { exact: false }).waitFor()
     outcomes.push({ lesson: lesson.id, passed: true })
   }
+  const lessonCanvas = page.getByRole('region', { name: 'Python lesson Canvas', exact: true })
+  assert.equal(await pane.locator('canvas').count(), 0, 'Editor must not host the lesson renderer')
+  const beforeCanvasSwitch = await inspect()
+  await editor.evaluate(element => element.setSelectionRange(7, 7))
+  await pane.getByRole('button', { name: 'View Canvas', exact: true }).click()
+  await lessonCanvas.locator('canvas').waitFor()
+  assert.equal(await pane.isVisible(), false, 'mobile scene uses the full Canvas view')
+  assert.equal(await lessonCanvas.getAttribute('data-learning-run-id'), beforeCanvasSwitch.binding.expectedRunId)
+  assert.ok((await lessonCanvas.boundingBox()).width >= 350)
+  await page.screenshot({ path: join(output, 'offline-mobile-canvas.png'), fullPage: true })
+  await lessonCanvas.getByRole('button', { name: 'Edit Python code', exact: true }).click()
+  await pane.waitFor(); await selectPython()
+  assert.equal((await inspect()).binding.expectedRunId, beforeCanvasSwitch.binding.expectedRunId, 'view switching must preserve the run')
+  assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'view switching must preserve source')
+  assert.equal(await editor.evaluate(element => element.selectionStart), 7, 'view switching must preserve the editor cursor')
+  assert.equal(await pane.getByLabel('Python lesson', { exact: true }).inputValue(), lessons.at(-1).id)
   await page.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
   await page.screenshot({ path: join(output, 'offline-mobile.png'), fullPage: true })
   await writeFile(join(output, 'accessible-workspace.txt'), await pane.ariaSnapshot())
@@ -162,7 +178,7 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   await awaitSource(lessons.at(-1).solution)
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'native autosave survives offline reload')
-  await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
+  await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
   await pane.getByText('3 matching debriefs', { exact: false }).waitFor()
   await page.setViewportSize({ width: 1280, height: 900 })
@@ -176,8 +192,12 @@ try {
   await pane.locator('.monaco-editor .view-lines').waitFor({ timeout: 30000 })
   assert.ok(await pane.locator('.monaco-editor .view-lines').evaluate(element => new Set([...element.querySelectorAll('span')].map(span => span.className).filter(name => /^mtk/.test(name))).size > 1), 'offline Python highlighting must load')
   await page.screenshot({ path: join(output, 'offline-desktop.png'), fullPage: true })
-  await pane.getByRole('button', { name: 'Scene and results', exact: true }).click()
+  await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
+  await page.waitForFunction(() => {
+    const editor = document.querySelector('.python-learning')?.getBoundingClientRect(), scene = document.querySelector('[aria-label="Python lesson Canvas"]')?.getBoundingClientRect()
+    return editor && scene && scene.left >= editor.right && scene.width >= 400
+  })
   await page.screenshot({ path: join(output, 'offline-desktop-scene.png'), fullPage: true })
   await page.setViewportSize({ width: 375, height: 812 })
   // A missing admitted worker must block offline navigation even if another runtime cache has it.
@@ -199,7 +219,7 @@ try {
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
   const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
-    toolRegistrationProven: true, narrowDesktopPaneProven: true, toolHost: 'controlled-registerTool-browser-host', discovery,
+    toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))

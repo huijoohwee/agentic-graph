@@ -14,7 +14,8 @@ export function PythonLearningCanvas() {
     return () => { document.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', leaving); runtime.dispose() }
   }, [])
   if (!snapshot.document) return null
-  return <section aria-label="Python lesson Canvas" style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+  return <section aria-label="Python lesson Canvas" data-learning-document={snapshot.document.documentId} data-learning-run-id={snapshot.result?.identity.runId}
+    style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
     <button style={{ minHeight: 44 }} onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true })}>Edit Python code</button>
     <LearningScene lesson={learningLesson(snapshot.document.lessonId)} scene={!snapshot.stale ? snapshot.result?.scene : undefined} />
   </section>
