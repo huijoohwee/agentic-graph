@@ -23,6 +23,7 @@ import {
   resetBrowserLocalSurfaceSnapshotsForTests,
 } from '@/features/agent-ready/browserLocalSurfaceSnapshots'
 import { getStripePaymentApiRowAnchorId } from '@/features/panels/views/stripePaymentApiDocs'
+import { commerceTransferRehearsalStore } from '@/features/panels/views/commerceTransferModel'
 
 export function testMainPanelCommerceReplacesPaymentsTopLevelTab() {
   const keys = MAIN_PANEL_TABS.map(tab => tab.key)
@@ -114,6 +115,7 @@ export async function testMainPanelCommerceRendersAgenticCommerceAndStripeSurfac
   try {
     installDeterministicRaf(dom.window)
     resetBrowserLocalSurfaceSnapshotsForTests()
+    commerceTransferRehearsalStore.clear()
     useGraphStore.getState().resetAll()
 
     await import('@/features/panels/views/CommerceHubView')
@@ -197,6 +199,30 @@ export async function testMainPanelCommerceRendersAgenticCommerceAndStripeSurfac
     if (!readinessSnapshot || !readinessSnapshot.routePaths.includes(AGENTIC_COMMERCE_ROUTE_PATHS.web3Settle)) {
       throw new Error(`expected Commerce readiness snapshot to reuse shared route paths, got ${JSON.stringify(readinessSnapshot?.routePaths || null)}`)
     }
+    await act(async () => { await waitForTasks(2) })
+    for (const anchor of ['commerce-overview', 'commerce-transfer', 'commerce-activity', 'commerce-developer']) {
+      if (!container.querySelector(`[aria-label="Commerce sections"] a[href="#${anchor}"]`) || !container.querySelector(`#${anchor}`)) {
+        throw new Error(`expected keyboard-reachable Commerce section ${anchor}`)
+      }
+    }
+    if (!container.textContent?.includes('Real transfer unavailable') || !container.textContent.includes('Simulation only')) {
+      throw new Error('expected the Commerce rehearsal to distinguish local simulation from provider readiness')
+    }
+    const button = (label: string): HTMLButtonElement => {
+      const match = [...container.querySelectorAll('button')]
+        .find(candidate => candidate.textContent?.trim() === label)
+      if (!match) throw new Error(`expected Commerce rehearsal button ${label}`)
+      return match as HTMLButtonElement
+    }
+    await act(async () => { button('Review demo terms').click() })
+    if (!container.textContent?.includes('Review exact simulation')) {
+      throw new Error('expected exact local simulation review before confirmation')
+    }
+    await act(async () => { button('Confirm simulation only').click() })
+    if (commerceTransferRehearsalStore.getSnapshot().activity.length !== 1
+      || !container.textContent?.includes('no money moved')) {
+      throw new Error('expected one clearly simulated activity record')
+    }
   } finally {
     try {
       if (root) await unmountReactRoot(root, { window: dom.window })
@@ -206,5 +232,6 @@ export async function testMainPanelCommerceRendersAgenticCommerceAndStripeSurfac
     restoreDom()
     restoreWindow()
     resetBrowserLocalSurfaceSnapshotsForTests()
+    commerceTransferRehearsalStore.clear()
   }
 }

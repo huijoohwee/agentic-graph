@@ -149,6 +149,10 @@ ci_scopes:
     roots: ["canvas/src/features/xr-v2/", "canvas/src/components/timeline/", "canvas/src/features/gitgraph/", "canvas/src/features/testing/XrV2RuntimeSmokePage.tsx", "canvas/src/features/testing/xrV2BrowserObservationSupport.ts", "canvas/scripts/run_xr_v2_browser_smoke.mjs", "canvas/scripts/verify_xr_v2_browser_smoke.mjs", "scripts/xr-v2/", "scripts/video-editor/", "scripts/run-xr-v2-source-smoke.mjs", "scripts/run-video-editor-source-smoke.mjs", "scripts/__tests__/xr-v2-source-smoke.test.mjs", "scripts/__tests__/video-editor-source-smoke.test.mjs", "docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md", "docs/documents/agentic-graph-xr-v2-runtime-readiness.md", "docs/documents/agentic-graph-2d-renderer-enhancement-design.md", "docs/TESTING.md", "docs/runtime-api.md"]
     commands:
       - ["npm", "run", "xr-v2:review-ready"]
+  xr_mp4_export:
+    roots: ["canvas/src/features/three/", "canvas/src/lib/three/", "canvas/src/features/xr-v2/", "canvas/src/features/markdown-workspace/main/exports/", "canvas/scripts/run_xr_scene_mp4_browser_smoke.mjs", "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"]
+    commands:
+      - ["node", "canvas/scripts/run_xr_scene_mp4_browser_smoke.mjs"]
   surface_policy:
     roots: ["config/surface-registry.json", "config/license-registry.json", "schemas/surface-registry.v1.schema.json", "scripts/surface/", "data/surface/", "docs/discoverability-ip-protection-runtime.md"]
     commands:
