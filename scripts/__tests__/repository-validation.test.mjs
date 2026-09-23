@@ -44,7 +44,8 @@ test('default and protected affected validation share one owner command map', as
   for (const [index, partition] of Object.keys(partitions).entries()) {
     const check = policy.checks[index]
     assert.deepEqual(check.command, ['npm', 'run', 'ci:affected:source', '--', `--partition=${partition}`])
-    assert.equal(check.reuse, 'never')
+    assert.equal(check.reuse, 'local-plan')
+    assert.deepEqual(check.inputs, ['*'], 'reuse binds the entire source-selected plan')
     assert.equal(check.timeoutMs, 900000)
   }
   for (const paths of [['canvas/src/scene.ts'], ['unmatched-input'], ['.github/workflows/integration.yml']]) {
