@@ -203,7 +203,7 @@ const openWorkspaceFolder = async (parent, name) => {
   await folder.waitFor({ state: 'visible', timeout: 45_000 })
   const isExpanded = await folder.evaluate(section => section.nextElementSibling instanceof HTMLUListElement)
   // Source Files can reflow during hydration; verify the pointer action by its opened child list.
-  if (!isExpanded) await folder.getByRole('button', { name: folderLabel, exact: true }).click({ force: true })
+  if (!isExpanded) await folder.getByRole('button', { name: folderLabel, exact: true }).click({ force: true, noWaitAfter: true })
   await folder.locator('xpath=following-sibling::ul[1]').waitFor({ state: 'visible', timeout: 45_000 })
   return folder
 }
