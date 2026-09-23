@@ -123,7 +123,10 @@ if (!process.argv.includes('--verify')) {
       root.render(React.createElement(React.Fragment, null,
         React.createElement('div', { style: { position: 'relative', width: '100%', maxWidth: 480, height: 300 } }, React.createElement(ThreeGraph, { active: true, mode: 'xr' })),
         React.createElement(XrCameraMotionSection), React.createElement(ExportMenu)))
-      const tracks = []
+      const tracks = [], encoders = new Set()
+      const encoderPrototype = globalThis.VideoEncoder?.prototype
+      const originalConfigure = encoderPrototype?.configure, originalEncode = encoderPrototype?.encode, originalClose = encoderPrototype?.close
+      let encoderFrames = 0, delayedEncode = false
       const originalCapture = HTMLCanvasElement.prototype.captureStream
       const originalStart = MediaRecorder.prototype.start
       const originalStop = MediaRecorder.prototype.stop
@@ -142,6 +145,28 @@ if (!process.argv.includes('--verify')) {
       window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observeClockStart)
       const originalReadPixels = CanvasRenderingContext2D.prototype.getImageData
       const originalDrawImage = CanvasRenderingContext2D.prototype.drawImage
+      if (encoderPrototype) {
+        encoderPrototype.configure = function (...args) {
+          const result = originalConfigure.apply(this, args); encoders.add(this); return result
+        }
+        encoderPrototype.encode = function (frame, ...args) {
+          if (frame.timestamp === 0) {
+            startedAtZero = clockStarts > 0 && openingReadComplete && readXrAnimationTransport().timeSeconds === 0
+            recordingStartedAt = performance.now(); report('encoder-start-at-authored-zero')
+          }
+          // Inject real scheduling delay: container duration must still follow authored timestamps.
+          if (++encoderFrames === 2) {
+            const until = performance.now() + 150
+            while (performance.now() < until) { /* Bounded verifier load, outside product code. */ }
+            delayedEncode = true
+          }
+          return originalEncode.call(this, frame, ...args)
+        }
+        encoderPrototype.close = function (...args) {
+          try { return originalClose.apply(this, args) } finally { encoders.delete(this) }
+        }
+      }
+      const captureActive = () => encoders.size > 0 || tracks.some(track => track.readyState === 'live')
       MediaRecorder.prototype.start = function (...args) {
         startedAtZero = clockStarts > 0 && openingReadComplete && readXrAnimationTransport().timeSeconds === 0
         report('recorder-start-request')
@@ -192,6 +217,8 @@ if (!process.argv.includes('--verify')) {
         const before = readXrAnimationTransport()
         const source = JSON.stringify(readXrMotionReferenceRuntime().plan)
         const capture = useGraphStore.getState().canvasSnapshotFns['3d'].captureVideo
+        const { inspectXrMp4Encoder } = await importSource('features/three/xrSceneMp4Encoder.ts')
+        const expectsEncoder = await inspectXrMp4Encoder(host.querySelector('canvas'), plan.fps)
         report('capture-and-decode')
         let reportedEnd = false
         const result = await capture({ onProgress: fraction => {
@@ -200,9 +227,10 @@ if (!process.argv.includes('--verify')) {
         } })
         report(`capture-result:${result.status}`)
         if (result.status === 'unsupported') return result
+        if (expectsEncoder && (!encoderFrames || !delayedEncode)) throw new Error('Supported timestamped encoder was not exercised under load.')
         const startupHandshakeVerified = clockStarts === 1 && startedAtZero
         if (!startupHandshakeVerified) throw new Error('Native clock did not hold zero through opening readback and recorder start.')
-        if (tracks.some(track => track.readyState !== 'ended')) throw new Error('A recording track survived successful export.')
+        if (captureActive()) throw new Error('A recording track survived successful export.')
         if (JSON.stringify(readXrMotionReferenceRuntime().plan) !== source) throw new Error('Export changed the authored source.')
         if (readXrAnimationTransport().timeSeconds !== before.timeSeconds) throw new Error('Export did not restore the playhead.')
         report('capture-cancellation')
@@ -212,7 +240,7 @@ if (!process.argv.includes('--verify')) {
         try { await cancelled; throw new Error('Cancelled capture unexpectedly completed.') }
         catch (error) { if (error.name !== 'AbortError') throw error }
         finally { clearTimeout(cancelTimer) }
-        if (tracks.some(track => track.readyState !== 'ended')) throw new Error('A recording track survived cancellation.')
+        if (captureActive()) throw new Error('A recording track survived cancellation.')
         const clickExport = label => {
           const button = [...document.querySelectorAll('#native-export button')].find(item => item.textContent === label)
           if (!button) throw new Error(`Native export action missing: ${label}`)
@@ -220,24 +248,27 @@ if (!process.argv.includes('--verify')) {
         }
         clickExport('MP4 (.mp4) — XR scene (silent)')
         await waitFor('menu-cancel-action', () => [...document.querySelectorAll('#native-export button')].some(item => item.textContent === 'Cancel MP4 export'))
-        await waitFor('menu-capture-track', () => tracks.some(track => track.readyState === 'live'))
+        await waitFor('menu-capture-track', captureActive)
         clickExport('Cancel MP4 export')
         await waitFor('menu-cancel-toast', () => toasts.some(toast => toast.message === 'MP4 export cancelled.'))
         await waitFor('menu-cancel-teardown', () => !getMarkdownWorkspaceActionBridge().export?.cancelMediaExport)
         clickExport('MP4 (.mp4) — XR scene (silent)')
         await waitFor('document-switch-capture', () => getMarkdownWorkspaceActionBridge().export?.cancelMediaExport)
-        await waitFor('document-switch-track', () => tracks.some(track => track.readyState === 'live'))
+        await waitFor('document-switch-track', captureActive)
         useGraphStore.setState({ markdownDocumentName: 'next-scene.md', markdownDocumentText: '# Next scene',
           timelineTransportDocumentKey: 'next-scene.md#xr-motion', timelineTransportPosition: 0.01, timelineTransportPlaying: false })
         await waitFor('document-switch-teardown', () => !getMarkdownWorkspaceActionBridge().export?.cancelMediaExport)
         if (useGraphStore.getState().timelineTransportPosition !== 0.01) throw new Error('Stale export restored into the next document.')
-        if (tracks.some(track => track.readyState !== 'ended')) throw new Error('A recording track survived document switching.')
-        return { startupHandshakeVerified, nativeMenuCancellationVerified: true, documentSwitchVerified: true, status: result.status, byteSize: result.blob.size, mimeType: result.blob.type, ...result.evidence, cancellationVerified: true }
+        if (captureActive()) throw new Error('A recording track survived document switching.')
+        return { startupHandshakeVerified, nativeMenuCancellationVerified: true, documentSwitchVerified: true, timestampedEncoderVerified: encoderFrames > 0 && delayedEncode, status: result.status, byteSize: result.blob.size, mimeType: result.blob.type, ...result.evidence, cancellationVerified: true }
       } finally {
         report('fixture-unmount')
         HTMLCanvasElement.prototype.captureStream = originalCapture
         MediaRecorder.prototype.start = originalStart
         MediaRecorder.prototype.stop = originalStop
+        if (encoderPrototype) {
+          encoderPrototype.configure = originalConfigure; encoderPrototype.encode = originalEncode; encoderPrototype.close = originalClose
+        }
         window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observeClockStart)
         CanvasRenderingContext2D.prototype.getImageData = originalReadPixels
         CanvasRenderingContext2D.prototype.drawImage = originalDrawImage
@@ -252,6 +283,7 @@ if (!process.argv.includes('--verify')) {
       assert.ok(evidence.renderedFrames >= 3)
       assert.ok(new Set(evidence.sampleHashes).size >= 2, 'native scene/camera frames should visibly change')
       assert.ok(Math.abs(evidence.durationSeconds - 2) <= 0.4)
+      if (evidence.timestampedEncoderVerified) assert.ok(Math.abs(evidence.durationSeconds - 2) < 0.001)
       assert.equal(evidence.cancellationVerified, true)
       assert.equal(evidence.nativeMenuCancellationVerified, true)
       assert.equal(evidence.documentSwitchVerified, true)
