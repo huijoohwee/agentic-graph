@@ -90,15 +90,21 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   binding?: XrMp4SourceBinding
   verify?: typeof verifyXrSceneMp4
 }): Promise<CanvasVideoCaptureResult> {
-  const plan = negotiateBrowserRecordingPlan(inspectBrowserRecorderCapabilities(globalThis), {
-    source: 'canvas', preferredContainer: 'mp4', includeAudio: false,
-  })
-  if (plan.status === 'unsupported') return { status: 'unsupported', reason: plan.reason }
   const binding = args.binding || createXrMp4SourceBinding()
   if (!(binding.durationSeconds > 0 && binding.durationSeconds <= 120)) {
     return { status: 'unsupported', reason: 'MP4 recording requires a scene between 0 and 120 seconds.' }
   }
   if (!args.canvas.width || !args.canvas.height) return { status: 'unsupported', reason: 'The XR canvas has no rendered dimensions.' }
+  if (!Number.isFinite(binding.fps) || binding.fps <= 0) return { status: 'unsupported', reason: 'The XR scene has no valid frame rate.' }
+  if (typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined') {
+    const { inspectXrMp4Encoder, encodeXrSceneMp4 } = await import('./xrSceneMp4Encoder')
+    const configuration = await inspectXrMp4Encoder(args.canvas, binding.fps)
+    if (configuration) return encodeXrSceneMp4({ ...args, binding }, configuration)
+  }
+  const plan = negotiateBrowserRecordingPlan(inspectBrowserRecorderCapabilities(globalThis), {
+    source: 'canvas', preferredContainer: 'mp4', includeAudio: false,
+  })
+  if (plan.status === 'unsupported') return { status: 'unsupported', reason: plan.reason }
   // Adaptive DPR and panel layout can resize the live WebGL canvas. The encoder
   // receives a stable surface copied only after that same renderer finishes a frame.
   const captureSurface = document.createElement('canvas')
@@ -326,7 +332,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     }, binding.durationSeconds * 1_000 + 8_000)
     // Only the acknowledged terminal render releases the native playing camera.
     // Let the frozen endpoint reach preview while encoded time is paused, then
-    // record two final samples so the last decodable frame has nonzero duration.
+    // record one final sample after the resume event to retain its decoded endpoint.
     detachClock(); detachClock = () => {}
     releaseEnd!(); releaseEnd = null; rejectEnd = null
     const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack
