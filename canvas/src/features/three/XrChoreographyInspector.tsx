@@ -14,6 +14,8 @@ import { resolveXrAnimationPreset } from './xrAnimationCatalog'
 import { resolveXrChoreographySpeedWarnings } from './xrChoreographyDiagnostics'
 import { selectXrMotionReferenceCastMark, selectXrMotionReferenceCameraMark, type XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntime'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
+import { evaluateXrStudioExercises } from './xrSceneExercises'
+import { projectXrStudioScene, queryXrStudioScene } from './xrSceneSemantic'
 
 function ChoreographyCard({
   Icon,
@@ -95,6 +97,21 @@ export function XrChoreographyInspector({
   selectedActorId: string
 }) {
   const warnings = React.useMemo(() => resolveXrChoreographySpeedWarnings(runtime.plan), [runtime.plan])
+  const studioScene = React.useMemo(() => projectXrStudioScene(runtime), [runtime])
+  const exercises = React.useMemo(() => evaluateXrStudioExercises(runtime), [runtime])
+  const [sceneCategory, setSceneCategory] = React.useState('all')
+  const [areaRadiusMeters, setAreaRadiusMeters] = React.useState(2)
+  const visibleEntities = sceneCategory === 'all'
+    ? studioScene.entities
+    : queryXrStudioScene(studioScene, { kind: 'category', category: sceneCategory }).matches
+  const selectedSubject = studioScene.entities.find(entity => entity.kind === 'subject' && entity.id === selectedActorId)
+  const nearest = selectedSubject
+    ? queryXrStudioScene(studioScene, { kind: 'nearest', subjectId: selectedActorId }).matches[0]
+    : undefined
+  const nearby = selectedSubject
+    ? queryXrStudioScene(studioScene, { kind: 'within', center: selectedSubject.position, radiusMeters: areaRadiusMeters })
+      .matches.filter(entity => entity.id !== selectedActorId)
+    : []
   const track = runtime.plan.cast.find(candidate => candidate.actorId === selectedActorId) || null
   const castMark = track?.marks.find(mark => runtime.selectedMark?.kind === 'cast'
     && runtime.selectedMark.actorId === track.actorId
@@ -161,6 +178,51 @@ export function XrChoreographyInspector({
       ) : (
         <ChoreographyCard Icon={Camera} target="camera" title="Camera path" description="Add camera marks in Camera → SHOOT; edit them in BottomPanel Timeline." invocation={cameraInvocation || controlTool} metadata="0 marks · Timeline owns time" footer={<span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>No camera marks yet.</span>} />
       )}
+      <details className={cn('rounded border p-2 text-[11px]', UI_THEME_TOKENS.panel.border)} data-kg-xr-studio="authored-scene">
+        <summary className="cursor-pointer font-semibold">Scene and rehearsal exercises</summary>
+        <p className={cn('m-0 mt-1', UI_THEME_TOKENS.text.tertiary)}>
+          Authored stage · {studioScene.timeSeconds.toFixed(2)} s · revision {studioScene.revision}
+        </p>
+        <label className="mt-2 grid gap-1">
+          Find scene objects
+          <PanelSelect aria-label="Find scene objects" value={sceneCategory} onChange={event => setSceneCategory(event.target.value)}>
+            <option value="all">All</option>
+            <option value="people">People</option>
+            <option value="animals">Animals</option>
+            <option value="vehicles">Vehicles</option>
+            <option value="furniture">Furniture</option>
+            <option value="props">Props</option>
+            <option value="structure">Stage structures</option>
+            <option value="poi">Stage landmarks</option>
+          </PanelSelect>
+        </label>
+        <output aria-live="polite" data-kg-xr-studio-results>
+          {studioScene.complete ? `${visibleEntities.length} result${visibleEntities.length === 1 ? '' : 's'}` : 'Scene inventory exceeds the local query limit'}
+          {visibleEntities.length > 0 && studioScene.complete ? ` · ${visibleEntities.slice(0, 8).map(entity => entity.label).join(', ')}` : ''}
+        </output>
+        {selectedSubject && nearest && studioScene.complete ? (
+          <p className="m-0">Nearest to {selectedSubject.label}: {nearest.label}</p>
+        ) : null}
+        {selectedSubject && studioScene.complete ? (
+          <section className="grid gap-1">
+            <label>Area around {selectedSubject.label}
+              <PanelSelect aria-label="Area radius" value={areaRadiusMeters} onChange={event => setAreaRadiusMeters(Number(event.target.value))}>
+                <option value={1}>1 m</option><option value={2}>2 m</option><option value={5}>5 m</option>
+              </PanelSelect>
+            </label>
+            <output aria-live="polite" data-kg-xr-studio-area>
+              {nearby.length} other authored object{nearby.length === 1 ? '' : 's'} within {areaRadiusMeters} m
+            </output>
+          </section>
+        ) : null}
+        <ul className="m-0 mt-2 grid gap-1 pl-4" aria-label="Rehearsal exercises">
+          {exercises.exercises.map(item => (
+            <li key={item.id} data-kg-xr-studio-exercise={item.id} data-state={item.state}>
+              <strong>{item.title}: {item.state}</strong> · {item.feedback}
+            </li>
+          ))}
+        </ul>
+      </details>
       {children}
     </section>
   )

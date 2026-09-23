@@ -84,6 +84,8 @@ import {
   type XrSceneTransition,
 } from './xrSceneControlNormalization'
 import { activateXrSceneSurface } from './xrSceneSurfaceRuntime'
+import { evaluateXrStudioExercises } from './xrSceneExercises'
+import { projectXrStudioScene } from './xrSceneSemantic'
 
 export { normalizeXrSceneControl }
 export type { XrSceneControlAction, XrSceneControlInput, XrSceneTransition }
@@ -133,6 +135,7 @@ function persistXrPhysicsConfig(): boolean {
 
 export function inspectLocalXrSceneAssets() {
   const runtime = readXrMotionReferenceRuntime()
+  const sceneReady = sceneDocumentReady()
   const physics = readXrPhysicsRuntime()
   const physicsFrame = readXrPhysicsRuntimeFrame()
   const controllerDemo = readXrNativeControllerDemo()
@@ -143,7 +146,11 @@ export function inspectLocalXrSceneAssets() {
       inspect: `agentic-graph.${XR_SCENE_WEB_MCP_TOOL_IDS.inspect}`,
       control: `agentic-graph.${XR_SCENE_WEB_MCP_TOOL_IDS.control}`,
     },
-    sceneReady: sceneDocumentReady(),
+    sceneReady,
+    studio: sceneReady ? {
+      scene: projectXrStudioScene(runtime),
+      exercises: evaluateXrStudioExercises(runtime),
+    } : null,
     catalogDefaults: {
       terrainId: XR_MOTION_REFERENCE_DEFAULT_STAGE_ID,
       assetId: XR_SCENE_LIBRARY_DEFAULT_ASSET_ID,
