@@ -74,7 +74,6 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     const path = await fs.createFile({ parentPath: '/', name: 'note-cloud-sync.md', text: '# New cloud note\n\nGitHub first, Cloudflare second.' })
     const entry = (await fs.listEntries()).find(candidate => candidate.path === path)
     if (!entry) throw new Error('expected created workspace entry')
-
     globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
       const method = String(init?.method || 'GET').toUpperCase()
       if (method === 'GET') return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404, headers: { 'content-type': 'application/json' } })
@@ -82,7 +81,6 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
       committedText = Buffer.from(String(body.content || ''), 'base64').toString('utf8')
       return new Response(JSON.stringify({ content: { sha: 'content-sha-cloud-sync' }, commit: { sha: 'commit-sha-cloud-sync' } }), { status: 200, headers: { 'content-type': 'application/json' } })
     }) as typeof fetch
-
     const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = withBrowserSessionCookie(input instanceof Request
         ? input
@@ -91,7 +89,6 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
       if (new URL(request.url).pathname === '/api/storage/collab/save') saveAuthorizations.push(String(request.headers.get('authorization') || ''))
       return readStorageWorker().fetch(request, env as never)
     }
-
     const snapshotPath = await fs.createFile({ parentPath: '/', name: 'selected-only.md', text: '# Selected snapshot' })
     const siblingPath = await fs.createFile({ parentPath: '/', name: 'sibling.md', text: '# Sibling snapshot' })
     await fs.createFile({ parentPath: '/', name: 'sibling.json', text: '{"sibling":true}' })
@@ -160,13 +157,11 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     events.length = 0
     const pythonSnapshot = await syncWorkspaceEntryToCloudWorkspaceSnapshot({ entry: pythonEntry, workspaceId, fetchImpl: cookieFetch })
     const pythonExport = await readCanonicalCloudDocumentSnapshot({ workspaceId, fetchImpl: cookieFetch })
-    if (pythonSnapshot.documentKind !== 'python' || !pythonSnapshot.readBackVerified
-      || pythonExport.get(pythonSnapshot.canonicalPath) !== 'print(at_goal())\n'
+    if (pythonSnapshot.documentKind !== 'python' || !pythonSnapshot.readBackVerified || pythonExport.get(pythonSnapshot.canonicalPath) !== 'print(at_goal())\n'
       || events.includes('POST:/api/storage/collab/save')) throw new Error('Python must sync only to the authenticated workspace snapshot')
     await __resetAgenticGraphStorageDbForTests()
     events.length = 0
     const result = await syncWorkspaceEntryToCanonicalCloud({ entry, workspaceId, baseUrl: '', sessionToken: SESSION_TOKEN, fetchImpl })
-
     if (result.githubPath !== 'docs/note-cloud-sync.md') {
       throw new Error(`expected root New .md to commit under canonical GitHub docs, got ${result.githubPath}`)
     }
@@ -197,7 +192,6 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
       || events.indexOf('POST:/api/storage/push') <= events.indexOf('POST:/api/storage/collab/save')) {
       throw new Error(`expected a cloud-icon retry to force GitHub and D1 in order, got ${events.join(', ')}`)
     }
-
     const emptyPath = await fs.createFile({ parentPath: '/', name: 'empty-new-note.md', text: '' })
     const emptyEntry = (await fs.listEntries()).find(candidate => candidate.path === emptyPath)
     if (!emptyEntry) throw new Error('expected empty New .md workspace entry')
@@ -596,15 +590,9 @@ export function testSourceFileCloudTargetsRespectDocumentRepositoryAuthority() {
   if (governance !== null) throw new Error('expected Agentic Canvas OS governance docs to remain read-only')
   const pythonSnapshot = resolveSourceFileCloudWorkspaceTarget('/python-learning-demo.py')
   if (pythonSnapshot?.documentKind !== 'python' || pythonSnapshot.canonicalPath !== 'python-learning-demo.py'
-    || resolveSourceFileCanonicalCloudTarget('/python-learning-demo.py') !== null) {
-    throw new Error('Python has explicit workspace snapshot support without canonical repository-save authority')
-  }
-  const pythonEntry = { kind: 'file', path: '/python-learning-demo.py', parentPath: '/', name: 'python-learning-demo.py',
-    updatedAtMs: 0, text: 'print(at_goal())\n' } satisfies WorkspaceEntry
-  if (resolveSourceFileCloudSyncStatus({ entry: pythonEntry, snapshotStatus: 'ready',
-    remoteContentByCanonicalPath: new Map() }) !== 'local'
-    || resolveSourceFileCloudSyncStatus({ entry: pythonEntry, snapshotStatus: 'ready',
-      remoteContentByCanonicalPath: new Map([['python-learning-demo.py', pythonEntry.text]]) }) !== 'cloud') {
+    || resolveSourceFileCanonicalCloudTarget('/python-learning-demo.py') !== null) throw new Error('Python workspace target must not grant repository-save authority')
+  const pythonEntry = { kind: 'file', path: '/python-learning-demo.py', parentPath: '/', name: 'python-learning-demo.py', updatedAtMs: 0, text: 'print(at_goal())\n' } satisfies WorkspaceEntry
+  const pythonStatus = (remoteContentByCanonicalPath: Map<string, string>) => resolveSourceFileCloudSyncStatus({ entry: pythonEntry, snapshotStatus: 'ready', remoteContentByCanonicalPath })
+  if (pythonStatus(new Map()) !== 'local' || pythonStatus(new Map([['python-learning-demo.py', pythonEntry.text]])) !== 'cloud')
     throw new Error('Python Source Files must expose the same explicit local/cloud status as Markdown')
-  }
 }
