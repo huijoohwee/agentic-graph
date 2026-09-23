@@ -178,6 +178,8 @@ The first increment of the [native commerce transfer plan](https://github.com/hu
 
 This fixture does not use the payment intent queue, receipt document or provider transport, because those own real collection evidence. It does not persist across browser reloads or devices, prove cross-device financial idempotency, or imply provider settlement. A later effectful transfer requires a separately admitted provider contract, tenant/recipient binding, policy and cost review, durable authority, independent readback and exact release approval. The rehearsal cannot be promoted into a live command by changing a flag.
 
+Successor handover (2026-09-23): the immutable candidate `857891c214dc9785ea88a80b7fcbb602e8a75239` was carried onto protected Graph base `8059fa0a846a724b4b558bf1902c3f8488225c45`. The original CI failure was the shared XR MP4 browser gate; current `main` scopes that gate to relevant XR changes. Three rehearsal state tests, four focused Commerce UI tests, and changed-file hygiene pass on this successor. Protected Integration remains the release criterion; no transfer provider, settlement, cross-device claim, or production effect is included. Reuse the six existing changed paths, add no dependency, and keep the next action to exact-head CI review and protected integration.
+
 ## Validation Contract
 
 | Gate | Command / Probe | Expected Result |
