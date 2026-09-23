@@ -1,6 +1,7 @@
 import React from 'react'
 import SettingsView from '@/features/panels/views/SettingsView'
-import { AGENTIC_COMMERCE_MAIN_PANEL_READINESS } from 'grph-shared/payments/agenticCommerceSsot'
+import { CommerceTransferRehearsal } from './CommerceTransferRehearsal'
+import { AGENTIC_COMMERCE_MAIN_PANEL_READINESS, AGENTIC_COMMERCE_ROUTE_PATHS } from 'grph-shared/payments/agenticCommerceSsot'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   clearLocalCommerceReadinessSurfaceSnapshot,
@@ -22,6 +23,7 @@ export const COMMERCE_ROUTE_READINESS_ROW_GRID_CLASS_NAME = 'grid min-w-0 grid-c
 
 const CommerceRouteReadiness = () => (
   <section
+    id="commerce-overview"
     className="mb-3 min-w-0"
     aria-label="Commerce readiness"
     data-kg-commerce-readiness-key={AGENTIC_COMMERCE_MAIN_PANEL_READINESS.semanticKey}
@@ -71,7 +73,14 @@ export default function CommerceHubView({
 
   return (
     <>
+      <nav aria-label="Commerce sections" className="mb-3 flex flex-wrap gap-2 text-xs">
+        <a href="#commerce-overview">Overview</a>
+        <a href="#commerce-transfer">Pay / transfer</a>
+        <a href="#commerce-activity">Activity</a>
+        <a href="#commerce-developer">Developer</a>
+      </nav>
       <CommerceRouteReadiness />
+      <CommerceTransferRehearsal />
       <h2 className={`mb-2 truncate text-xs font-semibold ${UI_THEME_TOKENS.text.primary}`}>Payments</h2>
       <SettingsView
         searchQuery={searchQuery}
@@ -80,6 +89,14 @@ export default function CommerceHubView({
         mode="payments"
         onRegisterActions={onRegisterActions}
       />
+      <section id="commerce-developer" aria-label="Commerce developer entry" className={`mt-3 rounded border p-3 text-xs ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>
+        <h2 className={`font-semibold ${UI_THEME_TOKENS.text.primary}`}>Developer</h2>
+        <p className={`mt-1 ${UI_THEME_TOKENS.text.secondary}`}>Existing read-only discovery paths; the local rehearsal adds no transfer API or tool.</p>
+        <dl className="mt-2 space-y-1">
+          <div><dt className={UI_THEME_TOKENS.text.tertiary}>ACP discovery</dt><dd className={`break-all font-mono ${UI_THEME_TOKENS.text.secondary}`}>{AGENTIC_COMMERCE_ROUTE_PATHS.acpDiscovery}</dd></div>
+          <div><dt className={UI_THEME_TOKENS.text.tertiary}>MPP OpenAPI</dt><dd className={`break-all font-mono ${UI_THEME_TOKENS.text.secondary}`}>{AGENTIC_COMMERCE_ROUTE_PATHS.mppOpenApi}</dd></div>
+        </dl>
+      </section>
     </>
   )
 }
