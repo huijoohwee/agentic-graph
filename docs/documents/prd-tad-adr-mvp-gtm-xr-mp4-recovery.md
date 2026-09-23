@@ -27,7 +27,7 @@ load_policy: "on-demand"
 
 All five roles join `XR-MP4-RECOVERY-001@1.0.0`. This editable recovery companion
 consumes ADR-7 of the [immutable spatial-authoring plan](agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md).
-Its pinned bytes remain unchanged. The [authoring guideline](../../../huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md)
+Its pinned bytes remain unchanged. The [authoring guideline](https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/prd-tad-adr-mvp-gtm-guidelines.md)
 owns the shared authoring contract; no new readiness or invocation contract is introduced here.
 
 ## PRD — reference implementation
