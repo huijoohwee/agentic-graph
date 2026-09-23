@@ -2,6 +2,23 @@ import React from 'react'
 import { Canvas } from '@react-three/fiber'
 import { XrProceduralVehicleGeometry } from '../three/XrProceduralVehicleGeometry'
 import type { LearningLesson, LearningSceneSnapshot } from './learningLessons'
+import { learningLesson } from './learningLessons'
+import { pythonLearningRuntime as runtime } from './learningRuntime'
+import { useGraphStore } from '@/hooks/useGraphStore'
+
+export function PythonLearningCanvas() {
+  const snapshot = React.useSyncExternalStore(runtime.subscribe, runtime.read, runtime.read)
+  React.useEffect(() => {
+    const hidden = () => runtime.setHidden(document.hidden), leaving = () => runtime.stop()
+    document.addEventListener('visibilitychange', hidden); window.addEventListener('pagehide', leaving); hidden()
+    return () => { document.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', leaving); runtime.dispose() }
+  }, [])
+  if (!snapshot.document) return null
+  return <section aria-label="Python lesson Canvas" style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <button style={{ minHeight: 44 }} onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true })}>Edit Python code</button>
+    <LearningScene lesson={learningLesson(snapshot.document.lessonId)} scene={!snapshot.stale ? snapshot.result?.scene : undefined} />
+  </section>
+}
 
 class SceneBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false }
@@ -10,7 +27,7 @@ class SceneBoundary extends React.Component<{ children: React.ReactNode }, { fai
 }
 export function LearningScene({ lesson, scene }: { lesson: LearningLesson; scene?: LearningSceneSnapshot }) {
   const x = scene?.x || 0, z = scene?.z || 0, heading = scene?.heading || 0
-  return <figure className="python-learning-scene" aria-label="Local lesson scene">
+  return <figure className="python-learning-scene" aria-label="Local lesson scene" style={{ flex: 1, height: '100%', minHeight: 0 }}>
     <SceneBoundary>
       <Canvas frameloop="demand" orthographic camera={{ position: [8, 10, 10], zoom: 40, near: 0.1, far: 100 }} dpr={[1, 1.5]}
         gl={{ antialias: false, preserveDrawingBuffer: false }} onCreated={({ camera }) => camera.lookAt(2, 0, 1)}>

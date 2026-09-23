@@ -5,7 +5,7 @@ import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
 import { LEARNING_LESSONS, learningLesson } from './learningLessons'
 import { pythonLearningRuntime as runtime } from './learningRuntime'
 import { PYTHON_LIMITS, PYTHON_RUNTIME_REVISION, sourceBytes } from './pythonModel'
-import { LearningScene } from './LearningScene'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { LearningDebriefControls } from './LearningDebriefControls'
 import { LearningOfflineControls } from './LearningOfflineControls'
 import { getMarkdownWorkspaceActionBridge } from '../markdown-explorer/workspaceActionBridge'
@@ -17,7 +17,7 @@ export default function PythonLearningPane(props: {
   editorRef: React.MutableRefObject<MonacoTextEditorHandle | null>; onCaretLine?: (line: number) => void
 }) {
   const panelTypography = usePanelTypography()
-  const [lessonId, setLessonId] = React.useState('travel')
+  const [lessonId, setLessonId] = React.useState(() => runtime.read().document?.documentId === props.documentId ? runtime.read().document!.lessonId : 'travel')
   const [notice, setNotice] = React.useState('')
   const [mobileView, setMobileView] = React.useState<'code' | 'result'>('code')
   const snapshot = React.useSyncExternalStore(runtime.subscribe, runtime.read, runtime.read)
@@ -25,12 +25,8 @@ export default function PythonLearningPane(props: {
   React.useLayoutEffect(() => {
     runtime.bind({ workspaceId: 'local-editor-workspace', documentId: props.documentId, source: props.source, lessonId, readOnly: props.readOnly })
   }, [props.documentId, props.source, props.readOnly, lessonId])
-  React.useEffect(() => {
-    const hidden = () => runtime.setHidden(document.hidden)
-    const leaving = () => runtime.stop()
-    document.addEventListener('visibilitychange', hidden); window.addEventListener('pagehide', leaving)
-    hidden()
-    return () => { document.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', leaving); runtime.dispose() }
+  React.useEffect(() => () => {
+    if (useGraphStore.getState().workspaceViewMode !== 'canvas') runtime.dispose()
   }, [])
   const control = async (operation: Parameters<typeof runtime.control>[0]) => {
     try { setNotice(''); await runtime.control(operation) } catch (error) { setNotice(error instanceof Error ? error.message : String(error)) }
@@ -39,6 +35,7 @@ export default function PythonLearningPane(props: {
   const disabled = props.readOnly || sourceBytes(props.source) > PYTHON_LIMITS.sourceBytes
   return <section className="python-learning" aria-label="Python learning workspace" data-learning-state={snapshot.state}>
     <div className="python-learning-controls">
+      <button onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'canvas' })}>View Canvas</button>
       <label>Lesson <select aria-label="Python lesson" value={lessonId} onChange={event => { setLessonId(event.target.value); setNotice('Lesson changed. Source is preserved.'); }}>
         {LEARNING_LESSONS.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
       </select></label>
@@ -57,7 +54,7 @@ export default function PythonLearningPane(props: {
     {snapshot.error ? <p role="alert"><button onClick={() => props.editorRef.current?.revealLine?.(snapshot.error!.span.line)}>Line {snapshot.error.span.line}</button>: {snapshot.error.message}</p> : null}
     <div className="python-learning-mobile-views" role="group" aria-label="Python workspace view">
       <button aria-pressed={mobileView === 'code'} onClick={() => setMobileView('code')}>Code</button>
-      <button aria-pressed={mobileView === 'result'} onClick={() => setMobileView('result')}>Scene and results</button>
+      <button aria-pressed={mobileView === 'result'} onClick={() => setMobileView('result')}>Results</button>
     </div>
     <div className="python-learning-body" data-mobile-view={mobileView}>
       <section className="python-learning-code" aria-label="Python source">
@@ -70,8 +67,7 @@ export default function PythonLearningPane(props: {
           <p>Imports, objects, containers, recursion, packages, file and network access are unsupported. Limits: 32 KiB source, 50,000 evaluation steps, 7,200 ticks, five seconds active compute. Step completes one statement; a drive call may cover many ticks.</p>
         </details>
       </section>
-      <section className="python-learning-result" aria-label="Python scene and results">
-        <LearningScene lesson={lesson} scene={!snapshot.stale ? result?.scene : undefined} />
+      <section className="python-learning-result" aria-label="Python results">
         <p role="status">{snapshot.state}{snapshot.stale ? ' · previous result is stale' : ''}{result && !snapshot.stale ? ` · line ${result.span.line} · tick ${result.scene.ticks}` : ''}</p>
         {result && !snapshot.stale ? <>
           <p>{result.grade.passed ? 'Lesson passed' : 'Keep exploring'} · {result.grade.criteria.filter(c => c.passed).length}/4 criteria</p>

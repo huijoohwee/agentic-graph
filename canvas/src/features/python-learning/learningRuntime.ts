@@ -125,6 +125,6 @@ export class LearningRuntime {
   stop(message?: string): void {
     this.terminate(); this.publish({ state: 'cancelled', stale: !!this.snapshot.result, error: message ? { code: 'cancelled', message, span: this.snapshot.result?.span || { line: 1, column: 1 } } : null })
   }
-  dispose(): void { this.terminate(); this.hidden = false; this.publish({ document: null, state: 'idle', result: null, stale: false, error: null, hint: 0 }); this.listeners.clear() }
+  dispose(): void { this.terminate(); this.hidden = false; this.publish({ document: null, state: 'idle', result: null, stale: false, error: null, hint: 0 }) }
 }
 export const pythonLearningRuntime = new LearningRuntime()
