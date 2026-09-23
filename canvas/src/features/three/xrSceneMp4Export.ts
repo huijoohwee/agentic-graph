@@ -111,6 +111,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   let preview: HTMLVideoElement | null = null
   let previewFrames = 0
   let previewFrameId: number | null = null
+  let pauseAtPreviewFrame = 0
   let recorderStarted = false
   let recorder: MediaRecorder | null = null
   let output: VideoSequenceRecorderOutput | null = null
@@ -152,6 +153,10 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   const onRecorderStart = () => { recorderStarted = true; check() }
   const onPreviewFrame = () => {
     previewFrames++
+    if (pauseAtPreviewFrame && previewFrames >= pauseAtPreviewFrame) {
+      pauseAtPreviewFrame = 0
+      try { if (recorder?.state === 'recording') recorder.pause() } catch (error) { failure = error as Error }
+    }
     previewFrameId = preview!.requestVideoFrameCallback(onPreviewFrame)
     check()
   }
@@ -321,7 +326,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     }, binding.durationSeconds * 1_000 + 8_000)
     // Only the acknowledged terminal render releases the native playing camera.
     // Let the frozen endpoint reach preview while encoded time is paused, then
-    // record one final sample so the last decodable frame has nonzero duration.
+    // record two final samples so the last decodable frame has nonzero duration.
     detachClock(); detachClock = () => {}
     releaseEnd!(); releaseEnd = null; rejectEnd = null
     const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack
@@ -329,8 +334,11 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     await waitSamplingSlots(2)
     assertCurrent()
     recorder.resume()
+    const lastPreviewFrame = previewFrames
+    if (previewFrameId !== null) pauseAtPreviewFrame = lastPreviewFrame + 2
     track.requestFrame?.()
-    await waitSamplingSlots(1)
+    if (previewFrameId !== null) await waitRendered(() => previewFrames >= lastPreviewFrame + 2 && recorder!.state === 'paused', 5_000)
+    else { await waitSamplingSlots(2); recorder.pause() }
     assertCurrent()
     await flushVideoSequenceRecorderOutput({ recorder, output, signal: args.signal })
     const chunks = await finishVideoSequenceRecorderOutput(recorder, output)
