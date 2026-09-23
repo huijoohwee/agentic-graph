@@ -28,7 +28,7 @@ async function fixture(run: (value: {
   binding: XrMp4SourceBinding; advanceWithoutRender: () => void; resumeRendering: () => void; stale: () => void; stopped: () => number; restored: () => number; scene: Scene; initialHook: Scene['onAfterRender']
   resizeSource: () => void; recordedDimensions: () => number[][]; copiedSourceWidths: () => number[]
   suspendRendering: () => void; isPlaying: () => boolean; exactEndPayload: () => void
-  automaticFramesOnly: () => void; sampledPixels: () => number[]; frameRequests: () => number
+  automaticFramesOnly: () => void; sampledPixels: () => number[]; sampledStates: () => { pixel: number; state: RecordingState }[]; frameRequests: () => number
 }) => Promise<void>) {
   const priorRecorder = Object.getOwnPropertyDescriptor(globalThis, 'MediaRecorder')
   Recorder.last = null; Recorder.streamReady = true
@@ -42,7 +42,8 @@ async function fixture(run: (value: {
   const listeners = new Set<() => void>()
   const scene = new Scene(); const initialHook = scene.onAfterRender
   const recordedDimensions: number[][] = []; const copiedSourceWidths: number[] = []
-  const sampledPixels: number[] = []; let frameRequests = 0; let automaticOnly = false; let previewFrame: (() => void) | null = null
+  const sampledPixels: number[] = []; const sampledStates: { pixel: number; state: RecordingState }[] = []
+  let frameRequests = 0; let automaticOnly = false; let previewFrame: (() => void) | null = null
   class Canvas {
     width = 160; height = 90; pixel = 0
     getContext() { return {
@@ -58,7 +59,11 @@ async function fixture(run: (value: {
     } }
     captureStream(fps: number) {
       recordedDimensions.push([this.width, this.height])
-      const sample = () => { sampledPixels.push(this.pixel); if (Recorder.streamReady) { const frame = previewFrame; previewFrame = null; frame?.() } }
+      const sample = () => {
+        sampledPixels.push(this.pixel)
+        if (Recorder.last) sampledStates.push({ pixel: this.pixel, state: Recorder.last.state })
+        if (Recorder.streamReady) { const frame = previewFrame; previewFrame = null; frame?.() }
+      }
       const sampler = setInterval(sample, 1_000 / fps)
       const track = { stop: () => { clearInterval(sampler); stopped++ },
         ...(!automaticOnly ? { requestFrame: () => { frameRequests++; sample() } } : {}) }
@@ -113,7 +118,8 @@ async function fixture(run: (value: {
       stopped: () => stopped, restored: () => restored, scene, initialHook, exactEndPayload: () => { exactEndPayload = true },
       resizeSource: () => { source.width = 80; source.height = 44 },
       recordedDimensions: () => recordedDimensions, copiedSourceWidths: () => copiedSourceWidths,
-      automaticFramesOnly: () => { automaticOnly = true }, sampledPixels: () => sampledPixels, frameRequests: () => frameRequests,
+      automaticFramesOnly: () => { automaticOnly = true }, sampledPixels: () => sampledPixels,
+      sampledStates: () => sampledStates, frameRequests: () => frameRequests,
     })
   } finally {
     clearInterval(timer); clockLifetime.abort()
@@ -147,7 +153,11 @@ test('final authored image survives faster rendering, slow recorder sampling and
     assert.equal((await value.capture()).status, 'captured')
     assert.ok(value.sampledPixels().length >= 2)
     assert.ok(value.sampledPixels().slice(-2).every(pixel => pixel === 80))
-    assert.equal(value.frameRequests(), automaticOnly ? 0 : 2)
+    assert.ok(value.sampledStates().some(sample => sample.pixel === 80 && sample.state === 'paused'),
+      'the endpoint must remain available while encoded time is paused')
+    assert.ok(value.sampledStates().some(sample => sample.pixel === 80 && sample.state === 'recording'),
+      'the endpoint must be recorded after the preview wait')
+    assert.equal(value.frameRequests(), automaticOnly ? 0 : 3)
   })
 })
 test('delayed Timeline startup creates no recorder or stream until the fresh opening image is ready', async () => {
