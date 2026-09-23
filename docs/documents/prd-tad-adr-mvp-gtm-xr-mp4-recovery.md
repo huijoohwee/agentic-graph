@@ -98,8 +98,11 @@ merged as `0433c86a3528f2130d952a1b63c9e40feb41fde3`. All 40 focused encoder/rec
 and Canvas typecheck passed. Native desktop/mobile smoke passed with exact two-second
 outputs, verified first/final poses, cancellation, document switching and resource release.
 The first affected run correctly rejected editing the immutable parent plan; its exact
-bytes are restored and this companion records the repair. Rerun affected checks and bind
-protected CI to the final candidate before integration. Integration and cleanup remain unaccepted.
+bytes are restored and this companion records the repair. The standard affected partition
+passed at `1f6472e50a345e3c107691b5e4c4fbb14da595ed`. The broader XR browser verifier
+requires a real upstream ref, so native publication must precede that remaining check.
+This checkpoint precedes publication; bind protected CI and native integration/cleanup
+receipts to the final candidate before accepting completion.
 
 Budget: seven final changed files, two lazy runtime modules, less than 50 KB diff, one
 existing checkout, no dependency or paid service. Runtime limits are AC-3. Provider wait
