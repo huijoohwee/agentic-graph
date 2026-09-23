@@ -140,6 +140,11 @@ interactive command:
 npm run production:authorize -- --repository huijoohwee/agentic-graph --run-id <workflow-run-id>
 ```
 
+If the sibling Agentic OS checkout has moved past the reviewed consumer pin, add
+`--agentic-os-root=/absolute/path/to/clean-pinned-checkout`. The command still
+verifies that checkout's exact reviewed revision and protected ancestry; leave
+the newer sibling checkout untouched.
+
 The command independently downloads and verifies the candidate artifacts and requires
 both clean canonical checkouts at their exact candidate revisions. Controller admission
 uses the existing Canvas native validator before the prompt and again before approval;
