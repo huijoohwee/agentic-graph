@@ -323,7 +323,7 @@ test('affected XR review expands the composite gate and runs the shared check on
     pkg.scripts?.['xr-v2:review-candidate'],
     'npm run check && npm run xr-v2:unit && npm run video-editor:unit && npm run video-editor:compatibility && npm run video-editor:source-ready && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser',
   )
-  assert.deepEqual(plan.scopes, ['agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'xr_v2_video_editor', 'xrpl_paid_resource'])
+  assert.deepEqual(plan.scopes, ['agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'xr_v2_video_editor', 'xr_mp4_export', 'xrpl_paid_resource'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.equal(
     plan.commands.filter(command => command.join(' ') === canvasCheck.join(' ')).length,
@@ -344,6 +344,7 @@ test('affected XR review expands the composite gate and runs the shared check on
     ['npm', 'run', 'video-editor:source-ready'],
     ['npm', 'run', 'xr-v2:source-ready'],
     ['npm', '-C', 'canvas', 'run', 'test:smoke:xr-v2:browser'],
+    ['node', 'canvas/scripts/run_xr_scene_mp4_browser_smoke.mjs'],
     ['npm', 'run', 'payment:x402:xrpl:source-check'],
   ])
   assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'check'], contract), 300000)

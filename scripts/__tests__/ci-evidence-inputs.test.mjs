@@ -58,6 +58,18 @@ test('a successful fresh PR affected plan supplies all XR gates exactly once and
   assert.equal(integration.find(step => step.name === 'Upload XR v2 browser observation').with['if-no-files-found'], 'error')
 })
 
+test('MP4 browser proof follows XR source changes, not release preflight changes', () => {
+  const mp4 = JSON.stringify(['node', 'canvas/scripts/run_xr_scene_mp4_browser_smoke.mjs'])
+  for (const path of ['canvas/src/features/three/xrSceneMp4Export.ts',
+    'canvas/src/lib/three/ThreeGraphSnapshots.ts',
+    'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md']) {
+    assert.ok(sample('pull_request', [path]).commands.some(command => JSON.stringify(command) === mp4), path)
+  }
+  assert.ok(!sample('pull_request', ['scripts/verify-production-fidelity.mjs']).commands
+    .some(command => JSON.stringify(command) === mp4))
+  assert.doesNotMatch(read('canvas/scripts/run_xr_v2_browser_smoke.mjs'), /run_xr_scene_mp4_browser_smoke/)
+})
+
 test('version evidence retries one bounded timeout and returns the exact observed version', () => {
   const calls = []
   const result = toolVersion('google-chrome', ['--version'], { execute: (...args) => {

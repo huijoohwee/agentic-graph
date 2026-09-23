@@ -51,7 +51,16 @@ export async function testFolderImportPersistsNativeArtifactAndCancellationPrese
     const fs = await getWorkspaceFs(), beforeRepeat = await fs.listEntries()
     await retainAgentGraphWorkspaceIndex(buildAgentGraphCanvasProjection(agentGraphResult()), String(header.source_projection))
     assert.deepEqual(await fs.listEntries(), beforeRepeat)
+    assert.deepEqual((await readActiveAgentGraphWorkspaceIndex())?.value, index?.value)
+    const retainedPath = String(header.source_projection) as WorkspacePath
+    const retainedText = (await fs.readFileText(retainedPath))!
+    await fs.writeFileText(retainedPath, retainedText.replace('"type":"Graph"', '"type":"Invalid"'), { mirrorToHost: false })
+    await assert.rejects(readActiveAgentGraphWorkspaceIndex(), /projection|Graph|source/i)
+    await fs.writeFileText(retainedPath, retainedText, { mirrorToHost: false })
+    assert.deepEqual((await readActiveAgentGraphWorkspaceIndex())?.value, index?.value)
     const first = await bindAgentGraphWorkspaceIndex('mission-first', index!)
+    await assert.rejects(bindAgentGraphWorkspaceIndex('mission-first', index!, { isCurrent: () => false }), /selection changed/)
+    assert.equal(JSON.parse((await fs.readFileText(first.path))!).snapshotDigest, agentGraphResult().snapshotDigest)
     const second = await bindAgentGraphWorkspaceIndex('mission-second', index!)
     assert.notEqual(first.path, second.path)
     assert.equal(first.value.path, second.value.path)

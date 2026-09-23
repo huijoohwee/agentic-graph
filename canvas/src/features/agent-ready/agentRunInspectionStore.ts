@@ -14,6 +14,7 @@ const listeners = new Set<() => void>()
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } }
 const emit = () => { for (const listener of listeners) listener() }
 const read = () => snapshot
+export const readAgentRunInspectionSnapshot = () => snapshot
 export const useAgentRunInspection = () => useSyncExternalStore(subscribe, read, () => null)
 export const readAgentRunWorkspace = () => workspace
 export const subscribeAgentRunWorkspace = subscribe
