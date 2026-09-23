@@ -23,6 +23,7 @@ import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourc
 import { DASHBOARD_TEMPLATE_PATH, DASHBOARD_TEMPLATE_ROOT, readDashboardTemplate } from '@/components/DashboardCanvas/dashboardTemplateSource'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
+import { PythonLearningDemoSourceFile } from '@/features/python-learning/PythonLearningDemoSourceFile'
 
 type MarkdownWorkspaceSourceFilesListProps = {
   search?: string
@@ -63,7 +64,18 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     onDeleteEntry,
     renderFileRight,
   } = props
-  const cloudSync = useSourceFileCloudSync(entries)
+  const [demoEntry, setDemoEntry] = React.useState<WorkspaceEntry | null>(null)
+  React.useEffect(() => {
+    let active = true
+    void getWorkspaceFs().then(fs => fs.listEntries()).then(rows => {
+      if (active) setDemoEntry(rows.find(row => row.kind === 'file' && row.path === '/python-learning-demo.py') || null)
+    }).catch(() => void 0)
+    return () => { active = false }
+  }, [])
+  const demoRepresented = entries.some(entry => entry.path === demoEntry?.path)
+  const cloudEntries = React.useMemo(() => demoEntry && !demoRepresented ? [...entries, demoEntry] : entries,
+    [demoEntry, demoRepresented, entries])
+  const cloudSync = useSourceFileCloudSync(cloudEntries)
   const [templateBusy, setTemplateBusy] = React.useState(false)
   const [templateError, setTemplateError] = React.useState('')
   const openTemplate = async () => {
@@ -137,6 +149,9 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       <SourceFilesOwnershipSummary onOpenTemplate={() => void openTemplate()} templateBusy={templateBusy} />
       {templateError && <p role="status" className={`px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>{templateError}</p>}
       <AgentMissionSourceFile search={props.search} />
+      <PythonLearningDemoSourceFile search={props.search} onSelectFile={onSelectFile}
+        entry={demoEntry} onReady={setDemoEntry} represented={demoRepresented}
+        cloudIndicator={demoEntry ? renderFileStatusRight({ entry: demoEntry, isActive: activePath === demoEntry.path }) : null} />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
         : <MarkdownFileTree
