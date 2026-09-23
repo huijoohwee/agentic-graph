@@ -2,6 +2,10 @@ import React from 'react'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
+import { MarkdownFileTreeRowButton } from '@/features/markdown-workspace/MarkdownFileTreeRowButton'
+import { FileText } from 'lucide-react'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 
 const DEMO_PATH = '/python-learning-demo.py'
 
@@ -14,6 +18,7 @@ export function PythonLearningDemoSourceFile({ search = '', onSelectFile, entry,
   cloudIndicator?: React.ReactNode
   represented: boolean
 }) {
+  const panelTypography = usePanelTypography()
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState('')
   if (!'python-learning-demo.py open python demo'.includes(search.trim().toLowerCase())) return null
@@ -41,9 +46,15 @@ export function PythonLearningDemoSourceFile({ search = '', onSelectFile, entry,
     }
   }
   return <>
-    <button type="button" className="w-full px-2 py-1 text-left text-xs" disabled={busy} onClick={() => void open()}>
-      {busy ? 'Opening Python demo…' : 'Open Python demo · local'}
-    </button>
+    {!entry ? <section className="group flex items-center" aria-label="Python demo starter">
+      <MarkdownFileTreeRowButton ariaLabel="Open Python demo" title="Create and open python-learning-demo.py"
+        indent={0} isActive={false} textClassName={panelTypography.panelTextClass}
+        onClick={() => void open()} onContextMenu={event => event.preventDefault()}>
+        <span className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
+        <FileText className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
+        <span className="truncate">{busy ? 'Opening Python demo…' : 'python-learning-demo.py'}</span>
+      </MarkdownFileTreeRowButton>
+    </section> : null}
     {entry && !represented ? <MarkdownFileTree entries={[entry]} readOnly expandedPaths={new Set(['/'])}
       toggleExpanded={() => void 0} activePath={null} onSelectFile={onSelectFile}
       renderFileRight={() => cloudIndicator} /> : null}
