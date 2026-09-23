@@ -108,6 +108,10 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
   if (!captureContext) return { status: 'unsupported', reason: 'A stable XR recording surface is unavailable.' }
   const release = acquireVideoSequenceRecorderLease()
   let stream: MediaStream | null = null
+  let preview: HTMLVideoElement | null = null
+  let previewFrames = 0
+  let previewFrameId: number | null = null
+  let recorderStarted = false
   let recorder: MediaRecorder | null = null
   let output: VideoSequenceRecorderOutput | null = null
   let detach = () => {}
@@ -145,6 +149,12 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     try { assertCurrent() } catch (error) { failure = error as Error; verificationAbort.abort() }
     wake?.()
   }
+  const onRecorderStart = () => { recorderStarted = true; check() }
+  const onPreviewFrame = () => {
+    previewFrames++
+    previewFrameId = preview!.requestVideoFrameCallback(onPreviewFrame)
+    check()
+  }
   const afterRender: Scene['onAfterRender'] = function (...renderArgs) {
     previousAfterRender.apply(this, renderArgs)
     if (!finalImageFrozen && !startupImageFrozen) {
@@ -152,7 +162,7 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
       catch (error) { failure = error as Error }
     }
     // A frozen pose still needs paints for captureStream to deliver its last frame.
-    if (finalImageFrozen && recorder?.state === 'recording') {
+    if ((finalImageFrozen || startupImageFrozen) && stream) {
       try { captureContext.drawImage(captureSurface, 0, 0) } catch (error) { failure = error as Error }
     }
     observedFrames += 1
@@ -257,15 +267,28 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     // already-started recorder cannot undo timestamps on queued opening frames.
     stream = captureSurface.captureStream(Math.min(60, Math.max(1, binding.fps)))
     if (!stream.getVideoTracks().length) throw new Error('XR canvas produced no video track.')
+    preview = document.createElement('video')
+    preview.muted = true; preview.playsInline = true; preview.srcObject = stream
+    if (preview.requestVideoFrameCallback) previewFrameId = preview.requestVideoFrameCallback(onPreviewFrame)
+    void preview.play().catch(error => { failure = error as Error; check() })
+    await waitRendered(() => preview!.readyState >= 2 && (previewFrameId === null || previewFrames >= 2), 5_000)
     recorder = new MediaRecorder(stream, { mimeType: plan.mimeType })
     recorder.addEventListener('dataavailable', onData)
     recorder.addEventListener('error', check)
+    recorder.addEventListener('start', onRecorderStart, { once: true })
     output = collectVideoSequenceRecorderOutput(recorder)
     void output.chunks.catch(error => { failure = error as Error; check() })
     assertCurrent()
     if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced before MP4 start.')
     recorder.start(250)
+    await waitRendered(() => recorderStarted, 5_000)
+    // Stream delivery can stall during startup; exclude that held-zero wait from recorded time.
+    recorder.pause()
+    const openingPreviewFrames = previewFrames
+    captureContext.drawImage(captureSurface, 0, 0)
     ;(stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack).requestFrame?.()
+    if (previewFrameId !== null) await waitRendered(() => previewFrames > openingPreviewFrames, 5_000)
+    recorder.resume()
     assertCurrent()
     if ((binding.transportTime?.() ?? binding.time()) !== 0) throw new Error('The XR clock advanced while MP4 was starting.')
     detachStartAbort(); detachStartAbort = () => {}
@@ -282,8 +305,10 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     detachClock(); detachClock = () => {}
     releaseEnd!(); releaseEnd = null; rejectEnd = null
     const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack
+    const endPreviewFrames = previewFrames
     track.requestFrame?.()
-    await new Promise<void>((resolve, reject) => {
+    if (previewFrameId !== null) await waitRendered(() => previewFrames >= endPreviewFrames + 2, 5_000)
+    else await new Promise<void>((resolve, reject) => {
       const finish = (error?: Error) => {
         clearTimeout(timer); verificationAbort.signal.removeEventListener('abort', aborted)
         if (error) reject(error); else resolve()
@@ -313,9 +338,14 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
     detach(); args.signal?.removeEventListener('abort', check)
     if (recorder) {
       recorder.removeEventListener('dataavailable', onData); recorder.removeEventListener('error', check)
+      recorder.removeEventListener('start', onRecorderStart)
       try { if (recorder.state !== 'inactive') recorder.stop() } catch { /* Tracks are released below. */ }
     }
     output?.dispose(); stopVideoSequenceCaptureTracks(stream)
+    if (preview) {
+      if (previewFrameId !== null) preview.cancelVideoFrameCallback(previewFrameId)
+      preview.pause(); preview.srcObject = null
+    }
     try {
       // Cancellation never writes the prior scene back into a newly opened document.
       if (prepared && current()) {

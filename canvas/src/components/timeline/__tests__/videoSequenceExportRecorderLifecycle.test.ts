@@ -113,10 +113,13 @@ test('an unexpected pause before the source range ends is a runtime failure', as
 })
 
 test('XR and edited media share an exclusive recorder lease', async () => {
-  const { acquireVideoSequenceRecorderLease } = await import('../videoSequenceRecorderLifecycle')
+  const { acquireVideoSequenceRecorderLease, isVideoSequenceRecorderLeased } = await import('../videoSequenceRecorderLifecycle')
+  assert.equal(isVideoSequenceRecorderLeased(), false)
   const release = acquireVideoSequenceRecorderLease()
+  assert.equal(isVideoSequenceRecorderLeased(), true)
   assert.throws(() => acquireVideoSequenceRecorderLease(), /Another media export/)
   release(); release()
+  assert.equal(isVideoSequenceRecorderLeased(), false)
   acquireVideoSequenceRecorderLease()()
 })
 

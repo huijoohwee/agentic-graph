@@ -102,6 +102,7 @@ export async function flushVideoSequenceRecorderOutput(args: {
 
 // Both XR canvas and edited-video exports own this one recorder lease.
 let activeRecorderLease: symbol | null = null
+export const isVideoSequenceRecorderLeased = (): boolean => activeRecorderLease !== null
 export function acquireVideoSequenceRecorderLease(): () => void {
   if (activeRecorderLease) throw new Error('Another media export is running. Cancel it before starting another export.')
   const lease = Symbol('media-export')

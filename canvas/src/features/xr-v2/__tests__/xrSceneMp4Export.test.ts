@@ -6,14 +6,15 @@ import { publishRichMediaTimelineClockAcknowledgement, publishRichMediaTimelineC
 import { acquireVideoSequenceRecorderLease } from '@/components/timeline/videoSequenceRecorderLifecycle'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { captureXrSceneMp4, createXrMp4SourceBinding, type XrMp4SourceBinding } from '@/features/three/xrSceneMp4Export'
-
 class Recorder extends EventTarget {
   static isTypeSupported = (mime: string) => mime.startsWith('video/mp4')
-  static last: Recorder | null = null
+  static streamReady = true; static last: Recorder | null = null
   constructor(..._args: unknown[]) { super(); Recorder.last = this }
   state: RecordingState = 'inactive'
   mimeType = 'video/mp4'
   start() { this.state = 'recording'; queueMicrotask(() => this.dispatchEvent(new Event('start'))) }
+  pause() { this.state = 'paused' }
+  resume() { this.state = 'recording' }
   requestData() {
     const event = new Event('dataavailable')
     Object.defineProperty(event, 'data', { value: new Blob(['test bytes']) })
@@ -30,7 +31,7 @@ async function fixture(run: (value: {
   automaticFramesOnly: () => void; sampledPixels: () => number[]; frameRequests: () => number
 }) => Promise<void>) {
   const priorRecorder = Object.getOwnPropertyDescriptor(globalThis, 'MediaRecorder')
-  Recorder.last = null
+  Recorder.last = null; Recorder.streamReady = true
   const priorCanvas = Object.getOwnPropertyDescriptor(globalThis, 'HTMLCanvasElement')
   const priorDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
   const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
@@ -41,7 +42,7 @@ async function fixture(run: (value: {
   const listeners = new Set<() => void>()
   const scene = new Scene(); const initialHook = scene.onAfterRender
   const recordedDimensions: number[][] = []; const copiedSourceWidths: number[] = []
-  const sampledPixels: number[] = []; let frameRequests = 0; let automaticOnly = false
+  const sampledPixels: number[] = []; let frameRequests = 0; let automaticOnly = false; let previewFrame: (() => void) | null = null
   class Canvas {
     width = 160; height = 90; pixel = 0
     getContext() { return {
@@ -57,16 +58,20 @@ async function fixture(run: (value: {
     } }
     captureStream(fps: number) {
       recordedDimensions.push([this.width, this.height])
-      const sampler = setInterval(() => sampledPixels.push(this.pixel), 1_000 / fps)
+      const sample = () => { sampledPixels.push(this.pixel); if (Recorder.streamReady) { const frame = previewFrame; previewFrame = null; frame?.() } }
+      const sampler = setInterval(sample, 1_000 / fps)
       const track = { stop: () => { clearInterval(sampler); stopped++ },
-        ...(!automaticOnly ? { requestFrame: () => { frameRequests++; sampledPixels.push(this.pixel) } } : {}) }
+        ...(!automaticOnly ? { requestFrame: () => { frameRequests++; sample() } } : {}) }
       return { getVideoTracks: () => [track], getTracks: () => [track] } as unknown as MediaStream
     }
   }
   const source = new Canvas()
   Object.defineProperty(globalThis, 'HTMLCanvasElement', { configurable: true, value: Canvas })
   Object.defineProperty(globalThis, 'MediaRecorder', { configurable: true, value: Recorder })
-  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: () => new Canvas() } })
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: (tag: string) => tag === 'video'
+    ? { get readyState() { return Recorder.streamReady ? 2 : 0 }, play: async () => {}, pause() {}, srcObject: null,
+      requestVideoFrameCallback: (callback: () => void) => { previewFrame = callback; return 1 }, cancelVideoFrameCallback: () => { previewFrame = null } }
+    : new Canvas() } })
   const binding: XrMp4SourceBinding = {
     documentKey: 'fixture#xr-motion', durationSeconds: 0.08, fps: 30, current: () => current, time: () => time,
     prepare: () => { time = 0 }, play: () => { playing = true; clockRequested = true }, pause: () => { playing = false },
@@ -118,7 +123,6 @@ async function fixture(run: (value: {
     if (priorDocument) Object.defineProperty(globalThis, 'document', priorDocument); else Reflect.deleteProperty(globalThis, 'document')
   }
 }
-
 test('XR capture acknowledges existing rendered frames and releases capture before returning evidence', async () => {
   await fixture(async value => {
     const result = await value.capture()
@@ -128,7 +132,6 @@ test('XR capture acknowledges existing rendered frames and releases capture befo
     assert.equal(value.scene.onAfterRender, value.initialHook)
   })
 })
-
 test('user cancellation tears down tracks and restores the same document', async () => {
   await fixture(async value => {
     const controller = new AbortController()
@@ -137,7 +140,6 @@ test('user cancellation tears down tracks and restores the same document', async
     assert.equal(value.scene.onAfterRender, value.initialHook)
   })
 })
-
 test('final authored image survives faster rendering, slow recorder sampling and camera restoration', async () => {
   for (const automaticOnly of [false, true]) await fixture(async value => {
     value.binding.fps = 5 // Renderer advances every 5ms; recorder samples every 200ms.
@@ -148,7 +150,6 @@ test('final authored image survives faster rendering, slow recorder sampling and
     assert.equal(value.frameRequests(), automaticOnly ? 0 : 2)
   })
 })
-
 test('delayed Timeline startup creates no recorder or stream until the fresh opening image is ready', async () => {
   await fixture(async value => {
     const play = value.binding.play
@@ -160,12 +161,13 @@ test('delayed Timeline startup creates no recorder or stream until the fresh ope
     await new Promise(resolve => setTimeout(resolve, 30))
     assert.equal(Recorder.last, null)
     assert.equal(value.frameRequests(), 0)
-    play()
+    Recorder.streamReady = false; play()
+    await new Promise(resolve => setTimeout(resolve, 30)); assert.equal(Recorder.last, null)
+    assert.equal(value.binding.time(), 0); Recorder.streamReady = true
     assert.equal((await capture).status, 'captured')
     assert.ok(value.sampledPixels().includes(0), 'the playing-camera opening image was requested')
   })
 })
-
 test('native transport advancement without an acknowledged startup hold rejects before recording', async () => {
   await fixture(async value => {
     let requested = false
@@ -177,7 +179,6 @@ test('native transport advancement without an acknowledged startup hold rejects 
     acquireVideoSequenceRecorderLease()()
   })
 })
-
 test('clock advancement during recorder start rejects instead of dropping the opening time', async () => {
   const start = Recorder.prototype.start
   try {
@@ -191,7 +192,6 @@ test('clock advancement during recorder start rejects instead of dropping the op
     })
   } finally { Recorder.prototype.start = start }
 })
-
 test('cancellation while waiting for clock startup creates no recorder or live tracks', async () => {
   await fixture(async value => {
     const controller = new AbortController()
@@ -204,7 +204,6 @@ test('cancellation while waiting for clock startup creates no recorder or live t
     acquireVideoSequenceRecorderLease()()
   })
 })
-
 test('cancellation during the final sampler interval releases tracks and the shared lease', async () => {
   await fixture(async value => {
     const controller = new AbortController()
@@ -214,7 +213,6 @@ test('cancellation during the final sampler interval releases tracks and the sha
     acquireVideoSequenceRecorderLease()()
   })
 })
-
 test('adaptive renderer resizing preserves encoder dimensions while copying the current rendered source', async () => {
   await fixture(async value => {
     assert.equal((await value.capture({ onProgress: () => value.resizeSource() })).status, 'captured')
@@ -223,7 +221,6 @@ test('adaptive renderer resizing preserves encoder dimensions while copying the 
     assert.ok(value.recordedDimensions().every(([width, height]) => width === 160 && height === 90))
   })
 })
-
 test('document or canvas replacement cancels without restoring the previous document', async () => {
   await fixture(async value => {
     await assert.rejects(value.capture({ onProgress: () => value.stale() }), /source, document or canvas changed/)
@@ -231,7 +228,6 @@ test('document or canvas replacement cancels without restoring the previous docu
     assert.equal(value.scene.onAfterRender, value.initialHook)
   })
 })
-
 test('WebM-only browsers return unsupported before acquiring tracks', async () => {
   await fixture(async value => {
     const supported = Recorder.isTypeSupported
@@ -242,7 +238,6 @@ test('WebM-only browsers return unsupported before acquiring tracks', async () =
     } finally { Recorder.isTypeSupported = supported }
   })
 })
-
 test('final Timeline publication cannot complete capture until the final time is rendered', async () => {
   await fixture(async value => {
     let complete = false; let advanced = false; let published: () => void = () => {}
@@ -260,7 +255,6 @@ test('final Timeline publication cannot complete capture until the final time is
     if (captured.status === 'captured') assert.ok(captured.evidence.renderedFrames >= 3)
   })
 })
-
 test('rounded pose playheads are corrected even when terminal event time is already exact', async () => {
   for (const exactPayload of [false, true]) await fixture(async value => {
     if (exactPayload) value.exactEndPayload()
@@ -273,7 +267,6 @@ test('rounded pose playheads are corrected even when terminal event time is alre
     assert.equal(value.binding.time(), value.binding.durationSeconds)
   })
 })
-
 test('restoration exceptions still detach the renderer hook and release the shared lease', async () => {
   for (const method of ['restoreTransport', 'restoreCameraAndPlayback'] as const) {
     await fixture(async value => {
@@ -285,7 +278,6 @@ test('restoration exceptions still detach the renderer hook and release the shar
     })
   }
 })
-
 test('recorder errors reject immediately, release tracks and allow a later export', async () => {
   await fixture(async value => {
     let failed = false
@@ -297,7 +289,6 @@ test('recorder errors reject immediately, release tracks and allow a later expor
     acquireVideoSequenceRecorderLease()()
   })
 })
-
 test('native binding restores its prior BottomPanel state but preserves a subsequent user choice', () => {
   const prior = useGraphStore.getState()
   try {
@@ -352,7 +343,6 @@ test('native RAF acknowledges unchanged zero, holds without scheduling, and excl
   assert.deepEqual(clock.positions, [0, 0.02], 'elapsed time begins at release, not the delayed initial RAF')
   clock.stop(); assert.equal(signal?.aborted, true); assert.equal(clock.queued(), 0)
 })
-
 test('ordinary native playback retains its elapsed-time behavior without a startup claimant', () => {
   const clock = nativeClockFixture()
   clock.tick(10); clock.tick(30)
@@ -360,7 +350,6 @@ test('ordinary native playback retains its elapsed-time behavior without a start
   clock.tick(2_010); assert.equal(clock.ended(), 1); assert.equal(clock.queued(), 0)
   clock.stop()
 })
-
 test('clock cleanup aborts a pending startup and late release cannot schedule another RAF', async () => {
   let release: () => void = () => {}; let signal: AbortSignal | undefined
   const clock = nativeClockFixture((_position, lifetime) => {
@@ -369,7 +358,6 @@ test('clock cleanup aborts a pending startup and late release cannot schedule an
   clock.tick(1); clock.stop(); release(); await Promise.resolve()
   assert.equal(signal?.aborted, true); assert.equal(clock.queued(), 0); assert.equal(clock.ended(), 0)
 })
-
 test('document replacement fences late startup success and failure without mutating the next document', async () => {
   for (const reject of [false, true]) {
     let finish: () => void = () => {}
@@ -381,13 +369,11 @@ test('document replacement fences late startup success and failure without mutat
     assert.deepEqual(clock.positions, [0]); clock.stop()
   }
 })
-
 test('rejected startup stops the current clock and handles the rejection', async () => {
   const clock = nativeClockFixture(() => Promise.reject(new Error('recorder failed')))
   clock.tick(1); await Promise.resolve()
   assert.equal(clock.queued(), 0); assert.equal(clock.ended(), 1); clock.stop()
 })
-
 test('boundary controls stay local while parent storage and broadcast contain serializable frames only', async () => {
   const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
   const priorChannel = Object.getOwnPropertyDescriptor(globalThis, 'BroadcastChannel')
@@ -430,7 +416,6 @@ test('boundary controls stay local while parent storage and broadcast contain se
     if (priorChannel) Object.defineProperty(globalThis, 'BroadcastChannel', priorChannel); else Reflect.deleteProperty(globalThis, 'BroadcastChannel')
   }
 })
-
 test('actual clock zero acknowledgement still waits for the fresh rendered opening image', async () => {
   await fixture(async value => {
     let acknowledged: () => void = () => {}
@@ -450,7 +435,6 @@ test('actual clock zero acknowledgement still waits for the fresh rendered openi
     } finally { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe) }
   })
 })
-
 test('source replacement during a held zero frame cancels without restoring the old document', async () => {
   await fixture(async value => {
     let acknowledged: () => void = () => {}
@@ -470,7 +454,6 @@ test('source replacement during a held zero frame cancels without restoring the 
     } finally { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe) }
   })
 })
-
 test('local boundary claims are synchronous and an unresponsive claimant has a bounded deadline', async context => {
   const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
   const target = new EventTarget()
@@ -504,7 +487,6 @@ test('local boundary claims are synchronous and an unresponsive claimant has a b
     if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
   }
 })
-
 test('synchronous document changes from a frame listener prevent stale startup and scheduling', () => {
   let started = false
   const clock = nativeClockFixture(() => { started = true })
@@ -513,7 +495,6 @@ test('synchronous document changes from a frame listener prevent stale startup a
   assert.equal(started, false); assert.equal(clock.queued(), 0); assert.equal(clock.ended(), 0)
   clock.stop()
 })
-
 test('startup preserves rejection even when a claimant rejects with undefined or null', async () => {
   const priorWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
   const target = new EventTarget()
@@ -535,7 +516,6 @@ test('startup preserves rejection even when a claimant rejects with undefined or
     if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
   }
 })
-
 test('native terminal hold retains the final position without another RAF and ends only after acknowledgement', async () => {
   let release: () => void = () => {}
   const clock = nativeClockFixture(undefined, position => {
@@ -546,7 +526,6 @@ test('native terminal hold retains the final position without another RAF and en
   release(); await Promise.resolve()
   assert.equal(clock.ended(), 1); assert.equal(clock.queued(), 0); clock.stop()
 })
-
 test('terminal acknowledgement cannot end a replaced or cancelled document, including late rejection', async () => {
   for (const replaced of [false, true]) for (const rejected of [false, true]) {
     let finish: () => void = () => {}; let signal: AbortSignal | undefined
@@ -560,7 +539,6 @@ test('terminal acknowledgement cannot end a replaced or cancelled document, incl
     assert.equal(clock.ended(), 0); assert.equal(clock.queued(), 0); assert.equal(signal?.aborted, true); clock.stop()
   }
 })
-
 test('terminal render hold keeps the playing camera until its actual image is retained', async () => {
   await fixture(async value => {
     let reached: () => void = () => {}
@@ -580,13 +558,11 @@ test('terminal render hold keeps the playing camera until its actual image is re
     } finally { window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe) }
   })
 })
-
 test('a rejected current terminal acknowledgement stops once and schedules no further frame', async () => {
   const clock = nativeClockFixture(undefined, () => Promise.reject(new Error('final render failed')))
   clock.tick(1); clock.tick(2_001); await Promise.resolve()
   assert.equal(clock.ended(), 1); assert.equal(clock.queued(), 0); clock.stop()
 })
-
 test('fresh React-like snapshots acknowledge the computed endpoint and retain the end callback receiver', async () => {
   let endpoint = -1; let ended = false
   const clock = nativeClockFixture(undefined, position => { endpoint = position; return Promise.resolve() }, true)
@@ -595,4 +571,22 @@ test('fresh React-like snapshots acknowledge the computed endpoint and retain th
   assert.deepEqual(clock.positions, [0, 1, 2]); assert.equal(clock.state.position, 0, 'setters must not mutate captured projections')
   assert.equal(endpoint, 2); assert.equal(ended, false)
   await Promise.resolve(); assert.equal(ended, true); assert.equal(clock.queued(), 0); clock.stop()
+})
+
+test('recorder startup holds zero until a fresh stream frame is presented', async () => {
+  const start = Recorder.prototype.start
+  try {
+    await fixture(async value => {
+      let began: () => void = () => {}
+      const started = new Promise<void>(resolve => { began = resolve })
+      Recorder.prototype.start = function () { Recorder.streamReady = false; start.call(this); began() }
+      const capture = value.capture()
+      await started
+      await new Promise(resolve => setTimeout(resolve, 30))
+      assert.equal(value.binding.time(), 0, 'recorder start alone is not a delivered opening frame')
+      assert.equal(Recorder.last?.state, 'paused', 'stream warmup must not add recorded time')
+      Recorder.streamReady = true
+      assert.equal((await capture).status, 'captured')
+    })
+  } finally { Recorder.prototype.start = start }
 })
