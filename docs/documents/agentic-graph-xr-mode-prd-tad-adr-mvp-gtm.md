@@ -2,7 +2,7 @@
 title: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KXR-001"
-version: "0.7.0"
+version: "0.7.1"
 status: "spec-complete"
 date: "2026-09-22"
 local_rung: "spec-complete"
@@ -41,12 +41,12 @@ adlc_source_revision: "2a86d4321edbcc34ea38f3f4718fd4e49b80d153"
 adlc_guide_sha256: "7b2c0a4c85879647c36766fad3e686899c43d219e6d57e39adfdace308dca686"
 increment_history: "agentic-graph-xr-mode-increments.md"
 reviewed_source_revision: "620471f120ddb31c7aab6ffcc8296f7be6eb3144"
-previous_document_version: "0.6.3"
-prd_revision: "0.7.0"
-tad_revision: "0.7.0"
-adr_revision: "0.7.0"
-mvp_revision: "0.7.0"
-gtm_revision: "0.7.0"
+previous_document_version: "0.7.0"
+prd_revision: "0.7.1"
+tad_revision: "0.7.1"
+adr_revision: "0.7.1"
+mvp_revision: "0.7.1"
+gtm_revision: "0.7.1"
 ---
 
 # agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
@@ -434,7 +434,7 @@ Historical proof remains at the [unchanged evidence section](agentic-graph-xr-mo
 <a id="planning-revision--reference-implementation"></a>
 ## Native authoring increment — reference implementation
 
-All five roles join `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.7.0`.
+All five roles join `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.7.1`.
 PRD criteria below extend Part A; TAD consumes those exact criteria; ADR-007-009
 bind the design; MVP and GTM consume all three. Historical E1-E4 proof and earlier
 increments are preserved in the [evidence companion](agentic-graph-xr-mode-increments.md).
@@ -486,7 +486,7 @@ Every row is Must. Listed checks are required evidence hosts, not passing result
 | Source / observed revision | Disposition and permitted reuse |
 |---|---|
 | Graph baseline `620471f120ddb31c7aab6ffcc8296f7be6eb3144` | Confirmed source owners: shared scene/transport, procedural subjects, consolidated catalog and Tropical Playground. A01-A09/B01-B08 complete runtime acceptance is unverified. |
-| Graph PR #1160, `776dbfb57f5d7eaea295fbba3645912cc5537b43` | Unmerged procedural builder/controls/export candidate, provider comparison base `620471f`; CI `35679076447` in progress at this observation. Focused predecessor evidence does not establish integrated availability. Consume only after exact protected integration; never add a second recipe. |
+| Graph protected `795581f138393e4a89169d1373a9f3e2161cb63e` | Integrated native procedural contract, builder, session, controls and workspace/export pipeline are available to S1. The earlier #1160 observation is superseded by this source revision; S1 subject integration remains unverified. No second recipe is introduced. |
 | OS PR #251, merge `139c46d8fe239c5a051a26729cb572fff6bd191a` | Confirmed completed source delivery of `/asset.create @text #procedural-asset`; dictionary metadata grants no execution. |
 | Canvas PR #943, merge `1bfd18356c8a33ac763454b0dddfb68e88d4694d` | Confirmed completed skill/preset source delivery. Its admitted capability is native Card Run; Chat/MCP/WebMCP/XR execution and direct Canvas consumption remain separate work. |
 | `design-token-integration`, `0da7c58ea4aa192f13ea36853d51847184a9ca98` | Active successor to design-review-bounds still owns registry, global tools and collaboration contract. B08/WebMCP/direct Canvas contract changes wait for actual ownership release/admission. |
@@ -499,7 +499,7 @@ These clean local source reads bind planning guidance, not full-guideline confor
 | Component / criteria | Reuse or enhancement; interface and data boundary |
 |---|---|
 | Scene source / A01-A02,A06,B02,B04 | Extend `xrMotionReferenceModel`, subject edits, `xrSceneControlNormalization` and `xrScenePersistence`; one source-bound recipe identity, revision-fenced writes, recoverable drafts and prior valid document. |
-| Trusted construction / A01-A02,A07,B01-B06 | Reuse the integrated `proceduralAssetContract/Builder/Session/RuntimeExport` candidate once available; original parts, pivots/sockets and bounded clips. Preserve `imageToGlbActionReadiness` and image-only reference validation. |
+| Trusted construction / A01-A02,A07,B01-B06 | Reuse the protected `proceduralAssetContract/Builder/Session/RuntimeExport` owners; original parts, pivots/sockets and bounded clips. Preserve `imageToGlbActionReadiness` and image-only reference validation. |
 | Rendering/panels / A04-A06,B03,B07 | Extend `XrSceneLibrarySubject`, Animation, existing Media controls and Timeline projections; exactly one scene, selected target/part, camera and transport. |
 | Tools / A03,B08 | Extend `xrSceneMcpRuntime`, `xrAnimationMcpRuntime` and their WebMCP adapters only in admitted scope; typed recipes share UI mutation/persistence and existing authorization. |
 | Exports / A07-A08,B06 | Reuse `ThreeGraphSnapshots`, workspace GLB save, codec negotiation and `videoSequenceRecorderLifecycle`; immutable scene/clip snapshot, explicit unsupported status, capture teardown and restored transport. |
@@ -524,6 +524,7 @@ The topology stays the existing renderer diagram with the admitted recipe feedin
 
 | Step / role-action-outcome | Prerequisite and bounded outcome | Cap / evidence gate |
 |---|---|---|
+| S0 Authoring maintainer fences existing subject drafts | Independently protect A01/A06 using document/source/plan identity; duplicate subject IDs cannot move a stale draft between documents. Timeline seeks keep valid drafts. Reuse existing controls and persistence; no recipe or rig added. | Ten active minutes, six reserved files, one small runtime helper; focused draft/reparse/UI tests, then affected validation. |
 | S1 Authoring maintainer integrates native model/rig | Exact protected procedural pipeline and admitted paths; editable parts, pivots, hierarchy and persistent controls, A01-A02/B01-B05. | First sprint: 45 active minutes, at most 12 implementation modules and 80 KB added source. Time is an estimate, not completion proof. |
 | S2 Runtime maintainer integrates animation/export | A08 MP4 capture of an existing XR scene may proceed now from protected `620471f120ddb31c7aab6ffcc8296f7be6eb3144` in admitted disjoint scope, using its shared Timeline, camera and lifecycle; it does not require S1. Articulated animation/GLB work (A04/A06/A07/B06) requires valid saved S1 source. | Shared S2 budget across both paths: at most 45 active minutes, 12 modules and 80 KB; refresh estimates from each measured slice. |
 | S3 Integration maintainer verifies agent/surface/demo parity | Tool/direct-Canvas ownership released and exact pins admitted; A03/A05/A09/B07-B08 plus all earlier criteria. | At most 45 active minutes, 12 modules and 80 KB per sprint; every criterion still required. |
@@ -542,7 +543,7 @@ Use affected model/rig, Timeline, serialization, lifecycle and GLB reimport chec
 selected owner checks and desktop/mobile browser journey. Preserve image regressions. The historical
 `npm run xr-mode:runtime-ready` E1-E4 gate remains required for its coverage, not proof of new criteria.
 Record exact candidate, command, result, evaluator, surface and evidence for each satisfied row.
-All 17 authoring criteria remain open here; no new runtime checks were run for this planning update.
+All 17 authoring criteria remain open here. S1 adapts native construction/controls to selected subjects; its two registered focused cases pass. Visual parts edit the same recipe/session with control bounds and source fences. Clip/rest/repeat/hold have source/reopen/seek proof. Native shared part selection now survives save/remount/seek, rejects stale part work and preserves unrelated model drafts; transport never rebuilds evicted constructions. Reimported selected-model GLB proves hierarchy, duration and start/middle/end poses. See companion S1 checkpoints for budgets and evidence; no full browser or whole-scene export acceptance is claimed.
 Core Functionality, Innovation, Technical Integration and Agentic Usefulness remain unassessed.
 
 <a id="gtm--reference-implementation"></a>
@@ -561,7 +562,7 @@ external dependencies on integrated source or released ownership, with no invent
 
 ### Coverage and remaining findings
 
-Product maintainers own each disposition at this exact 0.7.0 revision. The checks
+Product maintainers own each disposition at this exact 0.7.1 revision. The checks
 below revisit coverage before MVP acceptance and any buyer/audience handoff.
 
 | Domain | Disposition / exact section join | Evidence gap and next check |
