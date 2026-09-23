@@ -21,6 +21,7 @@ export async function testSourceFileCloudDownloadPreservesLocalBytesAndDirectory
         ['huijoohwee/docs/notes/keep.md', '# Cloud version 🧭'],
         ['huijoohwee/docs/nested/empty.md', ''],
         ['huijoohwee/docs/nested/readme.md', '# Downloaded'],
+        ['python-learning-demo.py', 'print(at_goal())\n'],
       ])
       const selected = await importSourceFileCloudSnapshot({ fs, snapshot, prefix: '/notes' })
       assert.equal(selected.transferred, 1)
@@ -36,6 +37,9 @@ export async function testSourceFileCloudDownloadPreservesLocalBytesAndDirectory
       assert.equal(all.transferred, 2)
       assert.equal(await fs.readFileText('/docs/nested/empty.md'), '')
       assert.equal(await fs.readFileText('/docs/nested/readme.md'), '# Downloaded')
+      const python = await importSourceFileCloudSnapshot({ fs, snapshot, prefix: '/python-learning-demo.py' })
+      assert.equal(python.transferred, 1)
+      assert.equal(await fs.readFileText('/python-learning-demo.py'), 'print(at_goal())\n')
       assert((await fs.listEntries()).some(entry => entry.kind === 'folder' && entry.path === '/docs/nested'))
       const before = await fs.listEntries()
       await assert.rejects(importSourceFileCloudSnapshot({ fs, prefix: '/', snapshot: new Map([

@@ -3,13 +3,14 @@ import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { readAgenticGraphStorageBrowserSession } from '@/lib/storage/agentic-graph-storage-browser-session'
 import { readActiveAgenticGraphStorageWorkspaceId } from './sourceFileShareUrl'
 import { readAgenticGraphStorageBaseUrl, readAgenticGraphStorageRuntimeSyncEnabled } from './source-files-agentic-graph-storage-settings'
-import { SOURCE_FILE_CLOUD_TRANSFER_LIMITS, readCanonicalCloudDocumentSnapshot, resolveSourceFileCanonicalCloudTarget, syncWorkspaceEntriesToCloudWorkspaceSnapshot } from './sourceFileCanonicalCloudSync'
+import { SOURCE_FILE_CLOUD_TRANSFER_LIMITS, readCanonicalCloudDocumentSnapshot, resolveSourceFileCloudWorkspaceTarget, syncWorkspaceEntriesToCloudWorkspaceSnapshot } from './sourceFileCanonicalCloudSync'
 
 export type SourceFileCloudTransferResult = { transferred: number; unchanged: number; conflicts: string[]; skipped: number }
 
 export const normalizeSourceFileTransferScope = (value: string): string => {
   const path = String(value || '/').trim().replace(/\\/g, '/').replace(/\/+$/, '') || '/'
-  if (/[\u0000-\u001f\u007f]/.test(path) || path.split('/').some(part => part === '.' || part === '..')) {
+  if ([...path].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
+    || path.split('/').some(part => part === '.' || part === '..')) {
     throw new Error('Choose a file or folder path without traversal segments.')
   }
   return path.startsWith('/') ? path : `/${path}`
@@ -18,16 +19,16 @@ const withinScope = (path: string, prefix: string): boolean => prefix === '/' ||
 const assertBounds = (texts: string[]): void => {
   const bytes = texts.reduce((sum, text) => sum + new TextEncoder().encode(text).byteLength, 0)
   if (texts.length > SOURCE_FILE_CLOUD_TRANSFER_LIMITS.files || bytes > SOURCE_FILE_CLOUD_TRANSFER_LIMITS.bytes) {
-    throw new Error('Choose a smaller folder: each transfer allows 50 Markdown files and 5 MiB.')
+    throw new Error('Choose a smaller folder: each transfer allows 50 Markdown or Python files and 5 MiB.')
   }
 }
 
 // Resolve known local aliases first; new documents retain their repository owner.
 const cloudWorkspacePath = (canonicalPath: string, entries: WorkspaceEntry[]): string | null => {
   const safe = normalizeSourceFileTransferScope(canonicalPath)
-  if (!resolveSourceFileCanonicalCloudTarget(safe)) return null
+  if (!resolveSourceFileCloudWorkspaceTarget(safe)) return null
   const existing = entries.find(entry => entry.kind === 'file'
-    && resolveSourceFileCanonicalCloudTarget(entry.path)?.canonicalPath === canonicalPath)
+    && resolveSourceFileCloudWorkspaceTarget(entry.path)?.canonicalPath === canonicalPath)
   if (existing) return existing.path
   if (safe.startsWith('/agentic-graph/docs/workspace-seeds/')) return safe.slice('/agentic-graph'.length)
   if (safe.startsWith('/huijoohwee/docs/')) return safe.slice('/huijoohwee'.length)
@@ -108,7 +109,7 @@ export const transferSourceFilesCloud = async (args: {
     const scoped = (await fs.listEntries()).filter(entry => entry.kind === 'file' && withinScope(entry.path, prefix))
     const entries: WorkspaceEntry[] = []
     for (const entry of scoped) {
-      if (!resolveSourceFileCanonicalCloudTarget(entry.path)) continue
+      if (!resolveSourceFileCloudWorkspaceTarget(entry.path)) continue
       entries.push({ ...entry, text: (await fs.readFileText(entry.path)) ?? entry.text ?? '' })
     }
     assertBounds(entries.map(entry => entry.text || ''))
