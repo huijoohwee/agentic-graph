@@ -151,6 +151,10 @@ export async function captureXrSceneMp4(args: CanvasVideoCaptureOptions & {
       try { captureContext.drawImage(args.canvas, 0, 0, captureSurface.width, captureSurface.height) }
       catch (error) { failure = error as Error }
     }
+    // A frozen pose still needs paints for captureStream to deliver its last frame.
+    if (finalImageFrozen && recorder?.state === 'recording') {
+      try { captureContext.drawImage(captureSurface, 0, 0) } catch (error) { failure = error as Error }
+    }
     observedFrames += 1
     const frameTime = binding.time()
     stableTimeFrames = renderedTime === frameTime ? stableTimeFrames + 1 : 1

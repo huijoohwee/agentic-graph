@@ -35,15 +35,28 @@ test('truncated MP4 sample boxes reject instead of creating a successful export'
 
 
 async function decoderFixture(empty: boolean,
-  run: (readCleanup: () => number, pendingEndedListeners: () => number) => Promise<void>,
-  options: { duration?: number; play?: () => Promise<void> } = {}) {
+  run: (readCleanup: () => number, pendingEndedListeners: () => number, pendingFrames: () => number) => Promise<void>,
+  options: { duration?: number; play?: () => Promise<void>; presentedFrames?: boolean; seekFailure?: boolean } = {}) {
   const prior = Object.getOwnPropertyDescriptor(globalThis, 'document')
   let cleanup = 0; let draws = 0
   const endedListeners = new Set<EventListenerOrEventListenerObject>()
+  let frameId = 0; let presented = false
+  const frames = new Map<number, () => void>()
+  const present = () => { presented = true; for (const [id, callback] of [...frames]) { frames.delete(id); callback() } }
   class Video extends EventTarget {
+    constructor() {
+      super()
+      if (options.presentedFrames) Object.assign(this, {
+        requestVideoFrameCallback: (callback: () => void) => { presented = false; frames.set(++frameId, callback); return frameId },
+        cancelVideoFrameCallback: (id: number) => frames.delete(id),
+      })
+    }
     duration = options.duration ?? 2; videoWidth = 160; videoHeight = 90; readyState = 4; time = 0
     get currentTime() { return this.time }
-    set currentTime(value: number) { this.time = value; queueMicrotask(() => this.dispatchEvent(new Event('seeked'))) }
+    set currentTime(value: number) {
+      if (options.seekFailure) throw new Error('seek rejected')
+      this.time = value; queueMicrotask(() => { this.dispatchEvent(new Event('seeked')); queueMicrotask(present) })
+    }
     load() { queueMicrotask(() => this.dispatchEvent(new Event('loadedmetadata'))) }
     play() { return options.play?.() ?? Promise.resolve() }
     addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: AddEventListenerOptions | boolean) {
@@ -59,13 +72,29 @@ async function decoderFixture(empty: boolean,
   }
   Object.defineProperty(globalThis, 'document', { configurable: true, value: {
     createElement: (tag: string) => tag === 'video' ? new Video() : {
-      getContext: () => ({ clearRect() {}, drawImage() { draws++ },
+      getContext: () => ({ clearRect() {}, drawImage() {
+        if (options.presentedFrames) assert.equal(presented, true, 'seeked is not proof that pixels were presented')
+        draws++
+      },
         getImageData: () => ({ data: new Uint8ClampedArray(32 * 32 * 4).fill(empty ? 0 : draws) }) }),
     },
   } })
-  try { await run(() => cleanup, () => endedListeners.size) }
+  try { await run(() => cleanup, () => endedListeners.size, () => frames.size) }
   finally { if (prior) Object.defineProperty(globalThis, 'document', prior); else Reflect.deleteProperty(globalThis, 'document') }
 }
+
+test('decode waits for presented pixels after every seek and cancels frame callbacks on failure', async () => {
+  await decoderFixture(false, async (_cleanup, _ended, pendingFrames) => {
+    const evidence = await verifyXrSceneMp4(new Blob([container()]), 2)
+    assert.equal(evidence.decodedFrames, 3)
+    assert.equal(new Set(evidence.sampleHashes).size, 3)
+    assert.equal(pendingFrames(), 0)
+  }, { presentedFrames: true })
+  await decoderFixture(false, async (_cleanup, _ended, pendingFrames) => {
+    await assert.rejects(verifyXrSceneMp4(new Blob([container()]), 2), /seek rejected/)
+    assert.equal(pendingFrames(), 0)
+  }, { presentedFrames: true, seekFailure: true })
+})
 
 test('browser decode samples beginning, middle and end, then releases its video source', async () => {
   await decoderFixture(false, async cleanup => {

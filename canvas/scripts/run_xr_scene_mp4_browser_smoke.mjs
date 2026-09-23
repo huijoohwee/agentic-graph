@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runLocalViteBrowserSmoke } from './lib/run-local-vite-browser-smoke.mjs'
-import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const script = fileURLToPath(import.meta.url)
 process.chdir(resolve(dirname(script), '..'))
@@ -29,8 +28,7 @@ if (!process.argv.includes('--verify')) {
     reportPhase('launch')
     const { chromium } = await import('playwright')
     // Keep an exact owned process handle for deadline cleanup, including a stalled renderer.
-    browserServer = await chromium.launchServer({ executablePath: findLocalChromiumExecutable() || undefined,
-      headless: true, timeout: 30_000, args: ['--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
+    browserServer = await chromium.launchServer({ headless: true, timeout: 30_000, args: ['--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
     const browser = await chromium.connect(browserServer.wsEndpoint(), { timeout: 10_000 })
     for (const viewport of [{ name: 'desktop', width: 1024, height: 768 }, { name: 'mobile', width: 390, height: 844 }]) {
     reportPhase(`viewport:${viewport.name}`)

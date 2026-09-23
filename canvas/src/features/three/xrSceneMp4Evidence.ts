@@ -49,18 +49,21 @@ export function assertXrMp4Container(bytes: ArrayBuffer): void {
 
 function waitForMedia(video: HTMLVideoElement, eventName: string, signal?: AbortSignal, timeoutMs = 8_000): Promise<void> {
   return new Promise((resolve, reject) => {
+    let frameId: number | null = null
     const finish = (error?: Error) => {
       clearTimeout(timer)
+      if (frameId !== null) video.cancelVideoFrameCallback(frameId)
       video.removeEventListener(eventName, done)
       video.removeEventListener('error', failed)
       signal?.removeEventListener('abort', aborted)
       if (error) reject(error); else resolve()
     }
-    const done = () => finish()
+    const done = () => { if (frameId !== null) video.pause(); finish() }
     const failed = () => finish(new Error('MP4 output could not be decoded.'))
     const aborted = () => finish(new DOMException('MP4 export cancelled.', 'AbortError'))
     const timer = setTimeout(() => finish(new Error('MP4 decode verification timed out.')), timeoutMs)
-    video.addEventListener(eventName, done, { once: true })
+    if (eventName === 'frame') frameId = video.requestVideoFrameCallback(done)
+    else video.addEventListener(eventName, done, { once: true })
     video.addEventListener('error', failed, { once: true })
     signal?.addEventListener('abort', aborted, { once: true })
     if (signal?.aborted) aborted()
@@ -77,6 +80,11 @@ export async function verifyXrSceneMp4(
   assertXrMp4Container(await blob.arrayBuffer())
   const video = document.createElement('video')
   const url = URL.createObjectURL(blob)
+  const lifetime = new AbortController(), callerSignal = signal
+  const aborted = () => lifetime.abort()
+  callerSignal?.addEventListener('abort', aborted, { once: true })
+  if (callerSignal?.aborted) aborted()
+  signal = lifetime.signal
   video.muted = true; video.playsInline = true; video.preload = 'auto'
   try {
     const metadata = waitForMedia(video, 'loadedmetadata', signal)
@@ -105,6 +113,7 @@ export async function verifyXrSceneMp4(
       throw new Error(`MP4 duration does not match the authored scene (decoded=${durationSeconds}, authored=${expectedDuration}).`)
     }
     if (!video.videoWidth || !video.videoHeight) throw new Error('MP4 output has no decoded video dimensions.')
+    if (video.paused === false) video.pause()
     if (video.readyState < 2) await waitForMedia(video, 'loadeddata', signal)
     const canvas = document.createElement('canvas')
     canvas.width = 32; canvas.height = 32
@@ -115,11 +124,15 @@ export async function verifyXrSceneMp4(
     let initialFrameMeanError: number | undefined
     for (const time of [0, durationSeconds / 2, Math.max(0, durationSeconds - 0.001)]) {
       if (signal?.aborted) throw new DOMException('MP4 export cancelled.', 'AbortError')
-      if (Math.abs(video.currentTime - time) > 0.001) {
+      const presented = typeof video.requestVideoFrameCallback === 'function' ? waitForMedia(video, 'frame', signal) : null
+      void presented?.catch(() => {})
+      if (presented || Math.abs(video.currentTime - time) > 0.001) {
         const sought = waitForMedia(video, 'seeked', signal)
+        void sought.catch(() => {})
         video.currentTime = time
         await sought
       }
+      if (presented) await presented
       context.clearRect(0, 0, 32, 32)
       context.drawImage(video, 0, 0, 32, 32)
       const pixels = context.getImageData(0, 0, 32, 32).data
@@ -128,7 +141,7 @@ export async function verifyXrSceneMp4(
         hash = Math.imul(hash ^ pixels[index], 16777619)
         if (index % 4 === 3) alpha += pixels[index]
       }
-      if (!alpha) throw new Error('MP4 output has an empty decoded frame.')
+      if (!alpha) throw new Error(`MP4 output has an empty decoded frame at ${time}s (readyState=${video.readyState}).`)
       sampleHashes.push((hash >>> 0).toString(16))
       if (expectedInitialFrame && sampleHashes.length === 1) initialFrameMeanError = comparePose(pixels, expectedInitialFrame, 'initial')
       if (expectedFinalFrame && sampleHashes.length === 3) {
@@ -139,6 +152,7 @@ export async function verifyXrSceneMp4(
       ...(expectedFinalFrame ? { finalFrameVerified: true, finalFrameMeanError } : {}),
       ...(expectedInitialFrame ? { initialFrameVerified: true, initialFrameMeanError } : {}) }
   } finally {
+    lifetime.abort(); callerSignal?.removeEventListener('abort', aborted)
     video.pause(); video.removeAttribute('src'); video.load(); URL.revokeObjectURL(url)
   }
 }
