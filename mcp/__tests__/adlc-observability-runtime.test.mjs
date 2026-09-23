@@ -288,6 +288,31 @@ test("observer fails closed on run revision, receipt, and artifact digest drift"
   });
 });
 
+test("concurrent observations share derived work but still reject changed artifact bytes", async (t) => {
+  const fixture = await runtimeFixture(t);
+  let evaluations = 0, projections = 0;
+  const trackedEvaluator = {
+    ...evaluator,
+    normalizeCanonicalRun(value) { evaluations++; return evaluator.normalizeCanonicalRun(value); },
+  };
+  const observer = createAdlcObservabilityRuntime({ rootDir: fixture.rootDir, store: fixture.store,
+    evaluatorLoader: async () => trackedEvaluator,
+    projector: async () => { projections++; return projection; } });
+  const request = { invocation, runId: fixture.state.runId, expectedRevision: fixture.state.revision,
+    expectedLedgerDigest: fixture.receipt.digest, view: "execution" };
+  const [first, second] = await Promise.all([observer.observe(request), observer.observe(request)]);
+  assert.equal(first.ok, true); assert.equal(second.ok, true);
+  assert.equal(first.cache.key, second.cache.key);
+  assert.equal(evaluations, 1, 'evaluation count');
+  assert.equal(projections, 1, 'projection count');
+  assert.equal((await observer.observe(request)).cache.status, "hit");
+  trackedEvaluator.normalizeCanonicalRun = (value) => { evaluations++; return evaluator.normalizeCanonicalRun(value); };
+  assert.equal((await observer.observe(request)).ok, true);
+  assert.equal(evaluations, 2); // A changed evaluator function invalidates the pure result.
+  await fs.writeFile(path.join(fixture.store.runDir(fixture.state.runId), fixture.receipt.artifact), `${LEDGER_TEXT} `, "utf8");
+  assert.equal((await observer.observe(request)).error.code, "ledger_digest_mismatch");
+});
+
 test("observer reports a typed unavailable state instead of fabricating a canonical ledger", async (t) => {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-sdlc-observe-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));

@@ -15,8 +15,8 @@ const cell = (value: unknown) => String(value ?? 'Unknown').replace(/&/g, '&amp;
 export function useAgentRunWorkspaceDocument() {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
-  const projection = agentMissionWorkspace(inspection?.trace, codebase.data)
-  const sourcePath = workspace ? resolveAgentMissionSource(inspection?.trace, workspace.source, codebase.data) : null
+  const projection = React.useMemo(() => agentMissionWorkspace(inspection?.trace, codebase.data), [inspection?.trace, codebase.data])
+  const sourcePath = workspace ? resolveAgentMissionSource(inspection?.trace, workspace.source, codebase.data, projection) : null
   const reference = sourcePath ? projection.references.get(sourcePath) : undefined
   const json = reference ? JSON.stringify(reference, null, 2)
     : sourcePath === projection.manifestPath && inspection?.trace.workflowManifest ? inspection.trace.workflowManifest.text

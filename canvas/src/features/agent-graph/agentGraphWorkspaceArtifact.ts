@@ -167,11 +167,16 @@ export async function retainAgentGraphWorkspaceProjection(graph: GraphData): Pro
   return target
 }
 
-export async function readAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<GraphData> {
+export async function readAgentGraphWorkspaceProjectionText(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<string> {
   const pathIdentity = retainedAgentGraphDocumentIdentity(target)
   if (!pathIdentity || pathIdentity.graphId !== expected.graphId || pathIdentity.snapshotDigest !== expected.snapshotDigest) throw new Error('Invalid retained source path')
   const text = await (await getWorkspaceFs()).readFileText(target)
   if (!text || new TextEncoder().encode(text).length > AGENT_GRAPH_CANVAS_MAX_BYTES) throw new Error('Retained source projection unavailable')
+  return text
+}
+
+/** Parse only bytes just read from the workspace owner; this pure step grants no source authority. */
+export function parseAgentGraphWorkspaceProjectionText(text: string, expected: { graphId: string; snapshotDigest: string }): GraphData {
   const graph = JSON.parse(text) as GraphData
   const identity = graph.metadata?.agentGraphProjection as Record<string, unknown>
   if (!isReadOnlyAgentGraphProjection(graph) || identity.graphId !== expected.graphId || identity.snapshotDigest !== expected.snapshotDigest) throw new Error('Retained source identity mismatch')
@@ -186,6 +191,10 @@ export async function readAgentGraphWorkspaceProjection(target: string, expected
       limit: identity.projectionLimit as number, ...(identity.projectionReason ? { reason: identity.projectionReason as string } : {}), graphData: graph },
   })
   return validated
+}
+
+export async function readAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<GraphData> {
+  return parseAgentGraphWorkspaceProjectionText(await readAgentGraphWorkspaceProjectionText(target, expected), expected)
 }
 
 export async function reopenAgentGraphWorkspaceProjection(target: string, expected: { graphId: string; snapshotDigest: string }): Promise<void> {

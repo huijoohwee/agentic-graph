@@ -16,13 +16,13 @@ export function AgentMissionSourceFile({ search = '' }: { search?: string }) {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set())
-  const projection = agentMissionWorkspace(inspection?.trace, codebase.data)
+  const projection = React.useMemo(() => agentMissionWorkspace(inspection?.trace, codebase.data), [inspection?.trace, codebase.data])
   if (!matchesAgentMissionSource(search) && !projection.entries.some(row => row.name.toLowerCase().includes(search.trim().toLowerCase()))) return null
   return <><MarkdownFileTree entries={projection.entries} readOnly
     expandedPaths={new Set(['/', ...projection.folders.filter(path => search || !collapsed.has(path))])}
     toggleExpanded={path => setCollapsed(previous => {
       const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next
-    })} activePath={resolveAgentMissionSource(inspection?.trace, workspace?.source, codebase.data)}
+    })} activePath={resolveAgentMissionSource(inspection?.trace, workspace?.source, codebase.data, projection)}
     onSelectFile={path => activateAgentRunWorkspace(workspace?.view ?? 'tree', 'editor', path)} />
     {codebase.error ? <p role="status">{codebase.error}</p> : null}</>
 }
