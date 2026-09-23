@@ -1,8 +1,26 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { readFile, mkdtemp, rm } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { hasMissionWorkspaceSelection } from '../../canvas/scripts/lib/verify-workspace-observation.mjs'
 import { readContract, selectAffectedCommands, resolveCiCommandTimeoutMs, validateExpansionScripts } from '../collaboration-contract.mjs'
 import { createMissionPhaseObservation } from '../../canvas/scripts/lib/mission-phase-observation.mjs'
+
+test('only an unselected repository can use the native workspace source without fixture isolation', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'mission-selection-'))
+  const git = (...args) => execFileSync('git', args, { cwd: root, stdio: 'pipe' })
+  try {
+    assert.throws(() => hasMissionWorkspaceSelection(root))
+    git('init')
+    assert.equal(hasMissionWorkspaceSelection(root), false)
+    for (const value of ['', '/private/archive/manifest.json', 'invalid-selection']) {
+      git('config', '--local', 'agentic-os.workflowManifest', value)
+      assert.equal(hasMissionWorkspaceSelection(root), true)
+    }
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
 
 test('mission expansion retains ingress, both unit selections, browser and lifecycle hook guards', async () => {
   const contract = await readContract()

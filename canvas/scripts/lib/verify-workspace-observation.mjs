@@ -1,11 +1,21 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { showMissionFace, openEditorWorkspace } from './mission-card-face.mjs'
+
+export function hasMissionWorkspaceSelection(root) {
+  try {
+    execFileSync('git', ['config', '--local', '--get', 'agentic-os.workflowManifest'],
+      { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], timeout: 2000, maxBuffer: 8192 })
+    return true // Even an empty or invalid selection needs fixture isolation.
+  } catch (error) { if (error.status === 1) return false; throw error }
+}
 
 export async function configureMissionPage(page, errors) {
   page.setDefaultTimeout(15000)
-  // Host fixtures must not inherit the developer clone's explicitly selected workspace archive.
-  await page.route('**/api/agent-swarm/workspace-source', route => route.fulfill({
+  // Routing disables HTTP caching for all assets. Only selected developer clones need this fixture;
+  // an unselected checkout exercises the native empty-source response with its cache intact.
+  if (process.env.AG_MISSION_NATIVE_EMPTY_WORKSPACE !== '1') await page.route('**/api/agent-swarm/workspace-source', route => route.fulfill({
     contentType: 'application/json', headers: { 'cache-control': 'no-store' }, body: '{"code":"workspace_source_unselected"}' }))
   page.on('pageerror', error => { errors.push(error.message); console.error(error.stack) })
   page.on('console', message => { if (message.type() === 'error') console.error('Browser console:', message.text()) })

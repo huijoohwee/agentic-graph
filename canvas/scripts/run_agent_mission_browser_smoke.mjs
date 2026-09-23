@@ -11,6 +11,7 @@ import { createAgentSwarmRuntime } from 'agentic-os/agents/swarm'
 import { createAgentSwarmSqliteStore } from 'agentic-os/agents/sqlite-store'
 import { startLocalAgentHost } from 'agentic-os/agents/local-host'
 import { runLocalViteBrowserSmoke } from './lib/run-local-vite-browser-smoke.mjs'
+import { hasMissionWorkspaceSelection } from './lib/verify-workspace-observation.mjs'
 
 const canvasRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = resolve(canvasRoot, '..')
@@ -24,6 +25,9 @@ const requireStatus = (value, status) => assert.equal(value.status, status, JSON
 async function run() {
   assert.equal(git('status', '--porcelain', '--untracked-files=all'), '', 'Browser proof requires a clean exact candidate')
   const head = git('rev-parse', 'HEAD'), root = await mkdtemp(join(tmpdir(), 'agent-mission-smoke-'))
+  const isolateWorkspace = hasMissionWorkspaceSelection(repositoryRoot)
+  process.env.AG_MISSION_NATIVE_EMPTY_WORKSPACE = isolateWorkspace ? '0' : '1'
+  console.log('Mission workspace source:', isolateWorkspace ? 'isolated selected archive' : 'native unselected; asset cache enabled')
   let host, stateStore
   try {
     const planPath = 'docs/documents/agentic-graph-agentic-os-prd-tad-adr-mvp-gtm.md'
@@ -96,6 +100,7 @@ async function run() {
       verifierArgs: ['scripts/verify_agent_mission_browser_smoke.mjs'], verifierFailureLabel: 'Agent mission browser smoke',
       prepareBeforeStart: false, devServerStartMode: 'vite-runner', existingServerPolicy: 'forbid' })
     assert.equal(git('rev-parse', 'HEAD'), head)
+    if (!isolateWorkspace) assert.equal(hasMissionWorkspaceSelection(repositoryRoot), false, 'Workspace selection changed during native browser proof')
     assert.equal(git('status', '--porcelain', '--untracked-files=all'), '', 'Proof must preserve the source candidate')
   } finally { await host?.close(); stateStore?.close(); await rm(root, { recursive: true, force: true }) }
 }
