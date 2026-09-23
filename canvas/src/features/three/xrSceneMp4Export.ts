@@ -63,7 +63,7 @@ export function createXrMp4SourceBinding(): XrMp4SourceBinding {
       if (!current()) return
       try {
         useGraphStore.getState().restoreThreeCameraPose(camera)
-        if (transport.playing) updateXrAnimationTransport({ operation: 'play', timeSeconds: transport.timeSeconds, playbackRate: transport.playbackRate })
+        if (transport.playing) updateXrAnimationTransport({ operation: 'play', timeSeconds: transport.timeSeconds })
       } finally {
         const next = useGraphStore.getState()
         if (next.bottomSurfaceTab === 'timeline' && !next.bottomSurfaceCollapsed) {

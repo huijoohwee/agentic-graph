@@ -324,7 +324,7 @@ function nativeClockFixture(onPlaybackStart?: (position: number, signal: AbortSi
   const frames: number[] = []
   const state = { position: 0, max: 2, unitsPerMs: 0.001, playbackRate: 1,
     onPositionChange: (position: number) => { positions.push(position); projectedPosition = position },
-    onPlaybackFrame: (position: number) => frames.push(position),
+    onPlaybackFrame: (position: number) => { frames.push(position) },
     onPlaybackEnd: () => { ended++ }, onPlaybackStart, onPlaybackComplete }
   const stop = startTimelineTransportPlayback({ readState: () => freshSnapshots ? { ...state, position: projectedPosition } : state,
     requestFrame: callback => { queue.set(++nextId, callback); return nextId }, cancelFrame: id => { queue.delete(id) },
@@ -422,7 +422,8 @@ test('boundary controls stay local while parent storage and broadcast contain se
     assert.deepEqual(broadcast.at(-1), frame); release(); await ending
     const cancelled = publishRichMediaTimelineClockStart(frame, lifetime.signal)
     lifetime.abort()
-    await assert.rejects(cancelled!, { name: 'AbortError' })
+    assert.ok(cancelled)
+    await assert.rejects(cancelled, { name: 'AbortError' })
   } finally {
     lifetime.abort()
     if (priorWindow) Object.defineProperty(globalThis, 'window', priorWindow); else Reflect.deleteProperty(globalThis, 'window')
@@ -493,7 +494,8 @@ test('local boundary claims are synchronous and an unresponsive claimant has a b
       assert.equal(control!.hold(Promise.resolve()), false, 'late claims cannot hold the clock')
       claim = true
       const pending = publishRichMediaTimelineClockAcknowledgement(frame, lifetime.signal, phase)
-      const rejected = assert.rejects(pending!, /acknowledgement timed out/)
+      assert.ok(pending)
+      const rejected = assert.rejects(pending, /acknowledgement timed out/)
       context.mock.timers.tick(5_000)
       await rejected
     }
@@ -525,7 +527,8 @@ test('startup preserves rejection even when a claimant rejects with undefined or
     for (reason of [undefined, null]) {
       const pending = publishRichMediaTimelineClockStart({ type: 'agentic-graph:timeline-transport-frame',
         documentKey: 'native#xr-motion', position: 0, timeMs: 0, playing: true, playbackRate: 1, sourcePlayback: false }, new AbortController().signal)
-      await assert.rejects(pending!)
+      assert.ok(pending)
+      await assert.rejects(pending)
     }
   } finally {
     target.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, observe)
