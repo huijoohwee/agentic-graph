@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { resolvePinnedAgenticDocsRoot } from '@/tests/lib/repoTestData'
 import Ajv2020 from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
@@ -92,4 +93,37 @@ export async function testCanvasViewRowsUseSourceBackedWebMcpInvocation(): Promi
       throw new Error(`expected ${fileName} to own ${token} and its runtime contract`)
     }
   }
+}
+
+export async function testDesignInspectionParity(): Promise<void> {
+  const { buildDesignContext } = await import('@/features/design/designContext')
+  const { inspectLocalCanvasTopology } = await import('@/features/agent-ready/localCanvasTopologyInspection')
+  const graphData = { type: 'Graph' as const, nodes: [{ id: 'design-card', label: 'Design card', type: 'Frame', properties: { fill: '#ffffff' } }], edges: [] }
+  const markdown = '---\ndesign:\n  intent: Readable local review\n---'
+  const context = buildDesignContext({ active: true, graphData, graphRevision: 1,
+    markdown, documentName: ' design.md ', theme: 'dark' })
+  const inspection = inspectLocalCanvasTopology({ graphData, graphDataRevision: 1,
+    markdownDocumentText: markdown, markdownDocumentName: ' design.md ', canvasRenderMode: '2d',
+    canvas2dRenderer: 'design', theme: 'dark' })
+  assert.deepEqual(inspection.design, context)
+  assert.equal(inspectLocalCanvasTopology({ graphData, graphDataRevision: 1,
+    canvasRenderMode: '2d', canvas2dRenderer: 'd3' }).design.status, 'inactive')
+  const contracts = buildAgenticGraphAgentReadyToolContracts({ defaultWorkspaceId: 'kgws:test', includeBrowserOnlyTools: true })
+  const inspectContract = contracts.find(c => c.name === AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology)!
+  const validate = new Ajv2020({ strict: false }).compile(inspectContract.outputSchema!)
+  assert.equal(validate(inspection), true)
+  assert.equal(validate({ available: true, design: { available: true, status: 'ready' } }), false)
+  assert.equal(validate({ available: false, design: { available: false, status: 'inactive', message: 'Inactive' } }), true)
+  const viewContract = contracts.find(c => c.name === AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalCanvasView)!
+  let option = ''
+  const cleanup = registerCanvasViewControlHandler(next => { option = next })
+  try {
+    const builders = buildCanvasViewWebMcpToolBuilders(() => viewContract)
+    const tool = builders[AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalCanvasView]()
+    await tool.execute({ invocation: buildCanvasViewInvocation('renderer:design') })
+    assert.equal(option, 'renderer:design')
+    await tool.execute({ optionId: 'renderer:design' })
+    assert.equal(option, 'renderer:design')
+    await assert.rejects(() => tool.execute({ invocation: '/design' }))
+  } finally { cleanup() }
 }

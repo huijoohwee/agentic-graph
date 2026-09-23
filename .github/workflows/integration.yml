@@ -306,13 +306,18 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Run XR v2 runtime review-candidate gate
+      - name: Select XR runtime gate from native source inputs
+        id: xr_gate
         working-directory: agentic-graph
-        env:
-          AG_XR_V2_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+        run: node scripts/ci-evidence-inputs.mjs --xr-gate >> "$GITHUB_OUTPUT"
+
+      - name: Run XR v2 runtime review-candidate gate
+        if: steps.xr_gate.outputs.execute != 'false'
+        working-directory: agentic-graph
         run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser
 
       - name: Upload XR v2 browser observation
+        if: steps.xr_gate.outputs.required != 'false'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: xr-v2-browser-observation

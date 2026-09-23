@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { test } from 'node:test'
 import { load } from 'js-yaml'
-import { ownerInputs, toolVersion } from '../ci-evidence-inputs.mjs'
+import { ownerInputs, toolVersion, xrRuntimeGateRequired, xrRuntimeGateExecutionRequired } from '../ci-evidence-inputs.mjs'
 import { readContract } from '../collaboration-contract.mjs'
 import { captureCiInputs, validateCiEvidencePolicy } from '../../node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs'
 
@@ -19,6 +19,44 @@ const sample = (event, paths, extra = {}) => ownerInputs({ contract,
   environment: { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: event },
   gitText: () => paths.map(p => `${p}\0`).join(''),
   resolveCi: () => ({ base: 'a'.repeat(40) }), versions: { python: '3.11', chrome: '140' }, ...extra })
+
+test('only isolated planning Markdown without executable impact omits the XR runtime gate', () => {
+  const plan = 'docs/documents/agentic-graph-game-flight-sim-prd-tad-adr-mvp-gtm.md'
+  for (const event of ['pull_request', 'push']) {
+    assert.equal(xrRuntimeGateRequired(sample(event, [plan]), event), false)
+    for (const paths of [[], [plan, 'package.json'], ['docs/workspace-seeds/README.md'],
+      ['docs/documents/agentic-graph-ar-vr-xr-prd-tad-adr-mvp-gtm.md'],
+      ['canvas/src/lib/three/ThreeGraph.impl.tsx'], ['.github/workflows/integration.yml'],
+      ['docs/documents/../workspace-seeds/README.md']]) {
+      assert.equal(xrRuntimeGateRequired(sample(event, paths), event), true, JSON.stringify(paths))
+    }
+  }
+  assert.equal(xrRuntimeGateRequired(sample('workflow_dispatch', [plan]), 'workflow_dispatch'), true)
+  assert.equal(xrRuntimeGateRequired(sample('pull_request', [plan]), 'unknown'), true)
+  const selector = integration.find(step => step.id === 'xr_gate')
+  assert.equal(selector.if, undefined)
+  assert.match(selector.run, /--xr-gate >> "\$GITHUB_OUTPUT"/)
+  assert.equal(integration.find(step => step.name === 'Run XR v2 runtime review-candidate gate').if, "steps.xr_gate.outputs.execute != 'false'")
+  assert.equal(integration.find(step => step.name === 'Upload XR v2 browser observation').if, "steps.xr_gate.outputs.required != 'false'")
+})
+
+test('a successful fresh PR affected plan supplies all XR gates exactly once and still uploads its proof', () => {
+  const inputs = sample('pull_request', ['canvas/src/features/xr-v2/xrV2ConnectedPreviewViewerRuntime.ts'])
+  assert.equal(xrRuntimeGateRequired(inputs, 'pull_request'), true)
+  assert.equal(xrRuntimeGateExecutionRequired(inputs, 'pull_request'), false)
+  for (const required of ['xr-v2:unit', 'xr-v2:source-ready', 'test:smoke:xr-v2:browser']) {
+    const incomplete = { ...inputs, commands: inputs.commands.filter(command => !command.includes(required)) }
+    assert.equal(xrRuntimeGateExecutionRequired(incomplete, 'pull_request'), true, required)
+  }
+  for (const event of ['push', 'workflow_dispatch', 'unknown'])
+    assert.equal(xrRuntimeGateExecutionRequired(inputs, event), true, event)
+  const gateIndex = integration.findIndex(step => step.id === 'xr_gate')
+  const planIndex = integration.findIndex(step => step.id === 'integration')
+  assert.ok(planIndex >= 0 && planIndex < gateIndex)
+  assert.equal(integration[planIndex]['continue-on-error'], undefined)
+  assert.equal(integration[gateIndex].if, undefined, 'selection requires successful earlier steps')
+  assert.equal(integration.find(step => step.name === 'Upload XR v2 browser observation').with['if-no-files-found'], 'error')
+})
 
 test('version evidence retries one bounded timeout and returns the exact observed version', () => {
   const calls = []

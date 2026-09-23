@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 55
+contract_version: 58
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -65,6 +65,22 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  xr_subject:
+    roots: ["canvas/src/features/three/XrAuthoredSubjectGeometry.tsx", "canvas/src/features/three/XrSceneLibrarySubject.tsx", "canvas/src/features/three/XrSubject", "canvas/src/features/three/xrSubject", "canvas/src/features/three/xrMotionReferenceModel.ts", "canvas/src/features/three/xrMotionReferenceRuntime", "canvas/src/features/three/xrMotionReferenceSubjectPlacement.ts", "canvas/src/features/three/XrMotionReferenceRuntimeBridge.tsx", "canvas/src/__tests__/xrSubjectAuthoring.test.tsx", "canvas/src/tests/registry/postParserCases3Tail.ts"]
+    commands:
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "xr.subject.draft.sourceAndSelectionFence", "xr.subject.editor.documentFenceAndPersistence"]
+  python_learning:
+    roots: ["canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/pythonLearning.test.ts", "canvas/src/__tests__/pythonLearningLifecycle.test.ts", "canvas/src/__tests__/pythonLearningOffline.test.ts"]
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.webMcpRuntime.scope.budgets", "agentReady.webMcpRuntime.scope.workspace"]
+      - ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
+      - ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
+  design_review:
+    roots: ["grph-shared/src/ui/kgToken", "canvas/src/lib/ui/tokens-ssot.ts", "canvas/src/lib/markdown.ts", "canvas/src/cli/gen-kg-tokens-css.ts", "canvas/src/features/design/", "canvas/src/features/design-system/", "canvas/src/features/agent-ready/localCanvasTopologyInspection.ts", "canvas/src/__tests__/designTokenSummary.test.ts", "canvas/src/__tests__/kgTokenSsot.test.ts", "canvas/scripts/verify_design_browser_smoke.mjs"]
+    commands:
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "design.editor", "design.layers", "ui.tokens.ssot", "ui.designTokens", "ui.designSystem", "canvasView", "markdown.frontmatterParse", "markdown.frontmatter.parsesCanvasWorkspacePreset", "markdown.frontmatter.cachesPresetByFrontmatterBlock"]
+      - ["node", "canvas/scripts/verify_design_browser_smoke.mjs"]
   node_impact_inspector:
     roots: ["canvas/src/features/graph-inspector/", "canvas/src/__tests__/nodeImpactInspector.test.tsx", "canvas/src/features/panels/views/OrchestratorSettingsSection.tsx", "canvas/src/features/agent-graph/agentGraphVisualEvidence.ts", "mcp/agent-graph/neighborhood.mjs", "mcp/agent-graph/query-core.mjs"]
     commands:

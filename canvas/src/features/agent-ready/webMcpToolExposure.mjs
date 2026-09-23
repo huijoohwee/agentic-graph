@@ -1,4 +1,5 @@
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS as ids } from './agenticGraphAgentReadyToolIds.mjs'
+import { PYTHON_LEARNING_TOOL_IDS } from '../python-learning/learningToolContract.mjs'
 
 // Browser discovery policy only. Shared contracts/executors remain the invocation authority.
 export const WEB_MCP_CORE_TOOL_IDS = Object.freeze([
@@ -13,6 +14,7 @@ export const WEB_MCP_TOOL_SCOPES = Object.freeze(Object.fromEntries(Object.entri
     ids.inspectSharedDocumentStructure, ids.inspectLocalWorkspaceDocument,
     ids.inspectLocalEditorWorkspaceState, ids.inspectLocalSourceFilesSnapshot],
   chat: [ids.inspectLocalChatPipelineState, ids.inspectLocalMainPanelChatCanvasPipeline],
+  pythonLearning: Object.values(PYTHON_LEARNING_TOOL_IDS),
   settings: [ids.inspectLocalSettingsChatReadiness, ids.inspectLocalMainPanelState, ids.inspectAgentSurface],
   xr: [ids.inspectLocalXrSceneAssets, ids.controlLocalXrScene, ids.inspectLocal3dCameraPose, ids.inspectLocal3dLayoutPositions],
   camera: [ids.inspectLocalCamera, ids.controlLocalCamera],
@@ -33,7 +35,7 @@ export const measureWebMcpExposure = tools => ({
 export function resolveWebMcpToolScope(state, missionOpen = false) {
   if (missionOpen) return 'mission'
   if (state.floatingPanelOpen && Object.hasOwn(WEB_MCP_TOOL_SCOPES, state.floatingPanelView)) return state.floatingPanelView
-  if (state.workspaceViewMode === 'editor') return 'editor'
+  if (state.workspaceViewMode === 'editor') return /\.py$/i.test(String(state.markdownDocumentName || '')) ? 'pythonLearning' : 'editor'
   return state.canvasRenderMode === '3d' ? 'xr' : 'graph'
 }
 

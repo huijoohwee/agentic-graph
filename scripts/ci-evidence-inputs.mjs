@@ -99,7 +99,34 @@ export async function ownerInputDigest(environment = process.env) {
   })
   return createHash('sha256').update(JSON.stringify(value)).digest('hex')
 }
-export async function main(environment = process.env) {
+export function xrRuntimeGateRequired(inputs, eventName) {
+  return !(['pull_request', 'push'].includes(eventName)
+    && inputs.paths.length > 0
+    && inputs.paths.every(path => path.startsWith('docs/documents/') && path.endsWith('.md')
+      && path.split('/').every(segment => segment !== '..' && segment !== '.' && segment !== ''))
+    && inputs.scopes.length === 1 && inputs.scopes[0] === 'documentation'
+    && inputs.commands.length === 0)
+}
+export function xrRuntimeGateExecutionRequired(inputs, eventName) {
+  if (!xrRuntimeGateRequired(inputs, eventName)) return false
+  // PR integration executes its complete affected plan freshly. Main may reuse
+  // source-plan evidence without local browser artifacts, so retain its gate.
+  const covered = [['npm', 'run', 'xr-v2:unit'], ['npm', 'run', 'xr-v2:source-ready'],
+    ['npm', '-C', 'canvas', 'run', 'test:smoke:xr-v2:browser']]
+    .every(required => inputs.commands.some(command => JSON.stringify(command) === JSON.stringify(required)))
+  return eventName !== 'pull_request' || !covered
+}
+
+export async function main(environment = process.env, args = []) {
+  if (args.length > 0) {
+    if (args.length !== 1 || args[0] !== '--xr-gate') throw new Error('unknown CI input command')
+    const { resolveValidationCi } = await import('../node_modules/agentic-os/bin/agentic-os-validation.mjs')
+    const inputs = ownerInputs({ contract: await readContract(), environment, gitText: readGitText,
+      resolveCi: () => resolveValidationCi(repoRoot, environment), versions: {} })
+    console.log(`required=${xrRuntimeGateRequired(inputs, environment.GITHUB_EVENT_NAME)}`)
+    console.log(`execute=${xrRuntimeGateExecutionRequired(inputs, environment.GITHUB_EVENT_NAME)}`)
+    return
+  }
   console.log(`AGENTIC_OS_CI_OWNER_INPUTS=${await ownerInputDigest(environment)}`)
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await main()
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await main(process.env, process.argv.slice(2))

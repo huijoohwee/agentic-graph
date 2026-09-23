@@ -19,7 +19,8 @@ const browser = await chromium.launch({
   ...(executablePath ? { executablePath } : {}),
   args: [
     '--use-gl=angle',
-    '--use-angle=swiftshader-webgl',
+    // Driver mode avoids blocking software-compositor pixel readback on every frame.
+    '--use-angle=swiftshader',
     '--enable-unsafe-swiftshader',
     '--use-fake-device-for-media-stream',
     '--use-fake-ui-for-media-stream',
@@ -371,7 +372,11 @@ try {
   await page.waitForFunction(() => (
     document.querySelector('[data-kg-xr-v2-delivery-validation="1"]')
       ?.getAttribute('data-kg-xr-v2-ac-11-evidence') === 'browser-observed'
+      || document.querySelector('[data-kg-xr-v2-delivery-validation="1"]')
+        ?.getAttribute('data-kg-xr-v2-ac-11-evidence') === 'failed'
   ), undefined, { timeout: coldStartTimeoutMs })
+  assert.equal(await reloadedDelivery.getAttribute('data-kg-xr-v2-ac-11-evidence'), 'browser-observed',
+    await page.locator('[aria-label="AC-11 browser packaging action"] [role="status"]').textContent())
   assert.equal(
     await readiness.locator('[data-kg-xr-v2-ac="AC-11"]').getAttribute('data-kg-xr-v2-ac-local-evidence'),
     'browser-observed',

@@ -17,6 +17,7 @@ import { buildCanvasInteractionAgentReadyToolContracts, } from './canvasInteract
 import { buildWorkspaceLaunchAgentReadyToolContracts, } from './workspaceLaunchAgentReadyContract.mjs'
 import { buildToolbarActionAgentReadyToolContracts, } from './toolbarActionAgentReadyContract.mjs'
 import { buildDurableRunAgentReadyToolContracts, } from './durableRunAgentReadyContract.mjs'
+import { buildPythonLearningToolContracts } from '../python-learning/learningToolContract.mjs'
 import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './agentic-graph-agent-ready-output-schemas.mjs'
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agenticGraphAgentReadyToolIds.mjs'
 export { AGENTIC_OS_AGENT_READY_TOOL_IDS }
@@ -375,7 +376,7 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
       annotations: READ_ONLY_TOOL_ANNOTATIONS,
     },
     ...(includeBrowserOnlyTools
-      ? [{
+      ? [...buildPythonLearningToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSettingsChatReadiness),
           title: 'Inspect Local Settings Chat Readiness',
@@ -421,8 +422,28 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology),
           title: 'Inspect Local Canvas Topology',
-          description: 'Inspect the active browser-local agentic-graph canvas topology summary from the app runtime without calling published storage or Pages MCP routes.',
+          description: 'Inspect browser-local canvas topology and bounded Design context, token provenance and declared-property findings. Inactive Design is explicit; this read never activates a renderer or calls published storage.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+          outputSchema: { type: 'object', required: ['available', 'design'], properties: {
+            available: { type: 'boolean' }, design: { type: 'object', required: ['available', 'status'], properties: {
+              available: { type: 'boolean' }, status: { enum: ['inactive', 'invalid', 'ready'] },
+              message: { type: 'string' }, semanticKey: { type: 'string' }, schema: { const: 'agentic-graph/design-context/v1' },
+              theme: { enum: ['light', 'dark'] }, documentName: { type: 'string' }, graphRevision: { type: 'integer', minimum: 0 },
+              tokenSource: { type: 'string' }, tokenRevision: { type: 'string' }, intentSource: { type: 'string' }, observationSource: { type: 'string' },
+              intent: { type: 'object', additionalProperties: { type: ['string', 'null'] } }, unresolved: { type: 'array', items: { type: 'string' } },
+              guidance: { type: 'array', items: { type: 'string' } }, dataPolicy: { type: 'string' },
+              tokens: { type: 'array', maxItems: 256, items: { type: 'object', required: ['name', 'cssVar', 'type', 'purpose', 'value'], properties: {
+                name: { type: 'string' }, cssVar: { type: 'string' }, type: { enum: ['color', 'dimension', 'number', 'shadow'] }, purpose: { type: 'string' }, value: { type: 'string' },
+              } } },
+              observed: { type: 'object', required: ['scannedNodes', 'totalNodes', 'visitedProperties', 'truncated'], properties: { truncated: { type: 'boolean' } } },
+              audit: { type: 'object', required: ['status', 'checked', 'findings', 'truncated'], properties: {
+                status: { enum: ['unassessed', 'findings', 'checked'] }, checked: { type: 'integer', minimum: 0 }, findings: { type: 'array', maxItems: 100 }, truncated: { type: 'boolean' },
+              } },
+            }, allOf: [{ if: { properties: { status: { const: 'ready' } } },
+              then: { required: ['semanticKey', 'tokenSource', 'tokenRevision', 'intentSource', 'theme', 'tokens', 'observed', 'audit'], properties: { available: { const: true } } },
+              else: { required: ['message'], properties: { available: { const: false } } },
+            }] },
+          } },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
         }, {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCanvasSnapshot,

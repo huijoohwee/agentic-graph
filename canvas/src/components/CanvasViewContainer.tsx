@@ -7,12 +7,13 @@ import {
 const OVERLAYS = '[data-kg-workspace-left-pane="1"], [data-kg-floating-panel-root="true"], .MainPanelContainer'
 
 /** One sizing owner for all renderers. Editor and panel overlays remain on the full workspace. */
-export function CanvasViewContainer({ children, configurable = true }: {
+export function CanvasViewContainer({ children, configurable = true, sizing }: {
   children: React.ReactNode
   configurable?: boolean
+  sizing?: 'full' | 'inset'
 }) {
   const preference = React.useSyncExternalStore(subscribeCanvasContainerSizing, readCanvasContainerSizing, () => 'full' as const)
-  const mode = configurable ? preference : 'full'
+  const mode = sizing ?? (configurable ? preference : 'full')
   const frameRef = React.useRef<HTMLElement>(null)
   const [insets, setInsets] = React.useState(FULL_CANVAS_INSETS)
   React.useLayoutEffect(() => {

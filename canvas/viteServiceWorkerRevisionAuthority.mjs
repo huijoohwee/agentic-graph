@@ -1,3 +1,4 @@
+import { installLearningOfflineOwner } from './vitePythonLearningOffline.mjs'
 const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/
 const AGENTIC_OS_RUNTIME_CACHE_NAMES = ['kg-assets', 'kg-static', 'kg-data']
 export const SERVICE_WORKER_REVISION_ARTIFACT = 'agentic-graph-service-worker-revision.js'
@@ -10,6 +11,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
   }
   return `;(() => {
   const sourceRevision = ${JSON.stringify(sourceRevision)}
+  ;(${installLearningOfflineOwner.toString()})(self, sourceRevision)
   const runtimeCacheNames = new Set(${JSON.stringify(AGENTIC_OS_RUNTIME_CACHE_NAMES)})
   const isHtmlContentType = contentType =>
     /^(?:text\\/html|application\\/xhtml\\+xml)(?:;|$)/i.test(String(contentType || '').trim())
@@ -23,6 +25,9 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
     let expectedPrecacheReady = false
 
     for (const cacheName of await caches.keys()) {
+      // Explicitly admitted learning packs retain their prior complete revision for recovery.
+      // Their own manifest/pointer owner verifies every served byte and bounds cleanup.
+      if (cacheName.startsWith('kg-python-learning-v1-')) continue
       const cache = await caches.open(cacheName)
       const isAgenticGraphOwnedCache = runtimeCacheNames.has(cacheName)
         || (cacheName.startsWith('workbox-precache') && cacheName.includes(scopeUrl.toString()))
@@ -71,6 +76,7 @@ export const buildServiceWorkerRevisionAuthoritySource = sourceRevision => {
     event.waitUntil(pruneStaleRevisionEntries())
   })
   self.addEventListener('message', event => {
+    if (event.data?.type === 'AG_PYTHON_LEARNING_OFFLINE') return self.__agLearningOffline.message(event)
     if (event.data?.type !== ${JSON.stringify(SERVICE_WORKER_REVISION_REQUEST)}) return
     const port = event.ports?.[0]
     if (!port) return
