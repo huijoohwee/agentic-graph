@@ -338,7 +338,7 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     assert.equal(useGraphStore.getState().markdownDocumentText, savedSource, 'Ground rejection leaves saved source bytes intact')
     assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction, originalConstruction)
 
-    const malformed = serializeXrMotionReferencePlan(beforeRejectedEdits.plan) as Record<string, unknown>
+    const malformed = serializeXrMotionReferencePlan(beforeRejectedEdits.plan)
     const subjects = malformed.subjects as Array<Record<string, unknown>>
     subjects[0].construction = { ...beforeRejectedEdits.plan.subjects[0].construction, proceduralAssetDocument: '{invalid' }
     assert.throws(() => hydrateXrMotionReferenceRuntime({ sceneKey: beforeRejectedEdits.sceneKey, nodes: [], persistedValue: malformed }), XrSubjectConstructionError)
