@@ -30,6 +30,8 @@ const EXPORT_ACTION_KEYS: readonly ExportMenuActionKey[] = [
   'png',
   'gltf',
   'glb',
+  'mp4',
+  'cancelMediaExport',
   'htmlWorkspace',
   'htmlViewer',
   'htmlCanvas',

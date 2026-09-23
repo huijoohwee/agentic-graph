@@ -53,6 +53,9 @@ import {
   resolveVideoSequenceExportPlanError,
 } from './videoSequenceExportSession'
 import {
+  acquireVideoSequenceRecorderLease,
+  stopVideoSequenceCaptureTracks,
+  finishVideoSequenceRecorderOutput,
   collectVideoSequenceRecorderOutput,
   flushVideoSequenceRecorderOutput,
   type VideoSequenceRecorderOutput,
@@ -215,7 +218,7 @@ async function cleanupVideoSequenceExportRuntime(args: {
   video: HTMLVideoElement
 }): Promise<void> {
   try {
-    args.stream?.getTracks().forEach(track => track.stop())
+    stopVideoSequenceCaptureTracks(args.stream)
   } catch {
     void 0
   }
@@ -392,7 +395,7 @@ function assertRecorderIsActive(recorder: MediaRecorder, output: VideoSequenceRe
   throw createVideoSequenceExportError('runtime-failed', 'Edited media recorder stopped before rendering completed.')
 }
 
-export async function renderVideoSequenceExport(args: {
+async function renderVideoSequenceExportOwned(args: {
   kind: VideoSequenceExportKind
   onEvent?: (event: VideoSequenceExportEvent) => void
   onProgress?: (progress: VideoSequenceExportProgress) => void
@@ -477,12 +480,10 @@ export async function renderVideoSequenceExport(args: {
       assertRecorderIsActive(recorder, recorderOutput)
     } catch (error) {
       renderFailure = error
-    } finally {
-      if (recorder.state !== 'inactive') recorder.stop()
     }
     let chunks: BlobPart[] = []
     try {
-      chunks = await recorderOutput.chunks
+      chunks = await finishVideoSequenceRecorderOutput(recorder, recorderOutput)
     } catch (error) {
       if (!renderFailure) renderFailure = error
     }
@@ -507,6 +508,13 @@ export async function renderVideoSequenceExport(args: {
       video,
     })
   }
+}
+
+export async function renderVideoSequenceExport(
+  args: Parameters<typeof renderVideoSequenceExportOwned>[0],
+): Promise<Blob> {
+  const release = acquireVideoSequenceRecorderLease()
+  try { return await renderVideoSequenceExportOwned(args) } finally { release() }
 }
 
 export async function downloadVideoSequenceExport(args: {

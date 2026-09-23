@@ -11,7 +11,20 @@ export type DesignSystemSlice = {
   setDesignSystemRequestedPage: (page: DesignSystemPageId | null) => void
 }
 
+export type CanvasVideoCaptureOptions = {
+  signal?: AbortSignal
+  onProgress?: (fraction: number) => void
+}
+export type CanvasVideoCaptureResult =
+  | { status: 'unsupported'; reason: string }
+  | { status: 'captured'; blob: Blob; evidence: {
+      durationSeconds: number; decodedFrames: number; renderedFrames: number; width: number; height: number; sampleHashes: string[]
+      finalFrameVerified?: boolean; finalFrameMeanError?: number
+      initialFrameVerified?: boolean; initialFrameMeanError?: number
+    } }
+
 export type CanvasSnapshotFns = {
+  captureVideo?: (options: CanvasVideoCaptureOptions) => Promise<CanvasVideoCaptureResult>;
   capturePng?: (pixelRatio?: number) => Promise<Blob | null>;
   captureSvg?: () => Promise<string | null>;
 };

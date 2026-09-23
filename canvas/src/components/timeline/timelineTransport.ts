@@ -285,9 +285,7 @@ export function useTimelineDocumentTransportController(args: {
   }
 }
 
-export function useTimelineTransportPlayback(args: {
-  active: boolean
-  playing: boolean
+type TimelinePlaybackState = {
   position: number
   max: number
   playbackRate: number
@@ -295,54 +293,89 @@ export function useTimelineTransportPlayback(args: {
   onPositionChange: (position: number) => void
   onPlaybackEnd: () => void
   onPlaybackFrame?: (position: number) => void
-}) {
-  const stateRef = React.useRef({
-    position: args.position,
-    max: args.max,
-    playbackRate: args.playbackRate,
-    unitsPerMs: args.unitsPerMs,
-    onPositionChange: args.onPositionChange,
-    onPlaybackEnd: args.onPlaybackEnd,
-    onPlaybackFrame: args.onPlaybackFrame,
-  })
+  onPlaybackStart?: (position: number, signal: AbortSignal) => Promise<void> | void
+  onPlaybackComplete?: (position: number, signal: AbortSignal) => Promise<void> | void
+}
 
-  React.useEffect(() => {
-    stateRef.current = {
-      position: args.position,
-      max: args.max,
-      playbackRate: args.playbackRate,
-      unitsPerMs: args.unitsPerMs,
-      onPositionChange: args.onPositionChange,
-      onPlaybackEnd: args.onPlaybackEnd,
-      onPlaybackFrame: args.onPlaybackFrame,
+/** The native Timeline RAF driver, shared by the hook and deterministic lifecycle tests. */
+export function startTimelineTransportPlayback(args: {
+  readState: () => TimelinePlaybackState
+  requestFrame: (callback: FrameRequestCallback) => number
+  cancelFrame: (id: number) => void
+  now: () => number
+  isCurrent?: () => boolean
+}): () => void {
+  const lifetime = new AbortController()
+  let frameId = 0
+  let previousTimestamp: number | null = null
+  let firstFrame = true
+  const alive = () => {
+    if (args.isCurrent?.() === false) lifetime.abort()
+    return !lifetime.signal.aborted
+  }
+  const acknowledge = (current: TimelinePlaybackState, position: number, boundary: TimelinePlaybackState['onPlaybackStart'], next: () => void): boolean => {
+    const fail = () => {
+      if (!alive()) return
+      lifetime.abort(); current.onPlaybackEnd()
     }
-  }, [args.max, args.onPlaybackEnd, args.onPlaybackFrame, args.onPositionChange, args.playbackRate, args.position, args.unitsPerMs])
+    try {
+      const hold = boundary?.(position, lifetime.signal)
+      if (!hold) return false
+      void hold.then(() => { if (alive()) next() }, fail)
+    } catch { fail() }
+    return true
+  }
+  const tick = (timestamp: number) => {
+    if (!alive()) return
+    const current = args.readState()
+    const elapsedMs = previousTimestamp === null ? 0 : Math.max(0, timestamp - previousTimestamp)
+    previousTimestamp = timestamp
+    const nextPosition = clampTimelineTransportValue(
+      current.position + elapsedMs * current.unitsPerMs * current.playbackRate, 0, current.max,
+    )
+    current.position = nextPosition
+    current.onPositionChange(nextPosition)
+    if (!alive()) return
+    current.onPlaybackFrame?.(nextPosition)
+    if (!alive()) return
+    if (nextPosition >= current.max) {
+      if (!acknowledge(current, nextPosition, current.onPlaybackComplete, () => current.onPlaybackEnd()) && alive()) current.onPlaybackEnd()
+      return
+    }
+    if (firstFrame) {
+      firstFrame = false
+      if (acknowledge(current, nextPosition, current.onPlaybackStart, () => {
+        // Start elapsed time at the recorder acknowledgement, not the first RAF.
+        previousTimestamp = args.now()
+        frameId = args.requestFrame(tick)
+      })) return
+    }
+    if (alive()) frameId = args.requestFrame(tick)
+  }
+  frameId = args.requestFrame(tick)
+  return () => { lifetime.abort(); args.cancelFrame(frameId) }
+}
 
+export function useTimelineTransportPlayback(args: TimelinePlaybackState & {
+  active: boolean
+  playing: boolean
+  documentKey?: string
+}) {
+  const stateRef = React.useRef<TimelinePlaybackState>({ ...args })
+  React.useEffect(() => { stateRef.current = { ...args } }, [args])
   React.useEffect(() => {
     if (!args.active || !args.playing || args.max <= 0 || args.unitsPerMs <= 0) return
     if (typeof window === 'undefined') return
-    let frameId = 0
-    let previousTimestamp = 0
-    const tick = (timestamp: number) => {
-      const current = stateRef.current
-      if (previousTimestamp === 0) previousTimestamp = timestamp
-      const elapsedMs = Math.max(0, timestamp - previousTimestamp)
-      previousTimestamp = timestamp
-      const nextPosition = clampTimelineTransportValue(
-        current.position + elapsedMs * current.unitsPerMs * current.playbackRate,
-        0,
-        current.max,
-      )
-      stateRef.current.position = nextPosition
-      current.onPositionChange(nextPosition)
-      current.onPlaybackFrame?.(nextPosition)
-      if (nextPosition >= current.max) {
-        current.onPlaybackEnd()
-        return
-      }
-      frameId = window.requestAnimationFrame(tick)
-    }
-    frameId = window.requestAnimationFrame(tick)
-    return () => window.cancelAnimationFrame(frameId)
-  }, [args.active, args.max, args.playing, args.unitsPerMs])
+    return startTimelineTransportPlayback({
+      readState: () => stateRef.current,
+      requestFrame: callback => window.requestAnimationFrame(callback),
+      cancelFrame: id => window.cancelAnimationFrame(id),
+      now: () => performance.now(),
+      isCurrent: () => {
+        if (!args.documentKey) return true
+        const transport = useGraphStore.getState()
+        return transport.timelineTransportDocumentKey === args.documentKey && transport.timelineTransportPlaying
+      },
+    })
+  }, [args.active, args.documentKey, args.max, args.playing, args.unitsPerMs])
 }

@@ -48,6 +48,29 @@ export function useWorkspaceExportBridge(args: UseWorkspaceExportBridgeArgs) {
     [activeText, viewerTextOverride],
   )
   const exportModelSceneActions = !isStandaloneSpatialCaptureManifestText(activeExportText)
+  const xrActive = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
+  const mp4Controller = React.useRef<AbortController | null>(null)
+  const [mp4Running, setMp4Running] = React.useState(false)
+  const currentSource = React.useRef({ key: activeDocumentKey, text: activeExportText })
+  currentSource.current = { key: activeDocumentKey, text: activeExportText }
+  React.useEffect(() => () => { mp4Controller.current?.abort() }, [activeDocumentKey, activeExportText, xrActive])
+  const cancelMediaExport = React.useCallback(() => { mp4Controller.current?.abort() }, [])
+  const handleExportMp4 = React.useCallback(async () => {
+    if (mp4Controller.current) return
+    const controller = new AbortController()
+    mp4Controller.current = controller
+    setMp4Running(true)
+    const source = currentSource.current
+    try {
+      const { exportCanvasXrMp4 } = await import('./exports/exportXrMp4')
+      await exportCanvasXrMp4({ exportBaseName, activeDocumentPath: source.key, signal: controller.signal,
+        isCurrent: () => currentSource.current.key === source.key && currentSource.current.text === source.text,
+        pushUiToast, getStore: () => useGraphStore.getState() })
+    } finally {
+      if (mp4Controller.current === controller) { mp4Controller.current = null; setMp4Running(false) }
+    }
+  }, [exportBaseName, pushUiToast])
+
 
   const flushGraphWritebackForExport = React.useCallback(() => {
     try {
@@ -218,6 +241,8 @@ export function useWorkspaceExportBridge(args: UseWorkspaceExportBridgeArgs) {
         workspaceFileJsonLd: () => void handleExportWorkspaceFile(),
         markdown: () => void handleExportMarkdown(),
         png: () => void handleExportPng(),
+        ...(xrActive ? { mp4: () => void handleExportMp4() } : {}),
+        ...(mp4Running ? { cancelMediaExport } : {}),
         ...(exportModelSceneActions ? {
           gltf: () => void handleExportGltf(),
           glb: () => void handleExportGlb(),
@@ -235,6 +260,7 @@ export function useWorkspaceExportBridge(args: UseWorkspaceExportBridgeArgs) {
     [
       handleExportGlb,
       handleExportGltf,
+      handleExportMp4, xrActive, mp4Running, cancelMediaExport,
       exportModelSceneActions,
       handleExportHtmlCanvas,
       handleExportHtmlWorkspace,
@@ -257,6 +283,7 @@ export function useWorkspaceExportBridge(args: UseWorkspaceExportBridgeArgs) {
   }, [args.enabled, exportBridge])
 
   return {
+    handleExportMp4, cancelMediaExport, mp4Running,
     handleExportWorkspaceFile,
     handleExportMarkdown,
     handleExportPng,

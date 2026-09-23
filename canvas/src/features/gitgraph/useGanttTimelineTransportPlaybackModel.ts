@@ -3,6 +3,7 @@ import { useTimelineTransportPlayback } from '@/components/timeline/timelineTran
 import {
   buildRichMediaTimelineTransportFrame,
   publishRichMediaTimelineTransportFrame,
+  publishRichMediaTimelineClockAcknowledgement,
 } from '@/lib/render/richMediaTimelineSync'
 import {
   resolveGanttTimelineTransportRenderTimeMs,
@@ -37,7 +38,7 @@ export function useGanttTimelineTransportPlaybackModel(args: {
     setTransportPlaybackPosition: args.onPositionChange,
     setTransportPlaying: args.setTransportPlaying,
   })
-  const publishTimelineTransportFrame = React.useCallback((positionMinutes: number, playing: boolean) => {
+  const publishTimelineTransportFrame = React.useCallback((positionMinutes: number, playing: boolean, boundary?: { signal: AbortSignal; phase: 'start' | 'end' }) => {
     if (args.disabled) return
     const payload = buildRichMediaTimelineTransportFrame({
       localDocumentKey: args.documentKey,
@@ -53,12 +54,18 @@ export function useGanttTimelineTransportPlaybackModel(args: {
         }),
       },
     })
-    if (payload) publishRichMediaTimelineTransportFrame(payload)
+    if (payload) {
+      if (boundary) return publishRichMediaTimelineClockAcknowledgement(payload, boundary.signal, boundary.phase)
+      publishRichMediaTimelineTransportFrame(payload)
+    }
   }, [args.disabled, args.documentKey, args.playbackRate, args.playbackUnitsPerMs])
 
   useTimelineTransportPlayback({
     active: args.clockActive !== false && !args.disabled,
+    documentKey: args.documentKey,
     max: args.maxMinutes,
+    onPlaybackStart: (position, signal) => publishTimelineTransportFrame(position, true, { signal, phase: 'start' }),
+    onPlaybackComplete: (position, signal) => publishTimelineTransportFrame(position, true, { signal, phase: 'end' }),
     onPlaybackFrame: position => publishTimelineTransportFrame(position, true),
     onPlaybackEnd: playbackControls.handlePlaybackEnd,
     onPositionChange: args.onPositionChange,
