@@ -90,11 +90,6 @@ async function encodeFrames(
   const width = frames[0]?.width || 0
   const height = frames[0]?.height || 0
   if (width < 1 || height < 1) throw new Error('Saved XR capture has no persisted RGBA frames')
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const context = canvas.getContext('2d', { alpha: false })
-  if (!context) throw new Error('Saved XR packaging canvas is unavailable')
   const samples: XrV2EncodedVideoSample[] = []
   let encoderError: Error | null = null
   const encoder = new VideoEncoder({
@@ -107,8 +102,11 @@ async function encodeFrames(
       if (signal.aborted) throw new Error('Saved XR packaging was cancelled')
       const frame = frames[index]
       assertFrame(frame, width, height)
-      context.putImageData(new ImageData(frame.data, width, height), 0, 0)
-      const videoFrame = new VideoFrame(canvas, {
+      // Captured RGBA bytes are already CPU-resident; avoid a canvas GPU round trip.
+      const videoFrame = new VideoFrame(frame.data, {
+        format: 'RGBA',
+        codedWidth: width,
+        codedHeight: height,
         timestamp: index * PACKAGING_FRAME_DURATION_US,
         duration: PACKAGING_FRAME_DURATION_US,
       })
