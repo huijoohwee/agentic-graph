@@ -162,6 +162,7 @@ browser-local agent inspection reads the same readiness snapshot instead of rebu
 | Replace top-level Payments with Commerce | `canvas/src/features/panels/mainPanelTabs.ts` | `MainPanelTabKey` includes `commerce`; there is no top-level `payments` key. |
 | Render Commerce via existing MainPanel lazy hub | `canvas/src/features/panels/MainPanel.tsx` | `CommerceHubView` is loaded through the shared MainPanel view map. |
 | Keep Payments as a subsection | `canvas/src/features/panels/views/CommerceHubView.tsx` | The view renders route readiness first, then delegates payment rows to `SettingsView mode="payments"`. |
+| Add a local transfer rehearsal | `CommerceHubView.tsx`, `CommerceTransferRehearsal.tsx`, `commerceTransferModel.ts` | Commerce offers Overview, Pay / transfer, Activity and Developer anchors. Synthetic terms require an exact, expiring review; activity is session-local and explicitly says no money moved. Existing payment collection is unchanged. |
 | Reuse route SSOT helpers | `CommerceHubView.tsx`, shared payment packages | Commerce rows read `AGENTIC_COMMERCE_ROUTE_PATHS` and `STRIPE_PAYMENT_ROUTE_PATHS`. |
 | Publish agent-ready Commerce snapshot | `CommerceHubView.tsx`, `browserLocalSurfaceSnapshots.ts`, `localMainPanelChatCanvasPipelineInspection.ts` | WebMCP E2E inspection reports Commerce readiness with the shared semantic key and route count. |
 | Keep entry tabs explicit | `localMainPanelChatCanvasPipelineInspection.ts` | MCP, Integrations, and Commerce are accepted as first-class E2E entry tabs; stale Payments tab state is rejected instead of compatibility-remapped. |
@@ -171,11 +172,18 @@ browser-local agent inspection reads the same readiness snapshot instead of rebu
 | Surface Solana Pay readiness | `agenticCommerceSolanaPay.ts`, `agenticCommerceSolanaPaySsot.ts` | Commerce readiness includes the Solana Pay settle route while checkout creation returns a generated `solana:` transfer URL and reference from the shared semantic-key owner. |
 | Keep Dev -> Prod -> Cloudflare deploy path intact | `scripts/build-pages-functions-worker.mjs`, Pages sync/deploy scripts | Pages functions worker is built before deploy so commerce UI and API routes stay published together. |
 
+### Native commerce transfer rehearsal (R1)
+
+The first increment of the [native commerce transfer plan](https://github.com/huijoohwee/agentic-commerce-os/pull/69) is a browser-local learning surface, not a transfer capability. Built-in demo recipients, units and fixture networks are synthetic. Availability separates local fixture configuration, unavailable real-provider readiness and timestamped local observation. The unsupported recipient fails before review. Editing any term invalidates review; an expired review cannot confirm. Confirmation records one simulation per operation ID, and offline retry resumes that same simulated record without a provider call. Clearing removes session activity. The Developer section points to the existing discovery paths and adds no API or tool.
+
+This fixture does not use the payment intent queue, receipt document or provider transport, because those own real collection evidence. It does not persist across browser reloads or devices, prove cross-device financial idempotency, or imply provider settlement. A later effectful transfer requires a separately admitted provider contract, tenant/recipient binding, policy and cost review, durable authority, independent readback and exact release approval. The rehearsal cannot be promoted into a live command by changing a flag.
+
 ## Validation Contract
 
 | Gate | Command / Probe | Expected Result |
 |---|---|---|
 | MainPanel Commerce focused tests | `npm --prefix canvas run test:ci:unit -- "ui.mainPanel.commerce"` | Commerce tab exists, renders route readiness, and excludes top-level Payments. |
+| Transfer rehearsal state tests | `TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/commerceTransferRehearsal.test.ts` | Changed/expired terms, unsupported recipient, duplicate confirmation and offline same-ID replay remain simulation-only. |
 | Stripe payment focused tests | `npm --prefix canvas run test:ci:unit -- "payments.stripe"` | Commerce Stripe rows, hosted Checkout, status refresh, config helper, readiness helper, and remote D1 table/column schema checks pass. |
 | Solana Pay focused tests | `npm --prefix canvas run test:ci:unit -- "worker.payments.agenticCommerce.solanaPay"` | Solana Pay checkout URL/reference generation, RPC-backed settlement, and generic-webhook bypass rejection pass. |
 | MainPanel entry-tab inspector | `npm --prefix canvas run test:ci:unit -- "agentReady.localMainPanelChatCanvasPipeline"` | MCP, Integrations, and Commerce all pass the same E2E readiness fixture; stale Payments is reported as an issue. |
