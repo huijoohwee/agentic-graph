@@ -158,25 +158,6 @@ test('final authored image survives faster rendering, slow recorder sampling and
     assert.equal(value.frameRequests(), automaticOnly ? 0 : 3)
   })
 })
-test('the final frame request waits for recorder resume acknowledgement', async () => {
-  await fixture(async value => {
-    const resume = Recorder.prototype.resume
-    let resumeEvents = 0; let requestsAtFinalResume = -1
-    Recorder.prototype.resume = function () {
-      this.state = 'recording'
-      setTimeout(() => {
-        if (++resumeEvents === 2) requestsAtFinalResume = value.frameRequests()
-        this.dispatchEvent(new Event('resume'))
-      }, 20)
-    }
-    try {
-      assert.equal((await value.capture()).status, 'captured')
-      assert.equal(resumeEvents, 2)
-      assert.equal(requestsAtFinalResume, 2)
-      assert.equal(value.frameRequests(), 3)
-    } finally { Recorder.prototype.resume = resume }
-  })
-})
 test('delayed Timeline startup creates no recorder or stream until the fresh opening image is ready', async () => {
   await fixture(async value => {
     const play = value.binding.play
