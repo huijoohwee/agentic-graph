@@ -11,6 +11,7 @@ export function MarkdownWorkspaceLayout(props: {
   renderMarkdownEditor: () => React.ReactNode
   renderJsonEditor: () => React.ReactNode
   pythonPane?: React.ReactNode
+  blockPane?: React.ReactNode
   binaryPane?: React.ReactNode
   binaryPaneVisible?: boolean
   splitPaneVisibility: MarkdownWorkspacePaneVisibility
@@ -37,6 +38,7 @@ export function MarkdownWorkspaceLayout(props: {
       </section>
     ) : null,
     paneVisibility.python ? <section key="python" className={paneClassName} aria-label="Python Editor">{props.pythonPane}</section> : null,
+    paneVisibility.block ? <section key="block" className={paneClassName} aria-label="Block Editor">{props.blockPane}</section> : null,
     paneVisibility.json ? (
       <section key="json" className={paneClassName} aria-label="JSON Editor">
         {props.renderJsonEditor()}
