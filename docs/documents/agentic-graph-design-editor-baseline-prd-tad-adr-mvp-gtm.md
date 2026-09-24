@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.6.0"
+version: "0.6.1"
 date: "2026-09-24"
 lang: "en-US"
 owner: "Documentation maintainers"
@@ -16,17 +16,17 @@ continuity_id: "PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/d1bb72de041b1ddc6d291fd4f8528ccc2d367fea/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "969f0d07802605a38dc10cde840ff685d468cf46"
-previous_document_version: "0.5.0"
-prd_revision: "0.6.0"
-tad_revision: "0.6.0"
-adr_revision: "0.6.0"
-mvp_revision: "0.6.0"
-gtm_revision: "0.6.0"
+previous_document_version: "0.6.0"
+prd_revision: "0.6.1"
+tad_revision: "0.6.1"
+adr_revision: "0.6.1"
+mvp_revision: "0.6.1"
+gtm_revision: "0.6.1"
 ---
 
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
-Current accepted scope revision: **0.6.0**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.6.1**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
 
@@ -589,3 +589,11 @@ no MainPanel Design tab and no page errors. This does not prove the user's `5175
 updated or establish full accessibility coverage. The central policy/template successor is
 website PR #269, pending protected integration. Exact Graph successor SHA, provider checks,
 protected integration and production remain pending. No buyer receipt.
+
+## Native offline validation recovery
+
+All five roles join the same continuity ID at **0.6.1**. PRD: the mobile offline Python workflow must remain operable when a restored FloatingPanel covers editor controls.
+TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs` to close that panel through its accessible button before editor pointer actions and after offline reloads.
+ADR: exercise the native pointer path and existing panel store owner; do not force clicks through overlays or create another controller. Exclude the Timeline, which shares the generic panel marker.
+MVP: rerun the offline smoke, source checks and exact protected Integration Gate. GTM: this validation repair changes no buyer offer or delivery claim.
+PR #1240 passed build and hygiene, then failed when the panel intercepted the offline browser click. Local built-preview smoke and the affected offline stage now pass all three lessons and offline reloads. The local affected plan then stopped on an unrelated catalog revision mismatch; protected integration remains pending. Successor cap: 20 minutes, 4 KiB authored delta, two test owner modules and this joined record. No production or buyer receipt is inferred.
