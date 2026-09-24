@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { HierarchyTreeRow } from '@/lib/ui/HierarchyTreeRow'
 import { MainPanelTypeIcon, type MainPanelTypeIconKey } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import type { TraceSpan, visibleSpanTree } from './missionControlProjection'
 import { numberLabel, spanResources } from './missionControlProjection'
@@ -31,6 +32,7 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', met
     }
     return true
   })
+  const visibleDepths = visible.map(row => row.depth)
   const focusedId = visible.some(row => row.span.spanId === selectedId) ? selectedId : visible[0]?.span.spanId
   function focus(index: number) { container.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')[index]?.focus() }
   function navigate(event: React.KeyboardEvent, index: number, hasChildren: boolean, expanded: boolean) {
@@ -66,7 +68,6 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', met
       const sourceIndex = rows.findIndex(row => row.span.spanId === span.spanId)
       const hasChildren = (rows[sourceIndex + 1]?.depth ?? 0) > depth
       const expanded = Boolean(search.trim()) || !collapsed.has(span.spanId)
-      const guides = Math.min(depth, 8), width = guides * 24
       const reported = [resources.cpuMs === null ? null : `CPU ${durationLabel(resources.cpuMs)}`,
         resources.peakMemoryBytes === null ? null : `Peak RSS ${spanMetricLabel(resources.peakMemoryBytes, 'peakMemoryBytes')}`,
         resources.costUsd === null ? null : spanMetricLabel(resources.costUsd, 'costUsd')].filter(Boolean)
@@ -81,23 +82,13 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', met
         missingParent ? 'parent outside this page' : null, depth > 8 ? `depth ${depth}` : null,
       ].filter(Boolean).join(' · ')
       return <li key={span.spanId} role="none" className="min-w-0">
-        <div role="treeitem" tabIndex={focusedId === span.spanId ? 0 : -1}
-          aria-label={`${span.operation} · ${span.kind} · ${span.status}${span.attempt === null ? '' : ` · attempt ${span.attempt}`}`}
-          aria-selected={selected} aria-level={depth + 1} aria-expanded={hasChildren ? expanded : undefined} aria-description={summary}
+        <HierarchyTreeRow depth={depth} visibleDepths={visibleDepths} index={index}
+          selected={selected} focused={focusedId === span.spanId} hasChildren={hasChildren} expanded={expanded}
+          label={`${span.operation} · ${span.kind} · ${span.status}${span.attempt === null ? '' : ` · attempt ${span.attempt}`}`}
+          description={summary} gridTemplateColumns={gridTemplateColumns} variant="span"
           onKeyDown={event => navigate(event, index, hasChildren, expanded)}
           onClick={() => onSelect(span.spanId)}
-          className="relative grid h-[60px] w-full min-w-0 cursor-pointer items-center gap-3 border-l-4 px-3 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
-          style={{ gridTemplateColumns, borderLeftColor: selected ? '#3b82f6' : 'transparent', background: selected ? 'color-mix(in srgb, #3b82f6 22%, var(--kg-bg, white))' : undefined }}>
-          {Array.from({ length: guides }, (_, level) => {
-            const last = visible.slice(index + 1).find(row => row.depth <= level + 1)?.depth !== level + 1
-            const branch = level === guides - 1
-            return <span key={level} aria-hidden="true" data-span-guide="" className="pointer-events-none absolute top-0 border-l"
-              style={{ left: 62 + level * 24, height: branch && last ? '50%' : '100%', borderColor: '#a8a29e', opacity: branch || !last ? 1 : 0 }}>
-              {branch && <span className="absolute left-0 w-3 border-b" style={{ top: last ? '100%' : '50%', borderColor: '#a8a29e' }} />}
-            </span>
-          })}
-          {hasChildren && expanded && <span aria-hidden="true" className="pointer-events-none absolute bottom-0 h-1/2 border-l" style={{ left: 62 + guides * 24, borderColor: '#a8a29e' }} />}
-          <span className="relative flex min-w-0 items-center gap-3" style={{ paddingLeft: width }}>
+          primary={<>
             <span className="flex w-5 shrink-0 justify-center">{hasChildren && <button type="button" tabIndex={-1}
               aria-label={`${expanded ? 'Collapse' : 'Expand'} ${span.operation}`} disabled={Boolean(search.trim())}
               onClick={event => { event.stopPropagation(); toggle(span.spanId) }} className="rounded p-0.5 hover:bg-gray-200/50">
@@ -109,9 +100,9 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', met
               <span className="block truncate text-sm font-medium leading-5" title={span.operation}>{span.operation}</span>
               <span className="block truncate text-xs leading-4 opacity-70" aria-label="Span resources" title={summary}>{summary}</span>
             </span>
-          </span>
-          {columns.map(({ key }) => <SpanMetricCell key={key} span={span} metric={key} maximum={maxima.get(key) ?? 0} end={end} color={tone.stroke} />)}
-        </div>
+          </>}
+          columns={columns.map(({ key }) => <SpanMetricCell key={key} span={span} metric={key} maximum={maxima.get(key) ?? 0} end={end} color={tone.stroke} />)}
+        />
       </li>
     })}
     </ul>
