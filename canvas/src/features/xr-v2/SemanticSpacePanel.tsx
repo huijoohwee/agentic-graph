@@ -5,7 +5,8 @@ import { LearningOfflineControls } from '@/features/python-learning/LearningOffl
 import { requestSemanticSpaceCamera } from '@/features/three/semanticSpaceCameraRuntime'
 import { applySpaceAction, hashSpaceImage, MAX_SPACE_ENTITIES, MAX_SPACE_OBSERVATIONS,
   querySpaceEntities, type SpaceDocument, type SpaceRegion } from './semanticSpaceRuntime'
-import { importSemanticSpace, readSemanticSpace, runSemanticSpaceAction, subscribeSemanticSpace } from './semanticSpaceStore'
+import { importSemanticSpace, readSemanticSpace, readSemanticSpaceSourceMirrorStatus,
+  runSemanticSpaceAction, subscribeSemanticSpace } from './semanticSpaceStore'
 import { exportSemanticSpacePackage } from './semanticSpaceStore'
 import { emptySemanticTwin, SEMANTIC_TWIN_PREVIEW_EVENT, SEMANTIC_TWIN_TEMPLATES,
   type TwinTemplate, type TwinVector } from './semanticTwinRuntime'
@@ -16,6 +17,11 @@ const observationId = () => `observation:${crypto.randomUUID()}`
 const buttonClass = 'App-toolbar__btn min-h-11 min-w-11 text-sm'
 const fieldClass = 'min-h-11 w-full rounded border border-current/30 bg-transparent px-3 text-sm'
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
+const sourceStatus = (space: SpaceDocument) => {
+  const status = readSemanticSpaceSourceMirrorStatus()
+  if (!status || status.revision !== space.revision) return ''
+  return status.error ? ` Source Files update failed: ${status.error}` : ` Source Files: ${status.path}`
+}
 const linkedCanvasNode = (space: SpaceDocument, entityId: string) =>
   useGraphStore.getState().graphData?.nodes.find(node =>
     node.type === 'semantic-space-entity'
@@ -133,7 +139,7 @@ export function SemanticSpacePanel() {
       setDocument(next)
       setObservationIndex(next.observations.length - 1)
       setRegion(null)
-      setStatus('Still saved locally. Drag a region and confirm its label.')
+      setStatus(`Still saved locally. Drag a region and confirm its label.${sourceStatus(next)}`)
     } catch (error) { setStatus(String((error as Error).message || error)) }
     finally { setBusy(false) }
   }
@@ -203,7 +209,8 @@ export function SemanticSpacePanel() {
   const mutate = async (action: Parameters<typeof applySpaceAction>[1], success: string): Promise<SpaceDocument | null> => {
     if (busy) return null
     setBusy(true)
-    try { const next = await runSemanticSpaceAction(action); setDocument(next); setStatus(success); return next }
+    try { const next = await runSemanticSpaceAction(action); setDocument(next);
+      setStatus(`${success}${sourceStatus(next)}`); return next }
     catch (error) { setStatus(String((error as Error).message || error)); return null }
     finally { setBusy(false) }
   }
@@ -243,7 +250,7 @@ export function SemanticSpacePanel() {
     if (file.size > 32 * 1024 * 1024) { setStatus('Space package exceeds 32 MiB.'); return }
     setBusy(true)
     try { const next = await importSemanticSpace(await file.text()); setDocument(next); setObservationIndex(0)
-      setRegion(null); setStatus('Space imported and verified. Previous local space retained as a backup.') }
+      setRegion(null); setStatus(`Space imported and verified. Previous local space retained as a backup.${sourceStatus(next)}`) }
     catch (error) { setStatus(String((error as Error).message || error)) }
     finally { setBusy(false) }
   }

@@ -25,6 +25,9 @@ import {
 } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
+import { readSemanticSpace, subscribeSemanticSpace } from '@/features/xr-v2/semanticSpaceStore'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { listStrybldrImageFiles } from '@/features/strybldr/strybldrImageFileRegistry'
 import type { ImmersiveMediaSourceKind } from './immersiveMediaModel'
 import { ImmersiveMediaMarkerProjections } from './ImmersiveMediaMarkerProjections'
 import {
@@ -64,6 +67,8 @@ const SURFACE_COPY: Readonly<Record<ImmersiveMediaProjectionSurface, {
   flightSim: { title: 'Immersive flight context', subtitle: 'Compass, map, and plan projections' },
   camera: { title: 'Immersive Camera', subtitle: 'Shared view, zoom, and lens strength' },
 })
+
+let localSpaceMediaUrl: string | null = null
 
 function SurfaceIcon({ surface }: { surface: ImmersiveMediaProjectionSurface }) {
   const className = 'h-3.5 w-3.5'
@@ -141,6 +146,53 @@ function MediaSourceControls() {
   )
 }
 
+function SemanticSpaceMediaSource() {
+  const activeSourcePath = useMarkdownExplorerStore(state => state.activePath)
+  const [imageUrl, setImageUrl] = React.useState<string | null>(null)
+  const [opening, setOpening] = React.useState(false)
+  const [openError, setOpenError] = React.useState<string | null>(null)
+  React.useEffect(() => {
+    let active = true
+    const refresh = () => { void readSemanticSpace().then(space => {
+      if (active) setImageUrl(space?.observations.at(-1)?.imageDataUrl || null)
+    }, () => { if (active) setImageUrl(null) }) }
+    refresh()
+    const unsubscribe = subscribeSemanticSpace(refresh)
+    return () => { active = false; unsubscribe() }
+  }, [])
+  const selectedSourceImage = listStrybldrImageFiles().find(file => file.workspacePath === activeSourcePath?.replace(/^\/+/, ''))?.objectUrl
+  const displayedImageUrl = selectedSourceImage || imageUrl
+  if (!displayedImageUrl) return null
+  return <section className="grid gap-1 rounded border p-1 text-[10px]" aria-label="Current local image">
+    <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
+    <button type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
+      setOpening(true)
+      setOpenError(null)
+      void (async () => {
+        const [{ readGameModeSnapshot, exitGameModeSurface },
+          { readFlightSimSnapshot, exitFlightSimSurface }] = await Promise.all([
+          import('@/features/game-fps/gameModeRuntime'),
+          import('@/features/game-flight-sim/flightSimRuntime'),
+        ])
+        if (readGameModeSnapshot().active) exitGameModeSurface({ restorePreviousSurface: false })
+        if (readFlightSimSnapshot().active) exitFlightSimSurface({ restorePreviousSurface: false })
+        const blob = await (await fetch(displayedImageUrl)).blob()
+        const url = URL.createObjectURL(blob)
+        const next = setImmersiveMediaSource({ kind: 'image', url })
+        if (next.error) { URL.revokeObjectURL(url); return }
+        const previous = localSpaceMediaUrl
+        localSpaceMediaUrl = url
+        openImmersiveMedia()
+        if (previous) URL.revokeObjectURL(previous)
+      })().catch(error => {
+        setOpenError(String((error as Error).message || error))
+      }).finally(() => setOpening(false))
+    }}>{opening ? 'Opening space image…' : 'Show space image on Canvas'}</button>
+    {openError ? <output role="status">Space image could not open: {openError}</output> : null}
+    <span>Panorama projection is approximate; scale remains unknown.</span>
+  </section>
+}
+
 function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface }) {
   const snapshot = readImmersiveMediaSnapshot()
   if (surface === 'media') {
@@ -150,6 +202,7 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
     return (
       <>
         <MediaSourceControls />
+        <SemanticSpaceMediaSource />
         <section className="flex flex-wrap gap-1" aria-label="Media presentation controls">
           <ToggleButton active={cropped} title="Toggle cropped panorama" onClick={() => configureImmersiveMedia({ cropped: !cropped })}>
             <Crop className="h-3.5 w-3.5" aria-hidden="true" /> Crop

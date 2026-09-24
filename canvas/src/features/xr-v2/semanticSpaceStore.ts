@@ -5,7 +5,12 @@ import { applySpaceAction, newSpaceDocument, SpaceError, validateSpaceDocument, 
 const ACTIVE_REF = 'semantic-space:active'
 const CHANGE_EVENT = 'agentic-graph:semantic-space-change'
 const PACKAGE_SCHEMA = 'agentic-graph/semantic-space-package/v2'
+const SOURCE_SCHEMA = 'agentic-graph/semantic-space-source/v1'
 type SpaceRecord = { ref: string; document: SpaceDocument }
+type SourceMirrorStatus = { revision: number; path: string | null; error: string | null }
+let sourceMirrorStatus: SourceMirrorStatus | null = null
+let sourceMirrorQueue: Promise<void> = Promise.resolve()
+export const readSemanticSpaceSourceMirrorStatus = () => sourceMirrorStatus
 
 async function contentDigest(text: string): Promise<string> {
   const bytes = new TextEncoder().encode(text)
@@ -112,6 +117,49 @@ export const subscribeSemanticSpace = (callback: () => void) => {
   return () => window.removeEventListener(CHANGE_EVENT, callback)
 }
 export const readSemanticSpace = () => store().read()
+async function mirrorCurrentSpaceToSourceFiles(): Promise<void> {
+  if (typeof window === 'undefined') return
+  const task = sourceMirrorQueue.catch(() => undefined).then(async () => {
+    const current = await store().read()
+    if (!current) return
+    try {
+      const [{ getWorkspaceFs }, { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH },
+        { ensureWorkspaceFolderTreeIfMissing }, { notifyWorkspaceFsChanged }] = await Promise.all([
+        import('@/features/workspace-fs/workspaceFs'),
+        import('@/features/workspace-fs/workspaceSourceRoots'),
+        import('@/features/workspace-fs/ensureFolderTreeIfMissing'),
+        import('@/features/workspace-fs/workspaceFsEvents'),
+      ])
+      const fs = await getWorkspaceFs()
+      await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH })
+      const name = `semantic-space-${(await contentDigest(current.id)).slice(0, 16)}.json`
+      const path = `${WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH}/${name}`
+      const existing = await fs.readFileText(path)
+      if (existing !== null) {
+        let parsed: { schema?: string; spaceId?: string }
+        try { parsed = JSON.parse(existing) } catch { throw Error('Source Files path belongs to another document') }
+        if (parsed.schema !== SOURCE_SCHEMA || parsed.spaceId !== current.id) {
+          throw Error('Source Files path belongs to another document')
+        }
+      }
+      const text = JSON.stringify({ schema: SOURCE_SCHEMA, sourceOfTruth: 'browser-local-semantic-space',
+        spaceId: current.id, revision: current.revision,
+        observations: current.observations.map(({ imageDataUrl: _pixels, ...metadata }) => metadata),
+        entities: current.entities, selectedEntityId: current.selectedEntityId,
+        twin: current.twin || null }, null, 2) + '\n'
+      if (text.length > 2_000_000) throw Error('Source Files projection exceeds its size budget')
+      if (existing === null) await fs.createFile({ parentPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH, name, text })
+      else if (existing !== text) await fs.writeFileText(path, text)
+      notifyWorkspaceFsChanged({ op: existing === null ? 'createFile' : 'writeFileText', path })
+      sourceMirrorStatus = { revision: current.revision, path, error: null }
+    } catch (error) {
+      sourceMirrorStatus = { revision: current.revision, path: null,
+        error: String((error as Error).message || error) }
+    }
+  })
+  sourceMirrorQueue = task
+  await task
+}
 export async function runSemanticSpaceAction(action: SpaceAction): Promise<SpaceDocument> {
   const current = await store().read()
   const base = current || newSpaceDocument(`space:${crypto.randomUUID()}`)
@@ -139,6 +187,7 @@ export async function runSemanticSpaceAction(action: SpaceAction): Promise<Space
     } finally { disposeProceduralAsset(built.scene) }
   }
   const saved = await store().save(next, current?.revision ?? null)
+  await mirrorCurrentSpaceToSourceFiles()
   changed()
   return saved
 }
@@ -161,6 +210,7 @@ export async function importSemanticSpace(text: string,
     throw new SpaceError('invalid-package', 'Twin packages require an integrity manifest')
   }
   const saved = await (target || store()).replace(await verifySpaceEvidence(validateSpaceDocument(document), true))
+  if (!target) await mirrorCurrentSpaceToSourceFiles()
   changed()
   return saved
 }

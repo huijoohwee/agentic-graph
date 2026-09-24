@@ -39,6 +39,7 @@ import { resolveAuthoredWorldPaused } from '@/lib/three/authoredWorldPause'
 import { boundedInverseFitScale, fitFloorOffset, readXrStageMetersPerUnit, resolveSceneBackgroundColor } from '@/lib/three/threeGraphSceneLayout'
 import { resolveThreeRendererLifecycleKey, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
 import { resolveThreeGraphXrSceneAuthority, ThreeGraphImmersiveMediaHud, ThreeGraphImmersiveMediaStage, useThreeGraphImmersiveMediaActive } from '@/lib/three/ThreeGraphImmersiveMedia'
+import { readImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import { type ThreeCanvasSemanticMediaOwner, useThreeCanvasSemanticOwner } from '@/lib/three/threeCanvasSemanticOwner'
 import { graphHasXrAuthoringSource } from '@/features/agentic-ecs/xrAuthoringEcsRuntime'
 import type { LearningLesson, LearningSceneSnapshot } from '@/features/python-learning/learningLessons'
@@ -81,7 +82,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const gameFpsStageActive = mode === 'xr' && gameFpsActive
   const gameplayOverlayActive = flightStageActive || gameFpsStageActive
   const immersiveMediaActive = useThreeGraphImmersiveMediaActive(mode, gameplayOverlayActive)
-  const immersiveMediaStageActive = immersiveMediaActive && !xrPhysicsSharedRunReadyDemo
+  const explicitMediaSourceActive = immersiveMediaActive && readImmersiveMediaSnapshot().source.kind !== 'procedural'
+  const immersiveMediaStageActive = !learningScene && immersiveMediaActive && (!xrPhysicsSharedRunReadyDemo || explicitMediaSourceActive)
   const markdownDocumentSourceUrl = useGraphStore(s => s.markdownDocumentSourceUrl)
   const markdownDocumentApplyViewPreset = useGraphStore(s => s.markdownDocumentApplyViewPreset)
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
@@ -191,7 +193,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ? sceneGraph
       : { ...sceneGraph, edges: [] }
   }, [xrPhysicsRuntimeRunReadyDemo, sceneGraph])
-  const hasGraph = !learningScene && !!sceneGraphForRender
+  const hasGraph = !learningScene && !!sceneGraphForRender && !explicitMediaSourceActive
   const hasGlbAsset = !learningScene && !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !learningScene && !!spatialCaptureManifest
   const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive
@@ -285,7 +287,6 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       threeSceneRef.current = null
     }
   }, [registerCanvasSnapshotFns, registerThreeGlbSnapshotFns, registerThreeLayoutSnapshotFns])
-
   useEffect(() => {
     const renderer = threeGlRef.current
     if (!renderer) return
@@ -441,7 +442,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       <Canvas
         key={rendererLifecycleKey}
         data-kg-three-canvas-owner="1"
-        frameloop={paused ? 'demand' : 'always'}
+        frameloop={paused && !immersiveMediaStageActive ? 'demand' : 'always'}
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={{ antialias: true, alpha: true }}
@@ -554,10 +555,10 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             learningSceneId={learningScene?.lesson.id}
             schema={effectiveSchema as GraphSchema}
             positions={positions}
-            paused={paused}
+            paused={paused && !immersiveMediaStageActive}
             mode={mode}
             flightSimActive={flightStageActive && !learningScene}
-            immersiveMediaActive={immersiveMediaStageActive && !learningScene}
+            immersiveMediaActive={immersiveMediaStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
             modelAssetRenderKey={learningScene ? undefined : spatialCaptureRenderKey || glbAssetRenderKey}
             modelAssetFit={learningScene ? null : spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit}

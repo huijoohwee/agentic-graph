@@ -216,6 +216,8 @@ export function useWorkspaceImportActions(args: {
           })
         }))
         if (importJobRef.current !== jobId) return
+        const imageSourceUnits = (res.corpusManifest?.sourceUnits || []).filter(unit => unit.mediaKind === 'image')
+        if (imageSourceUnits.length > 0) registerStrybldrImageFiles({ sourceUnits: imageSourceUnits, files: snapshot })
         registerVideoSequenceSourceFiles(snapshot)
         const applyToGraph = await resolveWorkspaceImportApplyToGraph(fs, res, importRuntime)
         if (importJobRef.current !== jobId) return

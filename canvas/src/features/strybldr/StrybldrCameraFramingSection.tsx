@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import type { JSONValue } from '@/lib/graph/types'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import {
@@ -11,6 +12,8 @@ import {
   subscribeCameraFramingRuntime,
 } from './cameraFramingRuntime'
 import { StrybldrCameraPanel } from './StrybldrCameraPanel'
+import { readSemanticSpace, subscribeSemanticSpace } from '@/features/xr-v2/semanticSpaceStore'
+import { listStrybldrImageFiles } from './strybldrImageFileRegistry'
 import {
   STRYBLDR_CAMERA_PROPERTY_KEY,
   readStrybldrCameraSettings,
@@ -45,6 +48,17 @@ const cameraSettingsEqual = (left: StrybldrCameraSettings, right: StrybldrCamera
 )
 
 export function StrybldrCameraFramingSection() {
+  const activeSourcePath = useMarkdownExplorerStore(state => state.activePath)
+  const [spacePreviewImageUrl, setSpacePreviewImageUrl] = React.useState<string | null>(null)
+  React.useEffect(() => {
+    let active = true
+    const refresh = () => { void readSemanticSpace().then(space => {
+      if (active) setSpacePreviewImageUrl(space?.observations.at(-1)?.imageDataUrl || null)
+    }, () => { if (active) setSpacePreviewImageUrl(null) }) }
+    refresh()
+    const unsubscribe = subscribeSemanticSpace(refresh)
+    return () => { active = false; unsubscribe() }
+  }, [])
   const activeGraphData = useActiveGraphRenderData(true)
   const {
     rawGraphData,
@@ -102,8 +116,10 @@ export function StrybldrCameraFramingSection() {
       : persistedSettings
     : runtime.settings
   const previewImageUrl = React.useMemo(
-    () => resolveStrybldrCameraPreviewImageUrl(selectedCard),
-    [selectedCard],
+    () => resolveStrybldrCameraPreviewImageUrl(selectedCard)
+      || listStrybldrImageFiles().find(file => file.workspacePath === activeSourcePath?.replace(/^\/+/, ''))?.objectUrl
+      || spacePreviewImageUrl,
+    [selectedCard, activeSourcePath, spacePreviewImageUrl],
   )
 
   React.useEffect(() => {

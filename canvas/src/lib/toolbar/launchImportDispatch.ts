@@ -122,6 +122,40 @@ function isHandledWorkspaceImport(result: void | WorkspaceBridgeImportResult): b
   )
 }
 
+async function retainImportedLocalImages(files: readonly File[], result: void | WorkspaceBridgeImportResult): Promise<void> {
+  const paths = result && Array.isArray(result.createdPaths) ? result.createdPaths : []
+  if (paths.length === 0) return
+  const images = files.filter(file => /^image\/(jpeg|png|webp)$/i.test(file.type))
+  if (images.length === 0) return
+  const [{ buildCorpusSourceUnit }, { registerStrybldrImageFiles }] = await Promise.all([
+    import('@/features/queryable-corpus/sourceFilesCorpusManifest'),
+    import('@/features/strybldr/strybldrImageFileRegistry'),
+  ])
+  const sourceUnits = images.flatMap(file => {
+    const stem = file.name.replace(/\.[^.]+$/, '')
+    const exact = paths.find(path => path.toLowerCase().endsWith(`/${file.name.toLowerCase()}.source.md`))
+    const stemMatches = paths.filter(path => path.toLowerCase().endsWith(`/${stem.toLowerCase()}.source.md`))
+    const path = exact || (stemMatches.length === 1 ? stemMatches[0] : null)
+    return path ? [buildCorpusSourceUnit({ workspacePath: path, relativePath: file.name,
+      originalName: file.name, text: '', mimeHint: file.type, byteSize: file.size,
+      status: 'parsed', importMode: 'file' })] : []
+  })
+  if (sourceUnits.length === 0) return
+  const mediaUrls = registerStrybldrImageFiles({ sourceUnits, files: images })
+  if (files.length !== 1 || sourceUnits.length !== 1) return
+  const imageUrl = mediaUrls[sourceUnits[0]!.id]
+  if (!imageUrl) return
+  const [{ useGraphStore }, media] = await Promise.all([
+    import('@/hooks/useGraphStore'),
+    import('@/features/immersive-media/immersiveMediaRuntime'),
+  ])
+  const prepared = media.setImmersiveMediaSource({ kind: 'image', url: imageUrl })
+  if (prepared.error) throw Error(prepared.message)
+  useGraphStore.getState().setFloatingPanelView('media')
+  const opened = media.openImmersiveMedia()
+  if (opened.error) throw Error(opened.message)
+}
+
 function finishAgentGraphImport(
   result: WorkspaceAgentGraphImportResult,
 ): WorkspaceAgentGraphImportResult {
@@ -158,14 +192,20 @@ export async function runLaunchImportLocalFiles(args: {
   }
   const bridgeImport = args.bridge.importLocalFiles
   if (typeof bridgeImport === 'function') {
+    let result: void | WorkspaceBridgeImportResult = undefined
     try {
-      const result = await bridgeImport(snapshot)
-      if (isHandledWorkspaceImport(result)) return result
+      result = await bridgeImport(snapshot)
     } catch {
       void 0
     }
+    if (isHandledWorkspaceImport(result)) {
+      await retainImportedLocalImages(snapshot, result)
+      return result
+    }
   }
-  return args.fallback(snapshot)
+  const result = await args.fallback(snapshot)
+  await retainImportedLocalImages(snapshot, result)
+  return result
 }
 
 export async function runLaunchImportLocalFolderPreview(args: {
