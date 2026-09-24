@@ -1,4 +1,7 @@
 import React from 'react'
+import { Box3 } from 'three'
+import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
+import { photoOverlayBindings, projectTwinOnPhoto } from './semanticTwinPhotoProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GlbFit } from '@/lib/three/GlbAssetModel'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -11,6 +14,9 @@ import { SEMANTIC_TWIN_PREVIEW_EVENT } from './semanticTwinRuntime'
 
 type PreviewRequest = { spaceId: string; entityId: string; operation: 'drop' | 'reset'; handled?: boolean }
 export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: boolean; onFitChange?: (fit: GlbFit | null) => void }) {
+  const media = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
+  const photo = media.active ? media.source.photo : undefined
+  const [ready, setReady] = React.useState(false)
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
   React.useEffect(() => {
     let active = true
@@ -23,14 +29,23 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   }, [])
   const linked = useGraphStore(state => state.graphData?.nodes.some(node => node.properties?.spaceId === document?.id
     && node.properties?.twinSchema === document?.twin?.schema) === true)
-  const bindings = linked ? document?.twin?.objects || [] : []
-  const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}`
-  const built = React.useMemo(() => buildTwinScene(bindings), [sceneKey])
+  const bindings = !linked || !document ? [] : media.active
+    ? photo ? photoOverlayBindings(document, photo) : [] : document.twin?.objects || []
+  const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}:${media.active}:${JSON.stringify(photo)}`
+  const built = React.useMemo(() => {
+    const result = buildTwinScene(bindings)
+    if (photo) result.objects.forEach(item => { item.wrapper.visible = false })
+    return result
+  }, [sceneKey])
   const invalidate = useThree(state => state.invalidate)
   React.useEffect(() => {
+    setReady(false)
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10_000)
-    if (document && built.objects.length) void applyTwinImageAppearance(built.objects, document, controller.signal, built.textures)
-      .then(() => { if (!controller.signal.aborted) invalidate() })
+    if (document && built.objects.length) void applyTwinImageAppearance(built.objects, document, controller.signal, built.textures, !!photo)
+      .then(() => { if (!controller.signal.aborted) {
+        if (photo) for (const item of built.objects) { projectTwinOnPhoto(item, document, photo); item.wrapper.visible = true }
+        setReady(true); invalidate()
+      } })
       .catch(error => { if (!controller.signal.aborted) window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error',
         { detail: `Photo appearance unavailable: ${String(error.message)} Solid geometry remains available.` })) })
     return () => { clearTimeout(timer); controller.abort(); disposeTwinScene(built) }
@@ -40,20 +55,24 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   }, [built.error])
   React.useEffect(() => {
     const room = document?.twin?.room
-    if (!room || !built.objects.length || built.error) { onFitChange?.(null); return }
+    if (media.active || !room || !built.objects.length || built.error) { onFitChange?.(null); return }
     const height = Math.max(...built.objects.map(item => item.binding.size[1]))
     const size: [number, number, number] = [room.width, height + room.depth * 0.35, room.depth + height * 0.35]
     onFitChange?.({ cameraProfile: 'spatial-capture', cameraTarget: [0, height * 10, 0],
       position: [0, 0, 0], scale: 20, floorY: 0, stageSpan: Math.max(...size) * 20,
       preserveFlatFacing: false, flatAxis: null, size, scaledSize: size.map(n => n * 20) as [number, number, number] })
     return () => onFitChange?.(null)
-  }, [built, onFitChange])
+  }, [built, onFitChange, media.active])
   const preview = React.useRef<{ engine: SpatialPhysicsEngine; entityId: string; elapsed: number } | null>(null)
   React.useEffect(() => {
     preview.current = null
     const handle = (event: Event) => {
       const request = (event as CustomEvent<PreviewRequest>).detail
       if (!request || request.spaceId !== document?.id) return
+      if (media.active) {
+        window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error', { detail: 'Open the 3D layout to preview gravity; the photo overlay keeps evidence aligned.' }))
+        return
+      }
       const selected = built.objects.find(item => item.binding.entityId === request.entityId)
       if (!selected) return
       request.handled = true
@@ -74,7 +93,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     }
     window.addEventListener(SEMANTIC_TWIN_PREVIEW_EVENT, handle)
     return () => window.removeEventListener(SEMANTIC_TWIN_PREVIEW_EVENT, handle)
-  }, [built, document?.id])
+  }, [built, document?.id, media.active])
   useFrame((_state, delta) => {
     const run = preview.current
     if (!run || paused || globalThis.document?.hidden) return
@@ -93,13 +112,15 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     })
   }
   if (!document?.twin || built.objects.length === 0) return null
-  return <group name="SemanticSpaceTwin" scale={20} rotation={[-0.35, 0, 0]}>
+  const selectedOverlay = photo && ready ? built.objects.find(item => item.binding.entityId === document.selectedEntityId) : null
+  return <group name="SemanticSpaceTwin" visible={!photo || ready} scale={photo ? 1 : 20} rotation={photo ? [0, 0, 0] : [-0.35, 0, 0]}>
+    {selectedOverlay && <box3Helper args={[new Box3().setFromObject(selectedOverlay.wrapper), '#67e8f9']} />}
     <ambientLight intensity={0.7} />
     <directionalLight position={[3, 7, 5]} intensity={1.2} />
-    <mesh position={[0, -0.04, 0]} receiveShadow>
+    {!photo && <mesh position={[0, -0.04, 0]} receiveShadow>
       <boxGeometry args={[document.twin.room.width, 0.08, document.twin.room.depth]} />
       <meshStandardMaterial color="#69747c" roughness={0.9} />
-    </mesh>
+    </mesh>}
     {built.objects.map(item => <primitive key={item.binding.entityId} object={item.wrapper} dispose={null}
       onClick={(event: { stopPropagation: () => void; nativeEvent: Event }) => {
         if (!(event.nativeEvent.target instanceof HTMLCanvasElement)) return

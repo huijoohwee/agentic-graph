@@ -23,13 +23,15 @@ const summary = (doc: SpaceDocument | null, query = '') => ({
       position: item.position, provenance: item.provenance,
       controls: item.recipe.controls.map(control => ({ id: control.id, value: item.recipe.values[control.id] })) })) } : null,
 })
-type Parsed = { operation: 'renderer'; backend: 'webgl' | 'webgpu' } | { operation: 'analyze'; observationId: string } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
+type Parsed = { operation: 'overlay'; observationId: string } | { operation: 'renderer'; backend: 'webgl' | 'webgpu' } | { operation: 'analyze'; observationId: string } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
   | { operation: 'correct'; entityId: string; category: string; label: string }
   | { operation: 'build'; entityId: string; template: TwinTemplate; size: TwinVector; position: TwinVector }
   | { operation: 'simulate' | 'reset'; entityId: string }
 const TOKEN = '[A-Za-z0-9][A-Za-z0-9._:-]{0,127}'
 const NUMBER = '-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)'
 export function parseSemanticSpaceInvocation(value: string): Parsed {
+  const overlay = new RegExp(`^/space\\.overlay @(${TOKEN}) #image$`).exec(value)
+  if (overlay) return { operation: 'overlay', observationId: overlay[1] }
   const renderer = /^\/space\.renderer @canvas #(webgl|webgpu)$/.exec(value)
   if (renderer) return { operation: 'renderer', backend: renderer[1] as 'webgl' | 'webgpu' }
   const analyze = new RegExp(`^/space\\.analyze @(${TOKEN}) #regions$`).exec(value)
@@ -66,6 +68,10 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
           if (operation === 'query') return summary(await readSemanticSpace(), String(raw.text || ''))
           const doc = await readSemanticSpace()
           if (!doc) throw new SpaceError('space-unavailable', 'Capture or import a space before editing')
+          if (operation === 'overlay') {
+            const { overlaySemanticObservation } = await import('@/features/xr-v2/semanticSpaceCanvas')
+            return { ...summary(doc), message: await overlaySemanticObservation(doc, String(raw.observationId || '')) }
+          }
           if (operation === 'analyze') {
             const observation = doc.observations.find(item => item.id === raw.observationId)
             if (!observation) throw new SpaceError('unknown-observation', 'Choose saved image evidence first')

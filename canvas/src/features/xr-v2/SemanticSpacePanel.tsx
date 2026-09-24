@@ -1,6 +1,6 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { addSemanticEntityToCanvas, linkedCanvasNode } from './semanticSpaceCanvas'
+import { addSemanticEntityToCanvas, linkedCanvasNode, overlaySemanticObservation } from './semanticSpaceCanvas'
 import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
 import { requestSemanticSpaceCamera } from '@/features/three/semanticSpaceCameraRuntime'
 import { applySpaceAction, hashSpaceImage, MAX_SPACE_ENTITIES, MAX_SPACE_OBSERVATIONS,
@@ -253,7 +253,11 @@ export function SemanticSpacePanel() {
   }
   const addSelectedToCanvas = async (space: SpaceDocument | null = document, entity = selected) => {
     if (!space || !entity) return
-    try { setStatus(await addSemanticEntityToCanvas(space, entity)) }
+    try {
+      const { closeImmersiveMedia } = await import('@/features/immersive-media/immersiveMediaRuntime')
+      closeImmersiveMedia()
+      setStatus(await addSemanticEntityToCanvas(space, entity))
+    }
     catch (error) { setStatus(String((error as Error).message || error)) }
   }
   const applyTwin = () => {
@@ -366,7 +370,10 @@ export function SemanticSpacePanel() {
       </div>
       {selected && <div className="grid gap-2"><span>Selected ID: <code>{selected.id}</code></span>
         <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => { setEditing(!editing); setLabel(selected.label); setCategory(selected.category) }}>Correct label</button>
-          <button type="button" className={buttonClass} onClick={() => void addSelectedToCanvas()}>Add to canvas</button></div>
+          <button type="button" className={buttonClass} onClick={() => void addSelectedToCanvas()}>Open 3D layout</button>
+          <button type="button" className={buttonClass} onClick={() => {
+            void overlaySemanticObservation(document, selected.observationId).then(setStatus, error => setStatus(String(error.message)))
+          }}>Overlay objects on image</button></div>
         {editing && <div className="grid gap-2"><input className={fieldClass} aria-label="Corrected label" value={label} onChange={event => setLabel(event.target.value)} />
           <input className={fieldClass} aria-label="Corrected category" value={category} onChange={event => setCategory(event.target.value)} />
           <button type="button" className={buttonClass} disabled={busy || !label.trim() || !category.trim()} onClick={() => {

@@ -51,3 +51,50 @@ export async function addSemanticEntityToCanvas(space: SpaceDocument, entity: Sp
   return twin && useGraphStore.getState().canvasRenderMode === '3d'
     ? 'Entity and editable geometry linked to the active 3D canvas.' : 'Entity linked to the active canvas.'
 }
+
+/** Open exact saved evidence with its meshes in the existing image presentation owner. */
+export async function overlaySemanticObservation(space: SpaceDocument, observationId: string, signal?: AbortSignal) {
+  signal?.throwIfAborted()
+  const observation = space.observations.find(item => item.id === observationId)
+  if (!observation) throw Error('Choose saved image evidence first.')
+  const { readSemanticSpace } = await import('./semanticSpaceStore')
+  const current = await readSemanticSpace()
+  if (current?.id !== space.id || current.revision !== space.revision) throw Error('Space changed before opening the overlay.')
+  const entity = space.entities.find(item => item.observationId === observationId && space.twin?.objects.some(binding => binding.entityId === item.id))
+  if (entity) await addSemanticEntityToCanvas(space, entity)
+  const media = await import('@/features/immersive-media/immersiveMediaRuntime')
+  const rechecked = await readSemanticSpace()
+  signal?.throwIfAborted()
+  if (rechecked?.id !== space.id || rechecked.revision !== space.revision) throw Error('Space changed while opening the overlay.')
+  const next = media.setImmersiveMediaSource({ kind: 'image', url: observation.imageDataUrl,
+    photo: { width: observation.width, height: observation.height, evidenceSha256: observation.sha256 } })
+  if (next.error) throw Error(next.message)
+  media.resetImmersiveMediaView()
+  const opened = media.openImmersiveMedia()
+  if (opened.error) throw Error(opened.message)
+  return 'Objects aligned with their source image. Depth is authored relief; use 3D layout for placement and physics.'
+}
+
+/** Reuse the same bounded evidence preparation to match a fresh local/URL import by content. */
+export async function showSemanticImageOnCanvas(sourceUrl: string, signal: AbortSignal) {
+  const [{ readSemanticSpace }, { perceiveImportedImage }, media] = await Promise.all([
+    import('./semanticSpaceStore'), import('./semanticImagePerceptionClient'),
+    import('@/features/immersive-media/immersiveMediaRuntime'),
+  ])
+  let space = await readSemanticSpace()
+  let observation = space?.observations.find(item => item.imageDataUrl === sourceUrl)
+  if (!observation) {
+    const draft = await perceiveImportedImage(sourceUrl, signal, { useWholeRegion: true })
+    space = await readSemanticSpace()
+    observation = space?.observations.find(item => item.sha256 === draft.observation.sha256) || draft.observation
+  }
+  signal.throwIfAborted()
+  if (space?.observations.some(item => item.id === observation.id)) return overlaySemanticObservation(space, observation.id, signal)
+  const next = media.setImmersiveMediaSource({ kind: 'image', url: sourceUrl,
+    photo: { width: observation.width, height: observation.height } })
+  if (next.error) throw Error(next.message)
+  media.resetImmersiveMediaView()
+  const opened = media.openImmersiveMedia()
+  if (opened.error) throw Error(opened.message)
+  return 'Image shown. Analyze and review regions to add aligned 3D objects.'
+}

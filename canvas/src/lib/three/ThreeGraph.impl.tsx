@@ -474,6 +474,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         <React.Suspense fallback={null}>
           {learningScene ? <LearningSceneStageLazy {...learningScene} /> : <>
           {immersiveMediaStageActive && !geospatialComposite ? <ThreeGraphImmersiveMediaStage /> : null}
+          {immersiveMediaStageActive && !geospatialComposite ? <SemanticTwinStageLazy paused={true} /> : null}
           <XrWorldPlacement
             active={mode === 'xr'}
             contentScale={xrWorldContentScale}
@@ -507,7 +508,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
                 geospatialComposite={geospatialComposite}
               />
             ) : null}
-            {!geospatialComposite ? <SemanticTwinStageLazy paused={authoredWorldPaused} onFitChange={setSemanticTwinFit} /> : null}
+            {!geospatialComposite && !immersiveMediaStageActive ? <SemanticTwinStageLazy paused={authoredWorldPaused} onFitChange={setSemanticTwinFit} /> : null}
             {!geospatialComposite && glbAsset && shouldRenderGlbAsset ? (
               <GlbAssetModel
                 key={glbAssetRenderKey}

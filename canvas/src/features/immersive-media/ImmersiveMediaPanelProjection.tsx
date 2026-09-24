@@ -114,6 +114,7 @@ function MediaSourceControls() {
     setKind(snapshot.source.kind)
     setUrl(snapshot.source.url)
   }, [snapshot.source.kind, snapshot.source.url])
+  if (snapshot.source.photo) return <p className="m-0 text-xs">Source image · select an object on the image to inspect it.</p>
   return (
     <form
       className="grid grid-cols-[80px_1fr_auto] gap-1"
@@ -155,6 +156,7 @@ function SemanticSpaceMediaSource() {
   const [imageUrl, setImageUrl] = React.useState<string | null>(null)
   const [opening, setOpening] = React.useState(false)
   const [creatingStoryboard, setCreatingStoryboard] = React.useState(false)
+  const openingRef = React.useRef<AbortController | null>(null)
   const [openError, setOpenError] = React.useState<string | null>(null)
   React.useEffect(() => {
     let active = true
@@ -167,11 +169,13 @@ function SemanticSpaceMediaSource() {
   }, [])
   const selectedSourceImage = listStrybldrImageFiles().find(file => file.workspacePath === activeSourcePath?.replace(/^\/+/, ''))?.objectUrl
   const displayedImageUrl = imported?.mediaUrl || selectedSourceImage || (media.source.kind === 'image' ? media.source.url : '') || imageUrl
+  React.useEffect(() => () => openingRef.current?.abort(), [displayedImageUrl])
   if (!displayedImageUrl) return null
   return <section className="grid gap-1 rounded border p-1 text-[10px]" aria-label="Current local image">
     {imported ? <strong>Image imported. Choose the next step.</strong> : null}
     <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
     <button type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
+      const job = new AbortController(); openingRef.current?.abort(); openingRef.current = job
       setOpening(true)
       setOpenError(null)
       void (async () => {
@@ -182,10 +186,8 @@ function SemanticSpaceMediaSource() {
         ])
         if (readGameModeSnapshot().active) exitGameModeSurface({ restorePreviousSurface: false })
         if (readFlightSimSnapshot().active) exitFlightSimSurface({ restorePreviousSurface: false })
-        const next = setImmersiveMediaSource({ kind: 'image', url: displayedImageUrl })
-        if (next.error) throw new Error(next.message)
-        const opened = openImmersiveMedia()
-        if (opened.error) throw new Error(opened.message)
+        const { showSemanticImageOnCanvas } = await import('@/features/xr-v2/semanticSpaceCanvas')
+        await showSemanticImageOnCanvas(displayedImageUrl, job.signal)
       })().catch(error => {
         setOpenError(String((error as Error).message || error))
       }).finally(() => setOpening(false))
@@ -199,7 +201,7 @@ function SemanticSpaceMediaSource() {
     }}>{imported.storyboardPath ? 'Storyboard created' : creatingStoryboard ? 'Creating storyboard…' : 'Create storyboard'}</button> : null}
     <React.Suspense fallback={null}><SemanticImagePerceptionChoice key={displayedImageUrl} sourceUrl={displayedImageUrl} /></React.Suspense>
     {openError ? <output role="status">Space image could not open: {openError}</output> : null}
-    <span>Panorama projection is approximate; scale remains unknown.</span>
+    <span>Image overlay preserves source regions. Depth and hidden surfaces remain authored approximations.</span>
   </section>
 }
 

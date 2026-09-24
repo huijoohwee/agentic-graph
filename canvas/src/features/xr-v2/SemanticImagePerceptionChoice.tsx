@@ -2,7 +2,7 @@ import React from 'react'
 import type { SemanticImageDraft } from './semanticImagePerceptionClient'
 import { perceiveImportedImage } from './semanticImagePerceptionClient'
 import { readSemanticSpace, readSemanticSpaceSourceMirrorStatus, runSemanticSpaceAction } from './semanticSpaceStore'
-import { addSemanticEntityToCanvas } from './semanticSpaceCanvas'
+import { addSemanticEntityToCanvas, overlaySemanticObservation } from './semanticSpaceCanvas'
 import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
 import SemanticImageRegionFocus from './SemanticImageRegionFocus'
 import type { SpaceRegion, SpaceDocument } from './semanticSpaceRuntime'
@@ -70,9 +70,10 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
       for (const entity of doc.entities.filter(item => item.observationId === draft.observation.id)) {
         await addSemanticEntityToCanvas(doc, entity)
       }
+      await overlaySemanticObservation(doc, draft.observation.id)
       const mirror = readSemanticSpaceSourceMirrorStatus()
       setStatus(mirror?.error ? `3D saved locally; Source Files projection failed: ${mirror.error}`
-        : 'Editable 3D saved locally and linked to Canvas and Source Files. Open Semantic space to edit or export.')
+        : 'Editable 3D saved locally and aligned over its source image. Open Semantic space for the 3D layout, editing or export.')
     } catch (error) { if (mounted.current) setStatus(`${saved.current ? 'Saved locally. Canvas linking: ' : ''}${String((error as Error).message || error)}`) }
     finally { if (mounted.current) setBusy(false) }
   }

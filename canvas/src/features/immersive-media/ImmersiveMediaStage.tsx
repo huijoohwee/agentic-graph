@@ -1,4 +1,5 @@
 import React from 'react'
+import { PHOTO_DISTANCE, photoDimensions } from './immersivePhotoProjection'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
   BackSide,
@@ -349,6 +350,14 @@ export function ImmersiveMediaStage() {
     }
   })
   if (!snapshot.active || !texture) return null
+  const photo = snapshot.source.photo
+  if (photo) {
+    const size = photoDimensions(photo)
+    return <mesh name="SemanticSpacePhoto" position={[0, 0, -PHOTO_DISTANCE]}>
+      <planeGeometry args={[size.width, size.height]} />
+      <meshBasicMaterial ref={materialRef} map={texture} toneMapped={false} transparent depthWrite={false} />
+    </mesh>
+  }
   const phiStart = MathUtils.degToRad(snapshot.crop.horizontalStartDegrees)
   const phiLength = MathUtils.degToRad(snapshot.crop.horizontalSpanDegrees)
   const thetaStart = MathUtils.degToRad(snapshot.crop.verticalStartDegrees)
