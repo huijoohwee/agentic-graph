@@ -547,10 +547,8 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   if (xrCameraMotionSource.includes('Capture camera') || xrCameraMotionSource.includes('Mark cast @')) {
     throw new Error('expected stale manual camera/cast capture controls to be removed in favor of canonical Camera SHOOT')
   }
-  if (!xrCameraMotionSource.includes('saveDisabled={!graphData || savingScene}')
-    || !xrCameraMotionSource.includes('persistXrSceneToAuthoredSource')) {
+  if (!xrCameraMotionSource.includes('saveDisabled={!graphData || savingScene}') || !xrCameraMotionSource.includes('persistXrSceneToAuthoredSource'))
     throw new Error('expected XR scene Save to verify authored-source storage and prevent duplicate saves')
-  }
   if (!readSource('features', 'three', 'xrScenePersistence.ts').includes('metadata?.[XR_MOTION_REFERENCE_GRAPH_METADATA_KEY] !== serializedMotion') || !xrCameraMotionSource.includes('save-error')) {
     throw new Error('expected XR plan persistence to verify the canonical graph write before clearing dirty state')
   }
