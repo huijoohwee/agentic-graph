@@ -1,7 +1,8 @@
 import type React from 'react'
 import { HierarchyGuides } from '@/lib/ui/HierarchyTreeRow'
 import type { BlockTreeNode } from './blockLibrary'
-import { BLOCK_VISUAL_TONES, blockKindBadge, blockRoleLabel, blockVisualCategory } from './blockVisualLanguage'
+import { BLOCK_VISUAL_TONES, blockKindBadge, blockRoleLabel, blockVisualCategory, blockVisualShape } from './blockVisualLanguage'
+import './blockShapes.css'
 
 /** Program-specific branch of the Agent Mission hierarchy presenter. */
 export function BlockProgramRow(props: {
@@ -33,16 +34,16 @@ export function BlockProgramRow(props: {
           {props.expanded ? '−' : '+'}
         </button>}
       </span>
-      <div className="min-w-0 flex-1 overflow-hidden rounded-lg border-l-[5px] shadow-sm"
-        style={{ borderLeftColor: tone, background: `color-mix(in srgb, ${tone} 13%, var(--kg-panel-bg, white))`,
-          outline: props.selected ? '2px solid #3b82f6' : `1px solid color-mix(in srgb, ${tone} 55%, transparent)` }}>
+      <div className="kg-block-card min-w-0 flex-1" data-shape={blockVisualShape(row)} data-selected={props.selected}
+        style={{ '--block-tone': tone, '--block-fill': `color-mix(in srgb, ${tone} 13%, var(--kg-panel-bg, white))`,
+          '--block-edge': props.selected ? '#3b82f6' : `color-mix(in srgb, ${tone} 55%, transparent)` } as React.CSSProperties}>
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-2.5 py-2">
           <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
             style={{ background: tone }}>{blockKindBadge(row.kind)}</span>
           <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-5" title={row.title}>{row.title}</span>
           {row.line > 0 && <span className="shrink-0 text-[10px] opacity-70">L{row.line}</span>}
         </div>
-        <div className="flex items-center justify-between gap-2 border-t px-2.5 py-1 text-[10px]"
+        <div className="kg-block-card-meta flex items-center justify-between gap-2 border-t px-2.5 py-1 text-[10px]"
           style={{ borderColor: `color-mix(in srgb, ${tone} 24%, transparent)` }}>
           <span className="font-medium">{category} · {role}</span>
           {props.hasChildren && <span className="opacity-70">{props.expanded ? 'Children' : 'Collapsed'}</span>}

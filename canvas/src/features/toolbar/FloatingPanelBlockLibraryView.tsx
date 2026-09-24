@@ -1,7 +1,8 @@
 import * as React from 'react'
 import { BLOCK_DEFINITIONS, type BlockInsertPosition } from '@/features/block-editor/blockLibrary'
 import { readBlockSession, subscribeBlockSession } from '@/features/block-editor/blockSession'
-import { BLOCK_VISUAL_TONES } from '@/features/block-editor/blockVisualLanguage'
+import { BLOCK_VISUAL_TONES, blockDefinitionShape } from '@/features/block-editor/blockVisualLanguage'
+import '@/features/block-editor/blockShapes.css'
 import {
   FloatingPanelCatalogHeader, FloatingPanelCatalogSearchControl,
   floatingPanelCatalogBodyClassName, floatingPanelCatalogSurfaceClassName,
@@ -63,7 +64,8 @@ export function FloatingPanelBlockLibraryView() {
                   <span className="mt-0.5 block text-[11px] leading-4 opacity-75">{item.description}</span>
                 </span>
               </span>
-              <span aria-hidden="true" className="mt-2 block overflow-hidden rounded px-2 py-1.5 font-mono text-[11px] leading-4 text-white" style={{ background: tone }}>
+              <span aria-hidden="true" className="kg-block-preview mt-2 font-mono text-[11px] leading-4" data-shape={blockDefinitionShape(item.id)}
+                style={{ '--block-tone': tone } as React.CSSProperties}>
                 {item.snippet.split('\n').map((line, index) => <span key={index} className="block truncate">{line || ' '}</span>)}
               </span>
             </button>

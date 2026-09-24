@@ -1,29 +1,29 @@
 ---
 title: "Native Block Editor and Four-Format Workspace"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.2.0"
-revision: "1.2.0"
+version: "1.2.1"
+revision: "1.2.1"
 date: "2026-09-24"
 updated_date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Editor Workspace product engineering"
 continuity_id: "NATIVE-BLOCK-EDITOR-001"
-prd_revision: "1.2.0"
-tad_revision: "1.2.0"
-adr_revision: "1.2.0"
-mvp_revision: "1.2.0"
-gtm_revision: "1.2.0"
+prd_revision: "1.2.1"
+tad_revision: "1.2.1"
+adr_revision: "1.2.1"
+mvp_revision: "1.2.1"
+gtm_revision: "1.2.1"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "active"
 worktree_id: "device-0232231d4a19--block-editor-spec"
-agent_id: "codex-block-editor-visuals"
+agent_id: "codex-block-editor-shapes"
 action: "/change"
-scope: "#block-editor-visuals"
-actor: "@codex-block-editor-visuals"
+scope: "#block-editor-shapes"
+actor: "@codex-block-editor-shapes"
 base_sha: "951aab7fa74df85ddf2a8a84743d93c6e0ed74d7"
 guideline_revision: "3.3.0"
 guideline_sha256: "03be60df27db07d1784cccd699a024b5ecd506545eb23e5ed33100e2ee528b22"
@@ -39,7 +39,7 @@ surfaces: ["2D Renderer: Storyboard"]
 
 ## Identity, scope and source policy — reference implementation
 
-**J1 = NATIVE-BLOCK-EDITOR-001@1.2.0.** PRD, TAD, ADR, MVP, GTM and the discovery projections below consume this exact join. This document specifies the Editor Workspace enhancement and records its bounded native implementation. The conservative `undocumented` ladder values mean the independent specification-baseline and full V1–V7 gates have not passed; they do not erase local implementation evidence.
+**J1 = NATIVE-BLOCK-EDITOR-001@1.2.1.** PRD, TAD, ADR, MVP, GTM and the discovery projections below consume this exact join. This document specifies the Editor Workspace enhancement and records its bounded native implementation. The conservative `undocumented` ladder values mean the independent specification-baseline and full V1–V7 gates have not passed; they do not erase local implementation evidence.
 
 Add **Block immediately to the right of Python** in the existing pane controls: **bin → Python → Block → JSON → Markdown → Viewer**, preserving any contextual HTML control. A native, headless conversion core connects all four authoring representations. There is one durable workspace document, one accepted revision and one edit transaction owner, with format-specific drafts and derived views.
 
@@ -217,6 +217,8 @@ Use existing icon/title/tooltip navigation; DOM/focus order and accessible names
 
 Share only hierarchy guides between the two verified consumers in the existing native UI layer. Block rows consume stable AST IDs, depth, expansion/selection and callbacks, with no trace, storage or runtime imports. Do not persist another hierarchy model. Preserve Agent Mission behavior; fork width/density and category cues for Block instead of inheriting its metric grid. At 320 px, panes stack, rows wrap metadata, guides cap visual indentation while accessible depth remains accurate, and the open FloatingPanel rises above the editor. Use host light/dark tokens, visible focus and touch targets; color never carries type alone. No new visual package or copied image assets.
 
+**Shape refinement, J1 revision 1.2.1:** preserve the category palette, typography, catalog tile shell and Span-derived tree guides. Native CSS supplies a shallow top socket/bottom connector for steps, an inset body recess for library control previews, rounded value capsules, chamfered comparison/logical-expression shapes and a closed base for terminal steps. The program root keeps a rounded cap. Shapes derive only from existing node kinds and declared native definition IDs; they do not create new syntax, sockets, drag targets or insertion permission. Decorative layers ignore pointer events and remain separate from text, focus and selection hit areas. Native labels continue to expose type without relying on shape or color. Recheck desktop dark/light and 320 px text/selection before publication.
+
 **T10a: definitions.** A bundled, immutable catalog projects G4/T3's supported node kinds and their typed insertion factories; it is not another grammar or durable AST. Native categories can include Logic, Loops, Math, Text, Variables and Functions only where backed by supported nodes. Search covers title, description and category locally; unsupported constructs are omitted or explicitly unavailable. Each item supplies kind, input/output slots, scope constraints and preview data. A connected valid factory can prepare a commit; required values left as holes remain an explicit unsaved draft under T3, with accepted source unchanged. No templates from remote registries, authentication, model inference or network requests are prerequisites. Catalog errors elsewhere cannot disable the local library.
 
 **T10b: selection and insertion.** Browse/search/select changes only view state. Capture the program target before panel focus moves and display its file, position and compatibility. Explicit Insert, equivalent keyboard action or touch target selection calls T8 with document identity, accepted revision/digest, selected node/socket, insertion position and selection generation. Recheck all fields and scope during preparation and commit. Missing target asks the author to choose one; stale target/file switch, read-only source, invalid draft or opaque source disables/rejects insertion with a reason. Never silently append into another document. A successful insertion creates one undo step and updates every open representation from the same accepted revision; panel closure does not cancel or duplicate an accepted edit. Drag/drop is optional and must call this identical path. Neither preview nor insertion runs Python. On successful explicit Insert, reveal Block if hidden and focus the inserted node; preserve the other pane choices.
@@ -379,6 +381,7 @@ All decisions consume J1 PRD and TAD, dated 2026-09-24; A1–A6 retain the bound
 | A5 | Local deterministic codecs plus existing explicit runtime (pass) outrank hosted/model translation (fail native/offline/spend). | No AI interpretation of prose. First-load offline needs verified installed cache; otherwise disclose unavailable. Roll back feature chunk using retained candidate, not user storage. |
 | A6 | Tutor preparation pilot (pass local/manual constraints) is provisionally nearer a first dollar than hosted subscriptions (fail MVP no-new-service) or marketplace sales (defer distribution evidence). | Price/channel WTP unknown; no payment action authorized here. Revisit after five buyer conversations; stop commercial expansion absent demonstrated need. |
 | A7 | Reuse G12 header/search/body and G13 pure hierarchy guides, then fork Block-specific program cards and previews (pass), rather than duplicating catalog infrastructure or feeding invented trace spans to the run viewer (fail data authority). | `BlockProgramRow` and `blockVisualLanguage` remain presentation-only. Span tree retains metrics/trace semantics; native definitions and T8 own edits. V7 must preserve both consumers. Revisit only with observed usability or parity failure. |
+| A8 | Refine geometry through shared native CSS and existing view adapters (pass) over replacing the visual system or adding a renderer/package (fail scope and dependency constraints). | One lazy stylesheet serves both visual consumers; content is not clipped, focus remains on the native row/button, and shape is decorative. Roll back the stylesheet/attributes if text or focus regresses; T8 transactions remain authoritative. |
 
 There is no claimed numerical winner where evidence is incomparable: willingness to pay across segments and native full-reparse versus incremental performance remain unknown. A failed hard constraint cannot be compensated by a better score elsewhere.
 
@@ -393,6 +396,7 @@ The MVP is R1–R5 and R7 for the declared procedural profile, not general-langu
 | S2 / P1 visible editing | Workspace owner; G1–G3/G5/G11–G13 → lazy Block pane/library, shared binding and hierarchy presenter | S1 → V1/V7 and one four-view save | Estimate 1–2 days; cap 16 hours, 4 new modules/40 kB source, 40k agent tokens; no dependency additions. |
 | S3 / P3 recovery/offline | Storage/validation owner; G7/G8/G10 → conditional write, recovery and cache closure | S2 → V4/V5 and R1–R5/R7 acceptance | Estimate 1–2 days; cap 16 hours, 4 new test/support modules/50 kB source, 40k agent tokens; stop on lost bytes/stale commit. |
 | S4 / payer learning | Product owner; existing workspace demo and manual offer | V1–V5/V7 plus reachable consenting prospects → measured pilot | ≤5 sessions, ≤4 operator hours, no ad spend; calendar/payment waits have no ETA; recheck on prospect reply/receipt. |
+| S5 / native shape refinement | Workspace owner; existing Block tree/library → shape cues | Explicit shape request and green visual predecessor → live geometry/interaction check | Estimate 15 active minutes; cap 30 minutes, four small source modules including one new lazy stylesheet, ≤8 KiB added source, one plan update; no added package/service/spend. Provider waits have no ETA. |
 
 Every implementation file remains <600 lines; every emitted chunk <500 kB. Feature target: ≤120 kB added minified conversion/UI code, ≤40 kB gzip, and ≤2 kB gzip added to the initial shell. Envelopes ≤256 KiB; source remains ≤32 KiB; ≤4,096 nodes; ≤200 mounted blocks with windowing for larger programs. New lazy module count ≤12 production modules across S1–S3; per-phase estimates must be reduced if the aggregate cap would be exceeded. Benchmark drift requires replan, not silently larger limits. No new always-load guidance.
 
@@ -481,7 +485,7 @@ Next bounded validation action after this visual slice: the parser and transacti
 
 ## Execution evidence and handoff — reference implementation
 
-Current authoring lane: `agent/device-0232231d4a19/block-editor-visuals` in the same requested checkout. Native `successor` preserved published runtime head `1a8c453872ccc6bbffd55cfcbd972a41bce4740b`; START readmitted the declared visual paths in `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/42648c5ffb747dc2fa7f168e2d19a83f5f039ec708abca1175c46873a76aea5a/manifest.json`. The shell's elevation owner is reserved by another active lane, so this candidate scopes the mobile stacking correction to the program workspace stylesheet and verifies the rendered layer. Frontmatter records the protected base, not feature readiness. E1–E6 retain historical evidence; E7 records this visual increment.
+Current authoring lane: `agent/device-0232231d4a19/block-editor-shapes` in the same requested checkout. Native `successor` preserved published visual head `f5107ef8aae43aa5f42b1fe43e811734bf65b9b5`, whose PR [#1231](https://github.com/huijoohwee/agentic-graph/pull/1231) passed its Integration Gate. START readmitted the Block presentation, library and document paths in `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/6170fd0b57757c57bdf37addc1579f2d1dc3f82d5358f30e6956b3eb1e0bf504/manifest.json`. The mission retains its original committed offline-learning planning parent; J1 records this feature increment. Frontmatter records the protected base, not feature readiness. E1–E7 retain historical evidence; E8 records geometry-only refinement.
 
 | Evidence / surface | Observed result | Scope and limitation |
 |---|---|---|
@@ -493,6 +497,7 @@ Current authoring lane: `agent/device-0232231d4a19/block-editor-visuals` in the 
 | E5 / product runtime, deployment and payer evidence | Partial: #1230 passed focused native tests and Integration Gate; current successor passed a local canvas check and live DEV visual interactions | Full V1–V7, protected merge, deployment, payment and repeat demand remain absent. |
 | E6 / J1 revision 1.1.0 document update | Pass: G11–G13 grounding, YAML/joins/links/budgets, restricted-reference check, diagrams, hygiene and affected CI (5/5 documentation partitions) | One Markdown file; no runtime/UI implementation, browser rendering or new feature test claim. |
 | E7 / J1 revision 1.2.0 visual successor | DEV `npm run dev` at localhost: dark/light and 320 px views; hierarchy disclosure, arrow/Enter selection, target-bound library preview and compatible-position Insert enablement observed. Native check passed before final diff; affected gate and provider publication are separate. | `BlockProgramRow.tsx`, `blockVisualLanguage.ts`, `programPaneLayout.css` and existing pane/library owners; no external visual or parser dependency. |
+| E8 / J1 revision 1.2.1 shape refinement | Live DEV dark/light desktop and 320 px library/tree captures show readable labels and body recesses; keyboard Left/Right collapses/expands the selected predicate. All 11 existing native editor/workspace tests and the canvas type/runtime check pass. | Four source modules; one new 82-line native CSS file; no new parsing, dependency, source mutation or execution behavior. Final affected gate and provider status belong to the exact published candidate. |
 
 ADLC ledger: one checkout/document, zero new runtime dependencies/services; actual authoring tokens/cost unavailable. OS check receipt: `.workspace/.artifacts/agent-observability-economy-20260916/validation-60684fc3ab048501fad756db/last.json` in the parent workspace. Provider wait: preserve authored bytes; recheck on gate/provider evidence change. Run the product lifecycle check before handoff; cleanup needs an exact eligible-target receipt.
 
@@ -501,6 +506,7 @@ ADLC ledger: one checkout/document, zero new runtime dependencies/services; actu
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
 | `NATIVE-BLOCK-EDITOR-001@1.2.0` | C: G1–G13 and published runtime #1230 at pinned Graph sources plus explicit native visual instruction · I: improve legibility of the four-view workspace and mobile library · D: fork program presentation from shared Agent Mission guides, add category cards/previews and readable pane widths while retaining native source authority. | R: Editor Workspace product engineering · A: Product engineer checks visual/keyboard/mobile behavior and updates this joined plan · O: one bounded visual successor with local evidence and open full-suite gaps · check: DEV UI, canvas check, affected source gate and protected provider gate | 2026-09-24 |
+| `NATIVE-BLOCK-EDITOR-001@1.2.1` | C: green visual predecessor #1231 and explicit geometry refinement request · I: make existing step/value/control distinctions legible through shape · D: retain visual identity and refine native silhouettes without copied assets or new dependencies. | R: Editor Workspace product engineering · A: refine shared shape CSS and verify live light/dark/mobile/keyboard views · O: geometry-only successor; check: 11 native tests, canvas check, affected gate and exact provider result | 2026-09-24 |
 
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
 [cid]: https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/cid-guidelines.md

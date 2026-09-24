@@ -11,6 +11,23 @@ export const BLOCK_VISUAL_TONES = {
 } as const
 
 export type BlockVisualCategory = keyof typeof BLOCK_VISUAL_TONES
+export type BlockVisualShape = 'start' | 'statement' | 'container' | 'terminal' | 'value' | 'predicate'
+
+/** Geometry describes the existing node; it never adds an editing or drop target. */
+export function blockVisualShape(row: Pick<BlockTreeNode, 'kind' | 'title' | 'statement' | 'container'>): BlockVisualShape {
+  if (row.kind === 'module') return 'start'
+  if (row.container) return 'container'
+  if (['return', 'break', 'continue'].includes(row.kind)) return 'terminal'
+  if (row.statement) return 'statement'
+  if (row.kind === 'compare' || row.kind === 'unary' && row.title === 'not'
+    || row.kind === 'binary' && ['and', 'or'].includes(row.title)) return 'predicate'
+  return 'value'
+}
+
+export function blockDefinitionShape(id: string): BlockVisualShape {
+  if (['if', 'while', 'for', 'function'].includes(id)) return 'container'
+  return id === 'return' ? 'terminal' : 'statement'
+}
 
 /** Labels and colors are a view of the supported native syntax, never a second parser. */
 export function blockVisualCategory(row: Pick<BlockTreeNode, 'kind' | 'title'>): BlockVisualCategory {
