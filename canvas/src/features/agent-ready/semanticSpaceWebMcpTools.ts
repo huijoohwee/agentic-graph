@@ -1,3 +1,4 @@
+import { readThreeRendererBackend, requestThreeRendererBackend } from '@/lib/three/threeRendererBackend'
 import { querySpaceEntities, SpaceError, type SpaceDocument, type SpaceEntity, type SpaceRegion } from '@/features/xr-v2/semanticSpaceRuntime'
 import { readSemanticSpace, runSemanticSpaceAction } from '@/features/xr-v2/semanticSpaceStore'
 import { SEMANTIC_SPACE_TOOL_IDS } from './semanticSpaceAgentReadyContract.mjs'
@@ -11,7 +12,7 @@ const slim = (entity: SpaceEntity) => ({ id: entity.id, label: entity.label, cat
   observationId: entity.observationId, region: entity.region, provenance: entity.provenance, proposalMethod: entity.proposalMethod })
 const summary = (doc: SpaceDocument | null, query = '') => ({
   ok: true, schema: 'agentic-graph/semantic-space-result/v1', spaceId: doc?.id || null,
-  revision: doc?.revision ?? null, scale: 'unknown', selectedEntityId: doc?.selectedEntityId || null,
+  renderer: readThreeRendererBackend(), revision: doc?.revision ?? null, scale: 'unknown', selectedEntityId: doc?.selectedEntityId || null,
   observations: doc?.observations.map(item => ({ id: item.id, capturedAtMs: item.capturedAtMs,
     width: item.width, height: item.height, sha256: item.sha256 })) || [],
   entities: doc ? querySpaceEntities(doc, query).map(slim) : [],
@@ -21,13 +22,15 @@ const summary = (doc: SpaceDocument | null, query = '') => ({
       position: item.position, provenance: item.provenance,
       controls: item.recipe.controls.map(control => ({ id: control.id, value: item.recipe.values[control.id] })) })) } : null,
 })
-type Parsed = { operation: 'analyze'; observationId: string } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
+type Parsed = { operation: 'renderer'; backend: 'webgl' | 'webgpu' } | { operation: 'analyze'; observationId: string } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
   | { operation: 'correct'; entityId: string; category: string; label: string }
   | { operation: 'build'; entityId: string; template: TwinTemplate; size: TwinVector; position: TwinVector }
   | { operation: 'simulate' | 'reset'; entityId: string }
 const TOKEN = '[A-Za-z0-9][A-Za-z0-9._:-]{0,127}'
 const NUMBER = '-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)'
 export function parseSemanticSpaceInvocation(value: string): Parsed {
+  const renderer = /^\/space\.renderer @canvas #(webgl|webgpu)$/.exec(value)
+  if (renderer) return { operation: 'renderer', backend: renderer[1] as 'webgl' | 'webgpu' }
   const analyze = new RegExp(`^/space\\.analyze @(${TOKEN}) #regions$`).exec(value)
   if (analyze) return { operation: 'analyze', observationId: analyze[1] }
   const find = new RegExp(`^/space\\.find #(${TOKEN})$`).exec(value)
@@ -55,6 +58,10 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
         try {
           const raw = (input?.invocation ? parseSemanticSpaceInvocation(String(input.invocation)) : input || {}) as Record<string, unknown>
           const operation = String(raw.operation || '')
+          if (operation === 'renderer') {
+            if (typeof window === 'undefined') throw new SpaceError('browser-required', 'Renderer selection needs the open browser Canvas')
+            return { ok: true, renderer: requestThreeRendererBackend(raw.backend) }
+          }
           if (operation === 'query') return summary(await readSemanticSpace(), String(raw.text || ''))
           const doc = await readSemanticSpace()
           if (!doc) throw new SpaceError('space-unavailable', 'Capture or import a space before editing')

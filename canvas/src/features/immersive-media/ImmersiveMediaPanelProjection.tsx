@@ -1,3 +1,4 @@
+import { ThreeRendererControls } from '@/lib/three/ThreeRendererControls'
 import React from 'react'
 import {
   Aperture,
@@ -444,6 +445,7 @@ export function ImmersiveMediaPanelProjection({
       >
         {snapshot.message}
       </p>
+      {surface === 'media' && <ThreeRendererControls />}
     </aside>
   )
 }
