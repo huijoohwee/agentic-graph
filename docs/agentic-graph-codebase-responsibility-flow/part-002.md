@@ -2,6 +2,7 @@
 
 | Area | Responsibility | Modules | Classes/Objects | Functions/Methods | Key | Imports | Notes | Line Range |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Editor: Monaco | Enable Monaco color decorators | `canvas/src/features/settings/registry-ui.monaco.ts` | `` | `setMonacoColorDecoratorsEnabled` | `monacoColorDecoratorsEnabled` | `zustand` |  | `canvas/src/features/settings/registry-ui.monaco.ts:L264` |
 | Editor: Monaco | Enable Monaco column selection | `canvas/src/features/settings/registry-ui.monaco.ts` | `` | `setMonacoColumnSelectionEnabled` | `monacoColumnSelectionEnabled` | `zustand` |  | `canvas/src/features/settings/registry-ui.monaco.ts:L624` |
 | Editor: Monaco | Enable Monaco copy with syntax highlighting | `canvas/src/features/settings/registry-ui.monaco.ts` | `` | `setMonacoCopyWithSyntaxHighlightingEnabled` | `monacoCopyWithSyntaxHighlightingEnabled` | `zustand` |  | `canvas/src/features/settings/registry-ui.monaco.ts:L480` |
 | Editor: Monaco | Enable Monaco cursor blinking | `canvas/src/features/settings/registry-ui.monaco.ts` | `` | `setMonacoCursorBlinkingEnabled` | `monacoCursorBlinkingEnabled` | `zustand` |  | `canvas/src/features/settings/registry-ui.monaco.ts:L372` |
@@ -201,4 +202,3 @@
 | Canvas Layout (2D) | Extra padding to visually separate nested groups | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part3.ts` | `` | `setSchema` | `schema.layout.groups.nestedPaddingStep` | `zustand` | Higher values increase outer-group breathing room to prevent nested group borders from visually snapping together. | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part3.ts:L214` |
 | Schema | max scale | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part1.ts` | `` | `setSchema` | `schema.zoom.maxScale` | `zustand` |  | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part1.ts:L679` |
 | Schema | min scale | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part1.ts` | `` | `setSchema` | `schema.zoom.minScale` | `zustand` |  | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part1.ts:L308` |
-| Graph Performance (Schema Derive Cache) | LRU capacity for schema derive lists | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part3.ts` | `` | `setSchemaDeriveCacheCapacity` | `schemaDeriveCacheCapacity` | `zustand` |  | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part3.ts:L124` |

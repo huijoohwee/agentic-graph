@@ -19,6 +19,7 @@ import { getIconSizeClass } from '@/lib/ui'
 import { readLayoutMode2d } from '@/lib/graph/layoutMode'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 import { readSnapGridScalarSize } from '@/lib/canvas/snapGridSize'
+import { activateDesignEditorSurface } from '@/features/design/designEditorLaunchState'
 import {
   CANVAS_GRID_MAJOR_ALPHA_DEFAULT,
   CANVAS_GRID_MAJOR_WIDTH_PX_DEFAULT,
@@ -217,6 +218,10 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
         workflowManagerEntryLabel?: string
       } | undefined>
       const detailTab = e.detail && e.detail.tab
+      if (detailTab === 'design') {
+        activateDesignEditorSurface()
+        return
+      }
       const detailSearchQuery = e.detail && typeof e.detail.searchQuery === 'string' ? e.detail.searchQuery : ''
       const detailAnchorId = e.detail && typeof e.detail.anchorId === 'string' ? e.detail.anchorId : ''
       const detailWorkflowManagerTab = e.detail?.workflowManagerTab === 'mapping' ? 'mapping' : 'graph'
@@ -230,7 +235,6 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
         || detailTab === 'mcp'
         || detailTab === 'maps'
         || detailTab === 'commerce'
-        || detailTab === 'design'
         || detailTab === 'workflowManager'
         || detailTab === 'help'
         || detailTab === 'dashboard'

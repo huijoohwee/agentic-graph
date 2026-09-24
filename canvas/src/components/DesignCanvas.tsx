@@ -43,6 +43,7 @@ export default function DesignCanvas({
   const containerRef = useRef<HTMLElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const resolvedThemeMode = useGraphStore(s => (s.resolvedThemeMode || 'light') as 'light' | 'dark')
+  const darkThemeVariant = useGraphStore(s => s.darkThemeVariant)
   const gRef = useRef<SVGGElement>(null)
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const labelsSelRef = useRef<d3.Selection<SVGTextElement, GraphNode, SVGGElement, unknown> | null>(null)
@@ -461,7 +462,7 @@ export default function DesignCanvas({
       arrangeActionsActive={arrangeActionsActive}
       onArrangeAction={applyArrange}
       canvasGrid={canvasGrid}
-      themeSignal={resolvedThemeMode}
+      themeSignal={`${resolvedThemeMode}:${darkThemeVariant}`}
       dims={dims}
       getZoomTransform={getZoomTransform}
       getZoomEventTarget={getZoomEventTarget}

@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { preview } from 'vite'
 import { chromium } from 'playwright'
 import { tsImport } from 'tsx/esm/api'
+import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const checkoutRevision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -70,6 +71,7 @@ try {
   }
   // A restored floating panel keeps its own discovery priority; agents select the requested group.
   await selectPython()
+  await dismissVisibleFloatingPanel(page)
   const discovery = await page.evaluate(() => ({ scope: document.documentElement.dataset.kgWebmcpScope,
     names: [...window.__registeredLearningTools.keys()], bytes: Number(document.documentElement.dataset.kgWebmcpBytes) }))
   assert.equal(discovery.names.length, 8); assert.ok(discovery.bytes <= 32 * 1024)
@@ -83,6 +85,7 @@ try {
   if (await page.getByLabel('Show Explorer pane', { exact: true }).isChecked()) await page.getByLabel('Show Explorer pane', { exact: true }).uncheck()
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'native import never executes')
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
+  await dismissVisibleFloatingPanel(page)
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByText('Offline lessons', { exact: true }).click()
   const installStart = performance.now()
@@ -96,6 +99,7 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
   await pane.waitFor({ timeout: 60000 })
   await selectPython()
+  await dismissVisibleFloatingPanel(page)
   const reloadMs = Math.round(performance.now() - reloadStart)
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   const editor = pane.getByRole('textbox', { name: 'Python source text', exact: true })
@@ -171,6 +175,7 @@ try {
   await page.screenshot({ path: join(output, 'offline-mobile-canvas.png'), fullPage: true })
   await page.getByRole('navigation', { name: 'Main Toolbar', exact: true }).getByRole('button', { name: 'Edit Python code', exact: true }).click()
   await pane.waitFor(); await selectPython()
+  await dismissVisibleFloatingPanel(page)
   assert.equal((await inspect()).binding.expectedRunId, beforeCanvasSwitch.binding.expectedRunId, 'view switching must preserve the run')
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'view switching must preserve source')
   assert.equal(await editor.evaluate(element => element.selectionStart), 7, 'view switching must preserve the editor cursor')
@@ -186,6 +191,7 @@ try {
   // Debrief save and the editor's debounced source autosave are separate native receipts.
   await awaitStoredSource(lessons.at(-1).solution)
   await page.reload({ waitUntil: 'domcontentloaded' }); await pane.waitFor({ timeout: 60000 })
+  await dismissVisibleFloatingPanel(page)
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   await awaitSource(lessons.at(-1).solution)
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'native autosave survives offline reload')
