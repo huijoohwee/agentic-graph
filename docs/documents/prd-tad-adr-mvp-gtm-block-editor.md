@@ -22,7 +22,7 @@ lifecycle_status: "proposed"
 worktree_id: "agent/device-0232231d4a19/block-editor-spec"
 agent_id: "codex-block-editor-spec"
 action: "/change"
-scope: "#block-editor.spec"
+scope: "#block-editor-spec"
 actor: "@codex-block-editor-spec"
 base_sha: "2874751715a1e1f0a12c06415141a93c894c9d90"
 guideline_revision: "3.3.0"
@@ -438,7 +438,7 @@ Next bounded implementation action, once separately in scope: parser owner proto
 
 ## Execution evidence and handoff — reference implementation
 
-Authoring lane: `agent/device-0232231d4a19/block-editor-spec`; exact base is frontmatter `base_sha`. START admitted only `docs/documents/prd-tad-adr-mvp-gtm-block-editor.md`, with checkout cap 1. The existing learning document was the committed START context; it does not authorize J1 runtime implementation. The native workflow manifest is retained in clone-local evidence at `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/1c6c8d49aa56fbe58dbfb25b320a81a3c8ffdf38ac150f1043fcf154cbae3c5c/manifest.json` outside this repository.
+Authoring lane: `agent/device-0232231d4a19/block-editor-spec`; original START base is frontmatter `base_sha`. START admitted only `docs/documents/prd-tad-adr-mvp-gtm-block-editor.md`, with checkout cap 1. The existing learning document was the committed START context; it does not authorize J1 runtime implementation. Publication first stopped on an advanced protected base. The sole intervening change was a disjoint planning document; code grounding remains unchanged. The unpublished source was refreshed onto `df55f0b64ef470c78853acce785597a2e51d62ca`, and native readmission accepted `9144d64d15504138560c6b4341ad268f5d1b1f4f` in the same lane. Its manifest is `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/2ca0a387e97aa19b0df90d9e1907f192fdadbf847b6dcf5151802ab86c073183/manifest.json` in the parent workspace. No published ref was rewritten.
 
 | Evidence / surface | Observed result | Scope and limitation |
 |---|---|---|
