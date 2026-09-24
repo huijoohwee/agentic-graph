@@ -92,11 +92,16 @@ try {
   await pane.getByRole('button', { name: 'Install offline lessons', exact: true }).click()
   await pane.getByText(/^Verified \d+ files/).waitFor({ timeout: 190000 })
   const installMs = Math.round(performance.now() - installStart)
-  await pane.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click()
-  await page.waitForURL(url => url.searchParams.get('python-learning-offline') === revision)
+  await Promise.all([
+    page.waitForURL(url => url.searchParams.get('python-learning-offline') === revision, { waitUntil: 'load', timeout: 60000 }),
+    pane.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click(),
+  ])
+  await pane.waitFor({ timeout: 60000 })
+  await page.waitForFunction(() => document.readyState === 'complete' && !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
   await context.setOffline(true)
   const reloadStart = performance.now()
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
+  const offlineResponse = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
+  assert.equal(offlineResponse?.status(), 200, 'verified offline navigation must return the cached application document')
   await pane.waitFor({ timeout: 60000 })
   await selectPython()
   await dismissVisibleFloatingPanel(page)
@@ -274,6 +279,6 @@ try {
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
 } catch (error) {
-  if (page) { console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
+  if (page) { console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState, serviceWorker: Boolean(navigator.serviceWorker?.controller) })).catch(() => ({}))); console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
   throw error
 } finally { await browser?.close(); await new Promise(resolve => server?.httpServer.close(resolve) || resolve()) }
