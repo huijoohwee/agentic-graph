@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils'
 import { readSemanticSpace, subscribeSemanticSpace } from '@/features/xr-v2/semanticSpaceStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { listStrybldrImageFiles } from '@/features/strybldr/strybldrImageFileRegistry'
+import { createStoryboardForImportedImage, readImportedImageChoice, subscribeImportedImageChoice } from './importedImageChoiceRuntime'
 import type { ImmersiveMediaSourceKind } from './immersiveMediaModel'
 import { ImmersiveMediaMarkerProjections } from './ImmersiveMediaMarkerProjections'
 import {
@@ -67,8 +68,6 @@ const SURFACE_COPY: Readonly<Record<ImmersiveMediaProjectionSurface, {
   flightSim: { title: 'Immersive flight context', subtitle: 'Compass, map, and plan projections' },
   camera: { title: 'Immersive Camera', subtitle: 'Shared view, zoom, and lens strength' },
 })
-
-let localSpaceMediaUrl: string | null = null
 
 function SurfaceIcon({ surface }: { surface: ImmersiveMediaProjectionSurface }) {
   const className = 'h-3.5 w-3.5'
@@ -148,8 +147,11 @@ function MediaSourceControls() {
 
 function SemanticSpaceMediaSource() {
   const activeSourcePath = useMarkdownExplorerStore(state => state.activePath)
+  const media = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
+  const imported = React.useSyncExternalStore(subscribeImportedImageChoice, readImportedImageChoice, readImportedImageChoice)
   const [imageUrl, setImageUrl] = React.useState<string | null>(null)
   const [opening, setOpening] = React.useState(false)
+  const [creatingStoryboard, setCreatingStoryboard] = React.useState(false)
   const [openError, setOpenError] = React.useState<string | null>(null)
   React.useEffect(() => {
     let active = true
@@ -161,9 +163,10 @@ function SemanticSpaceMediaSource() {
     return () => { active = false; unsubscribe() }
   }, [])
   const selectedSourceImage = listStrybldrImageFiles().find(file => file.workspacePath === activeSourcePath?.replace(/^\/+/, ''))?.objectUrl
-  const displayedImageUrl = selectedSourceImage || imageUrl
+  const displayedImageUrl = imported?.mediaUrl || selectedSourceImage || (media.source.kind === 'image' ? media.source.url : '') || imageUrl
   if (!displayedImageUrl) return null
   return <section className="grid gap-1 rounded border p-1 text-[10px]" aria-label="Current local image">
+    {imported ? <strong>Image imported. Choose the next step.</strong> : null}
     <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
     <button type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
       setOpening(true)
@@ -176,18 +179,21 @@ function SemanticSpaceMediaSource() {
         ])
         if (readGameModeSnapshot().active) exitGameModeSurface({ restorePreviousSurface: false })
         if (readFlightSimSnapshot().active) exitFlightSimSurface({ restorePreviousSurface: false })
-        const blob = await (await fetch(displayedImageUrl)).blob()
-        const url = URL.createObjectURL(blob)
-        const next = setImmersiveMediaSource({ kind: 'image', url })
-        if (next.error) { URL.revokeObjectURL(url); return }
-        const previous = localSpaceMediaUrl
-        localSpaceMediaUrl = url
-        openImmersiveMedia()
-        if (previous) URL.revokeObjectURL(previous)
+        const next = setImmersiveMediaSource({ kind: 'image', url: displayedImageUrl })
+        if (next.error) throw new Error(next.message)
+        const opened = openImmersiveMedia()
+        if (opened.error) throw new Error(opened.message)
       })().catch(error => {
         setOpenError(String((error as Error).message || error))
       }).finally(() => setOpening(false))
     }}>{opening ? 'Opening space image…' : 'Show space image on Canvas'}</button>
+    {imported ? <button type="button" className="App-toolbar__btn min-h-11" disabled={creatingStoryboard || !!imported.storyboardPath} onClick={() => {
+      setCreatingStoryboard(true)
+      setOpenError(null)
+      void createStoryboardForImportedImage().catch(error => {
+        setOpenError(String((error as Error).message || error))
+      }).finally(() => setCreatingStoryboard(false))
+    }}>{imported.storyboardPath ? 'Storyboard created' : creatingStoryboard ? 'Creating storyboard…' : 'Create storyboard'}</button> : null}
     {openError ? <output role="status">Space image could not open: {openError}</output> : null}
     <span>Panorama projection is approximate; scale remains unknown.</span>
   </section>

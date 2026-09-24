@@ -16,6 +16,7 @@ import {
 } from '@/features/agent-graph/agentGraphRepositoryUrl'
 import { AGENTIC_OS_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/agentic-graph-local-mcp-tool-names.mjs'
 import { isRemoteRateLimitFailureMessage } from '@/lib/net/fetchRemoteTextFailure'
+import { presentLaunchImportedImage } from './launchImportedImagePresentation'
 
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
 export const LAUNCH_FOLDER_PREVIEW_MAX_BYTES = 25 * 1024 * 1024
@@ -122,40 +123,6 @@ function isHandledWorkspaceImport(result: void | WorkspaceBridgeImportResult): b
   )
 }
 
-async function retainImportedLocalImages(files: readonly File[], result: void | WorkspaceBridgeImportResult): Promise<void> {
-  const paths = result && Array.isArray(result.createdPaths) ? result.createdPaths : []
-  if (paths.length === 0) return
-  const images = files.filter(file => /^image\/(jpeg|png|webp)$/i.test(file.type))
-  if (images.length === 0) return
-  const [{ buildCorpusSourceUnit }, { registerStrybldrImageFiles }] = await Promise.all([
-    import('@/features/queryable-corpus/sourceFilesCorpusManifest'),
-    import('@/features/strybldr/strybldrImageFileRegistry'),
-  ])
-  const sourceUnits = images.flatMap(file => {
-    const stem = file.name.replace(/\.[^.]+$/, '')
-    const exact = paths.find(path => path.toLowerCase().endsWith(`/${file.name.toLowerCase()}.source.md`))
-    const stemMatches = paths.filter(path => path.toLowerCase().endsWith(`/${stem.toLowerCase()}.source.md`))
-    const path = exact || (stemMatches.length === 1 ? stemMatches[0] : null)
-    return path ? [buildCorpusSourceUnit({ workspacePath: path, relativePath: file.name,
-      originalName: file.name, text: '', mimeHint: file.type, byteSize: file.size,
-      status: 'parsed', importMode: 'file' })] : []
-  })
-  if (sourceUnits.length === 0) return
-  const mediaUrls = registerStrybldrImageFiles({ sourceUnits, files: images })
-  if (files.length !== 1 || sourceUnits.length !== 1) return
-  const imageUrl = mediaUrls[sourceUnits[0]!.id]
-  if (!imageUrl) return
-  const [{ useGraphStore }, media] = await Promise.all([
-    import('@/hooks/useGraphStore'),
-    import('@/features/immersive-media/immersiveMediaRuntime'),
-  ])
-  const prepared = media.setImmersiveMediaSource({ kind: 'image', url: imageUrl })
-  if (prepared.error) throw Error(prepared.message)
-  useGraphStore.getState().setFloatingPanelView('media')
-  const opened = media.openImmersiveMedia()
-  if (opened.error) throw Error(opened.message)
-}
-
 function finishAgentGraphImport(
   result: WorkspaceAgentGraphImportResult,
 ): WorkspaceAgentGraphImportResult {
@@ -199,12 +166,12 @@ export async function runLaunchImportLocalFiles(args: {
       void 0
     }
     if (isHandledWorkspaceImport(result)) {
-      await retainImportedLocalImages(snapshot, result)
+      await presentLaunchImportedImage({ files: snapshot, result })
       return result
     }
   }
   const result = await args.fallback(snapshot)
-  await retainImportedLocalImages(snapshot, result)
+  await presentLaunchImportedImage({ files: snapshot, result })
   return result
 }
 
@@ -340,10 +307,17 @@ export async function runLaunchImportUrl(args: {
     try {
       result = await bridgeImport(url, args.opts)
     } catch {
-      return args.fallback(url, args.opts)
+      const fallbackResult = await args.fallback(url, args.opts)
+      await presentLaunchImportedImage({ url, result: fallbackResult })
+      return fallbackResult
     }
     if (isAgentGraphImportResult(result)) return finishAgentGraphImport(result)
-    if (isHandledWorkspaceImport(result)) return result
+    if (isHandledWorkspaceImport(result)) {
+      await presentLaunchImportedImage({ url, result })
+      return result
+    }
   }
-  return args.fallback(url, args.opts)
+  const result = await args.fallback(url, args.opts)
+  await presentLaunchImportedImage({ url, result })
+  return result
 }

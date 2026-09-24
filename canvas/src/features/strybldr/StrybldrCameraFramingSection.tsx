@@ -14,6 +14,7 @@ import {
 import { StrybldrCameraPanel } from './StrybldrCameraPanel'
 import { readSemanticSpace, subscribeSemanticSpace } from '@/features/xr-v2/semanticSpaceStore'
 import { listStrybldrImageFiles } from './strybldrImageFileRegistry'
+import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import {
   STRYBLDR_CAMERA_PROPERTY_KEY,
   readStrybldrCameraSettings,
@@ -49,6 +50,7 @@ const cameraSettingsEqual = (left: StrybldrCameraSettings, right: StrybldrCamera
 
 export function StrybldrCameraFramingSection() {
   const activeSourcePath = useMarkdownExplorerStore(state => state.activePath)
+  const immersiveMedia = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
   const [spacePreviewImageUrl, setSpacePreviewImageUrl] = React.useState<string | null>(null)
   React.useEffect(() => {
     let active = true
@@ -118,8 +120,9 @@ export function StrybldrCameraFramingSection() {
   const previewImageUrl = React.useMemo(
     () => resolveStrybldrCameraPreviewImageUrl(selectedCard)
       || listStrybldrImageFiles().find(file => file.workspacePath === activeSourcePath?.replace(/^\/+/, ''))?.objectUrl
+      || (immersiveMedia.source.kind === 'image' ? immersiveMedia.source.url : null)
       || spacePreviewImageUrl,
-    [selectedCard, activeSourcePath, spacePreviewImageUrl],
+    [selectedCard, activeSourcePath, immersiveMedia.source.kind, immersiveMedia.source.url, spacePreviewImageUrl],
   )
 
   React.useEffect(() => {
