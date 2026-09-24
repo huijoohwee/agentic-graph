@@ -4,7 +4,7 @@ doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.4.1"
 revision: "1.4.1"
 date: "2026-09-24"
-updated_date: "2026-09-24"
+updated_date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Editor Workspace product engineering"
@@ -507,8 +507,12 @@ Current authoring lane: `agent/device-0232231d4a19/block-editor-integration-refr
 | E9 / J1 revision 1.4.0 embedded consolidation | Live DEV clean-tab checks: exactly one Block infinite canvas under Split view; pointer pan, wheel zoom, 100→80→100 percent controls, reset and End-key reveal work while main Canvas stays at 100 percent. Python/Block/JSON/Markdown order and shared Monaco surfaces verified. Invalid JSON draft rejected with source retained; reset restored projection and original four Python statements. 13 focused tests and canvas type/runtime check pass locally. | Uses G14 directly; removes the custom layout stylesheet, adds no package. Latest adapter mobile/pinch and complete offline matrix remain open. Exact-candidate affected/provider result is recorded separately; earlier runs were blocked by base drift. |
 
 | E10 / J1 revision 1.4.1 integration refresh | #1236 at `e1bebf8e164b771375c231f9235dc9cb806cfc62` remained open and behind current `main` despite successful protected checks. Native successor preserved that reviewed ref; the new lane joined `280468240016f0dc4c1289256cb201c493473a5f` with no Block owner conflict. | Fresh exact-head affected/provider checks and protected review remain required. Native `complete` reported a verified wait; no integration, cleanup or production effect is claimed. |
+| E11 / protected source integration, 2026-09-25 | [#1253](https://github.com/huijoohwee/agentic-graph/pull/1253) merged the native Block editor into protected Graph `main` at `85658f03b7be1663cb2e5777a8e5fd8a1e8f736f`; Integration Gate and docs-contract passed. Canonical DEV at `http://127.0.0.1:5173/` displayed the existing Editor Workspace, Block canvas and Block library. Native closeout quarantined the former Block lane with `cleanupVerified:true`. | Source integration and local UI only. Closeout still reports `delivery_pending`; no Production activation or provider claim retirement follows from the merge. |
+| E12 / OS pin reconciliation, 2026-09-25 | Protected OS `main` at `7da764a016c8248d624ab650569d22462298e4e2` has successful `test` and `budgets` checks. This lane aligns Graph's runtime contract and package lock to that exact source through the native promoter. | The dependency update requires its own protected Graph integration and local review recheck. The current Production rollback baseline is retained; forward activation waits for an exact verified candidate and human authorization. |
 
 ADLC ledger: one checkout/document, zero new runtime dependencies/services; actual authoring tokens/cost unavailable. OS check receipt: `.workspace/.artifacts/agent-observability-economy-20260916/validation-60684fc3ab048501fad756db/last.json` in the parent workspace. Provider wait: preserve authored bytes; recheck on gate/provider evidence change. Run the product lifecycle check before handoff; cleanup needs an exact eligible-target receipt.
+
+The 2026-09-25 release handover uses the existing OS dependency promoter and a separate, one-checkout native mission. Four older automated pin PRs target the same three files and semantic scope; retire those superseded candidates before publishing this exact revision. Preserve the two unrelated seed-document edits in their separate worktree. After protected pin integration, regenerate the local review candidate and native release-frontier evidence, verify the retained Production predecessor, and present the resulting Production candidate for human approval. No local check, source merge or candidate preparation authorizes activation.
 
 ### 2026-09-24
 
