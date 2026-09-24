@@ -1,30 +1,30 @@
 ---
 title: "Native Block Editor and Four-Format Workspace"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.4.0"
-revision: "1.4.0"
+version: "1.4.1"
+revision: "1.4.1"
 date: "2026-09-24"
 updated_date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Editor Workspace product engineering"
 continuity_id: "NATIVE-BLOCK-EDITOR-001"
-prd_revision: "1.4.0"
-tad_revision: "1.4.0"
-adr_revision: "1.4.0"
-mvp_revision: "1.4.0"
-gtm_revision: "1.4.0"
+prd_revision: "1.4.1"
+tad_revision: "1.4.1"
+adr_revision: "1.4.1"
+mvp_revision: "1.4.1"
+gtm_revision: "1.4.1"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "active"
 worktree_id: "device-0232231d4a19--block-editor-spec"
-agent_id: "codex-block-editor-shapes"
+agent_id: "codex-block-editor-integration-refresh"
 action: "/change"
-scope: "#block-editor-shapes"
-actor: "@codex-block-editor-shapes"
-base_sha: "89c7a669d7a80288ca5f4aaa6b36149200134bbc"
+scope: "#block-editor-integration-refresh"
+actor: "@codex-block-editor-integration-refresh"
+base_sha: "280468240016f0dc4c1289256cb201c493473a5f"
 guideline_revision: "3.3.0"
 guideline_sha256: "03be60df27db07d1784cccd699a024b5ecd506545eb23e5ed33100e2ee528b22"
 authorization_scope: "User-authorized native Block runtime and visual implementation; no production effect"
@@ -39,7 +39,7 @@ surfaces: ["2D Renderer: Storyboard"]
 
 ## Identity, scope and source policy — reference implementation
 
-**J1 = NATIVE-BLOCK-EDITOR-001@1.4.0.** PRD, TAD, ADR, MVP, GTM and the discovery projections below consume this exact join. This document specifies the Editor Workspace enhancement and records its bounded native implementation. The conservative `undocumented` ladder values mean the independent specification-baseline and full V1–V7 gates have not passed; they do not erase local implementation evidence.
+**J1 = NATIVE-BLOCK-EDITOR-001@1.4.1.** PRD, TAD, ADR, MVP, GTM and the discovery projections below consume this exact join. This document specifies the Editor Workspace enhancement and records its bounded native implementation. The conservative `undocumented` ladder values mean the independent specification-baseline and full V1–V7 gates have not passed; they do not erase local implementation evidence.
 
 Add **Block immediately to the right of Python** in the existing pane controls: **bin → Python → Block → JSON → Markdown → Viewer**, preserving any contextual HTML control. A native, headless conversion core connects all four authoring representations. There is one durable workspace document, one accepted revision and one edit transaction owner, with format-specific drafts and derived views.
 
@@ -491,7 +491,7 @@ Next bounded validation action after this visual slice: the parser and transacti
 
 ## Execution evidence and handoff — reference implementation
 
-Current authoring lane: `agent/device-0232231d4a19/block-editor-shapes` in the same requested checkout. Native `successor` preserved published visual head `f5107ef8aae43aa5f42b1fe43e811734bf65b9b5`, whose PR [#1231](https://github.com/huijoohwee/agentic-graph/pull/1231) passed its Integration Gate. START readmitted the Block presentation, library and document paths in `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/6170fd0b57757c57bdf37addc1579f2d1dc3f82d5358f30e6956b3eb1e0bf504/manifest.json`. The mission retains its original committed offline-learning planning parent; J1 records this feature increment. Frontmatter records the protected base, not feature readiness. E1–E7 retain historical evidence; E8 records native shapes and assembled presentation; E9 records the embedded canvas consolidation. Two affected runs stopped on upstream-base drift after their browser smoke passed; the lane then merged the new protected base recorded above and requires a fresh exact-candidate gate.
+Current authoring lane: `agent/device-0232231d4a19/block-editor-integration-refresh` in the same requested checkout. Native `successor` preserved published head `e1bebf8e164b771375c231f9235dc9cb806cfc62` and review [#1236](https://github.com/huijoohwee/agentic-graph/pull/1236), whose Integration Gate passed but whose strict protected base advanced. This successor joins the latest protected source without changing Block implementation files. The mission retains its original committed offline-learning planning parent; J1 records this bounded refresh. Frontmatter records the protected base, not feature readiness. E1–E9 retain historical evidence; E10 records the closeout dependency and refreshed source candidate. Earlier affected runs stopped on upstream-base drift; the published predecessor later passed five selected owner checks.
 
 | Evidence / surface | Observed result | Scope and limitation |
 |---|---|---|
@@ -506,6 +506,8 @@ Current authoring lane: `agent/device-0232231d4a19/block-editor-shapes` in the s
 | E8 / J1 revision 1.3.0 shapes and assembly | Live DEV dark/light desktop and 320 px selection verified; a temporary loop inserted through Block library enclosed its body, collapsed/expanded independently, and was deleted to restore the original four source statements. Canvas type/runtime check and 13 focused native editor/workspace/assembly tests pass, including branch order, terminal ownership and source-preserving edits. | Existing canvas and native parser/transaction owners; six production modules and one focused test module in this successor, zero dependencies. No program was run during this check; source changes invalidated the prior run. Final affected/provider receipts remain exact-candidate evidence. |
 | E9 / J1 revision 1.4.0 embedded consolidation | Live DEV clean-tab checks: exactly one Block infinite canvas under Split view; pointer pan, wheel zoom, 100→80→100 percent controls, reset and End-key reveal work while main Canvas stays at 100 percent. Python/Block/JSON/Markdown order and shared Monaco surfaces verified. Invalid JSON draft rejected with source retained; reset restored projection and original four Python statements. 13 focused tests and canvas type/runtime check pass locally. | Uses G14 directly; removes the custom layout stylesheet, adds no package. Latest adapter mobile/pinch and complete offline matrix remain open. Exact-candidate affected/provider result is recorded separately; earlier runs were blocked by base drift. |
 
+| E10 / J1 revision 1.4.1 integration refresh | #1236 at `e1bebf8e164b771375c231f9235dc9cb806cfc62` remained open and behind current `main` despite successful protected checks. Native successor preserved that reviewed ref; the new lane joined `280468240016f0dc4c1289256cb201c493473a5f` with no Block owner conflict. | Fresh exact-head affected/provider checks and protected review remain required. Native `complete` reported a verified wait; no integration, cleanup or production effect is claimed. |
+
 ADLC ledger: one checkout/document, zero new runtime dependencies/services; actual authoring tokens/cost unavailable. OS check receipt: `.workspace/.artifacts/agent-observability-economy-20260916/validation-60684fc3ab048501fad756db/last.json` in the parent workspace. Provider wait: preserve authored bytes; recheck on gate/provider evidence change. Run the product lifecycle check before handoff; cleanup needs an exact eligible-target receipt.
 
 ### 2026-09-24
@@ -515,6 +517,7 @@ ADLC ledger: one checkout/document, zero new runtime dependencies/services; actu
 | `NATIVE-BLOCK-EDITOR-001@1.2.0` | C: G1–G13 and published runtime #1230 at pinned Graph sources plus explicit native visual instruction · I: improve legibility of the four-view workspace and mobile library · D: fork program presentation from shared Agent Mission guides, add category cards/previews and readable pane widths while retaining native source authority. | R: Editor Workspace product engineering · A: Product engineer checks visual/keyboard/mobile behavior and updates this joined plan · O: one bounded visual successor with local evidence and open full-suite gaps · check: DEV UI, canvas check, affected source gate and protected provider gate | 2026-09-24 |
 | `NATIVE-BLOCK-EDITOR-001@1.3.0` | C: green visual predecessor #1231 and explicit individual/assembled geometry requests · I: make step connections, nested values and body ownership legible · D: preserve native identity and canvas; assemble source-derived shapes with no copied assets or dependencies. | R: Editor Workspace product engineering · A: refine the native presenter, check branch semantics and live light/dark/mobile/keyboard behavior · O: bounded visual successor; check: 13 focused tests, canvas check, affected gate and exact provider result | 2026-09-24 |
 | `NATIVE-BLOCK-EDITOR-001@1.4.0` | C: explicit reuse and workspace embedding clarification · I: retain one editor experience and independent Canvas navigation · D: embed the native viewport engine/grid, reuse standard JSON/Markdown editor surfaces, remove the custom layout variant. | R: Editor Workspace product engineering · A: check camera isolation, keyboard reveal, shared-editor draft rejection and exact candidate gates · O: one embedded native Block canvas; check: E9 plus affected/provider receipt | 2026-09-24 |
+| `NATIVE-BLOCK-EDITOR-001@1.4.1` | C: explicit ADLC closeout request, #1236 green but behind strict protected `main` · I: refresh the exact source candidate while preserving published history · D: native successor joins current protected base and records closeout dependencies. | R: Editor Workspace product engineering · A: run affected checks, publish a reviewable successor and observe protected integration through native complete · O: E10 source handoff; production and cleanup require separate receipts | 2026-09-24 |
 
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
 [cid]: https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/cid-guidelines.md
