@@ -316,3 +316,18 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/hooks/useGraphStore.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/hooks/useGraphStore.ts), [`canvas/src/lib/parsers/markdownJsonLd.impl.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/parsers/markdownJsonLd.impl.ts), [`canvas/src/lib/config.render.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/config.render.ts). Their existence does not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+## ADLC release handover — reference implementation, 2026-09-24
+
+For the exact-state promotion workstream, the release owner is `agentic-graph` and the
+execution path is the [protected release runbook](../agentic-graph-acos-deploy-runbook.md).
+The current source delta admits a retained active worktree when its cached head is a
+verified ancestor of its observed live head. The native frontier producer still reads
+every registered worktree twice and rejects changed bytes, ambiguous attribution,
+divergent history, or a published lane whose cached head differs from the live head.
+The `native-release-frontier.test.mjs` focused suite is the Development check; the
+protected Integration Gate is the source-release check. A Production Release requires
+the exact localhost-review candidate, retained rollback identity, protected verify
+job, candidate-bound human authorization, and live receipts. None of those source,
+Production Release, or runtime results is claimed by this planning checkpoint. The
+next owner action is to attach their exact results before advancing `VCC-PRD-R7`.
