@@ -67,12 +67,6 @@ const MAIN_PANEL_TAB_METADATA: MainPanelTabMeta[] = [
     footerLabel: 'Research',
   },
   {
-    key: 'design',
-    label: 'Design',
-    searchable: false,
-    footerLabel: 'Design',
-  },
-  {
     key: 'workflowManager',
     label: UI_LABELS.workflowManager,
     searchable: true,
@@ -115,9 +109,9 @@ const MAIN_PANEL_TAB_METADATA: MainPanelTabMeta[] = [
 ]
 
 const MAIN_PANEL_TAB_KEY_SET = new Set<MainPanelTabKey>(MAIN_PANEL_TAB_METADATA.map(tab => tab.key))
-const MAIN_PANEL_TAB_META_BY_KEY: Record<MainPanelTabKey, MainPanelTabMeta> = Object.fromEntries(
+const MAIN_PANEL_TAB_META_BY_KEY: Partial<Record<MainPanelTabKey, MainPanelTabMeta>> = Object.fromEntries(
   MAIN_PANEL_TAB_METADATA.map(tab => [tab.key, tab]),
-) as Record<MainPanelTabKey, MainPanelTabMeta>
+) as Partial<Record<MainPanelTabKey, MainPanelTabMeta>>
 
 export function isMainPanelTabKey(key: string): key is MainPanelTabKey {
   return MAIN_PANEL_TAB_KEY_SET.has(key as MainPanelTabKey)
@@ -143,5 +137,5 @@ export const MAIN_PANEL_FOOTER_LABEL_BY_TAB: Record<MainPanelTabKey, string> = O
 ) as Record<MainPanelTabKey, string>
 
 export function getMainPanelTabMeta(tab: MainPanelTabKey): MainPanelTabMeta {
-  return MAIN_PANEL_TAB_META_BY_KEY[tab]
+  return MAIN_PANEL_TAB_META_BY_KEY[tab] ?? MAIN_PANEL_TAB_META_BY_KEY.help!
 }

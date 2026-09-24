@@ -55,6 +55,7 @@ export default function GalleryCanvas(props: GalleryCanvasProps) {
     markdownDocumentText,
     schema,
     resolvedThemeMode,
+    darkThemeVariant,
     setZoomState,
     setZoomStateForKey,
     viewPinned,
@@ -79,6 +80,7 @@ export default function GalleryCanvas(props: GalleryCanvasProps) {
       markdownDocumentText: state.markdownDocumentText,
       schema: state.schema,
       resolvedThemeMode: state.resolvedThemeMode || 'light',
+      darkThemeVariant: state.darkThemeVariant,
       setZoomState: state.setZoomState,
       setZoomStateForKey: state.setZoomStateForKey,
       viewPinned: state.viewPinned === true,
@@ -206,7 +208,7 @@ export default function GalleryCanvas(props: GalleryCanvasProps) {
         dpr={dims.dpr}
         getTransform={getGalleryGridTransform}
         getEventTarget={getGalleryGridEventTarget}
-        themeSignal={String(resolvedThemeMode)}
+        themeSignal={`${resolvedThemeMode}:${darkThemeVariant}`}
         surfaceId="gallery"
       />
       <section className="absolute inset-0 z-[1] overflow-auto" data-kg-gallery-scroll-surface="1">

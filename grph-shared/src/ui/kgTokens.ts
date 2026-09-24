@@ -54,6 +54,35 @@ const tokenValues: readonly Pick<KgTokenDef, 'cssVar' | 'light' | 'dark'>[] = [
   { cssVar: '--kg-panel-action-bg-hover', light: '#fffbeb', dark: 'var(--kg-canvas-accent, #60a5fa)' },
 ]
 
+// The neutral palette changes surfaces only; semantic accents and authored media keep their owners.
+const blackOverrides: Partial<Record<KgTokenDef['cssVar'], string>> = {
+  '--kg-app-bg': '#000000',
+  '--kg-surface-bg': '#111111',
+  '--kg-panel-bg': '#0a0a0a',
+  '--kg-panel-bg-hover': 'rgba(23, 23, 23, 0.9)',
+  '--kg-border': '#404040',
+  '--kg-divider': '#404040',
+  '--kg-text-tertiary': '#8a8a8a',
+  '--kg-code-bg': '#0d0d0d',
+  '--kg-code-border': '#343434',
+  '--kg-code-text': '#e5e7eb',
+  '--kg-accent-contrast': '#000000',
+  '--kg-focus-ring-offset': '#0a0a0a',
+  '--kg-table-header-bg': 'rgba(23, 23, 23, 0.85)',
+  '--kg-table-row-hover-bg': 'rgba(23, 23, 23, 0.9)',
+  '--kg-canvas-bg': '#000000',
+  '--kg-canvas-node-stroke': '#111111',
+  '--kg-canvas-edge-stroke': '#525252',
+  '--kg-canvas-label-halo': '#000000',
+  '--kg-media-panel-bg': '#0a0a0a',
+  '--kg-media-panel-header-bg': 'rgba(23, 23, 23, 0.85)',
+  '--kg-statusbar-bg': 'rgba(23, 23, 23, 0.9)',
+  '--kg-kanban-group-bg': 'rgba(23, 23, 23, 0.8)',
+  '--kg-kanban-card-bg': '#0a0a0a',
+  '--kg-kanban-card-bg-hover': 'rgba(23, 23, 23, 0.9)',
+  '--kg-kanban-cell-bg': 'rgba(13, 13, 13, 0.9)',
+}
+
 const purposes: Record<string, string> = {
   'app-bg': 'Application background',
   'surface-bg': 'Raised surface',
@@ -110,25 +139,28 @@ export const AG_TOKEN_DEFS: readonly KgTokenDef[] = tokenValues.map(value => {
   const name = value.cssVar.slice(5)
   const type = ['control-height', 'status-pill-height', 'table-row-height', 'kanban-card-radius'].includes(name)
     ? 'dimension' : ['kanban-card-shadow', 'kanban-card-shadow-hover'].includes(name) ? 'shadow' : 'color'
-  return { ...value, name, type, purpose: purposes[name],
-    ...(name === 'panel-action-bg-hover' ? { references: { dark: 'canvas-accent' } } : {}) }
+  return { ...value, black: blackOverrides[value.cssVar] ?? value.dark, name, type, purpose: purposes[name],
+    ...(name === 'panel-action-bg-hover' ? { references: { dark: 'canvas-accent', black: 'canvas-accent' } } : {}) }
 })
 
 export const buildKgTokensCssText = (theme: KgTheme, options: { selector?: string } = {}): string =>
-  renderKgTokensCss(AG_TOKEN_DEFS, theme, options.selector ?? (theme === 'dark' ? ":root[data-theme='dark']" : ':root'), true)
+  renderKgTokensCss(AG_TOKEN_DEFS, theme, options.selector ?? (
+    theme === 'black' ? ":root[data-theme='dark'][data-dark-variant='black']"
+      : theme === 'dark' ? ":root[data-theme='dark']" : ':root'
+  ), true)
 
 export const getKgThemeFromDom = (): KgTheme => {
   if (typeof document === 'undefined') return 'light'
   const raw = String(document.documentElement.getAttribute('data-theme') || '').trim()
-  if (raw === 'dark') return 'dark'
-  if (document.documentElement.classList.contains('dark')) return 'dark'
+  if (raw === 'dark') return document.documentElement.getAttribute('data-dark-variant') === 'black' ? 'black' : 'dark'
+  if (document.documentElement.classList.contains('dark')) return document.documentElement.getAttribute('data-dark-variant') === 'black' ? 'black' : 'dark'
   return 'light'
 }
 
 export const getKgTokenFallback = (cssVar: KgTokenDef['cssVar'], theme: KgTheme): string => {
   const def = AG_TOKEN_DEFS.find(d => d.cssVar === cssVar)
   if (!def) return ''
-  return theme === 'dark' ? def.dark : def.light
+  return def[theme]
 }
 
 export const resolveCssVarWithKgFallback = (cssVar: KgTokenDef['cssVar'], theme?: KgTheme): string => {
@@ -157,7 +189,7 @@ export const ensureKgTokensInstalled = (theme?: KgTheme): void => {
     const def = AG_TOKEN_DEFS[i]
     const current = styles ? String(styles.getPropertyValue(def.cssVar) || '').trim() : ''
     if (current) continue
-    const next = t === 'dark' ? def.dark : def.light
+    const next = def[t]
     if (!next) continue
     try {
       root.style.setProperty(def.cssVar, next)
