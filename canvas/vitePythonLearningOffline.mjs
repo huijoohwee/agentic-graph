@@ -131,14 +131,17 @@ export function installLearningOfflineOwner(owner, sourceRevision) {
   const read = async request => {
     const url = new URL(request.url)
     if (url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname)) return null
-    const navigation = request.mode === 'navigate' && url.searchParams.has('python-learning-offline')
+    const learningRoute = url.searchParams.has('python-learning-offline'), studioRoute = url.searchParams.has('studio-offline')
+    const navigation = request.mode === 'navigate' && (learningRoute || studioRoute)
     if (!navigation && !url.pathname.startsWith(scope.pathname + 'assets/')) return null
     let state
     try { state = await readState() } catch (error) { if (!navigation) return null; return new Response(String(error.message), { status: 503 }) }
     try {
-      const requested = navigation ? url.searchParams.get('python-learning-offline') : url.pathname.slice(scope.pathname.length).split('/')[1]
+      if (navigation && learningRoute && studioRoute) failure('Choose one offline workspace route.')
+      const routeKey = studioRoute ? 'studio-offline' : 'python-learning-offline'
+      const requested = navigation ? url.searchParams.get(routeKey) : url.pathname.slice(scope.pathname.length).split('/')[1]
       const version = [state.active, state.previous].find(item => item?.revision === requested)
-      if (!version) { if (navigation) failure('This offline version is not installed. Reconnect and install it from the Python pane.'); return null }
+      if (!version) { if (navigation) failure('This offline version is not installed. Reconnect and install it from the relevant workspace pane.'); return null }
       if (navigation) await verify(version)
       const { cache, manifest } = await readManifest(version)
       const file = manifest.files.find(item => item.path === (navigation ? 'index.html' : url.pathname.slice(scope.pathname.length)))
@@ -150,10 +153,10 @@ export function installLearningOfflineOwner(owner, sourceRevision) {
       const escape = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character])
       let recovery = ''
       for (const version of [state.active, state.previous]) {
-        if (!version || version.revision === url.searchParams.get('python-learning-offline')) continue
+        if (!version || version.revision === url.searchParams.get(studioRoute ? 'studio-offline' : 'python-learning-offline')) continue
         try {
           await verify(version)
-          const target = new URL(scope); target.searchParams.set('python-learning-offline', version.revision); target.searchParams.set('openEditorWorkspace', '1')
+          const target = new URL(scope); target.searchParams.set(studioRoute ? 'studio-offline' : 'python-learning-offline', version.revision); target.searchParams.set('openEditorWorkspace', '1')
           recovery = `<p><a href="${escape(target.href)}">Open previous verified installation</a></p>`; break
         } catch { /* A recovery link is offered only after full readback. */ }
       }

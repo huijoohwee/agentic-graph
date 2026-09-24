@@ -10,6 +10,7 @@ import { hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMot
 import { inspectLocalXrSceneAssets } from '@/features/three/xrSceneMcpRuntime'
 import { XrChoreographyInspector } from '@/features/three/XrChoreographyInspector'
 import { persistXrScene } from '@/features/three/xrScenePersistence'
+import { attachXrPhysicsBody, hydrateXrPhysicsRuntime, playXrPhysicsRuntime, readXrPhysicsRuntime, restoreXrPhysicsRuntimeSnapshot } from '@/features/three/xrPhysicsRuntime'
 import {
   readXrMotionReferenceRuntime,
   restoreXrMotionReferenceRuntimeSnapshot,
@@ -56,6 +57,15 @@ export function testXrStudioSceneProjectionAndExercises(): void {
   assert.equal(queryXrStudioScene(scene, { kind: 'nearest', subjectId: 'missing' }).reason, 'missing-subject')
   assert.equal(queryXrStudioScene(scene, { kind: 'within', center: [0, 0, 0], radiusMeters: Number.NaN }).reason, 'invalid-query')
   assert.equal(queryXrStudioScene({ ...scene, complete: false }, { kind: 'category', category: 'people' }).reason, 'partial-scene')
+  assert.deepEqual(queryXrStudioScene(scene, { kind: 'within', center: [2, 9, 0], radiusMeters: 0 }).matches.map(entity => entity.id), ['actor'])
+  assert.ok(queryXrStudioScene(scene, { kind: 'within', center: [2, 0, 0], radiusMeters: 50 }).matches.some(entity => entity.id === 'obstacle'))
+  assert.equal(queryXrStudioScene(scene, { kind: 'within', center: [2, 0, 0], radiusMeters: 50.01 }).reason, 'invalid-query')
+  const tiedScene = { ...scene, entities: [
+    { ...scene.entities.find(entity => entity.id === 'actor')!, position: [0, 0, 0] as const },
+    { ...scene.entities.find(entity => entity.id === 'obstacle')!, id: 'z-obstacle', position: [1, 20, 0] as const },
+    { ...scene.entities.find(entity => entity.id === 'obstacle')!, id: 'a-obstacle', position: [-1, -20, 0] as const },
+  ] }
+  assert.deepEqual(queryXrStudioScene(tiedScene, { kind: 'nearest', subjectId: 'actor' }).matches.map(entity => entity.id), ['a-obstacle'])
 
   const exercises = evaluateXrStudioExercises(runtime)
   assert.equal(exercises.sceneRevision, scene.revision)
@@ -70,12 +80,14 @@ export function testXrStudioSceneProjectionAndExercises(): void {
     { id: 'obstacle', assetId: 'furniture-table', label: 'Far table', position: [12, 0, 0] },
   ] }))
   assert.equal(distantObstacle.exercises[1]?.state, 'needs-work')
+  assert.equal(evaluateXrStudioExercises({ ...runtime, selectedActorId: 'obstacle' }).subjectId, 'actor', 'ineligible selection reports the evaluated fallback')
 
   const stageScene = projectXrStudioScene({ ...runtime, plan: readXrMotionReferencePlan({ stageId: 'neutral-volume' }) })
   assert.ok(stageScene.entities.some(entity => entity.kind === 'structure' && entity.id.startsWith('stage:')))
 }
 
 export async function testXrStudioInspectorProjectsSceneAndExercises(): Promise<void> {
+  const previousPhysics = readXrPhysicsRuntime()
   const env = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
   const container = env.dom.window.document.getElementById('root')!
   const root = createRoot(container)
@@ -88,6 +100,17 @@ export async function testXrStudioInspectorProjectsSceneAndExercises(): Promise<
     assert.ok(studio)
     assert.match(studio.textContent || '', /Nearest to Actor: Table/)
     assert.equal(studio.querySelectorAll('[data-kg-xr-studio-exercise][data-state="passed"]').length, 3)
+    assert.match(studio.textContent || '', /Evaluating Actor \(actor\)/)
+    assert.match(studio.textContent || '', /Offline Studio/)
+    assert.ok(studio.querySelector('[aria-label="Rehearsal exercises"]'))
+    await act(async () => {
+      hydrateXrPhysicsRuntime({ sceneKey: 'studio-test', persistedValue: null,
+        subjects: [{ subjectId: 'actor', position: [0, 0, 0], sizeMeters: [1, 1, 1] }] })
+      attachXrPhysicsBody({ subjectId: 'actor', patch: { mode: 'dynamic' } })
+      playXrPhysicsRuntime()
+    })
+    assert.equal(studio.querySelectorAll('[data-kg-xr-studio-exercise][data-state="blocked"]').length, 3,
+      'physics-only ownership changes refresh the visible exercise result')
     await act(async () => {
       const selector = studio.querySelector<HTMLSelectElement>('[aria-label="Find scene objects"]')!
       selector.value = 'furniture'
@@ -96,6 +119,7 @@ export async function testXrStudioInspectorProjectsSceneAndExercises(): Promise<
     assert.match(studio.querySelector('[data-kg-xr-studio-results]')?.textContent || '', /1 result · Table/)
   } finally {
     await unmountReactRoot(root)
+    restoreXrPhysicsRuntimeSnapshot(previousPhysics)
     env.restore()
   }
 }

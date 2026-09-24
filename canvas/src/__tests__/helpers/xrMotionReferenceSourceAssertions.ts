@@ -49,7 +49,7 @@ export function assertXrMotionReferenceStageSurfaceContracts(): void {
   if (!controlsSource.includes('enteredEmptyXrWorld')
     || !controlsSource.includes('camera.position.set(360, -460, 520)')
     || !controlsSource.includes('controls.target.set(0, 0, -72)')
-    || !threeGraphSource.includes('xrEmptyWorld={hasXrEmptyWorld}')) {
+    || !threeGraphSource.includes('xrEmptyWorld={hasXrEmptyWorld && !learningScene}')) {
     throw new Error('expected no-file XR world entry to reset a deterministic oblique world camera')
   }
   if (!threeGraphSource.includes("const xrDocumentLoaded = mode !== 'xr' || xrPhysicsRuntimeRunReadyDemo || Boolean(")
