@@ -448,9 +448,9 @@ if (!threeGraph.includes('{!gameFpsStageActive ? <ControlsLazy')) {
   throw new Error('Game FPS must suppress the shared OrbitControls owner')
 }
 const xrWorldPlacement = threeGraph.match(/<XrWorldPlacement\b[\s\S]*?<\/XrWorldPlacement>/)?.[0] || ''
-const authoredWorldTargets = ['SceneLazy', 'GlbAssetModel', 'SpatialCaptureManifestStage']
+const authoredWorldTargets = ['SceneLazy', 'SemanticTwinStageLazy', 'GlbAssetModel', 'SpatialCaptureManifestStage']
 const missingPauseTargets = authoredWorldTargets.filter(component => {
-  const mount = xrWorldPlacement.match(new RegExp(`<${component}\\b[\\s\\S]*?\\n\\s*/>`))?.[0] || ''
+  const mount = xrWorldPlacement.match(new RegExp(`<${component}\\b[\\s\\S]*?\\/>`))?.[0] || ''
   return !mount.includes('paused={authoredWorldPaused}')
 })
 const spatialCaptureMount = xrWorldPlacement.match(/<SpatialCaptureManifestStage\b[\s\S]*?\n\s*\/>/)?.[0] || ''
