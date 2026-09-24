@@ -36,12 +36,14 @@ export function testCanvasToolbarDockResponsiveContract() {
   if (
     !canvasText.includes("const toolbarHeaderLayerClassName = toolbarHeaderElevated ? 'z-[420]' : 'z-[290]'") ||
     !canvasText.includes('data-kg-workspace-toolbar-layer={toolbarHeaderElevated ?') ||
-    !canvasText.includes("setToolbarHeaderElevated(false)\n  }, [workspaceCanvasPaneVisible]") ||
+    !canvasText.includes('setToolbarHeaderElevated(canvasToolbarDockSpansViewport)') ||
+    !canvasText.includes("'[&_button]:min-h-11 [&_button]:!min-w-11'") ||
+    !canvasText.includes('onPointerDown={() => setToolbarHeaderElevated(false)}') ||
     !canvasText.includes('className={`absolute inset-0 pointer-events-none ${toolbarHeaderLayerClassName}`}') ||
     !canvasText.includes('onPointerDownCapture={() => setToolbarHeaderElevated(true)}') ||
     canvasText.includes("toolbarHeaderElevated ? 'z-[420]' : 'z-[400]'")
   ) {
-    throw new Error('expected editor-workspace canvas toolbar to default underneath the editor shell and elevate only after toolbar interaction')
+    throw new Error('expected editor-workspace toolbar to remain tappable above the mobile editor and retain desktop layer switching')
   }
   if (
     !toolbarText.includes('const shouldUseToolbarRowScroll = isNarrowViewport || isWorkspaceOverlayMode') ||

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import yaml from 'js-yaml'
 import { readXrMotionReferencePlan } from '@/features/three/xrMotionReferenceModel'
 import type { XrMotionReferenceRuntimeSnapshot } from '@/features/three/xrMotionReferenceRuntimeSnapshot'
 import { evaluateXrStudioExercises } from '@/features/three/xrSceneExercises'
@@ -9,7 +11,17 @@ import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFile
 import { hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import { inspectLocalXrSceneAssets } from '@/features/three/xrSceneMcpRuntime'
 import { XrChoreographyInspector } from '@/features/three/XrChoreographyInspector'
-import { persistXrScene } from '@/features/three/xrScenePersistence'
+import { persistXrScene, persistXrSceneToAuthoredSource } from '@/features/three/xrScenePersistence'
+import { buildXrMotionReferencePackage } from '@/features/three/xrMotionReferencePackage'
+import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
+import { XR_PHYSICS_WORKSPACE_SEED_PATH } from '@/features/workspace-fs/workspaceFs'
+import { createWorkspacePersistedFs } from '@/features/workspace-fs/workspaceFsPersisted'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
+import { buildAuthoredMarkdownNoteInitialText, resolveAuthoredMarkdownNoteDocumentNodeId } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
+import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
+import { withDurableBrowserStorage } from '@/__tests__/helpers/durable-browser-storage'
+import { MemoryStorage } from '@/tests/lib/memoryStorage'
+import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { attachXrPhysicsBody, hydrateXrPhysicsRuntime, playXrPhysicsRuntime, readXrPhysicsRuntime, restoreXrPhysicsRuntimeSnapshot } from '@/features/three/xrPhysicsRuntime'
 import {
   readXrMotionReferenceRuntime,
@@ -124,7 +136,7 @@ export async function testXrStudioInspectorProjectsSceneAndExercises(): Promise<
   }
 }
 
-export function testXrStudioAgentReadAndSaveReopen(): void {
+export async function testXrStudioAgentReadAndSaveReopen(): Promise<void> {
   const previousStore = useGraphStore.getState()
   const previousRuntime = readXrMotionReferenceRuntime()
   const persisted = serializeXrMotionReferencePlan(snapshot().plan)
@@ -157,4 +169,66 @@ export function testXrStudioAgentReadAndSaveReopen(): void {
     useGraphStore.setState(previousStore)
     restoreXrMotionReferenceRuntimeSnapshot(previousRuntime)
   }
+
+  await withDurableBrowserStorage(async () => {
+    const { restore } = initWindowHarness({ storage: new MemoryStorage() })
+    const path = `/notes/studio-${randomUUID()}.md`
+    const text = buildAuthoredMarkdownNoteInitialText(path)
+    const previousState = useGraphStore.getState()
+    const previousScene = readXrMotionReferenceRuntime()
+    try {
+      resetWorkspaceFsForTests()
+      const fs = await getWorkspaceFs()
+      await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: '/notes' })
+      await fs.createFile({ parentPath: '/notes', name: path.split('/').at(-1)!, text, mirrorToHost: false })
+      const initialPlan = serializeXrMotionReferencePlan(snapshot().plan)
+      const nodes = [{ id: resolveAuthoredMarkdownNoteDocumentNodeId(path), type: 'Document', label: 'Studio', properties: {} }]
+      useGraphStore.setState({
+        sourceFiles: [], markdownDocumentName: path, markdownDocumentText: text,
+        graphData: { type: 'Graph', context: 'frontmatter-flow', nodes, edges: [], metadata: { kgXrMotionReference: initialPlan } },
+        canvasRenderMode: '3d', canvas3dMode: 'xr',
+      } as never)
+      assert.ok(hydrateCanonicalXrMotionReferenceRuntime())
+      setXrMotionReferenceSubjectLabel('actor', 'Durable lead')
+      const saved = await persistXrSceneToAuthoredSource()
+      assert.equal(saved.ok, true, `${saved.message}; text=${String(useGraphStore.getState().markdownDocumentText).slice(0, 500)}`)
+      assert.equal(readXrMotionReferenceRuntime().dirty, false)
+      const stored = await createWorkspacePersistedFs().readFileText(path)
+      assert.equal(stored, useGraphStore.getState().markdownDocumentText)
+      assert.match(stored || '', /Durable lead/)
+      const packageBeforeReload = buildXrMotionReferencePackage({
+        plan: readXrMotionReferenceRuntime().plan, graphData: useGraphStore.getState().graphData!, documentName: path,
+      })
+      resetWorkspaceFsForTests()
+      const reopenedText = await (await getWorkspaceFs()).readFileText(path)
+      assert.equal(reopenedText, stored, 'new workspace instance reads the committed source')
+      const frontmatter = yaml.load(extractYamlFrontmatterBlock(reopenedText || '')?.yamlText || '') as Record<string, unknown>
+      assert.ok(frontmatter.kgXrMotionReference)
+      useGraphStore.setState({
+        sourceFiles: [], markdownDocumentName: path, markdownDocumentText: reopenedText,
+        graphData: { type: 'Graph', context: 'frontmatter-flow', nodes, edges: [], metadata: { kgXrMotionReference: frontmatter.kgXrMotionReference } },
+      } as never)
+      assert.ok(hydrateCanonicalXrMotionReferenceRuntime())
+      assert.ok(inspectLocalXrSceneAssets().studio?.scene.entities.some(entity => entity.label === 'Durable lead'))
+      const packageAfterReload = buildXrMotionReferencePackage({
+        plan: readXrMotionReferenceRuntime().plan, graphData: useGraphStore.getState().graphData!, documentName: path,
+      })
+      assert.deepEqual(packageAfterReload.files, packageBeforeReload.files, 'reopened scene exports identical reference bytes')
+
+      setXrMotionReferenceSubjectLabel('actor', 'Unsaved lead')
+      useGraphStore.setState({ markdownDocumentName: XR_PHYSICS_WORKSPACE_SEED_PATH } as never)
+      const seed = await persistXrSceneToAuthoredSource()
+      assert.equal(seed.ok, false, 'bundled seed is reconciled on reload and cannot claim an authored save')
+      assert.match(seed.message, /local scene copy/)
+      useGraphStore.setState({ markdownDocumentName: '/notes/missing-studio.md' } as never)
+      const missing = await persistXrSceneToAuthoredSource()
+      assert.equal(missing.ok, false, 'missing file cannot yield durable success')
+      assert.equal(readXrMotionReferenceRuntime().dirty, true)
+    } finally {
+      useGraphStore.setState(previousState)
+      restoreXrMotionReferenceRuntimeSnapshot(previousScene)
+      resetWorkspaceFsForTests()
+      restore()
+    }
+  })
 }

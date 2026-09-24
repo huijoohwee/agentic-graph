@@ -1,12 +1,12 @@
 ---
 title: "agentic-graph Choreography Studio"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.4.1"
-prd_revision: "1.4.1"
-tad_revision: "1.4.1"
-adr_revision: "1.4.1"
-mvp_revision: "1.4.1"
-gtm_revision: "1.4.1"
+version: "1.4.2"
+prd_revision: "1.4.2"
+tad_revision: "1.4.2"
+adr_revision: "1.4.2"
+mvp_revision: "1.4.2"
+gtm_revision: "1.4.2"
 date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -26,7 +26,7 @@ This specification covers authored spatial rehearsal: arrange a stage, query
 its objects, test movement, inspect feedback, and export a reference. The scene
 models authored space; it does not measure a room or prove execution.
 
-All five roles join at **CHOREOGRAPHY-STUDIO-001@1.4.1**. Grounding began at
+All five roles join at **CHOREOGRAPHY-STUDIO-001@1.4.2**. Grounding began at
 Graph `2874751715a1e1f0a12c06415141a93c894c9d90` ([PR #1223](https://github.com/huijoohwee/agentic-graph/pull/1223));
 the bounded S1 repair at `9dc1b112969e444561778080a60a3810abc894ef`
 is integrated at `497ce2b5d878b85058463d4b3e261d30c6d99196`. The Agentic OS
@@ -49,7 +49,7 @@ bare XR filenames mean `canvas/src/features/three/`.
 | Semantic scene | `canvas/src/features/three/xrSceneSemantic.ts` | Pure authored-plan projection and category, nearest, within queries; no physical reconstruction. |
 | Guided feedback | `canvas/src/features/three/xrSceneExercises.ts` | Three plan checks using native motion/physics safety; no persistent lesson progress or executed-run grade. |
 | Local agent controls | `canvas/src/features/three/xrSceneMcpRuntime.ts`, `xrSceneMcpContract.mjs`; `canvas/src/features/agent-ready/xrSceneWebMcpTools.ts`, `webMcpRuntime.ts` | Existing browser inspection/control seam; no dedicated semantic-query tool. |
-| Save and package | `canvas/src/features/three/xrScenePersistence.ts`, `xrMotionReferencePackage.ts` | Graph metadata save acknowledgement and deterministic JSON reference compilation; durability and reimport are separate. |
+| Save and package | `canvas/src/features/three/xrScenePersistence.ts`, `xrMotionReferencePackage.ts`; `canvas/src/features/markdown-workspace/useWorkspaceFileActions/importActions.ts` | Visible Save verifies authored Markdown bytes in persisted browser storage; local imports land in `/notes`; deterministic reference JSON remains a separate download. |
 | Procedural execution | `canvas/src/features/python-learning/pythonParser.ts`, `pythonEvaluator.ts`, `pythonWorker.ts`, `learningRuntime.ts` | Existing bounded Python subset in a terminable worker; no Studio adapter observed. |
 | Learning result and storage | `canvas/src/features/python-learning/learningProtocol.ts`, `learningLessons.ts`, `learningPersistence.ts` | Bound run identity, three original lessons, rubric and local workspace debriefs. |
 | Application cache | `canvas/vitePwaRuntimeCachePolicy.ts`, `canvas/vite.config.ts` | General asset caches; no generic offline navigation fallback. |
@@ -97,13 +97,14 @@ The $1 artifact experiment needs no new billing code or paid infrastructure.
    Downloading a reference package is not an editable-scene restore operation.
 
 At 375 px, use existing pane controls without losing selection/playhead. Touch
-must cover the flow without a keyboard. Layout, focus, screen-reader feedback
-and touch usability still require browser evidence.
+must cover the flow without a keyboard. Automated layout and touch checks are
+part of CS-09; a first-time human pilot and assistive-technology review remain
+separate evidence.
 
 ### Scope boundaries
 
-The Must slice is authored scene inspection and rehearsal, with offline proof
-still outstanding. Procedural execution already exists separately; bringing
+The Must slice is authored scene inspection and rehearsal. Procedural execution
+already exists separately; bringing
 arbitrary Studio scenes into it is a proposed extension, not delivered scope.
 
 Excluded: automatic capture/reconstruction, inferred identities, retained
@@ -239,11 +240,12 @@ prove remote HTTP/stdio control parity.
 
 ### T4 — Local continuity and failures
 
-`persistXrScene` writes serialized motion data through `updateGraphMetadata`,
-checks the in-memory value, and marks the draft saved. The graph owner updates
-the active Markdown document. Neither that boolean nor the draft's clean flag
-acknowledges durable browser storage; CS-08 must reopen the actual saved source
-through the workspace owner after a fresh page load.
+The visible Save serializes through `updateGraphMetadata`, checks the active
+Markdown frontmatter, waits for the workspace source write, then reads the same
+path from persisted browser storage. Only exact source bytes with an unchanged
+active scene clear the draft's dirty flag. Missing storage, a changed scene, or
+a reconciled bundled seed fail visibly. Local file import creates the authored
+`/notes` folder before writing there so Source Files can reopen the file.
 
 The reference compiler returns one JSON bundle with nine virtual files:
 manifest, subjects, cast, camera, diagnostics, frame samples, stage SVG,
@@ -259,8 +261,9 @@ its install/verify/recover controls. No second cache, database, shell or worker
 was added. An installed 855-file, 27,990,067-byte pack at source commit
 `9dc1b112969e444561778080a60a3810abc894ef` served the Studio route after
 network disable at 375 px and 1280 px, with HTTP 200 and no page errors.
-This proves navigation and asset closure in local Chromium, not durable scene
-save/reopen/export or the seven-step operator flow. Keep those CS-08/09 gates open.
+That historical run proved navigation and asset closure only. Current
+authored-source and mobile evidence is recorded below; the human operator gate
+remains separate.
 
 | Failure | Required outcome / evidence gap |
 |---|---|
@@ -269,7 +272,7 @@ save/reopen/export or the seven-step operator flow. Keep those CS-08/09 gates op
 | Incomplete inventory or invalid query | Preserve explicit failure and coverage state; do not imply a complete answer. |
 | Missing scene/document or unavailable browser tool | Report unavailable; manual controls remain the fallback. |
 | Failed export | Preserve plan and report error; no successful download claim. |
-| Save failure, quota, cache eviction, partial upgrade | Preserve available authored data/export recovery; report missing durability or installation. Pack failure paths have source tests; Studio document durability still needs browser proof. |
+| Save failure, quota, cache eviction, partial upgrade | Preserve available authored data/export recovery; report missing durability or installation. Missing source and seed rejection are tested; quota and eviction need separate browser negatives. |
 | Document switch after inspection | Reinspect current owner before applying any follow-up; do not reuse another document's IDs. |
 
 No telemetry, credentials, camera frames, or learner identity are required.
@@ -345,13 +348,15 @@ Report blocked prerequisites; keep source, browser, and pilot evidence distinct.
 |---|---|---|
 | S0 — This specification | One Markdown file, <500 lines and 32 KiB; zero runtime modules/dependencies; 15-minute active revision budget, refresh on preflight or source drift. | Grounded path/claim review, continuity joins, affected documentation checks, preserved historical evidence. |
 | S1 — Prove the existing rehearsal | One 60-minute verification sprint; change at most four owning source modules and 24 KiB only if a concrete failure needs repair; no new dependency. | CS-01–CS-09 with exact source, desktop/mobile profiles, network trace, save/reopen/export and negative results. |
+| S1b — Authored-source continuation | Refreshed 45-minute repair cap: one additional import owner, five source owners total, under 24 KiB changed source, no dependency. | Exact stored bytes, visible reopen, disconnected package parity, touch controls and failure paths. |
 | S2 — Evaluate a learning bridge | Separate 60-minute design spike, one supported scene mapping; no runtime commitment until S1 and owner conformance evidence pass. | CS-10 feasibility/denials, exact learning dependency revision, measured cost, then a separately scoped implementation decision. |
 
 S1 source work is merged; its four owning modules are
 `XrChoreographyInspector.tsx`, `LearningOfflineControls.tsx`,
 `vitePwaRuntimeCachePolicy.ts`, and `vitePythonLearningOffline.mjs`.
-The source diff is below 24 KiB and adds no dependency. S1 browser proof remains
-open; S2 is future scope. Each source module must stay under 600 lines and chunks under
+The source diff is below 24 KiB and adds no dependency. S1b adds the Save,
+Timeline, Canvas and import owners, plus a browser proof script. S2 is future
+scope. Each source module must stay under 600 lines and chunks under
 500 kB. Measure startup/input responsiveness on the target browser before
 claiming a performance benefit. External CI/user waits are dependencies with a
 recheck condition, never an estimated completion promise.
@@ -379,15 +384,15 @@ Public projections must pin source and preserve these evidence limits.
 
 | Surface | Status at this revision | Evidence / remaining check |
 |---|---|---|
-| Specification | `spec-complete` | Five roles join at 1.4.1; this documentation candidate requires its own checks and release receipt. |
+| Specification | `spec-complete` | Five roles join at 1.4.2; this candidate requires its own checks and release receipt. |
 | Native XR and Studio semantics | `implemented-in-part` | Source `9dc1b112969e444561778080a60a3810abc894ef`: physics-only UI refresh, fallback subject identity, query boundaries and native tool checks pass. |
-| Source integration | `observed-merged` | PRs [#1223](https://github.com/huijoohwee/agentic-graph/pull/1223) and [#1225](https://github.com/huijoohwee/agentic-graph/pull/1225) preceded [#1227](https://github.com/huijoohwee/agentic-graph/pull/1227), merged as `497ce2b5d878b85058463d4b3e261d30c6d99196` on 2026-09-24. |
-| Source checks | `passed` | Three Studio registry cases, seven verified-pack owner tests, TypeScript, Pages build, reference-package case, and 5/5 affected partitions passed. Exact-head Integration Gate run `35944202462` passed. |
-| Reference package check | `baseline-resolved` | Two test assertions lagged the shared Canvas's learning-scene exclusion; refreshed in `xrMotionReferenceSourceAssertions.ts` and `xrMotionReferencePackage.test.ts`. The package case passes; this is not a new package implementation. |
+| Source integration | `observed-merged` | [#1223](https://github.com/huijoohwee/agentic-graph/pull/1223), [#1225](https://github.com/huijoohwee/agentic-graph/pull/1225) and [#1227](https://github.com/huijoohwee/agentic-graph/pull/1227) merged through `497ce2b5` on 2026-09-24. |
+| Source checks | `passed` | Earlier Studio, pack, TypeScript, build and 5/5 affected checks passed; exact-head gate run `35944202462` passed. Current checks require a new receipt. |
+| Reference package check | `baseline-resolved` | Existing learning-scene exclusion assertions were refreshed; the package case passes. |
 | Offline navigation | `partial-pass` | At the exact source commit, local Chromium served the verified `studio-offline` pack after network disable at 375 px and 1280 px, HTTP 200, no page errors. The proof installed via the service-worker message, not a Studio button click. |
-| Offline/mobile MVP | `unverified` | CS-08/09 authored-source save/reopen/export, cache eviction, usability, accessibility and timing remain open. A bundled canonical seed reset after reload by design; its edit is not authored-source durability proof. Static local preview intermittently failed lazy-module loading, so it supplied no replacement proof. |
+| Offline/mobile MVP | `partial-pass` | Chrome 153 at 375×812 touch and 1280×800 pointer: imported `/notes/studio-local.md`, saved 17,597 bytes to IndexedDB, installed 855-file pack, cleared volatile storage, reloaded disconnected, reopened from Source Files, and exported identical files/fingerprint; zero page errors. Optional background GitHub requests were blocked. Quota/eviction, first-time human and assistive-technology checks remain open. |
 | Procedural learning bridge | `proposed` | Existing separate runtime inspected; CS-10 adapter absent. |
-| Source release | `integrated` | PR #1227 passed exact-head gate and merged; native completion quarantined its clean lane with recovery bytes retained. This is Development integration, not Production Release or Runtime evidence. |
+| Source release | `candidate` | PR #1227 is integrated; this 1.4.2 source change still needs its own exact-head release receipt. No Production deployment is requested. |
 | Deployment and market proof | `not-requested` / `unverified` | No new deployment, payment, usage or buyer evidence. |
 
 Reproduce the focused Studio checks from the Graph checkout:
@@ -397,11 +402,15 @@ npm -C canvas run test:ci:unit -- canvas.xrMode.studio.semanticExercises canvas.
 npm -C canvas run test:ci:unit -- canvas.xrMode.motionReferencePackage
 env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/pythonLearningOffline.test.ts
 npm run pages:build
+node canvas/scripts/run_choreography_studio_offline_smoke.mjs
+node canvas/scripts/run_choreography_studio_offline_smoke.mjs --desktop
 ```
 
 Registry: `canvas/src/tests/registry/postParserCases7.ts`; case owner:
-`canvas/src/__tests__/xrSceneSemantic.test.ts`. Its save/reopen uses a source
-harness, not durable browser storage. The source checks above do not close CS-08/09.
+`canvas/src/__tests__/xrSceneSemantic.test.ts`. Its new save/reopen case reads
+persisted storage and compares package files after a fresh workspace instance;
+the browser script covers the visible disconnected path. CS-08/09 remain open
+for the negative and human checks above.
 
 Run repository-selected affected checks, `git diff --check`, frontmatter join,
 source path/link, and byte/line validation. Check that no excluded branding,
@@ -411,26 +420,17 @@ bytes; never write a predicted commit or CI outcome as evidence.
 
 ### Current ADLC continuation
 
-`/change #choreography-studio-mvp @codex` integrated four source owners and
-focused tests through PR #1227. Its exact-head gate passed, canonical main
-advanced to `497ce2b5d878b85058463d4b3e261d30c6d99196`, and native
-completion quarantined the clean lane. This 1.4.1 evidence amendment uses a
-separate documentation lane; Graph's installed dependency pin is unchanged.
-
-Apply [START](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/START-WORKFLOW.md),
+The integrated S1 repair passed its exact-head gate through PR #1227. This
+1.4.2 continuation works in a separate Graph lane against `951aab7f` under
+the [START](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/START-WORKFLOW.md),
 [ADLC](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/adlc-guidelines.md), and
-[RELEASE](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/RELEASE-WORKFLOW.md) through their owner.
-Development integration, lane retirement/cleanup, and runtime delivery retain
-separate receipts. The [Graph release controller](../production-core-runtime-release.md)
-and [rollback owner](../production-rollback-baseline.md) apply only to separately
-authorized production effects; this task requests none.
-
-Next: run CS-08/09 on a user-owned source, not a reconciled seed. Prove save,
-offline reopen, export-byte parity, eviction/failure recovery, UI/tool parity
-and touch/focus timing. Recheck on source/cache/device/browser drift. Retain
-`implemented-in-part` until these gates pass; S2 remains conditional.
+[RELEASE](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/RELEASE-WORKFLOW.md)
+owners. Graph's dependency pin is unchanged. Development integration and the
+[production release](../production-core-runtime-release.md) remain separate.
+Next, complete CS-08 negatives and the CS-09 first-time pilot on source and
+browser revisions recorded with the result. S2 remains conditional.
 
 ### Preserved history
 
 - Earlier checks and MP4 evidence remain in the [immutable 1.1.2 checkpoint](https://github.com/huijoohwee/agentic-graph/blob/700e2e2cec0ade9193ea787a074f78c1a7f8bc9e/docs/documents/agentic-graph-choreography-studio-prd-tad-adr-mvp-gtm.md#historical-checkpoint--112).
-- [PR #1224](https://github.com/huijoohwee/agentic-graph/pull/1224) passed run `35937619945` and closed superseded; [PR #1225](https://github.com/huijoohwee/agentic-graph/pull/1225) passed run `35941026707` and merged as `df55f0b64ef470c78853acce785597a2e51d62ca`.
+- [PR #1224](https://github.com/huijoohwee/agentic-graph/pull/1224) closed superseded; [PR #1225](https://github.com/huijoohwee/agentic-graph/pull/1225) merged.

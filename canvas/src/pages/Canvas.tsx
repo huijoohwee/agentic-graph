@@ -117,6 +117,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
     if (workspaceViewMode === 'editor') setEditorShellWarmed(true)
   }, [workspaceViewMode])
 
+  const canvasToolbarDockSpansViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const [toolbarHeaderElevated, setToolbarHeaderElevated] = React.useState(false)
   const toolbarHeaderRef = React.useRef<HTMLElement>(null)
   const editorOverlayRef = React.useRef<HTMLElement>(null)
@@ -130,10 +131,9 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
   const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen({ workspaceViewMode, workspaceCanvasPaneOpen })
   const workspaceCanvasPaneVisible = workspaceEditorOverlayOpen && workspaceCanvasPaneOpen
   React.useEffect(() => {
-    setToolbarHeaderElevated(false)
-  }, [workspaceCanvasPaneVisible])
+    setToolbarHeaderElevated(canvasToolbarDockSpansViewport)
+  }, [canvasToolbarDockSpansViewport, workspaceCanvasPaneVisible])
   const workspacePaneBoundaryCss = `min(${workspacePreviewWidthPx}px, calc(100% - ${WORKSPACE_EDITOR_CANVAS_GUTTER_CSS}))`
-  const canvasToolbarDockSpansViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const workspaceToolbarBoundaryStyle = React.useMemo<React.CSSProperties | undefined>(
     () => canvasToolbarDockSpansViewport ? undefined : { left: workspacePaneBoundaryCss },
     [canvasToolbarDockSpansViewport, workspacePaneBoundaryCss],
@@ -270,7 +270,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                 data-kg-workspace-toolbar-layer={toolbarHeaderElevated ? 'above-editor' : 'under-editor'}
               >
                 <nav
-                  className={UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME}
+                  className={`${UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME} ${canvasToolbarDockSpansViewport ? '[&_button]:min-h-11 [&_button]:!min-w-11' : ''}`}
                   style={workspaceToolbarBoundaryStyle}
                   aria-label="Canvas Toolbar"
                   role="navigation"

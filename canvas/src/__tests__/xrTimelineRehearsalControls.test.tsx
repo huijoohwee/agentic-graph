@@ -261,7 +261,7 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     assert.ok(container.querySelector<HTMLElement>('[data-kg-xr-timeline-transport]')!.style.getPropertyValue('--kg-xr-scene-span-width').includes('* 0.1)'), 'all bars share Scene duration')
     await act(async () => { container.querySelector<HTMLButtonElement>('[data-kg-xr-motion-save]')!.click() })
     assert.equal(readXrMotionReferencePlan(useGraphStore.getState().graphData!.metadata!.kgXrMotionReference).durationSeconds, 1)
-    assert.equal(readXrMotionReferenceRuntime().dirty, false)
+    assert.equal(readXrMotionReferenceRuntime().dirty, true, 'an in-memory test document cannot claim durable Save')
     const resizeCommand = { schema: 'agentic-graph.gantt-timeline-transport-command/v1', kind: 'drag-edit', mode: 'resize-end',
       target: { documentKey: xrMotionReferenceTimelineDocumentKey('Cues.md'), selectedRowKey: scene().getAttribute('data-kg-gantt-timeline-track-row-key'), playheadMinutes: 1 / 60 },
       sourceStartMinutes: 0, sourceEndMinutes: 1 / 60, effectiveDeltaMinutes: 1 / 60, displayLaneDelta: 0 } as const
