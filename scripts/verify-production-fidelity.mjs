@@ -463,6 +463,12 @@ try {
   assert.equal(recoveredSourceAuthority.emptyWorldCount, 0, 'stale Home source recovery must never mount empty-world')
   assert.equal(recoveredSourceAuthority.gameStageCount, 0, 'stale Home source recovery must never mount Game fallback')
 
+  // Both Home proofs have finished. Release their XR canvases before exercising
+  // the Editor Workspace so the browser gate measures one active scene at a time.
+  await home.close()
+  await staleSelectionContext.close()
+  staleSelectionContext = null
+
   const app = await context.newPage()
   // The root-alias graph route is the documented way to suppress Home's live
   // canvas hero before opening the Editor Workspace.  `kgReleaseProof` alone
@@ -485,6 +491,15 @@ try {
   )
   assert.deepEqual(poisonedModules, [], `JavaScript module requests returned HTML: ${poisonedModules.join(', ')}`)
   assert.deepEqual(pageErrors, [], `uncaught browser errors: ${pageErrors.join(' | ')}`)
+} catch (error) {
+  console.error(JSON.stringify({
+    schema: 'agentic-graph/browser-fidelity-diagnostics/v1',
+    sourceRevision: expectedSourceRevision,
+    pageErrors: pageErrors.slice(-10),
+    poisonedModules: poisonedModules.slice(-10),
+    loadedReleaseAssetCount: browserAssetScripts.length,
+  }))
+  throw error
 } finally {
   await staleSelectionContext?.close()
   await browser.close()
