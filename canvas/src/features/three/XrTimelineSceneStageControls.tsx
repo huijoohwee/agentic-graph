@@ -16,6 +16,7 @@ export function XrTimelineSceneStageControls({
   playheadSeconds,
   saveDisabled,
   savePlan,
+  savingScene,
   sceneEditorStyle,
   scrubPlayhead,
   speedWarningCount,
@@ -34,6 +35,7 @@ export function XrTimelineSceneStageControls({
   playheadSeconds: number
   saveDisabled: boolean
   savePlan: () => void
+  savingScene: boolean
   sceneEditorStyle: React.CSSProperties
   scrubPlayhead: (seconds: number) => void
   speedWarningCount: number
@@ -64,9 +66,15 @@ export function XrTimelineSceneStageControls({
       >
         {beatLabel}
       </output>
+      <button type="button" className="App-toolbar__btn min-h-11 px-2 text-xs" style={{ minWidth: 44, flexShrink: 0 }} disabled={saveDisabled} aria-busy={savingScene} onClick={savePlan} data-kg-xr-motion-save="1">
+        {savingScene ? 'Saving…' : 'Save'}
+      </button>
+      <button type="button" className="App-toolbar__btn min-h-11 px-2 text-xs" style={{ minWidth: 44, flexShrink: 0 }} disabled={!graphReady} onClick={exportPackage} data-kg-xr-motion-export="1">
+        Export
+      </button>
       <label className="xr-timeline-control-field" data-kg-xr-timeline-playhead-control="scene-clip">
         <PanelTextInput
-          className="h-5 w-12 px-1 py-0 text-[9px]"
+          className="min-h-11 w-16 px-1 py-0 text-xs"
           type="number"
           min={0}
           max={durationSeconds}
@@ -79,6 +87,7 @@ export function XrTimelineSceneStageControls({
       </label>
       <PanelSelect
         className="xr-timeline-scene-stage-select"
+        style={{ minHeight: 44 }}
         aria-label="XR scene stage"
         value={stageId}
         onChange={event => applyStage(event.target.value)}
@@ -95,12 +104,6 @@ export function XrTimelineSceneStageControls({
       <span className={cn('xr-timeline-control-status xr-timeline-scene-stage-summary-chip', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-motion-stage-summary="scene-clip">
         {documentLoaded ? `${objectCount} objects · ${edges} links` : 'World ready'} · {cameraMarkCount} camera marks · {speedWarningCount ? `${speedWarningCount} speed warnings` : 'speed sane'}
       </span>
-      <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={saveDisabled} onClick={savePlan} data-kg-xr-motion-save="1">
-        Save
-      </button>
-      <button type="button" className="App-toolbar__btn h-5 px-1.5 text-[9px]" disabled={!graphReady} onClick={exportPackage} data-kg-xr-motion-export="1">
-        Export
-      </button>
     </section>
   )
 }
