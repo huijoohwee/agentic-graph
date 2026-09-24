@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
+import { spawnSync } from 'node:child_process'
 import { parseLearningPython } from '../features/python-learning/pythonParser'
 import { applyProgramJson, applyProgramMarkdown, renderProgramJson, renderProgramMarkdown } from '../features/block-editor/programCodec'
 import { BLOCK_DEFINITIONS, insertBlock, programTree } from '../features/block-editor/blockLibrary'
@@ -92,4 +93,52 @@ test('Block library session generations fence target and source changes', () => 
   assert(readBlockSession()!.generation > first)
   clearBlockSession(owner)
   assert.equal(readBlockSession(), null)
+})
+
+test('four editing origins preserve a shared program through every directed view pair and cycle', () => {
+  const base = '# keep header\r\nscore = 1\r\nif score > 1:\r\n    score = score + 3\r\nfor index in range(2):\r\n    score = score + index\r\nprint(score)\r\n# keep footer\r\n'
+  const expected = base.replace('score = 1', 'score = 2')
+  const jsonDraft = JSON.parse(renderProgramJson(base))
+  jsonDraft.program.body[0].value.value.decimal = '2'
+  const origins = {
+    Python: expected,
+    Block: replaceBlock(base, 's0', 'score = 2'),
+    JSON: applyProgramJson(base, JSON.stringify(jsonDraft)),
+    Markdown: applyProgramMarkdown(base, renderProgramMarkdown(base).replace('score = 1', 'score = 2')),
+  }
+  const views = ['Python', 'Block', 'JSON', 'Markdown'] as const
+  const project = (source: string, view: typeof views[number]): string => {
+    if (view === 'Python') { parseLearningPython(source); return source }
+    if (view === 'Block') {
+      assert(programTree(parseLearningPython(source)).some(row => row.title === 'assign score'))
+      return replaceBlock(source, 's0', blockSource(source, 's0'))
+    }
+    if (view === 'JSON') return applyProgramJson(source, renderProgramJson(source))
+    return applyProgramMarkdown(source, renderProgramMarkdown(source))
+  }
+  for (const from of views) {
+    assert.equal(origins[from], expected, `${from} changed only the intended source interval`)
+    for (const to of views) if (to !== from) assert.equal(project(origins[from], to), expected, `${from} → ${to}`)
+    let cycled = origins[from]
+    for (let step = 1; step <= views.length; step++) cycled = project(cycled, views[(views.indexOf(from) + step) % views.length]!)
+    assert.equal(cycled, expected, `${from} → all views → ${from}`)
+  }
+  const python = spawnSync('python3', ['-I', '-S', '-c', expected], { encoding: 'utf8', timeout: 3000 })
+  if (!python.error || (python.error as NodeJS.ErrnoException).code !== 'ENOENT') {
+    assert.equal(python.status, 0, python.stderr)
+    assert.equal(python.stdout, '6\n', 'independent interpreter output for the pure subset')
+  }
+})
+
+test('conversion rejects unsupported or ambiguous drafts without consuming their source bytes', () => {
+  const unsupported = '# keep opaque source\nimport os\n'
+  assert.throws(() => renderProgramJson(unsupported), /Unsupported|unsupported/)
+  assert.equal(unsupported, '# keep opaque source\nimport os\n')
+  const source = 'answer = 1\n', markdown = renderProgramMarkdown(source)
+  assert.throws(() => applyProgramMarkdown(source, markdown + markdown), /one owned Python fence/)
+  const json = JSON.parse(renderProgramJson(source))
+  json.program.body[0].value.value.decimal = '9007199254740993'
+  assert.equal(applyProgramJson(source, JSON.stringify(json)), 'answer = 9007199254740993\n')
+  assert.throws(() => applyProgramJson(source, renderProgramJson('answer = 2\n')), /Source changed/)
+  assert.equal(source, 'answer = 1\n')
 })
