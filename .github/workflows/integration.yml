@@ -26,8 +26,48 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  docs-contract:
+    name: docs-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DOC_SYNC_OS_REVISION: e96dd20f7ae5e12cfd2bda037c6cb1518237d378
+      DOC_SYNC_TEMPLATE_REVISION: fc14505ac603c6e72bd682326d0b4c4d75e1745c
+    steps:
+      - name: Checkout agentic-graph
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: agentic-graph
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Checkout protected Markdown sync verifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: huijoohwee/agentic-os
+          ref: ${{ env.DOC_SYNC_OS_REVISION }}
+          path: .doc-sync-os
+          persist-credentials: false
+      - name: Checkout protected Markdown template
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: huijoohwee/huijoohwee.github.io
+          ref: ${{ env.DOC_SYNC_TEMPLATE_REVISION }}
+          path: .doc-sync-source
+          persist-credentials: false
+      - name: Check enrolled Graph document
+        run: >-
+          node .doc-sync-os/scripts/doc-sync.mjs
+          --mode=check --repo=agentic-graph --source-repo=.doc-sync-source
+          --document=docs/document-maintenance.md
+          --to="$DOC_SYNC_TEMPLATE_REVISION"
+
   integration-gate:
     name: Integration Gate
+    needs: [docs-contract]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
