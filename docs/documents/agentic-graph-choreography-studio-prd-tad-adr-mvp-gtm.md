@@ -1,12 +1,12 @@
 ---
 title: "agentic-graph Choreography Studio"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.0"
-prd_revision: "1.3.0"
-tad_revision: "1.3.0"
-adr_revision: "1.3.0"
-mvp_revision: "1.3.0"
-gtm_revision: "1.3.0"
+version: "1.4.0"
+prd_revision: "1.4.0"
+tad_revision: "1.4.0"
+adr_revision: "1.4.0"
+mvp_revision: "1.4.0"
+gtm_revision: "1.4.0"
 date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -14,7 +14,7 @@ owner: "agentic-graph"
 continuity_id: "CHOREOGRAPHY-STUDIO-001"
 source_status: "spec-complete"
 runtime_status: "implemented-in-part"
-delivery_status: "undocumented"
+delivery_status: "development-candidate"
 deployment_status: "not-requested"
 ---
 
@@ -28,14 +28,15 @@ movement plan, inspect feedback, and export a reusable reference. Its semantic
 scene is an interactive digital model of authored space. It is not a measured
 copy of a physical room, live sensor state, or evidence that a rehearsal ran.
 
-All five roles join at **CHOREOGRAPHY-STUDIO-001@1.3.0**. This revision clarifies
-save/export/offline boundaries and adds acceptance scenarios. Grounding baseline: Graph
+All five roles join at **CHOREOGRAPHY-STUDIO-001@1.4.0**. This revision records
+the bounded S1 runtime repair and its remaining acceptance gaps. Grounding baseline: Graph
 `2874751715a1e1f0a12c06415141a93c894c9d90`, the merged Choreography source from
 [PR #1223](https://github.com/huijoohwee/agentic-graph/pull/1223). Runtime source
 was inspected at that revision; the upstream workflow was read at Agentic OS
 `f8d00dd13242d7d83bae0276837268286b550bf0`. An upstream workflow read does not
 change Graph's installed dependency pin. Refresh grounding when these owners
-change. Historical checks remain bound to their original source revisions.
+change. The implementation source commit is `9dc1b112969e444561778080a60a3810abc894ef`;
+historical checks remain bound to their original source revisions.
 
 The [XR Motion Reference](agentic-graph-xr-motion-reference-document.md) and
 [Python learning plan](prd-tad-adr-mvp-gtm-offline-python-learning-workspace.md)
@@ -212,8 +213,10 @@ safety owner reads scene-matched physics phase/frame and body ownership; this
 report is not a pure function of the plan or revision number alone. The current
 report carries no physics-frame identity. Compare UI/tool results with physics
 stopped or the same observed state; do not cache a pass by scene revision alone.
-The inspector memoizes by XR snapshot, so physics-only refresh parity and visible
-evaluated-subject identity remain S1 checks. These are plan observations, not
+The inspector now subscribes to native physics revisions and displays the
+evaluated subject ID/label. The browser tool evaluates on each inspection;
+selection fallback and physics-only UI refresh passed focused source tests.
+These are plan observations, not
 executed lessons, learner achievements, traversed distances, or framing proof.
 
 ### T3 — Headless queries, browser tools, and invocation
@@ -254,14 +257,16 @@ video. Its eight-hex graph/motion fingerprints are deterministic labels, not
 cryptographic integrity or authorization proofs. No Studio package importer was
 found in the inspected owners; retain the editable source document separately.
 
-Offline installation is a prerequisite still to prove. `vite.config.ts` sets
+Offline installation remains a prerequisite for a complete scene rehearsal. `vite.config.ts` sets
 `navigateFallback: null`; general script/style/worker caching is bounded and
-uses background revalidation. The dedicated offline navigation route and atomic
-asset closure belong to Python learning. They do not establish an installed
-Studio route. S1 must identify the real route, service-worker revision, complete
-lazy asset closure, and durable document before testing disconnected reload.
-An uncached visit or another feature's smoke is insufficient. Reuse these owners
-for any repair; add no independent cache, database, or application shell.
+uses background revalidation. S1 now admits `studio-offline=<source-revision>`
+through the existing verified application pack and service worker; Studio exposes
+its install/verify/recover controls. No second cache, database, shell or worker
+was added. An installed 855-file, 27,990,067-byte pack at source commit
+`9dc1b112969e444561778080a60a3810abc894ef` served the Studio route after
+network disable at 375 px and 1280 px, with HTTP 200 and no page errors.
+This proves navigation and asset closure in local Chromium, not durable scene
+save/reopen/export or the seven-step operator flow. Keep those CS-08/09 gates open.
 
 | Failure | Required outcome / evidence gap |
 |---|---|
@@ -270,7 +275,7 @@ for any repair; add no independent cache, database, or application shell.
 | Incomplete inventory or invalid query | Preserve explicit failure and coverage state; do not imply a complete answer. |
 | Missing scene/document or unavailable browser tool | Report unavailable; manual controls remain the fallback. |
 | Failed export | Preserve plan and report error; no successful download claim. |
-| Save failure, quota, cache eviction, partial upgrade | Preserve available authored data/export recovery; report missing durability or installation. Studio browser proof pending. |
+| Save failure, quota, cache eviction, partial upgrade | Preserve available authored data/export recovery; report missing durability or installation. Pack failure paths have source tests; Studio document durability still needs browser proof. |
 | Document switch after inspection | Reinspect current owner before applying any follow-up; do not reuse another document's IDs. |
 
 No telemetry, credentials, camera frames, or learner identity are required.
@@ -349,7 +354,11 @@ source tests, browser proof, and pilot outcomes retain their own evidence.
 | S1 — Prove the existing rehearsal | One 60-minute verification sprint; change at most four owning source modules and 24 KiB only if a concrete failure needs repair; no new dependency. | CS-01–CS-09 with exact source, desktop/mobile profiles, network trace, save/reopen/export and negative results. |
 | S2 — Evaluate a learning bridge | Separate 60-minute design spike, one supported scene mapping; no runtime commitment until S1 and owner conformance evidence pass. | CS-10 feasibility/denials, exact learning dependency revision, measured cost, then a separately scoped implementation decision. |
 
-S1/S2 are future scope estimates, not started work or production ETAs. Each
+S1 is active at the source commit above; its four owning source modules are
+`XrChoreographyInspector.tsx`, `LearningOfflineControls.tsx`,
+`vitePwaRuntimeCachePolicy.ts`, and `vitePythonLearningOffline.mjs`.
+The changed source diff is below 24 KiB and adds no dependency. S2 is future
+scope. Each
 source module must remain under 600 lines and each new lazy-loaded chunk under
 500 kB. Measure startup/input responsiveness on the target browser before
 claiming a performance benefit. External CI/user waits are dependencies with a
@@ -378,14 +387,15 @@ Public projections must pin source and preserve these evidence limits.
 
 | Surface | Status at this revision | Evidence / remaining check |
 |---|---|---|
-| Specification | `spec-complete` | Five roles joined at 1.3.0; document checks and exact candidate receipts required. |
-| Native XR and Studio semantics | `implemented-in-part` | Inspected Graph baseline above; ownership, limits, predicates, and tool boundaries cited. |
-| Prior source integration | `observed-merged` | PR #1223 merge `2874751715a1e1f0a12c06415141a93c894c9d90`, observed 2026-09-24. Does not prove this document successor's integration. |
-| Inherited focused checks | `passed-source-only` | On 2026-09-24, all three Studio registry cases below passed against unchanged runtime source at Graph `2874751715a1e1f0a12c06415141a93c894c9d90`; source harness only. |
-| Reference package check | `baseline-failed` | 2026-09-24: the case below failed in this lane and unchanged canonical `2874751715a1e1f0a12c06415141a93c894c9d90`: “expected no-file XR world entry to reset a deterministic oblique world camera.” Owner: `canvas/src/__tests__/helpers/xrMotionReferenceSourceAssertions.ts`. No package-test pass claimed. |
-| Offline/mobile MVP | `unverified` | CS-08/CS-09 full installed browser flow, failure recovery, accessibility and timing absent. |
+| Specification | `spec-complete` | Five roles joined at 1.4.0; this candidate's document checks and exact release receipts still required. |
+| Native XR and Studio semantics | `implemented-in-part` | Source `9dc1b112969e444561778080a60a3810abc894ef`: physics-only UI refresh, fallback subject identity, query boundaries and native tool checks pass. |
+| Prior source integration | `observed-merged` | PR #1223 merge `2874751715a1e1f0a12c06415141a93c894c9d90`; specification PR #1225 merge `df55f0b64ef470c78853acce785597a2e51d62ca`, both observed 2026-09-24. |
+| Focused source checks | `passed-source-only` | Three Studio registry cases, seven verified-pack owner tests, TypeScript, production Pages build/PWA authority, and reference-package registry case passed at source commit above. |
+| Reference package check | `baseline-resolved` | Two test assertions lagged the shared Canvas's learning-scene exclusion; refreshed in `xrMotionReferenceSourceAssertions.ts` and `xrMotionReferencePackage.test.ts`. The package case passes; this is not a new package implementation. |
+| Offline navigation | `partial-pass` | At the exact source commit, local Chromium served the verified `studio-offline` pack after network disable at 375 px and 1280 px, HTTP 200, no page errors. The proof installed via the service-worker message, not a Studio button click. |
+| Offline/mobile MVP | `unverified` | CS-08/09 source save/reopen/export, cache eviction in an actual Studio document, seven-step usability, accessibility and timing are outstanding. |
 | Procedural learning bridge | `proposed` | Existing separate runtime inspected; CS-10 adapter absent. |
-| Current source release | `pending` | Native RELEASE and exact candidate checks; no assumed integration. |
+| Current source release | `pending` | Native RELEASE and exact candidate Integration Gate still required; no assumed integration. |
 | Deployment and market proof | `not-requested` / `unverified` | No new deployment, payment, usage or buyer evidence. |
 
 Reproduce the focused Studio checks from the Graph checkout:
@@ -393,6 +403,8 @@ Reproduce the focused Studio checks from the Graph checkout:
 ```sh
 npm -C canvas run test:ci:unit -- canvas.xrMode.studio.semanticExercises canvas.xrMode.studio.inspector canvas.xrMode.studio.agentSaveReopen
 npm -C canvas run test:ci:unit -- canvas.xrMode.motionReferencePackage
+env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/pythonLearningOffline.test.ts
+npm run pages:build
 ```
 
 Registry owner: `canvas/src/tests/registry/postParserCases7.ts`; test owner:
@@ -410,13 +422,11 @@ bytes; never write a predicted commit or CI outcome as evidence.
 
 ### Current ADLC continuation
 
-`/change #choreography-studio-spec-continued @codex` owns this one-file revision.
-Native successor preserves PR #1224 at `700e2e2cec0ade9193ea787a074f78c1a7f8bc9e`
-and reuses the requested `device-0232231d4a19--choreography-studio-spec` checkout
-with its existing reservation and mission cap. The merged upstream START fix
-selects a fresh mission for new unbound scopes; an existing published owner
-continues through successor. Graph's installed dependency pin is unchanged.
-Canonical main remains read-only; this revision authorizes no runtime edits.
+`/change #choreography-studio-mvp @codex` owns this implementation candidate
+from Graph `df55f0b64ef470c78853acce785597a2e51d62ca` in the registered
+`device-0232231d4a19--choreography-studio-mvp` lane. The prior specification
+lane was integrated and closed. Four source owners and focused tests changed;
+Graph's installed dependency pin is unchanged. Canonical main remains read-only.
 
 Apply [START](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/START-WORKFLOW.md),
 [ADLC](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/adlc-guidelines.md), and
@@ -426,9 +436,9 @@ separate receipts. The [Graph release controller](../production-core-runtime-rel
 and [rollback owner](../production-rollback-baseline.md) apply only to separately
 authorized production effects; this task requests none.
 
-Next: the runtime owner reconciles the baseline package-test failure, then runs
-S1 with installed-cache/browser prerequisites at an exact reviewed revision.
-Recheck on source/cache/device/browser drift. Until CS-08/09 pass, retain
+Next: complete CS-08/09 with an actual saved Studio source reopened offline,
+export byte comparison, failure recovery, UI/tool parity and first-time mobile
+controls. Recheck on source/cache/device/browser drift. Until those gates pass, retain
 `implemented-in-part`. Handoff records diff, checks, release state and risk;
 preserve the lane while publication/closeout is pending.
 
@@ -437,8 +447,10 @@ preserve the lane while publication/closeout is pending.
 - 1.1.2 source work integrated through [PR #1223](https://github.com/huijoohwee/agentic-graph/pull/1223)
   at the grounding baseline. Earlier checks, reviewed heads, and MP4 evidence
   remain recorded in the [immutable checkpoint](https://github.com/huijoohwee/agentic-graph/blob/700e2e2cec0ade9193ea787a074f78c1a7f8bc9e/docs/documents/agentic-graph-choreography-studio-prd-tad-adr-mvp-gtm.md#historical-checkpoint--112).
-- 1.2.0 documentation candidate [PR #1224](https://github.com/huijoohwee/agentic-graph/pull/1224)
+- 1.2.0 documentation [PR #1224](https://github.com/huijoohwee/agentic-graph/pull/1224)
   at `700e2e2cec0ade9193ea787a074f78c1a7f8bc9e` passed Integration Gate run
-  `35937619945`; observed open on 2026-09-24. Its green result does not cover
-  this 1.3.0 successor. Publish and check the exact new candidate before claiming
-  its Development integration; Production Release and Runtime remain unverified.
+  `35937619945` and was closed as superseded on 2026-09-24.
+- 1.3.0 successor [PR #1225](https://github.com/huijoohwee/agentic-graph/pull/1225)
+  at `ccd4e69d731af95e24da83aeaae01677832a9294` passed Integration Gate run
+  `35941026707` and merged as `df55f0b64ef470c78853acce785597a2e51d62ca`.
+  Production Release and Runtime remain unverified.
