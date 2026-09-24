@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.6.2"
+version: "0.6.3"
 date: "2026-09-24"
 lang: "en-US"
 owner: "Documentation maintainers"
@@ -16,17 +16,17 @@ continuity_id: "PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/d1bb72de041b1ddc6d291fd4f8528ccc2d367fea/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "969f0d07802605a38dc10cde840ff685d468cf46"
-previous_document_version: "0.6.1"
-prd_revision: "0.6.2"
-tad_revision: "0.6.2"
-adr_revision: "0.6.2"
-mvp_revision: "0.6.2"
-gtm_revision: "0.6.2"
+previous_document_version: "0.6.2"
+prd_revision: "0.6.3"
+tad_revision: "0.6.3"
+adr_revision: "0.6.3"
+mvp_revision: "0.6.3"
+gtm_revision: "0.6.3"
 ---
 
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
-Current accepted scope revision: **0.6.2**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.6.3**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
 
@@ -590,10 +590,10 @@ updated or establish full accessibility coverage. The central policy/template su
 website PR #269, pending protected integration. Exact Graph successor SHA, provider checks,
 protected integration and production remain pending. No buyer receipt.
 
-## Native offline validation recovery
+## Native offline validation and palette browser proof
 
-All five roles join the same continuity ID at **0.6.2**. PRD: the mobile offline Python workflow must remain operable when a restored FloatingPanel covers editor controls and after a verified offline navigation.
-TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs` to close the panel through its accessible button, then awaits the opened document, workspace and service-worker controller before switching offline.
-ADR: exercise the native pointer path and existing panel store owner; do not force clicks through overlays or create another controller. Exclude the Timeline, which shares the generic panel marker.
-MVP: rerun the offline smoke, source checks and exact protected Integration Gate. GTM: this validation repair changes no buyer offer or delivery claim.
-PR #1240 passed build and hygiene, then failed on the covered click. PR #1241 reached offline reload but found an empty document in hosted CI; its local built-preview smoke and affected offline stage passed all three lessons. The new readiness-bound built-preview smoke also passed all three lessons and offline reloads. The local affected plan later stopped on an unrelated catalog revision mismatch. Successor cap: 35 minutes, 5 KiB authored delta, two test owner modules and this joined record. Protected integration, production and buyer receipts remain pending.
+All five roles join the same continuity ID at **0.6.3**. PRD: the mobile offline Python workflow must remain operable after a verified navigation, and Design review must distinguish Light, Black and Dark Blue at narrow and desktop widths.
+TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs`, awaits document and service-worker readiness, and the Design smoke selects palettes through the existing Settings store. `useThemeDetector` observes variant-only DOM changes.
+ADR: exercise native panel and theme owners; do not force clicks through overlays, mutate theme classes behind Settings, or create another controller. Exclude the Timeline, which shares the generic panel marker.
+MVP: rerun offline and Design browser smokes, source checks and exact protected Integration Gate. GTM: these validation repairs change no buyer offer or delivery claim.
+PR #1240 failed on a covered click; PR #1241 found an empty offline document; PR #1242 passed the offline stage but its Design smoke still expected one old Dark theme. Local readiness-bound offline smoke passed all three lessons; the Design smoke now passes Light, Black and Dark Blue at 360px and 1280px, and Canvas check and hygiene pass. A local affected plan stopped on an unrelated catalog revision mismatch. Successor cap: 50 minutes, 8 KiB authored delta, three owner modules and this record. Protected integration, production and buyer receipts remain pending.
