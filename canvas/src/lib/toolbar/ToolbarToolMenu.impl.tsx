@@ -79,6 +79,7 @@ type FloatingPanelOverflowOption = {
 }
 
 const FloatingPanelChatLazy = React.lazy(() => import('@/features/chat/FloatingPanelChat'))
+const FloatingPanelBlockLibraryLazy = React.lazy(() => import('@/features/toolbar/FloatingPanelBlockLibraryView').then(mod => ({ default: mod.FloatingPanelBlockLibraryView })))
 const StoryboardWidgetFloatingPanelViewLazy = React.lazy(() => import('@/features/storyboard-widget-manager/StoryboardWidgetFloatingPanelView').then(mod => ({ default: mod.StoryboardWidgetFloatingPanelView })))
 const FlowchartFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/FlowchartFloatingPanelView').then(mod => ({ default: mod.FlowchartFloatingPanelView })))
 const GitGraphFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GitGraphFloatingPanelView').then(mod => ({ default: mod.GitGraphFloatingPanelView })))
@@ -87,11 +88,13 @@ const TimelineFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgra
 const ArchitectureFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/ArchitectureFloatingPanelView').then(mod => ({ default: mod.ArchitectureFloatingPanelView })))
 const EventModelingFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/EventModelingFloatingPanelView').then(mod => ({ default: mod.EventModelingFloatingPanelView })))
 
-const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['skillsCommands', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling'])
+const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling'])
 
 const FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS: FloatingPanelViewButtonSpec[] = [
   { view: 'propsPanel', title: UI_LABELS.propsPanel, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.propsPanel },
-  { view: 'skillsCommands', title: UI_LABELS.skillsCommands, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.skillsCommands }, { view: 'promptPresets', title: UI_LABELS.promptPresets, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.promptPresets },
+  { view: 'skillsCommands', title: UI_LABELS.skillsCommands, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.skillsCommands },
+  { view: 'blockLibrary', title: UI_LABELS.blockLibrary, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.blockLibrary },
+  { view: 'promptPresets', title: UI_LABELS.promptPresets, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.promptPresets },
   { view: 'view', title: UI_LABELS.view, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.view },
   { view: 'media', title: 'Media', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.media },
   { view: 'animation', title: 'Animation', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.animation },
@@ -471,7 +474,9 @@ export function ToolbarToolMenu({
           <section className={floatingPanelBodyClassName} aria-label={UI_LABELS.floatingPanel}>
             <PanelFormDensityProvider value={panelFormDensity}>
             {floatingPanelView === 'propsPanel' && <FloatingPropsPanel />}
-            {floatingPanelView === 'skillsCommands' && <FloatingPanelSkillsCommandsView />} {floatingPanelView === 'promptPresets' && <FloatingPanelPromptPresetsView />}
+            {floatingPanelView === 'skillsCommands' && <FloatingPanelSkillsCommandsView />}
+            {floatingPanelView === 'blockLibrary' && <React.Suspense fallback={<p role="status">Loading Block library…</p>}><FloatingPanelBlockLibraryLazy /></React.Suspense>}
+            {floatingPanelView === 'promptPresets' && <FloatingPanelPromptPresetsView />}
             {floatingPanelView === 'view' && <WorkspaceDataViewFloatingPanelView />}
             <FloatingPanelXrSceneView view={floatingPanelView} />
             {floatingPanelView === 'design' && <DesignFloatingPanelView active={designPanelsAvailable} />}

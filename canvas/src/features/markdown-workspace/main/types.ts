@@ -5,11 +5,12 @@ import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/w
 import type { HighlightedLineRange, MarkdownPresentationApi } from '../markdownWorkspaceTypes'
 import type { WebpageFrontmatterMeta, WebpageViewMode } from '@/lib/markdown/frontmatter'
 
-export type MarkdownWorkspacePaneVisibility = { json: boolean; markdown: boolean; viewer: boolean; html: boolean; python?: boolean }
+export type MarkdownWorkspacePaneVisibility = { json: boolean; markdown: boolean; viewer: boolean; html: boolean; python?: boolean; block?: boolean }
 
 export type MarkdownWorkspacePaneAvailability = {
   bin: boolean
   python?: boolean
+  block?: boolean
   json: boolean
   markdown: boolean
   viewer: boolean
@@ -57,7 +58,7 @@ export function resolveMarkdownWorkspacePaneAvailability(args: {
   activeDocumentKey?: string | null
   modelAssetFormat?: 'glb' | 'gltf' | null
 }): MarkdownWorkspacePaneAvailability {
-  if (resolveMarkdownWorkspaceDocumentPanePreset(args.activeDocumentKey) === 'python') return { bin: false, python: true, json: false, markdown: false, viewer: false, html: false }
+  if (resolveMarkdownWorkspaceDocumentPanePreset(args.activeDocumentKey) === 'python') return { bin: false, python: true, block: true, json: true, markdown: true, viewer: true, html: false }
   if (args.modelAssetFormat === 'glb') {
     return { bin: true, json: false, markdown: false, viewer: false, html: false }
   }
@@ -77,7 +78,7 @@ export function resolveMarkdownWorkspaceInitialPaneVisibility(args: {
   if (args.webpageView === 'json') return { json: true, markdown: false, viewer: false, html: false }
   if (args.webpageView === 'html') return { json: false, markdown: false, viewer: true, html: true }
   const documentPreset = resolveMarkdownWorkspaceDocumentPanePreset(args.activeDocumentKey)
-  if (documentPreset === 'python') return { python: true, json: false, markdown: false, viewer: false, html: false }
+  if (documentPreset === 'python') return { python: true, block: false, json: false, markdown: false, viewer: false, html: false }
   if (documentPreset === 'viewer') return { json: false, markdown: false, viewer: true, html: false }
   if (documentPreset === 'json') return { json: true, markdown: false, viewer: false, html: false }
   if (documentPreset === 'markdown') return { json: false, markdown: true, viewer: false, html: false }
@@ -98,6 +99,7 @@ export function resolveMarkdownWorkspacePaneVisibility(args: {
 
   return {
     ...(availability.python ? { python: (isEditor || isSplit) && !!args.splitPaneVisibility.python } : {}),
+    ...(availability.block ? { block: (isEditor || isSplit) && !!args.splitPaneVisibility.block } : {}),
     json: availability.json && (isEditor || isSplit) && args.splitPaneVisibility.json,
     markdown: availability.markdown && (
       (isEditor && (forceMarkdownEditorInEditorMode || args.splitPaneVisibility.markdown)) ||

@@ -219,11 +219,12 @@ export function MarkdownWorkspaceToolbar({
   }, [webpageWorkspaceMeta])
   const visiblePaneCount = React.useCallback((current: MarkdownWorkspacePaneVisibility) => (
     Number(!!current.python && !!effectivePaneAvailability.python) +
+    Number(!!current.block && !!effectivePaneAvailability.block) +
     Number(current.json && effectivePaneAvailability.json) +
     Number(current.markdown && effectivePaneAvailability.markdown) +
     Number(current.viewer && effectivePaneAvailability.viewer) +
     Number(current.html && effectivePaneAvailability.html && !!webpageControls)
-  ), [effectivePaneAvailability.python, effectivePaneAvailability.html, effectivePaneAvailability.json, effectivePaneAvailability.markdown, effectivePaneAvailability.viewer, webpageControls])
+  ), [effectivePaneAvailability.python, effectivePaneAvailability.block, effectivePaneAvailability.html, effectivePaneAvailability.json, effectivePaneAvailability.markdown, effectivePaneAvailability.viewer, webpageControls])
   const resolveViewerEditPaneVisibility = React.useCallback((current: MarkdownWorkspacePaneVisibility): MarkdownWorkspacePaneVisibility => {
     if ((current.markdown && effectivePaneAvailability.markdown) || (current.json && effectivePaneAvailability.json)) return current
     if (contentFormat === 'json' && effectivePaneAvailability.json) return { ...current, json: true }
@@ -232,19 +233,21 @@ export function MarkdownWorkspaceToolbar({
     if (effectivePaneAvailability.json) return { ...current, json: true }
     return current
   }, [contentFormat, effectivePaneAvailability.json, effectivePaneAvailability.markdown])
-  const toggleSplitPane = React.useCallback((key: 'python' | 'json' | 'markdown' | 'viewer') => {
+  const toggleSplitPane = React.useCallback((key: 'python' | 'block' | 'json' | 'markdown' | 'viewer') => {
     if (!setSplitPaneVisibility) return
     const current = effectiveSplitPanes
+    if (key === 'python' && current.block && current.python) return
     const enabledCount = visiblePaneCount(current)
     if (current[key] && enabledCount <= 1) return
     const next = { ...current, [key]: !current[key] }
+    if (key === 'block' && next.block) next.python = true
     setSplitPaneVisibility(
       key === 'viewer' && next.viewer
         ? resolveViewerEditPaneVisibility(next)
         : next,
     )
   }, [effectiveSplitPanes, resolveViewerEditPaneVisibility, setSplitPaneVisibility, visiblePaneCount])
-  const handleSplitPaneToggle = React.useCallback((key: 'python' | 'json' | 'markdown' | 'viewer') => {
+  const handleSplitPaneToggle = React.useCallback((key: 'python' | 'block' | 'json' | 'markdown' | 'viewer') => {
     if (!setSplitPaneVisibility) return
     if (!effectivePaneAvailability[key]) return
     if (layoutMode !== 'split') {
@@ -255,6 +258,10 @@ export function MarkdownWorkspaceToolbar({
   const handleContentPaneToggle = React.useCallback((key: 'json' | 'markdown') => {
     if (!setSplitPaneVisibility) return
     if (!effectivePaneAvailability[key]) return
+    if (effectivePaneAvailability.python) {
+      handleSplitPaneToggle(key)
+      return
+    }
     const current = effectiveSplitPanes
     const isVisible = Boolean(current[key])
     const hasFormatSwitch = !!contentFormat && !!onContentFormatChange
@@ -411,13 +418,24 @@ export function MarkdownWorkspaceToolbar({
               />
               <WorkspacePaneToggle
                 label="Python"
-                title={paneToggleTitle('Python editor pane', !!effectivePaneAvailability.python)}
+                title={effectivePaneVisibility.block ? 'Close Block before hiding Python' : paneToggleTitle('Python editor pane', !!effectivePaneAvailability.python)}
                 ariaLabel="Show Python editor pane"
                 checked={!!effectivePaneVisibility.python}
-                disabled={!effectivePaneAvailability.python}
-                ariaDisabled={!effectivePaneAvailability.python}
+                disabled={!effectivePaneAvailability.python || !!effectivePaneVisibility.block}
+                ariaDisabled={!effectivePaneAvailability.python || !!effectivePaneVisibility.block}
                 onChange={() => handleSplitPaneToggle('python')}
                 labelClassName={paneToggleLabelClass(!!effectivePaneAvailability.python)}
+                textClassName={paneToggleTextClassName}
+              />
+              <WorkspacePaneToggle
+                label="Block"
+                title={paneToggleTitle('Block editor pane', !!effectivePaneAvailability.block)}
+                ariaLabel="Show Block editor pane"
+                checked={!!effectivePaneVisibility.block}
+                disabled={!effectivePaneAvailability.block}
+                ariaDisabled={!effectivePaneAvailability.block}
+                onChange={() => handleSplitPaneToggle('block')}
+                labelClassName={paneToggleLabelClass(!!effectivePaneAvailability.block)}
                 textClassName={paneToggleTextClassName}
               />
               <WorkspacePaneToggle

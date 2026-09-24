@@ -11,6 +11,7 @@ export function MarkdownWorkspaceLayout(props: {
   renderMarkdownEditor: () => React.ReactNode
   renderJsonEditor: () => React.ReactNode
   pythonPane?: React.ReactNode
+  blockPane?: React.ReactNode
   binaryPane?: React.ReactNode
   binaryPaneVisible?: boolean
   splitPaneVisibility: MarkdownWorkspacePaneVisibility
@@ -36,7 +37,8 @@ export function MarkdownWorkspaceLayout(props: {
         {props.binaryPane}
       </section>
     ) : null,
-    paneVisibility.python ? <section key="python" className={paneClassName} aria-label="Python Editor">{props.pythonPane}</section> : null,
+    paneVisibility.python ? <section key="python" className={paneClassName} data-program-pane="python" aria-label="Python Editor">{props.pythonPane}</section> : null,
+    paneVisibility.block ? <section key="block" className={paneClassName} data-program-pane="block" aria-label="Block Editor">{props.blockPane}</section> : null,
     paneVisibility.json ? (
       <section key="json" className={paneClassName} aria-label="JSON Editor">
         {props.renderJsonEditor()}
@@ -76,7 +78,7 @@ export function MarkdownWorkspaceLayout(props: {
       ) : null}
 
       {props.layoutMode === 'editor' ? (
-        <section className="kg-markdown-workspace-editor-panes flex-1 min-w-0 min-h-0 flex" aria-label="Monaco editors">
+        <section className={`kg-markdown-workspace-editor-panes flex-1 min-w-0 min-h-0 flex`} aria-label="Monaco editors">
           {effectiveSplitPanes.map((pane, index) => (
             <React.Fragment key={pane.key || `pane-${index}`}>
               {index > 0 ? <hr className={paneDividerClassName} aria-hidden="true" /> : null}
@@ -93,7 +95,7 @@ export function MarkdownWorkspaceLayout(props: {
           {props.presentation}
         </section>
       ) : (
-        <section className="kg-markdown-workspace-split-panes flex-1 min-w-0 min-h-0 flex kg-workspace-surface-shell" aria-label="Split view">
+        <section className={`kg-markdown-workspace-split-panes flex-1 min-w-0 min-h-0 flex kg-workspace-surface-shell`} aria-label="Split view">
           {effectiveSplitPanes.map((pane, index) => (
             <React.Fragment key={pane.key || `pane-${index}`}>
               {index > 0 ? <hr className={`${paneDividerClassName} kg-workspace-split-divider`} aria-hidden="true" /> : null}

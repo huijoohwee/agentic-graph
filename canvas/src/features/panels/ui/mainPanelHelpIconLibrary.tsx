@@ -67,6 +67,7 @@ export const MAIN_PANEL_TYPE_ICON_KEYS = [
   'mainPanel.help',
   'floatingPanel.propsPanel',
   'floatingPanel.skillsCommands',
+  'floatingPanel.blockLibrary',
   'floatingPanel.promptPresets',
   'floatingPanel.view',
   'floatingPanel.media',
@@ -316,6 +317,11 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
     label: 'Skills & Commands',
     Icon: SquareTerminal,
   },
+  'floatingPanel.blockLibrary': {
+    category: 'FloatingPanel surface',
+    label: 'Block library',
+    Icon: LayoutGrid,
+  },
   'floatingPanel.promptPresets': {
     category: 'FloatingPanel surface',
     label: 'Prompt Presets',
@@ -430,6 +436,7 @@ export const MAIN_PANEL_TAB_TYPE_ICON_BY_KEY = Object.fromEntries(
 export type FloatingPanelTypeIconView =
   | 'propsPanel'
   | 'skillsCommands'
+  | 'blockLibrary'
   | 'promptPresets'
   | 'view'
   | 'media'
@@ -455,6 +462,7 @@ export type FloatingPanelTypeIconView =
 export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
   propsPanel: 'floatingPanel.propsPanel',
   skillsCommands: 'floatingPanel.skillsCommands',
+  blockLibrary: 'floatingPanel.blockLibrary',
   promptPresets: 'floatingPanel.promptPresets',
   view: 'floatingPanel.view',
   media: 'floatingPanel.media',

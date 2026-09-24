@@ -33,6 +33,8 @@ import { useWorkspaceExportBridge } from './useWorkspaceExportBridge'
 import { workspaceTablePreferencesStore } from '@/features/workspace-table/workspaceTablePreferencesStore'
 import { isWorkspaceEditorOverlayOpen } from '@/features/workspace-table/workspaceTableSsot'
 const PythonLearningPaneLazy = React.lazy(() => import('../../python-learning/PythonLearningPane'))
+const BlockEditorPaneLazy = React.lazy(() => import('../../block-editor/BlockEditorPane'))
+const ProgramFormatPaneLazy = React.lazy(() => import('../../block-editor/ProgramFormatPane'))
 const MarkdownWorkspacePresentationSurfaceLazy = React.lazy(
   async (): Promise<{ default: typeof import('./presentation/MarkdownWorkspacePresentationSurface')['MarkdownWorkspacePresentationSurface'] }> =>
     import('./presentation/MarkdownWorkspacePresentationSurface').then(mod => ({ default: mod.MarkdownWorkspacePresentationSurface })),
@@ -524,12 +526,15 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
       }}
       layoutMode={layoutMode}
       documentNotice={documentNotice}
-      renderMarkdownEditor={renderMarkdownEditorPane}
-      renderJsonEditor={renderJsonEditorPane}
+      renderMarkdownEditor={documentPanePreset === 'python' ? () => <React.Suspense fallback={<p role="status">Loading program Markdown…</p>}><ProgramFormatPaneLazy uri={editorUri} wordWrap={markdownWordWrap} themeMode={themeMode} format="markdown" source={activeText} documentId={activeDocumentKey} onChange={setActiveText} readOnly={!!disableEditorMutations || !!props.passive} /></React.Suspense> : renderMarkdownEditorPane}
+      renderJsonEditor={documentPanePreset === 'python' ? () => <React.Suspense fallback={<p role="status">Loading program JSON…</p>}><ProgramFormatPaneLazy uri={editorUri} wordWrap={markdownWordWrap} themeMode={themeMode} format="json" source={activeText} documentId={activeDocumentKey} onChange={setActiveText} readOnly={!!disableEditorMutations || !!props.passive} /></React.Suspense> : renderJsonEditorPane}
       pythonPane={documentPanePreset === 'python' ? <React.Suspense fallback={<p role="status">Loading Python workspace…</p>}>
         <PythonLearningPaneLazy source={activeText} onChange={setActiveText} documentId={activeDocumentKey}
           uri={editorUri} editorRef={editorRef} onCaretLine={onEditorCaretLine} themeMode={themeMode}
           wordWrap={markdownWordWrap} readOnly={!!disableEditorMutations || !!props.passive} />
+      </React.Suspense> : null}
+      blockPane={documentPanePreset === 'python' ? <React.Suspense fallback={<p role="status">Loading Block editor…</p>}>
+        <BlockEditorPaneLazy source={activeText} onChange={setActiveText} documentId={activeDocumentKey} readOnly={!!disableEditorMutations || !!props.passive} />
       </React.Suspense> : null}
       binaryPane={binaryPane}
       binaryPaneVisible={binaryPaneVisible}
