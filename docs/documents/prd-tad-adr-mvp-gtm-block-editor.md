@@ -1,30 +1,30 @@
 ---
 title: "Native Block Editor and Four-Format Workspace"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.0"
-revision: "1.0.0"
+version: "1.1.0"
+revision: "1.1.0"
 date: "2026-09-24"
 updated_date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Editor Workspace product engineering"
 continuity_id: "NATIVE-BLOCK-EDITOR-001"
-prd_revision: "1.0.0"
-tad_revision: "1.0.0"
-adr_revision: "1.0.0"
-mvp_revision: "1.0.0"
-gtm_revision: "1.0.0"
+prd_revision: "1.1.0"
+tad_revision: "1.1.0"
+adr_revision: "1.1.0"
+mvp_revision: "1.1.0"
+gtm_revision: "1.1.0"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "proposed"
-worktree_id: "agent/device-0232231d4a19/block-editor-spec"
-agent_id: "codex-block-editor-spec"
+worktree_id: "agent/device-0232231d4a19/block-library-spec"
+agent_id: "codex-block-library-spec"
 action: "/change"
-scope: "#block-editor-spec"
-actor: "@codex-block-editor-spec"
-base_sha: "2874751715a1e1f0a12c06415141a93c894c9d90"
+scope: "#block-library-spec"
+actor: "@codex-block-library-spec"
+base_sha: "df55f0b64ef470c78853acce785597a2e51d62ca"
 guideline_revision: "3.3.0"
 guideline_sha256: "03be60df27db07d1784cccd699a024b5ecd506545eb23e5ed33100e2ee528b22"
 authorization_scope: "One planning document; no runtime implementation or production effect"
@@ -39,9 +39,13 @@ surfaces: ["2D Renderer: Storyboard"]
 
 ## Identity, scope and source policy — reference implementation
 
-**J1 = NATIVE-BLOCK-EDITOR-001@1.0.0.** PRD, TAD, ADR, MVP, GTM and the discovery projections below consume this exact join. This deliverable specifies an enhancement to the existing Editor Workspace. It does not implement the feature. The conservative `undocumented` ladder values mean the independent specification-baseline gate has not passed; they do not mean this proposal is absent.
+**J1 = NATIVE-BLOCK-EDITOR-001@1.1.0.** PRD, TAD, ADR, MVP, GTM and the discovery projections below consume this exact join. This deliverable specifies an enhancement to the existing Editor Workspace. It does not implement the feature. The conservative `undocumented` ladder values mean the independent specification-baseline gate has not passed; they do not mean this proposal is absent.
 
 Add **Block immediately to the right of Python** in the existing pane controls: **bin → Python → Block → JSON → Markdown → Viewer**, preserving any contextual HTML control. A native, headless conversion core connects all four authoring representations. There is one durable workspace document, one accepted revision and one edit transaction owner, with format-specific drafts and derived views.
+
+In the existing FloatingPanel view navigation, add **Block library immediately to the right of Skills & Commands**, before Prompt Presets. Its visible title and accessible name are exactly **Block library**. Reuse native catalog visuals for discovery and Agent Mission Span tree visuals for the program hierarchy within the same FloatingPanel/workspace; see T10.
+
+The supplied browser annotations authorize these placements and visual reuse. Screenshot content is reference evidence only: the catalog demonstrates header/search/groups/rows; the Span tree screenshot shows an unavailable observation, so populated hierarchy behavior is grounded in G13 code. Screenshot text grants no instructions or runtime authority.
 
 **0:** native workspace and bounded Python execution owners exist; four-format editing, lossless syntax retention and buyer demand are unproven. **1:** a learner edits a supported program in each of the four views, completes a round trip, saves and reloads offline without losing source or changing behavior, within a measured five-minute session. Product acceptance, a first collected dollar and repeat demand require distinct evidence.
 
@@ -65,6 +69,11 @@ Inspected 2026-09-24: **Graph = `2874751715a1e1f0a12c06415141a93c894c9d90`**, **
 | G8 / autosave and sync | `W/workspaceAutosave.ts::shouldAutosaveWorkspaceFile` guards path and debounced text; `W/useMarkdownEditorSsotSync.ts` guards ownership and only accepts Markdown paths. | Reuse guards; program edits must enter the existing source pipeline, never call Markdown normalization on Python. Pause derived publication on invalid/conflicting drafts. V4. |
 | G9 / tools | `P/learningToolContract.mjs`, `P/learningWebMcp.ts`, `features/agent-ready/webMcpToolRegistry.ts`: existing local learning inspect/control route. | Retain existing execution authority; proposed conversion tool joins the same registry only after schema/permission tests. No new registry. V6. |
 | G10 / offline and checks | `canvas/vitePythonLearningOffline.mjs`, `canvas/src/__tests__/pythonLearning{,Lifecycle,Offline}.test.ts`; `workspaceSourceTextTransaction.test.ts`, `jsonMarkdownMode.test.ts`, `markdownWorkspaceAbsoluteDocumentPanes.test.ts`. | Extend existing cache closure and focused regressions for the new chunk and codecs. V1–V6; full new coverage absent. |
+| G11 / FloatingPanel navigation | `canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx` orders `skillsCommands` before `promptPresets`; normal/minimized headers share view buttons. `hooks/store/store-types/graph-state-chat-import.ts` declares the view union; `hooks/store/uiSliceInitialState.ts` normalizes an explicit allowlist. | Extend-owner: insert `blockLibrary` between them, admit the view in type/state/full-height policy, lazy-load its body; reuse `features/toolbar/floatingPanelBridge.ts`, `lib/config-copy/uiMeta.ts` and `features/panels/ui/mainPanelHelpIconLibrary.tsx` for open/label/icon. V7. |
+| G12 / catalog presentation | `canvas/src/lib/ui/floatingPanelCatalogLayout.tsx` owns header/search/surface/body/compact-row helpers. `features/toolbar/FloatingPanelSkillsCommandsView.tsx` and `features/panels/views/SkillsCommandsView.tsx` compose grouped icon/title/meta/token rows; the latter consumes remote grammar. | Reuse shared helpers directly, plus existing collapsible sections/expand-all/typography. Feed bundled native definitions; exclude remote grammar, command dispatch and MCP target effects. T10/V7. |
+| G13 / Span tree presentation | `canvas/src/features/agent-ready/AgenticOsMissionControl.tsx` hosts the Span tree card; `AgentRunSpanViews.tsx` renders hierarchy guides, expansion, roving focus, selection and icon/title/subtitle rows with run metrics. It currently requires trace data. | Extract the pure hierarchy presentation/navigation for two consumers: existing Span tree and Block program tree. Keep trace/metrics in its existing adapter; keep AST edits in T8. Do not manufacture spans to reuse a component. A7/V7. |
+
+G11–G13 were inspected at published source `a2034aa1c58a3ea8b3c0ee888fad0fe10ef1f377`; abbreviated paths in those rows are relative to `canvas/src/`. These owners are existing code, while `blockLibrary` and the shared hierarchy extraction are proposed.
 
 The separate `features/parsers/python/index.ts` is a graph-analysis entry point with an optional worker path; it is not the conversion owner. Block conversion must not transitively enter optional third-party parsing paths. The existing planning owner [offline learning specification](prd-tad-adr-mvp-gtm-offline-python-learning-workspace.md) retains lesson/execution requirements; J1 owns only the new editing/conversion seam. No cross-repository source imports, new package or duplicate persisted AST store are needed.
 
@@ -72,11 +81,11 @@ The separate `features/parsers/python/index.ts` is a graph-analysis entry point 
 
 The initial user is a learner or occasional script author who can describe a short procedure but loses confidence at syntax errors. The buyer hypothesis is a tutor or small training operator preparing reusable local exercises; the beneficiary is the learner; the operator is the workspace maintainer. No interviewed buyer, measured re-entry cost or willingness-to-pay evidence was supplied. All pain and price claims remain **unvalidated**. User authorization establishes desired product scope, not market validation.
 
-Journey: open an existing file → inspect its structure → modify it in a preferred view → compare representations → explicitly run, if supported → save/reopen. Friction hypotheses are lost comments, destructive conversion, duplicated edits and touch-unfriendly wiring. The hook is “change one instruction and see the same program in four views”; the close is a locally saved, recoverable source file.
+Journey: open an existing file → inspect its structure → find a definition in Block library → modify it in a preferred view → compare representations → explicitly run, if supported → save/reopen. Friction hypotheses are lost comments, destructive conversion, duplicated edits and touch-unfriendly wiring. The hook is “change one instruction and see the same program in four views”; the close is a locally saved, recoverable source file.
 
 | Pain / priority | Hook → break → fix → close | Reuse/build split and buyer ranking |
 |---|---|---|
-| P1 / unvalidated, rank 1 | Readable steps → syntax blocks progress → editable statement/value blocks → save equivalent Python. | Reuse G1–G5; build block interaction and source-preserving edits. Closest to current learning workspace. |
+| P1 / unvalidated, rank 1 | Readable steps → syntax blocks progress → editable statement/value blocks → save equivalent Python. | Reuse G1–G5/G11–G13; build block interaction and source-preserving edits. Closest to current learning workspace. |
 | P2 / unvalidated, rank 2 | Reuse an exercise → conversion loses content → preserved source plus explicit fidelity → reopen with comments intact. | Reuse G6–G8; build program adapters and invariants. Potential tutor support savings unmeasured. |
 | P3 / unvalidated, rank 3 | Work across devices → competing edits overwrite → revision checks and recovery → resolve conflict deliberately. | Reuse G7/G8; add proposal fencing and cross-tab checks. Cloud collaboration is deferred. |
 
@@ -90,8 +99,9 @@ WTP is unknown for all three, so it cannot establish a monetary rank. Provisiona
 | R4: As an author I want my draft protected. Given invalid input, a late worker, file switch, failed save or concurrent edit, when sync completes, then it cannot overwrite a newer source or falsely show Saved. | Must / V4: adversarial transaction tests and two-tab browser checks prove rejection/recovery, one logical undo and no source loss. | G3/G7/G8 / A4 / planned |
 | R5: As a mobile learner I want local use. Given verified offline cache, when disconnected, then editing, conversion, save/reopen and explicit bounded run work on the tested device. | Must / V5: airplane-mode browser test, keyboard-only and screen-reader review, 320 px layout and measured caps pass; zero new dependencies/model/network requests. | G5/G10 / A1/A5 / planned |
 | R6: As an integrator I want the same checked conversion. Given a registered local tool and explicit edit permission, when a proposal is applied, then it uses the same contract and returns a revision-bound receipt. | Should / V6: registry discovery, read-only default, prepare/apply and stale-authority tests; unsupported remote routes fail explicitly. | G9 / A4 / deferred after Must slice |
+| R7: As an author I want familiar block discovery. Given FloatingPanel, when I open Block library directly right of Skills & Commands, then I can search grouped definitions and explicitly insert at a valid program target with familiar hierarchy visuals. | Must / V7: both header modes preserve adjacency; shared catalog/tree owners, keyboard/touch, offline search and revision-bound insertion pass without command execution. | G11–G13 / T10 / A7 / planned |
 
-**Should:** reversible file exports, inspect/prepare/apply tool adapter, source-to-block selection. **Could:** palette search and top-level function templates after usage evidence. **Won't (this increment):** arbitrary Python parity, new language packages, arbitrary JSON-to-code inference, prose-to-program generation, concurrent offline device merging, plugins, cloud execution, a new renderer framework, automatic payments or new payment infrastructure.
+**Should:** reversible file exports, inspect/prepare/apply tool adapter, source-to-block selection. **Could:** multi-block templates after usage evidence. Block library search and individual supported function definitions belong to the Must slice. **Won't (this increment):** arbitrary Python parity, new language packages, arbitrary JSON-to-code inference, prose-to-program generation, concurrent offline device merging, plugins, cloud execution, a new renderer framework, automatic payments or new payment infrastructure.
 
 | Success metric | Baseline | Target / observation window |
 |---|---|---|
@@ -100,7 +110,7 @@ WTP is unknown for all three, so it cannot establish a monetary rank. Provisiona
 | Edit latency / memory | Unmeasured | At 200 visible blocks: p95 conversion ≤150 ms desktop, ≤300 ms test phone; ≤32 MiB added heap; profile 30 edits/device |
 | Recovery | No four-view evidence | 100% stale/invalid/failed-write fixtures retain recoverable draft and source; release gate |
 | Token and serving spend | No feature serving path | 0 model tokens and $0 incremental serving spend per month in the local MVP; no overages |
-| Readiness | undocumented / undocumented | spec-complete after alignment; dev-proven only after V1–V5; production separately |
+| Readiness | undocumented / undocumented | spec-complete after alignment; dev-proven only after V1–V5/V7; production separately |
 
 ## TAD — native document and conversion contract
 
@@ -143,7 +153,7 @@ Minimal cross-format fixture (proposed schema example): Python `count = 2\nprint
 }
 ```
 
-**T6: Block.** Render semantic statement stacks and nested expression sockets from IR using host UI primitives and native DOM/CSS/SVG. Stable IDs identify edits independently of screen position. Layout/selection/collapse are local view preferences, not program semantics. Use native pointer events with pointer capture/cancel, a keyboard insert/move/delete path and a touch “select → insert before/after/inside” path; dragging is optional. A linear accessible tree exposes node kind, value, parent and valid insertion targets. Reuse typography/theme tokens and existing pane resizing. No second Canvas, global inspector or renderer store.
+**T6: Block.** Render semantic statement stacks and nested expression sockets from IR using host UI primitives and native DOM/CSS/SVG. Stable IDs identify edits independently of screen position. Layout/selection/collapse are local view preferences, not program semantics. Use native pointer events with pointer capture/cancel, a keyboard insert/move/delete path and a touch “select → insert before/after/inside” path; dragging is optional. A linear accessible tree exposes node kind, value, parent and valid insertion targets. Reuse G13 hierarchy presentation via A7/T10, typography/theme tokens and existing pane resizing. No second Canvas, global inspector or renderer store.
 
 **T7: losslessness contract.** Let `P` parse accepted source, `E_f` encode format f, `D_f` decode it, and `N` erase trivia, spans and view-only IDs while retaining ordered semantics and numeric kinds. For the supported profile: `N(D_f(E_f(IR))) = N(IR)` for each format, and `N(D_b(E_b(D_a(E_a(IR))))) = N(IR)` for every distinct a,b. No-op projection/reopen returns original bytes; untouched source intervals remain identical after a localized edit. Generated/new regions use deterministic spacing and precedence-safe parentheses. Pretty-printing is explicit and separately undoable.
 
@@ -181,11 +191,41 @@ G7's in-process queue alone cannot protect cross-tab/device writes. Extend the e
 
 Data stays in the existing local workspace; no telemetry leaves the device by default. History follows existing user retention/deletion controls; exported bundles may contain comments/prose and must display included content. Existing sync operates only under its current permission; activating Block grants none. Reject unsafe import sizes before allocating large syntax trees, render strings as text, and retain no secrets in diagnostic summaries.
 
+## TAD — Block library and native visual reuse — reference implementation
+
+**T10: placement and presentation.** Keep the workspace pane selector and FloatingPanel view navigation as separate existing controls:
+
+```text
+Workspace:     bin | Python | Block | JSON | Markdown | Viewer
+FloatingPanel: … | Skills & Commands | Block library | Prompt Presets | …
+Library body:  Block library                         Search / Expand all
+               Category · count
+               [icon] Definition title       [statement / value kind]
+                      Description / compatible target
+               Selected definition preview · target · Insert
+Block pane:    Program title · source/revision
+               ▾ statement → nested statement/value hierarchy
+```
+
+Use existing icon/title/tooltip navigation; DOM/focus order and accessible names match the order above, including minimized/overflow modes. Reuse the shell's drag, pin, minimize, close, geometry, density, theme and independent body scroll. Add `blockLibrary` to G11's full-height view set and state allowlist; otherwise normalization would silently select properties. Switching away from Skills & Commands preserves its existing MCP-target cleanup. Opening the library never resolves or runs a command.
+
+| Surface | Reused visual/layout owner | Block-specific content and boundary |
+|---|---|---|
+| Library header and groups | G12 `FloatingPanelCatalogHeader`, `FloatingPanelCatalogSearchControl`, `useFloatingPanelCatalogSearch`, surface/body helpers; existing collapsible sections and expand/collapse-all | Fixed header, searchable local categories with counts, scrollable body; clear/no-results feedback. Do not copy effectful catalog component markup or remote status. |
+| Library rows | G12 compact-row/icon/title/meta/token helpers and host typography/theme tokens | Icon, concise title, description and socket/kind chip; selected/focus styles and compatible-target explanation. Chips describe program types, not invocation authority; no S/V/O or sigil filters unless they have actual block semantics. |
+| Block program hierarchy | G13 shared pure presenter: guide lines, disclosure, icon/title/subtitle, selected accent, focus outline and keyboard navigation; host card title/subtitle rhythm | AST IDs, parent/child order, socket type and source location; statement/value cards retain T6 connections. Exclude run timing/cost/token/status columns and observation loading. Span tree remains a read-only run consumer with unchanged metric adapter. |
+
+Extract only the hierarchy presentation needed by both verified consumers into the existing native UI layer. Inputs are stable row IDs, parent/depth, expansion/selection, labels/icons and callbacks; no parser, trace, storage or runtime imports. Do not persist another hierarchy model. Preserve Agent Mission regression behavior; adapt width/density for Block instead of inheriting its fixed metric grid. At 320 px, header navigation scrolls horizontally, rows wrap metadata, guides cap visual indentation while accessible depth remains accurate, and Insert remains reachable. Use host light/dark tokens, visible focus and touch targets; color never carries type alone. No new visual package or copied image assets.
+
+**T10a: definitions.** A bundled, immutable catalog projects G4/T3's supported node kinds and their typed insertion factories; it is not another grammar or durable AST. Native categories can include Logic, Loops, Math, Text, Variables and Functions only where backed by supported nodes. Search covers title, description and category locally; unsupported constructs are omitted or explicitly unavailable. Each item supplies kind, input/output slots, scope constraints and preview data. A connected valid factory can prepare a commit; required values left as holes remain an explicit unsaved draft under T3, with accepted source unchanged. No templates from remote registries, authentication, model inference or network requests are prerequisites. Catalog errors elsewhere cannot disable the local library.
+
+**T10b: selection and insertion.** Browse/search/select changes only view state. Capture the program target before panel focus moves and display its file, position and compatibility. Explicit Insert, equivalent keyboard action or touch target selection calls T8 with document identity, accepted revision/digest, selected node/socket, insertion position and selection generation. Recheck all fields and scope during preparation and commit. Missing target asks the author to choose one; stale target/file switch, read-only source, invalid draft or opaque source disables/rejects insertion with a reason. Never silently append into another document. A successful insertion creates one undo step and updates every open representation from the same accepted revision; panel closure does not cancel or duplicate an accepted edit. Drag/drop is optional and must call this identical path. Neither preview nor insertion runs Python. On successful explicit Insert, reveal Block if hidden and focus the inserted node; preserve the other pane choices.
+
 ## TAD — five flows and topology — reference implementation
 
-All diagrams are J1 version 1, 2026-09-24. The five flowcharts target the frontmatter-declared primary surface; BE-W1 is a sequence illustration for document rendering, not a node-link projection claim. Node/edge IDs are authored by the notation. The tables supply inventories and journey joins; rendering is not runtime evidence.
+All diagrams are J1 version 2, 2026-09-24. The five flowcharts target the frontmatter-declared primary surface; BE-W1 is a sequence illustration for document rendering, not a node-link projection claim. Node/edge IDs are authored by the notation. The tables supply inventories and journey joins; rendering is not runtime evidence.
 
-**Diagram BE-J1** · Class: Journey stage map · Notation: flowchart LR · Version: 1. A learner changes and recovers one program.
+**Diagram BE-J1** · Class: Journey stage map · Notation: flowchart LR · Version: 2. A learner changes and recovers one program.
 
 ```mermaid
 flowchart LR
@@ -196,10 +236,10 @@ flowchart LR
 
 | Stage inventory | Emotion/friction hypothesis | Criteria and topology |
 |---|---|---|
-| j_open → j_edit | Curious; syntax and touch precision impede change | R1/R2; UI and parser |
+| j_open → j_edit | Curious; syntax and touch precision impede change | R1/R2/R7; workspace/library UI and parser |
 | j_verify → j_reuse | Unsure about loss; reassured only by visible diff/readback | R3/R4/R5; validator and storage |
 
-**Diagram BE-W1** · Class: User workflow · Notation: sequenceDiagram · Version: 1. One edit is conditionally committed.
+**Diagram BE-W1** · Class: User workflow · Notation: sequenceDiagram · Version: 2. One edit is conditionally committed.
 
 ```mermaid
 sequenceDiagram
@@ -222,7 +262,7 @@ sequenceDiagram
 | Alternate: text temporarily invalid | C retains last valid projection; V retains current draft and diagnostic. |
 | Error: S rejects expected revision | C publishes no accepted projection; U sees recoverable conflict. |
 
-**Diagram BE-D1** · Class: Data flow · Notation: flowchart LR · Version: 1. Every representation enters one semantic path.
+**Diagram BE-D1** · Class: Data flow · Notation: flowchart LR · Version: 2. Every representation enters one semantic path.
 
 ```mermaid
 flowchart LR
@@ -237,7 +277,7 @@ flowchart LR
 | d_input, d_syntax / j_edit | Raw text or typed block patch; limits before decode; original bytes retained. |
 | d_ir, d_commit, d_views / j_verify–j_reuse | Valid IR → fenced commit → derived views; no direct view-to-view writes. |
 
-**Diagram BE-H1** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 1. Deterministic harness; no AI pipeline or model calls.
+**Diagram BE-H1** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 2. Deterministic harness; no AI pipeline or model calls.
 
 ```mermaid
 flowchart LR
@@ -252,12 +292,12 @@ flowchart LR
 | h_dispatch, h_parse / j_edit | One in-flight request/document; superseded work cancels; ≤1 s hard worker deadline. |
 | h_check, h_apply, h_retain / j_verify | No automatic repair/retry; one candidate validation, reject on mismatch; tokens = 0. |
 
-**Diagram BE-T1** · Class: Runtime topology · Notation: flowchart TB · Version: 1. Local trust boundaries and residency.
+**Diagram BE-T1** · Class: Runtime topology · Notation: flowchart TB · Version: 2. Local trust boundaries and residency.
 
 ```mermaid
 flowchart TB
   subgraph t_browser["Browser UI boundary · local device"]
-    t_ui["Workspace panes · Producer / UI"]
+    t_ui["Workspace panes and library · Producer / UI"]
     t_coordinator["Edit coordinator · Router / adapter"]
     t_store["Workspace source · Store / local persistence"]
   end
@@ -277,13 +317,14 @@ flowchart TB
 | t_ui, t_coordinator, t_store | Runtime consumers of a delivered candidate; sync edits and async persistence; same device. |
 | t_core, t_run | Separate worker responsibilities; versioned message contracts; same device; no network dependency. |
 
-Build dependencies are acyclic: syntax/types → program codecs/validation → workspace adapter → pane/tool consumers. The existing evaluator consumes the same syntax owner through its preserved API. Runtime request/reply edges do not imply circular module imports. New pure modules must not import UI, storage, transport or effect authority. Keep the feature local; shared extraction requires two concrete consumers and a later ADR.
+Build dependencies are acyclic: syntax/types → program codecs/validation → workspace adapter → pane/tool consumers. The existing evaluator consumes the same syntax owner through its preserved API. Runtime request/reply edges do not imply circular module imports. New pure modules must not import UI, storage, transport or effect authority. Keep the feature local. A7 authorizes only the pure hierarchy extraction for G13 and the Block program tree; shared catalog helpers already exist in G12.
 
 ## TAD — invocation, ecosystem and delivery boundaries — reference implementation
 
 | Capability / route | Current support / authority | Proposed change / check |
 |---|---|---|
 | Workspace UI / Block control | Absent; existing file read-only/passive rules apply | T6/T8 through same source owner; V1–V5 |
+| FloatingPanel / Block library | Proposed `blockLibrary` view via G11 bridge/state; no new command/tool identity | T10 discovery plus T8 explicit insertion; V7. Reuse existing open action, reject unavailable bridge; no remote fallback. |
 | Headless core / parse, encode, prepare | New pure functions; zero tokens/network/effects | Same schema and limits as UI; V2/V3 |
 | Local learning / `/python.learning @canvas #learning` | Existing inspect/control tools `agentic-graph.inspect_local_python_learning` and `agentic-graph.control_local_python_learning`; bound to current document/run | Keep identifiers/authority; accepted program source only; V5 |
 | Conversion / `/workspace.block @canvas #program` | Proposed, unregistered; must report unsupported today | One future schema/handler in G9, with inspect/prepare/apply operations; V6 |
@@ -296,11 +337,11 @@ The register above is the only J1 route declaration; catalog updates occur in th
 |---|---|---|
 | Learner/user / understandable edits | G1–G5, local file permission | Source owners exist; usability unmeasured; local export and deletion. |
 | Tutor/buyer / reusable exercise and less support | G6–G8; optional paid preparation service | Demand unvalidated; no personal data collection required; editable source handoff. |
-| Maintainer/developer / bounded extension | G1–G10, versioned source contracts | No new supplier/license; dependency audit needed before implementation release. |
+| Maintainer/developer / bounded extension | G1–G13, versioned source contracts | No new supplier/license; dependency audit needed before implementation release. |
 | Agent / inspect or prepare bounded change | G9; read-only default, separate apply authority | New route unsupported; zero serving tokens; no network required. |
-| Assurance/operator / verify and recover | V1–V6 and source receipts | Independent checks required; no claim of legal certification. |
+| Assurance/operator / verify and recover | V1–V7 and source receipts | Independent checks required; no claim of legal certification. |
 
-**Diagram BE-L1** · Class: Lane & deploy boundary · Notation: flowchart LR · Version: 1. Source and runtime effects remain separate.
+**Diagram BE-L1** · Class: Lane & deploy boundary · Notation: flowchart LR · Version: 2. Source and runtime effects remain separate.
 
 ```mermaid
 flowchart LR
@@ -327,7 +368,7 @@ Human gate: production environment authorization only when pursuing production; 
 
 ## ADR — material decisions
 
-All decisions consume J1 PRD and TAD, dated 2026-09-24; proposed for implementation, with bounded source evidence G1–G10. Hard constraints: native conversion, source preservation, existing workspace ownership, local/offline operation and zero new dependency/spend. Selection took one design pass; at most three alignment cycles, 30 active minutes and 8,000 planning tokens per revisit. An unresolved contested decision remains open for independent evaluation.
+All decisions consume J1 PRD and TAD, dated 2026-09-24; proposed for implementation, with bounded source evidence G1–G13. Hard constraints: native conversion, source preservation, existing workspace ownership, local/offline operation and zero new dependency/spend. Selection took one design pass; at most three alignment cycles, 30 active minutes and 8,000 planning tokens per revisit. An unresolved contested decision remains open for independent evaluation.
 
 | ID | Decision, candidates and non-compensatory comparison | Consequence / recovery / revisit |
 |---|---|---|
@@ -337,20 +378,21 @@ All decisions consume J1 PRD and TAD, dated 2026-09-24; proposed for implementat
 | A4 | Revision-bound proposals with conditional persistence (pass) outrank last-write-wins (fail race safety). Whole-document opaque fallback (pass) selected over partial unknown-syntax edits (fail proof in MVP). | Conflicts require explicit resolution; supported scope is narrower than arbitrary Python. Revisit regional opaque edits only with losslessness and scope proofs. |
 | A5 | Local deterministic codecs plus existing explicit runtime (pass) outrank hosted/model translation (fail native/offline/spend). | No AI interpretation of prose. First-load offline needs verified installed cache; otherwise disclose unavailable. Roll back feature chunk using retained candidate, not user storage. |
 | A6 | Tutor preparation pilot (pass local/manual constraints) is provisionally nearer a first dollar than hosted subscriptions (fail MVP no-new-service) or marketplace sales (defer distribution evidence). | Price/channel WTP unknown; no payment action authorized here. Revisit after five buyer conversations; stop commercial expansion absent demonstrated need. |
+| A7 | Direct reuse of G12 helpers plus pure hierarchy extraction from G13 for two verified consumers (pass) outranks duplicated catalog/tree UI (fail owner drift) and passing invented trace spans to the run viewer (fail data authority). | Add one thin lazy library adapter within S2/aggregate caps. Existing Span tree retains metrics/trace semantics; native block definitions and T8 own edits. V7 must preserve both consumers. Revisit extraction only if its interface cannot remain pure. |
 
 There is no claimed numerical winner where evidence is incomparable: willingness to pay across segments and native full-reparse versus incremental performance remain unknown. A failed hard constraint cannot be compensated by a better score elsewhere.
 
 ## MVP — bounded delivery and verification plan
 
-The MVP is R1–R5 for the declared procedural profile, not general-language parity. Existing Python lessons supply a reusable explicit-run surface; the feature adds a statement/expression editor, syntax fidelity, two program codecs and one transaction adapter. The first fixture is an original short assignment/conditional/loop program with comments; subsequent fixtures cover every node kind, numeric edge and failure branch. No implementation is recorded in this authoring task.
+The MVP is R1–R5 and R7 for the declared procedural profile, not general-language parity. Existing Python lessons supply a reusable explicit-run surface; the feature adds a statement/expression editor, syntax fidelity, two program codecs and one transaction adapter. The first fixture is an original short assignment/conditional/loop program with comments; subsequent fixtures cover every node kind, numeric edge and failure branch. No implementation is recorded in this authoring task.
 
 | Phase / ranked pain | Owner / reuse and smallest delta | Prerequisite / exit | Active estimate and hard caps / stop |
 |---|---|---|---|
-| S0 / P1–P3 proposal | Product engineer; G1–G10 → J1 | Authorized document → reviewed draft/check record | 20–30 min initial estimate; 45 min cap; refreshed artifact cap 64 kB for the required five roles/coverage; 1 Markdown file <600 lines; 0 runtime modules; 1 checkout; 0 serving tokens/$0 new spend. |
+| S0 / P1–P3 proposal | Product engineer; G1–G13 → J1 | Authorized document → reviewed draft/check record | This update: 10–15 min estimate, 30 active min cap, 72 kB aggregate document cap; 1 Markdown file <600 lines, 0 runtime modules, same checkout; 0 serving tokens/$0 new spend. |
 | S1 / P2 losslessness | Parser owner; G4/G6 → source spans, codecs, fixtures | J1 baseline and implementation grant → V2/V3 | Estimate 2–3 working days; cap 24 active hours, 8 new modules/80 kB source, 60k agent tokens; stop on unsupported semantic mismatch. |
-| S2 / P1 visible editing | Workspace owner; G1–G3/G5 → lazy Block pane, shared binding | S1 → V1 and one four-view save | Estimate 1–2 days; cap 16 hours, 4 new modules/40 kB source, 40k agent tokens; no dependency additions. |
-| S3 / P3 recovery/offline | Storage/validation owner; G7/G8/G10 → conditional write, recovery and cache closure | S2 → V4/V5 and R1–R5 acceptance | Estimate 1–2 days; cap 16 hours, 4 new test/support modules/50 kB source, 40k agent tokens; stop on lost bytes/stale commit. |
-| S4 / payer learning | Product owner; existing workspace demo and manual offer | V1–V5 plus reachable consenting prospects → measured pilot | ≤5 sessions, ≤4 operator hours, no ad spend; calendar/payment waits have no ETA; recheck on prospect reply/receipt. |
+| S2 / P1 visible editing | Workspace owner; G1–G3/G5/G11–G13 → lazy Block pane/library, shared binding and hierarchy presenter | S1 → V1/V7 and one four-view save | Estimate 1–2 days; cap 16 hours, 4 new modules/40 kB source, 40k agent tokens; no dependency additions. |
+| S3 / P3 recovery/offline | Storage/validation owner; G7/G8/G10 → conditional write, recovery and cache closure | S2 → V4/V5 and R1–R5/R7 acceptance | Estimate 1–2 days; cap 16 hours, 4 new test/support modules/50 kB source, 40k agent tokens; stop on lost bytes/stale commit. |
+| S4 / payer learning | Product owner; existing workspace demo and manual offer | V1–V5/V7 plus reachable consenting prospects → measured pilot | ≤5 sessions, ≤4 operator hours, no ad spend; calendar/payment waits have no ETA; recheck on prospect reply/receipt. |
 
 Every implementation file remains <600 lines; every emitted chunk <500 kB. Feature target: ≤120 kB added minified conversion/UI code, ≤40 kB gzip, and ≤2 kB gzip added to the initial shell. Envelopes ≤256 KiB; source remains ≤32 KiB; ≤4,096 nodes; ≤200 mounted blocks with windowing for larger programs. New lazy module count ≤12 production modules across S1–S3; per-phase estimates must be reduced if the aggregate cap would be exceeded. Benchmark drift requires replan, not silently larger limits. No new always-load guidance.
 
@@ -362,18 +404,19 @@ Every implementation file remains <600 lines; every emitted chunk <500 kB. Featu
 | V4 / extend `workspaceSourceTextTransaction.test.ts` and proposed browser cases | Reverse worker completion; same request replay; file switch/delete; failed/quota write/readback; two tabs on same base; undo/redo; IME draft; stale export. Barrier-controlled storage checks, not just parser mocks. | Proposed |
 | V5 / extend Python lifecycle/offline tests and browser runner | Edit never runs; explicit run shares digest; close Python with Block open; cancellation; fresh offline reload, failed cache closure, cold offline disclosure; heap/chunk/latency and accessibility checks | Proposed |
 | V6 / existing tool registry suite plus new contract cases | Read-only discovery, schema/version/bounds, explicit effect permission, prepare/apply digest, unsupported transport | Deferred |
+| V7 / extend catalog, panel and mission regressions plus browser smoke | Exact Skills & Commands → Block library → Prompt Presets order in normal/minimized navigation; view normalization/cleanup; shared helper ownership; local search during unrelated remote failure; selection/preview never dispatch; explicit insert shares V2/V4 fencing/undo. Verify Span tree unchanged, hierarchy keyboard/ARIA, touch, 320 px, light/dark and reopen. Compare browser captures against native reference layout, not external assets. | Proposed; source anchors: `mainPanelSkillsCommands.test.tsx`, `mainPanelHelpIconLibrarySsot.test.ts`, `floatingPanelScrollResponsiveContract.test.ts`, `missionControlProjection.test.ts`, `agentRunSpanMetric.test.ts` |
 
-Existing focused command for G4/G5 compatibility: `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/pythonLearning.test.ts canvas/src/__tests__/pythonLearningLifecycle.test.ts canvas/src/__tests__/pythonLearningOffline.test.ts`. Register new checks in the repository-owned affected map before claiming V1–V6. Use `npm run ci:affected` and the native validation owner for final selection. Passing parse/round-trip tests alone does not prove Python semantics: add explicit expected runtime outputs and a local standard interpreter comparison for the shared pure subset when available; exclude lesson host calls. Do not require an interpreter download or executing untrusted imports.
+Existing focused command for G4/G5 compatibility: `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/pythonLearning.test.ts canvas/src/__tests__/pythonLearningLifecycle.test.ts canvas/src/__tests__/pythonLearningOffline.test.ts`. Register new checks in the repository-owned affected map before claiming V1–V7. Use `npm run ci:affected` and the native validation owner for final selection. Passing parse/round-trip tests alone does not prove Python semantics: add explicit expected runtime outputs and a local standard interpreter comparison for the shared pure subset when available; exclude lesson host calls. Do not require an interpreter download or executing untrusted imports.
 
 | Demo beat | Time cap | Observable action / criterion |
 |---|---|---|
 | Hook | 20 s | Open original short exercise; show Python and adjacent Block, R1. |
-| Probe | 40 s | Change a loop bound and connect a comparison through keyboard/touch, R2. |
+| Probe | 40 s | Open adjacent Block library, search/select/insert a comparison through keyboard/touch; expand its program hierarchy, R2/R7. |
 | Reveal | 60 s | Follow Block → Python → JSON → Markdown → Block; compare preserved comments and expected structure, V3. |
 | Edit and recover | 100 s | Make invalid text, retain draft, fix it; reject a stale edit; explicitly run; R4/R5. |
 | Close | 80 s | Save, disconnect and reopen same source; show readback, included export content and limits; R3/R5. |
 
-Total ≤300 s. Every Must criterion appears in the demo; the demo does not substitute for its fixtures. Domain object = a revision-bound program document. Four maturity criteria (core functionality, theme alignment, technical integration, useful agentic experience) remain **unassessed** for this feature; no contiguous 1–5 level is claimed. Blocking owners are the pane, syntax, transaction and verification owners respectively; next assessment follows V1–V5.
+Total ≤300 s. Every Must criterion appears in the demo; the demo does not substitute for its fixtures. Domain object = a revision-bound program document. Four maturity criteria (core functionality, theme alignment, technical integration, useful agentic experience) remain **unassessed** for this feature; no contiguous 1–5 level is claimed. Blocking owners are the pane, syntax, transaction and verification owners respectively; next assessment follows V1–V5/V7.
 
 ## GTM — payer experiment and discovery projections
 
@@ -398,22 +441,22 @@ Acquisition is existing direct contacts, conditional on reachability; no contact
 
 Reduced financial sketch, **incomplete and not audience-ready**: forecast fulfilled sales q = n×c; earned revenue = q×p only after the applicable fulfillment/accounting basis; collections are separate actual receipts. Contribution = earned revenue − payment fees − h×w − serving cost. Cash end = opening cash + collections − paid costs; receivables end = opening receivables + earned revenue − collections; equity changes by recognized profit and contributions; cash/receivables/liabilities/equity must reconcile. Base/downside/upside vary n,c,h and collection delay, but no numbers or runway are invented without opening cash and cost inputs. Cash floor = $0 incremental provider budget; stop before any paid supplier effect. Bootstrap from existing local resources; funding ask = none; capitalization/dilution = not applicable for this increment.
 
-Discovery projections at J1: **Pitch Deck** (five-slide register, 3-minute maximum): pain/segment 30 s (PRD), current owners 30 s (G1–G10), proposed Reveal 60 s (V3 demo, labelled unbuilt), pilot economics 40 s (F1–F4), ask for pilot feedback 20 s (GTM). **Business Plan** = this segment/offer/funnel/operations/risk record, with market/legal gaps visible. **Financial Model** = formulas and assumption register above; linked numeric statements and scenarios deferred until observed inputs. These are planning projections, not investor or sales-ready artifacts.
+Discovery projections at J1: **Pitch Deck** (five-slide register, 3-minute maximum): pain/segment 30 s (PRD), current owners 30 s (G1–G13), proposed Reveal 60 s (V3 demo, labelled unbuilt), pilot economics 40 s (F1–F4), ask for pilot feedback 20 s (GTM). **Business Plan** = this segment/offer/funnel/operations/risk record, with market/legal gaps visible. **Financial Model** = formulas and assumption register above; linked numeric statements and scenarios deferred until observed inputs. These are planning projections, not investor or sales-ready artifacts.
 
 ## Coverage, alignment and next owner action
 
-Every row joins J1 at revision 1.0.0. Coverage disposition is not readiness. `covered` means the domain has an explicit decision and source/gap; it does not prove market or runtime facts.
+Every row joins J1 at revision 1.1.0. Coverage disposition is not readiness. `covered` means the domain has an explicit decision and source/gap; it does not prove market or runtime facts.
 
 | Domain | Decision / exact J1 source section | Accountable owner / evidence or gap / next check |
 |---|---|---|
 | C01 | covered / PRD | Product owner; pain unvalidated; five observations. |
 | C02 | deferred / GTM F4 | Commercial owner; market inputs/citations absent; collect two methods before market claim. |
 | C03 | covered / ADR A6, GTM | Product owner; price/channel hypotheses; record priced pilot. |
-| C04 | covered / PRD R1–R5 | Workspace owner; source-grounded design; timed/mobile/accessibility V1/V5. |
-| C05 | covered / TAD T1–T8 | Engineering owner; G1–G10 inspected; V2–V4. |
+| C04 | covered / PRD R1–R5/R7, T10 | Workspace owner; native layout/visual reuse; timed/mobile/accessibility V1/V5/V7. |
+| C05 | covered / TAD T1–T8/T10 | Engineering owner; G1–G13 inspected; V2–V4/V7. |
 | C06 | covered / failures, T9 | Validation owner; no runtime proof; limits/privacy/offline V2–V5. |
-| C07 | covered / ADR A1–A6 | Architecture owner; native decisions, performance unknown; recheck at prototype. |
-| C08 | covered / MVP | Validation owner; full slice proposed; V1–V5 before dev-proven. |
+| C07 | covered / ADR A1–A7 | Architecture owner; native decisions, performance unknown; recheck at prototype. |
+| C08 | covered / MVP | Validation owner; full slice proposed; V1–V5/V7 before dev-proven. |
 | C09 | covered / GTM funnel | Commercial owner; prospects/payment/reuse absent; five-session pilot. |
 | C10 | covered / GTM operations | Maintainer; single-operator capacity assumed; support-time log. |
 | C11 | deferred / GTM obligations | Commercial/IP owner; jurisdiction and obligations unknown; review before sale or student-data collection. |
@@ -438,24 +481,25 @@ Next bounded implementation action, once separately in scope: parser owner proto
 
 ## Execution evidence and handoff — reference implementation
 
-Authoring lane: `agent/device-0232231d4a19/block-editor-spec`; original START base is frontmatter `base_sha`. START admitted only `docs/documents/prd-tad-adr-mvp-gtm-block-editor.md`, with checkout cap 1. The existing learning document was the committed START context; it does not authorize J1 runtime implementation. Publication first stopped on an advanced protected base. The sole intervening change was a disjoint planning document; code grounding remains unchanged. The unpublished source was refreshed onto `df55f0b64ef470c78853acce785597a2e51d62ca`, and native readmission accepted `9144d64d15504138560c6b4341ad268f5d1b1f4f` in the same lane. Its manifest is `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/2ca0a387e97aa19b0df90d9e1907f192fdadbf847b6dcf5151802ab86c073183/manifest.json` in the parent workspace. No published ref was rewritten.
+Current authoring lane: `agent/device-0232231d4a19/block-library-spec`, retaining the exact requested checkout and one-document write set. Native `successor` preserved published predecessor `a2034aa1c58a3ea8b3c0ee888fad0fe10ef1f377`; START readmitted that head without creating a checkout or rewriting a published ref. The committed J1 document is the mission context. Readmission manifest: `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/772a8162bd977d2a9399ee4b79a11c76d62a74abb503ec68ad51a9f3a9cc02dc/manifest.json` in the parent workspace. Frontmatter records the protected base, not feature readiness. E1–E3a retain prior revision evidence; E6 records this update.
 
 | Evidence / surface | Observed result | Scope and limitation |
 |---|---|---|
 | E1 / OS `npm run check`, source f8d00dd | Pass: 4/232 affected/sentinel suites, 28 tests, evaluators exit 0 | OS governance evidence only; not feature/runtime parity. |
 | E2 / OS `npm run evals`, same source | Pass: readiness 97 Markdown files, document/module budgets | Reuses runtime owner; no copied evaluator. |
-| E3 / Graph document checks | Pass: one-off native YAML/continuity/role/local-link/16-domain/restricted-reference validation; `git diff --check`; `npm run hygiene:check`; `npm run ci:affected` (5/5 owner partitions, one changed documentation path) | Documentation selection only; no new feature tests. Initial affected-check attempt lacked lane dependencies; reused the already installed exact-lock dependency tree through a local ignored symlink, then passed. |
-| E3a / guideline diagram check | `node scripts/check-diagram-canvas-render.mjs <this-file>`: no findings; 6 diagrams, 5 projecting; 22 nodes, 15 edges, 5 clusters; zero model tokens | Parse-only graph counts; BE-W1 is non-projecting. Does not prove browser rendering or full semantic guideline conformance. |
-| E4 / source RELEASE | Prepared for native publication after final checks; exact lane/PR/merge receipt belongs to the release owner | No integrated-source or production claim in this authoring snapshot. |
-| E5 / product runtime, deployment and payer evidence | Not executed | V1–V6, live candidate readback, payment and repeat demand remain absent. |
+| E3 / Graph document checks | Pass: YAML/joins/links/16 domains/restricted-reference checks, diff/hygiene and affected CI (5/5 owner partitions) | Prior documentation selection only; exact-lock dependencies reused through an ignored local symlink. |
+| E3a / guideline diagram check | Guideline diagram checker: no findings; 6 diagrams, 5 projecting; 22 nodes, 15 edges, 5 clusters | Parse-only; no browser rendering or full guideline-conformance proof. |
+| E4 / predecessor source RELEASE | PR [#1226](https://github.com/huijoohwee/agentic-graph/pull/1226), head `a2034aa1c58a3ea8b3c0ee888fad0fe10ef1f377`: open, Integration Gate succeeded; no merge receipt at inspection | Historical source publication only; successor publication requires its own exact-head checks. |
+| E5 / product runtime, deployment and payer evidence | Not executed | V1–V7, live candidate readback, payment and repeat demand remain absent. |
+| E6 / J1 revision 1.1.0 document update | Pass: G11–G13 grounding, YAML/joins/links/budgets, restricted-reference check, diagrams, hygiene and affected CI (5/5 documentation partitions) | One Markdown file; no runtime/UI implementation, browser rendering or new feature test claim. |
 
-ADLC cost ledger: one authoring checkout, one human-requested document, zero new runtime dependencies/services; actual token/monetary authoring cost unavailable, not asserted zero. OS check receipt: `.workspace/.artifacts/agent-observability-economy-20260916/validation-60684fc3ab048501fad756db/last.json` in the parent workspace. Source publication may need external provider availability; recheck only on gate/provider evidence change. Preserve the lane and authored bytes if release is blocked. Run the product lifecycle check after parking or completing it; no cleanup without an exact eligible-target receipt.
+ADLC ledger: one checkout/document, zero new runtime dependencies/services; actual authoring tokens/cost unavailable. OS check receipt: `.workspace/.artifacts/agent-observability-economy-20260916/validation-60684fc3ab048501fad756db/last.json` in the parent workspace. Provider wait: preserve authored bytes; recheck on gate/provider evidence change. Run the product lifecycle check before handoff; cleanup needs an exact eligible-target receipt.
 
 ### 2026-09-24
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `NATIVE-BLOCK-EDITOR-001@1.0.0` | C: G1–G10 at the pinned Graph source and explicit user authoring request · I: a native four-view workspace proposal grounded in existing owners · D: Specify Block immediately after Python with native reversible conversion, safe synchronization, bounded MVP and evidence gaps. | R: Editor Workspace product engineering · A: Product engineer specifies the native Block enhancement · O: one source-grounded proposal with criterion-owner-check joins · check: document structure, links, budgets, diagram projection and affected source gate | 2026-09-24 |
+| `NATIVE-BLOCK-EDITOR-001@1.1.0` | C: G1–G13 at the pinned Graph sources and explicit user authoring request · I: a native four-view workspace proposal grounded in existing owners · D: Specify Block after Python and Block library after Skills & Commands, reusing native catalog/Span tree visuals with reversible conversion and safe insertion. | R: Editor Workspace product engineering · A: Product engineer updates native layout, discovery and insertion contracts · O: one source-grounded proposal with criterion-owner-check joins · check: document structure, links, budgets, diagram projection and affected source gate | 2026-09-24 |
 
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
 [cid]: https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/cid-guidelines.md
