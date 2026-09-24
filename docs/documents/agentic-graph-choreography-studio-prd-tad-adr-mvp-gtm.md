@@ -1,12 +1,12 @@
 ---
 title: "agentic-graph Choreography Studio"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.2.0"
-prd_revision: "1.2.0"
-tad_revision: "1.2.0"
-adr_revision: "1.2.0"
-mvp_revision: "1.2.0"
-gtm_revision: "1.2.0"
+version: "1.3.0"
+prd_revision: "1.3.0"
+tad_revision: "1.3.0"
+adr_revision: "1.3.0"
+mvp_revision: "1.3.0"
+gtm_revision: "1.3.0"
 date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -28,21 +28,19 @@ movement plan, inspect feedback, and export a reusable reference. Its semantic
 scene is an interactive digital model of authored space. It is not a measured
 copy of a physical room, live sensor state, or evidence that a rehearsal ran.
 
-All five roles join at **CHOREOGRAPHY-STUDIO-001@1.2.0**. This revision updates
-requirements and evidence boundaries only. Grounding baseline: Graph
+All five roles join at **CHOREOGRAPHY-STUDIO-001@1.3.0**. This revision clarifies
+save/export/offline boundaries and adds acceptance scenarios. Grounding baseline: Graph
 `2874751715a1e1f0a12c06415141a93c894c9d90`, the merged Choreography source from
 [PR #1223](https://github.com/huijoohwee/agentic-graph/pull/1223). Runtime source
 was inspected at that revision; the upstream workflow was read at Agentic OS
-`0433c86a3528f2130d952a1b63c9e40feb41fde3`. An upstream workflow read does not
+`f8d00dd13242d7d83bae0276837268286b550bf0`. An upstream workflow read does not
 change Graph's installed dependency pin. Refresh grounding when these owners
 change. Historical checks remain bound to their original source revisions.
 
-The [XR Motion Reference](agentic-graph-xr-motion-reference-document.md) owns
-existing runtime design. The [Python learning plan](prd-tad-adr-mvp-gtm-offline-python-learning-workspace.md)
-owns procedural learning; its older planning status is not proof that the
-current source is absent. Neither plan is duplicated here. Paths in the table
-are repository-relative; bare XR filenames in subsequent sections mean
-`canvas/src/features/three/`.
+The [XR Motion Reference](agentic-graph-xr-motion-reference-document.md) and
+[Python learning plan](prd-tad-adr-mvp-gtm-offline-python-learning-workspace.md)
+retain their runtime/learning ownership. Paths below are repository-relative;
+bare XR filenames mean `canvas/src/features/three/`.
 
 | Concern | Actual source owner | Verified source behavior / limit |
 |---|---|---|
@@ -52,11 +50,12 @@ are repository-relative; bare XR filenames in subsequent sections mean
 | Movement constraints | `canvas/src/features/three/threeKeyboardChoreography.ts`, `xrConstrainedMotionEdits.ts` | Native bounds, swept peer collision, and physics-ownership checks. |
 | Authoring UI | `canvas/src/features/three/XrChoreographyInspector.tsx`, `XrAnimationFloatingPanelView.tsx`, `XrCameraMotionSection.tsx` | Existing FloatingPanel and BottomPanel projections. |
 | Semantic scene | `canvas/src/features/three/xrSceneSemantic.ts` | Pure authored-plan projection and category, nearest, within queries; no physical reconstruction. |
-| Guided feedback | `canvas/src/features/three/xrSceneExercises.ts` | Three deterministic plan checks; no persistent lesson progress or executed-run grade. |
+| Guided feedback | `canvas/src/features/three/xrSceneExercises.ts` | Three plan checks using native motion/physics safety; no persistent lesson progress or executed-run grade. |
 | Local agent controls | `canvas/src/features/three/xrSceneMcpRuntime.ts`, `xrSceneMcpContract.mjs`; `canvas/src/features/agent-ready/xrSceneWebMcpTools.ts`, `webMcpRuntime.ts` | Existing browser inspection/control seam; no dedicated semantic-query tool. |
-| Save and package | `canvas/src/features/three/xrScenePersistence.ts`, `xrMotionReferencePackage.ts` | Canonical graph persistence and deterministic reference compilation. |
+| Save and package | `canvas/src/features/three/xrScenePersistence.ts`, `xrMotionReferencePackage.ts` | Graph metadata save acknowledgement and deterministic JSON reference compilation; durability and reimport are separate. |
 | Procedural execution | `canvas/src/features/python-learning/pythonParser.ts`, `pythonEvaluator.ts`, `pythonWorker.ts`, `learningRuntime.ts` | Existing bounded Python subset in a terminable worker; no Studio adapter observed. |
 | Learning result and storage | `canvas/src/features/python-learning/learningProtocol.ts`, `learningLessons.ts`, `learningPersistence.ts` | Bound run identity, three original lessons, rubric and local workspace debriefs. |
+| Application cache | `canvas/vitePwaRuntimeCachePolicy.ts`, `canvas/vite.config.ts` | General asset caches; no generic offline navigation fallback. |
 | Learning tools and offline assets | `canvas/src/features/python-learning/learningToolContract.mjs`, `learningWebMcp.ts`; `canvas/vitePythonLearningOffline.mjs` | Separate inspect/control and cache owners; their presence does not prove Studio offline closure. |
 
 Original native behavior and assets are the implementation inputs. Do not copy
@@ -67,11 +66,10 @@ packages, or introduce external runtime dependencies for this capability.
 
 ### User, pain, and smallest valuable result
 
-The first user is a scene operator or independent facilitator preparing a short
-movement demonstration on a mobile or desktop browser. The buyer hypothesis is
-a facilitator paying for a reusable rehearsal reference that reduces setup and
-explanation time. No interview, measured saving, willingness to pay, or payment
-currently validates that hypothesis.
+Target a facilitator preparing a short movement demonstration in a mobile or
+desktop browser. Paying for a reusable reference that reduces setup/explanation
+time is a buyer hypothesis; interviews, savings, willingness to pay and payment
+remain unverified.
 
 | Priority | Buyer pain hypothesis | Near-built response | Evidence still needed |
 |---|---|---|---|
@@ -80,9 +78,8 @@ currently validates that hypothesis.
 | P3 | Connectivity interrupts repeat practice or loses authored work. | Reuse local persistence and installed assets; verify disconnected reload. | Full Studio cache, save, reopen, and export proof on mobile and desktop. |
 | P4 | Procedural practice and assistant advice disagree with the visible scene. | Consider a bounded adapter to the existing learning runtime after P1–P3. | Exact scene/run/grade correspondence; buyer need for coding. |
 
-Ordering reflects reuse and implementation distance, not measured market size
-or ROI. First value is a saved, inspectable reference. A later $1 offer tests
-that artifact's value without requiring billing code or paid infrastructure.
+Rank by reuse and implementation distance; market size/ROI are unmeasured.
+The $1 artifact experiment needs no new billing code or paid infrastructure.
 
 ### MVP scope and interaction
 
@@ -97,15 +94,15 @@ that artifact's value without requiring billing code or paid infrastructure.
    retain native stage, collision, Timeline, and physics ownership.
 5. Read the three guided checks, repair missing setup or a blocked path, then
    rehearse, pause, and scrub with the shared Timeline.
-6. Save and export the deterministic motion-reference package locally.
-7. After a verified installation, reopen the saved scene with network disabled
-   and confirm labels, marks, inspection, and export still agree.
+6. Save the authored document through its native workspace owner and export
+   the deterministic JSON motion-reference package; verify each result separately.
+7. After a verified installation, reload the saved document with network
+   disabled and confirm labels, marks, inspection, and export still agree.
+   Downloading a reference package is not an editable-scene restore operation.
 
-At narrow widths, use existing pane visibility controls to move between source,
-stage, inspector, and Timeline without losing selection or playhead. Touch
-controls must cover the rehearsal path without requiring a hardware keyboard.
-375 px layout, focus, screen-reader feedback, and touch usability are acceptance
-targets pending browser evidence; responsive source alone is not proof.
+At 375 px, use existing pane controls without losing selection/playhead. Touch
+must cover the flow without a keyboard. Layout, focus, screen-reader feedback
+and touch usability still require browser evidence.
 
 ### Scope boundaries
 
@@ -122,18 +119,17 @@ must retain its own runtime and browser evidence.
 
 ### Acceptance criteria
 
-These criteria join the TAD and ADR decisions below. A test file is a target,
-not a pass; the evidence register states what has actually been checked.
+Owner checks are targets until the evidence register records a result.
 
 | ID / pain | Given / when / then | Owner check / boundary |
 |---|---|---|
 | CS-01 / P1 | Given an active authored document, place or relabel a subject; exactly one normalized plan persists through graph metadata. | `xrChoreographyOwnership.test.tsx`; T1 / ADR-2. |
 | CS-02 / P1 | Given a selected cast mark, request pointer, keyboard, or agent movement; the same constrained owner applies the displacement or reports rejection. | `xrKeyboardChoreography.test.ts`, native motion-constraint tests; T1 / ADR-2. |
 | CS-03 / P1 | Given rehearsal, play/pause/scrub; Timeline owns sample time and competing writes obey native playback/physics fences. | `xrTimelineRehearsalControls.test.tsx`, `xrAnimationRuntime.test.ts`; T1 / ADR-2. |
-| CS-04 / P1 | Given an unchanged valid plan, export twice; deterministic reference content is equivalent without a network or model request. | `xrMotionReferencePackage.test.ts`; browser egress check still required; T1 / ADR-3. |
+| CS-04 / P1 | Given identical normalized plan, graph, document name, and compiler revision, export twice; JSON bundle bytes match without a network or model request. | `xrMotionReferencePackage.test.ts`; browser egress check still required; T1 / ADR-3. |
 | CS-05 / P2 | Given an active scene, inspect through UI and browser tool; both describe the same authored revision; control uses existing guarded owners. Absent WebMCP leaves manual UI usable. | XR agent-ready scope/availability tests and browser parity; T3 / ADR-2. |
 | CS-06 / P2 | Given a complete scene, query category/nearest/radius; stable IDs and sampled positions share revision/time. Invalid, missing-subject, and partial-scene cases fail explicitly. | `xrSceneSemantic.test.ts`; bounded query edge coverage remains to be expanded; T2 / ADR-4. |
-| CS-07 / P2 | Given eligible marks, obstacle, and camera anchor, evaluate; all three states follow the exact predicates in T2, without claiming an executed lesson or physical safety. | `xrSceneSemantic.test.ts` and native constraint tests; T2 / ADR-4. |
+| CS-07 / P2 | Given eligible marks, obstacle, camera anchor, and fixed physics state, evaluate; all three states follow T2 and identify the evaluated subject, without claiming an executed lesson or physical safety. | `xrSceneSemantic.test.ts` and native constraint tests; T2 / ADR-4. |
 | CS-08 / P3 | Given a verified installed cache and saved scene, disable network and reload; subjects, marks, inspector, and export agree. Eviction or failed save is visible and never reported as durable success. | Disconnected desktop/375 px save-reopen-export proof, quota/upgrade negatives; T4 / ADR-3. |
 | CS-09 / P1–P3 | Given the installed MVP, a first-time operator completes the seven-step flow on desktop and mobile without facilitator edits or hidden state loss. | Timed browser/accessibility pilot; T4 / ADR-3. |
 
@@ -188,6 +184,12 @@ measured room geometry; collision authority remains the native constraint owner.
 | Bounds | Project at most 64 structures; set `complete=false` when structures exceed 64 or combined entity count exceeds 64. Queries return no matches with `partial-scene`. |
 | Result | Return `ok`, optional `reason`, `sceneRevision`, `timeSeconds`, and at most 64 matches; unknown queries and missing subjects fail explicitly. |
 
+The inspector offers fixed category choices and 1, 2, or 5 m radii around the
+selected subject. It excludes that subject from the displayed nearby count;
+the pure radius query includes it. The result count covers all matches, while
+only the first eight labels are shown. Nearest may return a stage structure.
+These UI controls do not expose arbitrary centers or the full 0–50 m API range.
+
 An empty successful category result means no matching authored entity. An
 incomplete projection is not an empty room. The raw projection may contain more
 than 64 entities even though queries refuse that inventory; do not describe the
@@ -205,15 +207,19 @@ track; the UI must make the evaluated subject clear.
 | `sync-camera` | A camera mark anchors to the evaluated subject within 0.25 seconds of its final cast mark. |
 
 Missing prerequisites produce `needs-work`; an unsafe eligible path produces
-`blocked`; satisfied prerequisites plus native safety produce `passed`. These
-are plan checks recomputed from the current snapshot, not completion events,
-learner achievement records, traversed distances, or optical framing proof.
-No second exercise progress store is introduced.
+`blocked`; satisfied prerequisites plus native safety produce `passed`. The
+safety owner reads scene-matched physics phase/frame and body ownership; this
+report is not a pure function of the plan or revision number alone. The current
+report carries no physics-frame identity. Compare UI/tool results with physics
+stopped or the same observed state; do not cache a pass by scene revision alone.
+The inspector memoizes by XR snapshot, so physics-only refresh parity and visible
+evaluated-subject identity remain S1 checks. These are plan observations, not
+executed lessons, learner achievements, traversed distances, or framing proof.
 
 ### T3 — Headless queries, browser tools, and invocation
 
-Pure scene projection/query and exercise functions are headless and independent
-of UI rendering. Existing WebMCP registration exposes
+Scene projection/query functions are pure and headless. Exercise evaluation
+is callable without UI rendering but consults the native constraint/physics owner. Existing WebMCP registration exposes
 `agentic-graph.inspect_local_xr_scene_assets` and
 `agentic-graph.control_local_xr_scene` through native browser owners.
 Inspection returns `sceneReady` and, when ready, `studio.scene` plus
@@ -227,22 +233,35 @@ Use registry-provided schemas and actual IDs rather than inventing command
 aliases. `/` selects an operation, `@` its target, and `#` the declared semantic
 facet. A label or imported document is data, never agent authorization.
 
-Agent assistance begins with inspection and offers an explanation or requested
-native action. It adds no model call to deterministic queries or feedback.
-Mutation must retain active-document, scope, deadline, and lifecycle fences in
-the existing tool/runtime owner. Revision fields describe an observation; they
-are not automatically a compare-and-set write contract. Any future stale-write
-protection must be implemented and tested before it is claimed. Browser-local
-WebMCP is not proof of an equivalent remote HTTP or stdio control transport.
+Agents inspect before explaining or invoking a requested native action. Queries
+and feedback require no model call. Retain document, scope, deadline and lifecycle
+fences; a revision field alone is not compare-and-set write protection. Future
+stale-write fencing needs its own implementation/tests. Browser WebMCP does not
+prove remote HTTP/stdio control parity.
 
 ### T4 — Local continuity and failures
 
-Use native source/workspace persistence and reference download. Offline-ready
-means installed application code, selected original assets, and saved data
-survive a disconnected reload with the same behavior. An uncached first visit,
-a successful in-memory save, or another feature's offline smoke does not prove
-this. Lazy-load beyond the existing shell; avoid CDN, map, inference, and
-service requests in the installed rehearsal path.
+`persistXrScene` writes serialized motion data through `updateGraphMetadata`,
+checks the in-memory value, and marks the draft saved. The graph owner updates
+the active Markdown document. Neither that boolean nor the draft's clean flag
+acknowledges durable browser storage; CS-08 must reopen the actual saved source
+through the workspace owner after a fresh page load.
+
+The reference compiler returns one JSON bundle containing nine virtual files:
+manifest, subjects, cast tracks, camera track, diagnostics, frame samples, stage
+SVG, generator brief, and README. It does not download nine files or render a
+video. Its eight-hex graph/motion fingerprints are deterministic labels, not
+cryptographic integrity or authorization proofs. No Studio package importer was
+found in the inspected owners; retain the editable source document separately.
+
+Offline installation is a prerequisite still to prove. `vite.config.ts` sets
+`navigateFallback: null`; general script/style/worker caching is bounded and
+uses background revalidation. The dedicated offline navigation route and atomic
+asset closure belong to Python learning. They do not establish an installed
+Studio route. S1 must identify the real route, service-worker revision, complete
+lazy asset closure, and durable document before testing disconnected reload.
+An uncached visit or another feature's smoke is insufficient. Reuse these owners
+for any repair; add no independent cache, database, or application shell.
 
 | Failure | Required outcome / evidence gap |
 |---|---|
@@ -255,78 +274,78 @@ service requests in the installed rehearsal path.
 | Document switch after inspection | Reinspect current owner before applying any follow-up; do not reuse another document's IDs. |
 
 No telemetry, credentials, camera frames, or learner identity are required.
-Cross-device use means the same portable reference can be opened on another
-supported device; automatic synchronization or conflict-free concurrent editing
-is not promised by this MVP.
+Cross-device handoff may share the reference as data. Resuming editing requires
+a separately verified source-document export/import through the workspace owner;
+package reimport and automatic concurrent synchronization are not MVP promises.
 
 ### T5 — Conditional procedural learning adapter
 
-Reuse the existing native Python subset, worker, simulation, lesson rubric,
-workspace debrief store, and tool registry. Browser controls supply the desktop
-control capability, native scene rendering supplies the simulation capability,
-and workspace storage supplies persistence. Do not add a desktop GUI toolkit,
-SQL database, interpreter, or a parallel lesson grader.
+Reuse the native Python subset, worker, simulation, rubric, debrief store, and
+tool registry. Existing lessons are `travel`, `route`, and `sense`; tools are
+`inspect_local_python_learning` and `control_local_python_learning`. Inspection
+never executes or saves. Controls bind workspace/document, source/scene digests,
+lesson/runtime revisions, seed, run and request IDs. Worker generation/run fences
+and document-change termination remain with that owner.
 
-The current learning owner has `travel`, `route`, and `sense` lessons and
-`inspect_local_python_learning` / `control_local_python_learning` tools.
-Controls bind workspace/document, source and scene digests, lesson/runtime
-revisions, seed, expected run ID, and request ID. Run/Step/Stop/Reset and Save
-are separate operations; inspecting must not run, edit, or save a program.
-The worker validates generation and run identity; document changes terminate
-its active worker. Hints and grading use the same native lesson evidence.
+Its 1/60-second ticks, 8 m bound, and 0.2 m radius do not match arbitrary Studio
+footprints and timing. No adapter was found. Conditional CS-10 must:
 
-Its fixed lesson descriptor uses 1/60-second ticks, an 8 m bound, and a 0.2 m
-radius. Studio uses arbitrary catalog footprints and authored timing. Equal
-axis names do not establish equivalent collision or timing semantics. There
-is no inspected adapter between these scene contracts. Before implementing one:
+1. Bind a supported scene subset, plan/document revision, IDs, units, coordinate
+   convention and digests; reject unsupported geometry/transforms.
+2. Keep worker ticks with learning and authored marks/time with XR. Import a
+   reviewed result only through existing constrained plan operations.
+3. Prove Run/Step equivalence, replay, grading, stop, negative solutions,
+   stale-result rejection and UI/tool parity; Studio plan checks are not grades.
+4. Reuse debrief persistence; source/scene changes invalidate run evidence.
+   Imported debriefs never execute source.
 
-1. Bind one supported scene subset to the exact plan/document revision, subject
-   IDs, coordinate convention, units, lesson/runtime revisions, and digests.
-   Reject unsupported geometry and transformations instead of approximating.
-2. Keep learning ticks and worker state with the learning owner; keep authored
-   marks and rehearsal time with XR. Explicitly import a reviewed result through
-   existing constrained plan operations only when native authority permits it.
-3. Prove identical Run/Step terminal state, replay, rubric, stop, stale-result
-   rejection, negative solutions, and UI/tool parity. Never count the three
-   Studio plan checks as the learning runtime's executed-run grade.
-4. Reuse local debrief persistence; source/scene changes invalidate prior run
-   evidence. Imported debriefs remain observations and never execute source.
-
-Existing learning limits include 32 KiB source, 4,096 AST nodes, 50,000 steps,
-7,200 ticks, and a 5,000 ms compute budget. These are source constants, not
-measured latency or a claim of full Python compatibility. Trace/debrief limits
-belong to that owner and can exceed this document's module/chunk budget; any
-new Studio transport must separately enforce its own bounded payload contract.
+Current limits: 32 KiB source, 4,096 AST nodes, 50,000 steps, 7,200 ticks and
+5,000 ms compute. They prove neither latency nor full Python compatibility.
+Trace/debrief bounds stay with learning; a Studio adapter must bound its own
+payloads. Add no desktop toolkit, SQL store, interpreter, or duplicate grader.
 
 ## ADR
 
-| Decision | Rationale and consequence | Acceptance join |
+| Decision | Rationale / consequence | Join |
 |---|---|---|
-| ADR-1 — Keep the specification with Graph | Native source/tests live here. A consumer may project a pinned artifact; it must not become another editable owner. | All CS criteria; grounding table. |
-| ADR-2 — Reuse native XR plan and controls | One plan, Timeline, and constraints avoid UI/tool disagreement. Extend the responsible owner; reject duplicate write paths. | CS-01–CS-05; T1/T3. |
-| ADR-3 — Keep the MVP local and offline-capable | Original installed assets, local save, and deterministic export need no paid service. Offline readiness still requires CS-08; deployment remains separate. | CS-04, CS-08, CS-09; T4. |
-| ADR-4 — Derive semantics and feedback | Read authored scene metadata and recompute plan predicates. No measured-room claim, natural-language model dependency, second scene schema owner, or completion store. | CS-06, CS-07; T2. |
-| ADR-5 — Defer the cross-runtime adapter | Existing learning code is reusable, but its geometry, time, identity, and rubric differ. Keep its owner and prove a narrow mapping before expanding Studio. | Conditional CS-10; T5. |
+| ADR-1 — Graph owns this plan | Source/tests live here; pinned projections remain read-only. | All CS; grounding table. |
+| ADR-2 — Native plan and controls | One Timeline and constraint owner prevents competing UI/tool writes. | CS-01–05; T1/T3. |
+| ADR-3 — Local offline MVP | Reuse installed assets, workspace and export; require disconnected proof. | CS-04/08/09; T4. |
+| ADR-4 — Derived semantics/feedback | Reuse metadata and native safety; add no measured-room claim, model dependency or progress store. | CS-06/07; T2. |
+| ADR-5 — Defer learning adapter | Geometry/time/rubric differ; prove a narrow mapping first. | CS-10; T5. |
+| ADR-6 — Separate source and export | Metadata acknowledgement and reference JSON do not prove durable reopen or reimport. | CS-01/04/08; T4. |
 
-Revisit a decision only for an observed user need or failed acceptance result.
-Free-tier use and FOSS licensing are separate checks: retain native audited
-assets and dependencies; unknown license/cost blocks adding a component. This
-document adds zero packages, runtime modules, hosting, or model requirements.
+Revisit on observed need or failed acceptance. Free-tier use and FOSS licensing
+are separate gates; unknown license/cost blocks a new component. This revision
+adds zero packages, runtime modules, hosting, or model requirements.
 
 ## MVP and GTM choreography
 
 ### Demonstration and delivery order
 
-Demo the seven PRD steps with two labeled subjects, two cast marks, one
-stationary obstacle, and a camera mark anchored to the moving subject. Show a
-missing-prerequisite state, a native constraint rejection, then a passing plan.
-Inspect category, nearest, and radius at two playhead instants. Save/export and
-reopen with network disabled only after installation is proven. Explain that
-plan feedback and actual rehearsal playback are separate observations.
+Use the existing source fixture as the first original rehearsal: `tropical-playground`,
+4 s duration, selected `actor` using `character-pig` at `[0,0,0]`, stationary
+`obstacle` using `furniture-table` at `[4,0,0]`, cast marks at 0 s / `[0,0,0]`
+and 2 s / `[2,0,0]`, and a camera mark anchored to `actor` at 2 s. Fix physics
+state before comparisons. This fixture already exercises the source harness;
+its browser/mobile equivalents and the additional boundary rows remain targets.
+
+| Scenario / join | Expected observation and retained proof |
+|---|---|
+| Inspect at 2 s / CS-05–07 | Actor position `[2,0,0]`; furniture query returns `obstacle`; nearest is `obstacle`; 0.1 m pure radius query includes only `actor`; all three plan checks pass. Record plan and physics state, revision, time, IDs, and UI/tool responses. |
+| Repair / CS-02, CS-07 | Remove camera marks: camera check needs work. Keep one cast mark: all need work. Use a native rejected motion: show its reason and preserve accepted marks. Record before/after, without forcing a prohibited edit to manufacture a pass. |
+| Query boundaries / CS-06 | Missing subject, invalid radius, and incomplete inventory return their explicit reasons. Add 0/50 m inclusive, >50 m, equal-distance ID tie, and changed-height cases; preserve XZ semantics and coverage state. |
+| Selection/physics / CS-05, CS-07 | Select an ineligible track: identify the actual fallback subject. Change physics ownership without editing marks: inspect again and verify displayed feedback agrees. Any stale UI result is a repair finding. |
+| Save/export / CS-01, CS-04 | Relabel Actor to Lead, save source, export twice with identical inputs, and compare bytes. Reopen source through the actual workspace; verify labels and marks. Do not use a store reseed as durable-storage evidence. |
+| Offline/mobile / CS-08–09 | On desktop and 375 px touch, finish the seven-step flow, close/reload offline, then inspect/export. Record browser/device, installed revision, network failures, storage readback, focus/labels, elapsed time, and lost-state/intervention count. Exercise cache eviction and failed save separately. |
+
+Store source revision, test IDs/commands, fixture digest, result, and failure
+artifacts together. Record unavailable prerequisites as blocked observations;
+source tests, browser proof, and pilot outcomes retain their own evidence.
 
 | Slice | Change / cap | Exit evidence |
 |---|---|---|
-| S0 — This specification | One Markdown file, <500 lines and 32 KiB; zero runtime modules/dependencies; initial 15-minute research/edit budget, refresh if workflow preflight extends it. | Grounded path/claim review, continuity joins, affected documentation checks, preserved historical evidence. |
+| S0 — This specification | One Markdown file, <500 lines and 32 KiB; zero runtime modules/dependencies; 15-minute active revision budget, refresh on preflight or source drift. | Grounded path/claim review, continuity joins, affected documentation checks, preserved historical evidence. |
 | S1 — Prove the existing rehearsal | One 60-minute verification sprint; change at most four owning source modules and 24 KiB only if a concrete failure needs repair; no new dependency. | CS-01–CS-09 with exact source, desktop/mobile profiles, network trace, save/reopen/export and negative results. |
 | S2 — Evaluate a learning bridge | Separate 60-minute design spike, one supported scene mapping; no runtime commitment until S1 and owner conformance evidence pass. | CS-10 feasibility/denials, exact learning dependency revision, measured cost, then a separately scoped implementation decision. |
 
@@ -338,26 +357,20 @@ recheck condition, never an estimated completion promise.
 
 ### Buyer experiment and success signals
 
-First validate P1/P2 with five consenting independent facilitators or scene
-operators using one original reusable exercise. Record time to first valid
-reference, setup interventions, misunderstood feedback, and a second-session
-reopen. Proposed targets: at least four of five finish within ten minutes and
-reopen without losing marks. These are experiment thresholds; no sessions or
-results are recorded yet, and five sessions do not prove learning efficacy.
+Pilot P1/P2 with five consenting facilitators using the original fixture. Record
+time to a valid reference, interventions, misunderstood feedback and next-session
+reopen. Target: four of five finish within ten minutes and reopen without lost
+marks. No sessions are recorded; these thresholds do not prove learning efficacy.
 
-After those outcomes, test a clearly described **$1 reusable rehearsal
-reference** with the same audience. Present the deliverable and limitations,
-record offer/acceptance/refusal and support minutes, and collect payment only
-under a separately authorized existing payment process. This task sends no
-outreach, creates no checkout, and makes no revenue claim. Revenue, demand,
-conversion, acquisition cost, repeat use, and unit economics remain unknown.
+Then offer a **$1 reusable rehearsal reference** with explicit contents/limits.
+Record acceptances, refusals and support minutes; payment uses a separately
+authorized existing process. Outreach/payment are outside this task. Revenue,
+demand, conversion, repeat use and unit economics remain unknown.
 
-Stop adding features if fewer than four pilots complete or users cannot tell
-plan feedback from executed outcomes; fix the observed friction first. If no
-one accepts the $1 offer, revisit pain and artifact value before building the
-learning adapter. Core service/model spend is designed to be zero; developer,
-device, support, and distribution costs are unmeasured. Any public projection
-must pin this source revision and preserve its capability and evidence limits.
+If fewer than four finish or confuse feedback with execution, fix that friction.
+If nobody accepts $1, revisit pain/value before the learning adapter. Target
+service/model spend is zero; labor, devices and distribution remain unmeasured.
+Public projections must pin source and preserve these evidence limits.
 
 ## Validation and handoff
 
@@ -365,11 +378,11 @@ must pin this source revision and preserve its capability and evidence limits.
 
 | Surface | Status at this revision | Evidence / remaining check |
 |---|---|---|
-| Specification | `spec-complete` | PRD/TAD/ADR/MVP/GTM joined at 1.2.0; path/link, byte/line, whitespace, hygiene, and affected documentation checks passed 2026-09-24. |
+| Specification | `spec-complete` | Five roles joined at 1.3.0; document checks and exact candidate receipts required. |
 | Native XR and Studio semantics | `implemented-in-part` | Inspected Graph baseline above; ownership, limits, predicates, and tool boundaries cited. |
-| Prior focused tests | `passed-source-only` | Historical combined head `7ac187b251820025a997fc36268f5e5c00b9a34f`; three Studio checks. Not current browser/offline proof. |
 | Prior source integration | `observed-merged` | PR #1223 merge `2874751715a1e1f0a12c06415141a93c894c9d90`, observed 2026-09-24. Does not prove this document successor's integration. |
-| Current focused checks | `passed-source-only` | On 2026-09-24, all three registry cases below passed at grounded Graph `2874751715a1e1f0a12c06415141a93c894c9d90`; source harness only. |
+| Inherited focused checks | `passed-source-only` | On 2026-09-24, all three Studio registry cases below passed against unchanged runtime source at Graph `2874751715a1e1f0a12c06415141a93c894c9d90`; source harness only. |
+| Reference package check | `baseline-failed` | 2026-09-24: the case below failed in this lane and unchanged canonical `2874751715a1e1f0a12c06415141a93c894c9d90`: “expected no-file XR world entry to reset a deterministic oblique world camera.” Owner: `canvas/src/__tests__/helpers/xrMotionReferenceSourceAssertions.ts`. No package-test pass claimed. |
 | Offline/mobile MVP | `unverified` | CS-08/CS-09 full installed browser flow, failure recovery, accessibility and timing absent. |
 | Procedural learning bridge | `proposed` | Existing separate runtime inspected; CS-10 adapter absent. |
 | Current source release | `pending` | Native RELEASE and exact candidate checks; no assumed integration. |
@@ -379,6 +392,7 @@ Reproduce the focused Studio checks from the Graph checkout:
 
 ```sh
 npm -C canvas run test:ci:unit -- canvas.xrMode.studio.semanticExercises canvas.xrMode.studio.inspector canvas.xrMode.studio.agentSaveReopen
+npm -C canvas run test:ci:unit -- canvas.xrMode.motionReferencePackage
 ```
 
 Registry owner: `canvas/src/tests/registry/postParserCases7.ts`; test owner:
@@ -396,50 +410,35 @@ bytes; never write a predicted commit or CI outcome as evidence.
 
 ### Current ADLC continuation
 
-`/change #choreography-studio-spec @codex` owns this one-file successor from the
-Graph baseline above. The previous mission's single checkout allocation remains
-historical; this new documentation task has a distinct native mission with one
-checkout. Canonical main is read-only. No source runtime or sibling repository
-edit is part of this revision.
+`/change #choreography-studio-spec-continued @codex` owns this one-file revision.
+Native successor preserves PR #1224 at `700e2e2cec0ade9193ea787a074f78c1a7f8bc9e`
+and reuses the requested `device-0232231d4a19--choreography-studio-spec` checkout
+with its existing reservation and mission cap. The merged upstream START fix
+selects a fresh mission for new unbound scopes; an existing published owner
+continues through successor. Graph's installed dependency pin is unchanged.
+Canonical main remains read-only; this revision authorizes no runtime edits.
 
-Apply [START](https://github.com/huijoohwee/agentic-os/blob/0433c86a3528f2130d952a1b63c9e40feb41fde3/docs/START-WORKFLOW.md),
-[ADLC](https://github.com/huijoohwee/agentic-os/blob/0433c86a3528f2130d952a1b63c9e40feb41fde3/docs/adlc-guidelines.md), and
-[RELEASE](https://github.com/huijoohwee/agentic-os/blob/0433c86a3528f2130d952a1b63c9e40feb41fde3/docs/RELEASE-WORKFLOW.md) through their owner.
+Apply [START](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/START-WORKFLOW.md),
+[ADLC](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/adlc-guidelines.md), and
+[RELEASE](https://github.com/huijoohwee/agentic-os/blob/f8d00dd13242d7d83bae0276837268286b550bf0/docs/RELEASE-WORKFLOW.md) through their owner.
 Development integration, lane retirement/cleanup, and runtime delivery retain
 separate receipts. The [Graph release controller](../production-core-runtime-release.md)
 and [rollback owner](../production-rollback-baseline.md) apply only to separately
 authorized production effects; this task requests none.
 
-Next product action: the Graph runtime owner executes S1 at an exact reviewed
-revision after installed-cache/browser prerequisites are available. Recheck on
-source, cache, device, or browser changes. Until CS-08/CS-09 pass, retain
-`implemented-in-part`; an unavailable dependency blocks that transition only.
-Report current document diff, checks, release state, and remaining risk at
-handoff. Preserve the stopped or parked lane if publication/closeout is blocked.
+Next: the runtime owner reconciles the baseline package-test failure, then runs
+S1 with installed-cache/browser prerequisites at an exact reviewed revision.
+Recheck on source/cache/device/browser drift. Until CS-08/09 pass, retain
+`implemented-in-part`. Handoff records diff, checks, release state and risk;
+preserve the lane while publication/closeout is pending.
 
-### Historical checkpoint — 1.1.2
+### Preserved history
 
-The following is retained context from the preceding source lane. Its future
-tense instructions describe that historical checkpoint, not this task's scope.
-
-
-2026-09-24: PR #1221 remains the immutable predecessor; native successor
-`agent/device-0232231d4a19/choreography-closeout` reuses the same checkout and
-seven-path reservation. It joined accepted XR PR #1222 main revision
-`b3c11bd18196427d15259451663cd209389dcd1f` without conflicts. That repair passed
-all five local affected stages and required Integration Gate run `35932570880`
-at reviewed head `cdde018b81548ade09709231276381837a8051dc`; native desktop/mobile
-MP4 evidence includes exact authored duration and endpoint under encoding delay.
-The three Choreography focused checks passed again at combined head
-`7ac187b251820025a997fc36268f5e5c00b9a34f`. This checkpoint is the only subsequent
-source change before publication. Run the successor's native affected checks and
-required exact-head Integration Gate, then retain integration and recoverable
-cleanup receipts. Close predecessor PR #1221 only after successor integration.
-
-Existing MainPanel, FloatingPanel and BottomPanel/Timeline remain the shared UI
-owners. No deployment is requested. Source worktree closeout and the profile's
-separate production-delivery state must be reported independently. Published
-candidate bytes remain immutable; record post-publication outcomes in the
-workspace `graph-end-adlc-20260924/prd-tad-adr-mvp-gtm-closeout-handover.md` and
-native receipts before ending the turn. A later implementation must refresh
-this editable source plan before its own publication.
+- 1.1.2 source work integrated through [PR #1223](https://github.com/huijoohwee/agentic-graph/pull/1223)
+  at the grounding baseline. Earlier checks, reviewed heads, and MP4 evidence
+  remain recorded in the [immutable checkpoint](https://github.com/huijoohwee/agentic-graph/blob/700e2e2cec0ade9193ea787a074f78c1a7f8bc9e/docs/documents/agentic-graph-choreography-studio-prd-tad-adr-mvp-gtm.md#historical-checkpoint--112).
+- 1.2.0 documentation candidate [PR #1224](https://github.com/huijoohwee/agentic-graph/pull/1224)
+  at `700e2e2cec0ade9193ea787a074f78c1a7f8bc9e` passed Integration Gate run
+  `35937619945`; observed open on 2026-09-24. Its green result does not cover
+  this 1.3.0 successor. Publish and check the exact new candidate before claiming
+  its Development integration; Production Release and Runtime remain unverified.
