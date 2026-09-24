@@ -150,7 +150,7 @@ export function testThemeSystemModeApplyAndSubscribe() {
 
 export async function testNativeMonacoDarkVariants() {
   const { setNativeMonacoTheme } = await import('@/lib/monaco/theme')
-  const { getKgThemeFromDom, getKgTokenFallback } = await import('@/lib/ui/tokens-ssot')
+  const { getKgThemeFromDom, getKgTokenFallback, readRootCssStateKey } = await import('@/lib/ui/tokens-ssot')
   const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost' })
   const globals = globalThis as unknown as { window?: unknown; document?: unknown }
   const previous = { window: globals.window, document: globals.document }
@@ -164,6 +164,7 @@ export async function testNativeMonacoDarkVariants() {
       defineTheme: (id: string, data: { colors: Record<string, string> }) => defined.push({ id, data }),
     } } as unknown as Parameters<typeof setNativeMonacoTheme>[0]
     applyThemeMode('dark', 'black')
+    const blackCssKey = readRootCssStateKey()
     if (getKgThemeFromDom() !== 'black') throw new Error('black DOM palette was not resolved')
     setNativeMonacoTheme(monaco, 'dark', 'black')
     if (selected.at(-1) !== 'kg-dark-black'
@@ -171,6 +172,9 @@ export async function testNativeMonacoDarkVariants() {
       throw new Error('Monaco black palette must consume the shared code surface')
     }
     applyThemeMode('dark', 'dark-blue')
+    if (readRootCssStateKey() === blackCssKey) {
+      throw new Error('native canvas CSS cache must invalidate when the dark variant changes')
+    }
     if (getKgThemeFromDom() !== 'dark') throw new Error('dark-blue DOM palette was not resolved')
     setNativeMonacoTheme(monaco, 'dark', 'dark-blue')
     if (selected.at(-1) !== 'vs-dark') throw new Error('saved blue editors must retain their native palette')

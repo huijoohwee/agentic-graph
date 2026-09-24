@@ -508,6 +508,8 @@ The implementation grant is the user's 2026-09-24 request to implement the prior
 including the later explicit learning-canvas alignment. Source inspection is bound to Graph
 `969f0d07802605a38dc10cde840ff685d468cf46` and the proposed guideline
 `3.3.0` at website `d1bb72de041b1ddc6d291fd4f8528ccc2d367fea`.
+The unpublished Graph candidate was reconciled with protected base
+`272862cc4d130616497a392605bcb4caf25c3a5a` before publication.
 Protected integration and production effects require their separate evidence.
 
 ### PRD
@@ -524,6 +526,7 @@ buyer demand, time saved, and revenue have no observations.
 | T2 | Given either dark variant, when the mode or system preference changes, then Settings, shared semantic surfaces and lazy Monaco resolve one current palette; code keeps 12px Menlo/Monaco-compatible type and 18px lines. | `ui.tokens.ssot`, `ui.nativeMonacoDarkVariants`, browser observation |
 | T3 | Given the learning workspace, when theme changes, then scene backdrop, floor and grid follow Light, Black or Dark Blue while route/goal/object colors retain their lesson meaning. | Python learning browser smoke and manual theme switch |
 | T4 | Given typography, icon or density overrides, when Reset theme is used, then only mode and dark variant return to System and Black; unrelated preferences remain. | Settings interaction and store readback |
+| T5 | Given the 2D Flow canvas is visible, when Light, Black or Dark Blue is chosen, then its painted background changes on the next frame without a drag or zoom gesture. | Native canvas pixel readback before/after theme changes |
 
 ### TAD and ADR
 
@@ -532,6 +535,9 @@ buyer demand, time saved, and revenue have no observations.
 existing Settings registry and store own mode/variant persistence and DOM application.
 `canvas/src/lib/monaco/theme.ts` maps semantic roles at lazy editor mount and on toggles.
 `LearningSceneStage.tsx` consumes the same values for the scene's non-authored surfaces.
+The 2D Flow runtime redraws on root theme mutation, and the CSS state key includes the
+dark variant. D3, Design, Dashboard and Gallery grid signals include that variant so
+their cached paint follows the same change.
 The generated Settings projection and token CSS are derived outputs. This is one dependency
 direction: tokens → adapters → presentation. Preserve the former Dark palette as Dark Blue,
 retain existing mode cycling and personal text/icon/density settings, and add no remote
@@ -544,8 +550,9 @@ affected Design and Python browser checks, generated-output parity, and the prot
 Integration Gate. Browser checks must examine Light, Black and Dark Blue at narrow and
 desktop widths and keyboard focus. A local test or green PR does not prove deployed state.
 Active sprint bound: 45 minutes, 50 KiB authored delta and 12 owner modules initially.
-The learning-canvas observation and native Settings projection expanded the cap to 60 KiB
-authored delta and 24 owner modules; generated outputs are tracked separately. Refresh
+The learning-canvas observation, native Settings projection, and reported 2D redraw bug
+expanded the cap to 90 minutes, 70 KiB authored delta and 30 owner modules; generated
+outputs are tracked separately. Refresh
 again if these caps are crossed. No dependency, paid tier, provider
 request or new always-load guidance is part of this change.
 
@@ -556,11 +563,13 @@ The product operator owns that pilot and any later payment evidence.
 
 **Implementation checkpoint (2026-09-24):** source candidate under
 `agent/device-0232231d4a19/design-dark-variants`. Typecheck, token CSS parity,
-Settings projection parity, 11 focused theme/Design tests, and Python learning browser
+Settings projection parity, 12 focused theme/Design/Flow tests, and Python learning browser
 smoke passed. Direct browser readback at 375px and 1280px resolved distinct Light,
 Black, and Dark Blue canvas/code tokens without page overflow; the Settings dark-variant
 selector accepted keyboard focus and the theme-only reset restored System/Black. The
-broader Design browser verifier did not reach its Design panel because the current local
+isolated Flow canvas browser proof sampled its painted background before any drag:
+Light `[243,244,246]`, Black `[0,0,0]`, Dark Blue `[2,6,23]`, with no page errors.
+The broader Design browser verifier did not reach its Design panel because the current local
 XR overlay intercepted the fixture; it is not counted as a pass. The browser checks do
 not establish a complete accessibility assessment. Exact candidate SHA, provider checks,
 and protected integration remain pending. No production or buyer receipt.

@@ -64,6 +64,7 @@ export default function FlowCanvas({
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
   const runtimeRef = React.useRef<FlowNativeRuntime | null>(null)
   const resolvedThemeMode = useGraphStore(s => (s.resolvedThemeMode || 'light') as 'light' | 'dark')
+  const darkThemeVariant = useGraphStore(s => s.darkThemeVariant)
   const lastCommittedPositionsRef = React.useRef<Record<string, { x: number; y: number }> | null>(null)
   const positionsDirtySinceCommitRef = React.useRef(false)
   const selectedNodeIdsRef = React.useRef<string[]>([])
@@ -329,7 +330,17 @@ export default function FlowCanvas({
     if (!runtime) return
     runtime.dirty = true
     scheduleFlowDraw()
-  }, [active, resolvedThemeMode, scheduleFlowDraw])
+  }, [active, darkThemeVariant, resolvedThemeMode, scheduleFlowDraw])
+
+  React.useEffect(() => {
+    if (!active || typeof MutationObserver === 'undefined') return
+    const observer = new MutationObserver(() => scheduleFlowDraw({ force: true }))
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-dark-variant', 'class'],
+    })
+    return () => observer.disconnect()
+  }, [active, scheduleFlowDraw])
 
   const updateHiddenDrawArgs = React.useCallback(() => {
     const baseNodeIds = Array.from(new Set((hideNodeIds || []).map(String)))
