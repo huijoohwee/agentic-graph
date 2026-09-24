@@ -3,7 +3,6 @@ import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/w
 import { MarkdownWorkspaceToolbar } from '../../MarkdownWorkspaceToolbar'
 import { UI_VIEW_EDIT_SURFACE_DATA_ATTRIBUTES, UI_VIEW_EDIT_SURFACE_FLEX_AREA_CLASS_NAME } from '@/lib/ui/surfaceClasses'
 import { resolveMarkdownWorkspacePaneVisibility, type MarkdownWorkspacePaneAvailability, type MarkdownWorkspacePaneVisibility } from '../types'
-import './programPaneLayout.css'
 
 export function MarkdownWorkspaceLayout(props: {
   toolbarProps: React.ComponentProps<typeof MarkdownWorkspaceToolbar>
@@ -29,7 +28,6 @@ export function MarkdownWorkspaceLayout(props: {
     forceMarkdownEditorInEditorMode: props.forceMarkdownEditorInEditorMode,
   })
   const binaryPaneVisible = props.binaryPaneVisible === true
-  const programPanes = paneVisibility.block
   const paneClassName = 'kg-markdown-workspace-pane flex-1 min-w-0 min-h-0 flex flex-col'
   const viewerPaneClassName = `kg-markdown-workspace-pane flex flex-col ${UI_VIEW_EDIT_SURFACE_FLEX_AREA_CLASS_NAME}`
   const paneDividerClassName = 'kg-markdown-workspace-pane-divider w-px self-stretch bg-[color:var(--kg-border)] border-0'
@@ -80,7 +78,7 @@ export function MarkdownWorkspaceLayout(props: {
       ) : null}
 
       {props.layoutMode === 'editor' ? (
-        <section className={`kg-markdown-workspace-editor-panes flex-1 min-w-0 min-h-0 flex ${programPanes ? 'kg-program-workspace-panes' : ''}`} aria-label="Monaco editors">
+        <section className={`kg-markdown-workspace-editor-panes flex-1 min-w-0 min-h-0 flex`} aria-label="Monaco editors">
           {effectiveSplitPanes.map((pane, index) => (
             <React.Fragment key={pane.key || `pane-${index}`}>
               {index > 0 ? <hr className={paneDividerClassName} aria-hidden="true" /> : null}
@@ -97,7 +95,7 @@ export function MarkdownWorkspaceLayout(props: {
           {props.presentation}
         </section>
       ) : (
-        <section className={`kg-markdown-workspace-split-panes flex-1 min-w-0 min-h-0 flex kg-workspace-surface-shell ${programPanes ? 'kg-program-workspace-panes' : ''}`} aria-label="Split view">
+        <section className={`kg-markdown-workspace-split-panes flex-1 min-w-0 min-h-0 flex kg-workspace-surface-shell`} aria-label="Split view">
           {effectiveSplitPanes.map((pane, index) => (
             <React.Fragment key={pane.key || `pane-${index}`}>
               {index > 0 ? <hr className={`${paneDividerClassName} kg-workspace-split-divider`} aria-hidden="true" /> : null}

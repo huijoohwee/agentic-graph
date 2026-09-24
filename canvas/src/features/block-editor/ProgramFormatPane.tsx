@@ -1,4 +1,7 @@
 import * as React from 'react'
+import { MarkdownEditorPane } from '@/features/markdown-workspace/main/editor/MarkdownEditorPane'
+import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { applyProgramJson, applyProgramMarkdown, renderProgramJson, renderProgramMarkdown } from './programCodec'
 
@@ -7,8 +10,11 @@ const render = (source: string, format: ProgramFormat) => format === 'json' ? re
 const apply = (source: string, draft: string, format: ProgramFormat) => format === 'json' ? applyProgramJson(source, draft) : applyProgramMarkdown(source, draft)
 
 export default function ProgramFormatPane(props: {
+  uri: string; themeMode: 'light' | 'dark'; wordWrap: boolean
   format: ProgramFormat; documentId: string; source: string; onChange: (next: string) => void; readOnly: boolean
 }) {
+  const editorRef = React.useRef<MonacoTextEditorHandle | null>(null)
+  const panelTypography = usePanelTypography()
   const projection = React.useMemo(() => {
     try { return { text: render(props.source, props.format), error: '' } }
     catch (error) { return { text: '', error: error instanceof Error ? error.message : String(error) } }
@@ -50,9 +56,10 @@ export default function ProgramFormatPane(props: {
     </header>
     {projection.error ? <p role="alert" className="p-3 text-sm">This source cannot be converted: {projection.error}. Edit Python to continue.</p> : <>
       {notice ? <p role={stale ? 'alert' : 'status'} className="px-2 py-1 text-xs">{notice}</p> : null}
-      <textarea spellCheck={false} aria-label={`${props.format.toUpperCase()} program text`}
-        className={`min-h-0 flex-1 resize-none bg-transparent p-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${UI_THEME_TOKENS.text.primary}`}
-        value={draft} onChange={event => setDraft(event.target.value)} readOnly={props.readOnly} />
+      <MarkdownEditorPane value={draft} onChange={setDraft} readOnly={props.readOnly} language={props.format}
+        uri={`${props.uri}#program-${props.format}`} editorRef={editorRef} panelTypography={panelTypography}
+        wordWrap={props.wordWrap} themeMode={props.themeMode} ariaLabel={`${props.format.toUpperCase()} program text`}
+        paneAriaLabel={`${props.format.toUpperCase()} Editor Surface`} />
     </>}
   </section>
 }

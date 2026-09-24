@@ -1,6 +1,9 @@
 import * as React from 'react'
 import { parseLearningPython } from '@/features/python-learning/pythonParser'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { CanvasGridOverlaySurface } from '@/components/CanvasGridOverlaySurface'
+import { useBlockCanvasViewport } from './useBlockCanvasViewport'
+import { readCanvasGridRenderConfigFromSchema } from '@/lib/canvas/canvasGridConfig'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { BlockProgramRow } from './BlockProgramRow'
 import { insertBlock, programTree, type BlockTreeNode } from './blockLibrary'
@@ -11,6 +14,10 @@ import { ProgramEditError } from './programError'
 export default function BlockEditorPane(props: {
   source: string; onChange: (next: string) => void; documentId: string; readOnly: boolean
 }) {
+  const viewport = useBlockCanvasViewport(props.documentId)
+  const schema = useGraphStore(state => state.schema)
+  const theme = useGraphStore(state => state.resolvedThemeMode)
+  const grid = React.useMemo(() => readCanvasGridRenderConfigFromSchema(schema), [schema])
   const owner = React.useRef(Symbol('Block editor'))
   const sourceRef = React.useRef(props.source), documentRef = React.useRef(props.documentId)
   sourceRef.current = props.source; documentRef.current = props.documentId
@@ -54,7 +61,7 @@ export default function BlockEditorPane(props: {
     })
   }, [parsed.error, props.documentId, props.onChange, props.readOnly, props.source, selected])
   React.useEffect(() => () => clearBlockSession(owner.current), [])
-  const focus = (index: number) => listRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')[index]?.focus()
+  const focus = (index: number) => viewport.reveal(listRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]')[index])
   const toggle = (id: string) => setCollapsed(previous => { const next = new Set(previous); if (!next.delete(id)) next.add(id); return next })
   const navigate = (event: React.KeyboardEvent, index: number, row: BlockTreeNode, hasChildren: boolean, expanded: boolean) => {
     if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', ' '].includes(event.key)) return
@@ -86,7 +93,7 @@ export default function BlockEditorPane(props: {
     catch (error) { setNotice(error instanceof Error ? error.message : String(error)) }
   }
   const editStale = !!edit && (edit.documentId !== props.documentId || edit.source !== props.source)
-  return <section className={`flex h-full min-h-0 flex-col ${UI_THEME_TOKENS.panel.bg}`} aria-label="Block editor">
+  return <section className={`flex h-full min-h-0 flex-col ${UI_THEME_TOKENS.panel.bg}`} aria-label="Block editor" data-kg-block-canvas="true">
     <header className={`border-b px-3 py-2 ${UI_THEME_TOKENS.panel.border}`}>
       <h2 className="text-sm font-semibold">Block</h2>
       <p className="truncate text-xs opacity-70">{props.documentId.split('/').pop()} · {parsed.error ? 'Source preserved' : `${rows.length - 1} nodes`}</p>
@@ -108,15 +115,24 @@ export default function BlockEditorPane(props: {
         <div className="flex gap-1"><button type="button" disabled={editStale || props.readOnly} onClick={() => change(() => replaceBlock(props.source, edit.targetId, edit.draft), 'Statement updated.')} className="rounded border px-2 py-1 disabled:opacity-50">Apply block edit</button>
           <button type="button" onClick={() => setEdit(null)} className="rounded border px-2 py-1">Cancel</button></div>
       </div> : null}
-      <p className="px-3 py-2 text-xs opacity-70">Select a step to edit, or open the library to add one. Arrow keys move through the program.</p>
-      <ul ref={listRef} role="tree" aria-label="Program hierarchy" className="min-h-0 flex-1 overflow-auto py-2"
-        style={{ backgroundImage: 'radial-gradient(circle, color-mix(in srgb, var(--kg-border, #94a3b8) 72%, transparent) 0.8px, transparent 0.9px)', backgroundSize: '18px 18px' }}>
-        {rows[0] && <li role="none" className="px-3 pb-3"><BlockProgramRow row={rows[0]} childrenByParent={children}
+      <p className="px-3 py-2 text-xs opacity-70">Select a step to edit, or open the library to add one. Arrow keys navigate. Drag empty canvas to pan; use the zoom controls to change scale.</p>
+      <section ref={viewport.setViewport} className="relative min-h-0 flex-1 overflow-clip touch-none" aria-label="Block infinite canvas">
+        <CanvasGridOverlaySurface canvasGrid={grid} width={viewport.dims.width} height={viewport.dims.height} dpr={viewport.dims.dpr}
+          getTransform={viewport.getTransform} getEventTarget={viewport.getEventTarget} themeSignal={`${theme}:${viewport.transform}`} surfaceId="block" />
+      <ul ref={listRef} role="tree" aria-label="Program hierarchy" className="absolute left-0 top-0 origin-top-left"
+        style={{ width: 320, transform: `translate(${viewport.transform.x}px, ${viewport.transform.y}px) scale(${viewport.transform.k})` }}>
+        {rows[0] && <li role="none" className="pb-3"><BlockProgramRow row={rows[0]} childrenByParent={children}
           selectedId={selected?.id} focusedId={focusedId} collapsed={collapsed}
           onSelect={setSelectedId} onToggle={toggle}
           onNavigate={(event, row, hasChildren, expanded) => navigate(event, visibleIndex.get(row.id) || 0, row, hasChildren, expanded)} />
         </li>}
       </ul>
+        <nav aria-label="Block canvas controls" className={`absolute bottom-2 right-2 flex items-center gap-1 rounded border p-1 text-xs ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}>
+          <button type="button" aria-label="Zoom out Block canvas" onClick={() => viewport.zoomBy(.8)} className="h-7 w-7 rounded border">−</button>
+          <button type="button" aria-label="Reset Block canvas view" onClick={viewport.reset} className="h-7 rounded border px-2">{Math.round(viewport.transform.k * 100)}%</button>
+          <button type="button" aria-label="Zoom in Block canvas" onClick={() => viewport.zoomBy(1.25)} className="h-7 w-7 rounded border">+</button>
+        </nav>
+      </section>
     </>}
   </section>
 }

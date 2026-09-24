@@ -526,8 +526,8 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
       }}
       layoutMode={layoutMode}
       documentNotice={documentNotice}
-      renderMarkdownEditor={documentPanePreset === 'python' ? () => <React.Suspense fallback={<p role="status">Loading program Markdown…</p>}><ProgramFormatPaneLazy format="markdown" source={activeText} documentId={activeDocumentKey} onChange={setActiveText} readOnly={!!disableEditorMutations || !!props.passive} /></React.Suspense> : renderMarkdownEditorPane}
-      renderJsonEditor={documentPanePreset === 'python' ? () => <React.Suspense fallback={<p role="status">Loading program JSON…</p>}><ProgramFormatPaneLazy format="json" source={activeText} documentId={activeDocumentKey} onChange={setActiveText} readOnly={!!disableEditorMutations || !!props.passive} /></React.Suspense> : renderJsonEditorPane}
+      renderMarkdownEditor={documentPanePreset === 'python' ? () => <React.Suspense fallback={<p role="status">Loading program Markdown…</p>}><ProgramFormatPaneLazy uri={editorUri} wordWrap={markdownWordWrap} themeMode={themeMode} format="markdown" source={activeText} documentId={activeDocumentKey} onChange={setActiveText} readOnly={!!disableEditorMutations || !!props.passive} /></React.Suspense> : renderMarkdownEditorPane}
+      renderJsonEditor={documentPanePreset === 'python' ? () => <React.Suspense fallback={<p role="status">Loading program JSON…</p>}><ProgramFormatPaneLazy uri={editorUri} wordWrap={markdownWordWrap} themeMode={themeMode} format="json" source={activeText} documentId={activeDocumentKey} onChange={setActiveText} readOnly={!!disableEditorMutations || !!props.passive} /></React.Suspense> : renderJsonEditorPane}
       pythonPane={documentPanePreset === 'python' ? <React.Suspense fallback={<p role="status">Loading Python workspace…</p>}>
         <PythonLearningPaneLazy source={activeText} onChange={setActiveText} documentId={activeDocumentKey}
           uri={editorUri} editorRef={editorRef} onCaretLine={onEditorCaretLine} themeMode={themeMode}
