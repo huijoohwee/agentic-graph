@@ -31,7 +31,7 @@ function environment() {
     const request = (operation: string, requested = revision): Promise<any> => new Promise(resolve => owner.__agLearningOffline!.message({
       data: { type: 'AG_PYTHON_LEARNING_OFFLINE', operation, revision: requested }, source: { url: scope }, ports: [{ postMessage: resolve }], waitUntil() {},
     }))
-    return { owner, request, navigate: (rev = revision) => owner.__agLearningOffline!.read({ url: scope + '?python-learning-offline=' + rev, mode: 'navigate' }) }
+    return { owner, request, navigate: (rev = revision, route = 'python-learning-offline') => owner.__agLearningOffline!.read({ url: scope + '?' + route + '=' + rev, mode: 'navigate' }) }
   }
   const publish = async (revision: string, change?: (manifest: any) => void) => {
     const assets = { 'index.html': `<html>${revision}</html>`, [`assets/${revision}/pythonWorker.js`]: `// worker ${revision}` }
@@ -66,6 +66,21 @@ test('offline install admits a complete digest closure, preserves a prior versio
   assert.equal((await two.navigate(first)).status, 200)
 })
 
+test('the verified application pack serves Studio navigation offline and fails closed on missing or ambiguous revisions', async () => {
+  const env = environment(); await env.publish(first); const one = env.ownerFor(first)
+  assert.equal((await one.navigate(first, 'studio-offline')).status, 503)
+  assert.equal((await one.request('install')).ok, true)
+  const before = env.calls(); env.downloads.clear()
+  assert.match(await (await one.navigate(first, 'studio-offline')).text(), new RegExp(first))
+  assert.equal(env.calls(), before, 'Studio navigation reads the verified pack without network')
+  assert.equal((await one.navigate(second, 'studio-offline')).status, 503)
+  const ambiguous = await one.owner.__agLearningOffline!.read({
+    url: scope + '?python-learning-offline=' + first + '&studio-offline=' + first, mode: 'navigate',
+  })
+  assert.equal(ambiguous.status, 503)
+  assert.match(await ambiguous.text(), /Choose one offline workspace route/)
+})
+
 test('corruption fails closed and recovery verifies prior membership before changing the pointer', async () => {
   const env = environment(); await env.publish(first); const one = env.ownerFor(first); await one.request('install')
   await env.publish(second); const two = env.ownerFor(second); await two.request('install')
@@ -74,6 +89,9 @@ test('corruption fails closed and recovery verifies prior membership before chan
   assert.equal((await two.request('verify')).ok, false)
   const blocked = await two.navigate(); assert.equal(blocked.status, 503)
   assert.match(await blocked.text(), /Open previous verified installation/, 'cold offline failure offers a verified recovery link')
+  const studioBlocked = await two.navigate(second, 'studio-offline')
+  assert.equal(studioBlocked.status, 503)
+  assert.match(await studioBlocked.text(), new RegExp('studio-offline=' + first), 'Studio recovery retains its own route')
   assert.equal((await env.state()).active.cache, state.active.cache)
   assert.equal((await two.request('recover')).ok, true)
   assert.equal((await two.navigate(first)).status, 200)
@@ -113,7 +131,7 @@ test('concurrent installers serialize, retain two complete packs and leave ordin
 test('native build inventory includes HTML, worker and lazy language bytes with exact hashes', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'python-learning-manifest-'))
   try {
-    const files = ['index.html', `assets/${first}/pythonWorker.js`, `assets/${first}/pythonLanguage.js`]
+    const files = ['index.html', `assets/${first}/pythonWorker.js`, `assets/${first}/pythonLanguage.js`, `assets/${first}/studioScene.js`]
     await mkdir(join(directory, `assets/${first}`), { recursive: true })
     for (const file of files) await writeFile(join(directory, file), file)
     const plugin = createPythonLearningOfflinePlugin(first)

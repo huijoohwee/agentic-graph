@@ -16,6 +16,8 @@ import { selectXrMotionReferenceCastMark, selectXrMotionReferenceCameraMark, typ
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { evaluateXrStudioExercises } from './xrSceneExercises'
 import { projectXrStudioScene, queryXrStudioScene } from './xrSceneSemantic'
+import { readXrPhysicsRuntime, subscribeXrPhysicsRuntime } from './xrPhysicsRuntime'
+import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
 
 function ChoreographyCard({
   Icon,
@@ -98,7 +100,9 @@ export function XrChoreographyInspector({
 }) {
   const warnings = React.useMemo(() => resolveXrChoreographySpeedWarnings(runtime.plan), [runtime.plan])
   const studioScene = React.useMemo(() => projectXrStudioScene(runtime), [runtime])
-  const exercises = React.useMemo(() => evaluateXrStudioExercises(runtime), [runtime])
+  const physics = React.useSyncExternalStore(subscribeXrPhysicsRuntime, readXrPhysicsRuntime, readXrPhysicsRuntime)
+  const exercises = React.useMemo(() => evaluateXrStudioExercises(runtime), [runtime, physics])
+  const evaluatedSubject = studioScene.entities.find(entity => entity.id === exercises.subjectId && entity.kind === 'subject')
   const [sceneCategory, setSceneCategory] = React.useState('all')
   const [areaRadiusMeters, setAreaRadiusMeters] = React.useState(2)
   const visibleEntities = sceneCategory === 'all'
@@ -222,6 +226,10 @@ export function XrChoreographyInspector({
             </li>
           ))}
         </ul>
+        <p className={cn('m-0 mt-1', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-studio-evaluated-subject={exercises.subjectId || ''}>
+          {evaluatedSubject ? `Evaluating ${evaluatedSubject.label} (${evaluatedSubject.id})` : 'No eligible moving subject'} · physics revision {physics.revision}
+        </p>
+        <LearningOfflineControls purpose="studio" />
       </details>
       {children}
     </section>
