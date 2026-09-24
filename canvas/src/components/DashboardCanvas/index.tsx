@@ -42,6 +42,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
   const currentSchema = useGraphStore(state => state.schema)
   const schema = widgetConfiguration.dashboard?.mission?.schema ?? currentSchema
   const resolvedThemeMode = useGraphStore(state => state.resolvedThemeMode || 'light')
+  const darkThemeVariant = useGraphStore(state => state.darkThemeVariant)
   const updateNode = useGraphStore(state => state.updateNode)
   const dims = useContainerDims(containerRef)
   const graphSemanticKey = React.useMemo(
@@ -87,7 +88,7 @@ export default function DashboardCanvas(props: DashboardCanvasProps) {
         dpr={dims.dpr}
         getTransform={getDashboardGridTransform}
         getEventTarget={getDashboardGridEventTarget}
-        themeSignal={String(resolvedThemeMode)}
+        themeSignal={`${resolvedThemeMode}:${darkThemeVariant}`}
         surfaceId="dashboard"
       />
       <section className="absolute inset-0 overflow-auto z-[1]" data-kg-dashboard-scroll-surface="1">

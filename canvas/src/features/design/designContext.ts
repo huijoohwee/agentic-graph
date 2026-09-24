@@ -46,7 +46,7 @@ function readIntent(markdown: string) {
 export function buildDesignContext(args: DesignContextArgs) {
   if (!args.active) return { available: false as const, status: 'inactive' as const, message: 'Design renderer is inactive.' }
   try {
-    if (!['light', 'dark'].includes(args.theme)) throw new Error('design: invalid theme')
+    if (!['light', 'dark', 'black'].includes(args.theme)) throw new Error('design: invalid theme')
     if ((args.documentName?.length ?? 0) > 256) throw new Error('design: document name exceeds 256 characters')
     const documentName = args.documentName?.trim() ?? ''
     const graphRevision = readGraphRevision(args.graphRevision)

@@ -72,6 +72,8 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
   const containerRef = useRef<HTMLElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const resolvedThemeMode = useGraphStore(s => (s.resolvedThemeMode || 'light') as 'light' | 'dark')
+  const darkThemeVariant = useGraphStore(s => s.darkThemeVariant)
+  const themeSignal = `${resolvedThemeMode}:${darkThemeVariant}`
   const coarsePointer = useMediaQuery('(pointer: coarse)')
   const isEmbeddedPreview = useMemo(() => {
     try {
@@ -1001,7 +1003,7 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
     setHoverInfo,
   })
 
-  useSelectionHighlight({ paused: !active, nodesSelRef, mediaSelRef, labelsSelRef, linksSelRef, themeSignal: resolvedThemeMode })
+  useSelectionHighlight({ paused: !active, nodesSelRef, mediaSelRef, labelsSelRef, linksSelRef, themeSignal })
   useGroupSelectionHighlight({ gRef, paused: !active })
   useSelectionRerenderSubscription2d({ active, beforeRenderFrameRef })
   useZoomScaleReapplySubscription2d({ active, svgRef, zoomRef })
@@ -1021,7 +1023,7 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
     documentSemanticMode: documentSemanticMode ?? undefined,
     paused: !active,
     graphDataRevision: graphDataRevisionRef.current ?? 0,
-    themeSignal: resolvedThemeMode,
+    themeSignal,
   })
 
   const arrange = useArrange2d({
@@ -1070,7 +1072,7 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
         dpr={dpr}
         getTransform={getZoomTransform}
         getEventTarget={getZoomEventTarget}
-        themeSignal={resolvedThemeMode}
+        themeSignal={themeSignal}
         surfaceId="d3"
       />
       <svg
