@@ -3,17 +3,32 @@ import { waitForMissionAsync } from './mission-card-face.mjs'
 const readFloatingPanelOpen = targetPage => targetPage.evaluate(
   async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen === true,
 )
+const floatingPanelCard = (targetPage, candidates) => candidates.and(targetPage.locator(
+  '[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])',
+)).first()
+
+// Use the rendered control so this also works against the production preview,
+// where source-module imports are unavailable.
+export async function dismissVisibleFloatingPanel(
+  targetPage,
+  floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]'),
+) {
+  const panel = floatingPanelCard(targetPage, floatingPanel)
+  if (!(await panel.isVisible())) return false
+  await panel.getByRole('button', { name: 'Close', exact: true }).click({ timeout: 5000 })
+  await panel.waitFor({ state: 'detached', timeout: 30000 })
+  return true
+}
 
 export async function closeFloatingPanel(
   targetPage,
   floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]'),
 ) {
   if (!(await readFloatingPanelOpen(targetPage))) return
-  const panel = floatingPanel.first()
+  const panel = floatingPanelCard(targetPage, floatingPanel)
   await panel.waitFor({ state: 'visible', timeout: 30000 })
-  const closeButton = panel.getByRole('button', { name: 'Close', exact: true })
   try {
-    await closeButton.click({ timeout: 5000 })
+    await dismissVisibleFloatingPanel(targetPage, panel)
   } catch {
     try {
       await targetPage.keyboard.press('Escape')

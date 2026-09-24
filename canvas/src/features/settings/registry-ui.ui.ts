@@ -1,7 +1,7 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { SettingMeta } from './types'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import type { ThemeMode } from '@/lib/ui/theme'
+import { themeSettingsRegistry } from './themeSettings'
 import { LS_KEYS } from '@/lib/config'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 import {
@@ -304,21 +304,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
     docKey: 'uiIconAnimationEnabled',
     default: () => true,
   },
-  {
-    key: 'themeMode',
-    type: 'string',
-    source: 'store', backingImports: TAILWIND_BACKING,
-    read: () => s().themeMode,
-    write: (v) => {
-      const raw = String(v || '')
-      const next: ThemeMode =
-        raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'system'
-      s().setThemeMode(next)
-    },
-    docKey: 'themeMode',
-    default: () => 'system',
-    options: ['light', 'dark', 'system'],
-  },
+  ...themeSettingsRegistry,
   {
     key: 'floatingPanelWidthRatio',
     type: 'number',

@@ -82,7 +82,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["design.editor.prdTad.implementedOwners","@/__tests__/designEditorBaselineDocs.test","testDesignEditorBaselinePrdTadUsesImplementedDesignOwners"],
   ["design.editor.surface.reusesActions","@/__tests__/designEditorSurfaceRegression.test","testDesignEditorChromeUsesExistingStoreActions"],
   ["design.editor.surface.viewportHotkeys","@/__tests__/designEditorSurfaceRegression.test","testDesignFloatingPanelUsesViewportAndToolShortcuts"],
-  ["design.editor.surface.mainPanel","@/__tests__/designEditorIntegrationRegression.test","testDesignEditorMainPanelTabUsesSharedSurface"],
+  ["design.editor.surface.floatingPanelOnly","@/__tests__/designEditorIntegrationRegression.test","testDesignEditorUsesOneFloatingPanelSurface"],
   ["design.editor.surface.overviewShared","@/__tests__/designEditorIntegrationRegression.test","testDesignEditorOverviewIsSharedByDesignSurfaces"],
   ["design.editor.importUrl.activatesSurface","@/__tests__/designEditorIntegrationRegression.test","testImportUrlDesignSelectionActivatesSharedDesignSurface"],
   ["design.editor.tokens.contract","@/__tests__/kgTokenSsot.test","testKgTokenValidationAndAliases"],

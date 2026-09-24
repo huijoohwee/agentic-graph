@@ -6,7 +6,7 @@ import { CanvasRouteRuntime } from '@/features/canvas/CanvasRouteRuntime'
 import { LS_KEYS } from '@/lib/config.ls'
 import { resolveRouterBasename } from '@/lib/routing/basePath'
 import { getLocalStorage, resolveBrowserStorageKey } from '@/lib/persistence'
-import { applyThemeMode, getInitialThemeMode } from '@/lib/ui/theme'
+import { applyThemeMode, getInitialDarkThemeVariant, getInitialThemeMode, isDarkThemeVariant } from '@/lib/ui/theme'
 import { ensureWorkspaceLayoutTokensInstalled } from '@/lib/workspace/workspaceLayoutSettings'
 import { AgenticGraphRuntimeIdentityRuntime } from '@/features/runtime-identity/agentic-graph-runtime-identity-runtime'
 import { XrMotionReferenceRuntimeBridge } from '@/features/three/XrMotionReferenceRuntimeBridge'
@@ -39,7 +39,9 @@ const TravelCommerceDemoPageLazy = lazy(async () => ({
 
 function AppThemeRuntime() {
   useLayoutEffect(() => {
-    applyThemeMode(getInitialThemeMode(getLocalStorage()))
+    const storage = getLocalStorage()
+    const mode = getInitialThemeMode(storage)
+    applyThemeMode(mode, getInitialDarkThemeVariant(storage, mode))
     ensureWorkspaceLayoutTokensInstalled()
   }, [])
 
@@ -168,10 +170,15 @@ export default function App() {
           storageHandler = (e: StorageEvent) => {
             try {
               if (e.storageArea !== window.localStorage) return
-              if (e.key !== resolveBrowserStorageKey(LS_KEYS.themeMode)) return
-              const v = String(e.newValue || '').trim()
-              const mode = v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
-              graphStoreModule.useGraphStore.getState().setThemeMode(mode)
+              if (e.key === resolveBrowserStorageKey(LS_KEYS.themeMode)) {
+                const v = String(e.newValue || '').trim()
+                const mode = v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
+                graphStoreModule.useGraphStore.getState().setThemeMode(mode)
+              } else if (e.key === resolveBrowserStorageKey(LS_KEYS.darkThemeVariant)) {
+                graphStoreModule.useGraphStore.getState().setDarkThemeVariant(
+                  isDarkThemeVariant(e.newValue) ? e.newValue : 'black',
+                )
+              } else return
               tokensModule.ensureKgTokensInstalled()
             } catch {
               void 0

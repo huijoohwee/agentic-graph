@@ -101,3 +101,55 @@
   --kg-panel-action-bg: rgba(255,255,255,0.06);
   --kg-panel-action-bg-hover: var(--kg-canvas-accent, #60a5fa);
 }
+
+:root[data-theme='dark'][data-dark-variant='black']{
+  --kg-app-bg: #000000;
+  --kg-surface-bg: #111111;
+  --kg-panel-bg: #0a0a0a;
+  --kg-panel-bg-hover: rgba(23, 23, 23, 0.9);
+  --kg-border: #404040;
+  --kg-divider: #404040;
+  --kg-text-primary: #f3f4f6;
+  --kg-text-secondary: #9ca3af;
+  --kg-text-tertiary: #8a8a8a;
+  --kg-tooltip-bg: #000000;
+  --kg-tooltip-text: #ffffff;
+  --kg-code-bg: #0d0d0d;
+  --kg-code-border: #343434;
+  --kg-code-text: #e5e7eb;
+  --kg-control-height: 28px;
+  --kg-status-pill-height: 24px;
+  --kg-table-row-height: 44px;
+  --kg-focus-ring: #60a5fa;
+  --kg-accent: #60a5fa;
+  --kg-accent-contrast: #000000;
+  --kg-accent-border: #60a5fa;
+  --kg-accent-soft-bg: rgba(96, 165, 250, 0.16);
+  --kg-accent-strong-bg: #60a5fa;
+  --kg-focus-ring-offset: #0a0a0a;
+  --kg-table-header-bg: rgba(23, 23, 23, 0.85);
+  --kg-table-row-hover-bg: rgba(23, 23, 23, 0.9);
+  --kg-table-row-selected-bg: rgba(96, 165, 250, 0.16);
+  --kg-table-row-related-bg: rgba(96, 165, 250, 0.08);
+  --kg-canvas-bg: #000000;
+  --kg-canvas-node-stroke: #111111;
+  --kg-canvas-edge-stroke: #525252;
+  --kg-canvas-accent: #60a5fa;
+  --kg-canvas-label-halo: #000000;
+  --kg-canvas-label-fill: #e5e7eb;
+  --kg-canvas-grid-minor: #f3f4f6;
+  --kg-canvas-grid-major: #f3f4f6;
+  --kg-media-panel-bg: #0a0a0a;
+  --kg-media-panel-header-bg: rgba(23, 23, 23, 0.85);
+  --kg-statusbar-bg: rgba(23, 23, 23, 0.9);
+  --kg-statusbar-text: #9ca3af;
+  --kg-kanban-group-bg: rgba(23, 23, 23, 0.8);
+  --kg-kanban-card-bg: #0a0a0a;
+  --kg-kanban-card-bg-hover: rgba(23, 23, 23, 0.9);
+  --kg-kanban-cell-bg: rgba(13, 13, 13, 0.9);
+  --kg-kanban-card-radius: 0.5rem;
+  --kg-kanban-card-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  --kg-kanban-card-shadow-hover: 0 12px 30px rgba(0,0,0,0.50);
+  --kg-panel-action-bg: rgba(255,255,255,0.06);
+  --kg-panel-action-bg-hover: var(--kg-canvas-accent, #60a5fa);
+}
