@@ -65,6 +65,12 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  block_editor:
+    roots: ["canvas/src/features/block-editor/", "canvas/src/__tests__/blockEditor", "canvas/src/features/workspace-fs/", "canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io.ts", "canvas/src/__tests__/workspaceFsPersistenceReload.test.ts", "canvas/scripts/run_block_editor_browser_smoke.mjs"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/blockEditorNative.test.tsx", "canvas/src/__tests__/blockEditorWorkspace.test.tsx"]
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "workspaceFs.indexedDb.conditionalTwoTabSave"]
+      - ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--build"]
   xr_subject:
     roots: ["canvas/src/features/three/XrAuthoredSubjectGeometry.tsx", "canvas/src/features/three/XrSceneLibrarySubject.tsx", "canvas/src/features/three/XrSubject", "canvas/src/features/three/xrSubject", "canvas/src/features/three/xrMotionReferenceModel.ts", "canvas/src/features/three/xrMotionReferenceRuntime", "canvas/src/features/three/xrMotionReferenceSubjectPlacement.ts", "canvas/src/features/three/XrMotionReferenceRuntimeBridge.tsx", "canvas/src/__tests__/xrSubjectAuthoring.test.tsx", "canvas/src/tests/registry/postParserCases3Tail.ts"]
     commands:

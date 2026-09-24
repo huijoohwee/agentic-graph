@@ -221,6 +221,7 @@ export function applyProgramMarkdown(currentSource: string, draft: string): stri
   const currentMatch = /^(<!-- workspace-program:v1 final-newline=([01]) -->)(\r?\n)(`{3,})python\3/.exec(old)!
   if (match[1] !== currentMatch[1] || match[4] !== currentMatch[4]) throw new ProgramEditError('The owned fence metadata changed.')
   const payload = match[5]
+  if (payload.includes(`${match[3]}${match[4]}${match[3]}`)) throw new ProgramEditError('Keep one owned Python fence and its marker.')
   const candidate = match[2] === '0' ? payload.slice(0, -match[3].length) : payload
   if (match[2] === '0' && !payload.endsWith(match[3])) throw new ProgramEditError('The closing fence needs its own line.')
   parseLearningPython(candidate)

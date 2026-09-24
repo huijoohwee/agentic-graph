@@ -32,6 +32,7 @@ export function useBlockCanvasViewport(documentId: string) {
     if (!element) return
     const state = useGraphStore.getState
     let anchor: { sx: number; sy: number; ts: number } | null = null
+    let pointerType = ''
     const controller = createInfiniteCanvasViewportController({
       active: () => element.isConnected,
       adapter: { getTransform, setTransform: apply },
@@ -45,7 +46,7 @@ export function useBlockCanvasViewport(documentId: string) {
       getFlowWheelZoomIncrementMultiplier: () => state().flowWheelZoomIncrementMultiplier,
       getFlowWheelZoomSmoothDuration: () => ({ minMs: state().flowWheelZoomSmoothMinDurationMs, maxMs: state().flowWheelZoomSmoothMaxDurationMs }),
       isSpacePanHeld,
-      shouldIgnorePointerTarget: target => controlTarget(target) || (!isSpacePanHeld() && target instanceof Element && !!target.closest('[role="treeitem"]')),
+      shouldIgnorePointerTarget: target => controlTarget(target) || (pointerType !== 'touch' && !isSpacePanHeld() && target instanceof Element && !!target.closest('[role="treeitem"]')),
       shouldIgnoreWheelEvent: event => controlTarget(event.target),
       lockUserSelect: lockGlobalUserSelect,
       unlockUserSelect: unlockGlobalUserSelect,
@@ -62,7 +63,7 @@ export function useBlockCanvasViewport(documentId: string) {
     })
     const handlers: Record<string, EventListener> = {
       wheel: event => { if (controller.handleWheel(event as WheelEvent)) event.stopPropagation() },
-      pointerdown: event => { if (controller.handlePointerDown(event as PointerEvent)) event.stopPropagation() },
+      pointerdown: event => { pointerType = (event as PointerEvent).pointerType; if (controller.handlePointerDown(event as PointerEvent)) event.stopPropagation() },
       pointermove: event => { if (controller.handlePointerMove(event as PointerEvent)) event.stopPropagation() },
       pointerup: event => { if (controller.handlePointerUp(event as PointerEvent)) event.stopPropagation() },
       pointercancel: event => controller.handlePointerCancel(event as PointerEvent),

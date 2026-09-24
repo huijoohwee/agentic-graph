@@ -119,8 +119,8 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
         }
         return readShadowFileText(p)
       }),
-    writeFileText: (path: WorkspacePath, text: string, options) =>
-      run('writeFileText', async fs => {
+    writeFileText: (path: WorkspacePath, text: string, options) => {
+      const write = async (fs: WorkspaceFs) => {
         await fs.writeFileText(path, text, options)
         const p = normalizeWorkspacePath(path)
         upsertShadowEntry({
@@ -131,7 +131,10 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
           text: String(text ?? '').slice(0, SHADOW_MAX_FILE_TEXT_CHARS),
           updatedAtMs: Date.now(),
         })
-      }),
+      }
+      // A conditional save must never degrade into a shadow-memory write.
+      return options && Object.hasOwn(options, 'expectedText') ? write(inner) : run('writeFileText', write)
+    },
     createFile: args =>
       run('createFile', async fs => {
         const path = await fs.createFile(args)

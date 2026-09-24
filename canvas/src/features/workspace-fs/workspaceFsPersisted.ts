@@ -1,4 +1,4 @@
-import type { WorkspaceEntry, WorkspaceFs, WorkspaceFsMutationOptions, WorkspacePath } from './types'
+import { WorkspaceSourceTextConflictError, type WorkspaceEntry, type WorkspaceFs, type WorkspaceFsMutationOptions, type WorkspaceFsWriteOptions, type WorkspacePath } from './types'
 import { WORKSPACE_ROOT_PATH, joinWorkspacePath, normalizeWorkspacePath } from './path'
 import {
   CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED,
@@ -440,18 +440,27 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     return String(row.get('text') ?? '')
   }
 
-  const writeFileText = async (path: WorkspacePath, text: string, options?: WorkspaceFsMutationOptions) => {
-    const { collections } = await resolveDb()
+  const writeFileText = async (path: WorkspacePath, text: string, options?: WorkspaceFsWriteOptions) => {
+    const db = await resolveDb(), { collections } = db
     const p = normalizeWorkspacePath(path)
     const row = await collections.entries.findOne(p).exec()
-    if (!row || row.get('kind') !== 'file') return
+    const conditional = options !== undefined && Object.hasOwn(options, 'expectedText')
+    if (!row || row.get('kind') !== 'file') {
+      if (conditional) throw new WorkspaceSourceTextConflictError()
+      return
+    }
     const nextText = String(text ?? '')
     const previousText = String(row.get('text') ?? '')
+    if (conditional && previousText !== options.expectedText && previousText !== nextText) throw new WorkspaceSourceTextConflictError()
     if (previousText === nextText) return
-    await row.incrementalPatch({
-      text: nextText,
-      updatedAtMs: Date.now(),
-    })
+    const patch = { text: nextText, updatedAtMs: Date.now() }
+    if (conditional) {
+      const previous = row.toJSON()
+      const committed = await db.compareAndWrite([
+        { kind: 'upsert', collectionName: 'entries', record: { ...previous, ...patch } },
+      ], [{ collectionName: 'entries', selector: { path: p }, records: [previous] }])
+      if (!committed) throw new WorkspaceSourceTextConflictError()
+    } else await row.incrementalPatch(patch)
     const seedBasename = options?.mirrorToHost === false ? null : readWorkspaceSeedBasenameForPath(p)
     if (seedBasename) {
       void upsertWorkspaceInitializationSeedText({

@@ -33,6 +33,17 @@ selected = page.getByRole('region', { name: 'Selected run evidence' })
 }
 await openPage()
 const waitForAsync = predicate => waitForMissionAsync(page, predicate)
+async function waitForAuthoredWorkspaceSource() {
+  await waitForAsync(async () => {
+    const { readSourceFilesBootstrapReady } = await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')
+    const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+    const { useMarkdownExplorerStore } = await import('/src/features/markdown-explorer/store.ts')
+    const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
+    return readSourceFilesBootstrapReady() && state.historyIndex >= 0 && !!path
+      && state.sourceFiles[0]?.source?.path === `workspace:${path}`
+  })
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+}
 const openRunSource = (scope = mission) => showMissionFace(scope, true)
 const showEvidence = (scope = mission) => showMissionFace(scope, false)
 const waitText = async (locator, text) => {
@@ -100,7 +111,8 @@ async function openDesktopDashboard() {
   context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
   await openPage()
   returnView = await verifyMissionDashboardEntry(page, { baseUrl: process.env.AG_MISSION_SMOKE_BASE_URL,
-    authoredSnapshot, assertAuthored, waitForMission: () => waitText(mission, '2 retained matches') })
+    authoredSnapshot: async () => { await waitForAuthoredWorkspaceSource(); return authoredSnapshot() },
+    assertAuthored, waitForMission: () => waitText(mission, '2 retained matches') })
 }
 async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
@@ -287,14 +299,7 @@ async function verifyApexActivation(width) {
   await page.locator('button[data-kg-live-canvas-hero-import-embed="true"]').waitFor()
   assert.equal(requests.length, beforeEntryRequests, 'Catalog selection must not read traces or execute work')
   await page.screenshot({ path: resolve(output, `apex-${width}-catalog-overlay.png`) })
-  await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
-  await waitForAsync(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().historyIndex >= 0)
-  await waitForAsync(async () => {
-    const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
-    const path = (await import('/src/features/markdown-explorer/store.ts')).useMarkdownExplorerStore.getState().activePath
-    return !!path && state.sourceFiles[0]?.source?.path === `workspace:${path}`
-  })
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  await waitForAuthoredWorkspaceSource()
   const before = await authoredSnapshot()
   await page.evaluate(async () => {
     window.__AG_ACTIVATION_CHANGES__ = []
