@@ -1,33 +1,33 @@
 ---
 title: "Native Block Editor and Four-Format Workspace"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.1.0"
-revision: "1.1.0"
+version: "1.2.0"
+revision: "1.2.0"
 date: "2026-09-24"
 updated_date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Editor Workspace product engineering"
 continuity_id: "NATIVE-BLOCK-EDITOR-001"
-prd_revision: "1.1.0"
-tad_revision: "1.1.0"
-adr_revision: "1.1.0"
-mvp_revision: "1.1.0"
-gtm_revision: "1.1.0"
+prd_revision: "1.2.0"
+tad_revision: "1.2.0"
+adr_revision: "1.2.0"
+mvp_revision: "1.2.0"
+gtm_revision: "1.2.0"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-lifecycle_status: "proposed"
-worktree_id: "agent/device-0232231d4a19/block-library-spec"
-agent_id: "codex-block-library-spec"
+lifecycle_status: "active"
+worktree_id: "device-0232231d4a19--block-editor-spec"
+agent_id: "codex-block-editor-visuals"
 action: "/change"
-scope: "#block-library-spec"
-actor: "@codex-block-library-spec"
-base_sha: "df55f0b64ef470c78853acce785597a2e51d62ca"
+scope: "#block-editor-visuals"
+actor: "@codex-block-editor-visuals"
+base_sha: "951aab7fa74df85ddf2a8a84743d93c6e0ed74d7"
 guideline_revision: "3.3.0"
 guideline_sha256: "03be60df27db07d1784cccd699a024b5ecd506545eb23e5ed33100e2ee528b22"
-authorization_scope: "One planning document; no runtime implementation or production effect"
+authorization_scope: "User-authorized native Block runtime and visual implementation; no production effect"
 baseline_gate: "Unbaselined proposal; demand, timed prototype and independent alignment pending"
 kgCanvasSurfaceMode: "2d"
 kgCanvasRenderMode: "2d"
@@ -39,7 +39,7 @@ surfaces: ["2D Renderer: Storyboard"]
 
 ## Identity, scope and source policy — reference implementation
 
-**J1 = NATIVE-BLOCK-EDITOR-001@1.1.0.** PRD, TAD, ADR, MVP, GTM and the discovery projections below consume this exact join. This deliverable specifies an enhancement to the existing Editor Workspace. It does not implement the feature. The conservative `undocumented` ladder values mean the independent specification-baseline gate has not passed; they do not mean this proposal is absent.
+**J1 = NATIVE-BLOCK-EDITOR-001@1.2.0.** PRD, TAD, ADR, MVP, GTM and the discovery projections below consume this exact join. This document specifies the Editor Workspace enhancement and records its bounded native implementation. The conservative `undocumented` ladder values mean the independent specification-baseline and full V1–V7 gates have not passed; they do not erase local implementation evidence.
 
 Add **Block immediately to the right of Python** in the existing pane controls: **bin → Python → Block → JSON → Markdown → Viewer**, preserving any contextual HTML control. A native, headless conversion core connects all four authoring representations. There is one durable workspace document, one accepted revision and one edit transaction owner, with format-specific drafts and derived views.
 
@@ -73,7 +73,7 @@ Inspected 2026-09-24: **Graph = `2874751715a1e1f0a12c06415141a93c894c9d90`**, **
 | G12 / catalog presentation | `canvas/src/lib/ui/floatingPanelCatalogLayout.tsx` owns header/search/surface/body/compact-row helpers. `features/toolbar/FloatingPanelSkillsCommandsView.tsx` and `features/panels/views/SkillsCommandsView.tsx` compose grouped icon/title/meta/token rows; the latter consumes remote grammar. | Reuse shared helpers directly, plus existing collapsible sections/expand-all/typography. Feed bundled native definitions; exclude remote grammar, command dispatch and MCP target effects. T10/V7. |
 | G13 / Span tree presentation | `canvas/src/features/agent-ready/AgenticOsMissionControl.tsx` hosts the Span tree card; `AgentRunSpanViews.tsx` renders hierarchy guides, expansion, roving focus, selection and icon/title/subtitle rows with run metrics. It currently requires trace data. | Extract the pure hierarchy presentation/navigation for two consumers: existing Span tree and Block program tree. Keep trace/metrics in its existing adapter; keep AST edits in T8. Do not manufacture spans to reuse a component. A7/V7. |
 
-G11–G13 were inspected at published source `a2034aa1c58a3ea8b3c0ee888fad0fe10ef1f377`; abbreviated paths in those rows are relative to `canvas/src/`. These owners are existing code, while `blockLibrary` and the shared hierarchy extraction are proposed.
+G11–G13 were inspected at published source `a2034aa1c58a3ea8b3c0ee888fad0fe10ef1f377`; abbreviated paths in those rows are relative to `canvas/src/`. The Block library and shared hierarchy guides now exist in the published runtime candidate [#1230](https://github.com/huijoohwee/agentic-graph/pull/1230); the visual successor below refines their presentation without changing parse or transaction authority.
 
 The separate `features/parsers/python/index.ts` is a graph-analysis entry point with an optional worker path; it is not the conversion owner. Block conversion must not transitively enter optional third-party parsing paths. The existing planning owner [offline learning specification](prd-tad-adr-mvp-gtm-offline-python-learning-workspace.md) retains lesson/execution requirements; J1 owns only the new editing/conversion seam. No cross-repository source imports, new package or duplicate persisted AST store are needed.
 
@@ -93,22 +93,22 @@ WTP is unknown for all three, so it cannot establish a monetary rank. Provisiona
 
 | Criterion / story and Given–When–Then | Priority / VCC: verify end state by check with constraint | TAD / ADR / evidence |
 |---|---|---|
-| R1: As an author I want Block beside Python. Given the existing workspace, when I open Block, then it appears immediately right of Python and edits the same document. | Must / V1: DOM-order and browser checks show the exact pane order, shared file identity, keyboard/touch operation and retained pane choice after reopen. No second workspace or inspector. | G1–G3 / A1 / planned |
+| R1: As an author I want Block beside Python. Given the existing workspace, when I open Block, then it appears immediately right of Python and edits the same document. | Must / V1: DOM-order and browser checks show the exact pane order, shared file identity, keyboard/touch operation and retained pane choice after reopen. No second workspace or inspector. | G1–G3 / A1 / candidate; full V1 open |
 | R2: As a learner I want valid connected steps. Given a supported program, when I insert/move/delete/edit a block, then Python remains syntactically valid and the intended structure survives. | Must / V2: grammar and structural edit checks pass for every supported node kind, scope, precedence, holes and rejected connection; no execution on edit. | G4/G5 / A2 / planned |
 | R3: As a tutor I want reversible representations. Given a supported document, when I edit any of Block/Python/JSON/Markdown and return, then normalized meaning agrees and untouched source survives. | Must / V3: all 12 directed pairs and four cyclic starts pass semantic/byte invariants, save/reopen and source-map checks; unsupported input is preserved visibly. | G4/G6 / A2/A3 / planned |
 | R4: As an author I want my draft protected. Given invalid input, a late worker, file switch, failed save or concurrent edit, when sync completes, then it cannot overwrite a newer source or falsely show Saved. | Must / V4: adversarial transaction tests and two-tab browser checks prove rejection/recovery, one logical undo and no source loss. | G3/G7/G8 / A4 / planned |
 | R5: As a mobile learner I want local use. Given verified offline cache, when disconnected, then editing, conversion, save/reopen and explicit bounded run work on the tested device. | Must / V5: airplane-mode browser test, keyboard-only and screen-reader review, 320 px layout and measured caps pass; zero new dependencies/model/network requests. | G5/G10 / A1/A5 / planned |
 | R6: As an integrator I want the same checked conversion. Given a registered local tool and explicit edit permission, when a proposal is applied, then it uses the same contract and returns a revision-bound receipt. | Should / V6: registry discovery, read-only default, prepare/apply and stale-authority tests; unsupported remote routes fail explicitly. | G9 / A4 / deferred after Must slice |
-| R7: As an author I want familiar block discovery. Given FloatingPanel, when I open Block library directly right of Skills & Commands, then I can search grouped definitions and explicitly insert at a valid program target with familiar hierarchy visuals. | Must / V7: both header modes preserve adjacency; shared catalog/tree owners, keyboard/touch, offline search and revision-bound insertion pass without command execution. | G11–G13 / T10 / A7 / planned |
+| R7: As an author I want familiar block discovery. Given FloatingPanel, when I open Block library directly right of Skills & Commands, then I can search grouped definitions and explicitly insert at a valid program target with familiar hierarchy visuals. | Must / V7: both header modes preserve adjacency; shared catalog/tree owners, keyboard/touch, offline search and revision-bound insertion pass without command execution. | G11–G13 / T10 / A7 / candidate; full V7 open |
 
 **Should:** reversible file exports, inspect/prepare/apply tool adapter, source-to-block selection. **Could:** multi-block templates after usage evidence. Block library search and individual supported function definitions belong to the Must slice. **Won't (this increment):** arbitrary Python parity, new language packages, arbitrary JSON-to-code inference, prose-to-program generation, concurrent offline device merging, plugins, cloud execution, a new renderer framework, automatic payments or new payment infrastructure.
 
 | Success metric | Baseline | Target / observation window |
 |---|---|---|
 | TTV steps / elapsed | Unmeasured; manual editing exists | ≤5 actions to first block edit and ≤5 minutes for four-view save/reopen; first five pilot sessions |
-| Round-trip correctness | Not implemented | 100% of declared supported fixtures; zero silent losses in every failure fixture; each release |
+| Round-trip correctness | Native supported subset and focused no-op/edit fixtures exist; full matrix unverified | 100% of declared supported fixtures; zero silent losses in every failure fixture; each release |
 | Edit latency / memory | Unmeasured | At 200 visible blocks: p95 conversion ≤150 ms desktop, ≤300 ms test phone; ≤32 MiB added heap; profile 30 edits/device |
-| Recovery | No four-view evidence | 100% stale/invalid/failed-write fixtures retain recoverable draft and source; release gate |
+| Recovery | Focused stale/invalid fixture evidence; full failure matrix absent | 100% stale/invalid/failed-write fixtures retain recoverable draft and source; release gate |
 | Token and serving spend | No feature serving path | 0 model tokens and $0 incremental serving spend per month in the local MVP; no overages |
 | Readiness | undocumented / undocumented | spec-complete after alignment; dev-proven only after V1–V5/V7; production separately |
 
@@ -212,10 +212,10 @@ Use existing icon/title/tooltip navigation; DOM/focus order and accessible names
 | Surface | Reused visual/layout owner | Block-specific content and boundary |
 |---|---|---|
 | Library header and groups | G12 `FloatingPanelCatalogHeader`, `FloatingPanelCatalogSearchControl`, `useFloatingPanelCatalogSearch`, surface/body helpers; existing collapsible sections and expand/collapse-all | Fixed header, searchable local categories with counts, scrollable body; clear/no-results feedback. Do not copy effectful catalog component markup or remote status. |
-| Library rows | G12 compact-row/icon/title/meta/token helpers and host typography/theme tokens | Icon, concise title, description and socket/kind chip; selected/focus styles and compatible-target explanation. Chips describe program types, not invocation authority; no S/V/O or sigil filters unless they have actual block semantics. |
-| Block program hierarchy | G13 shared pure presenter: guide lines, disclosure, icon/title/subtitle, selected accent, focus outline and keyboard navigation; host card title/subtitle rhythm | AST IDs, parent/child order, socket type and source location; statement/value cards retain T6 connections. Exclude run timing/cost/token/status columns and observation loading. Span tree remains a read-only run consumer with unchanged metric adapter. |
+| Library rows | G12 catalog body/search owner and host typography/theme tokens; Block visual tokens render native preview tiles | Category label, concise title, description and source snippet; selected/focus styles and compatible-target explanation. Chips describe program types, not invocation authority; no unrelated catalog filters. |
+| Block program hierarchy | G13 pure `HierarchyGuides` extraction; a Block-only `BlockProgramRow` forks card density and category appearance | AST IDs, parent/child order, kind, role and source location; statement/value cards retain T6 connections. Block owns its navigation/selection, while Span tree retains read-only metrics and trace semantics. |
 
-Extract only the hierarchy presentation needed by both verified consumers into the existing native UI layer. Inputs are stable row IDs, parent/depth, expansion/selection, labels/icons and callbacks; no parser, trace, storage or runtime imports. Do not persist another hierarchy model. Preserve Agent Mission regression behavior; adapt width/density for Block instead of inheriting its fixed metric grid. At 320 px, header navigation scrolls horizontally, rows wrap metadata, guides cap visual indentation while accessible depth remains accurate, and Insert remains reachable. Use host light/dark tokens, visible focus and touch targets; color never carries type alone. No new visual package or copied image assets.
+Share only hierarchy guides between the two verified consumers in the existing native UI layer. Block rows consume stable AST IDs, depth, expansion/selection and callbacks, with no trace, storage or runtime imports. Do not persist another hierarchy model. Preserve Agent Mission behavior; fork width/density and category cues for Block instead of inheriting its metric grid. At 320 px, panes stack, rows wrap metadata, guides cap visual indentation while accessible depth remains accurate, and the open FloatingPanel rises above the editor. Use host light/dark tokens, visible focus and touch targets; color never carries type alone. No new visual package or copied image assets.
 
 **T10a: definitions.** A bundled, immutable catalog projects G4/T3's supported node kinds and their typed insertion factories; it is not another grammar or durable AST. Native categories can include Logic, Loops, Math, Text, Variables and Functions only where backed by supported nodes. Search covers title, description and category locally; unsupported constructs are omitted or explicitly unavailable. Each item supplies kind, input/output slots, scope constraints and preview data. A connected valid factory can prepare a commit; required values left as holes remain an explicit unsaved draft under T3, with accepted source unchanged. No templates from remote registries, authentication, model inference or network requests are prerequisites. Catalog errors elsewhere cannot disable the local library.
 
@@ -323,9 +323,9 @@ Build dependencies are acyclic: syntax/types → program codecs/validation → w
 
 | Capability / route | Current support / authority | Proposed change / check |
 |---|---|---|
-| Workspace UI / Block control | Absent; existing file read-only/passive rules apply | T6/T8 through same source owner; V1–V5 |
-| FloatingPanel / Block library | Proposed `blockLibrary` view via G11 bridge/state; no new command/tool identity | T10 discovery plus T8 explicit insertion; V7. Reuse existing open action, reject unavailable bridge; no remote fallback. |
-| Headless core / parse, encode, prepare | New pure functions; zero tokens/network/effects | Same schema and limits as UI; V2/V3 |
+| Workspace UI / Block control | Present in #1230; visual successor uses readable program cards and horizontal desktop projection widths | T6/T8 through same source owner; full V1–V5 remain open |
+| FloatingPanel / Block library | Present in #1230; visual successor adds category tones and native code previews | T10 discovery plus T8 explicit insertion; full V7 remains open. No command/tool identity or remote fallback. |
+| Headless core / parse, encode, prepare | Supported subset in `pythonParser.ts`, `programCodec.ts` and `blockLibrary.ts`; zero new tokens/network/effects | Same schema and limits as UI; full V2/V3 matrix remains open |
 | Local learning / `/python.learning @canvas #learning` | Existing inspect/control tools `agentic-graph.inspect_local_python_learning` and `agentic-graph.control_local_python_learning`; bound to current document/run | Keep identifiers/authority; accepted program source only; V5 |
 | Conversion / `/workspace.block @canvas #program` | Proposed, unregistered; must report unsupported today | One future schema/handler in G9, with inspect/prepare/apply operations; V6 |
 | Browser tool / `agentic-graph.workspace_block` | Proposed WebMCP identity, not callable evidence | Read/prepare zero tokens; apply requires explicit capability, document/revision and receipt; V6 |
@@ -360,7 +360,7 @@ flowchart LR
 
 | Boundary / inventory | Trigger and actor | Mechanism / required evidence | State and recovery |
 |---|---|---|---|
-| Authoring → integrated source / l_spec | Scoped source release by release owner | OS RELEASE plus repository Integration Gate; exact candidate/check/merge receipts | Not established by this specification; source revert through owner. |
+| Authoring → integrated source / l_spec | Scoped source release by release owner | OS RELEASE plus repository Integration Gate; exact candidate/check/merge receipts | #1230 passed its provider gate but remains open; visual successor needs its own exact candidate. Source revert through owner. |
 | Source → mirror / l_artifact | Product release owner after integration | Existing build/sync controllers and exact source/artifact identity; no hand-edited mirror | Closed; retain predecessor artifact. |
 | Mirror → delivery / l_runtime | Candidate-specific human production authorization | `.github/workflows/release.yml`, [core release](../production-core-runtime-release.md), live readback and [rollback baseline](../production-rollback-baseline.md) | Closed; no deployment authority in this task. Exact retained predecessor plus authorized rollback/readback. |
 
@@ -368,7 +368,7 @@ Human gate: production environment authorization only when pursuing production; 
 
 ## ADR — material decisions
 
-All decisions consume J1 PRD and TAD, dated 2026-09-24; proposed for implementation, with bounded source evidence G1–G13. Hard constraints: native conversion, source preservation, existing workspace ownership, local/offline operation and zero new dependency/spend. Selection took one design pass; at most three alignment cycles, 30 active minutes and 8,000 planning tokens per revisit. An unresolved contested decision remains open for independent evaluation.
+All decisions consume J1 PRD and TAD, dated 2026-09-24; A1–A6 retain the bounded design choices and A7 records the implemented visual path at current candidate scope. Hard constraints: native conversion, source preservation, existing workspace ownership, local/offline operation and zero new dependency/spend. Selection took one design pass; at most three alignment cycles, 30 active minutes and 8,000 planning tokens per revisit. An unresolved contested decision remains open for independent evaluation.
 
 | ID | Decision, candidates and non-compensatory comparison | Consequence / recovery / revisit |
 |---|---|---|
@@ -378,7 +378,7 @@ All decisions consume J1 PRD and TAD, dated 2026-09-24; proposed for implementat
 | A4 | Revision-bound proposals with conditional persistence (pass) outrank last-write-wins (fail race safety). Whole-document opaque fallback (pass) selected over partial unknown-syntax edits (fail proof in MVP). | Conflicts require explicit resolution; supported scope is narrower than arbitrary Python. Revisit regional opaque edits only with losslessness and scope proofs. |
 | A5 | Local deterministic codecs plus existing explicit runtime (pass) outrank hosted/model translation (fail native/offline/spend). | No AI interpretation of prose. First-load offline needs verified installed cache; otherwise disclose unavailable. Roll back feature chunk using retained candidate, not user storage. |
 | A6 | Tutor preparation pilot (pass local/manual constraints) is provisionally nearer a first dollar than hosted subscriptions (fail MVP no-new-service) or marketplace sales (defer distribution evidence). | Price/channel WTP unknown; no payment action authorized here. Revisit after five buyer conversations; stop commercial expansion absent demonstrated need. |
-| A7 | Direct reuse of G12 helpers plus pure hierarchy extraction from G13 for two verified consumers (pass) outranks duplicated catalog/tree UI (fail owner drift) and passing invented trace spans to the run viewer (fail data authority). | Add one thin lazy library adapter within S2/aggregate caps. Existing Span tree retains metrics/trace semantics; native block definitions and T8 own edits. V7 must preserve both consumers. Revisit extraction only if its interface cannot remain pure. |
+| A7 | Reuse G12 header/search/body and G13 pure hierarchy guides, then fork Block-specific program cards and previews (pass), rather than duplicating catalog infrastructure or feeding invented trace spans to the run viewer (fail data authority). | `BlockProgramRow` and `blockVisualLanguage` remain presentation-only. Span tree retains metrics/trace semantics; native definitions and T8 own edits. V7 must preserve both consumers. Revisit only with observed usability or parity failure. |
 
 There is no claimed numerical winner where evidence is incomparable: willingness to pay across segments and native full-reparse versus incremental performance remain unknown. A failed hard constraint cannot be compensated by a better score elsewhere.
 
@@ -398,13 +398,13 @@ Every implementation file remains <600 lines; every emitted chunk <500 kB. Featu
 
 | VCC / invocable check plan | Cases and independent oracle | Evidence now |
 |---|---|---|
-| V1 / extend `markdownWorkspaceAbsoluteDocumentPanes.test.ts` plus browser smoke | Exact Python–Block adjacency; initial/persisted/split states; unrelated `.json`, Markdown, model files; desktop/mobile keyboard and touch | Proposed; no execution claim |
-| V2 / proposed `blockEditorSyntax.test.ts` with existing `pythonLearning.test.ts` | Every node/operator; comments/CRLF/Unicode; integer precision, negative floats, precedence, comparison chains, short circuit; scope/hole/type rejection. Golden trees and expected source bytes authored independently of codec. | Proposed |
-| V3 / proposed `blockEditorRoundTrip.test.ts` | 12 directed pairs, four cyclic starts; no-op byte equality; changed-region/exterior preservation; duplicate JSON keys; conflicting fidelity; multiple fences; unsupported and limit boundaries. Deterministic generated corpus supplements golden fixtures. | Proposed |
-| V4 / extend `workspaceSourceTextTransaction.test.ts` and proposed browser cases | Reverse worker completion; same request replay; file switch/delete; failed/quota write/readback; two tabs on same base; undo/redo; IME draft; stale export. Barrier-controlled storage checks, not just parser mocks. | Proposed |
-| V5 / extend Python lifecycle/offline tests and browser runner | Edit never runs; explicit run shares digest; close Python with Block open; cancellation; fresh offline reload, failed cache closure, cold offline disclosure; heap/chunk/latency and accessibility checks | Proposed |
+| V1 / extend `markdownWorkspaceAbsoluteDocumentPanes.test.ts` plus browser smoke | Exact Python–Block adjacency; initial/persisted/split states; unrelated `.json`, Markdown, model files; desktop/mobile keyboard and touch | Partial: native pane-order fixture and local desktop/320 px browser; reopen and unrelated-doc matrix open |
+| V2 / proposed `blockEditorSyntax.test.ts` with existing `pythonLearning.test.ts` | Every node/operator; comments/CRLF/Unicode; integer precision, negative floats, precedence, comparison chains, short circuit; scope/hole/type rejection. Golden trees and expected source bytes authored independently of codec. | Partial: focused native edit fixtures; full grammar matrix open |
+| V3 / proposed `blockEditorRoundTrip.test.ts` | 12 directed pairs, four cyclic starts; no-op byte equality; changed-region/exterior preservation; duplicate JSON keys; conflicting fidelity; multiple fences; unsupported and limit boundaries. Deterministic generated corpus supplements golden fixtures. | Partial: four authoring origins and no-op bytes in focused tests; full pair matrix open |
+| V4 / extend `workspaceSourceTextTransaction.test.ts` and proposed browser cases | Reverse worker completion; same request replay; file switch/delete; failed/quota write/readback; two tabs on same base; undo/redo; IME draft; stale export. Barrier-controlled storage checks, not just parser mocks. | Partial: generation fence fixture; two-tab/quota/replay matrix open |
+| V5 / extend Python lifecycle/offline tests and browser runner | Edit never runs; explicit run shares digest; close Python with Block open; cancellation; fresh offline reload, failed cache closure, cold offline disclosure; heap/chunk/latency and accessibility checks | Partial: 320 px visual browser check; offline/performance/screen-reader matrix open |
 | V6 / existing tool registry suite plus new contract cases | Read-only discovery, schema/version/bounds, explicit effect permission, prepare/apply digest, unsupported transport | Deferred |
-| V7 / extend catalog, panel and mission regressions plus browser smoke | Exact Skills & Commands → Block library → Prompt Presets order in normal/minimized navigation; view normalization/cleanup; shared helper ownership; local search during unrelated remote failure; selection/preview never dispatch; explicit insert shares V2/V4 fencing/undo. Verify Span tree unchanged, hierarchy keyboard/ARIA, touch, 320 px, light/dark and reopen. Compare browser captures against native reference layout, not external assets. | Proposed; source anchors: `mainPanelSkillsCommands.test.tsx`, `mainPanelHelpIconLibrarySsot.test.ts`, `floatingPanelScrollResponsiveContract.test.ts`, `missionControlProjection.test.ts`, `agentRunSpanMetric.test.ts` |
+| V7 / extend catalog, panel and mission regressions plus browser smoke | Exact Skills & Commands → Block library → Prompt Presets order in normal/minimized navigation; view normalization/cleanup; shared helper ownership; local search during unrelated remote failure; selection/preview never dispatch; explicit insert shares V2/V4 fencing/undo. Verify Span tree unchanged, hierarchy keyboard/ARIA, touch, 320 px, light/dark and reopen. Compare browser captures against native reference layout, not external assets. | Partial: local dark/light/320 px, keyboard hierarchy and compatible-target affordance observed; full regression matrix open |
 
 Existing focused command for G4/G5 compatibility: `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/pythonLearning.test.ts canvas/src/__tests__/pythonLearningLifecycle.test.ts canvas/src/__tests__/pythonLearningOffline.test.ts`. Register new checks in the repository-owned affected map before claiming V1–V7. Use `npm run ci:affected` and the native validation owner for final selection. Passing parse/round-trip tests alone does not prove Python semantics: add explicit expected runtime outputs and a local standard interpreter comparison for the shared pure subset when available; exclude lesson host calls. Do not require an interpreter download or executing untrusted imports.
 
@@ -445,7 +445,7 @@ Discovery projections at J1: **Pitch Deck** (five-slide register, 3-minute maxim
 
 ## Coverage, alignment and next owner action
 
-Every row joins J1 at revision 1.1.0. Coverage disposition is not readiness. `covered` means the domain has an explicit decision and source/gap; it does not prove market or runtime facts.
+Every row joins J1 at revision 1.2.0. Coverage disposition is not readiness. `covered` means the domain has an explicit decision and source/gap; it does not prove market or runtime facts.
 
 | Domain | Decision / exact J1 source section | Accountable owner / evidence or gap / next check |
 |---|---|---|
@@ -477,11 +477,11 @@ Dispositioned: **16/16**; covered applicable domains: **12/16**; deferred: **4**
 
 No runtime criterion is marked satisfied. This targeted finding register is not an exhaustive independent alignment verdict; unchecked rule families have no asserted zero count. Baseline remains open until the independent mechanism supplies full rule coverage, typed findings and zero blockers. Limit alignment to three cycles; two consecutive cycles with no blocker reduction stop dependent progression. Routine document completion remains authorized.
 
-Next bounded implementation action, once separately in scope: parser owner prototypes T3/T7 against original golden fixtures, reusing G4; cap four active hours, two changed owner files plus two fixture files, no packages, 32 KiB fixture source. Exit: exact no-op bytes and semantic equivalence for assignment/conditional/loop plus explicit unsupported-source retention. If proof fails, retain source and revise A2 before UI work. Product owner can independently gather pain evidence; no runtime changes are implied by this document request.
+Next bounded validation action after this visual slice: the parser and transaction owners complete the independent V2–V5 fixtures and offline/mobile failure matrix; cap four active hours, two changed owner files plus two fixture files, no packages, 32 KiB fixture source. Exit: exact no-op bytes and semantic equivalence for assignment/conditional/loop plus explicit unsupported-source retention. If proof fails, retain source and revise A2. Product owner can independently gather pain evidence.
 
 ## Execution evidence and handoff — reference implementation
 
-Current authoring lane: `agent/device-0232231d4a19/block-library-spec`, retaining the exact requested checkout and one-document write set. Native `successor` preserved published predecessor `a2034aa1c58a3ea8b3c0ee888fad0fe10ef1f377`; START readmitted that head without creating a checkout or rewriting a published ref. The committed J1 document is the mission context. Readmission manifest: `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/772a8162bd977d2a9399ee4b79a11c76d62a74abb503ec68ad51a9f3a9cc02dc/manifest.json` in the parent workspace. Frontmatter records the protected base, not feature readiness. E1–E3a retain prior revision evidence; E6 records this update.
+Current authoring lane: `agent/device-0232231d4a19/block-editor-visuals` in the same requested checkout. Native `successor` preserved published runtime head `1a8c453872ccc6bbffd55cfcbd972a41bce4740b`; START readmitted the declared visual paths in `.workspace/.artifacts/workflows/a903ceb02cf9c0f2394cd7c1/42648c5ffb747dc2fa7f168e2d19a83f5f039ec708abca1175c46873a76aea5a/manifest.json`. The shell's elevation owner is reserved by another active lane, so this candidate scopes the mobile stacking correction to the program workspace stylesheet and verifies the rendered layer. Frontmatter records the protected base, not feature readiness. E1–E6 retain historical evidence; E7 records this visual increment.
 
 | Evidence / surface | Observed result | Scope and limitation |
 |---|---|---|
@@ -490,8 +490,9 @@ Current authoring lane: `agent/device-0232231d4a19/block-library-spec`, retainin
 | E3 / Graph document checks | Pass: YAML/joins/links/16 domains/restricted-reference checks, diff/hygiene and affected CI (5/5 owner partitions) | Prior documentation selection only; exact-lock dependencies reused through an ignored local symlink. |
 | E3a / guideline diagram check | Guideline diagram checker: no findings; 6 diagrams, 5 projecting; 22 nodes, 15 edges, 5 clusters | Parse-only; no browser rendering or full guideline-conformance proof. |
 | E4 / predecessor source RELEASE | PR [#1226](https://github.com/huijoohwee/agentic-graph/pull/1226), head `a2034aa1c58a3ea8b3c0ee888fad0fe10ef1f377`: open, Integration Gate succeeded; no merge receipt at inspection | Historical source publication only; successor publication requires its own exact-head checks. |
-| E5 / product runtime, deployment and payer evidence | Not executed | V1–V7, live candidate readback, payment and repeat demand remain absent. |
+| E5 / product runtime, deployment and payer evidence | Partial: #1230 passed focused native tests and Integration Gate; current successor passed a local canvas check and live DEV visual interactions | Full V1–V7, protected merge, deployment, payment and repeat demand remain absent. |
 | E6 / J1 revision 1.1.0 document update | Pass: G11–G13 grounding, YAML/joins/links/budgets, restricted-reference check, diagrams, hygiene and affected CI (5/5 documentation partitions) | One Markdown file; no runtime/UI implementation, browser rendering or new feature test claim. |
+| E7 / J1 revision 1.2.0 visual successor | DEV `npm run dev` at localhost: dark/light and 320 px views; hierarchy disclosure, arrow/Enter selection, target-bound library preview and compatible-position Insert enablement observed. Native check passed before final diff; affected gate and provider publication are separate. | `BlockProgramRow.tsx`, `blockVisualLanguage.ts`, `programPaneLayout.css` and existing pane/library owners; no external visual or parser dependency. |
 
 ADLC ledger: one checkout/document, zero new runtime dependencies/services; actual authoring tokens/cost unavailable. OS check receipt: `.workspace/.artifacts/agent-observability-economy-20260916/validation-60684fc3ab048501fad756db/last.json` in the parent workspace. Provider wait: preserve authored bytes; recheck on gate/provider evidence change. Run the product lifecycle check before handoff; cleanup needs an exact eligible-target receipt.
 
@@ -499,7 +500,7 @@ ADLC ledger: one checkout/document, zero new runtime dependencies/services; actu
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `NATIVE-BLOCK-EDITOR-001@1.1.0` | C: G1–G13 at the pinned Graph sources and explicit user authoring request · I: a native four-view workspace proposal grounded in existing owners · D: Specify Block after Python and Block library after Skills & Commands, reusing native catalog/Span tree visuals with reversible conversion and safe insertion. | R: Editor Workspace product engineering · A: Product engineer updates native layout, discovery and insertion contracts · O: one source-grounded proposal with criterion-owner-check joins · check: document structure, links, budgets, diagram projection and affected source gate | 2026-09-24 |
+| `NATIVE-BLOCK-EDITOR-001@1.2.0` | C: G1–G13 and published runtime #1230 at pinned Graph sources plus explicit native visual instruction · I: improve legibility of the four-view workspace and mobile library · D: fork program presentation from shared Agent Mission guides, add category cards/previews and readable pane widths while retaining native source authority. | R: Editor Workspace product engineering · A: Product engineer checks visual/keyboard/mobile behavior and updates this joined plan · O: one bounded visual successor with local evidence and open full-suite gaps · check: DEV UI, canvas check, affected source gate and protected provider gate | 2026-09-24 |
 
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
 [cid]: https://github.com/huijoohwee/huijoohwee.github.io/blob/987dd1d1e6d25761f2279d49a53c40a210466679/guidelines/cid-guidelines.md

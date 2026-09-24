@@ -1,0 +1,42 @@
+/* Program projections stay readable when Python, Block, JSON and Markdown are open together. */
+.kg-canvas-page-surface:has(.kg-program-workspace-panes):has(.ModalContainer) > header[aria-label="Workspace Toolbar Header"] {
+  /* The floating dock is a header descendant; keep its open panel above the editor overlay. */
+  z-index: 420;
+}
+
+.kg-program-workspace-panes.kg-markdown-workspace-editor-panes,
+.kg-program-workspace-panes.kg-markdown-workspace-split-panes {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+}
+
+.kg-program-workspace-panes > .kg-markdown-workspace-pane {
+  flex: 0 0 18rem;
+  min-width: 18rem;
+  max-width: none;
+  scroll-snap-align: start;
+}
+
+.kg-program-workspace-panes > .kg-markdown-workspace-pane[data-program-pane="block"] {
+  flex-basis: 21rem;
+  min-width: 21rem;
+}
+
+@media (pointer: coarse), (max-width: 768px) {
+  .kg-program-workspace-panes.kg-markdown-workspace-editor-panes,
+  .kg-program-workspace-panes.kg-markdown-workspace-split-panes {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: none;
+  }
+
+  .kg-program-workspace-panes > .kg-markdown-workspace-pane,
+  .kg-program-workspace-panes > .kg-markdown-workspace-pane[data-program-pane="block"] {
+    flex: 1 0 min(50dvh, 22rem);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}

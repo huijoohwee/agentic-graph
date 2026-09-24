@@ -1,5 +1,27 @@
 import type React from 'react'
 
+/** The native hierarchy guides shared by run spans and program blocks. */
+export function HierarchyGuides(props: {
+  depth: number; visibleDepths: readonly number[]; index: number
+  hasChildren: boolean; expanded?: boolean; origin?: number; step?: number; span?: boolean; maxDepth?: number
+}) {
+  const guides = Math.min(props.depth, props.maxDepth ?? 8)
+  const origin = props.origin ?? 62, step = props.step ?? 24
+  return <>
+    {Array.from({ length: guides }, (_, level) => {
+      const last = props.visibleDepths.slice(props.index + 1).find(depth => depth <= level + 1) !== level + 1
+      const branch = level === guides - 1
+      return <span key={level} aria-hidden="true" data-hierarchy-guide="" {...(props.span ? { 'data-span-guide': '' } : {})}
+        className="pointer-events-none absolute top-0 border-l"
+        style={{ left: origin + level * step, height: branch && last ? '50%' : '100%', borderColor: '#a8a29e', opacity: branch || !last ? 1 : 0 }}>
+        {branch && <span className="absolute left-0 w-3 border-b" style={{ top: last ? '100%' : '50%', borderColor: '#a8a29e' }} />}
+      </span>
+    })}
+    {props.hasChildren && props.expanded && <span aria-hidden="true" className="pointer-events-none absolute bottom-0 h-1/2 border-l"
+      style={{ left: origin + guides * step, borderColor: '#a8a29e' }} />}
+  </>
+}
+
 /** Shared, data-neutral hierarchy row for run spans and program statements. */
 export function HierarchyTreeRow(props: {
   depth: number
@@ -26,18 +48,9 @@ export function HierarchyTreeRow(props: {
     aria-expanded={props.hasChildren ? props.expanded : undefined}
     onClick={props.onClick} onKeyDown={props.onKeyDown}
     className={`relative grid w-full min-w-0 cursor-pointer items-center gap-3 border-l-4 px-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 ${span ? 'h-[60px] py-3' : 'min-h-14 py-2'}`}
-    style={{ gridTemplateColumns: props.gridTemplateColumns || 'minmax(0, 1fr)', borderLeftColor: props.selected ? '#3b82f6' : 'transparent', background: props.selected ? 'color-mix(in srgb, #3b82f6 22%, var(--kg-bg, white))' : undefined }}>
-    {Array.from({ length: guides }, (_, level) => {
-      const last = props.visibleDepths.slice(props.index + 1).find(depth => depth <= level + 1) !== level + 1
-      const branch = level === guides - 1
-      return <span key={level} aria-hidden="true" data-hierarchy-guide="" {...(span ? { 'data-span-guide': '' } : {})}
-        className="pointer-events-none absolute top-0 border-l"
-        style={{ left: 62 + level * 24, height: branch && last ? '50%' : '100%', borderColor: '#a8a29e', opacity: branch || !last ? 1 : 0 }}>
-        {branch && <span className="absolute left-0 w-3 border-b" style={{ top: last ? '100%' : '50%', borderColor: '#a8a29e' }} />}
-      </span>
-    })}
-    {props.hasChildren && props.expanded && <span aria-hidden="true" className="pointer-events-none absolute bottom-0 h-1/2 border-l"
-      style={{ left: 62 + guides * 24, borderColor: '#a8a29e' }} />}
+    style={{ gridTemplateColumns: props.gridTemplateColumns || 'minmax(0, 1fr)', borderLeftColor: props.selected ? '#3b82f6' : 'transparent', background: props.selected ? 'color-mix(in srgb, #3b82f6 22%, var(--kg-panel-bg, white))' : undefined }}>
+    <HierarchyGuides depth={props.depth} visibleDepths={props.visibleDepths} index={props.index}
+      hasChildren={props.hasChildren} expanded={props.expanded} span={span} />
     <span className="relative flex min-w-0 items-center gap-3" style={{ paddingLeft: guides * 24 }}>{props.primary}</span>
     {props.columns}
   </div>

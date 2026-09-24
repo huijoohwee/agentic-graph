@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { parseLearningPython } from '@/features/python-learning/pythonParser'
-import { HierarchyTreeRow } from '@/lib/ui/HierarchyTreeRow'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { BlockProgramRow } from './BlockProgramRow'
 import { insertBlock, programTree, type BlockTreeNode } from './blockLibrary'
 import { blockSource, deleteBlock, moveBlock, replaceBlock } from './blockEdits'
 import { clearBlockSession, publishBlockSession } from './blockSession'
@@ -34,6 +34,7 @@ export default function BlockEditorPane(props: {
     return true
   })
   const visibleDepths = visible.map(row => row.depth)
+  const focusedId = visible.some(row => row.id === selectedId) ? selectedId : visible[0]?.id
   React.useLayoutEffect(() => {
     publishBlockSession(owner.current, {
       documentId: props.documentId, source: props.source, target: selected, readOnly: props.readOnly || !!parsed.error,
@@ -101,21 +102,15 @@ export default function BlockEditorPane(props: {
         <div className="flex gap-1"><button type="button" disabled={editStale || props.readOnly} onClick={() => change(() => replaceBlock(props.source, edit.targetId, edit.draft), 'Statement updated.')} className="rounded border px-2 py-1 disabled:opacity-50">Apply block edit</button>
           <button type="button" onClick={() => setEdit(null)} className="rounded border px-2 py-1">Cancel</button></div>
       </div> : null}
-      <p className="px-3 py-1 text-xs opacity-70">Select a statement, then choose a block in the FloatingPanel library. Arrow keys navigate the hierarchy.</p>
-      <ul ref={listRef} role="tree" aria-label="Program hierarchy" className="min-h-0 flex-1 overflow-auto py-1">
+      <p className="px-3 py-2 text-xs opacity-70">Select a step to edit, or open the library to add one. Arrow keys move through the program.</p>
+      <ul ref={listRef} role="tree" aria-label="Program hierarchy" className="min-h-0 flex-1 overflow-auto py-2"
+        style={{ backgroundImage: 'radial-gradient(circle, color-mix(in srgb, var(--kg-border, #94a3b8) 72%, transparent) 0.8px, transparent 0.9px)', backgroundSize: '18px 18px' }}>
         {visible.map((row, index) => {
           const hasChildren = rows.some(item => item.parentId === row.id), expanded = !collapsed.has(row.id)
-          return <li key={row.id} role="none"><HierarchyTreeRow variant="program" depth={row.depth} visibleDepths={visibleDepths} index={index}
-            selected={selected?.id === row.id} focused={selected?.id === row.id} hasChildren={hasChildren} expanded={expanded}
-            label={`${row.title} · ${row.detail}`} description={row.detail} onClick={() => setSelectedId(row.id)}
-            onKeyDown={event => navigate(event, index, row, hasChildren, expanded)}
-            primary={<>
-              <span className="flex w-5 shrink-0 justify-center">{hasChildren && <button type="button" tabIndex={-1}
-                aria-label={`${expanded ? 'Collapse' : 'Expand'} ${row.title}`} onClick={event => { event.stopPropagation(); toggle(row.id) }}
-                className="rounded p-0.5 hover:bg-gray-200/50">{expanded ? '−' : '+'}</button>}</span>
-              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-600 bg-blue-100 text-xs font-semibold text-blue-800 dark:bg-blue-950 dark:text-blue-100">{row.statement ? 'S' : row.kind === 'module' ? 'P' : 'V'}</span>
-              <span className="min-w-0"><span className="block truncate text-sm font-medium" title={row.title}>{row.title}</span><span className="block truncate text-xs opacity-70">{row.detail}</span></span>
-            </>} />
+          return <li key={row.id} role="none"><BlockProgramRow row={row} index={index} visibleDepths={visibleDepths}
+            selected={selected?.id === row.id} focused={focusedId === row.id} hasChildren={hasChildren} expanded={expanded}
+            onClick={() => setSelectedId(row.id)} onToggle={() => toggle(row.id)}
+            onKeyDown={event => navigate(event, index, row, hasChildren, expanded)} />
           </li>
         })}
       </ul>
