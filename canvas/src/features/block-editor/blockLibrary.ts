@@ -17,6 +17,8 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = Object.freeze([
 export type BlockTreeNode = Readonly<{
   id: string; parentId: string | null; depth: number; kind: string; title: string; detail: string
   line: number; statement: boolean; container: boolean
+  /** Presentation attachment from the native syntax owner; never inferred from IDs. */
+  attachment?: string
 }>
 export type BlockInsertPosition = 'before' | 'after' | 'inside'
 const expressionTitle = (value: Expression): string => {
@@ -24,7 +26,7 @@ const expressionTitle = (value: Expression): string => {
     const scalar = value.value
     if (typeof scalar === 'bigint') return scalar.toString()
     if (scalar && typeof scalar === 'object' && scalar.kind === 'float') return String(scalar.value)
-    return scalar === null ? 'None' : String(scalar)
+    return scalar === null ? 'None' : typeof scalar === 'boolean' ? (scalar ? 'True' : 'False') : String(scalar)
   }
   if (value.kind === 'name' || value.kind === 'call') return value.name
   if (value.kind === 'unary' || value.kind === 'binary') return value.operator
@@ -32,28 +34,28 @@ const expressionTitle = (value: Expression): string => {
 }
 export function programTree(program: PythonProgram): BlockTreeNode[] {
   const rows: BlockTreeNode[] = [{ id: 'program', parentId: null, depth: 0, kind: 'module', title: 'Program', detail: `${program.body.length} statements`, line: 0, statement: false, container: true }]
-  const expression = (value: Expression, id: string, parentId: string, depth: number) => {
-    rows.push({ id, parentId, depth, kind: value.kind, title: expressionTitle(value), detail: `${value.kind} · line ${value.line}`, line: value.line, statement: false, container: false })
-    if (value.kind === 'unary') expression(value.value, `${id}.v`, id, depth + 1)
-    if (value.kind === 'binary') { expression(value.left, `${id}.l`, id, depth + 1); expression(value.right, `${id}.r`, id, depth + 1) }
-    if (value.kind === 'compare') value.values.forEach((item, index) => expression(item, `${id}.${index}`, id, depth + 1))
-    if (value.kind === 'call') value.args.forEach((item, index) => expression(item, `${id}.${index}`, id, depth + 1))
+  const expression = (value: Expression, id: string, parentId: string, depth: number, attachment: string) => {
+    rows.push({ id, parentId, depth, attachment, kind: value.kind, title: expressionTitle(value), detail: `${value.kind} · line ${value.line}`, line: value.line, statement: false, container: false })
+    if (value.kind === 'unary') expression(value.value, `${id}.v`, id, depth + 1, 'Value')
+    if (value.kind === 'binary') { expression(value.left, `${id}.l`, id, depth + 1, 'Left'); expression(value.right, `${id}.r`, id, depth + 1, 'Right') }
+    if (value.kind === 'compare') value.values.forEach((item, index) => expression(item, `${id}.${index}`, id, depth + 1, `Operand ${index + 1}`))
+    if (value.kind === 'call') value.args.forEach((item, index) => expression(item, `${id}.${index}`, id, depth + 1, `Argument ${index + 1}`))
   }
-  const statement = (value: Statement, id: string, parentId: string, depth: number) => {
+  const statement = (value: Statement, id: string, parentId: string, depth: number, attachment = 'Steps') => {
     const title = value.kind === 'assign' || value.kind === 'for' || value.kind === 'def' ? `${value.kind} ${value.name}` : value.kind
     const container = ['if', 'while', 'for', 'def'].includes(value.kind)
-    rows.push({ id, parentId, depth, kind: value.kind, title, detail: `statement · line ${value.line}`, line: value.line, statement: true, container })
-    if (value.kind === 'assign' || value.kind === 'expression') expression(value.value, `${id}.v`, id, depth + 1)
-    if (value.kind === 'return' && value.value) expression(value.value, `${id}.v`, id, depth + 1)
-    if (value.kind === 'while') { expression(value.condition, `${id}.c`, id, depth + 1); value.body.forEach((item, index) => statement(item, `${id}.${index}`, id, depth + 1)) }
-    if (value.kind === 'for') { expression(value.iterable, `${id}.i`, id, depth + 1); value.body.forEach((item, index) => statement(item, `${id}.${index}`, id, depth + 1)) }
-    if (value.kind === 'def') value.body.forEach((item, index) => statement(item, `${id}.${index}`, id, depth + 1))
+    rows.push({ id, parentId, depth, attachment, kind: value.kind, title, detail: `statement · line ${value.line}`, line: value.line, statement: true, container })
+    if (value.kind === 'assign' || value.kind === 'expression') expression(value.value, `${id}.v`, id, depth + 1, 'Value')
+    if (value.kind === 'return' && value.value) expression(value.value, `${id}.v`, id, depth + 1, 'Value')
+    if (value.kind === 'while') { expression(value.condition, `${id}.c`, id, depth + 1, 'While'); value.body.forEach((item, index) => statement(item, `${id}.${index}`, id, depth + 1, 'Do')) }
+    if (value.kind === 'for') { expression(value.iterable, `${id}.i`, id, depth + 1, 'In'); value.body.forEach((item, index) => statement(item, `${id}.${index}`, id, depth + 1, 'Do')) }
+    if (value.kind === 'def') value.body.forEach((item, index) => statement(item, `${id}.${index}`, id, depth + 1, 'Do'))
     if (value.kind === 'if') {
       value.branches.forEach((branch, index) => {
-        expression(branch.condition, `${id}.c${index}`, id, depth + 1)
-        branch.body.forEach((item, childIndex) => statement(item, `${id}.b${index}.${childIndex}`, id, depth + 1))
+        expression(branch.condition, `${id}.c${index}`, id, depth + 1, index ? `Elif ${index}` : 'If')
+        branch.body.forEach((item, childIndex) => statement(item, `${id}.b${index}.${childIndex}`, id, depth + 1, 'Then'))
       })
-      value.otherwise.forEach((item, index) => statement(item, `${id}.o${index}`, id, depth + 1))
+      value.otherwise.forEach((item, index) => statement(item, `${id}.o${index}`, id, depth + 1, 'Else'))
     }
   }
   program.body.forEach((value, index) => statement(value, `s${index}`, 'program', 1))

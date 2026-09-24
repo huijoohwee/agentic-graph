@@ -33,7 +33,13 @@ export default function BlockEditorPane(props: {
     for (let parent = row.parentId; parent; parent = byId.get(parent)?.parentId || null) if (collapsed.has(parent)) return false
     return true
   })
-  const visibleDepths = visible.map(row => row.depth)
+  const children = new Map<string, BlockTreeNode[]>()
+  for (const row of rows) if (row.parentId) {
+    const siblings = children.get(row.parentId)
+    if (siblings) siblings.push(row)
+    else children.set(row.parentId, [row])
+  }
+  const visibleIndex = new Map(visible.map((row, index) => [row.id, index]))
   const focusedId = visible.some(row => row.id === selectedId) ? selectedId : visible[0]?.id
   React.useLayoutEffect(() => {
     publishBlockSession(owner.current, {
@@ -52,7 +58,7 @@ export default function BlockEditorPane(props: {
   const toggle = (id: string) => setCollapsed(previous => { const next = new Set(previous); if (!next.delete(id)) next.add(id); return next })
   const navigate = (event: React.KeyboardEvent, index: number, row: BlockTreeNode, hasChildren: boolean, expanded: boolean) => {
     if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', ' '].includes(event.key)) return
-    event.preventDefault()
+    event.preventDefault(); event.stopPropagation()
     if (event.key === 'ArrowDown') focus(Math.min(index + 1, visible.length - 1))
     if (event.key === 'ArrowUp') focus(Math.max(index - 1, 0))
     if (event.key === 'Home') focus(0)
@@ -105,14 +111,11 @@ export default function BlockEditorPane(props: {
       <p className="px-3 py-2 text-xs opacity-70">Select a step to edit, or open the library to add one. Arrow keys move through the program.</p>
       <ul ref={listRef} role="tree" aria-label="Program hierarchy" className="min-h-0 flex-1 overflow-auto py-2"
         style={{ backgroundImage: 'radial-gradient(circle, color-mix(in srgb, var(--kg-border, #94a3b8) 72%, transparent) 0.8px, transparent 0.9px)', backgroundSize: '18px 18px' }}>
-        {visible.map((row, index) => {
-          const hasChildren = rows.some(item => item.parentId === row.id), expanded = !collapsed.has(row.id)
-          return <li key={row.id} role="none"><BlockProgramRow row={row} index={index} visibleDepths={visibleDepths}
-            selected={selected?.id === row.id} focused={focusedId === row.id} hasChildren={hasChildren} expanded={expanded}
-            onClick={() => setSelectedId(row.id)} onToggle={() => toggle(row.id)}
-            onKeyDown={event => navigate(event, index, row, hasChildren, expanded)} />
-          </li>
-        })}
+        {rows[0] && <li role="none" className="px-3 pb-3"><BlockProgramRow row={rows[0]} childrenByParent={children}
+          selectedId={selected?.id} focusedId={focusedId} collapsed={collapsed}
+          onSelect={setSelectedId} onToggle={toggle}
+          onNavigate={(event, row, hasChildren, expanded) => navigate(event, visibleIndex.get(row.id) || 0, row, hasChildren, expanded)} />
+        </li>}
       </ul>
     </>}
   </section>
