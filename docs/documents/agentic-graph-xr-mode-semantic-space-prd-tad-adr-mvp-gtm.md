@@ -1,18 +1,18 @@
 ---
 title: "Reference implementation — Native semantic space"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.8.2"
-revision: "0.8.2"
+version: "0.9.0"
+revision: "0.9.0"
 date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.8.2"
-tad_revision: "0.8.2"
-adr_revision: "0.8.2"
-mvp_revision: "0.8.2"
-gtm_revision: "0.8.2"
+prd_revision: "0.9.0"
+tad_revision: "0.9.0"
+adr_revision: "0.9.0"
+mvp_revision: "0.9.0"
+gtm_revision: "0.9.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -20,11 +20,12 @@ universal_scope: false
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
 agent_id: "codex-semantic-space"
 parent: "agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md"
-parent_version: "0.8.2"
+parent_version: "0.9.0"
 guideline_revision: "3.3.0"
-guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/96a382f1b810d19c09ed60439270da098f66af4a/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-guideline_sha256: "8c9262f089ac25b8db039152aef8f9856a094d506ba8569ee2753c9693b4dce5"
-reviewed_source_revision: "6d5a47d3e983ff02af2ceb1ae230f2808a80cf86"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/db3ca52f5e38a7ad411e989d3df81463eec51a61/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
+reviewed_source_revision: "f16ad08ac920ed125072b6de81335e96c790e3f3"
+reviewed_candidate_revision: "020d4f33d322eb1ad4bd34218134d1b25edd4ebb"
 audit_revision: "SEMANTIC-SPACE-AUDIT-001@1.2.0"
 audit_sha256: "abec71cd091d29410f7035487d0ce549081b0b22c4b0a44672146e4ade3a9876"
 load_policy: "on-demand"
@@ -37,7 +38,7 @@ surfaces: ["2D Renderer: Flowchart"]
 
 ## Continuity, scope and directive
 
-This size-bounded companion extends the [existing XR Mode owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision. PRD S01–S10 feed the TAD owners below, ADR-010–013 select the approach, and MVP/GTM consume those decisions. The audit's provisional MVP ID is absorbed into this existing product identity, not instantiated as another product or registry. Revision 0.8.2 records a corrected local implementation candidate; unverified criteria remain open.
+This size-bounded companion extends the [existing XR Mode owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision. PRD S01–S10 feed the TAD owners below, ADR-010–013 select the approach, and MVP/GTM consume those decisions. The audit's provisional MVP ID is absorbed into this existing product identity, not instantiated as another product or registry. Revision 0.8.2 recorded a corrected local implementation candidate; revision 0.9.0 joins the [CPU procedural-twin increment](agentic-graph-xr-mode-procedural-twin-prd-tad-adr-mvp-gtm.md), which owns D01–D10 and ADR-014–017. Its image-to-recipe/physics integration is proposed, not implemented. Unverified S criteria remain open.
 
 Input is the private `SEMANTIC-SPACE-AUDIT-001@1.2.0`, with digest in frontmatter. It is authoring evidence only; the implementation, build, tests and runtime must not require that file. No external conceptual material, identifiers, assets, prose or code are carried into this specification or admitted as dependencies. Required local implementation claims are restated from native source evidence below.
 
@@ -104,7 +105,7 @@ Each row is a VCC: verify the single end state by the stated check with its cons
 
 ## TAD — source grounding and ownership — reference implementation
 
-All rows bind Graph source `6d5a47d3e983ff02af2ceb1ae230f2808a80cf86`. Audit source `272862cc4d130616497a392605bcb4caf25c3a5a` is retained as history. The admission-time diff changed general design/theme UI; the camera/depth/semantic/lifecycle/offline owners listed below remain unchanged. Device/UI claims require fresh validation. Current OS and Canvas consumers remain independently pinned; this increment adds no cross-repository source import.
+Baseline rows bind protected Graph source `f16ad08ac920ed125072b6de81335e96c790e3f3`; listed camera/depth/semantic/lifecycle/offline owners are unchanged from `6d5a47d3e983ff02af2ceb1ae230f2808a80cf86`. Candidate disposition below binds the separate unmerged `020d4f33d322eb1ad4bd34218134d1b25edd4ebb`. Audit source `272862cc4d130616497a392605bcb4caf25c3a5a` is retained as history. The admission-time diff changed general design/theme UI; the camera/depth/semantic/lifecycle/offline owners listed below remain unchanged. Device/UI claims require fresh validation. Current OS and Canvas consumers remain independently pinned; this increment adds no cross-repository source import.
 
 | ID / owner / inspected symbol | Current capability / gap | Decision, consumers, delta and check |
 |---|---|---|
@@ -119,7 +120,7 @@ All rows bind Graph source `6d5a47d3e983ff02af2ceb1ae230f2808a80cf86`. Audit sou
 
 Reuse benefit targets fewer repeated actions and zero diverging UI/tool mutation implementations. Current duplicated captured-space implementations: none found; the missing integration, not a measured duplication count, motivates reuse. Integration time, repeat failures and support savings are unmeasured. A generic shared package is deferred until two concrete cross-product consumers and an ADR justify extraction.
 
-**0.8.2 source disposition:** [SemanticSpacePanel](../../canvas/src/features/xr-v2/SemanticSpacePanel.tsx) is mounted beside, and independent of, the older pose/temporal capture panel. The explicit camera request lives in the [camera runtime](../../canvas/src/features/three/semanticSpaceCameraRuntime.ts). [Action validation](../../canvas/src/features/xr-v2/semanticSpaceRuntime.ts) and [durable writes](../../canvas/src/features/xr-v2/semanticSpaceStore.ts) serve both the UI and [scoped WebMCP adapter](../../canvas/src/features/agent-ready/semanticSpaceWebMcpTools.ts). Space records reuse the existing XR IndexedDB `bundles` object store under a dedicated key, with atomic revision checks, decoded-image verification and readback; no schema upgrade or second scene database is introduced. “Add to canvas” projects the evidence hash and stable `entityId` into the active graph; the native composed graph ID may carry its source-layer prefix. The [point geometry owner](../../canvas/src/features/three/spatialCaptureGeometryRuntime.ts) accepts optional finite relative depth with assumed FOV and an unknown-scale tag; no model or metric claim is enabled.
+**Historical 0.8.2 candidate disposition, retained at 0.9.0:** [SemanticSpacePanel](../../canvas/src/features/xr-v2/SemanticSpacePanel.tsx) is mounted beside, and independent of, the older pose/temporal capture panel. The explicit camera request lives in the [camera runtime](../../canvas/src/features/three/semanticSpaceCameraRuntime.ts). [Action validation](../../canvas/src/features/xr-v2/semanticSpaceRuntime.ts) and [durable writes](../../canvas/src/features/xr-v2/semanticSpaceStore.ts) serve both the UI and [scoped WebMCP adapter](../../canvas/src/features/agent-ready/semanticSpaceWebMcpTools.ts). Space records reuse the existing XR IndexedDB `bundles` object store under a dedicated key, with atomic revision checks, decoded-image verification and readback; no schema upgrade or second scene database is introduced. “Add to canvas” projects the evidence hash and stable `entityId` into the active graph; the native composed graph ID may carry its source-layer prefix. The [point geometry owner](../../canvas/src/features/three/spatialCaptureGeometryRuntime.ts) accepts optional finite relative depth with assumed FOV and an unknown-scale tag; no model or metric claim is enabled.
 
 The candidate stores compressed stills in a self-contained active local package and retains the previous package as a backup on import. It does not yet model multiple independent spaces, calibrated camera intrinsics, raw photo bytes separate from the package, pose, automatic semantics, or an offline depth asset closure. These deltas stay open under T02/T03/T06/T07 rather than being inferred from the source checks.
 
@@ -350,6 +351,8 @@ Economics assumptions A1 `$1 pilot price`, A2 `zero incremental required service
 | C15 Audience projections | No deck/business-plan/financial-model readiness claimed; join exact revision before use |
 | C16 Learning | Pilot results create a successor context; preserve prior evidence and re-derive affected criteria |
 
+The 0.9.0 procedural companion owns current documentation check receipts; E01–E13 above retain their original source/revision scope and do not establish D01–D10. Required geometry generation now follows the CPU/manual spine; optional model depth remains a separately gated perception input.
+
 Each finding uses the guideline's six fields: type, severity, Rule ID/text, artifact, evidence, remediation. This is a bounded review, not an exhaustive conformance ratio. No runtime-ready or commercial-baseline claim is made.
 
 | Type / severity | Rule ID / rule text | Artifact | Evidence | Remediation / owner |
@@ -358,4 +361,4 @@ Each finding uses the guideline's six fields: type, severity, Rule ID/text, arti
 | `render-proof-absent` / major | `dual-target-portability#6`: verify static legibility and projected counts | SS-J–SS-L | Projection passes E04; static visual legibility unreviewed | Product maintainer reviews static preview before diagram alignment sign-off |
 | `scenario-set-incomplete` / major | `venture-record-pitch-deck-business-plan--financial-model#5`: linked statements and scenarios or incomplete discovery sketch | GTM | No financial/market observations | Financial modeling function produces sourced projections before audience handoff |
 
-Next bounded action: qualify the candidate on Safari/phone with camera grant/deny, touch and offline reopen; exercise a real WebMCP host, then resolve the headless MCP/grammar capture gap and optional depth asset closure before claiming S01–S10. Prerequisites are an exact integrated source revision, free/FOSS asset policy and a device/host test surface. Recheck each when available. Development = source candidate with focused local proof; Production Release = no candidate; Runtime = unverified. This checkpoint adds no required service or paid dependency.
+Next bounded actions: follow the procedural companion's M1 constraint/binding slice and retain the following independent acceptance debt: qualify the candidate on Safari/phone with camera grant/deny, touch and offline reopen; exercise a real WebMCP host, then resolve the headless MCP/grammar capture gap and optional depth asset closure before claiming S01–S10. Prerequisites are an exact integrated source revision, free/FOSS asset policy and a device/host test surface. Recheck each when available. Development = source candidate with focused local proof; Production Release = no candidate; Runtime = unverified. This checkpoint adds no required service or paid dependency.

@@ -1,0 +1,309 @@
+---
+title: "Reference implementation — CPU procedural space twin"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "0.9.0"
+revision: "0.9.0"
+date: "2026-09-24"
+lang: "en-US"
+frontmatter_contract: "required"
+owner: "Product maintainers"
+continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
+prd_revision: "0.9.0"
+tad_revision: "0.9.0"
+adr_revision: "0.9.0"
+mvp_revision: "0.9.0"
+gtm_revision: "0.9.0"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+lifecycle_status: "proposed"
+worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
+agent_id: "codex-semantic-space"
+parent: "agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md"
+parent_version: "0.9.0"
+guideline_revision: "3.3.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/db3ca52f5e38a7ad411e989d3df81463eec51a61/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
+reviewed_source_revision: "f16ad08ac920ed125072b6de81335e96c790e3f3"
+reviewed_candidate_revision: "020d4f33d322eb1ad4bd34218134d1b25edd4ebb"
+audit_revision: "SEMANTIC-SPACE-AUDIT-001@1.2.0"
+audit_sha256: "abec71cd091d29410f7035487d0ce549081b0b22c4b0a44672146e4ade3a9876"
+load_policy: "on-demand"
+agenticOsCanvasRenderMode: "2d"
+agenticOsCanvas2dRenderer: "flowchart"
+surfaces: ["2D Renderer: Flowchart"]
+---
+
+# Reference implementation — CPU procedural space twin
+
+## Continuity and directive — reference implementation
+
+This companion joins the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) and [semantic-space owner](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision 0.9.0. It owns D01–D10 and ADR-014–017; existing E/A/B/S criteria retain their scope. It introduces no second product, scene database, renderer, command catalog or commercial roadmap. The private audit identified the original gaps; its digest remains historical input, never a build/runtime dependency.
+
+**CID:** Context is existing capture, procedural assets and physics with no complete evidence-to-world bridge. Intent is an editable spatial handover from an ordinary photograph. Directive is to connect those native owners with a deterministic CPU pipeline, no mandatory model, GPU compute, remote API or service. **RAO:** Product maintainer specifies the smallest source-owned increment; outcome is a reviewable plan and acceptance gates, not a claim that the complete pipeline runs today.
+
+This revision changes documentation only. Protected source `f16ad08ac920ed125072b6de81335e96c790e3f3` supplies procedural generation and physics. The still/manual semantic-space implementation is the separate, unmerged source candidate `020d4f33d322eb1ad4bd34218134d1b25edd4ebb`. Those revisions are not interchangeable. The procedural/physics owners inspected below are unchanged between them. No external conceptual code, assets, project identifiers or runtime dependencies are admitted.
+
+## PRD — first useful outcome
+
+An operator selects a room image or captures a still, confirms two objects and a floor, chooses supported shapes, adjusts dimensions, then inspects and edits a linked 3D arrangement. The same entities remain selectable through their photograph, graph nodes, scene and exported package. A useful **digital twin** here is an evidence-linked, editable approximation; it is neither a certified survey nor a continuously synchronized physical replica.
+
+| Pain / status | Hook → break → fix → close | Priority / evidence needed |
+|---|---|---|
+| D-P1 Spatial handover loses editable object context; unvalidated | Photo → labels and geometry separate → bind confirmed entity to native recipe → reopen an editable inventory | First: near-built capture/recipes/export; observe one operator accepting two linked objects |
+| D-P2 Layout trial requires specialist tooling; unvalidated | Select object → static image cannot show changes → edit procedural dimensions/placement → compare a proposed layout | Second: reuse controls and scene; record correction effort and whether approximate geometry is useful |
+| D-P3 Device/network restrictions interrupt work; user constraint | Open local evidence → network/model dependency → CPU/manual path → edit/export disconnected | Mandatory feasibility gate; measure real phone behavior and cold offline reopen |
+| D-P4 Generated shape hides uncertainty; source-observed risk | Plausible mesh → hidden surfaces or units appear measured → field-level provenance → inspect and correct assumptions | Mandatory trust gate; reviewer must find each unmeasured extent and physics default |
+
+**Scope:** one room, one image first, explicit region/shape confirmation, floor/walls as authored planes or thin boxes, supported parametric furniture, optional isolated-contour volumes, local editing, bounded physics preview, animation-ready parts, semantic queries and portable recovery. Photo-only scale stays unknown. User dimensions establish authored units; a measured reference and compatible calibrated geometry are needed to label a result measured. Multiple photos may attach as evidence but do not automatically fuse into one coordinate frame.
+
+**Non-goals:** automatic complete reconstruction of arbitrary rooms, photorealistic hidden surfaces, automatic metric accuracy, inferred physical material properties, full rigid-body angular dynamics, collision-certified navigation, general natural-language synthesis, continuous scanning, new inference service or required native app. Optional perception cannot be a prerequisite or change these claims.
+
+| VCC | Observable condition / falsifier | Owner and proposed acceptance |
+|---|---|---|
+| D01 CPU independence | With network denied and model/GPU-compute adapters unavailable, image + confirmed constraints produces valid recipe, geometry buffers and export; 0 model/API calls | Generation owner; fresh-browser and headless geometry fixtures, explicit network/model call counters. Unsupported display retains 2D evidence + recipe export |
+| D02 Evidence and units | Every generated entity/part resolves stable entity ID, observation region and field provenance; unknown scale cannot answer metres/clearance questions | Semantic owner; two-object linking, unit-changing correction and orphan/mismatched-frame rejection |
+| D03 Deterministic edits | Same canonical input, compiler/template version and seed yields same canonical recipe/geometry digest on the same pinned runtime; edit changes only admitted fields | Procedural owner; repeat build, undo, failed draft, stable IDs and old-version restore. Cross-runtime numeric tolerance is explicit |
+| D04 Geometry quality | Finite indexed geometry, valid normals/bounds, no degenerate generated triangles, budget compliance and correct part/control/pivot bindings; failed evidence cannot publish | Existing quality owner; invalid/over-budget/cancel/stale cases plus isolated-mask projection and furniture dimension fixtures |
+| D05 Physics truthfulness | Reset restores authored layout; deterministic fixed-step preview respects accepted sphere/AABB proxies and static floor; unsupported rotation/shape reported | Native physics owner; floor/contact/sweep/sensor/replay fixtures. Mass/friction/restitution defaults remain authored assumptions |
+| D06 Animation readiness | Part hierarchy is acyclic; pivot edits preserve intended attachment; supported clip endpoints survive export/reopen; one transform authority per body | Scene/animation owner; articulated fixture, pause/reset, zero dangling tracks. No simulation writes over source recipe |
+| D07 Phone and offline | At 390 CSS px, accessible touch/keyboard capture/edit/select/export completes; committed room reopens after app close with network denied | Existing UI/offline owners; actual Safari and one desktop browser, camera grant/deny, storage eviction/quota and cold reopen. Current cold-shell blocker must be closed |
+| D08 Invocation consistency | UI, slash/binding/semantic tokens and admitted agent adapters yield the same validated result, revision and typed failure | Invocation owner; real browser host and headless package tests. Catalog entries or in-process registry alone do not satisfy transport parity |
+| D09 Recovery | Export/import preserves recipes, evidence, bindings, assumptions, quality receipts and optional simulation snapshot; corruption/stale writes retain previous valid scene | Existing persistence/export owners; fresh-store round trip, hash/decode/schema rejection, concurrent edit, cancelled commit and readback |
+| D10 Resource/value | Two-object accepted export in ≤180 seconds of operator time after shell ready; one bounded generation job; caps below enforced | Product maintainer; five timed runs per named device, latency/memory/bytes/failures recorded. Targets are unmeasured, not current performance |
+
+## TAD — existing owners and smallest changes — reference implementation
+
+All protected rows bind the frontmatter source SHA; candidate rows explicitly bind its separate SHA. Relative links locate native owners, not proof of execution. Reuse dispositions are `retain-local` or `extend-owner`; no cross-repository runtime import is proposed.
+
+| ID / exact owner and inspected export | Current capability and limit | Smallest delta / consumers / VCC |
+|---|---|---|
+| N01 Candidate [capture](../../canvas/src/features/three/semanticSpaceCameraRuntime.ts), `requestSemanticSpaceCamera`; [space core](../../canvas/src/features/xr-v2/semanticSpaceRuntime.ts), `applySpaceAction`; [store](../../canvas/src/features/xr-v2/semanticSpaceStore.ts), `runSemanticSpaceAction` | Still/manual evidence, confirmed regions/entities, revision-checked local package and graph linking; no full scene recipe bridge | Extend evidence → generation request → scene binding. Reuse existing IndexedDB bundles and camera lifecycle; D01/D02/D07/D09 |
+| N02 [image analysis](../../canvas/src/features/image-to-glb/imageToGlbSceneFactory.ts), `analyzeImageToGlbReference`, `createReviewedImageToGlbScene`; [contour owner](../../canvas/src/features/image-to-glb/imageToGlbContourRebuild.ts), `deriveContourRebuildPlan` | CPU alpha/edge-palette mask, spans, inferred extrusion and generated source; URL loader downsamples to 192 px. Heuristic confidence is not calibrated accuracy; complex room backgrounds need manual isolation | Retain analysis for confirmed isolated regions; accept decoded local crop/mask, expose editable thickness and assumption provenance. Never feed whole-room masks as recognized objects; D01/D02/D04 |
+| N03 [recipe contract](../../canvas/src/features/image-to-glb/proceduralAssetContract.ts), `parseProceduralAssetRecipe`; [text selector](../../canvas/src/features/image-to-glb/proceduralAssetTextRecipe.ts), `createProceduralAssetFromText` | Strict v1 primitives, controls, hierarchy, pivots, clips; bounded subject templates include chair/table. No image or physics fields; unsupported text fails | Compile confirmed object constraints to existing recipe; add room/furniture template parameters in owner. Keep contour plan in its existing owner rather than force it into primitive v1; D02/D03/D06 |
+| N04 [builder](../../canvas/src/features/image-to-glb/proceduralAssetBuilder.ts), `buildProceduralAsset`; [session](../../canvas/src/features/image-to-glb/proceduralAssetSession.ts), `ProceduralAssetSession` | CPU geometry construction, source export never evaluated, one-second builder deadline, last-valid draft/revision lifecycle | Extend deterministic input compiler and worker boundary; use same build for UI/tools/export, retain session fence; D01/D03/D04 |
+| N05 [quality](../../canvas/src/features/image-to-glb/imageToGlbQualityGate.ts), `evaluateImageToGlbQuality`, `assertImageToGlbQualityForExport` | CPU front projection, geometry/material/action budgets and stale-report export rejection. Current isolated-image thresholds are not room reconstruction proof | Reuse metrics through mode-specific policy: contour fidelity vs parametric dimensions vs room binding integrity. No duplicated gate or unconditional room-wide silhouette score; D04/D06 |
+| N06 [workflow](../../canvas/src/features/image-to-glb/proceduralAssetWorkflow.ts), `runProceduralAssetWorkflow`; [workspace](../../canvas/src/features/image-to-glb/proceduralAssetWorkspace.ts), `saveProceduralAssetWorkspace`, `restoreProceduralAssetWorkspace` | Revision-fenced construction/publication and manifest-led recipe/source/model restore; [export](../../canvas/src/features/image-to-glb/proceduralAssetRuntimeExport.ts), `exportProceduralAsset`, verifies GLB container | Bind scene manifest to these versioned asset manifests, commit pointer last and read back; reject missing evidence. GLB alone does not preserve the complete editable twin; D03/D09 |
+| N07 [scene semantics](../../canvas/src/features/three/xrSceneSemantic.ts), `projectXrStudioScene`, `queryXrStudioScene`; [persistence](../../canvas/src/features/three/xrScenePersistence.ts), `persistXrSceneToAuthoredSource` | Authored scene query and source save; separate captured entity IDs currently lack recipe/subject relation | Add stable entity ↔ subject ↔ asset/part bindings in owning scene document; existing canvas selection, scene editor and timeline consume them; D02/D06/D09 |
+| N08 [native physics](../../canvas/src/features/physics/spatialPhysicsEngine.ts), `SpatialPhysicsEngine.advance`; [types](../../canvas/src/features/physics/spatialPhysicsTypes.ts); [adapter](../../canvas/src/features/three/xrSpatialPhysicsAdapter.ts) | CPU fixed steps, sphere/cuboid contacts, queries and snapshots; body state has translation/linear velocity, no angular state. XR adapter uses cuboids | Derive explicit sphere/AABB proxies from accepted world bounds, attach existing scene physics; show conservative proxy limits. No new physics library; D05/D06 |
+| N09 [image-view contract](../../canvas/src/features/image-to-threejs/imageToThreeJsContract.ts); [workflow grammar](../../canvas/src/features/image-to-glb/proceduralAssetWorkflowContract.ts); [scene tools](../../canvas/src/features/three/xrSceneMcpRuntime.ts), `controlLocalXrScene` | Image view can be shape geometry/textured plane; asset creation and authored-scene actions execute independently. Candidate adds semantic-space tools | Connect these operations through existing validators and effect contexts; image plane alone is never reported as reconstructed room; D08 |
+| N10 [offline policy](../../canvas/vitePwaRuntimeCachePolicy.ts), [installer](../../canvas/vitePythonLearningOffline.mjs), [controls](../../canvas/src/features/python-learning/LearningOfflineControls.tsx) | Existing cache/install/verify owners; candidate cold offline HTML navigation failed despite precached feature chunks | Extend existing verified offline shell closure with source-revision consistency and recovery. Block offline-first release claim until actual cold reopen passes; D01/D07 |
+
+Appearance controls reuse existing Settings, tokens, typography, icons and `xrSceneAppearanceAuthoring.ts`; no alternate Design panel, hard-coded brand palette or visual framework. This planning increment changes no appearance implementation. Future appearance work must bind the guideline's native design contract and inspected adapters in the same joined record.
+
+### End-to-end generation contract
+
+1. **Capture/decode:** user gesture opens existing camera owner or local file picker. Normalize EXIF/display orientation and mirroring once, retain immutable evidence hash plus processed dimensions/transform, decode under a pixel cap, stop streams on leave. Do not fetch remote images or run pose/depth models as a side effect.
+2. **Confirm observations:** operator draws/corrects regions, labels objects, identifies floor and selects one supported shape family. Classical crop/mask/palette/contour suggestions assist isolated objects; low-contrast, cluttered, occluded or ambiguous input returns manual adjustment, never invented recognition.
+3. **Author spatial constraints:** retain normalized image coordinates separately from world coordinates. Supply dimensions/placement directly, or use explicitly accepted camera/floor correspondences. Plane homography needs at least four non-collinear correspondences with known plane coordinates; camera-ray placement needs compatible intrinsics, pose and a plane. A 2D box alone does not define 3D extent, depth or room scale. Missing evidence gives arbitrary units and editable layout.
+4. **Compile deterministically:** validate constraints, choose an existing parametric recipe or isolated-contour plan, derive stable part IDs from entity/template slots and record template/compiler version and seed. Generate primitives/extrusions through native owners, with hidden surfaces/thickness labelled authored or procedurally inferred. No LLM, neural mesh generation, `eval`, dynamic imported source or API request in this stage.
+5. **Evaluate:** run existing geometry/action checks plus binding, unit and mode-specific constraints below. Failed drafts remain editable while the previous accepted geometry stays visible. At most two deterministic simplification retries; no unbounded agent loop or silent quality-threshold reduction.
+6. **Bind and inspect:** publish only to the still-current scene revision. Select entity from graph, photo or 3D to reveal evidence, uncertainty, dimensions and supported controls. Observed arrangement and proposed layout remain separate revisions; edits do not rewrite raw evidence.
+7. **Simulate/animate:** explicitly enable a bounded sandbox using accepted proxies and authored physics parameters. Existing animation owns kinematic targets; physics owns dynamic translation; source recipe owns rest pose. Pause on background; reset from authored state; no implicit persistence of simulated motion.
+8. **Save/export/reopen:** persist evidence and asset artifacts through their existing owners, then atomically commit the owning scene manifest/reference. Verify readback, export self-contained versioned package and restore in a fresh local store. Model export is a derivative; the recipe + evidence + bindings package is the editable handover.
+
+### Typed contracts and provenance
+
+The following are **proposed extensions**, not accepted v1 wire fields today. Extend the owning scene schema with explicit versioning/migration; strict v1 asset recipes continue rejecting unknown keys. Do not create another registry or silently mutate old schemas.
+
+| Record | Required fields / ownership |
+|---|---|
+| Generation request | Existing document/space ID, expected revision, request ID, observation ID/hash, region/mask ref, entity ID, template ID/version, seed, constraints, unit/frame status, compiler version; existing action validation owns limits |
+| Constraint evidence | Value + unit + provenance (`confirmed`, `authored`, `measured`, `procedurally-inferred`, `perception-proposed`) + observation/ref + uncertainty/reviewer state. Confidence without calibration stays a heuristic score |
+| Optional perception input | Bounded boxes/masks/depth/camera estimates, shape/dimensions, coordinate convention, input hash/transform, provider/model/backend/version when present, raw confidence meaning and timestamp. No executable code or commands; reject mismatched frame/hash, nonfinite values or oversized tensors |
+| Scene binding | Stable entity ID, observation refs, asset manifest/revision/hash, recipe or contour-plan identity, subject/part IDs, scene transform, scale status, collider proxy policy, clip refs and proposed-layout revision; owning scene manifest is authoritative |
+| Quality receipt | Input/recipe/geometry digests, compiler/template/policy versions, per-gate metrics, failures, elapsed time, bytes and measured backend. Receipt is invalidated by any bound edit; non-cryptographic UI fingerprints are not package integrity hashes |
+| Result | Operation/status, expected/resulting revision, accepted artifact refs, selected IDs, assumptions, typed errors and durable-readback status. Duplicate request ID returns its bound result; changed payload under that ID is rejected |
+
+Use canonical key ordering, stable entity/part ordering and declared numeric quantization for deterministic hashes. Hash source bytes separately from normalized pixels. Freeze inputs before asynchronous work; cancellation, document switching, newer edits and import invalidate late publication. Persisting dependent artifacts first may leave recoverable orphans on failure; it must not expose a partially committed scene. Retain the previous valid manifest and let existing cleanup reclaim only unreferenced artifacts under its policy.
+
+### Geometry, physics and animation quality
+
+Mandatory generation and quality checks run on CPU over data/geometry buffers. Three.js geometry classes do not require a renderer for construction. The browser's interactive Three.js view still needs WebGL support and may use a GPU or a software driver; this plan does not promise hardware-free WebGL. If all GPU use is prohibited or rendering fails, retain CPU generation, 2D evidence/controls and export. A dedicated GPU and WebGPU compute are never required by the baseline.
+
+| Gate | Accept / reject policy |
+|---|---|
+| Structural geometry | Finite positions/normals/transforms, valid indices, nondegenerate visible triangles, bounded world extents, positive volume for volumetric parts, declared thin planes, acyclic hierarchy; manifoldness only for export modes that require it |
+| Reference fit | For a confirmed isolated mask, report the existing 64×64 front-projection metric and policy (current threshold 0.72) with its reference. This compares a normalized contour, not calibrated perspective or hidden geometry. Parametric room/furniture mode instead gates accepted constraints; future calibrated reprojection needs separate validated camera/occlusion tests |
+| Materials | Reuse native colors/materials and existing material limits; no remote texture dependency. Existing image policy's color score 0.82 is specific to that mode; surface appearance and real physical friction remain different fields |
+| Binding/scale | No dangling entity, part, asset, track or observation refs; unit/frame compatibility before composition. User-authored dimensions are not automatically sensor measurements; reject metric queries for unknown scale |
+| Physics | Static floor/walls; explicit dynamic/kinematic choice; positive mass and bounded material values. Rotated/concave meshes use labelled conservative AABBs or disable interaction; no claim of angular/mesh collision fidelity. Reject initial unacceptable overlap; verify bounded sweep/contact fixtures |
+| Animation | Reuse pivots, sockets and clip tracks; respect current parser's duration/key bounds and endpoint requirements. Dynamic bodies cannot simultaneously take animation translation. Articulation without supported collision treatment is visual-only, with physics disabled for that motion |
+| Publication/export | Shared quality decision binds actual output digests and current source revision; stale reports, cancelled work or invalid data block new publication. Existing GLB validation remains mandatory; package hashes, schema and decoded evidence checked on restore |
+
+### Resource, offline and invocation contract — reference implementation
+
+Initial mobile target is one room with ≤20 generated entities, ≤96 visible mesh parts in aggregate, ≤30,000 triangles, ≤24 materials, ≤32 colliders and ≤2 concurrently playing clips. Existing asset recipe hard bounds remain ≤48 parts, 32 controls, 8 clips and 32 keys per track, 64 KiB recipe and 120,000 triangles; the smaller mobile aggregate limits win. Retain one last-valid result and one pending job. Target transient generation memory ≤64 MiB beyond shell; measure peak on devices and stop/reduce before public enablement. No measured memory guarantee exists today.
+
+Use ≤192 px for existing contour analysis; a proposed local working image cap is 1,024 px on the longest side and 4 MiB RGBA. Decode source dimensions before expensive processing and reject unmanageable images; processing resize alone does not cap original decoder memory. Existing capture limits remain authoritative until a versioned change passes compatibility tests. Geometry work goes through an on-demand worker with transferable buffers; headless core has no DOM/camera dependency. Current builder's one-second budget remains; target total two-object generation ≤2 seconds p95 over five named-device runs, hard cancellation at five seconds and main-thread tasks <50 ms. These are proposed gates, not benchmark results.
+
+Physics target is fixed 1/60-second steps, at most four substeps per rendered frame, ≤32 colliders and a ten-second user-started preview. Drop excess accumulated time with an explicit slow-device state; do not increase work to catch up indefinitely. Deterministic replay uses same initial snapshot, ordered inputs and tick count on a pinned runtime; cross-browser physics is tolerance-tested, not promised bit-identical. Pause when hidden, release buffers/geometry/materials on replacement, and expose cancellation.
+
+Always-loaded model bytes and required inference/prompt/completion tokens are zero. No new required dependency, server, subscription, paid add-on or overflow path. All added feature code loads on demand; <600 lines/file and <500,000 bytes per delivered chunk. Portable data artifacts such as a GLB may exceed a code chunk: retain existing 8 MB GLB ceiling, segment optional package assets under the existing installer contract, and measure total package bytes separately. Do not disguise a model as a required data asset.
+
+Optional local neural perception is disabled by default, independently license/integrity/budget-admitted, and removable without breaking D01–D10. It may propose typed masks/depth only; user validation or explicit policy must accept them before deterministic compilation. No API-backed perception is part of this increment. Existing depth weights/offline closure and per-chunk limits remain unresolved in the semantic companion; do not enable that path by default. Classical multi-view reconstruction is deferred until a CPU correspondence/calibration/error experiment supports it; no identity-pose fusion.
+
+Offline-first release requires shell + worker + templates + evidence + renderer/export assets verified at the same revision, then actual app-close/network-denied reopen. Reuse existing installer/cache policy and recovery UI; current `navigateFallback: null`/excluded HTML policy is a known blocker. Local storage can be evicted: surface persistence/quota status and offer portable export, never guarantee indefinite retention. Optional sync may reuse the existing Cloudflare storage adapter only by opt-in; no new resource, automatic private-media upload or paid fallback. Free hosting is not itself FOSS.
+
+| Surface / current status | Native integration decision |
+|---|---|
+| `/asset.create @text #procedural-asset` exists | Keep bounded native template or validated recipe construction; `@text` alone does not authorize generation |
+| `/image.to-glb @image-to-glb #image-to-glb` and `/image.to-threejs @image-to-threejs #image-to-threejs` exist | Reuse image conversion routes and their explicit output types; a plane is not a volumetric twin. Resolve only local, admitted observation/crop assets in this path |
+| Candidate `/space.find #category`, `/space.select @entity`, `/space.label @entity #category label="name"` | Retain query/selection/correction; schema-valid expected-revision mutations remain authoritative |
+| Proposed `/space.build @entity #procedural-asset`, `/space.simulate`, `/space.reset` | Names are design proposals, not runnable commands. Extend existing catalog/dispatcher and scoped contracts together after collision/effect review; no new parser or grammar fork |
+| Existing authored `/xr.place`, `/xr.transform`, `/xr.physics` and scene controls | Apply generated scene bindings through these native owners; preserve source/current-document/effect checks |
+| WebMCP / MCP | Extend existing semantic-space/scene tools with inspect-capabilities and bounded generation operations; one core for UI and tools, ≤16 tools/32 KiB discovery. Browser host registration must be observed; fallback registry is not host proof. Headless package operations need explicit files/revision authority; camera requires an authorized page |
+
+Agent nativeness means inspectable schemas, provenance, deterministic validation, bounded jobs, recoverable errors and replayable evidence. It does not require an LLM in the generation loop. Read-only inspection never starts capture/build/simulation. Mutation tokens do not bypass permission, scope, current-revision or effect checks. Text/OCR/image metadata remains untrusted data.
+
+## TAD — five flows and diagram register — reference implementation
+
+All diagrams are proposed at 0.9.0, one Mermaid fenced-body ingest each on the declared Flowchart 2D surface. Inventory and captions are the text fallback on phone/offline. Typed node roles are explicit in labels; projection is parse-only, with zero model calls/tokens. Static legibility and canvas rendering require their own receipts.
+
+**Diagram PT-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.9.0
+**Caption:** The operator reaches an editable handover through explicit confirmation.
+
+```mermaid
+flowchart LR
+  J1["Stage: capture image"]
+  J1 -->|"confirm objects and floor"| J2["Stage: author constraints"]
+  J2 -->|"build supported shapes"| J3["Stage: inspect twin"]
+  J3 -->|"edit or preview motion"| J4["Stage: accept layout"]
+  J4 -->|"verify local package"| J5["Stage: reopen handover"]
+```
+
+| Inventory | Touchpoint / check |
+|---|---|
+| J1, J2, J3, J4, J5 | Capture, constraints, inspect, edit, reopen; operator uses existing canvas; D01/D02/D07/D09 |
+
+**Diagram PT-W** · Class: User workflow · Notation: flowchart LR, substituted for sequence to retain node-link projection · Version: 0.9.0
+**Caption:** Only current validated work replaces the accepted scene.
+
+```mermaid
+flowchart LR
+  W1["Actor: operator or admitted agent"]
+  W1 -->|"bounded request"| W2["Process: validate revision and scope"]
+  W2 -->|"valid current input"| W3["Process: CPU build and checks"]
+  W2 -->|"invalid input"| W5["Result: typed error and last valid scene"]
+  W3 -->|"passed and still current"| W4["Store: verified scene commit"]
+  W3 -->|"failed stale or cancelled"| W5
+```
+
+| Inventory | Happy / alternate / error |
+|---|---|
+| W1, W2, W3, W4, W5 | Request → validation → build → readback; unsupported input or stale/cancelled result retains last-valid state; D03/D04/D08/D09 |
+
+**Diagram PT-D** · Class: Data flow · Notation: flowchart LR · Version: 0.9.0
+**Caption:** Typed evidence produces recipes; geometry never becomes the evidence source.
+
+```mermaid
+flowchart LR
+  D1["Data: immutable image and regions"]
+  D1 -->|"confirmed fields"| D2["Data: constraints and provenance"]
+  D6["Data: optional perception proposals"]
+  D6 -->|"validated and accepted fields"| D2
+  D2 -->|"versioned deterministic compile"| D3["Data: recipe or contour plan"]
+  D3 -->|"native build"| D4["Data: geometry and quality receipt"]
+  D4 -->|"stable entity bindings"| D5["Data: scene and portable package"]
+```
+
+| Inventory | Artifact owner |
+|---|---|
+| D1, D2, D6 | Existing evidence/scene schema; optional perception is isolated input, D02 |
+| D3, D4, D5 | Existing procedural/contour, quality and scene/package owners; D03/D04/D09 |
+
+**Diagram PT-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.9.0
+**Caption:** A deterministic evaluator bounds retries and publishes evidence with the result.
+
+```mermaid
+flowchart LR
+  H1["Process: shared dispatcher"]
+  H1 -->|"one frozen job"| H2["Process: CPU compiler"]
+  H2 -->|"buffers and source digest"| H3["Process: deterministic evaluator"]
+  H3 -->|"at most two simplifications"| H2
+  H3 -->|"pass plus current revision"| H4["Process: scene publisher"]
+  H3 -->|"fail or budget exceeded"| H5["Result: diagnosis and last valid"]
+```
+
+| Inventory | Responsibility / cap |
+|---|---|
+| H1, H2, H3, H4, H5 | Dispatch, build, evaluate, publish, diagnose; one job, two retries, five-second cancellation; D01/D03/D04/D08 |
+
+**Diagram PT-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.9.0
+**Caption:** Local work is complete without the optional storage boundary.
+
+```mermaid
+flowchart TB
+  subgraph LOCAL["Boundary: device"]
+    T1["Process: existing UI or headless adapter"]
+    T1 -->|"typed local request"| T2["Process: CPU worker and validators"]
+    T2 -->|"accepted buffers"| T3["Process: existing scene and physics"]
+    T3 -->|"versioned local commit"| T4["Store: existing workspace and evidence"]
+  end
+  subgraph OPTIONAL["Boundary: optional remote storage"]
+    T5["Process: existing opt-in sync adapter"]
+  end
+  T4 -->|"explicit opt-in under free quota"| T5
+```
+
+| Inventory | Residency / trust |
+|---|---|
+| LOCAL; T1, T2, T3, T4 | Device boundary: untrusted input is validated before native build and commit; renderer optional for CPU artifact work |
+| OPTIONAL; T5 | Remote boundary: optional existing storage only, no inference/generation service; D01/D07/D09 |
+
+Register target: PT-J 5 nodes/4 edges; PT-W 5/5; PT-D 6/5; PT-H 5/5; PT-T 5/4 plus 2 clusters. Total 26 nodes, 23 edges, 2 clusters, 51 projected elements. Graph IDs are local to their fenced body. Each stays below 12 nodes/20 edges/depth 2; captions/inventories provide reading alternatives. Diagram source budget <5 KiB, model input/output tokens 0; named checker result belongs in the checkpoint below.
+
+## ADR — selected approach
+
+| Decision | Constraints → alternatives → outranking | Cost, reversibility and revisit |
+|---|---|---|
+| ADR-014 Deterministic spine | Mandatory CPU/no API/no generation ML/offline/manual fallback eliminate hosted or GPU/model-dependent generation. Rank existing primitive/contour owners first, hand-authored mesh second (higher effort); optional perception cannot outrank required constraints | No new service/dependency; modest bridge work. Replace individual templates through versions, never rewrite source evidence. Revisit after measured unsupported-object demand |
+| ADR-015 Evidence-bound approximation | Single image cannot identify hidden geometry or metric scale. Choose manual constraints + labelled procedural hypotheses over unqualified automatic reconstruction. Keep optional perception proposals separate | More operator input, less opaque error. Corrections regenerate from recipe; measured/calibrated path may refine fields with provenance. Revisit after device calibration/error study |
+| ADR-016 Existing recipe/scene/physics owners | Extend current asset and scene manifests; do not add another editable-world store, executable-code sandbox or physics engine. Native translation-only proxies precede richer dynamics | Limits shape/collision realism but minimizes migrations/dependencies. Explicit versioned contract-only adapter where necessary. Revisit angular/concave demand with a separate budgeted ADR |
+| ADR-017 Local first and capability-aware display | Required generation/evaluation/persistence uses CPU/local data; interactive 3D uses available browser renderer; 2D/export remains available. Optional sync uses current adapter; no required cloud path | Must close existing shell-cache gap and prove device memory/cancellation. No paid overflow or mandatory model download. Revisit only with measured failure and user value |
+
+## MVP — bounded implementation and verification — reference implementation
+
+Product maintainer owns all slices, sequentially; refresh exact source revisions and admission before implementation. These are proposed active-work timeboxes, not promised delivery dates. Required service spend and model tokens are zero; actual engineering time/device energy/CI cost remain unmeasured. Total first-increment ceiling: 12 active hours, ≤4 new production modules, ≤50,000 added source bytes, <600 lines/file and <500,000 bytes/chunk. At each cap, stop expansion and record the smallest remaining gap; do not claim parity. Prefer extending/extracting owners over wrappers or replacements.
+
+| Slice / active budget | Delta and dependencies | Exit evidence |
+|---|---|---|
+| M1 Constraints and bindings / 3 h, ≤1 new module, ≤14 kB | N01/N03/N07, two confirmed objects + authored floor, versioned scene binding; no automatic room inference | D02/D03/D09 core fixtures; existing entity IDs survive graph/scene edits and restore |
+| M2 CPU compiler and quality / 4 h, ≤2 new modules, ≤22 kB | N02–N06, local region → primitive/contour recipe, shared CPU quality and worker/cancel; depends on M1 | D01/D03/D04 with network/model/GPU-compute disabled; invalid input, stale result and unsupported shape tests |
+| M3 Interaction and invocation / 3 h, ≤1 new module, ≤10 kB | N07–N09, existing inspector/scene controls, explicit physics preview, bindings and scoped tools; depends on M2 | D05/D06/D08; fixed-step proxy fixtures, supported clip export, UI/tool same result; real host/headless gates remain separate |
+| M4 Offline/device handover / 2 h, no new service/module, ≤4 kB | N10 existing policy change plus installer/restore checks; depends on M1–M3 and full shell closure | D07/D09/D10 on named phone/browser; cold airplane-mode reopen and timed two-object handover |
+
+If the shell change cannot safely fit M4, keep cold-offline release blocked and readmit a separately budgeted owner fix; do not weaken the existing cache consistency policy. Optional local perception and multi-view work are deferred, with no reserved spend/time until core acceptance or measured customer need justifies them.
+
+Validation reuses existing suites: `proceduralAssetWorkflow.test.ts`, `proceduralAssetWorkspace.test.ts`, image-to-GLB quality tests, native spatial physics tests, XR source smoke, semantic-space capture/store tests and WebMCP lifecycle tests. Add only behavioral integration cases missing for D01–D10. Use the repository affected-check selector; a proposed VCC ID is not an executable test name. Build/typecheck/browser evidence binds exact candidate SHA and target device; prior source receipts do not establish this new pipeline.
+
+Deploy boundary: this documentation successor grants no production effect. Source implementation requires an admitted lane and scoped checks; protected integration requires exact green provider evidence; runtime publication requires existing explicit environment authority, device/offline gates and readback. Reuse [production contract](../production-core-runtime-release.md) and [rollback owner](../production-rollback-baseline.md). Retain prior scene/package reader and deployment artifact; rollback restores the last valid compatible version without deleting raw evidence. No runtime activation is part of this revision.
+
+## GTM — nearest useful handover
+
+Rank 1 remains the semantic companion's proposed **$1 operator-assisted inventory/handover**: two evidence-linked editable objects and an export the operator accepts. This increment tests whether editable geometry adds value; it does not create a second offer or revenue claim. Rank 2 is user-dimensioned layout preview after rank 1 demand; automated full-room reconstruction fails current feasibility constraints and stays deferred.
+
+Pilot only through an authorized channel: observe first-use time, accepted/rejected approximation, number of corrections, failed exports and support minutes. Compare against the same operator's photograph-only handover. Ask for a second use within seven days; no accepted useful package after three attempts means revisit scope before perception work. Pain, market size, price acceptance, frequency, ROI and willingness to pay remain unvalidated. No outreach, payment collection or contract action is authorized here.
+
+Marginal required inference/sync spend target is $0; separate existing hosting/domain cost, device energy, engineering and support. The $1 price is a hypothesis, not margin evidence. Optional hosting free quota never permits paid overflow. Retain the existing C01–C16 venture record: market sizing, jurisdiction/privacy/IP obligations before paid delivery, linked financial statements/scenarios and audience projections remain incomplete discovery work with Product maintainers accountable. No investment-ready or production-ready claim follows from a source prototype.
+
+## Coverage, evidence and next checkpoint — reference implementation
+
+C01/C03/C04/C08 map to D-P1–4, D01–10 and M1–M4; C05/C06/C07 map to N01–10, typed contracts, gates and ADR-014–017; C09/C10/C16 map to the shared handover experiment and stop rule. C02/C11/C12/C13/C15 retain the semantic companion's explicit commercial evidence gaps; C14 is the admitted documentation successor and separate release boundaries. This is a bounded alignment record, not a full conformance percentage or independent product assessment.
+
+| Evidence | Current disposition / owner / next check |
+|---|---|
+| Protected source inspection | Native image analysis/contour, procedural recipe/builder/export and translation-only physics verified at the exact source SHA; no runtime benchmark performed in this docs increment |
+| Candidate source inspection | Still/manual semantic loop and tools inspected at candidate SHA; inherited browser/test receipts stay scoped to revision 0.8.2. They do not prove D01–D10 |
+| Documentation checks | Current 0.9.0 joins/local links and <600-line caps pass (parent 599, semantic 364, procedural 309). Named `check-diagram-canvas-render.mjs` passes: new companion 5 diagrams / 26 nodes / 23 edges / 2 clusters; joined set 12 diagrams / 69 nodes / 54 edges / 4 clusters, no findings. Changed-file hygiene, conflict source compliance and worktree policy pass. Guideline/audit hashes verified; static visual and runtime proof are separate |
+| Device and transport | Actual phone/Safari camera, cold offline shell, real browser agent host and headless package parity remain unproven or blocked; recheck when exact source candidate and test surfaces exist |
+| Readiness | Development: specification + existing reusable owners; Production Release: no candidate for this increment; Runtime: end-to-end pipeline unverified |
+
+| Type / severity | Rule ID / rule text | Artifact / evidence | Remediation / accountable owner |
+|---|---|---|---|
+| `pain-point-not-validated` / major | `pain-point-to-feature-mapping#3`: retain unvalidated label without quote/ticket/behavior | D-P1/D-P2 and GTM lack operator observations | Product maintainer records accepted pilot outcome before commercial baseline |
+| `render-proof-absent` / major | `dual-target-portability#6`: verify static legibility and projected counts | PT-J–PT-T static visual proof absent | Product maintainer reviews phone-width/static and canvas preview before render sign-off |
+| `scenario-set-incomplete` / major | `venture-record-pitch-deck-business-plan--financial-model#5`: linked statements/scenarios or incomplete discovery sketch | Shared GTM has no observed unit economics | Financial modeling function supplies evidence before an audience business case |
+
+Next checkpoint is M1's exact source admission and two-object constraint/binding fixture, then M2's zero-model/zero-network CPU proof. Offline release blocker: existing shell-navigation cache policy; owner N10, recheck after a version-bound cold-reopen fixture and owner fix. Device/host acceptance waits on the named surfaces, with no promised external-wait ETA. Preserve these criteria and update this joined record at implementation/turn boundaries.
