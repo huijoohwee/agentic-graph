@@ -15,6 +15,7 @@ import { applyActiveMarkdownDocumentPayload } from '@/features/markdown/activeMa
 import { commitMarkdownWorkspaceWriteback, resolveMarkdownWorkspaceLoadedSnapshot } from './markdownWorkspaceWritebackCommit'
 import { cancelWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
 import { WORKSPACE_SYNC_TASK_MARKDOWN_EDITOR_SSOT } from '@/lib/async/workspaceSyncKeys'
+import { WorkspaceSourceTextConflictError } from '@/features/workspace-fs/types'
 import {
   resolveWorkspaceSourceFileInlineText,
   upsertWorkspaceEntryInlineText,
@@ -241,7 +242,12 @@ export const writeWorkspaceFileAndSync = async (args: {
         if (currentText !== expectedWorkspaceText && currentText !== text) return false
         if (currentText === text) { committedFs = fs; return true }
       }
-      await fs.writeFileText(path, text)
+      try {
+        await fs.writeFileText(path, text, hasExpectedWorkspaceText ? { expectedText: args.expectedWorkspaceText } : undefined)
+      } catch (error) {
+        if (error instanceof WorkspaceSourceTextConflictError) return false
+        throw error
+      }
       committedFs = fs
     },
   })

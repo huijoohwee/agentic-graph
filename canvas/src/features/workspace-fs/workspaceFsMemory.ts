@@ -1,5 +1,5 @@
 import { RETIRED_XR_WORKSPACE_SEED_PATHS, preserveRetiredXrSeed } from './workspaceXrSeedMigration'
-import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from './types'
+import { WorkspaceSourceTextConflictError, type WorkspaceEntry, type WorkspaceFs, type WorkspaceFsWriteOptions, type WorkspacePath } from './types'
 import { WORKSPACE_ROOT_PATH, joinWorkspacePath, normalizeWorkspacePath, workspaceBasename } from './path'
 import {
   CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE,
@@ -330,12 +330,19 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
     return String(entry.text ?? '')
   }
 
-  const writeFileText = async (path: WorkspacePath, text: string) => {
+  const writeFileText = async (path: WorkspacePath, text: string, options?: WorkspaceFsWriteOptions) => {
     ensureRoot()
     const p = normalizeWorkspacePath(path)
     const entry = entriesByPath.get(p)
-    if (!entry || entry.kind !== 'file') return
-    entriesByPath.set(p, { ...entry, text: String(text ?? ''), updatedAtMs: Date.now() })
+    const conditional = options !== undefined && Object.hasOwn(options, 'expectedText')
+    if (!entry || entry.kind !== 'file') {
+      if (conditional) throw new WorkspaceSourceTextConflictError()
+      return
+    }
+    const nextText = String(text ?? ''), previousText = String(entry.text ?? '')
+    if (conditional && previousText !== options.expectedText && previousText !== nextText) throw new WorkspaceSourceTextConflictError()
+    if (previousText === nextText) return
+    entriesByPath.set(p, { ...entry, text: nextText, updatedAtMs: Date.now() })
     notifyWorkspaceFsChanged({ op: 'writeFileText', path: p })
   }
 

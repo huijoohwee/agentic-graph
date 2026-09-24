@@ -292,6 +292,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["workspaceFs.indexedDb.concurrentMigration","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbConcurrentMigrationAndStaleRows"],
   ["workspaceFs.indexedDb.invalidLegacy","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbMigrationPreservesExistingAndInvalidBytes"],
   ["workspaceFs.indexedDb.writeFailure","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbWriteFailureAndMigrationRetry"],
+  ["workspaceFs.indexedDb.conditionalTwoTabSave","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceConditionalSaveKeepsOneWinnerAcrossTabs"],
   ["sourceFiles.ownership.summary.canonicalRoots","@/__tests__/sourceFilesOwnershipProjection.test","testSourceFilesOwnershipSummaryRendersCanonicalRoots"],
   ["sourceFiles.ownership.tree.workspaceSeeds","@/__tests__/sourceFilesOwnershipProjection.test","testSourceFilesTreeMarksAgenticGraphWorkspaceSeedAuthority"],
   ["sourceFiles.collaboration.repositoryAuthorityMismatch","@/__tests__/sourceFilesPocketBaseYjsCollaboration.test","testCollaborationSaveBridgeRejectsRepositoryTargetMismatch"],
