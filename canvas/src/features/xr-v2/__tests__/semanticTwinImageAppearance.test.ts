@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from 'three'
-import { mapTwinImageFace, planTwinImageCrop, TWIN_TEXTURE_PIXELS, applyTwinImageAppearance } from '../semanticTwinImageAppearance'
+import { mapTwinContourFace, mapTwinImageFace, planTwinImageCrop, TWIN_TEXTURE_PIXELS, applyTwinImageAppearance } from '../semanticTwinImageAppearance'
 import { buildTwinScene, disposeTwinScene } from '../semanticTwinScene'
 import { buildSemanticTwinBinding, emptySemanticTwin } from '../semanticTwinRuntime'
 import { newSpaceDocument, type SpaceEntity, type SpaceObservation } from '../semanticSpaceRuntime'
@@ -54,4 +54,26 @@ test('shared scene uses authored dimensions, retains manual materials, and relea
   const texture = new THREE.Texture(); texture.addEventListener('dispose', () => released++)
   built.textures.add(texture); disposeTwinScene(built); disposeTwinScene(built)
   assert.equal(released, 1)
+})
+
+
+test('contour projection uses one full source frame across separate components and preserves side swatches', () => {
+  const shape = new THREE.Shape().moveTo(-1, -1).lineTo(-0.3, -1).lineTo(-0.3, 1).lineTo(-1, 1).closePath()
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.4, bevelEnabled: false })
+  const positions = geometry.getAttribute('position').clone(), triangles = positions.count / 3
+  mapTwinContourFace(geometry, 2, 2, { width: 100, height: 100 }, 100, 108)
+  const uv = geometry.getAttribute('uv'), normal = geometry.getAttribute('normal')
+  let fronts = 0, sides = 0
+  for (let i = 0; i < uv.count; i++) {
+    if (normal.getZ(i) > 0.999) {
+      fronts++
+      assert.ok(uv.getX(i) < 0.36, 'left component samples only the left of the crop, not the whole photograph')
+      assert.ok(Math.abs(uv.getX(i) - Math.max(0, positions.getX(i) / 2 + 0.505)) < 1e-6)
+      assert.ok(uv.getY(i) >= 8 / 108 - 1e-6)
+    } else { sides++; assert.ok(Math.abs(uv.getY(i) - 4 / 108) < 1e-6) }
+  }
+  assert.ok(fronts > 0 && sides > 0)
+  assert.equal(geometry.getAttribute('position').count / 3, triangles)
+  assert.deepEqual(Array.from(geometry.getAttribute('position').array), Array.from(positions.array))
+  geometry.dispose()
 })

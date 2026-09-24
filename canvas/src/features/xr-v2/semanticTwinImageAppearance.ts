@@ -36,6 +36,23 @@ export function mapTwinImageFace(geometry: THREE.BufferGeometry, height: number,
   uv.needsUpdate = true
 }
 
+/** Project the evidence onto front cap vertices; side/back triangles retain authored swatches. */
+export function mapTwinContourFace(geometry: THREE.BufferGeometry, worldWidth: number, worldHeight: number,
+  silhouette: { width: number; height: number }, height: number, atlasHeight: number) {
+  const position = geometry.getAttribute('position'), normal = geometry.getAttribute('normal'), uv = geometry.getAttribute('uv')
+  if (!position || !normal || !uv || ![worldWidth, worldHeight, silhouette.width, silhouette.height].every(n => Number.isFinite(n) && n > 0)) {
+    throw Error('Contour appearance needs its validated projection frame.')
+  }
+  for (let index = 0; index < position.count; index++) {
+    if (normal.getZ(index) > 0.999) {
+      const u = position.getX(index) / worldWidth + 0.5 + 0.5 / silhouette.width
+      const v = position.getY(index) / worldHeight + 0.5 - 0.5 / silhouette.height
+      uv.setXY(index, Math.max(0, Math.min(1, u)), (8 + Math.max(0, Math.min(1, v)) * height) / atlasHeight)
+    } else uv.setXY(index, normal.getZ(index) < -0.5 ? 0.25 : 0.08, 4 / atlasHeight)
+  }
+  uv.needsUpdate = true
+}
+
 async function loadEvidenceImage(observation: SpaceObservation, signal: AbortSignal) {
   signal.throwIfAborted()
   if (!/^data:image\/(png|jpeg|webp);base64,/.test(observation.imageDataUrl)) throw Error('Photo faces require saved local evidence.')
@@ -65,7 +82,7 @@ export async function applyTwinImageAppearance(objects: readonly ImageObject[], 
   const candidates = objects.flatMap(object => {
     const entity = document.entities.find(item => item.id === object.binding.entityId)
     const observation = document.observations.find(item => item.id === object.binding.observationId)
-    if (entity?.proposalMethod !== 'local-foreground-components-v1' || object.binding.template !== 'box') return []
+    if (!['local-foreground-components-v1', 'user-selected-region-v1'].includes(entity?.proposalMethod || '') || !['box', 'contour'].includes(object.binding.template)) return []
     if (!observation || observation.sha256 !== object.binding.evidenceSha256) throw Error('Photo face evidence is missing.')
     return [{ ...object, entity, observation }]
   })
@@ -80,13 +97,15 @@ export async function applyTwinImageAppearance(objects: readonly ImageObject[], 
         signal.throwIfAborted()
         const meshes: THREE.Mesh[] = []
         source.traverse(item => { if ((item as THREE.Mesh).isMesh) meshes.push(item as THREE.Mesh) })
-        if (meshes.length !== 1 || meshes[0].userData.primitive !== 'box') continue
-        const mesh = meshes[0], plan = planTwinImageCrop(entity.region, observation, binding.size, candidates.length)
+        const contour = binding.template === 'contour'
+        if (!meshes.length || (!contour && (meshes.length !== 1 || meshes[0].userData.primitive !== 'box'))) continue
+        const plan = planTwinImageCrop(entity.region, observation, contour
+          ? [entity.region.width * observation.width, entity.region.height * observation.height] : binding.size, candidates.length)
         const canvas = globalThis.document.createElement('canvas')
         canvas.width = plan.width; canvas.height = plan.atlasHeight
         const context = canvas.getContext('2d')
         if (!context) throw Error('Photo face preparation needs the local image canvas.')
-        const previous = mesh.material as THREE.MeshStandardMaterial
+        const previous = meshes[0].material as THREE.MeshStandardMaterial
         context.fillStyle = previous.color.getStyle(); context.fillRect(0, 0, canvas.width, canvas.height)
         const s = plan.source, d = plan.destination
         context.drawImage(image, s.x, s.y, s.width, s.height, d.x, d.y, d.width, d.height)
@@ -98,11 +117,18 @@ export async function applyTwinImageAppearance(objects: readonly ImageObject[], 
         texture.colorSpace = THREE.SRGBColorSpace; texture.generateMipmaps = false
         texture.minFilter = THREE.LinearFilter; texture.magFilter = THREE.LinearFilter
         textures.add(texture)
-        mapTwinImageFace(mesh.geometry, plan.height, plan.atlasHeight)
-        mesh.material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false })
-        mesh.userData.imageAppearance = { kind: 'source-photo-front', evidenceSha256: observation.sha256,
-          region: { ...entity.region }, hiddenSurfaces: 'authored-colour', scale: 'unknown' }
-        previous.dispose()
+        const material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false })
+        const replaced = new Set<THREE.Material>()
+        for (const mesh of meshes) {
+          if (contour) {
+            const frame = source.userData.contourRebuildPlan
+            mapTwinContourFace(mesh.geometry, frame.worldWidth, frame.worldHeight, binding.silhouette!, plan.height, plan.atlasHeight)
+          } else mapTwinImageFace(mesh.geometry, plan.height, plan.atlasHeight)
+          replaced.add(mesh.material as THREE.Material); mesh.material = material
+          mesh.userData.imageAppearance = { kind: 'source-photo-front', evidenceSha256: observation.sha256,
+            region: { ...entity.region }, hiddenSurfaces: 'authored-colour', scale: 'unknown' }
+        }
+        replaced.forEach(item => item.dispose())
       }
     } finally { image.src = '' }
   }

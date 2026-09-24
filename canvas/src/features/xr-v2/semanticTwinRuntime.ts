@@ -1,3 +1,4 @@
+import { SEMANTIC_TWIN_PROCEDURAL_TEMPLATES } from './semanticTwinTemplates.mjs'
 import { validateTwinSilhouette, type TwinSilhouette } from './semanticTwinSilhouette'
 import { parseProceduralAssetRecipe, updateProceduralAssetControl,
   type AssetControlValue, type ProceduralAssetRecipe } from '@/features/image-to-glb/proceduralAssetContract'
@@ -6,7 +7,7 @@ import type { SpaceEntity, SpaceObservation } from './semanticSpaceRuntime'
 
 export const SEMANTIC_TWIN_SCHEMA = 'agentic-graph/semantic-twin/v1' as const
 export const SEMANTIC_TWIN_PREVIEW_EVENT = 'agentic-graph:semantic-twin-preview'
-export const SEMANTIC_TWIN_TEMPLATES = ['contour', 'chair', 'table', 'box', 'sphere', 'cylinder'] as const
+export const SEMANTIC_TWIN_TEMPLATES = ['contour', ...SEMANTIC_TWIN_PROCEDURAL_TEMPLATES] as const
 export const MAX_TWIN_OBJECTS = 20
 export type TwinTemplate = typeof SEMANTIC_TWIN_TEMPLATES[number]
 export type TwinVector = readonly [number, number, number]
@@ -60,7 +61,7 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
     ].includes(key)) || typeof object.entityId !== 'string' || seen.has(object.entityId)
       || typeof object.observationId !== 'string' || !/^[a-f0-9]{64}$/.test(String(object.evidenceSha256))
       || !template(object.template) || !vector(object.size, 0.1, 5)
-      || !vector(object.position, -10, 10) || object.position[1] !== 0
+      || !vector(object.position, -10, 10) || object.position[1] < 0
       || object.provenance !== 'authored-approximation') fail('invalid object binding')
     if (Math.abs(object.position[0]) + object.size[0] / 2 > twin.room.width / 2 + 1e-6
       || Math.abs(object.position[2]) + object.size[2] / 2 > twin.room.depth / 2 + 1e-6) fail('object extends beyond authored room')
@@ -79,12 +80,13 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
 
 export function buildSemanticTwinBinding(args: Readonly<{
   entity: SpaceEntity; observation: SpaceObservation; template: TwinTemplate
-  size: TwinVector; position: TwinVector; room: TwinRoom; seed?: number; silhouette?: TwinSilhouette
+  size: TwinVector; position: TwinVector; room: TwinRoom; seed?: number; silhouette?: TwinSilhouette; color?: string
 }>): TwinBinding {
   if (!template(args.template) || !vector(args.size, 0.1, 5) || !vector(args.position, -10, 10)
-    || args.position[1] !== 0 || !Number.isSafeInteger(args.seed ?? 1)
+    || args.position[1] < 0 || !Number.isSafeInteger(args.seed ?? 1)
     || (args.seed ?? 1) < 0 || (args.seed ?? 1) > 0xffff_ffff) fail('invalid construction request')
-  const recipe = createProceduralAssetFromText(args.template === 'contour' ? 'box' : args.template, args.seed ?? 1)
+  if (args.color !== undefined && !/^#[0-9a-f]{6}$/i.test(args.color)) fail('invalid construction colour')
+  const recipe = createProceduralAssetFromText(`${args.template === 'contour' ? 'box' : args.template} ${args.color || ''}`.trim(), args.seed ?? 1)
   if (args.template === 'contour') {
     recipe.controls = recipe.controls.filter(control => ['color', 'visible'].includes(control.id))
     recipe.values = Object.fromEntries(recipe.controls.map(control => [control.id, recipe.values[control.id]]))

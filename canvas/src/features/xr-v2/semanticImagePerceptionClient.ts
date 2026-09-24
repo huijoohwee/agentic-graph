@@ -1,18 +1,19 @@
 import { readImageReferencePixels } from '@/features/image-to-threejs/imageReferencePixels'
-import { hashSpaceImage, type SpaceObservation } from './semanticSpaceRuntime'
-import { IMAGE_PERCEPTION_LIMITS, type ImagePerceptionResult } from './semanticImagePerception'
+import { hashSpaceImage, type SpaceRegion, type SpaceObservation } from './semanticSpaceRuntime'
+import { IMAGE_PERCEPTION_LIMITS, describeChosenImageRegion, mapFocusedProposals, type ImagePerceptionResult } from './semanticImagePerception'
 
 export type SemanticImageDraft = Readonly<{ observation: SpaceObservation; result: ImagePerceptionResult }>
 
+type FocusOptions = { region?: SpaceRegion; useWholeRegion?: boolean }
 let active = false
-export async function perceiveImportedImage(sourceUrl: string, signal: AbortSignal): Promise<SemanticImageDraft> {
+export async function perceiveImportedImage(sourceUrl: string, signal: AbortSignal, options: FocusOptions = {}): Promise<SemanticImageDraft> {
   if (active) throw Error('An image analysis is already running. Cancel it or wait for completion.')
   active = true
-  try { return await runPerception(sourceUrl, signal) } finally { active = false }
+  try { return await runPerception(sourceUrl, signal, options) } finally { active = false }
 }
 
 /** Reads an already chosen import; never starts capture, uploads pixels or loads a model. */
-async function runPerception(sourceUrl: string, signal: AbortSignal): Promise<SemanticImageDraft> {
+async function runPerception(sourceUrl: string, signal: AbortSignal, options: FocusOptions = {}): Promise<SemanticImageDraft> {
   signal.throwIfAborted()
   const image = new Image()
   image.decoding = 'async'
@@ -32,7 +33,7 @@ async function runPerception(sourceUrl: string, signal: AbortSignal): Promise<Se
   })
   signal.throwIfAborted()
   if (image.naturalWidth * image.naturalHeight > 16_777_216) throw Error('Resize this image below 16 megapixels for local analysis.')
-  const pixels = readImageReferencePixels({ image, maxDimension: IMAGE_PERCEPTION_LIMITS.dimension })
+  const pixels = readImageReferencePixels({ image, maxDimension: IMAGE_PERCEPTION_LIMITS.dimension, region: options.region })
   const canvas = document.createElement('canvas')
   const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight))
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
@@ -45,7 +46,7 @@ async function runPerception(sourceUrl: string, signal: AbortSignal): Promise<Se
     width: canvas.width, height: canvas.height, imageDataUrl, sha256: await hashSpaceImage(imageDataUrl),
     orientation: 'source-pixels', scale: 'unknown' }
   signal.throwIfAborted()
-  const result = await new Promise<ImagePerceptionResult>((resolve, reject) => {
+  const result = options.useWholeRegion ? describeChosenImageRegion(pixels) : await new Promise<ImagePerceptionResult>((resolve, reject) => {
     const worker = new Worker(new URL('./semanticImagePerception.worker.ts', import.meta.url), { type: 'module' })
     const finish = (error?: Error, result?: ImagePerceptionResult) => {
       clearTimeout(timer); signal.removeEventListener('abort', abort); worker.terminate()
@@ -60,5 +61,6 @@ async function runPerception(sourceUrl: string, signal: AbortSignal): Promise<Se
     worker.postMessage(pixels, [pixels.data.buffer])
   })
   signal.throwIfAborted()
-  return { observation, result }
+  image.src = ''
+  return { observation, result: options.region ? mapFocusedProposals(result, options.region) : result }
 }

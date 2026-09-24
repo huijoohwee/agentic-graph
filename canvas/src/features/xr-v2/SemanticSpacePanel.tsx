@@ -389,9 +389,9 @@ export function SemanticSpacePanel() {
             <input className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
               onChange={event => { const value = Number(event.currentTarget.value)
                 setTwinSize(current => current.map((item, index) => index === axis ? value : item) as [number, number, number]) }} /></label>)}</div>
-          <div className="grid grid-cols-2 gap-2">{(['X position', 'Depth position'] as const).map((name, index) => {
-            const axis = index === 0 ? 0 : 2
-            return <label key={name}>{name}<input className={fieldClass} type="number" min="-10" max="10" step="0.1"
+          <div className="grid grid-cols-2 gap-2">{(['X position', 'Elevation', 'Depth position'] as const).map((name, index) => {
+            const axis = index
+            return <label key={name}>{name}<input className={fieldClass} type="number" min={axis === 1 ? "0" : "-10"} max="10" step="0.1"
               value={twinPosition[axis]} onChange={event => { const value = Number(event.currentTarget.value)
                 setTwinPosition(current => current.map((item, currentAxis) => currentAxis === axis ? value : item) as [number, number, number]) }} /></label>
           })}</div>

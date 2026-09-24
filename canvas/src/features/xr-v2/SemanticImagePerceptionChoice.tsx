@@ -4,7 +4,8 @@ import { perceiveImportedImage } from './semanticImagePerceptionClient'
 import { readSemanticSpace, readSemanticSpaceSourceMirrorStatus, runSemanticSpaceAction } from './semanticSpaceStore'
 import { addSemanticEntityToCanvas } from './semanticSpaceCanvas'
 import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
-import type { SpaceDocument } from './semanticSpaceRuntime'
+import SemanticImageRegionFocus from './SemanticImageRegionFocus'
+import type { SpaceRegion, SpaceDocument } from './semanticSpaceRuntime'
 
 const SpaceEditor = React.lazy(() => import('./SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
 const button = 'App-toolbar__btn min-h-11 w-full whitespace-normal'
@@ -13,6 +14,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   const [selected, setSelected] = React.useState<readonly number[]>([])
   const [labels, setLabels] = React.useState<readonly string[]>([])
   const [shapes, setShapes] = React.useState<readonly TwinTemplate[]>([])
+  const [focus, setFocus] = React.useState<SpaceRegion>({ x: 0, y: 0, width: 1, height: 1 })
   const [editing, setEditing] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const [status, setStatus] = React.useState('')
@@ -21,19 +23,19 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   const base = React.useRef<{ id: string | null; revision: number }>({ id: null, revision: 0 })
   const saved = React.useRef<SpaceDocument | null>(null)
   React.useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.abort() } }, [])
-  const analyze = async () => {
+  const analyze = async (region?: SpaceRegion, useWholeRegion = false) => {
     if (controller.current) return
     const job = new AbortController(); controller.current = job
     setBusy(true); setStatus('Finding visible regions locally…'); setDraft(null); setEditing(false); saved.current = null
     try {
       const doc = await readSemanticSpace()
       base.current = { id: doc?.id || null, revision: doc?.revision || 0 }
-      const next = await perceiveImportedImage(sourceUrl, job.signal)
+      const next = await perceiveImportedImage(sourceUrl, job.signal, { region, useWholeRegion })
       if (!mounted.current) return
       setDraft(next); setSelected(next.result.proposals.map((_, index) => index))
       setLabels(next.result.proposals.map(item => item.label))
-      setShapes(next.result.proposals.map(item => item.silhouette ? 'contour' : 'box'))
-      setStatus('Review the regions below. These are pixel groups, not recognized objects.')
+      setShapes(next.result.proposals.map(item => item.template || (item.silhouette ? 'contour' : 'box')))
+      setStatus(useWholeRegion ? 'Chosen area ready. Choose its 3D shape and label below.' : 'Review the regions below. These are pixel groups, not recognized objects.')
     } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
     finally { if (controller.current === job) controller.current = null; if (mounted.current) setBusy(false) }
   }
@@ -76,6 +78,13 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   }
   return <section className="grid gap-2" aria-label="Local image to 3D">
     <button type="button" className={button} disabled={busy} onClick={() => void analyze()}>Analyze image locally</button>
+    <details><summary className="min-h-11 cursor-pointer py-2">Refine image regions</summary>
+      <SemanticImageRegionFocus imageUrl={sourceUrl} value={focus} disabled={busy} onChange={next => {
+        setFocus(next); setDraft(null); saved.current = null; setStatus('Focus changed. Analyze it or use it as one region.')
+      }} />
+      <button type="button" className={button} disabled={busy} onClick={() => void analyze(focus)}>Analyze focus</button>
+      <button type="button" className={button} disabled={busy} onClick={() => void analyze(focus, true)}>Use focus as one region</button>
+    </details>
     {busy && controller.current && <button type="button" className={button}
       onClick={() => controller.current?.abort()}>Cancel analysis</button>}
     {draft && <>
@@ -90,18 +99,18 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
       <div className="grid max-h-48 gap-1 overflow-auto">{draft.result.proposals.map((_, index) =>
         <div key={index} className="grid gap-1 rounded border p-2"><label className="flex min-h-11 items-center gap-2">
           <input type="checkbox" aria-label={`Include region ${index + 1}`} checked={selected.includes(index)} disabled={busy || !!saved.current}
-            onChange={event => setSelected(current => event.target.checked ? [...current, index].sort((a, b) => a - b) : current.filter(i => i !== index))} />
+            onChange={event => { const checked = event.currentTarget.checked; setSelected(current => checked ? [...current, index].sort((a, b) => a - b) : current.filter(i => i !== index)) }} />
           <input className="min-h-11 min-w-0 flex-1 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} label`}
             value={labels[index]} maxLength={80} disabled={busy || !!saved.current}
-            onChange={event => setLabels(current => current.map((label, i) => i === index ? event.target.value : label))} />
+            onChange={event => { const value = event.currentTarget.value; setLabels(current => current.map((label, i) => i === index ? value : label)) }} />
         </label><label className="grid gap-1">3D shape
           <select className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} shape`}
             value={shapes[index]} disabled={busy || !!saved.current}
-            onChange={event => setShapes(current => current.map((shape, i) => i === index ? event.target.value as TwinTemplate : shape))}>
+            onChange={event => { const value = event.currentTarget.value as TwinTemplate; setShapes(current => current.map((shape, i) => i === index ? value : shape)) }}>
             {SEMANTIC_TWIN_TEMPLATES.filter(shape => shape !== 'contour' || draft.result.proposals[index].silhouette)
               .map(shape => <option key={shape} value={shape}>{shape === 'contour' ? 'Visible outline → 3D volume' : shape === 'box' ? 'Box with photo front' : shape}</option>)}
           </select></label></div>)}</div>
-      <p className="m-0">Visible outlines become solid Three.js contour meshes. Choose chair, table or a primitive for a full procedural model.
+      <p className="m-0">Visible outlines become solid Three.js contour meshes. Choose an object or outdoor shape for a procedural model, including buildings, trees, water, sky and terrain.
         These are reviewed approximations: object identity, hidden surfaces and real depth are not recovered. Contour depth starts at 0.4 arbitrary units; other models use template proportions; edit dimensions and placement in Semantic space.</p>
       <button type="button" className={button} disabled={busy || !selected.length || selected.some(i => !labels[i]?.trim())}
         onClick={() => void build()}>{saved.current ? 'Show built regions on Canvas' : 'Build selected regions in 3D'}</button>

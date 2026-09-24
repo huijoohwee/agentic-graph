@@ -1,3 +1,4 @@
+import { SEMANTIC_TWIN_PROCEDURAL_TEMPLATES } from '../xr-v2/semanticTwinTemplates.mjs'
 export const SEMANTIC_SPACE_TOOL_IDS = Object.freeze({
   inspectLocalSemanticSpace: 'inspect_local_semantic_space',
   controlLocalSemanticSpace: 'control_local_semantic_space',
@@ -15,13 +16,13 @@ const action = (operation, properties, required) => ({ type: 'object', additiona
   required: ['operation', ...required], properties: { operation: { const: operation }, ...properties } })
 export const SEMANTIC_SPACE_CONTROL_SCHEMA = Object.freeze({ oneOf: [
   action('renderer', { backend: { type: 'string', enum: ['webgl', 'webgpu'] } }, ['backend']),
-  action('analyze', { observationId: id }, ['observationId']),
+  action('analyze', { observationId: id, region, useWholeRegion: { type: 'boolean' } }, ['observationId']),
   action('query', { text: { type: 'string', maxLength: 80 } }, []),
   action('select', { ...base, entityId: { anyOf: [id, { type: 'null' }] } }, ['requestId', 'expectedRevision', 'entityId']),
   action('correct', { ...base, entityId: id, label: text, category: text }, ['requestId', 'expectedRevision', 'entityId', 'label', 'category']),
   action('confirm', { ...base, observationId: id, label: text, category: text, region },
     ['requestId', 'expectedRevision', 'observationId', 'label', 'category', 'region']),
-  action('build', { ...twinEntity, template: { type: 'string', enum: ['chair', 'table', 'box', 'sphere', 'cylinder'] },
+  action('build', { ...twinEntity, template: { type: 'string', enum: SEMANTIC_TWIN_PROCEDURAL_TEMPLATES },
     size, position }, ['requestId', 'expectedRevision', 'entityId', 'template', 'size', 'position']),
   action('edit-twin', { ...twinEntity, size, position },
     ['requestId', 'expectedRevision', 'entityId', 'size', 'position']),

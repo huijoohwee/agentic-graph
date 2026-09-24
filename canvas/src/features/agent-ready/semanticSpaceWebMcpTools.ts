@@ -1,3 +1,4 @@
+import { SEMANTIC_TWIN_PROCEDURAL_TEMPLATES } from '@/features/xr-v2/semanticTwinTemplates.mjs'
 import { readThreeRendererBackend, requestThreeRendererBackend } from '@/lib/three/threeRendererBackend'
 import { querySpaceEntities, SpaceError, type SpaceDocument, type SpaceEntity, type SpaceRegion } from '@/features/xr-v2/semanticSpaceRuntime'
 import { readSemanticSpace, runSemanticSpaceAction } from '@/features/xr-v2/semanticSpaceStore'
@@ -39,9 +40,9 @@ export function parseSemanticSpaceInvocation(value: string): Parsed {
   if (select) return { operation: 'select', entityId: select[1] }
   const label = new RegExp(`^/space\\.label @(${TOKEN}) #(${TOKEN}) label="([^"\\r\\n]{1,80})"$`).exec(value)
   if (label) return { operation: 'correct', entityId: label[1], category: label[2], label: label[3] }
-  const build = new RegExp(`^/space\\.build @(${TOKEN}) #procedural-asset template=(chair|table|box|sphere|cylinder) width=(${NUMBER}) height=(${NUMBER}) depth=(${NUMBER}) x=(${NUMBER}) z=(${NUMBER})$`).exec(value)
+  const build = new RegExp(`^/space\\.build @(${TOKEN}) #procedural-asset template=(${SEMANTIC_TWIN_PROCEDURAL_TEMPLATES.join('|')}) width=(${NUMBER}) height=(${NUMBER}) depth=(${NUMBER}) x=(${NUMBER}) z=(${NUMBER})(?: elevation=(${NUMBER}))?$`).exec(value)
   if (build) return { operation: 'build', entityId: build[1], template: build[2] as TwinTemplate,
-    size: [Number(build[3]), Number(build[4]), Number(build[5])], position: [Number(build[6]), 0, Number(build[7])] }
+    size: [Number(build[3]), Number(build[4]), Number(build[5])], position: [Number(build[6]), Number(build[8] || 0), Number(build[7])] }
   const simulate = new RegExp(`^/space\\.(simulate|reset) @(${TOKEN})$`).exec(value)
   if (simulate) return { operation: simulate[1] as 'simulate' | 'reset', entityId: simulate[2] }
   throw new SpaceError('unsupported-invocation', 'Use /space.find #category, /space.select @entity, /space.label, /space.build @entity #procedural-asset, /space.simulate or /space.reset')
@@ -69,7 +70,8 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
             const observation = doc.observations.find(item => item.id === raw.observationId)
             if (!observation) throw new SpaceError('unknown-observation', 'Choose saved image evidence first')
             const { perceiveImportedImage } = await import('@/features/xr-v2/semanticImagePerceptionClient')
-            const draft = await perceiveImportedImage(observation.imageDataUrl, new AbortController().signal)
+            const draft = await perceiveImportedImage(observation.imageDataUrl, new AbortController().signal,
+              { region: raw.region as SpaceRegion | undefined, useWholeRegion: raw.useWholeRegion === true })
             const current = await readSemanticSpace()
             if (current?.id !== doc.id || current.revision !== doc.revision) throw new SpaceError('stale-revision', 'Space changed during analysis')
             return { ok: true, spaceId: doc.id, revision: doc.revision, observationId: observation.id,

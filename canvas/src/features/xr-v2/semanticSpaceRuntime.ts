@@ -29,7 +29,7 @@ export type SpaceEntity = Readonly<{
   region: SpaceRegion
   confirmedAtMs: number
   provenance: 'user-confirmed'
-  proposalMethod?: 'local-foreground-components-v1'
+  proposalMethod?: 'local-foreground-components-v1' | 'user-selected-region-v1'
 }>
 export type SpaceDocument = Readonly<{
   schema: typeof SEMANTIC_SPACE_SCHEMA
@@ -107,7 +107,7 @@ export function validateSpaceDocument(input: unknown): SpaceDocument {
     if (!entity || !ID.test(entity.id) || entities.has(entity.id)
       || !observations.has(entity.observationId) || !validRegion(entity.region)
       || !validTime(entity.confirmedAtMs) || entity.provenance !== 'user-confirmed'
-      || (entity.proposalMethod !== undefined && entity.proposalMethod !== 'local-foreground-components-v1')) {
+      || (entity.proposalMethod !== undefined && !['local-foreground-components-v1', 'user-selected-region-v1'].includes(entity.proposalMethod))) {
       throw new SpaceError('invalid-package', 'Space entity or evidence link is invalid')
     }
     requireText(entity.label, 'label'); requireText(entity.category, 'category')

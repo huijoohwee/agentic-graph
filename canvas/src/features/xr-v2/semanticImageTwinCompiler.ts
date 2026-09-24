@@ -1,6 +1,6 @@
 import type { ImageRegionProposal } from './semanticImagePerception'
 import type { SpaceDocument, SpaceEntity, SpaceObservation } from './semanticSpaceRuntime'
-import { buildSemanticTwinBinding, editSemanticTwinControl, emptySemanticTwin } from './semanticTwinRuntime'
+import { buildSemanticTwinBinding, emptySemanticTwin } from './semanticTwinRuntime'
 
 export type ConfirmImageRegions = Readonly<{
   operation: 'confirm-image-regions'; requestId: string; expectedRevision: number
@@ -18,7 +18,7 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
     id: `entity:${action.requestId}:${index}`, observationId: action.observation.id,
     label: proposal.label, category: proposal.template && !['contour', 'box'].includes(proposal.template) ? proposal.template : 'visual-region', region: proposal.region,
     confirmedAtMs: action.observation.capturedAtMs, provenance: 'user-confirmed',
-    proposalMethod: 'local-foreground-components-v1',
+    proposalMethod: proposal.source === 'user-region' ? 'user-selected-region-v1' : 'local-foreground-components-v1',
   }))
   const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n))
   const objects = entities.map((entity, index) => {
@@ -27,17 +27,19 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
       || proposal.coverage <= 0 || proposal.coverage > 1) throw Error('Invalid region appearance evidence.')
     const aspect = (region.width * action.observation.width) / (region.height * action.observation.height)
     const width = clamp(region.width * twin.room.width, 0.1, Math.min(5, twin.room.width, 5 * aspect))
-    const height = clamp(width / aspect, 0.1, 5)
+    let height = clamp(width / aspect, 0.1, 5)
     const shape = proposal.template || (proposal.silhouette ? 'contour' : 'box')
-    const depth = ['contour', 'box'].includes(shape) ? 0.4
+    let depth = ['contour', 'box'].includes(shape) ? 0.4
       : clamp(width * (shape === 'chair' || shape === 'table' ? 0.72 : 1), 0.1, Math.min(5, twin.room.depth)) // Authored template proportions, not inferred depth.
+    if (shape === 'sea' || shape === 'river') { depth = height; height = 0.12 }
+    if (shape === 'sky') depth = 0.15
     const x = clamp((region.x + region.width / 2 - 0.5) * twin.room.width,
       -(twin.room.width - width) / 2, (twin.room.width - width) / 2)
     const z = clamp((region.y + region.height / 2 - 0.5) * twin.room.depth,
       -(twin.room.depth - depth) / 2, (twin.room.depth - depth) / 2)
     const binding = buildSemanticTwinBinding({ entity, observation: action.observation, room: twin.room,
-      template: shape, silhouette: proposal.silhouette, size: [width, height, depth], position: [x, 0, z] })
-    return editSemanticTwinControl(binding, 'color', proposal.color)
+      template: shape, color: proposal.color, silhouette: proposal.silhouette, size: [width, height, depth], position: [x, ['sky', 'cloud', 'moon', 'sun'].includes(shape) ? 2 : 0, z] })
+    return binding
   })
   return { ...doc, observations: [...doc.observations, action.observation],
     entities: [...doc.entities, ...entities], twin: { ...twin, objects: [...twin.objects, ...objects] },

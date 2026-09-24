@@ -63,7 +63,13 @@ export async function exportTwinModel(document: SpaceDocument, entityId: string,
 /** Uses the existing image-to-GLB contour generator; no second mesh-generation algorithm. */
 function buildContourObject(binding: TwinBinding) {
   const pixels = silhouettePixels(binding.silhouette!, String(binding.recipe.values.color))
-  const plan = deriveContourRebuildPlan(analyzeImageToGlbReference(pixels))
+  let plan
+  try {
+    plan = deriveContourRebuildPlan(analyzeImageToGlbReference(pixels, { detail: 'fine' }), { detail: 'fine' })
+  } catch { /* A detailed source may exceed the existing source/triangle budget; retain the bounded path. */ }
+  if (!plan?.quality.withinBudgets || plan.quality.retainedAreaRatio < 0.9) {
+    plan = deriveContourRebuildPlan(analyzeImageToGlbReference(pixels))
+  }
   if (!plan.quality.withinBudgets || plan.quality.retainedAreaRatio < 0.9) throw Error('Visible shape is too complex. Choose a simpler crop or a procedural shape.')
   // A region owns one material; all visible component volumes share its authored colour.
   plan.materials = plan.materials.slice(0, 1)

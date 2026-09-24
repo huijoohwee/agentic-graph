@@ -143,6 +143,7 @@ function averageSpanColor(args: {
 }
 
 function foregroundRuns(args: {
+  fine?: boolean
   bandBottom: number
   bandTop: number
   mask: PixelMask
@@ -161,7 +162,7 @@ function foregroundRuns(args: {
     if (active[index] && runStart < 0) runStart = index
     if ((!active[index] || index === active.length) && runStart >= 0) {
       const right = index - 1
-      if (right - runStart + 1 >= Math.max(2, Math.round(active.length * 0.018))) {
+      if (right - runStart + 1 >= (args.fine ? 1 : Math.max(2, Math.round(active.length * 0.018)))) {
         runs.push({ left: args.mask.left + runStart, right: args.mask.left + right })
       }
       runStart = -1
@@ -170,15 +171,15 @@ function foregroundRuns(args: {
   return runs
 }
 
-function buildSilhouetteSpans(pixels: ImageReferencePixels, mask: PixelMask): ImageToGlbSilhouetteSpan[] {
+function buildSilhouetteSpans(pixels: ImageReferencePixels, mask: PixelMask, fine = false): ImageToGlbSilhouetteSpan[] {
   const boundsWidth = mask.right - mask.left + 1
   const boundsHeight = mask.bottom - mask.top + 1
-  const bandCount = clamp(Math.round(boundsHeight / 4), 18, 30)
+  const bandCount = fine ? Math.min(boundsHeight, 96) : clamp(Math.round(boundsHeight / 4), 18, 30)
   const spans: ImageToGlbSilhouetteSpan[] = []
   for (let band = 0; band < bandCount; band += 1) {
     const bandTop = mask.top + Math.floor((band / bandCount) * boundsHeight)
     const bandBottom = Math.min(mask.bottom, mask.top + Math.floor(((band + 1) / bandCount) * boundsHeight) - 1)
-    for (const run of foregroundRuns({ bandBottom, bandTop, mask, pixels })) {
+    for (const run of foregroundRuns({ bandBottom, bandTop, mask, pixels, fine })) {
       spans.push({
         color: averageSpanColor({ pixels, mask, left: run.left, right: run.right, top: bandTop, bottom: bandBottom }),
         height: rounded((bandBottom - bandTop + 1) / boundsHeight),
@@ -256,10 +257,10 @@ function foregroundPalette(pixels: ImageReferencePixels, mask: PixelMask): RgbCo
     }))
 }
 
-export function analyzeImageToGlbReference(pixels: ImageReferencePixels): ImageToGlbReferenceAnalysis {
+export function analyzeImageToGlbReference(pixels: ImageReferencePixels, options: { detail?: 'standard' | 'fine' } = {}): ImageToGlbReferenceAnalysis {
   if (pixels.data.length !== pixels.width * pixels.height * 4) throw new Error('Reference pixel dimensions do not match their RGBA data.')
   const { mask, method } = buildForegroundMask(pixels)
-  const spans = buildSilhouetteSpans(pixels, mask)
+  const spans = buildSilhouetteSpans(pixels, mask, options.detail === 'fine')
   if (spans.length < 3) throw new Error('Reference-image analysis found too little procedural structure.')
   const symmetry = symmetryScore(pixels, mask)
   const topWidthRatio = clamp(spanWidthNear(spans, 0.38), 0, 1)

@@ -62,7 +62,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
       if (request.operation !== 'drop') return
       const bodies = built.objects.map(item => ({ id: item.binding.entityId,
         motion: item === selected ? 'dynamic' as const : 'static' as const,
-        position: [item.binding.position[0], item.binding.size[1] / 2 + (item === selected ? 1 : 0),
+        position: [item.binding.position[0], item.binding.position[1] + item.binding.size[1] / 2 + (item === selected ? 1 : 0),
           item.binding.position[2]] as const }))
       const colliders = built.objects.map(item => ({ id: `collider:${item.binding.entityId}`,
         bodyId: item.binding.entityId, shape: { kind: 'cuboid' as const,

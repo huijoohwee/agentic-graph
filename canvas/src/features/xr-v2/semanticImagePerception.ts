@@ -8,11 +8,11 @@ export const IMAGE_PERCEPTION_METHOD = 'local-foreground-components-v1' as const
 export const IMAGE_PERCEPTION_LIMITS = Object.freeze({ dimension: 192, regions: 12, timeoutMs: 5000 })
 export type ImageRegionProposal = Readonly<{
   region: SpaceRegion; color: string; coverage: number; label: string
-  silhouette?: TwinSilhouette; template?: TwinTemplate
+  silhouette?: TwinSilhouette; template?: TwinTemplate; source?: 'user-region'
 }>
 export type ImagePerceptionResult = Readonly<{
   method: typeof IMAGE_PERCEPTION_METHOD
-  background: 'alpha' | 'edge-palette'
+  background: 'alpha' | 'edge-palette' | 'user-region'
   width: number; height: number; proposals: readonly ImageRegionProposal[]
 }>
 
@@ -63,4 +63,29 @@ export function analyzeSemanticImage(pixels: ImageReferencePixels): ImagePercept
     .slice(0, IMAGE_PERCEPTION_LIMITS.regions).map((item, index) => ({ ...item, label: `Visible region ${index + 1}` }))
   if (!selected.length) throw Error('No distinct regions found. Use a clearer image or confirm regions manually in Semantic space.')
   return { method: IMAGE_PERCEPTION_METHOD, background: method, width, height, proposals: selected }
+}
+
+/** Translate focused proposals back to the saved full-image evidence coordinate frame. */
+export function mapFocusedProposals(result: ImagePerceptionResult, focus: SpaceRegion): ImagePerceptionResult {
+  if (![focus.x, focus.y, focus.width, focus.height].every(Number.isFinite) || focus.x < 0 || focus.y < 0
+    || focus.width <= 0 || focus.height <= 0 || focus.x + focus.width > 1 + 1e-9 || focus.y + focus.height > 1 + 1e-9) {
+    throw Error('Focus must stay inside the image.')
+  }
+  return { ...result, proposals: result.proposals.map(item => ({ ...item,
+    coverage: item.coverage * focus.width * focus.height,
+    region: { x: focus.x + item.region.x * focus.width, y: focus.y + item.region.y * focus.height,
+      width: item.region.width * focus.width, height: item.region.height * focus.height } })) }
+}
+
+/** Explicit authored crop for continuous surfaces; no foreground/identity claim. */
+export function describeChosenImageRegion(pixels: ImageReferencePixels): ImagePerceptionResult {
+  const { width, height, data } = pixels
+  if (width < 3 || height < 3 || width > 192 || height > 192 || data.length !== width * height * 4) {
+    throw Error('Choose an image region at least three pixels wide and high.')
+  }
+  const sums = [0, 0, 0]
+  for (let i = 0; i < data.length; i += 4) sums.forEach((_, channel) => { sums[channel] += data[i + channel] })
+  return { method: IMAGE_PERCEPTION_METHOD, background: 'user-region', width, height,
+    proposals: [{ region: { x: 0, y: 0, width: 1, height: 1 }, coverage: 1, label: 'Chosen region', template: 'box', source: 'user-region',
+      color: '#' + sums.map(sum => Math.round(sum / (width * height)).toString(16).padStart(2, '0')).join('') }] }
 }
