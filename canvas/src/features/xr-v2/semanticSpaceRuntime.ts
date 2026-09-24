@@ -121,11 +121,23 @@ export async function hashSpaceImage(imageDataUrl: string): Promise<string> {
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-export async function verifySpaceEvidence(doc: SpaceDocument): Promise<SpaceDocument> {
+export async function verifySpaceEvidence(doc: SpaceDocument, decodePixels = false): Promise<SpaceDocument> {
   validateSpaceDocument(doc)
   for (const observation of doc.observations) {
     if (await hashSpaceImage(observation.imageDataUrl) !== observation.sha256) {
       throw new SpaceError('corrupt-evidence', `Image evidence is corrupt: ${observation.id}`)
+    }
+    if (decodePixels && typeof Image !== 'undefined') {
+      const image = new Image()
+      const loaded = new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve()
+        image.onerror = () => reject(new SpaceError('corrupt-evidence', `Image cannot be decoded: ${observation.id}`))
+      })
+      image.src = observation.imageDataUrl
+      await loaded
+      if (image.naturalWidth !== observation.width || image.naturalHeight !== observation.height) {
+        throw new SpaceError('corrupt-evidence', `Image dimensions do not match: ${observation.id}`)
+      }
     }
   }
   return doc

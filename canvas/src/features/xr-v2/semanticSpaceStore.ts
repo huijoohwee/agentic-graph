@@ -102,7 +102,7 @@ export const readSemanticSpace = () => store().read()
 export async function runSemanticSpaceAction(action: SpaceAction): Promise<SpaceDocument> {
   const current = await store().read()
   const base = current || newSpaceDocument(`space:${crypto.randomUUID()}`)
-  if (action.operation === 'capture') await verifySpaceEvidence({ ...base, observations: [...base.observations, action.observation] })
+  if (action.operation === 'capture') await verifySpaceEvidence({ ...base, observations: [...base.observations, action.observation] }, true)
   const next = applySpaceAction(base, action)
   if (next === base) return base
   const saved = await store().save(next, current?.revision ?? null)
@@ -113,7 +113,7 @@ export async function importSemanticSpace(text: string): Promise<SpaceDocument> 
   if (text.length > 32 * 1024 * 1024) throw new SpaceError('package-too-large', 'Space package exceeds 32 MiB')
   let parsed: unknown
   try { parsed = JSON.parse(text) } catch { throw new SpaceError('invalid-package', 'Space package is not valid JSON') }
-  const saved = await store().replace(await verifySpaceEvidence(validateSpaceDocument(parsed)))
+  const saved = await store().replace(await verifySpaceEvidence(validateSpaceDocument(parsed), true))
   changed()
   return saved
 }

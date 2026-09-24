@@ -11,6 +11,10 @@ const observationId = () => `observation:${crypto.randomUUID()}`
 const buttonClass = 'App-toolbar__btn min-h-11 min-w-11 text-sm'
 const fieldClass = 'min-h-11 w-full rounded border border-current/30 bg-transparent px-3 text-sm'
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
+const linkedCanvasNode = (space: SpaceDocument, entityId: string) =>
+  useGraphStore.getState().graphData?.nodes.find(node =>
+    node.type === 'semantic-space-entity'
+    && node.properties?.spaceId === space.id && node.properties?.entityId === entityId)
 
 export function SemanticSpacePanel() {
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
@@ -166,8 +170,9 @@ export function SemanticSpacePanel() {
     if (!document || !selected) return
     const state = useGraphStore.getState()
     const id = selected.id
-    const existing = state.graphData?.nodes.find(node => node.id === id)
-    if (existing && existing.properties?.spaceId !== document.id) {
+    const existing = linkedCanvasNode(document, id)
+    if (!existing && state.graphData?.nodes.some(node =>
+      (node.id === id || node.id.endsWith(`::${id}`)) && node.properties?.spaceId !== document.id)) {
       setStatus('The active canvas already uses this entity ID. Open another canvas document.')
       return
     }
@@ -177,13 +182,14 @@ export function SemanticSpacePanel() {
           observationId: selected.observationId, category: selected.category, region: selected.region,
           evidenceSha256: document.observations.find(item => item.id === selected.observationId)?.sha256 || '' } })
     } else if (existing.label !== selected.label || existing.properties?.category !== selected.category) {
-      state.updateNode(id, { label: selected.label, properties: { ...existing.properties, category: selected.category } })
+      state.updateNode(existing.id, { label: selected.label, properties: { ...existing.properties, category: selected.category } })
     }
-    if (!useGraphStore.getState().graphData?.nodes.some(node => node.id === id)) {
+    const linked = linkedCanvasNode(document, id)
+    if (!linked) {
       setStatus('The active canvas did not accept this entity. Check its edit permissions.')
       return
     }
-    useGraphStore.getState().selectNode(id)
+    useGraphStore.getState().selectNode(linked.id)
     setStatus('Entity linked to the active canvas. Its evidence remains in this local space.')
   }
 
@@ -230,7 +236,8 @@ export function SemanticSpacePanel() {
       <div className="grid max-h-48 gap-1 overflow-auto" aria-label="Matching confirmed entities">
         {results.map(item => <button type="button" key={item.id} className={`${buttonClass} text-left ${selected?.id === item.id ? 'ring-2 ring-cyan-400' : ''}`}
           onClick={() => { setObservationIndex(document.observations.findIndex(view => view.id === item.observationId));
-            if (useGraphStore.getState().graphData?.nodes.some(node => node.id === item.id)) useGraphStore.getState().selectNode(item.id)
+            const linked = linkedCanvasNode(document, item.id)
+            if (linked) useGraphStore.getState().selectNode(linked.id)
             void mutate({ operation: 'select', requestId: actionId(), expectedRevision: document.revision, entityId: item.id }, 'Entity selected.') }}>
           {item.category} · {item.label}</button>)}
         {results.length === 0 && <span>No matching confirmed entities.</span>}
@@ -245,8 +252,8 @@ export function SemanticSpacePanel() {
               entityId: selected.id, label, category }, 'Entity correction saved.').then(ok => {
                 if (!ok) return
                 const state = useGraphStore.getState()
-                const node = state.graphData?.nodes.find(item => item.id === selected.id)
-                if (node?.properties?.spaceId === document.id) state.updateNode(selected.id,
+                const node = linkedCanvasNode(document, selected.id)
+                if (node) state.updateNode(node.id,
                   { label, properties: { ...node.properties, category } })
                 setEditing(false)
               })

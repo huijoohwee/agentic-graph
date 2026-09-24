@@ -1,27 +1,15 @@
 export const UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME = 'kg-responsive-element-row flex items-center'
-
 export const UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME = 'kg-responsive-element-row inline-flex items-center'
-
 export const UI_RESPONSIVE_ICON_TEXT_ROW_CLASSNAME = `${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} justify-center gap-1.5`
-
 export const UI_RESPONSIVE_MENU_ROW_CLASSNAME = `kg-menu-row w-full ${UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME}`
-
 export const UI_RESPONSIVE_TOUCH_MENU_ROW_CLASSNAME = `${UI_RESPONSIVE_MENU_ROW_CLASSNAME} kg-touch-menu-row`
-
 export const UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME = `${UI_RESPONSIVE_MENU_ROW_CLASSNAME} kg-menu-option-row`
-
 export const UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME = `${UI_RESPONSIVE_TOUCH_MENU_ROW_CLASSNAME} kg-menu-option-row`
-
 export const UI_RESPONSIVE_LAUNCH_MENU_ROW_CLASSNAME = `kg-launch-menu-item w-full ${UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME} kg-touch-menu-row`
-
 export const UI_RESPONSIVE_ACTION_ROW_CLASSNAME = `kg-data-view-action ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME}`
-
 export const UI_RESPONSIVE_TOOLBAR_FIELD_CLASSNAME = 'kg-responsive-toolbar-field'
-
 export const UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME = 'kg-responsive-color-swatch'
-
 export const UI_RESPONSIVE_COLOR_SWATCH_DASHED_CLASSNAME = 'kg-responsive-color-swatch kg-responsive-color-swatch--dashed'
-
 export const UI_RESPONSIVE_SELECTION_CONTROL_CLASSNAME = 'kg-responsive-selection-control'
 
 export const UI_RESPONSIVE_SMALL_SELECTION_CONTROL_CLASSNAME = 'kg-responsive-selection-control kg-responsive-selection-control--small'
@@ -101,7 +89,7 @@ export const UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME = 'absolute inset-0 po
 export const UI_RESPONSIVE_PASSIVE_BASE_LAYER_SURFACE_CLASSNAME =
   `${UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME} z-0`
 
-export const UI_RESPONSIVE_CANVAS_TOOLBAR_DOCK_CLASSNAME = 'kg-canvas-toolbar-dock absolute z-[200] flex min-w-0 bg-transparent pointer-events-none'
+export const UI_RESPONSIVE_CANVAS_TOOLBAR_DOCK_CLASSNAME = 'kg-canvas-toolbar-dock absolute z-[240] flex min-w-0 bg-transparent pointer-events-none'
 
 export const UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME = 'kg-workspace-overlay-canvas-toolbar absolute z-[200] flex min-w-0 bg-transparent'
 

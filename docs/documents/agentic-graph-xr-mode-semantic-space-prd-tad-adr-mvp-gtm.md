@@ -1,18 +1,18 @@
 ---
 title: "Reference implementation — Native semantic space"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.8.1"
-revision: "0.8.1"
+version: "0.8.2"
+revision: "0.8.2"
 date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.8.1"
-tad_revision: "0.8.1"
-adr_revision: "0.8.1"
-mvp_revision: "0.8.1"
-gtm_revision: "0.8.1"
+prd_revision: "0.8.2"
+tad_revision: "0.8.2"
+adr_revision: "0.8.2"
+mvp_revision: "0.8.2"
+gtm_revision: "0.8.2"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -20,7 +20,7 @@ universal_scope: false
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
 agent_id: "codex-semantic-space"
 parent: "agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md"
-parent_version: "0.8.1"
+parent_version: "0.8.2"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/96a382f1b810d19c09ed60439270da098f66af4a/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "8c9262f089ac25b8db039152aef8f9856a094d506ba8569ee2753c9693b4dce5"
@@ -37,7 +37,7 @@ surfaces: ["2D Renderer: Flowchart"]
 
 ## Continuity, scope and directive
 
-This size-bounded companion extends the [existing XR Mode owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision. PRD S01–S10 feed the TAD owners below, ADR-010–013 select the approach, and MVP/GTM consume those decisions. The audit's provisional MVP ID is absorbed into this existing product identity, not instantiated as another product or registry. Revision 0.8.1 records a local implementation candidate; unverified criteria remain open.
+This size-bounded companion extends the [existing XR Mode owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision. PRD S01–S10 feed the TAD owners below, ADR-010–013 select the approach, and MVP/GTM consume those decisions. The audit's provisional MVP ID is absorbed into this existing product identity, not instantiated as another product or registry. Revision 0.8.2 records a corrected local implementation candidate; unverified criteria remain open.
 
 Input is the private `SEMANTIC-SPACE-AUDIT-001@1.2.0`, with digest in frontmatter. It is authoring evidence only; the implementation, build, tests and runtime must not require that file. No external conceptual material, identifiers, assets, prose or code are carried into this specification or admitted as dependencies. Required local implementation claims are restated from native source evidence below.
 
@@ -82,11 +82,11 @@ Each row is a VCC: verify the single end state by the stated check with its cons
 | S09 / P04 | Given the same frozen RGB and finite depth, when projected, then points/colors map to the source pixels within declared tolerance. | Add `space.projection.geometry` to spatial geometry tests: center ray, plane, near/far polarity, invalid values, rotation/crop/mirror. ≤20,000 visible points and no identity-transform frame fusion. |
 | S10 / P04 | Given admitted local model/runtime assets, when the optional cloud is generated on a qualified device, then scene-dependent output and unknown scale/provenance survive reopen. | Extend XR adapter and browser smoke with `space.depth.offline`; real images and physical near/far target, explicit backend/fallback, complete offline closure. Mocks do not prove inference quality. |
 
-| Criterion | Candidate status at 0.8.1 / next evidence |
+| Criterion | Candidate status at 0.8.2 / next evidence |
 |---|---|
-| S01,S02,S05,S08 | Local source and fake IndexedDB checks cover still metadata, two linked entities, stable correction IDs, revision/replay guards and package readback. Physical permission/ended-track, canvas projection after reopen and corrupt real-image cases remain open. |
+| S01,S02,S05,S08 | Local source, fake IndexedDB and browser checks cover still metadata, linked entities, stable correction IDs, revision/replay guards, package readback and rejection of a hash-matching but undecodable image. The native composed canvas ID retains `properties.entityId`; browser add/repeat/correct selects and updates the same projected node. Physical camera permission/ended-track and canvas projection after reopen remain open. |
 | S03 | UI and scoped WebMCP share the browser-local action store; `/space.find #category`, `/space.select @entity` and `/space.label @entity #category label="name"` resolve exact tokens. Headless MCP and capture dictionary dispatch remain open; no parity claim. |
-| S04,S06 | Image-choice fallback and 44 px primary controls are implemented in source. Verified app offline closure, Safari/phone layout, background/resume and quota behavior remain open. |
+| S04,S06 | Image choice and 44 px primary controls work in a 390 px Chromium viewport after raising the toolbar panel above the timeline. Capture/query/correction/export work after taking the open tab offline. An offline page reload fails because the current service worker intentionally excludes the HTML shell; S04 remains blocked pending existing installer-owner admission. Real Safari/phone, background/resume and quota remain open. |
 | S07 | Async host resolve/reject/catalog-change/disposal fixtures pass locally. Real browser host qualification remains open. |
 | S09,S10 | Relative float-depth projection enters the existing Three.js point geometry with assumed FOV, polarity, cap and unknown scale; synthetic center/color/invalid-depth checks pass. Camera rotation/crop, admitted model asset closure, physical near/far and device performance remain open. |
 
@@ -119,7 +119,7 @@ All rows bind Graph source `6d5a47d3e983ff02af2ceb1ae230f2808a80cf86`. Audit sou
 
 Reuse benefit targets fewer repeated actions and zero diverging UI/tool mutation implementations. Current duplicated captured-space implementations: none found; the missing integration, not a measured duplication count, motivates reuse. Integration time, repeat failures and support savings are unmeasured. A generic shared package is deferred until two concrete cross-product consumers and an ADR justify extraction.
 
-**0.8.1 source disposition:** [SemanticSpacePanel](../../canvas/src/features/xr-v2/SemanticSpacePanel.tsx) is mounted beside, and independent of, the older pose/temporal capture panel. The explicit camera request lives in the [camera runtime](../../canvas/src/features/three/semanticSpaceCameraRuntime.ts). [Action validation](../../canvas/src/features/xr-v2/semanticSpaceRuntime.ts) and [durable writes](../../canvas/src/features/xr-v2/semanticSpaceStore.ts) serve both the UI and [scoped WebMCP adapter](../../canvas/src/features/agent-ready/semanticSpaceWebMcpTools.ts). Space records reuse the existing XR IndexedDB `bundles` object store under a dedicated key, with atomic revision checks and readback; no schema upgrade or second scene database is introduced. An explicit “Add to canvas” projects the same entity ID and evidence hash into the active graph. The [point geometry owner](../../canvas/src/features/three/spatialCaptureGeometryRuntime.ts) accepts optional finite relative depth with assumed FOV and an unknown-scale tag; no model or metric claim is enabled.
+**0.8.2 source disposition:** [SemanticSpacePanel](../../canvas/src/features/xr-v2/SemanticSpacePanel.tsx) is mounted beside, and independent of, the older pose/temporal capture panel. The explicit camera request lives in the [camera runtime](../../canvas/src/features/three/semanticSpaceCameraRuntime.ts). [Action validation](../../canvas/src/features/xr-v2/semanticSpaceRuntime.ts) and [durable writes](../../canvas/src/features/xr-v2/semanticSpaceStore.ts) serve both the UI and [scoped WebMCP adapter](../../canvas/src/features/agent-ready/semanticSpaceWebMcpTools.ts). Space records reuse the existing XR IndexedDB `bundles` object store under a dedicated key, with atomic revision checks, decoded-image verification and readback; no schema upgrade or second scene database is introduced. “Add to canvas” projects the evidence hash and stable `entityId` into the active graph; the native composed graph ID may carry its source-layer prefix. The [point geometry owner](../../canvas/src/features/three/spatialCaptureGeometryRuntime.ts) accepts optional finite relative depth with assumed FOV and an unknown-scale tag; no model or metric claim is enabled.
 
 The candidate stores compressed stills in a self-contained active local package and retains the previous package as a backup on import. It does not yet model multiple independent spaces, calibrated camera intrinsics, raw photo bytes separate from the package, pose, automatic semantics, or an offline depth asset closure. These deltas stay open under T02/T03/T06/T07 rather than being inferred from the source checks.
 
@@ -292,14 +292,15 @@ These are first investigation/work allocations, not a guarantee of completion in
 | E02 Registration-rejection fixture | Reproduced prior false installed state; updated `webMcpLifecycle` fixture now covers pending, rejection, resolve, catalog change and disposal | Focused local S07 repair proof; no real-host proof |
 | E03 Earlier focused suites | Audit retains 73 component test/check cases; not rerun or promoted to current end-to-end acceptance | Existing primitive evidence only; physical camera, depth quality and product loop unverified |
 | E04 Diagram projection | Workspace diagram canvas-render checker on this file: exit 0; 6 diagrams, 29 nodes, 18 edges, 2 clusters, zero findings; 0 prompt/completion tokens | Parse-only authoring proof; visual legibility and runtime behavior remain separate |
-| E05 Previous document structure | Private validator and receipt remain pinned to specification 0.8.0; invoking it on 0.8.1 rejects the exact-version assertion | Historical structure proof only; 0.8.1 uses E11 below |
+| E05 Previous document structure | Private validator and receipt remain pinned to specification 0.8.0; invoking it on 0.8.2 rejects the exact-version assertion | Historical structure proof only; 0.8.2 uses E11 below |
 | E06 Local action and package | `node --import tsx` from `canvas`, executing `testSemanticSpaceRoundTripAndGuards` and `testSemanticSpaceWebMcpAndInvocation`: pass | Fake IndexedDB readback, linked IDs, package integrity, stale/replay guards and the shared UI/WebMCP action-store contract; not device/UI runtime parity |
 | E07 Relative projection | `node --import tsx` executing `testSemanticSpaceRelativeDepthProjection`: pass | Synthetic center/color/polarity/point-cap/invalid-depth and native Three.js buffer path; not scene-dependent model quality |
 | E08 XR source ownership | `npm --prefix canvas run test:smoke:xr-v2:source`: pass after moving camera request to its owner | Existing XR v2 adapter boundary remains enforced; not a live camera test |
 | E09 WebMCP registry | Local contract inventory has two semantic-space tools, unique names; XR discovery 12 tools / 25,377 bytes; registry validation rejects an incomplete mutation | Within 16-tool/32-KiB project discovery budget; not an external-host or stdio MCP receipt |
-| E10 Candidate build/offline shell | Direct `vite build --configLoader runner`: pass; generated service worker lists the XR space panel, store and tool chunks | New space entry is in the precache; browser airplane-mode behavior remains untested. Existing unrelated output chunks exceed the `<500 kB/chunk` target; whole-app budget is not green |
-| E11 Current document and size | 0.8.1 frontmatter/role joins, source links, <600 lines/file, six production modules / 40,853 added bytes: pass; diagram checker: 6 diagrams, 29 nodes, 18 edges, 2 clusters, no findings | Current structural and parse-only proof; prior pinned validator is not promoted to 0.8.1 |
+| E10 Candidate build/offline shell | Direct `vite build --configLoader runner`: pass; generated service worker lists the XR space panel, store and tool chunks. Chromium offline reload: `ERR_INTERNET_DISCONNECTED` | Source chunks are precached but HTML navigation is excluded by the existing PWA policy. S04 is not satisfied; unrelated output chunks also exceed the `<500 kB/chunk` target |
+| E11 Current document and size | 0.8.2 frontmatter/role joins, source links, <600 lines/file, six production modules / 41,743 added bytes: pass; diagram checker: 6 diagrams, 29 nodes, 18 edges, 2 clusters, no findings | Current structural and parse-only proof; prior pinned validator is not promoted to 0.8.2 |
 | E12 Focused owner and baseline checks | Registered canvas suite: 6/6 relevant cases pass; XR v2 source smoke, changed-file hygiene, conflict source compliance and worktree policy pass. Full local TypeScript check reports the same 31 unrelated errors on protected checkout and this candidate | No changed-file type error observed; full typecheck is not green locally. CI must establish exact candidate health independently |
+| E13 Browser semantic loop | Local Chromium at 390 × 844: choose valid image → confirm/select → link to composed canvas node → correct label → export; repeated add leaves one graph node. Open-tab offline correction/export and hash-matching undecodable-image rejection pass; no page errors | Source-candidate browser proof. No physical camera, Safari, cold offline reopen or protected runtime effect is inferred |
 
 Existing validation entry points to extend/reuse: capture runtime/store tests under `canvas/src/features/xr-v2/__tests__`; registered `canvas.xrMode.studio.semanticExercises` and `canvas.xrMode.studio.agentSaveReopen`; `canvas/src/__tests__/webMcpLifecycle.test.ts`; `canvas/src/__tests__/pythonLearningOffline.test.ts`; `canvas/scripts/run_choreography_studio_offline_smoke.mjs`; XR adapter/browser smoke. Select exact cases through the repository affected-check owner at implementation time; do not invent an already-runnable S-prefixed suite. Retained stubs and synthetic frames cannot satisfy device acceptance.
 

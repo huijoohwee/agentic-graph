@@ -53,6 +53,35 @@ export async function testSemanticSpaceRoundTripAndGuards() {
   const reader = createSemanticSpaceStore({ indexedDB, databaseName })
   await reader.replace(imported)
   if (JSON.stringify(await reader.read()) !== packageText) throw Error('package import lost image, IDs or revision')
+  const previousImage = Object.getOwnPropertyDescriptor(globalThis, 'Image')
+  let decodeResult: 'ok' | 'bad-pixels' | 'wrong-size' = 'ok'
+  class TestImage {
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    naturalWidth = 1
+    naturalHeight = 1
+    set src(_value: string) {
+      queueMicrotask(() => {
+        if (decodeResult === 'bad-pixels') this.onerror?.()
+        else {
+          this.naturalWidth = decodeResult === 'wrong-size' ? 2 : 1
+          this.onload?.()
+        }
+      })
+    }
+  }
+  Object.defineProperty(globalThis, 'Image', { configurable: true, value: TestImage })
+  try {
+    await verifySpaceEvidence(doc, true)
+    for (const result of ['bad-pixels', 'wrong-size'] as const) {
+      decodeResult = result
+      try { await verifySpaceEvidence(doc, true); throw Error(`${result} accepted`) }
+      catch (error) { if ((error as Error).message === `${result} accepted`) throw error }
+    }
+  } finally {
+    if (previousImage) Object.defineProperty(globalThis, 'Image', previousImage)
+    else Reflect.deleteProperty(globalThis, 'Image')
+  }
   try {
     await verifySpaceEvidence({ ...doc, observations: [{ ...observation, imageDataUrl: imageDataUrl.replace('iVBOR', 'aVBOR') }] })
     throw Error('corrupt image accepted')
