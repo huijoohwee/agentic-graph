@@ -153,7 +153,12 @@ const snapshotLane = (registration, root, common, records, budget) => {
   assert.ok(text(record.device) && text(record.scope), 'native lane attribution is missing')
   if (branchRef) assert.equal(`refs/heads/${record.ref}`, branchRef, 'native lane metadata branch is stale')
   else assert.equal(record.head, headRevision, 'detached lane metadata must bind exact head')
-  if (record.head) assert.equal(record.head, headRevision, 'native lane metadata head is stale')
+  if (record.head && record.head !== headRevision) {
+    assert.equal(record.state, 'active', 'native lane metadata head is stale')
+    assert.match(record.head, SHA, 'native active lane metadata must bind an exact head')
+    assert.equal(line(location, ['merge-base', record.head, headRevision]), record.head,
+      'native active lane metadata must precede the current branch')
+  }
   const collaboration = validateNativePreservationIdentity({ schema: NATIVE_PRESERVATION_IDENTITY,
     repository: REPOSITORY, worktreePath: location, branchRef, headRevision, laneRef: record.ref,
     deviceId: record.device, scopeId: record.scope, metadataDigest: digest(record), authorizesEffects: false })
