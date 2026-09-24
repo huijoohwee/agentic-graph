@@ -35,6 +35,7 @@ async function verify() {
   try {
     await page.goto(base + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: /^Canvas View Mode:/ }).first().waitFor({ timeout: 120000 })
+    await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady(), undefined, { timeout: 120000 })
     console.log('Design browser: canvas ready')
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')

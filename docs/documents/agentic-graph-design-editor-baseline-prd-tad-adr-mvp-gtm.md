@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.6.3"
+version: "0.6.4"
 date: "2026-09-24"
 lang: "en-US"
 owner: "Documentation maintainers"
@@ -16,17 +16,17 @@ continuity_id: "PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/d1bb72de041b1ddc6d291fd4f8528ccc2d367fea/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "969f0d07802605a38dc10cde840ff685d468cf46"
-previous_document_version: "0.6.2"
-prd_revision: "0.6.3"
-tad_revision: "0.6.3"
-adr_revision: "0.6.3"
-mvp_revision: "0.6.3"
-gtm_revision: "0.6.3"
+previous_document_version: "0.6.3"
+prd_revision: "0.6.4"
+tad_revision: "0.6.4"
+adr_revision: "0.6.4"
+mvp_revision: "0.6.4"
+gtm_revision: "0.6.4"
 ---
 
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
-Current accepted scope revision: **0.6.3**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.6.4**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
 
@@ -592,8 +592,8 @@ protected integration and production remain pending. No buyer receipt.
 
 ## Native offline validation and palette browser proof
 
-All five roles join the same continuity ID at **0.6.3**. PRD: the mobile offline Python workflow must remain operable after a verified navigation, and Design review must distinguish Light, Black and Dark Blue at narrow and desktop widths.
-TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs`, awaits document and service-worker readiness, and the Design smoke selects palettes through the existing Settings store. `useThemeDetector` observes variant-only DOM changes.
+All five roles join the same continuity ID at **0.6.4**. PRD: the mobile offline Python workflow must remain operable after a verified navigation, and Design review must distinguish Light, Black and Dark Blue at narrow and desktop widths.
+TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs`, awaits document and service-worker readiness, and the Design smoke waits for source bootstrap before setting its fixture and selects palettes through the existing Settings store. `useThemeDetector` observes variant-only DOM changes.
 ADR: exercise native panel and theme owners; do not force clicks through overlays, mutate theme classes behind Settings, or create another controller. Exclude the Timeline, which shares the generic panel marker.
 MVP: rerun offline and Design browser smokes, source checks and exact protected Integration Gate. GTM: these validation repairs change no buyer offer or delivery claim.
-PR #1240 failed on a covered click; PR #1241 found an empty offline document; PR #1242 passed the offline stage but its Design smoke still expected one old Dark theme. Local readiness-bound offline smoke passed all three lessons; the Design smoke now passes Light, Black and Dark Blue at 360px and 1280px, and Canvas check and hygiene pass. A local affected plan stopped on an unrelated catalog revision mismatch. Successor cap: 50 minutes, 8 KiB authored delta, three owner modules and this record. Protected integration, production and buyer receipts remain pending.
+PR #1240 failed on a covered click; PR #1241 found an empty offline document; PR #1242 passed offline but expected one old Dark theme; PR #1244 passed offline but an XR source activation displaced the Design smoke fixture. Local offline and six palette/width Design cases pass again with the bootstrap wait; Canvas check and hygiene passed. A local affected plan stopped on an unrelated catalog revision mismatch. Successor cap: 60 minutes, 8 KiB authored delta, three owner modules and this record. Protected integration, production and buyer receipts remain pending.
