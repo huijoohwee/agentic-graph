@@ -2,9 +2,8 @@
 title: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KXR-001"
-version: "0.7.1"
-status: "spec-complete"
-date: "2026-09-22"
+version: "0.8.0"
+date: "2026-09-24"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -32,24 +31,29 @@ tags:
 historical_local_rung: "runtime-ready-dev"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
-worktree_id: "device-0232231d4a19--xr-character-authoring"
-agent_id: "codex-01a0c491"
-guideline_revision: "3.1.0"
-guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/993eb0e28a6d2e9427364df98c39c8a5e10910b4/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-guideline_sha256: "cc49896776a70e372a34d54fb81582ae1a46d46e2f527e2dfd3108cc07a0b1ef"
+worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
+agent_id: "codex-semantic-space"
+guideline_revision: "3.3.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/96a382f1b810d19c09ed60439270da098f66af4a/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+guideline_sha256: "8c9262f089ac25b8db039152aef8f9856a094d506ba8569ee2753c9693b4dce5"
 adlc_source_revision: "2a86d4321edbcc34ea38f3f4718fd4e49b80d153"
 adlc_guide_sha256: "7b2c0a4c85879647c36766fad3e686899c43d219e6d57e39adfdace308dca686"
 increment_history: "agentic-graph-xr-mode-increments.md"
-reviewed_source_revision: "620471f120ddb31c7aab6ffcc8296f7be6eb3144"
-previous_document_version: "0.7.0"
-prd_revision: "0.7.1"
-tad_revision: "0.7.1"
-adr_revision: "0.7.1"
-mvp_revision: "0.7.1"
-gtm_revision: "0.7.1"
+reviewed_source_revision: "6d5a47d3e983ff02af2ceb1ae230f2808a80cf86"
+previous_document_version: "0.7.1"
+prd_revision: "0.8.0"
+tad_revision: "0.8.0"
+adr_revision: "0.8.0"
+mvp_revision: "0.8.0"
+gtm_revision: "0.8.0"
 ---
 
-# agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
+# Reference implementation — agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
+
+## Semantic-space increment — reference implementation
+
+The [native semantic-space companion](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) joins all five roles at `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.8.0`; it is split solely to keep each file below 600 lines. It owns S01–S10 and ADR-010–013; existing E/A/B criteria remain in force within their original scope. Prior source grants do not expand this documentation task into implementation or deployment.
+The new proposed path is ordinary camera → observation → confirmed entity → query/highlight → local correction/save/reopen/export, with optional bounded depth-derived points. Reuse current canvas, neutralized camera lifecycle, scene/persistence, offline installation and invocation owners; add no second spatial engine. Still/manual mode is the baseline for this increment; historical live-video defaults do not govern it. New runtime acceptance is unverified; the companion records exact source grounding, resource limits, mobile/offline/MCP/WebMCP/grammar gaps and the next bounded action.
 
 ## Decision
 
@@ -434,7 +438,7 @@ Historical proof remains at the [unchanged evidence section](agentic-graph-xr-mo
 <a id="planning-revision--reference-implementation"></a>
 ## Native authoring increment — reference implementation
 
-All five roles join `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.7.1`.
+All five roles join `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.8.0`.
 PRD criteria below extend Part A; TAD consumes those exact criteria; ADR-007-009
 bind the design; MVP and GTM consume all three. Historical E1-E4 proof and earlier
 increments are preserved in the [evidence companion](agentic-graph-xr-mode-increments.md).
@@ -562,7 +566,7 @@ external dependencies on integrated source or released ownership, with no invent
 
 ### Coverage and remaining findings
 
-Product maintainers own each disposition at this exact 0.7.1 revision. The checks
+Product maintainers own each disposition at this exact 0.8.0 revision. The checks
 below revisit coverage before MVP acceptance and any buyer/audience handoff.
 
 | Domain | Disposition / exact section join | Evidence gap and next check |
