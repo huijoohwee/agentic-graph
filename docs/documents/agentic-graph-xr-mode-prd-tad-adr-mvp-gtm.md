@@ -2,7 +2,7 @@
 title: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KXR-001"
-version: "0.8.0"
+version: "0.8.1"
 date: "2026-09-24"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
@@ -41,19 +41,19 @@ adlc_guide_sha256: "7b2c0a4c85879647c36766fad3e686899c43d219e6d57e39adfdace308dc
 increment_history: "agentic-graph-xr-mode-increments.md"
 reviewed_source_revision: "6d5a47d3e983ff02af2ceb1ae230f2808a80cf86"
 previous_document_version: "0.7.1"
-prd_revision: "0.8.0"
-tad_revision: "0.8.0"
-adr_revision: "0.8.0"
-mvp_revision: "0.8.0"
-gtm_revision: "0.8.0"
+prd_revision: "0.8.1"
+tad_revision: "0.8.1"
+adr_revision: "0.8.1"
+mvp_revision: "0.8.1"
+gtm_revision: "0.8.1"
 ---
 
 # Reference implementation — agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
 
 ## Semantic-space increment — reference implementation
 
-The [native semantic-space companion](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) joins all five roles at `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.8.0`; it is split solely to keep each file below 600 lines. It owns S01–S10 and ADR-010–013; existing E/A/B criteria remain in force within their original scope. Prior source grants do not expand this documentation task into implementation or deployment.
-The new proposed path is ordinary camera → observation → confirmed entity → query/highlight → local correction/save/reopen/export, with optional bounded depth-derived points. Reuse current canvas, neutralized camera lifecycle, scene/persistence, offline installation and invocation owners; add no second spatial engine. Still/manual mode is the baseline for this increment; historical live-video defaults do not govern it. New runtime acceptance is unverified; the companion records exact source grounding, resource limits, mobile/offline/MCP/WebMCP/grammar gaps and the next bounded action.
+The [native semantic-space companion](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) joins all five roles at `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.8.1`; it is split solely to keep each file below 600 lines. It owns S01–S10 and ADR-010–013; existing E/A/B criteria remain in force within their original scope. This source successor implements a bounded local still/manual slice and fixes asynchronous WebMCP registration; source integration and deployment remain separate.
+The implemented local path is ordinary camera or chosen image → observation → confirmed entity → query/highlight → local correction/save/reopen/export, with a bounded relative-depth point projector. It reuses the current canvas, XR IndexedDB database, camera layer and WebMCP scope without a second spatial engine. Still/manual mode is the baseline; historical live-video defaults do not govern it. Phone/Safari, complete offline closure, headless MCP parity and optional model depth remain unverified; the companion records source proof and exact gaps.
 
 ## Decision
 

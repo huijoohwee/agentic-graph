@@ -16,7 +16,7 @@ export const WEB_MCP_TOOL_SCOPES = Object.freeze(Object.fromEntries(Object.entri
   chat: [ids.inspectLocalChatPipelineState, ids.inspectLocalMainPanelChatCanvasPipeline],
   pythonLearning: Object.values(PYTHON_LEARNING_TOOL_IDS),
   settings: [ids.inspectLocalSettingsChatReadiness, ids.inspectLocalMainPanelState, ids.inspectAgentSurface],
-  xr: [ids.inspectLocalXrSceneAssets, ids.controlLocalXrScene, ids.inspectLocal3dCameraPose, ids.inspectLocal3dLayoutPositions],
+  xr: [ids.inspectLocalXrSceneAssets, ids.controlLocalXrScene, ids.inspectLocalSemanticSpace, ids.controlLocalSemanticSpace, ids.inspectLocal3dCameraPose, ids.inspectLocal3dLayoutPositions],
   camera: [ids.inspectLocalCamera, ids.controlLocalCamera],
   animation: [ids.inspectLocalAnimation, ids.controlLocalAnimation],
   motionControl: [ids.inspectLocalMotionControl, ids.controlLocalMotionControl],

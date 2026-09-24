@@ -1,18 +1,18 @@
 ---
 title: "Reference implementation — Native semantic space"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.8.0"
-revision: "0.8.0"
+version: "0.8.1"
+revision: "0.8.1"
 date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.8.0"
-tad_revision: "0.8.0"
-adr_revision: "0.8.0"
-mvp_revision: "0.8.0"
-gtm_revision: "0.8.0"
+prd_revision: "0.8.1"
+tad_revision: "0.8.1"
+adr_revision: "0.8.1"
+mvp_revision: "0.8.1"
+gtm_revision: "0.8.1"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -20,7 +20,7 @@ universal_scope: false
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
 agent_id: "codex-semantic-space"
 parent: "agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md"
-parent_version: "0.8.0"
+parent_version: "0.8.1"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/96a382f1b810d19c09ed60439270da098f66af4a/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "8c9262f089ac25b8db039152aef8f9856a094d506ba8569ee2753c9693b4dce5"
@@ -37,11 +37,11 @@ surfaces: ["2D Renderer: Flowchart"]
 
 ## Continuity, scope and directive
 
-This size-bounded companion extends the [existing XR Mode owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision. PRD S01–S10 feed the TAD owners below, ADR-010–013 select the approach, and MVP/GTM consume those decisions. The audit's provisional MVP ID is absorbed into this existing product identity, not instantiated as another product or registry.
+This size-bounded companion extends the [existing XR Mode owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision. PRD S01–S10 feed the TAD owners below, ADR-010–013 select the approach, and MVP/GTM consume those decisions. The audit's provisional MVP ID is absorbed into this existing product identity, not instantiated as another product or registry. Revision 0.8.1 records a local implementation candidate; unverified criteria remain open.
 
-Input is the private `SEMANTIC-SPACE-AUDIT-001@1.2.0` at `/Users/huijoohwee/Documents/GitHub/.workspace/.artifacts/semantic-space-audit-20260924/AUDIT.md`, with digest in frontmatter. It is authoring evidence only; the implementation, build, tests and runtime must not require that file. No external conceptual material, identifiers, assets, prose or code are carried into this specification or admitted as dependencies. Required local implementation claims are restated from native source evidence below.
+Input is the private `SEMANTIC-SPACE-AUDIT-001@1.2.0`, with digest in frontmatter. It is authoring evidence only; the implementation, build, tests and runtime must not require that file. No external conceptual material, identifiers, assets, prose or code are carried into this specification or admitted as dependencies. Required local implementation claims are restated from native source evidence below.
 
-**CID:** Context is the source-grounded camera/scene/action gaps and the user's 2026-09-24 request. Intent is a useful physical-space inventory inside the existing canvas, usable on a phone and offline. Directive: extend existing owners for evidence-backed capture, entity queries, correction and durable export; keep optional geometry honest and every invocation bounded. **RAO:** Product maintainer specifies the native semantic-space increment; outcome is this joined, reviewable plan with checkable criteria. This turn authorizes documentation; implementation, integration and deployment retain their own gates.
+**CID:** Context is the source-grounded camera/scene/action gaps and the user's 2026-09-24 request. Intent is a useful physical-space inventory inside the existing canvas, usable on a phone and offline. Directive: extend existing owners for evidence-backed capture, entity queries, correction and durable export; keep optional geometry honest and every invocation bounded. **RAO:** Product maintainer implements a native semantic-space slice; outcome is a source candidate with named local checks and explicit unverified device/transport gates. Integration and deployment retain their own gates.
 
 ## PRD — outcome, pain and scope
 
@@ -67,7 +67,7 @@ User: small workspace/shop operator; buyer: operator or team lead; beneficiary: 
 
 ### Acceptance criteria and VCCs
 
-Each row is an unproven VCC: verify the single end state by the stated check with its constraint. S01–S08 are Must; S09–S10 gate optional geometry. Proposed check IDs identify cases to add to the named existing owner suites; they are not current executable commands or passing results.
+Each row is a VCC: verify the single end state by the stated check with its constraint. S01–S08 are Must; S09–S10 gate optional geometry. A focused source check can establish part of a row; it cannot substitute for phone, offline, real-host or headless parity proof. The status register below records that distinction.
 
 | ID / pain | Given → when → then; observable end state | Stated check and constraint |
 |---|---|---|
@@ -81,6 +81,14 @@ Each row is an unproven VCC: verify the single end state by the stated check wit
 | S08 / P03 | Given unknown scale, stale revision, unavailable page or unsupported intent, when queried or mutated, then a typed result explains the unsupported operation without changing evidence. | Add `space.action.guards` to semantic/normalization suites; race and request-ID replay checks. No invented metric answer, automatic upload or arbitrary model-generated code. |
 | S09 / P04 | Given the same frozen RGB and finite depth, when projected, then points/colors map to the source pixels within declared tolerance. | Add `space.projection.geometry` to spatial geometry tests: center ray, plane, near/far polarity, invalid values, rotation/crop/mirror. ≤20,000 visible points and no identity-transform frame fusion. |
 | S10 / P04 | Given admitted local model/runtime assets, when the optional cloud is generated on a qualified device, then scene-dependent output and unknown scale/provenance survive reopen. | Extend XR adapter and browser smoke with `space.depth.offline`; real images and physical near/far target, explicit backend/fallback, complete offline closure. Mocks do not prove inference quality. |
+
+| Criterion | Candidate status at 0.8.1 / next evidence |
+|---|---|
+| S01,S02,S05,S08 | Local source and fake IndexedDB checks cover still metadata, two linked entities, stable correction IDs, revision/replay guards and package readback. Physical permission/ended-track, canvas projection after reopen and corrupt real-image cases remain open. |
+| S03 | UI and scoped WebMCP share the browser-local action store; `/space.find #category`, `/space.select @entity` and `/space.label @entity #category label="name"` resolve exact tokens. Headless MCP and capture dictionary dispatch remain open; no parity claim. |
+| S04,S06 | Image-choice fallback and 44 px primary controls are implemented in source. Verified app offline closure, Safari/phone layout, background/resume and quota behavior remain open. |
+| S07 | Async host resolve/reject/catalog-change/disposal fixtures pass locally. Real browser host qualification remains open. |
+| S09,S10 | Relative float-depth projection enters the existing Three.js point geometry with assumed FOV, polarity, cap and unknown scale; synthetic center/color/invalid-depth checks pass. Camera rotation/crop, admitted model asset closure, physical near/far and device performance remain open. |
 
 ### Success metrics and assumptions
 
@@ -110,6 +118,10 @@ All rows bind Graph source `6d5a47d3e983ff02af2ceb1ae230f2808a80cf86`. Audit sou
 | T08 [XR registry](../../canvas/src/features/xr-v2/xrV2InvocationRegistry.ts); [scene grammar](../../canvas/src/features/three/xrSceneMcpContract.mjs); [local MCP contract](../../mcp/local-tool-contract.js) | Capture/author tokens declared, no capture dispatcher found; authored scene grammar executes; browser contract projected to stdio only for search/fetch | `retain-local` and `extend-owner`: reconcile exact dictionary bindings before effectful capture; use admitted page bridge or explicit package for headless actions. S03/S08; no automatic transport parity claim. |
 
 Reuse benefit targets fewer repeated actions and zero diverging UI/tool mutation implementations. Current duplicated captured-space implementations: none found; the missing integration, not a measured duplication count, motivates reuse. Integration time, repeat failures and support savings are unmeasured. A generic shared package is deferred until two concrete cross-product consumers and an ADR justify extraction.
+
+**0.8.1 source disposition:** [SemanticSpacePanel](../../canvas/src/features/xr-v2/SemanticSpacePanel.tsx) is mounted beside, and independent of, the older pose/temporal capture panel. The explicit camera request lives in the [camera runtime](../../canvas/src/features/three/semanticSpaceCameraRuntime.ts). [Action validation](../../canvas/src/features/xr-v2/semanticSpaceRuntime.ts) and [durable writes](../../canvas/src/features/xr-v2/semanticSpaceStore.ts) serve both the UI and [scoped WebMCP adapter](../../canvas/src/features/agent-ready/semanticSpaceWebMcpTools.ts). Space records reuse the existing XR IndexedDB `bundles` object store under a dedicated key, with atomic revision checks and readback; no schema upgrade or second scene database is introduced. An explicit “Add to canvas” projects the same entity ID and evidence hash into the active graph. The [point geometry owner](../../canvas/src/features/three/spatialCaptureGeometryRuntime.ts) accepts optional finite relative depth with assumed FOV and an unknown-scale tag; no model or metric claim is enabled.
+
+The candidate stores compressed stills in a self-contained active local package and retains the previous package as a backup on import. It does not yet model multiple independent spaces, calibrated camera intrinsics, raw photo bytes separate from the package, pose, automatic semantics, or an offline depth asset closure. These deltas stay open under T02/T03/T06/T07 rather than being inferred from the source checks.
 
 ### Native data and action contracts
 
@@ -270,17 +282,24 @@ Constraints precede ranking. Native still/manual dominates a new engine on scope
 | R4 Maintainer adds optional projection | S09/S10; T07/T06; ADR-013 | 90 minutes: float-depth/pixel contract and bounded point adapter; never claim model/device proof from synthetic tests |
 | R5 QA mechanism qualifies admitted modes | S01–S10 as applicable; all owners/ADRs | 90-minute measured session: phone/browser/offline/host and asset budgets; unmet cases remain unverified |
 
-These are first investigation/work allocations, not a guarantee of completion in 6.75 hours. Re-estimate at each exit; no more than three alignment cycles, stop after two cycles without reducing the same blocker. Implementation uses the six-module/<60-kB source cap above. Physical devices and external hosts have availability conditions and recheck triggers, not invented ETAs. User's current task updates planning only; no implementation, paid action or deployment is performed here.
+These are first investigation/work allocations, not a guarantee of completion in 6.75 hours. Re-estimate at each exit; no more than three alignment cycles, stop after two cycles without reducing the same blocker. This source candidate uses six new production modules and stays under the stated module cap; physical devices and external hosts have availability conditions and recheck triggers, not invented ETAs. R1/R2 and the source portion of R3/R4 have candidate code and focused local checks; R3 transport/device/offline parity and R5 qualification remain open. No paid action or deployment is performed here.
 
 ### Evidence register and checks — reference implementation
 
 | Evidence | Result / source / surface | What it establishes |
 |---|---|---|
-| E01 Private native audit, exact digest in frontmatter | Audit 1.2.0 at its recorded source SHAs; authoring | Source gaps and prior component checks; no satisfied new S01–S10 |
-| E02 Registration-rejection fixture | Audit records a rejected host promise while runtime/host remained installed; relevant owner unchanged at this base | Reproduced local failure supporting S07; no repaired behavior or real-host proof |
+| E01 Private native audit, exact digest in frontmatter | Audit 1.2.0 at its recorded source SHAs; authoring | Source gaps and prior component checks; this candidate's results are separate |
+| E02 Registration-rejection fixture | Reproduced prior false installed state; updated `webMcpLifecycle` fixture now covers pending, rejection, resolve, catalog change and disposal | Focused local S07 repair proof; no real-host proof |
 | E03 Earlier focused suites | Audit retains 73 component test/check cases; not rerun or promoted to current end-to-end acceptance | Existing primitive evidence only; physical camera, depth quality and product loop unverified |
-| E04 Diagram projection | `node /Users/huijoohwee/Documents/GitHub/huijoohwee.github.io/scripts/check-diagram-canvas-render.mjs docs/documents/agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md`: exit 0; 6 diagrams, 29 nodes, 18 edges, 2 clusters, zero findings; 0 prompt/completion tokens | Parse-only authoring proof; visual legibility and runtime behavior remain separate |
-| E05 Document structure | `node /Users/huijoohwee/Documents/GitHub/.workspace/.artifacts/semantic-space-audit-20260924/validate-spec.mjs`; exact results/digests retained in adjacent `spec-validation.json` | Frontmatter, five-role joins, source links, size and restricted-reference absence; no product readiness promotion |
+| E04 Diagram projection | Workspace diagram canvas-render checker on this file: exit 0; 6 diagrams, 29 nodes, 18 edges, 2 clusters, zero findings; 0 prompt/completion tokens | Parse-only authoring proof; visual legibility and runtime behavior remain separate |
+| E05 Previous document structure | Private validator and receipt remain pinned to specification 0.8.0; invoking it on 0.8.1 rejects the exact-version assertion | Historical structure proof only; 0.8.1 uses E11 below |
+| E06 Local action and package | `node --import tsx` from `canvas`, executing `testSemanticSpaceRoundTripAndGuards` and `testSemanticSpaceWebMcpAndInvocation`: pass | Fake IndexedDB readback, linked IDs, package integrity, stale/replay guards and the shared UI/WebMCP action-store contract; not device/UI runtime parity |
+| E07 Relative projection | `node --import tsx` executing `testSemanticSpaceRelativeDepthProjection`: pass | Synthetic center/color/polarity/point-cap/invalid-depth and native Three.js buffer path; not scene-dependent model quality |
+| E08 XR source ownership | `npm --prefix canvas run test:smoke:xr-v2:source`: pass after moving camera request to its owner | Existing XR v2 adapter boundary remains enforced; not a live camera test |
+| E09 WebMCP registry | Local contract inventory has two semantic-space tools, unique names; XR discovery 12 tools / 25,377 bytes; registry validation rejects an incomplete mutation | Within 16-tool/32-KiB project discovery budget; not an external-host or stdio MCP receipt |
+| E10 Candidate build/offline shell | Direct `vite build --configLoader runner`: pass; generated service worker lists the XR space panel, store and tool chunks | New space entry is in the precache; browser airplane-mode behavior remains untested. Existing unrelated output chunks exceed the `<500 kB/chunk` target; whole-app budget is not green |
+| E11 Current document and size | 0.8.1 frontmatter/role joins, source links, <600 lines/file, six production modules / 40,853 added bytes: pass; diagram checker: 6 diagrams, 29 nodes, 18 edges, 2 clusters, no findings | Current structural and parse-only proof; prior pinned validator is not promoted to 0.8.1 |
+| E12 Focused owner and baseline checks | Registered canvas suite: 6/6 relevant cases pass; XR v2 source smoke, changed-file hygiene, conflict source compliance and worktree policy pass. Full local TypeScript check reports the same 31 unrelated errors on protected checkout and this candidate | No changed-file type error observed; full typecheck is not green locally. CI must establish exact candidate health independently |
 
 Existing validation entry points to extend/reuse: capture runtime/store tests under `canvas/src/features/xr-v2/__tests__`; registered `canvas.xrMode.studio.semanticExercises` and `canvas.xrMode.studio.agentSaveReopen`; `canvas/src/__tests__/webMcpLifecycle.test.ts`; `canvas/src/__tests__/pythonLearningOffline.test.ts`; `canvas/scripts/run_choreography_studio_offline_smoke.mjs`; XR adapter/browser smoke. Select exact cases through the repository affected-check owner at implementation time; do not invent an already-runnable S-prefixed suite. Retained stubs and synthetic frames cannot satisfy device acceptance.
 
@@ -290,8 +309,8 @@ Independent deterministic checks judge only surfaced outcomes; the author does n
 
 | Boundary | Current state / owner | Required evidence and recovery |
 |---|---|---|
-| Documentation → source candidate | Admitted documentation lane; native release owner | Exact diff and documentation checks, current lease and protected review. No application/runtime edits in this task |
-| Source integration → runtime candidate | Closed for this increment; existing build/release owner | Implemented acceptance and exact integrated revision; preserve previous artifacts and source rollback information |
+| Documentation → source candidate | Admitted successor implementation lane; native release owner | Exact diff, affected checks, current lease and protected review. This task has application/runtime edits but no protected merge receipt |
+| Source integration → runtime candidate | Open only after protected source integration; existing build/release owner | Complete admitted device/host/offline acceptance and exact integrated revision; preserve previous artifacts and source rollback information |
 | Candidate → production | Closed; existing production owner | Exact green candidate, explicit environment authorization and runtime readback under existing [release contract](../production-core-runtime-release.md) |
 | Failed activation / asset migration | No activation performed | Retain exact predecessor and compatible document reader; use existing [rollback owner](../production-rollback-baseline.md). Never delete raw evidence or equate Git cleanup with runtime rollback |
 
@@ -320,13 +339,13 @@ Economics assumptions A1 `$1 pilot price`, A2 `zero incremental required service
 | C05 Architecture/data | TAD T01–T08, contracts and SS-D/SS-T; one owner per capability |
 | C06 Quality/security/AI | S04/S07–S10; provenance, races, quotas, asset licenses and local fallback |
 | C07 Decisions | ADR-010–013 with costs, reversibility and revisit conditions |
-| C08 Smallest slice | MVP two-object demo; all new runtime acceptance pending |
+| C08 Smallest slice | MVP candidate and local tests exist; physical two-object demonstration and complete runtime acceptance pending |
 | C09 Acquisition/retention | GTM bounded authorized pilot; observations absent |
 | C10 Operations | MVP support/recovery and GTM support-minute/capacity observations; no SLA promised |
 | C11 Organization/obligations | Product maintainer accountable; data/IP/license review before asset admission, jurisdiction/contract work before paid delivery |
 | C12 Financial viability | A1–A4 and receipt-led costs; statements/scenarios explicitly incomplete |
 | C13 Capital/milestones | Local core adds no service/funding requirement; funding case deferred |
-| C14 ADLC | R1–R5 and exact candidate/release boundaries; current lane is documentation only |
+| C14 ADLC | R1–R5 and exact candidate/release boundaries; current lane is a source successor, not integrated or deployed |
 | C15 Audience projections | No deck/business-plan/financial-model readiness claimed; join exact revision before use |
 | C16 Learning | Pilot results create a successor context; preserve prior evidence and re-derive affected criteria |
 
@@ -338,4 +357,4 @@ Each finding uses the guideline's six fields: type, severity, Rule ID/text, arti
 | `render-proof-absent` / major | `dual-target-portability#6`: verify static legibility and projected counts | SS-J–SS-L | Projection passes E04; static visual legibility unreviewed | Product maintainer reviews static preview before diagram alignment sign-off |
 | `scenario-set-incomplete` / major | `venture-record-pitch-deck-business-plan--financial-model#5`: linked statements and scenarios or incomplete discovery sketch | GTM | No financial/market observations | Financial modeling function produces sourced projections before audience handoff |
 
-Next bounded action: admit R1's existing-owner implementation after this plan's documentation checks and current scope review. Prerequisites are the exact source revision, free/FOSS asset policy and disjoint writer lease. Completion is its named source/evidence outcome, not a prettier scene. Recheck device and host qualification when those environments become available. Development = proposed specification; Production Release = no candidate; Runtime = unverified. This checkpoint adds no dependencies, services or runtime effects.
+Next bounded action: qualify the candidate on Safari/phone with camera grant/deny, touch and offline reopen; exercise a real WebMCP host, then resolve the headless MCP/grammar capture gap and optional depth asset closure before claiming S01–S10. Prerequisites are an exact integrated source revision, free/FOSS asset policy and a device/host test surface. Recheck each when available. Development = source candidate with focused local proof; Production Release = no candidate; Runtime = unverified. This checkpoint adds no required service or paid dependency.
