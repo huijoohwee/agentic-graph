@@ -1,3 +1,4 @@
+import { buildSolidRasterRelief } from '@/features/image-to-threejs/imageRasterReliefGeometry'
 import * as THREE from 'three'
 import { analyzeImageToGlbReference } from '@/features/image-to-glb/imageToGlbReferenceAnalysis'
 import { deriveContourRebuildPlan, buildContourRebuildScene } from '@/features/image-to-glb/imageToGlbContourRebuild'
@@ -19,7 +20,7 @@ export function buildTwinScene(bindings: readonly TwinBinding[]): BuiltTwinScene
   let triangles = 0
   try {
     for (const binding of bindings) {
-      const built = binding.template === 'contour' ? buildContourObject(binding) : buildProceduralAsset(binding.recipe)
+      const built = binding.template === 'contour' ? buildContourObject(binding) : binding.template === 'relief' ? buildReliefObject(binding) : buildProceduralAsset(binding.recipe)
       const source = built.scene
       objects.push({ binding, wrapper: new THREE.Group(), source })
       const bounds = new THREE.Box3().setFromObject(source), extent = bounds.getSize(new THREE.Vector3())
@@ -78,4 +79,13 @@ function buildContourObject(binding: TwinBinding) {
   scene.visible = binding.recipe.values.visible !== false
   scene.userData.geometryEvidence = { method: 'visible-contour-extrusion', depth: 'authored', hiddenSurfaces: 'approximate' }
   return { scene, evidence: { triangles: plan.quality.estimatedTriangleCount } }
+}
+
+function buildReliefObject(binding: TwinBinding) {
+  const geometry = buildSolidRasterRelief(binding.relief!, binding.size[0], binding.size[1])
+  const scene = new THREE.Group()
+  scene.add(new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: String(binding.recipe.values.color), roughness: 0.9 })))
+  scene.visible = binding.recipe.values.visible !== false
+  scene.userData.geometryEvidence = { method: 'image-brightness-relief-v1', depth: 'authored', hiddenSurfaces: 'flat-back-and-side-walls' }
+  return { scene, evidence: { triangles: geometry.index!.count / 3 } }
 }

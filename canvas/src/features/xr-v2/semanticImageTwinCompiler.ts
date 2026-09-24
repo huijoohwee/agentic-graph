@@ -29,7 +29,7 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
     const width = clamp(region.width * twin.room.width, 0.1, Math.min(5, twin.room.width, 5 * aspect))
     let height = clamp(width / aspect, 0.1, 5)
     const shape = proposal.template || (proposal.silhouette ? 'contour' : 'box')
-    let depth = ['contour', 'box'].includes(shape) ? 0.4
+    let depth = ['contour', 'box', 'relief'].includes(shape) ? 0.4
       : clamp(width * (shape === 'chair' || shape === 'table' ? 0.72 : 1), 0.1, Math.min(5, twin.room.depth)) // Authored template proportions, not inferred depth.
     if (shape === 'sea' || shape === 'river') { depth = height; height = 0.12 }
     if (shape === 'sky') depth = 0.15
@@ -38,7 +38,7 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
     const z = clamp((region.y + region.height / 2 - 0.5) * twin.room.depth,
       -(twin.room.depth - depth) / 2, (twin.room.depth - depth) / 2)
     const binding = buildSemanticTwinBinding({ entity, observation: action.observation, room: twin.room,
-      template: shape, color: proposal.color, silhouette: proposal.silhouette, size: [width, height, depth], position: [x, ['sky', 'cloud', 'moon', 'sun'].includes(shape) ? 2 : 0, z] })
+      template: shape, color: proposal.color, silhouette: shape === 'contour' ? proposal.silhouette : undefined, relief: proposal.relief, size: [width, height, depth], position: [x, ['sky', 'cloud', 'moon', 'sun'].includes(shape) ? 2 : 0, z] })
     return binding
   })
   return { ...doc, observations: [...doc.observations, action.observation],

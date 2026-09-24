@@ -72,7 +72,9 @@ export async function overlaySemanticObservation(space: SpaceDocument, observati
   media.resetImmersiveMediaView()
   const opened = media.openImmersiveMedia()
   if (opened.error) throw Error(opened.message)
-  return 'Objects aligned with their source image. Depth is authored relief; use 3D layout for placement and physics.'
+  const { photoOverlayBindings } = await import('./semanticTwinPhotoProjection')
+  const count = photoOverlayBindings(space, { width: observation.width, height: observation.height, evidenceSha256: observation.sha256 }).length
+  return `Image shown with ${count} saved 3D region${count === 1 ? '' : 's'}. Generate whole-image relief for complete surface coverage, or review more object regions.`
 }
 
 /** Reuse the same bounded evidence preparation to match a fresh local/URL import by content. */

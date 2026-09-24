@@ -82,7 +82,7 @@ export async function applyTwinImageAppearance(objects: readonly ImageObject[], 
   const candidates = objects.flatMap(object => {
     const entity = document.entities.find(item => item.id === object.binding.entityId)
     const observation = document.observations.find(item => item.id === object.binding.observationId)
-    if (!entity || (!photoOverlay && (!['local-foreground-components-v1', 'user-selected-region-v1'].includes(entity.proposalMethod || '') || !['box', 'contour'].includes(object.binding.template)))) return []
+    if (!entity || (!photoOverlay && (!['local-foreground-components-v1', 'user-selected-region-v1'].includes(entity.proposalMethod || '') || !['box', 'contour', 'relief'].includes(object.binding.template)))) return []
     if (!observation || observation.sha256 !== object.binding.evidenceSha256) throw Error('Photo face evidence is missing.')
     return [{ ...object, entity, observation }]
   })
@@ -97,9 +97,9 @@ export async function applyTwinImageAppearance(objects: readonly ImageObject[], 
         signal.throwIfAborted()
         const meshes: THREE.Mesh[] = []
         source.traverse(item => { if ((item as THREE.Mesh).isMesh) meshes.push(item as THREE.Mesh) })
-        const contour = binding.template === 'contour'
-        if (!meshes.length || (!photoOverlay && !contour && (meshes.length !== 1 || meshes[0].userData.primitive !== 'box'))) continue
-        const plan = planTwinImageCrop(entity.region, observation, contour || photoOverlay
+        const contour = binding.template === 'contour', relief = binding.template === 'relief'
+        if (!meshes.length || (!photoOverlay && !contour && !relief && (meshes.length !== 1 || meshes[0].userData.primitive !== 'box'))) continue
+        const plan = planTwinImageCrop(entity.region, observation, contour || relief || photoOverlay
           ? [entity.region.width * observation.width, entity.region.height * observation.height] : binding.size, candidates.length)
         const canvas = globalThis.document.createElement('canvas')
         canvas.width = plan.width; canvas.height = plan.atlasHeight
@@ -120,7 +120,11 @@ export async function applyTwinImageAppearance(objects: readonly ImageObject[], 
         const material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false })
         const replaced = new Set<THREE.Material>()
         for (const mesh of meshes) {
-          if (contour) {
+          if (relief) {
+            const uv = mesh.geometry.getAttribute('uv')
+            for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i), i < mesh.geometry.userData.reliefFrontVertices ? (8 + uv.getY(i) * plan.height) / plan.atlasHeight : 4 / plan.atlasHeight)
+            uv.needsUpdate = true
+          } else if (contour) {
             const frame = source.userData.contourRebuildPlan
             mapTwinContourFace(mesh.geometry, frame.worldWidth, frame.worldHeight, binding.silhouette!, plan.height, plan.atlasHeight)
           } else if (!photoOverlay) mapTwinImageFace(mesh.geometry, plan.height, plan.atlasHeight)

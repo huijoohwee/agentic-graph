@@ -23,19 +23,19 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   const base = React.useRef<{ id: string | null; revision: number }>({ id: null, revision: 0 })
   const saved = React.useRef<SpaceDocument | null>(null)
   React.useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.abort() } }, [])
-  const analyze = async (region?: SpaceRegion, useWholeRegion = false) => {
+  const analyze = async (region?: SpaceRegion, useWholeRegion = false, relief = false) => {
     if (controller.current) return
     const job = new AbortController(); controller.current = job
     setBusy(true); setStatus('Finding visible regions locally…'); setDraft(null); setEditing(false); saved.current = null
     try {
       const doc = await readSemanticSpace()
       base.current = { id: doc?.id || null, revision: doc?.revision || 0 }
-      const next = await perceiveImportedImage(sourceUrl, job.signal, { region, useWholeRegion })
+      const next = await perceiveImportedImage(sourceUrl, job.signal, { region, useWholeRegion, relief })
       if (!mounted.current) return
       setDraft(next); setSelected(next.result.proposals.map((_, index) => index))
       setLabels(next.result.proposals.map(item => item.label))
       setShapes(next.result.proposals.map(item => item.template || (item.silhouette ? 'contour' : 'box')))
-      setStatus(useWholeRegion ? 'Chosen area ready. Choose its 3D shape and label below.' : 'Review the regions below. These are pixel groups, not recognized objects.')
+      setStatus(relief ? 'Full image prepared as one continuous relief. Review and build below; this does not identify individual objects.' : useWholeRegion ? 'Chosen area ready. Choose its 3D shape and label below.' : 'Review the regions below. These are pixel groups, not recognized objects.')
     } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
     finally { if (controller.current === job) controller.current = null; if (mounted.current) setBusy(false) }
   }
@@ -79,6 +79,8 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   }
   return <section className="grid gap-2" aria-label="Local image to 3D">
     <button type="button" className={button} disabled={busy} onClick={() => void analyze()}>Analyze image locally</button>
+    <button type="button" className={button} disabled={busy} onClick={() => void analyze(undefined, false, true)}>Generate whole-image relief</button>
+    <p className="m-0">Show image displays saved regions. Analyze proposes visible groups; whole-image relief covers the complete photo.</p>
     <details><summary className="min-h-11 cursor-pointer py-2">Refine image regions</summary>
       <SemanticImageRegionFocus imageUrl={sourceUrl} value={focus} disabled={busy} onChange={next => {
         setFocus(next); setDraft(null); saved.current = null; setStatus('Focus changed. Analyze it or use it as one region.')
@@ -89,6 +91,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
     {busy && controller.current && <button type="button" className={button}
       onClick={() => controller.current?.abort()}>Cancel analysis</button>}
     {draft && <>
+      <p className="m-0">{draft.result.proposals.length} proposed region(s). {draft.result.proposals.some(item => item.relief) ? 'Relief includes every source pixel; brighter pixels raise its surface. Adjust depth in the editor.' : 'Pixel grouping does not guarantee every object is separated. Use focus to add missing objects.'}</p>
       <div className="relative">
         <img src={draft.observation.imageDataUrl} alt="Review proposed visible regions" className="block w-full" />
         {draft.result.proposals.map((item, index) => selected.includes(index) && <span key={index}
@@ -108,8 +111,8 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
           <select className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} shape`}
             value={shapes[index]} disabled={busy || !!saved.current}
             onChange={event => { const value = event.currentTarget.value as TwinTemplate; setShapes(current => current.map((shape, i) => i === index ? value : shape)) }}>
-            {SEMANTIC_TWIN_TEMPLATES.filter(shape => shape !== 'contour' || draft.result.proposals[index].silhouette)
-              .map(shape => <option key={shape} value={shape}>{shape === 'contour' ? 'Visible outline → 3D volume' : shape === 'box' ? 'Box with photo front' : shape}</option>)}
+            {SEMANTIC_TWIN_TEMPLATES.filter(shape => (shape !== 'contour' || draft.result.proposals[index].silhouette) && (shape !== 'relief' || draft.result.proposals[index].relief))
+              .map(shape => <option key={shape} value={shape}>{shape === 'relief' ? 'Whole-image surface relief' : shape === 'contour' ? 'Visible outline → 3D volume' : shape === 'box' ? 'Box with photo front' : shape}</option>)}
           </select></label></div>)}</div>
       <p className="m-0">Visible outlines become solid Three.js contour meshes. Choose an object or outdoor shape for a procedural model, including buildings, trees, water, sky and terrain.
         These are reviewed approximations: object identity, hidden surfaces and real depth are not recovered. Contour depth starts at 0.4 arbitrary units; other models use template proportions; edit dimensions and placement in Semantic space.</p>

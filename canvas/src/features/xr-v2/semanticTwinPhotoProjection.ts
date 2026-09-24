@@ -41,7 +41,7 @@ export function projectTwinOnPhoto(item: BuiltTwinObject, document: SpaceDocumen
       const uv = mesh.geometry.getAttribute('uv')
       if (atlas?.height && uv) uv.setXY(i, Math.max(0, Math.min(1, localX)),
         (8 + (1 - Math.max(0, Math.min(1, localY))) * (atlas.height - 8)) / atlas.height)
-      const depth = 0.25 + Math.max(0, Math.min(1, (point.z - bounds.min.z) / extent.z)) * 0.5
+      const depth = (item.binding.template === 'relief' ? 0.02 : 0.25) + Math.max(0, Math.min(1, (point.z - bounds.min.z) / extent.z)) * (item.binding.template === 'relief' ? 0.12 : 0.5)
       const distance = PHOTO_DISTANCE - depth
       // Scaling along the viewing ray prevents nearer faces expanding beyond their evidence region.
       positions.setXYZ(i, (u - 0.5) * size.width * distance / PHOTO_DISTANCE,

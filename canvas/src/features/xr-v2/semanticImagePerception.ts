@@ -1,3 +1,4 @@
+import { describeRasterRelief, type RasterRelief } from '@/features/image-to-threejs/imageRasterReliefField'
 import { buildForegroundMask } from '@/features/image-to-glb/imageToGlbReferenceAnalysis'
 import type { ImageReferencePixels } from '@/features/image-to-threejs/imageReferencePixels'
 import type { TwinSilhouette } from './semanticTwinSilhouette'
@@ -8,7 +9,7 @@ export const IMAGE_PERCEPTION_METHOD = 'local-foreground-components-v1' as const
 export const IMAGE_PERCEPTION_LIMITS = Object.freeze({ dimension: 192, regions: 12, timeoutMs: 5000 })
 export type ImageRegionProposal = Readonly<{
   region: SpaceRegion; color: string; coverage: number; label: string
-  silhouette?: TwinSilhouette; template?: TwinTemplate; source?: 'user-region'
+  silhouette?: TwinSilhouette; template?: TwinTemplate; source?: 'user-region'; relief?: RasterRelief
 }>
 export type ImagePerceptionResult = Readonly<{
   method: typeof IMAGE_PERCEPTION_METHOD
@@ -88,4 +89,10 @@ export function describeChosenImageRegion(pixels: ImageReferencePixels): ImagePe
   return { method: IMAGE_PERCEPTION_METHOD, background: 'user-region', width, height,
     proposals: [{ region: { x: 0, y: 0, width: 1, height: 1 }, coverage: 1, label: 'Chosen region', template: 'box', source: 'user-region',
       color: '#' + sums.map(sum => Math.round(sum / (width * height)).toString(16).padStart(2, '0')).join('') }] }
+}
+
+/** Full raster coverage, including pixels excluded by foreground segmentation. */
+export function describeImageRelief(pixels: ImageReferencePixels): ImagePerceptionResult {
+  const result = describeChosenImageRegion(pixels)
+  return { ...result, proposals: [{ ...result.proposals[0], label: 'Whole image relief', template: 'relief', relief: describeRasterRelief(pixels) }] }
 }

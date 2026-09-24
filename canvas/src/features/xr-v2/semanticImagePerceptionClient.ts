@@ -1,10 +1,10 @@
 import { readImageReferencePixels } from '@/features/image-to-threejs/imageReferencePixels'
 import { hashSpaceImage, type SpaceRegion, type SpaceObservation } from './semanticSpaceRuntime'
-import { IMAGE_PERCEPTION_LIMITS, describeChosenImageRegion, mapFocusedProposals, type ImagePerceptionResult } from './semanticImagePerception'
+import { IMAGE_PERCEPTION_LIMITS, describeChosenImageRegion, describeImageRelief, mapFocusedProposals, type ImagePerceptionResult } from './semanticImagePerception'
 
 export type SemanticImageDraft = Readonly<{ observation: SpaceObservation; result: ImagePerceptionResult }>
 
-type FocusOptions = { region?: SpaceRegion; useWholeRegion?: boolean }
+type FocusOptions = { region?: SpaceRegion; useWholeRegion?: boolean; relief?: boolean }
 let active = false
 export async function perceiveImportedImage(sourceUrl: string, signal: AbortSignal, options: FocusOptions = {}): Promise<SemanticImageDraft> {
   if (active) throw Error('An image analysis is already running. Cancel it or wait for completion.')
@@ -46,7 +46,7 @@ async function runPerception(sourceUrl: string, signal: AbortSignal, options: Fo
     width: canvas.width, height: canvas.height, imageDataUrl, sha256: await hashSpaceImage(imageDataUrl),
     orientation: 'source-pixels', scale: 'unknown' }
   signal.throwIfAborted()
-  const result = options.useWholeRegion ? describeChosenImageRegion(pixels) : await new Promise<ImagePerceptionResult>((resolve, reject) => {
+  const result = options.relief ? describeImageRelief(pixels) : options.useWholeRegion ? describeChosenImageRegion(pixels) : await new Promise<ImagePerceptionResult>((resolve, reject) => {
     const worker = new Worker(new URL('./semanticImagePerception.worker.ts', import.meta.url), { type: 'module' })
     const finish = (error?: Error, result?: ImagePerceptionResult) => {
       clearTimeout(timer); signal.removeEventListener('abort', abort); worker.terminate()

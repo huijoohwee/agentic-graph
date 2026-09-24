@@ -1,3 +1,4 @@
+import { validateRasterRelief, type RasterRelief } from '@/features/image-to-threejs/imageRasterReliefField'
 import { SEMANTIC_TWIN_PROCEDURAL_TEMPLATES } from './semanticTwinTemplates.mjs'
 import { validateTwinSilhouette, type TwinSilhouette } from './semanticTwinSilhouette'
 import { parseProceduralAssetRecipe, updateProceduralAssetControl,
@@ -7,7 +8,7 @@ import type { SpaceEntity, SpaceObservation } from './semanticSpaceRuntime'
 
 export const SEMANTIC_TWIN_SCHEMA = 'agentic-graph/semantic-twin/v1' as const
 export const SEMANTIC_TWIN_PREVIEW_EVENT = 'agentic-graph:semantic-twin-preview'
-export const SEMANTIC_TWIN_TEMPLATES = ['contour', ...SEMANTIC_TWIN_PROCEDURAL_TEMPLATES] as const
+export const SEMANTIC_TWIN_TEMPLATES = ['contour', 'relief', ...SEMANTIC_TWIN_PROCEDURAL_TEMPLATES] as const
 export const MAX_TWIN_OBJECTS = 20
 export type TwinTemplate = typeof SEMANTIC_TWIN_TEMPLATES[number]
 export type TwinVector = readonly [number, number, number]
@@ -18,6 +19,7 @@ export type TwinBinding = Readonly<{
   evidenceSha256: string
   template: TwinTemplate
   silhouette?: TwinSilhouette
+  relief?: RasterRelief
   recipe: ProceduralAssetRecipe
   size: TwinVector
   position: TwinVector
@@ -57,7 +59,7 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
   let parts = 0
   for (const object of twin.objects) {
     if (!isRecord(object) || Object.keys(object).some(key => ![
-      'entityId', 'observationId', 'evidenceSha256', 'template', 'recipe', 'size', 'position', 'provenance', 'silhouette',
+      'entityId', 'observationId', 'evidenceSha256', 'template', 'recipe', 'size', 'position', 'provenance', 'silhouette', 'relief',
     ].includes(key)) || typeof object.entityId !== 'string' || seen.has(object.entityId)
       || typeof object.observationId !== 'string' || !/^[a-f0-9]{64}$/.test(String(object.evidenceSha256))
       || !template(object.template) || !vector(object.size, 0.1, 5)
@@ -65,6 +67,8 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
       || object.provenance !== 'authored-approximation') fail('invalid object binding')
     if (Math.abs(object.position[0]) + object.size[0] / 2 > twin.room.width / 2 + 1e-6
       || Math.abs(object.position[2]) + object.size[2] / 2 > twin.room.depth / 2 + 1e-6) fail('object extends beyond authored room')
+    if (object.template === 'relief') validateRasterRelief(object.relief)
+    else if (object.relief !== undefined) fail('relief data requires relief geometry')
     if (object.template === 'contour') validateTwinSilhouette(object.silhouette)
     else if (object.silhouette !== undefined) fail('silhouette requires contour geometry')
     const entity = entities.find(item => item.id === object.entityId)
@@ -80,14 +84,14 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
 
 export function buildSemanticTwinBinding(args: Readonly<{
   entity: SpaceEntity; observation: SpaceObservation; template: TwinTemplate
-  size: TwinVector; position: TwinVector; room: TwinRoom; seed?: number; silhouette?: TwinSilhouette; color?: string
+  size: TwinVector; position: TwinVector; room: TwinRoom; seed?: number; silhouette?: TwinSilhouette; relief?: RasterRelief; color?: string
 }>): TwinBinding {
   if (!template(args.template) || !vector(args.size, 0.1, 5) || !vector(args.position, -10, 10)
     || args.position[1] < 0 || !Number.isSafeInteger(args.seed ?? 1)
     || (args.seed ?? 1) < 0 || (args.seed ?? 1) > 0xffff_ffff) fail('invalid construction request')
   if (args.color !== undefined && !/^#[0-9a-f]{6}$/i.test(args.color)) fail('invalid construction colour')
-  const recipe = createProceduralAssetFromText(`${args.template === 'contour' ? 'box' : args.template} ${args.color || ''}`.trim(), args.seed ?? 1)
-  if (args.template === 'contour') {
+  const recipe = createProceduralAssetFromText(`${['contour', 'relief'].includes(args.template) ? 'box' : args.template} ${args.color || ''}`.trim(), args.seed ?? 1)
+  if (['contour', 'relief'].includes(args.template)) {
     recipe.controls = recipe.controls.filter(control => ['color', 'visible'].includes(control.id))
     recipe.values = Object.fromEntries(recipe.controls.map(control => [control.id, recipe.values[control.id]]))
   }
@@ -96,6 +100,7 @@ export function buildSemanticTwinBinding(args: Readonly<{
     evidenceSha256: args.observation.sha256, template: args.template,
     recipe,
     ...(args.template === 'contour' ? { silhouette: validateTwinSilhouette(args.silhouette) } : {}),
+    ...(args.template === 'relief' ? { relief: validateRasterRelief(args.relief) } : {}),
     size: [...args.size] as [number, number, number],
     position: [...args.position] as [number, number, number],
     provenance: 'authored-approximation',

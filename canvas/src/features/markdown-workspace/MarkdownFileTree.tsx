@@ -90,6 +90,17 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
   const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; entry: WorkspaceEntry } | null>(null)
+  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null)
+  const deleteDialog = React.useRef<HTMLDialogElement | null>(null)
+  const deleteAnswer = React.useRef<((confirmed: boolean) => void) | null>(null)
+  const answerDelete = React.useCallback((confirmed: boolean) => {
+    deleteAnswer.current?.(confirmed); deleteAnswer.current = null; setDeleteTarget(null)
+  }, [])
+  const confirmDelete = React.useCallback((path: string) => new Promise<boolean>(resolve => {
+    deleteAnswer.current?.(false); deleteAnswer.current = resolve; setDeleteTarget(path)
+  }), [])
+  React.useEffect(() => { if (deleteTarget) deleteDialog.current?.showModal?.() }, [deleteTarget])
+  React.useEffect(() => () => { deleteAnswer.current?.(false) }, [])
 
   const closeContextMenu = React.useCallback(() => {
     setContextMenu(null)
@@ -150,10 +161,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             onClearFile,
             onRenameEntry,
             onDeleteEntry,
+            confirmDelete,
             closeContextMenu,
           })
         : [],
-    [props.readOnly, buildCanvasEmbedUrl, closeContextMenu, contextMenu, copyToClipboard, defaultBuildShareUrl, onCanvasEmbedReady, onCanvasEmbedStart, onClearFile, onCreateNewFile, onDeleteEntry, onRenameEntry, onRevealInFinder, onShareCodeReady],
+    [props.readOnly, buildCanvasEmbedUrl, closeContextMenu, contextMenu, copyToClipboard, defaultBuildShareUrl, onCanvasEmbedReady, onCanvasEmbedStart, onClearFile, onCreateNewFile, onDeleteEntry, onRenameEntry, onRevealInFinder, onShareCodeReady, confirmDelete],
   )
 
   const renderNode = (node: Node, depth: number) => {
@@ -256,6 +268,18 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   return (
     <nav className={UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME} aria-label="Source files">
       {renderNode(tree, 0)}
+      {deleteTarget && <dialog ref={deleteDialog} aria-labelledby="workspace-delete-title"
+        className={`w-[min(90vw,28rem)] rounded border p-4 shadow-lg backdrop:bg-black/60 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}
+        onCancel={event => { event.preventDefault(); answerDelete(false) }} onPointerDown={event => event.stopPropagation()}>
+        <h2 id="workspace-delete-title">Delete source file?</h2>
+        <p className="break-words">{deleteTarget}</p>
+        <p>This removes the workspace entry. The original imported file on your device is unchanged.</p>
+        <div className="flex justify-end gap-2">
+          <button type="button" autoFocus className="min-h-11 rounded border px-3" onClick={() => answerDelete(false)}>Cancel</button>
+          <button type="button" disabled={props.readOnly} className={`min-h-11 rounded border px-3 ${UI_THEME_TOKENS.status.error}`}
+            onClick={() => answerDelete(true)}>Delete from workspace</button>
+        </div>
+      </dialog>}
       {contextMenu ? (
         <section
           className={`kg-data-view-floating-menu fixed z-[120] ${UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME} rounded border shadow-lg ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}

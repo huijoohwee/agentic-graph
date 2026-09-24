@@ -23,13 +23,15 @@ const summary = (doc: SpaceDocument | null, query = '') => ({
       position: item.position, provenance: item.provenance,
       controls: item.recipe.controls.map(control => ({ id: control.id, value: item.recipe.values[control.id] })) })) } : null,
 })
-type Parsed = { operation: 'overlay'; observationId: string } | { operation: 'renderer'; backend: 'webgl' | 'webgpu' } | { operation: 'analyze'; observationId: string } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
+type Parsed = { operation: 'overlay'; observationId: string } | { operation: 'renderer'; backend: 'webgl' | 'webgpu' } | { operation: 'analyze'; observationId: string; relief?: boolean } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
   | { operation: 'correct'; entityId: string; category: string; label: string }
   | { operation: 'build'; entityId: string; template: TwinTemplate; size: TwinVector; position: TwinVector }
   | { operation: 'simulate' | 'reset'; entityId: string }
 const TOKEN = '[A-Za-z0-9][A-Za-z0-9._:-]{0,127}'
 const NUMBER = '-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)'
 export function parseSemanticSpaceInvocation(value: string): Parsed {
+  const relief = new RegExp(`^/space\\.analyze @(${TOKEN}) #relief$`).exec(value)
+  if (relief) return { operation: 'analyze', observationId: relief[1], relief: true }
   const overlay = new RegExp(`^/space\\.overlay @(${TOKEN}) #image$`).exec(value)
   if (overlay) return { operation: 'overlay', observationId: overlay[1] }
   const renderer = /^\/space\.renderer @canvas #(webgl|webgpu)$/.exec(value)
@@ -77,12 +79,12 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
             if (!observation) throw new SpaceError('unknown-observation', 'Choose saved image evidence first')
             const { perceiveImportedImage } = await import('@/features/xr-v2/semanticImagePerceptionClient')
             const draft = await perceiveImportedImage(observation.imageDataUrl, new AbortController().signal,
-              { region: raw.region as SpaceRegion | undefined, useWholeRegion: raw.useWholeRegion === true })
+              { region: raw.region as SpaceRegion | undefined, useWholeRegion: raw.useWholeRegion === true, relief: raw.relief === true })
             const current = await readSemanticSpace()
             if (current?.id !== doc.id || current.revision !== doc.revision) throw new SpaceError('stale-revision', 'Space changed during analysis')
             return { ok: true, spaceId: doc.id, revision: doc.revision, observationId: observation.id,
               evidenceSha256: observation.sha256, ...draft.result, confirmed: false, scale: 'unknown',
-              assumptions: 'Pixel groups only. Confirm labels and regions before building; depth is not observed.' }
+              assumptions: raw.relief ? 'Full-image brightness relief; not semantic recognition or observed depth.' : 'Pixel groups only. Confirm labels and regions before building; depth is not observed.' }
           }
           if (operation === 'simulate' || operation === 'reset') {
             const entityId = String(raw.entityId || '')

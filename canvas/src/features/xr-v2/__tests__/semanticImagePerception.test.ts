@@ -214,3 +214,47 @@ test('chosen continuous surfaces preserve authored provenance and elevated place
   assert.ok(parsed.operation === 'build')
   assert.deepEqual(parsed.position, [0, 3, 0])
 })
+
+
+test('whole-image relief covers landscape, portrait and uniform photos and makes a closed editable solid', async () => {
+  const { describeImageRelief } = await import('../semanticImagePerception')
+  const { buildSolidRasterRelief } = await import('@/features/image-to-threejs/imageRasterReliefGeometry')
+  const { validateRasterRelief } = await import('@/features/image-to-threejs/imageRasterReliefField')
+  for (const [width, height] of [[192, 108], [48, 192], [80, 80]]) {
+    const pixels = { width, height, sourceWidth: width, sourceHeight: height, data: new Uint8ClampedArray(width * height * 4).fill(255) }
+    const uniform = describeImageRelief(pixels)
+    assert.equal(uniform.proposals.length, 1)
+    assert.deepEqual(uniform.proposals[0].region, { x: 0, y: 0, width: 1, height: 1 })
+    assert.ok(uniform.proposals[0].relief!.samples.every(n => n === 255))
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      const value = Math.round(x / (width - 1) * 255)
+      pixels.data.set([value, value, value, 255], (y * width + x) * 4)
+    }
+    const proposals = describeImageRelief(pixels).proposals, field = proposals[0].relief!
+    assert.deepEqual(proposals, describeImageRelief(pixels).proposals)
+    assert.ok(field.width <= 65 && field.height <= 65)
+    const solid = buildSolidRasterRelief(field, 4, 4 * height / width)
+    try {
+      const positions = solid.getAttribute('position'), indices = solid.index!
+      assert.ok(Array.from(positions.array).every(Number.isFinite))
+      assert.ok(positions.getZ(field.width - 1) > positions.getZ(0), 'brightness changes actual vertex depth')
+      const edges = new Map<string, number>(), direction = new Map<string, number>()
+      for (let i = 0; i < indices.count; i += 3) for (let e = 0; e < 3; e++) {
+        const a = indices.getX(i + e), b = indices.getX(i + (e + 1) % 3), key = [Math.min(a,b), Math.max(a,b)].join(':')
+        edges.set(key, (edges.get(key) || 0) + 1); direction.set(key, (direction.get(key) || 0) + (a < b ? 1 : -1))
+      }
+      assert.ok([...edges.values()].every(n => n === 2), 'front, sides and back must form a closed manifold')
+      assert.ok([...direction.values()].every(n => n === 0), 'shared edges must have opposite winding')
+      assert.ok(indices.count / 3 < 17_000)
+    } finally { solid.dispose() }
+    const input = await action(), doc = applySpaceAction(newSpaceDocument('space:relief'), { ...input, proposals })
+    const built = buildTwinScene(doc.twin!.objects)
+    try { assert.equal(built.error, null) } finally { disposeTwinScene(built) }
+    const store = createSemanticSpaceStore({ indexedDB, databaseName: `relief-${crypto.randomUUID()}` })
+    assert.deepEqual(await importSemanticSpace(await exportSemanticSpacePackage(doc), store), doc)
+    assert.throws(() => validateRasterRelief({ ...field, samples: [NaN] }), /Invalid/)
+    assert.throws(() => validateRasterRelief({ ...field, width: 66 }), /Invalid/)
+  }
+  assert.deepEqual(parseSemanticSpaceInvocation('/space.analyze @observation:test #relief'),
+    { operation: 'analyze', observationId: 'observation:test', relief: true })
+})

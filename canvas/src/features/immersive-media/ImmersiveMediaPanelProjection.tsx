@@ -158,6 +158,7 @@ function SemanticSpaceMediaSource() {
   const [creatingStoryboard, setCreatingStoryboard] = React.useState(false)
   const openingRef = React.useRef<AbortController | null>(null)
   const [openError, setOpenError] = React.useState<string | null>(null)
+  const [openStatus, setOpenStatus] = React.useState<string | null>(null)
   React.useEffect(() => {
     let active = true
     const refresh = () => { void readSemanticSpace().then(space => {
@@ -187,7 +188,8 @@ function SemanticSpaceMediaSource() {
         if (readGameModeSnapshot().active) exitGameModeSurface({ restorePreviousSurface: false })
         if (readFlightSimSnapshot().active) exitFlightSimSurface({ restorePreviousSurface: false })
         const { showSemanticImageOnCanvas } = await import('@/features/xr-v2/semanticSpaceCanvas')
-        await showSemanticImageOnCanvas(displayedImageUrl, job.signal)
+        const message = await showSemanticImageOnCanvas(displayedImageUrl, job.signal)
+        if (!job.signal.aborted) setOpenStatus(message)
       })().catch(error => {
         setOpenError(String((error as Error).message || error))
       }).finally(() => setOpening(false))
@@ -200,6 +202,7 @@ function SemanticSpaceMediaSource() {
       }).finally(() => setCreatingStoryboard(false))
     }}>{imported.storyboardPath ? 'Storyboard created' : creatingStoryboard ? 'Creating storyboard…' : 'Create storyboard'}</button> : null}
     <React.Suspense fallback={null}><SemanticImagePerceptionChoice key={displayedImageUrl} sourceUrl={displayedImageUrl} /></React.Suspense>
+    {openStatus && !openError ? <output role="status">{openStatus}</output> : null}
     {openError ? <output role="status">Space image could not open: {openError}</output> : null}
     <span>Image overlay preserves source regions. Depth and hidden surfaces remain authored approximations.</span>
   </section>

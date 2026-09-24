@@ -390,7 +390,7 @@ export function SemanticSpacePanel() {
         <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Editable 3D approximation</legend>
           <label>Supported shape<select className={fieldClass} value={twinTemplate}
             onChange={event => setTwinTemplate(event.currentTarget.value as TwinTemplate)}>
-            {SEMANTIC_TWIN_TEMPLATES.filter(item => item !== 'contour' || twinBinding?.template === 'contour').map(item => <option key={item} value={item}>{item}</option>)}
+            {SEMANTIC_TWIN_TEMPLATES.filter(item => !['contour', 'relief'].includes(item) || twinBinding?.template === item).map(item => <option key={item} value={item}>{item}</option>)}
           </select></label>
           <div className="grid grid-cols-3 gap-2">{(['Width', 'Height', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
             <input className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
