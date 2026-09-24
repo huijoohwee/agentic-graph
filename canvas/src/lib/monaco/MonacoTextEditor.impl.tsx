@@ -10,6 +10,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { useShallow } from 'zustand/react/shallow'
 import { applyExternalMonacoValue } from './monacoExternalValueApply'
 import { resolveMonacoRuntimeMode } from './monacoRuntimeMode'
+import { setNativeMonacoTheme } from './theme'
 
 const FLASH_STYLE_ID = 'monaco-flash-style'
 const FLASH_CSS = `
@@ -244,6 +245,9 @@ export const buildMonacoEditorOptions = (
   scrollBeyondLastLine: settings.monacoScrollBeyondLastLineEnabled,
   wordWrap: settings.monacoWordWrapEnabled || args.wordWrap ? 'on' : 'off',
   fontLigatures: false,
+  fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+  fontSize: 12,
+  lineHeight: 18,
   automaticLayout: true,
   contextmenu: false,
   accessibilitySupport: settings.monacoAccessibilitySupportEnabled ? 'on' : 'off',
@@ -451,6 +455,7 @@ export function MonacoTextEditor(props: MonacoTextEditorProps) {
     flashDurationMs = 1000,
   } = props
   const monacoSettings = useMonacoCapabilitySettings()
+  const darkThemeVariant = useGraphStore(s => s.darkThemeVariant)
   const touchViewportMatches = useMediaQuery(MONACO_TOUCH_VIEWPORT_QUERY)
 
   const hostRef = React.useRef<HTMLElement | null>(null)
@@ -480,12 +485,14 @@ export function MonacoTextEditor(props: MonacoTextEditorProps) {
   const onFocusRef = React.useRef(onFocus)
   const onHandleRef = React.useRef(onHandle)
   const themeModeRef = React.useRef<'light' | 'dark'>(themeMode)
+  const darkThemeVariantRef = React.useRef(darkThemeVariant)
   const textareaHandleRef = React.useRef<MonacoTextEditorHandle | null>(null)
   const [touchViewportIntentActivated, setTouchViewportIntentActivated] = React.useState(false)
 
   React.useEffect(() => {
     themeModeRef.current = themeMode
-  }, [themeMode])
+    darkThemeVariantRef.current = darkThemeVariant
+  }, [themeMode, darkThemeVariant])
 
   React.useEffect(() => {
     editorRefRef.current = editorRef
@@ -553,12 +560,6 @@ export function MonacoTextEditor(props: MonacoTextEditorProps) {
 
     return () => clearTimeout(timer)
   }, [flashLine, flashDurationMs])
-
-  React.useEffect(() => {
-    if (editorInstanceRef.current && monacoRef.current) {
-        monacoRef.current.editor.setTheme(themeMode === 'dark' ? 'vs-dark' : 'vs')
-    }
-  }, [themeMode])
 
   const isJsdom =
     typeof window !== 'undefined' &&
@@ -885,7 +886,7 @@ export function MonacoTextEditor(props: MonacoTextEditorProps) {
         }),
       })
 
-      monaco.editor.setTheme(themeModeRef.current === 'dark' ? 'vs-dark' : 'vs')
+      setNativeMonacoTheme(monaco, themeModeRef.current, darkThemeVariantRef.current)
 
       editorInstanceRef.current = editor
       const nextValue = latestValueRef.current
@@ -1153,8 +1154,8 @@ export function MonacoTextEditor(props: MonacoTextEditorProps) {
     if (!canUseMonaco) return
     const monaco = monacoRef.current
     if (!monaco) return
-    monaco.editor.setTheme(themeMode === 'dark' ? 'vs-dark' : 'vs')
-  }, [canUseMonaco, themeMode])
+    setNativeMonacoTheme(monaco, themeMode, darkThemeVariant)
+  }, [canUseMonaco, themeMode, darkThemeVariant])
 
   const setTextareaRef = React.useCallback((el: HTMLTextAreaElement | null) => {
     if (textareaElRef.current === el) return

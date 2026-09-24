@@ -741,9 +741,14 @@ export const FALLBACK_DETAILS: Record<string, { area?: string; responsibility?: 
     responsibility: 'Master on/off switch for all voxel animations',
   },
   themeMode: {
-    area: 'UI Appearance',
-    responsibility: 'Global color theme (Light, Dark, or System)',
-    notes: 'Controls the application color palette. Light mode follows GitHub Light Tritanopia, Dark mode follows GitHub Dark Tritanopia.',
+    area: 'Themes',
+    responsibility: 'Global color theme (System, Light, or Dark)',
+    notes: 'System follows the device preference. Dark uses the selected dark variant.',
+  },
+  darkThemeVariant: {
+    area: 'Themes',
+    responsibility: 'Dark palette: Black (Default) or Dark Blue',
+    notes: 'Black is the fresh default. Previously saved Dark sessions retain Dark Blue until changed.',
   },
   selectionFlashDurationMs: {
     area: 'Selection Flash',

@@ -1,7 +1,7 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { SettingMeta } from './types'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import type { ThemeMode } from '@/lib/ui/theme'
+import { DARK_THEME_VARIANT_OPTIONS, isDarkThemeVariant, type ThemeMode } from '@/lib/ui/theme'
 import { LS_KEYS } from '@/lib/config'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 import {
@@ -318,6 +318,18 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
     docKey: 'themeMode',
     default: () => 'system',
     options: ['light', 'dark', 'system'],
+  },
+  {
+    key: 'darkThemeVariant',
+    type: 'string',
+    source: 'store',
+    read: () => DARK_THEME_VARIANT_OPTIONS.find(option => option.value === s().darkThemeVariant)?.label ?? 'Black (Default)',
+    write: (v) => s().setDarkThemeVariant(
+      v === 'Dark Blue' || v === 'dark-blue' ? 'dark-blue' : isDarkThemeVariant(v) ? v : 'black',
+    ),
+    docKey: 'darkThemeVariant',
+    default: () => 'Black (Default)',
+    options: DARK_THEME_VARIANT_OPTIONS.map(option => option.label),
   },
   {
     key: 'floatingPanelWidthRatio',

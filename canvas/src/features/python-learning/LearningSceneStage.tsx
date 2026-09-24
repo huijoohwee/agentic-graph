@@ -1,13 +1,20 @@
 import { XrProceduralVehicleGeometry } from '../three/XrProceduralVehicleGeometry'
 import type { LearningLesson, LearningSceneSnapshot } from './learningLessons'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { getKgTokenFallback, type KgTheme } from '@/lib/ui/tokens-ssot'
 
 export function LearningSceneStage({ lesson, scene }: { lesson: LearningLesson; scene?: LearningSceneSnapshot }) {
+  const resolvedThemeMode = useGraphStore(state => state.resolvedThemeMode)
+  const darkThemeVariant = useGraphStore(state => state.darkThemeVariant)
+  const palette: KgTheme = resolvedThemeMode === 'light' ? 'light'
+    : darkThemeVariant === 'black' ? 'black' : 'dark'
+  const color = (name: `--kg-${string}`) => getKgTokenFallback(name, palette)
   const x = scene?.x || 0, z = scene?.z || 0, heading = scene?.heading || 0
   return <>
-    <color attach="background" args={['#142138']} />
+    <color attach="background" args={[color('--kg-canvas-bg')]} />
     <ambientLight intensity={1.4} /><directionalLight position={[4, 7, 3]} intensity={2} />
-    <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[16, 16]} /><meshStandardMaterial color="#253c55" /></mesh>
-    <gridHelper args={[16, 16, '#75bfe8', '#476279']} position={[0, 0.01, 0]} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[16, 16]} /><meshStandardMaterial color={color('--kg-surface-bg')} /></mesh>
+    <gridHelper args={[16, 16, color('--kg-canvas-edge-stroke'), color('--kg-divider')]} position={[0, 0.01, 0]} />
     <mesh position={[4, 0.02, 0]}><boxGeometry args={[8, 0.015, 0.035]} /><meshBasicMaterial color="#68cfff" /></mesh>
     <mesh position={[0, 0.02, 4]}><boxGeometry args={[0.035, 0.015, 8]} /><meshBasicMaterial color="#ff8a91" /></mesh>
     <mesh position={[lesson.goal[0], 0.025, lesson.goal[1]]} rotation={[-Math.PI / 2, 0, 0]}>

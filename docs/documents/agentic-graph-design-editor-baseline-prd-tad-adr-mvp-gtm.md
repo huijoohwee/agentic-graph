@@ -1,32 +1,32 @@
 ---
 title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.0"
-date: "2026-09-21"
+version: "0.5.0"
+date: "2026-09-24"
 lang: "en-US"
 owner: "Documentation maintainers"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--design-native-contract"
-agent_id: "codex-design-plan"
+worktree_id: "device-0232231d4a19--design-dark-variants"
+agent_id: "codex-design-theme"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM"
-guideline_revision: "3.1.0"
-guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/1b2820d8d1da5246d8d6adedd99a2e39ba1eb4fd/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "b242ab5d82c49155808a86b45565c797f8e04f61"
-previous_document_version: "0.3.1"
-prd_revision: "0.4.0"
-tad_revision: "0.4.0"
-adr_revision: "0.4.0"
-mvp_revision: "0.4.0"
-gtm_revision: "0.4.0"
+guideline_revision: "3.3.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/d1bb72de041b1ddc6d291fd4f8528ccc2d367fea/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "969f0d07802605a38dc10cde840ff685d468cf46"
+previous_document_version: "0.4.0"
+prd_revision: "0.5.0"
+tad_revision: "0.5.0"
+adr_revision: "0.5.0"
+mvp_revision: "0.5.0"
+gtm_revision: "0.5.0"
 ---
 
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
-Current accepted scope revision: **0.4.0**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.5.0**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
 
@@ -500,3 +500,67 @@ Prior independent contract/parser checks passed. The shared owner join now requi
 Design/token/Canvas tests, application typecheck, generator parity and the local browser verifier.
 Authoring and validation do not establish protected integration, production or buyer outcomes.
 Merge remains coordinated with other eligible lanes; exact PR checks and closeout receipts follow.
+
+## Native dark variants — reference implementation
+
+All five roles here join `PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM@0.5.0`.
+The implementation grant is the user's 2026-09-24 request to implement the prior recommendations,
+including the later explicit learning-canvas alignment. Source inspection is bound to Graph
+`969f0d07802605a38dc10cde840ff685d468cf46` and the proposed guideline
+`3.3.0` at website `d1bb72de041b1ddc6d291fd4f8528ccc2d367fea`.
+Protected integration and production effects require their separate evidence.
+
+### PRD
+
+A builder switches System, Light and Dark but cannot choose a neutral Black appearance; the
+learning canvas remains blue while Light is selected. Existing saved Dark users must retain
+their appearance. The near-built solution is a subordinate dark palette in the current MainPanel
+Settings and shared token owner. A $1 assisted visual-consistency review is a hypothesis only;
+buyer demand, time saved, and revenue have no observations.
+
+| ID | Given → when → then | Check |
+|---|---|---|
+| T1 | Given fresh, legacy saved-Dark, malformed or unavailable storage, when appearance initializes, then fresh prefers Black, legacy Dark keeps Dark Blue, invalid data falls to Black, and System/Light retain the dark choice. | `ui.themeModePersistence`, `ui.themeSystemModeApplyAndSubscribe` |
+| T2 | Given either dark variant, when the mode or system preference changes, then Settings, shared semantic surfaces and lazy Monaco resolve one current palette; code keeps 12px Menlo/Monaco-compatible type and 18px lines. | `ui.tokens.ssot`, `ui.nativeMonacoDarkVariants`, browser observation |
+| T3 | Given the learning workspace, when theme changes, then scene backdrop, floor and grid follow Light, Black or Dark Blue while route/goal/object colors retain their lesson meaning. | Python learning browser smoke and manual theme switch |
+| T4 | Given typography, icon or density overrides, when Reset theme is used, then only mode and dark variant return to System and Black; unrelated preferences remain. | Settings interaction and store readback |
+
+### TAD and ADR
+
+`grph-shared/src/ui/kgTokenContract.ts` validates a complete third palette;
+`kgTokens.ts` owns its values and CSS generation. `canvas/src/lib/ui/theme.ts`, the
+existing Settings registry and store own mode/variant persistence and DOM application.
+`canvas/src/lib/monaco/theme.ts` maps semantic roles at lazy editor mount and on toggles.
+`LearningSceneStage.tsx` consumes the same values for the scene's non-authored surfaces.
+The generated Settings projection and token CSS are derived outputs. This is one dependency
+direction: tokens → adapters → presentation. Preserve the former Dark palette as Dark Blue,
+retain existing mode cycling and personal text/icon/density settings, and add no remote
+service or theme registry. A reviewed source revert plus regeneration is the rollback.
+
+### MVP and GTM
+
+The local candidate is complete only after type checking, focused theme/token checks,
+affected Design and Python browser checks, generated-output parity, and the protected
+Integration Gate. Browser checks must examine Light, Black and Dark Blue at narrow and
+desktop widths and keyboard focus. A local test or green PR does not prove deployed state.
+Active sprint bound: 45 minutes, 50 KiB authored delta and 12 owner modules initially.
+The learning-canvas observation and native Settings projection expanded the cap to 60 KiB
+authored delta and 24 owner modules; generated outputs are tracked separately. Refresh
+again if these caps are crossed. No dependency, paid tier, provider
+request or new always-load guidance is part of this change.
+
+Offer the existing $1 assisted review to a consenting builder only through an authorized
+product channel. Measure their current workaround, task time, visual corrections,
+support minutes and explicit offer response; do not treat feature completion as a sale.
+The product operator owns that pilot and any later payment evidence.
+
+**Implementation checkpoint (2026-09-24):** source candidate under
+`agent/device-0232231d4a19/design-dark-variants`. Typecheck, token CSS parity,
+Settings projection parity, 11 focused theme/Design tests, and Python learning browser
+smoke passed. Direct browser readback at 375px and 1280px resolved distinct Light,
+Black, and Dark Blue canvas/code tokens without page overflow; the Settings dark-variant
+selector accepted keyboard focus and the theme-only reset restored System/Black. The
+broader Design browser verifier did not reach its Design panel because the current local
+XR overlay intercepted the fixture; it is not counted as a pass. The browser checks do
+not establish a complete accessibility assessment. Exact candidate SHA, provider checks,
+and protected integration remain pending. No production or buyer receipt.
