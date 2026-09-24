@@ -11,11 +11,12 @@ import type {
   GraphDataTableSortRule,
 } from '@/features/graph-data-table/graphDataTable'
 import type { TraversalSummary } from '@/features/panels/utils/orchestratorTraversal'
-import { applyThemeMode, getSystemTheme, persistThemeMode, resolveThemeMode, type ResolvedThemeMode, type ThemeMode } from '@/lib/ui/theme'
+import { applyThemeMode, getSystemTheme, persistDarkThemeVariant, persistThemeMode, resolveThemeMode, type DarkThemeVariant, type ResolvedThemeMode, type ThemeMode } from '@/lib/ui/theme'
 import { getLocalStorage } from '@/lib/persistence'
 import { readInitialSessionTabId } from './uiSettingsSliceSession'
 
 type SetGraph = StoreApi<GraphState>['setState']
+type GetGraph = StoreApi<GraphState>['getState']
 
 type KeywordDefaults = {
   sourceMaxLines: number
@@ -29,22 +30,30 @@ type KeywordDefaults = {
 
 export const createUiSettingsCoreState = (
   set: SetGraph,
+  get: GetGraph,
   themeMode: ThemeMode,
+  darkThemeVariant: DarkThemeVariant,
   resolvedThemeMode: ResolvedThemeMode,
   keywordDefaults: KeywordDefaults,
 )=> ({
   themeMode,
+  darkThemeVariant,
   resolvedThemeMode,
   setThemeMode: (mode: ThemeMode) => {
     persistThemeMode(getLocalStorage(), mode);
-    applyThemeMode(mode);
+    applyThemeMode(mode, get().darkThemeVariant);
     set({ themeMode: mode, resolvedThemeMode: resolveThemeMode(mode) });
+  },
+  setDarkThemeVariant: (variant: DarkThemeVariant) => {
+    persistDarkThemeVariant(getLocalStorage(), variant);
+    applyThemeMode(get().themeMode, variant);
+    set({ darkThemeVariant: variant });
   },
   refreshResolvedThemeModeFromSystem: () => {
     set((state) => {
       if (state.themeMode !== 'system') return {} as Partial<GraphState>;
       const next = getSystemTheme();
-      applyThemeMode('system');
+      applyThemeMode('system', state.darkThemeVariant);
       if (state.resolvedThemeMode === next) return {} as Partial<GraphState>;
       return { resolvedThemeMode: next };
     });

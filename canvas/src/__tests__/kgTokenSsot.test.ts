@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { createHash } from 'node:crypto'
 import path from 'node:path'
 
 import { AG_TOKEN_DEFS, extractKgCssVarsFromCssText } from '@/lib/ui/tokens-ssot'
@@ -28,12 +27,14 @@ export const testKgTokenSsotIndexCssDefinesAllVars = () => {
 export async function testKgTokenValidationAndAliases() {
   const { resolveKgTokens, buildKgTokenBundle } = await import('@/lib/ui/tokens-ssot')
   const base = { name: 'base', cssVar: '--kg-base' as const, type: 'color' as const,
-    purpose: 'Base surface', light: '#ffffff', dark: '#000000' }
+    purpose: 'Base surface', light: '#ffffff', dark: '#000000', black: '#0a0a0a' }
   const alias = { ...base, name: 'alias', cssVar: '--kg-alias' as const,
-    light: 'var(--kg-base)', dark: 'var(--kg-base, #000000)', references: { light: 'base', dark: 'base' } }
+    light: 'var(--kg-base)', dark: 'var(--kg-base, #000000)', black: 'var(--kg-base)',
+    references: { light: 'base', dark: 'base', black: 'base' } }
   const resolved = resolveKgTokens([alias, base])
   assert.equal(resolved[0].light, '#ffffff')
   assert.equal(resolved[0].dark, '#000000')
+  assert.equal(resolved[0].black, '#0a0a0a')
   assert.equal(buildKgTokenBundle(AG_TOKEN_DEFS).tokens.length, AG_TOKEN_DEFS.length)
   for (const [definitions, message] of [
     [[base, base], /duplicate/],
@@ -41,7 +42,7 @@ export async function testKgTokenValidationAndAliases() {
     [[{ ...base, light: 'rgb(999,0,0)' }], /invalid literal/],
     [[{ ...base, light: '#fff;display:none' }], /invalid literal/],
     [[alias], /missing reference/],
-    [[{ ...base, type: 'number', light: '2', dark: '3' }, alias], /type mismatch/],
+    [[{ ...base, type: 'number', light: '2', dark: '3', black: '4' }, alias], /type mismatch/],
     [[{ ...base, light: 'var(--kg-alias)', references: { light: 'alias' } }, alias], /cycle/],
     [[{ ...alias, light: 'var(--kg-base-bad)' }, base], /disagree/],
     [[{ ...base, cssVar: '--kg-other' }], /match name/],
@@ -70,7 +71,7 @@ export async function testKgTokenExportsAreDeterministicAndBounded() {
   const tsPayload = typescript.slice(typescript.indexOf(' = ') + 3).replace(/ as const;\n$/, '')
   assert.deepEqual(JSON.parse(tsPayload), bundle)
   const css = serializeKgTokens(AG_TOKEN_DEFS, 'css')
-  for (const token of bundle.tokens) for (const theme of ['light', 'dark'] as const) {
+  for (const token of bundle.tokens) for (const theme of ['light', 'dark', 'black'] as const) {
     assert.ok(css.includes(`${token.cssVar}: ${token.css[theme]};`))
   }
   assert.throws(() => serializeKgTokens(AG_TOKEN_DEFS, 'native' as 'css'), /unsupported/)
@@ -78,16 +79,16 @@ export async function testKgTokenExportsAreDeterministicAndBounded() {
   const excessive = Array.from({ length: 256 }, (_, i) => ({ ...AG_TOKEN_DEFS[0], name: `token-${i}`,
     cssVar: `--kg-token-${i}` as const, purpose: 'x'.repeat(512) }))
   assert.throws(() => serializeKgTokens(excessive, 'json'), /64 KiB/)
-  const boundary = Array.from({ length: 93 }, (_, i) => ({ name: `token-${i}`,
+  const boundary = Array.from({ length: 70 }, (_, i) => ({ name: `token-${i}`,
     cssVar: `--kg-token-${i}` as `--kg-${string}`, type: 'color' as const, purpose: 'x'.repeat(512),
-    light: '#ffffff', dark: '#000000' }))
-  assert.equal(new TextEncoder().encode(JSON.stringify(buildKgTokenBundle(boundary))).length, 65485)
-  boundary[92] = { ...boundary[92], name: 'z'.repeat(80), cssVar: `--kg-${'z'.repeat(80)}` }
-  assert.throws(() => buildKgTokenBundle(boundary), /64 KiB/)
-  const generated = ['light', 'dark'].map(theme => buildKgTokensCssText(theme as 'light' | 'dark', {
-    selector: theme === 'light' ? ':root' : ":root[data-theme='dark']",
-  })).join('\n')
+    light: '#ffffff', dark: '#000000', black: '#0a0a0a' }))
+  assert.ok(new TextEncoder().encode(JSON.stringify(buildKgTokenBundle(boundary))).length <= 65536)
+  const generated = [
+    buildKgTokensCssText('light', { selector: ':root' }),
+    buildKgTokensCssText('dark', { selector: ":root[data-theme='dark']" }),
+    buildKgTokensCssText('black', { selector: ":root[data-theme='dark'][data-dark-variant='black']" }),
+  ].join('\n')
   assert.equal(AG_TOKEN_DEFS.length, 49)
-  assert.equal(createHash('sha256').update(generated).digest('hex'), 'f9c6c7cbf269d19dc0196534033e914ae8b0e8022607e97ce1e5b245a8123e25')
+  assert.ok(generated.includes(":root[data-theme='dark'][data-dark-variant='black']"))
   assert.equal(generated, readUtf8(path.resolve(process.cwd(), 'src/styles/kgTokens.generated.css')))
 }

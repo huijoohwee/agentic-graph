@@ -461,6 +461,7 @@ export const LS_KEYS = {
   parserInputCollapsed: 'kg:parsers:panel:inputCollapsed',
   parserParsersCollapsed: 'kg:parsers:panel:parsersCollapsed',
   themeMode: 'kg:ui:themeMode',
+  darkThemeVariant: 'kg:ui:darkThemeVariant',
   exportPrefs: 'kg:export:prefs',
   exportHtmlCanvasPublishPath: 'kg:export:htmlCanvasPublishPath',
   bottomSurfaceCollapsed: 'kg:ui:bottomSurface:collapsed',

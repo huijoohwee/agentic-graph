@@ -458,6 +458,7 @@ export const LS_KEY_OWNERS: Partial<Record<LsKeyId, LsKeyOwner>> = {
   parserInputCollapsed: 'parsers.panel',
   parserParsersCollapsed: 'parsers.panel',
   themeMode: 'ui.theme',
+  darkThemeVariant: 'ui.theme',
   exportPrefs: 'export.prefs',
   exportHtmlCanvasPublishPath: 'export.prefs',
   bottomSurfaceCollapsed: 'bottomSurface.collapsed',

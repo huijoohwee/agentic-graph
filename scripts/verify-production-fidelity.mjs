@@ -201,10 +201,11 @@ const openWorkspaceFolder = async (parent, name) => {
   const folderLabel = `Folder ${name}`
   const folder = parent.locator(`section[aria-label="${folderLabel}"]`)
   await folder.waitFor({ state: 'visible', timeout: 45_000 })
-  const isExpanded = await folder.evaluate(section => section.nextElementSibling instanceof HTMLUListElement)
-  // Source Files can reflow during hydration; verify the pointer action by its opened child list.
-  if (!isExpanded) await folder.getByRole('button', { name: folderLabel, exact: true }).click({ force: true, noWaitAfter: true })
-  await folder.locator('xpath=following-sibling::ul[1]').waitFor({ state: 'visible', timeout: 45_000 })
+  const childList = folder.locator('xpath=following-sibling::ul[1]')
+  // The tree can replace a folder during hydration. Query the child locator directly;
+  // locator.evaluate can wait on a detached row until its default timeout expires.
+  if (await childList.count() === 0) await folder.getByRole('button', { name: folderLabel, exact: true }).click({ force: true, noWaitAfter: true })
+  await childList.waitFor({ state: 'visible', timeout: 45_000 })
   return folder
 }
 
@@ -462,6 +463,12 @@ try {
   assert.equal(recoveredSourceAuthority.emptyWorldCount, 0, 'stale Home source recovery must never mount empty-world')
   assert.equal(recoveredSourceAuthority.gameStageCount, 0, 'stale Home source recovery must never mount Game fallback')
 
+  // Both Home proofs have finished. Release their XR canvases before exercising
+  // the Editor Workspace so the browser gate measures one active scene at a time.
+  await home.close()
+  await staleSelectionContext.close()
+  staleSelectionContext = null
+
   const app = await context.newPage()
   // The root-alias graph route is the documented way to suppress Home's live
   // canvas hero before opening the Editor Workspace.  `kgReleaseProof` alone
@@ -484,6 +491,15 @@ try {
   )
   assert.deepEqual(poisonedModules, [], `JavaScript module requests returned HTML: ${poisonedModules.join(', ')}`)
   assert.deepEqual(pageErrors, [], `uncaught browser errors: ${pageErrors.join(' | ')}`)
+} catch (error) {
+  console.error(JSON.stringify({
+    schema: 'agentic-graph/browser-fidelity-diagnostics/v1',
+    sourceRevision: expectedSourceRevision,
+    pageErrors: pageErrors.slice(-10),
+    poisonedModules: poisonedModules.slice(-10),
+    loadedReleaseAssetCount: browserAssetScripts.length,
+  }))
+  throw error
 } finally {
   await staleSelectionContext?.close()
   await browser.close()

@@ -123,12 +123,16 @@ Before dispatch:
 
 Use `release:lifecycle:receipts -- materialize-clean-frontier-evidence` only when canonical
 `main` is the sole registered worktree. When one or more separately owned, attributed lanes must
-remain registered, use `materialize-current-frontier-evidence` with the clean remote-exact Agentic
-Canvas OS controller root. The current-frontier adapter double-reads lane and lease state, binds
-each retained lane's exact revision, tree, work set, task identity, and recovery handle, and rejects
-canonical drift, ambiguous ownership, invalid lanes, or any state movement during capture. It
-preserves those lanes; it grants no authoring, integration, cleanup, or deployment authority to
-the release operator.
+remain registered, use `materialize-native-frontier-evidence` from clean, remote-exact canonical
+`main`, with `--repository-root`, `--rollback-recapture`, `--source-sha`, `--source-tree`, and
+`--output` set to exact observed values. Retain both the evidence JSON and its `.frontier.json`
+companion outside the checkout. The native adapter reads every registered lane and its visible
+source bytes twice, binding its exact revision, tree, write set, task attribution, and recovery
+handle. An active lane may advance beyond its cached head only when that head is a verified
+ancestor of the live branch; published lanes require exact head equality. Ambiguous attribution,
+canonical drift, or any state movement during capture fails closed. The capture preserves those
+lanes and grants no authoring, integration, cleanup, or deployment authority to the release
+operator.
 
 Do not substitute a branch name, pull-request SHA, mutable tag, or remembered URL for the
 exact inputs.

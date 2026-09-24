@@ -2,6 +2,7 @@
 
 | Area | Responsibility | Modules | Classes/Objects | Functions/Methods | Key | Imports | Notes | Line Range |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Zoom | stroke scale mode2d | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part1.ts` | `` | `setZoomStrokeScaleMode2d` | `zoom.strokeScaleMode2d` | `zustand` |  | `canvas/src/lib/settings/registry-ui.graph-and-orchestrator.part1.ts:L739` |
 | Canvas Zoom Actions | Animation duration (ms) for Fit-to-View / Fit-to-Screen actions | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts` | `` | `setZoomDurationFitMs` | `zoomDurationFitMs` | `zustand` | clamps to [0,2000]. Used by both D3 and Flow 2D renderers. | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L309` |
 | Canvas Zoom Actions | Animation duration (ms) for Zoom-to-Selection action | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts` | `` | `setZoomDurationSelectionMs` | `zoomDurationSelectionMs` | `zustand` | clamps to [0,2000]. Used by both D3 and Flow 2D renderers. | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L318` |
 | Canvas Zoom Modes | Auto-zoom to current selection (Zoom to Selection mode) | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts` | `` | `setZoomToSelectionMode` | `zoomToSelectionMode` | `zustand` | When enabled, Pin View and Fit to Screen modes are disabled. | `canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L300` |

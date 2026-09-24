@@ -112,6 +112,30 @@ test('missing, ambiguous, stale and mismatched metadata fail closed', t => {
   }
 })
 
+test('active lane retains a live descendant of its cached head without rewriting metadata', t => {
+  const f = fixture(t), cached = structuredClone(f.records)
+  f.records[0].state = 'active'
+  fs.writeFileSync(path.join(f.attached, 'source.txt'), 'new committed source\n')
+  command(f.attached, 'commit', '-am', 'advance active lane')
+  fs.writeFileSync(path.join(f.attached, 'draft.md'), 'uncommitted draft\n')
+  const head = command(f.attached, 'rev-parse', 'HEAD')
+  const frontier = collectNativeReleaseFrontier(f.options)
+  const lane = frontier.lanes.find(entry => entry.path === f.attached)
+  assert.equal(lane.headRevision, head)
+  assert.equal(lane.dirty, true)
+  assert.deepEqual(f.records[0], { ...cached[0], state: 'active' })
+
+  f.records[0].state = 'published'
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /native lane metadata head is stale/)
+  f.records[0].state = 'active'
+  command(f.detached, 'switch', '-c', 'agent/device/unrelated')
+  fs.writeFileSync(path.join(f.detached, 'kept.md'), 'divergent source\n')
+  command(f.detached, 'add', 'kept.md')
+  command(f.detached, 'commit', '-m', 'diverge metadata head')
+  f.records[0].head = command(f.detached, 'rev-parse', 'HEAD')
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /native active lane metadata must precede/)
+})
+
 test('attached successor uses its exact branch while retaining verified predecessor metadata', t => {
   const f = fixture(t), predecessor = f.records[0]
   command(f.attached, 'switch', '-c', 'agent/device/successor')

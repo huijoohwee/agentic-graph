@@ -35,6 +35,7 @@ async function verify() {
   try {
     await page.goto(base + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: /^Canvas View Mode:/ }).first().waitFor({ timeout: 120000 })
+    await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady(), undefined, { timeout: 120000 })
     console.log('Design browser: canvas ready')
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
@@ -72,11 +73,13 @@ async function verify() {
     console.log('Design browser: review ready')
     const initialGeometry = await geometry()
     const receipts = []
-    for (const [width, theme] of [[360, 'light'], [360, 'dark'], [1280, 'light'], [1280, 'dark']]) {
+    for (const [width, theme] of [[360, 'light'], [360, 'black'], [360, 'dark'], [1280, 'light'], [1280, 'black'], [1280, 'dark']]) {
       await page.setViewportSize({ width, height: 800 })
-      await page.evaluate(theme => {
-        document.documentElement.classList.toggle('dark', theme === 'dark')
-        document.documentElement.dataset.theme = theme
+      await page.evaluate(async theme => {
+        const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+        const store = useGraphStore.getState()
+        store.setDarkThemeVariant(theme === 'dark' ? 'dark-blue' : 'black')
+        store.setThemeMode(theme === 'light' ? 'light' : 'dark')
       }, theme)
       await review.getByText(new RegExp('^' + theme + ' ·')).waitFor()
       const projection = (await inspect()).design
