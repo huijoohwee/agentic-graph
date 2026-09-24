@@ -72,11 +72,13 @@ async function verify() {
     console.log('Design browser: review ready')
     const initialGeometry = await geometry()
     const receipts = []
-    for (const [width, theme] of [[360, 'light'], [360, 'dark'], [1280, 'light'], [1280, 'dark']]) {
+    for (const [width, theme] of [[360, 'light'], [360, 'black'], [360, 'dark'], [1280, 'light'], [1280, 'black'], [1280, 'dark']]) {
       await page.setViewportSize({ width, height: 800 })
-      await page.evaluate(theme => {
-        document.documentElement.classList.toggle('dark', theme === 'dark')
-        document.documentElement.dataset.theme = theme
+      await page.evaluate(async theme => {
+        const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+        const store = useGraphStore.getState()
+        store.setDarkThemeVariant(theme === 'dark' ? 'dark-blue' : 'black')
+        store.setThemeMode(theme === 'light' ? 'light' : 'dark')
       }, theme)
       await review.getByText(new RegExp('^' + theme + ' ·')).waitFor()
       const projection = (await inspect()).design

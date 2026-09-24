@@ -2,6 +2,15 @@ import { LS_KEYS } from '@/lib/config'
 
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type ResolvedThemeMode = Exclude<ThemeMode, 'system'>
+export type DarkThemeVariant = 'black' | 'dark-blue'
+
+export const DARK_THEME_VARIANT_OPTIONS: ReadonlyArray<{ value: DarkThemeVariant; label: string }> = [
+  { value: 'black', label: 'Black (Default)' },
+  { value: 'dark-blue', label: 'Dark Blue' },
+] as const
+
+export const isDarkThemeVariant = (value: unknown): value is DarkThemeVariant =>
+  value === 'black' || value === 'dark-blue'
 
 export const THEME_MODE_OPTIONS: ReadonlyArray<{ mode: ThemeMode; label: string }> = [
   { mode: 'system', label: 'System' },
@@ -43,17 +52,50 @@ export function persistThemeMode(storage: Storage | null, mode: ThemeMode): void
   }
 }
 
+export function getInitialDarkThemeVariant(
+  storage: Storage | null,
+  mode: ThemeMode,
+): DarkThemeVariant {
+  if (!storage) return 'black'
+  try {
+    const stored = storage.getItem(LS_KEYS.darkThemeVariant)
+    if (isDarkThemeVariant(stored)) return stored
+    // Existing saved Dark sessions retain their original blue palette.
+    if (stored === null && mode === 'dark') {
+      try {
+        storage.setItem(LS_KEYS.darkThemeVariant, 'dark-blue')
+      } catch {
+        void 0
+      }
+      return 'dark-blue'
+    }
+  } catch {
+    void 0
+  }
+  return 'black'
+}
+
+export function persistDarkThemeVariant(storage: Storage | null, variant: DarkThemeVariant): void {
+  if (!storage) return
+  try {
+    storage.setItem(LS_KEYS.darkThemeVariant, variant)
+  } catch {
+    void 0
+  }
+}
+
 export function getSystemTheme(): ResolvedThemeMode {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'light'
   const mq = window.matchMedia('(prefers-color-scheme: dark)')
   return mq.matches ? 'dark' : 'light'
 }
 
-export function applyThemeMode(mode: ThemeMode): void {
+export function applyThemeMode(mode: ThemeMode, variant: DarkThemeVariant = 'black'): void {
   if (typeof document === 'undefined') return
   const root = document.documentElement
   const resolved = mode === 'system' ? getSystemTheme() : mode
   root.setAttribute('data-theme', resolved)
+  root.setAttribute('data-dark-variant', variant)
   if (resolved === 'dark') {
     root.classList.add('dark')
   } else {

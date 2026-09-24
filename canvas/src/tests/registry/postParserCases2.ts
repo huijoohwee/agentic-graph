@@ -363,6 +363,7 @@ export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
   ["graphRecord.cache.updateCell","@/__tests__/graphRecordDb.test","testGraphRecordDbUpdatesCellValues"],
   ["graphRecord.cache.createRow","@/__tests__/graphRecordDb.test","testGraphRecordDbAllocatesAndCreatesRows"],
   ["ui.themeModePersistence","@/__tests__/theme.test","testThemeModePersistence"],
+  ["ui.nativeMonacoDarkVariants","@/__tests__/theme.test","testNativeMonacoDarkVariants"],
   ["ui.themeSystemModeApplyAndSubscribe","@/__tests__/theme.test","testThemeSystemModeApplyAndSubscribe"],
   ["ui.themeToolbar.singleButtonSystemLightDark","@/__tests__/theme.test","testToolbarThemeUsesSingleSharedCycleButton"],
   ["ui.tokens.ssot.indexCssDefinesAll","@/__tests__/kgTokenSsot.test","testKgTokenSsotIndexCssDefinesAllVars"],

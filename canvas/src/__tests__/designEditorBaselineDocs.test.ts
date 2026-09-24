@@ -9,7 +9,7 @@ export function testDesignEditorBaselinePrdTadUsesImplementedDesignOwners(): voi
   const owners = [
     'canvas/src/features/panels/mainPanelTabs.ts',
     'canvas/src/features/panels/MainPanel.tsx',
-    'canvas/src/features/panels/views/DesignEditorMainPanelView.tsx',
+    'canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx',
     'canvas/src/components/DesignCanvas.tsx',
     'canvas/src/components/DesignCanvas/DesignCanvasRenderShell.tsx',
     'canvas/src/components/DesignCanvas/DesignCanvasEditorChrome.tsx',
@@ -29,8 +29,8 @@ export function testDesignEditorBaselinePrdTadUsesImplementedDesignOwners(): voi
     '**Status**: Accepted and implemented Design editor baseline',
     'Document Version**: 0.3.0',
     'Design editor baseline is implemented natively in agentic-graph',
-    'MainPanel Design tab | Shipped',
-    'Shipped | `canvas/src/features/panels/mainPanelTabs.ts`; `canvas/src/features/panels/MainPanel.tsx`; `canvas/src/features/panels/views/DesignEditorMainPanelView.tsx`',
+    'FloatingPanel Design editor | Shipped',
+    'Shipped | `canvas/src/features/design/DesignFloatingPanelView.tsx`; `canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx`',
     'Editor chrome | Shipped | `canvas/src/components/DesignCanvas/DesignCanvasEditorChrome.tsx`',
     'Layers, Style, tokens, DOM tree, DOM inspect panels | Shipped | `canvas/src/features/design/DesignFloatingPanelView.tsx`',
     'Agent-native HTML video render | Shipped | `canvas/src/features/design/designAgentVideoSpec.ts`; `canvas/src/features/design/DesignAgentVideoPanel.tsx`',
@@ -45,8 +45,7 @@ export function testDesignEditorBaselinePrdTadUsesImplementedDesignOwners(): voi
   }
 
   const requiredOwnerTokens = [
-    "key: 'design'",
-    'DesignEditorMainPanelViewLazy',
+    "floatingPanelView === 'design'",
     'DesignFloatingPanelView',
     'DesignCanvasEditorChrome',
     'setCanvasPointerMode2d',
