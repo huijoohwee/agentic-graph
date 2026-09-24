@@ -345,13 +345,7 @@ export function LaunchDropdown({
             files,
             bridge: launchBridge,
             fallback: importLocalFilesFallback,
-          }).catch(error => pushUiToast({
-            id: 'launch:import:local-image-view',
-            kind: 'error',
-            message: `Local image view failed: ${String((error as Error).message || error)}`,
-            ttlMs: UI_TOAST_TTL_MS.warningExtended,
-            dismissible: true,
-          }))
+          }).catch(error => pushUiToast({ id: 'launch:import:local-image-view', kind: 'error', message: `Local image view failed: ${String((error as Error).message || error)}`, ttlMs: UI_TOAST_TTL_MS.warningExtended, dismissible: true }))
           onClose()
           try {
             e.currentTarget.value = ''
