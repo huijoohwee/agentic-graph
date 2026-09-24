@@ -152,6 +152,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       spatialCaptureManifest.sourceIdentity,
     ].join('|')
   }, [canvasMarkdownDocument.semanticKey, spatialCaptureManifest])
+  const [semanticTwinFit, setSemanticTwinFit] = useState<GlbFit | null>(null)
   const [glbAssetFit, setGlbAssetFit] = useState<GlbFit | null>(null)
   const [spatialCaptureFit, setSpatialCaptureFit] = useState<GlbFit | null>(null)
   const [spatialRuntimeStatus, setSpatialRuntimeStatus] = useState<'idle' | 'loading' | 'ready' | 'empty' | 'error'>('idle')
@@ -193,11 +194,11 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ? sceneGraph
       : { ...sceneGraph, edges: [] }
   }, [xrPhysicsRuntimeRunReadyDemo, sceneGraph])
-  const hasGraph = !learningScene && !!sceneGraphForRender && !explicitMediaSourceActive
+  const hasGraph = !semanticTwinFit && !learningScene && !!sceneGraphForRender && !explicitMediaSourceActive
   const hasGlbAsset = !learningScene && !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !learningScene && !!spatialCaptureManifest
   const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive
-  const hasRenderableScene = !!learningScene || immersiveMediaStageActive || gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld
+  const hasRenderableScene = !!semanticTwinFit || !!learningScene || immersiveMediaStageActive || gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld
   const xrAuthoringGraphActive = useMemo(() => (
     xrAuthoringGraphData ? graphHasXrAuthoringSource(xrAuthoringGraphData) : false
   ), [xrAuthoringGraphData])
@@ -295,7 +296,6 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       if (renderer === threeGlRef.current) renderer.xr.enabled = false
     }
   }, [mode])
-
   useEffect(() => {
     registerThreeLayoutSnapshotFns({
       capturePositions: () => {
@@ -368,11 +368,9 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     clearHoverClearTimer()
     setHoverInfo({ kind: 'edge', id: info.id, clientX: info.clientX, clientY: info.clientY })
   }, [clearHoverClearTimer])
-
   const handleHoverEdgeIdChange = useCallback((id: string | null) => {
     setHoveredEdgeId(id)
   }, [])
-
   const { dragOverridesRef, overlayHiddenNodeIdSet, overlayLayer, requestSchedule, scheduleRef } = useThreeRichMediaOverlayController({
     active: active && mode !== 'xr' && !gameplayOverlayActive,
     sceneGraph: mode === 'xr' || gameplayOverlayActive ? null : sceneGraphForRender,
@@ -529,7 +527,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
                 geospatialComposite={geospatialComposite}
               />
             ) : null}
-            {!geospatialComposite ? <SemanticTwinStageLazy paused={authoredWorldPaused} /> : null}
+            {!geospatialComposite ? <SemanticTwinStageLazy paused={authoredWorldPaused} onFitChange={setSemanticTwinFit} /> : null}
             {!geospatialComposite && glbAsset && shouldRenderGlbAsset ? (
               <GlbAssetModel
                 key={glbAssetRenderKey}
@@ -560,8 +558,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             flightSimActive={flightStageActive && !learningScene}
             immersiveMediaActive={immersiveMediaStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
-            modelAssetRenderKey={learningScene ? undefined : spatialCaptureRenderKey || glbAssetRenderKey}
-            modelAssetFit={learningScene ? null : spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit}
+            modelAssetRenderKey={learningScene ? undefined : spatialCaptureRenderKey || glbAssetRenderKey || (semanticTwinFit ? 'semantic-space' : '')}
+            modelAssetFit={learningScene ? null : spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit || semanticTwinFit}
             xrEmptyWorld={hasXrEmptyWorld && !learningScene}
             onControlsChange={() => {
               try {

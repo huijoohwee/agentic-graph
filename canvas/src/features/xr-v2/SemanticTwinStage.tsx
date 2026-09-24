@@ -1,4 +1,6 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import type { GlbFit } from '@/lib/three/GlbAssetModel'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { SpatialPhysicsEngine } from '@/features/physics/spatialPhysicsEngine'
@@ -41,7 +43,7 @@ function buildScene(bindings: readonly TwinBinding[]): BuiltScene {
   }
 }
 
-export function SemanticTwinStage({ paused = false }: { paused?: boolean }) {
+export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: boolean; onFitChange?: (fit: GlbFit | null) => void }) {
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
   React.useEffect(() => {
     let active = true
@@ -52,13 +54,25 @@ export function SemanticTwinStage({ paused = false }: { paused?: boolean }) {
     const unsubscribe = subscribeSemanticSpace(refresh)
     return () => { active = false; unsubscribe() }
   }, [])
-  const bindings = document?.twin?.objects || []
-  const sceneKey = `${document?.id || ''}:${JSON.stringify(document?.twin)}`
+  const linked = useGraphStore(state => state.graphData?.nodes.some(node => node.properties?.spaceId === document?.id
+    && node.properties?.twinSchema === document?.twin?.schema) === true)
+  const bindings = linked ? document?.twin?.objects || [] : []
+  const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}`
   const built = React.useMemo(() => buildScene(bindings), [sceneKey])
   React.useEffect(() => () => { for (const item of built.objects) disposeProceduralAsset(item.source) }, [built])
   React.useEffect(() => {
     if (built.error) window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error', { detail: built.error }))
   }, [built.error])
+  React.useEffect(() => {
+    const room = document?.twin?.room
+    if (!room || !built.objects.length || built.error) { onFitChange?.(null); return }
+    const height = Math.max(...built.objects.map(item => item.binding.size[1]))
+    const size: [number, number, number] = [room.width, height + room.depth * 0.35, room.depth + height * 0.35]
+    onFitChange?.({ cameraProfile: 'spatial-capture', cameraTarget: [0, height * 10, 0],
+      position: [0, 0, 0], scale: 20, floorY: 0, stageSpan: Math.max(...size) * 20,
+      preserveFlatFacing: false, flatAxis: null, size, scaledSize: size.map(n => n * 20) as [number, number, number] })
+    return () => onFitChange?.(null)
+  }, [built, onFitChange])
   const preview = React.useRef<{ engine: SpatialPhysicsEngine; entityId: string; elapsed: number } | null>(null)
   React.useEffect(() => {
     preview.current = null

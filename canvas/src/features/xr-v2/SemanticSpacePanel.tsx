@@ -1,6 +1,6 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { closeWorkspaceView, isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
+import { addSemanticEntityToCanvas, linkedCanvasNode } from './semanticSpaceCanvas'
 import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
 import { requestSemanticSpaceCamera } from '@/features/three/semanticSpaceCameraRuntime'
 import { applySpaceAction, hashSpaceImage, MAX_SPACE_ENTITIES, MAX_SPACE_OBSERVATIONS,
@@ -22,10 +22,7 @@ const sourceStatus = (space: SpaceDocument) => {
   if (!status || status.revision !== space.revision) return ''
   return status.error ? ` Source Files update failed: ${status.error}` : ` Source Files: ${status.path}`
 }
-const linkedCanvasNode = (space: SpaceDocument, entityId: string) =>
-  useGraphStore.getState().graphData?.nodes.find(node =>
-    node.type === 'semantic-space-entity'
-    && node.properties?.spaceId === space.id && node.properties?.entityId === entityId)
+
 
 export function SemanticSpacePanel() {
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
@@ -254,53 +251,10 @@ export function SemanticSpacePanel() {
     catch (error) { setStatus(String((error as Error).message || error)) }
     finally { setBusy(false) }
   }
-  const addSelectedToCanvas = async (space: SpaceDocument | null = document,
-    entity = selected) => {
+  const addSelectedToCanvas = async (space: SpaceDocument | null = document, entity = selected) => {
     if (!space || !entity) return
-    let state = useGraphStore.getState()
-    if (state.workspaceViewMode === 'editor') {
-      closeWorkspaceView(state)
-      for (let attempt = 0; attempt < 20 && isWorkspaceGraphMutationBlocked(useGraphStore.getState()); attempt += 1) {
-        await new Promise(resolve => window.setTimeout(resolve, 100))
-      }
-      state = useGraphStore.getState()
-    }
-    if (isWorkspaceGraphMutationBlocked(state)) {
-      setStatus('The canvas is still preparing or read-only. Open an editable canvas and retry linking this entity.')
-      return
-    }
-    const id = entity.id
-    const existing = linkedCanvasNode(space, id)
-    if (!existing && state.graphData?.nodes.some(node =>
-      (node.id === id || node.id.endsWith(`::${id}`)) && node.properties?.spaceId !== space.id)) {
-      setStatus('The active canvas already uses this entity ID. Open another canvas document.')
-      return
-    }
-    const twin = space.twin?.objects.find(item => item.entityId === entity.id)
-    const properties = { spaceId: space.id, entityId: entity.id,
-      observationId: entity.observationId, category: entity.category, region: entity.region,
-      evidenceSha256: space.observations.find(item => item.id === entity.observationId)?.sha256 || '',
-      twinSchema: space.twin?.schema || '', twinTemplate: twin?.template || '', twinUnits: space.twin?.room.unit || 'arbitrary' }
-    if (!existing) {
-      state.addNode({ id, label: entity.label, type: 'semantic-space-entity', properties })
-    } else if (existing.label !== entity.label || Object.entries(properties).some(([key, value]) =>
-      JSON.stringify(existing.properties?.[key]) !== JSON.stringify(value))) {
-      state.updateNode(existing.id, { label: entity.label, properties: { ...existing.properties, ...properties } })
-    }
-    const linked = linkedCanvasNode(space, id)
-    if (!linked) {
-      setStatus('The active canvas did not accept this entity. Check its edit permissions.')
-      return
-    }
-    useGraphStore.getState().selectNode(linked.id)
-    if (twin) {
-      useGraphStore.getState().setCanvas3dMode('3d')
-      useGraphStore.getState().setCanvasRenderMode('3d')
-    }
-    setStatus(twin && useGraphStore.getState().canvasRenderMode === '3d'
-      ? 'Entity and editable geometry linked to the active 3D canvas.'
-      : twin ? 'Entity linked. This canvas layout blocks 3D; choose a 3D-capable canvas to preview geometry.'
-        : 'Entity linked to the active canvas. Its evidence remains in this local space.')
+    try { setStatus(await addSemanticEntityToCanvas(space, entity)) }
+    catch (error) { setStatus(String((error as Error).message || error)) }
   }
   const applyTwin = () => {
     if (!document || !selected) return

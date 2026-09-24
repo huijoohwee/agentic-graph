@@ -1,3 +1,4 @@
+import { compileImageRegions, type ConfirmImageRegions } from './semanticImageTwinCompiler'
 import type { AssetControlValue } from '@/features/image-to-glb/proceduralAssetContract'
 import { buildSemanticTwinBinding, editSemanticTwinControl, emptySemanticTwin, MAX_TWIN_OBJECTS,
   validateSemanticTwin, type SemanticTwin, type TwinRoom, type TwinTemplate, type TwinVector } from './semanticTwinRuntime'
@@ -28,6 +29,7 @@ export type SpaceEntity = Readonly<{
   region: SpaceRegion
   confirmedAtMs: number
   provenance: 'user-confirmed'
+  proposalMethod?: 'local-foreground-components-v1'
 }>
 export type SpaceDocument = Readonly<{
   schema: typeof SEMANTIC_SPACE_SCHEMA
@@ -40,6 +42,7 @@ export type SpaceDocument = Readonly<{
   twin?: SemanticTwin
 }>
 export type SpaceAction =
+  | ConfirmImageRegions
   | Readonly<{ operation: 'capture'; requestId: string; expectedRevision: number; observation: SpaceObservation }>
   | Readonly<{ operation: 'confirm'; requestId: string; expectedRevision: number; entity: SpaceEntity }>
   | Readonly<{ operation: 'correct'; requestId: string; expectedRevision: number; entityId: string; label: string; category: string }>
@@ -103,7 +106,8 @@ export function validateSpaceDocument(input: unknown): SpaceDocument {
   for (const entity of doc.entities) {
     if (!entity || !ID.test(entity.id) || entities.has(entity.id)
       || !observations.has(entity.observationId) || !validRegion(entity.region)
-      || !validTime(entity.confirmedAtMs) || entity.provenance !== 'user-confirmed') {
+      || !validTime(entity.confirmedAtMs) || entity.provenance !== 'user-confirmed'
+      || (entity.proposalMethod !== undefined && entity.proposalMethod !== 'local-foreground-components-v1')) {
       throw new SpaceError('invalid-package', 'Space entity or evidence link is invalid')
     }
     requireText(entity.label, 'label'); requireText(entity.category, 'category')
@@ -174,6 +178,11 @@ export function applySpaceAction(doc: SpaceDocument, action: SpaceAction): Space
   const existing = 'entityId' in action && typeof action.entityId === 'string'
     ? twin.objects.find(item => item.entityId === action.entityId) : undefined
   switch (action.operation) {
+    case 'confirm-image-regions':
+      if (!validObservation(action.observation)) throw new SpaceError('invalid-input', 'Invalid image evidence')
+      try { next = compileImageRegions(doc, action); validateSpaceDocument(next) }
+      catch (error) { throw new SpaceError('invalid-input', String((error as Error).message || error)) }
+      break
     case 'capture':
       if (doc.observations.length >= MAX_SPACE_OBSERVATIONS) throw new SpaceError('capacity', 'Space observation limit reached')
       if (!validObservation(action.observation) || doc.observations.some(item => item.id === action.observation.id)) {

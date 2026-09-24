@@ -49,6 +49,8 @@ import {
   zoomImmersiveMedia,
 } from './immersiveMediaRuntime'
 
+const SemanticImagePerceptionChoice = React.lazy(() => import('@/features/xr-v2/SemanticImagePerceptionChoice'))
+
 export type ImmersiveMediaProjectionSurface =
   | 'media'
   | 'animation'
@@ -194,6 +196,7 @@ function SemanticSpaceMediaSource() {
         setOpenError(String((error as Error).message || error))
       }).finally(() => setCreatingStoryboard(false))
     }}>{imported.storyboardPath ? 'Storyboard created' : creatingStoryboard ? 'Creating storyboard…' : 'Create storyboard'}</button> : null}
+    <React.Suspense fallback={null}><SemanticImagePerceptionChoice key={displayedImageUrl} sourceUrl={displayedImageUrl} /></React.Suspense>
     {openError ? <output role="status">Space image could not open: {openError}</output> : null}
     <span>Panorama projection is approximate; scale remains unknown.</span>
   </section>

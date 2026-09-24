@@ -163,28 +163,32 @@ async function mirrorCurrentSpaceToSourceFiles(): Promise<void> {
 export async function runSemanticSpaceAction(action: SpaceAction): Promise<SpaceDocument> {
   const current = await store().read()
   const base = current || newSpaceDocument(`space:${crypto.randomUUID()}`)
-  if (action.operation === 'capture') await verifySpaceEvidence({ ...base, observations: [...base.observations, action.observation] }, true)
   const next = applySpaceAction(base, action)
   if (next === base) return base
-  if (action.operation === 'build' || action.operation === 'control-twin'
+  if (action.operation === 'capture' || action.operation === 'confirm-image-regions') await verifySpaceEvidence(next, true)
+  if (action.operation === 'confirm-image-regions' || action.operation === 'build' || action.operation === 'control-twin'
     || action.operation === 'resize-twin' || action.operation === 'edit-twin') {
-    const binding = next.twin?.objects.find(item => item.entityId === action.entityId)
-    if (!binding) throw new SpaceError('invalid-input', 'Twin binding is missing')
+    const bindings = next.twin?.objects || []
+    if (!bindings.length) throw new SpaceError('invalid-input', 'Twin binding is missing')
     const [{ buildProceduralAsset, disposeProceduralAsset }, { Box3, Vector3 }] = await Promise.all([
       import('@/features/image-to-glb/proceduralAssetBuilder'), import('three'),
     ])
-    let built
-    try { built = buildProceduralAsset(binding.recipe) }
-    catch (error) { throw new SpaceError('invalid-geometry', String((error as Error).message || error)) }
-    try {
-      const bounds = new Box3().setFromObject(built.scene)
-      const extent = bounds.getSize(new Vector3())
-      if (bounds.isEmpty() || ![...bounds.min.toArray(), ...bounds.max.toArray(),
-        ...extent.toArray()].every(Number.isFinite) || Math.min(...extent.toArray()) <= 0
-        || built.evidence.triangles > 30_000 || built.evidence.parts > 48) {
-        throw new SpaceError('invalid-geometry', 'Built geometry did not pass the local bounds and budget gate')
-      }
-    } finally { disposeProceduralAsset(built.scene) }
+    let totalTriangles = 0
+    for (const binding of bindings) {
+      let built
+      try { built = buildProceduralAsset(binding.recipe) }
+      catch (error) { throw new SpaceError('invalid-geometry', String((error as Error).message || error)) }
+      try {
+        totalTriangles += built.evidence.triangles
+        const bounds = new Box3().setFromObject(built.scene)
+        const extent = bounds.getSize(new Vector3())
+        if (bounds.isEmpty() || ![...bounds.min.toArray(), ...bounds.max.toArray(),
+          ...extent.toArray()].every(Number.isFinite) || Math.min(...extent.toArray()) <= 0
+          || totalTriangles > 30_000 || built.evidence.parts > 48) {
+          throw new SpaceError('invalid-geometry', 'Built geometry did not pass the local bounds and budget gate')
+        }
+      } finally { disposeProceduralAsset(built.scene) }
+    }
   }
   const saved = await store().save(next, current?.revision ?? null)
   await mirrorCurrentSpaceToSourceFiles()

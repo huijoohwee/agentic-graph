@@ -8,7 +8,7 @@ type ToolContract = Readonly<{ webName: string; title: string; description: stri
   annotations?: Record<string, unknown> }>
 type Tool = ToolContract & Readonly<{ name: string; execute: (input?: Record<string, unknown>) => Promise<unknown> }>
 const slim = (entity: SpaceEntity) => ({ id: entity.id, label: entity.label, category: entity.category,
-  observationId: entity.observationId, region: entity.region, provenance: entity.provenance })
+  observationId: entity.observationId, region: entity.region, provenance: entity.provenance, proposalMethod: entity.proposalMethod })
 const summary = (doc: SpaceDocument | null, query = '') => ({
   ok: true, schema: 'agentic-graph/semantic-space-result/v1', spaceId: doc?.id || null,
   revision: doc?.revision ?? null, scale: 'unknown', selectedEntityId: doc?.selectedEntityId || null,
@@ -21,13 +21,15 @@ const summary = (doc: SpaceDocument | null, query = '') => ({
       position: item.position, provenance: item.provenance,
       controls: item.recipe.controls.map(control => ({ id: control.id, value: item.recipe.values[control.id] })) })) } : null,
 })
-type Parsed = { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
+type Parsed = { operation: 'analyze'; observationId: string } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
   | { operation: 'correct'; entityId: string; category: string; label: string }
   | { operation: 'build'; entityId: string; template: TwinTemplate; size: TwinVector; position: TwinVector }
   | { operation: 'simulate' | 'reset'; entityId: string }
 const TOKEN = '[A-Za-z0-9][A-Za-z0-9._:-]{0,127}'
 const NUMBER = '-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)'
 export function parseSemanticSpaceInvocation(value: string): Parsed {
+  const analyze = new RegExp(`^/space\\.analyze @(${TOKEN}) #regions$`).exec(value)
+  if (analyze) return { operation: 'analyze', observationId: analyze[1] }
   const find = new RegExp(`^/space\\.find #(${TOKEN})$`).exec(value)
   if (find) return { operation: 'query', text: find[1] }
   const select = new RegExp(`^/space\\.select @(${TOKEN})$`).exec(value)
@@ -56,6 +58,17 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
           if (operation === 'query') return summary(await readSemanticSpace(), String(raw.text || ''))
           const doc = await readSemanticSpace()
           if (!doc) throw new SpaceError('space-unavailable', 'Capture or import a space before editing')
+          if (operation === 'analyze') {
+            const observation = doc.observations.find(item => item.id === raw.observationId)
+            if (!observation) throw new SpaceError('unknown-observation', 'Choose saved image evidence first')
+            const { perceiveImportedImage } = await import('@/features/xr-v2/semanticImagePerceptionClient')
+            const draft = await perceiveImportedImage(observation.imageDataUrl, new AbortController().signal)
+            const current = await readSemanticSpace()
+            if (current?.id !== doc.id || current.revision !== doc.revision) throw new SpaceError('stale-revision', 'Space changed during analysis')
+            return { ok: true, spaceId: doc.id, revision: doc.revision, observationId: observation.id,
+              evidenceSha256: observation.sha256, ...draft.result, confirmed: false, scale: 'unknown',
+              assumptions: 'Pixel groups only. Confirm labels and regions before building; depth is not observed.' }
+          }
           if (operation === 'simulate' || operation === 'reset') {
             const entityId = String(raw.entityId || '')
             if (!doc.twin?.objects.some(item => item.entityId === entityId)) {
