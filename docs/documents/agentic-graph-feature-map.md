@@ -38,6 +38,7 @@ Interpretation:
 | Feature | Typical User Trigger | Source Gate | Main Chunk Family / Built Chunk | Approx. Size | Mobile Risk | Notes |
 |---|---|---|---|---:|---|---|
 | Base 2D canvas shell | Opening the main app and staying in standard graph view | `CanvasViewport.tsx` lazy boundaries | `index-*`, `react-*`, `d3-*`, `ui-*`, `elk-*` | ~248 KB gzip critical path | Low-Medium | This is the default path and appears intentionally lean compared with optional editors/maps/3D views. |
+| Native theme and Design controls | Changing Light, Black or Dark Blue in MainPanel Settings; opening the Design FloatingPanel | `features/settings/themeSettings.ts`, `lib/ui/theme.ts`, `features/design/DesignFloatingPanelView.tsx` | Shared shell/token CSS; Design stays behind its existing view boundary | New incremental size unmeasured | Low for theme; Design cost unmeasured | One Settings owner persists mode and variant. Shared tokens, Monaco, learning scene and Flow canvas follow palette changes without a canvas drag; no duplicate MainPanel Design editor. |
 | Graph canvas bundle | Entering 2D graph canvas | `React.lazy(() => import('@/components/GraphCanvas'))` | `GraphCanvas-DaHxw-6U.js` plus shared entry/runtime chunks | code-split | Medium | Not as individually large as Monaco/Mermaid, but still part of active interaction flow. |
 | Flow canvas / storyboard widget | Entering flow-oriented editing surfaces | `FlowCanvasLazy`, `StoryboardWidgetCanvasLazy` | `FlowCanvas-D6RoDgZy.js`, `StoryboardWidgetCanvas-tUab0_Iz.js`, related manager/view chunks | code-split | Medium | Additional UI/editor complexity, but not the top bandwidth risk compared with Monaco/Mermaid. |
 | Monaco editor | Opening code/text editor workflows | `ensureMonacoStyles()` and dynamic Monaco imports in `MonacoTextEditor.impl.tsx` | `monaco-CuNkO3p_.js` plus `monaco-*` chunk family and Monaco workers | 2.71 MB raw / 696 KB gzip | High | Largest single mobile feature risk; also likely to cost CPU and memory. |
@@ -60,6 +61,8 @@ Interpretation:
 ---
 
 ## Mobile Risk Matrix
+
+The native theme and Design change is verified in source by Graph PR [#1245](https://github.com/huijoohwee/agentic-graph/pull/1245) and in Production Release and Runtime by [run #35996898470](https://github.com/huijoohwee/agentic-graph/actions/runs/35996898470) at protected `main` `f16ad08ac920ed125072b6de81335e96c790e3f3`. The [joined release companion](./agentic-graph-design-editor-release-recovery-prd-tad-adr-mvp-gtm.md) binds the Pages artifact, D1 readback, returning-user browser check and rollback evidence. Its code-related typography uses the existing 12px Menlo/Monaco-compatible editor setting. Incremental mobile transfer, a full accessibility audit and buyer response remain unmeasured; the next owner action is one consenting mobile pilot. This feature-map update is source documentation, not a new production candidate.
 
 | Feature | Trigger Frequency On Mobile | Payload Cost | CPU / Memory Cost | First-Paint Reachability | Overall Mobile Risk | Recommended Mitigation |
 |---|---|---|---|---|---|---|
