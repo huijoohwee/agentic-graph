@@ -4,7 +4,7 @@ type LearningOfflineWorker = typeof self & { __agLearningOffline?: { read(reques
 export const learningOfflineNavigationPlugin = {
   cachedResponseWillBeUsed: async ({ request }: { request: Request }) =>
     await (self as LearningOfflineWorker).__agLearningOffline?.read(request)
-      || new Response('This learning version is not installed. Reconnect and install it from the Python pane.', { status: 503 }),
+      || new Response('This offline version is not installed. Reconnect and install it from the relevant workspace pane.', { status: 503 }),
 }
 export const nonHtmlRuntimeCachePlugin = {
   cachedResponseWillBeUsed: async ({ request, cachedResponse }: { request?: Request; cachedResponse?: Response }) => {
@@ -35,7 +35,7 @@ export const nonHtmlRuntimeCachePlugin = {
 export const buildPwaRuntimeCachingRules = (): RuntimeCaching[] => [
   {
     urlPattern: ({ request, url }) => request.mode === 'navigate' && url.origin === self.location.origin
-      && url.searchParams.has('python-learning-offline'),
+      && (url.searchParams.has('python-learning-offline') || url.searchParams.has('studio-offline')),
     handler: 'CacheOnly',
     options: { cacheName: 'kg-python-learning-navigation', plugins: [learningOfflineNavigationPlugin] },
   },

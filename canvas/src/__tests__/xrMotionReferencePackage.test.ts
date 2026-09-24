@@ -508,7 +508,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   }
   if (!threeGraphSource.includes("active: active && mode !== 'xr' && !gameplayOverlayActive")
     || !threeGraphSource.includes("sceneGraph: mode === 'xr' || gameplayOverlayActive ? null : sceneGraphForRender")
-    || !threeGraphSource.includes("{mode !== 'xr' && !gameplayOverlayActive ? overlayLayer : null}")
+    || !threeGraphSource.includes("{mode !== 'xr' && !gameplayOverlayActive && !learningScene ? overlayLayer : null}")
     || !threeGraphSource.includes('data-kg-xr-exclusive-stage=')) {
     throw new Error('expected XR graph staging to exclude the standard rich-media overlay projection')
   }
