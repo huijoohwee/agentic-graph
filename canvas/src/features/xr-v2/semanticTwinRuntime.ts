@@ -1,3 +1,4 @@
+import { validateTwinSilhouette, type TwinSilhouette } from './semanticTwinSilhouette'
 import { parseProceduralAssetRecipe, updateProceduralAssetControl,
   type AssetControlValue, type ProceduralAssetRecipe } from '@/features/image-to-glb/proceduralAssetContract'
 import { createProceduralAssetFromText } from '@/features/image-to-glb/proceduralAssetTextRecipe'
@@ -5,7 +6,7 @@ import type { SpaceEntity, SpaceObservation } from './semanticSpaceRuntime'
 
 export const SEMANTIC_TWIN_SCHEMA = 'agentic-graph/semantic-twin/v1' as const
 export const SEMANTIC_TWIN_PREVIEW_EVENT = 'agentic-graph:semantic-twin-preview'
-export const SEMANTIC_TWIN_TEMPLATES = ['chair', 'table', 'box', 'sphere', 'cylinder'] as const
+export const SEMANTIC_TWIN_TEMPLATES = ['contour', 'chair', 'table', 'box', 'sphere', 'cylinder'] as const
 export const MAX_TWIN_OBJECTS = 20
 export type TwinTemplate = typeof SEMANTIC_TWIN_TEMPLATES[number]
 export type TwinVector = readonly [number, number, number]
@@ -15,6 +16,7 @@ export type TwinBinding = Readonly<{
   observationId: string
   evidenceSha256: string
   template: TwinTemplate
+  silhouette?: TwinSilhouette
   recipe: ProceduralAssetRecipe
   size: TwinVector
   position: TwinVector
@@ -54,7 +56,7 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
   let parts = 0
   for (const object of twin.objects) {
     if (!isRecord(object) || Object.keys(object).some(key => ![
-      'entityId', 'observationId', 'evidenceSha256', 'template', 'recipe', 'size', 'position', 'provenance',
+      'entityId', 'observationId', 'evidenceSha256', 'template', 'recipe', 'size', 'position', 'provenance', 'silhouette',
     ].includes(key)) || typeof object.entityId !== 'string' || seen.has(object.entityId)
       || typeof object.observationId !== 'string' || !/^[a-f0-9]{64}$/.test(String(object.evidenceSha256))
       || !template(object.template) || !vector(object.size, 0.1, 5)
@@ -62,6 +64,8 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
       || object.provenance !== 'authored-approximation') fail('invalid object binding')
     if (Math.abs(object.position[0]) + object.size[0] / 2 > twin.room.width / 2 + 1e-6
       || Math.abs(object.position[2]) + object.size[2] / 2 > twin.room.depth / 2 + 1e-6) fail('object extends beyond authored room')
+    if (object.template === 'contour') validateTwinSilhouette(object.silhouette)
+    else if (object.silhouette !== undefined) fail('silhouette requires contour geometry')
     const entity = entities.find(item => item.id === object.entityId)
     const observation = observations.find(item => item.id === object.observationId)
     if (!entity || entity.observationId !== object.observationId
@@ -75,15 +79,21 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
 
 export function buildSemanticTwinBinding(args: Readonly<{
   entity: SpaceEntity; observation: SpaceObservation; template: TwinTemplate
-  size: TwinVector; position: TwinVector; room: TwinRoom; seed?: number
+  size: TwinVector; position: TwinVector; room: TwinRoom; seed?: number; silhouette?: TwinSilhouette
 }>): TwinBinding {
   if (!template(args.template) || !vector(args.size, 0.1, 5) || !vector(args.position, -10, 10)
     || args.position[1] !== 0 || !Number.isSafeInteger(args.seed ?? 1)
     || (args.seed ?? 1) < 0 || (args.seed ?? 1) > 0xffff_ffff) fail('invalid construction request')
+  const recipe = createProceduralAssetFromText(args.template === 'contour' ? 'box' : args.template, args.seed ?? 1)
+  if (args.template === 'contour') {
+    recipe.controls = recipe.controls.filter(control => ['color', 'visible'].includes(control.id))
+    recipe.values = Object.fromEntries(recipe.controls.map(control => [control.id, recipe.values[control.id]]))
+  }
   const binding: TwinBinding = {
     entityId: args.entity.id, observationId: args.entity.observationId,
     evidenceSha256: args.observation.sha256, template: args.template,
-    recipe: createProceduralAssetFromText(args.template, args.seed ?? 1),
+    recipe,
+    ...(args.template === 'contour' ? { silhouette: validateTwinSilhouette(args.silhouette) } : {}),
     size: [...args.size] as [number, number, number],
     position: [...args.position] as [number, number, number],
     provenance: 'authored-approximation',

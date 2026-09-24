@@ -3,6 +3,7 @@ import type { SemanticImageDraft } from './semanticImagePerceptionClient'
 import { perceiveImportedImage } from './semanticImagePerceptionClient'
 import { readSemanticSpace, readSemanticSpaceSourceMirrorStatus, runSemanticSpaceAction } from './semanticSpaceStore'
 import { addSemanticEntityToCanvas } from './semanticSpaceCanvas'
+import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
 import type { SpaceDocument } from './semanticSpaceRuntime'
 
 const SpaceEditor = React.lazy(() => import('./SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
@@ -11,6 +12,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   const [draft, setDraft] = React.useState<SemanticImageDraft | null>(null)
   const [selected, setSelected] = React.useState<readonly number[]>([])
   const [labels, setLabels] = React.useState<readonly string[]>([])
+  const [shapes, setShapes] = React.useState<readonly TwinTemplate[]>([])
   const [editing, setEditing] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const [status, setStatus] = React.useState('')
@@ -30,6 +32,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
       if (!mounted.current) return
       setDraft(next); setSelected(next.result.proposals.map((_, index) => index))
       setLabels(next.result.proposals.map(item => item.label))
+      setShapes(next.result.proposals.map(item => item.silhouette ? 'contour' : 'box'))
       setStatus('Review the regions below. These are pixel groups, not recognized objects.')
     } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
     finally { if (controller.current === job) controller.current = null; if (mounted.current) setBusy(false) }
@@ -47,7 +50,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
         saved.current = await runSemanticSpaceAction({ operation: 'confirm-image-regions',
           requestId: `request:${crypto.randomUUID()}`, expectedRevision: base.current.revision,
           observation: draft.observation,
-          proposals: selected.map(index => ({ ...draft.result.proposals[index], label: labels[index] })) })
+          proposals: selected.map(index => ({ ...draft.result.proposals[index], label: labels[index], template: shapes[index] })) })
       }
       const doc = await readSemanticSpace()
       if (!doc || doc.id !== saved.current.id || !doc.observations.some(item => item.id === draft.observation.id)) {
@@ -85,20 +88,26 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
           <span className="bg-black/80 px-1">{index + 1}</span></span>)}
       </div>
       <div className="grid max-h-48 gap-1 overflow-auto">{draft.result.proposals.map((_, index) =>
-        <label key={index} className="flex min-h-11 items-center gap-2">
+        <div key={index} className="grid gap-1 rounded border p-2"><label className="flex min-h-11 items-center gap-2">
           <input type="checkbox" aria-label={`Include region ${index + 1}`} checked={selected.includes(index)} disabled={busy || !!saved.current}
             onChange={event => setSelected(current => event.target.checked ? [...current, index].sort((a, b) => a - b) : current.filter(i => i !== index))} />
           <input className="min-h-11 min-w-0 flex-1 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} label`}
             value={labels[index]} maxLength={80} disabled={busy || !!saved.current}
             onChange={event => setLabels(current => current.map((label, i) => i === index ? event.target.value : label))} />
-        </label>)}</div>
-      <p className="m-0">Builds coloured boxes from these regions. Image axes set an editable floor layout;
-        depth is fixed at 0.4 arbitrary units. Labels, shape, scale and placement need your review.</p>
+        </label><label className="grid gap-1">3D shape
+          <select className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} shape`}
+            value={shapes[index]} disabled={busy || !!saved.current}
+            onChange={event => setShapes(current => current.map((shape, i) => i === index ? event.target.value as TwinTemplate : shape))}>
+            {SEMANTIC_TWIN_TEMPLATES.filter(shape => shape !== 'contour' || draft.result.proposals[index].silhouette)
+              .map(shape => <option key={shape} value={shape}>{shape === 'contour' ? 'Visible outline → 3D volume' : shape === 'box' ? 'Box with photo front' : shape}</option>)}
+          </select></label></div>)}</div>
+      <p className="m-0">Visible outlines become solid Three.js contour meshes. Choose chair, table or a primitive for a full procedural model.
+        These are reviewed approximations: object identity, hidden surfaces and real depth are not recovered. Contour depth starts at 0.4 arbitrary units; other models use template proportions; edit dimensions and placement in Semantic space.</p>
       <button type="button" className={button} disabled={busy || !selected.length || selected.some(i => !labels[i]?.trim())}
         onClick={() => void build()}>{saved.current ? 'Show built regions on Canvas' : 'Build selected regions in 3D'}</button>
     </>}
-    {saved.current && <button type="button" className={button} onClick={() => setEditing(value => !value)}>
-      {editing ? 'Close space editor' : 'Edit or export built space'}</button>}
+    <button type="button" className={button} onClick={() => setEditing(value => !value)}>
+      {editing ? 'Close space editor' : 'Edit or export space'}</button>
     {editing && <React.Suspense fallback={<span>Opening space editor…</span>}><SpaceEditor /></React.Suspense>}
     {status && <output role="status">{status}</output>}
     <span>Local CPU · no model download or generation service</span>

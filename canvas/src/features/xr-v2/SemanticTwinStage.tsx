@@ -1,48 +1,15 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GlbFit } from '@/lib/three/GlbAssetModel'
-import * as THREE from 'three'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { SpatialPhysicsEngine } from '@/features/physics/spatialPhysicsEngine'
-import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
+import { buildTwinScene, disposeTwinScene } from './semanticTwinScene'
+import { applyTwinImageAppearance } from './semanticTwinImageAppearance'
 import { readSemanticSpace, runSemanticSpaceAction, subscribeSemanticSpace } from './semanticSpaceStore'
 import type { SpaceDocument } from './semanticSpaceRuntime'
-import type { TwinBinding } from './semanticTwinRuntime'
 import { SEMANTIC_TWIN_PREVIEW_EVENT } from './semanticTwinRuntime'
 
 type PreviewRequest = { spaceId: string; entityId: string; operation: 'drop' | 'reset'; handled?: boolean }
-type BuiltObject = { binding: TwinBinding; wrapper: THREE.Group; source: THREE.Group }
-type BuiltScene = { objects: readonly BuiltObject[]; error: string | null }
-
-function buildScene(bindings: readonly TwinBinding[]): BuiltScene {
-  const objects: BuiltObject[] = []
-  let triangles = 0
-  try {
-    for (const binding of bindings) {
-      const built = buildProceduralAsset(binding.recipe)
-      const source = built.scene
-      objects.push({ binding, wrapper: new THREE.Group(), source })
-      const bounds = new THREE.Box3().setFromObject(source)
-      const extent = bounds.getSize(new THREE.Vector3())
-      triangles += built.evidence.triangles
-      if (bounds.isEmpty() || ![...bounds.min.toArray(), ...bounds.max.toArray(),
-        ...extent.toArray()].every(Number.isFinite) || Math.min(...extent.toArray()) <= 0
-        || triangles > 30_000) throw Error('Twin geometry exceeds its finite bounds or mobile triangle budget')
-      source.scale.set(binding.size[0] / extent.x, binding.size[1] / extent.y, binding.size[2] / extent.z)
-      source.position.set(-bounds.getCenter(new THREE.Vector3()).x * source.scale.x,
-        -bounds.min.y * source.scale.y, -bounds.getCenter(new THREE.Vector3()).z * source.scale.z)
-      const wrapper = objects.at(-1)!.wrapper
-      wrapper.name = `SemanticTwin-${binding.entityId}`
-      wrapper.position.set(...binding.position)
-      wrapper.add(source)
-    }
-    return { objects, error: null }
-  } catch (error) {
-    for (const object of objects) disposeProceduralAsset(object.source)
-    return { objects: [], error: String((error as Error).message || error) }
-  }
-}
-
 export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: boolean; onFitChange?: (fit: GlbFit | null) => void }) {
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
   React.useEffect(() => {
@@ -58,8 +25,16 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     && node.properties?.twinSchema === document?.twin?.schema) === true)
   const bindings = linked ? document?.twin?.objects || [] : []
   const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}`
-  const built = React.useMemo(() => buildScene(bindings), [sceneKey])
-  React.useEffect(() => () => { for (const item of built.objects) disposeProceduralAsset(item.source) }, [built])
+  const built = React.useMemo(() => buildTwinScene(bindings), [sceneKey])
+  const invalidate = useThree(state => state.invalidate)
+  React.useEffect(() => {
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10_000)
+    if (document && built.objects.length) void applyTwinImageAppearance(built.objects, document, controller.signal, built.textures)
+      .then(() => { if (!controller.signal.aborted) invalidate() })
+      .catch(error => { if (!controller.signal.aborted) window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error',
+        { detail: `Photo appearance unavailable: ${String(error.message)} Solid geometry remains available.` })) })
+    return () => { clearTimeout(timer); controller.abort(); disposeTwinScene(built) }
+  }, [built, invalidate])
   React.useEffect(() => {
     if (built.error) window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error', { detail: built.error }))
   }, [built.error])
@@ -126,6 +101,9 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
       <meshStandardMaterial color="#69747c" roughness={0.9} />
     </mesh>
     {built.objects.map(item => <primitive key={item.binding.entityId} object={item.wrapper} dispose={null}
-      onClick={(event: { stopPropagation: () => void }) => { event.stopPropagation(); select(item.binding.entityId) }} />)}
+      onClick={(event: { stopPropagation: () => void; nativeEvent: Event }) => {
+        if (!(event.nativeEvent.target instanceof HTMLCanvasElement)) return
+        event.stopPropagation(); select(item.binding.entityId)
+      }} />)}
   </group>
 }

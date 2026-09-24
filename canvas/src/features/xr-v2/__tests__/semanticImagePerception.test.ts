@@ -4,7 +4,9 @@ import { indexedDB } from 'fake-indexeddb'
 import { analyzeSemanticImage } from '../semanticImagePerception'
 import { applySpaceAction, hashSpaceImage, newSpaceDocument, validateSpaceDocument } from '../semanticSpaceRuntime'
 import { createSemanticSpaceStore, exportSemanticSpacePackage, importSemanticSpace } from '../semanticSpaceStore'
-import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
+import * as THREE from 'three'
+import { buildTwinScene, disposeTwinScene } from '../semanticTwinScene'
+import { validateTwinSilhouette } from '../semanticTwinSilhouette'
 import { parseSemanticSpaceInvocation } from '@/features/agent-ready/semanticSpaceWebMcpTools'
 
 function fixture() {
@@ -49,9 +51,15 @@ test('reviewed pixel regions compile to editable CPU geometry and atomically rou
   for (const binding of next.twin!.objects) {
     assert.equal(binding.evidenceSha256, input.observation.sha256)
     assert.equal(binding.size[2], 0.4)
-    const built = buildProceduralAsset(binding.recipe)
-    try { assert.equal(built.evidence.providerCalls, 0); assert.equal(built.evidence.triangles, 12) }
-    finally { disposeProceduralAsset(built.scene) }
+    assert.equal(binding.template, 'contour')
+    const built = buildTwinScene([binding])
+    try {
+      assert.equal(built.error, null)
+      const meshes: THREE.Mesh[] = []
+      built.objects[0].source.traverse(item => { if ((item as THREE.Mesh).isMesh) meshes.push(item as THREE.Mesh) })
+      assert.ok(meshes.length > 0)
+      assert.ok(meshes.every(mesh => mesh.geometry.type === 'ExtrudeGeometry'))
+    } finally { disposeTwinScene(built) }
   }
   const store = createSemanticSpaceStore({ indexedDB, databaseName: `perception-${crypto.randomUUID()}` })
   await store.save(next, null)
@@ -76,4 +84,44 @@ test('invalid, stale, metric and over-budget proposals cannot partially mutate a
   assert.throws(() => validateSpaceDocument({ ...next, entities: [{ ...next.entities[0], proposalMethod: 'neural-depth' }] }))
   assert.deepEqual(parseSemanticSpaceInvocation('/space.analyze @observation:test #regions'),
     { operation: 'analyze', observationId: 'observation:test' })
+})
+
+test('new region volumes retain the pixel crop aspect instead of independently clamping both axes', async () => {
+  const input = await action()
+  const next = applySpaceAction(newSpaceDocument('space:aspect'), { ...input,
+    observation: { ...input.observation, width: 1024, height: 576 } })
+  next.twin!.objects.forEach((binding, index) => {
+    const region = input.proposals[index].region
+    assert.ok(Math.abs(binding.size[0] / binding.size[1] - region.width * 1024 / (region.height * 576)) < 1e-6)
+  })
+})
+
+
+test('visible silhouette makes actual contour meshes with leg gaps; chosen chair uses the existing part builder', async () => {
+  const width = 64, height = 64, data = new Uint8ClampedArray(width * height * 4)
+  for (let y = 5; y < 59; y++) for (let x = 8; x < 56; x++) {
+    if (y < 32 || x < 16 || x >= 48) data.set([100, 140, 180, 255], (y * width + x) * 4)
+  }
+  const proposals = analyzeSemanticImage({ width, height, sourceWidth: width, sourceHeight: height, data }).proposals
+  assert.equal(proposals.length, 1)
+  const input = await action(), doc = applySpaceAction(newSpaceDocument('space:shape'), { ...input, proposals })
+  const built = buildTwinScene(doc.twin!.objects)
+  try {
+    assert.equal(built.error, null)
+    const source = built.objects[0].source
+    source.updateMatrixWorld(true)
+    const bounds = new THREE.Box3().setFromObject(source), size = bounds.getSize(new THREE.Vector3())
+    const ray = new THREE.Raycaster(new THREE.Vector3(0, size.y * 0.2, 10), new THREE.Vector3(0, 0, -1))
+    assert.equal(ray.intersectObject(source, true).length, 0, 'leg gap must remain empty geometry')
+    ray.ray.origin.x = -size.x * 0.42
+    assert.ok(ray.intersectObject(source, true).length > 0, 'a leg must contain real triangles')
+  } finally { disposeTwinScene(built) }
+  const chair = applySpaceAction(newSpaceDocument('space:chair'), { ...input,
+    proposals: [{ ...proposals[0], label: 'Reviewed chair', template: 'chair' }] })
+  assert.equal(chair.entities[0].category, 'chair')
+  assert.equal(chair.twin!.objects[0].recipe.parts.length, 6)
+  assert.equal(chair.twin!.objects[0].silhouette, undefined)
+  for (const shape of [{ width: 193, height: 3, runs: [[0, 0, 1]] },
+    { width: 8, height: 8, runs: [[0, 0, 5], [3, 0, 1]] },
+    { width: 8, height: 8, runs: [[7, 0, 2]] }]) assert.throws(() => validateTwinSilhouette(shape))
 })

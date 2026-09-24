@@ -1,11 +1,14 @@
 import { buildForegroundMask } from '@/features/image-to-glb/imageToGlbReferenceAnalysis'
 import type { ImageReferencePixels } from '@/features/image-to-threejs/imageReferencePixels'
+import type { TwinSilhouette } from './semanticTwinSilhouette'
+import type { TwinTemplate } from './semanticTwinRuntime'
 import type { SpaceRegion } from './semanticSpaceRuntime'
 
 export const IMAGE_PERCEPTION_METHOD = 'local-foreground-components-v1' as const
 export const IMAGE_PERCEPTION_LIMITS = Object.freeze({ dimension: 192, regions: 12, timeoutMs: 5000 })
 export type ImageRegionProposal = Readonly<{
   region: SpaceRegion; color: string; coverage: number; label: string
+  silhouette?: TwinSilhouette; template?: TwinTemplate
 }>
 export type ImagePerceptionResult = Readonly<{
   method: typeof IMAGE_PERCEPTION_METHOD
@@ -41,7 +44,17 @@ export function analyzeSemanticImage(pixels: ImageReferencePixels): ImagePercept
     }
     const coverage = tail / (width * height)
     if (coverage < 0.008 || right - left < 2 || bottom - top < 2) continue
-    proposals.push({ region: { x: left / width, y: top / height,
+    const cropWidth = right - left + 1, cropHeight = bottom - top + 1
+    const component = new Uint8Array(cropWidth * cropHeight)
+    for (let i = 0; i < tail; i++) component[(Math.floor(queue[i] / width) - top) * cropWidth + queue[i] % width - left] = 1
+    const runs: [number, number, number][] = []
+    for (let y = 0; y < cropHeight; y++) for (let x = 0; x < cropWidth;) {
+      if (!component[y * cropWidth + x]) { x++; continue }
+      const startX = x
+      while (x < cropWidth && component[y * cropWidth + x]) x++
+      runs.push([startX, y, x - startX])
+    }
+    proposals.push({ ...(runs.length <= 2048 ? { silhouette: { width: cropWidth, height: cropHeight, runs } } : {}), region: { x: left / width, y: top / height,
       width: (right - left + 1) / width, height: (bottom - top + 1) / height },
     color: '#' + [red, green, blue].map(sum => Math.round(sum / tail).toString(16).padStart(2, '0')).join(''),
     coverage, label: '' })

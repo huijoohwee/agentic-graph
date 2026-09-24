@@ -281,19 +281,18 @@ export function SemanticSpacePanel() {
     const revision = document.revision
     setBusy(true)
     try {
-      const { exportProceduralAsset } = await import('@/features/image-to-glb/proceduralAssetRuntimeExport')
-      const result = await exportProceduralAsset({ recipe: twinBinding.recipe, artifactStem: selected?.label || 'space-object',
-        isCurrent: () => currentDocumentRef.current?.id === document.id
-          && currentDocumentRef.current.revision === revision })
+      const { exportTwinModel } = await import('./semanticTwinScene')
+      const blob = await exportTwinModel(document, twinBinding.entityId, () => currentDocumentRef.current?.id === document.id
+        && currentDocumentRef.current.revision === revision)
       const current = await readSemanticSpace()
       if (!current || current.id !== document.id || current.revision !== revision) {
         throw Error('Space changed during model export; retry with the current geometry')
       }
-      const url = URL.createObjectURL(result.glb.blob)
+      const url = URL.createObjectURL(blob)
       const link = window.document.createElement('a')
-      link.href = url; link.download = result.glb.fileName; link.click()
+      link.href = url; link.download = `${(selected?.label || 'space-object').replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 80)}.glb`; link.click()
       window.setTimeout(() => URL.revokeObjectURL(url), 30_000)
-      setStatus('Selected procedural model exported. The full space package retains its placement and evidence.')
+      setStatus('Selected model exported with its generated geometry, authored dimensions and available photo face. The full space package retains placement and evidence.')
     } catch (error) { setStatus(String((error as Error).message || error)) }
     finally { setBusy(false) }
   }
@@ -345,8 +344,8 @@ export function SemanticSpacePanel() {
       <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Approximate room floor</legend>
         <div className="grid grid-cols-2 gap-2">{(['Width', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
           <input className={fieldClass} type="number" min="2" max="20" step="0.1" value={roomSize[axis]}
-            onChange={event => setRoomSize(current => current.map((item, index) => index === axis
-              ? Number(event.currentTarget.value) : item) as [number, number])} /></label>)}</div>
+            onChange={event => { const value = Number(event.currentTarget.value)
+              setRoomSize(current => current.map((item, index) => index === axis ? value : item) as [number, number]) }} /></label>)}</div>
         <label className="flex items-center gap-2"><input type="checkbox" checked={authoredMetres}
           onChange={event => setAuthoredMetres(event.currentTarget.checked)} />I entered these dimensions in metres</label>
         <button type="button" className={buttonClass} disabled={busy} onClick={() => {
@@ -384,17 +383,17 @@ export function SemanticSpacePanel() {
         <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Editable 3D approximation</legend>
           <label>Supported shape<select className={fieldClass} value={twinTemplate}
             onChange={event => setTwinTemplate(event.currentTarget.value as TwinTemplate)}>
-            {SEMANTIC_TWIN_TEMPLATES.map(item => <option key={item} value={item}>{item}</option>)}
+            {SEMANTIC_TWIN_TEMPLATES.filter(item => item !== 'contour' || twinBinding?.template === 'contour').map(item => <option key={item} value={item}>{item}</option>)}
           </select></label>
           <div className="grid grid-cols-3 gap-2">{(['Width', 'Height', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
             <input className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
-              onChange={event => setTwinSize(current => current.map((item, index) => index === axis
-                ? Number(event.currentTarget.value) : item) as [number, number, number])} /></label>)}</div>
+              onChange={event => { const value = Number(event.currentTarget.value)
+                setTwinSize(current => current.map((item, index) => index === axis ? value : item) as [number, number, number]) }} /></label>)}</div>
           <div className="grid grid-cols-2 gap-2">{(['X position', 'Depth position'] as const).map((name, index) => {
             const axis = index === 0 ? 0 : 2
             return <label key={name}>{name}<input className={fieldClass} type="number" min="-10" max="10" step="0.1"
-              value={twinPosition[axis]} onChange={event => setTwinPosition(current => current.map((item, currentAxis) =>
-                currentAxis === axis ? Number(event.currentTarget.value) : item) as [number, number, number])} /></label>
+              value={twinPosition[axis]} onChange={event => { const value = Number(event.currentTarget.value)
+                setTwinPosition(current => current.map((item, currentAxis) => currentAxis === axis ? value : item) as [number, number, number]) }} /></label>
           })}</div>
           <p className="m-0 text-xs">Shape, hidden surfaces and image-derived placement are editable assumptions.
             {document.twin?.room.unit === 'authored-metres' ? ' Room dimensions are user-authored metres.' : ' Units are arbitrary.'}</p>
