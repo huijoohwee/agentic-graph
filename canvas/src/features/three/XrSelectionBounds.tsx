@@ -18,7 +18,7 @@ export function updateXrSelectionBounds(root: Group, helper: Box3Helper, inverse
   }
 }
 
-function SelectedBounds({ children, targetId }: { children: React.ReactNode; targetId: string }) {
+export function XrSelectionBounds({ children, targetId, selected }: { children: React.ReactNode; targetId: string; selected: boolean }) {
   const root = React.useRef<Group>(null)
   const inverse = React.useMemo(() => new Matrix4(), [])
   const helper = React.useMemo(() => {
@@ -36,11 +36,11 @@ function SelectedBounds({ children, targetId }: { children: React.ReactNode; tar
     helper.geometry.dispose()
     for (const material of Array.isArray(helper.material) ? helper.material : [helper.material]) material.dispose()
   }, [helper])
-  useFrame(() => { if (root.current) updateXrSelectionBounds(root.current, helper, inverse) })
-  return <><group ref={root}>{children}</group><primitive object={helper} raycast={() => null} /></>
+  useFrame(() => {
+    if (selected && root.current) updateXrSelectionBounds(root.current, helper, inverse)
+    else helper.visible = false
+  })
+  return <><group ref={root}>{children}</group><primitive object={helper} visible={selected} raycast={() => null} /></>
 }
 
-/** All object selections share this outline. Labels and pose diagnostics stay outside its bounds. */
-export function XrSelectionBounds({ selected, ...props }: { selected: boolean; children: React.ReactNode; targetId: string }) {
-  return selected ? <SelectedBounds {...props} /> : <>{props.children}</>
-}
+// Keep the model parent stable: reparenting a reused R3F primitive on selection destroys its root binding.

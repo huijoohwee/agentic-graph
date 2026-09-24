@@ -144,6 +144,8 @@ export async function testSemanticSpaceRoundTripAndGuards() {
 }
 
 export async function testSemanticSpaceWebMcpAndInvocation() {
+  const objectsToken = parseSemanticSpaceInvocation('/space.objects @observation:one #models')
+  if (objectsToken.operation !== 'objects' || objectsToken.observationId !== 'observation:one') throw Error('Object view invocation lost evidence target')
   const foundToken = parseSemanticSpaceInvocation('/space.find #chair')
   const selectedToken = parseSemanticSpaceInvocation('/space.select @entity:chair')
   if (foundToken.operation !== 'query' || foundToken.text !== 'chair'

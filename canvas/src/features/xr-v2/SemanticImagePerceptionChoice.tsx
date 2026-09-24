@@ -2,7 +2,7 @@ import React from 'react'
 import type { SemanticImageDraft } from './semanticImagePerceptionClient'
 import { perceiveImportedImage } from './semanticImagePerceptionClient'
 import { readSemanticSpace, readSemanticSpaceSourceMirrorStatus, runSemanticSpaceAction } from './semanticSpaceStore'
-import { addSemanticEntityToCanvas, overlaySemanticObservation } from './semanticSpaceCanvas'
+import { addSemanticEntityToCanvas, overlaySemanticObservation, openSemanticObjects } from './semanticSpaceCanvas'
 import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
 import SemanticImageRegionFocus from './SemanticImageRegionFocus'
 import type { SpaceRegion, SpaceDocument } from './semanticSpaceRuntime'
@@ -10,6 +10,7 @@ import type { SpaceRegion, SpaceDocument } from './semanticSpaceRuntime'
 const SpaceEditor = React.lazy(() => import('./SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
 const button = 'App-toolbar__btn min-h-11 w-full whitespace-normal'
 export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl: string }) {
+  const [objectMode, setObjectMode] = React.useState(true)
   const [draft, setDraft] = React.useState<SemanticImageDraft | null>(null)
   const [selected, setSelected] = React.useState<readonly number[]>([])
   const [labels, setLabels] = React.useState<readonly string[]>([])
@@ -34,7 +35,8 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
       if (!mounted.current) return
       setDraft(next); setSelected(next.result.proposals.map((_, index) => index))
       setLabels(next.result.proposals.map(item => item.label))
-      setShapes(next.result.proposals.map(item => item.template || (item.silhouette ? 'contour' : 'box')))
+      setObjectMode(!relief)
+      setShapes(next.result.proposals.map(item => relief ? 'relief' : 'box'))
       setStatus(relief ? 'Full image prepared as one continuous relief. Review and build below; this does not identify individual objects.' : useWholeRegion ? 'Chosen area ready. Choose its 3D shape and label below.' : 'Review the regions below. These are pixel groups, not recognized objects.')
     } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
     finally { if (controller.current === job) controller.current = null; if (mounted.current) setBusy(false) }
@@ -70,17 +72,18 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
       for (const entity of doc.entities.filter(item => item.observationId === draft.observation.id)) {
         await addSemanticEntityToCanvas(doc, entity)
       }
-      await overlaySemanticObservation(doc, draft.observation.id)
+      if (objectMode) await openSemanticObjects(doc, draft.observation.id)
+      else await overlaySemanticObservation(doc, draft.observation.id)
       const mirror = readSemanticSpaceSourceMirrorStatus()
       setStatus(mirror?.error ? `3D saved locally; Source Files projection failed: ${mirror.error}`
-        : 'Editable 3D saved locally and aligned over its source image. Open Semantic space for the 3D layout, editing or export.')
+        : objectMode ? 'Separate object models saved. Click each model to select it and edit its transform in Timeline.' : 'Image relief saved as a surface. It does not identify individual objects.')
     } catch (error) { if (mounted.current) setStatus(`${saved.current ? 'Saved locally. Canvas linking: ' : ''}${String((error as Error).message || error)}`) }
     finally { if (mounted.current) setBusy(false) }
   }
   return <section className="grid gap-2" aria-label="Local image to 3D">
-    <button type="button" className={button} disabled={busy} onClick={() => void analyze()}>Analyze image locally</button>
-    <button type="button" className={button} disabled={busy} onClick={() => void analyze(undefined, false, true)}>Generate whole-image relief</button>
-    <p className="m-0">Show image displays saved regions. Analyze proposes visible groups; whole-image relief covers the complete photo.</p>
+    <button type="button" className={button} disabled={busy} onClick={() => void analyze()}>Create 3D objects</button>
+    <details><summary className="min-h-11 cursor-pointer py-2">Image surface tools</summary><button type="button" className={button} disabled={busy} onClick={() => void analyze(undefined, false, true)}>Generate whole-image relief</button></details>
+    <p className="m-0">Create separate objects, choose a procedural shape for each region, then click the models to edit them. Shape and depth are authored; pixel grouping does not recognize every object.</p>
     <details><summary className="min-h-11 cursor-pointer py-2">Refine image regions</summary>
       <SemanticImageRegionFocus imageUrl={sourceUrl} value={focus} disabled={busy} onChange={next => {
         setFocus(next); setDraft(null); saved.current = null; setStatus('Focus changed. Analyze it or use it as one region.')
@@ -111,11 +114,11 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
           <select className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} shape`}
             value={shapes[index]} disabled={busy || !!saved.current}
             onChange={event => { const value = event.currentTarget.value as TwinTemplate; setShapes(current => current.map((shape, i) => i === index ? value : shape)) }}>
-            {SEMANTIC_TWIN_TEMPLATES.filter(shape => (shape !== 'contour' || draft.result.proposals[index].silhouette) && (shape !== 'relief' || draft.result.proposals[index].relief))
-              .map(shape => <option key={shape} value={shape}>{shape === 'relief' ? 'Whole-image surface relief' : shape === 'contour' ? 'Visible outline → 3D volume' : shape === 'box' ? 'Box with photo front' : shape}</option>)}
+            {SEMANTIC_TWIN_TEMPLATES.filter(shape => (!objectMode || !['contour', 'relief'].includes(shape)) && (shape !== 'contour' || draft.result.proposals[index].silhouette) && (shape !== 'relief' || draft.result.proposals[index].relief))
+              .map(shape => <option key={shape} value={shape}>{shape === 'relief' ? 'Whole-image surface relief' : shape === 'contour' ? 'Visible outline → 3D volume' : shape === 'box' ? 'Box object' : shape}</option>)}
           </select></label></div>)}</div>
-      <p className="m-0">Visible outlines become solid Three.js contour meshes. Choose an object or outdoor shape for a procedural model, including buildings, trees, water, sky and terrain.
-        These are reviewed approximations: object identity, hidden surfaces and real depth are not recovered. Contour depth starts at 0.4 arbitrary units; other models use template proportions; edit dimensions and placement in Semantic space.</p>
+      <p className="m-0">Choose a procedural object shape such as building, tree, water, cloud or furniture. Each selected region becomes its own selectable model.
+        These are reviewed approximations: object identity, hidden surfaces and real depth are not recovered. Models use authored template proportions. Edit dimensions and placement in Timeline.</p>
       <button type="button" className={button} disabled={busy || !selected.length || selected.some(i => !labels[i]?.trim())}
         onClick={() => void build()}>{saved.current ? 'Show built regions on Canvas' : 'Build selected regions in 3D'}</button>
     </>}

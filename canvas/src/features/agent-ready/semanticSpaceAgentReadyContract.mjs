@@ -18,6 +18,7 @@ export const SEMANTIC_SPACE_CONTROL_SCHEMA = Object.freeze({ oneOf: [
   action('renderer', { backend: { type: 'string', enum: ['webgl', 'webgpu'] } }, ['backend']),
   action('analyze', { observationId: id, region, relief: { type: 'boolean' }, useWholeRegion: { type: 'boolean' } }, ['observationId']),
   action('overlay', { observationId: id }, ['observationId']),
+  action('objects', { observationId: id }, ['observationId']),
   action('query', { text: { type: 'string', maxLength: 80 } }, []),
   action('select', { ...base, entityId: { anyOf: [id, { type: 'null' }] } }, ['requestId', 'expectedRevision', 'entityId']),
   action('correct', { ...base, entityId: id, label: text, category: text }, ['requestId', 'expectedRevision', 'entityId', 'label', 'category']),
@@ -55,7 +56,7 @@ export function buildSemanticSpaceAgentReadyToolContracts({ buildWebName, readOn
     name: SEMANTIC_SPACE_TOOL_IDS.controlLocalSemanticSpace,
     webName: buildWebName(SEMANTIC_SPACE_TOOL_IDS.controlLocalSemanticSpace),
     title: 'Control Local Semantic Space',
-    description: 'Inspect and edit evidence-linked entities and CPU procedural twins. Mutations require a request ID and expected revision. /space.renderer @canvas #webgpu or #webgl chooses device rendering. /space.analyze @observation #regions proposes local pixel groups; #relief proposes a whole-image brightness surface without mutation. /space.overlay @observation #image aligns saved objects on the source image. /space.find #category, /space.select @entity, /space.label, /space.build @entity #procedural-asset, /space.simulate and /space.reset are supported.',
+    description: 'Inspect and edit evidence-linked entities and CPU procedural twins. Mutations require a request ID and expected revision. /space.renderer @canvas #webgpu or #webgl chooses device rendering. /space.analyze @observation #regions proposes local pixel groups; #relief proposes a whole-image brightness surface without mutation. /space.overlay @observation #image aligns saved objects; /space.objects @observation #models opens separate models with shared selection and Timeline editing. /space.find #category, /space.select @entity, /space.label, /space.build @entity #procedural-asset, /space.simulate and /space.reset are supported.',
     inputSchema: SEMANTIC_SPACE_CONTROL_SCHEMA,
     annotations: mutationAnnotations,
   }]

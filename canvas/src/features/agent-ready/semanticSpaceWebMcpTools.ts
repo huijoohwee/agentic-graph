@@ -23,13 +23,15 @@ const summary = (doc: SpaceDocument | null, query = '') => ({
       position: item.position, provenance: item.provenance,
       controls: item.recipe.controls.map(control => ({ id: control.id, value: item.recipe.values[control.id] })) })) } : null,
 })
-type Parsed = { operation: 'overlay'; observationId: string } | { operation: 'renderer'; backend: 'webgl' | 'webgpu' } | { operation: 'analyze'; observationId: string; relief?: boolean } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
+type Parsed = { operation: 'objects'; observationId: string } | { operation: 'overlay'; observationId: string } | { operation: 'renderer'; backend: 'webgl' | 'webgpu' } | { operation: 'analyze'; observationId: string; relief?: boolean } | { operation: 'query'; text: string } | { operation: 'select'; entityId: string }
   | { operation: 'correct'; entityId: string; category: string; label: string }
   | { operation: 'build'; entityId: string; template: TwinTemplate; size: TwinVector; position: TwinVector }
   | { operation: 'simulate' | 'reset'; entityId: string }
 const TOKEN = '[A-Za-z0-9][A-Za-z0-9._:-]{0,127}'
 const NUMBER = '-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)'
 export function parseSemanticSpaceInvocation(value: string): Parsed {
+  const objects = new RegExp(`^/space\\.objects @(${TOKEN}) #models$`).exec(value)
+  if (objects) return { operation: 'objects', observationId: objects[1] }
   const relief = new RegExp(`^/space\\.analyze @(${TOKEN}) #relief$`).exec(value)
   if (relief) return { operation: 'analyze', observationId: relief[1], relief: true }
   const overlay = new RegExp(`^/space\\.overlay @(${TOKEN}) #image$`).exec(value)
@@ -70,6 +72,11 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
           if (operation === 'query') return summary(await readSemanticSpace(), String(raw.text || ''))
           const doc = await readSemanticSpace()
           if (!doc) throw new SpaceError('space-unavailable', 'Capture or import a space before editing')
+          if (operation === 'objects') {
+            const { openSemanticObjects } = await import('@/features/xr-v2/semanticSpaceCanvas')
+            const message = await openSemanticObjects(doc, String(raw.observationId || ''))
+            return { ...summary(await readSemanticSpace()), message }
+          }
           if (operation === 'overlay') {
             const { overlaySemanticObservation } = await import('@/features/xr-v2/semanticSpaceCanvas')
             return { ...summary(doc), message: await overlaySemanticObservation(doc, String(raw.observationId || '')) }
@@ -104,8 +111,12 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
           const requestId = fromInvocation ? `request:${crypto.randomUUID()}` : String(raw.requestId || '')
           const expectedRevision = fromInvocation ? doc.revision : Number(raw.expectedRevision)
           if (operation === 'select') {
-            return summary(await runSemanticSpaceAction({ operation: 'select', requestId, expectedRevision,
-              entityId: raw.entityId as string | null }), '')
+            const selected = await runSemanticSpaceAction({ operation: 'select', requestId, expectedRevision, entityId: raw.entityId as string | null })
+            if (selected.selectedEntityId) {
+              const { inspectSemanticObject } = await import('@/features/xr-v2/semanticSpaceCanvas')
+              await inspectSemanticObject(selected)
+            }
+            return summary(selected, '')
           }
           if (operation === 'correct') {
             return summary(await runSemanticSpaceAction({ operation: 'correct', requestId, expectedRevision,

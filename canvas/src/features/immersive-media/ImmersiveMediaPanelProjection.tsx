@@ -175,7 +175,7 @@ function SemanticSpaceMediaSource() {
   return <section className="grid gap-1 rounded border p-1 text-[10px]" aria-label="Current local image">
     {imported ? <strong>Image imported. Choose the next step.</strong> : null}
     <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
-    <button type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
+    {(['objects', 'image'] as const).map(presentation => <button key={presentation} type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
       const job = new AbortController(); openingRef.current?.abort(); openingRef.current = job
       setOpening(true)
       setOpenError(null)
@@ -187,13 +187,13 @@ function SemanticSpaceMediaSource() {
         ])
         if (readGameModeSnapshot().active) exitGameModeSurface({ restorePreviousSurface: false })
         if (readFlightSimSnapshot().active) exitFlightSimSurface({ restorePreviousSurface: false })
-        const { showSemanticImageOnCanvas } = await import('@/features/xr-v2/semanticSpaceCanvas')
-        const message = await showSemanticImageOnCanvas(displayedImageUrl, job.signal)
+        const { showSemanticImageOnCanvas, showSemanticObjectsOnCanvas } = await import('@/features/xr-v2/semanticSpaceCanvas')
+        const message = await (presentation === 'objects' ? showSemanticObjectsOnCanvas : showSemanticImageOnCanvas)(displayedImageUrl, job.signal)
         if (!job.signal.aborted) setOpenStatus(message)
       })().catch(error => {
         setOpenError(String((error as Error).message || error))
       }).finally(() => setOpening(false))
-    }}>{opening ? 'Opening space image…' : 'Show space image on Canvas'}</button>
+    }}>{opening ? 'Opening…' : presentation === 'objects' ? 'View 3D objects' : 'Show space image on Canvas'}</button>)}
     {imported ? <button type="button" className="App-toolbar__btn min-h-11" disabled={creatingStoryboard || !!imported.storyboardPath} onClick={() => {
       setCreatingStoryboard(true)
       setOpenError(null)
@@ -203,7 +203,7 @@ function SemanticSpaceMediaSource() {
     }}>{imported.storyboardPath ? 'Storyboard created' : creatingStoryboard ? 'Creating storyboard…' : 'Create storyboard'}</button> : null}
     <React.Suspense fallback={null}><SemanticImagePerceptionChoice key={displayedImageUrl} sourceUrl={displayedImageUrl} /></React.Suspense>
     {openStatus && !openError ? <output role="status">{openStatus}</output> : null}
-    {openError ? <output role="status">Space image could not open: {openError}</output> : null}
+    {openError ? <output role="status">Space view could not open: {openError}</output> : null}
     <span>Image overlay preserves source regions. Depth and hidden surfaces remain authored approximations.</span>
   </section>
 }

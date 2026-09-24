@@ -4,12 +4,12 @@ import type { BuiltTwinObject } from './semanticTwinScene'
 import type { SpaceDocument } from './semanticSpaceRuntime'
 
 /** Exact evidence match; the newest authored version of an identical region wins only in the overlay. */
-export function photoOverlayBindings(document: SpaceDocument, photo: ImmersivePhoto) {
+export function photoOverlayBindings(document: SpaceDocument, photo: Pick<ImmersivePhoto, 'evidenceSha256'>, include: (binding: NonNullable<SpaceDocument['twin']>['objects'][number]) => boolean = () => true) {
   const regions = new Map<string, NonNullable<SpaceDocument['twin']>['objects'][number]>()
   for (const binding of document.twin?.objects || []) {
     const entity = document.entities.find(item => item.id === binding.entityId)
     const observation = document.observations.find(item => item.id === binding.observationId)
-    if (!entity || !photo.evidenceSha256 || binding.evidenceSha256 !== photo.evidenceSha256
+    if (!include(binding) || !entity || !photo.evidenceSha256 || binding.evidenceSha256 !== photo.evidenceSha256
       || observation?.sha256 !== photo.evidenceSha256) continue
     const r = entity.region
     regions.set([r.x, r.y, r.width, r.height].join(':'), binding)

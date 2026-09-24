@@ -163,3 +163,59 @@ test('contour overlays retain their visible shape and keep bevels within the sou
   })
   assert.ok(vertices > 30); disposeTwinScene(built)
 })
+
+test('object view isolates matching models, picks each independently, and retains source recipes', async () => {
+  const { semanticObjectBindings } = await import('../semanticObjectView')
+  const { applySpaceAction } = await import('../semanticSpaceRuntime')
+  const observation: SpaceObservation = { id: 'observation:objects', capturedAtMs: 1, width: 100, height: 100,
+    imageDataUrl: 'data:image/png;base64,AA==', sha256: 'b'.repeat(64), orientation: 'source-pixels', scale: 'unknown' }
+  const makeEntity = (id: string, x: number): SpaceEntity => ({ id, observationId: observation.id, label: id,
+    category: 'object', region: { x, y: 0.2, width: 0.2, height: 0.4 }, confirmedAtMs: 1, provenance: 'user-confirmed' })
+  const entities = [makeEntity('entity:building', 0.1), makeEntity('entity:tree', 0.6), makeEntity('entity:surface', 0.1)]
+  const room = emptySemanticTwin().room
+  const objects = entities.map((entity, index) => buildSemanticTwinBinding({ entity, observation, room,
+    template: index === 0 ? 'building' : index === 1 ? 'tree' : 'box', size: [1, 2, 1], position: [index ? 2 : -2, 0, 0] }))
+  // A newer image-surface record must not replace the explicit building model at the same region.
+  objects[2] = { ...objects[2], template: 'relief', relief: { width: 3, height: 3, samples: Array(9).fill(128) } }
+  const doc = { ...newSpaceDocument('space:objects'), observations: [observation], entities, twin: { ...emptySemanticTwin(), objects } }
+  const before = JSON.stringify(doc)
+  const target = { spaceId: doc.id, evidenceSha256: observation.sha256 }
+  const visible = semanticObjectBindings(doc, target)
+  assert.deepEqual(visible.map(item => item.entityId), ['entity:building', 'entity:tree'])
+  assert.equal(semanticObjectBindings(doc, { ...target, spaceId: 'space:other' }).length, 0)
+  assert.equal(semanticObjectBindings(doc, { ...target, evidenceSha256: 'c'.repeat(64) }).length, 0)
+  const built = buildTwinScene(visible)
+  try {
+    for (const [index, x] of [-2, 2].entries()) {
+      built.objects.forEach(item => item.wrapper.updateMatrixWorld(true))
+      const ray = new THREE.Raycaster(new THREE.Vector3(x, 0.7, 5), new THREE.Vector3(0, 0, -1))
+      assert.ok(ray.intersectObject(built.objects[index].wrapper, true).length > 0)
+      assert.equal(ray.intersectObject(built.objects[1 - index].wrapper, true).length, 0)
+    }
+    const moved = applySpaceAction(doc, { operation: 'edit-twin', entityId: entities[0].id,
+      requestId: 'request:move-building', expectedRevision: doc.revision, size: [1, 3, 1], position: [-1, 0, 0] })
+    assert.deepEqual(moved.twin!.objects[1], doc.twin.objects[1])
+    assert.deepEqual(moved.twin!.objects[0].position, [-1, 0, 0])
+    assert.equal(JSON.stringify(doc), before)
+  } finally { disposeTwinScene(built) }
+})
+
+
+test('XR photo view survives YAML round-trip without changing source content', async () => {
+  const { readSemanticObjectViewMarkdown } = await import('../semanticObjectView')
+  const { upsertTopLevelFrontmatterSectionMarkdownText } = await import('@/hooks/store/graph-data-slice/graphDataFrontmatterSections')
+  const { parseCanvasWorkspaceFrontmatterPreset } = await import('@/lib/markdown/frontmatter')
+  const target = { spaceId: 'space:objects', evidenceSha256: 'a'.repeat(64) }
+  const source = '---\ntitle: My photograph\nkgCanvasSurfaceMode: 2d\nkgCanvasRenderMode: 2d\nflow:\n  nodes: []\n---\n# Original evidence\nDo not change.\n'
+  const settings = { kgCanvasSurfaceMode: 'xr', kgCanvasRenderMode: '3d', kgCanvas3dMode: 'xr', kgSemanticObjectView: target }
+  const write = (raw: string) => Object.entries(settings).reduce((rawText, [sectionKey, sectionValue]) =>
+    upsertTopLevelFrontmatterSectionMarkdownText({ rawText, sectionKey, sectionValue }), raw)
+  const updated = write(source)
+  assert.equal(write(updated), updated)
+  assert.ok(updated.endsWith('# Original evidence\nDo not change.\n'))
+  assert.ok(updated.includes('flow:\n  nodes: []'))
+  assert.equal(parseCanvasWorkspaceFrontmatterPreset(updated)?.canvasSurfaceMode, 'xr')
+  assert.deepEqual(readSemanticObjectViewMarkdown(updated), target)
+  assert.equal(readSemanticObjectViewMarkdown(source), null)
+  assert.equal(readSemanticObjectViewMarkdown('---\nkgSemanticObjectView: [broken\n---'), null)
+})

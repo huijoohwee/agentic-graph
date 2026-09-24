@@ -1,5 +1,7 @@
+import { selectSemanticObject } from './semanticSpaceCanvas'
 import React from 'react'
-import { Box3 } from 'three'
+import { XrSelectionBounds } from '@/features/three/XrSelectionBounds'
+import { readSemanticObjectViewMarkdown, semanticObjectBindings } from './semanticObjectView'
 import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import { photoOverlayBindings, projectTwinOnPhoto } from './semanticTwinPhotoProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -8,13 +10,15 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { SpatialPhysicsEngine } from '@/features/physics/spatialPhysicsEngine'
 import { buildTwinScene, disposeTwinScene } from './semanticTwinScene'
 import { applyTwinImageAppearance } from './semanticTwinImageAppearance'
-import { readSemanticSpace, runSemanticSpaceAction, subscribeSemanticSpace } from './semanticSpaceStore'
+import { readSemanticSpace, subscribeSemanticSpace } from './semanticSpaceStore'
 import type { SpaceDocument } from './semanticSpaceRuntime'
 import { SEMANTIC_TWIN_PREVIEW_EVENT } from './semanticTwinRuntime'
 
 type PreviewRequest = { spaceId: string; entityId: string; operation: 'drop' | 'reset'; handled?: boolean }
 export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: boolean; onFitChange?: (fit: GlbFit | null) => void }) {
   const media = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
+  const sourceText = useGraphStore(state => state.markdownDocumentText)
+  const objectView = React.useMemo(() => readSemanticObjectViewMarkdown(sourceText), [sourceText])
   const photo = media.active ? media.source.photo : undefined
   const [ready, setReady] = React.useState(false)
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
@@ -29,9 +33,9 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   }, [])
   const linked = useGraphStore(state => state.graphData?.nodes.some(node => node.properties?.spaceId === document?.id
     && node.properties?.twinSchema === document?.twin?.schema) === true)
-  const bindings = !linked || !document ? [] : media.active
-    ? photo ? photoOverlayBindings(document, photo) : [] : document.twin?.objects || []
-  const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}:${media.active}:${JSON.stringify(photo)}`
+  const bindings = (!linked && objectView?.spaceId !== document?.id) || !document ? [] : media.active
+    ? photo ? photoOverlayBindings(document, photo) : [] : objectView ? semanticObjectBindings(document, objectView) : document.twin?.objects || []
+  const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}:${media.active}:${JSON.stringify(photo)}:${JSON.stringify(objectView)}`
   const built = React.useMemo(() => {
     const result = buildTwinScene(bindings)
     if (photo) result.objects.forEach(item => { item.wrapper.visible = false })
@@ -41,7 +45,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   React.useEffect(() => {
     setReady(false)
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10_000)
-    if (document && built.objects.length) void applyTwinImageAppearance(built.objects, document, controller.signal, built.textures, !!photo)
+    if (document && built.objects.length) void (objectView && !photo ? Promise.resolve() : applyTwinImageAppearance(built.objects, document, controller.signal, built.textures, !!photo))
       .then(() => { if (!controller.signal.aborted) {
         if (photo) for (const item of built.objects) { projectTwinOnPhoto(item, document, photo); item.wrapper.visible = true }
         setReady(true); invalidate()
@@ -105,26 +109,24 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     if (selected && state) selected.wrapper.position.y = state.position[1] - selected.binding.size[1] / 2
   })
   const select = (entityId: string) => {
-    void readSemanticSpace().then(doc => {
-      if (!doc || doc.id !== document?.id) return
-      return runSemanticSpaceAction({ operation: 'select', requestId: `request:${crypto.randomUUID()}`,
-        expectedRevision: doc.revision, entityId })
-    })
+    if (!document) return
+    void selectSemanticObject(document.id, entityId).catch(error => useGraphStore.getState().pushUiToast({
+      id: 'semantic-object-selection', kind: 'error', message: String(error.message),
+    }))
   }
   if (!document?.twin || built.objects.length === 0) return null
-  const selectedOverlay = photo && ready ? built.objects.find(item => item.binding.entityId === document.selectedEntityId) : null
-  return <group name="SemanticSpaceTwin" visible={!photo || ready} scale={photo ? 1 : 20} rotation={photo ? [0, 0, 0] : [-0.35, 0, 0]}>
-    {selectedOverlay && <box3Helper args={[new Box3().setFromObject(selectedOverlay.wrapper), '#67e8f9']} />}
+  return <group name="SemanticSpaceTwin" visible={!photo || ready} scale={photo ? 1 : 20} rotation={photo || objectView ? [0, 0, 0] : [-0.35, 0, 0]}>
     <ambientLight intensity={0.7} />
     <directionalLight position={[3, 7, 5]} intensity={1.2} />
     {!photo && <mesh position={[0, -0.04, 0]} receiveShadow>
       <boxGeometry args={[document.twin.room.width, 0.08, document.twin.room.depth]} />
       <meshStandardMaterial color="#69747c" roughness={0.9} />
     </mesh>}
-    {built.objects.map(item => <primitive key={item.binding.entityId} object={item.wrapper} dispose={null}
+    {built.objects.map(item => <XrSelectionBounds key={item.binding.entityId} targetId={item.binding.entityId} selected={item.binding.entityId === document.selectedEntityId}>
+      <primitive object={item.wrapper} dispose={null}
       onClick={(event: { stopPropagation: () => void; nativeEvent: Event }) => {
         if (!(event.nativeEvent.target instanceof HTMLCanvasElement)) return
         event.stopPropagation(); select(item.binding.entityId)
-      }} />)}
+      }} /></XrSelectionBounds>)}
   </group>
 }

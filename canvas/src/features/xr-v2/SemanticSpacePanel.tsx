@@ -1,6 +1,6 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { addSemanticEntityToCanvas, linkedCanvasNode, overlaySemanticObservation } from './semanticSpaceCanvas'
+import { inspectSemanticObject, selectSemanticObject, addSemanticEntityToCanvas, linkedCanvasNode, overlaySemanticObservation } from './semanticSpaceCanvas'
 import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
 import { requestSemanticSpaceCamera } from '@/features/three/semanticSpaceCameraRuntime'
 import { applySpaceAction, hashSpaceImage, MAX_SPACE_ENTITIES, MAX_SPACE_OBSERVATIONS,
@@ -24,7 +24,7 @@ const sourceStatus = (space: SpaceDocument) => {
 }
 
 
-export function SemanticSpacePanel() {
+export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorEntityId, spaceId: inspectorSpaceId }: { inspectorOnly?: boolean; entityId?: string; spaceId?: string } = {}) {
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
   const [status, setStatus] = React.useState('Open a local space or capture a still.')
   const [cameraActive, setCameraActive] = React.useState(false)
@@ -37,6 +37,7 @@ export function SemanticSpacePanel() {
   const [region, setRegion] = React.useState<SpaceRegion | null>(null)
   const [observationIndex, setObservationIndex] = React.useState(0)
   const [editing, setEditing] = React.useState(false)
+  const [draftEntityId, setDraftEntityId] = React.useState('')
   const [twinTemplate, setTwinTemplate] = React.useState<TwinTemplate>('box')
   const [twinSize, setTwinSize] = React.useState<TwinVector>([1, 1, 1])
   const [twinPosition, setTwinPosition] = React.useState<TwinVector>([0, 0, 0])
@@ -77,8 +78,9 @@ export function SemanticSpacePanel() {
     return () => window.removeEventListener('agentic-graph:semantic-twin-error', handle)
   }, [])
   React.useEffect(() => {
-    const selected = document?.entities.find(item => item.id === document.selectedEntityId)
+    const selected = document?.entities.find(item => item.id === (inspectorEntityId || document.selectedEntityId))
     if (!selected) return
+    setDraftEntityId(selected.id)
     const binding = document?.twin?.objects.find(item => item.entityId === selected.id)
     const room = document?.twin?.room || emptySemanticTwin().room
     setTwinTemplate(binding?.template || (SEMANTIC_TWIN_TEMPLATES.includes(selected.category.toLowerCase() as TwinTemplate)
@@ -88,7 +90,7 @@ export function SemanticSpacePanel() {
       Number(((selected.region.x + selected.region.width / 2 - 0.5) * room.width).toFixed(2)), 0,
       Number(((selected.region.y + selected.region.height / 2 - 0.5) * room.depth).toFixed(2)),
     ])
-  }, [document?.selectedEntityId, document?.twin, document?.entities])
+  }, [document?.selectedEntityId, document?.twin, document?.entities, inspectorEntityId])
   React.useEffect(() => {
     const room = document?.twin?.room
     if (room) { setRoomSize([room.width, room.depth]); setAuthoredMetres(room.unit === 'authored-metres') }
@@ -212,7 +214,7 @@ export function SemanticSpacePanel() {
     finally { setBusy(false) }
   }
   const observation = document?.observations[observationIndex] || null
-  const selected = document?.entities.find(item => item.id === document.selectedEntityId) || null
+  const selected = document?.entities.find(item => item.id === (inspectorEntityId || document.selectedEntityId)) || null
   const twinBinding = document?.twin?.objects.find(item => item.entityId === selected?.id)
   const results = document ? querySpaceEntities(document, query) : []
   const imageEntities = document?.entities.filter(item => item.observationId === observation?.id) || []
@@ -261,7 +263,7 @@ export function SemanticSpacePanel() {
     catch (error) { setStatus(String((error as Error).message || error)) }
   }
   const applyTwin = () => {
-    if (!document || !selected) return
+    if (!document || !selected || draftEntityId !== selected.id) return
     const action = twinBinding && twinBinding.template === twinTemplate
       ? { operation: 'edit-twin' as const, requestId: actionId(), expectedRevision: document.revision,
           entityId: selected.id, size: twinSize, position: twinPosition }
@@ -301,6 +303,60 @@ export function SemanticSpacePanel() {
     finally { setBusy(false) }
   }
 
+  const objectEditor = document && (selected && <div className="grid gap-2"><span>Selected ID: <code>{selected.id}</code></span>
+        <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => { setEditing(!editing); setLabel(selected.label); setCategory(selected.category) }}>Correct label</button>
+          <button type="button" className={buttonClass} onClick={() => void addSelectedToCanvas()}>Open 3D layout</button>
+          <button type="button" className={buttonClass} onClick={() => {
+            void overlaySemanticObservation(document, selected.observationId).then(setStatus, error => setStatus(String(error.message)))
+          }}>Overlay objects on image</button></div>
+        {editing && <div className="grid gap-2"><input className={fieldClass} aria-label="Corrected label" value={label} onChange={event => setLabel(event.target.value)} />
+          <input className={fieldClass} aria-label="Corrected category" value={category} onChange={event => setCategory(event.target.value)} />
+          <button type="button" className={buttonClass} disabled={busy || !label.trim() || !category.trim()} onClick={() => {
+            void mutate({ operation: 'correct', requestId: actionId(), expectedRevision: document.revision,
+              entityId: selected.id, label, category }, 'Entity correction saved.').then(ok => {
+                if (!ok) return
+                const state = useGraphStore.getState()
+                const node = linkedCanvasNode(document, selected.id)
+                if (node) state.updateNode(node.id,
+                  { label, properties: { ...node.properties, category } })
+                setEditing(false)
+              })
+          }}>Save correction</button></div>}
+        <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Editable 3D approximation</legend>
+          <label>Supported shape<select className={fieldClass} value={twinTemplate}
+            onChange={event => setTwinTemplate(event.currentTarget.value as TwinTemplate)}>
+            {SEMANTIC_TWIN_TEMPLATES.filter(item => !['contour', 'relief'].includes(item) || twinBinding?.template === item).map(item => <option key={item} value={item}>{item}</option>)}
+          </select></label>
+          <div className="grid grid-cols-3 gap-2">{(['Width', 'Height', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
+            <input className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
+              onChange={event => { const value = Number(event.currentTarget.value)
+                setTwinSize(current => current.map((item, index) => index === axis ? value : item) as [number, number, number]) }} /></label>)}</div>
+          <div className="grid grid-cols-2 gap-2">{(['X position', 'Elevation', 'Depth position'] as const).map((name, index) => {
+            const axis = index
+            return <label key={name}>{name}<input className={fieldClass} type="number" min={axis === 1 ? "0" : "-10"} max="10" step="0.1"
+              value={twinPosition[axis]} onChange={event => { const value = Number(event.currentTarget.value)
+                setTwinPosition(current => current.map((item, currentAxis) => currentAxis === axis ? value : item) as [number, number, number]) }} /></label>
+          })}</div>
+          <p className="m-0 text-xs">Shape, hidden surfaces and image-derived placement are editable assumptions.
+            {document.twin?.room.unit === 'authored-metres' ? ' Room dimensions are user-authored metres.' : ' Units are arbitrary.'}</p>
+          <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={busy || draftEntityId !== selected.id} onClick={applyTwin}>
+            {twinBinding ? 'Apply geometry and placement' : 'Build and add to canvas'}</button>
+            {twinBinding && <><button type="button" className={buttonClass} disabled={busy} onClick={() => previewTwin('drop')}>Drop preview</button>
+              <button type="button" className={buttonClass} onClick={() => previewTwin('reset')}>Reset preview</button>
+              <button type="button" className={buttonClass} disabled={busy} onClick={() => void exportSelectedModel()}>Export model GLB</button></>}
+          </div>
+          {twinBinding?.recipe.controls.filter(control => control.type === 'color').slice(0, 1).map(control =>
+            <label key={control.id}>Model colour<input className={fieldClass} type="color"
+              value={String(twinBinding.recipe.values[control.id])} disabled={busy} onChange={event => {
+                void mutate({ operation: 'control-twin', requestId: actionId(), expectedRevision: document.revision,
+                  entityId: selected.id, controlId: control.id, value: event.currentTarget.value }, 'Model colour saved.')
+              }} /></label>)}
+        </fieldset></div>)
+  if (inspectorOnly && inspectorSpaceId && document?.id !== inspectorSpaceId) return <p>Choose an object in the current space.</p>
+  if (inspectorOnly) return <section className="grid gap-2 p-2" aria-label="Selected 3D object inspector">
+    <strong>{selected?.label || 'Choose an object'} · Object transform</strong>
+    {objectEditor}<output role="status">{status}</output>
+  </section>
   return <section className="grid gap-3 rounded border p-3 text-sm" aria-label="Semantic space" data-kg-semantic-space="1">
     <header><h5 className="m-0 text-base font-semibold">Semantic space</h5>
       <p className="m-0">Capture or choose a still, confirm regions, and query the same saved entities. Scale is unknown.</p></header>
@@ -364,59 +420,13 @@ export function SemanticSpacePanel() {
           onClick={() => { setObservationIndex(document.observations.findIndex(view => view.id === item.observationId));
             const linked = linkedCanvasNode(document, item.id)
             if (linked) useGraphStore.getState().selectNode(linked.id)
-            void mutate({ operation: 'select', requestId: actionId(), expectedRevision: document.revision, entityId: item.id }, 'Entity selected.') }}>
+            void selectSemanticObject(document.id, item.id).catch(error => setStatus(String(error.message))) }}>
           {item.category} · {item.label}</button>)}
         {results.length === 0 && <span>No matching confirmed entities.</span>}
       </div>
-      {selected && <div className="grid gap-2"><span>Selected ID: <code>{selected.id}</code></span>
-        <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => { setEditing(!editing); setLabel(selected.label); setCategory(selected.category) }}>Correct label</button>
-          <button type="button" className={buttonClass} onClick={() => void addSelectedToCanvas()}>Open 3D layout</button>
-          <button type="button" className={buttonClass} onClick={() => {
-            void overlaySemanticObservation(document, selected.observationId).then(setStatus, error => setStatus(String(error.message)))
-          }}>Overlay objects on image</button></div>
-        {editing && <div className="grid gap-2"><input className={fieldClass} aria-label="Corrected label" value={label} onChange={event => setLabel(event.target.value)} />
-          <input className={fieldClass} aria-label="Corrected category" value={category} onChange={event => setCategory(event.target.value)} />
-          <button type="button" className={buttonClass} disabled={busy || !label.trim() || !category.trim()} onClick={() => {
-            void mutate({ operation: 'correct', requestId: actionId(), expectedRevision: document.revision,
-              entityId: selected.id, label, category }, 'Entity correction saved.').then(ok => {
-                if (!ok) return
-                const state = useGraphStore.getState()
-                const node = linkedCanvasNode(document, selected.id)
-                if (node) state.updateNode(node.id,
-                  { label, properties: { ...node.properties, category } })
-                setEditing(false)
-              })
-          }}>Save correction</button></div>}
-        <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Editable 3D approximation</legend>
-          <label>Supported shape<select className={fieldClass} value={twinTemplate}
-            onChange={event => setTwinTemplate(event.currentTarget.value as TwinTemplate)}>
-            {SEMANTIC_TWIN_TEMPLATES.filter(item => !['contour', 'relief'].includes(item) || twinBinding?.template === item).map(item => <option key={item} value={item}>{item}</option>)}
-          </select></label>
-          <div className="grid grid-cols-3 gap-2">{(['Width', 'Height', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
-            <input className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
-              onChange={event => { const value = Number(event.currentTarget.value)
-                setTwinSize(current => current.map((item, index) => index === axis ? value : item) as [number, number, number]) }} /></label>)}</div>
-          <div className="grid grid-cols-2 gap-2">{(['X position', 'Elevation', 'Depth position'] as const).map((name, index) => {
-            const axis = index
-            return <label key={name}>{name}<input className={fieldClass} type="number" min={axis === 1 ? "0" : "-10"} max="10" step="0.1"
-              value={twinPosition[axis]} onChange={event => { const value = Number(event.currentTarget.value)
-                setTwinPosition(current => current.map((item, currentAxis) => currentAxis === axis ? value : item) as [number, number, number]) }} /></label>
-          })}</div>
-          <p className="m-0 text-xs">Shape, hidden surfaces and image-derived placement are editable assumptions.
-            {document.twin?.room.unit === 'authored-metres' ? ' Room dimensions are user-authored metres.' : ' Units are arbitrary.'}</p>
-          <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={busy} onClick={applyTwin}>
-            {twinBinding ? 'Apply geometry and placement' : 'Build and add to canvas'}</button>
-            {twinBinding && <><button type="button" className={buttonClass} disabled={busy} onClick={() => previewTwin('drop')}>Drop preview</button>
-              <button type="button" className={buttonClass} onClick={() => previewTwin('reset')}>Reset preview</button>
-              <button type="button" className={buttonClass} disabled={busy} onClick={() => void exportSelectedModel()}>Export model GLB</button></>}
-          </div>
-          {twinBinding?.recipe.controls.filter(control => control.type === 'color').slice(0, 1).map(control =>
-            <label key={control.id}>Model colour<input className={fieldClass} type="color"
-              value={String(twinBinding.recipe.values[control.id])} disabled={busy} onChange={event => {
-                void mutate({ operation: 'control-twin', requestId: actionId(), expectedRevision: document.revision,
-                  entityId: selected.id, controlId: control.id, value: event.currentTarget.value }, 'Model colour saved.')
-              }} /></label>)}
-        </fieldset></div>}
+      {selected && <button type="button" className={buttonClass} onClick={() => {
+        void inspectSemanticObject(document).catch(error => setStatus(String(error.message)))
+      }}>Edit selected object in Timeline</button>}
       <span>Revision {document.revision} · {document.observations.length} observations · {document.entities.length} entities</span>
     </>}
     <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={!document || busy} onClick={() => void exportPackage()}>Export space</button>
