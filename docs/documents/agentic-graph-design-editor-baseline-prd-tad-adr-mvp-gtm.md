@@ -586,9 +586,8 @@ its local failure is not a theme result. The successor passed hygiene, Settings 
 parity (604 settings), Canvas check, 18 Design tests and six focused theme/dashboard tests.
 An isolated browser at `127.0.0.1:4199` opened the FloatingPanel Design view while finding
 no MainPanel Design tab and no page errors. This does not prove the user's `5175` session has
-updated or establish full accessibility coverage. The central policy/template successor is
-website PR #269, pending protected integration. Exact Graph successor SHA, provider checks,
-protected integration and production remain pending. No buyer receipt.
+updated or establish full accessibility coverage. Website PR #269 and Graph PR #1245 integrated;
+production status follows in the linked release companion. No buyer receipt.
 
 ## Native offline validation and palette browser proof
 
@@ -597,3 +596,4 @@ TAD: the built-preview smoke reuses `canvas/scripts/lib/panel-close-helpers.mjs`
 ADR: exercise native panel and theme owners; do not force clicks through overlays, mutate theme classes behind Settings, or create another controller. Exclude the Timeline, which shares the generic panel marker.
 MVP: rerun offline and Design browser smokes, source checks and exact protected Integration Gate. GTM: these validation repairs change no buyer offer or delivery claim.
 PR #1240 failed on a covered click; PR #1241 found an empty offline document; PR #1242 passed offline but expected one old Dark theme; PR #1244 passed offline but an XR source activation displaced the Design smoke fixture. Local offline and six palette/width Design cases pass again with the bootstrap wait; Canvas check and hygiene passed. A local affected plan stopped on an unrelated catalog revision mismatch. Successor cap: 60 minutes, 8 KiB authored delta, three owner modules and this record. Protected integration, production and buyer receipts remain pending.
+Production release status and recovery are tracked in the [joined release companion](./agentic-graph-design-editor-release-recovery-prd-tad-adr-mvp-gtm.md).

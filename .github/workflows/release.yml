@@ -508,7 +508,7 @@ jobs:
         id: rollback_docs
         working-directory: rollback-agentic-graph
         run: npm run --silent runtime:docs-dependency:resolve -- --github-output >> "$GITHUB_OUTPUT"
-      - { name: Checkout rollback Agentic Canvas OS docs, if: always() && steps.rollback_docs.outcome == 'success', id: checkout_rollback_docs, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: '${{ steps.rollback_docs.outputs.repository }}', ref: '${{ steps.rollback_docs.outputs.ref }}', path: rollback-agentic-canvas-os } }
+      - { name: Checkout rollback Agentic Canvas OS docs, if: always() && steps.rollback_docs.outcome == 'success', id: checkout_rollback_docs, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: '${{ steps.rollback_docs.outputs.repository }}', ref: '${{ steps.rollback_docs.outputs.ref }}', path: rollback-agentic-canvas-os, fetch-depth: 0 } }
       - name: Roll back Pages to exact last-known-good deployment
         id: rollback_pages
         if: always() && steps.checkout_rollback_docs.outcome == 'success'

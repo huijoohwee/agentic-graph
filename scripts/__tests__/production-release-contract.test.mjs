@@ -215,6 +215,8 @@ test('production evidence wiring records exact Pages, D1, transport, browser, an
 })
 test('production rollback is authoritative, pre-publication only, and emits a terminal carrier', () => {
   const deployJob = workflowJob('deploy')
+  const rollbackDocsCheckout = YAML.parse(releaseWorkflow).jobs.deploy.steps.find(step => step.id === 'checkout_rollback_docs')
+  assert.equal(rollbackDocsCheckout.with['fetch-depth'], 0, 'rollback docs ancestry needs full Git history')
   assertInOrder(deployJob, [ 'name: Deploy verified artifact', 'name: Capture authoritative candidate deployment', 'name: Record exact Pages deployment receipt', 'name: Determine pre-publication rollback eligibility',
     'name: Checkout rollback agentic-graph source', 'name: Install rollback dependencies', 'name: Resolve rollback docs dependency', 'name: Checkout rollback Agentic Canvas OS docs',
     'name: Roll back Pages to exact last-known-good deployment', 'name: Restore and reconcile last-known-good D1 state', 'name: Capture authoritative restored Pages deployment',

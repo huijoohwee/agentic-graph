@@ -170,28 +170,33 @@ const readServiceWorkerRevisionEvidence = async (
         && cacheName.includes(`${window.location.origin}${scopePath}/`)
       )
     const requests = await cache.keys()
-    for (const request of requests) {
-      const url = new URL(request.url)
-      if (url.origin !== window.location.origin) continue
-      if (isIgnoredScopePath(url.pathname)) {
-        ignoredScopePathCount += 1
-        continue
-      }
-      const isAsset = url.pathname.startsWith(`${scopePath}/assets/`)
-      const isScopedPath = url.pathname === scopePath || url.pathname.startsWith(`${scopePath}/`)
-      const response = await cache.match(request)
-      const contentType = String(response?.headers.get('content-type') || '').trim()
-      const isHtml = url.pathname === scopePath
-        || url.pathname === `${scopePath}/`
-        || (url.pathname.startsWith(`${scopePath}/`) && url.pathname.endsWith('.html'))
-        || /^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(contentType)
-      const cacheKey = `${url.pathname}${url.search}`
-      if (isAsset) cachedAssetPaths.push(url.pathname)
-      if (isHtml && (isAgenticGraphOwnedCache || isScopedPath)) cachedHtmlPaths.push(cacheKey)
-      if (isHtml && !isAgenticGraphOwnedCache && !isScopedPath) preservedSiblingHtmlPaths.push(cacheKey)
-      if (cacheName.startsWith('workbox-precache')) {
-        if (isAsset) precacheAssetPaths.push(url.pathname)
-        if (isHtml) precacheHtmlPaths.push(cacheKey)
+    for (let offset = 0; offset < requests.length; offset += 24) {
+      const batch = requests.slice(offset, offset + 24)
+      const responses = await Promise.all(batch.map(request => cache.match(request)))
+      for (let index = 0; index < batch.length; index += 1) {
+        const request = batch[index]
+        const url = new URL(request.url)
+        if (url.origin !== window.location.origin) continue
+        if (isIgnoredScopePath(url.pathname)) {
+          ignoredScopePathCount += 1
+          continue
+        }
+        const isAsset = url.pathname.startsWith(`${scopePath}/assets/`)
+        const isScopedPath = url.pathname === scopePath || url.pathname.startsWith(`${scopePath}/`)
+        const response = responses[index]
+        const contentType = String(response?.headers.get('content-type') || '').trim()
+        const isHtml = url.pathname === scopePath
+          || url.pathname === `${scopePath}/`
+          || (url.pathname.startsWith(`${scopePath}/`) && url.pathname.endsWith('.html'))
+          || /^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(contentType)
+        const cacheKey = `${url.pathname}${url.search}`
+        if (isAsset) cachedAssetPaths.push(url.pathname)
+        if (isHtml && (isAgenticGraphOwnedCache || isScopedPath)) cachedHtmlPaths.push(cacheKey)
+        if (isHtml && !isAgenticGraphOwnedCache && !isScopedPath) preservedSiblingHtmlPaths.push(cacheKey)
+        if (cacheName.startsWith('workbox-precache')) {
+          if (isAsset) precacheAssetPaths.push(url.pathname)
+          if (isHtml) precacheHtmlPaths.push(cacheKey)
+        }
       }
     }
   }
