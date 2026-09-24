@@ -1,5 +1,7 @@
 import React from 'react'
 import { WORKSPACE_ROOT_PATH, normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
+import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { runWorkspaceFsChangedBatch, suppressNextWorkspaceFsChangedEvent } from '@/features/workspace-fs/workspaceFsEvents'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -196,13 +198,17 @@ export function useWorkspaceImportActions(args: {
       try {
         const fs = await getFs()
         await fs.ensureSeed()
+        await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH })
+        if (!(await fs.listEntries()).some(entry => entry.path === WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH && entry.kind === 'folder')) {
+          throw new Error('Authored source folder is unavailable')
+        }
         const importRuntime = await loadWorkspaceImportRuntimeActions()
         const res = importRuntime.normalizeWorkspaceImportResult(await runWorkspaceFsChangedBatch(() => {
           suppressNextWorkspaceFsChangedEvent()
           return importWorkspaceLocalFiles({
             fs,
             files: snapshot,
-            parentPath: WORKSPACE_ROOT_PATH,
+            parentPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH,
             onProgress: p => {
               if (importJobRef.current !== jobId) return
               status.setStatusProgress(p.label || 'Importing', p.current, p.total, p.bytesCurrent, p.bytesTotal)

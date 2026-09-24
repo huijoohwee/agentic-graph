@@ -1,4 +1,4 @@
-import { persistXrScene } from './xrScenePersistence'
+import { persistXrSceneToAuthoredSource } from './xrScenePersistence'
 import React from 'react'
 import type { VideoSequenceTimelineClipOverlayRenderArgs } from '@/components/timeline/VideoSequenceTimelineRuler'
 import {
@@ -157,6 +157,7 @@ export function XrCameraMotionSection() {
   const [selectedTimelineLaneId, setSelectedTimelineLaneId] = useXrTimelineLaneSelection(timelineCode, selectedShotTarget.id,
     sharedAssetControls.selectedKind || '', sharedAssetControls.selectedTargetId || '', JSON.stringify(runtime.selectedMark))
   const [draggingTimelineLaneId, setDraggingTimelineLaneId] = React.useState<XrTimelineLaneSelection | null>(null)
+  const [savingScene, setSavingScene] = React.useState(false)
   const timelineLaneDragStateRef = React.useRef<XrTimelineLaneBarDragState | null>(null)
   const timelineLaneDragMovedRef = React.useRef(false)
   const edges = Array.isArray(graphData?.edges) ? graphData.edges.length : 0
@@ -182,29 +183,24 @@ export function XrCameraMotionSection() {
     setXrMotionReferencePlayhead(transportPosition * 60)
   }, [transportDocumentKey, transportPosition, xrActive, xrTransportDocumentKey])
 
-  const savePlan = React.useCallback(() => {
-    if (!graphData) return
-    if (!persistXrScene()) {
-      pushUiToast({
-        id: 'xr:motion-reference:save-error',
-        kind: 'error',
-        message: 'XR motion-reference plan could not be written to graph metadata.',
-      })
-      return
-    }
+  const savePlan = React.useCallback(async () => {
+    if (!graphData || savingScene) return
+    setSavingScene(true)
+    const result = await persistXrSceneToAuthoredSource()
+    setSavingScene(false)
     pushUiToast({
-      id: 'xr:motion-reference:save',
-      kind: 'success',
-      message: 'XR motion-reference plan saved to graph metadata.',
+      id: result.ok ? 'xr:motion-reference:save' : 'xr:motion-reference:save-error',
+      kind: result.ok ? 'success' : 'error',
+      message: result.message,
     })
-  }, [graphData, pushUiToast])
+  }, [graphData, pushUiToast, savingScene])
 
   const exportPackage = React.useCallback(() => {
     if (!graphData) return
     const bundle = buildXrMotionReferencePackage({
       plan: readXrMotionReferenceRuntime().plan,
-      graphData,
-      documentName: markdownDocumentName || 'Untitled',
+      graphData: useGraphStore.getState().graphData || graphData,
+      documentName: useGraphStore.getState().markdownDocumentName || 'Untitled',
     })
     downloadBlob(xrMotionReferencePackageBlob(bundle), xrMotionReferencePackageFilename(bundle))
     pushUiToast({
@@ -212,7 +208,7 @@ export function XrCameraMotionSection() {
       kind: 'success',
       message: `Exported ${bundle.timeline.frameCount} deterministic motion samples.`,
     })
-  }, [graphData, markdownDocumentName, pushUiToast])
+  }, [graphData, pushUiToast])
 
   const scrubPlayhead = React.useCallback((timeSeconds: number) => {
     const result = controlLocalAnimation({ operation: 'scrub', timeSeconds })
@@ -449,7 +445,8 @@ export function XrCameraMotionSection() {
           graphReady={Boolean(graphData)}
           objectCount={objectTargets.length}
           playheadSeconds={runtime.playheadSeconds}
-          saveDisabled={!graphData || !runtime.dirty}
+          saveDisabled={!graphData || savingScene}
+          savingScene={savingScene}
           savePlan={savePlan}
           sceneEditorStyle={sceneEditorStyle}
           scrubPlayhead={scrubPlayhead}
@@ -458,7 +455,7 @@ export function XrCameraMotionSection() {
         />
       </>
     )
-  }, [applyStage, currentRehearsalBeat, documentLoaded, edges, exportPackage, graphData, objectTargets.length, rehearsalBeats, runtime.dirty, runtime.plan.camera.length, runtime.plan.durationSeconds, runtime.plan.fps, runtime.plan.stageId, runtime.playheadSeconds, savePlan, sceneEditorStyle, scrubPlayhead, selectedTimelineLaneId, speedWarnings.length])
+  }, [applyStage, currentRehearsalBeat, documentLoaded, edges, exportPackage, graphData, objectTargets.length, rehearsalBeats, runtime.plan.camera.length, runtime.plan.durationSeconds, runtime.plan.fps, runtime.plan.stageId, runtime.playheadSeconds, savePlan, savingScene, sceneEditorStyle, scrubPlayhead, selectedTimelineLaneId, speedWarnings.length])
 
   const nativeControllerActive = nativeController.phase !== 'off'
   const simulationPhase = nativeControllerActive ? nativeController.phase : physics.phase
