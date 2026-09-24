@@ -2,7 +2,7 @@
 import type { StoreApi } from 'zustand'
 import type { GraphState } from './types'
 import { LS_KEYS } from '@/lib/config.ls.keys'
-import { getInitialThemeMode, resolveThemeMode, type ResolvedThemeMode } from '@/lib/ui/theme'
+import { getInitialDarkThemeVariant, getInitialThemeMode, resolveThemeMode, type ResolvedThemeMode } from '@/lib/ui/theme'
 import { createUiStorageReaders } from './uiSliceStorage'
 import { createUiSettingsMonacoSlice } from './uiSettingsSliceMonaco'
 import { createUiSettingsRenderSlice } from './uiSettingsSliceRender'
@@ -23,6 +23,7 @@ export const createUiSettingsSlice = (set: SetGraph, get: GetGraph) => {
   const readers = createUiStorageReaders()
   const { lsInt, storage } = readers
   const themeMode = getInitialThemeMode(storage)
+  const darkThemeVariant = getInitialDarkThemeVariant(storage, themeMode)
   const resolvedThemeMode: ResolvedThemeMode = resolveThemeMode(themeMode)
   const keywordDefaults = {
     sourceMaxLines: lsInt(LS_KEYS.keywordSourceMaxLines, 8000),
@@ -36,7 +37,7 @@ export const createUiSettingsSlice = (set: SetGraph, get: GetGraph) => {
   return {
     ...createUiSettingsMonacoSlice(set, readers),
     ...createUiSettingsRenderSlice(set, readers),
-    ...createUiSettingsCoreState(set, themeMode, resolvedThemeMode, keywordDefaults),
+    ...createUiSettingsCoreState(set, get, themeMode, darkThemeVariant, resolvedThemeMode, keywordDefaults),
     ...createUiSettingsModeActions(set, get, keywordDefaults),
     ...createUiSettingsDataTableSlice(set),
     ...STARTUP_DOCUMENT_MODE_DEFAULTS,

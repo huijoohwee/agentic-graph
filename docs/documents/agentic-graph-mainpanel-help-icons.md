@@ -45,7 +45,7 @@ Keep `Key` aligned to the Help icon text key in source. Keep `Type` aligned to t
 | mainPanel.maps | mainPanel.maps | Geospatial configuration | MainPanel tab for map providers, directions, and GeoJSON settings. |
 | mainPanel.commerce | mainPanel.commerce | Commerce operations | MainPanel tab for ACP, Stripe, Web3, OpenBOX, proof, and trace readiness. |
 | mainPanel.research | mainPanel.research | Thesis compiler | MainPanel tab for compiling selected Source Files into reviewable thesis candidates. |
-| mainPanel.design | mainPanel.design | Design surface | MainPanel tab for design renderer and page/component inspection. |
+| mainPanel.design | mainPanel.design | Retired Design tab icon | Preserved in the shared icon catalog for existing references; the active Design editor is FloatingPanel Design. |
 | mainPanel.workflowManager | mainPanel.workflowManager | Workflow curation | MainPanel tab for graph fields, mappings, and workflow registry management. |
 | mainPanel.dashboard | mainPanel.dashboard | Surface summary | MainPanel tab for runtime status and dashboard metrics. |
 | mainPanel.preview | mainPanel.preview | Rendered preview | MainPanel tab for previewing rendered output. |

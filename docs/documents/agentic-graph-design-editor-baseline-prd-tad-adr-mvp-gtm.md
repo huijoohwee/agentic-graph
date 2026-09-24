@@ -1,32 +1,32 @@
 ---
 title: "agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.0"
-date: "2026-09-21"
+version: "0.6.0"
+date: "2026-09-24"
 lang: "en-US"
 owner: "Documentation maintainers"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--design-native-contract"
-agent_id: "codex-design-plan"
+worktree_id: "device-0232231d4a19--design-dark-variants"
+agent_id: "codex-design-theme"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM"
-guideline_revision: "3.1.0"
-guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/1b2820d8d1da5246d8d6adedd99a2e39ba1eb4fd/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "b242ab5d82c49155808a86b45565c797f8e04f61"
-previous_document_version: "0.3.1"
-prd_revision: "0.4.0"
-tad_revision: "0.4.0"
-adr_revision: "0.4.0"
-mvp_revision: "0.4.0"
-gtm_revision: "0.4.0"
+guideline_revision: "3.3.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/d1bb72de041b1ddc6d291fd4f8528ccc2d367fea/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+reviewed_source_revision: "969f0d07802605a38dc10cde840ff685d468cf46"
+previous_document_version: "0.5.0"
+prd_revision: "0.6.0"
+tad_revision: "0.6.0"
+adr_revision: "0.6.0"
+mvp_revision: "0.6.0"
+gtm_revision: "0.6.0"
 ---
 
 # agentic-graph Design Canvas Editor PRD-TAD-ADR-MVP-GTM
 
-Current accepted scope revision: **0.4.0**. The following baseline records earlier implementation;
+Current accepted scope revision: **0.6.0**. The following baseline records earlier implementation;
 the [native design enhancement](#native-design-enhancement--reference-implementation) is a scoped
 implementation in progress, with no new runtime or delivery claim.
 
@@ -44,7 +44,7 @@ The shipped baseline keeps renderer semantics neutral. Design editing operates o
 
 | Capability | Status | Source owner |
 |------------|--------|--------------|
-| MainPanel Design tab | Shipped | `canvas/src/features/panels/mainPanelTabs.ts`; `canvas/src/features/panels/MainPanel.tsx`; `canvas/src/features/panels/views/DesignEditorMainPanelView.tsx` |
+| FloatingPanel Design editor | Shipped | `canvas/src/features/design/DesignFloatingPanelView.tsx`; `canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx` |
 | Design canvas render shell | Shipped | `canvas/src/components/DesignCanvas.tsx`; `canvas/src/components/DesignCanvas/DesignCanvasRenderShell.tsx` |
 | Editor chrome | Shipped | `canvas/src/components/DesignCanvas/DesignCanvasEditorChrome.tsx` |
 | Pointer modes, fit-to-view, undo, redo | Shipped | `canvas/src/components/DesignCanvas/DesignCanvasEditorChrome.tsx`; `canvas/src/features/design/DesignFloatingPanelView.tsx` |
@@ -61,19 +61,19 @@ The shipped baseline keeps renderer semantics neutral. Design editing operates o
 |------|------|----------------------|
 | Knowledge curator | Arrange graph-derived frames into a readable canvas | Design mode supports frame selection, movement, resize, layers, and inspector controls without changing canonical graph topology. |
 | Research analyst | Reopen and refine visual layouts | Design state is scoped by graph metadata and committed through Design-owned store actions. |
-| Builder | Extend Design editor behavior without duplicate state paths | MainPanel, floating panel, render shell, controllers, and store history expose source-owned contracts covered by registry tests. |
+| Builder | Extend Design editor behavior without duplicate state paths | FloatingPanel, render shell, controllers, and store history expose source-owned contracts covered by registry tests. |
 
 ## Functional Requirements
 
 ### FR-1: Dedicated Design Surface
 
-The Design editor is reachable through the MainPanel Design tab and through Design renderer activation paths. `DesignEditorMainPanelView` reuses `DesignFloatingPanelView`, so the MainPanel and floating panel share the same overview, Layers, Style, token, DOM tree, DOM inspect, and Video behavior.
+The Design editor is reachable through Design renderer activation paths and one FloatingPanel Design view. The duplicate MainPanel Design tab is retired. MainPanel Settings remains the appearance owner; FloatingPanel Design owns overview, Layers, Style, Tokens, DOM tree, DOM inspect, and Video controls.
 
 Acceptance:
 
-- `mainPanelTabs.ts` defines `key: 'design'`.
-- `MainPanel.tsx` lazy-loads `DesignEditorMainPanelView`.
-- `DesignEditorMainPanelView.tsx` delegates to `DesignFloatingPanelView`.
+- `mainPanelTabs.ts` exposes no Design tab and `MainPanel.tsx` mounts no Design editor.
+- `ToolbarToolMenu.impl.tsx` mounts `DesignFloatingPanelView` for Design.
+- A legacy MainPanel Design intent activates the shared FloatingPanel Design view.
 
 ### FR-2: Editor Chrome and Tooling
 
@@ -129,9 +129,9 @@ Acceptance:
 
 ```mermaid
 flowchart LR
-  A["MainPanel Design tab"] --> B["DesignEditorMainPanelView"]
-  C["Design renderer"] --> D["DesignCanvasRenderShell"]
-  B --> E["DesignFloatingPanelView"]
+  A["Design activation"] --> E["DesignFloatingPanelView"]
+  A --> C["Design renderer"]
+  C --> D["DesignCanvasRenderShell"]
   D --> F["DesignCanvasEditorChrome"]
   D --> G["Drag and resize controllers"]
   E --> H["Layers / Style / Tokens / DOM panels"]
@@ -147,9 +147,8 @@ flowchart LR
 
 | Layer | Owner | Contract |
 |-------|-------|----------|
-| MainPanel registration | `canvas/src/features/panels/mainPanelTabs.ts` | Defines the Design tab identity. |
-| MainPanel mounting | `canvas/src/features/panels/MainPanel.tsx` | Lazy-loads the Design editor panel. |
-| MainPanel view | `canvas/src/features/panels/views/DesignEditorMainPanelView.tsx` | Reuses the shared Design floating panel. |
+| Panel routing | `canvas/src/features/design/designEditorLaunchState.ts`; `canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx` | Opens the sole FloatingPanel Design editor. |
+| MainPanel boundary | `canvas/src/features/panels/mainPanelTabs.ts`; `canvas/src/features/panels/MainPanel.tsx` | Keeps MainPanel Settings and omits the duplicate Design editor. |
 | Canvas root | `canvas/src/components/DesignCanvas.tsx` | Wires frame edit operations into Design history actions. |
 | Render shell | `canvas/src/components/DesignCanvas/DesignCanvasRenderShell.tsx` | Mounts editor chrome with selected and layer counts. |
 | Editor chrome | `canvas/src/components/DesignCanvas/DesignCanvasEditorChrome.tsx` | Exposes existing pointer, undo, redo, and fit actions. |
@@ -165,8 +164,8 @@ flowchart LR
 
 ### State and Data Flow
 
-1. The user opens the Design tab or activates the Design renderer.
-2. `DesignEditorMainPanelView` and `DesignFloatingPanelView` render shared Design controls.
+1. The user activates the Design renderer; its FloatingPanel opens through the shared launcher.
+2. `DesignFloatingPanelView` renders the Design controls once.
 3. `DesignCanvasRenderShell` mounts `DesignCanvasEditorChrome` on the active canvas.
 4. Drag, resize, inspector, and layer interactions preview through the UI and commit through Design history actions.
 5. Token summaries use `buildScopedGraphSemanticKey('design-token-summary'` for stable cache identity.
@@ -177,8 +176,7 @@ flowchart LR
 
 Implemented:
 
-- MainPanel Design tab.
-- Shared Design floating panel and MainPanel view.
+- One FloatingPanel Design editor; the former MainPanel Design entry is retired.
 - Canvas editor chrome for select, pan, undo, redo, fit-to-view, selected count, and layer count.
 - Design-only move, resize, layer, and inspector history commits.
 - Token summary extraction using the shared semantic-key helper.
@@ -243,7 +241,7 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 ## Planning gaps — reference implementation
 
-Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/features/panels/mainPanelTabs.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/panels/mainPanelTabs.ts), [`canvas/src/features/panels/MainPanel.tsx`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/panels/MainPanel.tsx), [`canvas/src/features/panels/views/DesignEditorMainPanelView.tsx`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/panels/views/DesignEditorMainPanelView.tsx). Their existence does not confirm every behavior asserted by the specification.
+Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. At that historical revision the MainPanel Design files existed; revision 0.6.0 retires the duplicate MainPanel view and keeps the FloatingPanel owner. File existence at the historical revision did not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
 
 ## Native design enhancement — reference implementation
@@ -500,3 +498,94 @@ Prior independent contract/parser checks passed. The shared owner join now requi
 Design/token/Canvas tests, application typecheck, generator parity and the local browser verifier.
 Authoring and validation do not establish protected integration, production or buyer outcomes.
 Merge remains coordinated with other eligible lanes; exact PR checks and closeout receipts follow.
+
+## Native dark variants — reference implementation
+
+All five roles here join `PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM@0.6.0`.
+The implementation grant is the user's 2026-09-24 request to implement the prior recommendations,
+including the later explicit learning-canvas alignment. Source inspection is bound to Graph
+`969f0d07802605a38dc10cde840ff685d468cf46` and the proposed guideline
+`3.3.0` at website `d1bb72de041b1ddc6d291fd4f8528ccc2d367fea`.
+The unpublished Graph candidate was reconciled with protected base
+`272862cc4d130616497a392605bcb4caf25c3a5a` before publication.
+Protected integration and production effects require their separate evidence.
+
+### PRD
+
+A builder switches System, Light and Dark but cannot choose a neutral Black appearance; the
+learning canvas remains blue while Light is selected. Existing saved Dark users must retain
+their appearance. The near-built solution is a subordinate dark palette in the current MainPanel
+Settings and shared token owner. A $1 assisted visual-consistency review is a hypothesis only;
+buyer demand, time saved, and revenue have no observations.
+
+| ID | Given → when → then | Check |
+|---|---|---|
+| T1 | Given fresh, legacy saved-Dark, malformed or unavailable storage, when appearance initializes, then fresh prefers Black, legacy Dark keeps Dark Blue, invalid data falls to Black, and System/Light retain the dark choice. | `ui.themeModePersistence`, `ui.themeSystemModeApplyAndSubscribe` |
+| T2 | Given either dark variant, when the mode or system preference changes, then Settings, shared semantic surfaces and lazy Monaco resolve one current palette; code keeps 12px Menlo/Monaco-compatible type and 18px lines. | `ui.tokens.ssot`, `ui.nativeMonacoDarkVariants`, browser observation |
+| T3 | Given the learning workspace, when theme changes, then scene backdrop, floor and grid follow Light, Black or Dark Blue while route/goal/object colors retain their lesson meaning. | Python learning browser smoke and manual theme switch |
+| T4 | Given typography, icon or density overrides, when Reset theme is used, then only mode and dark variant return to System and Black; unrelated preferences remain. | Settings interaction and store readback |
+| T5 | Given the 2D Flow canvas is visible, when Light, Black or Dark Blue is chosen, then its painted background changes on the next frame without a drag or zoom gesture. | Native canvas pixel readback before/after theme changes |
+| T6 | Given the Design renderer, when its controls are opened, then the FloatingPanel supplies the single Design editor and MainPanel has no duplicate Design tab; MainPanel Settings remains available. | Design surface regression, tab registry and browser observation |
+
+### TAD and ADR
+
+`grph-shared/src/ui/kgTokenContract.ts` validates a complete third palette;
+`kgTokens.ts` owns its values and CSS generation. `canvas/src/lib/ui/theme.ts`, the
+existing Settings registry and store own mode/variant persistence and DOM application.
+`canvas/src/lib/monaco/theme.ts` maps semantic roles at lazy editor mount and on toggles.
+`LearningSceneStage.tsx` consumes the same values for the scene's non-authored surfaces.
+The 2D Flow runtime redraws on root theme mutation, and the CSS state key includes the
+dark variant. D3, Design, Dashboard and Gallery grid signals include that variant so
+their cached paint follows the same change. `DesignFloatingPanelView` is the existing editor owner;
+`ToolbarToolMenu.impl.tsx` mounts it and the redundant MainPanel view is removed. A legacy
+MainPanel Design event routes to the shared Design launcher. `MarkdownWorkspaceMain.tsx`
+already uses `UI_THEME_TOKENS.status.warning` for its Frontmatter warning, and the Python
+help disclosure already uses semantic CSS variables. The economics disclosure reuses
+`DashboardWidgetDisclosure` and `DashboardMetricGrid`; its border and background now use
+`UI_THEME_TOKENS.panel`. These are reference consumers, not new parallel status, disclosure
+or metric utilities.
+The generated Settings projection and token CSS are derived outputs. This is one dependency
+direction: tokens → adapters → presentation. Preserve the former Dark palette as Dark Blue,
+retain existing mode cycling and personal text/icon/density settings, and add no remote
+service or theme registry. A reviewed source revert plus regeneration is the rollback.
+
+### MVP and GTM
+
+The local candidate is complete only after type checking, focused theme/token checks,
+affected Design and Python browser checks, generated-output parity, and the protected
+Integration Gate. Browser checks must examine Light, Black and Dark Blue at narrow and
+desktop widths and keyboard focus. A local test or green PR does not prove deployed state.
+Active sprint bound: 45 minutes, 50 KiB authored delta and 12 owner modules initially.
+The learning-canvas observation, native Settings projection, reported 2D redraw bug,
+and Design panel consolidation expanded the cap to 150 minutes, 100 KiB authored delta
+and 44 owner modules; generated outputs are tracked separately. Refresh again if these caps
+are crossed. No dependency, paid tier, provider
+request or new always-load guidance is part of this change.
+
+Offer the existing $1 assisted review to a consenting builder only through an authorized
+product channel. Measure their current workaround, task time, visual corrections,
+support minutes and explicit offer response; do not treat feature completion as a sale.
+The product operator owns that pilot and any later payment evidence.
+
+**Implementation checkpoint (2026-09-24):** first source candidate under
+`agent/device-0232231d4a19/design-dark-variants`. Typecheck, token CSS parity,
+Settings projection parity, 12 focused theme/Design/Flow tests, and Python learning browser
+smoke passed. Direct browser readback at 375px and 1280px resolved distinct Light,
+Black, and Dark Blue canvas/code tokens without page overflow; the Settings dark-variant
+selector accepted keyboard focus and the theme-only reset restored System/Black. The
+isolated Flow canvas browser proof sampled its painted background before any drag:
+Light `[243,244,246]`, Black `[0,0,0]`, Dark Blue `[2,6,23]`, with no page errors.
+The broader Design browser verifier did not reach its Design panel because the current local
+XR overlay intercepted the fixture; it is not counted as a pass. The browser checks do
+not establish a complete accessibility assessment. PR #1239 passed the documentation gate
+but failed Integration Gate hygiene because five pre-existing long files grew. The native
+successor `design-dark-variants-hygiene` reduces those owners below their baseline line
+counts, extracts the theme Settings entry into a small module, and consolidates Design
+into FloatingPanel. Focused test selection once included an unrelated pinned-catalog case;
+its local failure is not a theme result. The successor passed hygiene, Settings projection
+parity (604 settings), Canvas check, 18 Design tests and six focused theme/dashboard tests.
+An isolated browser at `127.0.0.1:4199` opened the FloatingPanel Design view while finding
+no MainPanel Design tab and no page errors. This does not prove the user's `5175` session has
+updated or establish full accessibility coverage. The central policy/template successor is
+website PR #269, pending protected integration. Exact Graph successor SHA, provider checks,
+protected integration and production remain pending. No buyer receipt.

@@ -12,6 +12,7 @@ const output = args.find(arg => arg.startsWith('--output='))?.slice(9)
 const next = format ? serializeKgTokens(AG_TOKEN_DEFS, format) : [
   buildKgTokensCssText('light', { selector: ':root' }),
   buildKgTokensCssText('dark', { selector: ":root[data-theme='dark']" }),
+  buildKgTokensCssText('black', { selector: ":root[data-theme='dark'][data-dark-variant='black']" }),
 ].join('\n')
 const outPath = output ? path.resolve(output) : format ? null : path.resolve('src/styles/kgTokens.generated.css')
 if (args.includes('--check')) {

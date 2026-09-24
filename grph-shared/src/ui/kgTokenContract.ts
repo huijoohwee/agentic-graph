@@ -1,6 +1,6 @@
 import { hashStringToHex } from '../hash/stringHash.js'
 
-export type KgTheme = 'light' | 'dark'
+export type KgTheme = 'light' | 'dark' | 'black'
 export type KgTokenType = 'color' | 'dimension' | 'number' | 'shadow'
 export type KgTokenDef = {
   name: string
@@ -9,11 +9,12 @@ export type KgTokenDef = {
   purpose: string
   light: string
   dark: string
+  black: string
   references?: Partial<Record<KgTheme, string>>
 }
 export const KG_TOKEN_SOURCE = 'grph-shared/src/ui/kgTokens.ts'
 export const KG_TOKEN_LIMITS = Object.freeze({ definitions: 256, depth: 16, bytes: 65536 })
-const themes: KgTheme[] = ['light', 'dark']
+const themes: KgTheme[] = ['light', 'dark', 'black']
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0
 const fail = (path: string, reason: string): never => { throw new Error(`${path}: ${reason}`) }
 const plain = (value: unknown): value is Record<string, unknown> => !!value
@@ -63,7 +64,7 @@ export function resolveKgTokens(input: readonly KgTokenDef[]) {
   for (const [index, token] of input.entries()) {
     const path = `tokens[${index}]`
     if (!plain(token)) fail(path, 'expected a plain definition')
-    if (Object.keys(token).some(k => !['name', 'cssVar', 'type', 'purpose', 'light', 'dark', 'references'].includes(k))) fail(path, 'unknown field')
+    if (Object.keys(token).some(k => !['name', 'cssVar', 'type', 'purpose', 'light', 'dark', 'black', 'references'].includes(k))) fail(path, 'unknown field')
     if (typeof token.name !== 'string' || !/^[a-z][a-z0-9-]{0,79}$/.test(token.name)) fail(path, 'invalid name')
     if (token.cssVar !== `--kg-${token.name}`) fail(path, 'CSS variable must match name')
     if (byName.has(token.name) || variables.has(token.cssVar)) fail(path, 'duplicate name or CSS variable')
@@ -98,8 +99,10 @@ export function resolveKgTokens(input: readonly KgTokenDef[]) {
   return [...byName.values()].sort((a, b) => compare(a.name, b.name)).map(token => ({
     name: token.name, cssVar: token.cssVar, type: token.type, purpose: token.purpose,
     light: resolve(token.name, 'light', []), dark: resolve(token.name, 'dark', []),
-    css: { light: token.light, dark: token.dark },
-    references: { light: token.references?.light ?? null, dark: token.references?.dark ?? null },
+    black: resolve(token.name, 'black', []),
+    css: { light: token.light, dark: token.dark, black: token.black },
+    references: { light: token.references?.light ?? null, dark: token.references?.dark ?? null,
+      black: token.references?.black ?? null },
   }))
 }
 
@@ -120,7 +123,10 @@ export type KgTokenBundle = ReturnType<typeof buildKgTokenBundle>
 
 export function renderKgTokensCss(definitions: readonly KgTokenDef[], theme: KgTheme, selector: string, legacy = false): string {
   if (!themes.includes(theme)) fail('theme', 'unsupported theme')
-  if (![':root', ":root[data-theme='dark']", ':root.dark', ':root[data-theme="dark"]', ':root.dark, :root[data-theme="dark"]'].includes(selector)) fail('selector', 'unsupported selector')
+  if (![':root', ":root[data-theme='dark']", ':root.dark', ':root[data-theme="dark"]',
+    ':root.dark, :root[data-theme="dark"]',
+    ":root[data-theme='dark'][data-dark-variant='black']",
+    ':root[data-theme="dark"][data-dark-variant="black"]'].includes(selector)) fail('selector', 'unsupported selector')
   const bundle = buildKgTokenBundle(definitions)
   const ordered = legacy ? definitions.map(t => bundle.tokens.find(resolved => resolved.name === t.name)!) : bundle.tokens
   return boundKgTokenOutput(`${selector}${legacy ? '' : ' '}{\n${ordered.map(t => `  ${t.cssVar}: ${t.css[theme]};`).join('\n')}\n}\n`)
@@ -133,7 +139,9 @@ export function serializeKgTokens(definitions: readonly KgTokenDef[], target: 'c
   if (target === 'typescript') return boundKgTokenOutput(`// Generated from ${bundle.source}; ${bundle.revision}\nexport const designTokens = ${json} as const;\n`)
   if (target !== 'css') fail('target', 'unsupported export target')
   return boundKgTokenOutput(`/* Generated from ${bundle.source}; ${bundle.revision} */\n` + themes.map(theme => {
-    const selector = theme === 'light' ? ':root' : ':root.dark, :root[data-theme="dark"]'
+    const selector = theme === 'light' ? ':root'
+      : theme === 'black' ? ':root[data-theme="dark"][data-dark-variant="black"]'
+        : ':root.dark, :root[data-theme="dark"]'
     return renderKgTokensCss(definitions, theme, selector)
   }).join(''))
 }
