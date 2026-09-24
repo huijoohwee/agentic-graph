@@ -45,6 +45,7 @@ import type { LearningLesson, LearningSceneSnapshot } from '@/features/python-le
 const LearningSceneStageLazy = React.lazy(() => import('@/features/python-learning/LearningSceneStage').then(mod => ({ default: mod.LearningSceneStage })))
 const SceneLazy = React.lazy(() => import('@/lib/three/Scene.impl').then(mod => ({ default: mod.Scene })))
 const ControlsLazy = React.lazy(() => import('@/features/three/Controls').then(mod => ({ default: mod.Controls })))
+const SemanticTwinStageLazy = React.lazy(() => import('@/features/xr-v2/SemanticTwinStage').then(mod => ({ default: mod.SemanticTwinStage })))
 const XR_PHYSICS_RUN_READY_GRAPH: GraphData = { type: 'Graph', nodes: [], edges: [] }
 function XrWorldPlacement({
   active,
@@ -65,8 +66,7 @@ function XrWorldPlacement({
 }
 type ThreeGraphProps = Readonly<{
   active?: boolean; geospatialComposite?: boolean
-  mode?: Canvas3dModeId
-  semanticMediaOwner?: ThreeCanvasSemanticMediaOwner
+  mode?: Canvas3dModeId; semanticMediaOwner?: ThreeCanvasSemanticMediaOwner
   learningScene?: { lesson: LearningLesson; scene?: LearningSceneSnapshot }
 }>
 export default function ThreeGraph({ active = true, geospatialComposite = false, mode = '3d', semanticMediaOwner, learningScene }: ThreeGraphProps) {
@@ -528,6 +528,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
                 geospatialComposite={geospatialComposite}
               />
             ) : null}
+            {!geospatialComposite ? <SemanticTwinStageLazy paused={authoredWorldPaused} /> : null}
             {!geospatialComposite && glbAsset && shouldRenderGlbAsset ? (
               <GlbAssetModel
                 key={glbAssetRenderKey}

@@ -1,18 +1,18 @@
 ---
 title: "Reference implementation — Native semantic space"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.9.0"
-revision: "0.9.0"
+version: "0.9.1"
+revision: "0.9.1"
 date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.9.0"
-tad_revision: "0.9.0"
-adr_revision: "0.9.0"
-mvp_revision: "0.9.0"
-gtm_revision: "0.9.0"
+prd_revision: "0.9.1"
+tad_revision: "0.9.1"
+adr_revision: "0.9.1"
+mvp_revision: "0.9.1"
+gtm_revision: "0.9.1"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -20,7 +20,7 @@ universal_scope: false
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
 agent_id: "codex-semantic-space"
 parent: "agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md"
-parent_version: "0.9.0"
+parent_version: "0.9.1"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/db3ca52f5e38a7ad411e989d3df81463eec51a61/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -38,7 +38,7 @@ surfaces: ["2D Renderer: Flowchart"]
 
 ## Continuity, scope and directive
 
-This size-bounded companion extends the [existing XR Mode owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision. PRD S01–S10 feed the TAD owners below, ADR-010–013 select the approach, and MVP/GTM consume those decisions. The audit's provisional MVP ID is absorbed into this existing product identity, not instantiated as another product or registry. Revision 0.8.2 recorded a corrected local implementation candidate; revision 0.9.0 joins the [CPU procedural-twin increment](agentic-graph-xr-mode-procedural-twin-prd-tad-adr-mvp-gtm.md), which owns D01–D10 and ADR-014–017. Its image-to-recipe/physics integration is proposed, not implemented. Unverified S criteria remain open.
+This size-bounded companion extends the [existing XR Mode owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision. PRD S01–S10 feed the TAD owners below, ADR-010–013 select the approach, and MVP/GTM consume those decisions. The audit's provisional MVP ID is absorbed into this existing product identity, not instantiated as another product or registry. Revision 0.9.1 joins the [CPU procedural-twin increment](agentic-graph-xr-mode-procedural-twin-prd-tad-adr-mvp-gtm.md), which owns D01–D10 and ADR-014–017. The manual image-to-recipe/physics preview bridge is implemented in the source successor; unverified S and D criteria remain open.
 
 Input is the private `SEMANTIC-SPACE-AUDIT-001@1.2.0`, with digest in frontmatter. It is authoring evidence only; the implementation, build, tests and runtime must not require that file. No external conceptual material, identifiers, assets, prose or code are carried into this specification or admitted as dependencies. Required local implementation claims are restated from native source evidence below.
 
@@ -302,6 +302,7 @@ These are first investigation/work allocations, not a guarantee of completion in
 | E11 Current document and size | 0.8.2 frontmatter/role joins, source links, <600 lines/file, six production modules / 41,743 added bytes: pass; diagram checker: 6 diagrams, 29 nodes, 18 edges, 2 clusters, no findings | Current structural and parse-only proof; prior pinned validator is not promoted to 0.8.2 |
 | E12 Focused owner and baseline checks | Registered canvas suite: 6/6 relevant cases pass; XR v2 source smoke, changed-file hygiene, conflict source compliance and worktree policy pass. Full local TypeScript check reports the same 31 unrelated errors on protected checkout and this candidate | No changed-file type error observed; full typecheck is not green locally. CI must establish exact candidate health independently |
 | E13 Browser semantic loop | Local Chromium at 390 × 844: choose valid image → confirm/select → link to composed canvas node → correct label → export; repeated add leaves one graph node. Open-tab offline correction/export and hash-matching undecodable-image rejection pass; no page errors | Source-candidate browser proof. No physical camera, Safari, cold offline reopen or protected runtime effect is inferred |
+| E14 Procedural successor browser loop | Local Chromium at 390 × 844: runtime-supplied panorama imported by file and same-origin URL, image evidence downscaled to 1280 × 720, user-confirmed landmark bound to a CPU primitive, shared Three.js preview and physics listener exercised, valid GLB and integrity package exported, fresh-context package restored. The verified Offline Studio route installed 858 files / 26.8 MiB; network-denied reload reopened revision 3 and exported a valid GLB | This is workflow and cold-offline proof on local Chromium only. The source input is a panorama with unknown physical scale; arbitrary room/shape assumptions are not measured reconstruction. No validation file path or bytes enter the repository |
 
 Existing validation entry points to extend/reuse: capture runtime/store tests under `canvas/src/features/xr-v2/__tests__`; registered `canvas.xrMode.studio.semanticExercises` and `canvas.xrMode.studio.agentSaveReopen`; `canvas/src/__tests__/webMcpLifecycle.test.ts`; `canvas/src/__tests__/pythonLearningOffline.test.ts`; `canvas/scripts/run_choreography_studio_offline_smoke.mjs`; XR adapter/browser smoke. Select exact cases through the repository affected-check owner at implementation time; do not invent an already-runnable S-prefixed suite. Retained stubs and synthetic frames cannot satisfy device acceptance.
 
@@ -351,7 +352,7 @@ Economics assumptions A1 `$1 pilot price`, A2 `zero incremental required service
 | C15 Audience projections | No deck/business-plan/financial-model readiness claimed; join exact revision before use |
 | C16 Learning | Pilot results create a successor context; preserve prior evidence and re-derive affected criteria |
 
-The 0.9.0 procedural companion owns current documentation check receipts; E01–E13 above retain their original source/revision scope and do not establish D01–D10. Required geometry generation now follows the CPU/manual spine; optional model depth remains a separately gated perception input.
+The 0.9.1 procedural companion records current source-check receipts; E01–E13 above retain their original source/revision scope and do not establish D01–D10. Required geometry generation now follows the CPU/manual spine; optional model depth remains a separately gated perception input.
 
 Each finding uses the guideline's six fields: type, severity, Rule ID/text, artifact, evidence, remediation. This is a bounded review, not an exhaustive conformance ratio. No runtime-ready or commercial-baseline claim is made.
 
@@ -361,4 +362,4 @@ Each finding uses the guideline's six fields: type, severity, Rule ID/text, arti
 | `render-proof-absent` / major | `dual-target-portability#6`: verify static legibility and projected counts | SS-J–SS-L | Projection passes E04; static visual legibility unreviewed | Product maintainer reviews static preview before diagram alignment sign-off |
 | `scenario-set-incomplete` / major | `venture-record-pitch-deck-business-plan--financial-model#5`: linked statements and scenarios or incomplete discovery sketch | GTM | No financial/market observations | Financial modeling function produces sourced projections before audience handoff |
 
-Next bounded actions: follow the procedural companion's M1 constraint/binding slice and retain the following independent acceptance debt: qualify the candidate on Safari/phone with camera grant/deny, touch and offline reopen; exercise a real WebMCP host, then resolve the headless MCP/grammar capture gap and optional depth asset closure before claiming S01–S10. Prerequisites are an exact integrated source revision, free/FOSS asset policy and a device/host test surface. Recheck each when available. Development = source candidate with focused local proof; Production Release = no candidate; Runtime = unverified. This checkpoint adds no required service or paid dependency.
+Next bounded actions: review the implemented two-object geometry and package bridge at its exact successor SHA; connect local semantic evidence to Source Files and Media/Camera in the existing Canvas; qualify phone/Safari camera grant/deny and touch; exercise a real WebMCP host; then resolve headless MCP parity and optional depth asset closure before claiming S01–S10. Local Chromium cold offline reopen is proven for one authored object, not physical-device acceptance. Development = source candidate with local browser proof; Production Release = no candidate; Runtime = unverified. This checkpoint adds no required service or paid dependency.

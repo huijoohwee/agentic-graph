@@ -1,18 +1,18 @@
 ---
 title: "Reference implementation — CPU procedural space twin"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.9.0"
-revision: "0.9.0"
+version: "0.9.1"
+revision: "0.9.1"
 date: "2026-09-24"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM"
-prd_revision: "0.9.0"
-tad_revision: "0.9.0"
-adr_revision: "0.9.0"
-mvp_revision: "0.9.0"
-gtm_revision: "0.9.0"
+prd_revision: "0.9.1"
+tad_revision: "0.9.1"
+adr_revision: "0.9.1"
+mvp_revision: "0.9.1"
+gtm_revision: "0.9.1"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -21,7 +21,7 @@ lifecycle_status: "proposed"
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
 agent_id: "codex-semantic-space"
 parent: "agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md"
-parent_version: "0.9.0"
+parent_version: "0.9.1"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/db3ca52f5e38a7ad411e989d3df81463eec51a61/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -39,11 +39,11 @@ surfaces: ["2D Renderer: Flowchart"]
 
 ## Continuity and directive — reference implementation
 
-This companion joins the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) and [semantic-space owner](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision 0.9.0. It owns D01–D10 and ADR-014–017; existing E/A/B/S criteria retain their scope. It introduces no second product, scene database, renderer, command catalog or commercial roadmap. The private audit identified the original gaps; its digest remains historical input, never a build/runtime dependency.
+This companion joins the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) and [semantic-space owner](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) at the same continuity ID and revision 0.9.1. It owns D01–D10 and ADR-014–017; existing E/A/B/S criteria retain their scope. It introduces no second product, scene database, renderer, command catalog or commercial roadmap. The private audit identified the original gaps; its digest remains historical input, never a build/runtime dependency.
 
-**CID:** Context is existing capture, procedural assets and physics with no complete evidence-to-world bridge. Intent is an editable spatial handover from an ordinary photograph. Directive is to connect those native owners with a deterministic CPU pipeline, no mandatory model, GPU compute, remote API or service. **RAO:** Product maintainer specifies the smallest source-owned increment; outcome is a reviewable plan and acceptance gates, not a claim that the complete pipeline runs today.
+**CID:** Context is existing capture, procedural assets and physics with a missing evidence-to-world bridge. Intent is an editable spatial handover from an ordinary photograph. Directive is to connect those native owners with a deterministic CPU pipeline, no mandatory model, GPU compute, remote API or service. **RAO:** Product maintainer implements the smallest source-owned increment; outcome is a reviewable candidate and explicit acceptance gates, not a claim of full reconstruction or deployment.
 
-This revision changes documentation only. Protected source `f16ad08ac920ed125072b6de81335e96c790e3f3` supplies procedural generation and physics. The still/manual semantic-space implementation is the separate, unmerged source candidate `020d4f33d322eb1ad4bd34218134d1b25edd4ebb`. Those revisions are not interchangeable. The procedural/physics owners inspected below are unchanged between them. No external conceptual code, assets, project identifiers or runtime dependencies are admitted.
+Historical source `f16ad08ac920ed125072b6de81335e96c790e3f3` supplies procedural generation and physics; the still/manual semantic-space source was first inspected at candidate `020d4f33d322eb1ad4bd34218134d1b25edd4ebb`. The current successor adds a versioned twin extension to that native space document, CPU recipe binding, scene rendering, proxy-physics preview, package integrity and WebMCP operations. These historical revisions are not proof of the successor; its exact commit and checks belong to the new review receipt. No external conceptual code, assets, project identifiers or runtime dependencies are admitted.
 
 ## PRD — first useful outcome
 
@@ -88,7 +88,7 @@ All protected rows bind the frontmatter source SHA; candidate rows explicitly bi
 | N07 [scene semantics](../../canvas/src/features/three/xrSceneSemantic.ts), `projectXrStudioScene`, `queryXrStudioScene`; [persistence](../../canvas/src/features/three/xrScenePersistence.ts), `persistXrSceneToAuthoredSource` | Authored scene query and source save; separate captured entity IDs currently lack recipe/subject relation | Add stable entity ↔ subject ↔ asset/part bindings in owning scene document; existing canvas selection, scene editor and timeline consume them; D02/D06/D09 |
 | N08 [native physics](../../canvas/src/features/physics/spatialPhysicsEngine.ts), `SpatialPhysicsEngine.advance`; [types](../../canvas/src/features/physics/spatialPhysicsTypes.ts); [adapter](../../canvas/src/features/three/xrSpatialPhysicsAdapter.ts) | CPU fixed steps, sphere/cuboid contacts, queries and snapshots; body state has translation/linear velocity, no angular state. XR adapter uses cuboids | Derive explicit sphere/AABB proxies from accepted world bounds, attach existing scene physics; show conservative proxy limits. No new physics library; D05/D06 |
 | N09 [image-view contract](../../canvas/src/features/image-to-threejs/imageToThreeJsContract.ts); [workflow grammar](../../canvas/src/features/image-to-glb/proceduralAssetWorkflowContract.ts); [scene tools](../../canvas/src/features/three/xrSceneMcpRuntime.ts), `controlLocalXrScene` | Image view can be shape geometry/textured plane; asset creation and authored-scene actions execute independently. Candidate adds semantic-space tools | Connect these operations through existing validators and effect contexts; image plane alone is never reported as reconstructed room; D08 |
-| N10 [offline policy](../../canvas/vitePwaRuntimeCachePolicy.ts), [installer](../../canvas/vitePythonLearningOffline.mjs), [controls](../../canvas/src/features/python-learning/LearningOfflineControls.tsx) | Existing cache/install/verify owners; candidate cold offline HTML navigation failed despite precached feature chunks | Extend existing verified offline shell closure with source-revision consistency and recovery. Block offline-first release claim until actual cold reopen passes; D01/D07 |
+| N10 [offline policy](../../canvas/vitePwaRuntimeCachePolicy.ts), [installer](../../canvas/vitePythonLearningOffline.mjs), [controls](../../canvas/src/features/python-learning/LearningOfflineControls.tsx) | Existing cache/install/verify owners; an earlier uninstalled cold HTML navigation failed despite precached chunks. The successor passed the explicit verified Studio install and network-denied reopen on local Chromium | Retain revision consistency and recovery. Phone/Safari cold reopen remains a separate gate; D01/D07 |
 
 Appearance controls reuse existing Settings, tokens, typography, icons and `xrSceneAppearanceAuthoring.ts`; no alternate Design panel, hard-coded brand palette or visual framework. This planning increment changes no appearance implementation. Future appearance work must bind the guideline's native design contract and inspected adapters in the same joined record.
 
@@ -105,7 +105,7 @@ Appearance controls reuse existing Settings, tokens, typography, icons and `xrSc
 
 ### Typed contracts and provenance
 
-The following are **proposed extensions**, not accepted v1 wire fields today. Extend the owning scene schema with explicit versioning/migration; strict v1 asset recipes continue rejecting unknown keys. Do not create another registry or silently mutate old schemas.
+The table describes the complete target contract. The 0.9.1 source candidate implements a bounded nested `semantic-twin/v1` in the existing space document: entity/observation/hash binding, native v1 recipe, user-authored room/object dimensions and placement, revisioned actions, integrity-wrapped package and native GLB derivative. Per-field uncertainty, scene asset manifests, quality receipts, canonical cross-runtime geometry hashes and optional perception remain proposed. Strict v1 asset recipes continue rejecting unknown keys; do not create another registry or silently mutate old schemas.
 
 | Record | Required fields / ownership |
 |---|---|
@@ -144,7 +144,7 @@ Always-loaded model bytes and required inference/prompt/completion tokens are ze
 
 Optional local neural perception is disabled by default, independently license/integrity/budget-admitted, and removable without breaking D01–D10. It may propose typed masks/depth only; user validation or explicit policy must accept them before deterministic compilation. No API-backed perception is part of this increment. Existing depth weights/offline closure and per-chunk limits remain unresolved in the semantic companion; do not enable that path by default. Classical multi-view reconstruction is deferred until a CPU correspondence/calibration/error experiment supports it; no identity-pose fusion.
 
-Offline-first release requires shell + worker + templates + evidence + renderer/export assets verified at the same revision, then actual app-close/network-denied reopen. Reuse existing installer/cache policy and recovery UI; current `navigateFallback: null`/excluded HTML policy is a known blocker. Local storage can be evicted: surface persistence/quota status and offer portable export, never guarantee indefinite retention. Optional sync may reuse the existing Cloudflare storage adapter only by opt-in; no new resource, automatic private-media upload or paid fallback. Free hosting is not itself FOSS.
+Offline-first release requires shell + worker + templates + evidence + renderer/export assets verified at the same revision, then actual app-close/network-denied reopen. Reuse the existing installer/cache policy and recovery UI; the verified `studio-offline` route passed a local Chromium cold reload with an authored twin, while uninstalled ordinary navigation remains outside the guarantee. Local storage can be evicted: surface persistence/quota status and offer portable export, never guarantee indefinite retention. Optional sync may reuse the existing Cloudflare storage adapter only by opt-in; no new resource, automatic private-media upload or paid fallback. Free hosting is not itself FOSS.
 
 | Surface / current status | Native integration decision |
 |---|---|
@@ -261,11 +261,11 @@ Register target: PT-J 5 nodes/4 edges; PT-W 5/5; PT-D 6/5; PT-H 5/5; PT-T 5/4 pl
 | ADR-014 Deterministic spine | Mandatory CPU/no API/no generation ML/offline/manual fallback eliminate hosted or GPU/model-dependent generation. Rank existing primitive/contour owners first, hand-authored mesh second (higher effort); optional perception cannot outrank required constraints | No new service/dependency; modest bridge work. Replace individual templates through versions, never rewrite source evidence. Revisit after measured unsupported-object demand |
 | ADR-015 Evidence-bound approximation | Single image cannot identify hidden geometry or metric scale. Choose manual constraints + labelled procedural hypotheses over unqualified automatic reconstruction. Keep optional perception proposals separate | More operator input, less opaque error. Corrections regenerate from recipe; measured/calibrated path may refine fields with provenance. Revisit after device calibration/error study |
 | ADR-016 Existing recipe/scene/physics owners | Extend current asset and scene manifests; do not add another editable-world store, executable-code sandbox or physics engine. Native translation-only proxies precede richer dynamics | Limits shape/collision realism but minimizes migrations/dependencies. Explicit versioned contract-only adapter where necessary. Revisit angular/concave demand with a separate budgeted ADR |
-| ADR-017 Local first and capability-aware display | Required generation/evaluation/persistence uses CPU/local data; interactive 3D uses available browser renderer; 2D/export remains available. Optional sync uses current adapter; no required cloud path | Must close existing shell-cache gap and prove device memory/cancellation. No paid overflow or mandatory model download. Revisit only with measured failure and user value |
+| ADR-017 Local first and capability-aware display | Required generation/evaluation/persistence uses CPU/local data; interactive 3D uses available browser renderer; 2D/export remains available. Optional sync uses current adapter; no required cloud path | Verified Studio cold reload passed on local Chromium; prove physical-device memory/cancellation and Safari closure. No paid overflow or mandatory model download. Revisit only with measured failure and user value |
 
 ## MVP — bounded implementation and verification — reference implementation
 
-Product maintainer owns all slices, sequentially; refresh exact source revisions and admission before implementation. These are proposed active-work timeboxes, not promised delivery dates. Required service spend and model tokens are zero; actual engineering time/device energy/CI cost remain unmeasured. Total first-increment ceiling: 12 active hours, ≤4 new production modules, ≤50,000 added source bytes, <600 lines/file and <500,000 bytes/chunk. At each cap, stop expansion and record the smallest remaining gap; do not claim parity. Prefer extending/extracting owners over wrappers or replacements.
+Product maintainer owns all slices, sequentially; refresh exact source revisions and admission before implementation. These are active-work caps, not promised delivery dates. Required service spend and model tokens are zero; actual engineering time/device energy/CI cost remain unmeasured. Total first-increment ceiling: 12 active hours, ≤4 new production modules, ≤50,000 added source bytes, <600 lines/file and <500,000 bytes/chunk. At each cap, stop expansion and record the smallest remaining gap; do not claim parity. Prefer extending/extracting owners over wrappers or replacements. The current candidate completes the manual primitive-template path through the existing renderer, local store, GLB export and physics preview; worker isolation, image-contour reconstruction and richer animation remain outside this increment.
 
 | Slice / active budget | Delta and dependencies | Exit evidence |
 |---|---|---|
@@ -278,7 +278,7 @@ If the shell change cannot safely fit M4, keep cold-offline release blocked and 
 
 Validation reuses existing suites: `proceduralAssetWorkflow.test.ts`, `proceduralAssetWorkspace.test.ts`, image-to-GLB quality tests, native spatial physics tests, XR source smoke, semantic-space capture/store tests and WebMCP lifecycle tests. Add only behavioral integration cases missing for D01–D10. Use the repository affected-check selector; a proposed VCC ID is not an executable test name. Build/typecheck/browser evidence binds exact candidate SHA and target device; prior source receipts do not establish this new pipeline.
 
-Deploy boundary: this documentation successor grants no production effect. Source implementation requires an admitted lane and scoped checks; protected integration requires exact green provider evidence; runtime publication requires existing explicit environment authority, device/offline gates and readback. Reuse [production contract](../production-core-runtime-release.md) and [rollback owner](../production-rollback-baseline.md). Retain prior scene/package reader and deployment artifact; rollback restores the last valid compatible version without deleting raw evidence. No runtime activation is part of this revision.
+Deploy boundary: this source successor grants no production effect. Source implementation uses the admitted native lane and scoped checks; protected integration requires exact green provider evidence; runtime publication requires existing explicit environment authority, device/offline gates and readback. Reuse [production contract](../production-core-runtime-release.md) and [rollback owner](../production-rollback-baseline.md). Retain prior scene/package reader and deployment artifact; rollback restores the last valid compatible version without deleting raw evidence. No runtime activation is part of this revision.
 
 ## GTM — nearest useful handover
 
@@ -294,11 +294,12 @@ C01/C03/C04/C08 map to D-P1–4, D01–10 and M1–M4; C05/C06/C07 map to N01–
 
 | Evidence | Current disposition / owner / next check |
 |---|---|
-| Protected source inspection | Native image analysis/contour, procedural recipe/builder/export and translation-only physics verified at the exact source SHA; no runtime benchmark performed in this docs increment |
-| Candidate source inspection | Still/manual semantic loop and tools inspected at candidate SHA; inherited browser/test receipts stay scoped to revision 0.8.2. They do not prove D01–D10 |
-| Documentation checks | Current 0.9.0 joins/local links and <600-line caps pass (parent 599, semantic 364, procedural 309). Named `check-diagram-canvas-render.mjs` passes: new companion 5 diagrams / 26 nodes / 23 edges / 2 clusters; joined set 12 diagrams / 69 nodes / 54 edges / 4 clusters, no findings. Changed-file hygiene, conflict source compliance and worktree policy pass. Guideline/audit hashes verified; static visual and runtime proof are separate |
-| Device and transport | Actual phone/Safari camera, cold offline shell, real browser agent host and headless package parity remain unproven or blocked; recheck when exact source candidate and test surfaces exist |
-| Readiness | Development: specification + existing reusable owners; Production Release: no candidate for this increment; Runtime: end-to-end pipeline unverified |
+| Protected source inspection | Native recipe/builder/export, renderer and translation-only physics verified at historical source SHA; it does not prove this successor |
+| Candidate source inspection | Source candidate links image-confirmed entities to deterministic primitive recipes, authored floor/placement, the existing Three.js canvas, local proxy physics and package/GLB exports. Two-object fresh-store reopen, invalid geometry, package-tamper and structured/slash agent actions pass focused local tests. The local TypeScript check and CI-input regression suite pass; exact published SHA and provider check belong to the release receipt |
+| Documentation checks | Current 0.9.1 joins, links, line caps and diagram validator must be rerun after this edit; the 0.9.0 receipts remain historical. Guideline/audit hashes remain historical authoring evidence; static visual proof is separate |
+| Browser handover | Local Chromium, 390 × 844 CSS px: a runtime-supplied 2048 × 1152 PNG with a misleading `.jpeg` suffix imported both as a local file and from a same-origin URL, downscaled to 1280 × 720, then manually confirmed, built, linked to the shared 3D canvas, previewed with native physics, exported as a valid GLB and integrity-wrapped JSON, and restored in a fresh browser context. The input is a panorama, not a room; its single box and arbitrary floor are authored workflow probes, not a reconstruction-quality claim. No validation asset path or bytes are committed |
+| Device and transport | Verified Offline Studio installed 858 files / 26.8 MiB in local Chromium, then reopened the saved image, entity and procedural model with the browser network disabled; offline GLB export retained a valid `glTF` header. Physical phone/Safari camera, real browser agent host and headless MCP parity remain unproven; recheck on named surfaces |
+| Readiness | Development: bounded source candidate with local browser and cold-offline proof; Production Release: no authorized effect; Runtime: physical-device, source-file handoff and full acceptance remain unverified |
 
 | Type / severity | Rule ID / rule text | Artifact / evidence | Remediation / accountable owner |
 |---|---|---|---|
@@ -306,4 +307,4 @@ C01/C03/C04/C08 map to D-P1–4, D01–10 and M1–M4; C05/C06/C07 map to N01–
 | `render-proof-absent` / major | `dual-target-portability#6`: verify static legibility and projected counts | PT-J–PT-T static visual proof absent | Product maintainer reviews phone-width/static and canvas preview before render sign-off |
 | `scenario-set-incomplete` / major | `venture-record-pitch-deck-business-plan--financial-model#5`: linked statements/scenarios or incomplete discovery sketch | Shared GTM has no observed unit economics | Financial modeling function supplies evidence before an audience business case |
 
-Next checkpoint is M1's exact source admission and two-object constraint/binding fixture, then M2's zero-model/zero-network CPU proof. Offline release blocker: existing shell-navigation cache policy; owner N10, recheck after a version-bound cold-reopen fixture and owner fix. Device/host acceptance waits on the named surfaces, with no promised external-wait ETA. Preserve these criteria and update this joined record at implementation/turn boundaries.
+Next checkpoint is exact source/CI review, Source Files and Media/Camera handoff, and a named-device two-object demonstration. The primitive path is bounded to 20 objects, 24 material parts, 30,000 triangles and authored floor/size/placement; it does not infer hidden surfaces, camera pose or metric scale. Local Chromium cold navigation has passed; physical phone/Safari and agent-host acceptance still wait on the named surfaces, with no promised external-wait ETA. Preserve these criteria and update this joined record at implementation/turn boundaries.

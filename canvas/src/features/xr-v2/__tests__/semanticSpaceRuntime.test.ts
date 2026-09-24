@@ -1,7 +1,8 @@
 import { indexedDB } from 'fake-indexeddb'
 import { applySpaceAction, hashSpaceImage, newSpaceDocument, querySpaceEntities,
   validateSpaceDocument, verifySpaceEvidence, type SpaceEntity, type SpaceObservation } from '../semanticSpaceRuntime'
-import { createSemanticSpaceStore } from '../semanticSpaceStore'
+import { createSemanticSpaceStore, exportSemanticSpacePackage, importSemanticSpace } from '../semanticSpaceStore'
+import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
 import { parseSemanticSpaceInvocation, buildSemanticSpaceWebMcpToolBuilders } from '@/features/agent-ready/semanticSpaceWebMcpTools'
 import { SEMANTIC_SPACE_TOOL_IDS } from '@/features/agent-ready/semanticSpaceAgentReadyContract.mjs'
 import { buildPointCloudGeometry, projectRelativeDepthPointCloud } from '@/features/three/spatialCaptureGeometryRuntime'
@@ -53,6 +54,56 @@ export async function testSemanticSpaceRoundTripAndGuards() {
   const reader = createSemanticSpaceStore({ indexedDB, databaseName })
   await reader.replace(imported)
   if (JSON.stringify(await reader.read()) !== packageText) throw Error('package import lost image, IDs or revision')
+  for (const [entityId, template, size, position] of [
+    [first.id, 'chair', [1, 1, 1], [-1, 0, 0]],
+    [second.id, 'table', [2, 1, 1], [1, 0, 0]],
+  ] as const) {
+    const previous = doc.revision
+    doc = applySpaceAction(doc, { operation: 'build', requestId: `request:build:${entityId}`,
+      expectedRevision: previous, entityId, template, size, position })
+    doc = await store.save(doc, previous)
+  }
+  if (doc.twin?.objects.length !== 2 || doc.twin.objects[0].entityId !== first.id
+    || doc.twin.objects[1].entityId !== second.id
+    || doc.twin.objects.some(binding => binding.evidenceSha256 !== observation.sha256)) {
+    throw Error('two-object twin lost its stable evidence bindings')
+  }
+  for (const binding of doc.twin.objects) {
+    const built = buildProceduralAsset(binding.recipe)
+    try {
+      if (built.evidence.triangles < 1 || built.evidence.providerCalls !== 0) {
+        throw Error('native procedural CPU geometry failed')
+      }
+    } finally { disposeProceduralAsset(built.scene) }
+  }
+  const firstControl = doc.twin.objects[0].recipe.controls.find(control => control.type === 'color')
+  if (!firstControl) throw Error('native material control missing')
+  doc = applySpaceAction(doc, { operation: 'control-twin', requestId: 'request:colour',
+    expectedRevision: doc.revision, entityId: first.id, controlId: firstControl.id, value: '#123456' })
+  if (doc.twin?.objects[0].recipe.values[firstControl.id] !== '#123456') throw Error('control edit was not persisted')
+  for (const [operation, change] of [
+    ['move-twin', { position: [20, 0, 0] }],
+    ['resize-twin', { size: [Number.NaN, 1, 1] }],
+  ] as const) {
+    try {
+      applySpaceAction(doc, { operation, requestId: `request:invalid:${operation}`, expectedRevision: doc.revision,
+        entityId: first.id, ...change } as Parameters<typeof applySpaceAction>[1])
+      throw Error(`${operation} accepted invalid geometry`)
+    } catch (error) { if ((error as Error).message === `${operation} accepted invalid geometry`) throw error }
+  }
+  const fullPackage = await exportSemanticSpacePackage(doc)
+  const restoredStore = createSemanticSpaceStore({ indexedDB, databaseName: `${databaseName}-restore` })
+  const restored = await importSemanticSpace(fullPackage, restoredStore)
+  if (JSON.stringify(restored) !== JSON.stringify(doc)
+    || JSON.stringify(await restoredStore.read()) !== JSON.stringify(doc)) {
+    throw Error('editable twin failed package import and fresh-store reopen')
+  }
+  const damaged = JSON.parse(fullPackage)
+  damaged.document.twin.objects[0].position[0] = 2
+  try { await importSemanticSpace(JSON.stringify(damaged), restoredStore); throw Error('tampered package accepted') }
+  catch (error) { if ((error as Error).message === 'tampered package accepted') throw error }
+  try { await importSemanticSpace(JSON.stringify(doc), restoredStore); throw Error('raw twin package accepted') }
+  catch (error) { if ((error as Error).message === 'raw twin package accepted') throw error }
   const previousImage = Object.getOwnPropertyDescriptor(globalThis, 'Image')
   let decodeResult: 'ok' | 'bad-pixels' | 'wrong-size' = 'ok'
   class TestImage {
@@ -99,6 +150,11 @@ export async function testSemanticSpaceWebMcpAndInvocation() {
     || selectedToken.operation !== 'select' || selectedToken.entityId !== 'entity:chair') {
     throw Error('space / @ # invocation did not resolve exact tokens')
   }
+  const buildToken = parseSemanticSpaceInvocation('/space.build @entity:chair #procedural-asset template=chair width=1 height=1 depth=1 x=-1 z=0')
+  if (buildToken.operation !== 'build' || buildToken.entityId !== 'entity:chair'
+    || buildToken.template !== 'chair' || buildToken.position[0] !== -1) {
+    throw Error('procedural / @ # invocation did not preserve typed geometry')
+  }
   try { parseSemanticSpaceInvocation('/space.select @entity:chair extra=unsafe'); throw Error('unsupported token accepted') }
   catch (error) { if ((error as Error).message === 'unsupported token accepted') throw error }
   Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: indexedDB })
@@ -128,6 +184,23 @@ export async function testSemanticSpaceWebMcpAndInvocation() {
   if (!confirmed.ok || confirmed.entities[0].id !== 'entity:request:webmcp-confirm') throw Error('WebMCP confirmation failed')
   const found = await control.execute({ invocation: '/space.find #chair' }) as { entities: Array<{ id: string }> }
   if (found.entities[0].id !== confirmed.entities[0].id) throw Error('invocation query disagreed with structured action')
+  const built = await control.execute({ invocation: `/space.build @${found.entities[0].id} #procedural-asset template=chair width=1 height=1 depth=1 x=-1 z=0` }) as {
+    ok: boolean; revision: number; twin: { objects: Array<{ entityId: string; template: string; position: number[] }> } }
+  if (!built.ok || built.twin.objects[0].entityId !== found.entities[0].id
+    || built.twin.objects[0].template !== 'chair' || built.twin.objects[0].position[0] !== -1) {
+    throw Error('WebMCP build did not use the native space action and geometry owner')
+  }
+  const edited = await control.execute({ operation: 'edit-twin', requestId: 'request:webmcp-edit',
+    expectedRevision: built.revision, entityId: found.entities[0].id,
+    size: [1.2, 1.1, 1], position: [0, 0, 0] }) as {
+      ok: boolean; twin: { objects: Array<{ size: number[]; position: number[] }> } }
+  if (!edited.ok || edited.twin.objects[0].size[0] !== 1.2 || edited.twin.objects[0].position[0] !== 0) {
+    throw Error('WebMCP edit disagreed with the same local action path')
+  }
+  const invalid = await control.execute({ operation: 'edit-twin', requestId: 'request:webmcp-invalid',
+    expectedRevision: built.revision + 1, entityId: found.entities[0].id,
+    size: [Number.NaN, 1, 1], position: [0, 0, 0] }) as { ok: boolean; code: string }
+  if (invalid.ok || invalid.code !== 'invalid-input') throw Error('WebMCP accepted invalid geometry')
   const stale = await control.execute({ operation: 'correct', requestId: 'request:webmcp-stale',
     expectedRevision: saved.revision, entityId: found.entities[0].id, label: 'Wrong', category: 'chair' }) as { ok: boolean; code: string }
   if (stale.ok || stale.code !== 'stale-revision') throw Error('stale agent mutation changed evidence')

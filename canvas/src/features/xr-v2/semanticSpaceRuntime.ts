@@ -1,3 +1,7 @@
+import type { AssetControlValue } from '@/features/image-to-glb/proceduralAssetContract'
+import { buildSemanticTwinBinding, editSemanticTwinControl, emptySemanticTwin, MAX_TWIN_OBJECTS,
+  validateSemanticTwin, type SemanticTwin, type TwinRoom, type TwinTemplate, type TwinVector } from './semanticTwinRuntime'
+
 export const SEMANTIC_SPACE_SCHEMA = 'agentic-graph/semantic-space/v1' as const
 export const MAX_SPACE_OBSERVATIONS = 24
 export const MAX_SPACE_ENTITIES = 50
@@ -33,12 +37,25 @@ export type SpaceDocument = Readonly<{
   entities: readonly SpaceEntity[]
   selectedEntityId: string | null
   requestIds: readonly string[]
+  twin?: SemanticTwin
 }>
 export type SpaceAction =
   | Readonly<{ operation: 'capture'; requestId: string; expectedRevision: number; observation: SpaceObservation }>
   | Readonly<{ operation: 'confirm'; requestId: string; expectedRevision: number; entity: SpaceEntity }>
   | Readonly<{ operation: 'correct'; requestId: string; expectedRevision: number; entityId: string; label: string; category: string }>
   | Readonly<{ operation: 'select'; requestId: string; expectedRevision: number; entityId: string | null }>
+  | Readonly<{ operation: 'build'; requestId: string; expectedRevision: number; entityId: string;
+      template: TwinTemplate; size: TwinVector; position: TwinVector; seed?: number }>
+  | Readonly<{ operation: 'set-room'; requestId: string; expectedRevision: number; room: TwinRoom }>
+  | Readonly<{ operation: 'move-twin'; requestId: string; expectedRevision: number;
+      entityId: string; position: TwinVector }>
+  | Readonly<{ operation: 'resize-twin'; requestId: string; expectedRevision: number;
+      entityId: string; size: TwinVector }>
+  | Readonly<{ operation: 'edit-twin'; requestId: string; expectedRevision: number;
+      entityId: string; size: TwinVector; position: TwinVector }>
+  | Readonly<{ operation: 'control-twin'; requestId: string; expectedRevision: number;
+      entityId: string; controlId: string; value: AssetControlValue }>
+  | Readonly<{ operation: 'remove-twin'; requestId: string; expectedRevision: number; entityId: string }>
 
 export class SpaceError extends Error {
   constructor(readonly code: string, message: string) { super(message); this.name = 'SpaceError' }
@@ -98,6 +115,10 @@ export function validateSpaceDocument(input: unknown): SpaceDocument {
   if (doc.requestIds.some(id => !ID.test(id)) || new Set(doc.requestIds).size !== doc.requestIds.length) {
     throw new SpaceError('invalid-package', 'Request receipts are invalid')
   }
+  if (doc.twin !== undefined) {
+    try { validateSemanticTwin(doc.twin, doc.entities, doc.observations) }
+    catch (error) { throw new SpaceError('invalid-package', String((error as Error).message || error)) }
+  }
   return doc
 }
 
@@ -149,6 +170,9 @@ export function applySpaceAction(doc: SpaceDocument, action: SpaceAction): Space
   if (doc.requestIds.includes(action.requestId)) return doc
   if (action.expectedRevision !== doc.revision) throw new SpaceError('stale-revision', 'Space changed; reload before editing')
   let next: SpaceDocument
+  const twin = doc.twin || emptySemanticTwin()
+  const existing = 'entityId' in action && typeof action.entityId === 'string'
+    ? twin.objects.find(item => item.entityId === action.entityId) : undefined
   switch (action.operation) {
     case 'capture':
       if (doc.observations.length >= MAX_SPACE_OBSERVATIONS) throw new SpaceError('capacity', 'Space observation limit reached')
@@ -178,6 +202,51 @@ export function applySpaceAction(doc: SpaceDocument, action: SpaceAction): Space
       }
       next = { ...doc, selectedEntityId: action.entityId }
       break
+    case 'build': {
+      const entity = doc.entities.find(item => item.id === action.entityId)
+      if (!entity) throw new SpaceError('unknown-entity', 'Confirm an entity before building its geometry')
+      const observation = doc.observations.find(item => item.id === entity.observationId)!
+      if (!existing && twin.objects.length >= MAX_TWIN_OBJECTS) throw new SpaceError('capacity', 'Twin object limit reached')
+      let binding
+      try { binding = buildSemanticTwinBinding({ entity, observation, room: twin.room,
+        template: action.template, size: action.size, position: action.position, seed: action.seed }) }
+      catch (error) { throw new SpaceError('invalid-input', String((error as Error).message || error)) }
+      next = { ...doc, twin: { ...twin, objects: [...twin.objects.filter(item => item.entityId !== entity.id), binding] },
+        selectedEntityId: entity.id }
+      break
+    }
+    case 'set-room':
+      next = { ...doc, twin: { ...twin, room: action.room } }
+      break
+    case 'move-twin':
+      if (!existing) throw new SpaceError('unknown-entity', 'Build this entity before moving it')
+      next = { ...doc, twin: { ...twin, objects: twin.objects.map(item => item.entityId === existing.entityId
+        ? { ...item, position: action.position } : item) } }
+      break
+    case 'resize-twin':
+      if (!existing) throw new SpaceError('unknown-entity', 'Build this entity before resizing it')
+      next = { ...doc, twin: { ...twin, objects: twin.objects.map(item => item.entityId === existing.entityId
+        ? { ...item, size: action.size } : item) } }
+      break
+    case 'edit-twin':
+      if (!existing) throw new SpaceError('unknown-entity', 'Build this entity before editing its placement')
+      next = { ...doc, twin: { ...twin, objects: twin.objects.map(item => item.entityId === existing.entityId
+        ? { ...item, size: action.size, position: action.position } : item) } }
+      break
+    case 'control-twin':
+      if (!existing) throw new SpaceError('unknown-entity', 'Build this entity before editing it')
+      try { next = { ...doc, twin: { ...twin, objects: twin.objects.map(item => item.entityId === existing.entityId
+        ? editSemanticTwinControl(item, action.controlId, action.value) : item) } } }
+      catch (error) { throw new SpaceError('invalid-input', String((error as Error).message || error)) }
+      break
+    case 'remove-twin':
+      if (!existing) throw new SpaceError('unknown-entity', 'This entity has no built geometry')
+      next = { ...doc, twin: { ...twin, objects: twin.objects.filter(item => item.entityId !== existing.entityId) } }
+      break
+  }
+  if (next.twin !== undefined) {
+    try { validateSemanticTwin(next.twin, next.entities, next.observations) }
+    catch (error) { throw new SpaceError('invalid-input', String((error as Error).message || error)) }
   }
   return { ...next, revision: doc.revision + 1, requestIds: [...doc.requestIds, action.requestId].slice(-32) }
 }

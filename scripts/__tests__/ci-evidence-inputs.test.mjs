@@ -85,11 +85,32 @@ test('version evidence retries one bounded timeout and returns the exact observe
   assert.equal(calls[0][2].killSignal, 'SIGKILL')
 })
 
+test('Chrome timeout accepts only exact installed package metadata, never a guessed version', () => {
+  const failure = Object.assign(new Error('browser probe timed out'), { code: 'ETIMEDOUT' })
+  let calls = 0
+  const result = toolVersion('google-chrome', ['--version'], {
+    execute: () => { calls += 1; throw failure },
+    readPackageVersion: (command, args, options) => {
+      assert.equal(command, 'dpkg-query')
+      assert.deepEqual(args, ['-W', '-f=${Version}', 'google-chrome-stable'])
+      assert.equal(options.timeout, 5000)
+      return '140.0.7339.185-1\n'
+    },
+  })
+  assert.equal(calls, 2)
+  assert.equal(result, 'Google Chrome 140.0.7339.185-1 (installed package)')
+  for (const output of ['', '140 guessed', '1.2.3\nextra']) {
+    assert.throws(() => toolVersion('google-chrome', ['--version'], {
+      execute: () => { throw failure }, readPackageVersion: () => output,
+    }), error => error === failure)
+  }
+})
+
 test('repeated timeout and non-timeout probe failures cannot become reusable evidence', () => {
   for (const [code, attempts] of [['ETIMEDOUT', 2], ['ENOENT', 1], ['ENOBUFS', 1], [undefined, 1]]) {
     let calls = 0
     const failure = Object.assign(new Error('probe failed'), { code })
-    assert.throws(() => toolVersion('google-chrome', ['--version'], { execute: () => {
+    assert.throws(() => toolVersion('google-chrome', ['--version'], { readPackageVersion: () => { throw failure }, execute: () => {
       calls += 1
       throw failure
     } }), error => error === failure)

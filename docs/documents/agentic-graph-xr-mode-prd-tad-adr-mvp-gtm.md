@@ -2,7 +2,7 @@
 title: "agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "KXR-001"
-version: "0.9.0"
+version: "0.9.1"
 date: "2026-09-24"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
@@ -41,22 +41,22 @@ adlc_guide_sha256: "7b2c0a4c85879647c36766fad3e686899c43d219e6d57e39adfdace308dc
 increment_history: "agentic-graph-xr-mode-increments.md"
 reviewed_source_revision: "f16ad08ac920ed125072b6de81335e96c790e3f3"
 reviewed_candidate_revision: "020d4f33d322eb1ad4bd34218134d1b25edd4ebb"
-previous_document_version: "0.8.2"
-prd_revision: "0.9.0"
-tad_revision: "0.9.0"
-adr_revision: "0.9.0"
-mvp_revision: "0.9.0"
-gtm_revision: "0.9.0"
+previous_document_version: "0.9.0"
+prd_revision: "0.9.1"
+tad_revision: "0.9.1"
+adr_revision: "0.9.1"
+mvp_revision: "0.9.1"
+gtm_revision: "0.9.1"
 ---
 
 # Reference implementation — agentic-graph XR Mode PRD-TAD-ADR-MVP-GTM
 
 ## Semantic-space increment — reference implementation
 
-The [native semantic-space companion](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) joins all five roles at `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.0`; it is split solely to keep each file below 600 lines. It owns S01–S10 and ADR-010–013; existing E/A/B criteria remain in force within their original scope. The prior candidate adds image-decoding integrity and a phone-width canvas-layer fix to the bounded local still/manual slice; source integration and deployment remain separate.
-The implemented local path is ordinary camera or chosen image → observation → confirmed entity → query/highlight → local correction/save/export, with a bounded relative-depth point projector. Captured entities keep their stable identity in composed canvas documents through the native source-layer ID mapping. Still/manual mode is the baseline; historical live-video defaults do not govern it. Open-tab offline edits pass in browser emulation; offline app reload, Safari/physical camera, headless MCP parity and optional model depth remain unverified or blocked as recorded in the companion.
+The [native semantic-space companion](agentic-graph-xr-mode-semantic-space-prd-tad-adr-mvp-gtm.md) joins all five roles at `PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1`; it is split solely to keep each file below 600 lines. It owns S01–S10 and ADR-010–013; existing E/A/B criteria retain their original scope. The current source successor connects the prior still/manual slice to deterministic editable geometry; protected integration and deployment remain separate.
+The implemented local path is camera or chosen image → observation → confirmed entity → authored room/object constraints → native CPU recipe and Three.js preview → revision-checked local package/GLB export. Entities keep stable IDs across the photo, graph and scene; supported geometry has explicit authored-approximation provenance. Open-tab offline editing and focused package/geometry tests pass locally. Cold offline reload, Safari/physical camera, actual browser-host WebMCP and headless MCP parity need separate receipts as recorded in the companions.
 
-The [CPU procedural-twin companion](agentic-graph-xr-mode-procedural-twin-prd-tad-adr-mvp-gtm.md) joins revision 0.9.0, owns D01–D10 and ADR-014–017, and specifies image evidence → confirmed constraints → native procedural geometry → quality gates → editable scene/physics → portable recovery. Required generation uses local CPU, no ML/API/GPU compute; optional perception supplies typed inputs only. It reuses the existing contour, recipe, export, scene and physics owners. This increment is documentation only; E/A/B/S evidence is not promoted to end-to-end procedural acceptance.
+The [CPU procedural-twin companion](agentic-graph-xr-mode-procedural-twin-prd-tad-adr-mvp-gtm.md) joins revision 0.9.1, owns D01–D10 and ADR-014–017, and records the implemented manual two-object pipeline and remaining quality/device gates. Required generation uses local CPU, no ML/API/GPU compute; optional perception supplies typed inputs only. It reuses the existing recipe, export, renderer and physics owners. Local source proof is not protected integration, device acceptance or production release.
 
 ## Decision
 

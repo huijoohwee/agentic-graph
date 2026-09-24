@@ -4,7 +4,20 @@ import { applySpaceAction, newSpaceDocument, SpaceError, validateSpaceDocument, 
 
 const ACTIVE_REF = 'semantic-space:active'
 const CHANGE_EVENT = 'agentic-graph:semantic-space-change'
+const PACKAGE_SCHEMA = 'agentic-graph/semantic-space-package/v2'
 type SpaceRecord = { ref: string; document: SpaceDocument }
+
+async function contentDigest(text: string): Promise<string> {
+  const bytes = new TextEncoder().encode(text)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+export async function exportSemanticSpacePackage(document: SpaceDocument): Promise<string> {
+  await verifySpaceEvidence(validateSpaceDocument(document))
+  const json = JSON.stringify(document)
+  return JSON.stringify({ schema: PACKAGE_SCHEMA, sha256: await contentDigest(json), document })
+}
 
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -105,15 +118,49 @@ export async function runSemanticSpaceAction(action: SpaceAction): Promise<Space
   if (action.operation === 'capture') await verifySpaceEvidence({ ...base, observations: [...base.observations, action.observation] }, true)
   const next = applySpaceAction(base, action)
   if (next === base) return base
+  if (action.operation === 'build' || action.operation === 'control-twin'
+    || action.operation === 'resize-twin' || action.operation === 'edit-twin') {
+    const binding = next.twin?.objects.find(item => item.entityId === action.entityId)
+    if (!binding) throw new SpaceError('invalid-input', 'Twin binding is missing')
+    const [{ buildProceduralAsset, disposeProceduralAsset }, { Box3, Vector3 }] = await Promise.all([
+      import('@/features/image-to-glb/proceduralAssetBuilder'), import('three'),
+    ])
+    let built
+    try { built = buildProceduralAsset(binding.recipe) }
+    catch (error) { throw new SpaceError('invalid-geometry', String((error as Error).message || error)) }
+    try {
+      const bounds = new Box3().setFromObject(built.scene)
+      const extent = bounds.getSize(new Vector3())
+      if (bounds.isEmpty() || ![...bounds.min.toArray(), ...bounds.max.toArray(),
+        ...extent.toArray()].every(Number.isFinite) || Math.min(...extent.toArray()) <= 0
+        || built.evidence.triangles > 30_000 || built.evidence.parts > 48) {
+        throw new SpaceError('invalid-geometry', 'Built geometry did not pass the local bounds and budget gate')
+      }
+    } finally { disposeProceduralAsset(built.scene) }
+  }
   const saved = await store().save(next, current?.revision ?? null)
   changed()
   return saved
 }
-export async function importSemanticSpace(text: string): Promise<SpaceDocument> {
+export async function importSemanticSpace(text: string,
+  target?: ReturnType<typeof createSemanticSpaceStore>): Promise<SpaceDocument> {
   if (text.length > 32 * 1024 * 1024) throw new SpaceError('package-too-large', 'Space package exceeds 32 MiB')
   let parsed: unknown
   try { parsed = JSON.parse(text) } catch { throw new SpaceError('invalid-package', 'Space package is not valid JSON') }
-  const saved = await store().replace(await verifySpaceEvidence(validateSpaceDocument(parsed), true))
+  let document: unknown = parsed
+  if (parsed && typeof parsed === 'object' && 'schema' in parsed && parsed.schema === PACKAGE_SCHEMA) {
+    const wrapped = parsed as Record<string, unknown>
+    if (Object.keys(wrapped).some(key => !['schema', 'sha256', 'document'].includes(key))
+      || typeof wrapped.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(wrapped.sha256)
+      || !wrapped.document || typeof wrapped.document !== 'object'
+      || await contentDigest(JSON.stringify(wrapped.document)) !== wrapped.sha256) {
+      throw new SpaceError('invalid-package', 'Space package integrity check failed')
+    }
+    document = wrapped.document
+  } else if (parsed && typeof parsed === 'object' && 'twin' in parsed) {
+    throw new SpaceError('invalid-package', 'Twin packages require an integrity manifest')
+  }
+  const saved = await (target || store()).replace(await verifySpaceEvidence(validateSpaceDocument(document), true))
   changed()
   return saved
 }
