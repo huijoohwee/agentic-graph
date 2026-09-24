@@ -3,27 +3,24 @@ import { resolve } from 'node:path'
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
 
-export function testDesignEditorMainPanelTabUsesSharedSurface() {
+export function testDesignEditorUsesOneFloatingPanelSurface() {
   const tabs = read('src/features/panels/mainPanelTabs.ts')
   const mainPanel = read('src/features/panels/MainPanel.tsx')
-  const icons = read('src/features/panels/ui/mainPanelHelpIconLibrary.tsx')
-  const view = read('src/features/panels/views/DesignEditorMainPanelView.tsx')
+  const floatingPanel = read('src/features/design/DesignFloatingPanelView.tsx')
+  const toolbar = read('src/lib/toolbar/ToolbarToolMenu.impl.tsx')
   const toolbarContext = read('src/components/toolbar/useCanvasToolbarContext.ts')
 
-  if (!tabs.includes("| 'design'") || !tabs.includes("key: 'design'")) {
-    throw new Error('expected MainPanel to expose a neutral Design editor tab')
+  if (tabs.includes("key: 'design'") || mainPanel.includes('DesignEditorMainPanelViewLazy')) {
+    throw new Error('expected the duplicate MainPanel Design surface to be absent')
   }
-  if (!mainPanel.includes('DesignEditorMainPanelViewLazy') || !mainPanel.includes('MAIN_PANEL_TAB_TYPE_ICON_BY_KEY')) {
-    throw new Error('expected MainPanel Design tab to mount the shared Design editor surface')
+  if (!mainPanel.includes('MAIN_PANEL_TAB_TYPE_ICON_BY_KEY') || !mainPanel.includes("'commerce', 'settings'")) {
+    throw new Error('expected MainPanel Settings to remain available')
   }
-  if (!icons.includes("design: 'mainPanel.design'") || !icons.includes('Icon: Palette')) {
-    throw new Error('expected shared MainPanel type-icon owner to provide the Design icon')
+  if (!toolbar.includes("floatingPanelView === 'design' && <DesignFloatingPanelView") || !floatingPanel.includes('DesignEditorOverviewPanel')) {
+    throw new Error('expected FloatingPanel Design to own the editor controls')
   }
-  if (!view.includes('DesignFloatingPanelView') || !view.includes("canvas2dRenderer === 'design'")) {
-    throw new Error('expected MainPanel Design view to reuse the Design floating-panel implementation')
-  }
-  if (!toolbarContext.includes("detailTab === 'design'")) {
-    throw new Error('expected shared main-panel open handler to accept the Design tab')
+  if (!toolbarContext.includes("detailTab === 'design'") || !toolbarContext.includes('activateDesignEditorSurface()')) {
+    throw new Error('expected legacy Design panel intent to open the FloatingPanel editor')
   }
 }
 

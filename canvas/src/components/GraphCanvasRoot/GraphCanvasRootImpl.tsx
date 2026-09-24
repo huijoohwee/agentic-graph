@@ -72,8 +72,7 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
   const containerRef = useRef<HTMLElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const resolvedThemeMode = useGraphStore(s => (s.resolvedThemeMode || 'light') as 'light' | 'dark')
-  const darkThemeVariant = useGraphStore(s => s.darkThemeVariant)
-  const themeSignal = `${resolvedThemeMode}:${darkThemeVariant}`
+  const themeSignal = useGraphStore(s => `${s.resolvedThemeMode || 'light'}:${s.darkThemeVariant}`)
   const coarsePointer = useMediaQuery('(pointer: coarse)')
   const isEmbeddedPreview = useMemo(() => {
     try {
@@ -1002,7 +1001,6 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
     selectedEdgeIdRef,
     setHoverInfo,
   })
-
   useSelectionHighlight({ paused: !active, nodesSelRef, mediaSelRef, labelsSelRef, linksSelRef, themeSignal })
   useGroupSelectionHighlight({ gRef, paused: !active })
   useSelectionRerenderSubscription2d({ active, beforeRenderFrameRef })

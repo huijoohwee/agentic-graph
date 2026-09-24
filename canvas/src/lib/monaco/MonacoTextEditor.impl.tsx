@@ -106,7 +106,6 @@ export type MonacoTextEditorProps = {
 }
 
 type MonacoApi = typeof import('monaco-editor/esm/vs/editor/editor.api')
-
 export type MonacoCapabilitySettings = {
   monacoLanguageJsonEnabled: boolean
   monacoLanguageJsonLoadMode: 'lazy' | 'eager'

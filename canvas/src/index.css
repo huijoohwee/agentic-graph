@@ -189,15 +189,7 @@
   --kg-panel-action-bg: rgba(255,255,255,0.06);
   --kg-panel-action-bg-hover: var(--kg-canvas-accent, #60a5fa);
 }
-:root[data-theme='dark'][data-dark-variant='black'] {
-  --divider-color: #404040;
-  --island-border-color: #404040;
-  --app-bg: #000000;
-  --panel-bg: #0a0a0a;
-  --island-bg: #111111;
-  --panel-bg-rgb: 10, 10, 10;
-  --island-bg-rgb: 17, 17, 17;
-}
+:root[data-theme='dark'][data-dark-variant='black'] { --divider-color: #404040; --island-border-color: #404040; --app-bg: #000000; --panel-bg: #0a0a0a; --island-bg: #111111; --panel-bg-rgb: 10, 10, 10; --island-bg-rgb: 17, 17, 17; }
 @layer components {
   [data-kg-kanban-card="1"]:hover [data-kg-kanban-actions="1"],
   [data-kg-kanban-card="1"]:focus-within [data-kg-kanban-actions="1"] {
@@ -259,7 +251,6 @@
   .kg-workspace-split-selector {
     padding: var(--kg-workspace-split-selector-pad, 0.5rem);
   }
-
   .kg-workspace-surface-shell {
     box-sizing: border-box;
     padding-top: var(--kg-workspace-surface-pad-top, 0.5rem);

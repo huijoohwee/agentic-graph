@@ -740,16 +740,8 @@ export const FALLBACK_DETAILS: Record<string, { area?: string; responsibility?: 
     area: 'Voxel Mode',
     responsibility: 'Master on/off switch for all voxel animations',
   },
-  themeMode: {
-    area: 'Themes',
-    responsibility: 'Global color theme (System, Light, or Dark)',
-    notes: 'System follows the device preference. Dark uses the selected dark variant.',
-  },
-  darkThemeVariant: {
-    area: 'Themes',
-    responsibility: 'Dark palette: Black (Default) or Dark Blue',
-    notes: 'Black is the fresh default. Previously saved Dark sessions retain Dark Blue until changed.',
-  },
+  themeMode: { area: 'Themes', responsibility: 'Global color theme (System, Light, or Dark)', notes: 'System follows the device preference. Dark uses the selected dark variant.' },
+  darkThemeVariant: { area: 'Themes', responsibility: 'Dark palette: Black (Default) or Dark Blue', notes: 'Black is the fresh default. Previously saved Dark sessions retain Dark Blue until changed.' },
   selectionFlashDurationMs: {
     area: 'Selection Flash',
     responsibility: 'Duration of canvas-driven selection flash highlights (ms)',
