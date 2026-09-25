@@ -52,13 +52,16 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
       : clamp(width * (shape === 'chair' || shape === 'table' ? 0.72 : 1), 0.1, Math.min(5, twin.room.depth)) // Authored template proportions, not inferred depth.
     if (shape === 'box' && proposal.source === 'user-region') depth = Math.min(width, twin.room.depth)
     if (shape === 'sea' || shape === 'river') { depth = height; height = 0.12 }
+    if (shape === 'landscape') { depth = height; height = clamp(width * 0.16, 0.2, 0.8) }
+    if (shape === 'aircraft') depth = clamp(width * 0.86, 0.1, Math.min(5, twin.room.depth))
+    if (shape === 'ship' || shape === 'car') depth = clamp(width * 2, 0.1, Math.min(5, twin.room.depth))
     if (shape === 'sky') depth = 0.15
     const x = clamp((region.x + region.width / 2 - 0.5) * twin.room.width,
       -(twin.room.width - width) / 2, (twin.room.width - width) / 2)
     const z = clamp((region.y + region.height / 2 - 0.5) * twin.room.depth,
       -(twin.room.depth - depth) / 2, (twin.room.depth - depth) / 2)
     const binding = buildSemanticTwinBinding({ entity, observation: action.observation, room: twin.room,
-      template: shape, color: proposal.color, silhouette: shape === 'contour' ? proposal.silhouette : undefined, relief: proposal.relief, size: [width, height, depth], position: [x, ['sky', 'cloud', 'moon', 'sun'].includes(shape) ? 2 : 0, z] })
+      template: shape, color: proposal.color, silhouette: shape === 'contour' ? proposal.silhouette : undefined, relief: proposal.relief, size: [width, height, depth], position: [x, ['sky', 'cloud', 'moon', 'sun', 'aircraft'].includes(shape) ? 2 : 0, z] })
     return binding
   })
   return { ...doc, observations: [...doc.observations, action.observation],
