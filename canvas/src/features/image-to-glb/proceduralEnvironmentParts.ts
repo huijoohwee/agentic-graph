@@ -23,7 +23,8 @@ export function createEnvironmentParts(subject: string, color: string): AssetPar
     add('cloud-left', 'sphere', [-0.75, -0.15, 0], [1.25, 0.85, 0.9])
     add('cloud-right', 'sphere', [0.75, -0.1, 0], [1.1, 0.95, 0.85])
   } else if (subject === 'landscape') {
-    add('hill-center', 'sphere', [0, 0, 0], [2.5, 1.3, 2])
+    // Ground the assembly at its root; child offsets keep the authored hill profile.
+    add('hill-center', 'sphere', [0, 0.65, 0], [2.5, 1.3, 2])
     add('hill-left', 'sphere', [-1.25, -0.15, 0.25], [2, 0.9, 1.75])
     add('hill-right', 'cone', [1.1, 0.3, -0.25], [1.8, 1.9, 1.8])
   } else if (subject === 'sky') {
