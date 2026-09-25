@@ -36,7 +36,7 @@ export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (s
       {snapshot.document?.lessonId === 'drone' ? <button disabled={busy || !finished || snapshot.state !== 'completed'} onClick={() => void act(async signal => {
         const record = await captureLearningDebrief(snapshot)
         const { createLearningFlightPath } = await import('./learningFlightPath')
-        const text = createLearningFlightPath(record.result)
+        const text = createLearningFlightPath(record.result, window.location.href)
         if (signal.aborted) throw new Error('Flight path export cancelled.')
         const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
         const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'drone-flight-path.json'; anchor.click()

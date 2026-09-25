@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { LearningRuntime, type LearningWorkerPort } from '../features/python-learning/learningRuntime'
 import { createPythonWorkerHost } from '../features/python-learning/pythonWorker'
 import { LEARNING_LESSONS } from '../features/python-learning/learningLessons'
-import { createLearningFlightPath } from '../features/python-learning/learningFlightPath'
+import { createLearningFlightPath, learningFlightSourceUrl } from '../features/python-learning/learningFlightPath'
 import type { LearningWorkerSnapshot } from '../features/python-learning/learningProtocol'
 import { inspectDroneBenchLog } from '../features/python-learning/learningDroneBenchLog'
 
@@ -55,4 +55,26 @@ test('GameXR path logs are bounded observations and never command replay', () =>
   assert.equal(inspectDroneBenchLog(JSON.stringify(log)).controlRequests, 1)
   log.records[0].value.pose[4] = 99
   assert.throws(() => inspectDroneBenchLog(JSON.stringify(log)))
+})
+
+
+test('v2 links the native Graph file route without carrying page tokens', async () => {
+  const completed = await result()
+  const file = JSON.parse(createLearningFlightPath(completed, 'http://127.0.0.1:4198/?secret=private#pair=private'))
+  assert.equal(file.schema, 'agentic-drone-flight-path/v2')
+  assert.equal(file.sourceUrl, 'http://127.0.0.1:4198/?kgDoc=flight.py')
+  assert.equal(learningFlightSourceUrl('https://example.test/graph/', '/a b/flight.py'), 'https://example.test/graph/?kgDoc=a+b%2Fflight.py')
+  for (const [url, document] of [['javascript:alert(1)', '/flight.py'], ['https://user:password@example.test/', '/flight.py'],
+    ['https://example.test/', '/../secret'], ['https://example.test/', '']]) assert.throws(() => learningFlightSourceUrl(url, document))
+})
+
+test('Canvas embed admits only bounded pose observations on its exact channel', async () => {
+  const { readLearningCanvasPose, learningCanvasScene, LEARNING_CANVAS_PROTOCOL } = await import('../features/python-learning/learningCanvasEmbedProtocol')
+  const channel = 'a'.repeat(32), message = { protocol: LEARNING_CANVAS_PROTOCOL, kind: 'pose', channel, pose: [60, 1, 0, 90, 2] }
+  const pose = readLearningCanvasPose(message, channel)!
+  assert.deepEqual(pose, message.pose)
+  assert.equal(learningCanvasScene(pose).altitude, 2)
+  for (const patch of [{ channel: 'b'.repeat(32) }, { kind: 'run' }, { source: 'takeoff(2)' },
+    { pose: [1, NaN, 0, 0, 0] }, { pose: [7201, 0, 0, 0, 0] }, { pose: [1, 9, 0, 0, 0] },
+    { pose: [1, 0, 0, 360, 0] }, { pose: [1, 0, 0, 0, 5] }]) assert.equal(readLearningCanvasPose({ ...message, ...patch }, channel), null)
 })
