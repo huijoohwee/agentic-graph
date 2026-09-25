@@ -60,9 +60,9 @@ The [CPU procedural-twin companion](agentic-graph-xr-mode-procedural-twin-prd-ta
 
 ## Decision
 
-XR Mode is the existing agentic-graph 3D canvas, workspace asset path, and
-progressive WebXR entry—not a parallel immersive application or a second 3D
-pipeline.
+The [spatial-workspace increment](agentic-graph-xr-spatial-workspace-prd-tad-adr-mvp-gtm.md), `PLAN-XR-SPATIAL-WORKSPACE@0.1.0`, extends native scene navigation with a searchable outline and explicitly defers gizmos, spatial constraints and agent proposal review. Existing scene, evidence, renderer and release owners remain authoritative.
+
+XR Mode is the existing agentic-graph 3D canvas, workspace asset path, and progressive WebXR entry—not a parallel immersive application or a second 3D pipeline.
 
 The current product:
 

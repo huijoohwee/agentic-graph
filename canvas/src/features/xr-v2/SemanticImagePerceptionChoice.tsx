@@ -14,6 +14,7 @@ import { copyImageModelsToSpace, replaceableImageRegionIds } from './semanticIma
 
 const SpaceEditor = React.lazy(() => import('./SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
 const SpatialComposer = React.lazy(() => import('./SemanticSpatialSceneComposer'))
+const SceneOutline = React.lazy(() => import('./SemanticSceneOutline'))
 const button = 'App-toolbar__btn min-h-11 w-full whitespace-normal'
 export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl: string }) {
   const [space, setSpace] = React.useState<SpaceDocument | null>(null)
@@ -209,12 +210,10 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
         <SpatialComposer space={space} observation={evidence} disabled={busy} />
       </React.Suspense>}
       {evidence && <SemanticBoxRefinement space={space} observation={evidence} disabled={busy} />}
-      <div className="grid max-h-36 gap-1 overflow-auto">{models.map((model, index) => {
-        const entity = space.entities.find(item => item.id === model.entityId)
-        return <button type="button" key={model.entityId} className={button} disabled={busy}
-          aria-pressed={space.selectedEntityId === model.entityId} onClick={() => void chooseModel(model.entityId)}>
-          {index + 1}. {entity?.label || model.template}</button>
-      })}</div>
+      {evidence && <React.Suspense fallback={<span>Loading scene outline…</span>}>
+        <SceneOutline key={`${space.id}:${evidence.sha256}`} space={space} evidenceSha256={evidence.sha256}
+          disabled={busy} onSelect={chooseModel} />
+      </React.Suspense>}
       {(space.twin?.objects.length || 0) > models.length && <details>
         <summary className="min-h-11 cursor-pointer py-2">More room for this image</summary>
         <p>This space also contains models from other images. Copy this image into its own space to use a separate object budget. Keep the previous space in Source Files and local backup.</p>

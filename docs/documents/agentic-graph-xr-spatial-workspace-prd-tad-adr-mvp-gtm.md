@@ -1,0 +1,285 @@
+---
+title: "XR spatial workspace — reference implementation"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "0.1.0"
+date: "2026-09-25"
+lang: "en-US"
+frontmatter_contract: "required"
+owner: "Product maintainers"
+continuity_id: "PLAN-XR-SPATIAL-WORKSPACE"
+prd_revision: "0.1.0"
+tad_revision: "0.1.0"
+adr_revision: "0.1.0"
+mvp_revision: "0.1.0"
+gtm_revision: "0.1.0"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+lifecycle_status: "proposed"
+worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
+agent_id: "codex-xr-scene-outline"
+parent_continuity: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1"
+reviewed_source_revision: "f42013fdde50c538e715d05f1c8282a6cc685875"
+guideline_revision: "3.3.0"
+guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
+load_policy: "on-demand"
+---
+
+# XR spatial workspace — reference implementation
+
+## Continuity and scope — reference implementation
+
+All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.1.0`. This bounded child of
+the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) owns W01–W06
+and ADR-W01. It is separate because the existing procedural-twin companion is
+near its 600-line limit. That companion continues to own evidence-to-geometry,
+units, recipes and reconstruction limits; this document owns workspace navigation.
+The containing candidate commit binds implementation evidence; the frontmatter
+source revision is the inspected predecessor, not proof of the changed candidate.
+
+**Context:** the existing solid scene has independent selectable objects, but its
+image-specific button list lacks search and visibility filtering. **Intent:** make
+an existing XR scene inspectable and editable through the same UI and agent owners.
+**Directive:** extend native presentation over saved entities; forbid a second
+world store, renderer, action registry or remote runtime dependency.
+
+**0 → 1:** the opportunity is the operator's observed navigation friction, with
+buyer demand unvalidated. The target is one operator finding, selecting, hiding,
+restoring and editing one of twenty saved objects within 60 seconds after the
+scene is ready. Five timed trials constitute the acceptance study; timing is
+currently unmeasured. Delivered product, payment and repeat demand are separate.
+
+## PRD — useful scene navigation — reference implementation
+
+User and beneficiary: an author reviewing a local scene. Buyer hypothesis: a solo
+designer or small-team operator preparing a spatial handover. Today's workaround
+is orbiting to find a small object or scrolling labels and reopening the inspector.
+The user requested an integrated spatial workspace on 2026-09-25; this is pain
+evidence, not willingness-to-pay evidence. No market-size or revenue claim follows.
+
+| Journey / pain | Change | Priority | Acceptance / falsifier |
+|---|---|---|---|
+| Scene → many small objects → hard to find one | Search names, shapes and stable IDs in a scene outline | Must, W01 | Results belong only to displayed evidence; empty search restores every saved model |
+| Outline → selection → disconnected editor | Reuse Canvas selection and Timeline inspector | Must, W02 | Row and Canvas select the same entity; selecting does not replace geometry |
+| Overlapping solids → hard to inspect behind them | Hide/show and visible/hidden filtering | Must, W03 | Hidden object remains saved, can be restored, and keeps dimensions and placement |
+| Delayed action → document changed | Fence the UI draft by space, revision and evidence | Must, W04 | Stale or replaced-space writes fail; another entity cannot receive the change |
+| Narrow panel → clipped controls | Wrapping labels, bounded list, native form controls, ≥44 px targets | Must, W05 | Search/filter/select/restore usable by keyboard and in a 390 CSS px viewport |
+| Operator → agent handover → state diverges | Keep existing inspect/control contracts | Must, W06 | No private outline store or second mutation path; transport parity remains separately tested |
+
+Scope is saved evidence-linked models in **Surface Mode XR**, inline in an ordinary
+browser. Opening a headset session or camera permission is unnecessary. Photo
+comparison, source marking, geometry composition, export and Timeline stay in
+their existing surfaces. Counts distinguish total and visible models; filter
+results never claim that hidden models were deleted or that every photographed
+object was recognized. The actual active observation bounds the outline.
+
+**Deferred requirements:** viewport move/rotate/scale gizmos for semantic models;
+opt-in object labels and grid; asset search across all native scene kinds; one
+reviewable agent proposal with before/after diff, explicit scope, revision fence
+and recoverable application; deterministic overlap/clearance findings; attributed
+history/undo shared across UI and tools. These are target requirements, not shipped
+capabilities. A clearance result must declare authored units, collision proxy and
+algorithm; it must never imply measured dimensions or building-code compliance.
+No new autonomy approval rule is introduced: existing explicit grants still apply.
+
+## TAD — codebase grounding — reference implementation
+
+Source-level rows are verified against the frontmatter predecessor unless a
+different exact revision is stated. `extend-owner` describes the candidate delta;
+`retain-local` means consume without copying. A source read is not device proof.
+
+| ID / owner | Inspected capability / limitation | Disposition / smallest delta / criterion |
+|---|---|---|
+| G01 `canvas/src/features/xr-v2/semanticSpaceRuntime.ts`, `semanticSpaceStore.ts` | Stable entities, observations, selected ID, expected-revision/request-ID actions; local verified readback and source mirror | retain-local; outline visibility uses `control-twin`, no schema change; W03–W04 |
+| G02 `canvas/src/features/xr-v2/semanticSpaceCanvas.ts`, `semanticObjectView.ts` | Persisted XR view, evidence-scoped bindings, shared selection and Timeline activation | retain-local; list selection calls `selectSemanticObject`; W01–W02 |
+| G03 `canvas/src/features/xr-v2/SemanticImagePerceptionChoice.tsx` | Existing image-owned saved-model list, composition and refinement controls | extend-owner; replace list with lazy `SemanticSceneOutline.tsx`; W01–W05 |
+| G04 `canvas/src/features/xr-v2/SemanticTwinStage.tsx`, `semanticTwinScene.ts` | Shared solid scene, ray selection, camera fit and geometry resource disposal | retain-local; visibility renders from the saved recipe; no new Canvas; W02–W03 |
+| G05 `canvas/src/features/agent-ready/semanticSpaceAgentReadyContract.mjs`, `semanticSpaceWebMcpTools.ts` | Native inspect/control and strict invocation adapters; `control-twin` already owns visibility | retain-local; no extra tool count or discovery group; W06 |
+| G06 `canvas/src/features/three/XrSubjectTransformEditor.tsx`, `xrSceneMcpRuntime.ts` | Authored native subjects have selection, transform cards and readiness fences | retain-local; semantic models keep their own existing inspector until an explicit adapter joins the contracts; no claim of identical transform types |
+| G07 `canvas/src/features/xr-v2/semanticSceneOutlineProjection.ts` (candidate) | Pure, evidence-scoped outline projection and UI draft context guard | new leaf helper, no storage or renderer imports; W01/W04 |
+| G08 `canvas/src/features/xr-v2/__tests__/semanticSceneOutline.test.ts` (candidate) | Synthetic independent checks of search, IDs, visibility, stale/foreign context and local recovery | candidate verification; W01–W04, not full W05/W06 proof |
+
+### Related codebase boundaries — reference implementation
+
+| Exact inspected source | Finding | Decision / remaining evidence |
+|---|---|---|
+| `agentic-os@8bd5c314c23e30bc16de9a0fbb0a4349c3273638`, `guides/TECH-STACK.md`, `docs/START-WORKFLOW.md`, `docs/RELEASE-WORKFLOW.md` | Composition and native lifecycle authority are upstream; publication is distinct from integration and deployment | retain-local by existing pin; no copied lifecycle or commercial controller |
+| `agentic-canvas-os@5ea33c4f521d39e985a60c054db8ebd13d4db54c`, `agent-api/src/tool-search.js` | Re-exports bounded tool discovery from the upstream package | retain-local; Graph's existing browser scope remains owner of exposed XR tools; no new discovery service |
+| `GameXR@81365d45a425c5aa58ef8454f9e47b33f2de4e26`, `package.json`, `vite.config.ts` | Consumes packaged shared/spatial artifacts and owns its browser build/base path | retain-local; no cross-repo source import, UI clone or device actuation; adoption needs its own package and device receipts |
+| `huijoohwee.github.io@ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed`, guideline and grounding companion | Owns authoring grammar and source-grounding procedure | reference exact upstream document; no copied rule catalog or checker |
+
+These observations ground the affected seams, not an exhaustive cross-repository
+audit. Protected source, unmerged candidate, installed package and deployed
+artifact identities remain different. No related repository changes are required.
+
+### Five flows and contracts — reference implementation
+
+| Flow | Input → owner → outcome | Failure / recovery |
+|---|---|---|
+| Content/data | Saved space + displayed evidence hash → pure outline projection → matching rows/counts | No matches is explicit; filtering changes no document bytes |
+| Control/interaction | Row click → existing selection owner → Canvas/Timeline selected entity | Read-only/preparing Canvas reports existing error; no optimistic selection write |
+| State/lifecycle | Visibility click → fresh read + captured context check → existing action → atomic local save/readback → subscriber | Space/revision/evidence mismatch rejected; failed persistence retains saved state |
+| Agent/invocation | Existing inspect/control tool or `/space.* @entity #…` → existing adapter/action owner → same document | Unsupported transport/capability reported; no DOM-only agent path or implied parity |
+| Delivery/recovery | Source change → native candidate/checks/review → protected integration → separately authorized deploy | Source revert or next candidate; export/local backup retains evidence; no hidden production effect |
+
+```mermaid
+flowchart LR
+  Saved[Saved semantic space] --> Outline[Outline projection]
+  Outline --> UI[Search / select / visibility]
+  UI --> Existing[Existing selection and action owners]
+  Tools[Existing MCP / WebMCP adapters] --> Existing
+  Existing --> Store[Revision checked local store]
+  Store --> Saved
+  Saved --> Canvas[Shared XR stage]
+  Saved --> Timeline[Existing transform inspector]
+```
+
+The outline stores only transient query/filter/busy/message state. It never
+persists a duplicate entity collection, derived count or measurement. One pending
+UI mutation is allowed at a time; a failed command is reported, not retried
+automatically. Space/evidence changes remount the outline and clear its draft.
+Raw images stay in existing local evidence storage. Search is an ≤80-character
+local string over at most twenty models; it performs no network call or inference.
+Room units remain `arbitrary` or explicitly authored metres; no measured claim.
+
+### Budgets, security and fallback — reference implementation
+
+Initial sprint estimate 45 minutes; at most six changed modules/files, two new
+small production leaves, zero dependencies/services/model downloads/API fees.
+No always-load module is added: the outline is reached by the existing lazy Media
+path. Each changed file stays below 600 lines; the new lazy chunk stays below 500 kB. Retain
+20 models, 160 recipe parts, 30,000 triangles and existing texture bounds; search
+does not expand generation budgets. CPU, memory, battery and engineering time
+are real costs even with no service bill; physical-device measurements are open.
+
+Treat labels and evidence as text, never HTML or executable instructions. A
+colliding entity ID in a replacement space must fail the UI context guard; the
+store still arbitrates a concurrent write after preflight. Visibility is a
+reversible saved control, not deletion. Storage/quota/source-mirror errors use
+existing reporting and recovery. If 3D cannot start, retained source evidence,
+outline and package export remain the intended recovery route; this increment
+does not certify every GPU-loss or offline boot condition.
+
+## ADR-W01 — extend native scene navigation — reference implementation
+
+**Accepted for this candidate:** a lazy outline over the existing semantic-space
+owner, using the current selection/control paths. Constraints eliminate paid or
+remote inference, a second world database and an external runtime dependency.
+Argumentation: the missing search/visibility surface is small, directly observed,
+and can be verified without changing geometry or importing another UI system.
+
+| Alternative | Tradeoff | Outranking |
+|---|---|---|
+| Extend existing Media list and Timeline | Least change, preserves IDs and revision fences; currently evidence-scoped | First: satisfies W01–W04 now |
+| Keep the current list | No implementation cost; leaves observed navigation friction | Second only if the outline creates more operator effort |
+| Introduce a new spatial workspace/store | Expands migrations, synchronization and device testing | Rejected: duplicate owner and excessive scope |
+
+Consequence: native gameplay subjects and saved image models do not yet share one
+asset/outliner type. Do not silently cast between their stores. Revisit after a
+measured multi-scene workflow requires a contract adapter. Gizmos, proposals and
+constraint analysis require separate source-grounded increments and acceptance.
+Recovery: remove the leaf UI integration or publish a corrective candidate;
+saved entities, recipes and package schema remain readable by the predecessor.
+
+## MVP — bounded implementation and evidence — reference implementation
+
+Must slice: W01–W06 for saved image models, with the proof boundary stated per row.
+Demo skeleton: open the saved XR scene → search for an object → select it → inspect
+Timeline → hide it → filter hidden objects → restore it → reload. An observed
+result must match source identity; a screenshot of a different application or a
+tool catalog cannot satisfy any acceptance criterion.
+
+| Evidence / check | Scope and current result | Gap |
+|---|---|---|
+| `semanticSceneOutline.test.ts`, direct Node/tsx runner | 4 checks pass: evidence/query/ID projection, shared selection/control, stale/replaced-space fencing, local readback/replay/concurrent refusal | Synthetic fixtures; no photo classification accuracy claim |
+| Canvas-local `npx tsc --noEmit`, root `npm run check`, production build | Pass; root check includes three local-browser launcher checks | No physical-device or delivery proof |
+| Existing localhost scene, 18 saved objects | Live search/select/hide/filter/restore/reload and 390 CSS px keyboard checks pass | Desktop browser emulation; no physical phone claim |
+| Existing MCP/WebMCP contract | Source reuse verified; no tool schema changed | Headless/browser-host end-to-end parity remains open |
+
+The complete spatial-workspace target remains `spec-complete`; a working outline
+does not advance every deferred requirement. Evidence below may prove the bounded
+local increment only. No protected merge or production deployment is inferred.
+
+## GTM — first useful paid handover — reference implementation
+
+Offer hypothesis: a free local authoring tool plus an optional operator-assisted
+scene-review/export service. First experiment: ask five qualified solo designers
+to complete the 60-second navigation task and ask whether one reviewed handover
+is worth a $1 pilot. No checkout, payment provider, subscription or outreach is
+implemented or authorized by this plan. Demand, offer acceptance, collection,
+fulfillment economics and repeat use are all **unvalidated**.
+
+Constraints → argumentation → outranking: direct opt-in pilot uses the existing
+local build and zero paid acquisition, giving the shortest path to feedback;
+a shareable demo is second because acquisition remains unknown; hosted automated
+generation is rejected by cost and scope. Prefer measured correction-time savings
+over claims of reconstruction fidelity. No TAM/SAM/SOM estimate is invented.
+Baseline against the prior list; record completion time, wrong selections,
+recoveries, failures and willingness to pay. Continue if 4/5 finish within target
+with no wrong-object write; revise if search adds effort; stop monetization claims
+until actual payment/fulfillment evidence exists. Product maintainer owns follow-up.
+
+Financial assumptions: no incremental service spend or revenue in this slice;
+device resource use and development/support minutes are unmeasured inputs. Pilot
+contribution = collected price minus measured fulfillment/support cost; it is not
+assumed positive at $1. No funding ask, hiring or infrastructure expansion now.
+Existing maintainers own delivery and incidents. Legal/IP/jurisdiction review is
+deferred until actual commercial distribution terms and customer geography exist.
+
+## Coverage and next checks — reference implementation
+
+Disposition is not readiness. All 16 domains apply: 16/16 dispositioned, 11/16
+covered, 5 deferred, 0 not applicable. Gaps below prevent full venture readiness.
+Every row joins this document at `0.1.0`; Product maintainers are accountable.
+
+| Domain | Disposition / source role | Evidence or gap / next check |
+|---|---|---|
+| C01 Purpose/customer/pain | Covered, PRD | Operator navigation request; validate buyer in pilot |
+| C02 Market/timing | Deferred, GTM | No sizing/interviews; owner revisits after five qualified prospects |
+| C03 Offer/alternatives | Covered, GTM + ADR-W01 | Explicit $1 hypothesis and ranked alternatives; seek offer acceptance |
+| C04 Experience | Covered, PRD | W01–W06 and demo; run browser and timed trials |
+| C05 Architecture/data | Covered, TAD | G01–G08 and five flows; exact candidate checks |
+| C06 Quality/security/AI | Covered, TAD | Revision/privacy/budget boundaries; physical device and GPU loss remain open |
+| C07 Tradeoffs | Covered, ADR-W01 | Existing-owner decision; revisit on measured workflow gap |
+| C08 Smallest slice | Covered, MVP | Focused tests and bounded live receipt; no full target parity |
+| C09 Acquisition/retention | Deferred, GTM | Opt-in pilot not run; owner records conversion/repeat use after invitation authority |
+| C10 Operations | Covered, TAD + GTM | Native release/recovery and maintainer support; measure incident effort |
+| C11 Obligations | Deferred, GTM | Customer/legal context absent; owner obtains review before commercial terms |
+| C12 Financial viability | Deferred, GTM | No fulfillment cost/linked financial statements; owner revisits after pilot measurement |
+| C13 Capital/milestones | Covered, GTM | Bootstrap, zero service spend; no ask until demand evidence |
+| C14 ADLC | Covered, TAD + MVP | Scoped successor and source-owned release; exact CI/review/deploy receipts separate |
+| C15 Audience projections | Deferred, GTM | Deck/business plan/financial model unnecessary for this code increment; owner revisits before buyer/investor handoff |
+| C16 Learning | Covered, GTM | 4/5 completion threshold; new successor context records pilot outcomes |
+
+Scoped authoring coverage: continuity, grounding, VCCs, five flows, budgets,
+decision/alternatives, recovery, evidence separation, GTM experiment and C01–C16
+are all linked above (10/10 selected artifact-bearing groups). This is not a
+whole-guideline conformance ratio. Guidance on commercial sizing remains deferred;
+no claim of zero findings or complete product/market validation is made.
+
+## Candidate validation receipt — reference implementation
+
+Observed 2026-09-25 in the candidate worktree at `http://localhost:4179/`:
+
+- Four focused tests pass, including IndexedDB readback, replay and concurrent refusal.
+- Typecheck and root `check` pass; production build completes in 43.69 seconds.
+  New outline chunk is 5.47 kB (2.36 kB gzip). Existing unrelated chunks exceed
+  500 kB; this is not a whole-application bundle-budget pass.
+- The saved scene shows 18 models. Combined name/shape search selects the matching
+  row and the same Timeline entity. Enter-key selection works. No-match feedback
+  is explicit. Hiding leaves 18 saved / 17 visible, survives reload, appears in the
+  hidden filter, and restoring returns 18 visible. A concurrent change was visibly
+  refused; a fresh retry succeeded. No hidden object was deleted.
+- At 390 × 844 CSS px, the outline fits within the viewport and tested input,
+  filter, selection and visibility controls are at least 44 × 44 px. The temporary
+  viewport override was reset. Physical touch/headset acceptance remains open.
+- A case-insensitive helper/component filename collision was fixed before browser
+  acceptance; restarting the development server cleared its old resolver cache.
+  Changed-file hygiene and source conflict checks pass.
+
+The containing candidate identifies these source bytes. Native provider review,
+protected integration and deployment require their own later receipts. This
+increment adds no dependencies or service calls. Cross-transport parity, timed
+buyer trials, cold offline boot, GPU loss and commercial validation remain open.
