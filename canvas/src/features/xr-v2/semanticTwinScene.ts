@@ -6,14 +6,15 @@ import { silhouettePixels } from './semanticTwinSilhouette'
 import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
 import type { TwinBinding } from './semanticTwinRuntime'
 import type { SpaceDocument } from './semanticSpaceRuntime'
-import { applyTwinImageAppearance } from './semanticTwinImageAppearance'
+import { applyTwinImageAppearance, prepareTwinPhotoContext, TWIN_TEXTURE_PIXELS } from './semanticTwinImageAppearance'
 import { projectTwinOnPhoto } from './semanticTwinPhotoProjection'
 import type { ImmersivePhoto } from '@/features/immersive-media/immersivePhotoProjection'
 
 export type BuiltTwinObject = { binding: TwinBinding; wrapper: THREE.Group; source: THREE.Group }
-export type BuiltTwinScene = { objects: readonly BuiltTwinObject[]; error: string | null; textures: Set<THREE.Texture> }
+export type BuiltTwinScene = { objects: readonly BuiltTwinObject[]; error: string | null; textures: Set<THREE.Texture>; context?: THREE.Mesh }
 export function disposeTwinScene(scene: BuiltTwinScene) {
   for (const item of scene.objects) disposeProceduralAsset(item.source)
+  if (scene.context) { scene.context.geometry.dispose(); (scene.context.material as THREE.Material).dispose() }
   scene.textures.forEach(texture => texture.dispose()); scene.textures.clear()
 }
 /** One geometry/placement owner for the existing Canvas and selected model export. */
@@ -44,14 +45,21 @@ export function buildTwinScene(bindings: readonly TwinBinding[]): BuiltTwinScene
 
 /** Publish only a complete scene. XR persistence must not remove saved image materials. */
 export async function prepareTwinScene(bindings: readonly TwinBinding[], document: SpaceDocument,
-  signal: AbortSignal, photo?: ImmersivePhoto): Promise<BuiltTwinScene> {
+  signal: AbortSignal, photo?: ImmersivePhoto, presentation?: { composition: boolean; context: boolean }): Promise<BuiltTwinScene> {
   signal.throwIfAborted()
   const built = buildTwinScene(bindings)
   try {
     if (built.error) throw Error(built.error)
-    await applyTwinImageAppearance(built.objects, document, signal, built.textures, !!photo)
+    let pixels = 0
+    if (photo && presentation?.composition && presentation.context) {
+      const observation = document.observations.find(item => item.sha256 === photo.evidenceSha256)
+      if (!observation) throw Error('Photo context evidence is missing.')
+      const context = await prepareTwinPhotoContext(observation, signal, built.textures)
+      built.context = context.mesh; pixels = context.pixels
+    }
+    await applyTwinImageAppearance(built.objects, document, signal, built.textures, !!photo, TWIN_TEXTURE_PIXELS - pixels)
     signal.throwIfAborted()
-    if (photo) for (const item of built.objects) projectTwinOnPhoto(item, document, photo)
+    if (photo) for (const item of built.objects) projectTwinOnPhoto(item, document, photo, presentation?.composition)
     return built
   } catch (error) {
     disposeTwinScene(built)

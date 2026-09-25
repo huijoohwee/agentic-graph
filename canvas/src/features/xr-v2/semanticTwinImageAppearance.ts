@@ -1,20 +1,22 @@
 import * as THREE from 'three'
+import { photoDimensions } from '@/features/immersive-media/immersivePhotoProjection'
 import type { SpaceDocument, SpaceObservation, SpaceRegion } from './semanticSpaceRuntime'
 import type { TwinBinding } from './semanticTwinRuntime'
 
 export const TWIN_TEXTURE_PIXELS = 4_194_304
 /** Fit source pixels inside the authored face without stretching or inventing hidden pixels. */
 export function planTwinImageCrop(region: SpaceRegion, image: { width: number; height: number },
-  size: readonly number[], count: number) {
+  size: readonly number[], count: number, pixelBudget = TWIN_TEXTURE_PIXELS) {
   const source = { x: region.x * image.width, y: region.y * image.height,
     width: region.width * image.width, height: region.height * image.height }
   if (![source.x, source.y, source.width, source.height, ...size].every(Number.isFinite)
     || source.x < 0 || source.y < 0 || source.width <= 0 || source.height <= 0
     || source.x + source.width > image.width + 1e-6 || source.y + source.height > image.height + 1e-6
+    || !Number.isFinite(pixelBudget) || pixelBudget < count * 81
     || size[0] <= 0 || size[1] <= 0 || !Number.isInteger(count) || count < 1 || count > 20) {
     throw Error('Image face has invalid evidence bounds.')
   }
-  const limit = Math.min(1024, Math.floor(Math.sqrt(TWIN_TEXTURE_PIXELS / count)) - 8)
+  const limit = Math.min(1024, Math.floor(Math.sqrt(pixelBudget / count)) - 8)
   const ratio = size[0] / size[1]
   // A larger atlas cannot create detail absent from the crop. Keep native texel density.
   const sourceLimit = Math.min(limit, Math.max(source.width / Math.min(1, ratio), source.height * Math.max(1, ratio)))
@@ -80,7 +82,7 @@ async function loadEvidenceImage(observation: SpaceObservation, signal: AbortSig
 type ImageObject = { binding: TwinBinding; source: THREE.Group }
 /** Reuses saved, verified evidence; no URLs, models, capture or external generation. */
 export async function applyTwinImageAppearance(objects: readonly ImageObject[], document: SpaceDocument,
-  signal: AbortSignal, textures: Set<THREE.Texture>, photoOverlay = false) {
+  signal: AbortSignal, textures: Set<THREE.Texture>, photoOverlay = false, pixelBudget = TWIN_TEXTURE_PIXELS) {
   const candidates = objects.flatMap(object => {
     const entity = document.entities.find(item => item.id === object.binding.entityId)
     const observation = document.observations.find(item => item.id === object.binding.observationId)
@@ -102,7 +104,7 @@ export async function applyTwinImageAppearance(objects: readonly ImageObject[], 
         const contour = binding.template === 'contour', relief = binding.template === 'relief'
         if (!meshes.length || (!photoOverlay && !contour && !relief && (meshes.length !== 1 || meshes[0].userData.primitive !== 'box'))) continue
         const plan = planTwinImageCrop(entity.region, observation, contour || relief || photoOverlay
-          ? [entity.region.width * observation.width, entity.region.height * observation.height] : binding.size, candidates.length)
+          ? [entity.region.width * observation.width, entity.region.height * observation.height] : binding.size, candidates.length, pixelBudget)
         const canvas = globalThis.document.createElement('canvas')
         canvas.width = plan.width; canvas.height = plan.atlasHeight
         const context = canvas.getContext('2d')
@@ -138,4 +140,26 @@ export async function applyTwinImageAppearance(objects: readonly ImageObject[], 
       }
     } finally { image.src = '' }
   }
+}
+
+/** A labelled reference backdrop, not generated scene geometry. Shares the scene texture budget. */
+export async function prepareTwinPhotoContext(observation: SpaceObservation, signal: AbortSignal, textures: Set<THREE.Texture>) {
+  const image = await loadEvidenceImage(observation, signal)
+  try {
+    const scale = Math.min(1, 1536 / Math.max(observation.width, observation.height))
+    const canvas = globalThis.document.createElement('canvas')
+    canvas.width = Math.max(1, Math.floor(observation.width * scale)); canvas.height = Math.max(1, Math.floor(observation.height * scale))
+    const context = canvas.getContext('2d')
+    if (!context) throw Error('Source context requires a local image canvas.')
+    context.drawImage(image, 0, 0, canvas.width, canvas.height)
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace; texture.generateMipmaps = false
+    texture.minFilter = THREE.LinearFilter; texture.magFilter = THREE.LinearFilter
+    textures.add(texture)
+    const frame = photoDimensions({ ...observation, evidenceSha256: observation.sha256 })
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(frame.width, frame.height),
+      new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }))
+    mesh.name = 'SourcePhotoContext'; mesh.raycast = () => undefined
+    return { mesh, pixels: canvas.width * canvas.height }
+  } finally { image.src = '' }
 }

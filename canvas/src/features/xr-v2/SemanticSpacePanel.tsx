@@ -1,7 +1,7 @@
 import React from 'react'
 import { publishCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { inspectSemanticObject, selectSemanticObject, addSemanticEntityToCanvas, linkedCanvasNode, overlaySemanticObservation } from './semanticSpaceCanvas'
+import { openSemanticObjects, inspectSemanticObject, selectSemanticObject, addSemanticEntityToCanvas, linkedCanvasNode, overlaySemanticObservation } from './semanticSpaceCanvas'
 import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
 import { requestSemanticSpaceCamera } from '@/features/three/semanticSpaceCameraRuntime'
 import { applySpaceAction, hashSpaceImage, MAX_SPACE_ENTITIES, MAX_SPACE_OBSERVATIONS,
@@ -264,7 +264,10 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
     try {
       const { closeImmersiveMedia } = await import('@/features/immersive-media/immersiveMediaRuntime')
       closeImmersiveMedia()
-      setStatus(await addSemanticEntityToCanvas(space, entity))
+      const binding = space.twin?.objects.find(item => item.entityId === entity.id)
+      setStatus(await (binding && !['relief', 'contour'].includes(binding.template)
+        ? openSemanticObjects(space, entity.observationId, undefined, { presentation: 'layout' })
+        : addSemanticEntityToCanvas(space, entity)))
     }
     catch (error) { setStatus(String((error as Error).message || error)) }
   }
@@ -325,6 +328,10 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
   const objectEditor = document && (selected && <div className="grid gap-2"><span>Selected ID: <code>{selected.id}</code></span>
         <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => { setEditing(!editing); setLabel(selected.label); setCategory(selected.category) }}>Correct label</button>
           <button type="button" className={buttonClass} onClick={() => void addSelectedToCanvas()}>Open 3D layout</button>
+          {(['photo', 'models'] as const).map(view => <button key={view} type="button" className={buttonClass} onClick={() => {
+            void openSemanticObjects(document, selected.observationId, undefined, { presentation: 'photo', context: view === 'photo' })
+              .then(setStatus, error => setStatus(String(error.message)))
+          }}>{view === 'photo' ? 'Match photo composition' : 'Show meshes without photo'}</button>)}
           <button type="button" className={buttonClass} onClick={() => {
             void overlaySemanticObservation(document, selected.observationId).then(setStatus, error => setStatus(String(error.message)))
           }}>Overlay objects on image</button></div>

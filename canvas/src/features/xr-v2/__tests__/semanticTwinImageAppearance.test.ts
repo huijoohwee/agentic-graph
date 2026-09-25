@@ -344,3 +344,84 @@ test('small photo regions keep native texel density instead of allocating enlarg
   assert.equal(plan.width, 20); assert.equal(plan.height, 40)
   assert.deepEqual(plan.destination, { x: 0, y: 0, width: 20, height: 40 })
 })
+
+test('photo composition preserves source rectangles, separate ray hits, extrusion and authored layout', async () => {
+  const { semanticPhotoCameraFit, parseSemanticObjectView, readSemanticObjectViewMarkdown } = await import('../semanticObjectView')
+  for (const aspect of [.5, 1, 3]) {
+    const observation: SpaceObservation = { id: 'observation:composition', capturedAtMs: 1, width: 600 * aspect, height: 600,
+      imageDataUrl: 'data:image/png;base64,AA==', sha256: 'e'.repeat(64), orientation: 'source-pixels', scale: 'unknown' }
+    const entities: SpaceEntity[] = [.1, .7].map((x, i) => ({ id: `entity:composition-${i}`, observationId: observation.id,
+      category: 'building', label: `Building ${i}`, region: { x, y: .2, width: .1, height: .4 }, confirmedAtMs: 1, provenance: 'user-confirmed' }))
+    const bindings = entities.map((entity, i) => buildSemanticTwinBinding({ entity, observation, template: 'box',
+      room: emptySemanticTwin().room, size: [1, 2, .5], position: [i, 0, 0] }))
+    const doc = { ...newSpaceDocument('space:composition'), observations: [observation], entities,
+      twin: { ...emptySemanticTwin(), objects: bindings } }
+    const before = JSON.stringify(doc), photo = { ...observation, evidenceSha256: observation.sha256 }, frame = photoDimensions(photo)
+    const built = buildTwinScene(bindings)
+    try {
+      built.objects.forEach(object => projectTwinOnPhoto(object, doc, photo, true))
+      built.objects.forEach((object, i) => {
+        const bounds = new THREE.Box3().setFromObject(object.wrapper), region = entities[i].region
+        assert.ok(Math.abs(bounds.min.x / frame.width + .5 - region.x) < 1e-6)
+        assert.ok(Math.abs(bounds.max.x / frame.width + .5 - region.x - region.width) < 1e-6)
+        assert.ok(Math.abs(.5 - bounds.max.y / frame.height - region.y) < 1e-6)
+        assert.ok(Math.abs(.5 - bounds.min.y / frame.height - region.y - region.height) < 1e-6)
+        assert.ok(bounds.max.z - bounds.min.z >= .02 && Math.abs(bounds.max.z - .002) < 1e-6)
+        const center = bounds.getCenter(new THREE.Vector3())
+        const ray = new THREE.Raycaster(new THREE.Vector3(center.x, center.y, 10), new THREE.Vector3(0, 0, -1))
+        assert.ok(ray.intersectObject(object.wrapper, true).length)
+        assert.equal(ray.intersectObject(built.objects[1 - i].wrapper, true).length, 0)
+      })
+      assert.deepEqual(semanticPhotoCameraFit(photo).scaledSize, [frame.width, frame.height, 1])
+      assert.equal(JSON.stringify(doc), before)
+    } finally { disposeTwinScene(built) }
+    for (const context of [true, false]) {
+      const target = { spaceId: doc.id, evidenceSha256: observation.sha256, presentation: 'photo', context }
+      assert.deepEqual(readSemanticObjectViewMarkdown(`---\nkgSemanticObjectView: ${JSON.stringify(target)}\n---\nBody`), target)
+      assert.equal(parseSemanticObjectView({ ...target, context: 'yes' }), null)
+      assert.equal(parseSemanticObjectView({ ...target, presentation: 'invented' }), null)
+    }
+  }
+})
+
+test('photo backdrop is bounded, non-pickable, and scene-owned with cancellable evidence decoding', async () => {
+  const { prepareTwinPhotoContext } = await import('../semanticTwinImageAppearance')
+  const observation: SpaceObservation = { id: 'observation:context', capturedAtMs: 1, width: 2048, height: 2048,
+    imageDataUrl: 'data:image/png;base64,AA==', sha256: 'f'.repeat(64), orientation: 'source-pixels', scale: 'unknown' }
+  const priorImage = Object.getOwnPropertyDescriptor(globalThis, 'Image'), priorDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  const decoders: Array<{ onload: null | (() => void) }> = []
+  class EvidenceImage {
+    decoding = ''; naturalWidth = 2048; naturalHeight = 2048; onload: null | (() => void) = null; onerror = null
+    constructor() { decoders.push(this) }
+    set src(value: string) { if (value) queueMicrotask(() => this.onload?.()) }
+  }
+  Object.defineProperty(globalThis, 'Image', { configurable: true, value: EvidenceImage })
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: {
+    createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillStyle: '', fillRect() {}, drawImage() {} }) }),
+  } })
+  const textures = new Set<THREE.Texture>()
+  try {
+    const context = await prepareTwinPhotoContext(observation, new AbortController().signal, textures)
+    assert.equal(context.pixels, 1536 ** 2)
+    context.mesh.updateMatrixWorld(true)
+    const ray = new THREE.Raycaster(new THREE.Vector3(0, 0, 10), new THREE.Vector3(0, 0, -1))
+    assert.equal(ray.intersectObject(context.mesh).length, 0)
+    assert.equal((context.mesh.material as THREE.MeshBasicMaterial).toneMapped, false)
+    let released = 0
+    textures.forEach(texture => texture.addEventListener('dispose', () => released++))
+    disposeTwinScene({ objects: [], error: null, textures, context: context.mesh }); assert.equal(released, 1)
+    for (const count of [1, 12, 20]) {
+      const budget = TWIN_TEXTURE_PIXELS - context.pixels
+      const crop = planTwinImageCrop({ x: 0, y: 0, width: 1, height: 1 }, observation, [1, 1], count, budget)
+      assert.ok(crop.width * crop.atlasHeight * count <= budget)
+    }
+    const controller = new AbortController()
+    const pending = prepareTwinPhotoContext(observation, controller.signal, textures)
+    const rejected = assert.rejects(pending, /cancelled/i)
+    controller.abort(); await rejected
+    assert.equal(decoders.at(-1)!.onload, null); assert.equal(textures.size, 0)
+  } finally {
+    if (priorImage) Object.defineProperty(globalThis, 'Image', priorImage); else Reflect.deleteProperty(globalThis, 'Image')
+    if (priorDocument) Object.defineProperty(globalThis, 'document', priorDocument); else Reflect.deleteProperty(globalThis, 'document')
+  }
+})

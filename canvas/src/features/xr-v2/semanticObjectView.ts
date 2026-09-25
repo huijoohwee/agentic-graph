@@ -3,16 +3,21 @@ import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
 import { photoOverlayBindings } from './semanticTwinPhotoProjection'
 import { resolveSpaceObservation, type SpaceDocument } from './semanticSpaceRuntime'
 import type { TwinBinding } from './semanticTwinRuntime'
+import { photoDimensions, type ImmersivePhoto } from '@/features/immersive-media/immersivePhotoProjection'
 import type { GlbFit } from '@/lib/three/GlbAssetModel'
 
-export type SemanticObjectView = Readonly<{ spaceId: string; evidenceSha256: string }>
+export type SemanticObjectView = Readonly<{ spaceId: string; evidenceSha256: string; presentation?: 'photo' | 'layout'; context?: boolean }>
 export const SEMANTIC_OBJECT_VIEW_KEY = 'kgSemanticObjectView'
 export function parseSemanticObjectView(value: unknown): SemanticObjectView | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const target = value as Record<string, unknown>
   return typeof target.spaceId === 'string' && typeof target.evidenceSha256 === 'string'
     && /^[a-f0-9]{64}$/.test(target.evidenceSha256)
-    ? { spaceId: target.spaceId, evidenceSha256: target.evidenceSha256 } : null
+    && (target.presentation === undefined || ['photo', 'layout'].includes(String(target.presentation)))
+    && (target.context === undefined || typeof target.context === 'boolean')
+    ? { spaceId: target.spaceId, evidenceSha256: target.evidenceSha256,
+      ...(target.presentation ? { presentation: target.presentation as 'photo' | 'layout' } : {}),
+      ...(typeof target.context === 'boolean' ? { context: target.context } : {}) } : null
 }
 /** Image relief and extracted silhouettes remain separate from explicit object models. */
 export function semanticObjectBindings(document: SpaceDocument, target: SemanticObjectView) {
@@ -47,4 +52,12 @@ export function readSemanticObjectViewMarkdown(text: string | null): SemanticObj
     const meta = yaml.load(block.yamlText) as Record<string, unknown> | null
     return parseSemanticObjectView(meta?.[SEMANTIC_OBJECT_VIEW_KEY])
   } catch { return null }
+}
+
+/** Fit the full source frame; selecting a region must not enlarge a few source pixels. */
+export function semanticPhotoCameraFit(photo: ImmersivePhoto): GlbFit {
+  const { width, height } = photoDimensions(photo)
+  const size: [number, number, number] = [width, height, 1]
+  return { position: [0, 0, 0], cameraTarget: [0, 0, 0], scale: 1, floorY: -height / 2,
+    stageSpan: Math.max(width, height), preserveFlatFacing: true, flatAxis: 'z', size, scaledSize: size }
 }

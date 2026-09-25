@@ -1,6 +1,6 @@
 import { readSemanticSpace, runSemanticSpaceAction } from './semanticSpaceStore'
 import { findSourceFileForMarkdownDocument } from '@/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
-import { SEMANTIC_OBJECT_VIEW_KEY, semanticObjectBindings } from './semanticObjectView'
+import { SEMANTIC_OBJECT_VIEW_KEY, semanticObjectBindings, type SemanticObjectView } from './semanticObjectView'
 import { publishCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { closeWorkspaceView, isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
@@ -110,18 +110,19 @@ export async function showSemanticImageOnCanvas(sourceUrl: string, signal: Abort
 }
 
 
-export async function openSemanticObjects(space: SpaceDocument, observationId: string, signal?: AbortSignal) {
+export async function openSemanticObjects(space: SpaceDocument, observationId: string, signal?: AbortSignal, view: Pick<SemanticObjectView, 'presentation' | 'context'> = { presentation: 'photo', context: true }) {
   signal?.throwIfAborted()
   const current = await readSemanticSpace()
   if (current?.id !== space.id || current.revision !== space.revision) throw Error('Space changed before opening objects.')
   const chosen = space.observations.find(item => item.id === observationId)
   const observation = chosen && resolveSpaceObservation(space, chosen.sha256)
   if (!observation) throw Error('Choose saved image evidence first.')
-  const target = { spaceId: space.id, evidenceSha256: observation.sha256 }
+  const target = { spaceId: space.id, evidenceSha256: observation.sha256, ...view }
   const bindings = semanticObjectBindings(space, target)
   if (!bindings.length) throw Error('No separate object models yet. Create 3D objects, mark a region, and choose its shape. Image relief is a separate surface.')
   const { closeImmersiveMedia } = await import('@/features/immersive-media/immersiveMediaRuntime')
-  const entity = space.entities.find(item => item.id === bindings[0].entityId)!
+  const selectedId = bindings.some(item => item.entityId === space.selectedEntityId) ? space.selectedEntityId : bindings[0].entityId
+  const entity = space.entities.find(item => item.id === selectedId)!
   await addSemanticEntityToCanvas(space, entity, { frame: false })
   signal?.throwIfAborted()
   const rechecked = await readSemanticSpace()
@@ -152,15 +153,19 @@ export async function openSemanticObjects(space: SpaceDocument, observationId: s
   }
   // Parsed Markdown metadata owns the presentation target on reopen as well as this activation.
   publishCameraFramingRuntime({ anchorId: 'canvas-camera', source: 'panel',
-    settings: { angle: 'front', level: 'high-angle', shot: 'medium', orbitX: 0.22, orbitY: -0.42 } })
-  await selectSemanticObject(space.id, entity.id)
-  return `${bindings.length} separate 3D object(s). Click a model to select it and edit its transform in Timeline.`
+    settings: view.presentation === 'photo'
+      ? { angle: 'front', level: 'eye-level', shot: 'medium', orbitX: 0, orbitY: 0 }
+      : { angle: 'front', level: 'high-angle', shot: 'medium', orbitX: 0.22, orbitY: -0.42 } })
+  await selectSemanticObject(space.id, space.selectedEntityId && bindings.some(b => b.entityId === space.selectedEntityId) ? space.selectedEntityId : entity.id)
+  return view.presentation === 'photo'
+    ? `${bindings.length} selectable 3D models aligned to their photo regions. ${view.context !== false ? 'Surroundings are source-photo context, not reconstructed objects.' : 'Source-photo context hidden.'} Depth remains authored.`
+    : `${bindings.length} separate 3D object(s) in the authored layout. Click a model to edit its transform in Timeline.`
 }
-export async function showSemanticObjectsOnCanvas(sourceUrl: string, signal: AbortSignal) {
+export async function showSemanticObjectsOnCanvas(sourceUrl: string, signal: AbortSignal, presentation: 'photo' | 'layout' | 'models' = 'photo') {
   const { space, observation } = await resolveSemanticImage(sourceUrl, signal)
   if (!space) throw Error('Create and review object models first.')
   signal.throwIfAborted()
-  return openSemanticObjects(space, observation.id, signal)
+  return openSemanticObjects(space, observation.id, signal, { presentation: presentation === 'layout' ? 'layout' : 'photo', context: presentation !== 'models' })
 }
 
 /** Select through the saved-entity owner, then expose its existing graph and Timeline controls. */

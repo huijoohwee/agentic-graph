@@ -18,7 +18,7 @@ export function photoOverlayBindings(document: SpaceDocument, photo: Pick<Immers
 }
 
 /** Reproject the existing triangles into image rays. Authored recipes and exports stay unchanged. */
-export function projectTwinOnPhoto(item: BuiltTwinObject, document: SpaceDocument, photo: ImmersivePhoto) {
+export function projectTwinOnPhoto(item: BuiltTwinObject, document: SpaceDocument, photo: ImmersivePhoto, composition = false) {
   const entity = document.entities.find(value => value.id === item.binding.entityId)
   if (!entity || item.binding.evidenceSha256 !== photo.evidenceSha256) throw Error('Overlay evidence does not match the image.')
   const size = photoDimensions(photo), region = entity.region
@@ -43,6 +43,13 @@ export function projectTwinOnPhoto(item: BuiltTwinObject, document: SpaceDocumen
         (8 + (1 - Math.max(0, Math.min(1, localY))) * (atlas.height - 8)) / atlas.height)
       const depth = (item.binding.template === 'relief' ? 0.02 : 0.25) + Math.max(0, Math.min(1, (point.z - bounds.min.z) / extent.z)) * (item.binding.template === 'relief' ? 0.12 : 0.5)
       const distance = PHOTO_DISTANCE - depth
+      if (composition) {
+        // Match the photographed front face exactly; extrusion is explicitly authored behind it.
+        const thickness = Math.max(0.02, Math.min(6, size.width * region.width * item.binding.size[2] / item.binding.size[0]))
+        const front = Math.max(0, Math.min(1, (point.z - bounds.min.z) / extent.z))
+        positions.setXYZ(i, (u - 0.5) * size.width, (0.5 - v) * size.height, 0.002 - (1 - front) * thickness)
+        continue
+      }
       // Scaling along the viewing ray prevents nearer faces expanding beyond their evidence region.
       positions.setXYZ(i, (u - 0.5) * size.width * distance / PHOTO_DISTANCE,
         (0.5 - v) * size.height * distance / PHOTO_DISTANCE, -distance)
@@ -55,5 +62,5 @@ export function projectTwinOnPhoto(item: BuiltTwinObject, document: SpaceDocumen
     object.position.set(0, 0, 0); object.rotation.set(0, 0, 0); object.scale.set(1, 1, 1); object.updateMatrix()
   })
   item.wrapper.updateMatrixWorld(true)
-  item.wrapper.userData.photoOverlay = { evidenceSha256: photo.evidenceSha256, region, depth: 'authored-relief' }
+  item.wrapper.userData.photoOverlay = { evidenceSha256: photo.evidenceSha256, region, depth: 'authored-relief', composition }
 }

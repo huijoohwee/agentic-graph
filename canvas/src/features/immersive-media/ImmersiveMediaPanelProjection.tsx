@@ -155,6 +155,7 @@ function SemanticSpaceMediaSource() {
   const imported = React.useSyncExternalStore(subscribeImportedImageChoice, readImportedImageChoice, readImportedImageChoice)
   const [imageUrl, setImageUrl] = React.useState<string | null>(null)
   const [opening, setOpening] = React.useState(false)
+  const [objectPresentation, setObjectPresentation] = React.useState<'photo' | 'layout' | 'models'>('photo')
   const [creatingStoryboard, setCreatingStoryboard] = React.useState(false)
   const openingRef = React.useRef<AbortController | null>(null)
   const [openError, setOpenError] = React.useState<string | null>(null)
@@ -175,6 +176,11 @@ function SemanticSpaceMediaSource() {
   return <section className="grid gap-1 rounded border p-1 text-[10px]" aria-label="Current local image">
     {imported ? <strong>Image imported. Choose the next step.</strong> : null}
     <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
+    <label className="grid gap-1">Open 3D view as<select aria-label="Photo object presentation" className="min-h-11 w-full rounded border bg-transparent px-2"
+      value={objectPresentation} onChange={event => setObjectPresentation(event.currentTarget.value as 'photo' | 'layout' | 'models')}>
+      <option value="photo">Match photo composition</option><option value="models">Photo-aligned meshes only</option><option value="layout">Authored model layout</option>
+    </select></label>
+    <p>Photo composition includes a source-image backdrop. Choose meshes only to inspect generated objects.</p>
     {(['objects', 'image'] as const).map(presentation => <button key={presentation} type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
       const job = new AbortController(); openingRef.current?.abort(); openingRef.current = job
       setOpening(true)
@@ -188,7 +194,7 @@ function SemanticSpaceMediaSource() {
         if (readGameModeSnapshot().active) exitGameModeSurface({ restorePreviousSurface: false })
         if (readFlightSimSnapshot().active) exitFlightSimSurface({ restorePreviousSurface: false })
         const { showSemanticImageOnCanvas, showSemanticObjectsOnCanvas } = await import('@/features/xr-v2/semanticSpaceCanvas')
-        const message = await (presentation === 'objects' ? showSemanticObjectsOnCanvas : showSemanticImageOnCanvas)(displayedImageUrl, job.signal)
+        const message = await (presentation === 'objects' ? showSemanticObjectsOnCanvas(displayedImageUrl, job.signal, objectPresentation) : showSemanticImageOnCanvas(displayedImageUrl, job.signal))
         if (!job.signal.aborted) setOpenStatus(message)
       })().catch(error => {
         setOpenError(String((error as Error).message || error))

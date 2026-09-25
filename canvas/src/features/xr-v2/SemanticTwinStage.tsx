@@ -1,7 +1,7 @@
 import { selectSemanticObject } from './semanticSpaceCanvas'
 import React from 'react'
 import { XrSelectionBounds } from '@/features/three/XrSelectionBounds'
-import { readSemanticObjectViewMarkdown, semanticObjectBindings, semanticObjectCameraFit } from './semanticObjectView'
+import { readSemanticObjectViewMarkdown, semanticObjectBindings, semanticObjectCameraFit, semanticPhotoCameraFit } from './semanticObjectView'
 import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import { photoOverlayBindings } from './semanticTwinPhotoProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -10,7 +10,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { SpatialPhysicsEngine } from '@/features/physics/spatialPhysicsEngine'
 import { prepareTwinScene, disposeTwinScene, type BuiltTwinScene } from './semanticTwinScene'
 import { readSemanticSpace, subscribeSemanticSpace } from './semanticSpaceStore'
-import type { SpaceDocument } from './semanticSpaceRuntime'
+import { resolveSpaceObservation, type SpaceDocument } from './semanticSpaceRuntime'
 import { SEMANTIC_TWIN_PREVIEW_EVENT } from './semanticTwinRuntime'
 
 type PreviewRequest = { spaceId: string; entityId: string; operation: 'drop' | 'reset'; handled?: boolean }
@@ -19,7 +19,6 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   const media = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
   const sourceText = useGraphStore(state => state.markdownDocumentText)
   const objectView = React.useMemo(() => readSemanticObjectViewMarkdown(sourceText), [sourceText])
-  const photo = media.active ? media.source.photo : undefined
   const [prepared, setPrepared] = React.useState<{ target: string; scene: BuiltTwinScene } | null>(null)
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
   React.useEffect(() => {
@@ -31,21 +30,26 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     const unsubscribe = subscribeSemanticSpace(refresh)
     return () => { active = false; unsubscribe() }
   }, [])
+  const composition = !media.active && objectView?.presentation === 'photo'
+  const observation = composition && document && objectView?.spaceId === document.id
+    ? resolveSpaceObservation(document, objectView.evidenceSha256) : null
+  const photo = media.active ? media.source.photo : observation
+    ? { width: observation.width, height: observation.height, evidenceSha256: observation.sha256 } : undefined
   const linked = useGraphStore(state => state.graphData?.nodes.some(node => node.properties?.spaceId === document?.id
     && node.properties?.twinSchema === document?.twin?.schema) === true)
   const bindings = (!linked && objectView?.spaceId !== document?.id) || !document ? [] : media.active
     ? photo ? photoOverlayBindings(document, photo) : [] : objectView ? semanticObjectBindings(document, objectView) : document.twin?.objects || []
   const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}:${media.active}:${JSON.stringify(photo)}:${JSON.stringify(objectView)}`
-  const target = `${document?.id || ''}:${media.active}:${photo?.evidenceSha256 || objectView?.evidenceSha256 || ''}`
+  const target = `${document?.id || ''}:${media.active}:${photo?.evidenceSha256 || objectView?.evidenceSha256 || ''}:${objectView?.presentation}:${objectView?.context}`
   const built = prepared?.target === target ? prepared.scene : EMPTY_SCENE
-  const objectFit = React.useMemo(() => objectView && !photo
-    ? semanticObjectCameraFit(built.objects.map(item => item.binding)) : null, [built, objectView, photo])
+  const objectFit = React.useMemo(() => composition && photo ? semanticPhotoCameraFit(photo) : objectView && !photo
+    ? semanticObjectCameraFit(bindings) : null, [sceneKey])
   const invalidate = useThree(state => state.invalidate)
   React.useEffect(() => {
     if (!document) { setPrepared(null); return }
     let cancelled = false
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10_000)
-    void prepareTwinScene(bindings, document, controller.signal, photo).then(scene => {
+    void prepareTwinScene(bindings, document, controller.signal, photo, { composition, context: objectView?.context !== false }).then(scene => {
       if (cancelled || controller.signal.aborted) { disposeTwinScene(scene); return }
       setPrepared({ target, scene }); invalidate()
     }).catch(error => {
@@ -59,22 +63,24 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   React.useEffect(() => () => { if (prepared) disposeTwinScene(prepared.scene) }, [prepared])
   React.useEffect(() => {
     const room = document?.twin?.room
-    if (media.active || !room || !built.objects.length || built.error) { onFitChange?.(null); return }
-    if (objectFit) { onFitChange?.(objectFit); return () => onFitChange?.(null) }
+    if (media.active || !room || built.error) { onFitChange?.(null); return }
+    // Keep the shared camera/scene owner engaged while replacement textures decode.
+    if (objectFit && bindings.length) { onFitChange?.(objectFit); return }
+    if (!built.objects.length) { onFitChange?.(null); return }
     const height = Math.max(...built.objects.map(item => item.binding.size[1]))
     const size: [number, number, number] = [room.width, height + room.depth * 0.35, room.depth + height * 0.35]
     onFitChange?.({ cameraProfile: 'spatial-capture', cameraTarget: [0, height * 10, 0],
       position: [0, 0, 0], scale: 20, floorY: 0, stageSpan: Math.max(...size) * 20,
       preserveFlatFacing: false, flatAxis: null, size, scaledSize: size.map(n => n * 20) as [number, number, number] })
-    return () => onFitChange?.(null)
   }, [built, onFitChange, media.active, objectFit])
+  React.useEffect(() => () => onFitChange?.(null), [onFitChange])
   const preview = React.useRef<{ engine: SpatialPhysicsEngine; entityId: string; elapsed: number } | null>(null)
   React.useEffect(() => {
     preview.current = null
     const handle = (event: Event) => {
       const request = (event as CustomEvent<PreviewRequest>).detail
       if (!request || request.spaceId !== document?.id) return
-      if (media.active) {
+      if (media.active || composition) {
         window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error', { detail: 'Open the 3D layout to preview gravity; the photo overlay keeps evidence aligned.' }))
         return
       }
@@ -98,7 +104,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     }
     window.addEventListener(SEMANTIC_TWIN_PREVIEW_EVENT, handle)
     return () => window.removeEventListener(SEMANTIC_TWIN_PREVIEW_EVENT, handle)
-  }, [built, document?.id, media.active])
+  }, [built, document?.id, media.active, composition])
   useFrame((_state, delta) => {
     const run = preview.current
     if (!run || paused || globalThis.document?.hidden) return
@@ -119,6 +125,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   return <group name="SemanticSpaceTwin" scale={photo ? 1 : objectFit?.scale || 20} rotation={photo || objectView ? [0, 0, 0] : [-0.35, 0, 0]}>
     <ambientLight intensity={0.7} />
     <directionalLight position={[3, 7, 5]} intensity={1.2} />
+    {built.context && <primitive object={built.context} dispose={null} />}
     {!photo && <mesh position={[0, -0.04, 0]} receiveShadow>
       <boxGeometry args={[document.twin.room.width, 0.08, document.twin.room.depth]} />
       <meshStandardMaterial color="#69747c" roughness={0.9} />
