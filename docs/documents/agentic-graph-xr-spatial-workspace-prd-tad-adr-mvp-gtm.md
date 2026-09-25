@@ -1,26 +1,26 @@
 ---
 title: "XR spatial workspace — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.4"
+version: "0.2.5"
 date: "2026-09-26"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-XR-SPATIAL-WORKSPACE"
-prd_revision: "0.2.4"
-tad_revision: "0.2.4"
-adr_revision: "0.2.4"
-mvp_revision: "0.2.4"
-gtm_revision: "0.2.4"
+prd_revision: "0.2.5"
+tad_revision: "0.2.5"
+adr_revision: "0.2.5"
+mvp_revision: "0.2.5"
+gtm_revision: "0.2.5"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "proposed"
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
-agent_id: "codex-xr-closeout-contract"
+agent_id: "codex-xr-validation-stage-closeout"
 parent_continuity: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1"
-reviewed_source_revision: "6477ee26fcb88c06b0f65798ad379f2eb374a2d3"
+reviewed_source_revision: "8f3c29d832cbc08c0a22ddea71f497ddcac89a3e"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ load_policy: "on-demand"
 
 ## Continuity and scope — reference implementation
 
-All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.4`. This bounded child of
+All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.5`. This bounded child of
 the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) owns W01–W06
 and ADR-W01/W02/W03 plus the F01–F04 rendering and P01–P06 panel increments and S01–S03 source admission. It is separate because the existing procedural-twin companion is
 near its 600-line limit. That companion continues to own evidence-to-geometry,
@@ -581,9 +581,7 @@ Validation receipt for S01–S03, 2026-09-25:
   resolves this geometry admission failure without bypassing the check.
 - Full automated XR/MP4 browser suites and protected CI remain separate evidence;
   no physical-device/headset parity, integration or deployment is claimed.
-
 ### Landscape ground correction — reference implementation, 2026-09-26
-
 **PRD:** native landscape creation must pass XR ground admission and remain editable.
 **TAD / ADR:** `proceduralEnvironmentParts.ts` places the root hill at Y = 0.65 m;
 existing child offsets preserve the assembly profile. Ground validation and saved
@@ -594,6 +592,8 @@ Four procedural contract/recovery/source/GLB checks, Canvas typecheck and three
 launcher contracts pass. The owned XR MP4 browser smoke passes desktop and mobile.
 **GTM:** closes an authoring failure in the existing pilot; pricing and claims are
 unchanged. Actual scope: three files, no new modules/dependencies/chunks; under the
-20-minute/four-file sprint cap. Closeout source guards and native physics contracts now
-follow shared XR admission. The source gate, build/chunks, typecheck, 13 non-browser commands,
-Python and XR MP4 browser checks pass; frozen-candidate browser checks and integration remain pending.
+20-minute/four-file sprint cap. Frozen Mission Control, XR and MP4 browser checks pass.
+**CI closeout:** hosted standard checks, including Python offline recovery, pass at the reviewed revision;
+extended validation rejected the Mission Control budget before execution. Align its declaration to the native
+15-minute cap and guard all declared stage budgets before product checks. This four-file CI correction adds
+no runtime code; exact successor integration remains pending.

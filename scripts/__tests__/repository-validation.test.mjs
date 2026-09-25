@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { readChangedPaths, readExecutionPartition, partitionAffectedCommands, validateExecutionPartitions } from '../run-affected-ci.mjs'
-import { readContract, selectAffectedCommands, validateContract } from '../collaboration-contract.mjs'
+import { readContract, resolveCiCommandTimeoutMs, selectAffectedCommands, validateContract } from '../collaboration-contract.mjs'
 import { selectValidationChecks, validateValidationPolicy } from '../../node_modules/agentic-os/bin/agentic-os-validation-policy.mjs'
 
 test('local affected inventory joins committed, working and untracked paths', () => {
@@ -89,6 +89,23 @@ test('execution groups preserve every affected check once and retain contract ti
   validateContract(ordinary)
   assert.deepEqual(partitionAffectedCommands([browser], ordinary), { standard: [browser] })
   assert.throws(() => partitionAffectedCommands([browser, browser], contract), /duplicate/)
+})
+
+test('declared command budgets fit both native stages and their enclosing checks', async () => {
+  const contract = await readContract()
+  const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
+  const commands = contract.ci_command_timeout_overrides.map(entry => entry.command)
+  const groups = partitionAffectedCommands(commands, contract)
+  assert(contract.ci_command_timeout_ms <= 900000, 'native stages allow at most 15 minutes')
+  for (const [partition, group] of Object.entries(groups)) {
+    const parent = policy.checks.find(check => readExecutionPartition(check.command.slice(4)) === partition)
+    assert(parent, `missing native check for ${partition}`)
+    for (const command of group) {
+      const timeout = resolveCiCommandTimeoutMs(command, contract)
+      assert(timeout <= Math.min(900000, parent.timeoutMs),
+        `${command.join(' ')} exceeds its native execution budget`)
+    }
+  }
 })
 
 test('affected CLI defaults to all checks and rejects misspelled or repeated partitions', () => {
