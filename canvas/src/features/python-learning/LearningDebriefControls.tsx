@@ -1,17 +1,19 @@
 import React from 'react'
 import { pythonLearningRuntime as runtime } from './learningRuntime'
 import { captureLearningDebrief, loadLearningDebriefs, parseLearningDebrief, saveLearningDebrief, LEARNING_RECORD_BYTES, type LearningDebrief } from './learningPersistence'
+import type { DroneBenchLogSummary } from './learningDroneBenchLog'
 
 export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (source: string, lessonId: string) => void; readOnly?: boolean }) {
   const snapshot = React.useSyncExternalStore(runtime.subscribe, runtime.read, runtime.read)
   const [message, setMessage] = React.useState(''), [busy, setBusy] = React.useState(false)
   const [records, setRecords] = React.useState<LearningDebrief[]>([])
+  const [bench, setBench] = React.useState<DroneBenchLogSummary | null>(null)
   const abort = React.useRef(new AbortController())
   React.useEffect(() => {
     abort.current.abort(); abort.current = new AbortController(); setBusy(false)
     return () => abort.current.abort()
   }, [snapshot.document?.documentId, snapshot.document?.source, snapshot.document?.lessonId, snapshot.result?.identity.runId])
-  React.useEffect(() => { setRecords([]); setMessage('') }, [snapshot.document?.documentId])
+  React.useEffect(() => { setRecords([]); setBench(null); setMessage('') }, [snapshot.document?.documentId, snapshot.document?.lessonId])
   const act = async (operation: (signal: AbortSignal) => Promise<string>) => {
     const signal = abort.current.signal; setBusy(true); setMessage('Working…')
     try { const text = await operation(signal); if (!signal.aborted) setMessage(text) }
@@ -44,6 +46,24 @@ export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (s
         })
       }} /></label>
     </div>
+    {snapshot.document?.lessonId === 'drone' ? <details><summary>GameXR drone bench log</summary>
+      <p>Inspect an exported simulated receiver session. Recorded setpoints are control requests; measured attitude and battery are unavailable. Receiver control stays in GameXR.</p>
+      <label>Import session log <input aria-label="Import GameXR drone bench log" type="file" accept="application/json,.json" disabled={busy} onChange={event => {
+        const file = event.target.files?.[0]; event.target.value = ''
+        if (file) { setBench(null); void act(async signal => {
+          const { inspectDroneBenchLog, DRONE_BENCH_LOG_BYTES } = await import('./learningDroneBenchLog')
+          if (file.size > DRONE_BENCH_LOG_BYTES) throw new Error('Bench log exceeds 500 kB. Export a shorter session.')
+          const summary = inspectDroneBenchLog(await file.text())
+          if (!signal.aborted) setBench(summary)
+          return 'GameXR log imported for inspection. No flight or receiver command was executed.'
+        }) }
+      }} /></label>
+      {bench ? <div aria-label="GameXR bench log summary">
+        <p>{bench.records} events · {bench.controlRequests} control requests · {bench.receiverReports} receiver reports · {bench.inhibitions} inhibitions</p>
+        <p>Imported file contents; authenticity and command acceptance are not verified.</p>
+        <pre>{bench.lastSetpoint ? JSON.stringify(bench.lastSetpoint, null, 2) : 'No receiver setpoint report.'}</pre>
+      </div> : null}
+    </details> : null}
     {message ? <p role="status">{message}</p> : null}
     {records.map(record => <details key={record.result.identity.runId}><summary>{record.result.identity.lessonId} · {record.savedAt} · saved observation</summary>
       <p>{record.result.identity.documentId}</p><pre>{record.source}</pre>

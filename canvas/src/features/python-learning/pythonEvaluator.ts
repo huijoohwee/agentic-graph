@@ -7,7 +7,7 @@ export type PythonCapabilities = Readonly<{ call: (name: string, args: PyValue[]
 type Frame = { values: Map<string, PyValue>; locals: Set<string> | null }
 type Flow = { kind: 'return'; value: PyValue } | { kind: 'break' | 'continue' } | undefined
 type Evaluation<T> = AsyncGenerator<SourceSpan, T, void>
-const BUILTINS = ['range', 'print', 'abs', 'min', 'max', 'drive', 'turn', 'distance', 'at_goal']
+const BUILTINS = ['range', 'print', 'abs', 'min', 'max', 'drive', 'turn', 'distance', 'at_goal', 'takeoff', 'fly', 'hover', 'land', 'altitude']
 
 export class PythonEvaluator {
   readonly program
@@ -102,7 +102,7 @@ export class PythonEvaluator {
       arity(2, 32)
       return args.slice(1).reduce((best, value) => compare(name === 'min' ? '<' : '>', value, best, span) ? value : best, args[0])
     }
-    if (name === 'distance' || name === 'at_goal') this.metrics.sensors++
+    if (name === 'distance' || name === 'at_goal' || name === 'altitude') this.metrics.sensors++
     return this.capabilities.call(name, args, span)
   }
   private async *statements(body: Statement[], frame: Frame): Evaluation<Flow> {

@@ -84,6 +84,17 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   await page.getByLabel('Import learning debrief', { exact: true }).setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{}') })
   await page.getByText('Invalid or oversized learning debrief.', { exact: true }).waitFor()
+  await page.getByText('GameXR drone bench log', { exact: true }).click()
+  const benchLog = { schema: 'gamexr-drone-bench-log/v1', profile: 'esp-drone-rpyt-bench/v1', physicalAircraft: false,
+    records: [{ at: '2026-09-25T15:00:00.000Z', event: 'inhibited', value: 'Pilot disabled bench control' }] }
+  const beforeBenchImport = await page.evaluate(() => JSON.stringify(window.__pythonLearningProof.read()))
+  await page.getByLabel('Import GameXR drone bench log', { exact: true }).setInputFiles({ name: 'bench.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(benchLog)) })
+  await page.getByText('GameXR log imported for inspection.', { exact: false }).waitFor()
+  assert.match(await page.getByLabel('GameXR bench log summary').innerText(), /1 events · 0 control requests · 0 receiver reports · 1 inhibitions/)
+  assert.equal(await page.evaluate(() => JSON.stringify(window.__pythonLearningProof.read())), beforeBenchImport, 'bench inspection cannot mutate the lesson or execute commands')
+  await page.getByLabel('Import GameXR drone bench log', { exact: true }).setInputFiles({ name: 'physical.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...benchLog, physicalAircraft: true })) })
+  await page.getByText('Invalid GameXR simulated bench log', { exact: false }).waitFor()
+  assert.equal(await page.getByLabel('GameXR bench log summary').count(), 0, 'failed import clears the previous observation')
   await page.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
   await page.screenshot({ path: join(output, 'mobile.png'), fullPage: true })
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), '375px page must not overflow horizontally')
@@ -93,12 +104,12 @@ try {
   assert.equal(await editor.inputValue(), lessons.at(-1).solution)
   await page.getByRole('button', { name: 'Results', exact: true }).click()
   await page.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
-  await page.getByText('3 matching debriefs', { exact: false }).waitFor()
+  await page.getByText(`${lessons.length} matching debriefs`, { exact: false }).waitFor()
   await page.setViewportSize({ width: 1280, height: 900 })
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await page.getByRole('button', { name: 'Load rich editor', exact: true }).click()
   await page.locator('.monaco-editor').first().waitFor({ timeout: 30000 })
-  await page.getByLabel('Python lesson', { exact: true }).selectOption('sense')
+  await page.getByLabel('Python lesson', { exact: true }).selectOption(lessons.at(-1).id)
   await page.locator('.monaco-editor').first().click({ position: { x: 120, y: 40 } })
   await page.keyboard.press('ControlOrMeta+A')
   const desktopSource = lessons.at(-1).solution + '# Unicode 保留 🧭\n'
@@ -117,10 +128,26 @@ try {
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await page.getByText('Lesson passed', { exact: false }).waitFor()
   await page.screenshot({ path: join(output, 'desktop.png'), fullPage: true })
+  // Execution and a position label alone do not establish a mounted 3D scene.
+  const sharedCanvas = page.locator('[data-kg-three-canvas-owner="1"] canvas')
+  await sharedCanvas.waitFor({ state: 'visible', timeout: 30000 })
+  assert.ok(await sharedCanvas.evaluate(canvas => canvas.width > 100 && canvas.height > 100), 'native scene must have a nonzero render target')
+  await pane.getByRole('button', { name: 'Code', exact: true }).click()
+  await page.locator('.monaco-editor').first().click({ position: { x: 120, y: 40 } })
+  await page.keyboard.press('ControlOrMeta+A')
+  await page.keyboard.insertText('takeoff(2)\nhover(60)\n')
+  await page.waitForFunction(() => window.__pythonLearningProof.read().document.source === 'takeoff(2)\nhover(60)\n')
+  await pane.getByRole('button', { name: 'Run', exact: true }).click()
+  await page.waitForFunction(() => window.__pythonLearningProof.read().state === 'completed')
+  const airborne = await page.evaluate(() => window.__pythonLearningProof.read().result.scene)
+  assert.ok(airborne.altitude > 1.9 && airborne.landed === false && airborne.hoverTicks === 60)
+  await pane.getByRole('button', { name: 'View Canvas', exact: true }).click()
+  assert.match(await page.getByLabel('Python lesson position', { exact: true }).innerText(), /airborne/)
+  await page.screenshot({ path: join(output, 'drone-airborne.png'), fullPage: true })
   await page.evaluate(() => window.__pythonLearningProof.flush())
   assert.deepEqual(errors, [])
   const evidence = { revision, sourceState: execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' }),
-    kind: 'native-component-development-smoke', offlineReloadProven: false, toolRegistrationProven: false,
+    kind: 'native-component-development-smoke', offlineReloadProven: false, toolRegistrationProven: false, mainCanvasMounted: true, droneAirborne: airborne,
     simulatedHiddenTabDenied: true, visibleReturnDoesNotRun: true, physicalBackgroundProven: false,
     elapsedMs: Math.round(performance.now() - started), outcomes, pageErrors: errors, remoteRequestsBlocked: remote }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')

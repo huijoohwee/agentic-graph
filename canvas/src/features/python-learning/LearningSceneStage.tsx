@@ -10,6 +10,7 @@ export function LearningSceneStage({ lesson, scene }: { lesson: LearningLesson; 
     : darkThemeVariant === 'black' ? 'black' : 'dark'
   const color = (name: `--kg-${string}`) => getKgTokenFallback(name, palette)
   const x = scene?.x || 0, z = scene?.z || 0, heading = scene?.heading || 0
+  const drone = lesson.vehicle === 'drone', altitude = scene?.altitude || 0
   return <>
     <color attach="background" args={[color('--kg-canvas-bg')]} />
     <ambientLight intensity={1.4} /><directionalLight position={[4, 7, 3]} intensity={2} />
@@ -23,8 +24,15 @@ export function LearningSceneStage({ lesson, scene }: { lesson: LearningLesson; 
     {lesson.obstacles.map(o => <mesh key={o.id} position={[o.position[0], 0.5, o.position[1]]}>
       <boxGeometry args={[o.size[0], 1, o.size[1]]} /><meshStandardMaterial color="#e8a869" />
     </mesh>)}
-    <group position={[x, 0.2, z]} rotation={[-Math.PI / 2, 0, -Math.PI / 2 - heading * Math.PI / 180]}>
+    {drone ? <group name="learning-drone" position={[x, 0.25 + altitude, z]} rotation={[0, -heading * Math.PI / 180, 0]}>
+      <mesh><boxGeometry args={[0.24, 0.07, 0.14]} /><meshStandardMaterial color="#87ddff" /></mesh>
+      <mesh position={[0.13, 0, 0]}><boxGeometry args={[0.04, 0.08, 0.1]} /><meshStandardMaterial color="#ffab55" /></mesh>
+      {[-1, 1].flatMap(sx => [-1, 1].map(sz => <group key={`${sx}:${sz}`} position={[sx * 0.12, 0, sz * 0.12]}>
+        <mesh rotation={[0, sx * sz * Math.PI / 4, 0]}><boxGeometry args={[0.2, 0.025, 0.025]} /><meshStandardMaterial color="#677785" /></mesh>
+        <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.04, 0.055, 16]} /><meshStandardMaterial color="#d6f4ff" side={2} /></mesh>
+      </group>))}
+    </group> : <group name="learning-vehicle" position={[x, 0.2, z]} rotation={[-Math.PI / 2, 0, -Math.PI / 2 - heading * Math.PI / 180]}>
       <XrProceduralVehicleGeometry color="#87ddff" kind="car" size={[0.3, 0.4, 0.24]} />
-    </group>
+    </group>}
   </>
 }

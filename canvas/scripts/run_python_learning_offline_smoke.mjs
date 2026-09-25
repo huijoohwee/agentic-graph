@@ -202,7 +202,7 @@ try {
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'native autosave survives offline reload')
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
-  await pane.getByText('3 matching debriefs', { exact: false }).waitFor()
+  await pane.getByText(`${lessons.length} matching debriefs`, { exact: false }).waitFor()
   await page.setViewportSize({ width: 1280, height: 900 })
   const paneWidth = (await pane.boundingBox()).width
   assert.ok(paneWidth < 768, 'native desktop Editor must exercise a narrow pane')

@@ -6,6 +6,8 @@ import { validLearningSnapshot, type LearningWorkerSnapshot } from '../features/
 import { LEARNING_LESSONS } from '../features/python-learning/learningLessons'
 import { PythonLearningError, pythonError } from '../features/python-learning/pythonModel'
 import { resolveWebMcpToolScope } from '../features/agent-ready/webMcpToolExposure.mjs'
+import { LearningSimulation } from '../features/python-learning/learningSimulation'
+import { inspectDroneBenchLog, DRONE_BENCH_LOG_BYTES } from '../features/python-learning/learningDroneBenchLog'
 
 test('Python discovery follows the active editor document without capturing other workspace groups', () => {
   const state = { workspaceViewMode: 'editor', markdownDocumentName: '/workspace/lesson.PY' }
@@ -17,6 +19,86 @@ test('Python discovery follows the active editor document without capturing othe
 })
 
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 1))
+const droneLesson = LEARNING_LESSONS.find(lesson => lesson.id === 'drone')!
+const droneSpan = { line: 1, column: 1 }
+test('drone command bounds reject atomically and remain isolated from ground lessons', async () => {
+  const drone = new LearningSimulation(droneLesson), ground = new LearningSimulation(LEARNING_LESSONS[0])
+  try {
+    await assert.rejects(ground.call('takeoff', [2n], droneSpan), /drone lesson/)
+    for (const [name, args] of [['hover', [1n]], ['fly', [1n, 0n, 0n, 1n]], ['takeoff', [5n]], ['takeoff', []], ['drive', [1n, 1n]]] as const) {
+      const before = drone.snapshot()
+      await assert.rejects(drone.call(name, [...args], droneSpan))
+      assert.deepEqual(drone.snapshot(), before)
+    }
+    await drone.call('takeoff', [2n], droneSpan)
+    for (const [name, args] of [['takeoff', [2n]], ['fly', [3n, 3n, 0n, 60n]], ['fly', [0n, 0n, 3n, 60n]], ['fly', [0n, 0n, -3n, 60n]], ['hover', [3601n]]] as const) {
+      const before = drone.snapshot()
+      await assert.rejects(drone.call(name, [...args], droneSpan))
+      assert.deepEqual(drone.snapshot(), before)
+    }
+    await drone.call('hover', [3600n], droneSpan)
+    await assert.rejects(drone.call('hover', [3600n], droneSpan), /7,200/)
+  } finally { drone.dispose(); ground.dispose() }
+})
+test('drone collisions, altitude sensing, body-relative yaw and blocked landing use native geometry', async () => {
+  const drone = new LearningSimulation(droneLesson)
+  try {
+    await drone.call('takeoff', [{ kind: 'float', value: 0.5 }], droneSpan)
+    assert.ok(drone.snapshot().distance < 2)
+    await drone.call('fly', [1n, 0n, 0n, 180n], droneSpan)
+    assert.ok(drone.snapshot().x < 1.5 && drone.snapshot().collisions > 0)
+    assert.equal(drone.snapshot().atGoal, false)
+  } finally { drone.dispose() }
+  const high = new LearningSimulation(droneLesson)
+  try {
+    await high.call('takeoff', [2n], droneSpan)
+    assert.ok(high.snapshot().distance > 7)
+    await high.call('fly', [1n, 0n, 0n, 120n], droneSpan)
+    await high.call('land', [], droneSpan)
+    assert.ok(high.snapshot().altitude! > 0 && high.snapshot().collisions > 0)
+    assert.equal(high.snapshot().landed, false)
+    await high.call('turn', [90n], droneSpan)
+    const before = high.snapshot()
+    await high.call('fly', [1n, 0n, 0n, 60n], droneSpan)
+    assert.ok(Math.abs(high.snapshot().x - before.x) < 1e-10)
+    assert.ok(Math.abs(high.snapshot().z - before.z - 1) < 1e-10)
+  } finally { high.dispose() }
+})
+test('drone worker evidence rejects forged altitude, landing, trace shape and grade', async () => {
+  const f = fixture()
+  try {
+    f.bind(droneLesson.solution, droneLesson.id); await f.runtime.control('run')
+    await until(() => f.runtime.read().state === 'completed')
+    const result = f.runtime.read().result!
+    assert.equal(result.scene.ticks, 540); assert.equal(result.scene.landed, true)
+    assert.equal(result.scene.hoverTicks, 60); assert.equal(result.trace![0].length, 5)
+    for (const scene of [{ ...result.scene, altitude: 5 }, { ...result.scene, landed: false },
+      { ...result.scene, maxAltitude: -1 }, { ...result.scene, hoverTicks: 541 }]) {
+      assert.equal(validLearningSnapshot({ ...result, scene }), false)
+    }
+    assert.equal(validLearningSnapshot({ ...result, trace: [[1, 0, 0, 0]] }), false)
+    assert.equal(validLearningSnapshot({ ...result, trace: [[1, 0, 0, 0, -1]] }), false)
+    assert.equal(validLearningSnapshot({ ...result, grade: { ...result.grade, score: 0 } }), false)
+  } finally { f.runtime.dispose() }
+})
+test('GameXR bench export is inspected without confusing requests, reports and measured flight', () => {
+  const profile = 'esp-drone-rpyt-bench/v1', axes = { roll: -0.2, pitch: 0.3, yaw: -0.1, throttle: 0.5 }
+  const event = (event: string, value: unknown) => ({ at: '2026-09-25T15:00:00.000Z', event, value })
+  const report = { kind: 'status', backend: 'simulated', connected: true, owned: true, enabled: true,
+    telemetry: { source: 'simulated', profile, motorOutputs: false, batteryVolts: null, attitudeDegrees: null, setpoint: axes } }
+  const log = { schema: 'gamexr-drone-bench-log/v1', profile, physicalAircraft: false, records: [
+    event('sent', { kind: 'enable' }), event('sent', { kind: 'controls', profile, sequence: 1, axes }),
+    event('status', report), event('inhibited', 'Focus lost'), event('sent', { kind: 'disable' }),
+  ] }
+  assert.deepEqual(inspectDroneBenchLog(JSON.stringify(log)), { records: 5, controlRequests: 1, receiverReports: 1, inhibitions: 1, lastSetpoint: axes })
+  assert.equal(inspectDroneBenchLog(JSON.stringify({ ...log, records: [log.records[1]] })).lastSetpoint, null)
+  for (const invalid of [{ ...log, profile: 'unknown' }, { ...log, physicalAircraft: true },
+    { ...log, records: Array(1001).fill(log.records[0]) },
+    { ...log, records: [event('status', { ...report, telemetry: { ...report.telemetry, motorOutputs: true } })] },
+    { ...log, records: [event('sent', { kind: 'controls', profile, sequence: 1, axes: { ...axes, throttle: -0.1 } })] },
+    { ...log, records: [event('execute', 'takeoff(2)')] }]) assert.throws(() => inspectDroneBenchLog(JSON.stringify(invalid)), /Invalid GameXR/)
+  assert.throws(() => inspectDroneBenchLog(' '.repeat(DRONE_BENCH_LOG_BYTES + 1)), /maximum/)
+})
 async function until(condition: () => boolean) {
   const deadline = performance.now() + 2500
   while (!condition()) { if (performance.now() > deadline) assert.fail('Runtime condition timed out.'); await tick() }

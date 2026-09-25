@@ -81,6 +81,23 @@ Inspection and control now share the adapter's two-second deadline. Inspection t
 
 This continuation remains within six changed files / 20 KiB incremental source. The subsequent registration continuation uses newly admitted Graph reservations; shared dictionaries retain their separate owner contracts.
 
-## Semantic references
+## Drone and GameXR increment — J2
+
+Plan: `OFFLINE-PYTHON-LEARNING-WORKSPACE-001@1.1.0`, intent `/change #drone.learning @codex-drone-learning`, admitted Graph base `e46c68fcea3a8604405c9bbbac3e68118eb73b49`. The drone is a bounded kinematic lesson using the existing 60 Hz worker/physics/Canvas path. `takeoff(height)` accepts 0.25–4 m from landed; `fly(forward,right,up,ticks)` accepts body-relative combined speed ≤3 m/s and 1–3,600 integer ticks; `hover(ticks)`, `land()` and `altitude()` share the same tick owner. World walls, obstacle collisions and the existing 7,200-tick budget remain enforced. Passing requires altitude, hover, executed function/sensor/branch concepts, collision-free arrival and landing. Ground descriptors and traces remain unchanged; drone traces declare altitude as column five.
+
+GameXR source was read at `81365d45a425c5aa58ef8454f9e47b33f2de4e26`: its drone bench owns independent roll/pitch/yaw/throttle receiver control, while its harmonization contract assigns shared flight simulation to Graph. The new lazy inspector consumes its existing `gamexr-drone-bench-log/v1` / `esp-drone-rpyt-bench/v1` file contract, limited to 500 kB and 1,000 events. It rejects physical-aircraft, motor-output, measured-flight and malformed axis claims; distinguishes requests from receiver reports; never executes or saves commands. File authenticity/acceptance remain unverified. GameXR source, hardware state and package pins were not changed.
+
+| Check | Observation on the recorded working source | Limit |
+|---|---|---|
+| Native selected Python suites | 32/33 pass, including four new drone/bench tests and all four lessons in real worker Run/Step comparison | One pre-existing `pythonLearning.test.ts:123` pane availability assertion fails; XR PR #1285 owns the correction. No skipped or weakened assertion |
+| Existing GameXR drone protocol suite | 6/6 pass at observed GameXR revision | Simulated receiver protocol, no physical-flight proof |
+| Native component browser | Four lessons, visible mounted 3D Canvas, airborne drone at 2 m; valid bench import leaves runtime byte-identical; invalid physical log clears prior observation; zero errors/remote requests | Isolated fixture with verified local source bootstrap and proper overlay stacking |
+| Full build and offline browser | Four lessons pass with network disabled; real tool registration, saved source/debrief reopen, narrow desktop editor and missing-worker corruption denial pass; zero page errors | Controlled registration host; optional unrelated background requests blocked. Uncommitted source state recorded, not a clean release receipt |
+| Offline pack | 28,077,766 bytes / 867 members; local install 5,677 ms, reload 652 ms | Complete existing application closure, not only drone bytes; device observation only |
+| TypeScript, native scope checks and hygiene | Canvas check and final incremental type check pass; both WebMCP budget/workspace checks pass; changed-file hygiene passes | No new dependency or lockfile; new inspector is lazy-loaded |
+
+Evidence directory: `.audit-artifacts/drone-implementation-20260925/` in the enclosing GitHub workspace, containing `python-tests.log`, `browser/evidence.json`, `browser/drone-airborne.png`, `offline/evidence.json` and build/browser logs. The component fixture now establishes actual rendering instead of inferring it from a position label. Final integration remains dependent on the existing XR pane-test correction and exact-candidate CI. Recovery is a reviewed source revert, preserving existing ground records. No deployment, hardware connection, learner efficacy or revenue result is claimed.
+
+## Language references
 
 Python language semantics were checked against the primary [expression reference](https://docs.python.org/3.13/reference/expressions.html) and [execution model](https://docs.python.org/3.13/reference/executionmodel.html). The executable local comparison uses the separately identified 3.9.6 interpreter and only the declared subset. Native repository implementations own rendering, simulation, storage and lifecycle behavior.

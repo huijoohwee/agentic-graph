@@ -75,6 +75,7 @@ export default function PythonLearningPane(props: {
         <details><summary>Supported Python and scene API</summary>
           <p>Bounded procedural Python: numbers, strings, booleans, variables, arithmetic, comparisons, if/elif/else, while, for/range, positional functions, return, break, continue, pass, print, abs, min and max.</p>
           <p>drive(speed, ticks): −6…6 m/s, 1…3,600 ticks per call. turn(degrees): −360…360. distance(): forward metres. at_goal(): boolean. Each second is 60 ticks.</p>
+          <p>Drone lesson: takeoff(height) 0.25…4 m; fly(forward, right, up, ticks), combined speed ≤3 m/s; hover(ticks); land(); altitude(). Flight and hover accept 1…3,600 ticks; take off first. Step through commands to inspect each pose. Drone flight is kinematic; motors, wind and aerodynamics are not modeled.</p>
           <p>Imports, objects, containers, recursion, packages, file and network access are unsupported. Limits: 32 KiB source, 50,000 evaluation steps, 7,200 ticks, five seconds active compute. Step completes one statement; a drive call may cover many ticks.</p>
         </details>
       </section>

@@ -1,16 +1,16 @@
 ---
 title: "Reference implementation - Offline Python Learning Workspace"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.0"
+version: "1.1.0"
 date: "2026-09-22"
 lang: "en-US"
 owner: "Learning workspace product maintainer"
 continuity_id: "OFFLINE-PYTHON-LEARNING-WORKSPACE-001"
-prd_revision: "1.0.0"
-tad_revision: "1.0.0"
-adr_revision: "1.0.0"
-mvp_revision: "1.0.0"
-gtm_revision: "1.0.0"
+prd_revision: "1.1.0"
+tad_revision: "1.1.0"
+adr_revision: "1.1.0"
+mvp_revision: "1.1.0"
+gtm_revision: "1.1.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -529,3 +529,40 @@ Handoff: exact J1 document, grounding/AC-Q joins, scope/budgets, open findings a
 [py-simple]: https://docs.python.org/3.13/reference/simple_stmts.html
 [py-compound]: https://docs.python.org/3.13/reference/compound_stmts.html
 [py-expressions]: https://docs.python.org/3.13/reference/expressions.html
+
+## Drone learning increment — J2
+
+**J2 = OFFLINE-PYTHON-LEARNING-WORKSPACE-001@1.1.0.** This increment supersedes J1 only for the added drone lesson and the acceptance corrections below; J1 remains the historical grounding for existing vehicle lessons. User authorization on 2026-09-25: implement the audit recommendations, focusing on drones first. Admitted intent: `/change #drone.learning @codex-drone-learning`. Admitted base `e46c68fcea3a8604405c9bbbac3e68118eb73b49`; worktree `device-0232231d4a19--drone-learning`. The authoring guideline was read at `ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed`, digest `7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea`.
+
+### PRD — J2
+
+Beginning programmers need visible, inspectable drone movement without hardware or network setup. Tutor demand, willingness to pay, learning gains and savings remain hypotheses. The minimum outcome is an original takeoff → hover → sense/move → land lesson in the existing Python/Canvas workspace, with a portable debrief. Existing three ground lessons and saved evidence remain readable. This is a bounded kinematic training model: rotor dynamics, aerodynamic response, battery, wind, autopilot/hardware protocols and physical flight validation are outside J2.
+
+| Criterion | Required observable result | Owner / check |
+|---|---|---|
+| D1 | Takeoff, hover, yaw, bounded 3D flight and landing advance deterministic ticks; collision, altitude and command limits are enforced; a flight blocked by an obstacle does not succeed. | LearningSimulation / drone and worker tests |
+| D2 | The original drone solution passes the same shared rubric as UI/tools, while a ground-only or incomplete flight fails; vehicle results remain unchanged. | Learning lessons / negative controls, repeated run/step |
+| D3 | A visible procedural drone, obstacles and landing target use the existing Canvas. Browser proof checks mounted canvas and scene pixels/geometry, not only a numeric position readout. | Learning scene and owned browser runner |
+| D4 | Worker and WebMCP evidence binds the drone lesson and altitude trace; invalid/out-of-order/stale messages fail; debrief save/reopen keeps the exact run. | Learning protocol/tool/persistence and registered browser checks |
+| D5 | Ordinary-app mobile/desktop and verified offline pack acceptance run on the changed candidate. Missing upstream proof remains a named dependency and cannot become a passing receipt. | Existing component and built-app offline runners |
+| D6 | Explicit GameXR session-log import validates the simulated profile, inspects bounded events, and cannot change source, simulation or receiver state. | Lazy log inspector / unit and browser checks |
+
+### TAD — J2
+
+Reuse `learningSimulation.ts` and the native SpatialPhysicsEngine for bounded sphere-versus-world queries. Drone commands use a 60 Hz kinematic body; altitude is relative to its landed pose, constrained to 0–4 m, and the world remains ±8 m. Preserve vehicle scene descriptors and four-column traces; drone descriptors declare their model and add altitude as a fifth trace column. Preserve the same evaluator, terminable worker, run identity, schema validation, rubric and debrief database owner. Add no second renderer, timer owner, network transport or tool namespace.
+
+Five flows: source command → evaluator → admitted tick; tick → spatial collision query → accepted pose; accepted pose → worker snapshot → existing Canvas; inspect identity → bound WebMCP operation → same controller; explicit save → verified local debrief → non-executing reopen. Errors retain the last committed pose and do not silently clamp an invalid command. Pausing/stopping is cooperative at every simulation tick and worker termination fences late callbacks.
+
+User steering adds alignment with GameXR, observed at `81365d45a425c5aa58ef8454f9e47b33f2de4e26`. Its harmonization contract assigns shared simulation to Graph and receiver control to GameXR. The existing drone implementation is a motor-disabled receiver bench, with independent roll/pitch/yaw/throttle setpoints; its flight-game adapter is an aircraft model, not a drone model to import. J2 consumes `gamexr-drone-bench-log/v1`, profile `esp-drone-rpyt-bench/v1`, only through explicit file selection. The inspector accepts at most 500 kB / 1,000 events, requires `physicalAircraft:false`, rejects motor-output or measured-flight claims, and discards session/challenge identifiers. It reports unverified file observations, never replays commands or maps receiver axes to invented motion. No GameXR code, runtime import, package pin or receiver transport is added. Shared package publication and physical-aircraft integration remain separate work.
+
+### ADR — J2
+
+Use educational kinematics first because the audited engine has no angular dynamics or motor model. Adding a visual rotor does not establish physical flight. Preserve one simulation owner and explicit model naming instead of expanding the global engine or introducing a package. Recovery is a reviewed source revert; existing ground records remain readable, while records requiring the drone lesson remain version-bound and must not be reinterpreted as ground records.
+
+### MVP and GTM — J2
+
+Checks and implementation status are appended to `python-learning-runtime-evidence.md`; no J2 criterion is passed by this planning update. Nearest first-dollar hypothesis: a tutor-led drone coding exercise and reusable debrief. Validate one observed learner session before new curriculum or hardware scope; no price or customer is invented. Shared renderer/pane changes already owned by active XR PRs remain integration dependencies; do not copy or overwrite those lanes.
+
+Sprint: initial 45 active minutes plus a 30-minute GameXR alignment/check increment; at most 16 changed existing modules plus one lazy log-parser module, 80 KiB added source, <600 lines/file and <500 kB/new chunk, zero dependencies or always-load bytes. Drone tests extend the existing lifecycle suite so native affected CI selects them. Publication uses native RELEASE; Production, package synchronization and rollback require their independent owner receipts. External dependency waits are conditional rechecks, not delivery estimates.
+
+Implementation: D1/D2/D4/D6 have local unit evidence; the combined Python suites pass 32/33, with the sole failure the existing authoring-pane availability assertion owned by open XR PR #1285. D3 component proof renders the drone at 2 m, all four lessons pass, and screenshots show the obstacle/landing scene. GameXR's six existing protocol tests pass at its observed revision. D5 built-app offline checks and the final inspector browser check pass on the recorded uncommitted source state, including four lessons, registered tools, persistence and corruption rejection. Protected integration remains blocked by the pane dependency; local development evidence is not clean-candidate release proof. Source and check receipts are recorded in the runtime evidence ledger.

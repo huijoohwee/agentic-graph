@@ -9,6 +9,7 @@ import { createLearningToolExecutor } from '../python-learning/learningWebMcp'
 import { CanvasViewport } from '@/components/CanvasViewport'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
 
 // Imported only by the owned smoke runner's temporary entry. No production route or auto-run.
 export default function PythonLearningSmokePage() {
@@ -24,7 +25,10 @@ export default function PythonLearningSmokePage() {
     void getLearningWorkspace().then(async fs => {
       let text = await fs.readFileText('/learning.py')
       if (text === null) { text = LEARNING_LESSONS[0].starter; await fs.createFile({ parentPath: '/', name: 'learning.py', text }) }
-      if (live) { setSource(text); setLoaded(true) }
+      if (live) {
+        // This isolated entry owns only the verified local file; the ordinary app bootstraps its full workspace.
+        completeSourceFilesBootstrap(); setSource(text); setLoaded(true)
+      }
     })
     const bridge = { flush: () => writes.current, read: pythonLearningRuntime.read, tools: createLearningToolExecutor(), lessons: LEARNING_LESSONS }
     Object.assign(window, { __pythonLearningProof: bridge })
@@ -36,7 +40,7 @@ export default function PythonLearningSmokePage() {
   }
   return <div style={{ position: 'relative', height: '100dvh', minWidth: 0 }}>
     <CanvasViewport variant="workspace" geospatialModeEnabled={false} canvasRenderMode="2d" canvas3dMode="xr" canvas2dRenderer="d3" workspaceEditorOverlayOpen={view === 'editor'} />
-    <section hidden={view !== 'editor'} data-kg-workspace-left-pane="1" style={{ position: 'absolute', inset: '0 auto 0 0', width: 'min(100%,420px)', background: '#fff', display: view === 'editor' ? 'flex' : 'none' }}>
+    <section hidden={view !== 'editor'} data-kg-workspace-left-pane="1" style={{ position: 'absolute', zIndex: 70, inset: '0 auto 0 0', width: 'min(100%,420px)', background: '#fff', display: view === 'editor' ? 'flex' : 'none' }}>
     {loaded ? <MarkdownWorkspaceMain themeMode="dark" uiPanelTextFontClass="" uiPanelMonospaceTextClass=""
       explorerOpen={false} setExplorerOpen={() => {}} layoutMode={mode} setLayoutMode={setMode}
       markdownWordWrap={true} setMarkdownWordWrap={() => {}} markdownTextHighlight={false} setMarkdownTextHighlight={() => {}}
