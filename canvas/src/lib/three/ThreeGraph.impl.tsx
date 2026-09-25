@@ -40,7 +40,7 @@ import { readWebglSupport } from '@/lib/three/webglSupport'
 import { XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE } from '@/features/three/xrNativeControllerDemoRuntime'
 import { resolveAuthoredWorldPaused } from '@/lib/three/authoredWorldPause'
 import { boundedInverseFitScale, fitFloorOffset, readXrStageMetersPerUnit, resolveSceneBackgroundColor } from '@/lib/three/threeGraphSceneLayout'
-import { resolveThreeRendererLifecycleKey, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
+import { resolveThreeRendererLifecycleKey, resolveThreeSceneFrameLoop, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
 import { resolveThreeGraphXrSceneAuthority, ThreeGraphImmersiveMediaHud, ThreeGraphImmersiveMediaStage, useThreeGraphImmersiveMediaActive } from '@/lib/three/ThreeGraphImmersiveMedia'
 import { readImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import { type ThreeCanvasSemanticMediaOwner, useThreeCanvasSemanticOwner } from '@/lib/three/threeCanvasSemanticOwner'
@@ -451,11 +451,12 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       <Canvas
         key={rendererLifecycleKey}
         data-kg-three-canvas-owner="1"
-        frameloop={paused && !immersiveMediaStageActive ? 'demand' : 'always'}
+        frameloop={resolveThreeSceneFrameLoop({ paused, immersiveMedia: immersiveMediaStageActive,
+          gameplay: gameplayOverlayActive, savedObjectView: !!semanticObjectTarget })}
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={rendererBackend.gl}
-        dpr={rendererBackend.gpu ? 1 : [1, 2]}
+        dpr={[1, 2]}
         style={geospatialComposite ? { pointerEvents: 'none' } : undefined}
         onCreated={state => configureThreeGraphRenderer(state, {
           mode, glCanvasRef, threeGlRef, threeCameraRef, threeSceneRef, applySemanticCanvasOwner,

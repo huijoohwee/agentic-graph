@@ -35,6 +35,11 @@ export function buildTwinScene(bindings: readonly TwinBinding[]): BuiltTwinScene
       source.scale.set(binding.size[0] / extent.x, binding.size[1] / extent.y, binding.size[2] / extent.z)
       source.position.set(-bounds.getCenter(new THREE.Vector3()).x * source.scale.x,
         -bounds.min.y * source.scale.y, -bounds.getCenter(new THREE.Vector3()).z * source.scale.z)
+      source.traverse(object => {
+        if (object instanceof THREE.Mesh) { object.castShadow = true; object.receiveShadow = true }
+      })
+      // The saved object toggle covers the entire assembly, including roof/window parts and shadows.
+      source.visible = binding.recipe.values.visible !== false
       const wrapper = objects.at(-1)!.wrapper
       wrapper.name = `SemanticTwin-${binding.entityId}`; wrapper.position.set(...binding.position); wrapper.add(source)
     }
@@ -61,7 +66,10 @@ export async function prepareTwinScene(bindings: readonly TwinBinding[], documen
     }
     await applyTwinImageAppearance(built.objects, document, signal, built.textures, !!photo, TWIN_TEXTURE_PIXELS - pixels)
     signal.throwIfAborted()
-    if (photo) for (const item of built.objects) projectTwinOnPhoto(item, document, photo, presentation?.composition)
+    if (photo) for (const item of built.objects) {
+      projectTwinOnPhoto(item, document, photo, presentation?.composition)
+      item.wrapper.traverse(object => { object.castShadow = false; object.receiveShadow = false })
+    }
     return built
   } catch (error) {
     disposeTwinScene(built)

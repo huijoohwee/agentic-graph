@@ -1,6 +1,8 @@
 import { selectSemanticObject } from './semanticSpaceCanvas'
 import { readCameraFramingRuntime, publishCameraFramingRuntime, subscribeCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
 import React from 'react'
+import { useThemeDetector } from '@/hooks/useThemeDetector'
+import { buildTwinPresentation } from './semanticTwinPresentation'
 import { XrSelectionBounds } from '@/features/three/XrSelectionBounds'
 import { readSemanticObjectViewMarkdown, semanticObjectBindings, semanticObjectCameraFit, semanticPhotoCameraFit } from './semanticObjectView'
 import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
@@ -17,6 +19,7 @@ import { SEMANTIC_TWIN_PREVIEW_EVENT } from './semanticTwinRuntime'
 type PreviewRequest = { spaceId: string; entityId: string; operation: 'drop' | 'reset'; handled?: boolean }
 const EMPTY_SCENE: BuiltTwinScene = { objects: [], textures: new Set(), error: null }
 export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: boolean; onFitChange?: (fit: GlbFit | null) => void }) {
+  const theme = useThemeDetector()
   const media = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
   const sourceText = useGraphStore(state => state.markdownDocumentText)
   const objectView = React.useMemo(() => readSemanticObjectViewMarkdown(sourceText), [sourceText])
@@ -53,6 +56,12 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}:${media.active}:${JSON.stringify(photo)}:${JSON.stringify(objectView)}`
   const target = `${document?.id || ''}:${media.active}:${photo?.evidenceSha256 || objectView?.evidenceSha256 || ''}:${objectView?.presentation}:${objectView?.context}`
   const built = prepared?.target === target ? prepared.scene : EMPTY_SCENE
+  const [presentation, setPresentation] = React.useState<ReturnType<typeof buildTwinPresentation>>(null)
+  React.useLayoutEffect(() => {
+    const next = photo ? null : buildTwinPresentation(built.objects.map(item => item.binding), theme === 'light')
+    setPresentation(next)
+    return () => next?.dispose()
+  }, [built, !!photo, theme])
   const objectFit = React.useMemo(() => composition && photo ? semanticPhotoCameraFit(photo) : objectView && !photo
     ? semanticObjectCameraFit(bindings) : null, [sceneKey])
   const invalidate = useThree(state => state.invalidate)
@@ -100,6 +109,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
       request.handled = true
       for (const item of built.objects) item.wrapper.position.y = item.binding.position[1]
       preview.current = null
+      invalidate()
       if (request.operation !== 'drop') return
       const bodies = built.objects.map(item => ({ id: item.binding.entityId,
         motion: item === selected ? 'dynamic' as const : 'static' as const,
@@ -112,11 +122,13 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
         gravity: [0, -9.81, 0], ground: { enabled: true, height: 0 }, bodies, colliders })
       selected.wrapper.position.y = 1
       preview.current = { engine, entityId: request.entityId, elapsed: 0 }
+      invalidate()
     }
     window.addEventListener(SEMANTIC_TWIN_PREVIEW_EVENT, handle)
     return () => window.removeEventListener(SEMANTIC_TWIN_PREVIEW_EVENT, handle)
-  }, [built, document?.id, media.active, composition])
+  }, [built, document?.id, media.active, composition, invalidate])
   useFrame((_state, delta) => {
+    presentation?.update()
     const run = preview.current
     if (!run || paused || globalThis.document?.hidden) return
     if (run.elapsed >= 10) { preview.current = null; return }
@@ -125,6 +137,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     const selected = built.objects.find(item => item.binding.entityId === run.entityId)
     const state = run.engine.readBody(run.entityId)
     if (selected && state) selected.wrapper.position.y = state.position[1] - selected.binding.size[1] / 2
+    invalidate()
   })
   const select = (entityId: string) => {
     if (!document) return
@@ -134,15 +147,11 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   }
   if (!document?.twin || built.objects.length === 0) return null
   return <group name="SemanticSpaceTwin" scale={photo ? 1 : objectFit?.scale || 20} rotation={photo || objectView ? [0, 0, 0] : [-0.35, 0, 0]}>
-    <ambientLight intensity={0.7} />
-    <directionalLight position={[3, 7, 5]} intensity={1.2} />
+    {presentation ? <primitive object={presentation.root} dispose={null} /> : <>
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[3, 7, 5]} intensity={1.2} />
+    </>}
     {built.context && <primitive object={built.context} dispose={null} />}
-    {!photo && <mesh position={[objectFit ? objectFit.cameraTarget[0] / objectFit.scale : 0, -0.04,
-      objectFit ? objectFit.cameraTarget[2] / objectFit.scale : 0]} receiveShadow>
-      <boxGeometry args={[objectFit ? objectFit.size[0] + 0.6 : document.twin.room.width, 0.08,
-        objectFit ? objectFit.size[2] + 0.6 : document.twin.room.depth]} />
-      <meshStandardMaterial color="#b6bbaa" roughness={0.9} />
-    </mesh>}
     {built.objects.map(item => <XrSelectionBounds key={item.binding.entityId} targetId={item.binding.entityId} outlined={!!photo} selected={item.binding.entityId === document.selectedEntityId}>
       <primitive object={item.wrapper} dispose={null}
       onClick={(event: { stopPropagation: () => void; nativeEvent: Event }) => {

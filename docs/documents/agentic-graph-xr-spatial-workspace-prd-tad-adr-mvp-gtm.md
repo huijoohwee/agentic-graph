@@ -1,26 +1,26 @@
 ---
 title: "XR spatial workspace — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.0"
+version: "0.1.1"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-XR-SPATIAL-WORKSPACE"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
+prd_revision: "0.1.1"
+tad_revision: "0.1.1"
+adr_revision: "0.1.1"
+mvp_revision: "0.1.1"
+gtm_revision: "0.1.1"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "proposed"
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
-agent_id: "codex-xr-scene-outline"
+agent_id: "codex-xr-render-fidelity"
 parent_continuity: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1"
-reviewed_source_revision: "f42013fdde50c538e715d05f1c8282a6cc685875"
+reviewed_source_revision: "fffbffc62a25e1397a44f07e8dd37e880daf7275"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,11 +31,11 @@ load_policy: "on-demand"
 
 ## Continuity and scope — reference implementation
 
-All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.1.0`. This bounded child of
+All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.1.1`. This bounded child of
 the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) owns W01–W06
-and ADR-W01. It is separate because the existing procedural-twin companion is
+and ADR-W01/W02 plus the F01–F04 rendering increment. It is separate because the existing procedural-twin companion is
 near its 600-line limit. That companion continues to own evidence-to-geometry,
-units, recipes and reconstruction limits; this document owns workspace navigation.
+units, recipes and reconstruction limits; this document owns workspace navigation and solid-scene presentation.
 The containing candidate commit binds implementation evidence; the frontmatter
 source revision is the inspected predecessor, not proof of the changed candidate.
 
@@ -76,7 +76,7 @@ results never claim that hidden models were deleted or that every photographed
 object was recognized. The actual active observation bounds the outline.
 
 **Deferred requirements:** viewport move/rotate/scale gizmos for semantic models;
-opt-in object labels and grid; asset search across all native scene kinds; one
+opt-in object labels and configurable grid; asset search across all native scene kinds; one
 reviewable agent proposal with before/after diff, explicit scope, revision fence
 and recoverable application; deterministic overlap/clearance findings; attributed
 history/undo shared across UI and tools. These are target requirements, not shipped
@@ -95,7 +95,7 @@ different exact revision is stated. `extend-owner` describes the candidate delta
 | G01 `canvas/src/features/xr-v2/semanticSpaceRuntime.ts`, `semanticSpaceStore.ts` | Stable entities, observations, selected ID, expected-revision/request-ID actions; local verified readback and source mirror | retain-local; outline visibility uses `control-twin`, no schema change; W03–W04 |
 | G02 `canvas/src/features/xr-v2/semanticSpaceCanvas.ts`, `semanticObjectView.ts` | Persisted XR view, evidence-scoped bindings, shared selection and Timeline activation | retain-local; list selection calls `selectSemanticObject`; W01–W02 |
 | G03 `canvas/src/features/xr-v2/SemanticImagePerceptionChoice.tsx` | Existing image-owned saved-model list, composition and refinement controls | extend-owner; replace list with lazy `SemanticSceneOutline.tsx`; W01–W05 |
-| G04 `canvas/src/features/xr-v2/SemanticTwinStage.tsx`, `semanticTwinScene.ts` | Shared solid scene, ray selection, camera fit and geometry resource disposal | retain-local; visibility renders from the saved recipe; no new Canvas; W02–W03 |
+| G04 `canvas/src/features/xr-v2/SemanticTwinStage.tsx`, `semanticTwinScene.ts` | Shared solid scene, ray selection, camera fit and geometry resource disposal | extend-owner for F01–F04; visibility renders from the saved recipe; no new Canvas; W02–W03 |
 | G05 `canvas/src/features/agent-ready/semanticSpaceAgentReadyContract.mjs`, `semanticSpaceWebMcpTools.ts` | Native inspect/control and strict invocation adapters; `control-twin` already owns visibility | retain-local; no extra tool count or discovery group; W06 |
 | G06 `canvas/src/features/three/XrSubjectTransformEditor.tsx`, `xrSceneMcpRuntime.ts` | Authored native subjects have selection, transform cards and readiness fences | retain-local; semantic models keep their own existing inspector until an explicit adapter joins the contracts; no claim of identical transform types |
 | G07 `canvas/src/features/xr-v2/semanticSceneOutlineProjection.ts` (candidate) | Pure, evidence-scoped outline projection and UI draft context guard | new leaf helper, no storage or renderer imports; W01/W04 |
@@ -232,7 +232,7 @@ deferred until actual commercial distribution terms and customer geography exist
 
 Disposition is not readiness. All 16 domains apply: 16/16 dispositioned, 11/16
 covered, 5 deferred, 0 not applicable. Gaps below prevent full venture readiness.
-Every row joins this document at `0.1.0`; Product maintainers are accountable.
+Every row joins this document at `0.1.1`; Product maintainers are accountable.
 
 | Domain | Disposition / source role | Evidence or gap / next check |
 |---|---|---|
@@ -259,7 +259,7 @@ are all linked above (10/10 selected artifact-bearing groups). This is not a
 whole-guideline conformance ratio. Guidance on commercial sizing remains deferred;
 no claim of zero findings or complete product/market validation is made.
 
-## Candidate validation receipt — reference implementation
+## Prior outline validation receipt — reference implementation
 
 Observed 2026-09-25 in the candidate worktree at `http://localhost:4179/`:
 
@@ -283,3 +283,105 @@ The containing candidate identifies these source bytes. Native provider review,
 protected integration and deployment require their own later receipts. This
 increment adds no dependencies or service calls. Cross-transport parity, timed
 buyer trials, cold offline boot, GPU loss and commercial validation remain open.
+
+
+## Rendering fidelity increment — reference implementation
+
+Revision `0.1.1` supersedes the initial `0.1.0` child for all five roles. The
+previous outline receipt remains historical evidence. The inspected predecessor
+is the exact frontmatter revision; the containing candidate binds this delta.
+
+### PRD — depth and stable inspection — reference implementation
+
+Observed pain on 2026-09-25: saved solid models appeared flat, and selecting an
+object could turn a sharp scene blurry. The operator asked whether changing the
+renderer default would solve fidelity. Target: retain readable edges throughout
+selection while revealing contact and depth in the existing authored geometry.
+This is presentation fidelity; automatic photo reconstruction is unchanged.
+
+| Requirement | Acceptance / falsifier |
+|---|---|
+| F01 Grounded solids | Buildings/terrain cast shadows onto the floor and each other; directional lighting distinguishes faces; floor grid aids orientation |
+| F02 Sharp inspection | Saved-object views render on demand; selection and idle inspection retain the configured pixel density; orbit/edit and bounded gravity preview continue to redraw |
+| F03 Stable ownership | No new Canvas, evidence, geometry or camera owner; translated/scaled scene shadow bounds stay finite; floor/grid never intercept object selection |
+| F04 Visibility and photo isolation | Hiding removes every assembly part and its shadow without deleting saved data; photo comparison omits presentation grid/lights/shadows from its evidence geometry |
+
+### TAD — native renderer extension — reference implementation
+
+`SemanticTwinStage.tsx` consumes a presentation-only leaf,
+`semanticTwinPresentation.ts`, on the existing lazy stage path. It derives a
+bounded floor and low-contrast grid from saved dimensions, aims key/rim lights at
+the actual scene center, and uses one 1024 × 1024 directional shadow map. A
+hemisphere fill preserves face readability. The floor remains at authored zero;
+elevated objects do not silently acquire a new ground level. Theme changes
+rebuild presentation resources through effect-owned cleanup.
+
+The shadow camera follows the group’s display/AR scale; authored coordinates do
+not change. `semanticTwinScene.ts` enables cast/receive on native meshes after
+batching and applies object visibility to the entire assembly. Photo projection
+disables those flags. Existing texture preparation, cancellation, disposal,
+selection, entity IDs, export and persistence retain their owners.
+
+`ThreeGraph.impl.tsx` uses demand rendering for saved-object views when immersive
+media/gameplay does not own the viewport. Inspector/selection work therefore
+cannot trigger the continuous XR frame budget’s resolution downgrade. React
+changes, camera controls and the gravity preview invalidate frames as needed.
+Continuous gameplay retains its existing adaptive budget. Both backends begin
+with the same device-capped 1–2 DPR range; no unbounded supersampling is added.
+
+The installed renderer is Three.js r170. This repository’s WebGPU eligibility
+allows linked procedural **3D** views; XR uses WebGL because the optional backend
+has no supported XR session implementation here. WebGL already enables
+antialiasing, ACES tone mapping, sRGB output and PCF soft shadows. Merely switching
+backends cannot reconstruct missing geometry or make a procedural model match
+unknown hidden surfaces.
+
+Budget: initial 35-minute implementation estimate, expanded from six to seven
+changed files for the operator-reported selection blur, one new
+small production leaf within the existing lazy stage, no dependency, texture,
+service or model download. Existing 20-object/160-part/30,000-triangle limits
+remain. One additional shadow pass and a two-draw floor/grid consume device GPU
+work; demand rendering avoids drawing an unchanged saved scene continuously.
+Physical-device frame-time and battery measurements remain open.
+
+### ADR-W02 — correct presentation before changing backend — reference implementation
+
+Accepted for this candidate: extend shared native materials/lighting and render
+static inspection on demand. This directly addresses observed missing depth cues
+and resolution loss without a renderer migration or a duplicate scene. Keep
+WebGL as the XR default; retain optional WebGPU’s existing bounded eligibility
+and failure reporting. A default switch ranks lower because it does not supply
+missing geometry and this installed optional backend cannot host XR sessions.
+Remote enhancement is excluded by the local/free-only boundary. Recovery is a
+source revert of this rendering increment; saved documents need no migration.
+
+### MVP and GTM — bounded proof — reference implementation
+
+Demo: open the saved XR solid scene → inspect contact shadows/grid → select
+several objects → orbit → drop/reset a model → compare the photo → return to
+solids. Verify backing canvas dimensions before/after selection, not screenshots
+alone. Synthetic checks cover transformed shadow-frustum containment, resource
+cleanup, selection pass-through, authored floor level and hidden assemblies.
+This strengthens the existing scene-review pilot; no additional buyer, revenue,
+photorealism, phone or headset claim follows. Continue measuring wrong selections
+and review time under the original GTM experiment.
+
+Local receipt on 2026-09-25: the saved 18-object scene visibly renders contact
+shadows, directional face shading and a floor grid at `http://localhost:4179/`.
+Before the demand-rendering correction, the backing canvas was observed at
+1125 px wide for a 1125 CSS px viewport. After the correction, selection and
+subsequent inspection retained 2250 × 1924 backing pixels at 1125 × 962 CSS px.
+The pre-correction sharp/blurry screenshots corroborate the operator's report.
+The native WebGPU selector correctly reports XR ineligibility and retains WebGL;
+this is not a WebGPU execution/parity receipt. No new renderer errors were
+observed in the temporary verification tab. Physical-device, full replay and
+gravity-preview visual checks remain separate acceptance gaps.
+Ten focused tests pass (four presentation/policy, two solid-scene and four outline
+checks). Root `npm run check` passes, including typechecking and three browser
+launcher checks. The final production build completes in 1m 28s; the lazy stage
+chunk is 13.36 kB (5.83 kB gzip), the geometry chunk 14.59 kB (5.41 kB gzip).
+Changed-file hygiene and source conflict compliance pass; all seven changed
+files remain below 600 lines. Existing unrelated bundles exceed 500 kB, so this
+is not a whole-application bundle-budget pass.
+
+Protected integration and deployment remain separate native lifecycle receipts.
