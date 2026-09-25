@@ -73,8 +73,10 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
           const doc = await readSemanticSpace()
           if (!doc) throw new SpaceError('space-unavailable', 'Capture or import a space before editing')
           if (operation === 'objects') {
+            if (raw.presentation !== undefined && !['photo', 'layout', 'models'].includes(String(raw.presentation))) throw new SpaceError('invalid-input', 'Unsupported object presentation')
             const { openSemanticObjects } = await import('@/features/xr-v2/semanticSpaceCanvas')
-            const message = await openSemanticObjects(doc, String(raw.observationId || ''))
+            const message = await openSemanticObjects(doc, String(raw.observationId || ''), undefined,
+              { presentation: raw.presentation === 'layout' ? 'layout' : 'photo', context: raw.presentation !== 'models' })
             return { ...summary(await readSemanticSpace()), message }
           }
           if (operation === 'overlay') {
@@ -128,6 +130,9 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
                 label: String(raw.label), category: String(raw.category), region: raw.region as SpaceRegion,
                 confirmedAtMs: Date.now(), provenance: 'user-confirmed' } }), '')
           }
+          if (operation === 'compose-twin-scene') return summary(await runSemanticSpaceAction({ operation: 'compose-twin-scene', requestId,
+            expectedRevision, evidenceSha256: String(raw.evidenceSha256),
+            assignments: raw.assignments as import('../xr-v2/semanticSpatialScene').ComposeTwinScene['assignments'] }), '')
           if (operation === 'build') return summary(await runSemanticSpaceAction({ operation: 'build', requestId,
             expectedRevision, entityId: String(raw.entityId), template: raw.template as TwinTemplate,
             size: raw.size as TwinVector, position: raw.position as TwinVector,

@@ -130,6 +130,7 @@ export async function openSemanticObjects(space: SpaceDocument, observationId: s
   const { activateXrSceneSurface } = await import('@/features/three/xrSceneSurfaceRuntime')
   const state = useGraphStore.getState()
   const settings = { kgCanvasSurfaceMode: 'xr', kgCanvasRenderMode: '3d', kgCanvas3dMode: 'xr',
+    kgFloatingPanelOpen: true, kgFloatingPanelView: 'media',
     kgBottomPanelOpen: true, kgBottomPanelTab: 'timeline', [SEMANTIC_OBJECT_VIEW_KEY]: target }
   const [{ upsertTopLevelFrontmatterSectionMarkdownText }, { writeActiveMarkdownDocumentTextIfPresent }] = await Promise.all([
     import('@/hooks/store/graph-data-slice/graphDataFrontmatterSections'),

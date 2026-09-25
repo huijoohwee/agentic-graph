@@ -5,6 +5,7 @@ import { deriveContourRebuildPlan, buildContourRebuildScene } from '@/features/i
 import { silhouettePixels } from './semanticTwinSilhouette'
 import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
 import type { TwinBinding } from './semanticTwinRuntime'
+import { batchTwinRecipe } from './semanticTwinMeshBatch'
 import type { SpaceDocument } from './semanticSpaceRuntime'
 import { applyTwinImageAppearance, prepareTwinPhotoContext, TWIN_TEXTURE_PIXELS } from './semanticTwinImageAppearance'
 import { projectTwinOnPhoto } from './semanticTwinPhotoProjection'
@@ -24,7 +25,8 @@ export function buildTwinScene(bindings: readonly TwinBinding[]): BuiltTwinScene
   try {
     for (const binding of bindings) {
       const built = binding.template === 'contour' ? buildContourObject(binding) : binding.template === 'relief' ? buildReliefObject(binding) : buildProceduralAsset(binding.recipe)
-      const source = built.scene
+      const source = !['contour', 'relief'].includes(binding.template) && binding.recipe.parts.length > 1
+        ? batchTwinRecipe(built.scene) : built.scene
       objects.push({ binding, wrapper: new THREE.Group(), source })
       const bounds = new THREE.Box3().setFromObject(source), extent = bounds.getSize(new THREE.Vector3())
       triangles += built.evidence.triangles

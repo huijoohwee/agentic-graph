@@ -177,7 +177,10 @@ test('outdoor templates compile from arbitrary image crops, persist, and match s
         triangles += (geometry.index?.count || geometry.getAttribute('position').count) / 3
       } })
       assert.ok(meshes >= 1 && triangles > 0 && triangles < 30_000)
-      if (['building', 'tree', 'river', 'cloud', 'landscape'].includes(template)) assert.ok(meshes > 1)
+      if (['building', 'tree', 'river', 'cloud', 'landscape'].includes(template)) {
+        assert.equal(meshes, 1, 'native parts share one render mesh')
+        assert.ok(next.twin!.objects[0].recipe.parts.length > 1 && triangles > 12)
+      }
       if (template === 'sea' || template === 'river') assert.equal(next.twin!.objects[0].size[1], 0.12)
     } finally { disposeTwinScene(built) }
     const invocation = parseSemanticSpaceInvocation(`/space.build @entity:test #procedural-asset template=${template} width=2 height=1 depth=1 x=0 z=0`)

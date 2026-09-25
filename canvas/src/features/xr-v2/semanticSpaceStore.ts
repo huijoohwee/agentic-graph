@@ -64,7 +64,7 @@ export function createSemanticSpaceStore(options: Readonly<{ indexedDB?: IDBFact
       return record ? await verifySpaceEvidence(validateSpaceDocument(record.document)) : null
     } finally { database.close() }
   }
-  const save = async (document: SpaceDocument, expectedRevision: number | null): Promise<SpaceDocument> => {
+  const save = async (document: SpaceDocument, expectedRevision: number | null, backup = false): Promise<SpaceDocument> => {
     await verifySpaceEvidence(document)
     const database = await open()
     try {
@@ -79,6 +79,7 @@ export function createSemanticSpaceStore(options: Readonly<{ indexedDB?: IDBFact
         await done.catch(() => undefined)
         throw new SpaceError('stale-revision', 'Space changed; reload before editing')
       }
+      if (backup && current) store.put({ ...current, ref: `semantic-space:backup:${current.document.id}` })
       store.put({ ref: ACTIVE_REF, document } satisfies SpaceRecord)
       await done
     } finally { database.close() }
@@ -166,7 +167,7 @@ export async function runSemanticSpaceAction(action: SpaceAction): Promise<Space
   const next = applySpaceAction(base, action)
   if (next === base) return base
   if (action.operation === 'capture' || action.operation === 'refresh-image-evidence' || action.operation === 'confirm-image-regions') await verifySpaceEvidence(next, true)
-  if (action.operation === 'confirm-image-regions' || action.operation === 'build' || action.operation === 'control-twin'
+  if (action.operation === 'compose-twin-scene' || action.operation === 'confirm-image-regions' || action.operation === 'build' || action.operation === 'control-twin'
     || action.operation === 'resize-twin' || action.operation === 'edit-twin') {
     const bindings = next.twin?.objects || []
     if (!bindings.length) throw new SpaceError('invalid-input', 'Twin binding is missing')
@@ -175,7 +176,7 @@ export async function runSemanticSpaceAction(action: SpaceAction): Promise<Space
     try { if (built.error) throw new SpaceError('invalid-geometry', built.error) }
     finally { disposeTwinScene(built) }
   }
-  const saved = await store().save(next, current?.revision ?? null)
+  const saved = await store().save(next, current?.revision ?? null, action.operation === 'compose-twin-scene')
   await mirrorCurrentSpaceToSourceFiles()
   changed()
   return saved

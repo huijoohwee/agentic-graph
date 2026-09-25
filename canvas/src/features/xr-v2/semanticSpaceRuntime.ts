@@ -1,4 +1,5 @@
 import type { TwinSilhouette } from './semanticTwinSilhouette'
+import { composeTwinScene, type ComposeTwinScene } from './semanticSpatialScene'
 import { compileImageRegions, type ConfirmImageRegions } from './semanticImageTwinCompiler'
 import type { AssetControlValue } from '@/features/image-to-glb/proceduralAssetContract'
 import { buildSemanticTwinBinding, editSemanticTwinControl, emptySemanticTwin, MAX_TWIN_OBJECTS,
@@ -45,6 +46,7 @@ export type SpaceDocument = Readonly<{
 }>
 export type SpaceAction =
   | ConfirmImageRegions
+  | ComposeTwinScene
   | Readonly<{ operation: 'refresh-image-evidence'; requestId: string; expectedRevision: number;
       observationId: string; observation: SpaceObservation }>
   | Readonly<{ operation: 'capture'; requestId: string; expectedRevision: number; observation: SpaceObservation }>
@@ -244,6 +246,10 @@ export function applySpaceAction(doc: SpaceDocument, action: SpaceAction): Space
         throw new SpaceError('unknown-entity', 'Entity does not exist')
       }
       next = { ...doc, selectedEntityId: action.entityId }
+      break
+    case 'compose-twin-scene':
+      try { next = composeTwinScene(doc, action) }
+      catch (error) { throw new SpaceError('invalid-input', String((error as Error).message || error)) }
       break
     case 'build': {
       const entity = doc.entities.find(item => item.id === action.entityId)

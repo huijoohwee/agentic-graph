@@ -80,8 +80,11 @@ test('all six reviewed kinds retain independent selections, evidence and package
   await store.save(next, prior.revision)
   assert.deepEqual(await importSemanticSpace(await exportSemanticSpacePackage(next), store), next)
   const before = JSON.stringify(next)
-  assert.throws(() => applySpaceAction(next, { ...nextInput, requestId: 'request:overflow', expectedRevision: next.revision,
-    observation: { ...nextInput.observation, id: 'observation:overflow' }, proposals: nextInput.proposals.slice(3) }), /budget/)
+  const expanded = applySpaceAction(next, { ...nextInput, requestId: 'request:expand', expectedRevision: next.revision,
+    observation: { ...nextInput.observation, id: 'observation:expand' }, proposals: [...nextInput.proposals, ...nextInput.proposals] })
+  assert.equal(expanded.twin!.objects.length, 19, 'batched parts permit multiple detailed objects')
+  assert.throws(() => applySpaceAction(expanded, { ...nextInput, requestId: 'request:overflow', expectedRevision: expanded.revision,
+    observation: { ...nextInput.observation, id: 'observation:overflow' }, proposals: nextInput.proposals.slice(3) }), /schema|limit|budget/)
   assert.equal(JSON.stringify(next), before)
 })
 

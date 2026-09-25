@@ -1,4 +1,5 @@
 import { selectSemanticObject } from './semanticSpaceCanvas'
+import { readCameraFramingRuntime, publishCameraFramingRuntime, subscribeCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
 import React from 'react'
 import { XrSelectionBounds } from '@/features/three/XrSelectionBounds'
 import { readSemanticObjectViewMarkdown, semanticObjectBindings, semanticObjectCameraFit, semanticPhotoCameraFit } from './semanticObjectView'
@@ -19,8 +20,18 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   const media = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
   const sourceText = useGraphStore(state => state.markdownDocumentText)
   const objectView = React.useMemo(() => readSemanticObjectViewMarkdown(sourceText), [sourceText])
+  const framing = React.useSyncExternalStore(subscribeCameraFramingRuntime, readCameraFramingRuntime, readCameraFramingRuntime)
   const [prepared, setPrepared] = React.useState<{ target: string; scene: BuiltTwinScene } | null>(null)
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
+  React.useLayoutEffect(() => {
+    // Source hydration can clear the old document's camera claim after XR opens.
+    // Initialize this saved view through the shared owner, without replacing an operator's orbit.
+    if (!objectView || objectView.spaceId !== document?.id || framing.claimed) return
+    publishCameraFramingRuntime({ anchorId: 'canvas-camera', source: 'document',
+      settings: objectView.presentation === 'photo'
+        ? { angle: 'front', level: 'eye-level', shot: 'medium', orbitX: 0, orbitY: 0 }
+        : { angle: 'front', level: 'high-angle', shot: 'medium', orbitX: 0.22, orbitY: -0.42 } })
+  }, [objectView?.spaceId, objectView?.presentation, document?.id, framing.claimed])
   React.useEffect(() => {
     let active = true
     const refresh = () => { void readSemanticSpace().then(value => { if (active) setDocument(value) }, () => {
@@ -126,9 +137,11 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     <ambientLight intensity={0.7} />
     <directionalLight position={[3, 7, 5]} intensity={1.2} />
     {built.context && <primitive object={built.context} dispose={null} />}
-    {!photo && <mesh position={[0, -0.04, 0]} receiveShadow>
-      <boxGeometry args={[document.twin.room.width, 0.08, document.twin.room.depth]} />
-      <meshStandardMaterial color="#69747c" roughness={0.9} />
+    {!photo && <mesh position={[objectFit ? objectFit.cameraTarget[0] / objectFit.scale : 0, -0.04,
+      objectFit ? objectFit.cameraTarget[2] / objectFit.scale : 0]} receiveShadow>
+      <boxGeometry args={[objectFit ? objectFit.size[0] + 0.6 : document.twin.room.width, 0.08,
+        objectFit ? objectFit.size[2] + 0.6 : document.twin.room.depth]} />
+      <meshStandardMaterial color="#b6bbaa" roughness={0.9} />
     </mesh>}
     {built.objects.map(item => <XrSelectionBounds key={item.binding.entityId} targetId={item.binding.entityId} outlined={!!photo} selected={item.binding.entityId === document.selectedEntityId}>
       <primitive object={item.wrapper} dispose={null}

@@ -78,7 +78,9 @@ export function validateSemanticTwin(value: unknown, entities: readonly SpaceEnt
     parts += parseProceduralAssetRecipe(object.recipe).parts.length
     seen.add(object.entityId)
   }
-  if (parts > 24) fail('mobile material budget exceeded')
+  // Static assemblies are batched to one vertex-colour material per object.
+  // Keep recipe work bounded independently of rendered materials (at most 20).
+  if (parts > 160) fail('mobile recipe part budget exceeded')
   return twin
 }
 

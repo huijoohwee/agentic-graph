@@ -13,6 +13,7 @@ import type { SpaceRegion, SpaceDocument, SpaceObservation } from './semanticSpa
 import { copyImageModelsToSpace, replaceableImageRegionIds } from './semanticImageTwinCompiler'
 
 const SpaceEditor = React.lazy(() => import('./SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
+const SpatialComposer = React.lazy(() => import('./SemanticSpatialSceneComposer'))
 const button = 'App-toolbar__btn min-h-11 w-full whitespace-normal'
 export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl: string }) {
   const [space, setSpace] = React.useState<SpaceDocument | null>(null)
@@ -203,7 +204,10 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   return <section className="grid gap-2" aria-label="Local image to 3D">
     {!!models.length && space && <section className="grid gap-1 rounded border p-2" aria-label="Saved image objects">
       <strong>{models.length} separate 3D objects</strong>
-      <span>Cyan boxes are selection bounds, not object shapes. Yellow marks your selection.</span>
+      <span>Click a solid model to edit it. Photo view uses cyan selection bounds; yellow marks your selection.</span>
+      {evidence && <React.Suspense fallback={<span>Loading scene tools…</span>}>
+        <SpatialComposer space={space} observation={evidence} disabled={busy} />
+      </React.Suspense>}
       {evidence && <SemanticBoxRefinement space={space} observation={evidence} disabled={busy} />}
       <div className="grid max-h-36 gap-1 overflow-auto">{models.map((model, index) => {
         const entity = space.entities.find(item => item.id === model.entityId)

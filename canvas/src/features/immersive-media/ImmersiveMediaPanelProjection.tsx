@@ -155,7 +155,7 @@ function SemanticSpaceMediaSource() {
   const imported = React.useSyncExternalStore(subscribeImportedImageChoice, readImportedImageChoice, readImportedImageChoice)
   const [imageUrl, setImageUrl] = React.useState<string | null>(null)
   const [opening, setOpening] = React.useState(false)
-  const [objectPresentation, setObjectPresentation] = React.useState<'photo' | 'layout' | 'models'>('photo')
+  const [objectPresentation, setObjectPresentation] = React.useState<'photo' | 'layout' | 'models'>('layout')
   const [creatingStoryboard, setCreatingStoryboard] = React.useState(false)
   const openingRef = React.useRef<AbortController | null>(null)
   const [openError, setOpenError] = React.useState<string | null>(null)
@@ -178,9 +178,9 @@ function SemanticSpaceMediaSource() {
     <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
     <label className="grid gap-1">Open 3D view as<select aria-label="Photo object presentation" className="min-h-11 w-full rounded border bg-transparent px-2"
       value={objectPresentation} onChange={event => setObjectPresentation(event.currentTarget.value as 'photo' | 'layout' | 'models')}>
-      <option value="photo">Match photo composition</option><option value="models">Photo-aligned meshes only</option><option value="layout">Authored model layout</option>
+      <option value="layout">Solid scene · orbit and select</option><option value="photo">Compare with photo</option><option value="models">Photo-aligned meshes only</option>
     </select></label>
-    <p>Photo composition includes a source-image backdrop. Choose meshes only to inspect generated objects.</p>
+    <p>{objectPresentation === 'layout' ? 'Explore saved solid objects. Use Compose solid scene below to turn box or contour regions into buildings, terrain and other shapes.' : 'Compare source regions with their models. The photograph is reference evidence, not reconstructed surroundings.'}</p>
     {(['objects', 'image'] as const).map(presentation => <button key={presentation} type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
       const job = new AbortController(); openingRef.current?.abort(); openingRef.current = job
       setOpening(true)
