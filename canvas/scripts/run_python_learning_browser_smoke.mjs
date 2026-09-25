@@ -105,6 +105,13 @@ try {
     await page.getByText('Saved locally:', { exact: false }).waitFor()
   }
   await page.setViewportSize({ width: 375, height: 812 })
+  const flightDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export flight path for GameXR', exact: true }).click()
+  const flightPathBytes = await readFile(await (await flightDownload).path())
+  const flightPath = JSON.parse(flightPathBytes.toString())
+  assert.equal(flightPath.schema, 'agentic-drone-flight-path/v1')
+  assert.deepEqual(flightPath.samples.at(-1), [540, 4, 0, 0, 0])
+  await writeFile(join(output, 'drone-flight-path.json'), flightPathBytes)
   const downloaded = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export debrief', exact: true }).click()
   const portable = await readFile(await (await downloaded).path())

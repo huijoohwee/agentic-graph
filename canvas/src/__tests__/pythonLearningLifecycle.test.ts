@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './pythonLearningFlightPath.test'
 import assert from 'node:assert/strict'
 import { LearningRuntime, digestLearningSource, type LearningWorkerPort } from '../features/python-learning/learningRuntime'
 import { createPythonWorkerHost, type LearningPlayback } from '../features/python-learning/pythonWorker'
@@ -90,7 +91,7 @@ test('GameXR bench export is inspected without confusing requests, reports and m
     event('sent', { kind: 'enable' }), event('sent', { kind: 'controls', profile, sequence: 1, axes }),
     event('status', report), event('inhibited', 'Focus lost'), event('sent', { kind: 'disable' }),
   ] }
-  assert.deepEqual(inspectDroneBenchLog(JSON.stringify(log)), { records: 5, controlRequests: 1, receiverReports: 1, inhibitions: 1, lastSetpoint: axes })
+  assert.deepEqual(inspectDroneBenchLog(JSON.stringify(log)), { records: 5, controlRequests: 1, receiverReports: 1, inhibitions: 1, lastSetpoint: axes, lastPathPose: null })
   assert.equal(inspectDroneBenchLog(JSON.stringify({ ...log, records: [log.records[1]] })).lastSetpoint, null)
   for (const invalid of [{ ...log, profile: 'unknown' }, { ...log, physicalAircraft: true },
     { ...log, records: Array(1001).fill(log.records[0]) },

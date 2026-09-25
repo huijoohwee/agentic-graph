@@ -33,6 +33,16 @@ export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (s
         const anchor = document.createElement('a'); anchor.href = url; anchor.download = `python-learning-${record.result.identity.lessonId}.json`; anchor.click()
         setTimeout(() => URL.revokeObjectURL(url), 1000); return 'Debrief exported with the exact source snapshot.'
       })}>Export debrief</button>
+      {snapshot.document?.lessonId === 'drone' ? <button disabled={busy || !finished || snapshot.state !== 'completed'} onClick={() => void act(async signal => {
+        const record = await captureLearningDebrief(snapshot)
+        const { createLearningFlightPath } = await import('./learningFlightPath')
+        const text = createLearningFlightPath(record.result)
+        if (signal.aborted) throw new Error('Flight path export cancelled.')
+        const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+        const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'drone-flight-path.json'; anchor.click()
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+        return 'Flight path exported. Import it in GameXR Drone bench, review it, then choose Run flight path.'
+      })}>Export flight path for GameXR</button> : null}
       <button disabled={busy} onClick={() => void act(async signal => {
         const loaded = await loadLearningDebriefs(snapshot.document!.documentId, signal)
         if (!signal.aborted) setRecords(loaded); return `${loaded.length} matching debriefs in the latest 20 local records.`
@@ -62,6 +72,7 @@ export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (s
         <p>{bench.records} events · {bench.controlRequests} control requests · {bench.receiverReports} receiver reports · {bench.inhibitions} inhibitions</p>
         <p>Imported file contents; authenticity and command acceptance are not verified.</p>
         <pre>{bench.lastSetpoint ? JSON.stringify(bench.lastSetpoint, null, 2) : 'No receiver setpoint report.'}</pre>
+        {bench.lastPathPose ? <p>Last recorded path setpoint [tick, x, z, heading, altitude]: {JSON.stringify(bench.lastPathPose)}</p> : null}
       </div> : null}
     </details> : null}
     {message ? <p role="status">{message}</p> : null}

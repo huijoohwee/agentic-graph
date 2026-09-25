@@ -569,6 +569,8 @@ Implementation: D1/D2/D4/D6 have local unit evidence; the combined Python suites
 
 ## Visible drone playback repair — J3
 
+Successor J4 is [DRONE-FLIGHT-PATH-001@1.0.0](prd-tad-adr-mvp-gtm-drone-flight-path.md): user-confirmed simulated bench path export to GameXR, superseding J3's read-only GameXR boundary only for explicit imported-path execution in the motor-disabled fixture.
+
 J3 = OFFLINE-PYTHON-LEARNING-WORKSPACE-001@1.2.0; `/fix #drone.playback @codex-drone-learning`. User browser feedback on 2026-09-26 observed a stationary landed drone. Published predecessor `c22b69c2abc5e09ff5ed7f8fbad6e3f298bbc469` is retained; native successor reuses its admitted checkout.
 
 PRD: the learner must see takeoff, travel and landing after Run. The starter intentionally lacks forward motion; a visible Load flight example action replaces source with the existing worked solution without auto-running. TAD: the dedicated Python worker paces two 60 Hz physics ticks per displayed frame, excluding display waits from active compute. Step retains statement semantics. The runtime watchdog refreshes only on validated advancing drone ticks; backwards ticks fail. Pause/hidden-tab handling retains pose, excludes paused wall time and resumes without catch-up; Stop still terminates the worker.

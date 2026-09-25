@@ -3,6 +3,7 @@ export const DRONE_BENCH_LOG_BYTES = 500_000
 export type DroneBenchLogSummary = Readonly<{
   records: number; controlRequests: number; receiverReports: number; inhibitions: number
   lastSetpoint: Readonly<{ roll: number; pitch: number; yaw: number; throttle: number }> | null
+  lastPathPose: readonly number[] | null
 }>
 
 export function inspectDroneBenchLog(text: string): DroneBenchLogSummary {
@@ -24,6 +25,13 @@ export function inspectDroneBenchLog(text: string): DroneBenchLogSummary {
   }
   let controlRequests = 0, receiverReports = 0, inhibitions = 0
   let lastSetpoint: DroneBenchLogSummary['lastSetpoint'] = null
+  let lastPathPose: readonly number[] | null = null
+  const pathPose = (value: any): readonly number[] => {
+    if (!Array.isArray(value) || value.length !== 5 || !value.every(n => typeof n === 'number' && Number.isFinite(n))
+      || !Number.isInteger(value[0]) || value[0] < 0 || value[0] > 7200 || Math.abs(value[1]) > 8 || Math.abs(value[2]) > 8
+      || value[3] < 0 || value[3] >= 360 || value[4] < 0 || value[4] > 4) reject()
+    return Object.freeze([...value])
+  }
   for (const record of log.records) {
     if (!object(record) || typeof record.at !== 'string' || !Number.isFinite(Date.parse(record.at))) reject()
     const value = record.value
@@ -35,6 +43,9 @@ export function inspectDroneBenchLog(text: string): DroneBenchLogSummary {
       if (value.kind === 'controls') {
         if (value.profile !== profile || !Number.isSafeInteger(value.sequence) || value.sequence < 1) reject()
         axes(value.axes); controlRequests++
+      } else if (value.kind === 'path') {
+        if (value.profile !== 'simulated-drone-path/v1' || !Number.isSafeInteger(value.sequence) || value.sequence < 1) reject()
+        pathPose(value.pose); controlRequests++
       } else if (!['enable', 'disable'].includes(value.kind)) reject()
     } else if (record.event === 'status') {
       if (!object(value) || value.kind !== 'status' || value.backend !== 'simulated'
@@ -44,9 +55,13 @@ export function inspectDroneBenchLog(text: string): DroneBenchLogSummary {
         if (!object(telemetry) || telemetry.source !== 'simulated' || telemetry.profile !== profile
           || telemetry.motorOutputs !== false || telemetry.attitudeDegrees !== null || telemetry.batteryVolts !== null) reject()
         lastSetpoint = axes(telemetry.setpoint); receiverReports++
+        if (telemetry.pathPose != null) {
+          if (telemetry.pathProfile !== 'simulated-drone-path/v1') reject()
+          lastPathPose = pathPose(telemetry.pathPose)
+        }
       }
     } else reject()
   }
   return Object.freeze({ records: log.records.length, controlRequests, receiverReports, inhibitions,
-    lastSetpoint: lastSetpoint && Object.freeze(lastSetpoint) })
+    lastSetpoint: lastSetpoint && Object.freeze(lastSetpoint), lastPathPose })
 }
