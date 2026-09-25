@@ -1,26 +1,26 @@
 ---
 title: "XR spatial workspace — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.3"
+version: "0.2.4"
 date: "2026-09-26"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-XR-SPATIAL-WORKSPACE"
-prd_revision: "0.2.3"
-tad_revision: "0.2.3"
-adr_revision: "0.2.3"
-mvp_revision: "0.2.3"
-gtm_revision: "0.2.3"
+prd_revision: "0.2.4"
+tad_revision: "0.2.4"
+adr_revision: "0.2.4"
+mvp_revision: "0.2.4"
+gtm_revision: "0.2.4"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "proposed"
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
-agent_id: "codex-xr-source-admission-guard"
+agent_id: "codex-xr-closeout-contract"
 parent_continuity: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1"
-reviewed_source_revision: "bc4a661fd6b745818559c1625c752cdf9959c641"
+reviewed_source_revision: "6477ee26fcb88c06b0f65798ad379f2eb374a2d3"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ load_policy: "on-demand"
 
 ## Continuity and scope — reference implementation
 
-All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.3`. This bounded child of
+All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.4`. This bounded child of
 the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) owns W01–W06
 and ADR-W01/W02/W03 plus the F01–F04 rendering and P01–P06 panel increments and S01–S03 source admission. It is separate because the existing procedural-twin companion is
 near its 600-line limit. That companion continues to own evidence-to-geometry,
@@ -594,6 +594,6 @@ Four procedural contract/recovery/source/GLB checks, Canvas typecheck and three
 launcher contracts pass. The owned XR MP4 browser smoke passes desktop and mobile.
 **GTM:** closes an authoring failure in the existing pilot; pricing and claims are
 unchanged. Actual scope: three files, no new modules/dependencies/chunks; under the
-20-minute/four-file sprint cap. Closeout found a stale source-admission assertion in
-`check-game-fps-readiness.mjs`; it now checks the shared resolver and disjoint scene paths.
-The guard, 302 XR tests and Canvas typecheck pass; protected integration is still pending.
+20-minute/four-file sprint cap. Closeout source guards and native physics contracts now
+follow shared XR admission. The source gate, build/chunks, typecheck, 13 non-browser commands,
+Python and XR MP4 browser checks pass; frozen-candidate browser checks and integration remain pending.
