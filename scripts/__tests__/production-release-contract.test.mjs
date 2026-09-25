@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import './production-release-dependency-install.test.mjs'
+import './seed-storage-local-api.test.mjs'
 import YAML from 'yaml'
 import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs'
 import { classifyServiceWorkerReleaseTransition } from '../service-worker-release-transition.mjs'
@@ -577,7 +578,7 @@ test('canonical docs reconciliation proves stored content and exact chunk parity
   assert.match(docsSeedScript, /buildDirectD1ReconciliationStatements/)
   assert.match(docsSeedScript, /'--command',[\s\S]*'--json'/)
   assert.match(docsSeedScript, /maxBuffer: 64 \* 1024 \* 1024/)
-  assert.match(docsSeedScript, /const shouldUseDirectD1ControlPlane = isCanonicalProductionOrigin/)
+  assert.match(docsSeedScript, /const shouldUseDirectD1ControlPlane = local \|\| isCanonicalProductionOrigin/)
   assert.match(docsSeedScript, /WHERE workspace_id = .*\n.*AND deleted = 0/)
   assert.match(docsSeedScript, /content-parity=passed/)
   assert.match(docsSeedScript, /snapshots=\$\{snapshotParity\.graphSnapshotCount\}/)

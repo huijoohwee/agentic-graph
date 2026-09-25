@@ -1,26 +1,26 @@
 ---
 title: "XR spatial workspace — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.7"
+version: "0.2.8"
 date: "2026-09-26"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-XR-SPATIAL-WORKSPACE"
-prd_revision: "0.2.7"
-tad_revision: "0.2.7"
-adr_revision: "0.2.7"
-mvp_revision: "0.2.7"
-gtm_revision: "0.2.7"
+prd_revision: "0.2.8"
+tad_revision: "0.2.8"
+adr_revision: "0.2.8"
+mvp_revision: "0.2.8"
+gtm_revision: "0.2.8"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "proposed"
-worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
-agent_id: "codex-xr-settings-initial-tab"
+worktree_id: "device-0232231d4a19--xr-local-doc-seed"
+agent_id: "codex-xr-local-doc-seed"
 parent_continuity: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1"
-reviewed_source_revision: "dda3d749090423cc6907e7a3bf39ed1358a9f924"
+reviewed_source_revision: "fa396466a447bc2ccd5670d6a38bcf5953b4ce2e"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ load_policy: "on-demand"
 
 ## Continuity and scope — reference implementation
 
-All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.7`. This bounded child of
+All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.8`. This bounded child of
 the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) owns W01–W06
 and ADR-W01/W02/W03 plus the F01–F04 rendering and P01–P06 panel increments and S01–S03 source admission. It is separate because the existing procedural-twin companion is
 near its 600-line limit. That companion continues to own evidence-to-geometry,
@@ -284,7 +284,6 @@ protected integration and deployment require their own later receipts. This
 increment adds no dependencies or service calls. Cross-transport parity, timed
 buyer trials, cold offline boot, GPU loss and commercial validation remain open.
 
-
 ## Rendering fidelity increment — reference implementation
 
 Revision `0.2.0` supersedes the initial `0.1.0` child for all five roles. The
@@ -469,7 +468,6 @@ not promote the deferred proposal/diff/undo/constraint-analysis requirements or
 claim protected integration, production delivery, exact photo reconstruction,
 physical-device parity or full raw tool-payload history.
 
-
 Validation receipt, 2026-09-25:
 
 - Eight focused Node/tsx checks pass: Activity projection/selection/revocation,
@@ -502,7 +500,6 @@ Validation receipt, 2026-09-25:
 
 Publication is a review handoff only. Exact protected CI, integration and deployment
 require their own native receipts; local checks do not grant those effects.
-
 
 ## S01–S03 — source-owned XR entry — reference implementation
 
@@ -562,7 +559,6 @@ The operator outcome is fewer wrong-scene entries; track this in the existing
 five-author pilot. Buyer demand, $1 handover hypothesis and release boundaries
 remain unchanged. No new commercial or reconstruction capability is claimed.
 
-
 Validation receipt for S01–S03, 2026-09-25:
 
 - 302 XR unit checks pass, including source admission and dirty scene removal;
@@ -593,7 +589,9 @@ launcher contracts pass. The owned XR MP4 browser smoke passes desktop and mobil
 **GTM:** closes an authoring failure in the existing pilot; pricing and claims are
 unchanged. Actual scope: three files, no new modules/dependencies/chunks; under the
 20-minute/four-file sprint cap. Frozen Mission Control, XR and MP4 browser checks pass.
-**CI closeout:** all 19 standard checks pass at the reviewed revision; stage budgets match the native 15-minute cap.
-Hosted browser evidence exposed a cold Settings mount deadline: MainPanel first initialized inactive Help.
-Initialize the requested tab directly and assert that Settings does not fetch Help; retain pointer/readiness deadlines.
-This three-file follow-up adds no modules or dependencies. Frozen browser proof and protected integration remain pending.
+**CI closeout:** PR #1296 merged; exact-main Integration Gate and XR v2 browser gate pass at the reviewed revision.
+Settings initializes its requested tab directly; the browser regression forbids inactive Help loading.
+**Local XR entry:** live canonical review found a stale local D1 corpus containing the retired playground source.
+Reuse direct D1 reconciliation with explicit `--local`, loopback-only target validation and complete content readback.
+Local seeding cannot emit production evidence or publication plans. Existing protected production behavior is retained.
+Four-file cap; zero new runtime modules/dependencies. SQLite limit diagnosis exceeded the 20-minute target; local imports use complete statements in ≤90 kB batches and fail loudly on partial failure. Native local readback passes for 31 documents/10 chunks, all 36 release-contract checks pass, and live Home XR renders the current source at :4179. Protected integration remains pending.
