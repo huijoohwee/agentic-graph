@@ -14,7 +14,7 @@ import { beginOverlayPanelPositionDrag } from '@/lib/ui/overlayPanelDrag'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { GanttTimelineTransportPlaybackRuntime } from '@/features/gitgraph/GanttTimelineTransportPlaybackRuntime'
-import { ChartGantt, Columns2, FileDiff, GitGraph, History, MonitorPlay, Network, Workflow } from 'lucide-react'
+import { Activity, ChartGantt, Columns2, FileDiff, GitGraph, History, MonitorPlay, Network, Workflow } from 'lucide-react'
 import { StrybldrTimelinePanel } from './StrybldrTimelinePanel'
 import {
   TIMELINE_BOTTOM_PANEL_FALLBACK_SIZE, TIMELINE_BOTTOM_PANEL_MAX_HEIGHT_RATIO,
@@ -27,6 +27,7 @@ import {
 type TimelineBottomPanelPosition = { top: number; left: number }
 type TimelineBottomPanelSize = { width: number; height: number }
 type TimelineBottomPanelView =
+  | 'activity'
   | 'timeline'
   | 'designTimeline'
   | 'strybldrTimeline'
@@ -36,6 +37,7 @@ type TimelineBottomPanelView =
   | 'gantt'
   | 'architecture'
   | 'eventModeling'
+const WorkspaceActivityPanelLazy = React.lazy(() => import('@/features/agent-ready/WorkspaceActivityPanel'))
 const GitGraphBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GitGraphBottomPanelView').then(mod => ({ default: mod.GitGraphBottomPanelView })))
 const FlowchartBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/FlowchartBottomPanelView').then(mod => ({ default: mod.FlowchartBottomPanelView })))
 const GanttBottomPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GanttBottomPanelView').then(mod => ({ default: mod.GanttBottomPanelView })))
@@ -213,6 +215,7 @@ export function StrybldrTimelineBottomPanel({
   const mermaidArchitectureRequested = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'architecture'
   const mermaidEventModelingRequested = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'eventModeling'
   const bottomSurfaceDiagramRequested =
+    (bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'activity') ||
     documentVersionGraphRequested ||
     mermaidFlowchartRequested ||
     mermaidGitGraphRequested ||
@@ -328,7 +331,7 @@ export function StrybldrTimelineBottomPanel({
   }
   const panelHeightStyle = minimized
     ? { height: 'var(--kg-toolbar-compact-surface-height)' }
-    : view === 'documentVersionGraph' || view === 'flowchart' || view === 'gitGraph' || view === 'gantt' || view === 'timeline' || view === 'designTimeline' || view === 'architecture' || view === 'eventModeling'
+    : view === 'activity' || view === 'documentVersionGraph' || view === 'flowchart' || view === 'gitGraph' || view === 'gantt' || view === 'timeline' || view === 'designTimeline' || view === 'architecture' || view === 'eventModeling'
       ? pinned
         ? expandedPinnedHeightStyle
         : expandedUnpinnedHeightStyle
@@ -393,7 +396,8 @@ export function StrybldrTimelineBottomPanel({
             onPointerDown={handleHeaderPointerDown}
           >
             <section className="flex min-w-0 items-center gap-1">
-              <span className="min-w-0 truncate text-xs font-semibold">Timeline</span>
+              <span className="min-w-0 truncate text-xs font-semibold">{view === 'activity' ? 'Activity' : 'Timeline'}</span>
+              <IconButton className="App-toolbar__btn" style={{ minWidth: 44, minHeight: 44 }} title="Activity" showTooltip aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" /></IconButton>
               <IconButton
                 className={cn(
                   'App-toolbar__btn',
@@ -532,7 +536,7 @@ export function StrybldrTimelineBottomPanel({
               data-kg-strybldr-bottom-timeline-scroll="body"
             >
               <GanttTimelineTransportPlaybackRuntime />
-              {view === 'documentVersionGraph' ? (
+              {view === 'activity' ? <React.Suspense fallback={null}><WorkspaceActivityPanelLazy /></React.Suspense> : view === 'documentVersionGraph' ? (
                 <React.Suspense fallback={null}>
                   <DocumentVersionGitGraphPanelLazy
                     activePath={markdownDocumentName}

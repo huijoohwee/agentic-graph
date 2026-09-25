@@ -1,26 +1,26 @@
 ---
 title: "XR spatial workspace — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.1"
+version: "0.2.0"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-XR-SPATIAL-WORKSPACE"
-prd_revision: "0.1.1"
-tad_revision: "0.1.1"
-adr_revision: "0.1.1"
-mvp_revision: "0.1.1"
-gtm_revision: "0.1.1"
+prd_revision: "0.2.0"
+tad_revision: "0.2.0"
+adr_revision: "0.2.0"
+mvp_revision: "0.2.0"
+gtm_revision: "0.2.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "proposed"
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
-agent_id: "codex-xr-render-fidelity"
+agent_id: "codex-xr-workspace-panels"
 parent_continuity: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1"
-reviewed_source_revision: "fffbffc62a25e1397a44f07e8dd37e880daf7275"
+reviewed_source_revision: "3eb28c9ce8afc7da2165e662e3e6a4b896fca4d2"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,9 +31,9 @@ load_policy: "on-demand"
 
 ## Continuity and scope — reference implementation
 
-All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.1.1`. This bounded child of
+All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.0`. This bounded child of
 the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) owns W01–W06
-and ADR-W01/W02 plus the F01–F04 rendering increment. It is separate because the existing procedural-twin companion is
+and ADR-W01/W02/W03 plus the F01–F04 rendering and P01–P06 panel increments. It is separate because the existing procedural-twin companion is
 near its 600-line limit. That companion continues to own evidence-to-geometry,
 units, recipes and reconstruction limits; this document owns workspace navigation and solid-scene presentation.
 The containing candidate commit binds implementation evidence; the frontmatter
@@ -232,7 +232,7 @@ deferred until actual commercial distribution terms and customer geography exist
 
 Disposition is not readiness. All 16 domains apply: 16/16 dispositioned, 11/16
 covered, 5 deferred, 0 not applicable. Gaps below prevent full venture readiness.
-Every row joins this document at `0.1.1`; Product maintainers are accountable.
+Every row joins this document at `0.2.0`; Product maintainers are accountable.
 
 | Domain | Disposition / source role | Evidence or gap / next check |
 |---|---|---|
@@ -287,7 +287,7 @@ buyer trials, cold offline boot, GPU loss and commercial validation remain open.
 
 ## Rendering fidelity increment — reference implementation
 
-Revision `0.1.1` supersedes the initial `0.1.0` child for all five roles. The
+Revision `0.2.0` supersedes the initial `0.1.0` child for all five roles. The
 previous outline receipt remains historical evidence. The inspected predecessor
 is the exact frontmatter revision; the containing candidate binds this delta.
 
@@ -385,3 +385,120 @@ files remain below 600 lines. Existing unrelated bundles exceed 500 kB, so this
 is not a whole-application bundle-budget pass.
 
 Protected integration and deployment remain separate native lifecycle receipts.
+
+## Workspace panels increment — reference implementation
+
+### PRD — inspect scene work without rebuilding context
+
+The 2026-09-25 request adds Assets, Outliner, Inspector and Agents to existing
+XR Media, and Activity to BottomPanel. The operator needs to find an object,
+inspect the same selection, and read recorded work without hunting across panels.
+This increment changes navigation and observation; existing grants and mutation
+owners remain authoritative. Buyer and $1 handover hypotheses are unchanged.
+
+| ID | Requirement / acceptance | Owner and boundary |
+|---|---|---|
+| P01 | XR Media offers Assets, Outliner, Inspector and Agents; switching views does not replace the scene | Lazy `XrWorkspaceMediaPanel.tsx` via existing `FloatingPanelXrSceneViews.tsx`; transient view/search only |
+| P02 | Outliner uses displayed saved-space evidence or the native XR subject/stage list | `SemanticSceneOutline.tsx` and compact `XrMediaLibraryPanel.tsx`; no schema casting between stores |
+| P03 | Selected object opens its current transform editor in Media and Timeline | Shared `XrObjectInspector` composes existing `SemanticSpacePanel` or `XrSubjectTransformEditor`; draft fences retained |
+| P04 | Agents displays the selected authorized run, shared selection and revocation | Existing `AgentMissionConsolePanel` and `AgentRunSpanViews`; explicit Open Agent Mission enters native run discovery |
+| P05 | Activity displays retained workspace records and authorized Mission spans; source/filter/selection work | Existing `uiLogEntries` (250-record owner cap) and `agentRunInspectionStore`; no new event persistence |
+| P06 | Hover text uses native controls; tool discovery reports current runtime state | `IconButton`/shared Tooltip unchanged; observe WebMCP runtime markers, never register or execute tools |
+
+### TAD — presentation composition and committed events
+
+Assets retains the current Media catalog, local image tools and projections.
+Outliner chooses its owner from the selected Markdown's semantic-object target.
+Saved-space reads are generation fenced and errors are visible; selection checks
+space/evidence again before calling the existing selection action. Native subjects
+retain their existing Remove and Motion Control actions; environment objects stay
+under their simulation/environment owner. Saved models retain recoverable Hide/Show;
+this increment does not add irreversible deletion to the semantic-space contract.
+Inspector extracts composition from Timeline without duplicating transform controls.
+
+Agents mounts the existing Console unchanged. It neither imports a private agent
+registry nor starts a run. Mission expiry/revocation clears Activity and Console
+through the same store. Browser tool names, scope and registration status come from
+existing runtime markers observed on demand; discovery is not execution permission.
+The selected Mission can own Canvas; Activity then mounts the same BottomPanel over
+that surface. Closing run inspection returns through its existing restore path.
+
+`kgBottomPanelTab: activity` is accepted by the native frontmatter parser and Canvas
+router. Activity keeps workspace timestamps separate from Mission relative timing.
+Unknown measurements and partial coverage remain explicit. It renders retained text,
+not executable markup; source payloads absent from the span contract are disclosed as
+unavailable. Full tool input/output auditing is deferred rather than fabricated.
+`semanticSpaceStore.runSemanticSpaceAction` appends operation, committed revision and
+selected label to the existing session log only after durable save and source-mirror
+attempt. Idempotent no-ops and failed writes do not produce success records. Raw image
+bytes and credentials are excluded. Source-mirror failure still uses the existing
+status owner; a local commit is not proof of remote synchronization.
+
+Budget: 45-minute initial sprint estimate, expanded to 13 changed files for the inherited Mission timeout assertion, two production leaf
+modules, no new dependencies, services, models, renderers or persistent stores.
+Both leaves load through existing lazy panel paths. Retain the existing scene and
+record caps; each changed file remains below 600 lines and each new chunk below
+500 kB. A 390 CSS px browser check covers wrapping/scrolling; physical touch and
+headset resource measurements remain open. Global always-load code adds routing only.
+
+### ADR-W03 — reuse native panel owners
+
+Accepted for this candidate: grouped Media navigation and a read-only Activity
+projection. Extending current owners ranks first because selection, edits, logs,
+span hierarchy and revocation already exist. A separate workspace/store ranks lower
+because it duplicates state and broadens migration risk. An entirely separate Agents
+registry is rejected; the Mission observation is the single source of truth. No
+changes to the concurrently owned Console file are required. Native hover components
+are reused without alternate styles or labels for the same control.
+
+Recovery: a corrective source candidate can remove the panel composition and Activity
+route; saved scenes retain predecessor compatibility and session logs are ephemeral.
+No data migration, remote effect or production deployment is part of this increment.
+
+### MVP and GTM — bounded evidence
+
+Demo: XR → Media → Outliner → select an object → Inspector → Activity/workspace
+records → Agents → native Mission observation → Activity/Mission spans → close run
+inspection and return to the scene. Empty and revoked observations must stay empty.
+The native playground Outliner retains the existing authored-subject Remove action;
+no user object is deleted for acceptance testing. Measure wrong-object writes and
+navigation time in the existing five-author pilot; no new revenue claim is made.
+
+Local validation on 2026-09-25 is recorded below at candidate completion. This does
+not promote the deferred proposal/diff/undo/constraint-analysis requirements or
+claim protected integration, production delivery, exact photo reconstruction,
+physical-device parity or full raw tool-payload history.
+
+
+Validation receipt, 2026-09-25:
+
+- Eight focused Node/tsx checks pass: Activity projection/selection/revocation,
+  browser discovery replacement, Media routing/source preservation, the existing
+  Console, and four outline/storage concurrency checks. Typecheck and the three
+  local browser-launcher contract checks pass.
+- Affected XR/video source-runner, unit, compatibility and source-ready commands
+  pass: 87 + 20 runner checks, 300 XR checks, 15 video checks and both selected
+  compatibility/export checks. Mission ingress/lifecycle checks pass (8), and
+  selected Mission/WebMCP projections pass (4). The inherited Mission timeout
+  assertion now matches its already accepted 1,200,000 ms contract; no timeout
+  budget is changed. Full automated browser suites remain protected-CI evidence,
+  separate from the bounded live checks below.
+- At `http://localhost:4179/`, Outliner lists the current 18 saved objects; selecting
+  East island tower opens its existing Inspector. A subsequent Detail region 2
+  selection appears in Activity as a committed saved-space revision. Workspace
+  events remain separate from Mission spans. No object was removed in this check.
+- Agents renders the existing authorized two-span Mission tree, with partial
+  coverage and unknown timing retained. Activity renders the same observation
+  while Mission owns Canvas. Expiry clears the retained handoff. Tool discovery
+  reflects the native runtime's current exposed count and scope without execution.
+- At 390 × 844 CSS px, navigation wraps inside the viewport. All five new Media
+  navigation targets measure at least 44 × 44 px; selected text uses the existing
+  accent-contrast token. The temporary viewport override is reset. Physical
+  device/headset tests and full end-to-end transport parity remain open.
+- The production build passes; new lazy chunks measure 21.94 kB / 5.86 kB
+  gzip for Media composition and 5.52 kB / 2.10 kB gzip for Activity. Existing
+  oversized application chunks are not newly certified. Changed-file hygiene,
+  source conflict compliance and whitespace checks pass. No dependency changes.
+
+Publication is a review handoff only. Exact protected CI, integration and deployment
+require their own native receipts; local checks do not grant those effects.

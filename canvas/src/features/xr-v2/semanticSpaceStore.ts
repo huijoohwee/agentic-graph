@@ -166,6 +166,7 @@ export async function runSemanticSpaceAction(action: SpaceAction): Promise<Space
   const base = current || newSpaceDocument(`space:${crypto.randomUUID()}`)
   const next = applySpaceAction(base, action)
   if (next === base) return base
+  const activity = typeof window === 'undefined' ? null : (await import('@/hooks/useGraphStore')).useGraphStore.getState().pushUiLog
   if (action.operation === 'capture' || action.operation === 'refresh-image-evidence' || action.operation === 'confirm-image-regions') await verifySpaceEvidence(next, true)
   if (action.operation === 'compose-twin-scene' || action.operation === 'confirm-image-regions' || action.operation === 'build' || action.operation === 'control-twin'
     || action.operation === 'resize-twin' || action.operation === 'edit-twin') {
@@ -179,6 +180,9 @@ export async function runSemanticSpaceAction(action: SpaceAction): Promise<Space
   const saved = await store().save(next, current?.revision ?? null, action.operation === 'compose-twin-scene')
   await mirrorCurrentSpaceToSourceFiles()
   changed()
+  const selected = saved.entities.find(entity => entity.id === saved.selectedEntityId)
+  activity?.({ source: 'XR saved space', kind: 'success',
+    message: `${action.operation} · revision ${saved.revision}${selected ? ` · ${selected.label}` : ''}` })
   return saved
 }
 export async function importSemanticSpace(text: string,
