@@ -420,7 +420,8 @@ if (!/xrPhysicsRuntimeRunReadyDemo\s*\? 'native-controller'\s*: 'motion-referenc
   || !threeGraphImmersiveMedia.includes("if (input.immersiveMediaActive) return 'immersive-media'")
   || !threeGraphImmersiveMedia.includes('if (input.xrGraphStageAuthority) return input.xrGraphStageAuthority')
   || !threeGraphImmersiveMedia.includes("return input.hasXrEmptyWorld ? 'empty-world' : undefined")
-  || !threeGraph.includes("const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive")
+  || !threeGraph.includes("const hasXrEmptyWorld = !semanticObjectTarget && mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive")
+  || !threeGraph.includes('!semanticObjectTarget && !semanticTwinFit && !learningScene')
   || !threeGraph.includes('xrGraphStageAuthority={xrGraphStageAuthority}')
   || (threeGraph.match(/data-kg-xr-scene-authority=\{xrSceneAuthority\}/g) || []).length !== 2) {
   throw new Error('canonical XR Physics must first mount native-controller; authored motion-reference and settled empty-world must remain disjoint')
