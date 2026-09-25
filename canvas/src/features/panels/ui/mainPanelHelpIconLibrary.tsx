@@ -373,11 +373,7 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
     label: 'Chat',
     Icon: MessageCircle,
   },
-  'floatingPanel.console': {
-    category: 'FloatingPanel surface',
-    label: 'Console',
-    Icon: SquareTerminal,
-  },
+  'floatingPanel.console': { category: 'FloatingPanel surface', label: 'Console', Icon: SquareTerminal },
   'floatingPanel.geo': {
     category: 'FloatingPanel surface',
     label: 'Geo',
