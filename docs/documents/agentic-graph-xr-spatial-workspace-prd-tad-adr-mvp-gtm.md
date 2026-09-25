@@ -1,26 +1,26 @@
 ---
 title: "XR spatial workspace — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.6"
+version: "0.2.7"
 date: "2026-09-26"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-XR-SPATIAL-WORKSPACE"
-prd_revision: "0.2.6"
-tad_revision: "0.2.6"
-adr_revision: "0.2.6"
-mvp_revision: "0.2.6"
-gtm_revision: "0.2.6"
+prd_revision: "0.2.7"
+tad_revision: "0.2.7"
+adr_revision: "0.2.7"
+mvp_revision: "0.2.7"
+gtm_revision: "0.2.7"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "proposed"
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
-agent_id: "codex-xr-validation-budget-consumers"
+agent_id: "codex-xr-settings-initial-tab"
 parent_continuity: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1"
-reviewed_source_revision: "a5ccde9622e2b1849c70510978c5759604b5f37d"
+reviewed_source_revision: "dda3d749090423cc6907e7a3bf39ed1358a9f924"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ load_policy: "on-demand"
 
 ## Continuity and scope — reference implementation
 
-All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.6`. This bounded child of
+All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.7`. This bounded child of
 the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) owns W01–W06
 and ADR-W01/W02/W03 plus the F01–F04 rendering and P01–P06 panel increments and S01–S03 source admission. It is separate because the existing procedural-twin companion is
 near its 600-line limit. That companion continues to own evidence-to-geometry,
@@ -593,7 +593,7 @@ launcher contracts pass. The owned XR MP4 browser smoke passes desktop and mobil
 **GTM:** closes an authoring failure in the existing pilot; pricing and claims are
 unchanged. Actual scope: three files, no new modules/dependencies/chunks; under the
 20-minute/four-file sprint cap. Frozen Mission Control, XR and MP4 browser checks pass.
-**CI closeout:** the native Mission Control browser partition passed at the reviewed revision in 197.53 seconds.
-The timeout declaration and all consumer assertions now match the native 15-minute cap; a regression guards
-every declared budget before product checks. Hosted Python offline recovery passed on both prior candidates.
-The five-file cumulative CI correction adds no runtime code; exact successor integration remains pending.
+**CI closeout:** all 19 standard checks pass at the reviewed revision; stage budgets match the native 15-minute cap.
+Hosted browser evidence exposed a cold Settings mount deadline: MainPanel first initialized inactive Help.
+Initialize the requested tab directly and assert that Settings does not fetch Help; retain pointer/readiness deadlines.
+This three-file follow-up adds no modules or dependencies. Frozen browser proof and protected integration remain pending.

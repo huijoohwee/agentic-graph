@@ -64,6 +64,13 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
   }
   const before = await authoredSnapshot()
   await installEntryObservation(page)
+  const inactiveTabRequests = []
+  const observeInactiveTab = request => {
+    if (new URL(request.url()).pathname.endsWith('/src/features/panels/views/HelpView.tsx')) {
+      inactiveTabRequests.push(request.url())
+    }
+  }
+  page.on('request', observeInactiveTab)
   let status = 'failed'
   try {
     await page.locator('[data-kg-toolbar-action="settings:open"]:visible').click({ timeout: 15000 })
@@ -79,6 +86,7 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
       assert.ok(timeout > 0, 'Settings lazy readiness deadline elapsed')
       await page.locator(selector).waitFor({ state: 'visible', timeout })
     }
+    assert.deepEqual(inactiveTabRequests, [], 'Settings opens directly without loading the inactive Help tab')
     await page.evaluate(() => window.__AG_MISSION_DASHBOARD_ENTRY__.record('settings-body-ready'))
     const returnView = await page.evaluate(async () => {
       const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
@@ -97,6 +105,7 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
     status = 'passed'
     return returnView
   } finally {
+    page.off('request', observeInactiveTab)
     console.log('Mission Dashboard pointer entry:', JSON.stringify(await finishEntryObservation(page, status)))
   }
 }

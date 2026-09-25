@@ -139,7 +139,9 @@ export default function MainPanel({
 }) {
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
-  const [tab, setTab] = React.useState<MainPanelTabKey>('help')
+  const [tab, setTab] = React.useState<MainPanelTabKey>(() =>
+    requestedTab && isMainPanelTabKey(requestedTab) ? requestedTab : 'help',
+  )
   const [sharedActionsByTab, setSharedActionsByTab] = React.useState<Record<SharedMainPanelTabKey, MainPanelSharedActions>>(
     () => createMainPanelSharedActionsState(),
   )
