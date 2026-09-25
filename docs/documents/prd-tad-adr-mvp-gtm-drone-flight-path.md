@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.1.0
+version: 1.2.0
 date: 2026-09-26
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -13,7 +13,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.1.0 binds this user-authorized extension. The user confirmed
+DRONE-FLIGHT-PATH-001@1.2.0 binds this user-authorized extension. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
 inspects its motion, then exports the completed path. GameXR imports a bounded file,
@@ -139,3 +139,48 @@ Graph's component browser passes with the actual v2 541-sample export, paced fli
 landing and shared scene mounted. The rebuilt full-app offline reload/cache-recovery
 proof also passes. WebMCP scope and Vite runtime checks pass. These remain working-source
 observations; no clean-candidate CI, protected integration or phone session is inferred.
+
+
+## Direct transfer and phone links — 1.2.0
+
+PRD: remove the compulsory download/file-picker step. Results now offers Send to GameXR
+and Copy flight path. GameXR admits direct handoff, pasted JSON, compressed phone links
+and existing files through one validation/review owner. Import never connects or runs.
+The shared Canvas and source-file link remain the same across these entry points.
+
+TAD: `agentic-drone-flight-handoff/v1` messages have protocol, kind, channel; path messages
+add text. The sender opens the explicitly entered HTTP(S) destination on the user click,
+strips query/hash credentials, and appends drone=1 plus flightChannel (32 random hex)
+and flightOrigin (exact origin) in the fragment. Ready/accepted/rejected replies require
+that exact opened Window, origin, channel and key set. The one-shot receiver validates
+text through its flight-file reader before acknowledgment. Both sides expire at 20 seconds;
+source/lesson/run changes abort the sender. Neither endpoint exposes receiver commands.
+
+ADR: phone sharing uses the browser's gzip Compression Streams API and base64url in a
+fragment named flight, with at most 16,000 encoded characters and 500,000 decoded bytes.
+GameXR owns link generation/decoding. No sharing server, dependency or cloud account is
+introduced. Oversized links fail visibly with file/paste recovery. A user-supplied trusted
+HTTPS gateway address may include the existing one-use pair token; only pair is preserved.
+Transfer fields are removed from history after capture; pair remains for explicit Connect.
+This does not mint, renew, store or broaden a pairing grant. Generated links contain the
+path and any supplied token and must be shared privately. Safari support begins at 16.4:
+https://developer.apple.com/documentation/safari-release-notes/safari-16_4-release-notes
+
+MVP: bound this increment to 16 files / 80 KiB added source / no new dependencies.
+Browser tests cover cross-origin opener admission, forged sender rejection, replay,
+invalid replacement, phone-link compression/review and mobile width. Unit tests cover
+bounded decompression, exact bytes, pairing-field preservation and cancellation. The
+Canvas change listener wraps invalidate() so OrbitControls events are not passed as a
+frame count. TypeScript and the focused native learning/browser checks are required.
+Full-source offline recovery and the exact native publication gates retain their owners.
+Physical iPhone/Wi-Fi and clipboard permission behavior require a real-device session.
+
+GTM: demonstrate run → send → review → Run, with phone link and offline copy/paste as
+alternatives. Measure completed transfers and setup friction before adding synchronization.
+The phone link is a flight-data snapshot; sourceUrl still points to the original browser's
+workspace route and does not synchronize source files across devices.
+
+Release/rollback: publish reviewed source successors; protected merge and production remain
+separate authority. Revert this increment to restore file-only transfer, preserving the
+prior shared Canvas. Working-source evidence uses flight-transfer-* under the existing
+external audit directory. No firmware, gateway authorization or physical control changes.

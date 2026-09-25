@@ -78,3 +78,43 @@ test('Canvas embed admits only bounded pose observations on its exact channel', 
     { pose: [1, NaN, 0, 0, 0] }, { pose: [7201, 0, 0, 0, 0] }, { pose: [1, 9, 0, 0, 0] },
     { pose: [1, 0, 0, 360, 0] }, { pose: [1, 0, 0, 0, 5] }]) assert.equal(readLearningCanvasPose({ ...message, ...patch }, channel), null)
 })
+
+test('browser transfer rejects foreign acknowledgments and strips phone credentials from its destination', async () => {
+  const { flightDestination, isFlightReply, sendFlightPath, FLIGHT_HANDOFF } = await import('../features/python-learning/learningFlightTransfer')
+  const url = flightDestination('https://game.test/gamexr/?secret=private#pair=private')
+  assert.equal(url.href, 'https://game.test/gamexr/?drone=1')
+  assert.throws(() => flightDestination('javascript:alert(1)'))
+  assert.throws(() => flightDestination('https://user:password@game.test/'))
+  const target = {} as Window, channel = 'a'.repeat(32), origin = 'https://game.test'
+  const event = { source: target, origin, data: { protocol: FLIGHT_HANDOFF, channel, kind: 'accepted' } } as unknown as MessageEvent
+  assert.equal(isFlightReply(event, target, origin, channel), true)
+  for (const change of [{ source: {} }, { origin: 'https://evil.test' }, { data: { ...event.data, channel: 'b'.repeat(32) } },
+    { data: { ...event.data, execute: true } }]) assert.equal(isFlightReply({ ...event, ...change } as MessageEvent, target, origin, channel), false)
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, 'window'), oldLocation = Object.getOwnPropertyDescriptor(globalThis, 'location')
+  const events = new EventTarget(), messages: { value: any; origin: string }[] = []
+  let opened = '', prepareCount = 0
+  const child = { postMessage: (value: unknown, destination: string) => messages.push({ value, origin: destination }) }
+  const receive = (kind: string, messageChannel: string) => {
+    const e = Object.assign(new Event('message'), { source: child, origin, data: { protocol: FLIGHT_HANDOFF, kind, channel: messageChannel } })
+    events.dispatchEvent(e)
+  }
+  try {
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: Object.assign(events, { open: (url: string) => { opened = url; return child } }) })
+    Object.defineProperty(globalThis, 'location', { configurable: true, value: { origin: 'https://graph.test' } })
+    const controller = new AbortController()
+    const promise = sendFlightPath(origin + '/gamexr/', async () => { prepareCount++; return 'review-data' }, controller.signal)
+    const transfer = new URLSearchParams(new URL(opened).hash.slice(1)).get('flightChannel')!
+    assert.equal(prepareCount, 1); assert.equal(messages.length, 0)
+    receive('ready', 'wrong'); await Promise.resolve(); assert.equal(messages.length, 0)
+    receive('ready', transfer); assert.equal(messages.length, 1); assert.equal(messages[0].origin, origin)
+    receive('ready', transfer); assert.equal(messages.length, 1)
+    receive('accepted', transfer); assert.match(await promise, /for review/)
+    receive('ready', transfer); assert.equal(messages.length, 1)
+    const cancelled = new AbortController()
+    const pending = sendFlightPath(origin, async () => 'cancelled', cancelled.signal)
+    cancelled.abort(); await assert.rejects(pending, /changed/)
+  } finally {
+    for (const [key, descriptor] of [['window', oldWindow], ['location', oldLocation]] as const)
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor); else Reflect.deleteProperty(globalThis, key)
+  }
+})

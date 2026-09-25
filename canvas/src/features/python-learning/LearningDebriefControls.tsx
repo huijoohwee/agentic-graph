@@ -2,6 +2,7 @@ import React from 'react'
 import { pythonLearningRuntime as runtime } from './learningRuntime'
 import { captureLearningDebrief, loadLearningDebriefs, parseLearningDebrief, saveLearningDebrief, LEARNING_RECORD_BYTES, type LearningDebrief } from './learningPersistence'
 import type { DroneBenchLogSummary } from './learningDroneBenchLog'
+import { LearningFlightTransferControls } from './LearningFlightTransferControls'
 
 export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (source: string, lessonId: string) => void; readOnly?: boolean }) {
   const snapshot = React.useSyncExternalStore(runtime.subscribe, runtime.read, runtime.read)
@@ -56,6 +57,7 @@ export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (s
         })
       }} /></label>
     </div>
+    {snapshot.document?.lessonId === 'drone' ? <LearningFlightTransferControls /> : null}
     {snapshot.document?.lessonId === 'drone' ? <details><summary>GameXR drone bench log</summary>
       <p>Inspect an exported simulated receiver session. Recorded setpoints are control requests; measured attitude and battery are unavailable. Receiver control stays in GameXR.</p>
       <label>Import session log <input aria-label="Import GameXR drone bench log" type="file" accept="application/json,.json" disabled={busy} onChange={event => {

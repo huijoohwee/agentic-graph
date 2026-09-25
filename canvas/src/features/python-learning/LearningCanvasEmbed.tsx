@@ -12,9 +12,10 @@ function CameraControls() {
   React.useEffect(() => {
     const controls = new OrbitControls(camera, gl.domElement)
     applyLearningCameraPose(camera as PerspectiveCamera, controls, gl.domElement)
-    controls.addEventListener('change', invalidate)
+    const redraw = () => invalidate()
+    controls.addEventListener('change', redraw)
     invalidate()
-    return () => { controls.removeEventListener('change', invalidate); controls.dispose() }
+    return () => { controls.removeEventListener('change', redraw); controls.dispose() }
   }, [camera, gl, invalidate, size.width, size.height])
   return null
 }
