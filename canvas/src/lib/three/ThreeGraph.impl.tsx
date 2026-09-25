@@ -44,7 +44,7 @@ import { resolveThreeRendererLifecycleKey, resolveThreeSceneFrameLoop, shouldMou
 import { resolveThreeGraphXrSceneAuthority, ThreeGraphImmersiveMediaHud, ThreeGraphImmersiveMediaStage, useThreeGraphImmersiveMediaActive } from '@/lib/three/ThreeGraphImmersiveMedia'
 import { readImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import { type ThreeCanvasSemanticMediaOwner, useThreeCanvasSemanticOwner } from '@/lib/three/threeCanvasSemanticOwner'
-import { graphHasXrAuthoringSource } from '@/features/agentic-ecs/xrAuthoringEcsRuntime'
+import { resolveXrDocumentStageAuthority } from '@/features/three/xrSceneDocumentReadiness'
 import type { LearningLesson, LearningSceneSnapshot } from '@/features/python-learning/learningLessons'
 const LearningSceneStageLazy = React.lazy(() => import('@/features/python-learning/LearningSceneStage').then(mod => ({ default: mod.LearningSceneStage })))
 const SceneLazy = React.lazy(() => import('@/lib/three/Scene.impl').then(mod => ({ default: mod.Scene })))
@@ -119,6 +119,9 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     String(canvasMarkdownDocument.name || '').trim()
     && String(canvasMarkdownDocument.text || '').trim(),
   )
+  const documentStageAuthority = resolveXrDocumentStageAuthority({
+    graphData: xrAuthoringGraphData, markdownDocumentName: canvasMarkdownDocument.name, markdownDocumentText: canvasMarkdownDocument.text,
+  })
   const renderGraphRef = useRef<GraphData | null>(null)
   const renderGraph = useMemo(() => {
     if (!xrDocumentLoaded) {
@@ -203,19 +206,12 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     immersive: immersiveMediaStageActive, gameplay: gameplayOverlayActive, importedModel: !!glbAsset, spatialCapture: !!spatialCaptureManifest,
     semanticSpace: !!sceneGraphForRender?.nodes.some(node => node.properties?.twinTemplate && node.properties?.spaceId) })
   const rendererBackend = useThreeRendererBackend(gpuEligible, active && !geospatialComposite)
-  const hasGraph = !rendererBackend.gpu && !semanticObjectTarget && !semanticTwinFit && !learningScene && !!sceneGraphForRender && !explicitMediaSourceActive
+  const hasGraph = (mode !== 'xr' || !!documentStageAuthority) && !rendererBackend.gpu && !semanticObjectTarget && !semanticTwinFit && !learningScene && !!sceneGraphForRender && !explicitMediaSourceActive
   const hasGlbAsset = !learningScene && !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !learningScene && !!spatialCaptureManifest
-  const hasXrEmptyWorld = !semanticObjectTarget && mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive
+  const hasXrEmptyWorld = !semanticObjectTarget && mode === 'xr' && !documentStageAuthority && !hasGlbAsset && !hasSpatialCaptureManifest && !learningScene && !gameplayOverlayActive && !immersiveMediaStageActive
   const hasRenderableScene = !!semanticObjectTarget || gpuEligible || !!semanticTwinFit || !!learningScene || immersiveMediaStageActive || gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld
-  const xrAuthoringGraphActive = useMemo(() => (
-    xrAuthoringGraphData ? graphHasXrAuthoringSource(xrAuthoringGraphData) : false
-  ), [xrAuthoringGraphData])
-  const xrGraphStageAuthority = mode === 'xr' && hasGraph
-    ? xrAuthoringGraphActive
-      ? 'native-controller'
-      : xrPhysicsRuntimeRunReadyDemo ? 'native-controller' : 'motion-reference'
-    : undefined
+  const xrGraphStageAuthority = mode === 'xr' && hasGraph ? documentStageAuthority : undefined
   const xrSceneAuthority = resolveThreeGraphXrSceneAuthority({ mode, immersiveMediaActive: immersiveMediaStageActive, xrGraphStageAuthority, hasGlbAsset, hasSpatialCaptureManifest, hasXrEmptyWorld })
   const xrStandaloneFit = hasSpatialCaptureManifest
     ? spatialCaptureFit
@@ -535,6 +531,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           </XrWorldPlacement>
           </>}
           {!gameFpsStageActive ? <ControlsLazy
+            key={hasXrEmptyWorld ? 'empty-world-controls' : 'scene-controls'}
             learningSceneId={learningScene?.lesson.id}
             schema={effectiveSchema as GraphSchema}
             positions={positions}
@@ -557,7 +554,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} />
         </React.Suspense>
       </Canvas>
-      {mode === 'xr' && xrDocumentLoaded && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
+      {mode === 'xr' && documentStageAuthority && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
       {hasXrEmptyWorld && !gameplayOverlayActive ? <XrEmptyWorldHud /> : null}
       {immersiveMediaActive ? <ThreeGraphImmersiveMediaHud geospatialComposite={geospatialComposite} /> : null}
       <CanvasXrEntryPanel

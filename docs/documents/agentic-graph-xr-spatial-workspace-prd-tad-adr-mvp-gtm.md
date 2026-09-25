@@ -1,26 +1,26 @@
 ---
 title: "XR spatial workspace — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.0"
+version: "0.2.1"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product maintainers"
 continuity_id: "PLAN-XR-SPATIAL-WORKSPACE"
-prd_revision: "0.2.0"
-tad_revision: "0.2.0"
-adr_revision: "0.2.0"
-mvp_revision: "0.2.0"
-gtm_revision: "0.2.0"
+prd_revision: "0.2.1"
+tad_revision: "0.2.1"
+adr_revision: "0.2.1"
+mvp_revision: "0.2.1"
+gtm_revision: "0.2.1"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 lifecycle_status: "proposed"
 worktree_id: "device-0232231d4a19--xr-semantic-space-spec"
-agent_id: "codex-xr-workspace-panels"
+agent_id: "codex-xr-source-authority"
 parent_continuity: "PLAN-AGENTIC-GRAPH-XR-MODE-PRD-TAD-ADR-MVP-GTM@0.9.1"
-reviewed_source_revision: "3eb28c9ce8afc7da2165e662e3e6a4b896fca4d2"
+reviewed_source_revision: "8ce2ce850fee65fb24552b2ca9b40e4d07f9a565"
 guideline_revision: "3.3.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,9 +31,9 @@ load_policy: "on-demand"
 
 ## Continuity and scope — reference implementation
 
-All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.0`. This bounded child of
+All five roles below join `PLAN-XR-SPATIAL-WORKSPACE@0.2.1`. This bounded child of
 the [XR product owner](agentic-graph-xr-mode-prd-tad-adr-mvp-gtm.md) owns W01–W06
-and ADR-W01/W02/W03 plus the F01–F04 rendering and P01–P06 panel increments. It is separate because the existing procedural-twin companion is
+and ADR-W01/W02/W03 plus the F01–F04 rendering and P01–P06 panel increments and S01–S03 source admission. It is separate because the existing procedural-twin companion is
 near its 600-line limit. That companion continues to own evidence-to-geometry,
 units, recipes and reconstruction limits; this document owns workspace navigation and solid-scene presentation.
 The containing candidate commit binds implementation evidence; the frontmatter
@@ -502,3 +502,82 @@ Validation receipt, 2026-09-25:
 
 Publication is a review handoff only. Exact protected CI, integration and deployment
 require their own native receipts; local checks do not grant those effects.
+
+
+## S01–S03 — source-owned XR entry — reference implementation
+
+### PRD — remove implicit stage variants
+
+Observed on 2026-09-25: selecting XR with the catalog `demo.md` rendered a
+Singapore stage and paragraph actors. A loaded Markdown document had been treated
+as scene authority. The author could not distinguish saved scene content from an
+implicit fallback. This increment removes that fallback; it does not remove
+intentionally authored motion scenes or redefine XR as a separate renderer.
+
+| ID | Requirement / acceptance | Owner |
+|---|---|---|
+| S01 | Ordinary Markdown in XR opens the existing neutral world; surface selection alone does not create actors | `xrSceneDocumentReadiness.ts` and `ThreeGraph.impl.tsx` |
+| S02 | Removing authored scene metadata clears retained dirty stage state and cast without writing Markdown | `XrMotionReferenceRuntimeBridge.tsx` |
+| S03 | Timeline offers no synthetic stage/cast for unauthored documents; saved scene and explicit demo routes remain valid | `TimelineBottomPanelView.tsx` and shared admission resolver |
+
+### TAD and ADR-W04 — distinguish loaded document from authored scene
+
+The shared admission resolver accepts native ECS authoring, the explicit XR
+run-ready identity, or persisted motion-reference content. Direct and nested
+frontmatter metadata use the existing reader. A document name or selected surface
+cannot grant stage authority. Document readiness remains separate so the existing
+Media authoring actions can add a first object to a loaded document.
+
+Canvas and Timeline consume that same decision. Imported models, saved semantic
+objects, spatial capture, immersive media and explicit gameplay retain their
+existing owners. The empty world reuses its current grid, origin and camera;
+there is no second scene, hover treatment, renderer or fallback component.
+The existing Controls instance resets when entering or leaving the empty world,
+so a native follow camera cannot donate its close-distance baseline. The Canvas
+renderer remains mounted across this handoff and ordinary object selection.
+
+Hydration passes no graph nodes and an explicit neutral/subjects-only plan when
+source authority is absent. An empty-scene identity fence prevents the runtime's
+same-scene dirty merge from restoring a removed stage. Reopening persisted source
+restores its authored plan. This changes transient runtime admission, not saved
+schema or user source content. Authored motion-reference support remains necessary
+for existing scene documents; deleting that owner would break valid saved work.
+
+Decision: extend native source admission instead of adding another XR option or
+changing WebGPU defaults. The reported conflict is source selection, not backend
+capability. Rollback is a corrective source candidate reverting these admission
+checks; no data migration or remote rollback is needed.
+
+### MVP and GTM — bounded correction
+
+Demonstration: open the catalog document → select XR → neutral grid and empty
+Timeline; open the authored XR demo → its existing native scene; return to the
+catalog → no retained stage. Automated coverage also removes metadata from the
+same document after a dirty scene edit, ensuring no synthetic cast survives.
+
+Initial sprint cap: 30 minutes, eight files, zero new production modules or
+dependencies; each changed file stays below 600 lines. The 500 kB chunk cap adds no
+new chunks here. Existing application-wide bundle debt is not newly certified.
+The operator outcome is fewer wrong-scene entries; track this in the existing
+five-author pilot. Buyer demand, $1 handover hypothesis and release boundaries
+remain unchanged. No new commercial or reconstruction capability is claimed.
+
+
+Validation receipt for S01–S03, 2026-09-25:
+
+- 302 XR unit checks pass, including source admission and dirty scene removal;
+  four selected motion/ownership/session contracts pass. Two inherited source
+  assertions now follow the shared resolver and extracted renderer setup owner.
+- Typecheck and three browser-launcher contracts pass. XR/video source-runner
+  checks pass (87 + 20); video unit checks pass (15), compatibility/cleanup and
+  both source-ready commands pass. The production build passes. No new chunks
+  or dependencies are added; changed-file hygiene and source compliance pass.
+- Live localhost entry with `demo.md` shows no automatic stage or paragraph cast.
+  Selecting the authored XR demo renders the native playground and transform
+  inspector; returning to the catalog clears that content and Timeline.
+- One separate selected subject-draft test fails on the unchanged native
+  `landscape` recipe: its bounds extend approximately 0.65 m below the ground
+  origin. The subject editor persistence check passes. This existing geometry
+  admission issue is not a green release receipt and is not bypassed here.
+- Full automated XR/MP4 browser suites and protected CI remain separate evidence;
+  no physical-device/headset parity, integration or deployment is claimed.
