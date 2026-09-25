@@ -1,7 +1,7 @@
 import { selectSemanticObject } from './semanticSpaceCanvas'
 import React from 'react'
 import { XrSelectionBounds } from '@/features/three/XrSelectionBounds'
-import { readSemanticObjectViewMarkdown, semanticObjectBindings } from './semanticObjectView'
+import { readSemanticObjectViewMarkdown, semanticObjectBindings, semanticObjectCameraFit } from './semanticObjectView'
 import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import { photoOverlayBindings } from './semanticTwinPhotoProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -38,6 +38,8 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}:${media.active}:${JSON.stringify(photo)}:${JSON.stringify(objectView)}`
   const target = `${document?.id || ''}:${media.active}:${photo?.evidenceSha256 || objectView?.evidenceSha256 || ''}`
   const built = prepared?.target === target ? prepared.scene : EMPTY_SCENE
+  const objectFit = React.useMemo(() => objectView && !photo
+    ? semanticObjectCameraFit(built.objects.map(item => item.binding)) : null, [built, objectView, photo])
   const invalidate = useThree(state => state.invalidate)
   React.useEffect(() => {
     if (!document) { setPrepared(null); return }
@@ -58,13 +60,14 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   React.useEffect(() => {
     const room = document?.twin?.room
     if (media.active || !room || !built.objects.length || built.error) { onFitChange?.(null); return }
+    if (objectFit) { onFitChange?.(objectFit); return () => onFitChange?.(null) }
     const height = Math.max(...built.objects.map(item => item.binding.size[1]))
     const size: [number, number, number] = [room.width, height + room.depth * 0.35, room.depth + height * 0.35]
     onFitChange?.({ cameraProfile: 'spatial-capture', cameraTarget: [0, height * 10, 0],
       position: [0, 0, 0], scale: 20, floorY: 0, stageSpan: Math.max(...size) * 20,
       preserveFlatFacing: false, flatAxis: null, size, scaledSize: size.map(n => n * 20) as [number, number, number] })
     return () => onFitChange?.(null)
-  }, [built, onFitChange, media.active])
+  }, [built, onFitChange, media.active, objectFit])
   const preview = React.useRef<{ engine: SpatialPhysicsEngine; entityId: string; elapsed: number } | null>(null)
   React.useEffect(() => {
     preview.current = null
@@ -113,7 +116,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     }))
   }
   if (!document?.twin || built.objects.length === 0) return null
-  return <group name="SemanticSpaceTwin" scale={photo ? 1 : 20} rotation={photo || objectView ? [0, 0, 0] : [-0.35, 0, 0]}>
+  return <group name="SemanticSpaceTwin" scale={photo ? 1 : objectFit?.scale || 20} rotation={photo || objectView ? [0, 0, 0] : [-0.35, 0, 0]}>
     <ambientLight intensity={0.7} />
     <directionalLight position={[3, 7, 5]} intensity={1.2} />
     {!photo && <mesh position={[0, -0.04, 0]} receiveShadow>

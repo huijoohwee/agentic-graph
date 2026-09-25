@@ -114,3 +114,38 @@ export function editSemanticTwinControl(binding: TwinBinding, controlId: string,
   const recipe = updateProceduralAssetControl(binding.recipe, controlId, value)
   return { ...binding, recipe }
 }
+
+export type TwinJoinSide = 'left' | 'right' | 'front' | 'back'
+/** Face-to-face placement only; neighbors remain independent bindings and meshes. */
+export function positionTwinBeside(size: TwinVector, neighbor: Pick<TwinBinding, 'size' | 'position'>,
+  side: TwinJoinSide, gap: number, room: TwinRoom): TwinVector {
+  if (!vector(size, 0.1, 5) || !vector(neighbor.size, 0.1, 5) || !vector(neighbor.position, -10, 10)
+    || neighbor.position[1] < 0 || !finite(room.width, 2, 20) || !finite(room.depth, 2, 20)
+    || !finite(gap, 0, 2) || !['left', 'right', 'front', 'back'].includes(side)) fail('invalid contiguous placement')
+  const horizontal = side === 'left' || side === 'right'
+  const axis = horizontal ? 0 : 2, sign = side === 'left' || side === 'back' ? -1 : 1
+  const position: [number, number, number] = [...neighbor.position]
+  position[axis] += sign * ((neighbor.size[axis] + size[axis]) / 2 + gap)
+  // Left/right blocks share the same front facade plane, even when depths differ.
+  if (horizontal) position[2] += (neighbor.size[2] - size[2]) / 2
+  if (Math.abs(position[0]) + size[0] / 2 > room.width / 2 + 1e-6
+    || Math.abs(position[2]) + size[2] / 2 > room.depth / 2 + 1e-6) fail('joining would extend beyond the room; move the neighbor or enlarge the room')
+  return position
+}
+
+/** Compact authored streetscape; no inferred geographic location or object fusion. */
+export function packTwinRow(objects: readonly TwinBinding[], room: TwinRoom): readonly TwinBinding[] {
+  if (!finite(room.width, 2, 20) || !finite(room.depth, 2, 20)
+    || objects.some(item => !vector(item.size, 0.1, 5))) fail('invalid contiguous row dimensions')
+  const width = objects.reduce((sum, item) => sum + item.size[0], 0)
+  if (!objects.length || objects.length > MAX_TWIN_OBJECTS || !Number.isFinite(width) || width > room.width + 1e-6) {
+    fail('contiguous row exceeds room width; use fewer objects or enlarge the room')
+  }
+  let cursor = -width / 2
+  return objects.map(item => {
+    const position: TwinVector = [cursor + item.size[0] / 2, 0, -item.size[2] / 2]
+    cursor += item.size[0]
+    if (item.size[2] > room.depth / 2) fail('contiguous row exceeds room depth')
+    return { ...item, position }
+  })
+}

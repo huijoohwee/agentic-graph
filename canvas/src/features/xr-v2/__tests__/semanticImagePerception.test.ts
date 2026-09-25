@@ -13,6 +13,9 @@ import { buildTwinScene, disposeTwinScene } from '../semanticTwinScene'
 import { validateTwinSilhouette } from '../semanticTwinSilhouette'
 import { parseSemanticSpaceInvocation } from '@/features/agent-ready/semanticSpaceWebMcpTools'
 import { replaceableImageRegionIds } from '../semanticImageTwinCompiler'
+import { positionTwinBeside } from '../semanticTwinRuntime'
+import { semanticObjectCameraFit } from '../semanticObjectView'
+import { readModelAssetCameraPose } from '@/features/three/modelAssetCameraPose'
 
 function fixture() {
   const width = 64, height = 32, data = new Uint8ClampedArray(width * height * 4).fill(255)
@@ -301,4 +304,68 @@ test('individual object marks atomically replace automatic merged groups with in
   assert.throws(() => applySpaceAction(coarse, { ...split,
     proposals: [{ ...split.proposals[0], region: { x: .9, y: 0, width: .5, height: .2 } }] }))
   assert.equal(JSON.stringify(coarse), before, 'invalid or successful replacement never mutates the input')
+})
+
+test('contiguous marked blocks keep crop proportions, touch without fusion, and retain independent ray hits', async () => {
+  const input = await action(), original = newSpaceDocument('space:row')
+  const row = { ...input, layout: 'contiguous-row' as const, proposals: Array.from({ length: 4 }, (_, index) => ({
+    ...describeChosenImageRegion(fixture()).proposals[0], template: 'box' as const,
+    region: { x: index * .2, y: .2, width: .06 + index * .02, height: .4 },
+  })) }
+  const next = applySpaceAction(original, row), bindings = next.twin!.objects
+  const fit = semanticObjectCameraFit(bindings)!
+  assert.ok(Math.abs(Math.max(...fit.scaledSize) - 100) < 1e-6, 'small contiguous blocks fill the model view')
+  const pose = readModelAssetCameraPose(fit)
+  assert.deepEqual(pose.target, fit.cameraTarget)
+  const enlarged = semanticObjectCameraFit(bindings.map(binding => ({ ...binding,
+    size: binding.size.map(value => value * 2) as [number, number, number],
+    position: binding.position.map(value => value * 2) as [number, number, number] })))!
+  assert.deepEqual(enlarged.scaledSize, fit.scaledSize, 'camera framing is independent of arbitrary authoring units')
+  assert.deepEqual(enlarged.cameraTarget, fit.cameraTarget)
+  const built = buildTwinScene(bindings)
+  try {
+    assert.equal(built.error, null)
+    for (const [index, item] of built.objects.entries()) {
+      const binding = item.binding
+      assert.equal(binding.size[2], binding.size[0], 'authored footprint scales with width, not a fixed slab depth')
+      assert.equal(binding.position[2] + binding.size[2] / 2, 0, 'front faces align')
+      if (index) {
+        const previous = bindings[index - 1]
+        assert.ok(Math.abs(previous.position[0] + previous.size[0] / 2 - binding.position[0] + binding.size[0] / 2) < 1e-6)
+      }
+      built.objects.forEach(candidate => candidate.wrapper.updateMatrixWorld(true))
+      const ray = new THREE.Raycaster(new THREE.Vector3(binding.position[0], binding.size[1] / 2, 5), new THREE.Vector3(0, 0, -1))
+      assert.deepEqual(built.objects.filter(candidate => ray.intersectObject(candidate.wrapper, true).length)
+        .map(candidate => candidate.binding.entityId), [binding.entityId])
+      assert.equal(binding.evidenceSha256, input.observation.sha256)
+    }
+  } finally { disposeTwinScene(built) }
+  const store = createSemanticSpaceStore({ indexedDB, databaseName: `row-${crypto.randomUUID()}` })
+  assert.deepEqual(await importSemanticSpace(await exportSemanticSpacePackage(next), store), next)
+  assert.throws(() => applySpaceAction(original, { ...row, layout: 'fused' as never }), /layout/)
+  assert.throws(() => applySpaceAction(original, { ...row,
+    proposals: row.proposals.map(item => ({ ...item, region: { x: 0, y: 0, width: .8, height: .8 } })) }), /row exceeds/)
+  assert.equal(original.entities.length, 0)
+})
+
+test('neighbor placement supports contact and gaps without modifying other objects or accepting stale writes', async () => {
+  const input = await action(), next = applySpaceAction(newSpaceDocument('space:join'), { ...input,
+    proposals: input.proposals.map(item => ({ ...item, template: 'box' as const })) })
+  const [first, second] = next.twin!.objects, room = next.twin!.room
+  const anchor = { size: [1, 2, 2] as const, position: [0, 1, 0] as const }
+  assert.deepEqual(positionTwinBeside([1, 1, 1], anchor, 'left', 0, room), [-1, 1, .5])
+  assert.deepEqual(positionTwinBeside([1, 1, 1], anchor, 'right', .25, room), [1.25, 1, .5])
+  assert.deepEqual(positionTwinBeside([1, 1, 1], anchor, 'front', 0, room), [0, 1, 1.5])
+  assert.deepEqual(positionTwinBeside([1, 1, 1], anchor, 'back', 0, room), [0, 1, -1.5])
+  for (const gap of [-.1, NaN, Infinity, 3]) assert.throws(() => positionTwinBeside([1, 1, 1], anchor, 'right', gap, room))
+  assert.throws(() => positionTwinBeside([1, 1, 1], { ...anchor, position: [3.5, 0, 0] }, 'right', 0, room), /beyond/)
+  const position = positionTwinBeside(first.size, second, 'right', 0, room)
+  const edit = { operation: 'edit-twin' as const, requestId: 'request:join', expectedRevision: next.revision,
+    entityId: first.entityId, size: first.size, position }
+  const joined = applySpaceAction(next, edit)
+  assert.deepEqual(joined.twin!.objects[1], second)
+  assert.deepEqual(joined.entities, next.entities)
+  assert.deepEqual(joined.twin!.objects[0].position, position)
+  assert.throws(() => applySpaceAction(joined, { ...edit, requestId: 'request:stale-join' }), /changed/)
+  assert.deepEqual(validateSpaceDocument(JSON.parse(JSON.stringify(joined))), joined)
 })

@@ -23,6 +23,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   const [marking, setMarking] = React.useState(false)
   const [replacementIds, setReplacementIds] = React.useState<readonly string[]>([])
   const [replaceGroups, setReplaceGroups] = React.useState(true)
+  const [layout, setLayout] = React.useState<'image' | 'contiguous-row'>('image')
   const controller = React.useRef<AbortController | null>(null)
   const mounted = React.useRef(true)
   const base = React.useRef<{ id: string | null; revision: number }>({ id: null, revision: 0 })
@@ -91,6 +92,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
         saved.current = await runSemanticSpaceAction({ operation: 'confirm-image-regions',
           requestId: `request:${crypto.randomUUID()}`, expectedRevision: base.current.revision,
           observation: draft.observation,
+          layout: objectMode ? layout : 'image',
           ...(marking && replaceGroups ? { replaceEntityIds: replacementIds } : {}),
           proposals: selected.map(index => ({ ...draft.result.proposals[index], label: labels[index], template: shapes[index] })) })
       }
@@ -174,6 +176,14 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
           </select></label></div>)}</div>
       <p className="m-0">Choose a procedural object shape such as building, tree, water, cloud or furniture. Each selected region becomes its own selectable model.
         These are reviewed approximations: object identity, hidden surfaces and real depth are not recovered. Models use authored template proportions. Edit dimensions and placement in Timeline.</p>
+      {objectMode && <label className="grid gap-1">Object layout
+        <select className="min-h-11 w-full rounded border bg-transparent px-2" value={layout} disabled={busy || !!saved.current}
+          onChange={event => setLayout(event.currentTarget.value as typeof layout)}>
+          <option value="image">Image positions</option>
+          <option value="contiguous-row">Contiguous row · separate blocks</option>
+        </select>
+        {layout === 'contiguous-row' && <span>Place selected objects edge-to-edge in review order, with aligned front faces. This is an authored arrangement.</span>}
+      </label>}
       <button type="button" className={button} disabled={busy || !selected.length || selected.some(i => !labels[i]?.trim())}
         onClick={() => void build()}>{saved.current ? 'Show built regions on Canvas' : 'Build selected regions in 3D'}</button>
     </>}

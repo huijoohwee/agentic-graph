@@ -1,11 +1,12 @@
 import type { ImageRegionProposal } from './semanticImagePerception'
 import type { SpaceDocument, SpaceEntity, SpaceObservation } from './semanticSpaceRuntime'
-import { buildSemanticTwinBinding, emptySemanticTwin } from './semanticTwinRuntime'
+import { buildSemanticTwinBinding, emptySemanticTwin, packTwinRow } from './semanticTwinRuntime'
 
 export type ConfirmImageRegions = Readonly<{
   operation: 'confirm-image-regions'; requestId: string; expectedRevision: number
   observation: SpaceObservation; proposals: readonly ImageRegionProposal[]
   replaceEntityIds?: readonly string[]
+  layout?: 'image' | 'contiguous-row'
 }>
 
 /** Only unrefined, automatically grouped image volumes may be replaced by reviewed object marks. */
@@ -23,6 +24,7 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
     throw Error('Confirm between 1 and 12 visible regions.')
   }
   const twin = doc.twin || emptySemanticTwin()
+  if (action.layout !== undefined && !['image', 'contiguous-row'].includes(action.layout)) throw Error('Unsupported image object layout.')
   if (twin.room.unit !== 'arbitrary') throw Error('Image layout needs arbitrary units. Change the floor units before building proposals.')
   const replacements = action.replaceEntityIds || []
   const eligible = replaceableImageRegionIds(doc, action.observation.sha256)
@@ -48,6 +50,7 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
     const shape = proposal.template || (proposal.silhouette ? 'contour' : 'box')
     let depth = ['contour', 'box', 'relief'].includes(shape) ? 0.4
       : clamp(width * (shape === 'chair' || shape === 'table' ? 0.72 : 1), 0.1, Math.min(5, twin.room.depth)) // Authored template proportions, not inferred depth.
+    if (shape === 'box' && proposal.source === 'user-region') depth = Math.min(width, twin.room.depth)
     if (shape === 'sea' || shape === 'river') { depth = height; height = 0.12 }
     if (shape === 'sky') depth = 0.15
     const x = clamp((region.x + region.width / 2 - 0.5) * twin.room.width,
@@ -59,6 +62,7 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
     return binding
   })
   return { ...doc, observations: [...doc.observations, action.observation],
-    entities: [...doc.entities, ...entities], twin: { ...twin, objects: [...twin.objects.filter(item => !replacements.includes(item.entityId)), ...objects] },
+    entities: [...doc.entities, ...entities], twin: { ...twin, objects: [...twin.objects.filter(item => !replacements.includes(item.entityId)),
+      ...(action.layout === 'contiguous-row' ? packTwinRow(objects, twin.room) : objects)] },
     selectedEntityId: entities[0].id }
 }

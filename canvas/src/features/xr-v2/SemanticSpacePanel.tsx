@@ -8,8 +8,8 @@ import { applySpaceAction, hashSpaceImage, MAX_SPACE_ENTITIES, MAX_SPACE_OBSERVA
 import { importSemanticSpace, readSemanticSpace, readSemanticSpaceSourceMirrorStatus,
   runSemanticSpaceAction, subscribeSemanticSpace } from './semanticSpaceStore'
 import { exportSemanticSpacePackage } from './semanticSpaceStore'
-import { emptySemanticTwin, SEMANTIC_TWIN_PREVIEW_EVENT, SEMANTIC_TWIN_TEMPLATES,
-  type TwinTemplate, type TwinVector } from './semanticTwinRuntime'
+import { emptySemanticTwin, positionTwinBeside, SEMANTIC_TWIN_PREVIEW_EVENT, SEMANTIC_TWIN_TEMPLATES,
+  type TwinJoinSide, type TwinTemplate, type TwinVector } from './semanticTwinRuntime'
 
 const actionId = () => `action:${crypto.randomUUID()}`
 const entityId = () => `entity:${crypto.randomUUID()}`
@@ -41,6 +41,9 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
   const [twinTemplate, setTwinTemplate] = React.useState<TwinTemplate>('box')
   const [twinSize, setTwinSize] = React.useState<TwinVector>([1, 1, 1])
   const [twinPosition, setTwinPosition] = React.useState<TwinVector>([0, 0, 0])
+  const [joinNeighborId, setJoinNeighborId] = React.useState('')
+  const [joinSide, setJoinSide] = React.useState<TwinJoinSide>('right')
+  const [joinGap, setJoinGap] = React.useState(0)
   const [roomSize, setRoomSize] = React.useState<readonly [number, number]>([8, 8])
   const [authoredMetres, setAuthoredMetres] = React.useState(false)
   const currentDocumentRef = React.useRef<SpaceDocument | null>(null)
@@ -216,6 +219,8 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
   const observation = document?.observations[observationIndex] || null
   const selected = document?.entities.find(item => item.id === (inspectorEntityId || document.selectedEntityId)) || null
   const twinBinding = document?.twin?.objects.find(item => item.entityId === selected?.id)
+  const neighbors = document?.twin?.objects.filter(item => item.entityId !== selected?.id
+    && item.evidenceSha256 === twinBinding?.evidenceSha256) || []
   const results = document ? querySpaceEntities(document, query) : []
   const imageEntities = document?.entities.filter(item => item.observationId === observation?.id) || []
   const pointer = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -282,6 +287,18 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
       : operation === 'drop' ? 'Local cuboid proxy preview started; source layout is unchanged.'
         : 'Physics preview reset to the authored layout.')
   }
+  const joinNeighbor = () => {
+    if (!document?.twin || !selected || !twinBinding || draftEntityId !== selected.id) return
+    const neighbor = neighbors.find(item => item.entityId === joinNeighborId)
+    if (!neighbor) { setStatus('Choose a neighboring object from the same image.'); return }
+    try {
+      const position = positionTwinBeside(twinSize, neighbor, joinSide, joinGap, document.twin.room)
+      void mutate({ operation: 'edit-twin', requestId: actionId(), expectedRevision: document.revision,
+        entityId: selected.id, size: twinSize, position }, 'Placement saved. Objects remain independently editable.').then(next => {
+          if (next) void addSelectedToCanvas(next, selected)
+        })
+    } catch (error) { setStatus(String((error as Error).message || error)) }
+  }
   const exportSelectedModel = async () => {
     if (!twinBinding || !document || busy) return
     const revision = document.revision
@@ -331,6 +348,10 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
             <input className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
               onChange={event => { const value = Number(event.currentTarget.value)
                 setTwinSize(current => current.map((item, index) => index === axis ? value : item) as [number, number, number]) }} /></label>)}</div>
+          {['box', 'building'].includes(twinTemplate) && <button type="button" className={buttonClass} disabled={busy} onClick={() => {
+            setTwinSize(current => [current[0], current[1], current[0]])
+            setStatus('Square footprint prepared. Apply geometry to save this authored depth.')
+          }}>Match depth to width</button>}
           <div className="grid grid-cols-2 gap-2">{(['X position', 'Elevation', 'Depth position'] as const).map((name, index) => {
             const axis = index
             return <label key={name}>{name}<input className={fieldClass} type="number" min={axis === 1 ? "0" : "-10"} max="10" step="0.1"
@@ -345,6 +366,24 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
               <button type="button" className={buttonClass} onClick={() => previewTwin('reset')}>Reset preview</button>
               <button type="button" className={buttonClass} disabled={busy} onClick={() => void exportSelectedModel()}>Export model GLB</button></>}
           </div>
+          {twinBinding && neighbors.length > 0 && <details><summary className="min-h-11 cursor-pointer py-2">Join neighboring blocks</summary>
+            <div className="grid gap-2"><label>Neighbor object<select className={fieldClass} value={joinNeighborId} disabled={busy}
+              onChange={event => setJoinNeighborId(event.currentTarget.value)}>
+              <option value="">Choose a neighbor</option>
+              {neighbors.map(item => <option key={item.entityId} value={item.entityId}>
+                {document.entities.find(entity => entity.id === item.entityId)?.label || item.entityId}
+              </option>)}</select></label>
+              <div className="grid grid-cols-2 gap-2"><label>Join side<select className={fieldClass} value={joinSide} disabled={busy}
+                onChange={event => setJoinSide(event.currentTarget.value as TwinJoinSide)}>
+                {(['left', 'right', 'front', 'back'] as const).map(side => <option key={side} value={side}>{side}</option>)}
+              </select></label>
+              <label>Gap<input className={fieldClass} type="number" min="0" max="2" step="0.01" value={joinGap} disabled={busy}
+                onChange={event => setJoinGap(Number(event.currentTarget.value))} /></label></div>
+              <span className="text-xs">Zero gap joins bounds. Left/right joins align front faces; each object keeps its own shape and selection.</span>
+              <button type="button" className={buttonClass} disabled={busy || draftEntityId !== selected.id
+                || twinTemplate !== twinBinding.template || !neighbors.some(item => item.entityId === joinNeighborId)}
+                onClick={joinNeighbor}>Join beside object</button>
+            </div></details>}
           {twinBinding?.recipe.controls.filter(control => control.type === 'color').slice(0, 1).map(control =>
             <label key={control.id}>Model colour<input className={fieldClass} type="color"
               value={String(twinBinding.recipe.values[control.id])} disabled={busy} onChange={event => {
