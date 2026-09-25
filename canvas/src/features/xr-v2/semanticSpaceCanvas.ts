@@ -4,7 +4,7 @@ import { SEMANTIC_OBJECT_VIEW_KEY, semanticObjectBindings } from './semanticObje
 import { publishCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { closeWorkspaceView, isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
-import type { SpaceDocument, SpaceEntity } from './semanticSpaceRuntime'
+import { resolveSpaceObservation, type SpaceDocument, type SpaceEntity } from './semanticSpaceRuntime'
 
 export const linkedCanvasNode = (space: SpaceDocument, entityId: string) =>
   useGraphStore.getState().graphData?.nodes.find(node =>
@@ -58,12 +58,13 @@ export async function addSemanticEntityToCanvas(space: SpaceDocument, entity: Sp
 /** Open exact saved evidence with its meshes in the existing image presentation owner. */
 export async function overlaySemanticObservation(space: SpaceDocument, observationId: string, signal?: AbortSignal) {
   signal?.throwIfAborted()
-  const observation = space.observations.find(item => item.id === observationId)
+  const chosen = space.observations.find(item => item.id === observationId)
+  const observation = chosen && resolveSpaceObservation(space, chosen.sha256)
   if (!observation) throw Error('Choose saved image evidence first.')
   const { readSemanticSpace } = await import('./semanticSpaceStore')
   const current = await readSemanticSpace()
   if (current?.id !== space.id || current.revision !== space.revision) throw Error('Space changed before opening the overlay.')
-  const entity = space.entities.find(item => item.observationId === observationId && space.twin?.objects.some(binding => binding.entityId === item.id))
+  const entity = space.entities.find(item => item.observationId === observation.id && space.twin?.objects.some(binding => binding.entityId === item.id))
   if (entity) await addSemanticEntityToCanvas(space, entity)
   const media = await import('@/features/immersive-media/immersiveMediaRuntime')
   const rechecked = await readSemanticSpace()
@@ -113,7 +114,8 @@ export async function openSemanticObjects(space: SpaceDocument, observationId: s
   signal?.throwIfAborted()
   const current = await readSemanticSpace()
   if (current?.id !== space.id || current.revision !== space.revision) throw Error('Space changed before opening objects.')
-  const observation = space.observations.find(item => item.id === observationId)
+  const chosen = space.observations.find(item => item.id === observationId)
+  const observation = chosen && resolveSpaceObservation(space, chosen.sha256)
   if (!observation) throw Error('Choose saved image evidence first.')
   const target = { spaceId: space.id, evidenceSha256: observation.sha256 }
   const bindings = semanticObjectBindings(space, target)

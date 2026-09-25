@@ -6,7 +6,7 @@ import { buildSemanticTwinBinding, editSemanticTwinControl, emptySemanticTwin, M
 export const SEMANTIC_SPACE_SCHEMA = 'agentic-graph/semantic-space/v1' as const
 export const MAX_SPACE_OBSERVATIONS = 24
 export const MAX_SPACE_ENTITIES = 50
-const IMAGE_LIMIT = 2 * 1024 * 1024
+export const SPACE_IMAGE_LIMIT = 2 * 1024 * 1024
 const IMAGE = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 
@@ -20,6 +20,7 @@ export type SpaceObservation = Readonly<{
   sha256: string
   orientation: 'source-pixels'
   scale: 'unknown'
+  supersedesSha256?: string
 }>
 export type SpaceEntity = Readonly<{
   id: string
@@ -43,6 +44,8 @@ export type SpaceDocument = Readonly<{
 }>
 export type SpaceAction =
   | ConfirmImageRegions
+  | Readonly<{ operation: 'refresh-image-evidence'; requestId: string; expectedRevision: number;
+      observationId: string; observation: SpaceObservation }>
   | Readonly<{ operation: 'capture'; requestId: string; expectedRevision: number; observation: SpaceObservation }>
   | Readonly<{ operation: 'confirm'; requestId: string; expectedRevision: number; entity: SpaceEntity }>
   | Readonly<{ operation: 'correct'; requestId: string; expectedRevision: number; entityId: string; label: string; category: string }>
@@ -82,7 +85,7 @@ const validObservation = (observation: SpaceObservation): boolean => Boolean(obs
   && ID.test(observation.id) && validTime(observation.capturedAtMs)
   && Number.isSafeInteger(observation.width) && observation.width > 0 && observation.width <= 4096
   && Number.isSafeInteger(observation.height) && observation.height > 0 && observation.height <= 4096
-  && typeof observation.imageDataUrl === 'string' && observation.imageDataUrl.length <= IMAGE_LIMIT
+  && typeof observation.imageDataUrl === 'string' && observation.imageDataUrl.length <= SPACE_IMAGE_LIMIT
   && IMAGE.test(observation.imageDataUrl) && /^[a-f0-9]{64}$/.test(observation.sha256)
   && observation.orientation === 'source-pixels' && observation.scale === 'unknown')
 
@@ -99,6 +102,11 @@ export function validateSpaceDocument(input: unknown): SpaceDocument {
   for (const observation of doc.observations) {
     if (!validObservation(observation) || observations.has(observation.id)) {
       throw new SpaceError('invalid-package', 'Space observation is malformed or duplicated')
+    }
+    if (observation.supersedesSha256 !== undefined && (!/^[a-f0-9]{64}$/.test(observation.supersedesSha256)
+      || observation.supersedesSha256 === observation.sha256
+      || !doc.observations.some(item => observations.has(item.id) && item.sha256 === observation.supersedesSha256))) {
+      throw new SpaceError('invalid-package', 'Replacement image must reference earlier saved evidence')
     }
     observations.add(observation.id)
   }
@@ -126,6 +134,15 @@ export function validateSpaceDocument(input: unknown): SpaceDocument {
   return doc
 }
 
+/** Keep saved document targets useful after an explicitly reviewed evidence refresh. */
+export function resolveSpaceObservation(doc: SpaceDocument, sha256: string): SpaceObservation | undefined {
+  let observation = doc.observations.find(item => item.sha256 === sha256)
+  for (const candidate of doc.observations) {
+    if (observation && candidate.supersedesSha256 === observation.sha256) observation = candidate
+  }
+  return observation
+}
+
 export function newSpaceDocument(id: string): SpaceDocument {
   return { schema: SEMANTIC_SPACE_SCHEMA, id: requireId(id, 'space id'), revision: 0,
     observations: [], entities: [], selectedEntityId: null, requestIds: [] }
@@ -133,7 +150,7 @@ export function newSpaceDocument(id: string): SpaceDocument {
 
 export async function hashSpaceImage(imageDataUrl: string): Promise<string> {
   const match = IMAGE.exec(imageDataUrl)
-  if (!match || imageDataUrl.length > IMAGE_LIMIT) throw new SpaceError('invalid-image', 'Image format or size is unsupported')
+  if (!match || imageDataUrl.length > SPACE_IMAGE_LIMIT) throw new SpaceError('invalid-image', 'Image format or size is unsupported')
   let bytes: Uint8Array
   try { bytes = Uint8Array.from(atob(match[2]), char => char.charCodeAt(0)) }
   catch { throw new SpaceError('invalid-image', 'Image encoding is corrupt') }
@@ -183,6 +200,22 @@ export function applySpaceAction(doc: SpaceDocument, action: SpaceAction): Space
       try { next = compileImageRegions(doc, action); validateSpaceDocument(next) }
       catch (error) { throw new SpaceError('invalid-input', String((error as Error).message || error)) }
       break
+    case 'refresh-image-evidence': {
+      const previous = doc.observations.find(item => item.id === action.observationId)
+      const replacement = { ...action.observation, supersedesSha256: previous?.sha256 }
+      if (!previous || !validObservation(replacement) || doc.observations.some(item => item.id === replacement.id)
+        || replacement.sha256 === previous.sha256 || replacement.width <= previous.width || replacement.height <= previous.height
+        || Math.abs(replacement.width / replacement.height - previous.width / previous.height) > 0.005) {
+        throw new SpaceError('invalid-input', 'Detail refresh requires the same uncropped image at a higher resolution')
+      }
+      if (doc.observations.length >= MAX_SPACE_OBSERVATIONS) throw new SpaceError('capacity', 'Space observation limit reached')
+      const ids = new Set(doc.observations.filter(item => item.sha256 === previous.sha256).map(item => item.id))
+      next = { ...doc, observations: [...doc.observations, replacement],
+        entities: doc.entities.map(item => ids.has(item.observationId) ? { ...item, observationId: replacement.id } : item),
+        ...(doc.twin ? { twin: { ...doc.twin, objects: doc.twin.objects.map(item => ids.has(item.observationId)
+          ? { ...item, observationId: replacement.id, evidenceSha256: replacement.sha256 } : item) } } : {}) }
+      break
+    }
     case 'capture':
       if (doc.observations.length >= MAX_SPACE_OBSERVATIONS) throw new SpaceError('capacity', 'Space observation limit reached')
       if (!validObservation(action.observation) || doc.observations.some(item => item.id === action.observation.id)) {

@@ -16,8 +16,10 @@ export function planTwinImageCrop(region: SpaceRegion, image: { width: number; h
   }
   const limit = Math.min(1024, Math.floor(Math.sqrt(TWIN_TEXTURE_PIXELS / count)) - 8)
   const ratio = size[0] / size[1]
-  const width = Math.max(1, Math.floor(limit * Math.min(1, ratio)))
-  const height = Math.max(1, Math.floor(limit / Math.max(1, ratio)))
+  // A larger atlas cannot create detail absent from the crop. Keep native texel density.
+  const sourceLimit = Math.min(limit, Math.max(source.width / Math.min(1, ratio), source.height * Math.max(1, ratio)))
+  const width = Math.max(1, Math.ceil(sourceLimit * Math.min(1, ratio)))
+  const height = Math.max(1, Math.ceil(sourceLimit / Math.max(1, ratio)))
   const scale = Math.min(width / source.width, height / source.height)
   const destination = { x: Math.max(0, (width - source.width * scale) / 2), y: Math.max(0, (height - source.height * scale) / 2),
     width: source.width * scale, height: source.height * scale }

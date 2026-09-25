@@ -275,3 +275,72 @@ test('saved XR objects retain photo materials after hydration and edits, and wai
     if (priorDocument) Object.defineProperty(globalThis, 'document', priorDocument); else Reflect.deleteProperty(globalThis, 'document')
   }
 })
+
+import { semanticObjectBindings } from '../semanticObjectView'
+import { encodeSpaceImage, imageEvidenceDifference } from '../semanticImagePerceptionClient'
+import { applySpaceAction, SPACE_IMAGE_LIMIT } from '../semanticSpaceRuntime'
+
+test('display evidence keeps native detail and saved bytes within an independent budget', () => {
+  const originalDocument = globalThis.document
+  let encodings = 0
+  const canvas = { width: 0, height: 0, getContext: () => ({ drawImage() {} }),
+    toDataURL: () => { encodings++; return 'data:image/jpeg;base64,/9j/AA==' } }
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: () => canvas } })
+  try {
+    const source = { naturalWidth: 1800, naturalHeight: 1200 } as HTMLImageElement
+    const encoded = encodeSpaceImage(source, 'blob:test')
+    assert.equal(encoded.width, 1800); assert.equal(encoded.height, 1200); assert.equal(encodings, 1)
+    assert.deepEqual(encodeSpaceImage(source, encoded.imageDataUrl), encoded)
+    assert.equal(encodings, 1, 'saved pixels are never JPEG-encoded again')
+    const large = encodeSpaceImage({ naturalWidth: 4000, naturalHeight: 3000 } as HTMLImageElement, 'blob:test')
+    assert.equal(large.width, 2048); assert.equal(large.height, 1536)
+    canvas.toDataURL = () => { encodings++; return encodings < 6 ? 'x'.repeat(SPACE_IMAGE_LIMIT + 1) : encoded.imageDataUrl }
+    const bounded = encodeSpaceImage(source, 'blob:test')
+    assert.ok(bounded.imageDataUrl.length <= SPACE_IMAGE_LIMIT)
+    assert.equal(bounded.width, 1350, 'reduces resolution only after bounded quality attempts')
+    assert.throws(() => encodeSpaceImage({ naturalWidth: 5000, naturalHeight: 5000 } as HTMLImageElement, 'blob:test'))
+  } finally { Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument }) }
+})
+
+test('source comparison tolerates compression but rejects different pixels or dimensions', () => {
+  const pixels = (color: number) => ({ data: new Uint8ClampedArray(64 * 32 * 4).fill(color),
+    width: 64, height: 32, sourceWidth: 1200, sourceHeight: 600 })
+  assert.equal(imageEvidenceDifference(pixels(80), pixels(80)), 0)
+  assert.ok(imageEvidenceDifference(pixels(80), pixels(85)) < .06)
+  assert.ok(imageEvidenceDifference(pixels(80), pixels(200)) > .06)
+  assert.equal(imageEvidenceDifference(pixels(80), { ...pixels(80), height: 31 }), Infinity)
+})
+
+test('evidence refresh retains edited models, prior evidence and unrelated sources', () => {
+  const old: SpaceObservation = { id: 'observation:old', capturedAtMs: 1, width: 800, height: 600,
+    imageDataUrl: 'data:image/png;base64,AA==', sha256: 'a'.repeat(64), orientation: 'source-pixels', scale: 'unknown' }
+  const other = { ...old, id: 'observation:other', sha256: 'b'.repeat(64) }
+  const next = { ...old, id: 'observation:detail', width: 1600, height: 1200, sha256: 'c'.repeat(64) }
+  const entities: SpaceEntity[] = [old, other].map((observation, index) => ({
+    id: `entity:${index}`, observationId: observation.id, label: 'Reviewed object', category: 'object',
+    region: { x: .2, y: .3, width: .1, height: .2 }, confirmedAtMs: 1, provenance: 'user-confirmed', proposalMethod: 'user-selected-region-v1' }))
+  const twin = emptySemanticTwin()
+  const objects = entities.map((entity, i) => buildSemanticTwinBinding({ entity, observation: [old, other][i],
+    room: twin.room, template: 'box', size: [.6, 1.1, .8], position: [i, 0, 1] }))
+  const doc = { ...newSpaceDocument('space:detail'), observations: [old, other], entities,
+    twin: { ...twin, objects }, selectedEntityId: entities[0].id }
+  const action = { operation: 'refresh-image-evidence' as const, requestId: 'request:detail', expectedRevision: 0,
+    observationId: old.id, observation: next }
+  const refreshed = applySpaceAction(doc, action)
+  assert.deepEqual(refreshed.observations, [old, other, { ...next, supersedesSha256: old.sha256 }])
+  assert.equal(refreshed.entities[0].observationId, next.id); assert.equal(refreshed.selectedEntityId, doc.selectedEntityId)
+  assert.deepEqual(refreshed.twin!.objects[0], { ...objects[0], observationId: next.id, evidenceSha256: next.sha256 })
+  assert.deepEqual(refreshed.twin!.objects[1], objects[1]); assert.deepEqual(refreshed.entities[1], entities[1])
+  assert.equal(doc.revision, 0); assert.equal(applySpaceAction(refreshed, action), refreshed)
+  assert.equal(semanticObjectBindings(refreshed, { spaceId: doc.id, evidenceSha256: old.sha256 })[0].entityId, entities[0].id)
+  assert.throws(() => applySpaceAction(refreshed, { ...action, requestId: 'request:stale' }))
+  for (const observation of [{ ...next, width: 800, height: 600 }, { ...next, height: 800 }, { ...next, id: old.id }]) {
+    assert.throws(() => applySpaceAction(doc, { ...action, observation }))
+  }
+})
+
+test('small photo regions keep native texel density instead of allocating enlarged atlases', () => {
+  const plan = planTwinImageCrop({ x: .2, y: .3, width: .01, height: .04 }, { width: 2000, height: 1000 }, [1, 2], 4)
+  assert.equal(plan.width, 20); assert.equal(plan.height, 40)
+  assert.deepEqual(plan.destination, { x: 0, y: 0, width: 20, height: 40 })
+})

@@ -165,7 +165,7 @@ export async function runSemanticSpaceAction(action: SpaceAction): Promise<Space
   const base = current || newSpaceDocument(`space:${crypto.randomUUID()}`)
   const next = applySpaceAction(base, action)
   if (next === base) return base
-  if (action.operation === 'capture' || action.operation === 'confirm-image-regions') await verifySpaceEvidence(next, true)
+  if (action.operation === 'capture' || action.operation === 'refresh-image-evidence' || action.operation === 'confirm-image-regions') await verifySpaceEvidence(next, true)
   if (action.operation === 'confirm-image-regions' || action.operation === 'build' || action.operation === 'control-twin'
     || action.operation === 'resize-twin' || action.operation === 'edit-twin') {
     const bindings = next.twin?.objects || []

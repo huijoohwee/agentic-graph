@@ -1,4 +1,5 @@
 import React from 'react'
+import { publishCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { inspectSemanticObject, selectSemanticObject, addSemanticEntityToCanvas, linkedCanvasNode, overlaySemanticObservation } from './semanticSpaceCanvas'
 import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
@@ -320,6 +321,7 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
     finally { setBusy(false) }
   }
 
+  const selectedEvidence = document?.observations.find(item => item.id === selected?.observationId)
   const objectEditor = document && (selected && <div className="grid gap-2"><span>Selected ID: <code>{selected.id}</code></span>
         <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => { setEditing(!editing); setLabel(selected.label); setCategory(selected.category) }}>Correct label</button>
           <button type="button" className={buttonClass} onClick={() => void addSelectedToCanvas()}>Open 3D layout</button>
@@ -339,6 +341,15 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
                 setEditing(false)
               })
           }}>Save correction</button></div>}
+        {selectedEvidence && <details><summary className="min-h-11 cursor-pointer py-2">Compare source detail</summary>
+          <svg role="img" aria-label="Original object crop" className="h-32 max-w-full" viewBox={`${selected.region.x * selectedEvidence.width} ${selected.region.y * selectedEvidence.height} ${selected.region.width * selectedEvidence.width} ${selected.region.height * selectedEvidence.height}`}>
+            <image href={selectedEvidence.imageDataUrl} width={selectedEvidence.width} height={selectedEvidence.height} />
+          </svg>
+          <p className="m-0 text-xs">{Math.round(selected.region.width * selectedEvidence.width)} × {Math.round(selected.region.height * selectedEvidence.height)} source pixels in this object.
+            Enlarge the original crop here to compare its available detail with the model face.</p>
+          <button type="button" className={buttonClass} onClick={() => publishCameraFramingRuntime({ anchorId: 'canvas-camera', source: 'panel',
+            settings: { angle: 'front', level: 'eye-level', shot: 'medium', orbitX: 0, orbitY: 0 } })}>Face photo textures</button>
+        </details>}
         <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Editable 3D approximation</legend>
           <label>Supported shape<select className={fieldClass} value={twinTemplate}
             onChange={event => setTwinTemplate(event.currentTarget.value as TwinTemplate)}>

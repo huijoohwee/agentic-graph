@@ -1,16 +1,18 @@
 import React from 'react'
 import type { SemanticImageDraft } from './semanticImagePerceptionClient'
-import { perceiveImportedImage } from './semanticImagePerceptionClient'
+import { perceiveImportedImage, prepareImageEvidenceRefresh } from './semanticImagePerceptionClient'
 import { readSemanticSpace, readSemanticSpaceSourceMirrorStatus, runSemanticSpaceAction } from './semanticSpaceStore'
 import { addSemanticEntityToCanvas, overlaySemanticObservation, openSemanticObjects } from './semanticSpaceCanvas'
 import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
 import SemanticImageRegionFocus from './SemanticImageRegionFocus'
-import type { SpaceRegion, SpaceDocument } from './semanticSpaceRuntime'
+import type { SpaceRegion, SpaceDocument, SpaceObservation } from './semanticSpaceRuntime'
 import { replaceableImageRegionIds } from './semanticImageTwinCompiler'
 
 const SpaceEditor = React.lazy(() => import('./SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
 const button = 'App-toolbar__btn min-h-11 w-full whitespace-normal'
 export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl: string }) {
+  const refreshFile = React.useRef<HTMLInputElement>(null)
+  const [refresh, setRefresh] = React.useState<{ previous: SpaceObservation; observation: SpaceObservation; spaceId: string; revision: number } | null>(null)
   const [objectMode, setObjectMode] = React.useState(true)
   const [draft, setDraft] = React.useState<SemanticImageDraft | null>(null)
   const [selected, setSelected] = React.useState<readonly number[]>([])
@@ -29,6 +31,39 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   const base = React.useRef<{ id: string | null; revision: number }>({ id: null, revision: 0 })
   const saved = React.useRef<SpaceDocument | null>(null)
   React.useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.abort() } }, [])
+  const prepareRefresh = async (file?: File) => {
+    if (!file || controller.current) return
+    const job = new AbortController(); controller.current = job
+    const url = URL.createObjectURL(file)
+    setBusy(true); setRefresh(null); setStatus('Checking original image detail…')
+    try {
+      if (file.size > 24 * 1024 * 1024) throw Error('Choose an original below 24 MiB.')
+      const doc = await readSemanticSpace()
+      const previous = doc?.observations.find(item => item.imageDataUrl === sourceUrl)
+      if (!doc || !previous) throw Error('Open the saved image models before refreshing their source detail.')
+      const observation = await prepareImageEvidenceRefresh(url, previous, job.signal)
+      if (!mounted.current) return
+      setRefresh({ previous, observation, spaceId: doc.id, revision: doc.revision })
+      setStatus('Review the replacement below. Your object boundaries, identities and geometry will stay the same.')
+    } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
+    finally { URL.revokeObjectURL(url); if (controller.current === job) controller.current = null; if (mounted.current) setBusy(false) }
+  }
+  const applyRefresh = async () => {
+    if (!refresh || busy) return
+    setBusy(true)
+    try {
+      const doc = await readSemanticSpace()
+      if (!doc || doc.id !== refresh.spaceId || doc.revision !== refresh.revision) throw Error('Space changed during review. Choose the original again.')
+      const next = await runSemanticSpaceAction({ operation: 'refresh-image-evidence', requestId: `request:${crypto.randomUUID()}`,
+        expectedRevision: refresh.revision, observationId: refresh.previous.id, observation: refresh.observation })
+      for (const entity of next.entities.filter(item => item.observationId === refresh.observation.id)) {
+        await addSemanticEntityToCanvas(next, entity, { frame: false })
+      }
+      await openSemanticObjects(next, refresh.observation.id)
+      if (mounted.current) { setRefresh(null); setStatus('Original detail saved on the same 3D objects. Previous image evidence is retained.') }
+    } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
+    finally { if (mounted.current) setBusy(false) }
+  }
   const analyze = async (region?: SpaceRegion, useWholeRegion = false, relief = false) => {
     if (controller.current) return
     const job = new AbortController(); controller.current = job
@@ -121,6 +156,19 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
     finally { if (mounted.current) setBusy(false) }
   }
   return <section className="grid gap-2" aria-label="Local image to 3D">
+    <details><summary className="min-h-11 cursor-pointer py-2">Improve source detail</summary>
+      <p className="m-0">Use the same uncropped original to sharpen saved object faces. Shape, depth and layout remain editable approximations.</p>
+      <button type="button" className={button} disabled={busy} onClick={() => refreshFile.current?.click()}>Choose higher-resolution original</button>
+      <input ref={refreshFile} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={event => {
+        void prepareRefresh(event.currentTarget.files?.[0]); event.currentTarget.value = ''
+      }} />
+      {refresh && <section className="grid gap-2" aria-label="Review source detail refresh">
+        <span>{refresh.previous.width} × {refresh.previous.height} → {refresh.observation.width} × {refresh.observation.height} saved pixels</span>
+        <img src={refresh.observation.imageDataUrl} alt="Higher-detail original for review" className="max-h-40 w-full object-contain" />
+        <button type="button" className={button} disabled={busy} onClick={() => void applyRefresh()}>Use higher-detail source</button>
+        <button type="button" className={button} disabled={busy} onClick={() => setRefresh(null)}>Keep current source</button>
+      </section>}
+    </details>
     <button type="button" className={button} disabled={busy} onClick={() => void analyze()}>Create 3D objects</button>
     <button type="button" className={button} disabled={busy} onClick={() => void markObject(true)}>Mark individual buildings or objects</button>
     {marking && <section className="grid gap-2 rounded border p-2" aria-label="Individual object marking">

@@ -1,7 +1,7 @@
 import yaml from 'js-yaml'
 import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
 import { photoOverlayBindings } from './semanticTwinPhotoProjection'
-import type { SpaceDocument } from './semanticSpaceRuntime'
+import { resolveSpaceObservation, type SpaceDocument } from './semanticSpaceRuntime'
 import type { TwinBinding } from './semanticTwinRuntime'
 import type { GlbFit } from '@/lib/three/GlbAssetModel'
 
@@ -17,7 +17,7 @@ export function parseSemanticObjectView(value: unknown): SemanticObjectView | nu
 /** Image relief and extracted silhouettes remain separate from explicit object models. */
 export function semanticObjectBindings(document: SpaceDocument, target: SemanticObjectView) {
   if (document.id !== target.spaceId) return []
-  return photoOverlayBindings(document, target, binding => !['relief', 'contour'].includes(binding.template))
+  return photoOverlayBindings(document, { ...target, evidenceSha256: resolveSpaceObservation(document, target.evidenceSha256)?.sha256 || target.evidenceSha256 }, binding => !['relief', 'contour'].includes(binding.template))
 }
 
 /** Normalize display scale around visible models, never the arbitrary room floor. Saved dimensions stay intact. */
