@@ -47,7 +47,7 @@ try {
   assert.equal(labels[labels.findIndex(label => label.trim() === 'bin') + 1].trim(), 'Python')
   const editor = page.getByRole('textbox', { name: 'Python source text', exact: true })
   const lessons = await page.evaluate(() => window.__pythonLearningProof.lessons)
-  const outcomes = []
+  const outcomes = [], flightFrames = []
   try {
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
@@ -64,9 +64,39 @@ try {
   for (const lesson of lessons) {
     await page.getByLabel('Python lesson', { exact: true }).selectOption(lesson.id)
     await page.getByRole('button', { name: 'Code', exact: true }).click()
-    await editor.fill(lesson.solution)
+    if (lesson.id === 'drone') {
+      await page.getByRole('button', { name: 'Load flight example', exact: true }).click()
+      assert.equal(await editor.inputValue(), lesson.solution)
+      assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'loading the example cannot execute it')
+      await page.setViewportSize({ width: 1280, height: 900 })
+    } else await editor.fill(lesson.solution)
+    const runStarted = performance.now()
     await page.getByRole('button', { name: 'Run', exact: true }).click()
+    if (lesson.id === 'drone') {
+      const phases = [
+        { name: 'takeoff', xMin: -0.1, xMax: 0.1, low: 0.2, high: 1.8 },
+        { name: 'flight', xMin: 0.5, xMax: 3.5, low: 1.9, high: 2.1 },
+        { name: 'landing', xMin: 3.9, xMax: 4.1, low: 0.2, high: 1.8 },
+      ]
+      for (const phase of phases) {
+        await page.waitForFunction(phase => {
+          const state = window.__pythonLearningProof.read(), scene = state.result?.scene
+          return state.state === 'running' && scene.x > phase.xMin && scene.x < phase.xMax && scene.altitude > phase.low && scene.altitude < phase.high
+        }, phase)
+        flightFrames.push({ phase: phase.name, elapsedMs: performance.now() - runStarted, scene: await page.evaluate(() => window.__pythonLearningProof.read().result.scene) })
+        await page.screenshot({ path: join(output, `drone-${phase.name}.png`), fullPage: true })
+        if (phase.name === 'flight') {
+          await page.getByRole('button', { name: 'Pause', exact: true }).click()
+          await page.waitForFunction(() => window.__pythonLearningProof.read().state === 'paused')
+          const paused = await page.evaluate(() => JSON.stringify(window.__pythonLearningProof.read().result.scene))
+          await page.waitForTimeout(250)
+          assert.equal(await page.evaluate(() => JSON.stringify(window.__pythonLearningProof.read().result.scene)), paused)
+          await page.getByRole('button', { name: 'Run', exact: true }).click()
+        }
+      }
+    }
     await page.waitForFunction(() => window.__pythonLearningProof.read().state === 'completed')
+    if (lesson.id === 'drone') assert.ok(performance.now() - runStarted >= 8500, 'flight must be visibly paced, including beyond the five-second compute limit')
     const state = await page.evaluate(() => window.__pythonLearningProof.read())
     assert.equal(state.result.grade.passed, true)
     outcomes.push({ lesson: lesson.id, ticks: state.result.scene.ticks, computeMs: state.result.computeMs, passed: true })
@@ -74,6 +104,7 @@ try {
     await page.getByRole('button', { name: 'Save debrief', exact: true }).click()
     await page.getByText('Saved locally:', { exact: false }).waitFor()
   }
+  await page.setViewportSize({ width: 375, height: 812 })
   const downloaded = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export debrief', exact: true }).click()
   const portable = await readFile(await (await downloaded).path())
@@ -149,7 +180,7 @@ try {
   const evidence = { revision, sourceState: execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' }),
     kind: 'native-component-development-smoke', offlineReloadProven: false, toolRegistrationProven: false, mainCanvasMounted: true, droneAirborne: airborne,
     simulatedHiddenTabDenied: true, visibleReturnDoesNotRun: true, physicalBackgroundProven: false,
-    elapsedMs: Math.round(performance.now() - started), outcomes, pageErrors: errors, remoteRequestsBlocked: remote }
+    elapsedMs: Math.round(performance.now() - started), outcomes, flightFrames, pageErrors: errors, remoteRequestsBlocked: remote }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
   console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
 } catch (error) {

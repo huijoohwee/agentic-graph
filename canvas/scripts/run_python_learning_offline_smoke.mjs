@@ -16,6 +16,8 @@ const { resolveViteRuntimeIdentity } = await tsImport('../viteChatProxyEnv.ts', 
 const { sourceRevision: revision } = resolveViteRuntimeIdentity(root)
 const sourceState = () => execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' })
 const before = sourceState(), output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-offline-${revision.slice(0, 12)}`))
+const port = Number(process.env.PYTHON_LEARNING_PROOF_PORT || 4198)
+assert.ok(Number.isInteger(port) && port >= 1024 && port <= 65535, 'offline proof port must be 1024..65535')
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 const { LEARNING_LESSONS: lessons } = await tsImport('../src/features/python-learning/learningLessons.ts', import.meta.url)
 const manifest = JSON.parse(await readFile(join(canvas, 'dist', `learning-offline-manifest-${revision}.json`), 'utf8'))
@@ -26,8 +28,8 @@ for (const file of manifest.files) {
 let server, browser, page
 try {
   await mkdir(output, { recursive: true })
-  server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port: 4198, strictPort: true } })
-  const origin = 'http://127.0.0.1:4198', base = origin + '/agentic-graph/'
+  server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port, strictPort: true } })
+  const origin = `http://127.0.0.1:${port}`, base = origin + '/agentic-graph/'
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
   // Controlled browser-host surface; production registers its actual validated lazy tools.

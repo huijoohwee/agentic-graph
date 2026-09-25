@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { LearningRuntime, digestLearningSource, type LearningWorkerPort } from '../features/python-learning/learningRuntime'
-import { createPythonWorkerHost } from '../features/python-learning/pythonWorker'
+import { createPythonWorkerHost, type LearningPlayback } from '../features/python-learning/pythonWorker'
 import { validLearningSnapshot, type LearningWorkerSnapshot } from '../features/python-learning/learningProtocol'
 import { LEARNING_LESSONS } from '../features/python-learning/learningLessons'
 import { PythonLearningError, pythonError } from '../features/python-learning/pythonModel'
@@ -103,20 +103,72 @@ async function until(condition: () => boolean) {
   const deadline = performance.now() + 2500
   while (!condition()) { if (performance.now() > deadline) assert.fail('Runtime condition timed out.'); await tick() }
 }
-function fixture(digest = async (_source: string) => 'a'.repeat(64), now = () => performance.now()) {
+function fixture(digest = async (_source: string) => 'a'.repeat(64), now = () => performance.now(), playback?: LearningPlayback) {
   const messages: LearningWorkerSnapshot[] = [], ports: LearningWorkerPort[] = []
   let terminated = 0
   const runtime = new LearningRuntime(() => {
     const host = createPythonWorkerHost(data => {
       if (data.kind === 'snapshot') messages.push(structuredClone(data))
       port.onmessage?.({ data: structuredClone(data) })
-    }, now)
+    }, now, playback)
     const port: LearningWorkerPort = { onmessage: null, onerror: null, postMessage: host.receive, terminate: () => { terminated++; host.dispose() } }
     ports.push(port); return port
   }, digest)
   const bind = (source: string, lessonId = 'travel', documentId = '/learning.py') => runtime.bind({ workspaceId: 'workspace:test', documentId, lessonId, source })
   return { runtime, bind, messages, ports, terminated: () => terminated }
 }
+
+test('paced drone Run exposes intermediate motion for nine seconds without spending compute budget', async () => {
+  let clock = 0
+  const waits: number[] = [], paced = fixture(undefined, () => clock, { wait: async ms => { waits.push(ms); clock += ms } }), fast = fixture()
+  try {
+    paced.bind(droneLesson.solution, 'drone'); fast.bind(droneLesson.solution, 'drone')
+    await paced.runtime.control('run'); await fast.runtime.control('run')
+    await until(() => paced.runtime.read().state === 'completed' && fast.runtime.read().state === 'completed')
+    assert.ok(Math.abs(clock - 9000) < 1e-5)
+    assert.equal(waits.length, 270); assert.ok(waits.every(ms => ms > 0 && ms <= 1000 / 30 + 1e-8))
+    assert.equal(paced.runtime.read().result!.computeMs, 0, 'display waits are not active evaluator compute')
+    for (const key of ['scene', 'trace', 'grade', 'metrics', 'output']) assert.deepEqual(paced.runtime.read().result![key], fast.runtime.read().result![key])
+    const scenes = paced.messages.filter(row => row.state === 'running').map(row => row.scene)
+    assert.ok(scenes.some(scene => scene.altitude! > 0 && scene.altitude! < 1 && scene.x === 0))
+    assert.ok(scenes.some(scene => scene.altitude! > 1.9 && scene.x > 0 && scene.x < 4))
+    assert.ok(scenes.some(scene => scene.altitude! > 0 && scene.altitude! < 1 && scene.x > 3.9))
+    assert.ok(paced.messages.every(validLearningSnapshot))
+  } finally { paced.runtime.dispose(); fast.runtime.dispose() }
+})
+
+test('paced drone pause freezes motion, late timers do not cause catch-up, and Stop fences pending frames', async () => {
+  let clock = 0
+  const waits: Array<{ ms: number; release: () => void }> = []
+  const f = fixture(undefined, () => clock, { wait: ms => new Promise<void>(release => waits.push({ ms, release })) })
+  try {
+    f.bind(droneLesson.solution, 'drone'); await f.runtime.control('run'); await until(() => waits.length === 1)
+    f.runtime.setHidden(true)
+    clock += waits[0].ms; waits.shift()!.release(); await until(() => f.runtime.read().state === 'paused')
+    const frozen = f.runtime.read(); clock += 60_000
+    f.runtime.setHidden(false); await tick(); assert.equal(f.runtime.read(), frozen)
+    await f.runtime.control('run'); await until(() => waits.length === 1)
+    assert.ok(waits[0].ms > 0 && waits[0].ms <= 1000 / 30 + 1e-8)
+    clock += 2000; waits.shift()!.release(); await until(() => waits.length === 1)
+    assert.ok(waits[0].ms > 0 && waits[0].ms <= 1000 / 30 + 1e-8)
+    const messages = f.messages.length
+    f.runtime.stop(); waits.shift()!.release(); await tick(); await tick()
+    assert.equal(f.runtime.read().state, 'cancelled'); assert.equal(f.messages.length, messages)
+  } finally { f.runtime.dispose() }
+})
+
+test('a backwards tick cannot refresh the paced worker watchdog', async () => {
+  const f = fixture()
+  try {
+    f.bind('takeoff(2)', 'drone'); await f.runtime.control('validate')
+    const ready = f.messages[0], handler = f.ports[0].onmessage!
+    handler({ data: { ...ready, state: 'running', sequence: 2, scene: { ...ready.scene, ticks: 2 } } })
+    assert.equal(f.runtime.read().state, 'running')
+    handler({ data: { ...ready, state: 'running', sequence: 3, scene: { ...ready.scene, ticks: 1 } } })
+    assert.equal(f.runtime.read().state, 'failed'); assert.match(f.runtime.read().error!.message, /backwards/)
+    assert.equal(f.terminated(), 1)
+  } finally { f.runtime.dispose() }
+})
 
 test('real worker host: Run and Step produce identical deterministic lesson evidence', async () => {
   for (const lesson of LEARNING_LESSONS) {

@@ -1,16 +1,16 @@
 ---
 title: "Reference implementation - Offline Python Learning Workspace"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.1.0"
+version: "1.2.0"
 date: "2026-09-22"
 lang: "en-US"
 owner: "Learning workspace product maintainer"
 continuity_id: "OFFLINE-PYTHON-LEARNING-WORKSPACE-001"
-prd_revision: "1.1.0"
-tad_revision: "1.1.0"
-adr_revision: "1.1.0"
-mvp_revision: "1.1.0"
-gtm_revision: "1.1.0"
+prd_revision: "1.2.0"
+tad_revision: "1.2.0"
+adr_revision: "1.2.0"
+mvp_revision: "1.2.0"
+gtm_revision: "1.2.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -566,3 +566,15 @@ Checks and implementation status are appended to `python-learning-runtime-eviden
 Sprint: initial 45 active minutes plus a 30-minute GameXR alignment/check increment; at most 16 changed existing modules plus one lazy log-parser module, 80 KiB added source, <600 lines/file and <500 kB/new chunk, zero dependencies or always-load bytes. Drone tests extend the existing lifecycle suite so native affected CI selects them. Publication uses native RELEASE; Production, package synchronization and rollback require their independent owner receipts. External dependency waits are conditional rechecks, not delivery estimates.
 
 Implementation: D1/D2/D4/D6 have local unit evidence; the combined Python suites pass 32/33, with the sole failure the existing authoring-pane availability assertion owned by open XR PR #1285. D3 component proof renders the drone at 2 m, all four lessons pass, and screenshots show the obstacle/landing scene. GameXR's six existing protocol tests pass at its observed revision. D5 built-app offline checks and the final inspector browser check pass on the recorded uncommitted source state, including four lessons, registered tools, persistence and corruption rejection. Protected integration remains blocked by the pane dependency; local development evidence is not clean-candidate release proof. Source and check receipts are recorded in the runtime evidence ledger.
+
+## Visible drone playback repair — J3
+
+J3 = OFFLINE-PYTHON-LEARNING-WORKSPACE-001@1.2.0; `/fix #drone.playback @codex-drone-learning`. User browser feedback on 2026-09-26 observed a stationary landed drone. Published predecessor `c22b69c2abc5e09ff5ed7f8fbad6e3f298bbc469` is retained; native successor reuses its admitted checkout.
+
+PRD: the learner must see takeoff, travel and landing after Run. The starter intentionally lacks forward motion; a visible Load flight example action replaces source with the existing worked solution without auto-running. TAD: the dedicated Python worker paces two 60 Hz physics ticks per displayed frame, excluding display waits from active compute. Step retains statement semantics. The runtime watchdog refreshes only on validated advancing drone ticks; backwards ticks fail. Pause/hidden-tab handling retains pose, excludes paused wall time and resumes without catch-up; Stop still terminates the worker.
+
+ADR: preserve one worker/tick owner and deterministic traces, rather than replaying completed traces in a second animation owner. GameXR remains a read-only log consumer boundary. MVP acceptance: observe airborne ascent, movement and descent during running; completion around nine seconds, exact same final trace/rubric as unpaced evaluation; pause/stop and timer-overrun negative checks; explicit example loading without execution. GTM: visible flight makes the existing tutor demo inspectable; no new efficacy or revenue claim.
+
+Budget: eight changed files, 30 KiB added source, no new modules or dependencies; about 25 minutes including selected checks. Prior terminal-pose screenshots proved rendering but did not prove visible motion, and do not satisfy J3. Native component and built-app offline evidence must refresh for changed worker bytes. The existing XR pane assertion remains an independent integration dependency.
+
+J3 implementation: the component browser captured ascent at 0.49 s, forward flight at 3.80 s and descent at 7.98 s, including an explicit pause. The user's preview then completed at (4,0), altitude zero, 4/4 criteria. All four lessons pass the rebuilt offline browser; worker, debrief, tool registration and corruption checks remain intact. The selected Python suites pass 35/36, including three pacing/protocol regression tests; only the independently owned pane assertion remains red. Native Canvas TypeScript and both WebMCP scope checks pass. Test-port contention was resolved by reusing the successful build on an available loopback port, preserving the user's preview. Publication/integration receipts remain separate from these working-source observations.
