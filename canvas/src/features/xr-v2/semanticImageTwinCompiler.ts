@@ -66,3 +66,18 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
       ...(action.layout === 'contiguous-row' ? packTwinRow(objects, twin.room) : objects)] },
     selectedEntityId: entities[0].id }
 }
+
+/** Copy only this image's models into a new space; the storage owner retains the old package. */
+export function copyImageModelsToSpace(doc: SpaceDocument, evidenceSha256: string, id: string): SpaceDocument {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(id) || id === doc.id) throw Error('Choose a new valid space identity.')
+  const twin = doc.twin
+  const bindings = twin?.objects.filter(item => item.evidenceSha256 === evidenceSha256) || []
+  if (!twin || !bindings.length) throw Error('Build this image before copying its models.')
+  const identities = new Map(bindings.map((item, index) => [item.entityId, `entity:${id}:${index}`]))
+  return { ...doc, id, revision: 0, requestIds: [],
+    entities: doc.entities.filter(item => identities.has(item.id)).map(item => ({ ...item, id: identities.get(item.id)! })),
+    // Retain observation history, including the verified source-detail refresh chain.
+    observations: [...doc.observations],
+    twin: { ...twin, objects: bindings.map(item => ({ ...item, entityId: identities.get(item.entityId)! })) },
+    selectedEntityId: identities.get(doc.selectedEntityId || '') || identities.values().next().value || null }
+}

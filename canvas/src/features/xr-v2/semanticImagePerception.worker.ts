@@ -1,6 +1,6 @@
 import { analyzeSemanticImage } from './semanticImagePerception'
 
 self.onmessage = event => {
-  try { self.postMessage({ ok: true, result: analyzeSemanticImage(event.data) }) }
+  try { self.postMessage({ ok: true, result: analyzeSemanticImage(event.data.pixels, { detail: event.data.detail }) }) }
   catch (error) { self.postMessage({ ok: false, message: String((error as Error).message || error) }) }
 }

@@ -12,7 +12,7 @@ import * as THREE from 'three'
 import { buildTwinScene, disposeTwinScene } from '../semanticTwinScene'
 import { validateTwinSilhouette } from '../semanticTwinSilhouette'
 import { parseSemanticSpaceInvocation } from '@/features/agent-ready/semanticSpaceWebMcpTools'
-import { replaceableImageRegionIds } from '../semanticImageTwinCompiler'
+import { copyImageModelsToSpace, replaceableImageRegionIds } from '../semanticImageTwinCompiler'
 import { positionTwinBeside } from '../semanticTwinRuntime'
 import { semanticObjectCameraFit } from '../semanticObjectView'
 import { readModelAssetCameraPose } from '@/features/three/modelAssetCameraPose'
@@ -368,4 +368,88 @@ test('neighbor placement supports contact and gaps without modifying other objec
   assert.deepEqual(joined.twin!.objects[0].position, position)
   assert.throws(() => applySpaceAction(joined, { ...edit, requestId: 'request:stale-join' }), /changed/)
   assert.deepEqual(validateSpaceDocument(JSON.parse(JSON.stringify(joined))), joined)
+})
+
+
+test('detail pass separates touching contrasts, leaves uniform objects intact, and never mutates pixels', async () => {
+  const width = 96, height = 48, data = new Uint8ClampedArray(width * height * 4).fill(255)
+  const colors = [[30, 20, 80], [180, 30, 30], [20, 140, 30], [30, 50, 190], [150, 100, 30], [80, 30, 130]]
+  for (let y = 8; y < 40; y++) for (let x = 6; x < 90; x++) data.set([...colors[Math.floor((x - 6) / 14)], 255], (y * width + x) * 4)
+  const pixels = { width, height, sourceWidth: width, sourceHeight: height, data }, before = data.slice()
+  assert.equal(analyzeSemanticImage(pixels).proposals.length, 1)
+  const detailed = analyzeSemanticImage(pixels, { detail: true })
+  assert.equal(detailed.proposals.length, 6)
+  assert.deepEqual(detailed, analyzeSemanticImage(pixels, { detail: true }))
+  assert.deepEqual(data, before)
+  assert.equal(detailed.proposals.reduce((sum, item) => sum + item.coverage, 0), 84 * 32 / (width * height))
+  const input = await action(), next = applySpaceAction(newSpaceDocument('space:details'), { ...input,
+    proposals: detailed.proposals.map(item => ({ ...item, template: 'box' })) })
+  const built = buildTwinScene(next.twin!.objects)
+  try {
+    assert.equal(built.error, null)
+    assert.equal(built.objects.length, 6)
+    for (const object of built.objects) {
+      object.wrapper.updateWorldMatrix(true, true)
+      const bounds = new THREE.Box3().setFromObject(object.wrapper), center = bounds.getCenter(new THREE.Vector3())
+      const ray = new THREE.Raycaster(new THREE.Vector3(center.x, center.y, bounds.max.z + 1), new THREE.Vector3(0, 0, -1))
+      assert.ok(ray.intersectObject(object.wrapper, true).length > 0)
+    }
+  } finally { disposeTwinScene(built) }
+  // Color-free subdivisions would invent extra objects; refinement needs actual contrast.
+  for (let y = 8; y < 40; y++) for (let x = 6; x < 90; x++) data.set([30, 20, 80, 255], (y * width + x) * 4)
+  assert.equal(analyzeSemanticImage(pixels, { detail: true }).proposals.length, 1)
+})
+
+test('detail proposals stay within worker, region and focus budgets on varied image aspects', () => {
+  for (const [width, height] of [[192, 96], [96, 192], [192, 192]]) {
+    const data = new Uint8ClampedArray(width * height * 4).fill(255)
+    for (let y = 5; y < height - 5; y++) for (let x = 5; x < width - 5; x++) {
+      data.set([20 + Math.round(x / width * 150), 20 + Math.round(y / height * 100), 30, 255], (y * width + x) * 4)
+    }
+    const result = analyzeSemanticImage({ width, height, sourceWidth: width, sourceHeight: height, data }, { detail: true })
+    assert.ok(result.proposals.length > 1 && result.proposals.length <= 12)
+    const focus = { x: 0.25, y: 0.2, width: 0.5, height: 0.4 }
+    for (const proposal of mapFocusedProposals(result, focus).proposals) {
+      assert.ok(proposal.region.x >= focus.x && proposal.region.y >= focus.y)
+      assert.ok(proposal.region.x + proposal.region.width <= focus.x + focus.width + 1e-9)
+      assert.ok(proposal.region.y + proposal.region.height <= focus.y + focus.height + 1e-9)
+      if (proposal.silhouette) validateTwinSilhouette(proposal.silhouette)
+    }
+  }
+})
+
+test('image-only space copies preserve models and evidence while keeping the full previous space recoverable', async () => {
+  const input = await action()
+  let original = applySpaceAction(newSpaceDocument('space:multi-image'), { ...input,
+    proposals: input.proposals.map(item => ({ ...item, template: 'box' })) })
+  const secondImage = 'data:image/png;base64,' + btoa(atob(imageDataUrl.split(',')[1]) + String.fromCharCode(0))
+  original = applySpaceAction(original, { ...input, requestId: 'request:other-image', expectedRevision: original.revision,
+    observation: { ...input.observation, id: 'observation:other-image', imageDataUrl: secondImage, sha256: await hashSpaceImage(secondImage) },
+    proposals: [{ ...input.proposals[0], template: 'building' }] })
+  const before = JSON.stringify(original), copy = copyImageModelsToSpace(original, input.observation.sha256, 'space:image-copy')
+  assert.equal(validateSpaceDocument(copy), copy)
+  assert.equal(copy.twin!.objects.length, 2)
+  assert.equal(copy.entities.length, 2)
+  assert.deepEqual(copy.observations, original.observations)
+  for (const [i, model] of copy.twin!.objects.entries()) {
+    assert.notEqual(model.entityId, original.twin!.objects[i].entityId)
+    assert.deepEqual({ ...model, entityId: original.twin!.objects[i].entityId }, original.twin!.objects[i])
+  }
+  assert.equal(JSON.stringify(original), before)
+  assert.throws(() => copyImageModelsToSpace(original, input.observation.sha256, original.id), /new valid/)
+  assert.throws(() => copyImageModelsToSpace(original, 'f'.repeat(64), 'space:empty'), /Build/)
+  const databaseName = `copy-${crypto.randomUUID()}`, store = createSemanticSpaceStore({ indexedDB, databaseName })
+  await importSemanticSpace(await exportSemanticSpacePackage(original), store)
+  assert.deepEqual(await importSemanticSpace(await exportSemanticSpacePackage(copy), store), copy)
+  assert.deepEqual(await store.read(), copy)
+  const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(databaseName); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error)
+  })
+  try {
+    const backup = await new Promise<{ document: typeof original }>((resolve, reject) => {
+      const request = db.transaction('bundles', 'readonly').objectStore('bundles').get(`semantic-space:backup:${original.id}`)
+      request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error)
+    })
+    assert.deepEqual(backup.document, original)
+  } finally { db.close() }
 })

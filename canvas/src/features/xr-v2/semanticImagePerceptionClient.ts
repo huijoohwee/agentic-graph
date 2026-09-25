@@ -4,7 +4,7 @@ import { IMAGE_PERCEPTION_LIMITS, describeChosenImageRegion, describeImageRelief
 
 export type SemanticImageDraft = Readonly<{ observation: SpaceObservation; result: ImagePerceptionResult }>
 
-type FocusOptions = { region?: SpaceRegion; useWholeRegion?: boolean; relief?: boolean }
+type FocusOptions = { region?: SpaceRegion; useWholeRegion?: boolean; relief?: boolean; detail?: boolean }
 let active = false
 export async function perceiveImportedImage(sourceUrl: string, signal: AbortSignal, options: FocusOptions = {}): Promise<SemanticImageDraft> {
   if (active) throw Error('An image analysis is already running. Cancel it or wait for completion.')
@@ -111,7 +111,7 @@ async function runPerception(sourceUrl: string, signal: AbortSignal, options: Fo
       worker.onerror = () => finish(new Error('Local image worker failed. Retry or confirm regions manually.'))
       worker.onmessage = event => event.data.ok ? finish(undefined, event.data.result)
         : finish(new Error(event.data.message))
-      worker.postMessage(pixels, [pixels.data.buffer])
+      worker.postMessage({ pixels, detail: options.detail === true }, [pixels.data.buffer])
     })
     signal.throwIfAborted()
     return { observation, result: options.region ? mapFocusedProposals(result, options.region) : result }

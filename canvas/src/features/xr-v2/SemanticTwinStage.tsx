@@ -130,7 +130,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
       <boxGeometry args={[document.twin.room.width, 0.08, document.twin.room.depth]} />
       <meshStandardMaterial color="#69747c" roughness={0.9} />
     </mesh>}
-    {built.objects.map(item => <XrSelectionBounds key={item.binding.entityId} targetId={item.binding.entityId} selected={item.binding.entityId === document.selectedEntityId}>
+    {built.objects.map(item => <XrSelectionBounds key={item.binding.entityId} targetId={item.binding.entityId} outlined={!!photo} selected={item.binding.entityId === document.selectedEntityId}>
       <primitive object={item.wrapper} dispose={null}
       onClick={(event: { stopPropagation: () => void; nativeEvent: Event }) => {
         if (!(event.nativeEvent.target instanceof HTMLCanvasElement)) return

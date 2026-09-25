@@ -1,6 +1,6 @@
 import React from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Box3, Box3Helper, Matrix4, type Group } from 'three'
+import { Box3, Box3Helper, Matrix4, type Group, type LineBasicMaterial } from 'three'
 import { THREE_RENDER_ORDER } from './renderOrder'
 
 /** World bounds follow the rendered geometry and compensate for any transformed parent. */
@@ -18,7 +18,7 @@ export function updateXrSelectionBounds(root: Group, helper: Box3Helper, inverse
   }
 }
 
-export function XrSelectionBounds({ children, targetId, selected }: { children: React.ReactNode; targetId: string; selected: boolean }) {
+export function XrSelectionBounds({ children, targetId, selected, outlined = false }: { children: React.ReactNode; targetId: string; selected: boolean; outlined?: boolean }) {
   const root = React.useRef<Group>(null)
   const inverse = React.useMemo(() => new Matrix4(), [])
   const helper = React.useMemo(() => {
@@ -36,11 +36,16 @@ export function XrSelectionBounds({ children, targetId, selected }: { children: 
     helper.geometry.dispose()
     for (const material of Array.isArray(helper.material) ? helper.material : [helper.material]) material.dispose()
   }, [helper])
+  React.useEffect(() => {
+    for (const material of Array.isArray(helper.material) ? helper.material : [helper.material]) {
+      (material as LineBasicMaterial).color.setHex(selected ? 0xfacc15 : 0x22d3ee)
+    }
+  }, [helper, selected])
   useFrame(() => {
-    if (selected && root.current) updateXrSelectionBounds(root.current, helper, inverse)
+    if ((selected || outlined) && root.current) updateXrSelectionBounds(root.current, helper, inverse)
     else helper.visible = false
   })
-  return <><group ref={root}>{children}</group><primitive object={helper} visible={selected} raycast={() => null} /></>
+  return <><group ref={root}>{children}</group><primitive object={helper} visible={selected || outlined} raycast={() => null} /></>
 }
 
 // Keep the model parent stable: reparenting a reused R3F primitive on selection destroys its root binding.

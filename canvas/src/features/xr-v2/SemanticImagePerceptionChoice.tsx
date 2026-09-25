@@ -1,16 +1,57 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { readSemanticObjectViewMarkdown } from './semanticObjectView'
 import type { SemanticImageDraft } from './semanticImagePerceptionClient'
 import { perceiveImportedImage, prepareImageEvidenceRefresh } from './semanticImagePerceptionClient'
-import { readSemanticSpace, readSemanticSpaceSourceMirrorStatus, runSemanticSpaceAction } from './semanticSpaceStore'
-import { addSemanticEntityToCanvas, overlaySemanticObservation, openSemanticObjects } from './semanticSpaceCanvas'
+import { exportSemanticSpacePackage, importSemanticSpace, subscribeSemanticSpace, readSemanticSpace, readSemanticSpaceSourceMirrorStatus, runSemanticSpaceAction } from './semanticSpaceStore'
+import { selectSemanticObject, addSemanticEntityToCanvas, overlaySemanticObservation, openSemanticObjects } from './semanticSpaceCanvas'
 import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
 import SemanticImageRegionFocus from './SemanticImageRegionFocus'
 import type { SpaceRegion, SpaceDocument, SpaceObservation } from './semanticSpaceRuntime'
-import { replaceableImageRegionIds } from './semanticImageTwinCompiler'
+import { copyImageModelsToSpace, replaceableImageRegionIds } from './semanticImageTwinCompiler'
 
 const SpaceEditor = React.lazy(() => import('./SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
 const button = 'App-toolbar__btn min-h-11 w-full whitespace-normal'
 export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl: string }) {
+  const [space, setSpace] = React.useState<SpaceDocument | null>(null)
+  React.useEffect(() => {
+    let alive = true, generation = 0
+    const update = () => { const request = ++generation; void readSemanticSpace().then(doc => {
+      if (alive && request === generation) setSpace(doc)
+    }, error => { if (alive) setStatus(String(error.message || error)) }) }
+    update(); const unsubscribe = subscribeSemanticSpace(update)
+    return () => { alive = false; unsubscribe() }
+  }, [])
+  const evidence = space?.observations.find(item => item.imageDataUrl === sourceUrl)
+  const models = space?.twin?.objects.filter(item => item.evidenceSha256 === evidence?.sha256) || []
+  const chooseModel = async (entityId: string) => {
+    if (!space || !evidence || busy) return
+    try {
+      const doc = await readSemanticSpace()
+      if (doc?.id !== space.id) throw Error('Space changed. Reopen this image.')
+      const view = readSemanticObjectViewMarkdown(useGraphStore.getState().markdownDocumentText)
+      if (view?.spaceId !== doc.id || view.evidenceSha256 !== evidence.sha256) await openSemanticObjects(doc, evidence.id)
+      await selectSemanticObject(doc.id, entityId)
+    } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
+  }
+  const copyImage = async () => {
+    if (!space || !evidence || busy) return
+    setBusy(true)
+    try {
+      const doc = await readSemanticSpace()
+      if (doc?.id !== space.id || doc.revision !== space.revision) throw Error('Space changed. Reopen this image before copying.')
+      const next = copyImageModelsToSpace(doc, evidence.sha256, `space:${crypto.randomUUID()}`)
+      const pack = await exportSemanticSpacePackage(next)
+      const rechecked = await readSemanticSpace()
+      if (rechecked?.id !== doc.id || rechecked.revision !== doc.revision) throw Error('Space changed while copying. Retry.')
+      // Existing package import atomically retains the previous active document as a backup.
+      const copied = await importSemanticSpace(pack)
+      setDraft(null); saved.current = null
+      await openSemanticObjects(copied, evidence.id)
+      setStatus('Image copied into its own space. The previous complete space remains in Source Files and local backup.')
+    } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
+    finally { if (mounted.current) setBusy(false) }
+  }
   const refreshFile = React.useRef<HTMLInputElement>(null)
   const [refresh, setRefresh] = React.useState<{ previous: SpaceObservation; observation: SpaceObservation; spaceId: string; revision: number } | null>(null)
   const [objectMode, setObjectMode] = React.useState(true)
@@ -64,7 +105,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
     } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
     finally { if (mounted.current) setBusy(false) }
   }
-  const analyze = async (region?: SpaceRegion, useWholeRegion = false, relief = false) => {
+  const analyze = async (region?: SpaceRegion, useWholeRegion = false, relief = false, detail = false) => {
     if (controller.current) return
     const job = new AbortController(); controller.current = job
     setBusy(true); setMarking(false); setReplacementIds([])
@@ -72,7 +113,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
     try {
       const doc = await readSemanticSpace()
       base.current = { id: doc?.id || null, revision: doc?.revision || 0 }
-      const next = await perceiveImportedImage(sourceUrl, job.signal, { region, useWholeRegion, relief })
+      const next = await perceiveImportedImage(sourceUrl, job.signal, { region, useWholeRegion, relief, detail })
       if (!mounted.current) return
       setDraft(next); setSelected(next.result.proposals.map((_, index) => index))
       setLabels(next.result.proposals.map(item => item.label))
@@ -156,6 +197,21 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
     finally { if (mounted.current) setBusy(false) }
   }
   return <section className="grid gap-2" aria-label="Local image to 3D">
+    {!!models.length && space && <section className="grid gap-1 rounded border p-2" aria-label="Saved image objects">
+      <strong>{models.length} separate 3D objects</strong>
+      <span>In photo view: cyan outlines show all models; yellow marks your selection.</span>
+      <div className="grid max-h-36 gap-1 overflow-auto">{models.map((model, index) => {
+        const entity = space.entities.find(item => item.id === model.entityId)
+        return <button type="button" key={model.entityId} className={button} disabled={busy}
+          aria-pressed={space.selectedEntityId === model.entityId} onClick={() => void chooseModel(model.entityId)}>
+          {index + 1}. {entity?.label || model.template}</button>
+      })}</div>
+      {(space.twin?.objects.length || 0) > models.length && <details>
+        <summary className="min-h-11 cursor-pointer py-2">More room for this image</summary>
+        <p>This space also contains models from other images. Copy this image into its own space to use a separate object budget. Keep the previous space in Source Files and local backup.</p>
+        <button type="button" className={button} disabled={busy} onClick={() => void copyImage()}>Copy image models to own space</button>
+      </details>}
+    </section>}
     <details><summary className="min-h-11 cursor-pointer py-2">Improve source detail</summary>
       <p className="m-0">Use the same uncropped original to sharpen saved object faces. Shape, depth and layout remain editable approximations.</p>
       <button type="button" className={button} disabled={busy} onClick={() => refreshFile.current?.click()}>Choose higher-resolution original</button>
@@ -169,7 +225,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
         <button type="button" className={button} disabled={busy} onClick={() => setRefresh(null)}>Keep current source</button>
       </section>}
     </details>
-    <button type="button" className={button} disabled={busy} onClick={() => void analyze()}>Create 3D objects</button>
+    <button type="button" className={button} disabled={busy} onClick={() => void analyze(undefined, false, false, true)}>Create 3D objects</button>
     <button type="button" className={button} disabled={busy} onClick={() => void markObject(true)}>Mark individual buildings or objects</button>
     {marking && <section className="grid gap-2 rounded border p-2" aria-label="Individual object marking">
       <p className="m-0">One outline becomes one selectable 3D block. Include only that building, not the whole skyline. Repeat for each object.</p>
@@ -189,13 +245,13 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
       <SemanticImageRegionFocus imageUrl={sourceUrl} value={focus} disabled={busy} onChange={next => {
         setFocus(next); setDraft(null); saved.current = null; setStatus('Focus changed. Analyze it or use it as one region.')
       }} />
-      <button type="button" className={button} disabled={busy} onClick={() => void analyze(focus)}>Analyze focus</button>
+      <button type="button" className={button} disabled={busy} onClick={() => void analyze(focus, false, false, true)}>Find finer regions in focus</button>
       <button type="button" className={button} disabled={busy} onClick={() => void analyze(focus, true)}>Use focus as one region</button>
     </details>}
     {busy && controller.current && <button type="button" className={button}
       onClick={() => controller.current?.abort()}>Cancel analysis</button>}
     {draft && <>
-      <p className="m-0">{draft.result.proposals.length} {marking ? 'individually marked object(s). Each selected mark will be a separate block.' : 'proposed region(s). Pixel grouping can merge objects; mark buildings individually to separate them.'}</p>
+      <p className="m-0">{draft.result.proposals.length} {marking ? 'individually marked object(s). Each selected mark will be a separate block.' : 'proposed region(s). Contrast refinement proposes separate regions. Review boundaries; they are not recognized objects.'}</p>
       <div className="relative">
         <img src={draft.observation.imageDataUrl} alt="Review proposed visible regions" className="block w-full" />
         {draft.result.proposals.map((item, index) => selected.includes(index) && <span key={index}
