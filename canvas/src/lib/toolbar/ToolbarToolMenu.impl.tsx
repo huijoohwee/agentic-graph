@@ -79,6 +79,7 @@ type FloatingPanelOverflowOption = {
 }
 
 const FloatingPanelChatLazy = React.lazy(() => import('@/features/chat/FloatingPanelChat'))
+const AgentMissionConsolePanelLazy = React.lazy(() => import('@/features/agent-ready/AgentMissionConsolePanel'))
 const FloatingPanelBlockLibraryLazy = React.lazy(() => import('@/features/toolbar/FloatingPanelBlockLibraryView').then(mod => ({ default: mod.FloatingPanelBlockLibraryView })))
 const StoryboardWidgetFloatingPanelViewLazy = React.lazy(() => import('@/features/storyboard-widget-manager/StoryboardWidgetFloatingPanelView').then(mod => ({ default: mod.StoryboardWidgetFloatingPanelView })))
 const FlowchartFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/FlowchartFloatingPanelView').then(mod => ({ default: mod.FlowchartFloatingPanelView })))
@@ -88,7 +89,7 @@ const TimelineFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgra
 const ArchitectureFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/ArchitectureFloatingPanelView').then(mod => ({ default: mod.ArchitectureFloatingPanelView })))
 const EventModelingFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/EventModelingFloatingPanelView').then(mod => ({ default: mod.EventModelingFloatingPanelView })))
 
-const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling'])
+const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'console', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling'])
 
 const FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS: FloatingPanelViewButtonSpec[] = [
   { view: 'propsPanel', title: UI_LABELS.propsPanel, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.propsPanel },
@@ -105,6 +106,7 @@ const FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS: FloatingPanelViewButtonSpec[] = 
   { view: 'camera', title: 'Camera', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.camera },
   { view: 'design', title: 'Design', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.design },
   { view: 'chat', title: UI_LABELS.chat, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.chat },
+  { view: 'console', title: 'Console', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.console },
   { view: 'geo', title: UI_LABELS.geo, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.geo },
   { view: 'renderer', title: UI_LABELS.renderer, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.renderer },
   { view: 'storyboardWidget', title: 'Storyboard Widget', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.storyboardWidget },
@@ -483,6 +485,11 @@ export function ToolbarToolMenu({
             {floatingPanelView === 'chat' && (
               <React.Suspense fallback={null}>
                 <FloatingPanelChatLazy />
+              </React.Suspense>
+            )}
+            {floatingPanelView === 'console' && (
+              <React.Suspense fallback={<p role="status">Loading Console…</p>}>
+                <AgentMissionConsolePanelLazy />
               </React.Suspense>
             )}
             {floatingPanelView === 'geo' && (

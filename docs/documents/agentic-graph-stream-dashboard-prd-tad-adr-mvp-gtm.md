@@ -2,19 +2,21 @@
 title: "Stream to Markdown Dashboard — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-STREAM-DASHBOARD-001"
-version: "2.0.0"
-prd_revision: "2.0.0"
-tad_revision: "2.0.0"
-adr_revision: "2.0.0"
-mvp_revision: "2.0.0"
-gtm_revision: "2.0.0"
+version: "2.1.0"
+date: "2026-09-25"
+lang: "en-US"
+prd_revision: "2.1.0"
+tad_revision: "2.1.0"
+adr_revision: "2.1.0"
+mvp_revision: "2.1.0"
+gtm_revision: "2.1.0"
 owner: "agentic-graph"
 frontmatter_contract: "required"
-local_rung: "implemented-local"
+local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 load_policy: "on-demand"
-reviewed_source_revision: "2fd02312fd9caf145184f9e5d9fc8b28b612917d"
+reviewed_source_revision: "1ee1282ad7346762d3a172094233839aadcd0498"
 ---
 
 # Stream to Markdown Dashboard — reference implementation
@@ -123,6 +125,18 @@ fetch, offline cache reuse, changed bytes, size bounds and preservation of edite
 Browser saving through the pinned public GitHub source succeeded. OS PR #212 and website PR #234
 passed their required CI; the source guide and template remain review candidates. Saved dashboards
 remain self-contained and do not need a template download to reopen.
+
+## Mission Console projection (2.1.0)
+
+PRD SD-08: the floating panel exposes **Console** immediately after Chat. With a selected Mission observation, it shows the same retained span hierarchy and selected-span status; without one, it states that no observation is selected. Opening Console never starts an agent, evaluates a run or grants release authority.
+
+TAD: `AgentMissionConsolePanel` consumes `useAgentRunInspection`, `visibleSpanTree` and `AgentRunSpanViews` from the existing Mission owner. It stores no second trace, polls no endpoint, and exposes no execution or payment tool. The toolbar lazy-loads this surface; the existing floating-panel store admits its view ID. The narrow panel scrolls horizontally for the shared span tree and vertically for evidence.
+
+ADR SD-ADR-05: reuse the existing read-only Mission snapshot and span component. A duplicated event stream or a new operator write console would introduce authority drift. Selection remains in the Mission inspection store, expires with that snapshot and returns to the truthful empty state; rollback removes the new view without migrating data.
+
+MVP SD-08 check: open Chat, select Console by pointer or keyboard, observe the empty state, then select a native Mission trace and confirm the retained span/partial marker and selection synchronize. `npm -C canvas run check` and all five selected source validation checks passed; the focused component test rendered a real typed trace, partial marker, shared span tree and expiry-to-empty transition with no write control. The local browser showed pointer and keyboard activation and the truthful empty state; selected-trace browser proof remains open. This slice is bounded to 90 active minutes, seven files/two UI modules/16 KiB, <600 lines per file, <500 KiB per chunk and $0 new spend.
+
+GTM and the deck, business-plan and financial projections stay unchanged: a clearer inspection path may reduce operator review time, but savings, demand and revenue are unmeasured. Public delivery requires a separate exact source and deployment receipt.
 
 ## Full-reference template and file ownership (2.0.0)
 

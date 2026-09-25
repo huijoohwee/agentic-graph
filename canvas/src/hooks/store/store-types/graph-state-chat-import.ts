@@ -62,6 +62,7 @@ export type FloatingPanelView =
   | 'camera'
   | 'design'
   | 'chat'
+  | 'console'
   | 'geo'
   | 'renderer'
   | 'storyboardWidget'

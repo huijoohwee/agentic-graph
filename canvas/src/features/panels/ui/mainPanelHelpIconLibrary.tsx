@@ -78,6 +78,7 @@ export const MAIN_PANEL_TYPE_ICON_KEYS = [
   'floatingPanel.camera',
   'floatingPanel.design',
   'floatingPanel.chat',
+  'floatingPanel.console',
   'floatingPanel.geo',
   'floatingPanel.renderer',
   'floatingPanel.storyboardWidget',
@@ -372,6 +373,7 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
     label: 'Chat',
     Icon: MessageCircle,
   },
+  'floatingPanel.console': { category: 'FloatingPanel surface', label: 'Console', Icon: SquareTerminal },
   'floatingPanel.geo': {
     category: 'FloatingPanel surface',
     label: 'Geo',
@@ -448,6 +450,7 @@ export type FloatingPanelTypeIconView =
   | 'camera'
   | 'design'
   | 'chat'
+  | 'console'
   | 'geo'
   | 'renderer'
   | 'storyboardWidget'
@@ -474,6 +477,7 @@ export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
   camera: 'floatingPanel.camera',
   design: 'floatingPanel.design',
   chat: 'floatingPanel.chat',
+  console: 'floatingPanel.console',
   geo: 'floatingPanel.geo',
   renderer: 'floatingPanel.renderer',
   storyboardWidget: 'floatingPanel.storyboardWidget',
