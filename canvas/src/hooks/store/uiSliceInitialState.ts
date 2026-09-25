@@ -90,6 +90,7 @@ export const createUiInitialState = (
         || view === 'camera'
         || view === 'design'
         || view === 'chat'
+        || view === 'console'
         || view === 'geo'
         || view === 'renderer'
         || view === 'storyboardWidget' || view === 'flowchart'
