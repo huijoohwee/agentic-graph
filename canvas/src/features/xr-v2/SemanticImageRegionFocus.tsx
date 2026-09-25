@@ -3,8 +3,9 @@ import type { SpaceRegion } from './semanticSpaceRuntime'
 
 const fullImage: SpaceRegion = { x: 0, y: 0, width: 1, height: 1 }
 /** Pointer selection plus percent fields for touch, keyboard and precise small-object crops. */
-export default function SemanticImageRegionFocus({ imageUrl, value, onChange, disabled }: {
+export default function SemanticImageRegionFocus({ imageUrl, value, onChange, disabled, regions = [] }: {
   imageUrl: string; value: SpaceRegion; onChange: (value: SpaceRegion) => void; disabled: boolean
+  regions?: readonly SpaceRegion[]
 }) {
   const start = React.useRef<{ x: number; y: number } | null>(null)
   const [preview, setPreview] = React.useState<SpaceRegion | null>(null)
@@ -28,20 +29,23 @@ export default function SemanticImageRegionFocus({ imageUrl, value, onChange, di
         start.current = point(event); event.currentTarget.setPointerCapture(event.pointerId) }}
       onPointerMove={event => { if (start.current) setPreview(rectangle(event)) }}
       onPointerUp={event => { const next = rectangle(event); start.current = null; setPreview(null)
-        if (next && next.width >= 0.02 && next.height >= 0.02) onChange(next) }}
+        if (next && next.width >= 0.002 && next.height >= 0.002) onChange(next) }}
       onPointerCancel={() => { start.current = null; setPreview(null) }}>
       <img src={imageUrl} alt="Choose a focused image area" draggable={false} className="block w-full select-none" />
+      {regions.map((region, index) => <span key={index} className="pointer-events-none absolute border border-cyan-500 text-xs text-white"
+        style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }}>
+        <span className="bg-black/80 px-1">{index + 1}</span></span>)}
       <span className="pointer-events-none absolute border-2 border-amber-400 bg-amber-400/10"
         style={{ left: `${shown.x * 100}%`, top: `${shown.y * 100}%`, width: `${shown.width * 100}%`, height: `${shown.height * 100}%` }} />
     </div>
     <div className="grid grid-cols-2 gap-2">{(['x', 'y', 'width', 'height'] as const).map(key => <label key={key}>
       {({ x: 'Left', y: 'Top', width: 'Width', height: 'Height' })[key]} %
       <input type="number" className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2"
-        aria-label={`Focus ${key} percent`} min={key === 'x' || key === 'y' ? 0 : 2} max="100" step="0.1"
+        aria-label={`Focus ${key} percent`} min={key === 'x' || key === 'y' ? 0 : 0.2} max="100" step="0.1"
         value={Number((value[key] * 100).toFixed(1))} onChange={event => {
           const raw = Number(event.currentTarget.value) / 100
           if (!Number.isFinite(raw)) return
-          const next = { ...value, [key]: Math.max(key === 'x' || key === 'y' ? 0 : 0.02, Math.min(1, raw)) }
+          const next = { ...value, [key]: Math.max(key === 'x' || key === 'y' ? 0 : 0.002, Math.min(1, raw)) }
           if (key === 'x') next.x = Math.min(next.x, 1 - next.width)
           if (key === 'y') next.y = Math.min(next.y, 1 - next.height)
           if (key === 'width') next.width = Math.min(next.width, 1 - next.x)

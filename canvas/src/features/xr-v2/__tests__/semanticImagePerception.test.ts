@@ -12,6 +12,7 @@ import * as THREE from 'three'
 import { buildTwinScene, disposeTwinScene } from '../semanticTwinScene'
 import { validateTwinSilhouette } from '../semanticTwinSilhouette'
 import { parseSemanticSpaceInvocation } from '@/features/agent-ready/semanticSpaceWebMcpTools'
+import { replaceableImageRegionIds } from '../semanticImageTwinCompiler'
 
 function fixture() {
   const width = 64, height = 32, data = new Uint8ClampedArray(width * height * 4).fill(255)
@@ -257,4 +258,47 @@ test('whole-image relief covers landscape, portrait and uniform photos and makes
   }
   assert.deepEqual(parseSemanticSpaceInvocation('/space.analyze @observation:test #relief'),
     { operation: 'analyze', observationId: 'observation:test', relief: true })
+})
+
+test('individual object marks atomically replace automatic merged groups with independent selectable meshes', async () => {
+  const input = await action()
+  const coarse = applySpaceAction(newSpaceDocument('space:individual'), { ...input,
+    proposals: [{ ...input.proposals[0], template: 'box', region: { x: 0, y: .1, width: 1, height: .8 } },
+      { ...input.proposals[1], template: 'box', source: 'user-region' }] })
+  const before = JSON.stringify(coarse), parent = coarse.entities[0].id, authored = coarse.entities[1].id
+  assert.deepEqual(replaceableImageRegionIds(coarse, input.observation.sha256), [parent])
+  assert.deepEqual(replaceableImageRegionIds(coarse, 'f'.repeat(64)), [])
+  const split = { ...input, requestId: 'request:individual', expectedRevision: coarse.revision,
+    observation: { ...input.observation, id: 'observation:individual' }, replaceEntityIds: [parent],
+    proposals: Array.from({ length: 4 }, (_, index) => ({ ...describeChosenImageRegion(fixture()).proposals[0],
+      label: `Marked building ${index + 1}`, template: 'box' as const,
+      region: { x: .05 + index * .22, y: .3, width: .08, height: .3 } })) }
+  const next = applySpaceAction(coarse, split)
+  assert.equal(next.twin!.objects.length, 5)
+  assert.ok(!next.twin!.objects.some(item => item.entityId === parent), 'the monolithic model is removed from the active scene')
+  assert.ok(next.entities.some(item => item.id === parent), 'original region evidence remains available')
+  assert.deepEqual(next.twin!.objects.find(item => item.entityId === authored), coarse.twin!.objects[1])
+  assert.ok(next.entities.slice(-4).every(item => item.proposalMethod === 'user-selected-region-v1'))
+  const children = next.twin!.objects.filter(item => item.observationId === split.observation.id)
+  const built = buildTwinScene(children)
+  try {
+    assert.equal(built.error, null); assert.equal(built.objects.length, 4)
+    for (const object of built.objects) {
+      object.wrapper.updateMatrixWorld(true)
+      const [x, y, z] = object.binding.position
+      const ray = new THREE.Raycaster(new THREE.Vector3(x, y + object.binding.size[1] / 2, z + 5), new THREE.Vector3(0, 0, -1))
+      const hits = built.objects.filter(candidate => ray.intersectObject(candidate.wrapper, true).length > 0)
+      assert.equal(hits.length, 1); assert.equal(hits[0].binding.entityId, object.binding.entityId)
+    }
+  } finally { disposeTwinScene(built) }
+  assert.deepEqual(validateSpaceDocument(JSON.parse(JSON.stringify(next))), next)
+  assert.equal(applySpaceAction(next, split), next, 'the same reviewed batch is idempotent')
+  for (const replaceEntityIds of [[authored], ['entity:unknown'], [parent, parent]]) {
+    assert.throws(() => applySpaceAction(coarse, { ...split, replaceEntityIds }), /matching automatic/)
+  }
+  assert.throws(() => applySpaceAction(coarse, { ...split,
+    observation: { ...split.observation, sha256: 'f'.repeat(64) } }), /matching automatic/)
+  assert.throws(() => applySpaceAction(coarse, { ...split,
+    proposals: [{ ...split.proposals[0], region: { x: .9, y: 0, width: .5, height: .2 } }] }))
+  assert.equal(JSON.stringify(coarse), before, 'invalid or successful replacement never mutates the input')
 })

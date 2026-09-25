@@ -6,6 +6,7 @@ import { addSemanticEntityToCanvas, overlaySemanticObservation, openSemanticObje
 import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
 import SemanticImageRegionFocus from './SemanticImageRegionFocus'
 import type { SpaceRegion, SpaceDocument } from './semanticSpaceRuntime'
+import { replaceableImageRegionIds } from './semanticImageTwinCompiler'
 
 const SpaceEditor = React.lazy(() => import('./SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
 const button = 'App-toolbar__btn min-h-11 w-full whitespace-normal'
@@ -19,6 +20,9 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   const [editing, setEditing] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const [status, setStatus] = React.useState('')
+  const [marking, setMarking] = React.useState(false)
+  const [replacementIds, setReplacementIds] = React.useState<readonly string[]>([])
+  const [replaceGroups, setReplaceGroups] = React.useState(true)
   const controller = React.useRef<AbortController | null>(null)
   const mounted = React.useRef(true)
   const base = React.useRef<{ id: string | null; revision: number }>({ id: null, revision: 0 })
@@ -27,7 +31,8 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   const analyze = async (region?: SpaceRegion, useWholeRegion = false, relief = false) => {
     if (controller.current) return
     const job = new AbortController(); controller.current = job
-    setBusy(true); setStatus('Finding visible regions locally…'); setDraft(null); setEditing(false); saved.current = null
+    setBusy(true); setMarking(false); setReplacementIds([])
+    setStatus('Finding visible regions locally…'); setDraft(null); setEditing(false); saved.current = null
     try {
       const doc = await readSemanticSpace()
       base.current = { id: doc?.id || null, revision: doc?.revision || 0 }
@@ -38,6 +43,38 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
       setObjectMode(!relief)
       setShapes(next.result.proposals.map(item => relief ? 'relief' : 'box'))
       setStatus(relief ? 'Full image prepared as one continuous relief. Review and build below; this does not identify individual objects.' : useWholeRegion ? 'Chosen area ready. Choose its 3D shape and label below.' : 'Review the regions below. These are pixel groups, not recognized objects.')
+    } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
+    finally { if (controller.current === job) controller.current = null; if (mounted.current) setBusy(false) }
+  }
+  const markObject = async (start = false) => {
+    if (controller.current || (marking && saved.current && !start)) return
+    const job = new AbortController(); controller.current = job
+    setBusy(true); setStatus(start ? 'Opening individual object marking…' : 'Adding the marked object…')
+    try {
+      const doc = await readSemanticSpace()
+      const perceived = await perceiveImportedImage(sourceUrl, job.signal, { region: start ? undefined : focus, useWholeRegion: true })
+      // A reopened evidence image must retain its exact hash, not the hash of a second JPEG encoding.
+      const evidence = doc?.observations.find(item => item.imageDataUrl === sourceUrl)
+      const next = evidence ? { ...perceived, observation: { ...evidence,
+        id: perceived.observation.id, capturedAtMs: perceived.observation.capturedAtMs } } : perceived
+      if (!mounted.current) return
+      if (start) {
+        base.current = { id: doc?.id || null, revision: doc?.revision || 0 }; saved.current = null
+        setDraft({ ...next, result: { ...next.result, proposals: [] } })
+        setSelected([]); setLabels([]); setShapes([]); setMarking(true); setObjectMode(true); setEditing(false)
+        setReplacementIds(doc ? replaceableImageRegionIds(doc, next.observation.sha256) : [])
+        setReplaceGroups(true)
+        setStatus('Outline each building separately, then add it. Mark up to 12 objects per batch; every mark becomes an independent block.')
+      } else {
+        if (!draft || draft.observation.sha256 !== next.observation.sha256) throw Error('Source image changed. Start marking again.')
+        if (draft.result.proposals.length >= 12) throw Error('Build this batch before marking more objects. The scene keeps its existing object budget.')
+        const region = next.result.proposals[0].region
+        if (draft.result.proposals.some(item => JSON.stringify(item.region) === JSON.stringify(region))) throw Error('This region is already marked. Outline the next object.')
+        const index = draft.result.proposals.length, label = `Object ${index + 1}`
+        setDraft({ ...draft, result: { ...draft.result, proposals: [...draft.result.proposals, { ...next.result.proposals[0], label }] } })
+        setSelected(current => [...current, index]); setLabels(current => [...current, label]); setShapes(current => [...current, 'box'])
+        setStatus(`${index + 1} individual object(s) marked. Outline the next building or build the selected blocks.`)
+      }
     } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
     finally { if (controller.current === job) controller.current = null; if (mounted.current) setBusy(false) }
   }
@@ -54,6 +91,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
         saved.current = await runSemanticSpaceAction({ operation: 'confirm-image-regions',
           requestId: `request:${crypto.randomUUID()}`, expectedRevision: base.current.revision,
           observation: draft.observation,
+          ...(marking && replaceGroups ? { replaceEntityIds: replacementIds } : {}),
           proposals: selected.map(index => ({ ...draft.result.proposals[index], label: labels[index], template: shapes[index] })) })
       }
       const doc = await readSemanticSpace()
@@ -82,19 +120,32 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   }
   return <section className="grid gap-2" aria-label="Local image to 3D">
     <button type="button" className={button} disabled={busy} onClick={() => void analyze()}>Create 3D objects</button>
+    <button type="button" className={button} disabled={busy} onClick={() => void markObject(true)}>Mark individual buildings or objects</button>
+    {marking && <section className="grid gap-2 rounded border p-2" aria-label="Individual object marking">
+      <p className="m-0">One outline becomes one selectable 3D block. Include only that building, not the whole skyline. Repeat for each object.</p>
+      <SemanticImageRegionFocus imageUrl={sourceUrl} value={focus} disabled={busy || !!saved.current} onChange={setFocus}
+        regions={draft?.result.proposals.filter((_, index) => selected.includes(index)).map(item => item.region)} />
+      <button type="button" className={button} disabled={busy || !!saved.current || (draft?.result.proposals.length || 0) >= 12
+        || focus.width * focus.height > 0.5} onClick={() => void markObject()}>Add marked object</button>
+      {focus.width * focus.height > 0.5 && <span>Outline a smaller individual object before adding it.</span>}
+      {!!replacementIds.length && <label className="flex min-h-11 items-center gap-2">
+        <input type="checkbox" checked={replaceGroups} disabled={busy || !!saved.current} onChange={event => setReplaceGroups(event.currentTarget.checked)} />
+        Replace {replacementIds.length} previous automatic group model(s) for this image. Keep their source evidence.
+      </label>}
+    </section>}
     <details><summary className="min-h-11 cursor-pointer py-2">Image surface tools</summary><button type="button" className={button} disabled={busy} onClick={() => void analyze(undefined, false, true)}>Generate whole-image relief</button></details>
     <p className="m-0">Create separate objects, choose a procedural shape for each region, then click the models to edit them. Shape and depth are authored; pixel grouping does not recognize every object.</p>
-    <details><summary className="min-h-11 cursor-pointer py-2">Refine image regions</summary>
+    {!marking && <details><summary className="min-h-11 cursor-pointer py-2">Refine image regions</summary>
       <SemanticImageRegionFocus imageUrl={sourceUrl} value={focus} disabled={busy} onChange={next => {
         setFocus(next); setDraft(null); saved.current = null; setStatus('Focus changed. Analyze it or use it as one region.')
       }} />
       <button type="button" className={button} disabled={busy} onClick={() => void analyze(focus)}>Analyze focus</button>
       <button type="button" className={button} disabled={busy} onClick={() => void analyze(focus, true)}>Use focus as one region</button>
-    </details>
+    </details>}
     {busy && controller.current && <button type="button" className={button}
       onClick={() => controller.current?.abort()}>Cancel analysis</button>}
     {draft && <>
-      <p className="m-0">{draft.result.proposals.length} proposed region(s). {draft.result.proposals.some(item => item.relief) ? 'Relief includes every source pixel; brighter pixels raise its surface. Adjust depth in the editor.' : 'Pixel grouping does not guarantee every object is separated. Use focus to add missing objects.'}</p>
+      <p className="m-0">{draft.result.proposals.length} {marking ? 'individually marked object(s). Each selected mark will be a separate block.' : 'proposed region(s). Pixel grouping can merge objects; mark buildings individually to separate them.'}</p>
       <div className="relative">
         <img src={draft.observation.imageDataUrl} alt="Review proposed visible regions" className="block w-full" />
         {draft.result.proposals.map((item, index) => selected.includes(index) && <span key={index}
@@ -110,7 +161,11 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
           <input className="min-h-11 min-w-0 flex-1 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} label`}
             value={labels[index]} maxLength={80} disabled={busy || !!saved.current}
             onChange={event => { const value = event.currentTarget.value; setLabels(current => current.map((label, i) => i === index ? value : label)) }} />
-        </label><label className="grid gap-1">3D shape
+        </label>{marking && <button type="button" className={button} disabled={busy || !!saved.current} onClick={() => {
+          setDraft({ ...draft, result: { ...draft.result, proposals: draft.result.proposals.filter((_, i) => i !== index) } })
+          setLabels(current => current.filter((_, i) => i !== index)); setShapes(current => current.filter((_, i) => i !== index))
+          setSelected(current => current.filter(i => i !== index).map(i => i > index ? i - 1 : i))
+        }}>Remove mark {index + 1}</button>}<label className="grid gap-1">3D shape
           <select className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} shape`}
             value={shapes[index]} disabled={busy || !!saved.current}
             onChange={event => { const value = event.currentTarget.value as TwinTemplate; setShapes(current => current.map((shape, i) => i === index ? value : shape)) }}>

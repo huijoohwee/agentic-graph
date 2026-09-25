@@ -5,7 +5,17 @@ import { buildSemanticTwinBinding, emptySemanticTwin } from './semanticTwinRunti
 export type ConfirmImageRegions = Readonly<{
   operation: 'confirm-image-regions'; requestId: string; expectedRevision: number
   observation: SpaceObservation; proposals: readonly ImageRegionProposal[]
+  replaceEntityIds?: readonly string[]
 }>
+
+/** Only unrefined, automatically grouped image volumes may be replaced by reviewed object marks. */
+export function replaceableImageRegionIds(doc: SpaceDocument, evidenceSha256: string): string[] {
+  return (doc.twin?.objects || []).filter(binding => {
+    const entity = doc.entities.find(item => item.id === binding.entityId)
+    return binding.evidenceSha256 === evidenceSha256 && ['box', 'contour'].includes(binding.template)
+      && entity?.proposalMethod === 'local-foreground-components-v1' && entity.category === 'visual-region'
+  }).map(binding => binding.entityId)
+}
 
 /** Image axes create an editable layout, never a recovered camera/depth coordinate frame. */
 export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegions): SpaceDocument {
@@ -14,6 +24,13 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
   }
   const twin = doc.twin || emptySemanticTwin()
   if (twin.room.unit !== 'arbitrary') throw Error('Image layout needs arbitrary units. Change the floor units before building proposals.')
+  const replacements = action.replaceEntityIds || []
+  const eligible = replaceableImageRegionIds(doc, action.observation.sha256)
+  if (!Array.isArray(replacements) || replacements.length > 20 || new Set(replacements).size !== replacements.length
+    || replacements.some(id => !eligible.includes(id))
+    || (replacements.length && action.proposals.some(item => item.source !== 'user-region'))) {
+    throw Error('Only matching automatic image groups can be replaced with individually marked objects.')
+  }
   const entities: SpaceEntity[] = action.proposals.map((proposal, index) => ({
     id: `entity:${action.requestId}:${index}`, observationId: action.observation.id,
     label: proposal.label, category: proposal.template && !['contour', 'box'].includes(proposal.template) ? proposal.template : 'visual-region', region: proposal.region,
@@ -42,6 +59,6 @@ export function compileImageRegions(doc: SpaceDocument, action: ConfirmImageRegi
     return binding
   })
   return { ...doc, observations: [...doc.observations, action.observation],
-    entities: [...doc.entities, ...entities], twin: { ...twin, objects: [...twin.objects, ...objects] },
+    entities: [...doc.entities, ...entities], twin: { ...twin, objects: [...twin.objects.filter(item => !replacements.includes(item.entityId)), ...objects] },
     selectedEntityId: entities[0].id }
 }
