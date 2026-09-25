@@ -7,6 +7,7 @@ import {
   type XrV2WorkspaceReadinessSnapshot,
 } from './xrV2WorkspaceReadinessRuntime'
 import { XrV2SpatialCapturePanel } from './XrV2SpatialCapturePanel'
+import { SemanticSpacePanel } from './SemanticSpacePanel'
 import { XrV2DeliveryValidationPanel } from './XrV2DeliveryValidationPanel'
 import {
   readXrV2ImmersiveSession,
@@ -106,6 +107,8 @@ export function XrV2WorkspaceReadinessPanelView({
       </p>
 
       <XrV2ImmersiveSessionControls readiness={snapshot} />
+
+      <SemanticSpacePanel />
 
       <XrV2SpatialCapturePanel
         actionsEnabled={snapshot.canOfferUserActions

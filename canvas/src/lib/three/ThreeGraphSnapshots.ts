@@ -1,5 +1,5 @@
 import type { MutableRefObject } from 'react'
-import type { Scene as ThreeScene } from 'three'
+import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace, type Camera, type Scene as ThreeScene, type WebGLRenderer } from 'three'
 import type { CanvasSnapshotFns } from '@/hooks/store/store-types/core'
 
 export function registerThreeGraphSnapshotFns(args: {
@@ -93,4 +93,21 @@ export function registerThreeGraphSnapshotFns(args: {
       }
     },
   })
+}
+
+/** Shared Canvas initialization for either supported Three renderer. */
+export function configureThreeGraphRenderer(state: { gl: WebGLRenderer; scene: ThreeScene; camera: Camera },
+  args: Parameters<typeof registerThreeGraphSnapshotFns>[0] & {
+    mode: string; threeGlRef: MutableRefObject<WebGLRenderer | null>; threeCameraRef: MutableRefObject<Camera | null>
+    applySemanticCanvasOwner: (canvas: HTMLCanvasElement | null) => void; requestSchedule: () => void
+  }) {
+  const { gl, scene, camera } = state
+  gl.xr.enabled = args.mode === 'xr'
+  gl.toneMapping = ACESFilmicToneMapping; gl.toneMappingExposure = 1
+  gl.shadowMap.enabled = true; gl.shadowMap.type = PCFSoftShadowMap; gl.outputColorSpace = SRGBColorSpace
+  args.glCanvasRef.current = gl.domElement
+  args.applySemanticCanvasOwner(gl.domElement)
+  args.threeGlRef.current = gl; args.threeCameraRef.current = camera; args.threeSceneRef.current = scene
+  args.requestSchedule()
+  registerThreeGraphSnapshotFns(args)
 }

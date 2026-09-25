@@ -91,7 +91,7 @@ export function Controls({
     coordinateScale: gameplayCoordinateScale,
     flightSimActive,
     renderer: gl,
-    suspended: !!paused || mode !== 'xr' || xrEmptyWorld
+    suspended: !!paused || mode !== 'xr' || xrEmptyWorld || immersiveMediaActive
       || cameraMarkPlaybackOwnsFraming || objectInputOwnership.active,
   })
   const expansionCfg = schema.behavior?.expansion || {}
@@ -184,7 +184,7 @@ export function Controls({
       && Date.now() - lastInteractionAtRef.current >= voxelIdleAutoRotateConfig.delayMs
     controls.autoRotate = voxelIdleAutoRotate
     controls.autoRotateSpeed = mode === 'voxel' ? voxelIdleAutoRotateConfig.speed : 0
-    if (paused) return
+    if (paused || immersiveMediaActive) return
     const voxelIntro = voxelIntroRef.current
     if (voxelIntro) {
       if (controlsUserInteractingRef.current) {
@@ -462,7 +462,7 @@ export function Controls({
     camera: perspectiveCamera,
     controls,
     mode,
-    paused: !!paused || !!learningSceneId,
+    paused: !!paused || !!learningSceneId || immersiveMediaActive,
     modelAssetRenderKey,
     modelAssetFit,
     xrEmptyWorld,
@@ -471,7 +471,7 @@ export function Controls({
     camera: perspectiveCamera,
     controls,
     mode,
-    paused: !!paused,
+    paused: !!paused || immersiveMediaActive,
     playing: timelineTransportPlaying,
     xrEmptyWorld,
   })

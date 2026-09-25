@@ -48,6 +48,8 @@ export const createWebMcpLifecycleController = (args = {}) => {
       ownedTools: new Map(),
       toolSet: null,
       installed: false,
+      generation: 0,
+      pendingCount: 0,
     }
     lifecycleState.registrations.set(context, created)
     return created
@@ -86,6 +88,9 @@ export const createWebMcpLifecycleController = (args = {}) => {
   }
 
   const releaseTools = (context, registrationState, keep = new Set()) => {
+    registrationState.generation += 1
+    registrationState.pendingCount = 0
+    registrationState.installed = false
     for (const [name, tool] of registrationState.ownedTools) {
       if (keep.has(tool)) continue
       registrationState.abortControllers.get(name)?.abort()
@@ -123,9 +128,10 @@ export const createWebMcpLifecycleController = (args = {}) => {
     const registrationState = getRegistrationState(context)
     if (registrationState.toolSet === tools) return registrationState.installed
     releasePreviousRegisteredContext(context)
-    releaseTools(context, registrationState, new Set(tools))
+    releaseTools(context, registrationState, registrationState.pendingCount ? new Set() : new Set(tools))
     registrationState.toolSet = tools
     registrationState.installed = false
+    const generation = registrationState.generation
     if (context === lifecycleState.fallbackContext
       || (typeof context.registerTool !== 'function' && typeof context.provideContext === 'function')) {
       try {
@@ -142,13 +148,32 @@ export const createWebMcpLifecycleController = (args = {}) => {
         const controller = typeof AbortController === 'function' ? new AbortController() : null
         if (!controller) return false // A changing catalog requires removable registrations.
         try {
-          context.registerTool(tool, { signal: controller.signal })
+          const registration = context.registerTool(tool, { signal: controller.signal })
           registrationState.registeredToolNames.add(tool.name)
           registrationState.abortControllers.set(tool.name, controller)
           registrationState.ownedTools.set(tool.name, tool)
+          if (registration && typeof registration.then === 'function') {
+            registrationState.pendingCount += 1
+            Promise.resolve(registration).then(() => {
+              if (registrationState.generation !== generation || controller.signal.aborted) return
+              registrationState.pendingCount -= 1
+              if (registrationState.pendingCount !== 0) return
+              registrationState.installed = true
+              clearLateBindingRetry()
+              markRuntimeState('installed')
+              markHostBindingState('installed')
+            }, () => {
+              if (registrationState.generation !== generation || controller.signal.aborted) return
+              releaseTools(context, registrationState)
+              registrationState.toolSet = null
+              markRuntimeState('awaiting-model-context')
+              markHostBindingState('registration-failed')
+              scheduleLateBindingRetry(readGlobalNavigator())
+            })
+          }
         } catch { controller.abort(); return false } // Never claim a foreign duplicate.
       }
-      registrationState.installed = true
+      registrationState.installed = registrationState.pendingCount === 0
     } else if (Array.isArray(context.tools)) {
       for (const tool of tools) {
         if (context.tools.includes(tool)) continue

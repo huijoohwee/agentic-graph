@@ -1,3 +1,4 @@
+import { webGpuManualChunk } from './viteManualChunks'
 import { createRemoteFetchHandler } from './viteRemoteFetch'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
@@ -6635,7 +6636,7 @@ export default defineConfig(({ command, mode }) => {
       'mermaid',
       'maplibre-gl', 'maplibre-gl/dist/maplibre-gl.js',
       'dagre',
-      '@react-three/fiber', 'fflate', 'three/examples/jsm/loaders/GLTFLoader.js',
+      '@react-three/fiber', 'fflate', 'three/examples/jsm/loaders/GLTFLoader.js', 'three/src/renderers/webgpu/WebGPURenderer.js',
       'yjs',
     ],
     exclude: ['gympgrph', 'grph-shared', 'entities'],
@@ -6710,9 +6711,7 @@ export default defineConfig(({ command, mode }) => {
                 if (mermaidInternalChunk) return `mermaid-${mermaidInternalChunk[1]}`
                 if (moduleId.includes('/node_modules/mermaid/dist/')) return 'mermaid'
                 if (moduleId.includes('/node_modules/mermaid/')) return 'mermaid'
-                if (moduleId.includes('/node_modules/three/examples/')) return 'three-examples'
-                if (moduleId.includes('/node_modules/@react-three/fiber/')) return 'three-fiber'
-                if (moduleId.includes('/node_modules/three/')) return 'three-core'
+                const gpuChunk = webGpuManualChunk(moduleId); if (gpuChunk) return gpuChunk
                 if (moduleId.includes('/node_modules/maplibre-gl/')) return 'maplibre'
                 if (moduleId.includes('/node_modules/onnxruntime-web/')) return 'onnx-runtime'
                 if (moduleId.includes('/node_modules/@huggingface/transformers/')) return 'transformers'
@@ -6744,7 +6743,7 @@ export default defineConfig(({ command, mode }) => {
       { find: /^react$/, replacement: resolvedReact },
       { find: 'react-dom/client', replacement: resolvedReactDomClient },
       { find: /^react-dom$/, replacement: resolvedReactDom },
-      { find: /^three$/, replacement: resolvedThreeSrc },
+      { find: /^three$/, replacement: resolvedThreeSrc }, { find: /^three\/src\/(.*)$/, replacement: path.join(path.dirname(resolvedThreeSrc), '$1') },
       { find: /^d3$/, replacement: resolvedD3Entry },
       { find: /^maplibre-gl(?:\/dist\/maplibre-gl\.js)?$/, replacement: resolvedMaplibreEntry },
       { find: /^zustand$/, replacement: resolvedZustandCompatEntry },
@@ -6857,7 +6856,7 @@ export default defineConfig(({ command, mode }) => {
         navigateFallback: null,
         importScripts: [`agentic-graph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agentic-graph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
         globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
-        globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'],
+        globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js', 'assets/**/three-webgpu-*.js', 'assets/**/createWebGpuRenderer-*.js'],
         runtimeCaching: buildPwaRuntimeCachingRules(),
       },
     }),

@@ -14,6 +14,8 @@ import { loadWorkspaceSourceIndex, removeWorkspaceEntrySourcesForPrefix, setWork
 import { runWorkspaceFsChangedBatch, suppressNextWorkspaceFsChangedEvent } from '@/features/workspace-fs/workspaceFsEvents'
 import type { WorkspaceMutationActionsCtx } from './types'
 import { syncWorkspaceTextState, writeWorkspaceFileAndSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
+import { cancelMarkdownWorkspaceAutosaveSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.stateSync'
+import { settleWorkspaceSourceTextTransactions } from '@/features/workspace-fs/workspaceSourceTextTransaction'
 
 export function useWorkspaceMutationActions(args: {
   core: { status: ReturnType<typeof import('./core').useWorkspaceStatusHelpers> }
@@ -144,6 +146,14 @@ export function useWorkspaceMutationActions(args: {
       status.setStatusProgress('Deleting')
       try {
         const fs = await getFs()
+        if (openedPath === normalized || openedPath?.startsWith(`${normalized}/`)) {
+          cancelMarkdownWorkspaceAutosaveSync(openedPath)
+          lastLoadedRef.current = null
+          setActivePathSafe(WORKSPACE_ROOT_PATH)
+          setSelectionPathSafe(WORKSPACE_ROOT_PATH)
+          setActiveText('')
+        }
+        await settleWorkspaceSourceTextTransactions()
         await runWorkspaceFsChangedBatch(async () => {
           suppressNextWorkspaceFsChangedEvent()
           await fs.deleteEntry(normalized)
@@ -155,7 +165,7 @@ export function useWorkspaceMutationActions(args: {
         status.setStatusError(`Delete failed: ${String((e as { message?: unknown })?.message ?? e)}`)
       }
     },
-    [getFs, refresh, status],
+    [getFs, refresh, status, openedPath, lastLoadedRef, setActivePathSafe, setSelectionPathSafe, setActiveText],
   )
 
   const renameEntry = React.useCallback(

@@ -81,3 +81,46 @@ export async function testMarkdownWorkspaceWebpageHtmlSidecarDeletionDoesNotRecr
     restoreDom()
   }
 }
+
+
+export async function testActiveSourceDeletionSettlesWritesAndClearsSelection() {
+  const { dom, restore } = initJsdomHarness()
+  const { useWorkspaceMutationActions } = await import('@/features/markdown-workspace/useWorkspaceFileActions/mutationActions')
+  const { enqueueWorkspaceSourceTextTransaction } = await import('@/features/workspace-fs/workspaceSourceTextTransaction')
+  const fs = await getWorkspaceFs(), path = await fs.createFile({ parentPath: '/', name: 'delete-race-fixture.md', text: 'original' })
+  const container = dom.window.document.createElement('div'); dom.window.document.body.appendChild(container)
+  const root = createRoot(container), events: string[] = []
+  let actions: ReturnType<typeof useWorkspaceMutationActions> | undefined
+  let deleted!: () => void
+  const deletion = new Promise<void>(resolve => { deleted = resolve })
+  const lastLoadedRef = { current: { path, text: 'original' } as { path: string; text: string } | null }
+  function Harness() {
+    actions = useWorkspaceMutationActions({ core: { status: {
+      setStatusInfo: value => { events.push(value); if (value === 'Deleted') deleted() }, setStatusWarning: () => {}, setStatusError: value => { throw Error(value) },
+      setStatusProgress: () => {}, clearStatus: () => {}, buildWebpageImportStageLabel: () => '',
+    } }, ctx: { getFs: async () => fs, refresh: async () => ({ entries: await fs.listEntries(), sourcesByPath: {} }),
+      openedPath: path, selectionPath: path, selectionEntryKind: 'file', activeDocumentKey: path,
+      setActiveText: value => events.push(`text:${value}`), setEntries: () => {}, lastLoadedRef,
+      setActiveMarkdownDocument: async () => true, setActivePathSafe: value => events.push(`active:${value}`),
+      setSelectionPathSafe: value => { events.push(`selection:${value}`) },
+    } })
+    return null
+  }
+  try {
+    root.render(React.createElement(Harness))
+    for (let i = 0; i < 20 && !actions; i++) await new Promise(resolve => setTimeout(resolve, 10))
+    let finish!: () => void
+    const gate = new Promise<void>(resolve => { finish = resolve })
+    const pending = enqueueWorkspaceSourceTextTransaction({ path, text: 'pending', write: async () => {
+      await gate; await fs.writeFileText(path, 'pending')
+    } })
+    actions!.onDeleteEntry(path)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    if (await fs.readFileText(path) === null) throw Error('Deletion must wait for in-flight source writes')
+    finish(); await pending; await deletion
+    if (await fs.readFileText(path) !== null) throw Error('Pending source write resurrected the deleted entry')
+    if (lastLoadedRef.current !== null || !events.includes('active:/') || !events.includes('selection:/') || !events.includes('Deleted')) {
+      throw Error(`Deletion did not clear editor ownership: ${events.join(',')}`)
+    }
+  } finally { root.unmount(); restore() }
+}

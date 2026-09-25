@@ -172,6 +172,7 @@ const lazyToolBuilders = (names: readonly string[], load: () => Promise<Record<s
   }]))
 }
 const XR_SCENE_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalXrSceneAssets, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene], () => import('./xrSceneWebMcpTools').then(m => m.buildXrSceneWebMcpToolBuilders(findWebToolContract)))
+const SEMANTIC_SPACE_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSemanticSpace, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalSemanticSpace], () => import('./semanticSpaceWebMcpTools').then(m => m.buildSemanticSpaceWebMcpToolBuilders(findWebToolContract)))
 const CAMERA_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalCamera, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalCamera], () => import('./cameraWebMcpTools').then(m => m.buildCameraWebMcpToolBuilders(findWebToolContract)))
 const XR_ANIMATION_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalAnimation, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalAnimation], () => import('./xrAnimationWebMcpTools').then(m => m.buildXrAnimationWebMcpToolBuilders(findWebToolContract)))
 const MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS = lazyToolBuilders([AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalMotionControl, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalMotionControl], () => import('./motionControlWebMcpTools').then(m => m.buildMotionControlWebMcpToolBuilders(findWebToolContract)))
@@ -547,6 +548,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...lazyToolBuilders(Object.values(DURABLE_RUN_AGENT_READY_TOOL_IDS), () => import('./durableRunWebMcpTools').then(m => m.buildDurableRunWebMcpToolBuilders(findWebToolContract))),
   ...lazyToolBuilders(Object.values(PYTHON_LEARNING_TOOL_IDS), () => import('../python-learning/learningWebMcp').then(m => m.buildPythonLearningWebMcpToolBuilders(findWebToolContract))),
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,
+  ...SEMANTIC_SPACE_WEB_MCP_TOOL_BUILDERS,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,
   [AGENTIC_OS_AGENT_READY_TOOL_IDS.readLocalRuntimeIdentity]: () => buildReadLocalRuntimeIdentityTool(READ_LOCAL_RUNTIME_IDENTITY_TOOL_CONTRACT),

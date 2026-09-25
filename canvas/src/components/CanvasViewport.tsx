@@ -100,9 +100,11 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
 }
 export function CanvasViewport(props: CanvasViewportProps) {
   const inspection = useAgentRunWorkspace()
+  const activityOpen = useGraphStore(state => !state.bottomSurfaceCollapsed && state.bottomSurfaceTab === 'activity')
   const learning = React.useSyncExternalStore(pythonLearningRuntime.subscribe, pythonLearningRuntime.read, pythonLearningRuntime.read)
   if (inspection && props.variant === 'workspace') return <section className="relative w-full h-full overflow-hidden" data-kg-canvas-viewport-root="1" aria-label="Canvas viewport">
     <CanvasViewContainer><React.Suspense fallback={<p>Loading run canvas…</p>}><DashboardCanvasLazy active /></React.Suspense></CanvasViewContainer>
+    {activityOpen && <React.Suspense fallback={null}><StrybldrTimelineBottomPanelLazy active={false} initialView="activity" workspaceEditorOverlayOpen={props.workspaceEditorOverlayOpen} /></React.Suspense>}
   </section>
   const learningScene = learning.document && props.variant === 'workspace'
     ? { lesson: learningLesson(learning.document.lessonId), scene: !learning.stale ? learning.result?.scene : undefined, documentId: learning.document.documentId, runId: learning.result?.identity.runId }
@@ -192,6 +194,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
       bottomSurfaceTab: s.bottomSurfaceTab,
     })),
   )
+  const activityBottomPanelVisible = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'activity'
   const documentVersionGraphBottomPanelVisible = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'documentVersionGraph'
   const mermaidFlowchartBottomPanelVisible = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'flowchart'
   const mermaidGitGraphBottomPanelVisible = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'gitGraph'
@@ -239,6 +242,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
     timelineEnabled,
   })
   const timelineBottomPanelVisible =
+    activityBottomPanelVisible ||
     documentVersionGraphBottomPanelVisible ||
     mermaidFlowchartBottomPanelVisible ||
     mermaidGitGraphBottomPanelVisible ||
@@ -526,7 +530,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
               <StrybldrTimelineBottomPanelLazy
                 active={strybldrTimelineBottomPanelVisible}
                 initialView={
-                  mermaidEventModelingBottomPanelVisible
+                  activityBottomPanelVisible ? 'activity' : mermaidEventModelingBottomPanelVisible
                     ? 'eventModeling'
                     : mermaidArchitectureBottomPanelVisible
                       ? 'architecture'

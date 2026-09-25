@@ -1,56 +1,33 @@
+import type { UiToastInput } from '@/hooks/store/types'
 import { getMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
-import { useGraphStore } from '@/hooks/useGraphStore'
+import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
+import { runLaunchImportLocalFiles } from './launchImportDispatch'
 
-type PushImportToast = (toast: {
-  id: string
-  kind: 'warning'
-  message: string
-  dismissible?: boolean
-}) => void
-
-const IMAGE_IMPORT_BRIDGE_RETRY_DELAYS_MS = [0, 75, 250, 750] as const
-
-const openWorkspaceEditorForImport = (): void => {
-  try {
-    const state = useGraphStore.getState()
-    state.setWorkspaceViewMode('editor')
-    state.setEditorWorkspacePane('markdown')
-    state.setWorkspaceCanvasPaneOpen(true)
-  } catch {
-    void 0
-  }
-}
-
-const importLocalImagesViaWorkspaceBridge = (files: readonly File[]): boolean => {
-  if (files.length === 0) return true
-  const launchBridge = getMarkdownWorkspaceActionBridge()
-  if (typeof launchBridge.importLocalImages !== 'function') return false
-  launchBridge.importLocalImages(files as unknown as FileList)
-  return true
-}
-
-export const importLocalImagesWithWorkspaceBridgeRetry = (args: {
+/** Image selection uses the same workspace importer and fallback as local files. */
+export async function importLocalImagesWithWorkspaceBridgeRetry(args: {
   files: readonly File[]
-  pushUiToast: PushImportToast
-}): void => {
-  if (importLocalImagesViaWorkspaceBridge(args.files)) return
-  openWorkspaceEditorForImport()
-  let index = 0
-  const schedule = typeof window !== 'undefined' ? window.setTimeout.bind(window) : setTimeout
-  const retry = () => {
-    if (importLocalImagesViaWorkspaceBridge(args.files)) return
-    if (index < IMAGE_IMPORT_BRIDGE_RETRY_DELAYS_MS.length) {
-      const delay = IMAGE_IMPORT_BRIDGE_RETRY_DELAYS_MS[index]!
-      index += 1
-      schedule(retry, delay)
-      return
-    }
+  pushUiToast: (toast: UiToastInput) => void
+}): Promise<void> {
+  if (args.files.length === 0) return
+  const { inferCorpusMediaKind } = await import('@/features/queryable-corpus/corpusGraph')
+  const images = args.files.filter(file => inferCorpusMediaKind(file.name, file.type) === 'image')
+  if (images.length === 0) {
+    args.pushUiToast({ id: 'launch:import:localImages', kind: 'warning', message: 'Choose a supported image.' })
+    return
+  }
+  try {
+    await runLaunchImportLocalFiles({
+      files: images,
+      bridge: getMarkdownWorkspaceActionBridge(),
+      fallback: async files => {
+        const fallback = await loadLaunchDropdownFallbackModule()
+        return fallback.importLocalFilesFallback({ files, pushUiToast: args.pushUiToast })
+      },
+    })
+  } catch (error) {
     args.pushUiToast({
-      id: 'launch:import:localImages:bridge',
-      kind: 'warning',
-      message: 'Import Image: open Workspace to import images',
-      dismissible: true,
+      id: 'launch:import:localImages', kind: 'error',
+      message: `Image import failed: ${String((error as Error).message || error)}`, dismissible: true,
     })
   }
-  retry()
 }
