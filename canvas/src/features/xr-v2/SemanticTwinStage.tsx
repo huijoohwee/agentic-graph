@@ -3,24 +3,24 @@ import React from 'react'
 import { XrSelectionBounds } from '@/features/three/XrSelectionBounds'
 import { readSemanticObjectViewMarkdown, semanticObjectBindings } from './semanticObjectView'
 import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
-import { photoOverlayBindings, projectTwinOnPhoto } from './semanticTwinPhotoProjection'
+import { photoOverlayBindings } from './semanticTwinPhotoProjection'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GlbFit } from '@/lib/three/GlbAssetModel'
 import { useFrame, useThree } from '@react-three/fiber'
 import { SpatialPhysicsEngine } from '@/features/physics/spatialPhysicsEngine'
-import { buildTwinScene, disposeTwinScene } from './semanticTwinScene'
-import { applyTwinImageAppearance } from './semanticTwinImageAppearance'
+import { prepareTwinScene, disposeTwinScene, type BuiltTwinScene } from './semanticTwinScene'
 import { readSemanticSpace, subscribeSemanticSpace } from './semanticSpaceStore'
 import type { SpaceDocument } from './semanticSpaceRuntime'
 import { SEMANTIC_TWIN_PREVIEW_EVENT } from './semanticTwinRuntime'
 
 type PreviewRequest = { spaceId: string; entityId: string; operation: 'drop' | 'reset'; handled?: boolean }
+const EMPTY_SCENE: BuiltTwinScene = { objects: [], textures: new Set(), error: null }
 export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: boolean; onFitChange?: (fit: GlbFit | null) => void }) {
   const media = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
   const sourceText = useGraphStore(state => state.markdownDocumentText)
   const objectView = React.useMemo(() => readSemanticObjectViewMarkdown(sourceText), [sourceText])
   const photo = media.active ? media.source.photo : undefined
-  const [ready, setReady] = React.useState(false)
+  const [prepared, setPrepared] = React.useState<{ target: string; scene: BuiltTwinScene } | null>(null)
   const [document, setDocument] = React.useState<SpaceDocument | null>(null)
   React.useEffect(() => {
     let active = true
@@ -36,27 +36,25 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
   const bindings = (!linked && objectView?.spaceId !== document?.id) || !document ? [] : media.active
     ? photo ? photoOverlayBindings(document, photo) : [] : objectView ? semanticObjectBindings(document, objectView) : document.twin?.objects || []
   const sceneKey = `${linked}:${document?.id || ''}:${JSON.stringify(document?.twin)}:${media.active}:${JSON.stringify(photo)}:${JSON.stringify(objectView)}`
-  const built = React.useMemo(() => {
-    const result = buildTwinScene(bindings)
-    if (photo) result.objects.forEach(item => { item.wrapper.visible = false })
-    return result
-  }, [sceneKey])
+  const target = `${document?.id || ''}:${media.active}:${photo?.evidenceSha256 || objectView?.evidenceSha256 || ''}`
+  const built = prepared?.target === target ? prepared.scene : EMPTY_SCENE
   const invalidate = useThree(state => state.invalidate)
   React.useEffect(() => {
-    setReady(false)
+    if (!document) { setPrepared(null); return }
+    let cancelled = false
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10_000)
-    if (document && built.objects.length) void (objectView && !photo ? Promise.resolve() : applyTwinImageAppearance(built.objects, document, controller.signal, built.textures, !!photo))
-      .then(() => { if (!controller.signal.aborted) {
-        if (photo) for (const item of built.objects) { projectTwinOnPhoto(item, document, photo); item.wrapper.visible = true }
-        setReady(true); invalidate()
-      } })
-      .catch(error => { if (!controller.signal.aborted) window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error',
-        { detail: `Photo appearance unavailable: ${String(error.message)} Solid geometry remains available.` })) })
-    return () => { clearTimeout(timer); controller.abort(); disposeTwinScene(built) }
-  }, [built, invalidate])
-  React.useEffect(() => {
-    if (built.error) window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error', { detail: built.error }))
-  }, [built.error])
+    void prepareTwinScene(bindings, document, controller.signal, photo).then(scene => {
+      if (cancelled || controller.signal.aborted) { disposeTwinScene(scene); return }
+      setPrepared({ target, scene }); invalidate()
+    }).catch(error => {
+      if (!cancelled) window.dispatchEvent(new CustomEvent('agentic-graph:semantic-twin-error', {
+        detail: `3D appearance could not be prepared: ${String(error.message)} The previous model is unchanged.`,
+      }))
+    }).finally(() => clearTimeout(timer))
+    return () => { cancelled = true; clearTimeout(timer); controller.abort() }
+  }, [sceneKey, invalidate])
+  // Keep the last complete model visible during edits; release it after its replacement commits.
+  React.useEffect(() => () => { if (prepared) disposeTwinScene(prepared.scene) }, [prepared])
   React.useEffect(() => {
     const room = document?.twin?.room
     if (media.active || !room || !built.objects.length || built.error) { onFitChange?.(null); return }
@@ -115,7 +113,7 @@ export function SemanticTwinStage({ paused = false, onFitChange }: { paused?: bo
     }))
   }
   if (!document?.twin || built.objects.length === 0) return null
-  return <group name="SemanticSpaceTwin" visible={!photo || ready} scale={photo ? 1 : 20} rotation={photo || objectView ? [0, 0, 0] : [-0.35, 0, 0]}>
+  return <group name="SemanticSpaceTwin" scale={photo ? 1 : 20} rotation={photo || objectView ? [0, 0, 0] : [-0.35, 0, 0]}>
     <ambientLight intensity={0.7} />
     <directionalLight position={[3, 7, 5]} intensity={1.2} />
     {!photo && <mesh position={[0, -0.04, 0]} receiveShadow>

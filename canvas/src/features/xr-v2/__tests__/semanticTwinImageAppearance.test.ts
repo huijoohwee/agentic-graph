@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from 'three'
 import { mapTwinContourFace, mapTwinImageFace, planTwinImageCrop, TWIN_TEXTURE_PIXELS, applyTwinImageAppearance } from '../semanticTwinImageAppearance'
-import { buildTwinScene, disposeTwinScene } from '../semanticTwinScene'
+import { buildTwinScene, disposeTwinScene, prepareTwinScene } from '../semanticTwinScene'
 import { buildSemanticTwinBinding, emptySemanticTwin } from '../semanticTwinRuntime'
 import { newSpaceDocument, type SpaceEntity, type SpaceObservation } from '../semanticSpaceRuntime'
 
@@ -218,4 +218,60 @@ test('XR photo view survives YAML round-trip without changing source content', a
   assert.deepEqual(readSemanticObjectViewMarkdown(updated), target)
   assert.equal(readSemanticObjectViewMarkdown(source), null)
   assert.equal(readSemanticObjectViewMarkdown('---\nkgSemanticObjectView: [broken\n---'), null)
+})
+
+test('saved XR objects retain photo materials after hydration and edits, and wait for decoding before publication', async () => {
+  const { semanticObjectBindings, readSemanticObjectViewMarkdown } = await import('../semanticObjectView')
+  const observation: SpaceObservation = { id: 'observation:material', capturedAtMs: 1, width: 200, height: 100,
+    imageDataUrl: 'data:image/png;base64,AA==', sha256: 'd'.repeat(64), orientation: 'source-pixels', scale: 'unknown' }
+  const entity: SpaceEntity = { id: 'entity:material', observationId: observation.id, category: 'object', label: 'Region',
+    region: { x: .1, y: .2, width: .6, height: .4 }, confirmedAtMs: 1, provenance: 'user-confirmed',
+    proposalMethod: 'user-selected-region-v1' }
+  const binding = buildSemanticTwinBinding({ entity, observation, template: 'box',
+    room: emptySemanticTwin().room, size: [3, 1, .4], position: [0, 0, 0] })
+  const doc = { ...newSpaceDocument('space:material'), observations: [observation], entities: [entity],
+    twin: { ...emptySemanticTwin(), objects: [binding] } }
+  const target = readSemanticObjectViewMarkdown(`---\nkgSemanticObjectView:\n  spaceId: ${doc.id}\n  evidenceSha256: ${observation.sha256}\n---\n`)!
+  const decoders: Array<{ onload: null | (() => void); onerror: null | (() => void) }> = []
+  const priorImage = Object.getOwnPropertyDescriptor(globalThis, 'Image')
+  const priorDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  const scenes: Awaited<ReturnType<typeof prepareTwinScene>>[] = []
+  let draws = 0
+  class EvidenceImage {
+    decoding = ''; naturalWidth = 200; naturalHeight = 100; src = ''
+    onload = null; onerror = null
+    constructor() { decoders.push(this) }
+  }
+  Object.defineProperty(globalThis, 'Image', { configurable: true, value: EvidenceImage })
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: {
+    createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillStyle: '', fillRect() {}, drawImage() { draws++ } }) }),
+  } })
+  try {
+    for (const bindings of [[binding], semanticObjectBindings(doc, target), [{ ...binding, size: [2, 1, .4] as const }]]) {
+      let published = false
+      const pending = prepareTwinScene(bindings, doc, new AbortController().signal).then(scene => { published = true; return scene })
+      await Promise.resolve()
+      assert.equal(published, false, 'untextured replacement is never exposed while the image decodes')
+      decoders.at(-1)!.onload!()
+      const scene = await pending; scenes.push(scene)
+      const meshes: THREE.Mesh[] = []
+      scene.objects[0].source.traverse(object => { if ((object as THREE.Mesh).isMesh) meshes.push(object as THREE.Mesh) })
+      const mesh = meshes[0]
+      assert.equal(scene.textures.size, 1)
+      assert.ok((mesh.material as THREE.MeshBasicMaterial).map)
+      assert.equal(mesh.userData.imageAppearance.evidenceSha256, observation.sha256)
+      assert.deepEqual(scene.objects[0].binding.size, bindings[0].size)
+      assert.equal(draws, scenes.length)
+    }
+    const controller = new AbortController()
+    const pending = prepareTwinScene([binding], doc, controller.signal)
+    const rejected = assert.rejects(pending, /cancelled/i)
+    controller.abort(); await rejected
+    assert.equal(decoders.at(-1)!.onload, null, 'cancelled decoding cannot publish a late scene')
+    assert.equal(scenes[0].textures.size, 1, 'a failed replacement does not dispose the displayed model')
+  } finally {
+    scenes.forEach(disposeTwinScene)
+    if (priorImage) Object.defineProperty(globalThis, 'Image', priorImage); else Reflect.deleteProperty(globalThis, 'Image')
+    if (priorDocument) Object.defineProperty(globalThis, 'document', priorDocument); else Reflect.deleteProperty(globalThis, 'document')
+  }
 })

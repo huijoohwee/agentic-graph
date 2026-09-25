@@ -7,6 +7,8 @@ import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-t
 import type { TwinBinding } from './semanticTwinRuntime'
 import type { SpaceDocument } from './semanticSpaceRuntime'
 import { applyTwinImageAppearance } from './semanticTwinImageAppearance'
+import { projectTwinOnPhoto } from './semanticTwinPhotoProjection'
+import type { ImmersivePhoto } from '@/features/immersive-media/immersivePhotoProjection'
 
 export type BuiltTwinObject = { binding: TwinBinding; wrapper: THREE.Group; source: THREE.Group }
 export type BuiltTwinScene = { objects: readonly BuiltTwinObject[]; error: string | null; textures: Set<THREE.Texture> }
@@ -37,6 +39,23 @@ export function buildTwinScene(bindings: readonly TwinBinding[]): BuiltTwinScene
   } catch (error) {
     disposeTwinScene({ objects, textures, error: null })
     return { objects: [], textures, error: String((error as Error).message || error) }
+  }
+}
+
+/** Publish only a complete scene. XR persistence must not remove saved image materials. */
+export async function prepareTwinScene(bindings: readonly TwinBinding[], document: SpaceDocument,
+  signal: AbortSignal, photo?: ImmersivePhoto): Promise<BuiltTwinScene> {
+  signal.throwIfAborted()
+  const built = buildTwinScene(bindings)
+  try {
+    if (built.error) throw Error(built.error)
+    await applyTwinImageAppearance(built.objects, document, signal, built.textures, !!photo)
+    signal.throwIfAborted()
+    if (photo) for (const item of built.objects) projectTwinOnPhoto(item, document, photo)
+    return built
+  } catch (error) {
+    disposeTwinScene(built)
+    throw error
   }
 }
 
