@@ -348,7 +348,7 @@ test('affected XR review expands the composite gate and runs the shared check on
     ['npm', 'run', 'payment:x402:xrpl:source-check'],
   ])
   assert.equal(resolveCiCommandTimeoutMs(['npm', 'run', 'check'], contract), 300000)
-  assert.equal(resolveCiCommandTimeoutMs(['node', 'canvas/scripts/run_agent_mission_browser_smoke.mjs'], contract), 600000)
+  assert.equal(resolveCiCommandTimeoutMs(['node', 'canvas/scripts/run_agent_mission_browser_smoke.mjs'], contract), 1200000)
   assert.equal(
     resolveCiCommandTimeoutMs(['npm', 'run', 'check:agentic-travel-commerce-platform'], contract),
     900000,
