@@ -157,7 +157,7 @@ test('focus remaps different photo aspects without losing source coordinates or 
 test('outdoor templates compile from arbitrary image crops, persist, and match structured/slash contracts', async () => {
   const input = await action()
   const buildSchema = SEMANTIC_SPACE_CONTROL_SCHEMA.oneOf.find(item => item.properties.operation?.const === 'build')!
-  assert.deepEqual(buildSchema.properties.template.enum, SEMANTIC_TWIN_PROCEDURAL_TEMPLATES)
+  assert.deepEqual(buildSchema.properties.template.enum, ['contour', ...SEMANTIC_TWIN_PROCEDURAL_TEMPLATES])
   for (const template of SEMANTIC_TWIN_PROCEDURAL_TEMPLATES) {
     const next = applySpaceAction(newSpaceDocument('space:outdoor'), { ...input,
       proposals: [{ ...input.proposals[0], template, label: `Reviewed ${template}` }] })

@@ -127,9 +127,7 @@ export async function openSemanticObjects(space: SpaceDocument, observationId: s
   signal?.throwIfAborted()
   const rechecked = await readSemanticSpace()
   if (rechecked?.id !== space.id || rechecked.revision !== space.revision) throw Error('Space changed while opening objects.')
-  closeImmersiveMedia()
   const { activateXrSceneSurface } = await import('@/features/three/xrSceneSurfaceRuntime')
-  if (!activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })) throw Error('XR view is unavailable for this document.')
   const state = useGraphStore.getState()
   const settings = { kgCanvasSurfaceMode: 'xr', kgCanvasRenderMode: '3d', kgCanvas3dMode: 'xr',
     kgBottomPanelOpen: true, kgBottomPanelTab: 'timeline', [SEMANTIC_OBJECT_VIEW_KEY]: target }
@@ -156,6 +154,11 @@ export async function openSemanticObjects(space: SpaceDocument, observationId: s
     settings: view.presentation === 'photo'
       ? { angle: 'front', level: 'eye-level', shot: 'medium', orbitX: 0, orbitY: 0 }
       : { angle: 'front', level: 'high-angle', shot: 'medium', orbitX: 0.22, orbitY: -0.42 } })
+  // Claim the saved source before mounting XR; otherwise its default graph can flash
+  // while the frontmatter/persistence imports and image textures are still loading.
+  signal?.throwIfAborted()
+  closeImmersiveMedia()
+  if (!activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })) throw Error('XR view is unavailable for this document.')
   await selectSemanticObject(space.id, space.selectedEntityId && bindings.some(b => b.entityId === space.selectedEntityId) ? space.selectedEntityId : entity.id)
   return view.presentation === 'photo'
     ? `${bindings.length} selectable 3D models aligned to their photo regions. ${view.context !== false ? 'Surroundings are source-photo context, not reconstructed objects.' : 'Source-photo context hidden.'} Depth remains authored.`

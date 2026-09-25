@@ -8,6 +8,7 @@ import { selectSemanticObject, addSemanticEntityToCanvas, overlaySemanticObserva
 import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
 import { semanticTwinTemplateLabel } from './semanticTwinTemplates.mjs'
 import SemanticImageRegionFocus from './SemanticImageRegionFocus'
+import SemanticBoxRefinement from './SemanticBoxRefinement'
 import type { SpaceRegion, SpaceDocument, SpaceObservation } from './semanticSpaceRuntime'
 import { copyImageModelsToSpace, replaceableImageRegionIds } from './semanticImageTwinCompiler'
 
@@ -121,7 +122,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
       setDraft(next); setSelected(next.result.proposals.map((_, index) => index))
       setLabels(next.result.proposals.map(item => item.label))
       setObjectMode(!relief)
-      setShapes(next.result.proposals.map(item => relief ? 'relief' : 'box'))
+      setShapes(next.result.proposals.map(item => relief ? 'relief' : item.silhouette ? 'contour' : 'box'))
       setStatus(relief ? 'Full image prepared as one continuous relief. Review and build below; this does not identify individual objects.' : useWholeRegion ? 'Chosen area ready. Choose its 3D shape and label below.' : 'Review the regions below. These are pixel groups, not recognized objects.')
     } catch (error) { if (mounted.current) setStatus(String((error as Error).message || error)) }
     finally { if (controller.current === job) controller.current = null; if (mounted.current) setBusy(false) }
@@ -202,7 +203,8 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
   return <section className="grid gap-2" aria-label="Local image to 3D">
     {!!models.length && space && <section className="grid gap-1 rounded border p-2" aria-label="Saved image objects">
       <strong>{models.length} separate 3D objects</strong>
-      <span>In photo view: cyan outlines show all models; yellow marks your selection.</span>
+      <span>Cyan boxes are selection bounds, not object shapes. Yellow marks your selection.</span>
+      {evidence && <SemanticBoxRefinement space={space} observation={evidence} disabled={busy} />}
       <div className="grid max-h-36 gap-1 overflow-auto">{models.map((model, index) => {
         const entity = space.entities.find(item => item.id === model.entityId)
         return <button type="button" key={model.entityId} className={button} disabled={busy}
@@ -289,7 +291,7 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
           <select className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} shape`}
             value={shapes[index]} disabled={busy || !!saved.current}
             onChange={event => { const value = event.currentTarget.value as TwinTemplate; setShapes(current => current.map((shape, i) => i === index ? value : shape)) }}>
-            {SEMANTIC_TWIN_TEMPLATES.filter(shape => (!objectMode || !['contour', 'relief'].includes(shape)) && (shape !== 'contour' || draft.result.proposals[index].silhouette) && (shape !== 'relief' || draft.result.proposals[index].relief))
+            {SEMANTIC_TWIN_TEMPLATES.filter(shape => (!objectMode || shape !== 'relief') && (shape !== 'contour' || draft.result.proposals[index].silhouette) && (shape !== 'relief' || draft.result.proposals[index].relief))
               .map(shape => <option key={shape} value={shape}>{semanticTwinTemplateLabel(shape)}</option>)}
           </select></label></div>)}</div>
       <p className="m-0">Choose terrain, water, aircraft, vessel, car, building, tree or furniture. Each selected region becomes its own selectable model.

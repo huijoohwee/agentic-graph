@@ -8,6 +8,10 @@ import type { GlbFit } from '@/lib/three/GlbAssetModel'
 
 export type SemanticObjectView = Readonly<{ spaceId: string; evidenceSha256: string; presentation?: 'photo' | 'layout'; context?: boolean }>
 export const SEMANTIC_OBJECT_VIEW_KEY = 'kgSemanticObjectView'
+/** Camera framing must refresh when asynchronous fit or presentation changes, not on selection. */
+export function semanticObjectCameraKey(target: SemanticObjectView | null, fit: GlbFit | null) {
+  return fit ? `semantic-space:${JSON.stringify([target, fit.cameraTarget, fit.scaledSize, fit.scale])}` : ''
+}
 export function parseSemanticObjectView(value: unknown): SemanticObjectView | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const target = value as Record<string, unknown>
@@ -19,10 +23,10 @@ export function parseSemanticObjectView(value: unknown): SemanticObjectView | nu
       ...(target.presentation ? { presentation: target.presentation as 'photo' | 'layout' } : {}),
       ...(typeof target.context === 'boolean' ? { context: target.context } : {}) } : null
 }
-/** Image relief and extracted silhouettes remain separate from explicit object models. */
+/** Per-region contour volumes are selectable objects; whole-image relief remains a separate surface. */
 export function semanticObjectBindings(document: SpaceDocument, target: SemanticObjectView) {
   if (document.id !== target.spaceId) return []
-  return photoOverlayBindings(document, { ...target, evidenceSha256: resolveSpaceObservation(document, target.evidenceSha256)?.sha256 || target.evidenceSha256 }, binding => !['relief', 'contour'].includes(binding.template))
+  return photoOverlayBindings(document, { ...target, evidenceSha256: resolveSpaceObservation(document, target.evidenceSha256)?.sha256 || target.evidenceSha256 }, binding => binding.template !== 'relief')
 }
 
 /** Normalize display scale around visible models, never the arbitrary room floor. Saved dimensions stay intact. */

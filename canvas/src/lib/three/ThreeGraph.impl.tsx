@@ -1,3 +1,4 @@
+import { readSemanticObjectViewMarkdown, semanticObjectCameraKey } from '@/features/xr-v2/semanticObjectView'
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { useThreeRendererBackend } from './useThreeRendererBackend'
@@ -154,6 +155,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       spatialCaptureManifest.sourceIdentity,
     ].join('|')
   }, [canvasMarkdownDocument.semanticKey, spatialCaptureManifest])
+  // Saved source ownership is synchronous; geometry/camera-fit preparation is asynchronous.
+  const semanticObjectTarget = useMemo(() => readSemanticObjectViewMarkdown(markdownDocumentText), [markdownDocumentText])
   const [semanticTwinFit, setSemanticTwinFit] = useState<GlbFit | null>(null)
   const [glbAssetFit, setGlbAssetFit] = useState<GlbFit | null>(null)
   const [spatialCaptureFit, setSpatialCaptureFit] = useState<GlbFit | null>(null)
@@ -200,11 +203,11 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     immersive: immersiveMediaStageActive, gameplay: gameplayOverlayActive, importedModel: !!glbAsset, spatialCapture: !!spatialCaptureManifest,
     semanticSpace: !!sceneGraphForRender?.nodes.some(node => node.properties?.twinTemplate && node.properties?.spaceId) })
   const rendererBackend = useThreeRendererBackend(gpuEligible, active && !geospatialComposite)
-  const hasGraph = !rendererBackend.gpu && !semanticTwinFit && !learningScene && !!sceneGraphForRender && !explicitMediaSourceActive
+  const hasGraph = !rendererBackend.gpu && !semanticObjectTarget && !semanticTwinFit && !learningScene && !!sceneGraphForRender && !explicitMediaSourceActive
   const hasGlbAsset = !learningScene && !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !learningScene && !!spatialCaptureManifest
-  const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive
-  const hasRenderableScene = gpuEligible || !!semanticTwinFit || !!learningScene || immersiveMediaStageActive || gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld
+  const hasXrEmptyWorld = !semanticObjectTarget && mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive
+  const hasRenderableScene = !!semanticObjectTarget || gpuEligible || !!semanticTwinFit || !!learningScene || immersiveMediaStageActive || gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld
   const xrAuthoringGraphActive = useMemo(() => (
     xrAuthoringGraphData ? graphHasXrAuthoringSource(xrAuthoringGraphData) : false
   ), [xrAuthoringGraphData])
@@ -539,7 +542,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             flightSimActive={flightStageActive && !learningScene}
             immersiveMediaActive={immersiveMediaStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
-            modelAssetRenderKey={learningScene ? undefined : spatialCaptureRenderKey || glbAssetRenderKey || (semanticTwinFit ? 'semantic-space' : '')}
+            modelAssetRenderKey={learningScene ? undefined : spatialCaptureRenderKey || glbAssetRenderKey || semanticObjectCameraKey(semanticObjectTarget, semanticTwinFit)}
             modelAssetFit={learningScene ? null : spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit || semanticTwinFit}
             xrEmptyWorld={hasXrEmptyWorld && !learningScene}
             onControlsChange={() => {

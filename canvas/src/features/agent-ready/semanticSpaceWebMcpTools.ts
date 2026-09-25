@@ -130,7 +130,8 @@ export function buildSemanticSpaceWebMcpToolBuilders(findContract: (name: string
           }
           if (operation === 'build') return summary(await runSemanticSpaceAction({ operation: 'build', requestId,
             expectedRevision, entityId: String(raw.entityId), template: raw.template as TwinTemplate,
-            size: raw.size as TwinVector, position: raw.position as TwinVector }), '')
+            size: raw.size as TwinVector, position: raw.position as TwinVector,
+            silhouette: raw.silhouette as import('../xr-v2/semanticTwinSilhouette').TwinSilhouette | undefined }), '')
           if (operation === 'edit-twin') return summary(await runSemanticSpaceAction({ operation: 'edit-twin', requestId,
             expectedRevision, entityId: String(raw.entityId), size: raw.size as TwinVector,
             position: raw.position as TwinVector }), '')

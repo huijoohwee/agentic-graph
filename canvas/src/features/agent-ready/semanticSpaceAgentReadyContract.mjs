@@ -24,8 +24,11 @@ export const SEMANTIC_SPACE_CONTROL_SCHEMA = Object.freeze({ oneOf: [
   action('correct', { ...base, entityId: id, label: text, category: text }, ['requestId', 'expectedRevision', 'entityId', 'label', 'category']),
   action('confirm', { ...base, observationId: id, label: text, category: text, region },
     ['requestId', 'expectedRevision', 'observationId', 'label', 'category', 'region']),
-  action('build', { ...twinEntity, template: { type: 'string', enum: SEMANTIC_TWIN_PROCEDURAL_TEMPLATES },
-    size, position }, ['requestId', 'expectedRevision', 'entityId', 'template', 'size', 'position']),
+  action('build', { ...twinEntity, template: { type: 'string', enum: ['contour', ...SEMANTIC_TWIN_PROCEDURAL_TEMPLATES] },
+    silhouette: { type: 'object', additionalProperties: false, required: ['width', 'height', 'runs'], properties: {
+      width: { type: 'integer', minimum: 3, maximum: 192 }, height: { type: 'integer', minimum: 3, maximum: 192 },
+      runs: { type: 'array', minItems: 1, maxItems: 2048, items: { type: 'array', minItems: 3, maxItems: 3, items: { type: 'integer', minimum: 0, maximum: 192 } } },
+    } }, size, position }, ['requestId', 'expectedRevision', 'entityId', 'template', 'size', 'position']),
   action('edit-twin', { ...twinEntity, size, position },
     ['requestId', 'expectedRevision', 'entityId', 'size', 'position']),
   action('set-room', { ...base, room: { type: 'object', additionalProperties: false,

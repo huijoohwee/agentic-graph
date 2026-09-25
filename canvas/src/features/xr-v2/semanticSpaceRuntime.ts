@@ -1,3 +1,4 @@
+import type { TwinSilhouette } from './semanticTwinSilhouette'
 import { compileImageRegions, type ConfirmImageRegions } from './semanticImageTwinCompiler'
 import type { AssetControlValue } from '@/features/image-to-glb/proceduralAssetContract'
 import { buildSemanticTwinBinding, editSemanticTwinControl, emptySemanticTwin, MAX_TWIN_OBJECTS,
@@ -51,7 +52,7 @@ export type SpaceAction =
   | Readonly<{ operation: 'correct'; requestId: string; expectedRevision: number; entityId: string; label: string; category: string }>
   | Readonly<{ operation: 'select'; requestId: string; expectedRevision: number; entityId: string | null }>
   | Readonly<{ operation: 'build'; requestId: string; expectedRevision: number; entityId: string;
-      template: TwinTemplate; size: TwinVector; position: TwinVector; seed?: number }>
+      template: TwinTemplate; size: TwinVector; position: TwinVector; seed?: number; silhouette?: TwinSilhouette }>
   | Readonly<{ operation: 'set-room'; requestId: string; expectedRevision: number; room: TwinRoom }>
   | Readonly<{ operation: 'move-twin'; requestId: string; expectedRevision: number;
       entityId: string; position: TwinVector }>
@@ -249,10 +250,13 @@ export function applySpaceAction(doc: SpaceDocument, action: SpaceAction): Space
       if (!entity) throw new SpaceError('unknown-entity', 'Confirm an entity before building its geometry')
       const observation = doc.observations.find(item => item.id === entity.observationId)!
       if (!existing && twin.objects.length >= MAX_TWIN_OBJECTS) throw new SpaceError('capacity', 'Twin object limit reached')
+      if (action.silhouette && action.template !== 'contour') throw new SpaceError('invalid-input', 'A silhouette requires contour geometry')
       let binding
       try { binding = buildSemanticTwinBinding({ entity, observation, room: twin.room,
-        template: action.template, size: action.size, position: action.position, seed: action.seed }) }
+        template: action.template, size: action.size, position: action.position, seed: action.seed, silhouette: action.silhouette,
+        ...(action.silhouette && existing ? { color: String(existing.recipe.values.color) } : {}) }) }
       catch (error) { throw new SpaceError('invalid-input', String((error as Error).message || error)) }
+      if (action.silhouette && existing?.recipe.values.visible === false) binding.recipe.values.visible = false
       next = { ...doc, twin: { ...twin, objects: [...twin.objects.filter(item => item.entityId !== entity.id), binding] },
         selectedEntityId: entity.id }
       break
