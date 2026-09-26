@@ -1,5 +1,6 @@
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
+import { isMarkdownPath } from '@/features/markdown-workspace/markdownWorkspaceUtils'
 
 type MarkdownWorkspaceIndexingLoadedText = { path: WorkspacePath; text: string } | null
 
@@ -25,7 +26,8 @@ export function resolveMarkdownWorkspaceIndexingFreshText(args: {
 
   const liveName = normalizeWorkspacePath(String(args.liveMarkdownDocumentName || '').trim())
   const liveText = String(args.liveMarkdownDocumentText || '')
-  if (path && liveName === path && liveText && liveText !== nextText) {
+  // Other source formats own their FS bytes; the Markdown display can be a restored snapshot.
+  if (isMarkdownPath(path) && liveName === path && liveText && liveText !== nextText) {
     nextText = liveText
   }
   return nextText

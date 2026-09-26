@@ -43,6 +43,24 @@ test('native lesson folder preserves edits, migrated roots and deletions across 
   assert.equal(sourceLearningLesson('# agentic-graph lesson: route\nprint(1)', '/renamed.py'), 'route')
 })
 
+test('local docs reads preserve saved edits, cleared bytes and deletion over stale display copies', async () => {
+  const { createMemoryWorkspaceFs } = await import('../features/workspace-fs/workspaceFsMemory')
+  const { setWorkspaceEntrySource } = await import('../features/workspace-fs/sourceIndex')
+  const { readWorkspaceActiveDocumentObservedText, readWorkspaceActiveDocumentResolvedText } = await import('../features/source-files/sourceFilesRuntimeActive')
+  const fs = createMemoryWorkspaceFs(), activePath = await fs.createFile({ parentPath: '/docs', name: 'local-reader.py', text: '' })
+  setWorkspaceEntrySource(activePath, { kind: 'local' }, { persist: 'sync' })
+  try {
+    for (const text of ['# Saved edit 保留\nprint(42)\n', '']) {
+      await fs.writeFileText(activePath, text)
+      assert.equal(await readWorkspaceActiveDocumentResolvedText({ activePath, fs, currentText: 'stale copy', preferCanonicalPathText: true }), text)
+      const observed = await readWorkspaceActiveDocumentObservedText({ activePath, fs, fallbackText: 'stale copy', preferCanonicalPathText: true })
+      assert.equal(observed.text, text); assert.equal(observed.observedWorkspaceText, text)
+    }
+    await fs.deleteEntry(activePath)
+    assert.equal(await readWorkspaceActiveDocumentResolvedText({ activePath, fs, currentText: 'stale copy', preferCanonicalPathText: true, preserveMissing: true }), null)
+  } finally { setWorkspaceEntrySource(activePath, null) }
+})
+
 test('lesson initialization fails loudly on collisions and resumes a partial save safely', async () => {
   const { createMemoryWorkspaceFs } = await import('../features/workspace-fs/workspaceFsMemory')
   const blocked = createMemoryWorkspaceFs()
@@ -448,6 +466,23 @@ test('inspection has a two-second deadline without cancelling or mutating the ac
     await f.runtime.control('run'); await until(() => f.runtime.read().state === 'completed')
     assert.equal(f.runtime.read().result!.output, '1\n')
   } finally { f.runtime.dispose() }
+})
+
+test('source indexing preserves saved non-Markdown files against restored Markdown display text', async () => {
+  const { resolveMarkdownWorkspaceIndexingFreshText: resolveText } = await import('../lib/markdown-workspace-runtime/markdownWorkspaceIndexingFreshText')
+  for (const path of ['/docs/python-lessons/02-repeat-a-route.py', '/docs/local.json', '/docs/local.csv']) {
+    for (const nextText of ['# Saved learner code 保留\nprint(42)\n', '']) {
+      const loaded = { path, text: 'old display' }
+      assert.equal(resolveText({ path, nextText, scheduledLastLoaded: loaded, liveLoaded: loaded,
+        liveMarkdownDocumentName: path, liveMarkdownDocumentText: 'old display' }), nextText)
+    }
+  }
+  const path = '/docs/local.md', loaded = { path, text: 'old file' }
+  assert.equal(resolveText({ path, nextText: 'old file', scheduledLastLoaded: loaded, liveLoaded: loaded,
+    liveMarkdownDocumentName: path, liveMarkdownDocumentText: 'new Canvas edit' }), 'new Canvas edit')
+  assert.equal(resolveText({ path: '/docs/local.py', nextText: 'old file', scheduledLastLoaded: null,
+    liveLoaded: { path: '/docs/local.py', text: 'newer loaded edit' },
+    liveMarkdownDocumentName: '/docs/local.py', liveMarkdownDocumentText: 'old display' }), 'newer loaded edit')
 })
 
 test('native Decision storage reopens exact source and rejects quota failures, corruption and cancelled writes', async () => {

@@ -28,6 +28,7 @@ import {
 import { normalizeRuntimeStorageMediaAccessUrlsInText } from '@/lib/storage/runtimeMediaUrl'
 import { isWorkspaceRepoLocalRunReadyBootstrap } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { shouldRejectMarkdownDocumentPayload } from '@/lib/markdown/markdownDocumentPayloadGuards'
+import { loadWorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
@@ -42,6 +43,7 @@ const resolveCanonicalDocsMirrorRepairText = async (args: {
   storageFallbackByPath?: Map<string, string>
   modelAssetFormat: 'glb' | 'gltf' | null
 }): Promise<string | null> => {
+  if (loadWorkspaceSourceIndex()[args.activePath]?.kind === 'local') return null
   const canonicalDocsMirrorText = resolveWorkspaceActiveDocumentText(
     args.activePath,
     args.modelAssetFormat,
@@ -280,6 +282,10 @@ async function readWorkspaceActiveDocumentTextResult(args: {
 }): Promise<string | null> {
   const activePath = normalizeWorkspacePath(args.activePath)
   const modelAssetFormat = isWorkspaceModelAssetPath(activePath)
+  if (args.preferCanonicalPathText && loadWorkspaceSourceIndex()[activePath]?.kind === 'local') {
+    const text = await (args.fs || await getWorkspaceFs()).readFileText(activePath)
+    return text === null ? null : resolveWorkspaceActiveDocumentText(activePath, modelAssetFormat, text)
+  }
   const preferCanonicalDocsMirrorText = args.preferCanonicalPathText === true
     && isWorkspaceCanonicalDocsMirrorPath(activePath)
   if (preferCanonicalDocsMirrorText) {
@@ -373,7 +379,9 @@ export const readWorkspaceActiveDocumentObservedText = async (args: {
   let rawText: string | null | undefined
   try { rawText = await fs.readFileText(activePath) } catch { /* Display fallback has no observed write authority. */ }
   const resolved = await readWorkspaceActiveDocumentResolvedText({ ...args, fs, activePath, currentText: rawText ?? '' })
-  const displayText = resolved.trim() ? resolved : args.fallbackText ?? resolved
+  const localObservation = rawText !== undefined && loadWorkspaceSourceIndex()[activePath]?.kind === 'local'
+  const displayText = localObservation ? resolveWorkspaceActiveDocumentText(activePath, isWorkspaceModelAssetPath(activePath), rawText ?? '')
+    : resolved.trim() ? resolved : args.fallbackText ?? resolved
   if (rawText === undefined) return { text: displayText, observedWorkspaceText: undefined, observedWorkspaceFs: undefined }
   let latest: string | null
   try { latest = await fs.readFileText(activePath) } catch { return { text: displayText, observedWorkspaceText: undefined, observedWorkspaceFs: undefined } }

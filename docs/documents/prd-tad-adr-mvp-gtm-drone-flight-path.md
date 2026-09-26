@@ -297,6 +297,12 @@ empty files, renames and individual deletions survive reload. Known file paths
 select the lesson while source loads; markers support renamed files. Explicit
 lesson selection is scoped to the current document.
 
+The normal active-file reader gives registered local files their saved WorkspaceFs
+bytes before consulting stale docs display copies, including empty or deleted
+files. Canonical mirror repair remains available for mirror-owned documents.
+Indexing uses graph-authored Markdown text only for Markdown documents; restored
+display text cannot replace saved Python, JSON or other source formats.
+
 ADR: browser Web Locks serialize cooperating tabs; same-runtime requests are
 coalesced. WorkspaceFs conditional creation preserves concurrent writes. Folder
 collisions and partial saves report errors with an explicit retry. No host mirror
@@ -307,8 +313,9 @@ verified readback; this does not grant GitHub repository-save authority.
 MVP: verify all four native paths, matching lessons, explicit Run, edit/reopen
 preservation, interim-source preservation, deletion persistence, collision and
 partial-save recovery, and cloud target resolution. Run affected Python, cloud
-sync, browser and offline checks. Bound this increment to eight files and 25 KiB,
-no dependencies or new execution engines, and 25 active minutes before reassessment.
+sync, browser and offline checks. Refreshed cap: ten files and 32 KiB, including
+the active-file reader and indexing fixes; no dependencies or new execution engines.
+Use a 15-minute final validation/publication sprint before reassessment.
 Provider waits remain separate. Existing oversized unrelated bundles are unchanged.
 
 GTM: expand docs → python-lessons, open a file, edit and Run. Use its existing

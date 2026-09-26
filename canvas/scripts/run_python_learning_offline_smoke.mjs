@@ -20,7 +20,7 @@ const port = Number(process.env.PYTHON_LEARNING_PROOF_PORT || 4198)
 assert.ok(Number.isInteger(port) && port >= 1024 && port <= 65535, 'offline proof port must be 1024..65535')
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 const { LEARNING_LESSONS: lessons } = await tsImport('../src/features/python-learning/learningLessons.ts', import.meta.url)
-const { LEARNING_LESSON_FILES: lessonFiles } = await tsImport('../src/features/python-learning/learningLessonFiles.ts', import.meta.url)
+const { LEARNING_LESSON_FILES: lessonFiles } = await tsImport('../src/features/python-learning/learningLessonFiles.ts', { parentURL: import.meta.url, tsconfig: join(canvas, 'tsconfig.json') })
 const manifest = JSON.parse(await readFile(join(canvas, 'dist', `learning-offline-manifest-${revision}.json`), 'utf8'))
 for (const file of manifest.files) {
   const bytes = await readFile(join(canvas, 'dist', file.path))
@@ -32,7 +32,7 @@ try {
   server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port, strictPort: true } })
   const origin = `http://127.0.0.1:${port}`, base = origin + '/agentic-graph/'
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, hasTouch: true })
   // Controlled browser-host surface; production registers its actual validated lazy tools.
   // This proves application registration, not an experimental browser vendor API.
   await context.addInitScript(() => {
@@ -57,6 +57,7 @@ try {
   page.on('requestfailed', request => failedRequests.push(new URL(request.url()).pathname))
   await page.goto(base + '?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
+  await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
   await dismissVisibleFloatingPanel(page)
@@ -88,7 +89,7 @@ try {
   await nativeEditor.fill(editedSource)
   await nativePane.getByRole('button', { name: 'Save source', exact: true }).click()
   await page.getByText('Saved', { exact: true }).waitFor()
-  await page.waitForFunction(async ({ path, text }) => {
+  const awaitNativeStoredSource = () => page.waitForFunction(async ({ path, text }) => {
     const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
     if (!name) return false
     return new Promise((resolve, reject) => {
@@ -100,8 +101,12 @@ try {
       }
     })
   }, { path: editedFile.path, text: editedSource }, { timeout: 15000 })
+  await awaitNativeStoredSource()
+  assert.equal(await page.evaluate(path => JSON.parse(localStorage.getItem('kg:ui:markdown:workspace:sourcesByPath') || '{}')[path]?.kind, editedFile.path), 'local')
   await page.reload({ waitUntil: 'domcontentloaded' }); await nativePane.waitFor({ timeout: 60000 })
   await dismissVisibleFloatingPanel(page)
+  assert.equal(await page.evaluate(path => JSON.parse(localStorage.getItem('kg:ui:markdown:workspace:sourcesByPath') || '{}')[path]?.kind, editedFile.path), 'local')
+  await awaitNativeStoredSource()
   await page.waitForFunction(text => document.querySelector('textarea[aria-label="Python source text"]')?.value === text, editedSource, { timeout: 30000 })
   assert.equal(await nativeEditor.inputValue(), editedSource, 'native lesson save survives reload without replacing learner code')
   assert.equal(await nativePane.getByLabel('Python lesson', { exact: true }).inputValue(), editedFile.id, 'markerless source keeps its file lesson')
@@ -121,7 +126,6 @@ try {
     await page.waitForFunction(() => window.__registeredLearningTools.has('agentic-graph.select_local_tool_scope'))
     await invoke('select_local_tool_scope', { scope: 'pythonLearning' })
     assert.equal(await page.locator('html').getAttribute('data-kg-webmcp-scope'), 'pythonLearning')
-  }
   // A restored floating panel keeps its own discovery priority; agents select the requested group.
   await selectPython()
   await dismissVisibleFloatingPanel(page)
@@ -331,6 +335,7 @@ try {
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
+  }
 } catch (error) {
   if (page) { console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState, serviceWorker: Boolean(navigator.serviceWorker?.controller) })).catch(() => ({}))); console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
   throw error
