@@ -1,16 +1,16 @@
 ---
 title: "Spatial workspace acceptance and pilot"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.0"
+version: "0.4.0"
 date: "2026-09-26"
 lang: "en-US"
 owner: "Graph product maintainer"
 continuity_id: "SPATIAL-WORKSPACE-PILOT-001"
-prd_revision: "0.3.0"
-tad_revision: "0.3.0"
-adr_revision: "0.3.0"
-mvp_revision: "0.3.0"
-gtm_revision: "0.3.0"
+prd_revision: "0.4.0"
+tad_revision: "0.4.0"
+adr_revision: "0.4.0"
+mvp_revision: "0.4.0"
+gtm_revision: "0.4.0"
 frontmatter_contract: "required"
 lifecycle_status: "active"
 local_rung: "undocumented"
@@ -24,7 +24,7 @@ guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.
 ---
 # Spatial workspace acceptance and pilot — reference implementation
 
-All five roles join `SPATIAL-WORKSPACE-PILOT-001@0.3.0`. This bounded follow-up validates
+All five roles join `SPATIAL-WORKSPACE-PILOT-001@0.4.0`. This bounded follow-up validates
 SW5/SW6 in the spatial workspace specification and prepares three human walkthroughs.
 The named participants below are recommended profiles, not recruited people. No outreach
 or human participation has occurred. Automated results never count as interviews or consent.
@@ -61,7 +61,7 @@ remote import dereferencing, paid model calls, production deployment or fabricat
 ## TAD — reference implementation
 
 T1 uses native Launch → local file import → existing Timeline review. The shortcut prepares
-one detached proposal from the inspected revision. Only Apply commits through the existing
+one detached proposal from the inspected revision. Native import preserves explicit XR or renderer settings when widgets are present; implicit and explicitly 2D widget imports retain the existing Storyboard fallback. Only Apply commits through the existing
 source owner. Cancel changes no bytes; Undo checks the affected values and records its inverse.
 Touch controls are at least 44 pixels high. The shared timeline layout gives up its source-editor inset when less than 320 pixels remain; initial and reopened review panels must have at least 320 visible pixels on the measured mobile viewport, with no internal horizontal overflow. The free-form position/scale path remains available.
 
@@ -179,16 +179,16 @@ source bytes or clean-browser first value cannot meet the threshold after three 
 
 | Stage | Exit condition | Current evidence |
 |---|---|---|
-| M1 | Provenance and malformed import checks pass | 25 spatial model/runtime/provenance tests passed locally; candidate only |
-| M2 | Desktop/mobile full-app first value, offline cancel/undo and cold reload | Five actions at both widths; commit `6f5550e4469ffa717ef19cbbb88483f732f909dd`; offline apply/cancel/undo/cold reload and absent tool-host surfaces passed |
+| M1 | Provenance and malformed import checks pass | 26 spatial model/runtime/provenance tests passed locally; candidate only |
+| M2 | Desktop/mobile full-app first value, offline cancel/undo and cold reload | Five actions at both widths; commit `afc114feb2fec454208ceca74b1b08ad1b0b8c44`; offline apply/cancel/undo/cold reload and absent tool-host surfaces passed |
 | M3 | Protected owner diagnostics repair, consumer pin, required CI and canonical runtime | Owner PR #313 protected at `84a15c89e5a0f8ea6926a0ce4685ce40d9ccf2a6`; exact main CI passed on retry; consumer pin/gate in this candidate |
 | M4 | Three consented walkthroughs | Protocol ready; zero participants and zero completed human records |
-| M5 | Successor five-role specification reflects actual findings | Spatial five-role specification advanced to 0.6.0 with bounded technical evidence; human fields remain pending |
+| M5 | Successor five-role specification reflects actual findings | Spatial five-role specification advanced to 0.7.0 with bounded technical evidence; human fields remain pending |
 
 Run `npm run spatial-workspace:test`, `npm run spatial-workspace:browser` and
 `npm run spatial-workspace:full-app`. The full-app command builds, requires clean committed
 source and writes revision-bound `acceptance.json` plus desktop/mobile review screenshots.
-Observed technical timings: 1024 px: 18.66 s to first value, 4.65 s installation, 2.71 s offline reload; 390 px: 10.99 s to first value, 3.32 s installation, 1.67 s offline reload. Artifact: `/tmp/spatial-full-app-inspection/acceptance.json`. Mobile text review retains the existing separate 3D opt-in. The browser uses native UI and actual IndexedDB. The existing storage service fixture prevents
+Observed technical timings: 1024 px: 17.72 s to first value, 5.28 s installation, 2.83 s offline reload; 390 px: 5.05 s to first value, 3.82 s installation, 1.70 s offline reload. Artifact: `/tmp/spatial-full-app-import/acceptance.json`. Mobile text review retains the existing separate 3D opt-in. The browser uses native UI and actual IndexedDB. The existing storage service fixture prevents
 host/external writes; no fixture component or injected graph-store state establishes first value.
 
 ### Three walkthroughs — reference implementation
