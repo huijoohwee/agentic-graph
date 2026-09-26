@@ -13,6 +13,7 @@ import { canAuthorWorkspaceSceneMetadata, registerWorkspaceSceneMetadataEditor }
 import { tryParseMarkdownFrontmatterFlowGraph } from '../features/parsers/markdownFrontmatterFlowGraph'
 import { extractYamlFrontmatterBlock } from '../lib/markdown/frontmatter'
 import { upsertFrontmatterFlowMarkdownText } from '../hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
+import { resolveWorkspaceCanvasLayerInsetLeft } from '../features/strybldr/strybldrTimelineBottomPanelLayout'
 const prior = useGraphStore.getState(), motion = readXrMotionReferenceRuntime(), physics = readXrPhysicsRuntime()
 let history = 0
 function install(name = '/spatial-unit.md') {
@@ -35,6 +36,15 @@ async function proposal() {
   assert.ok('proposal' in result, JSON.stringify(result)); return result.proposal
 }
 test.after(() => { cancelSpatialWorkspace(); useGraphStore.setState(prior); restoreXrMotionReferenceRuntimeSnapshot(motion); restoreXrPhysicsRuntimeSnapshot(physics) })
+test('the mobile timeline retains readable review width beside a restored source editor', () => {
+  const layout = (width: number, right: number) => resolveWorkspaceCanvasLayerInsetLeft({
+    workspaceEditorOverlayOpen: true, rootRect: { left: 0, right: width, width },
+    workspaceLeftPaneRect: { left: 0, right, width: right },
+  })
+  assert.equal(layout(390, 342), 0, 'a 48px strip cannot host a review form')
+  assert.equal(layout(1024, 512), 512, 'desktop panels still avoid the source editor')
+  assert.equal(layout(390, 0), 0)
+})
 test('physics serializer key is admitted only for the current settled editor', () => {
   const text = install(), state = { ...useGraphStore.getState(), workspaceViewMode: 'editor' as const }
   let settled = true

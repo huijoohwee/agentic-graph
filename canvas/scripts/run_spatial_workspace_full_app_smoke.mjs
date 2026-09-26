@@ -55,6 +55,19 @@ async function storedSource(page) {
     })
   })
 }
+async function visibleReviewWidth(review) {
+  return review.evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    let left = Math.max(0, rect.left), right = Math.min(innerWidth, rect.right)
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+      if (getComputedStyle(parent).overflowX !== 'visible') {
+        const bounds = parent.getBoundingClientRect()
+        left = Math.max(left, bounds.left); right = Math.min(right, bounds.right)
+      }
+    }
+    return { visible: Math.max(0, right - left), width: rect.width, overflow: element.scrollWidth > element.clientWidth + 1 }
+  })
+}
 let server, browser, activePage
 const results = []
 try {
@@ -90,6 +103,9 @@ try {
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
+    const initialLayout = await visibleReviewWidth(review)
+    assert.ok(initialLayout.visible >= Math.min(320, width - 48), JSON.stringify(initialLayout))
+    assert.equal(initialLayout.overflow, false)
     if (width === 1024) await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
     else await page.getByRole('button', { name: 'Load 3D view', exact: true }).waitFor()
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
@@ -140,10 +156,16 @@ try {
     assert.deepEqual(dialogs, []); assert.deepEqual(errors, [])
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
     assert.equal(overflow, false)
-    await review.screenshot({ path: join(output, `review-${width}.png`) })
+    const reopenedLayout = await visibleReviewWidth(review)
+    assert.ok(reopenedLayout.visible >= Math.min(320, width - 48), JSON.stringify(reopenedLayout))
+    assert.equal(reopenedLayout.overflow, false)
+    await quickPreview.scrollIntoViewIfNeeded()
+    const visibleControl = await quickPreview.boundingBox()
+    assert.ok(visibleControl.x >= 0 && visibleControl.x + visibleControl.width <= width)
+    await page.screenshot({ path: join(output, `review-${width}.png`), fullPage: true })
     results.push({ width, actions, firstValueMs, installation, installMs, reloadMs, receipts: 2,
       noWebMcp: true, offlineReview: true, coldReload: true, importedLabelIsText: true, renderer: width === 390 ? 'touch-opt-in-deferred' : 'loaded',
-      overflow, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal' })
+      overflow, initialLayout, reopenedLayout, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal' })
     console.log(JSON.stringify(results.at(-1)))
     await context.close()
   }
