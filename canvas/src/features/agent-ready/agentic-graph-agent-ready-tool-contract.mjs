@@ -507,8 +507,7 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
             },
             anyOf: [{ required: ['invocation'] }, { required: ['action'] }],
           },
-          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
-          annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
+          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] }, annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
         }, {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalAnimation,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalAnimation),
@@ -523,8 +522,7 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
           title: 'Control Local Animation',
           description: 'Apply, clear, configure, keyboard-move, play, pause, scrub, or export native XR choreography through structured fields or the in-repo /animation.control, #character-motion, #action-path, @selected-actor, and @canvas grammar.',
           inputSchema: XR_ANIMATION_CONTROL_INPUT_SCHEMA,
-          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
-          annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
+          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] }, annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
         }, ...buildSemanticSpaceAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildImmersiveMediaAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildCitySimAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildStorageSyncAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName }), buildDashboardWidgetToolContract(), ...buildGroupPanelAgentReadyToolContracts({ buildWebName: buildAgenticGraphWebMcpToolName, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions),
@@ -544,10 +542,19 @@ export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalXrScene),
           title: 'Control Local XR Scene',
-          description: 'Control the open browser-local XR scene through structured stage, placement, native dynamics, immersive AR reticle placement, path-interpolation, label, and removal actions. Animation is owned separately by /animation.control.',
-          inputSchema: XR_SCENE_CONTROL_INPUT_SCHEMA,
-          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
-          annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
+          description: 'Prepare a detached position/scale proposal using the spatialWorkspace identity token returned by scene inspection. The operator applies or undoes it in the scene inspector. Direct agent writes and approval flags are refused; legacy controls remain available through manual UI.',
+          inputSchema: {
+            oneOf: [XR_SCENE_CONTROL_INPUT_SCHEMA, {
+              type: 'object', additionalProperties: false, required: ['action', 'expectedToken', 'edits'],
+              properties: {
+                action: { type: 'string', const: 'preview' }, expectedToken: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+                edits: { type: 'array', minItems: 1, maxItems: 8, items: { type: 'object', additionalProperties: false, required: ['subjectId'], minProperties: 2,
+                  properties: {
+                    subjectId: { type: 'string', minLength: 1, maxLength: 96 },
+                    position: { type: 'array', minItems: 3, maxItems: 3, items: { type: 'number', minimum: -50, maximum: 50 } },
+                    scale: { type: 'number', minimum: 0.25, maximum: 4 },
+                  }, } }, }, }], },
+          outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] }, annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
         }, {
           name: AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport,
           webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport),

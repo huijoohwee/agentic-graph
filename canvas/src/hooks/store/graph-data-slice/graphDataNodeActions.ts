@@ -1,3 +1,5 @@
+import yaml from 'js-yaml'
+import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
 import type { GraphData, GraphNode, JSONValue } from '@/lib/graph/types'
 import type { GetGraph, SetGraph } from './graphDataSliceAccess'
 import { validateNodeProperties } from '@/features/schema/validation'
@@ -183,7 +185,8 @@ export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
 
   updateGraphMetadata: (updates: Record<string, JSONValue | undefined>) => {
     if (isWorkspaceGraphMutationBlocked(get()) && !canAuthorWorkspaceSceneMetadata(get(), updates)) return
-    const { graphData } = get();
+    const before = get()
+    const { graphData } = before;
     if (!graphData) return;
     const nextMetadata = { ...(graphData.metadata || {}) } as Record<string, JSONValue>
     let changed = false
@@ -206,10 +209,19 @@ export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
     const nextRevision = (get().graphDataRevision || 0) + 1
     const nextGraphData = withGraphDataRevision(nextGraphDataBase, nextRevision)
     const activeTextSync = syncActiveMarkdownDocumentTextFromParsedGraph({
-      state: get(),
+      state: before,
       sourceFiles: get().sourceFiles || [],
       parsedGraphData: nextGraphData,
     })
+    // A spatial receipt and scene must reach authored source in the same store update.
+    // Unsupported document projections refuse before any graph or history mutation.
+    if (Object.hasOwn(updates, 'kgSpatialWorkspaceReview')) {
+      if (!activeTextSync.accepted || typeof activeTextSync.markdownDocumentText !== 'string') return
+      try {
+        const source = yaml.load(extractYamlFrontmatterBlock(activeTextSync.markdownDocumentText)?.yamlText || '') as Record<string, unknown>
+        if (Object.entries(updates).some(([key, value]) => JSON.stringify(source?.[key]) !== JSON.stringify(value))) return
+      } catch { return }
+    }
     set(s => ({
       ...(activeTextSync.sourceFiles !== (s.sourceFiles || []) ? { sourceFiles: activeTextSync.sourceFiles } : {}),
       graphData: nextGraphData,
@@ -223,7 +235,7 @@ export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
     }))
     if (Object.prototype.hasOwnProperty.call(activeTextSync, 'markdownDocumentText')) {
       writeActiveMarkdownDocumentTextIfPresent({
-        state: get(),
+        state: { ...before, markdownDocumentText: activeTextSync.markdownDocumentText ?? null },
         sourceFiles: activeTextSync.sourceFiles,
         text: activeTextSync.markdownDocumentText ?? '',
       })

@@ -26,7 +26,8 @@ export async function closeFloatingPanel(
 ) {
   if (!(await readFloatingPanelOpen(targetPage))) return
   const panel = floatingPanelCard(targetPage, floatingPanel)
-  await panel.waitFor({ state: 'visible', timeout: 30000 })
+  // Editor Workspace can retain an open Canvas panel without mounting its card.
+  // Dismiss a rendered card first; otherwise clear the retained state below.
   try {
     await dismissVisibleFloatingPanel(targetPage, panel)
   } catch {
