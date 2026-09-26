@@ -1,16 +1,16 @@
 ---
 title: "Spatial workspace acceptance and pilot"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.0"
+version: "0.2.0"
 date: "2026-09-26"
 lang: "en-US"
 owner: "Graph product maintainer"
 continuity_id: "SPATIAL-WORKSPACE-PILOT-001"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
+prd_revision: "0.2.0"
+tad_revision: "0.2.0"
+adr_revision: "0.2.0"
+mvp_revision: "0.2.0"
+gtm_revision: "0.2.0"
 frontmatter_contract: "required"
 lifecycle_status: "active"
 local_rung: "undocumented"
@@ -24,7 +24,7 @@ guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.
 ---
 # Spatial workspace acceptance and pilot — reference implementation
 
-All five roles join `SPATIAL-WORKSPACE-PILOT-001@0.1.0`. This bounded follow-up validates
+All five roles join `SPATIAL-WORKSPACE-PILOT-001@0.2.0`. This bounded follow-up validates
 SW5/SW6 in the spatial workspace specification and prepares three human walkthroughs.
 The named participants below are recommended profiles, not recruited people. No outreach
 or human participation has occurred. Automated results never count as interviews or consent.
@@ -35,7 +35,7 @@ or human participation has occurred. Automated results never count as interviews
 |---|---|---|
 | Graph PR #1302, protected merge `434972605932f219bb680f9c782988477ee73f02` | Revision-bound inspect, preview, operator apply, durable receipt and undo; mission regression fixed. | Retain these guards; exercise actual app entry. |
 | Canvas PR #952, protected merge `e36ff95c210aa3fd11002958fde9bcbd26b336da` | Host-injected browser client supports inspection and preview. | Existing cross-repository transport remains the adapter; no new endpoint or apply permission. |
-| `SpatialWorkspaceReview.tsx` | Existing form requires a typed change before preview. | Add an explicit one-metre X preview shortcut and refresh inspection when the editor loading guard clears; reuse the same proposal and approval boundary. |
+| `SpatialWorkspaceReview.tsx` | Existing form requires a typed change before preview. | Add an explicit one-metre X preview shortcut and refresh inspection when the editor loading guard clears; keep the shared timeline readable beside the restored source editor; reuse the same proposal and approval boundary. |
 | `semanticSpaceRuntime.ts`, `semanticSpaceStore.ts`, `semanticObjectView.ts` | Saved pixels, hashes, entities and observation reference already have import/export owners. | Project provenance without copying pixels, fetching URLs or inventing calibration. |
 | `LearningOfflineControls.tsx` and PWA revision cache | Existing complete installation supports the offline Studio route. | Expose the same installer within spatial review and test offline cold reload. |
 | `run_spatial_workspace_browser_smoke.mjs` | Component and transport fixture; not a complete app boot. | Keep it and add `run_spatial_workspace_full_app_smoke.mjs`. |
@@ -63,7 +63,7 @@ remote import dereferencing, paid model calls, production deployment or fabricat
 T1 uses native Launch → local file import → existing Timeline review. The shortcut prepares
 one detached proposal from the inspected revision. Only Apply commits through the existing
 source owner. Cancel changes no bytes; Undo checks the affected values and records its inverse.
-Touch controls are at least 44 pixels high. The free-form position/scale path remains available.
+Touch controls are at least 44 pixels high. The shared timeline layout gives up its source-editor inset when less than 320 pixels remain; initial and reopened review panels must have at least 320 visible pixels on the measured mobile viewport, with no internal horizontal overflow. The free-form position/scale path remains available.
 
 T2 reads `kgSemanticObjectView` and the existing saved semantic-space package. Authored
 positions use authored metres; static catalog comparisons are simulated; imported images use
@@ -75,7 +75,7 @@ actor, token, time, provenance and inverse marks before exposing the undo path.
 T3 reuses the existing verified installation, manifest, service worker and `studio-offline` route.
 Installation time and bytes are setup costs and are recorded separately. Technical first value
 starts at clean app navigation, including import; offline review begins after app modules load.
-Cold reload occurs after explicit installation. Browser eviction remains an existing storage limit.
+Cold reload occurs after explicit installation. Verify source bytes in the restored editor, then use its native Close action to return to scene review; record that navigation separately from first value. Browser eviction remains an existing storage limit.
 
 T4 stores only volunteered, consented observations in the pilot record. No participant names,
 recordings or private scene files belong in the repository. Technical output records exact Git
@@ -179,16 +179,16 @@ source bytes or clean-browser first value cannot meet the threshold after three 
 
 | Stage | Exit condition | Current evidence |
 |---|---|---|
-| M1 | Provenance and malformed import checks pass | 23 spatial model/runtime/provenance tests passed locally; candidate only |
-| M2 | Desktop/mobile full-app first value, offline cancel/undo and cold reload | Five actions at both widths; commit `e093342f3229ef1c6e050e1b97a34cfcf22d3a86`; offline apply/cancel/undo/cold reload and absent tool-host surfaces passed |
+| M1 | Provenance and malformed import checks pass | 24 spatial model/runtime/provenance tests passed locally; candidate only |
+| M2 | Desktop/mobile full-app first value, offline cancel/undo and cold reload | Five actions at both widths; commit `76d8856a960a3dfdaa5524f530483ed7cc0b3967`; offline apply/cancel/undo/cold reload and absent tool-host surfaces passed |
 | M3 | Protected owner diagnostics repair, consumer pin, required CI and canonical runtime | Owner PR #313 protected at `84a15c89e5a0f8ea6926a0ce4685ce40d9ccf2a6`; exact main CI passed on retry; consumer pin/gate in this candidate |
 | M4 | Three consented walkthroughs | Protocol ready; zero participants and zero completed human records |
-| M5 | Successor five-role specification reflects actual findings | Spatial five-role specification advanced to 0.4.0 with bounded technical evidence; human fields remain pending |
+| M5 | Successor five-role specification reflects actual findings | Spatial five-role specification advanced to 0.5.0 with bounded technical evidence; human fields remain pending |
 
 Run `npm run spatial-workspace:test`, `npm run spatial-workspace:browser` and
 `npm run spatial-workspace:full-app`. The full-app command builds, requires clean committed
 source and writes revision-bound `acceptance.json` plus desktop/mobile review screenshots.
-Observed technical timings: 1024 px: 25.14 s to first value, 9.14 s installation, 3.17 s offline reload; 390 px: 13.40 s to first value, 4.34 s installation, 1.34 s offline reload. Artifact: `/tmp/spatial-full-app-mobile/acceptance.json`. Mobile text review retains the existing separate 3D opt-in. The browser uses native UI and actual IndexedDB. The existing storage service fixture prevents
+Observed technical timings: 1024 px: 10.80 s to first value, 4.67 s installation, 3.37 s offline reload; 390 px: 6.85 s to first value, 3.85 s installation, 1.67 s offline reload. Artifact: `/tmp/spatial-full-app-visible/acceptance.json`. Mobile text review retains the existing separate 3D opt-in. The browser uses native UI and actual IndexedDB. The existing storage service fixture prevents
 host/external writes; no fixture component or injected graph-store state establishes first value.
 
 ### Three walkthroughs — reference implementation
