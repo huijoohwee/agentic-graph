@@ -83,21 +83,39 @@ revision/tree, actions, timings, errors, storage readback and screenshots in a l
 CI failure artifacts retain a bounded 16 MiB log plus digest, source and truncation metadata for
 seven days; they remain diagnostics and grant no release authority.
 
-```mermaid
-flowchart TB
-  A[Clean app] --> B[Choose local scene]
-  B --> C[Detached preview]
-  C --> D[Operator decision]
-  D --> E[Receipt and undo]
-```
+**Diagram P-J** · Class: Journey stage map · Version: 1 — 2026-09-26.
+**Surface:** 2D Renderer: Storyboard; 2D Renderer: D3 Graph. Native entry reaches a reviewed receipt.
 
 ```mermaid
 flowchart TB
-  A[Document owner] --> B[Review form]
-  B --> C[Proposal owner]
-  C --> D[Source transaction]
-  D --> A
+  A["Clean app"]
+  B["Choose local scene"]
+  C["Detached preview"]
+  D["Operator decision"]
+  E["Receipt and undo"]
+  A -->|"import"| B
+  B -->|"propose"| C
+  C -->|"review"| D
+  D -->|"apply"| E
 ```
+
+**Diagram P-D** · Class: Data flow · Version: 1 — 2026-09-26.
+**Surface:** 2D Renderer: Storyboard; 2D Renderer: D3 Graph. Existing owners share one guarded source transaction.
+
+```mermaid
+flowchart TB
+  A["Document owner"]
+  B["Review form"]
+  C["Proposal owner"]
+  D["Source transaction"]
+  A -->|"inspect"| B
+  B -->|"bounded edit"| C
+  C -->|"operator approval"| D
+  D -->|"durable receipt"| A
+```
+
+**Diagram P-S** · Class: State transition · Version: 1 — 2026-09-26.
+**Surface:** non-projecting semantic diagram. Cancellation and undo remain explicit operator actions.
 
 ```mermaid
 stateDiagram-v2
@@ -107,6 +125,9 @@ stateDiagram-v2
   Proposed --> Applied: Approve
   Applied --> Undone: Guarded inverse
 ```
+
+**Diagram P-W** · Class: User workflow · Version: 1 — 2026-09-26.
+**Surface:** non-projecting semantic diagram. Review precedes the existing durable source transaction.
 
 ```mermaid
 sequenceDiagram
@@ -121,16 +142,24 @@ sequenceDiagram
   S-->>O: Durable readback
 ```
 
+**Diagram P-H** · Class: Orchestration / harness flow · Version: 1 — 2026-09-26.
+**Surface:** 2D Renderer: Storyboard; 2D Renderer: D3 Graph. Technical evidence precedes consented human observations.
+
 ```mermaid
 flowchart TB
-  A[Technical rehearsal] --> B[Explicit consent]
-  B --> C[Human walkthrough]
-  C --> D[Record observation]
-  D --> E[Revise scope]
+  A["Technical rehearsal"]
+  B["Explicit consent"]
+  C["Human walkthrough"]
+  D["Record observation"]
+  E["Revise scope"]
+  A -->|"engineering gate"| B
+  B -->|"voluntary participation"| C
+  C -->|"measured outcome"| D
+  D -->|"bounded successor"| E
 ```
 
 The journey, owner flow, states, handshake and pilot topology above contain respectively
-5/4, 4/4, 4/4, 3/6 and 5/4 nodes/transitions; none has subgraphs. Diagrams explain the
+5/4, 4/4, 4/5, 3/6 and 5/4 nodes/transitions (the state chart excludes its initial pseudostate from the node count); none has subgraphs. Diagrams explain the
 protocol; they are not additional acceptance evidence.
 
 ## ADR — reference implementation
@@ -151,15 +180,15 @@ source bytes or clean-browser first value cannot meet the threshold after three 
 | Stage | Exit condition | Current evidence |
 |---|---|---|
 | M1 | Provenance and malformed import checks pass | 23 spatial model/runtime/provenance tests passed locally; candidate only |
-| M2 | Desktop/mobile full-app first value, offline cancel/undo and cold reload | Implemented harness; exact-candidate run pending |
-| M3 | Protected owner diagnostics repair, consumer pin, required CI and canonical runtime | Owner verification in progress; consumer not yet published |
+| M2 | Desktop/mobile full-app first value, offline cancel/undo and cold reload | Five actions at both widths; commit `e093342f3229ef1c6e050e1b97a34cfcf22d3a86`; offline apply/cancel/undo/cold reload and absent tool-host surfaces passed |
+| M3 | Protected owner diagnostics repair, consumer pin, required CI and canonical runtime | Owner PR #313 protected at `84a15c89e5a0f8ea6926a0ce4685ce40d9ccf2a6`; exact main CI passed on retry; consumer pin/gate in this candidate |
 | M4 | Three consented walkthroughs | Protocol ready; zero participants and zero completed human records |
-| M5 | Successor five-role specification reflects actual findings | Update after technical and human evidence; never promote pending criteria |
+| M5 | Successor five-role specification reflects actual findings | Spatial five-role specification advanced to 0.4.0 with bounded technical evidence; human fields remain pending |
 
 Run `npm run spatial-workspace:test`, `npm run spatial-workspace:browser` and
 `npm run spatial-workspace:full-app`. The full-app command builds, requires clean committed
 source and writes revision-bound `acceptance.json` plus desktop/mobile review screenshots.
-The browser uses native UI and actual IndexedDB. The existing storage service fixture prevents
+Observed technical timings: 1024 px: 25.14 s to first value, 9.14 s installation, 3.17 s offline reload; 390 px: 13.40 s to first value, 4.34 s installation, 1.34 s offline reload. Artifact: `/tmp/spatial-full-app-mobile/acceptance.json`. Mobile text review retains the existing separate 3D opt-in. The browser uses native UI and actual IndexedDB. The existing storage service fixture prevents
 host/external writes; no fixture component or injected graph-store state establishes first value.
 
 ### Three walkthroughs — reference implementation
@@ -211,5 +240,4 @@ remain unreported. Production promotion retains its existing exact-candidate hum
 Scoped guideline linkage: continuity → frontmatter; grounding → owner table; flow-patterns → five
 diagrams; time-to-value → P1/M2 and H1–H3; autonomous verification → P1–P3 commands;
 division-of-work → T1–T4 and A1–A4; monetization → GTM; deploy-boundary → Dev-only rule.
-This is a linkage record, not full guideline conformance. Open findings: exact-candidate full-app
-proof and actual human consent/outcomes. Both local and delivered readiness remain undocumented.
+This is a linkage record, not full guideline conformance. Open findings: actual human consent/outcomes, larger-scene responsiveness and full guideline alignment. Both local and delivered readiness remain undocumented.
