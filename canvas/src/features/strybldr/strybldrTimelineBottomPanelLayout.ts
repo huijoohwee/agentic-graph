@@ -38,7 +38,8 @@ export function resolveWorkspaceCanvasLayerInsetLeft({
   if (workspaceLeftPaneRect.right <= rootRect.left || workspaceLeftPaneRect.left >= rootRect.right) return 0
   const insetLeft = workspaceLeftPaneRect.right - rootRect.left
   if (!Number.isFinite(insetLeft) || insetLeft <= 0) return 0
-  if (insetLeft >= rootRect.width - TIMELINE_BOTTOM_PANEL_VISIBLE_PX) return 0
+  // A dock beside the editor needs readable content width, not just a visible drag handle.
+  if (rootRect.width - insetLeft < TIMELINE_BOTTOM_PANEL_MIN_RESIZE_WIDTH_PX) return 0
   return Math.max(0, Math.min(rootRect.width, insetLeft))
 }
 

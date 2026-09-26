@@ -12,6 +12,8 @@ import { SPATIAL_REVIEW_KEY, readSpatialReceipts } from '../features/three/spati
 import { canAuthorWorkspaceSceneMetadata, registerWorkspaceSceneMetadataEditor } from '../features/workspace-table/workspaceSceneMetadataAuthoring'
 import { tryParseMarkdownFrontmatterFlowGraph } from '../features/parsers/markdownFrontmatterFlowGraph'
 import { extractYamlFrontmatterBlock } from '../lib/markdown/frontmatter'
+import { upsertFrontmatterFlowMarkdownText } from '../hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
+import { resolveWorkspaceCanvasLayerInsetLeft } from '../features/strybldr/strybldrTimelineBottomPanelLayout'
 const prior = useGraphStore.getState(), motion = readXrMotionReferenceRuntime(), physics = readXrPhysicsRuntime()
 let history = 0
 function install(name = '/spatial-unit.md') {
@@ -34,6 +36,15 @@ async function proposal() {
   assert.ok('proposal' in result, JSON.stringify(result)); return result.proposal
 }
 test.after(() => { cancelSpatialWorkspace(); useGraphStore.setState(prior); restoreXrMotionReferenceRuntimeSnapshot(motion); restoreXrPhysicsRuntimeSnapshot(physics) })
+test('the mobile timeline retains readable review width beside a restored source editor', () => {
+  const layout = (width: number, right: number) => resolveWorkspaceCanvasLayerInsetLeft({
+    workspaceEditorOverlayOpen: true, rootRect: { left: 0, right: width, width },
+    workspaceLeftPaneRect: { left: 0, right, width: right },
+  })
+  assert.equal(layout(390, 342), 0, 'a 48px strip cannot host a review form')
+  assert.equal(layout(1024, 512), 512, 'desktop panels still avoid the source editor')
+  assert.equal(layout(390, 0), 0)
+})
 test('physics serializer key is admitted only for the current settled editor', () => {
   const text = install(), state = { ...useGraphStore.getState(), workspaceViewMode: 'editor' as const }
   let settled = true
@@ -141,7 +152,7 @@ test('unbound and remote documents cannot enter local spatial review', async () 
 })
 
 test('actual Markdown parser roundtrips scene receipts and supports undo after rehydration', async () => {
-  const text = install().replace('---\n', '---\nflow:\n  nodes:\n    - id: scene\n      label: Scene\n  connections: []\n')
+  const text = install().replace('---\n', '---\nflow:\n  nodes:\n    - id: {key: id, type: string, value: scene}\n      type: {key: type, type: string, value: Document}\n      label: {key: label, type: string, value: Scene}\n  edges: []\n')
   const reparse = (text: string) => {
     const parsed = tryParseMarkdownFrontmatterFlowGraph('/spatial-unit.md', text)
     assert.ok(parsed)
@@ -154,8 +165,130 @@ test('actual Markdown parser roundtrips scene receipts and supports undo after r
   const reviewed = await proposal(), applied = await applySpatialWorkspace(reviewed)
   assert.ok(applied.receipt, JSON.stringify(applied))
   reparse(useGraphStore.getState().markdownDocumentText!)
+  // An unrelated flow/layout serialization runs after the parser has nested persisted metadata.
+  // It must preserve the scene and its receipt before the next operator action.
+  const parsedState = useGraphStore.getState()
+  assert.equal(parsedState.graphData!.nodes.length, 1)
+  const synchronized = upsertFrontmatterFlowMarkdownText(parsedState.markdownDocumentText!, parsedState.graphData!)
+  const persisted = yaml.load(extractYamlFrontmatterBlock(synchronized)!.yamlText) as Record<string, unknown>
+  const beforeSync = yaml.load(extractYamlFrontmatterBlock(parsedState.markdownDocumentText!)!.yamlText) as Record<string, unknown>
+  assert.deepEqual(persisted.kgXrMotionReference, beforeSync.kgXrMotionReference)
+  assert.equal(readSpatialReceipts(persisted[SPATIAL_REVIEW_KEY]).length, 1)
+  reparse(synchronized)
   const inspected = await inspectSpatialWorkspace()
   assert.ok('receipts' in inspected, JSON.stringify(inspected)); assert.equal(inspected.receipts.length, 1)
   const undone = await undoSpatialWorkspace(reviewed.id); assert.ok(undone.receipt, JSON.stringify(undone))
   assert.deepEqual(readXrMotionReferenceRuntime().plan.subjects[0].position, [-3, 0, 0])
+})
+
+test('review refreshes when source hydration releases its mutation fence without changing scene bytes', async () => {
+  const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
+  const { mountReactRoot, unmountReactRoot } = await import('@/tests/lib/reactRootHarness')
+  const React = await import('react'), { createRoot } = await import('react-dom/client')
+  const { SpatialWorkspaceReview } = await import('../features/three/SpatialWorkspaceReview')
+  const environment = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
+  const container = environment.dom.window.document.getElementById('root')!, root = createRoot(container)
+  const source = install()
+  useGraphStore.setState({ markdownWorkspaceIndexingInFlight: true })
+  const flush = () => React.act(async () => { await new Promise(resolve => setTimeout(resolve, 30)) })
+  try {
+    await mountReactRoot(root, React.createElement(SpatialWorkspaceReview)); await flush()
+    assert.equal(container.querySelector('fieldset')?.disabled, true)
+    await React.act(async () => { useGraphStore.setState({ markdownWorkspaceIndexingInFlight: false }) }); await flush()
+    assert.equal(container.querySelector('fieldset')?.disabled, false)
+    await React.act(async () => { useGraphStore.setState({ workspaceGraphMutationBlockUntilMs: Date.now() + 100 }) }); await flush()
+    assert.equal(container.querySelector('fieldset')?.disabled, true)
+    await React.act(async () => { await new Promise(resolve => setTimeout(resolve, 130)) }); await flush()
+    assert.equal(container.querySelector('fieldset')?.disabled, false)
+    const digest = crypto.subtle.digest.bind(crypto.subtle)
+    let release: () => void = () => {}
+    const pending = new Promise<void>(resolve => { release = resolve })
+    crypto.subtle.digest = async (...args: Parameters<SubtleCrypto['digest']>) => { await pending; return digest(...args) }
+    try {
+      const displayedPosition = container.querySelector<HTMLInputElement>('[aria-label="Proposed position"]')!.value
+      await React.act(async () => { useGraphStore.setState({ graphData: { ...useGraphStore.getState().graphData! } }) })
+      assert.equal(container.querySelector('fieldset')?.disabled, true, 'old inspection cannot enable controls while a fresh identity is pending')
+      assert.equal(container.querySelector<HTMLInputElement>('[aria-label="Proposed position"]')!.value, displayedPosition, 'pending inspection retains the displayed draft')
+      release(); await flush()
+      assert.equal(container.querySelector('fieldset')?.disabled, false)
+    } finally { release(); crypto.subtle.digest = digest }
+    assert.equal(useGraphStore.getState().markdownDocumentText, source)
+  } finally { await unmountReactRoot(root); environment.restore() }
+})
+
+test('review follows late local source binding, graph replacement and physics readiness', async () => {
+  const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
+  const { mountReactRoot, unmountReactRoot } = await import('@/tests/lib/reactRootHarness')
+  const React = await import('react'), { createRoot } = await import('react-dom/client')
+  const { SpatialWorkspaceReview } = await import('../features/three/SpatialWorkspaceReview')
+  const environment = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
+  const container = environment.dom.window.document.getElementById('root')!, root = createRoot(container)
+  const source = install(), files = useGraphStore.getState().sourceFiles
+  useGraphStore.setState({ sourceFiles: [] })
+  const flush = () => React.act(async () => { await new Promise(resolve => setTimeout(resolve, 30)) })
+  const disabled = () => container.querySelector('fieldset')?.disabled
+  try {
+    await mountReactRoot(root, React.createElement(SpatialWorkspaceReview)); await flush()
+    assert.equal(disabled(), true)
+    await React.act(async () => { useGraphStore.setState({ sourceFiles: files }) }); await flush()
+    assert.equal(disabled(), false, 'local source binding must refresh a previous refusal')
+    const graph = useGraphStore.getState().graphData!
+    await React.act(async () => { useGraphStore.setState({ graphData: { ...graph, metadata: {} } }) }); await flush()
+    assert.equal(disabled(), true, 'graph replacement invalidates the prior inspection')
+    await React.act(async () => { useGraphStore.setState({ graphData: graph }) }); await flush()
+    assert.equal(disabled(), false)
+    const stopped = readXrPhysicsRuntime()
+    await React.act(async () => { restoreXrPhysicsRuntimeSnapshot({ ...stopped, dirty: true, revision: stopped.revision + 1 }) }); await flush()
+    assert.equal(disabled(), true)
+    await React.act(async () => { restoreXrPhysicsRuntimeSnapshot({ ...stopped, revision: stopped.revision + 2 }) }); await flush()
+    assert.equal(disabled(), false, 'saved physics readiness must refresh inspection')
+    assert.equal(useGraphStore.getState().markdownDocumentText, source)
+  } finally { await unmountReactRoot(root); environment.restore() }
+})
+
+test('native local import preserves an explicit XR surface when the graph includes widgets', async () => {
+  const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
+  const { mountReactRoot, unmountReactRoot } = await import('@/tests/lib/reactRootHarness')
+  const { useWorkspaceFileActionsCore } = await import('../features/markdown-workspace/useWorkspaceFileActions/core')
+  const { createMemoryWorkspaceFs } = await import('../features/workspace-fs/workspaceFsMemory')
+  const { waitForCanvasFrontmatterSurfaceTransition } = await import('../features/parsers/canvasFrontmatterSurfaceTransition')
+  const React = await import('react'), { createRoot } = await import('react-dom/client')
+  const environment = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
+  const root = createRoot(environment.dom.window.document.getElementById('root')!)
+  const source = install().replace('---\n', '---\nkgCanvasSurfaceMode: 3d\nkgCanvasRenderMode: 3d\nkgCanvas3dMode: xr\n')
+  const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/spatial-unit.md', parentPath: '/', kind: 'file', name: 'spatial-unit.md', text: source, updatedAtMs: 1 }] })
+  const graph = useGraphStore.getState().graphData!
+  useGraphStore.setState({ canvasRenderMode: '3d', canvas3dMode: 'xr', workspaceViewMode: 'editor', markdownDocumentText: source,
+    graphData: { ...graph, nodes: [{ id: 'scene', type: 'Document', label: 'Scene', properties: {} }], metadata: { ...graph.metadata, 'flow:widgetRegistry': [{ id: 'scene', type: 'Document' }] } } })
+  let actions: ReturnType<typeof useWorkspaceFileActionsCore> | undefined
+  const noOp = () => {}
+  function Harness() {
+    actions = useWorkspaceFileActionsCore({ getFs: async () => fs, refresh: async () => ({ entries: [], sourcesByPath: {} }),
+      openedPath: null, selectionPath: null, selectionEntryKind: null, activeDocumentKey: '', activeDocumentSourceUrl: null,
+      setActiveText: noOp, setEntries: noOp, lastLoadedRef: { current: null }, setExpandedPaths: noOp,
+      setActivePathSafe: noOp, setSelectionPathSafe: noOp, setActiveMarkdownDocument: async () => true,
+      applyMarkdownDocumentToGraph: async () => true })
+    return null
+  }
+  const unwantedModes: string[] = []
+  const unsubscribe = useGraphStore.subscribe((next, before) => {
+    if (next.canvasRenderMode !== before.canvasRenderMode && next.canvasRenderMode === '2d') unwantedModes.push('2d')
+  })
+  try {
+    await mountReactRoot(root, React.createElement(Harness))
+    await React.act(async () => { await actions!.focusAfterImport('/spatial-unit.md', { applyToGraph: true }); await waitForCanvasFrontmatterSurfaceTransition() })
+    assert.deepEqual(unwantedModes, [], 'generic widget fallback must never replace authored XR intent')
+    assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
+    assert.equal(useGraphStore.getState().canvas3dMode, 'xr')
+    assert.equal(useGraphStore.getState().workspaceViewMode, 'canvas', 'import reveals the authored surface above the editor')
+    assert.equal(await fs.readFileText('/spatial-unit.md'), source)
+    const implicitSource = source.replace('kgCanvasSurfaceMode: 3d\nkgCanvasRenderMode: 3d\nkgCanvas3dMode: xr\n', '')
+    for (const header of ['', 'kgCanvasSurfaceMode: 2d\n']) {
+      await fs.writeFileText('/spatial-unit.md', implicitSource.replace('---\n', `---\n${header}`))
+      useGraphStore.setState({ canvasRenderMode: '3d' })
+      await React.act(async () => { await actions!.focusAfterImport('/spatial-unit.md', { applyToGraph: true }); await waitForCanvasFrontmatterSurfaceTransition() })
+      assert.equal(useGraphStore.getState().canvasRenderMode, '2d', 'implicit and explicit 2D widget imports retain their fallback')
+      assert.equal(useGraphStore.getState().canvas2dRenderer, 'storyboard')
+    }
+  } finally { unsubscribe(); await unmountReactRoot(root); environment.restore() }
 })

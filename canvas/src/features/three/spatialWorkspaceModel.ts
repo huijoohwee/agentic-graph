@@ -116,11 +116,22 @@ export function readSpatialReceipts(value: unknown): SpatialReceipt[] {
     if (!receipt || typeof receipt.id !== 'string' || receipt.id.length > 96 || ids.has(receipt.id) || !Array.isArray(receipt.diff) || receipt.diff.length < 1 || receipt.diff.length > 8
       || !['apply', 'undo'].includes(receipt.kind) || typeof receipt.documentName !== 'string' || typeof receipt.session !== 'string'
       || !/^[a-f0-9]{64}$/.test(receipt.proposalDigest) || !/^[a-f0-9]{64}$/.test(receipt.sceneDigest)
-      || !Number.isFinite(receipt.timestamp) || receipt.approver !== 'local-operator') refuse('invalid-input', 'Malformed spatial receipt; preserve the source and repair its ledger.')
+      || !Number.isSafeInteger(receipt.timestamp) || receipt.timestamp < 0 || receipt.approver !== 'local-operator'
+      || !/^[a-f0-9]{64}$/.test(receipt.sourceToken) || !['local-operator', 'browser-agent'].includes(receipt.actor)
+      || !receipt.id || !receipt.session || receipt.session.length > 128 || !receipt.documentName || receipt.documentName.length > 1024
+      || receipt.provenance?.kind !== 'authored' || receipt.provenance?.units !== 'metres' || receipt.provenance?.correspondence !== 'unknown'
+      || (receipt.kind === 'undo' ? typeof receipt.undoOf !== 'string' || !receipt.undoOf || receipt.undoOf.length > 96 : receipt.undoOf !== undefined)) refuse('invalid-input', 'Malformed spatial receipt; preserve the source and repair its ledger.')
     ids.add(receipt.id)
     parseSpatialEdits(receipt.diff.map(row => ({ subjectId: row.subjectId, position: row.before?.position, scale: row.before?.scale })))
     parseSpatialEdits(receipt.diff.map(row => ({ subjectId: row.subjectId, position: row.after?.position, scale: row.after?.scale })))
-    if (receipt.diff.some(row => typeof row.context !== 'string' || row.context.length > 4096 || !Array.isArray(row.before?.marks) || !Array.isArray(row.after?.marks))) refuse('invalid-input', 'Malformed inverse change values.')
+    if (receipt.diff.some(row => typeof row.label !== 'string' || row.label.length > 256 || typeof row.context !== 'string' || row.context.length > 4096 || !Array.isArray(row.before?.marks) || !Array.isArray(row.after?.marks))) refuse('invalid-input', 'Malformed inverse change values.')
+    for (const row of receipt.diff) for (const values of [row.before, row.after]) {
+      if (values.marks.length > 32) refuse('invalid-input', 'Too many authored track marks.')
+      for (const mark of values.marks) {
+        if (!mark || !Number.isFinite(mark.time) || mark.time < 0 || mark.time > 30) refuse('invalid-input', 'Malformed authored track time.')
+        vector(mark.position)
+      }
+    }
   }
   return receipts
 }
