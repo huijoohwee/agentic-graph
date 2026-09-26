@@ -79,42 +79,34 @@ test('Canvas embed admits only bounded pose observations on its exact channel', 
     { pose: [1, 0, 0, 360, 0] }, { pose: [1, 0, 0, 0, 5] }]) assert.equal(readLearningCanvasPose({ ...message, ...patch }, channel), null)
 })
 
-test('browser transfer rejects foreign acknowledgments and strips phone credentials from its destination', async () => {
-  const { flightDestination, isFlightReply, sendFlightPath, FLIGHT_HANDOFF } = await import('../features/python-learning/learningFlightTransfer')
-  const url = flightDestination('https://game.test/gamexr/?secret=private#pair=private')
-  assert.equal(url.href, 'https://game.test/gamexr/?drone=1')
-  assert.throws(() => flightDestination('javascript:alert(1)'))
-  assert.throws(() => flightDestination('https://user:password@game.test/'))
-  const target = {} as Window, channel = 'a'.repeat(32), origin = 'https://game.test'
-  const event = { source: target, origin, data: { protocol: FLIGHT_HANDOFF, channel, kind: 'accepted' } } as unknown as MessageEvent
-  assert.equal(isFlightReply(event, target, origin, channel), true)
-  for (const change of [{ source: {} }, { origin: 'https://evil.test' }, { data: { ...event.data, channel: 'b'.repeat(32) } },
-    { data: { ...event.data, execute: true } }]) assert.equal(isFlightReply({ ...event, ...change } as MessageEvent, target, origin, channel), false)
-  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, 'window'), oldLocation = Object.getOwnPropertyDescriptor(globalThis, 'location')
-  const events = new EventTarget(), messages: { value: any; origin: string }[] = []
-  let opened = '', prepareCount = 0
-  const child = { postMessage: (value: unknown, destination: string) => messages.push({ value, origin: destination }) }
-  const receive = (kind: string, messageChannel: string) => {
-    const e = Object.assign(new Event('message'), { source: child, origin, data: { protocol: FLIGHT_HANDOFF, kind, channel: messageChannel } })
-    events.dispatchEvent(e)
+test('native flight review link preserves exact export without window/opener APIs or destination credentials', async () => {
+  const { createFlightReviewUrl, flightDestination } = await import('../features/python-learning/learningFlightTransfer')
+  const { gunzipSync } = await import('node:zlib')
+  const text = createLearningFlightPath(await result(), 'https://graph.test/?kgDoc=flight.py')
+  for (const destination of ['https://game.test/gamexr/?secret=private#pair=private', 'http://127.0.0.1:54842/gamexr/']) {
+    const url = new URL(await createFlightReviewUrl(text, destination, new AbortController().signal))
+    assert.equal(url.origin, new URL(destination).origin)
+    assert.equal(url.search, '?drone=1')
+    const fields = new URLSearchParams(url.hash.slice(1))
+    assert.deepEqual([...fields.keys()], ['flight'])
+    const encoded = fields.get('flight')!
+    assert.ok(encoded.length <= 16000)
+    assert.equal(gunzipSync(Buffer.from(encoded, 'base64url')).toString('utf8'), text)
+    assert.equal('window' in globalThis, false)
   }
-  try {
-    Object.defineProperty(globalThis, 'window', { configurable: true, value: Object.assign(events, { open: (url: string) => { opened = url; return child } }) })
-    Object.defineProperty(globalThis, 'location', { configurable: true, value: { origin: 'https://graph.test' } })
-    const controller = new AbortController()
-    const promise = sendFlightPath(origin + '/gamexr/', async () => { prepareCount++; return 'review-data' }, controller.signal)
-    const transfer = new URLSearchParams(new URL(opened).hash.slice(1)).get('flightChannel')!
-    assert.equal(prepareCount, 1); assert.equal(messages.length, 0)
-    receive('ready', 'wrong'); await Promise.resolve(); assert.equal(messages.length, 0)
-    receive('ready', transfer); assert.equal(messages.length, 1); assert.equal(messages[0].origin, origin)
-    receive('ready', transfer); assert.equal(messages.length, 1)
-    receive('accepted', transfer); assert.match(await promise, /for review/)
-    receive('ready', transfer); assert.equal(messages.length, 1)
-    const cancelled = new AbortController()
-    const pending = sendFlightPath(origin, async () => 'cancelled', cancelled.signal)
-    cancelled.abort(); await assert.rejects(pending, /changed/)
-  } finally {
-    for (const [key, descriptor] of [['window', oldWindow], ['location', oldLocation]] as const)
-      if (descriptor) Object.defineProperty(globalThis, key, descriptor); else Reflect.deleteProperty(globalThis, key)
-  }
+  for (const value of ['javascript:alert(1)', 'https://user:password@game.test/', 'file:///tmp/flight', 'x'.repeat(4097)])
+    assert.throws(() => flightDestination(value))
+})
+
+test('review link generation cancels before/during preparation and refuses oversized data', async () => {
+  const { createFlightReviewUrl } = await import('../features/python-learning/learningFlightTransfer')
+  const { createHash } = await import('node:crypto')
+  const destination = 'https://game.test/gamexr/', controller = new AbortController()
+  controller.abort()
+  await assert.rejects(createFlightReviewUrl('{}', destination, controller.signal), { name: 'AbortError' })
+  const active = new AbortController(), pending = createFlightReviewUrl('{}', destination, active.signal)
+  active.abort(); await assert.rejects(pending, { name: 'AbortError' })
+  await assert.rejects(createFlightReviewUrl('x'.repeat(500001), destination, new AbortController().signal), /500 kB/)
+  const incompressible = Array.from({ length: 700 }, (_, i) => createHash('sha256').update(String(i)).digest('hex')).join('')
+  await assert.rejects(createFlightReviewUrl(incompressible, destination, new AbortController().signal), /too large for a review link/)
 })

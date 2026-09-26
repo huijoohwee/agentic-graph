@@ -6,6 +6,7 @@ import { dirname, resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 import { chromium } from 'playwright'
+import { gunzipSync } from 'node:zlib'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const revision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -113,11 +114,37 @@ try {
   assert.ok(new URL(flightPath.sourceUrl).searchParams.get('kgDoc')?.endsWith('.py'), 'export links the authored Graph source')
   assert.deepEqual(flightPath.samples.at(-1), [540, 4, 0, 0, 0])
   await writeFile(join(output, 'drone-flight-path.json'), flightPathBytes)
+  // In-app browsers can suppress window.open and sever opener channels. Native links must still work.
+  await page.getByText('Send flight to GameXR', { exact: true }).click()
+  await context.route(origin + '/__flight_review_fixture?**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Flight review fixture</h1>' }))
+  await page.getByLabel('GameXR address', { exact: true }).fill(origin + '/__flight_review_fixture?secret=discard#pair=discard')
+  const sendLink = page.getByRole('link', { name: 'Send to GameXR', exact: true })
+  await sendLink.waitFor()
+  assert.equal(await sendLink.getAttribute('target'), '_blank')
+  assert.equal(await sendLink.getAttribute('rel'), 'noopener noreferrer')
+  await page.evaluate(() => { window.open = () => { throw new Error('Scripted popup unavailable in regression fixture') } })
+  const reviewOpened = context.waitForEvent('page')
+  await sendLink.click()
+  const reviewPage = await reviewOpened
+  await reviewPage.getByRole('heading', { name: 'Flight review fixture' }).waitFor()
+  assert.equal(await reviewPage.evaluate(() => window.opener), null)
+  const reviewUrl = new URL(reviewPage.url()), payload = new URLSearchParams(reviewUrl.hash.slice(1))
+  assert.equal(reviewUrl.search, '?drone=1'); assert.deepEqual([...payload.keys()], ['flight'])
+  assert.equal(gunzipSync(Buffer.from(payload.get('flight'), 'base64url')).toString('utf8'), flightPathBytes.toString())
+  await reviewPage.close()
+  await page.getByLabel('GameXR address', { exact: true }).fill('javascript:alert(1)')
+  await sendLink.waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Send to GameXR', exact: true }).waitFor()
+  assert.equal(await page.getByRole('button', { name: 'Send to GameXR', exact: true }).isEnabled(), false)
+  await page.getByLabel('GameXR address', { exact: true }).fill(origin + '/__flight_review_fixture')
+  await sendLink.waitFor()
+
   const downloaded = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export debrief', exact: true }).click()
   const portable = await readFile(await (await downloaded).path())
   assert.equal(JSON.parse(portable.toString()).source, lessons.at(-1).solution)
   await page.getByRole('button', { name: 'Reset', exact: true }).click()
+  await sendLink.waitFor({ state: 'detached' })
   await page.getByLabel('Import learning debrief', { exact: true }).setInputFiles({ name: 'saved.json', mimeType: 'application/json', buffer: portable })
   await page.getByText('Imported for inspection.', { exact: false }).waitFor()
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')

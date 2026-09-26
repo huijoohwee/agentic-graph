@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.2.0
+version: 1.2.1
 date: 2026-09-26
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -13,7 +13,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.2.0 binds this user-authorized extension. The user confirmed
+DRONE-FLIGHT-PATH-001@1.2.1 binds this user-authorized extension. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
 inspects its motion, then exports the completed path. GameXR imports a bounded file,
@@ -184,3 +184,47 @@ Release/rollback: publish reviewed source successors; protected merge and produc
 separate authority. Revert this increment to restore file-only transfer, preserving the
 prior shared Canvas. Working-source evidence uses flight-transfer-* under the existing
 external audit directory. No firmware, gateway authorization or physical control changes.
+
+
+## In-app handoff correction — 1.2.1
+
+PRD: Send to GameXR must reach review when an embedded browser suppresses scripted
+popups or has no usable window.opener. Preserve the Graph source tab and explicit Run.
+
+TAD/ADR: replace Graph's popup/message producer with a native noopener/noreferrer link.
+Prepare the existing bounded gzip/base64url #flight snapshot locally after a completed
+run and valid destination. The link is enabled only for the current snapshot and address;
+source/run/address changes remove stale hrefs in that render and abort pending preparation.
+Use GameXR's existing phone-link decoder/admission unchanged. This small producer is a
+wire-contract adapter; it contains no receiver code, physics, grant or alternate validator.
+No window.open, opener handshake or acknowledgment timer remains in the Graph sender.
+The receiver still admits old message transfers from retained published producers.
+Preparation does not fetch or navigate; only a user click opens the named destination.
+Link readiness is not a delivery acknowledgment. Review/Connect/Run stay in GameXR.
+
+MVP: cap decoded exports at 500,000 bytes and compressed data at 12,000 bytes (16,000
+base64url characters). Strip destination query/hash secrets as before. Unsupported or
+oversized links fail visibly with the existing copy/file fallback. No dependencies added;
+this correction is five owner files, below the eight-file / 40 KiB / 20-minute sprint cap.
+Regression proof disables scripted window.open, opens the native link with no opener,
+and verifies exact decompressed export bytes. Unit proof covers cancellation and bounds.
+Actual Codex in-app browser → GameXR review → explicit Run must be observed separately.
+
+GTM: keep the existing Send label and remove the failed-popup timeout from the learner's
+path. No setup step or alternate import is needed for a normal bounded flight snapshot.
+
+Release/rollback: publish an immutable successor to the prior transfer candidate. Revert
+this correction to recover the predecessor implementation; retain its ref and evidence.
+Run native affected checks and refresh the explicit Graph Canvas artifact after publication.
+Source publication, protected integration, production and physical-phone acceptance remain
+separate. Working-source evidence uses the external popup-fix-* audit prefix.
+
+
+Observed correction: Codex's in-app browser opened the native Send link into a separate
+GameXR review tab with all 541 samples and the source link intact. Run stayed disabled
+until explicit Connect. Explicit Run then ended at x=4, z=0, altitude=0, tick=540 with
+receiver acknowledgment. The original Graph source tab remained open. The scripted-popup
+disabled browser regression and link/cancellation/bounds unit tests pass. The broader
+Python selection initially retained a pre-existing pane-availability assertion failure;
+protected main subsequently corrected that assertion in #1296. Refresh the unpublished
+candidate from protected main before publication and repeat the affected selection.
