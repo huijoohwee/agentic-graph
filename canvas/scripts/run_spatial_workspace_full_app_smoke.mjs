@@ -68,7 +68,7 @@ async function visibleReviewWidth(review) {
     return { visible: Math.max(0, right - left), width: rect.width, overflow: element.scrollWidth > element.clientWidth + 1 }
   })
 }
-let server, browser, activePage
+let server, browser, activePage, activeDiagnostics
 const results = []
 try {
   await mkdir(output, { recursive: true })
@@ -85,8 +85,12 @@ try {
       })
     })
     const page = activePage = await context.newPage(), errors = [], remote = [], dialogs = []
+    const failedRequests = [], consoleErrors = []
+    activeDiagnostics = { errors, failedRequests, consoleErrors }
     page.setDefaultTimeout(30000)
     page.on('pageerror', error => errors.push(error.message)); page.on('dialog', dialog => { dialogs.push(dialog.message()); void dialog.dismiss() })
+    page.on('requestfailed', request => { if (failedRequests.length < 30) { const url = new URL(request.url()); failedRequests.push({ path: url.origin + url.pathname, error: request.failure()?.errorText }) } })
+    page.on('console', message => { if (message.type() === 'error' && consoleErrors.length < 20) consoleErrors.push(message.text().slice(0, 2000)) })
     await createXrV2ExistingStorageFixture().installExistingStorageFixture(page)
     await context.route('**/*', route => {
       const url = new URL(route.request().url())
@@ -143,6 +147,9 @@ try {
     await review.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click()
     await page.waitForURL(url => url.searchParams.has('studio-offline'), { timeout: 60000 })
     await review.waitFor({ timeout: 60000 })
+    await page.waitForFunction(() => document.readyState === 'complete' && !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
+    await page.waitForLoadState('networkidle', { timeout: 30000 })
+    assert.equal(await storedSource(page), undone, 'installed route must finish restoring the saved scene before disconnecting')
     await context.setOffline(true)
     const reloadStart = performance.now(), response = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
     assert.equal(response.status(), 200)
@@ -183,6 +190,9 @@ try {
     await writeFile(join(output, 'failure.txt'), failure)
     // Retained stage logs must explain a disabled form even when runner screenshots are unavailable.
     console.error(JSON.stringify({ revision, tree, viewport: activePage.viewportSize(), output }))
+    console.error(JSON.stringify(activeDiagnostics))
+    console.error(JSON.stringify(await activePage.evaluate(() => ({ readyState: document.readyState, online: navigator.onLine,
+      worker: navigator.serviceWorker?.controller?.scriptURL, scripts: [...document.scripts].map(script => script.src), html: document.documentElement.outerHTML.slice(0, 4000) })).catch(() => ({ unavailable: true }))))
     console.error(failure.slice(0, 50000))
   }
   throw error
