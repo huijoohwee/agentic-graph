@@ -282,7 +282,7 @@ async function readWorkspaceActiveDocumentTextResult(args: {
 }): Promise<string | null> {
   const activePath = normalizeWorkspacePath(args.activePath)
   const modelAssetFormat = isWorkspaceModelAssetPath(activePath)
-  if (args.preferCanonicalPathText && loadWorkspaceSourceIndex()[activePath]?.kind === 'local') {
+  if (loadWorkspaceSourceIndex()[activePath]?.kind === 'local') {
     const text = await (args.fs || await getWorkspaceFs()).readFileText(activePath)
     return text === null ? null : resolveWorkspaceActiveDocumentText(activePath, modelAssetFormat, text)
   }
@@ -399,6 +399,17 @@ export const readWorkspaceActiveEntrySnapshot = async (args: {
   const provided = Array.isArray(args.workspaceEntries) ? args.workspaceEntries : []
   const observedEntry = provided.find(entry => entry?.kind === 'file' && normalizeWorkspacePath(entry.path) === activePath)
   const existingEntry = observedEntry ? { ...observedEntry } : null
+  // Local file bytes outrank inline projections and snapshots retained before a save.
+  if (loadWorkspaceSourceIndex()[activePath]?.kind === 'local') {
+    const token = beginWorkspaceActiveEntrySnapshotRead({ fs: args.fs, activePath })
+    const observed = await readWorkspaceActiveDocumentObservedText({ activePath, fs: args.fs })
+    if (observed.observedWorkspaceText === null) return []
+    const snapshot: WorkspaceEntry[] = [{
+      ...existingEntry, path: activePath, parentPath: activePath.slice(0, activePath.lastIndexOf('/')) || '/',
+      kind: 'file', name: workspaceBasename(activePath), text: observed.text, updatedAtMs: existingEntry?.updatedAtMs ?? 0,
+    }]
+    return rememberWorkspaceActiveEntrySnapshot({ fs: args.fs, activePath, entries: snapshot, token }) || snapshot
+  }
   if (existingEntry && typeof existingEntry.text === 'string') {
     const token = beginWorkspaceActiveEntrySnapshotRead({ fs: args.fs, activePath })
     const observed = await resolveObservedWorkspaceActiveText({ fs: args.fs, activePath, rawText: existingEntry.text })
@@ -486,6 +497,9 @@ export async function resolveActiveWorkspaceEntriesSnapshot(args: {
   workspaceEntries?: WorkspaceEntry[]
   activeWorkspaceEntriesSnapshot?: WorkspaceEntry[]
 }): Promise<WorkspaceEntry[]> {
+  if (loadWorkspaceSourceIndex()[normalizeWorkspacePath(args.activePath)]?.kind === 'local') {
+    return readWorkspaceActiveEntrySnapshot(args)
+  }
   const providedSnapshot = readProvidedActiveWorkspaceEntriesSnapshot({
     fs: args.fs,
     activePath: args.activePath,
@@ -506,6 +520,9 @@ export async function readActiveWorkspaceSourceFileFallbackText(args: {
   fs?: Awaited<ReturnType<typeof getWorkspaceFs>>
   ignoreActiveFileText?: boolean
 }): Promise<string> {
+  if (loadWorkspaceSourceIndex()[normalizeWorkspacePath(args.activePath)]?.kind === 'local') {
+    return readWorkspaceActiveDocumentResolvedText({ activePath: args.activePath, fs: args.fs })
+  }
   const activeText = String(args.activeFile?.text || '')
   if (!args.ignoreActiveFileText && activeText.trim()) return activeText
   const providedSnapshot = readProvidedActiveWorkspaceEntriesSnapshot({

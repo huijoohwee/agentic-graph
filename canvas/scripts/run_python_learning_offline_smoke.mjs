@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { preview } from 'vite'
 import { chromium } from 'playwright'
+import { expect } from 'playwright/test'
 import { tsImport } from 'tsx/esm/api'
 import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 
@@ -26,7 +27,8 @@ for (const file of manifest.files) {
   const bytes = await readFile(join(canvas, 'dist', file.path))
   assert.equal(bytes.length, file.bytes); assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256)
 }
-let server, browser, page
+let server, browser, page, evidenceWritten = false
+const consoleWarnings = []
 try {
   await mkdir(output, { recursive: true })
   server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port, strictPort: true } })
@@ -54,9 +56,11 @@ try {
     remote.push(url.origin + url.pathname); return route.abort()
   })
   page = await context.newPage(); page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (['warning', 'error'].includes(message.type())) consoleWarnings.push(message.text()) })
   page.on('requestfailed', request => failedRequests.push(new URL(request.url()).pathname))
   await page.goto(base + '?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), undefined, { timeout: 60000 })
   await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
@@ -73,6 +77,7 @@ try {
     const row = page.getByRole('button', { name: `File ${file.name}`, exact: true })
     assert.equal(await row.count(), 1, 'one native row per lesson')
     assert.equal(await row.getAttribute('title'), file.path)
+    console.log('Opening native lesson:', file.path)
     await row.click(); await nativePane.waitFor()
     await page.waitForFunction(id => document.querySelector('select[aria-label="Python lesson"]')?.value === id, file.id)
     assert.equal(await nativePane.getAttribute('data-learning-state'), 'idle', 'opening a source file never runs it')
@@ -89,7 +94,7 @@ try {
   await nativeEditor.fill(editedSource)
   await nativePane.getByRole('button', { name: 'Save source', exact: true }).click()
   await page.getByText('Saved', { exact: true }).waitFor()
-  const awaitNativeStoredSource = () => page.waitForFunction(async ({ path, text }) => {
+  const awaitNativeStoredSource = () => expect.poll(() => page.evaluate(async ({ path, text }) => {
     const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
     if (!name) return false
     return new Promise((resolve, reject) => {
@@ -97,10 +102,10 @@ try {
       opening.onsuccess = () => {
         const db = opening.result, request = db.transaction('records', 'readonly').objectStore('records').getAll()
         request.onerror = () => { db.close(); reject(request.error) }
-        request.onsuccess = () => { db.close(); resolve(request.result.some(record => record.collection === 'entries' && record.value.path === path && record.value.text === text)) }
+        request.onsuccess = () => { db.close(); resolve(request.result.some(record => record.key === 'entries\u0000' + path && record.id === path && record.collection === 'entries' && record.value.path === path && record.value.text === text)) }
       }
     })
-  }, { path: editedFile.path, text: editedSource }, { timeout: 15000 })
+  }, { path: editedFile.path, text: editedSource }), { timeout: 15000 }).toBe(true)
   await awaitNativeStoredSource()
   assert.equal(await page.evaluate(path => JSON.parse(localStorage.getItem('kg:ui:markdown:workspace:sourcesByPath') || '{}')[path]?.kind, editedFile.path), 'local')
   await page.reload({ waitUntil: 'domcontentloaded' }); await nativePane.waitFor({ timeout: 60000 })
@@ -126,6 +131,7 @@ try {
     await page.waitForFunction(() => window.__registeredLearningTools.has('agentic-graph.select_local_tool_scope'))
     await invoke('select_local_tool_scope', { scope: 'pythonLearning' })
     assert.equal(await page.locator('html').getAttribute('data-kg-webmcp-scope'), 'pythonLearning')
+  }
   // A restored floating panel keeps its own discovery priority; agents select the requested group.
   await selectPython()
   await dismissVisibleFloatingPanel(page)
@@ -166,7 +172,7 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   const editor = pane.getByRole('textbox', { name: 'Python source text', exact: true })
   const awaitSource = expected => page.waitForFunction(value => document.querySelector('textarea[aria-label="Python source text"]')?.value === value, expected, { timeout: 30000 })
-  const awaitStoredSource = expected => page.waitForFunction(async value => {
+  const awaitStoredSource = expected => expect.poll(() => page.evaluate(async value => {
     const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
     if (!name) return false
     return new Promise((resolve, reject) => {
@@ -177,7 +183,7 @@ try {
         request.onsuccess = () => { db.close(); resolve(request.result.some(record => record.collection === 'entries' && record.value.path?.endsWith('/learning.py') && record.value.text === value)) }
       }
     })
-  }, expected, { polling: 100, timeout: 15000 })
+  }, expected), { timeout: 15000 }).toBe(true)
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await awaitSource(lessons[0].solution)
   assert.equal(await editor.inputValue(), lessons[0].solution)
@@ -334,9 +340,13 @@ try {
     nativeLessonFilesProven: true, nativeLessonSaveReloadProven: true, toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
-  await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
-  }
+  await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
+  evidenceWritten = true
+  console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
 } catch (error) {
-  if (page) { console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState, serviceWorker: Boolean(navigator.serviceWorker?.controller) })).catch(() => ({}))); console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
+  console.error('Browser warnings:', consoleWarnings)
+  if (page) { console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState, serviceWorker: Boolean(navigator.serviceWorker?.controller) })).catch(() => ({}))); console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value.slice(0, 2000) })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
   throw error
 } finally { await browser?.close(); await new Promise(resolve => server?.httpServer.close(resolve) || resolve()) }
+
+assert.ok(evidenceWritten, 'full offline acceptance must write its evidence before success')

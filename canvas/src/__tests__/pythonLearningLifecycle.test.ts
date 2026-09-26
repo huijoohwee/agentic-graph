@@ -55,17 +55,24 @@ test('native lesson folder preserves edits, migrated roots and deletions across 
 test('local docs reads preserve saved edits, cleared bytes and deletion over stale display copies', async () => {
   const { createMemoryWorkspaceFs } = await import('../features/workspace-fs/workspaceFsMemory')
   const { setWorkspaceEntrySource } = await import('../features/workspace-fs/sourceIndex')
-  const { readWorkspaceActiveDocumentObservedText, readWorkspaceActiveDocumentResolvedText } = await import('../features/source-files/sourceFilesRuntimeActive')
+  const { readWorkspaceActiveDocumentObservedText, readWorkspaceActiveDocumentResolvedText, readWorkspaceActiveEntrySnapshot, resolveActiveWorkspaceEntriesSnapshot, readActiveWorkspaceSourceFileFallbackText } = await import('../features/source-files/sourceFilesRuntimeActive')
   const fs = createMemoryWorkspaceFs(), activePath = await fs.createFile({ parentPath: '/docs', name: 'local-reader.py', text: '' })
   setWorkspaceEntrySource(activePath, { kind: 'local' }, { persist: 'sync' })
+  const staleEntries = (await fs.listEntries()).filter(entry => entry.path === activePath).map(entry => ({ ...entry, text: 'stale copy' }))
   try {
     for (const text of ['# Saved edit 保留\nprint(42)\n', '']) {
       await fs.writeFileText(activePath, text)
       assert.equal(await readWorkspaceActiveDocumentResolvedText({ activePath, fs, currentText: 'stale copy', preferCanonicalPathText: true }), text)
       const observed = await readWorkspaceActiveDocumentObservedText({ activePath, fs, fallbackText: 'stale copy', preferCanonicalPathText: true })
       assert.equal(observed.text, text); assert.equal(observed.observedWorkspaceText, text)
+      assert.equal(await readWorkspaceActiveDocumentResolvedText({ activePath, fs, currentText: 'stale copy' }), text)
+      assert.equal((await readWorkspaceActiveEntrySnapshot({ activePath, fs, workspaceEntries: staleEntries }))[0]?.text, text)
+      assert.equal((await resolveActiveWorkspaceEntriesSnapshot({ activePath, fs, activeWorkspaceEntriesSnapshot: staleEntries }))[0]?.text, text)
+      assert.equal(await readActiveWorkspaceSourceFileFallbackText({ activePath, fs, activeWorkspaceEntriesSnapshot: staleEntries }), text)
     }
     await fs.deleteEntry(activePath)
+    assert.deepEqual(await readWorkspaceActiveEntrySnapshot({ activePath, fs, workspaceEntries: staleEntries }), [])
+    assert.deepEqual(await resolveActiveWorkspaceEntriesSnapshot({ activePath, fs, activeWorkspaceEntriesSnapshot: staleEntries }), [])
     assert.equal(await readWorkspaceActiveDocumentResolvedText({ activePath, fs, currentText: 'stale copy', preferCanonicalPathText: true, preserveMissing: true }), null)
   } finally { setWorkspaceEntrySource(activePath, null) }
 })
@@ -88,6 +95,17 @@ test('lesson initialization fails loudly on collisions and resumes a partial sav
   await fs.deleteEntry(LEARNING_LESSON_FILES[0].path)
   await fs.createFolder({ parentPath: LEARNING_LESSON_FOLDER, name: LEARNING_LESSON_FILES[0].name })
   await assert.rejects(ensureLearningLessonFiles(fs, true), /folder occupies/)
+})
+
+test('Python selection settles without retrying Markdown Canvas application over learner edits', async () => {
+  const { isWorkspaceDocumentSwitchApplySettled, shouldForceWorkspaceDocumentSwitchGraphApply, shouldApplyStableWorkspaceSelectionToCanvas } = await import('../lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply')
+  const path = '/docs/python-lessons/02-repeat-a-route.PY'
+  const state = { activeDocumentKey: path, text: 'print(42)', markdownDocumentName: '/notes.md', markdownDocumentText: 'Other Canvas', graphDataSource: 'markdown:/notes.md' }
+  assert.equal(isWorkspaceDocumentSwitchApplySettled(state), true)
+  assert.equal(shouldForceWorkspaceDocumentSwitchGraphApply({ activeDocumentKey: path, pendingSwitchPath: path }), false)
+  assert.equal(shouldApplyStableWorkspaceSelectionToCanvas({ ...state, activePath: path, activeEntryKind: 'file', nextText: state.text }), false)
+  assert.equal(isWorkspaceDocumentSwitchApplySettled({ ...state, activeDocumentKey: '/new.md' }), false)
+  assert.equal(shouldForceWorkspaceDocumentSwitchGraphApply({ activeDocumentKey: '/new.md', pendingSwitchPath: '/new.md' }), true)
 })
 
 test('Python discovery follows the active editor document without capturing other workspace groups', () => {

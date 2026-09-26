@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.1
+version: 1.4.2
 date: 2026-09-26
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -323,7 +323,7 @@ cloud indicator after sign-in to sync across devices; offline edits remain local
 until explicitly synced. Learning gains remain unmeasured. Rollback restores the
 prior launcher without deleting saved files. Evidence: external lesson-files-* logs.
 
-## Canvas replay clock correction — 1.4.1
+## Canvas replay clock correction — 1.4.2
 
 Protected CI for PR1313 completed the drone's four flight criteria but exposed a
 first-frame replay failure: an animation timestamp can precede the effect's
@@ -334,3 +334,23 @@ regression exercises the earlier timestamp, resume offset, ordinary advance and
 final clamp; the native browser smoke must still replay the copied embed to tick
 540 and reset it. Published predecessors remain immutable. Integration,
 production activation and ADLC delivery require their separate exact receipts.
+
+### Local source reload correction
+
+The protected gate exposed a saved-source reload race after the replay clock fix.
+Local source ownership now applies to every active-file read, including inline
+entry snapshots and source fallback calls, so a retained starter cannot outrank
+saved WorkspaceFs bytes. Deleted local files return no active entry; empty edits
+remain empty. Regression checks exercise stale inline copies across those readers.
+Protected integration and delivery remain pending until their exact receipts pass.
+
+The save failure was traced to pending Python selection being retried through the
+Markdown Canvas loader. The native switch owner now treats a hydrated Python file
+as settled and leaves its Canvas to the learning runtime. Stable Python selections
+also avoid Markdown graph application. This preserves a new edit before explicit
+Save without changing Markdown switch behavior. The production smoke uses awaited
+Boolean storage observations, closes its offline test body correctly and requires
+its final evidence file before reporting success. Its acceptance is unchanged:
+exact source must survive Save and reload, all lessons must run offline, and missing
+verified assets must block navigation. Refresh cap: seven files / 25 KiB, zero new
+runtime dependencies; normal production-build proof and protected CI are required.

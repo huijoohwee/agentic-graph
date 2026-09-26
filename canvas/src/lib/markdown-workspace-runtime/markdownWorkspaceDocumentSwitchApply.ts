@@ -1,5 +1,6 @@
 import React from 'react'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
+import { workspaceExtLower } from '@/features/workspace-fs/path'
 import { applyActiveMarkdownDocumentPayload } from '@/features/markdown/activeMarkdownDocument'
 import type { MarkdownWorkspaceRuntimeSetActiveDocument } from './markdownWorkspaceRuntime.types'
 import { shouldRejectMarkdownDocumentPayload } from '@/lib/markdown/markdownDocumentPayloadGuards'
@@ -149,6 +150,7 @@ export function shouldApplyStableWorkspaceSelectionToCanvas(args: {
   canvas2dRenderer?: string | null
 }): boolean {
   if (args.userEditedActiveText === true) return false
+  if (workspaceExtLower(args.activeDocumentKey || args.activePath || '') === 'py') return false
   if (isWorkspaceDocumentCanvasGraphApplyDisabled(args.nextText)) return false
   if (!shouldAcceptWorkspaceDocumentSelectionText({
     activePath: args.activePath,
@@ -205,6 +207,8 @@ export function isWorkspaceDocumentSwitchApplySettled(args: {
 }): boolean {
   const activeDocumentKey = String(args.activeDocumentKey || '').trim()
   if (!activeDocumentKey) return false
+  // Python's learning runtime owns its Canvas; selection only hydrates the file.
+  if (workspaceExtLower(activeDocumentKey) === 'py') return true
   if (String(args.markdownDocumentName || '').trim() !== activeDocumentKey) return false
   if (String(args.markdownDocumentText || '') !== String(args.text || '')) return false
   if (isWorkspaceDocumentCanvasGraphApplyDisabled(args.text)) return true
@@ -220,7 +224,7 @@ export function shouldForceWorkspaceDocumentSwitchGraphApply(args: {
 }): boolean {
   const activeDocumentPath = normalizeMarkdownWorkspaceSelectionPath(args.activeDocumentKey || null)
   const pendingSwitchPath = normalizeMarkdownWorkspaceSelectionPath(args.pendingSwitchPath || null)
-  return !!activeDocumentPath && pendingSwitchPath === activeDocumentPath
+  return !!activeDocumentPath && workspaceExtLower(activeDocumentPath) !== 'py' && pendingSwitchPath === activeDocumentPath
 }
 
 export type WorkspaceDocumentSwitchApplyStatus = 'applied' | 'settled' | 'deferred'
