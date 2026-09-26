@@ -64,8 +64,14 @@ integration; the immutable consumer archive will be generated only from its merg
 R2/R3 remain unimplemented, and GX1–GX6 do not become satisfied merely by this extraction.
 R4 remains open with zero completed human sessions. The inventory below remains a historical
 observation at its explicitly named source revisions; its formerly absent export is supplied
-by this R1 candidate. Source delta is bounded to five files, one runtime module (replacing
-inline helpers), one test module and no new package dependency or hosted service.
+by this R1 candidate. Source delta is bounded to six files, one runtime module (replacing inline helpers), one test
+module and one build projection script. `grph-shared/scripts/pack-spatial-review.mjs` creates
+an internal `@agentic-graph/spatial-review@0.1.0` archive from that exact built module and
+records its source SHA and source-byte digest. It contains no second policy implementation,
+renderer, transitive dependency or network service. Build it twice from the protected R1
+revision and compare archive bytes before admission. Its separate identity deliberately
+leaves X's older flight and persisted strategy package contracts pinned; it is not an alias
+for those packages. This narrows A2's immutable-package delivery without forking its source.
 
 ## Codebase grounding — reference implementation
 
