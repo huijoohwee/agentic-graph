@@ -257,21 +257,23 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
 
       const hasWidgetRegistry = readWidgetRegistryMetadataEntries(graphData?.metadata).length > 0
 
-      // Widget presence is only a fallback; authored XR/Geo/renderer intent owns the surface.
-      if (hasWidgetRegistry && !hasExplicitSurface) {
+      if (hasWidgetRegistry) {
         if (baselineLocked) {
           status.setStatusWarning(UI_COPY.baselineLockedToast, { ttlMs: UI_TOAST_TTL_MS.warningExtended, dismissible: true })
           return
         }
-        const schema = store.schema
-        if (schema) {
-          const { enableHandlesForAllInputsInSchema } = (await import('@/lib/storyboardWidget/storyboardWidgetActions')) as typeof import('@/lib/storyboardWidget/storyboardWidgetActions')
-          const res = enableHandlesForAllInputsInSchema(schema)
-          if (res.changed) store.setSchema(res.schema)
+        // Widget presence is only a fallback; authored XR/Geo/renderer intent owns the surface.
+        if (!hasExplicitSurface) {
+          const schema = store.schema
+          if (schema) {
+            const { enableHandlesForAllInputsInSchema } = (await import('@/lib/storyboardWidget/storyboardWidgetActions')) as typeof import('@/lib/storyboardWidget/storyboardWidgetActions')
+            const res = enableHandlesForAllInputsInSchema(schema)
+            if (res.changed) store.setSchema(res.schema)
+          }
+          store.setCanvasRenderMode('2d')
+          store.setCanvas2dRenderer('storyboard')
+          await requestCanvasFrontmatterGeospatialSurface(false)
         }
-        store.setCanvasRenderMode('2d')
-        store.setCanvas2dRenderer('storyboard')
-        await requestCanvasFrontmatterGeospatialSurface(false)
         store.setWorkspaceViewMode('canvas')
         return
       }

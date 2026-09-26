@@ -246,7 +246,7 @@ test('native local import preserves an explicit XR surface when the graph includ
   const source = install().replace('---\n', '---\nkgCanvasSurfaceMode: 3d\nkgCanvasRenderMode: 3d\nkgCanvas3dMode: xr\n')
   const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/spatial-unit.md', parentPath: '/', kind: 'file', name: 'spatial-unit.md', text: source, updatedAtMs: 1 }] })
   const graph = useGraphStore.getState().graphData!
-  useGraphStore.setState({ canvasRenderMode: '3d', canvas3dMode: 'xr', markdownDocumentText: source,
+  useGraphStore.setState({ canvasRenderMode: '3d', canvas3dMode: 'xr', workspaceViewMode: 'editor', markdownDocumentText: source,
     graphData: { ...graph, nodes: [{ id: 'scene', type: 'Document', label: 'Scene', properties: {} }], metadata: { ...graph.metadata, 'flow:widgetRegistry': [{ id: 'scene', type: 'Document' }] } } })
   let actions: ReturnType<typeof useWorkspaceFileActionsCore> | undefined
   const noOp = () => {}
@@ -268,6 +268,7 @@ test('native local import preserves an explicit XR surface when the graph includ
     assert.deepEqual(unwantedModes, [], 'generic widget fallback must never replace authored XR intent')
     assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
     assert.equal(useGraphStore.getState().canvas3dMode, 'xr')
+    assert.equal(useGraphStore.getState().workspaceViewMode, 'canvas', 'import reveals the authored surface above the editor')
     assert.equal(await fs.readFileText('/spatial-unit.md'), source)
     const implicitSource = source.replace('kgCanvasSurfaceMode: 3d\nkgCanvasRenderMode: 3d\nkgCanvas3dMode: xr\n', '')
     for (const header of ['', 'kgCanvasSurfaceMode: 2d\n']) {
