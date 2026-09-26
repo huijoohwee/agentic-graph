@@ -1,27 +1,27 @@
 ---
 title: "Reference implementation: agentic-graph Agent-Native Spatial Workspace"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.8.0"
+version: "0.9.0"
 date: "2026-09-26"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Spatial workspace maintainers"
 continuity_id: "SPATIAL-WORKSPACE-001"
-prd_revision: "0.8.0"
-tad_revision: "0.8.0"
-adr_revision: "0.8.0"
-mvp_revision: "0.8.0"
-gtm_revision: "0.8.0"
+prd_revision: "0.9.0"
+tad_revision: "0.9.0"
+adr_revision: "0.9.0"
+mvp_revision: "0.9.0"
+gtm_revision: "0.9.0"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
-lifecycle_status: "implementation-candidate"
+lifecycle_status: "integrated-dev-with-follow-on-plan"
 universal_scope: false
-worktree_id: "device-cba000d3779d--spatial-workspace-runtime"
+worktree_id: "device-cba000d3779d--spatial-gamexr-plan"
 agent_id: "codex-01a0dba4"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/87a4178264b272c567496568c57dc323a7a35550/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "8bff012eac5f58a456c8caf85ccc2ac11ccf07c9"
+reviewed_source_revision: "d91de86b772825aaec70e773f902756b6fd16e25"
 load_policy: "on-demand"
 kgCanvasSurfaceMode: "2d"
 kgCanvasRenderMode: "2d"
@@ -34,15 +34,15 @@ surfaces:
 
 # Reference implementation: agentic-graph agent-native spatial workspace
 
-PRD, TAD, ADR, MVP and GTM join **SPATIAL-WORKSPACE-001@0.8.0**. This successor records protected integration of the initial review loop and the bounded acceptance follow-up: observation provenance, native app entry, offline recovery and a three-profile pilot protocol. The follow-up remains a source candidate until its own protected gate completes. Customer validation and production delivery remain unestablished.
+PRD, TAD, ADR, MVP and GTM join **SPATIAL-WORKSPACE-001@0.9.0**. This successor records protected integration of the initial review loop and the bounded acceptance follow-up: observation provenance, native app entry, offline recovery and a three-profile pilot protocol. The acceptance follow-up is protected in PR #1307 and its exact merged runtime is verified. This revision adds the code-grounded GameXR extension plan; its proposed integration is not implemented. Customer validation and production delivery remain unestablished.
 
-Context: the source owners below already support bounded spatial authoring, but the reviewed base did not expose a revision-bound spatial proposal transaction. Intent: let an operator and an agent inspect the same authored scene and safely compare a proposed edit. Directive: extend those owners with the smallest inspect, preview, review, apply and undo slice. Role: spatial maintainer. Action: the maintainer implements and checks that shared review loop. Outcome: a local runtime candidate with reproducible checks and a remaining-work plan. Authoring/runtime invocation: `/change #spatial-workspace-runtime @codex-01a0dba4`; these are contributor intent tokens, not new product routes.
+Context: the source owners below already support bounded spatial authoring, but the reviewed base did not expose a revision-bound spatial proposal transaction. Intent: let an operator and an agent inspect the same authored scene and safely compare a proposed edit. Directive: extend those owners with the smallest inspect, preview, review, apply and undo slice. Role: spatial maintainer. Action: the maintainer implements and checks that shared review loop. Outcome: a protected local review loop plus an exact cross-runtime gap and implementation plan. Current authoring invocation: `/change #spatial-gamexr-plan @codex-01a0dba4`; these are contributor intent tokens, not new product routes.
 
 This artifact owns the spatial proposal delta. The [XR planning set](agentic-graph-ar-vr-xr-planning-prd-tad-adr-mvp-gtm.md), `PLAN-AGENTIC-GRAPH-AR-VR-XR-PRD-TAD-ADR-MVP-GTM@3.0.1`, retains capture, rendering and general spatial authoring ownership. Its pinned historical conformance document is unchanged. The [native physics plan](agentic-graph-native-physics-engines-prd-tad-adr-mvp-gtm.md), `PLAN-AGENTIC-GRAPH-NATIVE-PHYSICS-ENGINES-PRD-TAD-ADR-MVP-GTM@1.1.3`, retains simulation ownership. Canvas consumes this contract; it must not create another scene store or physics engine.
 
 ## Codebase grounding - reference implementation
 
-The following G/C/O/X inventory is the historical pre-implementation baseline, not a claim about current missing features. All Graph-relative paths in that inventory resolve at `8bff012eac5f58a456c8caf85ccc2ac11ccf07c9` (G). Canvas paths resolve at `5ea33c4f521d39e985a60c054db8ebd13d4db54c` (C). Lifecycle source checkout: `8bd5c314c23e30bc16de9a0fbb0a4349c3273638` (O); consumer lockfiles, not O, select execution versions. GameXR package observation: `d3e840bfd45ffb269dba330c369aa8ee94587baa` (X). Authoring input: the user-requested `0.1.0` plan followed by implementation authorization; this `0.8.0` successor assesses the bounded source inventory and candidate delta separately. External reference material supplies no implementation evidence, copied artifacts, or dependency.
+The following G/C/O/X inventory is the historical pre-implementation baseline, not a claim about current missing features. All Graph-relative paths in that inventory resolve at `8bff012eac5f58a456c8caf85ccc2ac11ccf07c9` (G). Canvas paths resolve at `5ea33c4f521d39e985a60c054db8ebd13d4db54c` (C). Lifecycle source checkout: `8bd5c314c23e30bc16de9a0fbb0a4349c3273638` (O); consumer lockfiles, not O, select execution versions. GameXR package observation: `d3e840bfd45ffb269dba330c369aa8ee94587baa` (X). Authoring input: the user-requested `0.1.0` plan followed by implementation authorization; this `0.9.0` successor assesses the bounded source inventory and candidate delta separately. External reference material supplies no implementation evidence, copied artifacts, or dependency.
 
 | ID | Material claim and disposition | Exact owner evidence / implication |
 |---|---|---|
@@ -56,18 +56,20 @@ The following G/C/O/X inventory is the historical pre-implementation baseline, n
 | G8 | **contradicted**: all spatial metadata writes pass the settled-editor fence | G: `canvas/src/features/workspace-table/workspaceSceneMetadataAuthoring.ts` allows `kgXrPhysics`; G1 writes `kgXrPhysicsWorld`. The mismatch affects the guarded editor path; it does not prove every physics save fails. Fix the existing allowlist owner and test the exact persisted keys before proposal commits. |
 | C1 | **confirmed**: Canvas routes to shared Graph/lifecycle contracts | C: `src/agentic-graph-mcp-contract.js` re-exports the pinned lifecycle adapter; `scripts/xr-invocation-contract.mjs` checks dictionary ownership; `agent-api/src/tool-search.js` owns deferred discovery. No Canvas-local scene store is justified. |
 | O1 | **confirmed**: lifecycle and fleet allocation have existing owners | O: `bin/agentic-os.mjs`, `bin/agentic-os-fleet.mjs`, `FLEET.md`. Checks and local reservations do not confer protected integration or deployment authority. |
-| X1 | **confirmed, package scope only**: another spatial frontend consumes shared packages | X: `package.json` pins local archives for `grph-shared` and spatial input. No current spatial-proposal compatibility is evidenced; adoption is deferred until Graph's contract is proven. |
+| X1 | **confirmed, package scope only**: another spatial frontend consumes shared packages | X: `package.json` pins local archives for `grph-shared` and spatial input. This was a package-only observation. The current, deeper GameXR inventory and bounded extension are owned by `SPATIAL-GAMEXR-001@0.1.0`; compatibility is still unimplemented. |
 | G9 | **unverified**: complete digital-twin correspondence, device latency, offline reload and buyer value | No sensor-calibration, physical-scene comparison, clean-browser timing or customer-result artifact was supplied. These claims cannot justify readiness or execution. |
 
 **Recorded source checks, 2026-09-26, authoring surface:** after `npm ci --ignore-scripts` and `npm run smoke:prepare`, G's `TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/spatialPhysicsEngine.test.ts canvas/src/__tests__/xrSceneMcpContract.test.ts` exited 0: 8 tests, 8 passed. An initial run failed because the linked package build was absent; preparing it resolved that environment failure. C's `node --test __tests__/xr-invocation-contract.test.mjs` exited 0: 7 tests, 7 passed. C's `npm run docs:check` exited 0 over 75 artifacts. After authoring, C's `npm run check` passed all six selected owner checks (budgets, four test shards and docs); it does not imply full-suite parity. G's `npm run check` passed linked-package builds, TypeScript and all three local-browser-runtime policy tests. These are supporting source checks, not evidence satisfying the new VCCs.
 
-**Fleet preflight, repaired 2026-09-26:** O's `npm run fleet:check -- --ownership=<explicit-eight-root-map>` passes across 8 repositories, 578 artifacts, 18 responsibilities and 106 planning families, with zero findings. The Graph release-recovery companion now explicitly consumes the Design baseline's five-role `0.6.4` join; its separate artifact version `0.6.7` preserves the original release evidence. The two specification worktrees replace canonical roots in this candidate map. This clears the recorded planning prerequisite; it is not protected publication or deployment evidence.
+**Historical fleet preflight, repaired 2026-09-26:** O's `npm run fleet:check -- --ownership=<explicit-eight-root-map>` passes across 8 repositories, 578 artifacts, 18 responsibilities and 106 planning families, with zero findings. The Graph release-recovery companion now explicitly consumes the Design baseline's five-role `0.6.4` join; its separate artifact version `0.6.7` preserves the original release evidence. The two specification worktrees replace canonical roots in this candidate map. This clears the recorded planning prerequisite; it is not protected publication or deployment evidence.
 
 ### Implementation checkpoint - reference implementation
 
 The original Graph review loop is protected in [PR #1302](https://github.com/huijoohwee/agentic-graph/pull/1302), merge `434972605932f219bb680f9c782988477ee73f02`; its specification is in merged PR #1300. The mission-browser panel cleanup regression is fixed. Canvas's browser client is protected in [PR #952](https://github.com/huijoohwee/agentic-canvas-os/pull/952), merge `e36ff95c210aa3fd11002958fde9bcbd26b336da`. The runtime and transport gaps recorded at G/C are therefore historical.
 
-The follow-up is branch `agent/device-cba000d3779d/spatial-offline-startup`. Its automated full-app proof binds commit `5b69acc9f69aeeea7bf5424139afd1f21b34ee04` and tree `d6e6af8043fda97c3ab6c36afc8ae6b9b6feb1ef`; artifact `/tmp/spatial-full-app-offline/acceptance.json`. Subsequent specification and protected lifecycle-pin changes retain this source observation and receive their own required CI proof; the observation is not retroactively rebound.
+The acceptance follow-up is protected in [PR #1307](https://github.com/huijoohwee/agentic-graph/pull/1307), merge `d91de86b772825aaec70e773f902756b6fd16e25`. PR CI `36229128820` and exact main CI `36230039512` passed, including the canonical Integration Gate and XR runtime gate. Native `turn:end` verified that merge with OS `84a15c89e5a0f8ea6926a0ce4685ce40d9ccf2a6`; app, storage and storage-proxy probes returned HTTP 200. The completed lane was quarantined with recovery bytes preserved. These receipts establish Dev integration and local startup, not production or human validation.
+
+The automated full-app proof retains its original commit `5b69acc9f69aeeea7bf5424139afd1f21b34ee04` and tree `d6e6af8043fda97c3ab6c36afc8ae6b9b6feb1ef`. The source-bound pilot artifact directory is `.workspace/.artifacts/spatial-pilot/d2851535a8993152f73e4f3931ab457eaf703848/technical-evidence/`, containing `acceptance.json`, `protected-main-ci.json` and `integration.json`. Later documentation does not retroactively rebind that rehearsal.
 
 | Delta | Concrete owner / result |
 |---|---|
@@ -80,21 +82,27 @@ The follow-up is branch `agent/device-cba000d3779d/spatial-offline-startup`. Its
 
 **Technical evidence, 2026-09-26:** 26 model/runtime/provenance tests pass, including hydration-fence release, late local source binding, graph/physics readiness changes and actual parser/source reserialization. The late-binding and native-import regressions failed before their respective repairs and pass afterward; two existing import checks also pass. TypeScript and three browser-runtime policy tests pass. The cross-repository browser smoke passes at 1024/390 pixels with Canvas's generated client and the actual Graph registry: matching identities, stale rejection, offline apply/undo, four receipts, durable readback and zero page errors. The full-app rehearsal records five deliberate actions at both widths; 1024 px: 18.38 s to first value, 4.69 s installation, 2.74 s offline reload; 390 px: 4.61 s to first value, 3.83 s installation, 1.69 s offline reload. Both profiles verify preview/cancel byte preservation, apply, undo, two persisted receipts, installed offline cold reload, absent navigator/document tool surfaces, no script execution and no horizontal overflow. Browser checks now verify the review panel is at least 320 pixels wide within all clipping ancestors before editing and after reload; the earlier clickable-but-clipped mobile observation was insufficient. Mobile uses text review without opting into 3D. Offline Studio deliberately reopens the source editor; after verifying exact bytes, one native Close action returns to review. This reopen navigation is recorded separately from first value. These are automated technical timings, not observed customer TTV.
 
-The first follow-up CI run (`36226732242`, attempt 1) timed out while initial review remained disabled. Its complete failed-stage log was retained by the new diagnostics exporter. A successor adds the missing inspection dependencies and logs the saved source and visible refusal message for future full-app failures; it requires its own green CI proof. Run `36227352881` then completed the desktop flow but exposed a mobile XR-to-Storyboard transition with intact saved source. The native import regression reproduced the generic widget fallback overriding explicit XR intent; the successor repairs that source owner. Run `36228461044` preserved source and both receipts through edit/undo but produced a blank desktop offline startup. The harness now waits for installed-route load, service-worker control, network idle and exact source restoration before disconnecting, and retains browser errors, failed requests and worker/entry-script state on failure. Local desktop/mobile cold reload passes; resolution of that CI-only startup observation requires new protected evidence. Owner CI passed before protected merge. The OS merge's first main run hit an unchanged 500 ms local-application fixture deadline; its focused three tests passed and the unchanged exact-revision retry passed. Logs and provider identity remain diagnostic evidence, not permission to bypass checks. Native closeout now quarantines both the completed specification lane and lifecycle-fix lane with recovery bytes preserved; the old 10,000-entry blocker is resolved.
+Historical failed runs `36226732242`, `36227352881` and `36228461044` exposed late source binding, native import overriding XR intent and offline startup readiness respectively. The successor fixes and retained complete diagnostics are described by PR #1307; its successful protected CI supersedes those blockers for this exact implementation. The OS merge's initial 500 ms fixture timeout passed an unchanged exact-revision retry after three focused tests passed; that baseline flake is not claimed fixed. Native cleanup's former 10,000-entry blocker is resolved by protected OS #313.
 
 | Stage | Result | Remaining prerequisite |
 |---|---|---|
-| M0-M3 | Initial review loop protected; acceptance follow-up source-tested | Follow-up protected integration and canonical runtime receipt |
+| M0-M3 | Initial and follow-up review loop protected; canonical runtime receipt passed at the merged revision | No remaining integration/startup prerequisite for this bounded Dev slice |
 | M4 | Canvas transport protected; SW5 package cases and SW6 full-app technical rehearsal pass | Larger-scene responsiveness and full guideline alignment remain unmeasured |
 | M5 | Three-profile consent script, tasks and empty measurement record implemented | Real consenting participants and independently observed outcomes |
 
-The [pilot specification](agentic-graph-spatial-workspace-pilot-prd-tad-adr-mvp-gtm.md), `SPATIAL-WORKSPACE-PILOT-001@0.5.0`, owns the recommended solo-author, agent-builder and mobile-reviewer sessions. No person was recruited, no feedback invented and no outreach sent. Production remains governed by its existing explicit authorization boundary.
+The [pilot specification](agentic-graph-spatial-workspace-pilot-prd-tad-adr-mvp-gtm.md), `SPATIAL-WORKSPACE-PILOT-001@0.6.0`, owns the recommended solo-author, agent-builder and mobile-reviewer sessions. Consent and participant identities stay in the private pilot record. No completed human outcome has been reported; consent alone does not satisfy M5. No outreach or feedback is invented. Production remains governed by its existing explicit authorization boundary.
+
+### GameXR extension — reference implementation
+
+The [cross-runtime integration plan](agentic-graph-spatial-gamexr-prd-tad-adr-mvp-gtm.md), `SPATIAL-GAMEXR-001@0.1.0`, owns GX1–GX6 and its bounded R0–R4 sequence. It inspects GameXR protected main `01b18b515b05e027d966eb157746332d2d830bd0`, its actual manifest/IndexedDB/MCP/flight owners, the existing Canvas same-realm client, and Graph's unexported pure review model. GameXR's immediate `apply-manifest-patch` has no review token or durable undo; its simulated live pose is not the saved ship transform. Reuse the existing Graph package owners and GameXR frontend/storage adapters rather than copying a scene store or physics engine.
+
+The GameXR drone consumer is a separate bounded path. Its Graph canvas/export provider is still open PR #1299, head `e4e7317aa5bceee0432eb4f119e8168c9f27448c`, and absent from this protected Graph main. A merged consumer, source URL or passing game-core test cannot establish that provider's integration. Follow its existing owner; do not overlap that active lane. No new dependency, copied external artifact, runtime route or physical-control permission is introduced by this planning update.
 
 ## PRD - reference implementation
 
 ### Problem, personas and pain evidence — reference implementation
 
-The operator can edit a scene today but cannot rely on the inspected interface to distinguish a reversible agent suggestion from an immediate write, or to prove which scene revision a spatial comparison describes. The implemented candidate supplies one reviewable loop using the existing editor and tools; the limitation in the preceding sentence describes the reviewed base. The domain object is an **authored spatial workspace**: one active document, scene entities, configured physical behavior, optional observation provenance, and bounded change evidence. A useful digital twin additionally requires measured correspondence with the physical subject; a rendered scene alone does not establish it.
+The operator can edit a scene today but cannot rely on the inspected interface to distinguish a reversible agent suggestion from an immediate write, or to prove which scene revision a spatial comparison describes. The protected implementation supplies one reviewable loop using the existing editor and tools; the limitation in the preceding sentence describes the reviewed base. The domain object is an **authored spatial workspace**: one active document, scene entities, configured physical behavior, optional observation provenance, and bounded change evidence. A useful digital twin additionally requires measured correspondence with the physical subject; a rendered scene alone does not establish it.
 
 | Persona | Job | First value |
 |---|---|---|
@@ -158,7 +166,7 @@ Open research: whether scene authors prefer one atomic proposal or per-edit sele
 
 ### Components, interfaces and reuse — reference implementation
 
-TAD consumes all six criteria at `SPATIAL-WORKSPACE-001@0.8.0`. Existing components remain source-confirmed at G/C. The candidate owners and tests below implement T1-T4 through the bounded same-realm Canvas adapter. The increment retains local/delivered `undocumented` pending full acceptance and alignment; this conservative overall rung does not erase the bounded passing tests.
+TAD consumes all six criteria at `SPATIAL-WORKSPACE-001@0.9.0`. Current components are source-confirmed at the protected Graph/Canvas revisions in the implementation checkpoint. The owners and tests below implement T1-T4 through the bounded same-realm Canvas adapter. The increment retains local/delivered `undocumented` pending full acceptance and alignment; this conservative overall rung does not erase the bounded passing tests.
 
 | Element | Owner and responsibility | Reuse / new work; input -> output | Local / delivered for delta |
 |---|---|---|---|
@@ -171,7 +179,7 @@ Dependency licenses and package versions stay lockfile-owned; this plan adds no 
 
 ### Snapshot, proposal and transaction contract — reference implementation
 
-The candidate uses `agentic-graph.spatial-review/v1` and the document key `kgSpatialWorkspaceReview`. It extends the existing scene tool envelope without a new transport. Source owners and exact limits are recorded below.
+The protected runtime uses `agentic-graph.spatial-review/v1` and the document key `kgSpatialWorkspaceReview`. It extends the existing scene tool envelope without a new transport. Source owners and exact limits are recorded below.
 
 | Record | Required content | Validation and owner |
 |---|---|---|
@@ -342,14 +350,14 @@ Offline: after the app and existing assets load, inspection, static preview, rev
 
 | Boundary | From lane | To lane | Evidence reference | Operator instruction | Rollback | State |
 |---|---|---|---|---|---|---|
-| Source integration and projection | Authoring | Mirror | Initial runtime and transport have protected merge receipts; follow-up gate and projection receipt remain pending | None for promotion | Revert exact source commit through protected owner workflow; regenerate projection | closed |
+| Source integration and projection | Authoring | Mirror | Initial runtime, acceptance follow-up and transport have protected Dev receipts; generated production projection remains separate | None for promotion | Revert exact source commit through protected owner workflow; regenerate projection | closed |
 | Public runtime promotion | Mirror | Delivery | Exact candidate, SW1-SW6, runtime proof, artifact identity and production authorization; absent | None | Existing product release owner restores prior verified candidate and validates readback | closed |
 
 Do not hand-edit generated publication artifacts. Repository admission, integration and cleanup use the pinned lifecycle owner. Canvas uses existing discovery/routing only after Graph proves the contract. A local test or authoring request does not authorize a production release.
 
 ## ADR - reference implementation
 
-A1-A3 are implemented in the protected initial loop. A4 now consumes the existing observation-package owner in the acceptance candidate. These decisions join this exact revision; the follow-up requires its own protected gate.
+A1-A3 are implemented in the protected initial loop. A4 consumes the existing observation-package owner in protected PR #1307. These decisions join this exact revision; future GameXR work requires its own protected gates.
 
 | ID | Context / decision | Alternatives and consequences | Recovery |
 |---|---|---|---|
@@ -396,9 +404,9 @@ Total demo ceiling is 300 seconds. A recorded clean-environment run must establi
 
 ### Verification, readiness and scoped conformance — reference implementation
 
-Agentic OS visibility, AI Agent discovery and gateway federation are all in scope, in that order. The local candidate implements shared inspection, preview, guarded commit and undo; the Graph browser tool schema is executable in that candidate. Canvas browser federation now supports inspect and preview through the host-injected active registry. It exposes no apply/undo, URL proxy or agent approval capability; abort discards late replies while Graph retains any already-submitted preview for operator review. The bounded SW5/SW6 technical cases pass; human validation, larger-scene responsiveness and full alignment remain open, so the complete increment stays local/delivered `undocumented`. No delivered route is advertised.
+Agentic OS visibility, AI Agent discovery and gateway federation are all in scope, in that order. The protected local implementation provides shared inspection, preview, guarded commit and undo; the Graph browser tool schema is executable at the protected merge. Canvas browser federation now supports inspect and preview through the host-injected active registry. It exposes no apply/undo, URL proxy or agent approval capability; abort discards late replies while Graph retains any already-submitted preview for operator review. The bounded SW5/SW6 technical cases pass; human validation, larger-scene responsiveness and full alignment remain open, so the complete increment stays local/delivered `undocumented`. No delivered route is advertised.
 
-Experience assessment at `SPATIAL-WORKSPACE-001@0.8.0`, authoring environment, using the shared **Agent Experience Maturity Rubric v1.0.0**: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are all **unassessed**. Gap owner: product maintainer; next evidence: timed M5 pilot plus SW1-SW6 checks. No cumulative capability level, WTP or revenue follows from those ratings.
+Experience assessment at `SPATIAL-WORKSPACE-001@0.9.0`, authoring environment, using the shared **Agent Experience Maturity Rubric v1.0.0**: Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are all **unassessed**. Gap owner: product maintainer; next evidence: timed M5 pilot plus SW1-SW6 checks. No cumulative capability level, WTP or revenue follows from those ratings.
 
 Authoring checks: strict YAML/revision/source-locator/line-budget checks on changed artifacts; `git diff --check`; C `npm run docs:check`; shared `scripts/check-diagram-canvas-render.mjs <this-file>`. The projection check also passes for the Canvas consumer document (two diagrams, 15 nodes, 12 edges, three clusters). Keep source test observations above separate. Mechanical checks evaluate surfaced structure and deterministic output; they cannot independently certify buyer pain, architectural completeness or visual usability.
 
@@ -413,7 +421,7 @@ These are two explicit open findings, not a complete enumerated guideline audit;
 
 ## GTM - reference implementation
 
-Reachable-segment hypothesis: solo scene authors already using the existing workspace. No customer cohort, quote, usage result or willingness-to-pay evidence is attached. The smallest commercial test is a reviewed scene-change report for one existing user, after the local loop works; no subscription, marketplace or remote twin platform is required.
+Reachable-segment hypothesis: solo scene authors already using the existing workspace. No completed customer task, quote, usage result or willingness-to-pay evidence is attached. The smallest commercial test is a reviewed scene-change report for one existing user, after the local loop works; no subscription, marketplace or remote twin platform is required.
 
 | First-dollar order | Offer / constraint disposition | Evidence required / current state |
 |---|---|---|

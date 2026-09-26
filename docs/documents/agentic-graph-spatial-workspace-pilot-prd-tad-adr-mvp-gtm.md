@@ -1,33 +1,33 @@
 ---
 title: "Spatial workspace acceptance and pilot"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.5.0"
+version: "0.6.0"
 date: "2026-09-26"
 lang: "en-US"
 owner: "Graph product maintainer"
 continuity_id: "SPATIAL-WORKSPACE-PILOT-001"
-prd_revision: "0.5.0"
-tad_revision: "0.5.0"
-adr_revision: "0.5.0"
-mvp_revision: "0.5.0"
-gtm_revision: "0.5.0"
+prd_revision: "0.6.0"
+tad_revision: "0.6.0"
+adr_revision: "0.6.0"
+mvp_revision: "0.6.0"
+gtm_revision: "0.6.0"
 frontmatter_contract: "required"
 lifecycle_status: "active"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-cba000d3779d--spatial-workspace-runtime"
+worktree_id: "device-cba000d3779d--spatial-gamexr-plan"
 agent_id: "codex-01a0dba4"
-reviewed_source_revision: "434972605932f219bb680f9c782988477ee73f02"
+reviewed_source_revision: "d91de86b772825aaec70e773f902756b6fd16e25"
 guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.7.0"
 ---
 # Spatial workspace acceptance and pilot — reference implementation
 
-All five roles join `SPATIAL-WORKSPACE-PILOT-001@0.5.0`. This bounded follow-up validates
+All five roles join `SPATIAL-WORKSPACE-PILOT-001@0.6.0`. This bounded follow-up validates
 SW5/SW6 in the spatial workspace specification and prepares three human walkthroughs.
 The named participants below are recommended profiles, not recruited people. No outreach
-or human participation has occurred. Automated results never count as interviews or consent.
+or completed human walkthrough is recorded. Consent is stored separately in the private session record; it does not establish completion, target-profile eligibility or first-time discovery. Automated results never count as interviews or consent.
 
 ## Grounding — reference implementation
 
@@ -179,11 +179,11 @@ source bytes or clean-browser first value cannot meet the threshold after three 
 
 | Stage | Exit condition | Current evidence |
 |---|---|---|
-| M1 | Provenance and malformed import checks pass | 26 spatial model/runtime/provenance tests passed locally; candidate only |
+| M1 | Provenance and malformed import checks pass | 26 spatial model/runtime/provenance tests passed; PR #1307 protected CI and exact main CI passed |
 | M2 | Desktop/mobile full-app first value, offline cancel/undo and cold reload | Five actions at both widths; commit `5b69acc9f69aeeea7bf5424139afd1f21b34ee04`; offline apply/cancel/undo/cold reload and absent tool-host surfaces passed |
-| M3 | Protected owner diagnostics repair, consumer pin, required CI and canonical runtime | Owner PR #313 protected at `84a15c89e5a0f8ea6926a0ce4685ce40d9ccf2a6`; exact main CI passed on retry; consumer pin/gate in this candidate |
-| M4 | Three consented walkthroughs | Protocol ready; zero participants and zero completed human records |
-| M5 | Successor five-role specification reflects actual findings | Spatial five-role specification advanced to 0.8.0 with bounded technical evidence; human fields remain pending |
+| M3 | Protected owner diagnostics repair, consumer pin, required CI and canonical runtime | Owner PR #313 protected at `84a15c89e5a0f8ea6926a0ce4685ce40d9ccf2a6`; Graph PR #1307 merged at `d91de86b772825aaec70e773f902756b6fd16e25`, exact main CI `36230039512` passed; native runtime probes all HTTP 200 |
+| M4 | Three consented walkthroughs | Protocol ready; private consent record exists; zero completed human task records |
+| M5 | Successor five-role specification reflects actual findings | Spatial five-role specification advances to 0.9.0 with protected technical evidence and `SPATIAL-GAMEXR-001@0.1.0`; human outcome fields remain pending |
 
 Run `npm run spatial-workspace:test`, `npm run spatial-workspace:browser` and
 `npm run spatial-workspace:full-app`. The full-app command builds, requires clean committed
@@ -207,9 +207,9 @@ time. I will not record your screen, name or scene content without separate cons
 explicit agreement before timing. Use a supplied harmless scene if they prefer. Do not collect
 camera, location, microphone or account credentials.
 
-Facilitator: establish prior experience, disclose any installed-cache setup, then say “Show how
+Facilitator: establish device, prior experience and earlier exposure to the sample or instructions; disclose any installed-cache setup, then say “Show how
 you would review this proposed move before accepting it.” Offer no hints during the first attempt.
-Count each click/tap, chooser selection and field edit; record navigation and installation separately.
+Count each click/tap, chooser selection and field edit; record navigation and installation separately. Chat-facilitated sessions use participant-reported values, explicitly labelled self-reported; message latency is not task time. Do not infer completion or timings from consent or an opened tab.
 After first value, ask them to cancel another proposal, undo, identify what is authored versus
 observed, and reopen offline. Stop at five minutes and record an incomplete outcome rather than
 coaching a pass. Log any later assistance separately. Ask what they would use this for, what fails
@@ -217,11 +217,13 @@ today, and what would make them return; ask price only as a hypothesis, never as
 
 | Record | Consent | Completed | Actions / seconds | Errors / help minutes | Provenance explanation | Return intent / quote |
 |---|---|---|---|---|---|---|
-| H1 | Not collected | Not run | — | — | — | — |
+| H1 | Recorded privately | Awaiting first-attempt report | — | — | — | — |
 | H2 | Not collected | Not run | — | — | — | — |
 | H3 | Not collected | Not run | — | — | — | — |
 
 ## GTM — reference implementation
+
+GameXR technical follow-ons require their own GX1–GX6 evidence under `SPATIAL-GAMEXR-001@0.1.0`; this Graph pilot cannot certify an unimplemented GameXR review adapter.
 
 The recommended first audience is existing local scene authors with an immediate reversible-edit
 need. The agent-workflow builder checks integration usefulness; the mobile reviewer checks
