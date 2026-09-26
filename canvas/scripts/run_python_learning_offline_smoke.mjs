@@ -93,7 +93,7 @@ try {
     '# agentic-graph lesson: route\n' + lessons[1].solution)
   await nativeEditor.fill(editedSource)
   await nativePane.getByRole('button', { name: 'Save source', exact: true }).click()
-  await page.getByText('Saved', { exact: true }).waitFor()
+  // Save and indexing share a transient toast. Exact committed bytes own completion.
   const awaitNativeStoredSource = () => expect.poll(() => page.evaluate(async ({ path, text }) => {
     const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
     if (!name) return false

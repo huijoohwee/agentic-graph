@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.5
+version: 1.4.6
 date: 2026-09-27
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -434,3 +434,28 @@ before publication. Scope: five files, at most 8 KiB changed bytes, zero depende
 15 active minutes for repair/local proof, with protected CI as a separate dependency.
 PR1317 and its exact failure artifacts are retained. Integration, canonical runtime,
 private handover and candidate-bound human authorization remain separate receipts.
+
+## Durable Save observation — 1.4.6
+
+The clean startup repair passed the unchanged full mission smoke, including all
+44 assertions and authored-state preservation. Its normal production proof then
+timed out waiting for a transient `Saved` toast after the Unicode edit; the failure
+screenshot showed indexing progress in that shared status display. The native
+status owner uses one toast identity for both operations. The proof now awaits its
+existing exact IndexedDB-byte assertion immediately after the real Save click and
+still requires exact reload, local source ownership and all offline outcomes. It
+does not infer persistence from the editor, a toast, or a Promise object. The failed
+run and screenshot remain retained; required durable acceptance is unchanged.
+
+Scope refresh: six files, at most 10 KiB changed content, zero dependencies; five
+additional active minutes for the existing artifact browser proof and publication.
+Runtime source is unchanged by this verifier adjustment; protected CI must bind
+the final committed source and catalog pair. Candidate preparation, human approval
+and live Production readback retain their separate prerequisites and receipts.
+
+The reused normal production artifact passed the complete durable proof: exact
+Unicode Save/reload, native lesson discovery, four offline outcomes, light/Monaco
+round trips, tool registration and missing-asset rejection. The artifact's runtime
+revision is `ea93888c30aa6dc1b4790aa2870b9e8358ba301e`; only this verifier and planning
+document changed during that proof. The final protected head remains independently
+required; no deployment, native device session or human authorization is inferred.
