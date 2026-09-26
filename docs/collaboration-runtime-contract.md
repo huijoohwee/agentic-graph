@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 61
+contract_version: 62
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -132,6 +132,11 @@ ci_scopes:
     roots: ["scripts/production-terminal-authorization.mjs", "scripts/production-canonical-release-state.mjs", "scripts/__tests__/production-terminal-authorization.test.mjs"]
     commands:
       - ["node", "--test", "scripts/__tests__/production-terminal-authorization.test.mjs", "scripts/__tests__/production-release-authorization.test.mjs"]
+  gamexr_production:
+    roots: ["scripts/production-gamexr.mjs", "scripts/__tests__/production-gamexr.test.mjs", "config/production-gamexr.json", ".github/workflows/release.yml"]
+    commands:
+      - ["npm", "run", "smoke:prepare"]
+      - ["node", "--test", "scripts/__tests__/production-gamexr.test.mjs"]
   core_runtime_release:
     roots: ["scripts/production-mirror-maintenance-proof.mjs", "scripts/__tests__/production-mirror-maintenance-proof.test.mjs", "scripts/production-mirror-artifact.mjs", "scripts/production-mirror-artifact-entries.mjs", "config/production-release-profile.json", "scripts/runtime-release-profile.mjs", "scripts/runtime-release-migrations.mjs", "scripts/__tests__/runtime-release-migrations.test.mjs", "scripts/core-runtime-release-", "scripts/travel-mesh-release.mjs", "scripts/travel-mesh-release-plan.mjs", "scripts/travel-mesh-release-bindings.mjs", "scripts/__tests__/core-runtime-release.test.mjs", "cloudflare/workers/agentic-graph-storage/storageCoreReadiness", "cloudflare/workers/agentic-graph-storage/storageBrowserSession", "cloudflare/workers/agentic-graph-storage/storageSessionExchange", "canvas/src/lib/storage/agentic-graph-storage-worker-env-contract.ts", "cloudflare/workers/agentic-graph-storage/index.ts", ".github/workflows/release.yml"]
     commands:

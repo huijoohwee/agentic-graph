@@ -1,23 +1,23 @@
 ---
 title: "Spatial workspace and GameXR integration — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.0"
+version: "0.4.0"
 date: "2026-09-26"
 lang: "en-US"
 owner: "Spatial integration maintainer"
 continuity_id: "SPATIAL-GAMEXR-001"
-prd_revision: "0.3.0"
-tad_revision: "0.3.0"
-adr_revision: "0.3.0"
-mvp_revision: "0.3.0"
-gtm_revision: "0.3.0"
+prd_revision: "0.4.0"
+tad_revision: "0.4.0"
+adr_revision: "0.4.0"
+mvp_revision: "0.4.0"
+gtm_revision: "0.4.0"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 lifecycle_status: "in-progress"
 universal_scope: false
-worktree_id: "device-cba000d3779d--spatial-review-record"
+worktree_id: "device-cba000d3779d--gamexr-release"
 agent_id: "codex-01a0dba4"
 guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.7.0"
 reviewed_source_revision: "14f993caba1a3ee1e3edb8b435d240c34c34339c"
@@ -33,7 +33,7 @@ surfaces:
 
 # Spatial workspace and GameXR integration — reference implementation
 
-All five roles join **SPATIAL-GAMEXR-001@0.3.0**. This is the cross-runtime extension plan,
+All five roles join **SPATIAL-GAMEXR-001@0.4.0**. This is the cross-runtime extension plan,
 not evidence that either application's scene format can already execute the other's proposals.
 The [spatial review owner](agentic-graph-spatial-workspace-prd-tad-adr-mvp-gtm.md),
 `SPATIAL-WORKSPACE-001@0.9.0`, retains Graph's transaction and geometry requirements.
@@ -95,6 +95,33 @@ Canvas remains the Graph-only consumer and reports GameXR transport unavailable.
 R1–R3 implementation without claiming the optional Canvas-to-GameXR route or a human result.
 The combined GameXR increment is bounded to 20 changed paths (21 reservations including the renamed predecessor), three new runtime modules, <80 KiB net
 runtime/test/document growth and one separate generated archive; each source file remains <600 lines.
+
+## Production admission — implementation and release pending
+
+Context: the protected release bundle preserved an older GameXR artifact even after R1–R3
+merged. Intent: deliver the reviewed spatial runtime on the existing shared Pages project.
+Directive: `/release #gamexr-release @codex-01a0dba4` adds R5 at Graph's release owner;
+GameXR and the publish mirror remain source and generated consumers respectively.
+
+`config/production-gamexr.json` pins GameXR protected merge
+`74bd6c6d28b5aeaa275edd2f149ec4618bcc86f3`, successful main CI run `36236161473`,
+and artifact digest `87b6df08eec652398145a2759042faab415106bc4e109b5e980865dccab2f4fa`.
+`scripts/production-gamexr.mjs` requires a clean exact checkout, rebuild, complete byte inventory,
+source-owned header/route parity and the existing WebKit production tests before candidate admission.
+The managed artifact inventory now carries `content/gamexr` through sealing, upload, reconciliation
+and generated publication. Sibling routes and files retain their existing owners.
+
+The protected controller checks disabled Pages HTML injection, prewarms an isolated returning-user
+GameXR profile, then verifies immutable/public route hashes, metadata caching, MIME types, aliases, the bounded same-origin canonical HTML redirect,
+WebKit runtime/cache checks and returning-user cache bytes before mirror publication. Existing
+Pages/storage rollback and exact-candidate human authorization remain unchanged. Receipt files
+bind source, artifact and before/after cache identities; this source update itself grants no deployment.
+
+R5 is bounded to ten source/test/config/document paths, one new release module, <35 KiB net growth,
+no runtime payload growth, no new resource/subscription and one existing release controller.
+Source checks, protected integration, deployed identity and live verification are separate gates.
+Production remains pending until the controller's terminal receipt exists. Native-device validation
+and R4's real human sessions remain unverified independently of any successful browser deployment.
 
 ## Initial codebase inventory — historical reference
 
@@ -302,6 +329,7 @@ package release is a build-time dependency, not a new hosted data path.
 | A2 | Extract only proven reusable pure policy from G, then consume an immutable package in X | Copying G's model or implementing parallel geometry violates one-owner. Direct canvas imports couple builds. If extraction cannot preserve G's regression suite, keep X read-only and stop that extension |
 | A3 | Each persisted document has one local writer; extend X's existing queue/database for its own manifest | A second world database duplicates truth. Updating renderer first can lose durable identity. Preserve source/receipt on projection failure and disable acceptance until recovery |
 | A4 | Preserve separate authored, simulated and observed facts; treat drone transfer as an unrelated capability | Reject claiming calibrated twin, native parity or aircraft authority from a scene review. Missing provenance remains unknown; source export stays available |
+| A5 | Admit exact GameXR source and artifact through Graph’s existing release controller | A mirror-only edit leaves production stale; independent deployment splits rollback ownership. Refuse drift before activation and use the existing rollback owner before publication |
 
 Hard constraints: no external project dependency, no paid/model service, offline local path, preserved
 native manifest, one capability owner, no autonomous apply, no physical control effect. A new hosted
@@ -317,6 +345,7 @@ proof, at most three repair cycles and stop after two with no reduction in block
 | R1 / GX1, GX2 | G pure helpers/tests; new explicit shared export and source-qualified capability contract | G maintainer first; two 90-minute slices, ≤6 touched files/2 new modules, each <600 lines/500 kB | Existing 26 G tests unchanged; package builds with no canvas/renderer imports; foreign-source and unknown-capability rejection |
 | R2 / GX2–GX5 | X validator, queue, local database, UI and export owner; new detached proposal/receipt adapter | X maintainer after protected R1; three 90-minute slices; R2/R3 combined ≤20 changed paths (21 reservations including the renamed predecessor)/3 new runtime modules, ≤80 KiB runtime/test/document delta | Preview/cancel leave exact bytes unchanged; paused-only acceptance; concurrent/replayed/stale attempts; storage abort, post-commit rebuild failure, receipt roundtrip and guarded undo |
 | R3 / GX1, GX6 | C admitted discovery/client, existing X bridge and mobile/offline harness | Consumer maintainers after protected R2; two 60-minute slices, ≤4 touched files | Real host/no-host distinction, replaced registry/session, 390/1024 px, ≤5 actions/300 s, offline cold reload; no test injection creates first value |
+| R5 / GX1–GX6 deployment | Existing protected release, artifact inventory, GameXR checker and WebKit tests; one admission adapter | G maintainer after R1–R3 protected merge; one 90-minute slice; ten files, one release module, <35 KiB | Exact source/build hash, sibling preservation, injection refusal, immutable/public browser checks, returning-user cache convergence, protected authorization, terminal receipt |
 | R4 / all | Existing pilot protocol and private record | Product owner after technical acceptance | Consented real outcomes, observed confusion, support minutes and return intent; three profiles, no synthetic substitution |
 
 R1–R3 implementation and mechanical verification are recorded above; their time bounds remain
