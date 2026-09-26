@@ -512,6 +512,11 @@
       "types": "./dist/spatial-review/index.d.ts",
       "import": "./dist/spatial-review/index.js",
       "default": "./dist/spatial-review/index.js"
+    },
+    "./spatial-review/index": {
+      "types": "./dist/spatial-review/index.d.ts",
+      "import": "./dist/spatial-review/index.js",
+      "default": "./dist/spatial-review/index.js"
     }
   },
   "files": [

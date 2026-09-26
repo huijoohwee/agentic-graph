@@ -1,5 +1,5 @@
-import { canonicalSpatialJson, enforceSpatialBudget, freezeSpatial, refuse, spatialValuesEqual, SPATIAL_REVIEW_MAX_RECEIPTS } from 'grph-shared/spatial-review'
-export { canonicalSpatialJson, enforceSpatialBudget, freezeSpatial, refuse, spatialDigest, SpatialReviewError, SPATIAL_REVIEW_MAX_BYTES } from 'grph-shared/spatial-review'
+import { canonicalSpatialJson, enforceSpatialBudget, freezeSpatial, refuse, spatialValuesEqual, SPATIAL_REVIEW_MAX_RECEIPTS } from 'grph-shared/spatial-review/index'
+export { canonicalSpatialJson, enforceSpatialBudget, freezeSpatial, refuse, spatialDigest, SpatialReviewError, SPATIAL_REVIEW_MAX_BYTES } from 'grph-shared/spatial-review/index'
 import type { GraphNode } from '@/lib/graph/types'
 import { SpatialPhysicsEngine } from '../physics/spatialPhysicsEngine'
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan, type XrMotionReferencePlan, type XrMotionReferenceVector } from './xrMotionReferenceModel'
