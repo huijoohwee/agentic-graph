@@ -1,3 +1,4 @@
+import { PROGRAMMATIC_DRONE_PRESET_ID, isProgrammaticDronePrompt } from '@/features/python-learning/programmaticDronePreset'
 import { parseCanvasViewInvocation } from '@/lib/canvas/canvasViewInvocationContract.mjs'
 import { load as parseYaml } from 'js-yaml'
 import {
@@ -140,6 +141,10 @@ const parsePreset = (value: unknown): PromptPreset | null => {
   ) return null
   if (id === PROCEDURAL_ASSET_PROMPT_PRESET_ID) {
     if (responseMode !== 'native-chat-response' || !isProceduralAssetPromptPreset(value)) return null
+  } else if (id === PROGRAMMATIC_DRONE_PRESET_ID) {
+    if (runtimeCommand !== '/python.learning' || slashCommand !== '/programmatic-drone-flight-prompt-preset'
+      || activation !== 'source-backed-canvas' || responseMode !== 'native-chat-response'
+      || !isProgrammaticDronePrompt(prompt)) return null
   } else if (id === 'xr-physics') {
     const invocation = parseXrInteractiveInvocation(prompt)
     if (runtimeCommand !== '/xr.physics' || activation !== 'source-backed-canvas'

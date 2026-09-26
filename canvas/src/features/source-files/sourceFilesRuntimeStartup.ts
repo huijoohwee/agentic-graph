@@ -14,6 +14,7 @@ import { resolveMaterializedWorkspaceActivePath } from '@/features/source-files/
 import { resolveMarkdownWorkspaceCanonicalSelection } from '@/lib/markdown-workspace-runtime/markdownWorkspaceSelectionCanonicalPath'
 import { buildWorkspaceEntriesIndex, hasWorkspaceFileEntry } from '@/lib/markdown-workspace-runtime/workspaceEntriesIndex'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
 
 export function buildInitialWorkspaceStartupSnapshot(args: {
   currentActivePath: WorkspacePath | null
@@ -134,6 +135,9 @@ export async function resolveInitialWorkspaceStartupState(args?: { fs?: Workspac
     TEST_VALIDATION_WORKSPACE_SEED_REL_PATH !== DEFAULT_TEST_VALIDATION_WORKSPACE_SEED_REL_PATH
   const fs = args?.fs || await getWorkspaceFs()
   await fs.ensureSeed()
+  // Source bootstrap must own installation before readiness; opening Explorer is read-only.
+  const { ensureLearningLessonFiles } = await import('@/features/python-learning/learningLessonFiles')
+  await runWorkspaceFsChangedBatch(() => ensureLearningLessonFiles(fs))
   const startupWorkspaceEntries = await fs.listEntries()
   const readStartupSourceRootEntries = createWorkspaceStartupSourceRootEntriesReader({
     fs,

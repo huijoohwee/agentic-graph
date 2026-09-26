@@ -10,6 +10,7 @@ import { LearningDebriefControls } from './LearningDebriefControls'
 import { LearningOfflineControls } from './LearningOfflineControls'
 import { getMarkdownWorkspaceActionBridge } from '../markdown-explorer/workspaceActionBridge'
 import './pythonLearning.css'
+import { sourceLearningLesson } from './learningLessonFiles'
 
 export default function PythonLearningPane(props: {
   source: string; onChange: (source: string) => void; documentId: string; uri: string
@@ -17,7 +18,10 @@ export default function PythonLearningPane(props: {
   editorRef: React.MutableRefObject<MonacoTextEditorHandle | null>; onCaretLine?: (line: number) => void
 }) {
   const panelTypography = usePanelTypography()
-  const [lessonId, setLessonId] = React.useState(() => runtime.read().document?.documentId === props.documentId ? runtime.read().document!.lessonId : 'travel')
+  const [selection, setSelection] = React.useState<{ documentId: string; lessonId: string } | null>(null)
+  const lessonId = selection?.documentId === props.documentId ? selection.lessonId : sourceLearningLesson(props.source, props.documentId)
+  const setLessonId = (lessonId: string) => setSelection({ documentId: props.documentId, lessonId })
+  React.useEffect(() => { setSelection(null) }, [props.documentId])
   const [notice, setNotice] = React.useState('')
   const [mobileView, setMobileView] = React.useState<'code' | 'result'>('code')
   const snapshot = React.useSyncExternalStore(runtime.subscribe, runtime.read, runtime.read)
@@ -47,6 +51,9 @@ export default function PythonLearningPane(props: {
         {LEARNING_LESSONS.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
       </select></label>
       <button disabled={disabled || running} onClick={() => { props.onChange(lesson.starter); setNotice('Starter placed in this file. Run when ready.'); }}>Replace source with starter</button>
+      {lesson.vehicle === 'drone' ? <button disabled={disabled || running} onClick={() => {
+        props.onChange(lesson.solution); setNotice('Flight example loaded. Choose Run to watch takeoff, flight and landing.');
+      }}>Load flight example</button> : null}
       <button disabled={props.readOnly} onClick={() => {
         const save = getMarkdownWorkspaceActionBridge().save
         if (!save) { setNotice('File saving is unavailable in this embedded editor.'); return }
@@ -57,6 +64,7 @@ export default function PythonLearningPane(props: {
         onClick={() => void control(operation)}>{operation[0].toUpperCase() + operation.slice(1)}</button>)}
     </div>
     <p className="python-learning-objective">{lesson.objective}</p>
+    {lesson.vehicle === 'drone' ? <p>The starter is an incomplete exercise. Load flight example, then Run to watch the full nine-second flight. Pause holds the current pose.</p> : null}
     {notice ? <p role="status">{notice}</p> : null}
     {snapshot.error ? <p role="alert"><button onClick={() => props.editorRef.current?.revealLine?.(snapshot.error!.span.line)}>Line {snapshot.error.span.line}</button>: {snapshot.error.message}</p> : null}
     {runFeedback ? <div className="python-learning-run-feedback" role="status">
@@ -75,6 +83,7 @@ export default function PythonLearningPane(props: {
         <details><summary>Supported Python and scene API</summary>
           <p>Bounded procedural Python: numbers, strings, booleans, variables, arithmetic, comparisons, if/elif/else, while, for/range, positional functions, return, break, continue, pass, print, abs, min and max.</p>
           <p>drive(speed, ticks): −6…6 m/s, 1…3,600 ticks per call. turn(degrees): −360…360. distance(): forward metres. at_goal(): boolean. Each second is 60 ticks.</p>
+          <p>Drone lesson: takeoff(height) 0.25…4 m; fly(forward, right, up, ticks), combined speed ≤3 m/s; hover(ticks); land(); altitude(). Flight and hover accept 1…3,600 ticks; take off first. Run animates at 60 simulation ticks per second; Step completes one statement. Drone flight is kinematic; motors, wind and aerodynamics are not modeled.</p>
           <p>Imports, objects, containers, recursion, packages, file and network access are unsupported. Limits: 32 KiB source, 50,000 evaluation steps, 7,200 ticks, five seconds active compute. Step completes one statement; a drive call may cover many ticks.</p>
         </details>
       </section>

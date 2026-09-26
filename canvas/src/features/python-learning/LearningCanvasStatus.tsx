@@ -9,5 +9,6 @@ export function PythonLearningCanvasStatus({ lesson, scene, documentId, runId }:
     className="absolute left-2 top-14 z-[60] rounded px-2 py-1 text-xs text-white pointer-events-none"
     style={{ background: 'rgba(20, 33, 56, .85)' }}>
     Position ({x.toFixed(2)}, {z.toFixed(2)}) m · heading {heading.toFixed(0)}° · goal ({lesson.goal.join(', ')})
+    {lesson.vehicle === 'drone' ? ` · altitude ${(scene?.altitude || 0).toFixed(2)} m · ${scene?.landed === false ? 'airborne' : 'landed'} · kinematic model` : ''}
   </output>
 }

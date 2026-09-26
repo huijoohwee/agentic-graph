@@ -4,10 +4,51 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { materializeBootstrapWorkspaceSourceFiles } from '@/features/source-files/sourceFilesBootstrapStartup'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
+import { resolveInitialWorkspaceStartupState } from '@/features/source-files/sourceFilesRuntimeStartup'
+
+async function verifyLessonFilesAreReadyBeforeSourceBootstrapReturns() {
+  useGraphStore.getState().resetAll()
+  const activePath = '/docs/current.md'
+  const text = '# Current authored source'
+  const baseFs = createMemoryWorkspaceFs({ initialEntries: [
+    { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+    { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+    { path: activePath, parentPath: '/docs', kind: 'file', name: 'current.md', text, updatedAtMs: 1 },
+  ] })
+  const fs: WorkspaceFs = { ...baseFs, ensureSeed: async () => false }
+  useMarkdownExplorerStore.getState().setActivePath(activePath)
+  const before = JSON.stringify(useGraphStore.getState().sourceFiles)
+  const startup = await resolveInitialWorkspaceStartupState({ fs })
+  const files = startup.workspaceEntries.filter(entry => entry.kind === 'file' && entry.path.startsWith('/docs/python-lessons/'))
+  if (files.length !== 4 || startup.activePath !== activePath || await fs.readFileText(activePath) !== text
+    || JSON.stringify(useGraphStore.getState().sourceFiles) !== before) {
+    throw new Error('Source startup must await lesson installation while preserving the authored document and Graph.')
+  }
+  const editedPath = '/docs/python-lessons/04-drone-flight-and-landing.py'
+  const deletedPath = '/docs/python-lessons/01-variables-in-motion.py'
+  await fs.writeFileText(editedPath, '# learner edit\nprint("飞行")\n')
+  await fs.deleteEntry(deletedPath)
+  await resolveInitialWorkspaceStartupState({ fs })
+  if (await fs.readFileText(editedPath) !== '# learner edit\nprint("飞行")\n' || await fs.readFileText(deletedPath) !== null) {
+    throw new Error('Source startup must retain edited and deleted learner files.')
+  }
+  const blockedFs: WorkspaceFs = {
+    ...createMemoryWorkspaceFs({ initialEntries: [
+      { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+      { path: '/docs', parentPath: '/', kind: 'file', name: 'docs', text: 'retain me', updatedAtMs: 1 },
+    ] }), ensureSeed: async () => false,
+  }
+  let rejected = false
+  try { await resolveInitialWorkspaceStartupState({ fs: blockedFs }) } catch { rejected = true }
+  if (!rejected || await blockedFs.readFileText('/docs') !== 'retain me') {
+    throw new Error('A lesson-folder collision must reject startup without replacing existing bytes.')
+  }
+}
 
 export async function testWorkspaceBootstrapRetriesGraphOwningMaterializationAfterActivePathDrift() {
   const { restore } = initJsdomHarness()
   try {
+    await verifyLessonFilesAreReadyBeforeSourceBootstrapReturns()
     useGraphStore.getState().resetAll()
     const pathA = '/docs/first.md'
     const pathB = '/docs/canonical.md'

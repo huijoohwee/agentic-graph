@@ -4,6 +4,16 @@ schema: agentic-graph-prompt-preset-demos/v1
 demo_only: true
 source_root: agentic-graph/docs
 demos:
+  - id: programmatic-drone-flight
+    title: Programmatic Drone Flight
+    reply: "Open the editable Python drone example. Choose Run to watch takeoff, hover, a flight to (4, 0) and landing. The example runs locally without a model call."
+    outputs:
+      - title: Program and simulate
+        text: "Demo creates a fresh local Python file and selects the drone lesson. Edit takeoff, hover, fly and land; Run is explicit."
+      - title: Share Canvas replay
+        text: "After a completed flight, Share canvas embed copies an iframe for the same Graph scene and recorded flight. Replay never connects a receiver."
+      - title: GameXR simulated bench
+        text: "Send to GameXR opens a review tab with the flight path. Connect the simulated receiver, then Run. No physical aircraft or motors are controlled."
   - id: xr-physics
     title: Physics Playground
     background: xr-physics

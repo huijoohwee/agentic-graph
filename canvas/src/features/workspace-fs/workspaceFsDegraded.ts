@@ -6,6 +6,7 @@ export const notifyWorkspaceFsDegraded = async (err: unknown) => {
       err && typeof err === 'object' && 'message' in err
         ? String((err as { message?: unknown }).message || '').trim()
         : ''
+    console.warn(`[workspace-fs] Persistence unavailable: ${msg || 'unknown storage error'}`)
     mod.useGraphStore.getState().pushUiToast({
       id: 'workspace-fs-persistence-disabled',
       kind: 'warning',

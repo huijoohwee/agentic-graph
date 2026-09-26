@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { preview } from 'vite'
 import { chromium } from 'playwright'
+import { expect } from 'playwright/test'
 import { tsImport } from 'tsx/esm/api'
 import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 
@@ -16,20 +17,24 @@ const { resolveViteRuntimeIdentity } = await tsImport('../viteChatProxyEnv.ts', 
 const { sourceRevision: revision } = resolveViteRuntimeIdentity(root)
 const sourceState = () => execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' })
 const before = sourceState(), output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-offline-${revision.slice(0, 12)}`))
+const port = Number(process.env.PYTHON_LEARNING_PROOF_PORT || 4198)
+assert.ok(Number.isInteger(port) && port >= 1024 && port <= 65535, 'offline proof port must be 1024..65535')
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 const { LEARNING_LESSONS: lessons } = await tsImport('../src/features/python-learning/learningLessons.ts', import.meta.url)
+const { LEARNING_LESSON_FILES: lessonFiles } = await tsImport('../src/features/python-learning/learningLessonFiles.ts', { parentURL: import.meta.url, tsconfig: join(canvas, 'tsconfig.json') })
 const manifest = JSON.parse(await readFile(join(canvas, 'dist', `learning-offline-manifest-${revision}.json`), 'utf8'))
 for (const file of manifest.files) {
   const bytes = await readFile(join(canvas, 'dist', file.path))
   assert.equal(bytes.length, file.bytes); assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256)
 }
-let server, browser, page
+let server, browser, page, evidenceWritten = false
+const consoleWarnings = []
 try {
   await mkdir(output, { recursive: true })
-  server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port: 4198, strictPort: true } })
-  const origin = 'http://127.0.0.1:4198', base = origin + '/agentic-graph/'
+  server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port, strictPort: true } })
+  const origin = `http://127.0.0.1:${port}`, base = origin + '/agentic-graph/'
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, hasTouch: true })
   // Controlled browser-host surface; production registers its actual validated lazy tools.
   // This proves application registration, not an experimental browser vendor API.
   await context.addInitScript(() => {
@@ -51,9 +56,67 @@ try {
     remote.push(url.origin + url.pathname); return route.abort()
   })
   page = await context.newPage(); page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (['warning', 'error'].includes(message.type())) consoleWarnings.push(message.text()) })
   page.on('requestfailed', request => failedRequests.push(new URL(request.url()).pathname))
   await page.goto(base + '?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), undefined, { timeout: 60000 })
+  await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
+  // Exercise the actual Source Files owner before the separate offline lesson proof.
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await dismissVisibleFloatingPanel(page)
+  const folder = page.getByRole('button', { name: 'Folder python-lessons', exact: true })
+  const docsFolder = page.getByRole('button', { name: 'Folder docs', exact: true })
+  await docsFolder.waitFor()
+  if (await docsFolder.locator('svg.lucide-chevron-right').count()) await docsFolder.click()
+  await folder.waitFor({ timeout: 30000 })
+  const firstFile = page.getByRole('button', { name: `File ${lessonFiles[0].name}`, exact: true })
+  if (!await firstFile.isVisible()) await folder.click()
+  const nativePane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
+  for (const file of lessonFiles) {
+    const row = page.getByRole('button', { name: `File ${file.name}`, exact: true })
+    assert.equal(await row.count(), 1, 'one native row per lesson')
+    assert.equal(await row.getAttribute('title'), file.path)
+    console.log('Opening native lesson:', file.path)
+    await row.click(); await nativePane.waitFor()
+    await page.waitForFunction(id => document.querySelector('select[aria-label="Python lesson"]')?.value === id, file.id)
+    assert.equal(await nativePane.getAttribute('data-learning-state'), 'idle', 'opening a source file never runs it')
+    await page.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
+  }
+  await nativePane.getByRole('button', { name: 'Run', exact: true }).click()
+  await page.locator('.python-learning[data-learning-state="completed"]').waitFor({ timeout: 15000 })
+  await nativePane.getByText(/Goal reached · 4\/4 checks/).waitFor()
+  const editedFile = lessonFiles[1], editedSource = '# Saved learner code 保留\nprint(42)\n'
+  await page.getByRole('button', { name: `File ${editedFile.name}`, exact: true }).click()
+  const nativeEditor = nativePane.getByRole('textbox', { name: 'Python source text', exact: true })
+  await page.waitForFunction(text => document.querySelector('textarea[aria-label="Python source text"]')?.value === text,
+    '# agentic-graph lesson: route\n' + lessons[1].solution)
+  await nativeEditor.fill(editedSource)
+  await nativePane.getByRole('button', { name: 'Save source', exact: true }).click()
+  // Save and indexing share a transient toast. Exact committed bytes own completion.
+  const awaitNativeStoredSource = () => expect.poll(() => page.evaluate(async ({ path, text }) => {
+    const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
+    if (!name) return false
+    return new Promise((resolve, reject) => {
+      const opening = indexedDB.open(name); opening.onerror = () => reject(opening.error)
+      opening.onsuccess = () => {
+        const db = opening.result, request = db.transaction('records', 'readonly').objectStore('records').getAll()
+        request.onerror = () => { db.close(); reject(request.error) }
+        request.onsuccess = () => { db.close(); resolve(request.result.some(record => record.key === 'entries\u0000' + path && record.id === path && record.collection === 'entries' && record.value.path === path && record.value.text === text)) }
+      }
+    })
+  }, { path: editedFile.path, text: editedSource }), { timeout: 15000 }).toBe(true)
+  await awaitNativeStoredSource()
+  assert.equal(await page.evaluate(path => JSON.parse(localStorage.getItem('kg:ui:markdown:workspace:sourcesByPath') || '{}')[path]?.kind, editedFile.path), 'local')
+  await page.reload({ waitUntil: 'domcontentloaded' }); await nativePane.waitFor({ timeout: 60000 })
+  await dismissVisibleFloatingPanel(page)
+  assert.equal(await page.evaluate(path => JSON.parse(localStorage.getItem('kg:ui:markdown:workspace:sourcesByPath') || '{}')[path]?.kind, editedFile.path), 'local')
+  await awaitNativeStoredSource()
+  await page.waitForFunction(text => document.querySelector('textarea[aria-label="Python source text"]')?.value === text, editedSource, { timeout: 30000 })
+  assert.equal(await nativeEditor.inputValue(), editedSource, 'native lesson save survives reload without replacing learner code')
+  assert.equal(await nativePane.getByLabel('Python lesson', { exact: true }).inputValue(), editedFile.id, 'markerless source keeps its file lesson')
+  await page.screenshot({ path: join(output, 'native-lesson-files.png'), fullPage: true })
+  await page.setViewportSize({ width: 375, height: 812 })
   await page.locator('input[type="file"][accept*=".py"]').setInputFiles({ name: 'learning.py', mimeType: 'text/plain', buffer: Buffer.from(lessons[0].solution) })
   const pane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
   await pane.waitFor({ timeout: 60000 })
@@ -109,7 +172,7 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   const editor = pane.getByRole('textbox', { name: 'Python source text', exact: true })
   const awaitSource = expected => page.waitForFunction(value => document.querySelector('textarea[aria-label="Python source text"]')?.value === value, expected, { timeout: 30000 })
-  const awaitStoredSource = expected => page.waitForFunction(async value => {
+  const awaitStoredSource = expected => expect.poll(() => page.evaluate(async value => {
     const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
     if (!name) return false
     return new Promise((resolve, reject) => {
@@ -120,7 +183,7 @@ try {
         request.onsuccess = () => { db.close(); resolve(request.result.some(record => record.collection === 'entries' && record.value.path?.endsWith('/learning.py') && record.value.text === value)) }
       }
     })
-  }, expected, { polling: 100, timeout: 15000 })
+  }, expected), { timeout: 15000 }).toBe(true)
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await awaitSource(lessons[0].solution)
   assert.equal(await editor.inputValue(), lessons[0].solution)
@@ -202,7 +265,7 @@ try {
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'native autosave survives offline reload')
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
-  await pane.getByText('3 matching debriefs', { exact: false }).waitFor()
+  await pane.getByText(`${lessons.length} matching debriefs`, { exact: false }).waitFor()
   await page.setViewportSize({ width: 1280, height: 900 })
   const paneWidth = (await pane.boundingBox()).width
   assert.ok(paneWidth < 768, 'native desktop Editor must exercise a narrow pane')
@@ -274,11 +337,16 @@ try {
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
   const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
-    toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
+    nativeLessonFilesProven: true, nativeLessonSaveReloadProven: true, toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
-  await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
+  await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
+  evidenceWritten = true
+  console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
 } catch (error) {
-  if (page) { console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState, serviceWorker: Boolean(navigator.serviceWorker?.controller) })).catch(() => ({}))); console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
+  console.error('Browser warnings:', consoleWarnings)
+  if (page) { console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState, serviceWorker: Boolean(navigator.serviceWorker?.controller) })).catch(() => ({}))); console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value.slice(0, 2000) })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
   throw error
 } finally { await browser?.close(); await new Promise(resolve => server?.httpServer.close(resolve) || resolve()) }
+
+assert.ok(evidenceWritten, 'full offline acceptance must write its evidence before success')

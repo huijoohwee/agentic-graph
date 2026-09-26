@@ -15,7 +15,7 @@ export async function dismissVisibleFloatingPanel(
 ) {
   const panel = floatingPanelCard(targetPage, floatingPanel)
   if (!(await panel.isVisible())) return false
-  await panel.getByRole('button', { name: 'Close', exact: true }).click({ timeout: 5000 })
+  await panel.getByRole('button', { name: 'Close', exact: true }).click({ timeout: 30000 })
   await panel.waitFor({ state: 'detached', timeout: 30000 })
   return true
 }

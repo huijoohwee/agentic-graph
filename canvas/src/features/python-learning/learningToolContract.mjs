@@ -3,7 +3,7 @@ export const PYTHON_LEARNING_OPERATIONS = Object.freeze(['validate', 'run', 'ste
 const digest = { type: 'string', pattern: '^[a-f0-9]{64}$' }
 const identity = {
   workspaceId: { type: 'string', minLength: 1, maxLength: 1024 }, documentId: { type: 'string', minLength: 1, maxLength: 1024 },
-  sourceDigest: digest, sceneDigest: digest, lessonId: { type: 'string', enum: ['travel', 'route', 'sense'] },
+  sourceDigest: digest, sceneDigest: digest, lessonId: { type: 'string', enum: ['travel', 'route', 'sense', 'drone'] },
   lessonRevision: { const: '1' }, runtimeRevision: { const: 'learning-python-1' }, seed: { const: 0 },
   expectedRunId: { anyOf: [{ type: 'null' }, { type: 'string', minLength: 1, maxLength: 64 }] },
 }
