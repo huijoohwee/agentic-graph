@@ -1,23 +1,23 @@
 ---
 title: "Spatial workspace and GameXR integration — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.0"
+version: "0.2.0"
 date: "2026-09-26"
 lang: "en-US"
 owner: "Spatial integration maintainer"
 continuity_id: "SPATIAL-GAMEXR-001"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
+prd_revision: "0.2.0"
+tad_revision: "0.2.0"
+adr_revision: "0.2.0"
+mvp_revision: "0.2.0"
+gtm_revision: "0.2.0"
 frontmatter_contract: "required"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
-lifecycle_status: "proposed"
+lifecycle_status: "in-progress"
 universal_scope: false
-worktree_id: "device-cba000d3779d--spatial-gamexr-plan"
+worktree_id: "device-cba000d3779d--spatial-review-core"
 agent_id: "codex-01a0dba4"
 guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.7.0"
 reviewed_source_revision: "d91de86b772825aaec70e773f902756b6fd16e25"
@@ -33,7 +33,7 @@ surfaces:
 
 # Spatial workspace and GameXR integration — reference implementation
 
-All five roles join **SPATIAL-GAMEXR-001@0.1.0**. This is the cross-runtime extension plan,
+All five roles join **SPATIAL-GAMEXR-001@0.2.0**. This is the cross-runtime extension plan,
 not evidence that either application's scene format can already execute the other's proposals.
 The [spatial review owner](agentic-graph-spatial-workspace-prd-tad-adr-mvp-gtm.md),
 `SPATIAL-WORKSPACE-001@0.9.0`, retains Graph's transaction and geometry requirements.
@@ -46,7 +46,32 @@ Intent: make those capabilities discoverable without confusing a simulation, a p
 observation with an accepted edit. Directive: reuse existing owners, expose unsupported seams,
 then implement one reversible game-manifest edit. Role/action/outcome: the spatial integration
 maintainer grounds the boundaries and sequences checked source changes. Contributor invocation:
-`/change #spatial-gamexr-plan @codex-01a0dba4`; this is not a new product route.
+`/change #spatial-review-core @codex-01a0dba4`; this is not a new product route.
+
+## Implementation progress — reference implementation
+
+R1 now extracts canonical JSON, SHA-256, recursive freeze, UTF-8 budget, refusal and value
+comparison policy into `grph-shared/spatial-review`. Graph's model imports that export and
+retains its domain-specific edits, geometry, receipt validation and commit owner. Existing
+helper exports remain contract-only re-exports; there is no second implementation.
+The package additionally exposes owner/schema/document/session/revision-qualified identities
+and a capability guard. Source tokens grant no approval. Foreign owners, stale identities,
+unknown capabilities and forged approval fields fail before consumer effects.
+
+The package builds without Canvas or renderer imports. Four new package tests and all 26
+unchanged Graph spatial tests pass locally. R1 is a local candidate pending protected
+integration; the immutable consumer archive will be generated only from its merged revision.
+R2/R3 remain unimplemented, and GX1–GX6 do not become satisfied merely by this extraction.
+R4 remains open with zero completed human sessions. The inventory below remains a historical
+observation at its explicitly named source revisions; its formerly absent export is supplied
+by this R1 candidate. Source delta is bounded to six files, one runtime module (replacing inline helpers), one test
+module and one build projection script. `grph-shared/scripts/pack-spatial-review.mjs` creates
+an internal `@agentic-graph/spatial-review@0.1.0` archive from that exact built module and
+records its source SHA and source-byte digest. It contains no second policy implementation,
+renderer, transitive dependency or network service. Build it twice from the protected R1
+revision and compare archive bytes before admission. Its separate identity deliberately
+leaves X's older flight and persisted strategy package contracts pinned; it is not an alias
+for those packages. This narrows A2's immutable-package delivery without forking its source.
 
 ## Codebase grounding — reference implementation
 
