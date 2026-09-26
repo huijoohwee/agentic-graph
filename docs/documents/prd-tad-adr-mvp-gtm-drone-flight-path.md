@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.3
+version: 1.4.4
 date: 2026-09-26
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -393,3 +393,24 @@ joined production-complete lifecycle carrier and live readback close delivery.
 Preserve the existing rollback identity and saved learner files. Scope refresh:
 four pin/handover files, at most 12 KiB, zero new dependencies; a 15-minute active
 integration/preparation sprint, with CI dependency waits reported separately.
+
+## Native panel readiness — 1.4.4
+
+Protected PR1315 run `36252038106` failed before opening a lesson: the actual
+floating-panel Close action did not become actionable within its five-second
+click budget during production startup. The shared UI smoke owner now uses the
+same 30-second budget as its existing panel-detachment check. It still clicks
+the real control and requires the panel to detach before proceeding; no forced
+click, assertion skip, source-module hook or alternate close path is added.
+The full lesson/offline acceptance remains required on the exact catalog pair.
+PR1316's redundant pending gate was canceled; both published heads and the exact
+failure diagnostics are retained. Two owner files, at most 4 KiB source growth,
+zero runtime dependencies; a five-minute local proof sprint precedes the new
+protected review. External CI and candidate approval retain separate evidence.
+
+The fresh normal-production-build local browser proof passed against the promoted
+OS docs revision: all four native lesson files retained exact Unicode edits across
+Save/reload, all offline lesson outcomes passed, shared tool registration and
+light/Monaco round trips passed, and missing assets blocked navigation. The proof
+wrote its final evidence receipt with no page errors. Protected CI remains the
+independent integration requirement; this does not prove Production activation.
