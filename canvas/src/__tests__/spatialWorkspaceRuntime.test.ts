@@ -233,3 +233,49 @@ test('review follows late local source binding, graph replacement and physics re
     assert.equal(useGraphStore.getState().markdownDocumentText, source)
   } finally { await unmountReactRoot(root); environment.restore() }
 })
+
+test('native local import preserves an explicit XR surface when the graph includes widgets', async () => {
+  const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
+  const { mountReactRoot, unmountReactRoot } = await import('@/tests/lib/reactRootHarness')
+  const { useWorkspaceFileActionsCore } = await import('../features/markdown-workspace/useWorkspaceFileActions/core')
+  const { createMemoryWorkspaceFs } = await import('../features/workspace-fs/workspaceFsMemory')
+  const { waitForCanvasFrontmatterSurfaceTransition } = await import('../features/parsers/canvasFrontmatterSurfaceTransition')
+  const React = await import('react'), { createRoot } = await import('react-dom/client')
+  const environment = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
+  const root = createRoot(environment.dom.window.document.getElementById('root')!)
+  const source = install().replace('---\n', '---\nkgCanvasSurfaceMode: 3d\nkgCanvasRenderMode: 3d\nkgCanvas3dMode: xr\n')
+  const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/spatial-unit.md', parentPath: '/', kind: 'file', name: 'spatial-unit.md', text: source, updatedAtMs: 1 }] })
+  const graph = useGraphStore.getState().graphData!
+  useGraphStore.setState({ canvasRenderMode: '3d', canvas3dMode: 'xr', markdownDocumentText: source,
+    graphData: { ...graph, nodes: [{ id: 'scene', type: 'Document', label: 'Scene', properties: {} }], metadata: { ...graph.metadata, 'flow:widgetRegistry': [{ id: 'scene', type: 'Document' }] } } })
+  let actions: ReturnType<typeof useWorkspaceFileActionsCore> | undefined
+  const noOp = () => {}
+  function Harness() {
+    actions = useWorkspaceFileActionsCore({ getFs: async () => fs, refresh: async () => ({ entries: [], sourcesByPath: {} }),
+      openedPath: null, selectionPath: null, selectionEntryKind: null, activeDocumentKey: '', activeDocumentSourceUrl: null,
+      setActiveText: noOp, setEntries: noOp, lastLoadedRef: { current: null }, setExpandedPaths: noOp,
+      setActivePathSafe: noOp, setSelectionPathSafe: noOp, setActiveMarkdownDocument: async () => true,
+      applyMarkdownDocumentToGraph: async () => true })
+    return null
+  }
+  const unwantedModes: string[] = []
+  const unsubscribe = useGraphStore.subscribe((next, before) => {
+    if (next.canvasRenderMode !== before.canvasRenderMode && next.canvasRenderMode === '2d') unwantedModes.push('2d')
+  })
+  try {
+    await mountReactRoot(root, React.createElement(Harness))
+    await React.act(async () => { await actions!.focusAfterImport('/spatial-unit.md', { applyToGraph: true }); await waitForCanvasFrontmatterSurfaceTransition() })
+    assert.deepEqual(unwantedModes, [], 'generic widget fallback must never replace authored XR intent')
+    assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
+    assert.equal(useGraphStore.getState().canvas3dMode, 'xr')
+    assert.equal(await fs.readFileText('/spatial-unit.md'), source)
+    const implicitSource = source.replace('kgCanvasSurfaceMode: 3d\nkgCanvasRenderMode: 3d\nkgCanvas3dMode: xr\n', '')
+    for (const header of ['', 'kgCanvasSurfaceMode: 2d\n']) {
+      await fs.writeFileText('/spatial-unit.md', implicitSource.replace('---\n', `---\n${header}`))
+      useGraphStore.setState({ canvasRenderMode: '3d' })
+      await React.act(async () => { await actions!.focusAfterImport('/spatial-unit.md', { applyToGraph: true }); await waitForCanvasFrontmatterSurfaceTransition() })
+      assert.equal(useGraphStore.getState().canvasRenderMode, '2d', 'implicit and explicit 2D widget imports retain their fallback')
+      assert.equal(useGraphStore.getState().canvas2dRenderer, 'storyboard')
+    }
+  } finally { unsubscribe(); await unmountReactRoot(root); environment.restore() }
+})
