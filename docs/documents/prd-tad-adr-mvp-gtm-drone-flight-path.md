@@ -1,8 +1,8 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.4
-date: 2026-09-26
+version: 1.4.5
+date: 2026-09-27
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
 status: implementation
@@ -414,3 +414,23 @@ Save/reload, all offline lesson outcomes passed, shared tool registration and
 light/Monaco round trips passed, and missing assets blocked navigation. The proof
 wrote its final evidence receipt with no page errors. Protected CI remains the
 independent integration requirement; this does not prove Production activation.
+
+## Source startup ownership — 1.4.5
+
+Protected PR1317 run `36253126975` passed the complete standard plan, including
+the native lesson/offline browser acceptance. The extended mission smoke then
+failed its unchanged-authored-workspace check: mounting Explorer installed lesson
+files after source bootstrap had declared readiness. Installation now runs through
+the awaited source startup owner before its entries snapshot. The redundant
+Explorer installer is removed; opening Explorer cannot introduce lesson files or
+reorder the authored source list. Existing files, edits and deletions remain owned
+by the learner, and collisions fail startup without replacing bytes. Lesson source
+stays lazily imported; no flight runs during initialization.
+
+The existing bootstrap regression now checks awaited lesson discovery, retained
+Unicode edits/deletions, collision rejection and active-source drift. The unchanged
+mission inspection assertion and normal production lesson/offline proof must pass
+before publication. Scope: five files, at most 8 KiB changed bytes, zero dependencies;
+15 active minutes for repair/local proof, with protected CI as a separate dependency.
+PR1317 and its exact failure artifacts are retained. Integration, canonical runtime,
+private handover and candidate-bound human authorization remain separate receipts.

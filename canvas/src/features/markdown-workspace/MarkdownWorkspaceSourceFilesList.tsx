@@ -23,7 +23,6 @@ import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourc
 import { DASHBOARD_TEMPLATE_PATH, DASHBOARD_TEMPLATE_ROOT, readDashboardTemplate } from '@/components/DashboardCanvas/dashboardTemplateSource'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
-import { PythonLearningDemoSourceFile } from '@/features/python-learning/PythonLearningDemoSourceFile'
 
 type MarkdownWorkspaceSourceFilesListProps = {
   search?: string
@@ -155,7 +154,6 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       <SourceFilesOwnershipSummary onOpenTemplate={() => void openTemplate()} templateBusy={templateBusy} />
       {templateError && <p role="status" className={`px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>{templateError}</p>}
       <AgentMissionSourceFile search={props.search} />
-      <PythonLearningDemoSourceFile />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
         : <MarkdownFileTree
