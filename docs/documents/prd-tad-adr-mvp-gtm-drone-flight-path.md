@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.6
+version: 1.4.7
 date: 2026-09-27
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -459,3 +459,29 @@ round trips, tool registration and missing-asset rejection. The artifact's runti
 revision is `ea93888c30aa6dc1b4790aa2870b9e8358ba301e`; only this verifier and planning
 document changed during that proof. The final protected head remains independently
 required; no deployment, native device session or human authorization is inferred.
+
+## Captured schema reconciliation — 1.4.7
+
+Development: PR1318 integrated as protected main
+`e71e96d1d916eeda98e78e083df814a6d1593dd8`; exact head/main Integration checks
+passed. Canonical sync, locked install and native turn:end bound that source to OS
+`e0ef770860905830157e64c455f0a342084b6d25`. Source completion, recovery retirement
+and predecessor dispositions passed with branches and learner bytes preserved.
+
+Production Release36267574685 stopped before authorization or mutation: publish
+parity passed, but the captured schema map contained309 document nodes for310
+canonical files, missing this drone plan. The release preparation owner now runs
+the existing captured schema generator against explicit exact-source docs/map
+paths, after checking source HEAD and clean docs, before the unchanged parity gate.
+Only the ephemeral captured schema checkout changes; no provider write, new
+generator, mirror hotfix or parity exemption is introduced. The protected release
+still binds the captured guideline revision and independently authorizes activation.
+
+PRD/MVP acceptance retains all drone, native file, replay and offline outcomes.
+TAD/ADR assigns reconciliation to preparation, using the existing schema owner;
+the focused workflow regression checks ordering, exact paths and read-only provider
+permissions. A local native-generator proof uses the failed run's captured schema
+revision and verifies a zero-diff second check. GTM delivery remains pending new
+protected integration, canonical review, candidate preparation, human terminal
+authorization and joined live receipts. Three files, at most6KiB changed content,
+zero dependencies;15 active minutes for repair/proof, external CI waits separate.
