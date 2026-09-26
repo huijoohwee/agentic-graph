@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.0
+version: 1.4.1
 date: 2026-09-26
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -322,3 +322,15 @@ GTM: expand docs → python-lessons, open a file, edit and Run. Use its existing
 cloud indicator after sign-in to sync across devices; offline edits remain local
 until explicitly synced. Learning gains remain unmeasured. Rollback restores the
 prior launcher without deleting saved files. Evidence: external lesson-files-* logs.
+
+## Canvas replay clock correction — 1.4.1
+
+Protected CI for PR1313 completed the drone's four flight criteria but exposed a
+first-frame replay failure: an animation timestamp can precede the effect's
+`performance.now()` clock. A negative tick selected an undefined pose and stopped
+the shared iframe. The existing replay owner now bounds elapsed ticks at zero,
+including after Pause/Resume, while retaining the final-frame bound. A focused
+regression exercises the earlier timestamp, resume offset, ordinary advance and
+final clamp; the native browser smoke must still replay the copied embed to tick
+540 and reset it. Published predecessors remain immutable. Integration,
+production activation and ADLC delivery require their separate exact receipts.

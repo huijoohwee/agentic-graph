@@ -10,6 +10,15 @@ import { resolveWebMcpToolScope } from '../features/agent-ready/webMcpToolExposu
 import { LearningSimulation } from '../features/python-learning/learningSimulation'
 import { inspectDroneBenchLog, DRONE_BENCH_LOG_BYTES } from '../features/python-learning/learningDroneBenchLog'
 import { LEARNING_LESSON_FILES, LEARNING_LESSON_FOLDER, ensureLearningLessonFiles, sourceLearningLesson } from '../features/python-learning/learningLessonFiles'
+import { learningCanvasReplayTick } from '../features/python-learning/learningCanvasReplay'
+
+test('Canvas replay retains a valid pose when its first frame precedes the effect clock', () => {
+  assert.equal(learningCanvasReplayTick(100, 99, 0, 540), 0)
+  assert.equal(learningCanvasReplayTick(100, 99, 120, 540), 120)
+  assert.equal(learningCanvasReplayTick(100, 100, 0, 540), 0)
+  assert.equal(learningCanvasReplayTick(100, 1100, 120, 540), 180)
+  assert.equal(learningCanvasReplayTick(100, 10000, 0, 540), 540)
+})
 
 test('native lesson folder preserves edits, migrated roots and deletions across reload', async () => {
   const { createMemoryWorkspaceFs } = await import('../features/workspace-fs/workspaceFsMemory')

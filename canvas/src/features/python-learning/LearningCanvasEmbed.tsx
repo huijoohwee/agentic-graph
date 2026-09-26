@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { LearningSceneGeometry } from './LearningSceneGeometry'
 import { applyLearningCameraPose } from './learningCameraPose'
 import { learningLesson } from './learningLessons'
+import { learningCanvasReplayTick } from './learningCanvasReplay'
 import { LEARNING_CANVAS_PROTOCOL, learningCanvasScene, readLearningCanvasPose, readLearningCanvasShare, type LearningCanvasPose } from './learningCanvasEmbedProtocol'
 function CameraControls() {
   const { camera, gl, invalidate, size } = useThree()
@@ -39,7 +40,7 @@ export default function LearningCanvasEmbed() {
     const started = performance.now(), first = pose[0]
     let frame = 0
     const advance = (now: number) => {
-      const tick = Math.min(samples.length - 1, first + Math.floor((now - started) * 60 / 1000))
+      const tick = learningCanvasReplayTick(started, now, first, samples.length - 1)
       setPose(samples[tick])
       if (tick === samples.length - 1) setPlaying(false)
       else frame = requestAnimationFrame(advance)
