@@ -17,18 +17,22 @@ export function SpatialWorkspaceReview() {
     files: state.sourceFiles, graph: state.graphData, revision: state.graphContentRevision,
     indexing: state.markdownWorkspaceIndexingInFlight, layoutLock: state.workspaceGraphMutationLayoutLockActive,
     blockedUntil: state.workspaceGraphMutationBlockUntilMs, workspace: state.workspaceViewMode, pane: state.workspaceCanvasPaneOpen })))
-  const [snapshot, setSnapshot] = React.useState<Awaited<ReturnType<typeof inspectSpatialWorkspace>> | null>(null)
   const [selected, setSelected] = React.useState('')
   const [position, setPosition] = React.useState('')
   const [scale, setScale] = React.useState('1')
   const [result, setResult] = React.useState<SpatialResult | null>(null)
   const [working, setWorking] = React.useState(false)
   const [refresh, setRefresh] = React.useState(0)
+  const inspectionContext = React.useMemo(() => ({ source, ready, motionRevision: motion.revision, physicsRevision: physics.revision, refresh }),
+    [source, ready, motion.revision, physics.revision, refresh])
+  const [inspection, setInspection] = React.useState<{ context: typeof inspectionContext; snapshot: Awaited<ReturnType<typeof inspectSpatialWorkspace>> } | null>(null)
+  const snapshot = inspection?.snapshot ?? null
+  const inspectionCurrent = inspection?.context === inspectionContext
   React.useEffect(() => {
     let active = true
-    void inspectSpatialWorkspace().then(next => { if (active) setSnapshot(next) })
+    void inspectSpatialWorkspace().then(next => { if (active) setInspection({ context: inspectionContext, snapshot: next }) })
     return () => { active = false }
-  }, [source, ready, motion.revision, physics.revision, refresh])
+  }, [inspectionContext])
   React.useEffect(() => {
     const remaining = Number(source.blockedUntil || 0) - Date.now()
     if (!Number.isFinite(remaining) || remaining <= 0) return
@@ -54,7 +58,7 @@ export function SpatialWorkspaceReview() {
     <p>Preview position or scale edits, then apply the exact change. Bounds are approximate; physical correspondence is unknown.</p>
     {snapshot && !snapshot.ok && <><p role="status">{snapshot.message}</p><button type="button" className="min-h-11 rounded border px-3" onClick={() => setRefresh(value => value + 1)}>Refresh inspection</button></>}
     {snapshot?.ok && 'provenance' in snapshot && <p>Authored positions · metres. Simulated bounds · approximate. {snapshot.provenance.observation ? `Imported observation · ${snapshot.provenance.observation.availability} · ${snapshot.provenance.observation.units} · physical scale unknown.` : 'No observation linked.'}</p>}
-    {!proposal && <fieldset disabled={working || review.preparing || !snapshot?.ok} className="grid min-w-0 gap-2">
+    {!proposal && <fieldset disabled={working || review.preparing || !inspectionCurrent || !snapshot?.ok} className="grid min-w-0 gap-2">
       <label className="grid gap-1">Object<select aria-label="Review object" value={subject?.id || ''} onChange={event => setSelected(event.target.value)} className="min-h-11 rounded border bg-transparent p-1">
         {subjects.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
       </select></label>

@@ -200,6 +200,18 @@ test('review refreshes when source hydration releases its mutation fence without
     assert.equal(container.querySelector('fieldset')?.disabled, true)
     await React.act(async () => { await new Promise(resolve => setTimeout(resolve, 130)) }); await flush()
     assert.equal(container.querySelector('fieldset')?.disabled, false)
+    const digest = crypto.subtle.digest.bind(crypto.subtle)
+    let release: () => void = () => {}
+    const pending = new Promise<void>(resolve => { release = resolve })
+    crypto.subtle.digest = async (...args: Parameters<SubtleCrypto['digest']>) => { await pending; return digest(...args) }
+    try {
+      const displayedPosition = container.querySelector<HTMLInputElement>('[aria-label="Proposed position"]')!.value
+      await React.act(async () => { useGraphStore.setState({ graphData: { ...useGraphStore.getState().graphData! } }) })
+      assert.equal(container.querySelector('fieldset')?.disabled, true, 'old inspection cannot enable controls while a fresh identity is pending')
+      assert.equal(container.querySelector<HTMLInputElement>('[aria-label="Proposed position"]')!.value, displayedPosition, 'pending inspection retains the displayed draft')
+      release(); await flush()
+      assert.equal(container.querySelector('fieldset')?.disabled, false)
+    } finally { release(); crypto.subtle.digest = digest }
     assert.equal(useGraphStore.getState().markdownDocumentText, source)
   } finally { await unmountReactRoot(root); environment.restore() }
 })
