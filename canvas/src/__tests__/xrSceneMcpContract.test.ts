@@ -187,7 +187,9 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
   }
   assert(control, 'expected the browser-local XR scene control contract')
 
-  const physicsSchema = control.inputSchema?.properties?.physics as JsonSchema | undefined
+  const legacySchema = control.inputSchema?.oneOf?.[0] as JsonSchema | undefined
+  assert(control.inputSchema?.oneOf?.[1]?.properties?.action?.const === 'preview', 'agent scene contract must expose detached preview')
+  const physicsSchema = legacySchema?.properties?.physics as JsonSchema | undefined
   assert(physicsSchema?.oneOf?.length === 17, `expected seventeen operation-specific XR physics schemas, got ${physicsSchema?.oneOf?.length || 0}`)
   const operationSchema = (scope: string, operation: string): JsonSchema | undefined => physicsSchema.oneOf?.find(schema => (
     schema.properties?.scope?.const === scope && schema.properties?.operation?.const === operation
@@ -202,7 +204,7 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
 
   assert(operationSchema('controller', 'step')?.properties?.ticks?.maximum === 240, 'controller stepping must share the bounded physics tick schema')
 
-  const sceneControlSchema = control.inputSchema as JsonSchema | undefined
+  const sceneControlSchema = legacySchema
   assert(sceneControlSchema?.oneOf?.length === 9, `expected invocation plus eight structured XR action schemas, got ${sceneControlSchema?.oneOf?.length || 0}`)
   const physicsActionSchema = sceneControlSchema.oneOf?.find(schema => schema.properties?.action?.const === 'physics')
   const transformActionSchema = sceneControlSchema.oneOf?.find(schema => schema.properties?.action?.const === 'transform')
@@ -216,6 +218,10 @@ function assertWebMcpSchemasAndReadOnlyProjection(): void {
     && Object.keys(invocationSchema.properties || {}).join('|') === 'invocation', 'expected invocation calls to reject contradictory structured action fields')
 
   const validateControl = new Ajv2020({ allErrors: true, strict: true }).compile(control.inputSchema)
+  const preview = { action: 'preview', expectedToken: 'a'.repeat(64), edits: [{ subjectId: 'box', position: [0, 0, 0] }] }
+  assert(validateControl(preview), 'agent scene schema accepts a bounded detached preview')
+  assert(!validateControl({ ...preview, approved: true }), 'agent scene schema rejects forged approval')
+  assert(!validateControl({ ...preview, edits: [{ subjectId: 'box', rotationYDegrees: 90 }] }), 'agent scene schema rejects unsupported edits')
   assert(validateControl({ action: 'physics', physics: { scope: 'controller', operation: 'step', ticks: 240 } }), 'controller step schema must accept its upper bound')
   for (const ticks of [0, 241, 1.5, '1', null]) {
     assert(!validateControl({ action: 'physics', physics: { scope: 'controller', operation: 'step', ticks } }), 'controller step schema must reject invalid ticks')
@@ -345,51 +351,21 @@ export async function assertXrScenePhysicsWebMcpLifecycle(args: Readonly<{
   inspect: () => Promise<unknown>
   subjectId: string
 }>): Promise<void> {
-  assert(args.subjectId, 'expected a placed XR subject before exercising physics WebMCP')
-  const inspection = await args.inspect() as { invocationGrammar?: { physicsController?: string } }
-  assert(inspection.invocationGrammar?.physicsController?.includes('|step')
-    && inspection.invocationGrammar.physicsController.includes('ticks=<1..240>'), 'scene inspection must advertise bounded controller stepping')
-  const transformed = await args.control({ invocation: `/xr.transform @${encodeURIComponent(args.subjectId)} #transform asset=prop-ball position=1,0,-2 rotation=30 scale=1.25 color=#38bdf8` })
-  const staged = await args.control({ action: 'stage', stageId: 'tropical-playground' })
-  const invalidSemantics = await args.control({ invocation: '/xr.physics @canvas #world #body operation=play' })
-  const attached = await args.control({ invocation: `/xr.physics @canvas #body operation=attach subject=${encodeURIComponent(args.subjectId)} mode=dynamic mass=2 friction=0.4 restitution=0.2 damping=0.1` })
-  const played = await args.control({ invocation: '/xr.physics @canvas #world operation=play' })
-  const rejectedSceneEdit = await args.control({ action: 'remove', subjectId: 'missing-subject' })
-  const afterRejectedEdit = await args.inspect()
-  const impulse = await args.control({ action: 'physics', physics: { scope: 'impulse', operation: 'impulse', subjectId: args.subjectId, impulse: [0, 3, -1] } })
-  const stopped = await args.control({ invocation: '/xr.physics @canvas #world operation=stop' })
-  const controllerStarted = await args.control({ invocation: '/xr.physics @canvas #controller operation=develop-run mode=ball' })
-  const controllerSelected = await args.control({ action: 'physics', physics: { scope: 'controller', operation: 'select', controllerMode: 'rocket' } })
-  const rejectedStep = await args.control({ invocation: '/xr.physics @canvas #controller operation=step' })
-  const pausedController = await args.control({ invocation: '/xr.physics @canvas #controller operation=pause' })
-  const steppedController = await args.control({ action: 'physics', physics: { scope: 'controller', operation: 'step', ticks: 2 } })
-  const controllerState = (value: unknown) => (value as { scene?: { physics?: { controllerDemo?: { phase?: string; frame?: { stepCount?: number } } } } }).scene?.physics?.controllerDemo
-  assert((rejectedStep as { ok?: boolean }).ok === false, 'WebMCP must reject stepping a running controller')
-  assert((steppedController as { ok?: boolean }).ok === true
-    && controllerState(steppedController)?.phase === 'paused'
-    && controllerState(steppedController)?.frame?.stepCount === Number(controllerState(pausedController)?.frame?.stepCount) + 2,
-  'WebMCP must advance exactly the requested paused physics ticks')
-  const controllerExited = await args.control({ invocation: '/xr.physics @canvas #controller operation=exit' })
-  assert((invalidSemantics as { ok?: unknown }).ok === false, 'expected duplicate XR physics semantics to fail closed')
-  const transformedSubject = (transformed as { scene?: { runtime?: { subjects?: Array<Record<string, unknown>> } } }).scene?.runtime?.subjects?.find(subject => subject.id === args.subjectId)
-  assert((transformed as { ok?: unknown }).ok === true
-    && Array.isArray(transformedSubject?.position)
-    && transformedSubject?.rotationYDegrees === 30
-    && transformedSubject?.assetId === 'prop-ball'
-    && transformedSubject?.scale === 1.25
-    && transformedSubject?.color === '#38bdf8', 'expected / @ # subject transforms to persist through the canonical scene owner')
-  assert((staged as { scene?: { runtime?: { stageId?: unknown }; physics?: { controllerDemo?: { terrainId?: unknown } } } }).scene?.runtime?.stageId === 'tropical-playground'
-    && (staged as { scene?: { physics?: { controllerDemo?: { terrainId?: unknown } } } }).scene?.physics?.controllerDemo?.terrainId === 'tropical-playground', 'expected stage control to synchronize the canonical plan and native controller terrain atomically')
-  assert((rejectedSceneEdit as { ok?: unknown }).ok === false
-    && (afterRejectedEdit as { physics?: { phase?: unknown } }).physics?.phase === 'playing', 'expected rejected XR scene edits to preserve active dynamics')
-  assert((attached as { ok?: unknown; scene?: { physics?: { world?: { bodies?: Record<string, unknown> } } } }).ok === true
-    && Boolean((attached as { scene?: { physics?: { world?: { bodies?: Record<string, unknown> } } } }).scene?.physics?.world?.bodies?.[args.subjectId])
-    && (played as { scene?: { physics?: { phase?: unknown } } }).scene?.physics?.phase === 'playing'
-    && (impulse as { ok?: unknown }).ok === true
-    && (stopped as { scene?: { physics?: { phase?: unknown } } }).scene?.physics?.phase === 'stopped', 'expected XR WebMCP attach/play/impulse/stop parity')
-  assert((controllerStarted as { scene?: { physics?: { controllerDemo?: { phase?: unknown } } } }).scene?.physics?.controllerDemo?.phase === 'running'
-    && (controllerSelected as { scene?: { physics?: { controllerDemo?: { mode?: unknown } } } }).scene?.physics?.controllerDemo?.mode === 'rocket'
-    && (controllerExited as { scene?: { physics?: { controllerDemo?: { phase?: unknown } } } }).scene?.physics?.controllerDemo?.phase === 'off', 'expected XR WebMCP native controller launch/select/exit parity')
+  const before = await args.inspect() as { runtime?: unknown; physics?: unknown }
+  for (const input of [
+    { invocation: '/xr.transform @box #transform position=1,0,0' },
+    { action: 'stage', stageId: 'tropical-playground' },
+    { action: 'place', assetId: 'prop-crate' },
+    { action: 'remove', subjectId: 'box' },
+    { invocation: '/xr.physics @canvas #world operation=play' },
+    { invocation: '/xr.physics @canvas #controller operation=develop-run' },
+  ]) {
+    const result = await args.control(input) as { ok?: boolean; code?: string }
+    assert(result.ok === false && result.code === 'approval-required', 'agent mutation must stop at the operator review boundary')
+  }
+  const after = await args.inspect() as typeof before
+  assert(JSON.stringify(before.runtime) === JSON.stringify(after.runtime)
+    && JSON.stringify(before.physics) === JSON.stringify(after.physics), 'refused agent calls preserve scene and physics')
 }
 
 export function testXrSceneMcpContractCatalogSchemasAndCleanRoom(): void {

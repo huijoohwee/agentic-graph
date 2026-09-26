@@ -14,7 +14,7 @@ import { parsePdfWorkspaceFrontmatter } from '@/lib/pdf/pdfWorkspaceFrontmatter'
 import { fetchPdfWorkspaceDoc } from '@/lib/pdf/pdfWorkspaceClient'
 import { setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { syncWorkspaceTextState } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
-import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import { applyCanvasFrontmatterPreset, resolveCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
 import {
   requestCanvasFrontmatterGeospatialSurface,
 } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
@@ -226,12 +226,18 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
         await loadGraphDataFromTextViaParser(inner.nameForParse, resolvedText, { applyToStore: true })
       }
 
+      const preset = resolveCanvasFrontmatterPreset({ graphData: useGraphStore.getState().graphData, rawText: resolvedText })
+      const hasExplicitSurface = Boolean(
+        (preset?.canvasSurfaceMode && preset.canvasSurfaceMode !== '2d') || preset?.canvasRenderMode === '3d' || preset?.canvas3dMode
+        || (preset?.canvas2dRenderer && preset.canvas2dRenderer !== 'storyboard'),
+      )
       try {
         applyCanvasFrontmatterPreset({
+          preset,
           graphData: useGraphStore.getState().graphData,
           rawText: resolvedText,
         })
-        activateStrybldrImportSurface({
+        if (!hasExplicitSurface) activateStrybldrImportSurface({
           graphData: useGraphStore.getState().graphData,
           rawText: resolvedText,
         })
@@ -256,15 +262,18 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
           status.setStatusWarning(UI_COPY.baselineLockedToast, { ttlMs: UI_TOAST_TTL_MS.warningExtended, dismissible: true })
           return
         }
-        const schema = store.schema
-        if (schema) {
-          const { enableHandlesForAllInputsInSchema } = (await import('@/lib/storyboardWidget/storyboardWidgetActions')) as typeof import('@/lib/storyboardWidget/storyboardWidgetActions')
-          const res = enableHandlesForAllInputsInSchema(schema)
-          if (res.changed) store.setSchema(res.schema)
+        // Widget presence is only a fallback; authored XR/Geo/renderer intent owns the surface.
+        if (!hasExplicitSurface) {
+          const schema = store.schema
+          if (schema) {
+            const { enableHandlesForAllInputsInSchema } = (await import('@/lib/storyboardWidget/storyboardWidgetActions')) as typeof import('@/lib/storyboardWidget/storyboardWidgetActions')
+            const res = enableHandlesForAllInputsInSchema(schema)
+            if (res.changed) store.setSchema(res.schema)
+          }
+          store.setCanvasRenderMode('2d')
+          store.setCanvas2dRenderer('storyboard')
+          await requestCanvasFrontmatterGeospatialSurface(false)
         }
-        store.setCanvasRenderMode('2d')
-        store.setCanvas2dRenderer('storyboard')
-        await requestCanvasFrontmatterGeospatialSurface(false)
         store.setWorkspaceViewMode('canvas')
         return
       }

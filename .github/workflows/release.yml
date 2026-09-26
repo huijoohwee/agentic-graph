@@ -32,10 +32,7 @@ jobs:
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, path: huijoohwee } }
       - { name: Capture production mirror base revision, id: mirror_revision, working-directory: huijoohwee, run: 'echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"' }
       - { name: Checkout schema mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee.github.io, path: huijoohwee.github.io } }
-      - name: Capture execution guideline revision
-        id: guideline_revision
-        working-directory: huijoohwee.github.io
-        run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - { name: Capture execution guideline revision, id: guideline_revision, working-directory: huijoohwee.github.io, run: 'echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"' }
       - { name: Setup Node, uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" } }
       - { name: Setup Python, uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 , with: { python-version: '3.11' } }
       - name: Install dependencies
@@ -103,18 +100,16 @@ jobs:
         working-directory: agentic-graph
         env: { AGENTIC_OS_SOURCE_REVISION: '${{ inputs.source_sha }}', VITE_AGENTIC_OS_STORAGE_BASE_URL: 'https://airvio.co', VITE_AGENTIC_OS_OBSERVATION_PATH: '/agentic-commerce-os/fulfillment/', VITE_AGENTIC_OS_SESSION_PATH: '/agentic-commerce-os/fulfillment/session', VITE_AGENTIC_OS_CSRF_HEADER: 'x-commerce-csrf' }
         run: npm run pages:build-sync
+      - { name: Resolve reviewed GameXR source, id: gamexr_source, working-directory: agentic-graph, run: 'node scripts/production-gamexr.mjs resolve >> "$GITHUB_OUTPUT"' }
+      - { name: Checkout reviewed GameXR source, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: huijoohwee/GameXR, ref: '${{ steps.gamexr_source.outputs.revision }}', path: GameXR } }
+      - { name: Admit verified GameXR artifact, working-directory: agentic-graph, env: { GH_TOKEN: '${{ github.token }}' }, run: 'node scripts/production-gamexr.mjs prepare' }
       - { name: Verify source-to-mirror parity, working-directory: agentic-graph, run: 'npm run conflict:mirror:check' }
       - { name: Build Pages functions, working-directory: agentic-graph, run: 'npm run pages:functions:build' }
       - { name: Verify complete mirror runtime seal before activation, working-directory: huijoohwee, run: 'npm run runtime:check' }
       - { name: Create verified mirror artifact manifest, working-directory: agentic-graph, run: 'npm run --silent production:mirror-artifact:create -- ../huijoohwee' }
-      - name: Prepare isolated browser candidate
-        working-directory: agentic-graph
-        run: node scripts/production-browser-preflight.mjs prepare
+      - { name: Prepare isolated browser candidate, working-directory: agentic-graph, run: 'node scripts/production-browser-preflight.mjs prepare' }
       - { name: Retain browser attempt before execution, uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: '${{ steps.browser_history.outputs.artifact_name }}', path: '${{ github.workspace }}/browser-preflight/context.json', if-no-files-found: error, retention-days: 90 } }
-      - name: Run isolated browser gate before production authorization
-        id: browser_gate
-        working-directory: agentic-graph
-        run: node node_modules/agentic-os/bin/agentic-os.mjs flight gate --operation=production-activation --context="$GITHUB_WORKSPACE/browser-preflight/context.json"
+      - { name: Run isolated browser gate before production authorization, id: browser_gate, working-directory: agentic-graph, run: 'node node_modules/agentic-os/bin/agentic-os.mjs flight gate --operation=production-activation --context="$GITHUB_WORKSPACE/browser-preflight/context.json"' }
       - { name: Retain browser ledger and bounded diagnostics, if: "always() && (steps.browser_gate.outcome == 'success' || steps.browser_gate.outcome == 'failure' || steps.browser_gate.outcome == 'cancelled')", uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a , with: { name: '${{ steps.browser_history.outputs.artifact_name }}-ledger', path: '${{ github.workspace }}/agentic-graph/.git/agentic-os/flight-checks', if-no-files-found: error, include-hidden-files: true, retention-days: 90 } }
       - name: Bind immutable production candidate
         id: production_candidate
@@ -193,6 +188,8 @@ jobs:
           test -n "${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}"
           npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest-proof/immutable-release-manifest.json" --source-sha "$RELEASE_SHA" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --digest "${{ needs.verify.outputs.manifest_digest }}"
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
+      - { name: Resolve reviewed GameXR source, id: gamexr_source, working-directory: agentic-graph, run: 'node scripts/production-gamexr.mjs resolve >> "$GITHUB_OUTPUT"' }
+      - { name: Checkout reviewed GameXR source, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: huijoohwee/GameXR, ref: '${{ steps.gamexr_source.outputs.revision }}', path: GameXR } }
       - name: Capture current production rollback target
         id: previous
         working-directory: agentic-graph
@@ -208,6 +205,7 @@ jobs:
         working-directory: agentic-graph
         env: *cloudflare_release_environment
         run: |
+          node scripts/production-gamexr.mjs settings
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           npm run --silent runtime:pages:owner-enforce
@@ -238,6 +236,7 @@ jobs:
         working-directory: agentic-graph
         env: { PRODUCTION_SW_PROFILE_ORIGIN: '${{ steps.previous.outputs.production_origin }}', PRODUCTION_SW_PROFILE_DIR: '${{ runner.temp }}/agentic-graph-production-sw-profile', PRODUCTION_SW_EVIDENCE_PATH: '${{ runner.temp }}/agentic-graph-production-sw-evidence.json', PRODUCTION_BROWSER_HEADLESS: 'false' }
         run: timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm
+      - { name: Prewarm returning GameXR browser, working-directory: agentic-graph, run: 'node scripts/production-gamexr.mjs prewarm' }
       - name: Deploy verified artifact
         id: deploy_pages
         continue-on-error: true
@@ -360,6 +359,7 @@ jobs:
         working-directory: agentic-graph
         env: { CANDIDATE_DEPLOYMENT_URL: '${{ steps.deployment_authority.outputs.deployment_url }}', IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}' }
         run: node ./scripts/verify-production-release-transports.mjs --immutable-origin "$CANDIDATE_DEPLOYMENT_URL" --stable-pages-origin "https://${CLOUDFLARE_PAGES_PROJECT}.pages.dev" --public-origin "https://airvio.co" --source-sha "$RELEASE_SHA" --manifest-digest "$IMMUTABLE_MANIFEST_DIGEST" --immutable-smoke "$RUNNER_TEMP/immutable-origin-smoke.log" --stable-pages-smoke "$RUNNER_TEMP/stable-pages-smoke.log" --public-smoke "$RUNNER_TEMP/public-route-smoke.log" --output "$RUNNER_TEMP/production-transport-evidence.json" --github-output
+      - { name: Verify GameXR artifact and returning browser, working-directory: agentic-graph, env: { GAMEXR_IMMUTABLE_ORIGIN: '${{ steps.deployment_authority.outputs.deployment_url }}' }, run: 'node scripts/production-gamexr.mjs live' }
       - name: Record live verification receipt
         id: live_receipt
         working-directory: agentic-graph
@@ -594,4 +594,4 @@ jobs:
       - name: Persist raw production release observations
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with: { name: 'production-release-raw-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/release-stage.txt\n${{ runner.temp }}/*failure*.json\n${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*evidence.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/production-fidelity-diagnostics.log\n${{ runner.temp }}/wrangler*.ndjson\n${{ runner.temp }}/production-lifecycle", if-no-files-found: warn, retention-days: 90 }
+        with: { name: 'production-release-raw-${{ inputs.source_sha }}-${{ github.run_id }}', path: "${{ runner.temp }}/release-stage.txt\n${{ runner.temp }}/*failure*.json\n${{ runner.temp }}/*pages*.json\n${{ runner.temp }}/*d1*.json\n${{ runner.temp }}/*travel-mesh*.json\n${{ runner.temp }}/*rollback*\n${{ runner.temp }}/*smoke.log\n${{ runner.temp }}/*evidence.json\n${{ runner.temp }}/gamexr-*.json\n${{ runner.temp }}/*deploy*.log\n${{ runner.temp }}/production-fidelity-diagnostics.log\n${{ runner.temp }}/wrangler*.ndjson\n${{ runner.temp }}/production-lifecycle", if-no-files-found: warn, retention-days: 90 }
