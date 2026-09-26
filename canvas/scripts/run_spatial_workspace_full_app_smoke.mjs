@@ -65,7 +65,12 @@ try {
   for (const width of [1024, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width === 390, hasTouch: width === 390 })
     // Explicit absent browser capability: every action below uses the product's visible controls.
-    await context.addInitScript(() => Object.defineProperty(navigator, 'modelContext', { configurable: true, value: undefined }))
+    await context.addInitScript(() => {
+      // Keep both host surfaces unavailable even when the application attempts its fallback.
+      for (const target of [navigator, document]) Object.defineProperty(target, 'modelContext', {
+        configurable: false, get: () => undefined, set: () => {},
+      })
+    })
     const page = activePage = await context.newPage(), errors = [], remote = [], dialogs = []
     page.setDefaultTimeout(30000)
     page.on('pageerror', error => errors.push(error.message)); page.on('dialog', dialog => { dialogs.push(dialog.message()); void dialog.dismiss() })
@@ -130,7 +135,7 @@ try {
     await quickPreview.click(); await review.getByRole('button', { name: 'Cancel proposal', exact: true }).click()
     const reloadMs = Math.round(performance.now() - reloadStart)
     assert.equal(await storedSource(page), undone)
-    assert.equal(await page.evaluate(() => navigator.modelContext === undefined), true)
+    assert.equal(await page.evaluate(() => navigator.modelContext === undefined && document.modelContext === undefined), true, 'manual review works without either tool-host surface')
     assert.deepEqual(dialogs, []); assert.deepEqual(errors, [])
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
     assert.equal(overflow, false)
@@ -148,7 +153,7 @@ try {
 } catch (error) {
   if (activePage && !activePage.isClosed()) {
     await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
-    await writeFile(join(output, 'failure.txt'), String(error) + '\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable'))
+    await writeFile(join(output, 'failure.txt'), (error.stack || String(error)) + '\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable'))
   }
   throw error
 } finally { await browser?.close(); await server?.close() }
