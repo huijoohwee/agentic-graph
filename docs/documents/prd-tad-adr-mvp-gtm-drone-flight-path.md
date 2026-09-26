@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.2
+version: 1.4.3
 date: 2026-09-26
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -354,3 +354,42 @@ its final evidence file before reporting success. Its acceptance is unchanged:
 exact source must survive Save and reload, all lessons must run offline, and missing
 verified assets must block navigation. Refresh cap: seven files / 25 KiB, zero new
 runtime dependencies; normal production-build proof and protected CI are required.
+
+## Catalog dependency and release handover — 1.4.3
+
+PRD: discover Programmatic Drone Flight from the existing Home Catalog and Prompt
+Presets, then open its source file, edit, Run and review a reusable Canvas. The
+confirmed simulated bench remains the delivery target. Buyer demand, willingness
+to pay and physical iPhone execution are unmeasured.
+
+TAD/ADR: the native OS prompt catalog owns the preset. Graph's existing revision
+promotion command verifies protected OS main checks and updates its exact package,
+lockfile and runtime docs reference together. There is one catalog entry and no
+new catalog service, runtime dependency or automatically executed flight.
+
+MVP evidence: 35 focused Python/file lifecycle checks, the native Markdown switch
+regression, 18 source-reader/indexing checks and root type checks passed. The full
+normal-production-build browser proof executed its complete body and wrote its
+receipt: all four native files, exact Unicode Save/reload, offline light/Monaco
+editor round trips, four completed lessons, registered tools and missing-asset
+rejection passed with no page errors. Local proof is separate from protected CI.
+
+Development: source review PR1315 requires its exact protected merge receipt.
+Native catalog PR314 passed test/budgets and merged at
+`e0ef770860905830157e64c455f0a342084b6d25`; Graph's package pin requires successful
+checks on that exact OS main revision and its own protected integration.
+The exact OS main test/budget checks passed in run `36252295278`. Native promotion
+selected that revision for all three Graph dependency files; ten focused docs
+source/promotion checks passed and the resolver returned the same exact pin.
+Production Release: prepare only from clean exact main, native localhost review
+and retained rollback/frontier evidence. The protected owner must record human
+authorization for that candidate before activation.
+Runtime: the previous verified release remains the deployed baseline; these
+source checks do not prove a new production or native-device session.
+
+GTM/next owner action: complete the protected source/pin sequence, prepare the
+candidate and review the existing production authorization challenge. Only its
+joined production-complete lifecycle carrier and live readback close delivery.
+Preserve the existing rollback identity and saved learner files. Scope refresh:
+four pin/handover files, at most 12 KiB, zero new dependencies; a 15-minute active
+integration/preparation sprint, with CI dependency waits reported separately.
