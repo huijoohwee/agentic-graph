@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { ImportUrlPrompt } from '@/features/toolbar/ImportUrlPrompt'
 import { VideoDownloadOptionsPanel } from '@/features/toolbar/VideoDownloadOptionsPanel'
 import { getMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
-import type { WorkspaceUrlImportCanvasRendererId, WorkspaceUrlImportDocumentModeId } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
+import { isWorkspaceUrlImportCanvasRendererId, type WorkspaceUrlImportCanvasRendererId, type WorkspaceUrlImportDocumentModeId } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
 import type { Canvas2dRendererId } from '@/lib/config.render'
 import type { VideoDownloadOptions } from '@/lib/video-download/types'
 import { isVideoDownloadEligible } from '@/lib/video-download/isVideoDownloadEligible'
@@ -162,7 +162,7 @@ export function LaunchDropdownImportUrlItem(props: {
   const importUrlFallback = React.useCallback(
     async (urlRaw: string, opts?: { canvas2dRenderer?: WorkspaceUrlImportCanvasRendererId | null; documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null }) => {
       const mod = await loadLaunchDropdownFallbackModule()
-      await mod.importUrlFallback({ urlRaw, canvas2dRenderer: opts?.canvas2dRenderer, documentSemanticMode: opts?.documentSemanticMode, pushUiToast })
+      return mod.importUrlFallback({ urlRaw, canvas2dRenderer: opts?.canvas2dRenderer, documentSemanticMode: opts?.documentSemanticMode, pushUiToast })
     },
     [pushUiToast],
   )
@@ -367,7 +367,6 @@ export function LaunchDropdownImportUrlItem(props: {
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Design renderer" aria-label="Design renderer" aria-pressed={importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION} onClick={() => setImportUrlRenderer(prev => (prev === DESIGN_IMPORT_URL_RENDERER_SELECTION ? 'default' : DESIGN_IMPORT_URL_RENDERER_SELECTION))}>
                   <Palette className={props.menuIconClass} strokeWidth={1.6} aria-hidden={true} />
                 </button>
-                <ImportUrlRendererSelect value={importUrlRenderer} onChange={setImportUrlRenderer} />
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', validationConfigOpen ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Video-agent validation config" aria-label="Video-agent validation config" aria-pressed={validationConfigOpen} onClick={() => setValidationConfigOpen(prev => !prev)}>
                   <Workflow className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
                 </button>
@@ -387,6 +386,11 @@ export function LaunchDropdownImportUrlItem(props: {
               </section>
             }
           />
+          <label className="mt-2 grid min-w-0 gap-1 px-1 text-xs">
+            <span className={UI_THEME_TOKENS.text.secondary}>Canvas layout after import</span>
+            <ImportUrlRendererSelect value={importUrlRenderer} onChange={setImportUrlRenderer} />
+            <span className={UI_THEME_TOKENS.text.secondary}>Images offer next steps after saving.</span>
+          </label>
           <section className="mt-1 flex min-w-0 flex-wrap items-center gap-1 text-xs" aria-label="Codebase graph import mode">
             <button
               type="button"
@@ -446,7 +450,12 @@ export function LaunchDropdownImportUrlItem(props: {
               urlsAriaLabel="Video-agent validation import URLs"
               actionsAriaLabel="Video-agent validation URL actions"
               importUrlOpts={selectedImportOpts}
-              importUrlFallback={importUrlFallback}
+              importUrlFallback={async (urlRaw, opts) => {
+                await importUrlFallback(urlRaw, {
+                  canvas2dRenderer: isWorkspaceUrlImportCanvasRendererId(opts?.canvas2dRenderer) ? opts?.canvas2dRenderer : null,
+                  documentSemanticMode: opts?.documentSemanticMode,
+                })
+              }}
               onBeforeImport={beforeValidationImport}
               onSelectUrl={url => {
                 setUrlDraft(url)

@@ -14,30 +14,25 @@ import {
   parseD1ExecuteJsonRows,
   toSqlString,
 } from './lib/seed-storage-documents-d1.mjs'
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const agenticGraphRoot = path.resolve(__dirname, '..')
 const githubRoot = path.resolve(agenticGraphRoot, '..')
-
 const KNOWN_ARGS = new Set([
   '--docs-root',
   '--base-url',
   '--workspace-id',
   '--device-id',
   '--evidence-output', '--capture-state', '--publication-plan-output',
-  '--dry-run',
+  '--dry-run', '--local',
   '--help',
 ])
-
 const getArgValue = (flag) => {
   const index = process.argv.indexOf(flag)
   if (index < 0) return null
   return process.argv[index + 1] || null
 }
-
 const hasFlag = (flag) => process.argv.includes(flag)
-
 const ensureNoUnknownArgs = () => {
   const args = process.argv.slice(2)
   for (let i = 0; i < args.length; i += 1) {
@@ -46,10 +41,9 @@ const ensureNoUnknownArgs = () => {
     if (!KNOWN_ARGS.has(token)) {
       throw new Error(`Unknown argument: ${token}`)
     }
-    if (token !== '--dry-run' && token !== '--capture-state' && token !== '--help') i += 1
+    if (token !== '--dry-run' && token !== '--capture-state' && token !== '--local' && token !== '--help') i += 1
   }
 }
-
 const printHelp = () => console.log([
   'Seed Source Files through the agentic-graph storage owner.',
   'Usage: node ./scripts/seed-storage-docs-to-cloudflare.mjs [options]',
@@ -61,25 +55,23 @@ const printHelp = () => console.log([
   '--publication-plan-output <path>  Write a non-authorizing canonical publication plan',
   '--capture-state            Read current D1 state without mutation',
   '--dry-run                  Print planned mutations without push',
+  '--local                    Reconcile local D1 only; remote origins are forbidden',
   '--help                     Show this help',
 ].join('\n'))
-
 const normalizeString = (value) => String(value || '').trim()
-
 const docsRoot = normalizeString(getArgValue('--docs-root'))
   || normalizeString(process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT)
   || resolveAgenticCanvasOsDocsRoot({ rootDir: agenticGraphRoot })
-const baseUrl = normalizeString(getArgValue('--base-url')) || 'https://airvio.co'
+const local = hasFlag('--local')
+const baseUrl = normalizeString(getArgValue('--base-url')) || (local ? 'http://127.0.0.1:8787' : 'https://airvio.co')
 const isCanonicalProductionOrigin = new URL(baseUrl).origin === 'https://airvio.co'
 const workspaceId = normalizeString(getArgValue('--workspace-id')) || 'kgws:canonical-docs'
 const deviceId = normalizeString(getArgValue('--device-id')) || 'seed:canonical-docs'
 const [evidenceOutput, captureState] = [normalizeString(getArgValue('--evidence-output')), hasFlag('--capture-state')]
 const dryRun = hasFlag('--dry-run')
-
 const SUPPORTED_DOCS_FILE_EXTENSIONS = new Set(['.md', '.gltf', '.glb'])
 const DEFAULT_CANONICAL_DOCS_ROOT = 'agentic-canvas-os/docs'
 const MAX_INLINE_DOCUMENT_CONTENT_CHARS = 48 * 1024
-
 const contentHash = (text) => createHash('sha256').update(text).digest('hex')
 
 const estimateTokenCount = (text) => Math.max(1, Math.ceil(String(text || '').length / 4))
@@ -299,7 +291,7 @@ const executeD1SqlFile = async (sqlText, label = 'unnamed-step') => {
         'd1',
         'execute',
         'agentic-storage',
-        '--remote',
+        local ? '--local' : '--remote',
         '--config',
         'cloudflare/workers/agentic-graph-storage/wrangler.toml',
         '--file',
@@ -334,7 +326,7 @@ const executeD1JsonQuery = (sqlText, label = 'unnamed-query') => {
       'd1',
       'execute',
       'agentic-storage',
-      '--remote',
+      local ? '--local' : '--remote',
       '--config',
       'cloudflare/workers/agentic-graph-storage/wrangler.toml',
       '--command',
@@ -445,7 +437,18 @@ const seedDocumentsDirectlyToD1 = async (args) => {
     updatedAtMs: authoritativeUpdatedAtMs,
   })
   statements.push(...reconciliationStatements)
-  await executeD1SqlFile(statements.join('\n'), 'authoritative-corpus-reconciliation')
+  const groups = [[]], fragments = []
+  for (const fragment of statements) {
+    fragments.push(fragment)
+    if (!fragment.trimEnd().endsWith(';')) continue
+    const statement = fragments.splice(0).join('\n')
+    if (local && Buffer.byteLength(statement) > 90_000) throw new Error('Local D1 statement exceeds 90 kB')
+    let group = groups[groups.length - 1]
+    if (local && group.length && Buffer.byteLength([...group, statement].join('\n')) > 90_000) groups.push(group = [])
+    group.push(statement)
+  }
+  if (fragments.length) throw new Error('Incomplete D1 reconciliation statement')
+  for (const group of groups) await executeD1SqlFile(group.join('\n'), 'authoritative-corpus-reconciliation')
   return statements
 }
 
@@ -464,6 +467,11 @@ const run = async () => {
     printHelp()
     return
   }
+  if (local && (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(baseUrl).hostname) || new URL(baseUrl).protocol !== 'http:')) {
+    throw new Error('--local requires a loopback HTTP origin')
+  }
+  if (local && captureState) throw new Error('--capture-state is reserved for protected production evidence')
+  if (local && (evidenceOutput || getArgValue('--publication-plan-output'))) throw new Error('Local seeding cannot emit production evidence or publication plans')
   const rootStats = await fs.stat(docsRoot).catch(() => null)
   if (!rootStats || !rootStats.isDirectory()) {
     throw new Error(`Docs root does not exist or is not a directory: ${docsRoot}`)
@@ -512,9 +520,9 @@ const run = async () => {
     }
     return
   }
-  const shouldUseDirectD1ControlPlane = isCanonicalProductionOrigin
+  const shouldUseDirectD1ControlPlane = local || isCanonicalProductionOrigin
   if (shouldUseDirectD1ControlPlane) {
-    console.warn('[agentic-graph] Canonical production reconciliation skips the public storage API and uses direct D1 reconciliation with direct readback.')
+    console.warn(`[agentic-graph] ${local ? 'Local' : 'Canonical production'} reconciliation uses direct D1 with direct readback.`)
     const statements = await seedDocumentsDirectlyToD1({ workspaceId, documentSeeds })
     const exportedStartedAt = Date.now()
     console.log('[agentic-graph] export start: direct-d1-verification')
@@ -526,9 +534,11 @@ const run = async () => {
       exportedDocumentChunks: exported.documentChunks,
     })
     const snapshotParity = assertNoD1GraphSnapshots(exported.graphSnapshots)
-    const evidence = createD1ReconciliationEvidence({ workspaceId, documentSeeds, statements,
-      exported, parity, snapshotParity, reconciledAt: new Date().toISOString() })
-    await emitEvidence(evidence)
+    if (!local) {
+      const evidence = createD1ReconciliationEvidence({ workspaceId, documentSeeds, statements,
+        exported, parity, snapshotParity, reconciledAt: new Date().toISOString() })
+      await emitEvidence(evidence)
+    }
     const publicationOutput = getArgValue('--publication-plan-output')
     if (publicationOutput) await fs.writeFile(path.resolve(publicationOutput),
       `${JSON.stringify(createD1PublicationPlan({ workspaceId, documentSeeds, exported }))}\n`, { flag: 'wx', mode: 0o600 })

@@ -14,6 +14,7 @@ export function assertXrMotionReferenceStageSurfaceContracts(): void {
   const xrEntrySource = readSource('lib', 'three', 'ThreeGraphXr.tsx')
   const threeGraphSource = readSource('lib', 'three', 'ThreeGraph.impl.tsx')
   const controlsSource = readSource('features', 'three', 'Controls.tsx')
+  const rendererSetupSource = readSource('lib', 'three', 'ThreeGraphSnapshots.ts')
 
   if (existsSync(resolve(process.cwd(), 'src', 'features', 'three', 'XrMotionReferenceSection.tsx'))) {
     throw new Error('expected the standalone XR motion-reference form component to be removed')
@@ -57,10 +58,12 @@ export function assertXrMotionReferenceStageSurfaceContracts(): void {
     || !threeGraphSource.includes('data-kg-xr-document-loaded=')) {
     throw new Error('expected XR stage rendering to reject retained graph data when no document is loaded, except for the explicit run-ready physics demo graph')
   }
-  if (!threeGraphSource.includes("const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded")
+  if (!threeGraphSource.includes('resolveXrDocumentStageAuthority({')
+    || !threeGraphSource.includes("mode === 'xr' && !documentStageAuthority")
+    || threeGraphSource.includes("xrAuthoringGraphActive ? 'native-controller' : 'motion-reference'")
     || !threeGraphSource.includes('data-kg-xr-empty-world=')
     || !threeGraphSource.includes('<XrEmptyWorldStage')) {
-    throw new Error('expected no-file XR Mode to initialize a neutral world, grid, origin, and camera without retained graph data')
+    throw new Error('expected unauthored XR documents to reuse the neutral world without an implicit graph-cast stage')
   }
   for (const marker of [
     'agentic_os_xr_empty_world_stage',
@@ -84,7 +87,8 @@ export function assertXrMotionReferenceStageSurfaceContracts(): void {
     || rendererClearOwnership.includes('gameFpsActive')
     || !threeGraphSource.includes("? '#0b2f4a'")
     || !threeGraphSource.includes('<XrRendererClearController')
-    || !threeGraphSource.includes("gl.xr.enabled = mode === 'xr'")) {
+    || !threeGraphSource.includes('configureThreeGraphRenderer(state, {')
+    || !rendererSetupSource.includes("gl.xr.enabled = args.mode === 'xr'")) {
     throw new Error('expected every XR projection to reuse the shared renderer environment without a Game-conditioned clear variant')
   }
   for (const marker of ['data-kg-xr-empty-world-hud="1"', 'Centers Mode', 'XR world axes X Y Z']) {

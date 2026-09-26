@@ -366,6 +366,7 @@ const canvasStartupRuntimes = await text('canvas/src/features/canvas/CanvasStart
 const canvasSourceAuthorityBoundary = await text('canvas/src/features/canvas/CanvasSourceAuthorityBoundary.tsx')
 const appSource = await text('canvas/src/App.tsx')
 const xrRuntimeBridge = await text('canvas/src/features/three/XrMotionReferenceRuntimeBridge.tsx')
+const xrDocumentStageAuthority = await text('canvas/src/features/three/xrSceneDocumentReadiness.ts')
 const xrCanonicalPhysicsStage = await text('canvas/src/features/three/XrCanonicalPhysicsStage.tsx')
 const xrMotionReferenceGraphStage = await text('canvas/src/features/three/XrMotionReferenceGraphStage.tsx')
 const canvasViewport = await text('canvas/src/components/CanvasViewport.tsx')
@@ -414,13 +415,18 @@ if (!canvasViewport.includes("const sourceFilesBootstrapReady = sourceFilesBoots
   || !appSource.includes('<XrMotionReferenceRuntimeBridge />')) {
   throw new Error('Three, Game Mode, HUD, and hydration must remain fenced by settled source authority while mounted run-ready lifecycle owners survive later document intents')
 }
-const xrGraphStageAuthority = threeGraph.match(/const xrGraphStageAuthority = mode === 'xr'[\s\S]*?const xrSceneAuthority/)?.[0] || ''
-if (!/xrPhysicsRuntimeRunReadyDemo\s*\? 'native-controller'\s*: 'motion-reference'/.test(xrGraphStageAuthority)
+if (!threeGraph.includes('const documentStageAuthority = resolveXrDocumentStageAuthority({')
+  || !threeGraph.includes("const xrGraphStageAuthority = mode === 'xr' && hasGraph ? documentStageAuthority : undefined")
+  || !/if \(isXrPhysicsRuntimeRunReadyDemoActive\([^\n]+\)\) return 'native-controller'/.test(xrDocumentStageAuthority)
+  || !xrDocumentStageAuthority.includes("if (graphHasXrAuthoringSource(input.graphData)) return 'native-controller'")
+  || !xrDocumentStageAuthority.includes('resolveXrMotionReferencePersistedValue')
+  || !xrDocumentStageAuthority.includes("return persisted && typeof persisted === 'object' && !Array.isArray(persisted) ? 'motion-reference' : undefined")
   || !threeGraph.includes('resolveThreeGraphXrSceneAuthority({ mode, immersiveMediaActive: immersiveMediaStageActive, xrGraphStageAuthority, hasGlbAsset, hasSpatialCaptureManifest, hasXrEmptyWorld })')
   || !threeGraphImmersiveMedia.includes("if (input.immersiveMediaActive) return 'immersive-media'")
   || !threeGraphImmersiveMedia.includes('if (input.xrGraphStageAuthority) return input.xrGraphStageAuthority')
   || !threeGraphImmersiveMedia.includes("return input.hasXrEmptyWorld ? 'empty-world' : undefined")
-  || !threeGraph.includes("const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive")
+  || !threeGraph.includes("const hasXrEmptyWorld = !semanticObjectTarget && mode === 'xr' && !documentStageAuthority && !hasGlbAsset && !hasSpatialCaptureManifest && !learningScene && !gameplayOverlayActive && !immersiveMediaStageActive")
+  || !threeGraph.includes('!semanticObjectTarget && !semanticTwinFit && !learningScene')
   || !threeGraph.includes('xrGraphStageAuthority={xrGraphStageAuthority}')
   || (threeGraph.match(/data-kg-xr-scene-authority=\{xrSceneAuthority\}/g) || []).length !== 2) {
   throw new Error('canonical XR Physics must first mount native-controller; authored motion-reference and settled empty-world must remain disjoint')
@@ -430,7 +436,7 @@ if (!xrCanonicalPhysicsStage.includes('<XrNativeControllerDemoStage')
   || xrCanonicalPhysicsStage.includes('XrPhysicsStageRuntime')
   || !xrMotionReferenceGraphStage.includes('<XrMotionReferenceStage')
   || xrMotionReferenceGraphStage.includes('XrNativeControllerDemoStage')
-  || !threeGraph.includes("xrPhysicsRuntimeRunReadyDemo ? 'native-controller' : 'motion-reference'")
+  || !threeGraph.includes("const hasGraph = (mode !== 'xr' || !!documentStageAuthority)")
   || !deepLinkRuntime.includes('createWorkspaceFsMutationTransaction(fs)')
   || !deepLinkRuntime.includes('cancelIntent: () => {')
   || !deepLinkRuntime.includes('mirrorToHost: false')
@@ -448,9 +454,9 @@ if (!threeGraph.includes('{!gameFpsStageActive ? <ControlsLazy')) {
   throw new Error('Game FPS must suppress the shared OrbitControls owner')
 }
 const xrWorldPlacement = threeGraph.match(/<XrWorldPlacement\b[\s\S]*?<\/XrWorldPlacement>/)?.[0] || ''
-const authoredWorldTargets = ['SceneLazy', 'GlbAssetModel', 'SpatialCaptureManifestStage']
+const authoredWorldTargets = ['SceneLazy', 'SemanticTwinStageLazy', 'GlbAssetModel', 'SpatialCaptureManifestStage']
 const missingPauseTargets = authoredWorldTargets.filter(component => {
-  const mount = xrWorldPlacement.match(new RegExp(`<${component}\\b[\\s\\S]*?\\n\\s*/>`))?.[0] || ''
+  const mount = xrWorldPlacement.match(new RegExp(`<${component}\\b[\\s\\S]*?\\/>`))?.[0] || ''
   return !mount.includes('paused={authoredWorldPaused}')
 })
 const spatialCaptureMount = xrWorldPlacement.match(/<SpatialCaptureManifestStage\b[\s\S]*?\n\s*\/>/)?.[0] || ''

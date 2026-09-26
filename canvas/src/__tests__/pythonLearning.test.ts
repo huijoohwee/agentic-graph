@@ -114,12 +114,13 @@ test('native physics supplies collision/sensor truth and enforces simulation inp
   await assert.rejects(simulation.call('drive', [0n, 3600n], span), /7,200/)
   simulation.dispose()
 })
-test('Python source keeps its own workspace pane and never enables format conversion', () => {
+test('Python source opens in its own pane while retaining optional authoring views', () => {
   for (const path of ['/learning.py', 'workspace:///notes/Lesson.PY?revision=2#start']) {
     assert.equal(resolveMarkdownWorkspaceDocumentPanePreset(path), 'python')
     const initial = resolveMarkdownWorkspaceInitialPaneVisibility({ activeDocumentKey: path })
     assert.equal(initial.python, true); assert.equal(initial.json || initial.markdown || initial.html, false)
     const available = resolveMarkdownWorkspacePaneAvailability({ activeDocumentKey: path, modelAssetFormat: 'glb' })
-    assert.equal(available.python, true); assert.equal(available.bin || available.json || available.markdown, false)
+    assert.deepEqual([available.python, available.block, available.json, available.markdown, available.viewer], [true, true, true, true, true])
+    assert.equal(available.bin || available.html, false)
   }
 })

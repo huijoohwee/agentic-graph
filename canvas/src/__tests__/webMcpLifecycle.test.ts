@@ -95,7 +95,7 @@ export function testWebMcpFallbackReadinessSurvivesHostRetryExhaustion() {
   }
 }
 
-export function testWebMcpScopeReconciliationOwnsOnlyItsRegistrations() {
+export async function testWebMcpScopeReconciliationOwnsOnlyItsRegistrations() {
   for (const transport of ['register', 'provide', 'array', 'fallback']) {
     const core = { name: 'core', execute: async () => undefined }
     const old = { name: 'old', execute: async () => undefined }
@@ -148,4 +148,42 @@ export function testWebMcpScopeReconciliationOwnsOnlyItsRegistrations() {
   }
   controller.dispose()
   if (attempts !== 1 || context.tools[0] !== foreign) throw Error('unchanged failure must not retry or release foreign ownership')
+
+  const tool = (name: string) => ({ name, execute: async () => undefined })
+  const pending: Array<{ name: string; resolve: () => void; reject: (error: Error) => void; signal: AbortSignal }> = []
+  const hostStates: string[] = []
+  const asyncContext = {
+    registerTool(entry: { name: string }, { signal }: { signal: AbortSignal }) {
+      return new Promise<void>((resolve, reject) => pending.push({ name: entry.name, resolve, reject, signal }))
+    },
+  }
+  const asyncRoot = { navigator: { modelContext: asyncContext } }
+  const asyncController = createWebMcpLifecycleController({ root: asyncRoot, state: {
+    registrations: new WeakMap(), activeRegisteredContext: null, fallbackContext: null,
+    lateBindingRetryId: null, lateBindingAttemptCount: 0,
+  }, tools: [tool('old')], markHostBindingState: (state: string) => hostStates.push(state) })
+  asyncController.install()
+  if (hostStates.includes('installed')) throw Error('pending host registration claimed installed')
+  pending[0].reject(Error('host rejected'))
+  await Promise.resolve(); await Promise.resolve()
+  if (hostStates.includes('installed') || !pending[0].signal.aborted
+    || hostStates.at(-1) !== 'registration-failed') throw Error('rejected host registration was not released')
+  asyncController.install()
+  pending[1].resolve()
+  await Promise.resolve(); await Promise.resolve()
+  if (hostStates.at(-1) !== 'installed') throw Error('resolved host registration did not become ready')
+  asyncController.updateTools([tool('next')])
+  if (!pending[1].signal.aborted || hostStates.at(-1) === 'installed') {
+    throw Error('catalog change retained an obsolete registration')
+  }
+  pending[2].resolve()
+  await Promise.resolve(); await Promise.resolve()
+  if (hostStates.at(-1) !== 'installed') throw Error('new catalog did not become ready')
+  asyncController.updateTools([tool('cancelled')])
+  asyncController.dispose()
+  pending[3].resolve()
+  await Promise.resolve(); await Promise.resolve()
+  if (!pending[3].signal.aborted || hostStates.at(-1) === 'installed') {
+    throw Error('disposed registration became ready after cancellation')
+  }
 }

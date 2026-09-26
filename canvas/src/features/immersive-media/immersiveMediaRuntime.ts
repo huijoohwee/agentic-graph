@@ -145,7 +145,7 @@ export function openImmersiveMedia(): ImmersiveMediaSnapshot {
     introRevision: snapshot.introRevision + 1,
     transitionRevision: snapshot.transitionRevision + 1,
     lastAction: 'open',
-    message: 'Immersive media opened with the zero-config local panorama.',
+    message: snapshot.source.photo ? 'Image overlay opened on the shared Canvas.' : 'Immersive media opened with the zero-config local panorama.',
     error: null,
   })
 }
@@ -174,17 +174,22 @@ export function closeImmersiveMedia(): ImmersiveMediaSnapshot {
 export function setImmersiveMediaSource(input: Readonly<{
   kind?: ImmersiveMediaSourceKind
   url?: string
+  photo?: import('./immersivePhotoProjection').ImmersivePhoto
 }>): ImmersiveMediaSnapshot {
   const kind = input.kind || (input.url ? 'image' : 'procedural')
   if (!['procedural', 'image', 'video'].includes(kind)) {
     return publish({ lastAction: 'source', error: 'unsupported-source-kind', message: 'Use procedural, image, or video.' })
   }
-  const url = kind === 'procedural' ? '' : normalizeMediaUrl(input.url)
+  const url = kind === 'procedural' ? '' : normalizeMediaUrl(input.url, input.photo ? 2 * 1024 * 1024 : 2048)
   if (kind !== 'procedural' && !url) {
     return publish({ lastAction: 'source', error: 'invalid-media-url', message: 'The media URL is missing or unsupported.' })
   }
+  if (input.photo && (kind !== 'image' || ![input.photo.width, input.photo.height].every(n => Number.isFinite(n) && n > 0 && n <= 16384)
+    || (input.photo.evidenceSha256 !== undefined && !/^[a-f0-9]{64}$/.test(input.photo.evidenceSha256)))) {
+    return publish({ error: 'invalid-photo', message: 'Photo overlay needs finite image dimensions and valid evidence.' })
+  }
   return publish({
-    source: { kind, url: url || '' },
+    source: { kind, url: url || '', ...(input.photo ? { photo: Object.freeze({ ...input.photo }) } : {}) },
     phase: snapshot.active ? 'transitioning' : snapshot.phase,
     transitionRevision: snapshot.transitionRevision + 1,
     lastAction: 'source',

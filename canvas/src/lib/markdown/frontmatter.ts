@@ -195,6 +195,7 @@ function readBooleanPreset(value: unknown): boolean | undefined {
 export function readBottomSurfaceTabPreset(value: unknown): BottomSurfaceTab | undefined {
   const raw = String(value || '').trim()
   if (
+    raw === 'activity' ||
     raw === 'stats' ||
     raw === 'history' ||
     raw === 'documentVersionGraph' ||

@@ -1,3 +1,4 @@
+import { ThreeRendererControls } from '@/lib/three/ThreeRendererControls'
 import React from 'react'
 import {
   Aperture,
@@ -25,6 +26,10 @@ import {
 } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
+import { readSemanticSpace, subscribeSemanticSpace } from '@/features/xr-v2/semanticSpaceStore'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { listStrybldrImageFiles } from '@/features/strybldr/strybldrImageFileRegistry'
+import { createStoryboardForImportedImage, readImportedImageChoice, subscribeImportedImageChoice } from './importedImageChoiceRuntime'
 import type { ImmersiveMediaSourceKind } from './immersiveMediaModel'
 import { ImmersiveMediaMarkerProjections } from './ImmersiveMediaMarkerProjections'
 import {
@@ -44,6 +49,8 @@ import {
   transitionImmersiveMedia,
   zoomImmersiveMedia,
 } from './immersiveMediaRuntime'
+
+const SemanticImagePerceptionChoice = React.lazy(() => import('@/features/xr-v2/SemanticImagePerceptionChoice'))
 
 export type ImmersiveMediaProjectionSurface =
   | 'media'
@@ -107,6 +114,7 @@ function MediaSourceControls() {
     setKind(snapshot.source.kind)
     setUrl(snapshot.source.url)
   }, [snapshot.source.kind, snapshot.source.url])
+  if (snapshot.source.photo) return <p className="m-0 text-xs">Source image · select an object on the image to inspect it.</p>
   return (
     <form
       className="grid grid-cols-[80px_1fr_auto] gap-1"
@@ -141,6 +149,71 @@ function MediaSourceControls() {
   )
 }
 
+function SemanticSpaceMediaSource() {
+  const activeSourcePath = useMarkdownExplorerStore(state => state.activePath)
+  const media = React.useSyncExternalStore(subscribeImmersiveMediaSnapshot, readImmersiveMediaSnapshot, readImmersiveMediaSnapshot)
+  const imported = React.useSyncExternalStore(subscribeImportedImageChoice, readImportedImageChoice, readImportedImageChoice)
+  const [imageUrl, setImageUrl] = React.useState<string | null>(null)
+  const [opening, setOpening] = React.useState(false)
+  const [objectPresentation, setObjectPresentation] = React.useState<'photo' | 'layout' | 'models'>('layout')
+  const [creatingStoryboard, setCreatingStoryboard] = React.useState(false)
+  const openingRef = React.useRef<AbortController | null>(null)
+  const [openError, setOpenError] = React.useState<string | null>(null)
+  const [openStatus, setOpenStatus] = React.useState<string | null>(null)
+  React.useEffect(() => {
+    let active = true
+    const refresh = () => { void readSemanticSpace().then(space => {
+      if (active) setImageUrl(space?.observations.at(-1)?.imageDataUrl || null)
+    }, () => { if (active) setImageUrl(null) }) }
+    refresh()
+    const unsubscribe = subscribeSemanticSpace(refresh)
+    return () => { active = false; unsubscribe() }
+  }, [])
+  const selectedSourceImage = listStrybldrImageFiles().find(file => file.workspacePath === activeSourcePath?.replace(/^\/+/, ''))?.objectUrl
+  const displayedImageUrl = imported?.mediaUrl || selectedSourceImage || (media.source.kind === 'image' ? media.source.url : '') || imageUrl
+  React.useEffect(() => () => openingRef.current?.abort(), [displayedImageUrl])
+  if (!displayedImageUrl) return null
+  return <section className="grid gap-1 rounded border p-1 text-[10px]" aria-label="Current local image">
+    {imported ? <strong>Image imported. Choose the next step.</strong> : null}
+    <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
+    <label className="grid gap-1">Open 3D view as<select aria-label="Photo object presentation" className="min-h-11 w-full rounded border bg-transparent px-2"
+      value={objectPresentation} onChange={event => setObjectPresentation(event.currentTarget.value as 'photo' | 'layout' | 'models')}>
+      <option value="layout">Solid scene · orbit and select</option><option value="photo">Compare with photo</option><option value="models">Photo-aligned meshes only</option>
+    </select></label>
+    <p>{objectPresentation === 'layout' ? 'Explore saved solid objects. Use Compose solid scene below to turn box or contour regions into buildings, terrain and other shapes.' : 'Compare source regions with their models. The photograph is reference evidence, not reconstructed surroundings.'}</p>
+    {(['objects', 'image'] as const).map(presentation => <button key={presentation} type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
+      const job = new AbortController(); openingRef.current?.abort(); openingRef.current = job
+      setOpening(true)
+      setOpenError(null)
+      void (async () => {
+        const [{ readGameModeSnapshot, exitGameModeSurface },
+          { readFlightSimSnapshot, exitFlightSimSurface }] = await Promise.all([
+          import('@/features/game-fps/gameModeRuntime'),
+          import('@/features/game-flight-sim/flightSimRuntime'),
+        ])
+        if (readGameModeSnapshot().active) exitGameModeSurface({ restorePreviousSurface: false })
+        if (readFlightSimSnapshot().active) exitFlightSimSurface({ restorePreviousSurface: false })
+        const { showSemanticImageOnCanvas, showSemanticObjectsOnCanvas } = await import('@/features/xr-v2/semanticSpaceCanvas')
+        const message = await (presentation === 'objects' ? showSemanticObjectsOnCanvas(displayedImageUrl, job.signal, objectPresentation) : showSemanticImageOnCanvas(displayedImageUrl, job.signal))
+        if (!job.signal.aborted) setOpenStatus(message)
+      })().catch(error => {
+        setOpenError(String((error as Error).message || error))
+      }).finally(() => setOpening(false))
+    }}>{opening ? 'Opening…' : presentation === 'objects' ? 'View 3D objects' : 'Show space image on Canvas'}</button>)}
+    {imported ? <button type="button" className="App-toolbar__btn min-h-11" disabled={creatingStoryboard || !!imported.storyboardPath} onClick={() => {
+      setCreatingStoryboard(true)
+      setOpenError(null)
+      void createStoryboardForImportedImage().catch(error => {
+        setOpenError(String((error as Error).message || error))
+      }).finally(() => setCreatingStoryboard(false))
+    }}>{imported.storyboardPath ? 'Storyboard created' : creatingStoryboard ? 'Creating storyboard…' : 'Create storyboard'}</button> : null}
+    <React.Suspense fallback={null}><SemanticImagePerceptionChoice key={displayedImageUrl} sourceUrl={displayedImageUrl} /></React.Suspense>
+    {openStatus && !openError ? <output role="status">{openStatus}</output> : null}
+    {openError ? <output role="status">Space view could not open: {openError}</output> : null}
+    <span>Image overlay preserves source regions. Depth and hidden surfaces remain authored approximations.</span>
+  </section>
+}
+
 function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface }) {
   const snapshot = readImmersiveMediaSnapshot()
   if (surface === 'media') {
@@ -150,6 +223,7 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
     return (
       <>
         <MediaSourceControls />
+        <SemanticSpaceMediaSource />
         <section className="flex flex-wrap gap-1" aria-label="Media presentation controls">
           <ToggleButton active={cropped} title="Toggle cropped panorama" onClick={() => configureImmersiveMedia({ cropped: !cropped })}>
             <Crop className="h-3.5 w-3.5" aria-hidden="true" /> Crop
@@ -382,6 +456,7 @@ export function ImmersiveMediaPanelProjection({
       >
         {snapshot.message}
       </p>
+      {surface === 'media' && <ThreeRendererControls />}
     </aside>
   )
 }

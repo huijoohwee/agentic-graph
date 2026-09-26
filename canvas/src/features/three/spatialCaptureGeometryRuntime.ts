@@ -1,5 +1,59 @@
 import * as THREE from 'three'
 import type { SpatialCapturePointCloudLoad } from '@/lib/assets/spatialCaptureAssetRuntime'
+import type { PlyPointCloud } from '@/lib/assets/plyPointCloud'
+
+export function projectRelativeDepthPointCloud(input: Readonly<{
+  width: number; height: number; rgba: Uint8ClampedArray; depth: Float32Array
+  fovDegrees?: number; nearWhite?: boolean; mirrorX?: boolean; pointBudget?: number
+}>): Readonly<{ pointCloud: PlyPointCloud; units: 'relative'; scale: 'unknown';
+  intrinsics: Readonly<{ fx: number; fy: number; cx: number; cy: number; source: 'assumed-fov' }> }> {
+  const { width, height, rgba, depth } = input
+  const fov = input.fovDegrees ?? 60
+  const budget = input.pointBudget ?? 20_000
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1
+    || width > 1024 || height > 1024 || !(rgba instanceof Uint8ClampedArray)
+    || rgba.length !== width * height * 4 || !(depth instanceof Float32Array)
+    || depth.length !== width * height || !Number.isFinite(fov) || fov < 20 || fov > 120
+    || !Number.isSafeInteger(budget) || budget < 1 || budget > 20_000) {
+    throw new Error('Relative depth projection input is malformed or exceeds its bound')
+  }
+  const fx = width / (2 * Math.tan(fov * Math.PI / 360))
+  const fy = fx // Square pixels are an explicit assumption, not device calibration.
+  const cx = (width - 1) / 2
+  const cy = (height - 1) / 2
+  const stride = Math.ceil(Math.sqrt(width * height / budget))
+  const positions = new Float32Array(budget * 3)
+  const colors = new Float32Array(budget * 3)
+  const min: [number, number, number] = [Infinity, Infinity, Infinity]
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity]
+  let count = 0
+  for (let y = 0; y < height && count < budget; y += stride) {
+    for (let x = 0; x < width && count < budget; x += stride) {
+      const pixel = y * width + x
+      const value = depth[pixel]
+      if (!Number.isFinite(value) || value < 0 || value > 1 || rgba[pixel * 4 + 3] === 0) continue
+      const z = 0.2 + (input.nearWhite ? 1 - value : value) // Relative display depth, never metres.
+      const sourceX = input.mirrorX ? width - 1 - x : x
+      const point: [number, number, number] = [(sourceX - cx) * z / fx, -(y - cy) * z / fy, -z]
+      const offset = count * 3
+      for (let axis = 0; axis < 3; axis += 1) {
+        positions[offset + axis] = point[axis]
+        min[axis] = Math.min(min[axis], point[axis])
+        max[axis] = Math.max(max[axis], point[axis])
+        colors[offset + axis] = rgba[pixel * 4 + axis] / 255
+      }
+      count += 1
+    }
+  }
+  if (!count) throw new Error('Relative depth contains no valid visible points')
+  const center: [number, number, number] = min.map((value, axis) => (value + max[axis]) / 2) as [number, number, number]
+  const pointCloud: PlyPointCloud = { kind: 'point-cloud', positions: positions.slice(0, count * 3),
+    colors: colors.slice(0, count * 3), opacities: null, splatScales: null, splatRotations: null,
+    sourcePointCount: width * height, pointCount: count,
+    bounds: { min, max, center, maxExtent: Math.max(...max.map((value, axis) => value - min[axis])) } }
+  return { pointCloud, units: 'relative', scale: 'unknown',
+    intrinsics: { fx, fy, cx, cy, source: 'assumed-fov' } }
+}
 
 export const SPATIAL_CAPTURE_SORT_BUCKETS = 32768
 export const SPATIAL_CAPTURE_SORT_DIRECTION_DOT_MIN = 0.985

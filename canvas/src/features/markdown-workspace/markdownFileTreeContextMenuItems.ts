@@ -30,7 +30,7 @@ type BuildMarkdownFileTreeContextMenuItemsArgs = {
   onDeleteEntry?: (path: WorkspacePath) => void
   closeContextMenu: () => void
   promptRename?: (currentName: string) => string | null
-  confirmDelete?: (entryPath: string) => boolean
+  confirmDelete?: (entryPath: string) => boolean | Promise<boolean>
 }
 
 export function buildMarkdownFileTreeContextMenuItems(
@@ -170,8 +170,8 @@ export function buildMarkdownFileTreeContextMenuItems(
       key: 'delete',
       label: 'Delete',
       tone: 'danger',
-      onSelect: () => {
-        if (!confirmDelete(entryPath)) {
+      onSelect: async () => {
+        if (!await confirmDelete(entryPath)) {
           args.closeContextMenu()
           return
         }

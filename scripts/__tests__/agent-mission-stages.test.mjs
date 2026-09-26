@@ -33,7 +33,7 @@ test('mission expansion retains ingress, both unit selections, browser and lifec
   const plan = selectAffectedCommands(['canvas/scripts/verify_agent_mission_browser_smoke.mjs', 'canvas/scripts/lib/mission-phase-observation.mjs'], contract)
   for (const step of steps) assert.equal(plan.commands.filter(command => JSON.stringify(command) === JSON.stringify(step)).length, 1)
   assert.ok(!plan.commands.some(command => command.join(' ') === 'npm run agent-mission:check'))
-  assert.equal(resolveCiCommandTimeoutMs(steps[2], contract), 600000)
+  assert.equal(resolveCiCommandTimeoutMs(steps[2], contract), 900000)
   const pkg = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'))
   assert.throws(() => validateExpansionScripts(contract, { ...pkg.scripts, 'preagent-mission:check': 'node required.mjs' }), /lifecycle hooks/)
   assert.throws(() => validateExpansionScripts(contract, { ...pkg.scripts, 'agent-mission:check': 'node incomplete.mjs' }), /expansion drift/)

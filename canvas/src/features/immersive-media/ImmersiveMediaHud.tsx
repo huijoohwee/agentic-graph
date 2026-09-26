@@ -19,7 +19,7 @@ export function ImmersiveMediaHud({
     readImmersiveMediaSnapshot,
     readImmersiveMediaSnapshot,
   )
-  if (!snapshot.active) return null
+  if (!snapshot.active || snapshot.source.photo) return null
   const hoveredMarker = snapshot.markers.find(marker => marker.id === snapshot.hoveredMarkerId)
   const selectedMarker = snapshot.markers.find(marker => marker.id === snapshot.selectedMarkerId)
   const tooltipMarker = selectedMarker || hoveredMarker

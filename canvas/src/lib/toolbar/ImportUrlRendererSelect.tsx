@@ -45,7 +45,7 @@ export function ImportUrlRendererSelect(props: {
     <select
       className={cn(
         UI_RESPONSIVE_IMPORT_URL_FIELD_CLASSNAME,
-        'flex-1 rounded border text-xs',
+        'w-full min-h-11 rounded border text-xs',
         UI_THEME_TOKENS.input.border,
         UI_THEME_TOKENS.input.bg,
         UI_THEME_TOKENS.input.text,
@@ -53,9 +53,9 @@ export function ImportUrlRendererSelect(props: {
       value={props.value}
       onChange={e => props.onChange(normalizeImportUrlRendererSelection(e.target.value))}
       aria-label="Import URL renderer"
-      title="2D renderer"
+      title="Optional 2D Canvas layout"
     >
-      <option value="default">Default</option>
+      <option value="default">Automatic (source defaults)</option>
       {WORKSPACE_URL_IMPORT_CANVAS_RENDERERS.map(renderer => (
         <optgroup key={renderer} label={getWorkspaceUrlImportCanvasRendererLabel(renderer)}>
           {WORKSPACE_URL_IMPORT_DOCUMENT_MODES.map(mode => (

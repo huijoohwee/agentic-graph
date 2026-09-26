@@ -1,6 +1,8 @@
+import { PROCEDURAL_ENVIRONMENT_SUBJECTS, createEnvironmentParts } from './proceduralEnvironmentParts'
+import { PROCEDURAL_TRANSPORT_SUBJECTS, createTransportParts } from './proceduralTransportParts'
 import { PROCEDURAL_ASSET_SCHEMA, parseProceduralAssetRecipe, type AssetPart, type AssetPrimitive, type AssetVector, type ProceduralAssetRecipe } from './proceduralAssetContract'
 
-export const PROCEDURAL_ASSET_TEXT_SUBJECTS = ['robot', 'character', 'tree', 'palm', 'chair', 'table', 'box', 'sphere', 'cylinder'] as const
+export const PROCEDURAL_ASSET_TEXT_SUBJECTS = ['robot', 'character', 'tree', 'palm', 'chair', 'table', 'box', 'sphere', 'cylinder', ...PROCEDURAL_ENVIRONMENT_SUBJECTS, ...PROCEDURAL_TRANSPORT_SUBJECTS] as const
 /** A bounded local recipe selector, not a claim of unrestricted text synthesis. */
 export function createProceduralAssetFromText(intent: string, seed = 1): ProceduralAssetRecipe {
   if (typeof intent !== 'string' || intent.length > 2000) throw new Error('Describe an asset in 1–2000 characters')
@@ -30,7 +32,9 @@ export function createProceduralAssetFromText(intent: string, seed = 1): Procedu
     add('top', 'box', [0, 1, 0], [1.4, 0.16, 1], null, color)
     for (const [id, x, z] of [['front-left', -0.55, 0.35], ['front-right', 0.55, 0.35], ['back-left', -0.55, -0.35], ['back-right', 0.55, -0.35]] as const) add(id, 'box', [x, -0.48, z], [0.14, 0.9, 0.14], 'top', accent)
     if (subject === 'chair') add('back', 'box', [0, 0.55, -0.43], [1.4, 0.95, 0.14], 'top')
-  } else add('body', subject, [0, 0.5, 0], [1, 1, 1])
+  } else if (PROCEDURAL_ENVIRONMENT_SUBJECTS.some(item => item === subject)) parts.push(...createEnvironmentParts(subject, color))
+  else if (PROCEDURAL_TRANSPORT_SUBJECTS.some(item => item === subject)) parts.push(...createTransportParts(subject, color))
+  else add('body', subject as AssetPrimitive, [0, 0.5, 0], [1, 1, 1])
   const main = parts[0], controls: ProceduralAssetRecipe['controls'] = [
     ...(['width', 'height', 'depth'] as const).map((target, index) => ({ id: target, label: `${main.id} ${target}`, partId: main.id, target, type: 'number' as const, min: 0.05, max: 5, step: 0.05, default: main.size[index] })),
     { id: 'color', label: `${main.id} colour`, partId: main.id, target: 'color', type: 'color', default: main.color },

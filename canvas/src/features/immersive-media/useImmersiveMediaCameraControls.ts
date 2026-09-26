@@ -1,4 +1,5 @@
 import React from 'react'
+import { photoFieldOfView } from './immersivePhotoProjection'
 import { useFrame } from '@react-three/fiber'
 import { Euler, MathUtils, PerspectiveCamera, Vector3 } from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -163,18 +164,18 @@ export function useImmersiveMediaCameraControls({
   useFrame(({ clock }) => {
     if (!active) return
     controls.enabled = false
-    camera.position.set(0, 0, 0.01)
+    camera.position.set(0, 0, snapshot.source.photo ? 0 : 0.01)
     const intro = introRef.current
     if (!intro.startedAt) intro.startedAt = clock.elapsedTime
     const elapsed = clock.elapsedTime - intro.startedAt
     const duration = Math.max(0.25, snapshot.transitionDurationMs / 1000)
     const progress = Math.min(1, elapsed / duration)
     const eased = 1 - Math.pow(1 - progress, 3)
-    const introOffset = intro.revision === snapshot.introRevision ? (1 - eased) * -42 : 0
+    const introOffset = !snapshot.source.photo && intro.revision === snapshot.introRevision ? (1 - eased) * -42 : 0
     const yaw = MathUtils.degToRad(snapshot.view.yawDegrees + introOffset)
     const pitch = MathUtils.degToRad(snapshot.view.pitchDegrees)
     camera.rotation.set(pitch, yaw, 0, 'YXZ')
-    const fieldOfView = Math.max(
+    const fieldOfView = snapshot.source.photo ? photoFieldOfView(snapshot.source.photo, camera.aspect, snapshot.view.fieldOfViewDegrees) : Math.max(
       24,
       Math.min(115, snapshot.view.fieldOfViewDegrees + snapshot.view.lensStrength * 18),
     )

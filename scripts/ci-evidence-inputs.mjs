@@ -71,9 +71,10 @@ export function ownerInputs({ contract, environment, gitText, resolveCi, version
     commands: plan.commands, scopes: plan.scopes, versions }
 }
 
-export function toolVersion(command, args, { execute = execFileSync } = {}) {
-  // A hosted runner can time out before Chrome prints its version. Retry
-  // only that transient probe once; never substitute guessed or absent evidence.
+export function toolVersion(command, args, { execute = execFileSync, readPackageVersion = execFileSync } = {}) {
+  // A hosted runner can time out before Chrome prints its version. A second
+  // timeout may use the installed package's exact version; missing metadata
+  // still fails closed and never becomes reusable CI evidence.
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const version = execute(command, args, {
@@ -83,7 +84,20 @@ export function toolVersion(command, args, { execute = execFileSync } = {}) {
       if (!version) throw new Error(`${command} returned no version evidence`)
       return version
     } catch (error) {
-      if (error?.code !== 'ETIMEDOUT' || attempt === 1) throw error
+      if (error?.code !== 'ETIMEDOUT') throw error
+      if (attempt === 1) {
+        if (command === 'google-chrome' && args.length === 1 && args[0] === '--version') {
+          try {
+            const version = readPackageVersion('dpkg-query', ['-W', '-f=${Version}', 'google-chrome-stable'], {
+              cwd: repoRoot, encoding: 'utf8', timeout: 5000, maxBuffer: 4096, killSignal: 'SIGKILL',
+            }).trim()
+            if (/^[0-9]+(?:\.[0-9]+){2,4}(?:-[0-9a-z.+~:-]+)?$/u.test(version)) {
+              return `Google Chrome ${version} (installed package)`
+            }
+          } catch { /* The timed-out executable remains the recorded failure. */ }
+        }
+        throw error
+      }
     }
   }
 }

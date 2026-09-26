@@ -49,7 +49,27 @@ export async function testMarkdownFileTreeContextMenuItemsReuseSharedDefinitions
   items[5]?.onSelect()
   items[6]?.onSelect()
   items[7]?.onSelect()
-  items[8]?.onSelect()
+  await items[8]?.onSelect()
+
+  let answer!: (ok: boolean) => void
+  const pendingCalls: string[] = []
+  const pendingItems = buildMarkdownFileTreeContextMenuItems({
+    entry: { path: '/temporary.md', parentPath: '/', kind: 'file', name: 'temporary.md', updatedAtMs: 0 },
+    copyToClipboard: async () => true,
+    onDeleteEntry: path => pendingCalls.push(path), closeContextMenu: () => pendingCalls.push('close'),
+    confirmDelete: () => new Promise<boolean>(resolve => { answer = resolve }),
+  })
+  const remove = pendingItems.find(item => item.label === 'Delete')!
+  const canceled = remove.onSelect()
+  if (pendingCalls.length) throw Error('Deletion must await the visible confirmation')
+  answer(false); await canceled
+  if (pendingCalls.join(',') !== 'close') throw Error('Cancel must retain the source')
+  pendingCalls.length = 0
+  const confirmed = remove.onSelect(); answer(true); await confirmed
+  if (pendingCalls.join(',') !== '/temporary.md,close') throw Error('Confirmed deletion must run once')
+
+  const { testActiveSourceDeletionSettlesWritesAndClearsSelection } = await import('./markdownWorkspaceWebpageHtmlSidecarDeletion.test')
+  await testActiveSourceDeletionSettlesWritesAndClearsSelection()
 
   const callLog = calls.join(',')
   if (!callLog.includes('new-file,close')) {
