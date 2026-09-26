@@ -203,3 +203,33 @@ test('review refreshes when source hydration releases its mutation fence without
     assert.equal(useGraphStore.getState().markdownDocumentText, source)
   } finally { await unmountReactRoot(root); environment.restore() }
 })
+
+test('review follows late local source binding, graph replacement and physics readiness', async () => {
+  const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
+  const { mountReactRoot, unmountReactRoot } = await import('@/tests/lib/reactRootHarness')
+  const React = await import('react'), { createRoot } = await import('react-dom/client')
+  const { SpatialWorkspaceReview } = await import('../features/three/SpatialWorkspaceReview')
+  const environment = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
+  const container = environment.dom.window.document.getElementById('root')!, root = createRoot(container)
+  const source = install(), files = useGraphStore.getState().sourceFiles
+  useGraphStore.setState({ sourceFiles: [] })
+  const flush = () => React.act(async () => { await new Promise(resolve => setTimeout(resolve, 30)) })
+  const disabled = () => container.querySelector('fieldset')?.disabled
+  try {
+    await mountReactRoot(root, React.createElement(SpatialWorkspaceReview)); await flush()
+    assert.equal(disabled(), true)
+    await React.act(async () => { useGraphStore.setState({ sourceFiles: files }) }); await flush()
+    assert.equal(disabled(), false, 'local source binding must refresh a previous refusal')
+    const graph = useGraphStore.getState().graphData!
+    await React.act(async () => { useGraphStore.setState({ graphData: { ...graph, metadata: {} } }) }); await flush()
+    assert.equal(disabled(), true, 'graph replacement invalidates the prior inspection')
+    await React.act(async () => { useGraphStore.setState({ graphData: graph }) }); await flush()
+    assert.equal(disabled(), false)
+    const stopped = readXrPhysicsRuntime()
+    await React.act(async () => { restoreXrPhysicsRuntimeSnapshot({ ...stopped, dirty: true, revision: stopped.revision + 1 }) }); await flush()
+    assert.equal(disabled(), true)
+    await React.act(async () => { restoreXrPhysicsRuntimeSnapshot({ ...stopped, revision: stopped.revision + 2 }) }); await flush()
+    assert.equal(disabled(), false, 'saved physics readiness must refresh inspection')
+    assert.equal(useGraphStore.getState().markdownDocumentText, source)
+  } finally { await unmountReactRoot(root); environment.restore() }
+})

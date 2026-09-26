@@ -5,13 +5,16 @@ import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { applySpatialWorkspace, cancelSpatialWorkspace, inspectSpatialWorkspace, proposeSpatialWorkspace, readSpatialReview, recheckSpatialReceipt, subscribeSpatialReview, undoSpatialWorkspace, type SpatialResult } from './spatialWorkspaceRuntime'
 import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
+import { readXrPhysicsRuntime, subscribeXrPhysicsRuntime } from './xrPhysicsRuntime'
 
 /** Operator review uses the same snapshot and detached proposal as the browser agent tool. */
 export function SpatialWorkspaceReview() {
   const review = React.useSyncExternalStore(subscribeSpatialReview, readSpatialReview, readSpatialReview)
   const motion = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
+  const physics = React.useSyncExternalStore(subscribeXrPhysicsRuntime, readXrPhysicsRuntime, readXrPhysicsRuntime)
   const ready = useSourceFilesBootstrapReady()
   const source = useGraphStore(useShallow(state => ({ name: state.markdownDocumentName, text: state.markdownDocumentText,
+    files: state.sourceFiles, graph: state.graphData, revision: state.graphContentRevision,
     indexing: state.markdownWorkspaceIndexingInFlight, layoutLock: state.workspaceGraphMutationLayoutLockActive,
     blockedUntil: state.workspaceGraphMutationBlockUntilMs, workspace: state.workspaceViewMode, pane: state.workspaceCanvasPaneOpen })))
   const [snapshot, setSnapshot] = React.useState<Awaited<ReturnType<typeof inspectSpatialWorkspace>> | null>(null)
@@ -25,7 +28,7 @@ export function SpatialWorkspaceReview() {
     let active = true
     void inspectSpatialWorkspace().then(next => { if (active) setSnapshot(next) })
     return () => { active = false }
-  }, [source, ready, motion.revision, refresh])
+  }, [source, ready, motion.revision, physics.revision, refresh])
   React.useEffect(() => {
     const remaining = Number(source.blockedUntil || 0) - Date.now()
     if (!Number.isFinite(remaining) || remaining <= 0) return

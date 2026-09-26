@@ -179,7 +179,11 @@ try {
 } catch (error) {
   if (activePage && !activePage.isClosed()) {
     await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
-    await writeFile(join(output, 'failure.txt'), (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable'))
+    const failure = (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable')
+    await writeFile(join(output, 'failure.txt'), failure)
+    // Retained stage logs must explain a disabled form even when runner screenshots are unavailable.
+    console.error(JSON.stringify({ revision, tree, viewport: activePage.viewportSize(), output }))
+    console.error(failure.slice(0, 50000))
   }
   throw error
 } finally { await browser?.close(); await server?.close() }
