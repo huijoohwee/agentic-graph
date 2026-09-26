@@ -10,13 +10,15 @@ import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME } from '@/lib/ui/responsiveElemen
 const DEMO_PATH = '/python-learning-demo.py'
 
 /** Create an editable browser-local file only when the learner opens the bundled demo. */
-export function PythonLearningDemoSourceFile({ search = '', onSelectFile, entry, onReady, cloudIndicator, represented }: {
+export function PythonLearningDemoSourceFile({ search = '', onSelectFile, entry, onReady, cloudIndicator, represented, buildCanvasEmbedUrl, onCanvasEmbedReady }: {
   search?: string
   onSelectFile: (path: WorkspacePath) => void
   entry: WorkspaceEntry | null
   onReady: (entry: WorkspaceEntry) => void
   cloudIndicator?: React.ReactNode
   represented: boolean
+  buildCanvasEmbedUrl?: (entry: WorkspaceEntry) => Promise<string | null>
+  onCanvasEmbedReady?: (entry: WorkspaceEntry, url: string) => void
 }) {
   const panelTypography = usePanelTypography()
   const [busy, setBusy] = React.useState(false)
@@ -55,8 +57,9 @@ export function PythonLearningDemoSourceFile({ search = '', onSelectFile, entry,
         <span className="truncate">{busy ? 'Opening Python demo…' : 'python-learning-demo.py'}</span>
       </MarkdownFileTreeRowButton>
     </section> : null}
-    {entry && !represented ? <MarkdownFileTree entries={[entry]} readOnly expandedPaths={new Set(['/'])}
+    {entry && !represented ? <MarkdownFileTree readOnly entries={[entry]} expandedPaths={new Set(['/'])}
       toggleExpanded={() => void 0} activePath={null} onSelectFile={onSelectFile}
+      buildCanvasEmbedUrl={buildCanvasEmbedUrl} onCanvasEmbedReady={onCanvasEmbedReady}
       renderFileRight={() => cloudIndicator} /> : null}
     {error ? <p role="alert" className="px-2 text-xs">{error}</p> : null}
   </>

@@ -20,3 +20,43 @@ export function learningCanvasScene(pose: LearningCanvasPose): LearningSceneSnap
   const [ticks, x, z, heading, altitude] = pose
   return { ticks, x, z, heading, altitude, landed: altitude === 0, collisions: 0, atGoal: false, distance: 0 }
 }
+
+/** Render-only admission; it never imports source, executes a program or sends receiver commands. */
+export async function readLearningCanvasShare(hash: string, signal: AbortSignal): Promise<LearningCanvasPose[]> {
+  signal.throwIfAborted()
+  if (hash.length > 16016) throw new Error('Canvas snapshot link is too large.')
+  const fields = new URLSearchParams(hash.replace(/^#/, '')), encoded = fields.get('flight') || ''
+  if ([...fields.keys()].join(',') !== 'flight' || !/^[A-Za-z0-9_-]{1,16000}$/u.test(encoded))
+    throw new Error('Canvas snapshot link is invalid.')
+  const bytes = Uint8Array.from(atob(encoded.replace(/-/gu, '+').replace(/_/gu, '/')), char => char.charCodeAt(0))
+  const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader()
+  const chunks: Uint8Array[] = []; let size = 0
+  try {
+    while (true) {
+      signal.throwIfAborted()
+      const row = await reader.read()
+      if (row.done) break
+      size += row.value.byteLength
+      if (size > 500000) throw new Error('Canvas snapshot exceeds 500 kB.')
+      chunks.push(row.value)
+    }
+  } finally { await reader.cancel().catch(() => void 0) }
+  signal.throwIfAborted()
+  const path = JSON.parse(await new Blob(chunks).text())
+  if (!path || !['agentic-drone-flight-path/v1', 'agentic-drone-flight-path/v2'].includes(path.schema)
+    || path.model !== 'kinematic' || path.physicalAircraft !== false || path.tickRate !== 60
+    || path.coordinateFrame !== 'local-xz-altitude-m-heading-deg'
+    || !Array.isArray(path.samples) || path.samples.length < 2 || path.samples.length > 7201)
+    throw new Error('Unsupported Canvas snapshot.')
+  const channel = '0'.repeat(32), poses: LearningCanvasPose[] = []
+  for (let tick = 0; tick < path.samples.length; tick++) {
+    const pose = readLearningCanvasPose({ protocol: LEARNING_CANVAS_PROTOCOL, kind: 'pose', channel, pose: path.samples[tick] }, channel)
+    const previous = poses[tick - 1]
+    if (!pose || pose[0] !== tick || (!tick && pose.some(n => n !== 0))
+      || (previous && Math.hypot(pose[1] - previous[1], pose[2] - previous[2], pose[4] - previous[4]) > 0.050002))
+      throw new Error('Canvas snapshot contains an invalid pose.')
+    poses.push(pose)
+  }
+  if (poses[poses.length - 1][4] !== 0) throw new Error('Canvas snapshot must end landed.')
+  return poses
+}

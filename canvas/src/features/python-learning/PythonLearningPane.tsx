@@ -10,6 +10,7 @@ import { LearningDebriefControls } from './LearningDebriefControls'
 import { LearningOfflineControls } from './LearningOfflineControls'
 import { getMarkdownWorkspaceActionBridge } from '../markdown-explorer/workspaceActionBridge'
 import './pythonLearning.css'
+import { sourceLearningLesson } from './programmaticDronePreset'
 
 export default function PythonLearningPane(props: {
   source: string; onChange: (source: string) => void; documentId: string; uri: string
@@ -17,7 +18,11 @@ export default function PythonLearningPane(props: {
   editorRef: React.MutableRefObject<MonacoTextEditorHandle | null>; onCaretLine?: (line: number) => void
 }) {
   const panelTypography = usePanelTypography()
-  const [lessonId, setLessonId] = React.useState(() => runtime.read().document?.documentId === props.documentId ? runtime.read().document!.lessonId : 'travel')
+  const [selection, setSelection] = React.useState(() => ({ documentId: props.documentId, lessonId:
+    runtime.read().document?.documentId === props.documentId ? runtime.read().document!.lessonId : sourceLearningLesson(props.source) }))
+  const lessonId = selection.documentId === props.documentId ? selection.lessonId : sourceLearningLesson(props.source)
+  const setLessonId = (lessonId: string) => setSelection({ documentId: props.documentId, lessonId })
+  React.useEffect(() => { if (selection.documentId !== props.documentId) setLessonId(sourceLearningLesson(props.source)) }, [props.documentId])
   const [notice, setNotice] = React.useState('')
   const [mobileView, setMobileView] = React.useState<'code' | 'result'>('code')
   const snapshot = React.useSyncExternalStore(runtime.subscribe, runtime.read, runtime.read)

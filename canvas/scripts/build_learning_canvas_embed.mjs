@@ -18,7 +18,8 @@ try {
   // Retain Graph aliases and JSX compilation; this entry has no app shell or service worker.
   const plugins = (await Promise.all(config.plugins.flat(Infinity))).filter(p => p &&
     ['vite:react-babel', 'vite:react-refresh', '@tailwindcss/vite:scan', '@tailwindcss/vite:generate:build'].includes(p.name))
-  await writeFile(join(scratch, 'index.html'), `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="${join(canvas, 'src/features/python-learning/LearningCanvasEmbed.tsx')}"></script></body></html>`)
+  await writeFile(join(scratch, 'entry.jsx'), `import React from 'react';import {createRoot} from 'react-dom/client';import LearningCanvasEmbed from '${join(canvas, 'src/features/python-learning/LearningCanvasEmbed.tsx')}';createRoot(document.getElementById('root')).render(<LearningCanvasEmbed/>);`)
+  await writeFile(join(scratch, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="./entry.jsx"></script></body></html>')
   await build({ ...config, configFile: false, root: scratch, publicDir: false, plugins,
     base: '/gamexr/graph-canvas/', build: { outDir: output, emptyOutDir: true, rollupOptions: { output: { manualChunks(id) {
       if (id.includes('/three/src/renderers/shaders/') && id.endsWith('.glsl.js')) return 'three-shaders'

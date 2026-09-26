@@ -54,6 +54,16 @@ export function LearningFlightTransferControls() {
         style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '4px 9px', border: '1px solid var(--kg-border,#667)', borderRadius: 5, color: 'inherit' }}>Send to GameXR</a>
         : <button disabled>Send to GameXR</button>}
       <button disabled={!available} onClick={() => act(async signal => {
+        const { captureLearningCanvasShare } = await import('./learningCanvasShare')
+        const { buildCanvasEmbedIframeMarkup } = await import('@/features/canvas/canvasEmbedIframeMarkup')
+        const { openCanvasEmbedCodePanel } = await import('@/features/canvas/canvasEmbedCodePanelEvent')
+        const url = await captureLearningCanvasShare(snapshot.document!.documentId, new URL(import.meta.env.BASE_URL, location.origin).href, signal)
+        const code = buildCanvasEmbedIframeMarkup(url)
+        if (!code || signal.aborted) throw new Error('Canvas sharing cancelled.')
+        openCanvasEmbedCodePanel({ sourceName: snapshot.document!.documentId, title: 'Canvas iframe embed', language: 'html', code })
+        return 'Canvas embed ready. Copy the iframe into another page to replay this completed flight.'
+      })}>Share canvas embed</button>
+      <button disabled={!available} onClick={() => act(async signal => {
         const text = await prepare(); if (signal.aborted) return ''
         setCopyText(text)
         try { await navigator.clipboard.writeText(text); return 'Copied. In GameXR, open Paste flight path and choose Review pasted path.' }

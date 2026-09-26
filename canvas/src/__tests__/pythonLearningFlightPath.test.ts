@@ -110,3 +110,25 @@ test('review link generation cancels before/during preparation and refuses overs
   const incompressible = Array.from({ length: 700 }, (_, i) => createHash('sha256').update(String(i)).digest('hex')).join('')
   await assert.rejects(createFlightReviewUrl(incompressible, destination, new AbortController().signal), /too large for a review link/)
 })
+
+test('shared Canvas replays a bounded snapshot without source, storage or receiver authority', async () => {
+  const { createLearningCanvasShareUrl } = await import('../features/python-learning/learningCanvasShare')
+  const { readLearningCanvasShare } = await import('../features/python-learning/learningCanvasEmbedProtocol')
+  const text = createLearningFlightPath(await result()), signal = new AbortController().signal
+  const url = new URL(await createLearningCanvasShareUrl(text, 'https://graph.test/agentic-graph/?secret=private#pair=private', signal))
+  assert.equal(url.search, '?kgLearningCanvas=drone')
+  assert.equal(url.pathname, '/agentic-graph/')
+  const poses = await readLearningCanvasShare(url.hash, signal)
+  assert.equal(poses.length, 541); assert.deepEqual(poses.at(-1), [540, 4, 0, 0, 0])
+  for (const change of [{ physicalAircraft: true }, { tickRate: 120 }, { samples: [[0, 0, 0, 0, 0], [1, 8, 0, 0, 0]] },
+    { samples: [[0, 0, 0, 0, 0], [1, 0, 0, 0, 0.01]] }]) {
+    const bad = new URL(await createLearningCanvasShareUrl(JSON.stringify({ ...JSON.parse(text), ...change }), url.href, signal))
+    await assert.rejects(readLearningCanvasShare(bad.hash, signal))
+  }
+  await assert.rejects(readLearningCanvasShare(url.hash + '&flight=duplicate', signal))
+  const { gzipSync } = await import('node:zlib')
+  const bomb = '#flight=' + gzipSync('x'.repeat(500001)).toString('base64url')
+  await assert.rejects(readLearningCanvasShare(bomb, signal), /500 kB/)
+  const abort = new AbortController(); abort.abort()
+  await assert.rejects(readLearningCanvasShare(url.hash, abort.signal), { name: 'AbortError' })
+})

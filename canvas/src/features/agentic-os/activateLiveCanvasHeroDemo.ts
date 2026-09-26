@@ -59,6 +59,12 @@ export async function activateLiveCanvasHeroDemo(selection: LiveCanvasHeroPreset
     return
   }
   const demo = await loadLiveCanvasHeroDemo(selection.id)
+  if (selection.id === 'programmatic-drone-flight') {
+    const { activateProgrammaticDroneDemo, isProgrammaticDronePrompt } = await import('@/features/python-learning/programmaticDronePreset')
+    if (!isProgrammaticDronePrompt(selection.prompt)) throw new Error('Reload the Programmatic Drone Flight preset before opening Demo.')
+    await activateProgrammaticDroneDemo()
+    return
+  }
   if (demo.repository) {
     const { activateLiveCanvasHeroRepositoryDemo } = await import('./activateLiveCanvasHeroRepositoryDemo')
     return activateLiveCanvasHeroRepositoryDemo(selection, demo)

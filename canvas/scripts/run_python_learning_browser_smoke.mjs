@@ -6,23 +6,26 @@ import { dirname, resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 import { chromium } from 'playwright'
+import { createServer as createHostServer } from 'node:http'
 import { gunzipSync } from 'node:zlib'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const revision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
 const output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-proof-${revision.slice(0, 12)}`))
 const scratch = await mkdtemp(join(tmpdir(), 'python-learning-browser-'))
-let server, browser
+let server, browser, embedHost
+let embedHostOrigin = ''
 try {
   await mkdir(output, { recursive: true })
   await symlink(join(root, 'node_modules'), join(scratch, 'node_modules'), 'dir')
   await writeFile(join(scratch, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/proof-entry.jsx"></script></body></html>')
-  await writeFile(join(scratch, 'proof-entry.jsx'), `import React from 'react';import {createRoot} from 'react-dom/client';import Page from '/@fs/${canvas}/src/features/testing/PythonLearningSmokePage.tsx';import '/@fs/${canvas}/src/index.css';createRoot(document.getElementById('root')).render(<Page/>);`)
+  const catalogText = process.env.PROGRAMMATIC_DRONE_CATALOG ? await readFile(process.env.PROGRAMMATIC_DRONE_CATALOG, 'utf8') : undefined
+  await writeFile(join(scratch, 'proof-entry.jsx'), `import React from 'react';import {createRoot} from 'react-dom/client';import Page from '/@fs/${canvas}/src/features/testing/PythonLearningSmokePage.tsx';import '/@fs/${canvas}/src/index.css';createRoot(document.getElementById('root')).render(<Page catalogText={new URLSearchParams(location.search).has('catalog') ? ${JSON.stringify(catalogText) || 'undefined'} : undefined}/>);`)
   const proofPath = '/__python_learning_smoke'
   server = await createServer({ configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', root: canvas, cacheDir: join(scratch, 'vite-cache'),
     plugins: [{ name: 'python-learning-smoke-entry', configureServer(owner) {
       owner.middlewares.use(async (request, response, next) => {
-        if (request.url?.split('?')[0] !== proofPath) return next()
+        if (request.url?.split('?')[0] !== proofPath || request.url.includes('kgLearningCanvas=drone')) return next()
         const html = '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/@fs/' + join(scratch, 'proof-entry.jsx') + '"></script></body></html>'
         response.setHeader('Content-Type', 'text/html'); response.end(await owner.transformIndexHtml(proofPath, html))
       })
@@ -36,7 +39,7 @@ try {
   page.on('console', message => { if (message.type() === 'error') console.error('Browser console:', message.text().slice(0, 700)) })
   await context.route('**/*', route => {
     const url = new URL(route.request().url())
-    if (!['http:', 'https:'].includes(url.protocol) || url.origin === origin) return route.continue()
+    if (!['http:', 'https:'].includes(url.protocol) || url.origin === origin || url.origin === embedHostOrigin) return route.continue()
     remote.push(url.origin + url.pathname); return route.abort()
   })
   const started = performance.now()
@@ -139,6 +142,39 @@ try {
   await page.getByLabel('GameXR address', { exact: true }).fill(origin + '/__flight_review_fixture')
   await sendLink.waitFor()
 
+  // Both sharing entry points use the existing iframe-code event and the same Graph renderer.
+  await page.evaluate(() => window.addEventListener('kg-canvas-embed-code-panel-open', event => { window.__sharedCanvasCode = event.detail.code }, { once: true }))
+  await page.getByRole('button', { name: 'Share canvas embed', exact: true }).click()
+  await page.waitForFunction(() => !!window.__sharedCanvasCode)
+  const embedCode = await page.evaluate(() => window.__sharedCanvasCode)
+  assert.match(embedCode, /kgLearningCanvas=drone/)
+  await writeFile(join(output, 'canvas-embed.html'), embedCode)
+  // Load copied markup in a different-origin host, with no Graph workspace storage.
+  // A real second origin gives Chromium the resolved loopback address required by Local Network Access.
+  embedHost = createHostServer((_request, response) => { response.setHeader('Content-Type', 'text/html'); response.end(embedCode) })
+  await new Promise(resolve => embedHost.listen(0, '127.0.0.1', resolve))
+  embedHostOrigin = `http://127.0.0.1:${embedHost.address().port}`
+  const hostUrl = embedHostOrigin + '/shared-canvas'
+  const sharedPage = await context.newPage()
+  sharedPage.on('console', message => { if (message.type() === 'error') console.error('Shared Canvas console:', message.text().slice(0, 700)) })
+  sharedPage.on('requestfailed', request => console.error('Shared Canvas request failed:', request.url().slice(0, 160), request.failure()))
+  sharedPage.on('pageerror', error => { errors.push(error.message); console.error('Shared Canvas error:', error.message) })
+  await sharedPage.goto(hostUrl)
+  const sharedFrame = sharedPage.frameLocator('iframe')
+  try { await sharedFrame.getByText('Flight replay · 0 / 540 ticks', { exact: false }).waitFor({ timeout: 60000 }) }
+  catch (error) {
+    console.error('Shared Canvas frames:', await Promise.all(sharedPage.frames().map(async frame => ({ url: frame.url(), text: await frame.locator('body').innerText().catch(() => '') }))))
+    await sharedPage.screenshot({ path: join(output, 'shared-canvas-failure.png') }); throw error
+  }
+  await sharedFrame.getByRole('button', { name: 'Replay flight', exact: true }).click()
+  await sharedFrame.getByText('Flight replay · 540 / 540 ticks', { exact: false }).waitFor({ timeout: 20000 })
+  assert.equal(await sharedFrame.getByRole('region', { name: 'Graph drone Canvas' }).getAttribute('data-graph-canvas-pose'), '[540,4,0,0,0]')
+  await sharedFrame.getByRole('button', { name: 'Reset replay', exact: true }).click()
+  await sharedFrame.getByText('Flight replay · 0 / 540 ticks', { exact: false }).waitFor()
+  await sharedPage.screenshot({ path: join(output, 'shared-canvas.png') })
+  await sharedPage.close()
+  await page.getByRole('button', { name: 'Close share code panel', exact: true }).click()
+
   const downloaded = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export debrief', exact: true }).click()
   const portable = await readFile(await (await downloaded).path())
@@ -211,6 +247,33 @@ try {
   assert.match(await page.getByLabel('Python lesson position', { exact: true }).innerText(), /airborne/)
   await page.screenshot({ path: join(output, 'drone-airborne.png'), fullPage: true })
   await page.evaluate(() => window.__pythonLearningProof.flush())
+  if (catalogText) {
+    const catalogPage = await context.newPage()
+    catalogPage.on('pageerror', error => errors.push(error.message))
+    await catalogPage.goto(origin + proofPath + '?catalog=1')
+    await catalogPage.getByLabel('Prompt preset', { exact: true }).selectOption('programmatic-drone-flight')
+    const prompt = catalogPage.locator('[data-kg-card-inline-viewer-edit-command-proxy="1"]')
+    await catalogPage.waitForFunction(() => document.querySelector('[data-kg-card-inline-viewer-edit-command-proxy="1"]')?.value === '/python.learning @canvas #learning operation=inspect lesson=drone')
+    assert.equal(await catalogPage.getByRole('region', { name: 'Python learning workspace', exact: true }).count(), 0, 'selection cannot open or run a file')
+    await catalogPage.screenshot({ path: join(output, 'programmatic-drone-catalog.png'), fullPage: true })
+    await catalogPage.getByRole('button', { name: 'Demo', exact: true }).click()
+    const dronePane = catalogPage.getByRole('region', { name: 'Python learning workspace', exact: true })
+    await dronePane.waitFor({ timeout: 30000 })
+    assert.equal(await dronePane.getAttribute('data-learning-state'), 'idle')
+    assert.equal(await catalogPage.getByLabel('Python lesson', { exact: true }).inputValue(), 'drone')
+    const fresh = await catalogPage.evaluate(() => window.__pythonLearningProof.read().document)
+    assert.match(fresh.documentId, /programmatic-drone-flight-.*\.py$/)
+    assert.match(fresh.source, /^# agentic-graph lesson: drone\n/)
+    const observed = await catalogPage.evaluate(() => window.__pythonLearningProof.tools.inspect())
+    assert.equal(observed.binding.lessonId, 'drone'); assert.equal(observed.state, 'idle')
+    await catalogPage.getByRole('button', { name: 'Run', exact: true }).click()
+    await catalogPage.waitForFunction(() => window.__pythonLearningProof.read().state === 'completed', null, { timeout: 20000 })
+    assert.equal((await catalogPage.evaluate(() => window.__pythonLearningProof.read().result.grade)).passed, true)
+    await catalogPage.screenshot({ path: join(output, 'programmatic-drone-demo.png'), fullPage: true })
+    await writeFile(join(output, 'programmatic-drone-catalog.md'), catalogText)
+    await writeFile(join(output, 'programmatic-drone-demo.json'), JSON.stringify({ document: fresh, inspection: observed }, null, 2))
+    await catalogPage.close()
+  }
   assert.deepEqual(errors, [])
   const evidence = { revision, sourceState: execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' }),
     kind: 'native-component-development-smoke', offlineReloadProven: false, toolRegistrationProven: false, mainCanvasMounted: true, droneAirborne: airborne,
@@ -222,4 +285,4 @@ try {
   const failedPage = browser?.contexts()[0]?.pages()[0]
   if (failedPage) console.error('Visible failure context:', (await failedPage.locator('body').innerText()).slice(-5000))
   throw error
-} finally { await browser?.close(); await server?.close(); await rm(scratch, { recursive: true, force: true }) }
+} finally { await browser?.close(); if (embedHost) await new Promise(resolve => embedHost.close(resolve)); await server?.close(); await rm(scratch, { recursive: true, force: true }) }

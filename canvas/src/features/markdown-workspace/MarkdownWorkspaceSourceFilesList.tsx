@@ -113,6 +113,10 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
 
   const buildCanvasEmbedUrl = React.useCallback(async (entry: WorkspaceEntry): Promise<string | null> => {
     if (entry.kind !== 'file') return null
+    if (/\.py$/iu.test(entry.path)) {
+      const { captureLearningCanvasShare } = await import('@/features/python-learning/learningCanvasShare')
+      return captureLearningCanvasShare(entry.path, new URL(import.meta.env.BASE_URL, window.location.origin).href, new AbortController().signal)
+    }
     const shareUrl = await publishWorkspaceEntryShareUrl({ entry, sourcesByPath })
     return appendCanvasPreviewParam(shareUrl || '')
   }, [sourcesByPath])
@@ -120,6 +124,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   const handleCanvasEmbedReady = React.useCallback((entry: WorkspaceEntry, embedUrl: string) => {
     const code = buildCanvasEmbedIframeMarkup(embedUrl)
     if (code) openCanvasEmbedCodePanel({ sourceName: entry.name || entry.path, title: 'Canvas iframe embed', language: 'html', code })
+    if (new URL(embedUrl).searchParams.has('kgLearningCanvas')) return
     if (!isSameOriginCanvasEmbedUrl(embedUrl)) return
     const isolatedEmbedUrl = resolveLiveCanvasHeroEmbedUrl({
       sourcePath: entry.path,
@@ -130,6 +135,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   }, [])
 
   const handleCanvasEmbedStart = React.useCallback((entry: WorkspaceEntry) => {
+    if (/\.py$/iu.test(entry.path)) return
     const embedUrl = buildLocalDocCanvasEmbedUrl({ relativePath: entry.path })
     if (!embedUrl) return
     selectLiveCanvasHeroSource({ sourcePath: entry.path, embedUrl })
@@ -151,6 +157,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       <AgentMissionSourceFile search={props.search} />
       <PythonLearningDemoSourceFile search={props.search} onSelectFile={onSelectFile}
         entry={demoEntry} onReady={setDemoEntry} represented={demoRepresented}
+        buildCanvasEmbedUrl={buildCanvasEmbedUrl} onCanvasEmbedReady={handleCanvasEmbedReady}
         cloudIndicator={demoEntry ? renderFileStatusRight({ entry: demoEntry, isActive: activePath === demoEntry.path }) : null} />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>

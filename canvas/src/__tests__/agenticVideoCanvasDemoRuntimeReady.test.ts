@@ -1,4 +1,3 @@
-import { parseXrInteractiveInvocation } from '@/features/three/xrSceneInteractiveInvocation'
 import { resolvePinnedAgenticDocPath, resolveRepoSourcePath, resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -6,18 +5,14 @@ import path from 'node:path'
 import { load as parseYaml } from 'js-yaml'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
 import { parseGenerationInvocation } from '@/features/chat/generationInvocation'
-import { parseChatSkillSlashInvocation } from '@/features/chat/chatSkillRegistry'
-import { parseNativeCrawlerInvocation } from '@/features/chat/nativeCrawlerInvocation'
 import { isVideoAgentDemoPresetInvocation } from '@/features/chat/floatingPanelChat/videoAgentDemoPresetSubmit'
-import { isImageToThreeJsPromptPreset } from '@/features/image-to-threejs/imageToThreeJsPromptPreset'
-import { isImageToGlbPromptPreset } from '@/features/image-to-glb/imageToGlbPromptPreset'
-import { isAgenticGraphProbeTreePromptPreset } from '@/features/agentic-os/probeTreePromptPreset'
 import { buildLiveCanvasHeroModel } from '@/features/agentic-os/liveCanvasHeroModel'
 import { getCachedStoryboardWidgetWorkflowRunPlan } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
 import {
   PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE,
   PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE,
   PROMPT_PRESET_REQUIRED_IDS,
+  loadPromptPresetCatalog,
 } from '@/features/chat/promptPresetCatalog'
 import { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME } from '../../../mcp/agentic-canvas-os-docs-contract.mjs'
 
@@ -60,6 +55,8 @@ const property = (node: PlainRecord, key: string): unknown => unwrap(node[key])
 
 export async function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes() {
   const catalogText = fs.readFileSync(await resolvePinnedAgenticDocPath('PROMPT-PRESETS.md'), 'utf8')
+  const accepted = await loadPromptPresetCatalog({ readFileText: async () => catalogText } as unknown as import('@/features/workspace-fs/types').WorkspaceFs)
+  if (!accepted.ok) throw new Error('Published catalog rejected by its runtime owner: ' + ('error' in accepted ? accepted.error : 'unknown'))
   const catalog = readFrontmatter(catalogText)
   const presets = Array.isArray(catalog.prompt_presets) ? catalog.prompt_presets.filter(isRecord) : []
   if (catalog.schema !== 'agentic-os-prompt-preset-catalog/v1') {
@@ -83,15 +80,7 @@ export async function testAgenticPromptPresetCatalogOwnsChatAndMcpRuntimeRoutes(
     const mcpTool = String(preset.mcp_tool || '')
     const mcpToken = String(preset.mcp_token || '')
     const isCardInline = slashCommand === '/image.to-threejs' || slashCommand === '/image.to-glb' || runtimeCommand === '/agentic-graph.probe-tree'
-    let valid = false
-    if (runtimeCommand === '/xr.physics') valid = parseXrInteractiveInvocation(prompt)?.action === 'physics'
-    else if (slashCommand === '/image.to-threejs') valid = isImageToThreeJsPromptPreset(prompt)
-    else if (slashCommand === '/image.to-glb') valid = isImageToGlbPromptPreset(prompt)
-    else if (runtimeCommand === '/agentic-graph.probe-tree') valid = isAgenticGraphProbeTreePromptPreset(prompt)
-    else if (runtimeCommand === '/launch-copilot') valid = /^\/launch-copilot\s+outline\s+reference\s+\S[\s\S]*$/.test(prompt)
-    else if (runtimeCommand === '/video-agent') valid = Boolean(parseGenerationInvocation(prompt))
-    else if (runtimeCommand === '/crawler-agent') valid = parseNativeCrawlerInvocation(prompt)?.command === '/crawler-agent'
-    else valid = parseChatSkillSlashInvocation(prompt)?.skill.slashCommand === runtimeCommand
+    const valid = accepted.presets.some(item => item.id === preset.id && item.prompt === prompt.trim())
     if (
       (!isCardInline && !slashCommand.endsWith('-prompt-preset'))
       || !valid

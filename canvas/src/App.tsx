@@ -14,6 +14,7 @@ import { CanvasSourceAuthorityBoundary } from '@/features/canvas/CanvasSourceAut
 import { AgenticOsRemoteGrammarAutoHydrationBoundary } from '@/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration'
 
 const CanvasLazy = lazy(() => import('@/pages/Canvas'))
+const LearningCanvasEmbedLazy = lazy(() => import('@/features/python-learning/LearningCanvasEmbed'))
 const PerformanceAutomationReadoutLazy = lazy(async () => ({
   default: (await import('@/features/canvas/PerformanceAutomationReadout')).PerformanceAutomationReadout,
 }))
@@ -49,6 +50,12 @@ function AppThemeRuntime() {
 }
 
 export default function App() {
+  if (new URLSearchParams(window.location.search).get('kgLearningCanvas') === 'drone')
+    return <Suspense fallback={<p>Loading shared Canvas…</p>}><LearningCanvasEmbedLazy /></Suspense>
+  return <CanvasApplication />
+}
+
+function CanvasApplication() {
   const basename = resolveRouterBasename(import.meta.env.BASE_URL)
   const performanceAutomationReadoutEnabled = useMemo(() => {
     if (typeof window === 'undefined') return false

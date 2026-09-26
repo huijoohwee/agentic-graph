@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.2.1
+version: 1.3.0
 date: 2026-09-26
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -13,10 +13,10 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.2.1 binds this user-authorized extension. The user confirmed
+DRONE-FLIGHT-PATH-001@1.3.0 binds this user-authorized extension. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
-inspects its motion, then exports the completed path. GameXR imports a bounded file,
+inspects its motion, then sends or exports the completed path. GameXR admits the bounded snapshot,
 previews it and requires an explicit Run after a receiver connection. Imported source
 is never evaluated. No aircraft support or motor output is part of this revision.
 
@@ -228,3 +228,53 @@ disabled browser regression and link/cancellation/bounds unit tests pass. The br
 Python selection initially retained a pre-existing pane-availability assertion failure;
 protected main subsequently corrected that assertion in #1296. Refresh the unpublished
 candidate from protected main before publication and repeat the affected selection.
+
+
+## Reusable sharing and catalog entry — 1.3.0
+
+PRD: Programmatic Drone Flight is discoverable through the shared Home Catalog and
+Chat Prompt Presets. Selection loads `/python.learning @canvas #learning operation=inspect
+lesson=drone` without opening a file or starting a run. Home Demo creates a uniquely
+named local Python example and selects the drone lesson from its inert first-line marker.
+It never overwrites an existing source. Chat Send delegates inspection to the existing
+learning tool executor; missing or different active lessons fail visibly without a provider
+request. Run remains the learner's explicit execution boundary.
+
+TAD: `agentic-canvas-os/docs/PROMPT-PRESETS.md` owns the catalog entry. Graph validates
+its native grammar and reuses its workspace file/import owners and existing drone solution.
+No second catalog, lesson engine or receiver API is introduced. The consumer remains
+compatible with the previous catalog; integrate Graph support before the catalog candidate.
+Production publication remains a separately authorized exact effect.
+
+Share canvas embed is now available for the completed drone source in Source Files and
+Results. Both use the existing iframe markup and code-panel owners. The URL contains a
+bounded compressed recording in its fragment and `kgLearningCanvas=drone`; no source code,
+workspace storage, model request or receiver grant is included. A recipient loads the same
+`LearningCanvasEmbed` renderer used by GameXR and explicitly chooses Replay, Pause or Reset.
+Replay pauses when hidden. This is a recorded simulation; GameXR alone supplies accepted
+receiver observations through the unchanged nonce-bound parent message mode.
+
+ADR: share immutable observations in a self-contained link, retaining the existing general
+Canvas share action instead of another upload service or custom preview renderer. Replay
+input is size-limited before and during decompression and validates contiguous ticks, bounds,
+origin, per-tick translation and final landing. Invalid or oversized snapshots fail visibly.
+Use a reachable Graph deployment URL for another device; a localhost URL stays on its host.
+The receiving site still controls whether its own CSP permits the iframe.
+
+Validation: 54 native Python/transfer/inspection/menu tests pass. ACOS preset contract and
+full docs contract pass. Browser proof covers different-origin copied iframe markup, explicit
+replay/final pose/reset, catalog selection without execution, fresh-file Demo and successful
+flight. A real second-origin HTTP fixture is required: intercepted synthetic hosts lose their
+resolved address under Chromium Local Network Access. This is not bypassed with browser flags.
+Actual in-app Source Files sharing produced the iframe code panel, copied a replay URL and
+finished at [540,4,0,0,0]. Canvas compilation and full-app offline/cache-corruption proof pass.
+The standalone renderer still builds five chunks, largest 495,333 bytes. Native candidate gates
+remain required before publication. The application replay route omits workspace WebMCP, media
+adapter and PWA installation.
+
+Budget refresh: at most 24 Graph owner files and five ACOS owner files for this increment,
+90 KiB source delta, zero dependencies or paid services; lazy load execution and sharing owners.
+A 20-minute verification/publication sprint follows implementation; external CI waits have no ETA.
+GTM: discover → edit → Run → replay/share → optional simulated bench review. Measure completed
+learner sessions before expanding hardware scope. Rollback removes the catalog row first,
+then reverts the Graph adapter and replay route; retain prior immutable refs and local data.

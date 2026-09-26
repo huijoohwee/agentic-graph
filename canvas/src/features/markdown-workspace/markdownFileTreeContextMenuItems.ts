@@ -181,8 +181,9 @@ export function buildMarkdownFileTreeContextMenuItems(
     })
   }
 
-  // Keep the shared menu discoverable; virtual evidence cannot be mutated or published.
+  // Read-only files may share an explicitly supplied replay; mutation stays disabled.
   return args.readOnly ? items.map(item => item.key === 'copyPath' || item.key === 'copyRelativePath'
+    || (item.key === 'shareCanvasEmbed' && !!args.buildCanvasEmbedUrl)
     ? item : { ...item, disabled: true, onSelect: () => {} }) : items
 }
 

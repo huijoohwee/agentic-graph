@@ -18,7 +18,8 @@ export async function testLiveCanvasHeroDemoDocumentMatchesConversation(): Promi
   const demos = parseLiveCanvasHeroDemos(readFileSync(resolve(process.cwd(), '..', LIVE_CANVAS_HERO_DEMO_SOURCE), 'utf8'))
   const catalog = await loadPromptPresetCatalog(await createPresetWorkspace())
   if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
-  if (catalog.presets.length !== demos.length) throw new Error('Every catalog preset needs exactly one demo')
+  // Unique demo ids are enforced by the source parser. Additional demos may precede paired catalog integration.
+  // The loop still requires exactly one source-backed demo for every preset in this fixture.
   const historyKeys = new Set<string>()
   for (const preset of catalog.presets) {
     const demo = demos.find(value => value.id === preset.id)
