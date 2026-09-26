@@ -116,15 +116,27 @@ async function settings() {
   return { analyticsDisabled: true }
 }
 
-const fetchBytes = async url => {
-  const response = await fetch(url, { cache: 'no-store', redirect: 'manual', signal: AbortSignal.timeout(30_000) })
+export const fetchGameXrBytes = async (url, fetchFn = fetch) => {
+  let current = new URL(url), response
+  for (let hop = 0; hop < 3; hop++) {
+    response = await fetchFn(current.href, { cache: 'no-store', redirect: 'manual', signal: AbortSignal.timeout(30_000) })
+    if (response.status === 200) break
+    const allowed = current.pathname === '/gamexr/index.html' ? ['/gamexr/', '/content/gamexr/']
+      : current.pathname === '/content/gamexr/' ? ['/gamexr/'] : []
+    assert.ok([301, 308].includes(response.status) && allowed.length, `GameXR HTTP status: ${current.href}`)
+    const target = new URL(response.headers.get('location'), current)
+    assert.ok(target.origin === new URL(url).origin && !target.search && !target.hash && !target.username && !target.password
+      && allowed.includes(target.pathname), 'GameXR shell redirect must stay canonical and same-origin')
+    await response.body?.cancel()
+    current = target
+  }
   assert.equal(response.status, 200, `GameXR HTTP status: ${url}`)
   return { bytes: Buffer.from(await response.arrayBuffer()), headers: response.headers }
 }
 export async function verifyGameXrLive(origin, pin) {
   const url = new URL(origin)
   assert.ok(url.origin === origin && !url.username && !url.password, 'GameXR target must be an origin')
-  const { bytes } = await fetchBytes(`${origin}/gamexr/release-manifest.json`), manifest = JSON.parse(bytes)
+  const { bytes } = await fetchGameXrBytes(`${origin}/gamexr/release-manifest.json`), manifest = JSON.parse(bytes)
   assert.equal(manifest.sourceRevision, pin.sourceRevision)
   assert.equal(manifest.artifactDigest, pin.artifactDigest)
   assert.equal(manifest.candidateStatus, 'source-bound-clean')
@@ -133,7 +145,7 @@ export async function verifyGameXrLive(origin, pin) {
   const entries = []
   for (const entry of manifest.artifacts) {
     assert.ok(safePath(entry.path), 'GameXR live artifact path')
-    const result = await fetchBytes(`${origin}/gamexr/${entry.path}`)
+    const result = await fetchGameXrBytes(`${origin}/gamexr/${entry.path}`)
     assert.equal(result.bytes.length, entry.bytes, entry.path)
     assert.equal(sha256(result.bytes), entry.sha256, entry.path)
     const cache = result.headers.get('cache-control') || ''
@@ -146,7 +158,7 @@ export async function verifyGameXrLive(origin, pin) {
     entries.push({ path: entry.path, bytes: result.bytes.length, sha256: sha256(result.bytes) })
   }
   assert.equal(digest(entries), pin.artifactDigest)
-  const shell = await fetchBytes(`${origin}/gamexr/`)
+  const shell = await fetchGameXrBytes(`${origin}/gamexr/`)
   assert.equal(sha256(shell.bytes), entries.find(entry => entry.path === 'index.html')?.sha256)
   for (const [from, to] of [['/GameXR', '/gamexr/'], ['/GameXR/sw.js', '/gamexr/sw.js']]) {
     const response = await fetch(origin + from, { redirect: 'manual', signal: AbortSignal.timeout(30_000) })
@@ -164,8 +176,8 @@ async function browserTransition(mode, pin) {
   const profile = path.join(temp, 'gamexr-returning-user'), evidence = path.join(temp, 'gamexr-before.json')
   const origin = 'https://airvio.co'
   const before = mode === 'prewarm' ? null : await json(evidence)
-  const manifest = JSON.parse((await fetchBytes(`${origin}/gamexr/precache-manifest.json`)).bytes)
-  const release = JSON.parse((await fetchBytes(`${origin}/gamexr/release-manifest.json`)).bytes)
+  const manifest = JSON.parse((await fetchGameXrBytes(`${origin}/gamexr/precache-manifest.json`)).bytes)
+  const release = JSON.parse((await fetchGameXrBytes(`${origin}/gamexr/release-manifest.json`)).bytes)
   if (mode !== 'prewarm') {
     assert.equal(release.sourceRevision, pin.sourceRevision)
     assert.equal(release.artifactDigest, pin.artifactDigest)

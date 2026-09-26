@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import YAML from 'yaml'
-import { admitGameXr, assertAnalyticsDisabled, validateGameXrPin, verifyGameXrArtifact, verifyGameXrFragments } from '../production-gamexr.mjs'
+import { admitGameXr, assertAnalyticsDisabled, fetchGameXrBytes, validateGameXrPin, verifyGameXrArtifact, verifyGameXrFragments } from '../production-gamexr.mjs'
 
 const hash = value => createHash('sha256').update(value).digest('hex')
 const fixture = async t => {
@@ -100,4 +100,24 @@ test('protected release seals GameXR before authorization and verifies it before
   assert.equal(pin.sourceRevision.length, 40)
   const { productionMirrorArtifactEntries } = await import('../production-mirror-artifact-entries.mjs')
   assert.ok(productionMirrorArtifactEntries.includes('content/gamexr'))
+})
+
+
+test('canonical shell redirect preserves byte verification and refuses cross-origin or arbitrary redirects', async () => {
+  const url = 'https://example.test/gamexr/index.html'
+  const calls = []
+  const result = await fetchGameXrBytes(url, async target => {
+    calls.push(target)
+    return target === url ? new Response(null, { status: 308, headers: { location: '/gamexr/' } }) : new Response('sealed')
+  })
+  assert.deepEqual(calls, [url, 'https://example.test/gamexr/'])
+  assert.equal(result.bytes.toString(), 'sealed')
+  const rewritten = await fetchGameXrBytes(url, async target => target === url
+    ? new Response(null, { status: 308, headers: { location: '/content/gamexr/' } })
+    : target.endsWith('/content/gamexr/') ? new Response(null, { status: 301, headers: { location: '/gamexr/' } }) : new Response('sealed'))
+  assert.equal(rewritten.bytes.toString(), 'sealed')
+  for (const location of ['https://other.test/gamexr/', '/other/', '/gamexr/?injected=1']) {
+    await assert.rejects(fetchGameXrBytes(url, async () => new Response(null, { status: 308, headers: { location } })), /same-origin/)
+  }
+  await assert.rejects(fetchGameXrBytes('https://example.test/gamexr/sw.js', async () => new Response(null, { status: 308, headers: { location: '/gamexr/' } })), /HTTP status/)
 })

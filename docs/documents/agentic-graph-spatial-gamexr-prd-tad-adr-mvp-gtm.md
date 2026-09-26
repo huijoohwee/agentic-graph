@@ -112,12 +112,12 @@ The managed artifact inventory now carries `content/gamexr` through sealing, upl
 and generated publication. Sibling routes and files retain their existing owners.
 
 The protected controller checks disabled Pages HTML injection, prewarms an isolated returning-user
-GameXR profile, then verifies immutable/public route hashes, metadata caching, MIME types, aliases,
+GameXR profile, then verifies immutable/public route hashes, metadata caching, MIME types, aliases, the bounded same-origin canonical HTML redirect,
 WebKit runtime/cache checks and returning-user cache bytes before mirror publication. Existing
 Pages/storage rollback and exact-candidate human authorization remain unchanged. Receipt files
 bind source, artifact and before/after cache identities; this source update itself grants no deployment.
 
-R5 is bounded to nine source/test/config/document paths, one new release module, <35 KiB net growth,
+R5 is bounded to ten source/test/config/document paths, one new release module, <35 KiB net growth,
 no runtime payload growth, no new resource/subscription and one existing release controller.
 Source checks, protected integration, deployed identity and live verification are separate gates.
 Production remains pending until the controller's terminal receipt exists. Native-device validation
@@ -345,7 +345,7 @@ proof, at most three repair cycles and stop after two with no reduction in block
 | R1 / GX1, GX2 | G pure helpers/tests; new explicit shared export and source-qualified capability contract | G maintainer first; two 90-minute slices, ≤6 touched files/2 new modules, each <600 lines/500 kB | Existing 26 G tests unchanged; package builds with no canvas/renderer imports; foreign-source and unknown-capability rejection |
 | R2 / GX2–GX5 | X validator, queue, local database, UI and export owner; new detached proposal/receipt adapter | X maintainer after protected R1; three 90-minute slices; R2/R3 combined ≤20 changed paths (21 reservations including the renamed predecessor)/3 new runtime modules, ≤80 KiB runtime/test/document delta | Preview/cancel leave exact bytes unchanged; paused-only acceptance; concurrent/replayed/stale attempts; storage abort, post-commit rebuild failure, receipt roundtrip and guarded undo |
 | R3 / GX1, GX6 | C admitted discovery/client, existing X bridge and mobile/offline harness | Consumer maintainers after protected R2; two 60-minute slices, ≤4 touched files | Real host/no-host distinction, replaced registry/session, 390/1024 px, ≤5 actions/300 s, offline cold reload; no test injection creates first value |
-| R5 / GX1–GX6 deployment | Existing protected release, artifact inventory, GameXR checker and WebKit tests; one admission adapter | G maintainer after R1–R3 protected merge; one 90-minute slice; nine files, one release module, <35 KiB | Exact source/build hash, sibling preservation, injection refusal, immutable/public browser checks, returning-user cache convergence, protected authorization, terminal receipt |
+| R5 / GX1–GX6 deployment | Existing protected release, artifact inventory, GameXR checker and WebKit tests; one admission adapter | G maintainer after R1–R3 protected merge; one 90-minute slice; ten files, one release module, <35 KiB | Exact source/build hash, sibling preservation, injection refusal, immutable/public browser checks, returning-user cache convergence, protected authorization, terminal receipt |
 | R4 / all | Existing pilot protocol and private record | Product owner after technical acceptance | Consented real outcomes, observed confusion, support minutes and return intent; three profiles, no synthetic substitution |
 
 R1–R3 implementation and mechanical verification are recorded above; their time bounds remain
