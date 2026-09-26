@@ -90,7 +90,8 @@ try {
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
-    await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
+    if (width === 1024) await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
+    else await page.getByRole('button', { name: 'Load 3D view', exact: true }).waitFor()
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
     const initial = await storedSource(page); assert.ok(initial)
     await page.waitForLoadState('networkidle', { timeout: 30000 })
@@ -141,7 +142,7 @@ try {
     assert.equal(overflow, false)
     await review.screenshot({ path: join(output, `review-${width}.png`) })
     results.push({ width, actions, firstValueMs, installation, installMs, reloadMs, receipts: 2,
-      noWebMcp: true, offlineReview: true, coldReload: true, importedLabelIsText: true,
+      noWebMcp: true, offlineReview: true, coldReload: true, importedLabelIsText: true, renderer: width === 390 ? 'touch-opt-in-deferred' : 'loaded',
       overflow, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal' })
     console.log(JSON.stringify(results.at(-1)))
     await context.close()
@@ -153,7 +154,7 @@ try {
 } catch (error) {
   if (activePage && !activePage.isClosed()) {
     await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
-    await writeFile(join(output, 'failure.txt'), (error.stack || String(error)) + '\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable'))
+    await writeFile(join(output, 'failure.txt'), (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable'))
   }
   throw error
 } finally { await browser?.close(); await server?.close() }

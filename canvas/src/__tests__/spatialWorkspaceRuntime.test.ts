@@ -12,6 +12,7 @@ import { SPATIAL_REVIEW_KEY, readSpatialReceipts } from '../features/three/spati
 import { canAuthorWorkspaceSceneMetadata, registerWorkspaceSceneMetadataEditor } from '../features/workspace-table/workspaceSceneMetadataAuthoring'
 import { tryParseMarkdownFrontmatterFlowGraph } from '../features/parsers/markdownFrontmatterFlowGraph'
 import { extractYamlFrontmatterBlock } from '../lib/markdown/frontmatter'
+import { upsertFrontmatterFlowMarkdownText } from '../hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
 const prior = useGraphStore.getState(), motion = readXrMotionReferenceRuntime(), physics = readXrPhysicsRuntime()
 let history = 0
 function install(name = '/spatial-unit.md') {
@@ -141,7 +142,7 @@ test('unbound and remote documents cannot enter local spatial review', async () 
 })
 
 test('actual Markdown parser roundtrips scene receipts and supports undo after rehydration', async () => {
-  const text = install().replace('---\n', '---\nflow:\n  nodes:\n    - id: scene\n      label: Scene\n  connections: []\n')
+  const text = install().replace('---\n', '---\nflow:\n  nodes:\n    - id: {key: id, type: string, value: scene}\n      type: {key: type, type: string, value: Document}\n      label: {key: label, type: string, value: Scene}\n  edges: []\n')
   const reparse = (text: string) => {
     const parsed = tryParseMarkdownFrontmatterFlowGraph('/spatial-unit.md', text)
     assert.ok(parsed)
@@ -154,6 +155,16 @@ test('actual Markdown parser roundtrips scene receipts and supports undo after r
   const reviewed = await proposal(), applied = await applySpatialWorkspace(reviewed)
   assert.ok(applied.receipt, JSON.stringify(applied))
   reparse(useGraphStore.getState().markdownDocumentText!)
+  // An unrelated flow/layout serialization runs after the parser has nested persisted metadata.
+  // It must preserve the scene and its receipt before the next operator action.
+  const parsedState = useGraphStore.getState()
+  assert.equal(parsedState.graphData!.nodes.length, 1)
+  const synchronized = upsertFrontmatterFlowMarkdownText(parsedState.markdownDocumentText!, parsedState.graphData!)
+  const persisted = yaml.load(extractYamlFrontmatterBlock(synchronized)!.yamlText) as Record<string, unknown>
+  const beforeSync = yaml.load(extractYamlFrontmatterBlock(parsedState.markdownDocumentText!)!.yamlText) as Record<string, unknown>
+  assert.deepEqual(persisted.kgXrMotionReference, beforeSync.kgXrMotionReference)
+  assert.equal(readSpatialReceipts(persisted[SPATIAL_REVIEW_KEY]).length, 1)
+  reparse(synchronized)
   const inspected = await inspectSpatialWorkspace()
   assert.ok('receipts' in inspected, JSON.stringify(inspected)); assert.equal(inspected.receipts.length, 1)
   const undone = await undoSpatialWorkspace(reviewed.id); assert.ok(undone.receipt, JSON.stringify(undone))
