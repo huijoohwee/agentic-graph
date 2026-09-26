@@ -1,3 +1,5 @@
+import { canonicalSpatialJson, enforceSpatialBudget, freezeSpatial, refuse, spatialValuesEqual, SPATIAL_REVIEW_MAX_RECEIPTS } from 'grph-shared/spatial-review'
+export { canonicalSpatialJson, enforceSpatialBudget, freezeSpatial, refuse, spatialDigest, SpatialReviewError, SPATIAL_REVIEW_MAX_BYTES } from 'grph-shared/spatial-review'
 import type { GraphNode } from '@/lib/graph/types'
 import { SpatialPhysicsEngine } from '../physics/spatialPhysicsEngine'
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan, type XrMotionReferencePlan, type XrMotionReferenceVector } from './xrMotionReferenceModel'
@@ -7,7 +9,6 @@ import { resolveXrCanonicalSceneSpatialSource } from './xrCanonicalSceneSpatialS
 
 export const SPATIAL_REVIEW_KEY = 'kgSpatialWorkspaceReview'
 export const SPATIAL_REVIEW_SCHEMA = 'agentic-graph.spatial-review/v1'
-export const SPATIAL_REVIEW_MAX_BYTES = 128 * 1024
 export type SpatialEdit = Readonly<{ subjectId: string; position?: XrMotionReferenceVector; scale?: number }>
 export type SpatialValues = { position: XrMotionReferenceVector; scale: number; marks: readonly { time: number; position: XrMotionReferenceVector }[] }
 export type SpatialDiff = { subjectId: string; label: string; context: string; before: SpatialValues; after: SpatialValues }
@@ -16,26 +17,6 @@ export type SpatialReceipt = {
   session: string; actor: 'local-operator' | 'browser-agent'; approver: 'local-operator'
   timestamp: number; kind: 'apply' | 'undo'; undoOf?: string; diff: SpatialDiff[]
   provenance: { kind: 'authored'; units: 'metres'; correspondence: 'unknown' }
-}
-export class SpatialReviewError extends Error {
-  constructor(public code: string, message: string) { super(message); this.name = 'SpatialReviewError' }
-}
-export function refuse(code: string, message: string): never { throw new SpatialReviewError(code, message) }
-export function canonicalSpatialJson(value: unknown): string {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value)
-  if (Array.isArray(value)) return `[${value.map(canonicalSpatialJson).join(',')}]`
-  return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalSpatialJson((value as Record<string, unknown>)[key])}`).join(',')}}`
-}
-export async function spatialDigest(value: unknown): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalSpatialJson(value)))
-  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
-}
-export function freezeSpatial<T>(value: T): T {
-  if (value && typeof value === 'object') { Object.values(value).forEach(freezeSpatial); Object.freeze(value) }
-  return value
-}
-export function enforceSpatialBudget(value: unknown) {
-  if (new TextEncoder().encode(JSON.stringify(value)).length > SPATIAL_REVIEW_MAX_BYTES) refuse('budget-exceeded', 'Spatial review exceeds 128 KiB. Export and prune receipts before continuing.')
 }
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) refuse('invalid-input', 'Expected a spatial review object.')
@@ -100,7 +81,7 @@ export function previewSpatialEdits(plan: XrMotionReferencePlan, input: unknown,
     candidate = next
   }
   const diff = edits.map(edit => ({ subjectId: edit.subjectId, label: plan.subjects.find(subject => subject.id === edit.subjectId)!.label, context: spatialContext(plan, edit.subjectId), before: spatialValues(plan, edit.subjectId), after: spatialValues(candidate, edit.subjectId) }))
-  if (diff.every(row => canonicalSpatialJson(row.before) === canonicalSpatialJson(row.after))) refuse('invalid-input', 'The proposed values do not change the scene.')
+  if (diff.every(row => spatialValuesEqual(row.before, row.after))) refuse('invalid-input', 'The proposed values do not change the scene.')
   const result = { edits, plan: candidate, metadata: serializeXrMotionReferencePlan(candidate), diff, before: spatialFindings(plan), after: spatialFindings(candidate) }
   enforceSpatialBudget(result)
   return freezeSpatial(result)
@@ -109,7 +90,7 @@ export function readSpatialReceipts(value: unknown): SpatialReceipt[] {
   if (value === undefined) return []
   enforceSpatialBudget(value)
   const ledger = record(value)
-  if (ledger.schema !== SPATIAL_REVIEW_SCHEMA || !Array.isArray(ledger.receipts) || ledger.receipts.length > 32) refuse('invalid-input', 'Unsupported or oversized spatial receipt ledger.')
+  if (ledger.schema !== SPATIAL_REVIEW_SCHEMA || !Array.isArray(ledger.receipts) || ledger.receipts.length > SPATIAL_REVIEW_MAX_RECEIPTS) refuse('invalid-input', 'Unsupported or oversized spatial receipt ledger.')
   const receipts = ledger.receipts as SpatialReceipt[]
   const ids = new Set<string>()
   for (const receipt of receipts) {
