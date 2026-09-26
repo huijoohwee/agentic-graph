@@ -1,3 +1,4 @@
+import { SpatialWorkspaceReview } from './SpatialWorkspaceReview'
 import { XrSubjectAuthoringControls } from './XrSubjectAuthoringControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -36,9 +37,9 @@ export function XrSubjectTransformEditor() {
     useGraphStore.getState().pushUiToast({ id: 'xr:timeline:transform', kind: result.ok ? 'success' : 'error', message: result.message })
     return result
   }
-  if (!subject && !stageObject) return null
+  if (!subject && !stageObject) return <SpatialWorkspaceReview />
   const label = subject?.label || stageObject!.label
-  return <details key={boundary.current.key} open className="shrink-0 border-b p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
+  return <><SpatialWorkspaceReview /><details key={boundary.current.key} open className="shrink-0 border-b p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
     onFocusCapture={() => { draft.current = context }}>
     <summary className="cursor-pointer text-xs font-semibold">{label} · Object transform</summary>
     {subject ? <section className="mt-2 grid gap-2">
@@ -56,5 +57,5 @@ export function XrSubjectTransformEditor() {
       <p>{stageObject!.nativeBodyId ? 'Position is controlled by the playground simulation.' : 'Placement belongs to the Tropical Playground environment.'} Select this object as a camera target or inspect its Timeline lane.</p>
       <output aria-label={`${label} position`}>Position · {resolveXrShotTargetPosition(runtime.plan, stageObject!.id, runtime.playheadSeconds).map(value => value.toFixed(2)).join(', ')} m</output>
     </section>}
-  </details>
+  </details></>
 }

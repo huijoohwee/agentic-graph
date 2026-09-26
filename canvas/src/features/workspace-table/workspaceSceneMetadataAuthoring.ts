@@ -16,7 +16,7 @@ export function canAuthorWorkspaceSceneMetadata(
 ): boolean {
   if (state.workspaceViewMode !== 'editor' || isWorkspaceCameraInitializationBlocked(state)) return false
   const keys = Object.keys(updates)
-  if (!keys.length || keys.some(key => key !== 'kgXrMotionReference' && key !== 'kgXrPhysics')) return false
+  if (!keys.length || keys.some(key => key !== 'kgXrMotionReference' && key !== 'kgXrPhysicsWorld' && key !== 'kgSpatialWorkspaceReview')) return false
   const source = readEditorSource?.()
   return Boolean(source?.settled && state.markdownDocumentName && state.markdownDocumentText
     && normalizeWorkspacePath(source.path) === normalizeWorkspacePath(state.markdownDocumentName)
