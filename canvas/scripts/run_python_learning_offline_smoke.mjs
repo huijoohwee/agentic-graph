@@ -20,6 +20,7 @@ const port = Number(process.env.PYTHON_LEARNING_PROOF_PORT || 4198)
 assert.ok(Number.isInteger(port) && port >= 1024 && port <= 65535, 'offline proof port must be 1024..65535')
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 const { LEARNING_LESSONS: lessons } = await tsImport('../src/features/python-learning/learningLessons.ts', import.meta.url)
+const { LEARNING_LESSON_FILES: lessonFiles } = await tsImport('../src/features/python-learning/learningLessonFiles.ts', import.meta.url)
 const manifest = JSON.parse(await readFile(join(canvas, 'dist', `learning-offline-manifest-${revision}.json`), 'utf8'))
 for (const file of manifest.files) {
   const bytes = await readFile(join(canvas, 'dist', file.path))
@@ -56,6 +57,56 @@ try {
   page.on('requestfailed', request => failedRequests.push(new URL(request.url()).pathname))
   await page.goto(base + '?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
+  // Exercise the actual Source Files owner before the separate offline lesson proof.
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await dismissVisibleFloatingPanel(page)
+  const folder = page.getByRole('button', { name: 'Folder python-lessons', exact: true })
+  const docsFolder = page.getByRole('button', { name: 'Folder docs', exact: true })
+  await docsFolder.waitFor()
+  if (await docsFolder.locator('svg.lucide-chevron-right').count()) await docsFolder.click()
+  await folder.waitFor({ timeout: 30000 })
+  const firstFile = page.getByRole('button', { name: `File ${lessonFiles[0].name}`, exact: true })
+  if (!await firstFile.isVisible()) await folder.click()
+  const nativePane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
+  for (const file of lessonFiles) {
+    const row = page.getByRole('button', { name: `File ${file.name}`, exact: true })
+    assert.equal(await row.count(), 1, 'one native row per lesson')
+    assert.equal(await row.getAttribute('title'), file.path)
+    await row.click(); await nativePane.waitFor()
+    await page.waitForFunction(id => document.querySelector('select[aria-label="Python lesson"]')?.value === id, file.id)
+    assert.equal(await nativePane.getAttribute('data-learning-state'), 'idle', 'opening a source file never runs it')
+    await page.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
+  }
+  await nativePane.getByRole('button', { name: 'Run', exact: true }).click()
+  await page.locator('.python-learning[data-learning-state="completed"]').waitFor({ timeout: 15000 })
+  await nativePane.getByText(/Goal reached · 4\/4 checks/).waitFor()
+  const editedFile = lessonFiles[1], editedSource = '# Saved learner code 保留\nprint(42)\n'
+  await page.getByRole('button', { name: `File ${editedFile.name}`, exact: true }).click()
+  const nativeEditor = nativePane.getByRole('textbox', { name: 'Python source text', exact: true })
+  await page.waitForFunction(text => document.querySelector('textarea[aria-label="Python source text"]')?.value === text,
+    '# agentic-graph lesson: route\n' + lessons[1].solution)
+  await nativeEditor.fill(editedSource)
+  await nativePane.getByRole('button', { name: 'Save source', exact: true }).click()
+  await page.getByText('Saved', { exact: true }).waitFor()
+  await page.waitForFunction(async ({ path, text }) => {
+    const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
+    if (!name) return false
+    return new Promise((resolve, reject) => {
+      const opening = indexedDB.open(name); opening.onerror = () => reject(opening.error)
+      opening.onsuccess = () => {
+        const db = opening.result, request = db.transaction('records', 'readonly').objectStore('records').getAll()
+        request.onerror = () => { db.close(); reject(request.error) }
+        request.onsuccess = () => { db.close(); resolve(request.result.some(record => record.collection === 'entries' && record.value.path === path && record.value.text === text)) }
+      }
+    })
+  }, { path: editedFile.path, text: editedSource }, { timeout: 15000 })
+  await page.reload({ waitUntil: 'domcontentloaded' }); await nativePane.waitFor({ timeout: 60000 })
+  await dismissVisibleFloatingPanel(page)
+  await page.waitForFunction(text => document.querySelector('textarea[aria-label="Python source text"]')?.value === text, editedSource, { timeout: 30000 })
+  assert.equal(await nativeEditor.inputValue(), editedSource, 'native lesson save survives reload without replacing learner code')
+  assert.equal(await nativePane.getByLabel('Python lesson', { exact: true }).inputValue(), editedFile.id, 'markerless source keeps its file lesson')
+  await page.screenshot({ path: join(output, 'native-lesson-files.png'), fullPage: true })
+  await page.setViewportSize({ width: 375, height: 812 })
   await page.locator('input[type="file"][accept*=".py"]').setInputFiles({ name: 'learning.py', mimeType: 'text/plain', buffer: Buffer.from(lessons[0].solution) })
   const pane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
   await pane.waitFor({ timeout: 60000 })
@@ -276,7 +327,7 @@ try {
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
   const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
-    toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
+    nativeLessonFilesProven: true, nativeLessonSaveReloadProven: true, toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))

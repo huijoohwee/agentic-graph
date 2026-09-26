@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.3.0
+version: 1.4.0
 date: 2026-09-26
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -13,7 +13,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.3.0 binds this user-authorized extension. The user confirmed
+DRONE-FLIGHT-PATH-001@1.4.0 binds this user-authorized extension. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
 inspects its motion, then sends or exports the completed path. GameXR admits the bounded snapshot,
@@ -278,3 +278,40 @@ A 20-minute verification/publication sprint follows implementation; external CI 
 GTM: discover → edit → Run → replay/share → optional simulated bench review. Measure completed
 learner sessions before expanding hardware scope. Rollback removes the catalog row first,
 then reverts the Graph adapter and replay route; retain prior immutable refs and local data.
+
+## Lessons in Source Files — 1.4.0
+
+PRD: expose all four Python lessons as ordinary editable files under
+`docs/python-lessons` in Source Files. Reuse the existing expandable folder,
+file actions, search, selection, local save, authenticated cloud snapshot and
+Canvas sharing controls. Opening never executes code or uploads a file.
+
+TAD: bootstrap four small worked examples through WorkspaceFs and the existing
+workspace import owner without applying a graph. The native explorer renders
+the saved entries; its existing source index records local ownership so docs
+reconciliation preserves the files and even an emptied lesson folder. There is
+no separate lesson list or storage service. Existing
+root-level lesson code is copied verbatim when its folder counterpart is absent,
+and the original is retained. An existing lesson folder is user-owned: edits,
+empty files, renames and individual deletions survive reload. Known file paths
+select the lesson while source loads; markers support renamed files. Explicit
+lesson selection is scoped to the current document.
+
+ADR: browser Web Locks serialize cooperating tabs; same-runtime requests are
+coalesced. WorkspaceFs conditional creation preserves concurrent writes. Folder
+collisions and partial saves report errors with an explicit retry. No host mirror
+writes, external upload, sign-in or code execution occurs during initialization.
+Each Python file uses the existing authenticated workspace snapshot upload and
+verified readback; this does not grant GitHub repository-save authority.
+
+MVP: verify all four native paths, matching lessons, explicit Run, edit/reopen
+preservation, interim-source preservation, deletion persistence, collision and
+partial-save recovery, and cloud target resolution. Run affected Python, cloud
+sync, browser and offline checks. Bound this increment to eight files and 25 KiB,
+no dependencies or new execution engines, and 25 active minutes before reassessment.
+Provider waits remain separate. Existing oversized unrelated bundles are unchanged.
+
+GTM: expand docs → python-lessons, open a file, edit and Run. Use its existing
+cloud indicator after sign-in to sync across devices; offline edits remain local
+until explicitly synced. Learning gains remain unmeasured. Rollback restores the
+prior launcher without deleting saved files. Evidence: external lesson-files-* logs.

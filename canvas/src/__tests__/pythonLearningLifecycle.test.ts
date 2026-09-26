@@ -9,6 +9,59 @@ import { PythonLearningError, pythonError } from '../features/python-learning/py
 import { resolveWebMcpToolScope } from '../features/agent-ready/webMcpToolExposure.mjs'
 import { LearningSimulation } from '../features/python-learning/learningSimulation'
 import { inspectDroneBenchLog, DRONE_BENCH_LOG_BYTES } from '../features/python-learning/learningDroneBenchLog'
+import { LEARNING_LESSON_FILES, LEARNING_LESSON_FOLDER, ensureLearningLessonFiles, sourceLearningLesson } from '../features/python-learning/learningLessonFiles'
+
+test('native lesson folder preserves edits, migrated roots and deletions across reload', async () => {
+  const { createMemoryWorkspaceFs } = await import('../features/workspace-fs/workspaceFsMemory')
+  const { resolveSourceFileCloudWorkspaceTarget } = await import('../features/source-files/sourceFileCanonicalCloudSync')
+  const { loadWorkspaceSourceIndex } = await import('../features/workspace-fs/sourceIndex')
+  const { buildWorkspaceDocsMirrorSourceOwnedPathSet } = await import('../features/workspace-fs/workspaceDocsMirrorSourceOwnership')
+  const fs = createMemoryWorkspaceFs()
+  const previous = '# My own code 保留\nprint(42)\n'
+  await fs.createFile({ parentPath: '/', name: LEARNING_LESSON_FILES[1].name, text: previous })
+  const [first, concurrent] = await Promise.all([ensureLearningLessonFiles(fs), ensureLearningLessonFiles(fs)])
+  assert.deepEqual(first, concurrent)
+  const ownedPaths = buildWorkspaceDocsMirrorSourceOwnedPathSet(loadWorkspaceSourceIndex())
+  assert.ok(ownedPaths.has(LEARNING_LESSON_FOLDER), 'normal docs reconciliation preserves the lesson folder')
+  assert.deepEqual(LEARNING_LESSON_FILES.map(file => file.id), LEARNING_LESSONS.map(lesson => lesson.id))
+  for (const file of LEARNING_LESSON_FILES) {
+    assert.equal(first.find(entry => entry.path === file.path)?.parentPath, LEARNING_LESSON_FOLDER)
+    assert.ok(ownedPaths.has(file.path), 'normal source ownership prevents seed reconciliation from replacing learner files')
+    const source = await fs.readFileText(file.path)
+    assert.equal(source, file.id === 'route' ? previous : `# agentic-graph lesson: ${file.id}\n` + LEARNING_LESSONS.find(lesson => lesson.id === file.id)!.solution)
+    assert.equal(sourceLearningLesson(source!, file.path), file.id)
+    assert.equal(sourceLearningLesson('# agentic-graph lesson: route', file.path.slice(1)), file.id, 'path wins while prior source is still loading')
+    assert.equal(resolveSourceFileCloudWorkspaceTarget(file.path)?.documentKind, 'python')
+  }
+  await fs.writeFileText(first[0].path, '')
+  await fs.deleteEntry(first[3].path)
+  const reopened = createMemoryWorkspaceFs({ initialEntries: await fs.listEntries() })
+  assert.equal((await ensureLearningLessonFiles(reopened)).length, 3, 'deleted or renamed examples are not recreated')
+  assert.equal(await reopened.readFileText(first[0].path), '')
+  assert.equal(await reopened.readFileText('/' + LEARNING_LESSON_FILES[1].name), previous)
+  assert.equal(sourceLearningLesson('# agentic-graph lesson: unknown\nprint(1)', '/other.py'), 'travel')
+  assert.equal(sourceLearningLesson('# agentic-graph lesson: route\nprint(1)', '/renamed.py'), 'route')
+})
+
+test('lesson initialization fails loudly on collisions and resumes a partial save safely', async () => {
+  const { createMemoryWorkspaceFs } = await import('../features/workspace-fs/workspaceFsMemory')
+  const blocked = createMemoryWorkspaceFs()
+  await blocked.createFile({ parentPath: '/', name: 'docs', text: 'preserve' })
+  await assert.rejects(ensureLearningLessonFiles(blocked), /occupied by a file/)
+  assert.equal(await blocked.readFileText('/docs'), 'preserve')
+  const fs = createMemoryWorkspaceFs()
+  let writes = 0
+  const flaky = { ...fs, createFile: async (args: Parameters<typeof fs.createFile>[0]) => {
+    if (++writes === 2) throw new Error('QuotaExceededError')
+    return fs.createFile(args)
+  } }
+  await assert.rejects(ensureLearningLessonFiles(flaky), /QuotaExceededError/)
+  assert.equal((await ensureLearningLessonFiles(flaky)).length, 4)
+  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'file').length, 4)
+  await fs.deleteEntry(LEARNING_LESSON_FILES[0].path)
+  await fs.createFolder({ parentPath: LEARNING_LESSON_FOLDER, name: LEARNING_LESSON_FILES[0].name })
+  await assert.rejects(ensureLearningLessonFiles(fs, true), /folder occupies/)
+})
 
 test('Python discovery follows the active editor document without capturing other workspace groups', () => {
   const state = { workspaceViewMode: 'editor', markdownDocumentName: '/workspace/lesson.PY' }

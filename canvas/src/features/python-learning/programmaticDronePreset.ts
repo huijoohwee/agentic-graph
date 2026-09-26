@@ -4,7 +4,7 @@ export const PROGRAMMATIC_DRONE_PRESET_ID = 'programmatic-drone-flight'
 export const PROGRAMMATIC_DRONE_PROMPT = '/python.learning @canvas #learning operation=inspect lesson=drone'
 export const DRONE_LESSON_MARKER = '# agentic-graph lesson: drone'
 export const isProgrammaticDronePrompt = (prompt: string) => prompt.trim().replace(/\s+/g, ' ') === PROGRAMMATIC_DRONE_PROMPT
-export const sourceLearningLesson = (source: string) => source.split(/\r?\n/, 1)[0] === DRONE_LESSON_MARKER ? 'drone' : 'travel'
+export { sourceLearningLesson } from './learningLessonFiles'
 
 /** Explicit Home Demo creates its own local file; selecting a preset never calls this. */
 export async function activateProgrammaticDroneDemo(): Promise<string> {

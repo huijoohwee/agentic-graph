@@ -155,14 +155,11 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       <SourceFilesOwnershipSummary onOpenTemplate={() => void openTemplate()} templateBusy={templateBusy} />
       {templateError && <p role="status" className={`px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>{templateError}</p>}
       <AgentMissionSourceFile search={props.search} />
-      <PythonLearningDemoSourceFile search={props.search} onSelectFile={onSelectFile}
-        entry={demoEntry} onReady={setDemoEntry} represented={demoRepresented}
-        buildCanvasEmbedUrl={buildCanvasEmbedUrl} onCanvasEmbedReady={handleCanvasEmbedReady}
-        cloudIndicator={demoEntry ? renderFileStatusRight({ entry: demoEntry, isActive: activePath === demoEntry.path }) : null} />
+      <PythonLearningDemoSourceFile />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
         : <MarkdownFileTree
-        entries={entries}
+        entries={cloudEntries.filter(entry => entry !== demoEntry || !props.search || entry.name.toLowerCase().includes(props.search.toLowerCase()))}
         expandedPaths={expandedPaths}
         toggleExpanded={toggleExpanded}
         activePath={activePath}
