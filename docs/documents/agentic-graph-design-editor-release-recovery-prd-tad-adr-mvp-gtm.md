@@ -2,10 +2,16 @@
 title: "Graph Design and Theme Production Release Recovery"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "production-verified"
-version: "0.6.6"
-date: "2026-09-24"
+version: "0.6.7"
+previous_document_version: "0.6.6"
+date: "2026-09-26"
 owner: "agentic-graph"
 continuity_id: "PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM"
+prd_revision: "0.6.4"
+tad_revision: "0.6.4"
+adr_revision: "0.6.4"
+mvp_revision: "0.6.4"
+gtm_revision: "0.6.4"
 local_rung: "dev-proven"
 delivered_rung: "production-verified"
 ---
@@ -13,6 +19,8 @@ delivered_rung: "production-verified"
 # Graph Design and Theme Production Release Recovery
 
 This is the delivery companion to the [implemented Design and theme record](./agentic-graph-design-editor-baseline-prd-tad-adr-mvp-gtm.md). It retains the failed attempt and records the verified recovery without changing that record's product or buyer claims.
+
+The governing five-role join is `PLAN-AGENTIC-GRAPH-DESIGN-EDITOR-BASELINE-PRD-TAD-ADR-MVP-GTM@0.6.4`, observed at Graph `8bff012eac5f58a456c8caf85ccc2ac11ccf07c9`. Companion artifact version `0.6.7` repairs the missing join fields from `0.6.6`; it does not revise the baseline scope or advance its readiness. The dated release evidence below retains its original candidate identities and is not evidence for later source changes.
 
 ## PRD · outcome and acceptance
 
