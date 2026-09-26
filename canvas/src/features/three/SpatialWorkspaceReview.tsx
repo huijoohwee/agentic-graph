@@ -1,4 +1,5 @@
 import React from 'react'
+import { useSourceFilesBootstrapReady } from '../source-files/sourceFilesBootstrapReadiness'
 import { LearningOfflineControls } from '../python-learning/LearningOfflineControls'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -9,7 +10,10 @@ import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from 
 export function SpatialWorkspaceReview() {
   const review = React.useSyncExternalStore(subscribeSpatialReview, readSpatialReview, readSpatialReview)
   const motion = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
-  const source = useGraphStore(useShallow(state => ({ name: state.markdownDocumentName, text: state.markdownDocumentText })))
+  const ready = useSourceFilesBootstrapReady()
+  const source = useGraphStore(useShallow(state => ({ name: state.markdownDocumentName, text: state.markdownDocumentText,
+    indexing: state.markdownWorkspaceIndexingInFlight, layoutLock: state.workspaceGraphMutationLayoutLockActive,
+    blockedUntil: state.workspaceGraphMutationBlockUntilMs, workspace: state.workspaceViewMode, pane: state.workspaceCanvasPaneOpen })))
   const [snapshot, setSnapshot] = React.useState<Awaited<ReturnType<typeof inspectSpatialWorkspace>> | null>(null)
   const [selected, setSelected] = React.useState('')
   const [position, setPosition] = React.useState('')
@@ -21,7 +25,13 @@ export function SpatialWorkspaceReview() {
     let active = true
     void inspectSpatialWorkspace().then(next => { if (active) setSnapshot(next) })
     return () => { active = false }
-  }, [source.name, source.text, motion.revision, refresh])
+  }, [source, ready, motion.revision, refresh])
+  React.useEffect(() => {
+    const remaining = Number(source.blockedUntil || 0) - Date.now()
+    if (!Number.isFinite(remaining) || remaining <= 0) return
+    const timer = setTimeout(() => setRefresh(value => value + 1), Math.min(remaining + 1, 2147483647))
+    return () => clearTimeout(timer)
+  }, [source.blockedUntil])
   const subjects = snapshot && 'subjects' in snapshot ? snapshot.subjects : []
   const subject = subjects.find(item => item.id === selected) || subjects.find(item => item.id === motion.selectedShotTargetId) || subjects[0]
   React.useEffect(() => {
@@ -39,7 +49,7 @@ export function SpatialWorkspaceReview() {
   return <section aria-label="Spatial change review" className="grid min-w-0 gap-2 border-t p-2 text-xs" style={{ color: 'var(--kg-text-primary)', background: 'var(--kg-panel-bg)' }} data-kg-spatial-review>
     <h3 className="font-semibold">Review a scene change</h3>
     <p>Preview position or scale edits, then apply the exact change. Bounds are approximate; physical correspondence is unknown.</p>
-    {snapshot && !snapshot.ok && <p role="status">{snapshot.message}</p>}
+    {snapshot && !snapshot.ok && <><p role="status">{snapshot.message}</p><button type="button" className="min-h-11 rounded border px-3" onClick={() => setRefresh(value => value + 1)}>Refresh inspection</button></>}
     {snapshot?.ok && 'provenance' in snapshot && <p>Authored positions · metres. Simulated bounds · approximate. {snapshot.provenance.observation ? `Imported observation · ${snapshot.provenance.observation.availability} · ${snapshot.provenance.observation.units} · physical scale unknown.` : 'No observation linked.'}</p>}
     {!proposal && <fieldset disabled={working || review.preparing || !snapshot?.ok} className="grid min-w-0 gap-2">
       <label className="grid gap-1">Object<select aria-label="Review object" value={subject?.id || ''} onChange={event => setSelected(event.target.value)} className="min-h-11 rounded border bg-transparent p-1">

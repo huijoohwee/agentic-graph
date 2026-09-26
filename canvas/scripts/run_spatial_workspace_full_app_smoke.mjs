@@ -19,15 +19,22 @@ const source = `---
 title: Local spatial walkthrough
 kgCanvasSurfaceMode: 3d
 kgCanvasRenderMode: 3d
-kgCanvas3dMode: 3d
+kgCanvas3dMode: xr
 kgFloatingPanelOpen: false
 kgBottomPanelOpen: true
 kgBottomPanelTab: timeline
+kgDocumentSemanticMode: document
 kgFrontmatterModeEnabled: true
 flow:
-  nodes: [{id: scene, label: Scene}]
-  connections: []
+  nodes:
+    - id: {key: id, type: string, value: scene}
+      type: {key: type, type: string, value: Document}
+      label: {key: label, type: string, value: Scene}
+  edges: []
 kgXrMotionReference:
+  schema: agentic-graph-xr-motion-reference/v1
+  durationSeconds: 6
+  fps: 12
   stageId: neutral-volume
   castSource: subjects-only
   subjects: [{id: box, assetId: prop-crate, label: '<img src=x onerror=alert(1)>', position: [-3, 0, 0]}]
@@ -48,7 +55,7 @@ async function storedSource(page) {
     })
   })
 }
-let server, browser
+let server, browser, activePage
 const results = []
 try {
   await mkdir(output, { recursive: true })
@@ -59,7 +66,7 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width === 390, hasTouch: width === 390 })
     // Explicit absent browser capability: every action below uses the product's visible controls.
     await context.addInitScript(() => Object.defineProperty(navigator, 'modelContext', { configurable: true, value: undefined }))
-    const page = await context.newPage(), errors = [], remote = [], dialogs = []
+    const page = activePage = await context.newPage(), errors = [], remote = [], dialogs = []
     page.setDefaultTimeout(30000)
     page.on('pageerror', error => errors.push(error.message)); page.on('dialog', dialog => { dialogs.push(dialog.message()); void dialog.dismiss() })
     await createXrV2ExistingStorageFixture().installExistingStorageFixture(page)
@@ -70,13 +77,16 @@ try {
     })
     const start = performance.now(), actions = []
     await page.goto(origin + '/agentic-graph/?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
     await page.getByRole('button', { name: 'Launch', exact: true }).click(); actions.push('Open Launch')
     const chooser = page.waitForEvent('filechooser')
     await page.getByText('Choose files', { exact: true }).click(); actions.push('Choose files')
     await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); actions.push('Select local scene')
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
-    await page.waitForFunction(() => !document.querySelector('[data-kg-spatial-review] fieldset')?.disabled)
+    await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
+    await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
+    await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
     const initial = await storedSource(page); assert.ok(initial)
     await page.waitForLoadState('networkidle', { timeout: 30000 })
     await context.setOffline(true)
@@ -116,7 +126,7 @@ try {
     assert.equal(response.status(), 200)
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor({ timeout: 60000 })
     assert.equal(await storedSource(page), undone, 'offline reload retains source and receipt bytes')
-    await page.waitForFunction(() => !document.querySelector('[data-kg-spatial-review] fieldset')?.disabled)
+    await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
     await quickPreview.click(); await review.getByRole('button', { name: 'Cancel proposal', exact: true }).click()
     const reloadMs = Math.round(performance.now() - reloadStart)
     assert.equal(await storedSource(page), undone)
@@ -135,4 +145,10 @@ try {
   assert.equal(git('rev-parse', 'HEAD'), revision)
   await writeFile(join(output, 'acceptance.json'), JSON.stringify({ schema: 'agentic-graph.spatial-full-app-acceptance/v1', revision, tree,
     productionAuthority: false, humanParticipants: 0, modelTokens: 0, results }, null, 2) + '\n')
+} catch (error) {
+  if (activePage && !activePage.isClosed()) {
+    await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
+    await writeFile(join(output, 'failure.txt'), String(error) + '\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable'))
+  }
+  throw error
 } finally { await browser?.close(); await server?.close() }

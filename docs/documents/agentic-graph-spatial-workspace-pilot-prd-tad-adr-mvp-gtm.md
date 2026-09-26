@@ -35,7 +35,7 @@ or human participation has occurred. Automated results never count as interviews
 |---|---|---|
 | Graph PR #1302, protected merge `434972605932f219bb680f9c782988477ee73f02` | Revision-bound inspect, preview, operator apply, durable receipt and undo; mission regression fixed. | Retain these guards; exercise actual app entry. |
 | Canvas PR #952, protected merge `e36ff95c210aa3fd11002958fde9bcbd26b336da` | Host-injected browser client supports inspection and preview. | Existing cross-repository transport remains the adapter; no new endpoint or apply permission. |
-| `SpatialWorkspaceReview.tsx` | Existing form requires a typed change before preview. | Add an explicit one-metre X preview shortcut; reuse the same proposal and approval boundary. |
+| `SpatialWorkspaceReview.tsx` | Existing form requires a typed change before preview. | Add an explicit one-metre X preview shortcut and refresh inspection when the editor loading guard clears; reuse the same proposal and approval boundary. |
 | `semanticSpaceRuntime.ts`, `semanticSpaceStore.ts`, `semanticObjectView.ts` | Saved pixels, hashes, entities and observation reference already have import/export owners. | Project provenance without copying pixels, fetching URLs or inventing calibration. |
 | `LearningOfflineControls.tsx` and PWA revision cache | Existing complete installation supports the offline Studio route. | Expose the same installer within spatial review and test offline cold reload. |
 | `run_spatial_workspace_browser_smoke.mjs` | Component and transport fixture; not a complete app boot. | Keep it and add `run_spatial_workspace_full_app_smoke.mjs`. |
@@ -150,7 +150,7 @@ source bytes or clean-browser first value cannot meet the threshold after three 
 
 | Stage | Exit condition | Current evidence |
 |---|---|---|
-| M1 | Provenance and malformed import checks pass | 22 spatial model/runtime/provenance tests passed locally; candidate only |
+| M1 | Provenance and malformed import checks pass | 23 spatial model/runtime/provenance tests passed locally; candidate only |
 | M2 | Desktop/mobile full-app first value, offline cancel/undo and cold reload | Implemented harness; exact-candidate run pending |
 | M3 | Protected owner diagnostics repair, consumer pin, required CI and canonical runtime | Owner verification in progress; consumer not yet published |
 | M4 | Three consented walkthroughs | Protocol ready; zero participants and zero completed human records |

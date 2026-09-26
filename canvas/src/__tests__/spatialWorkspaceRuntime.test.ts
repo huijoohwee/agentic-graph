@@ -159,3 +159,26 @@ test('actual Markdown parser roundtrips scene receipts and supports undo after r
   const undone = await undoSpatialWorkspace(reviewed.id); assert.ok(undone.receipt, JSON.stringify(undone))
   assert.deepEqual(readXrMotionReferenceRuntime().plan.subjects[0].position, [-3, 0, 0])
 })
+
+test('review refreshes when source hydration releases its mutation fence without changing scene bytes', async () => {
+  const { initJsdomHarness } = await import('@/tests/lib/jsdomHarness')
+  const { mountReactRoot, unmountReactRoot } = await import('@/tests/lib/reactRootHarness')
+  const React = await import('react'), { createRoot } = await import('react-dom/client')
+  const { SpatialWorkspaceReview } = await import('../features/three/SpatialWorkspaceReview')
+  const environment = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
+  const container = environment.dom.window.document.getElementById('root')!, root = createRoot(container)
+  const source = install()
+  useGraphStore.setState({ markdownWorkspaceIndexingInFlight: true })
+  const flush = () => React.act(async () => { await new Promise(resolve => setTimeout(resolve, 30)) })
+  try {
+    await mountReactRoot(root, React.createElement(SpatialWorkspaceReview)); await flush()
+    assert.equal(container.querySelector('fieldset')?.disabled, true)
+    await React.act(async () => { useGraphStore.setState({ markdownWorkspaceIndexingInFlight: false }) }); await flush()
+    assert.equal(container.querySelector('fieldset')?.disabled, false)
+    await React.act(async () => { useGraphStore.setState({ workspaceGraphMutationBlockUntilMs: Date.now() + 100 }) }); await flush()
+    assert.equal(container.querySelector('fieldset')?.disabled, true)
+    await React.act(async () => { await new Promise(resolve => setTimeout(resolve, 130)) }); await flush()
+    assert.equal(container.querySelector('fieldset')?.disabled, false)
+    assert.equal(useGraphStore.getState().markdownDocumentText, source)
+  } finally { await unmountReactRoot(root); environment.restore() }
+})
