@@ -324,8 +324,9 @@
     "runtime:session:stop": "node ./scripts/local-runtime.mjs session-stop",
     "turn:end": "node ./scripts/local-runtime.mjs turn-end",
     "test:local-review": "node --test scripts/__tests__/local-runtime.test.mjs scripts/__tests__/local-review-contract.test.mjs scripts/__tests__/production-terminal-authorization.test.mjs",
-    "spatial-workspace:test": "npm run smoke:prepare && TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/spatialWorkspace.test.ts canvas/src/__tests__/spatialWorkspaceRuntime.test.ts",
-    "spatial-workspace:browser": "node canvas/scripts/run_spatial_workspace_browser_smoke.mjs"
+    "spatial-workspace:test": "npm run smoke:prepare && TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/spatialWorkspace.test.ts canvas/src/__tests__/spatialWorkspaceRuntime.test.ts canvas/src/__tests__/spatialWorkspaceProvenance.test.ts",
+    "spatial-workspace:browser": "node canvas/scripts/run_spatial_workspace_browser_smoke.mjs",
+    "spatial-workspace:full-app": "node canvas/scripts/run_spatial_workspace_full_app_smoke.mjs --build"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",

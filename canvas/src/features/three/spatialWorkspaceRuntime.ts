@@ -1,4 +1,6 @@
 import yaml from 'js-yaml'
+import { spatialWorkspaceProvenance } from './spatialWorkspaceProvenance'
+import { SEMANTIC_OBJECT_VIEW_KEY } from '../xr-v2/semanticObjectView'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { JSONValue } from '@/lib/graph/types'
 import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
@@ -50,7 +52,7 @@ function capture() {
   if (!metadata[MOTION_KEY]) refuse('source-unavailable', 'This document has no authored spatial scene.')
   const block = extractYamlFrontmatterBlock(state.markdownDocumentText)
   const frontmatter = yaml.load(block?.yamlText || '') as Record<string, unknown> | undefined
-  for (const key of [MOTION_KEY, XR_PHYSICS_GRAPH_METADATA_KEY, SPATIAL_REVIEW_KEY]) {
+  for (const key of [MOTION_KEY, XR_PHYSICS_GRAPH_METADATA_KEY, SPATIAL_REVIEW_KEY, SEMANTIC_OBJECT_VIEW_KEY]) {
     if (canonicalSpatialJson(frontmatter?.[key] ?? null) !== canonicalSpatialJson(metadata[key] ?? null)) refuse('source-unavailable', 'The scene and Markdown source are not synchronized.')
   }
   const plan = readXrMotionReferencePlan(metadata[MOTION_KEY], state.graphData.nodes)
@@ -76,9 +78,12 @@ async function identify(base: Capture) {
 export async function inspectSpatialWorkspace() {
   try {
     const base = capture(), identity = await identify(base)
+    const space = base.metadata[SEMANTIC_OBJECT_VIEW_KEY] === undefined ? null
+      : await (await import('../xr-v2/semanticSpaceStore')).readSemanticSpace()
+    current(base)
     return { ok: true as const, message: 'Authored scene inspected; physical correspondence is unknown.', identity,
       subjects: base.plan.subjects.map(subject => ({ id: subject.id, label: subject.label, position: subject.position, scale: subject.scale })),
-      provenance: { kind: 'authored', units: 'metres', source: base.path, correspondence: 'unknown' }, receipts: base.receipts }
+      provenance: { ...spatialWorkspaceProvenance(base.metadata, space), source: base.path }, receipts: base.receipts }
   } catch (error) { return spatialFailure(error) }
 }
 let pendingBase: Capture | null = null

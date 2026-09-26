@@ -320,6 +320,26 @@ jobs:
           AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR: ${{ runner.temp }}
         run: npm run ci:integration
 
+      - name: Export failed-stage diagnostics
+        id: failure_diagnostics
+        if: ${{ always() && steps.integration.outcome == 'failure' }}
+        continue-on-error: true
+        working-directory: agentic-graph
+        run: >-
+          node --input-type=module -e
+          'import { exportFailureDiagnostics } from "./node_modules/agentic-os/bin/agentic-os-validation-stages.mjs";
+          exportFailureDiagnostics(process.cwd(), process.argv[1]);'
+          "$RUNNER_TEMP/validation-failure-diagnostics"
+
+      - name: Retain failed-stage diagnostics
+        if: ${{ always() && steps.failure_diagnostics.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: validation-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/validation-failure-diagnostics
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Retain source-plan reuse decision
         if: always() && github.event_name == 'push'
         continue-on-error: true
