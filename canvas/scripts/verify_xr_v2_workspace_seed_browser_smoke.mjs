@@ -43,7 +43,7 @@ try {
     waitUntil: 'domcontentloaded',
     timeout: coldStartTimeoutMs,
   })
-  const sourceFiles = page.getByRole('navigation', { name: 'Source files', exact: true })
+  const sourceFiles = page.getByRole('region', { name: 'Source Files', exact: true })
   await sourceFiles.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const docsFolder = sourceFiles.getByRole('button', { name: 'Folder docs', exact: true })
   await docsFolder.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
@@ -301,7 +301,7 @@ try {
   assert.equal(await panel.getAttribute('data-kg-motion-control-device-sensors'), 'off')
 
   await page.reload({ waitUntil: 'domcontentloaded' })
-  const reloadedSourceFiles = page.getByRole('navigation', { name: 'Source files', exact: true })
+  const reloadedSourceFiles = page.getByRole('region', { name: 'Source Files', exact: true })
   await reloadedSourceFiles.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const reloadedSeedRow = reloadedSourceFiles.getByRole('button', {
     name: 'File agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
@@ -434,7 +434,7 @@ try {
     waitUntil: 'domcontentloaded',
     timeout: coldStartTimeoutMs,
   })
-  const secondSourceFiles = secondPage.getByRole('navigation', { name: 'Source files', exact: true })
+  const secondSourceFiles = secondPage.getByRole('region', { name: 'Source Files', exact: true })
   await secondSourceFiles.waitFor({ state: 'visible', timeout: coldStartTimeoutMs })
   const secondSeedRow = secondSourceFiles.getByRole('button', {
     name: 'File agentic-graph-ar-vr-xr-runtime-readiness-demo.md', exact: true,

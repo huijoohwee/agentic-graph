@@ -12,7 +12,7 @@ export function applyLearningCameraPose(camera: PerspectiveCamera, controls: Orb
   const visibleCenterShift = frame.left + frame.width / 2 - rect.width / 2
   const targetX = 2 - visibleCenterShift / pixelsPerMeter
   camera.up.set(0, 1, 0)
-  camera.position.set(targetX + 8, 10, 10)
+  camera.position.set(targetX + 10, 12, 4)
   camera.zoom = zoom
   camera.updateProjectionMatrix()
   controls.target.set(targetX, 0, 0)
