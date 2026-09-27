@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.6.7
+version: 1.6.8
 lang: en
 date: 2026-09-27
 owner: Learning runtime maintainer
@@ -19,7 +19,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.6.7 binds this user-authorized extension. The warehouse
+DRONE-FLIGHT-PATH-001@1.6.8 binds this user-authorized extension. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -519,7 +519,7 @@ are explicitly outside the offer. Observe a user completing source → Run →
 inspection → export and record setup time/errors before adding infrastructure.
 No new channel, supplier, capital commitment or paid dependency is authorized.
 
-## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.7
+## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.8
 
 Disposition: **16/16 domains recorded; 11/16 covered applicable; 5 deferred;
 0 not applicable.** Coverage records decisions and gaps, not acceptance or revenue.
@@ -559,7 +559,7 @@ built production assets and passed chunk checks, then rejected a machine-specifi
 path in this document. The raw job log, rather than the truncated combined log,
 identifies that failure. It is not a runtime build failure or a passing gate.
 
-ADR 1.6.7: retain published source and use native successors. PR1323 at
+ADR 1.6.8: retain published source and use native successors. PR1323 at
 `35c3da386649bd2d08d7f090b3fa23c98f479d6d` corrected the local path and recorded
 prior evidence. Its rerun exposed a test race: workspace and document lists share
 the Source Files navigation label. Publication also changed validation inputs;
@@ -577,19 +577,19 @@ browser proof and 87 source-runner tests. Native validation then found one furth
 Canvas unit assertion requiring the old selector; PR1326 then passed all 302 XR units
 and exposed the native-menu focus race. PR1327 flight proof passed in 59s locally.
 
-Current successor: `agent/device-0232231d4a19/drone-warehouse-bays`. Changes since
-PR1322 corrections now include the shared render loop and controls: lesson-owned
-scenes render on demand; camera changes invalidate frames, while XR owns its loop.
+Current successor: `agent/device-0232231d4a19/drone-warehouse-capture`; lesson scenes
+render on demand, camera changes invalidate frames and XR owns its loop.
 Its exact-head native validation and provider receipts remain pending until
 recorded in the task handoff. Tests await native menu expansion, use pointer clicks,
 and verify orbit changes pixels without changing flight state. Both inbound bays
 now face receiving/security completely; zone containment guards every dock.
+PR1328 CI identified screenshot latency racing Pause after landing. Phase captures
+now pause first, verify pose stability, resume, and exclude capture time from pacing.
 
 Production Release: closed without exact protected integration, clean preparation
-and candidate-bound authorization. Runtime: port 4201 is a local simulation;
-canonical runtime, production, physical phones/headsets and aircraft are not
+and candidate-bound authorization. Port 4201 is local simulation; canonical
+runtime, production, physical phones/headsets and aircraft are not
 upgraded by this source publication. No deployment is claimed.
-
 Next bounded action: verify native menu transitions, publish the successor, then
 run native checks with stable inputs. Refreshed correction cap: 40 active minutes,
 14 files, 45 kB changed text including regenerated SVG, no dependencies. Two CI runs

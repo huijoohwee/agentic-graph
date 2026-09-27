@@ -86,6 +86,7 @@ try {
       await page.setViewportSize({ width: 1280, height: 900 })
     } else await editor.fill(lesson.solution)
     const runStarted = performance.now()
+    let capturePauseMs = 0
     checkpoint(`run:${lesson.id}`)
     await page.getByRole('button', { name: 'Run', exact: true }).click()
     if (lesson.id === 'drone') {
@@ -100,22 +101,25 @@ try {
           const state = window.__pythonLearningProof.read(), scene = state.result?.scene
           return state.state === 'running' && scene.x > phase.xMin && scene.x < phase.xMax && scene.altitude > phase.low && scene.altitude < phase.high
         }, phase)
-        flightFrames.push({ phase: phase.name, elapsedMs: performance.now() - runStarted, scene: await page.evaluate(() => window.__pythonLearningProof.read().result.scene) })
+        await page.getByRole('button', { name: 'Pause', exact: true }).click()
+        await page.waitForFunction(() => window.__pythonLearningProof.read().state === 'paused')
+        const pausedAt = performance.now()
+        const capturedScene = await page.evaluate(() => window.__pythonLearningProof.read().result.scene)
+        assert.ok(capturedScene.x > phase.xMin && capturedScene.x < phase.xMax
+          && capturedScene.altitude > phase.low && capturedScene.altitude < phase.high, `${phase.name} stays in its capture window`)
+        flightFrames.push({ phase: phase.name, elapsedMs: performance.now() - runStarted, scene: capturedScene })
         checkpoint(`flight:${phase.name}:capture`)
         await page.screenshot({ path: join(output, `drone-${phase.name}.png`), fullPage: true })
         checkpoint(`flight:${phase.name}:captured`)
-        if (phase.name === 'flight') {
-          await page.getByRole('button', { name: 'Pause', exact: true }).click()
-          await page.waitForFunction(() => window.__pythonLearningProof.read().state === 'paused')
-          const paused = await page.evaluate(() => JSON.stringify(window.__pythonLearningProof.read().result.scene))
-          await page.waitForTimeout(250)
-          assert.equal(await page.evaluate(() => JSON.stringify(window.__pythonLearningProof.read().result.scene)), paused)
-          await page.getByRole('button', { name: 'Run', exact: true }).click()
-        }
+        if (phase.name === 'flight') await page.waitForTimeout(250)
+        assert.deepEqual(await page.evaluate(() => window.__pythonLearningProof.read().result.scene), capturedScene,
+          'capture latency cannot advance a paused flight')
+        capturePauseMs += performance.now() - pausedAt
+        await page.getByRole('button', { name: 'Run', exact: true }).click()
       }
     }
     await page.waitForFunction(() => window.__pythonLearningProof.read().state === 'completed')
-    if (lesson.id === 'drone') assert.ok(performance.now() - runStarted >= 8500, 'flight must be visibly paced, including beyond the five-second compute limit')
+    if (lesson.id === 'drone') assert.ok(performance.now() - runStarted - capturePauseMs >= 8500, 'flight must be visibly paced, excluding paused captures and beyond the five-second compute limit')
     const state = await page.evaluate(() => window.__pythonLearningProof.read())
     assert.equal(state.result.grade.passed, true)
     outcomes.push({ lesson: lesson.id, ticks: state.result.scene.ticks, computeMs: state.result.computeMs, passed: true })
