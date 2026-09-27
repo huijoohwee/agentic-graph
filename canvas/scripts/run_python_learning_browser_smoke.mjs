@@ -97,16 +97,26 @@ try {
       ]
       for (const phase of phases) {
         checkpoint(`flight:${phase.name}:wait`)
-        await page.waitForFunction(phase => {
+        const pauseObservation = await page.waitForFunction(phase => {
           const state = window.__pythonLearningProof.read(), scene = state.result?.scene
-          return state.state === 'running' && scene.x > phase.xMin && scene.x < phase.xMax && scene.altitude > phase.low && scene.altitude < phase.high
+          if (state.state !== 'running' || !scene || !(scene.x > phase.xMin && scene.x < phase.xMax && scene.altitude > phase.low && scene.altitude < phase.high)) return false
+          const buttons = [...document.querySelectorAll('[aria-label="Python learning workspace"] .python-learning-controls button')]
+            .filter(button => button.textContent?.trim() === 'Pause')
+          if (buttons.length !== 1 || !(buttons[0] instanceof HTMLButtonElement)) throw new Error('Expected one native Python Pause button')
+          const pause = buttons[0]
+          if (pause.disabled || !pause.getClientRects().length) return false
+          // Observe and invoke the real control in one task; a protocol roundtrip can outlast this phase.
+          pause.click()
+          return { ticks: scene.ticks, x: scene.x, z: scene.z, altitude: scene.altitude }
         }, phase)
-        await page.getByRole('button', { name: 'Pause', exact: true }).click()
+        const requestedScene = await pauseObservation.jsonValue()
+        await pauseObservation.dispose()
         await page.waitForFunction(() => window.__pythonLearningProof.read().state === 'paused')
         const pausedAt = performance.now()
         const capturedScene = await page.evaluate(() => window.__pythonLearningProof.read().result.scene)
         assert.ok(capturedScene.x > phase.xMin && capturedScene.x < phase.xMax
-          && capturedScene.altitude > phase.low && capturedScene.altitude < phase.high, `${phase.name} stays in its capture window`)
+          && capturedScene.altitude > phase.low && capturedScene.altitude < phase.high,
+          `${phase.name} stays in its capture window: ${JSON.stringify({ phase, requestedScene, capturedScene })}`)
         flightFrames.push({ phase: phase.name, elapsedMs: performance.now() - runStarted, scene: capturedScene })
         checkpoint(`flight:${phase.name}:capture`)
         await page.screenshot({ path: join(output, `drone-${phase.name}.png`), fullPage: true })

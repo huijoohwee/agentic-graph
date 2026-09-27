@@ -299,6 +299,7 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   await awaitSource(lessons.at(-1).solution)
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'native autosave survives offline reload')
+  await selectPython()
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
   await pane.getByText(`${lessons.length} matching debriefs`, { exact: false }).waitFor()
