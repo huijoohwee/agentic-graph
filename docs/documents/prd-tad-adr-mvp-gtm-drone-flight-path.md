@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.6.1
+version: 1.6.2
 lang: en
 date: 2026-09-27
 owner: Learning runtime maintainer
@@ -19,7 +19,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.6.1 binds this user-authorized extension. The warehouse
+DRONE-FLIGHT-PATH-001@1.6.2 binds this user-authorized extension. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -519,7 +519,7 @@ are explicitly outside the offer. Observe a user completing source → Run →
 inspection → export and record setup time/errors before adding infrastructure.
 No new channel, supplier, capital commitment or paid dependency is authorized.
 
-## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.1
+## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.2
 
 Disposition: **16/16 domains recorded; 11/16 covered applicable; 5 deferred;
 0 not applicable.** Coverage records decisions and gaps, not acceptance or revenue.
@@ -534,13 +534,13 @@ The source joins below refer to the corresponding role in the warehouse section.
 | C05 | Covered; TAD | Architecture: native owners, five flows and invocation routes named; inspect final source diff |
 | C06 | Covered; TAD/ADR | Runtime maintainer: bounded simulation, offline/local data, no external models or new AI loop; execute failure/recovery checks |
 | C07 | Covered; ADR | Architecture: reuse versus new editor/physics, rollback and revisit trigger recorded; verify removed duplicate controls |
-| C08 | Covered; MVP | Evaluator: 17 native checks pass on warehouse source; documentation successor awaits its own receipt |
+| C08 | Covered; MVP | Evaluator: 17 native checks pass on warehouse source; test/documentation successor awaits its own receipt |
 | C09 | Deferred; GTM | Product: acquisition/retention experiment requires a consenting trial user; revisit after a completed demonstration |
 | C10 | Covered; TAD/MVP | Maintainer: local delivery, native release/rollback and one active checkout; no new suppliers; verify lifecycle receipts |
 | C11 | Covered; PRD/ADR | Maintainer: no copied external assets, accommodation or legal approval claim; measured site/legal review remains external scope |
 | C12 | Deferred; GTM/MVP | Finance: zero new provider spend, but labor/token cost and three-statement scenarios unmeasured; revisit before quoting paid work |
 | C13 | Deferred; GTM | Product: no funding/capital action requested; local prototype only; revisit on validated paid-delivery need |
-| C14 | Covered; MVP/handoff | Release maintainer: admitted successor and prior exact evidence recorded; warehouse source published; portability correction awaits checks/publication |
+| C14 | Covered; MVP/handoff | Release maintainer: admitted successor and prior exact evidence recorded; warehouse source published; portability and test-race corrections await final checks |
 | C15 | Deferred; GTM | Product: deck/business/financial projections not prepared for audience use; depend on validated offer and sourced economics |
 | C16 | Covered; MVP/GTM | Maintainer: next bounded proof below; stop expansion if route or source preservation fails |
 
@@ -559,21 +559,28 @@ built production assets and passed chunk checks, then rejected a machine-specifi
 path in this document. The raw job log, rather than the truncated combined log,
 identifies that failure. It is not a runtime build failure or a passing gate.
 
-ADR 1.6.1: retain the published source and correct the documentation through native
-successor `agent/device-0232231d4a19/drone-warehouse-portable`. References use the
-retained task artifact root; no machine username or home directory is required.
-PRD, runtime TAD, warehouse allocations and GTM assumptions remain unchanged.
-This successor changes only this document. Its exact-head native validation and
-provider review receipts remain pending until recorded in the task handoff.
+ADR 1.6.2: retain published source and use native successors. PR1323 at
+`35c3da386649bd2d08d7f090b3fa23c98f479d6d` corrected the local path and recorded
+prior evidence. Its rerun exposed an offline-test race: two Source Files navigation
+lists can mount before the initial wait. The test now waits for their unique
+Source Files region; subsequent folder, source, service-worker and offline checks
+remain intact. Native validation also detected publication input drift, so final
+validation starts after publication metadata is stable.
+
+Current successor: `agent/device-0232231d4a19/drone-warehouse-check`. Only this
+document and the offline-test locator change from PR1322; runtime TAD, product
+acceptance, warehouse allocations and GTM assumptions remain unchanged. Its
+exact-head native validation and provider receipts remain pending until recorded
+in the task handoff. No prior failed or blocked receipt is counted as a pass.
 
 Production Release: closed without exact protected integration, clean preparation
 and candidate-bound authorization. Runtime: port 4201 is a local simulation;
 canonical runtime, production, physical phones/headsets and aircraft are not
 upgraded by this source publication. No deployment is claimed.
 
-Next bounded action: finish the one-document portability correction, verify the
-source-only conflict check and run native required checks before source publication.
-Additional allowance: 15 active minutes, one documentation module, at most 8 kB
-changed text, zero runtime or dependency changes. External CI waits are tracked by
-blocker and recheck condition, not an ETA. Protected integration and deployment
-remain separate from source publication. Handoff names diff, checks and risks.
+Next bounded action: validate the corrected offline test, publish the source
+successor, then run native checks with stable publication inputs. The correction
+allowance is 15 active minutes, two test/documentation files, at most 8 kB changed
+text, zero runtime or dependency changes. External CI waits are tracked by blocker
+and recheck condition, not an ETA. Protected integration and deployment remain
+separate from source publication. Handoff names diff, checks and risks.
