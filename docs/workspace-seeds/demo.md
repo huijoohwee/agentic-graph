@@ -6,6 +6,7 @@ source_root: agentic-graph/docs
 demos:
   - id: programmatic-drone-flight
     title: Programmatic Drone Flight
+    background: python-drone
     reply: "Open the editable Python drone example. Choose Run to watch takeoff, hover, a flight to (4, 0) and landing. The example runs locally without a model call."
     outputs:
       - title: Program and simulate
