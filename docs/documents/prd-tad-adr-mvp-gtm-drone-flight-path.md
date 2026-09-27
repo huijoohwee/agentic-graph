@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.6.3
+version: 1.6.4
 lang: en
 date: 2026-09-27
 owner: Learning runtime maintainer
@@ -19,7 +19,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.6.3 binds this user-authorized extension. The warehouse
+DRONE-FLIGHT-PATH-001@1.6.4 binds this user-authorized extension. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -519,7 +519,7 @@ are explicitly outside the offer. Observe a user completing source → Run →
 inspection → export and record setup time/errors before adding infrastructure.
 No new channel, supplier, capital commitment or paid dependency is authorized.
 
-## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.3
+## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.4
 
 Disposition: **16/16 domains recorded; 11/16 covered applicable; 5 deferred;
 0 not applicable.** Coverage records decisions and gaps, not acceptance or revenue.
@@ -559,7 +559,7 @@ built production assets and passed chunk checks, then rejected a machine-specifi
 path in this document. The raw job log, rather than the truncated combined log,
 identifies that failure. It is not a runtime build failure or a passing gate.
 
-ADR 1.6.3: retain published source and use native successors. PR1323 at
+ADR 1.6.4: retain published source and use native successors. PR1323 at
 `35c3da386649bd2d08d7f090b3fa23c98f479d6d` corrected the local path and recorded
 prior evidence. Its rerun exposed a test race: workspace and document lists share
 the Source Files navigation label. Publication also changed validation inputs;
@@ -574,8 +574,13 @@ that verifier, plus its existing source-contract expectation and regression test
 All use the unique Source Files parent region; scoped file, storage and XR
 assertions remain intact. No failed or blocked receipt counts as a pass.
 
-Current successor: `agent/device-0232231d4a19/drone-warehouse-proof`. Changes since
-PR1322 are restricted to this record and four verification files. Runtime TAD,
+PR1325 at `bcc3a8649c8467adb485c2a8654fe873f05e23a1` passed targeted XR seed
+browser proof and 87 source-runner tests. Native validation then found one further
+Canvas unit assertion requiring the old selector (301/302 XR unit tests passed).
+That expectation is now updated consistently with the verifier and source contract.
+
+Current successor: `agent/device-0232231d4a19/drone-warehouse-verified`. Changes since
+PR1322 are restricted to this record and five verification files. Runtime TAD,
 product acceptance, warehouse allocations and GTM assumptions remain unchanged.
 Its exact-head native validation and provider receipts remain pending until
 recorded in the task handoff. Other editor test suites are outside this correction.
@@ -587,7 +592,7 @@ upgraded by this source publication. No deployment is claimed.
 
 Next bounded action: verify the source contract and XR seed check, publish the
 successor, then run native checks with stable publication inputs. The correction
-allowance is 20 active minutes, five test/documentation files and at most 10 kB
+allowance is 20 active minutes, six test/documentation files and at most 10 kB
 changed text, with zero runtime or dependency changes. External CI waits are
 tracked by blocker and recheck condition, not an ETA. Protected integration and
 deployment remain separate from source publication. Handoff names diff, checks
