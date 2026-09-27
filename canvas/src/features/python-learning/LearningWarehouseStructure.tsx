@@ -1,7 +1,8 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Color, InstancedMesh, Object3D } from 'three'
 import type { KgTheme } from '@/lib/ui/tokens-ssot'
 import { WAREHOUSE_DOCKS, WAREHOUSE_ZONES, WAREHOUSE_CONTEXT_RACKS, WAREHOUSE_PARTITIONS, WAREHOUSE_FIXTURES, warehouseRackGeometry } from './warehouseLayout'
+import { createWarehouseConcreteMaps } from './learningWarehouseMaterials'
 
 type Vector = readonly [number, number, number]
 type BoxPart = { position: Vector; size: Vector; rotation?: Vector; color?: string }
@@ -51,13 +52,20 @@ export function WarehouseRack({ width, depth, height }: { width: number; depth: 
       for (const side of [-1, 1]) orange.push({ position: [0, y, side * (depth / 2 - 0.055)], size: [width - 0.08, 0.13, 0.1] })
       for (let bay = 0; bay < bays; bay++) {
         const x = -width / 2 + 0.08 + (bay + 0.5) * bayWidth, boxHeight = levelHeight * 0.62
-        timber.push({ position: [x, y + 0.1, 0], size: [bayWidth - 0.16, 0.08, depth - 0.15] })
+        timber.push({ position: [x, y + 0.1, 0], size: [bayWidth - 0.16, 0.08, depth - 0.15], color: '#9d8059' })
         for (const side of [-1, 1]) {
           const boxX = x + side * bayWidth * 0.23, front = depth / 2 - 0.11
-          cartons.push({ position: [boxX, y + 0.18 + boxHeight / 2, 0], size: [bayWidth * 0.41, boxHeight, depth - 0.22], color: (tier + bay) % 2 ? '#c1a079' : '#cdb18a' })
+          const kraft = ['#bea181', '#c2a079', '#b99a72', '#d0b38a'][(tier * 3 + bay + (side > 0 ? 1 : 0)) % 4]
+          cartons.push({ position: [boxX, y + 0.18 + boxHeight / 2, 0], size: [bayWidth * 0.41, boxHeight, depth - 0.22], color: kraft })
+          timber.push({ position: [boxX, y + 0.185 + boxHeight, 0], size: [0.045, 0.008, depth - 0.22], color: '#b99a67' })
           for (const face of [-1, 1]) {
-            labels.push({ position: [boxX + bayWidth * 0.1, y + 0.18 + boxHeight * 0.58, face * front], size: [0.2, 0.13, 0.007] })
-            timber.push({ position: [boxX, y + 0.185 + boxHeight, 0], size: [0.045, 0.008, depth - 0.22] })
+            const labelX = boxX + bayWidth * 0.1, labelY = y + 0.18 + boxHeight * 0.58
+            labels.push({ position: [labelX, labelY, face * front], size: [0.2, 0.13, 0.007], color: '#ece8d8' })
+            labels.push({ position: [boxX, y + 0.18 + boxHeight / 2, face * (front + 0.001)], size: [0.045, boxHeight, 0.003], color: '#b99a67' })
+            // Non-semantic print marks share the label batch, with no fonts, textures or new draw calls.
+            for (let mark = 0; mark < 6; mark++) labels.push({ position: [labelX - 0.071 + mark * 0.025, labelY - 0.012, face * (front + 0.0045)],
+              size: [mark % 3 === 0 ? 0.011 : 0.005, 0.057, 0.001], color: '#39424a' })
+            labels.push({ position: [labelX - 0.014, labelY + 0.043, face * (front + 0.0045)], size: [0.13, 0.009, 0.001], color: '#70766f' })
           }
         }
       }
@@ -65,11 +73,11 @@ export function WarehouseRack({ width, depth, height }: { width: number; depth: 
     return { blue, orange, timber, cartons, labels }
   }, [width, depth, height])
   return <>
-    <WarehouseBoxes parts={batches.blue} color="#285d7a" metalness={0.58} roughness={0.43} />
-    <WarehouseBoxes parts={batches.orange} color="#e98535" metalness={0.3} roughness={0.55} />
-    <WarehouseBoxes parts={batches.timber} color="#9d8059" />
-    <WarehouseBoxes parts={batches.cartons} color="#ffffff" />
-    <WarehouseBoxes parts={batches.labels} color="#e5e6d9" castShadow={false} />
+    <WarehouseBoxes parts={batches.blue} color="#356c8a" metalness={0.48} roughness={0.42} />
+    <WarehouseBoxes parts={batches.orange} color="#d87e31" metalness={0.24} roughness={0.48} />
+    <WarehouseBoxes parts={batches.timber} color="#ffffff" roughness={0.88} />
+    <WarehouseBoxes parts={batches.cartons} color="#ffffff" roughness={0.9} />
+    <WarehouseBoxes parts={batches.labels} color="#ffffff" roughness={0.94} castShadow={false} />
   </>
 }
 
@@ -102,7 +110,9 @@ function LoadingBay({ dock }: { dock: typeof WAREHOUSE_DOCKS[number] }) {
 /** The full facility is architectural context. Only lesson-owned obstacles are simulated. */
 export function LearningWarehouseStructure({ palette }: { palette: KgTheme }) {
   const light = palette === 'light'
-  const wall = light ? '#c2cdd2' : '#485866', floor = light ? '#d2d9db' : '#3b4853'
+  const wall = light ? '#c2cdd2' : '#485866', floor = light ? '#c6ced0' : '#46535e'
+  const concrete = useMemo(createWarehouseConcreteMaps, [])
+  useEffect(() => () => concrete.dispose(), [concrete])
   const structure = useMemo(() => {
     const walls: readonly BoxPart[] = WAREHOUSE_PARTITIONS
     const columns: BoxPart[] = [], windows: BoxPart[] = [], lines: BoxPart[] = []
@@ -116,17 +126,21 @@ export function LearningWarehouseStructure({ palette }: { palette: KgTheme }) {
       for (const x of [-29.7, 29.7]) columns.push({ position: [x, 3.55, z], size: [0.22, 7.1, 0.22] })
     }
     for (let mark = -7.5; mark <= 7.5; mark += 1) for (const side of [-1, 1]) {
-      lines.push({ position: [mark, 0.012, side * 8], size: [0.55, 0.007, 0.06] })
-      lines.push({ position: [side * 8, 0.012, mark], size: [0.06, 0.007, 0.55] })
+      lines.push({ position: [mark, 0.012, side * 8], size: [0.55, 0.007, 0.06], color: '#367cb7' })
+      lines.push({ position: [side * 8, 0.012, mark], size: [0.06, 0.007, 0.55], color: '#367cb7' })
     }
+    // Thin surface marks replace the dense decorative grid; they introduce no obstacle volumes.
+    for (let x = -25; x <= 25; x += 5) lines.push({ position: [x, 0.002, 0], size: [0.016, 0.002, 40], color: light ? '#9da6a9' : '#35434e' })
+    for (let z = -15; z <= 15; z += 5) lines.push({ position: [0, 0.002, z], size: [60, 0.002, 0.016], color: light ? '#9da6a9' : '#35434e' })
     return { walls, columns, windows, lines }
-  }, [])
+  }, [light])
   return <group name="warehouse-architectural-context">
-    <mesh name="learning-room-floor" receiveShadow position={[0, -0.09, 0]}><boxGeometry args={[60, 0.18, 40]} /><meshStandardMaterial color={floor} roughness={0.75} metalness={0.12} /></mesh>
+    <mesh name="learning-room-floor" receiveShadow position={[0, -0.09, 0]}><boxGeometry args={[60, 0.18, 40]} />
+      <meshStandardMaterial color={floor} map={concrete.colorMap} roughnessMap={concrete.roughnessMap} roughness={0.82} metalness={0.04} />
+    </mesh>
     {[-39, 39].map(x => <mesh key={x} receiveShadow position={[x, -0.24, 0]}><boxGeometry args={[18, 0.12, 40]} /><meshStandardMaterial color={light ? '#77838b' : '#26333d'} roughness={0.95} /></mesh>)}
     {[-54, 54].map(x => <mesh key={x} receiveShadow position={[x, -0.24, 0]}><boxGeometry args={[12, 0.12, 40]} /><meshStandardMaterial color={light ? '#89949b' : '#303d47'} roughness={0.95} /></mesh>)}
     <mesh receiveShadow position={[0, -0.24, 24]}><boxGeometry args={[120, 0.12, 8]} /><meshStandardMaterial color={light ? '#89949b' : '#303d47'} roughness={0.95} /></mesh>
-    <gridHelper args={[60, 60, light ? '#a9b6bc' : '#52616c', light ? '#bec8cc' : '#465460']} position={[0, 0.005, 0]} scale={[1, 1, 2 / 3]} />
     {WAREHOUSE_ZONES.map(zone => {
       const [x, z, width, depth] = zone.rect
       return <group key={zone.id} name={`warehouse-zone-${zone.id}`}>
@@ -139,7 +153,7 @@ export function LearningWarehouseStructure({ palette }: { palette: KgTheme }) {
     <WarehouseBoxes parts={structure.walls} color={wall} />
     <WarehouseBoxes parts={structure.columns} color={light ? '#748b9c' : '#637989'} metalness={0.45} />
     <WarehouseBoxes parts={structure.windows} color={light ? '#e7efed' : '#9eafb7'} castShadow={false} />
-    <WarehouseBoxes parts={structure.lines} color="#367cb7" castShadow={false} />
+    <WarehouseBoxes parts={structure.lines} color="#ffffff" roughness={0.95} castShadow={false} />
     {WAREHOUSE_DOCKS.map(dock => <LoadingBay key={dock.id} dock={dock} />)}
     {WAREHOUSE_CONTEXT_RACKS.map(rack => <group key={rack.id} name={`warehouse-zone-${rack.zoneId}`} position={[rack.position[0], 0, rack.position[1]]}>
       <WarehouseRack width={rack.size[0]} depth={rack.size[2]} height={rack.size[1]} />

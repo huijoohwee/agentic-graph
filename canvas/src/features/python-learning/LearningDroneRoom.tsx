@@ -45,13 +45,13 @@ function WarehouseObstacle({ obstacle }: { obstacle: LearningLesson['obstacles']
 /** The marked inspection cell retains the bounded lesson physics within a larger facility cutaway. */
 export function LearningDroneRoom({ lesson, palette }: { lesson: LearningLesson; palette: KgTheme }) {
   return <group name="learning-drone-training-room">
-    <hemisphereLight args={['#e8f3ff', '#667581', 1.3]} />
-    <ambientLight intensity={0.4} />
-    <directionalLight position={[-3, 11, -6]} intensity={2.7} color="#fff0d5" castShadow
+    <hemisphereLight args={['#eaf2f5', '#717b80', 1.55]} />
+    <ambientLight intensity={0.25} />
+    <directionalLight position={[-3, 11, -6]} intensity={2.35} color="#fff4e6" castShadow
       shadow-mapSize={[1024, 1024]} shadow-camera-left={-9} shadow-camera-right={9}
       shadow-camera-top={9} shadow-camera-bottom={-9} shadow-camera-near={0.5}
-      shadow-camera-far={32} shadow-bias={-0.0005} shadow-normalBias={0.025} />
-    <directionalLight position={[5, 7, 5]} intensity={0.9} color="#b9d9ff" />
+      shadow-camera-far={32} shadow-bias={-0.00015} shadow-normalBias={0.003} />
+    <directionalLight position={[5, 7, 5]} intensity={1.1} color="#c7e0ef" />
     <LearningWarehouseStructure palette={palette} />
     <LandingPad position={[0, 0]} color="#83c8ef" />
     <LandingPad position={[lesson.goal[0], lesson.goal[1]]} color="#92efb5" goal />

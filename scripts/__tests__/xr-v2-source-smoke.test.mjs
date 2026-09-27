@@ -12,6 +12,8 @@ import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+// XR build preparation shares the native source-runner gate; fixtures never download assets.
+import '../../canvas/scripts/__tests__/xr-v2-depth-assets.test.mjs'
 
 import { NamedVerificationAggregateError } from '../lib/named-verification-runner.mjs'
 import {
