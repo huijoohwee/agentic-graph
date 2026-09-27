@@ -1,16 +1,21 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.8.1
+version: 1.8.2
 lang: en
 date: 2026-09-27
 owner: Learning runtime maintainer
 continuity_id: DRONE-FLIGHT-PATH-001
+prd_revision: "1.8.2"
+tad_revision: "1.8.2"
+adr_revision: "1.8.2"
+mvp_revision: "1.8.2"
+gtm_revision: "1.8.2"
 local_rung: spec-complete
 delivered_rung: undocumented
 lane: authoring
 universal_scope: false
-worktree_id: device-0232231d4a19--home-drone-background
+worktree_id: device-0232231d4a19--drone-plan-metadata
 agent_id: codex-root
 frontmatter_contract: required
 ---
@@ -18,8 +23,7 @@ frontmatter_contract: required
 # Graph to GameXR simulated drone flight path
 
 ## PRD
-
-DRONE-FLIGHT-PATH-001@1.8.1 binds this user-authorized extension. The warehouse
+DRONE-FLIGHT-PATH-001@1.8.2 binds this user-authorized planning successor. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -33,7 +37,6 @@ import cannot enable a receiver; Run preserves path order and requires fresh rec
 acknowledgments; stop/focus loss/disconnect invalidate the run and require a new Run;
 the mobile browser displays planned and receiver-accepted positions distinctly.
 ## TAD
-
 Graph owns simulation and this portable data contract. GameXR owns consumer validation,
 UI review and simulated-receiver admission. Graph also builds the read-only Canvas
 artifact served by the local GameXR gateway; no Graph source is copied into GameXR.
@@ -49,7 +52,6 @@ Coordinates round to six decimals; consecutive translation is at most 0.050002 m
 Heading changes retain educational instantaneous turns; they are not angular dynamics.
 Digest identifiers aid comparison and do not authenticate a downloaded file.
 ## ADR
-
 Use a portable trace, not Python execution or an invented position-to-throttle mapping.
 The simulated receiver accepts position setpoints under its existing challenge/session
 lease and reports them as simulated observations. No path setpoint enters the RPYT
@@ -73,14 +75,7 @@ Observe a learner completing export/import/Run before expanding curriculum or ha
 
 ## Implementation evidence
 
-This section records the initial implementation; it does not establish acceptance
-of the current warehouse candidate. The current evidence checkpoint is below.
-
-Initial Graph/GameXR proof exported a 541-sample nine-second route and completed
-simulated receiver acknowledgment on mobile WebKit. Focus-loss, disconnect and
-receiver expiry checks passed. These historical receipts do not establish current
-hardware or production readiness. Retained implementation evidence is under
-`.audit-artifacts/drone-implementation-20260925/` outside both repositories.
+Historical initial implementation and limitations remain at [predecessor 09e6250c](https://github.com/huijoohwee/agentic-graph/blob/09e6250c39657812b224b57eddb714d949f5753e/docs/documents/prd-tad-adr-mvp-gtm-drone-flight-path.md#implementation-evidence). Those working-source receipts do not establish current hardware or Production readiness.
 
 ## Canvas reuse and source navigation — 1.1.0
 
@@ -137,7 +132,6 @@ landing and shared scene mounted. The rebuilt full-app offline reload/cache-reco
 proof also passes. WebMCP scope and Vite runtime checks pass. These remain working-source
 observations; no clean-candidate CI, protected integration or phone session is inferred.
 
-
 ## Direct transfer and phone links — 1.2.0
 
 PRD: remove the compulsory download/file-picker step. Results now offers Send to GameXR
@@ -182,7 +176,6 @@ separate authority. Revert this increment to restore file-only transfer, preserv
 prior shared Canvas. Working-source evidence uses flight-transfer-* under the existing
 external audit directory. No firmware, gateway authorization or physical control changes.
 
-
 ## In-app handoff correction — 1.2.1
 
 PRD: Send to GameXR must reach review when an embedded browser suppresses scripted
@@ -216,7 +209,6 @@ Run native affected checks and refresh the explicit Graph Canvas artifact after 
 Source publication, protected integration, production and physical-phone acceptance remain
 separate. Working-source evidence uses the external popup-fix-* audit prefix.
 
-
 Observed correction: Codex's in-app browser opened the native Send link into a separate
 GameXR review tab with all 541 samples and the source link intact. Run stayed disabled
 until explicit Connect. Explicit Run then ended at x=4, z=0, altitude=0, tick=540 with
@@ -225,7 +217,6 @@ disabled browser regression and link/cancellation/bounds unit tests pass. The br
 Python selection initially retained a pre-existing pane-availability assertion failure;
 protected main subsequently corrected that assertion in #1296. Refresh the unpublished
 candidate from protected main before publication and repeat the affected selection.
-
 
 ## Reusable sharing and catalog entry — 1.3.0
 
@@ -596,3 +587,13 @@ Budget: six files, <8 kB changed source, <600 lines/file; 15 active minutes plus
 Rollback: revert this successor; preserve authored programs and the prior production receipts.
 Validation: local warehouse render passed; two demo contract checks, 82 Python cases and type checks passed.
 H1 preset switching passed; Demo opens an idle editable drone lesson. Publish source; new Production proof remains required.
+
+## Planning metadata and release handover — DRONE-FLIGHT-PATH-001@1.8.2
+
+PRD / P1: repair the missing five-role revisions and duplicated Graph/GameXR CID reported by fleet ownership. Retain H1/H2 acceptance, limitations and unvalidated payer demand. TAD: all five Graph role fields bind 1.8.2; Graph owns DRONE-FLIGHT-PATH-001 and the portable contract. GameXR's separate consumer successor owns GAMEXR-DRONE-PATH-CONSUMER-001 and explicitly consumes the Graph contract. ADR: preserve published history and use distinct source owners; metadata grants no runtime or Production authority.
+
+MVP / P1: fleet ownership must pass against both admitted candidates; each required Integration Gate and exact merge/readback must pass before native source closeout. Scope: this document plus the GameXR consumer plan and only required provenance records; <8 kB added text, <600 lines/file, 25 active minutes plus external gates, zero dependencies, always-load changes or spend; headless review. GTM: restore traceability; no new product or demand proof.
+
+Development: H1/H2 PR #1334 merged as `09e6250c39657812b224b57eddb714d949f5753e`; main Integration 36321356929 attempt 2 and native Home warehouse/preset/idle-Demo review passed at OS `e0ef770860905830157e64c455f0a342084b6d25`. Production Release: authorized run 36322891459 completed at 2026-09-27T13:54:59Z, Pages `a06e1ca5-29c7-46a4-9c77-4fd3eebb2572`, mirror `be045fb0071ecdff93e86ededc10c36b82906987`. Runtime: native terminal, immutable/public readback, browser fidelity, cache convergence, D1 and public Home passed. These receipts bind predecessor 1.8.1 and supersede its pending H1/H2 handoff; no universal-device or physical-flight claim. Source cleanup retained recovery bytes.
+
+Private workspace PR #33 at `6707866e8adcc8b667e62af34cfa03c840fc7497` published the release Context and done row with passed CI/readback. Retained `drone-end-adlc-20260927` receipts: `home-background-END-ADLC-handover.json`, `planning-publication-completion.json` and `planning-fleet-ownership-finding.json`. P1 checks remain pending this successor. Next release-maintainer action: verify fleet ownership, integrate protected sources, classify deployed inputs, complete native closeout and append the exact outcome through the private Context/board owner. Rollback: reviewed documentation revert, preserving runtime and prior receipts.
