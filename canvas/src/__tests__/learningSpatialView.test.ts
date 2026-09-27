@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { WAREHOUSE_ZONES, WAREHOUSE_CONTEXT_RACKS, warehouseAllocation } from '../features/python-learning/warehouseLayout'
+import { WAREHOUSE_ZONES, WAREHOUSE_DOCKS, WAREHOUSE_CONTEXT_RACKS, warehouseAllocation } from '../features/python-learning/warehouseLayout'
 import test from 'node:test'
 import { LearningSpatialSelection, learningAssets, learningAssetFromObject } from '../features/python-learning/learningSpatialView'
 import { learningLesson } from '../features/python-learning/learningLessons'
@@ -63,6 +63,15 @@ test('warehouse concept partitions its footprint and keeps racks in the bounded 
   assert.ok(assets.filter(asset => asset.kind === 'dock').every(asset => Math.abs(asset.position[0]) > 30))
   assert.equal(learningAssetFromObject({ name: 'warehouse-zone-vault', parent: null }), 'zone:vault')
   assert.equal(learningAssetFromObject({ name: 'warehouse-dock-in-1', parent: null }), 'dock:in-1')
+})
+
+test('every dock opens entirely onto its receiving or shipping zone', () => {
+  for (const dock of WAREHOUSE_DOCKS) {
+    const zone = WAREHOUSE_ZONES.find(value => value.id === dock.side)!
+    assert.ok(dock.z >= zone.rect[1] && dock.z + dock.depth <= zone.rect[1] + zone.rect[3], dock.id)
+    assert.equal(dock.side === 'inbound' ? dock.x + dock.width : dock.x,
+      dock.side === 'inbound' ? zone.rect[0] : zone.rect[0] + zone.rect[2], dock.id)
+  }
 })
 
 test('lesson snapshots own rendering without keeping an idle warehouse animation loop alive', () => {

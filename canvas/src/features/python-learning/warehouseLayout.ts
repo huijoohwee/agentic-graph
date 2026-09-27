@@ -15,8 +15,8 @@ export const WAREHOUSE_ZONES: readonly WarehouseZone[] = [
   { id: 'office', name: 'Office / front entry', rect: [6, 12, 24, 8], use: 'ancillary', color: '#bec5d5' },
 ]
 export const WAREHOUSE_DOCKS = [
-  { id: 'in-1', name: 'Inbound bay 1', side: 'inbound', x: -48, z: -7, width: 18, depth: 4 },
-  { id: 'in-2', name: 'Inbound bay 2', side: 'inbound', x: -48, z: -1, width: 18, depth: 4 },
+  { id: 'in-1', name: 'Inbound bay 1', side: 'inbound', x: -48, z: -9, width: 18, depth: 4 },
+  { id: 'in-2', name: 'Inbound bay 2', side: 'inbound', x: -48, z: -4, width: 18, depth: 4 },
   { id: 'out-1', name: 'Outbound bay 1', side: 'outbound', x: 30, z: -7, width: 18, depth: 4 },
   { id: 'out-2', name: 'Outbound bay 2', side: 'outbound', x: 30, z: 3, width: 18, depth: 4 },
 ] as const
