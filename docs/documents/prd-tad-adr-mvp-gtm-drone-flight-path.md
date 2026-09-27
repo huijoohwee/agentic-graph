@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.6.2
+version: 1.6.3
 lang: en
 date: 2026-09-27
 owner: Learning runtime maintainer
@@ -19,7 +19,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.6.2 binds this user-authorized extension. The warehouse
+DRONE-FLIGHT-PATH-001@1.6.3 binds this user-authorized extension. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -519,7 +519,7 @@ are explicitly outside the offer. Observe a user completing source → Run →
 inspection → export and record setup time/errors before adding infrastructure.
 No new channel, supplier, capital commitment or paid dependency is authorized.
 
-## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.2
+## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.3
 
 Disposition: **16/16 domains recorded; 11/16 covered applicable; 5 deferred;
 0 not applicable.** Coverage records decisions and gaps, not acceptance or revenue.
@@ -559,28 +559,36 @@ built production assets and passed chunk checks, then rejected a machine-specifi
 path in this document. The raw job log, rather than the truncated combined log,
 identifies that failure. It is not a runtime build failure or a passing gate.
 
-ADR 1.6.2: retain published source and use native successors. PR1323 at
+ADR 1.6.3: retain published source and use native successors. PR1323 at
 `35c3da386649bd2d08d7f090b3fa23c98f479d6d` corrected the local path and recorded
-prior evidence. Its rerun exposed an offline-test race: two Source Files navigation
-lists can mount before the initial wait. The test now waits for their unique
-Source Files region; subsequent folder, source, service-worker and offline checks
-remain intact. Native validation also detected publication input drift, so final
-validation starts after publication metadata is stable.
+prior evidence. Its rerun exposed a test race: workspace and document lists share
+the Source Files navigation label. Publication also changed validation inputs;
+subsequent final validation therefore starts after publication metadata settles.
 
-Current successor: `agent/device-0232231d4a19/drone-warehouse-check`. Only this
-document and the offline-test locator change from PR1322; runtime TAD, product
-acceptance, warehouse allocations and GTM assumptions remain unchanged. Its
-exact-head native validation and provider receipts remain pending until recorded
-in the task handoff. No prior failed or blocked receipt is counted as a pass.
+PR1324 at `6f41bf6050b9e88f1cce5922b5aeec8288b15299` corrected the offline-test
+wait and passed all 15 standard checks plus Mission browser. This includes rebuilt
+offline mobile, saved-source reload, surface/run preservation and zero page errors.
+XR seed verification then exposed the same ambiguous navigation owner on startup.
+The current correction covers startup, reload and the second device context in
+that verifier, plus its existing source-contract expectation and regression test.
+All use the unique Source Files parent region; scoped file, storage and XR
+assertions remain intact. No failed or blocked receipt counts as a pass.
+
+Current successor: `agent/device-0232231d4a19/drone-warehouse-proof`. Changes since
+PR1322 are restricted to this record and four verification files. Runtime TAD,
+product acceptance, warehouse allocations and GTM assumptions remain unchanged.
+Its exact-head native validation and provider receipts remain pending until
+recorded in the task handoff. Other editor test suites are outside this correction.
 
 Production Release: closed without exact protected integration, clean preparation
 and candidate-bound authorization. Runtime: port 4201 is a local simulation;
 canonical runtime, production, physical phones/headsets and aircraft are not
 upgraded by this source publication. No deployment is claimed.
 
-Next bounded action: validate the corrected offline test, publish the source
+Next bounded action: verify the source contract and XR seed check, publish the
 successor, then run native checks with stable publication inputs. The correction
-allowance is 15 active minutes, two test/documentation files, at most 8 kB changed
-text, zero runtime or dependency changes. External CI waits are tracked by blocker
-and recheck condition, not an ETA. Protected integration and deployment remain
-separate from source publication. Handoff names diff, checks and risks.
+allowance is 20 active minutes, five test/documentation files and at most 10 kB
+changed text, with zero runtime or dependency changes. External CI waits are
+tracked by blocker and recheck condition, not an ETA. Protected integration and
+deployment remain separate from source publication. Handoff names diff, checks
+and risks; final task receipts supersede this pre-publication checkpoint.
