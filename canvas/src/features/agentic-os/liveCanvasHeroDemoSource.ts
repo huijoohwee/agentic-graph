@@ -4,7 +4,7 @@ export const LIVE_CANVAS_HERO_DEMO_SOURCE = 'docs/workspace-seeds/demo.md'
 export type LiveCanvasHeroDemo = {
   id: string
   title: string
-  background?: 'xr-physics'
+  background?: 'xr-physics' | 'python-drone'
   repository?: string
   reply: string
   outputs: { title: string; text: string }[]
@@ -23,7 +23,9 @@ export function parseLiveCanvasHeroDemos(text: string): LiveCanvasHeroDemo[] {
     const demo = raw as LiveCanvasHeroDemo | null
     if (!demo || !string(demo.id) || !/^[a-z0-9-]+$/.test(demo.id) || ids.has(demo.id)
       || !string(demo.title) || !string(demo.reply)
-      || (demo.background !== undefined && (demo.background !== 'xr-physics' || demo.id !== 'xr-physics'))
+      || (demo.background !== undefined && !(
+        (demo.background === 'xr-physics' && demo.id === 'xr-physics')
+        || (demo.background === 'python-drone' && demo.id === 'programmatic-drone-flight')))
       || (demo.repository !== undefined && (demo.id !== 'launch-copilot'
         || !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(demo.repository)))
       || !Array.isArray(demo.outputs) || demo.outputs.length < 1 || demo.outputs.length > 6

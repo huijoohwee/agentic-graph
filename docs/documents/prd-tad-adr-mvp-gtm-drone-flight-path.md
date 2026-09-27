@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.8.0
+version: 1.8.1
 lang: en
 date: 2026-09-27
 owner: Learning runtime maintainer
@@ -10,7 +10,7 @@ local_rung: spec-complete
 delivered_rung: undocumented
 lane: authoring
 universal_scope: false
-worktree_id: device-0232231d4a19--drone-scene-fidelity
+worktree_id: device-0232231d4a19--home-drone-background
 agent_id: codex-root
 frontmatter_contract: required
 ---
@@ -19,7 +19,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.8.0 binds this user-authorized extension. The warehouse
+DRONE-FLIGHT-PATH-001@1.8.1 binds this user-authorized extension. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -571,27 +571,28 @@ Retained model: 104 rack / 47 aisle stations; 751.04 s fixed rehearsal, 489 keyf
 
 ## Visual fidelity — reference implementation · DRONE-FLIGHT-PATH-001@1.8.0
 
-PRD: the user requests clearer warehouse materials and recognizable miniature mechanical/
-electronic detail. F1 requires reviewable closed/open truck, drone electronics and warehouse
-views at unchanged dimensions; F2 preserves native 2D/3D/XR, Timeline and Python behavior.
-TAD: extend six rendering owners: batched truck details; drone-002 wires, curved blades and
-PCB; drone-001 canopy; shared warehouse labels/tape; concrete maps; existing room lighting.
-Two deterministic local 128² color/roughness maps use ~175 kB with mipmaps and explicit
-disposal. Rack marks reuse instance batches; one existing 1024² shadow light remains.
-No routes, poses, dimensions, collision/portable contracts, source pins or dependencies change.
-Existing lesson loading, Settings/theme, selection and camera owners remain authoritative.
-ADR: original procedural detail within current envelopes avoids external asset packs and
-new scene owners. No new clock, renderer, network effect or physical capability follows.
-Source revert to the baseline restores appearance while preserving saved learner programs.
-MVP: 25 active minutes plus validation; cap eight rendering modules / 35 kB new source,
-<600 lines/file, <500 kB/chunk, zero provider spend or dependencies; six rendering modules
-implemented. Existing pinned XR asset preparation now includes body-timeout retry handling
-with seven mock cases; immutable pins stay unchanged. Current candidate proof is pending.
-GTM: improve the same scoped demonstration; observe asset recognition and explanation time
-before/after. Demand, price, revenue, hardware readiness and photographic coverage stay gaps.
-Next bounded action: runtime maintainer reviews F1 views, then verifies F2 with native
-surface/Timeline, rebuilt offline, 83 learning cases, retry mocks and source/chunk guards.
-Stop on geometry drift, visual regression or resource overrun; retain exact failed receipts.
-Admitted branch: `agent/device-0232231d4a19/warehouse-visual-fidelity`. Recheck after candidate
-checks finish; external provider waits have no ETA. Source publication, protected integration
-and Production Release require separate receipts; deployment and physical flight remain unclaimed.
+Immutable predecessor: [source 4c542343](https://github.com/huijoohwee/agentic-graph/blob/4c542343d7eaf5c53b22dfb32dcebec12c6c8de4/docs/documents/prd-tad-adr-mvp-gtm-drone-flight-path.md#visual-fidelity--reference-implementation--drone-flight-path-001180).
+F1 enhanced six existing rendering owners: truck mechanics, drone-002 electronics/blades,
+drone-001 canopy, warehouse markings/concrete and lighting at unchanged dimensions.
+F2 preserved native surfaces, Timeline, Python and portable contracts; no new dependencies.
+Two 128² procedural maps use ~175 kB with mipmaps; shared instancing and one shadow light remain.
+The protected source and production receipts bind run36316328997, source4c542343 and OS e0ef7708.
+Native local review, source-to-mirror parity, browser fidelity, storage/cache convergence and
+terminal production-complete passed; mirror PR83 merged at9a48fb37. Physical flight stays unclaimed.
+
+## Homepage warehouse background — DRONE-FLIGHT-PATH-001@1.8.1
+
+PRD / H1: the selected drone preset shows explanatory cards instead of its warehouse scene.
+Restore a visible scene behind Home while retaining editable prompt, Catalog and explicit Demo.
+TAD: the authored demo selects python-drone; LiveCanvasHeroPresetStage lazily reuses the existing
+LearningCanvasEmbed and LearningSceneGeometry. Bound the viewer to its parent viewport.
+ADR: one geometry/camera owner, no duplicated scene, screenshot, external asset, clock or auto-Run.
+An explicitly imported embed keeps precedence; other presets retain their native backgrounds.
+MVP / H1: inspect the scene and controls locally, switch presets and back, and verify explicit Demo.
+H2: reject mismatched background/preset pairs; reuse demo/source contract checks and type checks.
+OS dependency remains e0ef770860905830157e64c455f0a342084b6d25; no provider call or spend.
+GTM: restore an inspectable demonstration; payer demand and recognition-time gains remain unknown.
+Budget: six files, <8 kB changed source, <600 lines/file; 15 active minutes plus external gates.
+Rollback: revert this successor; preserve authored programs and the prior production receipts.
+Validation: local warehouse render passed; two demo contract checks, 82 Python cases and type checks passed.
+H1 preset switching passed; Demo opens an idle editable drone lesson. Publish source; new Production proof remains required.

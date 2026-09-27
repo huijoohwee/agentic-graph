@@ -16,6 +16,9 @@ import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
 
 export async function testLiveCanvasHeroDemoDocumentMatchesConversation(): Promise<void> {
   const demos = parseLiveCanvasHeroDemos(readFileSync(resolve(process.cwd(), '..', LIVE_CANVAS_HERO_DEMO_SOURCE), 'utf8'))
+  if (demos.find(demo => demo.id === 'programmatic-drone-flight')?.background !== 'python-drone') {
+    throw new Error('The drone preset must preview its native warehouse Canvas')
+  }
   const catalog = await loadPromptPresetCatalog(await createPresetWorkspace())
   if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
   // Unique demo ids are enforced by the source parser. Additional demos may precede paired catalog integration.
@@ -108,7 +111,9 @@ export function testLiveCanvasHeroDemoSourceRejectsInvalidRecords(): void {
   const text = readFileSync(resolve(process.cwd(), '..', LIVE_CANVAS_HERO_DEMO_SOURCE), 'utf8')
   for (const invalid of [text.replace('demo_only: true', 'demo_only: false'), text.replace('id: launch-copilot', 'id: xr-physics'),
     text.replace('repository: https://github.com/anthropics/commerce-agents', 'repository: file:///tmp/private'),
-    text.replace('background: xr-physics', 'background: https://example.com'), 'x'.repeat(40_001)]) {
+    text.replace('background: xr-physics', 'background: https://example.com'),
+    text.replace('background: python-drone', 'background: xr-physics'),
+    text.replace('background: xr-physics', 'background: python-drone'), 'x'.repeat(40_001)]) {
     let rejected = false
     try { parseLiveCanvasHeroDemos(invalid) } catch { rejected = true }
     if (!rejected) throw new Error('Invalid source must not become a demo')
