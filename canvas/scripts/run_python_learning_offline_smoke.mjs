@@ -10,6 +10,7 @@ import { chromium } from 'playwright'
 import { expect } from 'playwright/test'
 import { tsImport } from 'tsx/esm/api'
 import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
+import { proveWarehouseRehearsal } from './lib/warehouse-rehearsal-proof.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const checkoutRevision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -59,7 +60,8 @@ try {
   page.on('console', message => { if (['warning', 'error'].includes(message.type())) consoleWarnings.push(message.text()) })
   page.on('requestfailed', request => failedRequests.push(new URL(request.url()).pathname))
   await page.goto(base + '?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
+  // Workspace and document lists share a navigation label; their parent is unique.
+  await page.getByRole('region', { name: 'Source Files', exact: true }).waitFor({ timeout: 60000 })
   await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), undefined, { timeout: 60000 })
   await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
   // Exercise the actual Source Files owner before the separate offline lesson proof.
@@ -151,10 +153,12 @@ try {
   await dismissVisibleFloatingPanel(page)
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByText('Offline lessons', { exact: true }).click()
+  console.log('Offline lessons: starting verified installation')
   const installStart = performance.now()
   await pane.getByRole('button', { name: 'Install offline lessons', exact: true }).click()
   await pane.getByText(/^Verified \d+ files/).waitFor({ timeout: 190000 })
   const installMs = Math.round(performance.now() - installStart)
+  console.log('Offline lessons: verified installation in', installMs, 'ms')
   await Promise.all([
     page.waitForURL(url => url.searchParams.get('python-learning-offline') === revision, { waitUntil: 'load', timeout: 60000 }),
     pane.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click(),
@@ -222,6 +226,21 @@ try {
   }
   const lessonCanvas = page.getByRole('region', { name: 'Canvas viewport', exact: true })
   const sharedCanvas = lessonCanvas.locator('[data-kg-three-canvas-owner="1"]')
+  const mainToolbar = page.getByRole('navigation', { name: 'Main Toolbar', exact: true })
+  const sceneControls = lessonCanvas.getByRole('region', { name: 'Lesson scene controls', exact: true })
+  const selectSurface = async mode => {
+    const trigger = mainToolbar.getByRole('button', { name: /^Canvas View Mode:/ })
+    await trigger.click()
+    // The native menu auto-expands its active parent and restores keyboard focus.
+    await expect(page.getByRole('button', { name: '2D Renderer', exact: true })).toHaveAttribute('aria-expanded', 'true')
+    const surfaceMenu = page.getByRole('button', { name: 'Surface Mode', exact: true })
+    await surfaceMenu.click()
+    await expect(surfaceMenu).toHaveAttribute('aria-expanded', 'true')
+    const option = page.getByRole('button', { name: `${mode} Mode`, exact: true })
+    await expect(option).toBeEnabled(); await option.click()
+    await expect(surfaceMenu).toHaveCount(0)
+    if (mode !== '2D') await expect(mainToolbar.getByRole('button', { name: `Canvas View Mode: ${mode} Mode`, exact: true })).toBeVisible()
+  }
   assert.equal(await pane.locator('canvas').count(), 0, 'Editor must not host the lesson renderer')
   const beforeCanvasSwitch = await inspect()
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
@@ -229,6 +248,8 @@ try {
   for (let offset = 0; offset < 7; offset++) await editor.press('ArrowRight')
   assert.equal(await editor.evaluate(element => element.selectionStart), 7)
   await pane.getByRole('button', { name: 'View Canvas', exact: true }).click()
+  await expect(sceneControls.getByRole('button', { name: /^(2D Plan|3D|XR)$/ })).toHaveCount(0)
+  await selectSurface('3D')
   await sharedCanvas.waitFor()
   assert.equal(await pane.isVisible(), false, 'mobile scene uses the full Canvas view')
   assert.equal(await lessonCanvas.locator('[data-learning-run-id]').getAttribute('data-learning-run-id'), beforeCanvasSwitch.binding.expectedRunId)
@@ -241,6 +262,24 @@ try {
     return owner && owner.getBoundingClientRect().width >= 350 && canvas && canvas.width > 0
   })
   await page.screenshot({ path: join(output, 'offline-mobile-canvas.png'), fullPage: true })
+  await selectSurface('2D')
+  await dismissVisibleFloatingPanel(page)
+  const plan = page.getByRole('region', { name: 'Drone lesson floor plan', exact: true })
+  await plan.waitFor()
+  await plan.getByRole('button', { name: 'Fit flight', exact: true }).click()
+  await plan.getByRole('button', { name: 'Select Pallet load', exact: true }).press('Enter')
+  await expect(sceneControls).toContainText('Pallet load · 0.80 × 1.20 m')
+  assert.equal(await lessonCanvas.locator('[data-learning-run-id]').getAttribute('data-learning-run-id'), beforeCanvasSwitch.binding.expectedRunId)
+  const controlsBox = await lessonCanvas.getByRole('region', { name: 'Lesson scene controls' }).boundingBox()
+  const planHeaderBox = await plan.locator(':scope > div').boundingBox()
+  const planFooterBox = await plan.locator('footer').boundingBox()
+  const toolbarBox = await page.getByRole('navigation', { name: 'Main Toolbar', exact: true }).boundingBox()
+  assert.ok(planHeaderBox.y >= controlsBox.y + controlsBox.height, 'wrapped scene controls must not cover the plan header')
+  assert.ok(planFooterBox.y + planFooterBox.height <= toolbarBox.y, 'mobile toolbar must not cover the plan footer')
+  await page.screenshot({ path: join(output, 'offline-mobile-plan.png'), fullPage: true })
+  await selectSurface('XR')
+  await expect(sceneControls.getByRole('button', { name: /^(2D Plan|3D|XR)$/ })).toHaveCount(0)
+  await expect(sceneControls).toContainText('Pallet load · 0.80 × 1.20 m')
   await page.getByRole('navigation', { name: 'Main Toolbar', exact: true }).getByRole('button', { name: 'Edit Python code', exact: true }).click()
   await pane.waitFor(); await selectPython()
   await dismissVisibleFloatingPanel(page)
@@ -263,6 +302,7 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   await awaitSource(lessons.at(-1).solution)
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'native autosave survives offline reload')
+  await selectPython()
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
   await pane.getByText(`${lessons.length} matching debriefs`, { exact: false }).waitFor()
@@ -317,6 +357,9 @@ try {
   const afterResize = await sharedCanvas.boundingBox()
   assert.equal(afterResize.x, beforeResize.x, 'Editor resize must not move the Canvas viewport')
   assert.equal(afterResize.width, beforeResize.width, 'Editor resize must not resize the Canvas viewport')
+  const warehouseRehearsal = await proveWarehouseRehearsal({
+    page, pane, lessons, inspect, selectPython, selectSurface, editRichSource, awaitStoredSource, output,
+  })
   await page.setViewportSize({ width: 375, height: 812 })
   // A missing admitted worker must block offline navigation even if another runtime cache has it.
   const missing = await page.evaluate(async () => {
@@ -338,7 +381,7 @@ try {
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
   const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
     nativeLessonFilesProven: true, nativeLessonSaveReloadProven: true, toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
-    installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
+    installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, warehouseRehearsal, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
   evidenceWritten = true

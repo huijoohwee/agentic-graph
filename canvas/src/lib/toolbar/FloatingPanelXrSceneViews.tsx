@@ -1,4 +1,5 @@
 import React from 'react'
+import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   CitySimPanelProjection,
@@ -30,6 +31,8 @@ const ImmersiveMediaPanelProjectionLazy = React.lazy(() =>
 )
 
 export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) {
+  const learning = React.useSyncExternalStore(pythonLearningRuntime.subscribe, pythonLearningRuntime.read, pythonLearningRuntime.read)
+  const drone = learning.document?.lessonId === 'drone'
   const xr = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const panel = view === 'media' ? <MediaCatalogPanelLazy />
     : view === 'animation' ? <XrAnimationFloatingPanelViewLazy />
@@ -65,6 +68,6 @@ export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) 
         </div>
       </section>
   )
-  return <React.Suspense fallback={null}>{view === 'media' && xr
+  return <React.Suspense fallback={null}>{view === 'media' && (xr || drone)
     ? <XrWorkspaceMediaPanelLazy>{content}</XrWorkspaceMediaPanelLazy> : content}</React.Suspense>
 }

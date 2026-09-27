@@ -44,7 +44,7 @@ export function Controls({
   gameplayCoordinateScale?: number
   onControlsChange?: () => void; learningSceneId?: string
 }) {
-  const { camera, gl, size } = useThree(); const perspectiveCamera = camera as PerspectiveCamera
+  const { camera, gl, size, invalidate } = useThree(); const perspectiveCamera = camera as PerspectiveCamera
   const controls = useMemo(() => {
     const c = new OrbitControls(camera, gl.domElement)
     c.enableDamping = true; c.minDistance = 0.05
@@ -150,10 +150,11 @@ export function Controls({
     }
   }, [controls])
   React.useEffect(() => {
-    if (!onControlsChange) return
+    if (!onControlsChange && !learningSceneId) return
     const handler = () => {
+      if (learningSceneId) invalidate()
       try {
-        onControlsChange()
+        onControlsChange?.()
       } catch {
         void 0
       }
@@ -170,7 +171,7 @@ export function Controls({
         void 0
       }
     }
-  }, [controls, onControlsChange])
+  }, [controls, onControlsChange, learningSceneId, invalidate])
   useFrame(() => {
     const objectDragActive = readThreeObjectInputOwnership().active
     if (objectDragActive) return

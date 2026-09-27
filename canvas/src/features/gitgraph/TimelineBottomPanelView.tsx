@@ -8,8 +8,10 @@ import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from 
 import { resolveXrStageObjects } from '@/features/three/xrSceneLibrary'
 import { XrSubjectTransformEditor } from '@/features/three/XrSubjectTransformEditor'
 import { resolveXrDocumentStageAuthority } from '@/features/three/xrSceneDocumentReadiness'
+import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
 
 const SemanticObjectInspector = React.lazy(() => import('@/features/xr-v2/SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
+const WarehouseTimelinePanel = React.lazy(() => import('@/features/python-learning/WarehouseTimelinePanel').then(module => ({ default: module.WarehouseTimelinePanel })))
 
 function MediaTimelineBottomPanelView({ compact }: { compact: boolean }) {
   const { code: mediaGanttCode, ganttModel, graphData } = useMermaidGanttDocument({ purpose: 'media' })
@@ -28,9 +30,11 @@ export function XrObjectInspector({ emptyMessage = '' }: { emptyMessage?: string
 }
 
 export function TimelineBottomPanelView({ compact = false }: { compact?: boolean }) {
+  const learningDocument = React.useSyncExternalStore(pythonLearningRuntime.subscribe, () => pythonLearningRuntime.read().document, () => null)
   const xrTimelineContext = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const semanticSelection = useGraphStore(state => state.canvasRenderMode === '3d' && state.graphData?.nodes.some(node => node.id === state.selectedNodeId && node.type === 'semantic-space-entity'))
   const stageAuthority = useGraphStore(state => resolveXrDocumentStageAuthority(state))
+  if (learningDocument?.lessonId === 'drone') return <React.Suspense fallback={<p>Opening warehouse timeline…</p>}><WarehouseTimelinePanel compact={compact} /></React.Suspense>
   if (semanticSelection) return <XrObjectInspector />
   if (xrTimelineContext && !stageAuthority) return <p role="status" className="p-3 text-xs">No authored XR timeline in this document. Add an object from Media or open an XR scene.</p>
   if (xrTimelineContext) return <><XrObjectInspector /><XrCameraMotionSection /></>
