@@ -30,6 +30,7 @@ export class LearningSpatialSelection {
     if (!this.value.inspection) return null
     const changed = !previous || learningSpatialDocumentKey(runtime.document) !== this.key
       || runtime.document?.source !== previous.document?.source
+      || runtime.result !== previous.result
     if (!changed && canInspectWarehouse(runtime)) return null
     const transportKey = warehouseInspectionTransportKey(this.key)
     this.update(this.key, { inspection: false })

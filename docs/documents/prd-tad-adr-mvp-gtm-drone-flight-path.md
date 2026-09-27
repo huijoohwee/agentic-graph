@@ -592,8 +592,8 @@ offline, types, Mission and XR browsers); exact receipts accompany that handoff.
 Its Integration Gate and docs-contract now pass. Prior failed receipts
 remain revision-bound; none substitutes for this increment's checks.
 Current admitted successor: `agent/device-0232231d4a19/warehouse-mobile-proof`.
-Focused geometry, route, frame and ownership checks pass; Canvas TypeScript passes.
+Focused geometry, route and frame checks pass; advancing Python results now revoke rehearsal.
 Production Release remains closed pending protected integration and candidate-bound
 authorization; no deployment or physical aircraft operation is claimed.
-PR1331 validation was blocked by configuration drift; rerun serial builds and native surface navigation.
+Offline proof passes at fdbd9f119; native surface navigation fixed; final affected checks follow.
 Observed: 104 rack stations / 47 aisle stations; 751.04 s fixed rehearsal, 489 keyframes.

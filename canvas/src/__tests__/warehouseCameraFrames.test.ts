@@ -4,6 +4,10 @@ import { sampleWarehouseCameraFrame, WAREHOUSE_CAMERA_IDS, WAREHOUSE_CAMERAS, WA
 import { WAREHOUSE_INSPECTION, WAREHOUSE_INSPECTION_FPS, WAREHOUSE_INSPECTION_SCENARIO_ID } from '../features/python-learning/warehouseCoverageRoutes'
 import { LearningSpatialSelection, learningSpatialDocumentKey, warehouseInspectionTransportKey } from '../features/python-learning/learningSpatialSelection'
 import type { LearningRuntimeSnapshot } from '../features/python-learning/learningRuntime'
+import { learningLesson, gradeLearningLesson } from '../features/python-learning/learningLessons'
+import { LearningSimulation } from '../features/python-learning/learningSimulation'
+import { validLearningSnapshot, type LearningWorkerSnapshot } from '../features/python-learning/learningProtocol'
+import { PYTHON_RUNTIME_REVISION } from '../features/python-learning/pythonModel'
 
 test('synthetic delivery keeps the displayed frame and detections on one capture identity', () => {
   for (const camera of WAREHOUSE_CAMERA_IDS) {
@@ -107,5 +111,48 @@ test('another authored timeline can take native transport ownership without revi
   owner.releaseWhenTransportChanges('authored-document#xr-motion')
   assert.equal(owner.read(key).inspection, false)
   owner.releaseWhenTransportChanges(warehouseInspectionTransportKey(key))
+  assert.equal(owner.read(key).inspection, false)
+})
+
+function pausedWorkerResult(): LearningWorkerSnapshot {
+  const lesson = learningLesson('drone'), simulation = new LearningSimulation(lesson)
+  const scene = simulation.snapshot(); simulation.dispose()
+  const metrics = { statements: 1, assignments: 0, loops: 0, branches: 0, functions: 0, sensors: 0 }
+  const result: LearningWorkerSnapshot = { kind: 'snapshot', identity: {
+    runId: 'resumed-flight', generation: 1, workspaceId: 'warehouse', documentId: 'lesson.py',
+    sourceDigest: 'a'.repeat(64), sceneDigest: 'b'.repeat(64), lessonId: lesson.id,
+    lessonRevision: lesson.revision, runtimeRevision: PYTHON_RUNTIME_REVISION, seed: 0,
+  }, sequence: 2, state: 'paused', span: { line: 1, column: 1 }, scene, output: '', variables: {}, metrics,
+    grade: gradeLearningLesson(lesson, scene, metrics, false), computeMs: 0, error: null }
+  assert.equal(validLearningSnapshot(result), true)
+  return result
+}
+
+test('resumed Python results revoke inspection even without an intervening running snapshot', () => {
+  for (const state of ['paused', 'completed'] as const) {
+    const owner = new LearningSpatialSelection(), result = pausedWorkerResult()
+    const initial = snapshot({ state: 'paused', result }), key = learningSpatialDocumentKey(initial.document)
+    owner.bind(initial); owner.update(key, { inspection: true })
+    // A worker resumed from inside yieldTurn may finish before publishing running.
+    const next: LearningWorkerSnapshot = { ...result, sequence: result.sequence + 1, state,
+      grade: gradeLearningLesson(learningLesson('drone'), result.scene, result.metrics, state === 'completed') }
+    assert.equal(validLearningSnapshot(next), true)
+    assert.equal(owner.bind({ ...initial, state, result: next }), warehouseInspectionTransportKey(key))
+    assert.equal(owner.read(key).inspection, false)
+    owner.bind({ ...initial, state, result: next, hint: 1 })
+    assert.equal(owner.read(key).inspection, false, 'later updates cannot revive the preview')
+  }
+})
+
+test('normal binding and hint-only publications preserve inspection; new results revoke it', () => {
+  const owner = new LearningSpatialSelection(), initial = snapshot({ state: 'paused', result: pausedWorkerResult() })
+  const key = learningSpatialDocumentKey(initial.document)
+  owner.bind(initial); owner.update(key, { inspection: true })
+  assert.equal(owner.bind({ ...initial, document: { ...initial.document! } }), null)
+  assert.equal(owner.bind({ ...initial, hint: 1 }), null)
+  assert.equal(owner.read(key).inspection, true)
+  assert.equal(owner.bind(snapshot()), warehouseInspectionTransportKey(key), 'reset discards the bound result')
+  owner.update(key, { inspection: true })
+  assert.equal(owner.bind(initial), warehouseInspectionTransportKey(key), 'a new result also revokes an idle preview')
   assert.equal(owner.read(key).inspection, false)
 })
