@@ -15,7 +15,15 @@ const output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `
 const scratch = await mkdtemp(join(tmpdir(), 'python-learning-browser-'))
 let server, browser, embedHost
 let embedHostOrigin = ''
+const proofStarted = performance.now()
+let phaseName = 'setup', phaseStarted = proofStarted
+const checkpoint = next => {
+  const now = performance.now()
+  console.log(`[python-learning] ${next} elapsed=${Math.round(now - proofStarted)}ms previous=${phaseName}:${Math.round(now - phaseStarted)}ms`)
+  phaseName = next; phaseStarted = now
+}
 try {
+  checkpoint('setup')
   await mkdir(output, { recursive: true })
   await symlink(join(root, 'node_modules'), join(scratch, 'node_modules'), 'dir')
   await writeFile(join(scratch, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/proof-entry.jsx"></script></body></html>')
@@ -43,6 +51,7 @@ try {
     remote.push(url.origin + url.pathname); return route.abort()
   })
   const started = performance.now()
+  checkpoint('mount')
   await page.goto(origin + proofPath, { waitUntil: 'domcontentloaded', timeout: 60000 })
   const pane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
   await pane.waitFor({ timeout: 60000 })
@@ -52,6 +61,7 @@ try {
   const editor = page.getByRole('textbox', { name: 'Python source text', exact: true })
   const lessons = await page.evaluate(() => window.__pythonLearningProof.lessons)
   const outcomes = [], flightFrames = []
+  checkpoint('hidden-tab')
   try {
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
@@ -66,6 +76,7 @@ try {
   }
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'returning visible cannot auto-run')
   for (const lesson of lessons) {
+    checkpoint(`lesson:${lesson.id}`)
     await page.getByLabel('Python lesson', { exact: true }).selectOption(lesson.id)
     await page.getByRole('button', { name: 'Code', exact: true }).click()
     if (lesson.id === 'drone') {
@@ -75,6 +86,7 @@ try {
       await page.setViewportSize({ width: 1280, height: 900 })
     } else await editor.fill(lesson.solution)
     const runStarted = performance.now()
+    checkpoint(`run:${lesson.id}`)
     await page.getByRole('button', { name: 'Run', exact: true }).click()
     if (lesson.id === 'drone') {
       const phases = [
@@ -83,12 +95,15 @@ try {
         { name: 'landing', xMin: 3.9, xMax: 4.1, low: 0.2, high: 1.8 },
       ]
       for (const phase of phases) {
+        checkpoint(`flight:${phase.name}:wait`)
         await page.waitForFunction(phase => {
           const state = window.__pythonLearningProof.read(), scene = state.result?.scene
           return state.state === 'running' && scene.x > phase.xMin && scene.x < phase.xMax && scene.altitude > phase.low && scene.altitude < phase.high
         }, phase)
         flightFrames.push({ phase: phase.name, elapsedMs: performance.now() - runStarted, scene: await page.evaluate(() => window.__pythonLearningProof.read().result.scene) })
+        checkpoint(`flight:${phase.name}:capture`)
         await page.screenshot({ path: join(output, `drone-${phase.name}.png`), fullPage: true })
+        checkpoint(`flight:${phase.name}:captured`)
         if (phase.name === 'flight') {
           await page.getByRole('button', { name: 'Pause', exact: true }).click()
           await page.waitForFunction(() => window.__pythonLearningProof.read().state === 'paused')
@@ -107,7 +122,30 @@ try {
     await page.getByRole('button', { name: 'Results', exact: true }).click()
     await page.getByRole('button', { name: 'Save debrief', exact: true }).click()
     await page.getByText('Saved locally:', { exact: false }).waitFor()
+    checkpoint(`lesson:${lesson.id}:done`)
   }
+  checkpoint('camera-orbit')
+  const orbitCanvas = page.locator('[data-kg-three-canvas-owner="1"] canvas')
+  await orbitCanvas.waitFor({ state: 'visible', timeout: 30000 })
+  const orbitBounds = await orbitCanvas.boundingBox()
+  assert.ok(orbitBounds && orbitBounds.width > 900, 'desktop Canvas must expose an unobstructed orbit area')
+  const orbitX = orbitBounds.x + orbitBounds.width * 0.75, orbitY = orbitBounds.y + orbitBounds.height * 0.5
+  const beforeOrbitScene = await page.evaluate(() => window.__pythonLearningProof.read().result.scene)
+  await page.mouse.move(orbitX, orbitY)
+  checkpoint('camera-orbit:before-capture')
+  const beforeOrbitImage = await orbitCanvas.screenshot({ path: join(output, 'drone-orbit-before.png') })
+  checkpoint('camera-orbit:drag')
+  await page.mouse.down()
+  try { await page.mouse.move(orbitX - 100, orbitY + 40, { steps: 8 }) }
+  finally { await page.mouse.up() }
+  await page.mouse.move(orbitX, orbitY)
+  checkpoint('camera-orbit:after-capture')
+  const afterOrbitImage = await orbitCanvas.screenshot({ path: join(output, 'drone-orbit-after.png') })
+  checkpoint('camera-orbit:verify')
+  assert.ok(!beforeOrbitImage.equals(afterOrbitImage), 'pointer orbit must repaint the completed lesson Canvas')
+  assert.deepEqual(await page.evaluate(() => window.__pythonLearningProof.read().result.scene), beforeOrbitScene,
+    'camera orbit must not mutate the completed kinematic scene')
+  checkpoint('flight-export')
   await page.setViewportSize({ width: 375, height: 812 })
   const flightDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export flight path for GameXR', exact: true }).click()
@@ -117,6 +155,7 @@ try {
   assert.ok(new URL(flightPath.sourceUrl).searchParams.get('kgDoc')?.endsWith('.py'), 'export links the authored Graph source')
   assert.deepEqual(flightPath.samples.at(-1), [540, 4, 0, 0, 0])
   await writeFile(join(output, 'drone-flight-path.json'), flightPathBytes)
+  checkpoint('flight-share')
   // In-app browsers can suppress window.open and sever opener channels. Native links must still work.
   await page.getByText('Send flight to GameXR', { exact: true }).click()
   await context.route(origin + '/__flight_review_fixture?**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Flight review fixture</h1>' }))
@@ -143,6 +182,7 @@ try {
   await sendLink.waitFor()
 
   // Both sharing entry points use the existing iframe-code event and the same Graph renderer.
+  checkpoint('embed-mount')
   await page.evaluate(() => window.addEventListener('kg-canvas-embed-code-panel-open', event => { window.__sharedCanvasCode = event.detail.code }, { once: true }))
   await page.getByRole('button', { name: 'Share canvas embed', exact: true }).click()
   await page.waitForFunction(() => !!window.__sharedCanvasCode)
@@ -166,15 +206,18 @@ try {
     console.error('Shared Canvas frames:', await Promise.all(sharedPage.frames().map(async frame => ({ url: frame.url(), text: await frame.locator('body').innerText().catch(() => '') }))))
     await sharedPage.screenshot({ path: join(output, 'shared-canvas-failure.png') }); throw error
   }
+  checkpoint('embed-replay')
   await sharedFrame.getByRole('button', { name: 'Replay flight', exact: true }).click()
   await sharedFrame.getByText('Flight replay · 540 / 540 ticks', { exact: false }).waitFor({ timeout: 20000 })
   assert.equal(await sharedFrame.getByRole('region', { name: 'Graph drone Canvas' }).getAttribute('data-graph-canvas-pose'), '[540,4,0,0,0]')
   await sharedFrame.getByRole('button', { name: 'Reset replay', exact: true }).click()
   await sharedFrame.getByText('Flight replay · 0 / 540 ticks', { exact: false }).waitFor()
+  checkpoint('embed-capture')
   await sharedPage.screenshot({ path: join(output, 'shared-canvas.png') })
   await sharedPage.close()
   await page.getByRole('button', { name: 'Close share code panel', exact: true }).click()
 
+  checkpoint('debrief-import')
   const downloaded = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export debrief', exact: true }).click()
   const portable = await readFile(await (await downloaded).path())
@@ -198,15 +241,18 @@ try {
   await page.getByText('Invalid GameXR simulated bench log', { exact: false }).waitFor()
   assert.equal(await page.getByLabel('GameXR bench log summary').count(), 0, 'failed import clears the previous observation')
   await page.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
+  checkpoint('mobile-capture')
   await page.screenshot({ path: join(output, 'mobile.png'), fullPage: true })
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), '375px page must not overflow horizontally')
   await page.evaluate(() => window.__pythonLearningProof.flush())
+  checkpoint('reload')
   await page.reload({ waitUntil: 'domcontentloaded' }); await pane.waitFor({ timeout: 60000 })
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'reopening source never executes')
   assert.equal(await editor.inputValue(), lessons.at(-1).solution)
   await page.getByRole('button', { name: 'Results', exact: true }).click()
   await page.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
   await page.getByText(`${lessons.length} matching debriefs`, { exact: false }).waitFor()
+  checkpoint('rich-editor-mount')
   await page.setViewportSize({ width: 1280, height: 900 })
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await page.getByRole('button', { name: 'Load rich editor', exact: true }).click()
@@ -220,6 +266,7 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   const tokenKinds = await page.locator('.monaco-editor .view-lines').evaluate(element => new Set([...element.querySelectorAll('span')].map(span => span.className).filter(name => /^mtk/.test(name))).size)
   assert.ok(tokenKinds > 1, 'Python language tokens must be loaded in the native rich editor')
+  checkpoint('rich-editor-run')
   const acknowledgement = await page.evaluate(async () => {
     const tools = window.__pythonLearningProof.tools, inspection = await tools.inspect()
     return tools.execute({ ...inspection.binding, operation: 'run', requestId: 'browser-rich-run' })
@@ -229,11 +276,13 @@ try {
   assert.equal(await page.evaluate(() => window.__pythonLearningProof.read().result.grade.passed), true)
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await page.getByText('Lesson passed', { exact: false }).waitFor()
+  checkpoint('desktop-capture')
   await page.screenshot({ path: join(output, 'desktop.png'), fullPage: true })
   // Execution and a position label alone do not establish a mounted 3D scene.
   const sharedCanvas = page.locator('[data-kg-three-canvas-owner="1"] canvas')
   await sharedCanvas.waitFor({ state: 'visible', timeout: 30000 })
   assert.ok(await sharedCanvas.evaluate(canvas => canvas.width > 100 && canvas.height > 100), 'native scene must have a nonzero render target')
+  checkpoint('airborne-run')
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await page.locator('.monaco-editor').first().click({ position: { x: 120, y: 40 } })
   await page.keyboard.press('ControlOrMeta+A')
@@ -245,9 +294,11 @@ try {
   assert.ok(airborne.altitude > 1.9 && airborne.landed === false && airborne.hoverTicks === 60)
   await pane.getByRole('button', { name: 'View Canvas', exact: true }).click()
   assert.match(await page.getByLabel('Python lesson position', { exact: true }).innerText(), /airborne/)
+  checkpoint('airborne-capture')
   await page.screenshot({ path: join(output, 'drone-airborne.png'), fullPage: true })
   await page.evaluate(() => window.__pythonLearningProof.flush())
   if (catalogText) {
+    checkpoint('catalog')
     const catalogPage = await context.newPage()
     catalogPage.on('pageerror', error => errors.push(error.message))
     await catalogPage.goto(origin + proofPath + '?catalog=1')
@@ -274,6 +325,7 @@ try {
     await writeFile(join(output, 'programmatic-drone-demo.json'), JSON.stringify({ document: fresh, inspection: observed }, null, 2))
     await catalogPage.close()
   }
+  checkpoint('evidence')
   assert.deepEqual(errors, [])
   const evidence = { revision, sourceState: execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' }),
     kind: 'native-component-development-smoke', offlineReloadProven: false, toolRegistrationProven: false, mainCanvasMounted: true, droneAirborne: airborne,
@@ -282,7 +334,8 @@ try {
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
   console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
 } catch (error) {
+  checkpoint(`failed:${phaseName}`)
   const failedPage = browser?.contexts()[0]?.pages()[0]
   if (failedPage) console.error('Visible failure context:', (await failedPage.locator('body').innerText()).slice(-5000))
   throw error
-} finally { await browser?.close(); if (embedHost) await new Promise(resolve => embedHost.close(resolve)); await server?.close(); await rm(scratch, { recursive: true, force: true }) }
+} finally { checkpoint('cleanup'); await browser?.close(); if (embedHost) await new Promise(resolve => embedHost.close(resolve)); await server?.close(); await rm(scratch, { recursive: true, force: true }); checkpoint('closed') }
