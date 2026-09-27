@@ -1,7 +1,8 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.8
+version: 1.5.0
+lang: en
 date: 2026-09-27
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -537,3 +538,59 @@ validation on those final rendering bytes before publication. Four runtime
 modules and this plan remain below the six-module/100 kB ceiling. No physical
 device or headset was tested; canonical port 5173 remains the protected main
 runtime until integration. The isolated review runtime uses port 4201.
+
+
+## 2026-09-27 — measured lesson workspace · DRONE-FLIGHT-PATH-001@1.5.0
+
+PRD: the existing drone lesson gains a measured 2D plan, 3D/XR asset picking,
+and a shared Media Assets inventory. Acceptance: surface switches preserve the
+run and selected asset; room/obstacle dimensions equal the lesson model; drone
+coordinates follow verified snapshots; stale results never appear current;
+keyboard selection, search and mobile offline viewing work. Room and flight
+framing, dimension visibility, Outliner and Inspector make the fixed training
+space easier to inspect. Physical room/wall authoring remains outside this increment.
+
+TAD/ADR: reuse CanvasViewport, Canvas View's MCP/WebMCP `/canvas.view.set
+#canvas-view @canvas-view` owner, FloatingPanel's Media wrapper and the shared
+learning runtime. Lazy SVG plan/catalog modules derive assets from LearningLesson;
+the presentation store scopes selection to workspace/document/lesson. Three
+picking resolves existing named geometry ancestors. Selection bounds have no
+colliders; geometry, source/scene digests, worker pacing and flight exports retain
+their original owners. Procedural SVG thumbnails are authored locally. No new
+package, paid service, remote asset or reference-project dependency is introduced.
+The three ground lessons retain their 3D presentation. Phone replay keeps the
+shared pure geometry without importing the editor's selection state.
+
+MVP: eleven runtime modules, four test files and this plan, under 100 kB of added
+source; initial 35 minutes extended by 20 for validation and the existing offline
+smoke's explicit surface selection. VCC-SP1: inventory/selection/picking unit
+checks. VCC-SP2: native browser selects crate across plan/3D/XR, searches catalog,
+inspects live drone and toggles dimensions. VCC-SP3: rebuilt offline browser
+proof switches 3D→2D→XR without changing the run, and all affected checks pass.
+Evidence and remaining gaps are recorded below before source publication.
+
+GTM: clearer self-serve demonstration and inspection of a programmed flight;
+no new farm deployment, revenue or physical-flight claim. Rollback: reviewed
+revert of this presentation increment; stored Python, debriefs and flight paths
+remain readable. Local rung: source candidate; delivered rung: local preview
+only, pending exact protected CI/merge receipts. Predecessor PR 1320's protected
+Integration Gate failed in its browser smoke stage; retained diagnostics report
+failure without a definitive root cause. Do not equate local green with that gate.
+
+The first affected pass confirmed lesson/unit and WebMCP checks, then correctly
+rejected the old browser fixture's implicit forced-3D assumption. The fixture now
+explicitly requests 3D; production offline coverage additionally selects and
+verifies the 2D plan and XR while preserving run identity. No check was removed.
+
+Browser review also exposed the existing selected-tab foreground without an
+accent background; the Media navigation now supplies both theme tokens. The
+plan/status reuse Canvas viewport occlusion for the editor and shared floating
+panel clearance. Offline proof closes an overlapping retained camera panel via
+the existing user close action before selecting plan assets; no force-click or
+pointer interception bypass is used. Source is frozen for final affected checks.
+
+All 15 standard checks passed, including rebuilt offline 2D/3D/XR switching;
+Mission's additional browser gate requires a clean commit. Visual XR inspection
+found the generic large-world camera reset overriding the metre-based lesson.
+The ThreeGraph controls adapter now retains the lesson camera profile in XR;
+the XR surface itself remains active. Final committed candidate checks follow.

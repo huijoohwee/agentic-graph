@@ -52,6 +52,7 @@ import {
 } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanticMediaSurface'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
+const LearningPlanViewLazy = React.lazy(() => import('@/features/python-learning/LearningPlanView'))
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
 const LiveCanvasHeroPresetStageLazy = React.lazy(() => import('@/features/agentic-os/LiveCanvasHeroPresetStage').then(mod => ({ default: mod.LiveCanvasHeroPresetStage })))
 const SharedGraphCanvasLazy = React.lazy(() => import('@/components/GraphCanvas'))
@@ -109,8 +110,8 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const learningScene = learning.document && props.variant === 'workspace'
     ? { lesson: learningLesson(learning.document.lessonId), scene: !learning.stale ? learning.result?.scene : undefined, documentId: learning.document.documentId, runId: learning.result?.identity.runId }
     : undefined
-  return <AuthoredCanvasViewport {...props} canvasRenderMode={learningScene ? '3d' : props.canvasRenderMode}
-    canvas3dMode={learningScene ? '3d' : props.canvas3dMode}
+  return <AuthoredCanvasViewport {...props} canvasRenderMode={learningScene && learningScene.lesson.vehicle !== 'drone' ? '3d' : props.canvasRenderMode}
+    canvas3dMode={learningScene && (learningScene.lesson.vehicle !== 'drone' || props.canvas3dMode !== 'xr') ? '3d' : props.canvas3dMode}
     geospatialModeEnabled={learningScene ? false : props.geospatialModeEnabled}
     documentSwitchPending={learningScene ? false : props.documentSwitchPending}
     learningScene={learningScene} />
@@ -349,7 +350,8 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
           <LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles}
             visible={liveCanvasHeroVisible} onEnter={dismissLiveCanvasHero} />
         ) : null}
-        {!documentSwitchOwnsViewport && !geospatialOverlayOwnsViewport && canvasRenderMode === '2d' && (
+        {learningScene && canvasRenderMode === '2d' && <LearningPlanViewLazy editorOpen={workspaceEditorOverlayOpen} lesson={learningScene.lesson} scene={learningScene.scene} />}
+        {!learningScene && !documentSwitchOwnsViewport && !geospatialOverlayOwnsViewport && canvasRenderMode === '2d' && (
           <section className="absolute inset-0 z-[10]">
             {liveCanvasHeroEmbedPreview && liveCanvasHeroEmbedGraph ? (
                 <section
@@ -438,7 +440,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
             learningScene={learningScene}
           />
         ) : null}
-        {learningScene ? <PythonLearningCanvasStatus {...learningScene} /> : null}
+        {learningScene ? <PythonLearningCanvasStatus editorOpen={workspaceEditorOverlayOpen} {...learningScene} /> : null}
         {!documentSwitchOwnsViewport && geospatialCompositionEnabled && active2dSurface === 'storyboard' ? (
           <section className="absolute inset-0 z-[30] pointer-events-none" aria-hidden="true">
             <StoryboardWidgetDropBridgeLazy active={false} widgetDropCaptureEnabled geospatialWidgetPanelMode />

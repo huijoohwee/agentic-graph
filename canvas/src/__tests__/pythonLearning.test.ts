@@ -1,3 +1,4 @@
+import './learningSpatialView.test'
 import test from 'node:test'
 import { resolveMarkdownWorkspaceDocumentPanePreset, resolveMarkdownWorkspaceInitialPaneVisibility, resolveMarkdownWorkspacePaneAvailability } from '../features/markdown-workspace/main/types'
 import assert from 'node:assert/strict'
