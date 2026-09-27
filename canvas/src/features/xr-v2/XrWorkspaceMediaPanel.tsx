@@ -1,4 +1,5 @@
 import React from 'react'
+import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
 import IconButton from '@/components/IconButton'
 import { Activity, Boxes, ListTree, ScanSearch, Bot } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -8,6 +9,7 @@ import { selectSemanticObject } from './semanticSpaceCanvas'
 import type { SpaceDocument } from './semanticSpaceRuntime'
 import { activateAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 
+const LearningAssets = React.lazy(() => import('@/features/python-learning/LearningAssetsPanel'))
 const SceneOutline = React.lazy(() => import('./SemanticSceneOutline'))
 const XrLibrary = React.lazy(() => import('@/features/command-menu/XrMediaLibraryPanel').then(m => ({ default: m.XrMediaLibraryPanel })))
 const Inspector = React.lazy(() => import('@/features/gitgraph/TimelineBottomPanelView').then(m => ({ default: m.XrObjectInspector })))
@@ -19,6 +21,8 @@ type MediaView = typeof tabs[number][0]
 
 /** Navigation only: scene, selection, inspector and Mission retain their existing owners. */
 export default function XrWorkspaceMediaPanel({ children }: { children: React.ReactNode }) {
+  const learning = React.useSyncExternalStore(pythonLearningRuntime.subscribe, pythonLearningRuntime.read, pythonLearningRuntime.read)
+  const drone = learning.document?.lessonId === 'drone'
   const [view, setView] = React.useState<MediaView>('assets')
   const documentName = useGraphStore(s => s.markdownDocumentName)
   const markdown = useGraphStore(s => s.markdownDocumentText)
@@ -39,7 +43,7 @@ export default function XrWorkspaceMediaPanel({ children }: { children: React.Re
   return <section className="flex h-full min-h-0 flex-col" aria-label="XR Media workspace">
     <nav className="flex shrink-0 flex-wrap gap-1 border-b p-1" aria-label="XR Media views">
       {tabs.map(([id, label, Icon]) => <IconButton key={id} title={label} showTooltip
-        className="App-toolbar__btn min-h-11" style={{ minWidth: 44, color: view === id ? 'var(--kg-accent-contrast)' : undefined }}
+        className="App-toolbar__btn min-h-11" style={{ minWidth: 44, background: view === id ? 'var(--kg-accent)' : undefined, color: view === id ? 'var(--kg-accent-contrast)' : undefined }}
         aria-pressed={view === id} onClick={() => setView(id)}>
         <Icon className="size-4" aria-hidden /><span>{label}</span>
       </IconButton>)}
@@ -49,7 +53,7 @@ export default function XrWorkspaceMediaPanel({ children }: { children: React.Re
     </nav>
     <section className="min-h-0 flex-1 overflow-auto" aria-label={tabs.find(([id]) => id === view)![1]}>
       <React.Suspense fallback={<p role="status" className="p-2">Opening {view}…</p>}>
-        {view === 'assets' ? children : view === 'outliner' ? <div className="p-2">
+        {drone && view !== 'agents' ? <LearningAssets view={view} /> : view === 'assets' ? children : view === 'outliner' ? <div className="p-2">
           {target ? space && space.id === target.spaceId ? <SceneOutline key={`${space.id}:${target.evidenceSha256}`}
             space={space} evidenceSha256={target.evidenceSha256} onSelect={async id => {
               const current = readSemanticObjectViewMarkdown(useGraphStore.getState().markdownDocumentText)

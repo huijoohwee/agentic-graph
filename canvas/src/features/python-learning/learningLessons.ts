@@ -1,7 +1,7 @@
 import type { ExecutionMetrics } from './pythonEvaluator'
 export type LearningLesson = Readonly<{
   id: string; revision: string; title: string; objective: string; starter: string; solution: string
-  goal: readonly [number, number]; obstacles: readonly { id: string; position: readonly [number, number]; size: readonly [number, number] }[]
+  goal: readonly [number, number]; obstacles: readonly { id: string; name?: string; position: readonly [number, number]; size: readonly [number, number]; height?: number }[]
   hints: readonly string[]; concept: 'assignments' | 'loops' | 'functions'
   vehicle?: 'drone'
 }>
@@ -27,12 +27,16 @@ export const LEARNING_LESSONS: readonly LearningLesson[] = [
     goal: [4, 0], obstacles: [{ id: 'wall', position: [6, 0], size: [0.5, 4] }], concept: 'functions',
     hints: ['distance() reads metres to the nearest obstacle ahead.', 'Only drive when there is room. Call your function until at_goal() is True.', 'Inside advance(), use if distance() > 0.5: followed by drive(1, 30).'],
   },
-  { id: 'drone', revision: '1', title: '4 · Drone flight and landing', vehicle: 'drone',
-    objective: 'Take off above the crate, hover for 30 ticks, fly to (4, 0), then land. Use altitude() in a function. Kinematic training model; each second is 60 ticks.',
+  { id: 'drone', revision: '2', title: '4 · Drone flight and landing', vehicle: 'drone',
+    objective: 'Inspect the warehouse aisle: take off to 2 m, hover, pass above the pallet load, and land at (4, 0). Stay between the tall racks inside the 16 × 16 m inspection cell. Pre-programmed kinematic simulation; 60 ticks per second, altitude 0–4 m.',
     starter: 'def fly_leg():\n    return altitude()\n\ntakeoff(0.5)\nfly_leg()\nland()\nprint(at_goal())\n',
-    solution: 'def fly_leg():\n    if altitude() >= 1:\n        fly(1, 0, 0, 120)\n\ntakeoff(2)\nhover(60)\nfor leg in range(2):\n    fly_leg()\nland()\nprint(at_goal())\n',
-    goal: [4, 0], obstacles: [{ id: 'crate', position: [2, 0], size: [0.8, 1.2] }], concept: 'functions',
-    hints: ['The crate is one metre tall. Take off before flying forward.', 'fly(forward, right, up, ticks) uses body-relative speeds. Hover without moving, then land at the goal.', 'Take off to 2 m, hover for 60 ticks, fly forward at 1 m/s for 240 ticks, then land.'],
+    solution: '# Warehouse inspection cell: X/Z -8..8 m, altitude 0..4 m.\n# Fixed aisle route; simulated flight only.\ndef fly_leg():\n    if altitude() >= 1:\n        fly(1, 0, 0, 120)\n\ntakeoff(2)\nhover(60)\nfor leg in range(2):\n    fly_leg()\nland()\nprint(at_goal())\n',
+    goal: [4, 0], obstacles: [
+      { id: 'crate', name: 'Pallet load', position: [2, 0], size: [0.8, 1.2], height: 1 },
+      { id: 'rack-north', name: 'North pallet rack', position: [2, -2.4], size: [12, 1.2], height: 4.5 },
+      { id: 'rack-south', name: 'South pallet rack', position: [2, 2.4], size: [12, 1.2], height: 4.5 },
+    ], concept: 'functions',
+    hints: ['The pallet load is one metre tall; the racks are 4.5 m tall. Take off above the load and stay in the 3.6 m clear aisle.', 'fly(forward, right, up, ticks) uses body-relative speeds. Keep right and up speeds at zero for this fixed aisle route; this exercise does not model the entire warehouse.', 'Take off to 2 m, hover for 60 ticks, fly forward at 1 m/s for 240 ticks, then land at (4, 0). The full simulation takes nine seconds.'],
   },
 ]
 export function learningLesson(id: string): LearningLesson {
