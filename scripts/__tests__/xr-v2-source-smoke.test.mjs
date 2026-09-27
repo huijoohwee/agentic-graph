@@ -171,7 +171,7 @@ test('XR v2 workspace browser smoke selects the actual Explorer seed without an 
   const selection = verifier.indexOf('await seedRow.click()')
   const mountedRuntime = verifier.indexOf("const runtime = page.locator('[data-kg-xr-v2-authoring-runtime=\"1\"]')")
   assert.match(verifier, /openEditorWorkspace=1/u)
-  assert.match(verifier, /getByRole\('navigation', \{ name: 'Source files', exact: true \}\)/u)
+  assert.match(verifier, /getByRole\('region', \{ name: 'Source Files', exact: true \}\)/u)
   assert.match(verifier, /Folder workspace-seeds/u)
   assert.match(verifier, /File agentic-graph-ar-vr-xr-runtime-readiness-demo\.md/u)
   assert.ok(selection >= 0)
