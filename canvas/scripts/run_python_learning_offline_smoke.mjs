@@ -226,12 +226,15 @@ try {
   const mainToolbar = page.getByRole('navigation', { name: 'Main Toolbar', exact: true })
   const sceneControls = lessonCanvas.getByRole('region', { name: 'Lesson scene controls', exact: true })
   const selectSurface = async mode => {
-    await mainToolbar.getByRole('button', { name: /^Canvas View Mode:/ }).press('Enter')
+    const trigger = mainToolbar.getByRole('button', { name: /^Canvas View Mode:/ })
+    await trigger.click()
+    // The native menu auto-expands its active parent and restores keyboard focus.
+    await expect(page.getByRole('button', { name: '2D Renderer', exact: true })).toHaveAttribute('aria-expanded', 'true')
     const surfaceMenu = page.getByRole('button', { name: 'Surface Mode', exact: true })
-    await surfaceMenu.waitFor()
-    if (await surfaceMenu.getAttribute('aria-expanded') !== 'true') await surfaceMenu.press('Enter')
+    await surfaceMenu.click()
+    await expect(surfaceMenu).toHaveAttribute('aria-expanded', 'true')
     const option = page.getByRole('button', { name: `${mode} Mode`, exact: true })
-    await expect(option).toBeEnabled(); await option.press('Enter')
+    await expect(option).toBeEnabled(); await option.click()
     await expect(surfaceMenu).toHaveCount(0)
     if (mode !== '2D') await expect(mainToolbar.getByRole('button', { name: `Canvas View Mode: ${mode} Mode`, exact: true })).toBeVisible()
   }
