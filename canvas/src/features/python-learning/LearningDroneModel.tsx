@@ -1,10 +1,10 @@
 import type { LearningSceneSnapshot } from './learningLessons'
 
 /** Render-only aircraft detail; the simulation remains the sole pose/tick owner. */
-export function LearningDroneModel({ scene }: { scene?: LearningSceneSnapshot }) {
+export function LearningDroneModel({ scene, groundOffset = .25 }: { scene?: LearningSceneSnapshot; groundOffset?: number }) {
   const x = scene?.x ?? 0, z = scene?.z ?? 0, altitude = scene?.altitude ?? 0
   const rotorPhase = altitude > 0 ? (scene?.ticks ?? 0) * 1.7 : 0
-  return <group name="learning-drone" position={[x, 0.25 + altitude, z]} rotation={[0, -(scene?.heading ?? 0) * Math.PI / 180, 0]}>
+  return <group name="learning-drone" position={[x, groundOffset + altitude, z]} rotation={[0, -(scene?.heading ?? 0) * Math.PI / 180, 0]}>
     <mesh castShadow receiveShadow scale={[1, 0.38, 0.62]}>
       <sphereGeometry args={[0.12, 16, 10]} /><meshStandardMaterial color="#b8d9e5" metalness={0.35} roughness={0.38} />
     </mesh>

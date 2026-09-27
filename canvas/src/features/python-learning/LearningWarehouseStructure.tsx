@@ -1,9 +1,9 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Color, InstancedMesh, Object3D } from 'three'
 import type { KgTheme } from '@/lib/ui/tokens-ssot'
-import { WAREHOUSE_DOCKS, WAREHOUSE_ZONES, WAREHOUSE_CONTEXT_RACKS } from './warehouseLayout'
+import { WAREHOUSE_DOCKS, WAREHOUSE_ZONES, WAREHOUSE_CONTEXT_RACKS, WAREHOUSE_PARTITIONS, WAREHOUSE_FIXTURES, warehouseRackGeometry } from './warehouseLayout'
 
-type Vector = [number, number, number]
+type Vector = readonly [number, number, number]
 type BoxPart = { position: Vector; size: Vector; rotation?: Vector; color?: string }
 
 /** Repeated structural details share one geometry, material and draw call per batch. */
@@ -37,8 +37,7 @@ export function WarehouseBoxes({ parts, color, metalness = 0, roughness = 0.8, c
 export function WarehouseRack({ width, depth, height }: { width: number; depth: number; height: number }) {
   const batches = useMemo(() => {
     const blue: BoxPart[] = [], orange: BoxPart[] = [], timber: BoxPart[] = [], cartons: BoxPart[] = [], labels: BoxPart[] = []
-    const bays = Math.max(1, Math.floor(width / 2.4)), bayWidth = (width - 0.16) / bays
-    const levels = Math.max(1, Math.floor(height / 1.35)), levelHeight = (height - 0.18) / levels
+    const { bays, bayWidth, levels, levelHeight } = warehouseRackGeometry(width, height)
     for (let column = 0; column <= bays; column++) {
       const x = -width / 2 + 0.08 + column * bayWidth
       for (const side of [-1, 1]) blue.push({ position: [x, height / 2, side * (depth / 2 - 0.055)], size: [0.08, height, 0.09] })
@@ -105,11 +104,9 @@ export function LearningWarehouseStructure({ palette }: { palette: KgTheme }) {
   const light = palette === 'light'
   const wall = light ? '#c2cdd2' : '#485866', floor = light ? '#d2d9db' : '#3b4853'
   const structure = useMemo(() => {
-    const walls: BoxPart[] = [{ position: [0, 3.6, -20.08], size: [60.2, 7.2, 0.16] }]
+    const walls: readonly BoxPart[] = WAREHOUSE_PARTITIONS
     const columns: BoxPart[] = [], windows: BoxPart[] = [], lines: BoxPart[] = []
     // The front and side walls are cut away; partitions remain outside the inspection cell.
-    for (const x of [-30, -20, -6, 12, 30]) walls.push({ position: [x, 1.65, -15], size: [0.16, 3.3, 10] })
-    for (const x of [-30, -6, 6, 30]) walls.push({ position: [x, 0.7, 16], size: [0.12, 1.4, 8] })
     for (const x of [-25, -15, -5, 5, 15, 25]) {
       columns.push({ position: [x, 3.6, -19.8], size: [0.2, 7.2, 0.24] })
       windows.push({ position: [x, 5.4, -19.97], size: [7.8, 1.8, 0.04] })
@@ -147,14 +144,9 @@ export function LearningWarehouseStructure({ palette }: { palette: KgTheme }) {
     {WAREHOUSE_CONTEXT_RACKS.map(rack => <group key={rack.id} name={`warehouse-zone-${rack.zoneId}`} position={[rack.position[0], 0, rack.position[1]]}>
       <WarehouseRack width={rack.size[0]} depth={rack.size[2]} height={rack.size[1]} />
     </group>)}
-    <group name="warehouse-zone-bulk"><WarehouseBoxes color="#b79771" parts={[
-      { position: [-25, 0.7, 3], size: [2.4, 1.4, 2.4] }, { position: [-25, 0.5, 7], size: [2.4, 1, 2.4] },
-    ]} /></group>
-    <group name="warehouse-zone-kitting"><WarehouseBoxes color="#9e937c" parts={[
-      { position: [0, 0.5, -15], size: [5, 1, 1.5] }, { position: [7, 0.5, -15], size: [5, 1, 1.5] },
-    ]} /></group>
-    <group name="warehouse-zone-packing"><WarehouseBoxes color="#bea580" parts={[
-      { position: [16, 0.6, -15], size: [2.4, 1.2, 2.4] }, { position: [22, 0.6, -15], size: [2.4, 1.2, 2.4] },
-    ]} /></group>
+    {['bulk', 'kitting', 'packing'].map(zoneId => {
+      const parts = WAREHOUSE_FIXTURES.filter(part => part.zoneId === zoneId)
+      return <group key={zoneId} name={`warehouse-zone-${zoneId}`}><WarehouseBoxes color={parts[0].color} parts={parts} /></group>
+    })}
   </group>
 }

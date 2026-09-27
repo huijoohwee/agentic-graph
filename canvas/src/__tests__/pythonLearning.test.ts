@@ -1,4 +1,7 @@
 import './learningSpatialView.test'
+import './learningDockAssets.test'
+import './warehouseCoverageRoutes.test'
+import './warehouseCameraFrames.test'
 import test from 'node:test'
 import { resolveMarkdownWorkspaceDocumentPanePreset, resolveMarkdownWorkspaceInitialPaneVisibility, resolveMarkdownWorkspacePaneAvailability } from '../features/markdown-workspace/main/types'
 import assert from 'node:assert/strict'

@@ -32,3 +32,24 @@ export function warehouseAllocation() {
   const ancillary = WAREHOUSE_ZONES.filter(zone => zone.use === 'ancillary').reduce((sum, zone) => sum + zone.rect[2] * zone.rect[3], 0)
   return { core, ancillary, total: core + ancillary, corePercent: core / (core + ancillary) * 100, ancillaryPercent: ancillary / (core + ancillary) * 100 }
 }
+
+export type WarehouseBox = Readonly<{ position: readonly [number, number, number]; size: readonly [number, number, number] }>
+/** Shared architectural envelopes: cutaway rendering does not grant room access. */
+export const WAREHOUSE_PARTITIONS: readonly WarehouseBox[] = [
+  { position: [0, 3.6, -20.08], size: [60.2, 7.2, 0.16] },
+  ...[-30, -20, -6, 12, 30].map(x => ({ position: [x, 1.65, -15] as const, size: [0.16, 3.3, 10] as const })),
+  ...[-30, -6, 6, 30].map(x => ({ position: [x, 0.7, 16] as const, size: [0.12, 1.4, 8] as const })),
+]
+export const WAREHOUSE_FIXTURES = [
+  { id: 'bulk-1', zoneId: 'bulk', color: '#b79771', position: [-25, 0.7, 3], size: [2.4, 1.4, 2.4] },
+  { id: 'bulk-2', zoneId: 'bulk', color: '#b79771', position: [-25, 0.5, 7], size: [2.4, 1, 2.4] },
+  { id: 'kitting-1', zoneId: 'kitting', color: '#9e937c', position: [0, 0.5, -15], size: [5, 1, 1.5] },
+  { id: 'kitting-2', zoneId: 'kitting', color: '#9e937c', position: [7, 0.5, -15], size: [5, 1, 1.5] },
+  { id: 'packing-1', zoneId: 'packing', color: '#bea580', position: [16, 0.6, -15], size: [2.4, 1.2, 2.4] },
+  { id: 'packing-2', zoneId: 'packing', color: '#bea580', position: [22, 0.6, -15], size: [2.4, 1.2, 2.4] },
+] as const
+/** Rendered rack bays and tier spacing are also the coverage denominator owner. */
+export function warehouseRackGeometry(width: number, height: number) {
+  const bays = Math.max(1, Math.floor(width / 2.4)), levels = Math.max(1, Math.floor(height / 1.35))
+  return { bays, levels, bayWidth: (width - 0.16) / bays, levelHeight: (height - 0.18) / levels }
+}

@@ -2,11 +2,13 @@ import { useMemo, useEffect } from 'react'
 import { BoxGeometry } from 'three'
 import { learningAssets, useLearningSpatialView } from './learningSpatialView'
 import type { LearningLesson, LearningSceneSnapshot } from './learningLessons'
+import { useWarehouseInspection } from './useWarehouseInspection'
 
 /** Presentation bounds; these meshes never participate in the simulation. */
 export function LearningSpatialOverlay({ lesson, scene }: { lesson: LearningLesson; scene?: LearningSceneSnapshot }) {
   const { view } = useLearningSpatialView()
-  const asset = learningAssets(lesson, scene).find(value => value.id === view.selectedId)
+  const inspection = useWarehouseInspection()
+  const asset = learningAssets(lesson, scene, inspection.active ? inspection.sample : undefined).find(value => value.id === view.selectedId)
   const width = asset?.size[0] ?? 1, height = asset?.size[1] ?? 1, depth = asset?.size[2] ?? 1
   const bounds = useMemo(() => new BoxGeometry(width + .08, height + .08, depth + .08), [width, height, depth])
   useEffect(() => () => bounds.dispose(), [bounds])

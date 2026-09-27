@@ -1,19 +1,36 @@
+import { memo } from 'react'
+import { LearningChargeTruckModel } from './LearningChargeTruckModel'
+import { LearningEsp32DroneModel } from './LearningEsp32DroneModel'
+import { useWarehouseInspection } from './useWarehouseInspection'
+import { WarehouseInspectionSpatialRoutes } from './WarehouseInspectionPaths'
 import { LearningDroneModel } from './LearningDroneModel'
 import { LearningDroneRoom } from './LearningDroneRoom'
 import { XrProceduralVehicleGeometry } from '../three/XrProceduralVehicleGeometry'
 import type { LearningLesson, LearningSceneSnapshot } from './learningLessons'
 import { getKgTokenFallback, type KgTheme } from '@/lib/ui/tokens-ssot'
 
+const StaticDroneRoom = memo(LearningDroneRoom)
+
 /** Single geometry owner for the Graph lesson Canvas and its phone preview. */
 export function LearningSceneGeometry({ lesson, scene, palette = 'dark' }: {
   lesson: LearningLesson; scene?: LearningSceneSnapshot; palette?: KgTheme
 }) {
+  const inspection = useWarehouseInspection()
+  const fleet = inspection.sample
+  const facilityDrone = inspection.active ? { ...scene, x: fleet.actors.drone001.position[0], z: fleet.actors.drone001.position[2], altitude: fleet.actors.drone001.position[1], heading: fleet.actors.drone001.heading, ticks: fleet.frameIndex } as LearningSceneSnapshot : scene
   const color = (name: `--kg-${string}`) => getKgTokenFallback(name, palette)
   const x = scene?.x || 0, z = scene?.z || 0, heading = scene?.heading || 0
   if (lesson.vehicle === 'drone') return <>
     <color attach="background" args={[color('--kg-canvas-bg')]} />
-    <LearningDroneRoom lesson={lesson} palette={palette} />
-    <LearningDroneModel scene={scene} />
+    <StaticDroneRoom lesson={lesson} palette={palette} />
+    {inspection.active && <WarehouseInspectionSpatialRoutes />}
+    <LearningDroneModel scene={facilityDrone} groundOffset={inspection.active ? .09 : .25} />
+    <group position={[...fleet.actors.truck.position]} rotation={[0, -fleet.actors.truck.heading * Math.PI / 180, 0]}>
+      <LearningChargeTruckModel lidAngleRadians={fleet.lidAngleRadians} />
+    </group>
+    <group position={[...fleet.actors.drone002.position]} rotation={[0, -fleet.actors.drone002.heading * Math.PI / 180, 0]}>
+      <LearningEsp32DroneModel rotorPhase={inspection.active && !fleet.drone002Docked ? fleet.frameIndex * 1.7 : 0} />
+    </group>
   </>
   return <>
     <color attach="background" args={[color('--kg-canvas-bg')]} />

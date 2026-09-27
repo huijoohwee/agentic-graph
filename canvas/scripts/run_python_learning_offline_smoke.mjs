@@ -10,6 +10,7 @@ import { chromium } from 'playwright'
 import { expect } from 'playwright/test'
 import { tsImport } from 'tsx/esm/api'
 import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
+import { proveWarehouseRehearsal } from './lib/warehouse-rehearsal-proof.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const checkoutRevision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
@@ -354,6 +355,9 @@ try {
   const afterResize = await sharedCanvas.boundingBox()
   assert.equal(afterResize.x, beforeResize.x, 'Editor resize must not move the Canvas viewport')
   assert.equal(afterResize.width, beforeResize.width, 'Editor resize must not resize the Canvas viewport')
+  const warehouseRehearsal = await proveWarehouseRehearsal({
+    page, pane, lessons, inspect, selectPython, selectSurface, editRichSource, awaitStoredSource, output,
+  })
   await page.setViewportSize({ width: 375, height: 812 })
   // A missing admitted worker must block offline navigation even if another runtime cache has it.
   const missing = await page.evaluate(async () => {
@@ -375,7 +379,7 @@ try {
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
   const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
     nativeLessonFilesProven: true, nativeLessonSaveReloadProven: true, toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
-    installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, corruptionBlocked: true,
+    installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, warehouseRehearsal, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
   evidenceWritten = true
