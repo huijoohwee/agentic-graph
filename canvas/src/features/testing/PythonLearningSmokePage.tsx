@@ -61,7 +61,7 @@ export default function PythonLearningSmokePage({ catalogText }: { catalogText?:
       setSource(state.markdownDocumentText); setLoaded(true)
     }} /></>
   return <div style={{ position: 'relative', height: '100dvh', minWidth: 0 }}>
-    <CanvasViewport variant="workspace" geospatialModeEnabled={false} canvasRenderMode="2d" canvas3dMode="xr" canvas2dRenderer="d3" workspaceEditorOverlayOpen={view === 'editor'} />
+    <CanvasViewport variant="workspace" geospatialModeEnabled={false} canvasRenderMode="3d" canvas3dMode="xr" canvas2dRenderer="d3" workspaceEditorOverlayOpen={view === 'editor'} />
     <section hidden={view !== 'editor'} data-kg-workspace-left-pane="1" style={{ position: 'absolute', zIndex: 70, inset: '0 auto 0 0', width: 'min(100%,420px)', background: '#fff', display: view === 'editor' ? 'flex' : 'none' }}>
     {loaded ? <MarkdownWorkspaceMain themeMode="dark" uiPanelTextFontClass="" uiPanelMonospaceTextClass=""
       explorerOpen={false} setExplorerOpen={() => {}} layoutMode={mode} setLayoutMode={setMode}

@@ -26,10 +26,10 @@ export class LearningSimulation {
       { id: 'boundary-north', position: [0, 8] as const, size: [16, 0.2] as const },
       { id: 'boundary-south', position: [0, -8] as const, size: [16, 0.2] as const },
     ]
-    const halfHeight = (id: string) => lesson.vehicle === 'drone' && id.startsWith('boundary-') ? 3 : 0.5
+    const halfHeight = (obstacle: LearningLesson['obstacles'][number]) => lesson.vehicle === 'drone' && obstacle.id.startsWith('boundary-') ? 3 : (obstacle.height ?? 1) / 2
     this.physics = new SpatialPhysicsEngine({ fixedStepSeconds: 1 / 60, maxSubSteps: 1, gravity: [0, 0, 0],
-      bodies: [{ id: 'learner', motion: 'kinematic', position: [0, 0.25, 0] }, ...obstacles.map(o => ({ id: o.id, motion: 'static' as const, position: [o.position[0], halfHeight(o.id), o.position[1]] as const }))],
-      colliders: [{ id: 'learner-body', bodyId: 'learner', shape: { kind: 'sphere', radius: 0.2 } }, ...obstacles.map(o => ({ id: o.id, bodyId: o.id, shape: { kind: 'cuboid' as const, halfSize: [o.size[0] / 2, halfHeight(o.id), o.size[1] / 2] as const } }))],
+      bodies: [{ id: 'learner', motion: 'kinematic', position: [0, 0.25, 0] }, ...obstacles.map(o => ({ id: o.id, motion: 'static' as const, position: [o.position[0], halfHeight(o), o.position[1]] as const }))],
+      colliders: [{ id: 'learner-body', bodyId: 'learner', shape: { kind: 'sphere', radius: 0.2 } }, ...obstacles.map(o => ({ id: o.id, bodyId: o.id, shape: { kind: 'cuboid' as const, halfSize: [o.size[0] / 2, halfHeight(o), o.size[1] / 2] as const } }))],
     })
     const system = (context: TickContext) => {
       for (const [field, value] of Object.entries({ x: this.x, z: this.z, heading: this.heading, ticks: this.ticks, collisions: this.collisions })) context.write(0, 'LearningPose', field, value)

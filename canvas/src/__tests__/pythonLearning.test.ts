@@ -1,12 +1,19 @@
+import './learningSpatialView.test'
+import './learningDockAssets.test'
+import './warehouseCoverageRoutes.test'
+import './warehouseCameraFrames.test'
 import test from 'node:test'
 import { resolveMarkdownWorkspaceDocumentPanePreset, resolveMarkdownWorkspaceInitialPaneVisibility, resolveMarkdownWorkspacePaneAvailability } from '../features/markdown-workspace/main/types'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { PythonEvaluator } from '../features/python-learning/pythonEvaluator'
 import { parseLearningPython } from '../features/python-learning/pythonParser'
-import { PYTHON_LIMITS } from '../features/python-learning/pythonModel'
+import { PYTHON_LIMITS, PYTHON_RUNTIME_REVISION } from '../features/python-learning/pythonModel'
 import { LearningSimulation } from '../features/python-learning/learningSimulation'
-import { LEARNING_LESSONS, gradeLearningLesson } from '../features/python-learning/learningLessons'
+import { LEARNING_LESSONS, gradeLearningLesson, learningLesson, learningSceneDescriptor } from '../features/python-learning/learningLessons'
+import { validLearningSnapshot, type LearningWorkerSnapshot } from '../features/python-learning/learningProtocol'
+import { createLearningFlightPath } from '../features/python-learning/learningFlightPath'
 
 async function execute(source: string) {
   const runtime = new PythonEvaluator(source, { call: async name => { throw new Error(`Unexpected capability ${name}`) } })
@@ -113,6 +120,47 @@ test('native physics supplies collision/sensor truth and enforces simulation inp
   await simulation.call('drive', [0n, 3600n], span)
   await assert.rejects(simulation.call('drive', [0n, 3600n], span), /7,200/)
   simulation.dispose()
+})
+test('warehouse racks stop lateral flight at inspection altitude on both sides of the aisle', async () => {
+  const lesson = learningLesson('drone'), span = { line: 1, column: 1 }
+  for (const side of [-1n, 1n]) {
+    const simulation = new LearningSimulation(lesson)
+    try {
+      await simulation.call('takeoff', [2n], span)
+      await simulation.call('fly', [0n, side, 0n, 180n], span)
+      const scene = simulation.snapshot()
+      assert.ok(scene.collisions > 0, 'rack geometry must block a drone above the old one-metre box height')
+      assert.ok(Math.abs(scene.z) <= 1.6 + 1e-9, 'the 0.2 m collision radius remains inside the 3.6 m aisle')
+      assert.ok(Math.abs(scene.z) > 1.5)
+      assert.ok(Math.abs(scene.altitude! - 2) < 1e-9)
+    } finally { simulation.dispose() }
+  }
+})
+test('warehouse example preserves the nine-second portable route and rejects prior scene evidence', async () => {
+  const lesson = learningLesson('drone'), simulation = new LearningSimulation(lesson)
+  const evaluator = new PythonEvaluator(lesson.solution, simulation)
+  const digest = (text: string) => createHash('sha256').update(text).digest('hex')
+  try {
+    for await (const span of evaluator.run()) assert.ok(span.line > 0)
+    const scene = simulation.snapshot(), descriptor = learningSceneDescriptor('drone')
+    assert.equal(scene.ticks, 540); assert.equal(scene.collisions, 0)
+    assert.equal(scene.atGoal, true); assert.equal(scene.landed, true)
+    const previousDescriptor = JSON.stringify({ ...JSON.parse(descriptor), revision: '1',
+      obstacles: [{ id: 'crate', position: [2, 0], size: [0.8, 1.2] }] })
+    assert.notEqual(digest(descriptor), digest(previousDescriptor))
+    const snapshot: LearningWorkerSnapshot = { kind: 'snapshot', identity: {
+      runId: 'warehouse-route', generation: 1, workspaceId: 'test', documentId: '/warehouse.py',
+      sourceDigest: digest(lesson.solution), sceneDigest: digest(descriptor), lessonId: lesson.id,
+      lessonRevision: lesson.revision, runtimeRevision: PYTHON_RUNTIME_REVISION, seed: 0,
+    }, sequence: 1, state: 'completed', span: { line: 1, column: 1 }, scene,
+      output: evaluator.output.join(''), variables: evaluator.inspectVariables(), metrics: evaluator.metrics,
+      grade: gradeLearningLesson(lesson, scene, evaluator.metrics, true), computeMs: 0, error: null, trace: simulation.trace }
+    assert.equal(snapshot.grade.passed, true); assert.equal(validLearningSnapshot(snapshot), true)
+    assert.deepEqual(JSON.parse(createLearningFlightPath(snapshot)).samples.at(-1), [540, 4, 0, 0, 0])
+    const previous = { ...snapshot, identity: { ...snapshot.identity, lessonRevision: '1', sceneDigest: digest(previousDescriptor) } }
+    assert.equal(validLearningSnapshot(previous), false)
+    assert.throws(() => createLearningFlightPath(previous), /Finish a collision-free drone run/)
+  } finally { simulation.dispose() }
 })
 test('Python source opens in its own pane while retaining optional authoring views', () => {
   for (const path of ['/learning.py', 'workspace:///notes/Lesson.PY?revision=2#start']) {

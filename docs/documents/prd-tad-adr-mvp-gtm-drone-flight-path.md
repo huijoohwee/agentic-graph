@@ -1,11 +1,17 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.7
+version: 1.7.0
+lang: en
 date: 2026-09-27
-owner: Graph learning and GameXR bench maintainers
+owner: Learning runtime maintainer
 continuity_id: DRONE-FLIGHT-PATH-001
-status: implementation
+local_rung: dev-proven
+delivered_rung: undocumented
+lane: authoring
+universal_scope: false
+worktree_id: device-0232231d4a19--drone-scene-fidelity
+agent_id: codex-root
 frontmatter_contract: required
 ---
 
@@ -13,7 +19,8 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.4.0 binds this user-authorized extension. The user confirmed
+DRONE-FLIGHT-PATH-001@1.7.0 binds this user-authorized extension. The warehouse
+iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
 inspects its motion, then sends or exports the completed path. GameXR admits the bounded snapshot,
@@ -25,7 +32,6 @@ unknown versions/fields, oversized/non-finite/out-of-bounds/discontinuous sample
 import cannot enable a receiver; Run preserves path order and requires fresh receiver
 acknowledgments; stop/focus loss/disconnect invalidate the run and require a new Run;
 the mobile browser displays planned and receiver-accepted positions distinctly.
-
 ## TAD
 
 Graph owns simulation and this portable data contract. GameXR owns consumer validation,
@@ -42,7 +48,6 @@ last is landed. There are 2–7,201 samples, at most 120 seconds and 500,000 UTF
 Coordinates round to six decimals; consecutive translation is at most 0.050002 m.
 Heading changes retain educational instantaneous turns; they are not angular dynamics.
 Digest identifiers aid comparison and do not authenticate a downloaded file.
-
 ## ADR
 
 Use a portable trace, not Python execution or an invented position-to-throttle mapping.
@@ -51,7 +56,6 @@ lease and reports them as simulated observations. No path setpoint enters the RP
 codec or physical diagnostics channel. The phone uses the existing paired HTTPS gateway
 once its owner releases the stopped writer. Overlapping files wait for that handoff.
 Recovery stops the session; a reviewed source revert restores prior functionality.
-
 ## MVP
 
 Initial budget: 35 active minutes, 12 files, 50 KiB, no paid services or new dependencies;
@@ -69,21 +73,14 @@ Observe a learner completing export/import/Run before expanding curriculum or ha
 
 ## Implementation evidence
 
-Graph export and GameXR simulated execution are implemented in admitted successors.
-The component browser exported the actual 541-sample, nine-second route; GameXR's six
-mobile WebKit bench tests consumed that file and passed, including final landed receiver
-acknowledgment and cancellation. The visible local GameXR page also completed at x=4,
-z=0, altitude=0, tick=540. Graph lifecycle tests pass 24/24; native Canvas TypeScript,
-three Vite runtime checks, two WebMCP scope checks and rebuilt full-app offline proof
-pass. The existing Python pane-availability assertion remains red and belongs to open
-XR PR #1285; its correction is not copied into this lane.
+This section records the initial implementation; it does not establish acceptance
+of the current warehouse candidate. The current evidence checkpoint is below.
 
-GameXR's native selected evaluators, candidate build/release checks and behavior suite
-pass; TLS transport and exact receiver expiry are covered. Working-source observations
-are retained under `.audit-artifacts/drone-implementation-20260925/path-*` and
-`gamexr-path-*` outside both repositories. Publication, protected integration and actual
-iPhone/Wi-Fi verification remain separate. No physical aircraft was connected.
-
+Initial Graph/GameXR proof exported a 541-sample nine-second route and completed
+simulated receiver acknowledgment on mobile WebKit. Focus-loss, disconnect and
+receiver expiry checks passed. These historical receipts do not establish current
+hardware or production readiness. Retained implementation evidence is under
+`.audit-artifacts/drone-implementation-20260925/` outside both repositories.
 
 ## Canvas reuse and source navigation — 1.1.0
 
@@ -323,165 +320,280 @@ cloud indicator after sign-in to sync across devices; offline edits remain local
 until explicitly synced. Learning gains remain unmeasured. Rollback restores the
 prior launcher without deleting saved files. Evidence: external lesson-files-* logs.
 
-## Canvas replay clock correction — 1.4.2
+## Retained source and release decisions — 1.4.2 through 1.4.7
 
-Protected CI for PR1313 completed the drone's four flight criteria but exposed a
-first-frame replay failure: an animation timestamp can precede the effect's
-`performance.now()` clock. A negative tick selected an undefined pose and stopped
-the shared iframe. The existing replay owner now bounds elapsed ticks at zero,
-including after Pause/Resume, while retaining the final-frame bound. A focused
-regression exercises the earlier timestamp, resume offset, ordinary advance and
-final clamp; the native browser smoke must still replay the copied embed to tick
-540 and reset it. Published predecessors remain immutable. Integration,
-production activation and ADLC delivery require their separate exact receipts.
+These historical repairs remain owned by their existing components. A past local
+pass does not establish the current candidate, deployment or physical-device proof.
 
-### Local source reload correction
+| Revision | Decision / retained evidence | Remaining boundary |
+|---|---|---|
+| 1.4.2 | Replay ticks clamp to zero when the first animation timestamp precedes the effect clock; resume and final bounds remain. Local WorkspaceFs bytes outrank stale inline/display copies, including empty/deleted files. Hydrated Python selection bypasses the Markdown graph loader. | Exact protected source checks remain required. |
+| 1.4.3 | One native catalog owns the preset. Native promotion joined package/lock/runtime docs at OS `e0ef770860905830157e64c455f0a342084b6d25`; exact OS test/budget run `36252295278` passed. The full production-build local proof covered four files, Unicode Save/reload, offline outcomes, editor round trips and missing-asset rejection. | Candidate-bound production authorization and live receipt are separate. |
+| 1.4.4 | PR1315 run `36252038106` exposed a five-second panel-action timeout. The shared Close helper uses its existing 30-second detachment budget; no forced click or skipped assertion. Fresh local offline proof passed; redundant PR1316 gate was canceled with diagnostics retained. | Local readiness does not prove protected integration. |
+| 1.4.5 | PR1317 run `36253126975` passed standard checks but exposed Explorer mutation after startup. The awaited source bootstrap now installs lessons before its snapshot; the duplicate Explorer installer is removed. Existing edits, empty files, deletions and collisions retain learner ownership. | No initialization executes a flight. |
+| 1.4.6 | The unchanged 44-assertion mission smoke passed. Save proof now checks exact IndexedDB bytes after the real Save action instead of a shared transient toast. Complete durable/offline proof passed using runtime `ea93888c30aa6dc1b4790aa2870b9e8358ba301e`; only its verifier and plan then changed. | Final protected head requires independent evidence. |
+| 1.4.7 | PR1318 integrated at `e71e96d1d916eeda98e78e083df814a6d1593dd8`; exact head/main checks and native lifecycle passed with the OS pin above. Production run `36267574685` stopped before authorization/mutation because its captured map had 309 nodes for 310 docs. Preparation now runs the existing schema generator against explicit clean exact-source paths before unchanged parity validation. | Ephemeral captured-schema repair grants no provider or production mutation. |
 
-The protected gate exposed a saved-source reload race after the replay clock fix.
-Local source ownership now applies to every active-file read, including inline
-entry snapshots and source fallback calls, so a retained starter cannot outrank
-saved WorkspaceFs bytes. Deleted local files return no active entry; empty edits
-remain empty. Regression checks exercise stale inline copies across those readers.
-Protected integration and delivery remain pending until their exact receipts pass.
+Historical bounds were refreshed per repair: seven files/25 KiB (1.4.2), four
+files/12 KiB (1.4.3), two files/4 KiB (1.4.4), five files/8 KiB (1.4.5), six
+files/10 KiB (1.4.6), and three files/6 KiB (1.4.7); all added zero dependencies.
+The prior native records and immutable refs preserve detailed failure/recovery
+history. Protected merge, canonical review, release preparation, production
+authorization, activation and live readback remain distinct lifecycle effects.
 
-The save failure was traced to pending Python selection being retried through the
-Markdown Canvas loader. The native switch owner now treats a hydrated Python file
-as settled and leaves its Canvas to the learning runtime. Stable Python selections
-also avoid Markdown graph application. This preserves a new edit before explicit
-Save without changing Markdown switch behavior. The production smoke uses awaited
-Boolean storage observations, closes its offline test body correctly and requires
-its final evidence file before reporting success. Its acceptance is unchanged:
-exact source must survive Save and reload, all lessons must run offline, and missing
-verified assets must block navigation. Refresh cap: seven files / 25 KiB, zero new
-runtime dependencies; normal production-build proof and protected CI are required.
 
-## Catalog dependency and release handover — 1.4.3
+## Native drone scene fidelity — 1.4.8
 
-PRD: discover Programmatic Drone Flight from the existing Home Catalog and Prompt
-Presets, then open its source file, edit, Run and review a reusable Canvas. The
-confirmed simulated bench remains the delivery target. Buyer demand, willingness
-to pay and physical iPhone execution are unmeasured.
+PRD: the native drone lesson and phone/replay projection gained an architectural
+cutaway, tiled floor, directional shadows, marked pads, detailed shipping crate
+and guarded quadcopter. This was an educational volume, not a surveyed facility;
+learner source and the programmed motion remained unchanged.
 
-TAD/ADR: the native OS prompt catalog owns the preset. Graph's existing revision
-promotion command verifies protected OS main checks and updates its exact package,
-lockfile and runtime docs reference together. There is one catalog entry and no
-new catalog service, runtime dependency or automatically executed flight.
+TAD/ADR: `LearningSceneGeometry` remained the composition owner; `LearningDroneRoom`
+owned render-only architecture/obstacles and `LearningDroneModel` owned the aircraft.
+Existing geometry/material dependencies and one bounded 1024-square shadow map
+served the native scene and shared demand-rendered embed. No model, font, texture,
+image, post-processing or network asset was added. Rotor phase came solely from
+simulation ticks/altitude, preserving Pause and replay without another clock.
+The original ±8 m floor, one-metre obstacle envelope, pose/heading, collision
+engine, scene digest and transfer contracts were unchanged by that increment.
 
-MVP evidence: 35 focused Python/file lifecycle checks, the native Markdown switch
-regression, 18 source-reader/indexing checks and root type checks passed. The full
-normal-production-build browser proof executed its complete body and wrote its
-receipt: all four native files, exact Unicode Save/reload, offline light/Monaco
-editor round trips, four completed lessons, registered tools and missing-asset
-rejection passed with no page errors. Local proof is separate from protected CI.
+MVP/GTM: initial six-module/100 kB/30-minute bounds, four runtime modules in the
+result, zero dependencies or paid services. Working-source affected checks covered
+learning/lifecycle, scope, nine-second flight/export, offline and Canvas behavior.
+In-app review observed XR motion, fixed paused pose, orbit controls and shadows;
+wall-panel depth offsets corrected shallow-angle flicker. Subsequent exact local
+proof is recorded at 1.5.0 below. Canonical runtime, protected integration,
+production, physical hardware and headset acceptance remained distinct receipts.
+Rollback preserved learner files and portable paths through a reviewed source revert.
 
-Development: source review PR1315 requires its exact protected merge receipt.
-Native catalog PR314 passed test/budgets and merged at
-`e0ef770860905830157e64c455f0a342084b6d25`; Graph's package pin requires successful
-checks on that exact OS main revision and its own protected integration.
-The exact OS main test/budget checks passed in run `36252295278`. Native promotion
-selected that revision for all three Graph dependency files; ten focused docs
-source/promotion checks passed and the resolver returned the same exact pin.
-Production Release: prepare only from clean exact main, native localhost review
-and retained rollback/frontier evidence. The protected owner must record human
-authorization for that candidate before activation.
-Runtime: the previous verified release remains the deployed baseline; these
-source checks do not prove a new production or native-device session.
 
-GTM/next owner action: complete the protected source/pin sequence, prepare the
-candidate and review the existing production authorization challenge. Only its
-joined production-complete lifecycle carrier and live readback close delivery.
-Preserve the existing rollback identity and saved learner files. Scope refresh:
-four pin/handover files, at most 12 KiB, zero new dependencies; a 15-minute active
-integration/preparation sprint, with CI dependency waits reported separately.
+## Measured lesson workspace — 1.5.0 evidence checkpoint
 
-## Native panel readiness — 1.4.4
+PRD/TAD/ADR: the native lesson gained a measured SVG plan, asset picking and shared
+Media Assets/Outliner/Inspector, using existing Canvas View, runtime, theme tokens
+and FloatingPanel owners. Selection is scoped to workspace/document/lesson;
+stale results are excluded. Presentation bounds have no colliders. Phone replay
+uses pure scene geometry without the editor selection store. No dependency,
+remote asset or new execution service was added; the three ground lessons remain.
 
-Protected PR1315 run `36252038106` failed before opening a lesson: the actual
-floating-panel Close action did not become actionable within its five-second
-click budget during production startup. The shared UI smoke owner now uses the
-same 30-second budget as its existing panel-detachment check. It still clicks
-the real control and requires the panel to detach before proceeding; no forced
-click, assertion skip, source-module hook or alternate close path is added.
-The full lesson/offline acceptance remains required on the exact catalog pair.
-PR1316's redundant pending gate was canceled; both published heads and the exact
-failure diagnostics are retained. Two owner files, at most 4 KiB source growth,
-zero runtime dependencies; a five-minute local proof sprint precedes the new
-protected review. External CI and candidate approval retain separate evidence.
+Browser findings were repaired in their owners: paired selected-tab color tokens,
+workspace/floating-panel occlusion, measured mobile header/footer insets and the
+metre-based lesson camera profile in XR. Native Close resolves retained panels;
+no pointer interception bypass, forced click or test removal was introduced.
 
-The fresh normal-production-build local browser proof passed against the promoted
-OS docs revision: all four native lesson files retained exact Unicode edits across
-Save/reload, all offline lesson outcomes passed, shared tool registration and
-light/Monaco round trips passed, and missing assets blocked navigation. The proof
-wrote its final evidence receipt with no page errors. Protected CI remains the
-independent integration requirement; this does not prove Production activation.
+MVP evidence: PR1321 source `58ccff7bdec25da644bebb3b50eac48c2b093ad8` passed
+all 17 selected native local checks across five owner partitions. This includes
+53 learning tests, the completed nine-second flight/export, rebuilt offline mobile
+2D/3D/XR run preservation and layout, Canvas types, Mission browser and XR browser
+checks. Protected CI was pending at the preceding handoff. PR1320's retained
+protected failure was not reclassified as passing from local evidence.
 
-## Source startup ownership — 1.4.5
+Reference implementation evidence: [PR1321](https://github.com/huijoohwee/agentic-graph/pull/1321),
+`outputs/drone-space-validation.json`, `outputs/drone-space-validation.zip` and
+`outputs/drone-space-receipt.json` relative to the retained task artifact root.
+GTM: this improves the same simulated demonstration; no demand, revenue, headset,
+physical aircraft or production claim follows. The eleven-module/100 kB runtime
+budget and zero new dependencies were retained. New scope uses the successor below.
 
-Protected PR1317 run `36253126975` passed the complete standard plan, including
-the native lesson/offline browser acceptance. The extended mission smoke then
-failed its unchanged-authored-workspace check: mounting Explorer installed lesson
-files after source bootstrap had declared readiness. Installation now runs through
-the awaited source startup owner before its entries snapshot. The redundant
-Explorer installer is removed; opening Explorer cannot introduce lesson files or
-reorder the authored source list. Existing files, edits and deletions remain owned
-by the learner, and collisions fail startup without replacing bytes. Lesson source
-stays lazily imported; no flight runs during initialization.
+## Warehouse lesson — reference implementation · DRONE-FLIGHT-PATH-001@1.6.0
 
-The existing bootstrap regression now checks awaited lesson discovery, retained
-Unicode edits/deletions, collision rejection and active-source drift. The unchanged
-mission inspection assertion and normal production lesson/offline proof must pass
-before publication. Scope: five files, at most 8 KiB changed bytes, zero dependencies;
-15 active minutes for repair/local proof, with protected CI as a separate dependency.
-PR1317 and its exact failure artifacts are retained. Integration, canonical runtime,
-private handover and candidate-bound human authorization remain separate receipts.
+### PRD
 
-## Durable Save observation — 1.4.6
+The user requests a warehouse setting, complete process-zone allocation and one
+native surface selector. The observed pain is duplicate 2D/3D/XR controls and a
+training scene lacking the supplied warehouse context; commercial WTP remains
+unvalidated. Must: inspect the top-down warehouse, understand core/ancillary
+allocation, see detailed racks in 3D/XR, and run the fixed aisle lesson through the
+existing Python/Block/JSON workspace. Keep native keyboard, mobile and offline reach.
+The [warehouse concept](../warehouse/warehouse-concept.md) and its linked SVG are
+projections of this record, with model coordinates owned by `warehouseLayout.ts`.
 
-The clean startup repair passed the unchanged full mission smoke, including all
-44 assertions and authored-state preservation. Its normal production proof then
-timed out waiting for a transient `Saved` toast after the Unicode edit; the failure
-screenshot showed indexing progress in that shared status display. The native
-status owner uses one toast identity for both operations. The proof now awaits its
-existing exact IndexedDB-byte assertion immediately after the real Save click and
-still requires exact reload, local source ownership and all offline outcomes. It
-does not infer persistence from the editor, a toast, or a Promise object. The failed
-run and screenshot remain retained; required durable acceptance is unchanged.
+Acceptance: twelve non-overlapping zones cover the assumed 60 × 40 m floor;
+1,920 m² core plus 480 m² ancillary total 2,400 m² (80:20). Show west inbound/east
+outbound 20/40-foot container bays, dock levelers, 12 m maneuvering aprons and an
+8 m access/ramp connection. All dimensions are conceptual. The ratio meets the
+requested numerical target; it is not statutory GFA certification or a complete
+ramp/building design. Staff break space contains no residential accommodation.
 
-Scope refresh: six files, at most 10 KiB changed content, zero dependencies; five
-additional active minutes for the existing artifact browser proof and publication.
-Runtime source is unchanged by this verifier adjustment; protected CI must bind
-the final committed source and catalog pair. Candidate preparation, human approval
-and live Production readback retain their separate prerequisites and receipts.
+The flight remains a distinct 16 × 16 m inspection cell: X/Z ±8 m, altitude 0–4 m.
+The example takes off to 2 m, hovers, passes over a 1 m low pallet and lands at
+(4, 0) after nine seconds. The 4.5 m racks block lateral travel; the wider facility
+is context, not a newly validated flight envelope. No motor output, autonomous
+navigation, manual piloting, real-warehouse inspection or pest detection is added.
 
-The reused normal production artifact passed the complete durable proof: exact
-Unicode Save/reload, native lesson discovery, four offline outcomes, light/Monaco
-round trips, tool registration and missing-asset rejection. The artifact's runtime
-revision is `ea93888c30aa6dc1b4790aa2870b9e8358ba301e`; only this verifier and planning
-document changed during that proof. The final protected head remains independently
-required; no deployment, native device session or human authorization is inferred.
+### TAD
 
-## Captured schema reconciliation — 1.4.7
+`learningLessons.ts` owns drone lesson revision 2, its fixed program, obstacles
+and scene identity. `/docs/python-lessons/04-drone-flight-and-landing.py` is a
+virtual WorkspaceFs source seeded through `learningLessonFiles.ts`; it is not a
+new host Python file. Existing saved learner bytes remain untouched. **Load flight
+example** is the explicit way to replace current editor content with the new seed.
+The revision changes the scene digest; portable v1/v2 bounds and sample schema stay.
 
-Development: PR1318 integrated as protected main
-`e71e96d1d916eeda98e78e083df814a6d1593dd8`; exact head/main Integration checks
-passed. Canonical sync, locked install and native turn:end bound that source to OS
-`e0ef770860905830157e64c455f0a342084b6d25`. Source completion, recovery retirement
-and predecessor dispositions passed with branches and learner bytes preserved.
+| Capability | Existing owner / smallest delta | Verification |
+|---|---|---|
+| Lesson and collision rules | `learningLessons.ts`; revise warehouse objective, seed and rack obstacles | Deterministic route, collision and scene-identity checks |
+| Zone allocation | `warehouseLayout.ts`; one pure twelve-zone model consumed by plan and procedural scenery | Bounds, sum, non-overlap and 80:20 checks |
+| Plan and shared scene | `LearningPlanView`, `LearningSceneGeometry`, `LearningDroneRoom`; extend local procedural geometry | Desktop/mobile plan, 3D/XR and shared embed review |
+| Surface switching | Native Canvas View/Surface Mode; remove lesson's duplicate 2D/3D/XR buttons | Native menu switches without replacing run/selection |
+| Assets and inspection | Existing `LearningAssetsPanel` and spatial selection; warehouse assets from native owners | Search, selection, dimensions and stale-state checks |
+| Appearance | Existing Settings, `--kg-*` colors, native text/code typography, icons and focus styles | Theme contrast and responsive review; no font/model network load |
+| Blueprint projection | `docs/warehouse/warehouse-floor-plan.svg` generated from layout coordinates | SVG labels and geometry/allocation agreement |
 
-Production Release36267574685 stopped before authorization or mutation: publish
-parity passed, but the captured schema map contained309 document nodes for310
-canonical files, missing this drone plan. The release preparation owner now runs
-the existing captured schema generator against explicit exact-source docs/map
-paths, after checking source HEAD and clean docs, before the unchanged parity gate.
-Only the ephemeral captured schema checkout changes; no provider write, new
-generator, mirror hotfix or parity exemption is introduced. The protected release
-still binds the captured guideline revision and independently authorizes activation.
+Invocation Register remains one capability: `/canvas.view.set #canvas-view
+@canvas-view`, with existing MCP/WebMCP `surface:2d`, `surface:3d`, `surface:xr`
+options. This is a view mutation, not flight authority. `/python.learning @canvas
+#learning` retains the existing lesson executor and explicit Run boundary. There
+is no new `/`, `@`, `#` registry, remote service or firmware adapter.
 
-PRD/MVP acceptance retains all drone, native file, replay and offline outcomes.
-TAD/ADR assigns reconciliation to preparation, using the existing schema owner;
-the focused workflow regression checks ordering, exact paths and read-only provider
-permissions. A local native-generator proof uses the failed run's captured schema
-revision and verifies a zero-diff second check. GTM delivery remains pending new
-protected integration, canonical review, candidate preparation, human terminal
-authorization and joined live receipts. Three files, at most6KiB changed content,
-zero dependencies;15 active minutes for repair/proof, external CI waits separate.
+Five flows: information goes from lesson/layout to views; interaction selects
+source/assets and native surface controls; structure keeps pure models before
+adapters/views; navigation uses Source Files, Editor Workspace and Canvas View;
+data flows from saved source through runtime snapshots to validated exports.
+No view infers real receiver position from planned movement. Resource bounds,
+source-digest validation, cancellation and local source recovery retain their owners.
+
+### ADR
+
+Extend the existing scene with local procedural rack geometry and one pure layout
+model. Direct reuse preserves native controls, assets, theme and replay. A new
+warehouse editor, cloned catalog, remote model pack or expanded portable physics
+would add unrequested authority/dependencies and invalidate existing bounded
+consumers. A contract-only adapter remains appropriate for projections; no second
+simulation or store is justified. Consolidate presentation switches into native
+Surface Mode and remove their superseded lesson buttons rather than retain a shim.
+
+The 60 × 40 m context and 16 × 16 m flight cell are deliberately distinct and must
+be labeled together. The nine-second route stays portable while rack obstacles
+make lateral limits meaningful. Revisit the cell only when a separately specified
+route requires wider geometry, corresponding collision/export contracts and
+receiver compatibility tests. Rollback is a reviewed source revert preserving
+saved Python, completed traces and immutable predecessor refs; the changed scene
+revision prevents a prior debrief from silently representing the new geometry.
+
+### MVP
+
+VCC-W1: zone geometry/allocations and blueprint agree; VCC-W2: the revision-2 route
+lands collision-free at (4, 0) while lateral rack attempts collide; VCC-W3: native
+Surface Mode switches plan/3D/XR with run and selection preserved; VCC-W4: saved
+source, flight/export/replay and rebuilt mobile offline behavior retain acceptance.
+VCC-W5: labels distinguish simulated cell, context dimensions and planning ratio.
+
+Demo bound: Hook 10 s (warehouse plan), Probe 10 s (zone and asset inspection),
+Reveal 10 s (VCC-W1 and cell bounds), programmed Run 9 s (VCC-W2), Close 10 s
+(native surface changes and Results). Total ≤49 s after initial module load;
+actual first-load/setup time remains unmeasured. All Must features reuse native
+owners; hardware deployment and complete architectural design are Won't this increment.
+
+Initial active ETA/cap: 45 minutes, at most 12 runtime modules and 150 kB added
+source; <600 lines/file and <500 kB/chunk; zero paid services or new dependencies.
+Reuse the active native successor checkout. Scene, plan, catalog and status stay
+lazy-loaded; the small warehouse layout model adds no always-load entry. Final
+runtime refresh: at most 15 modules, 200 kB touched runtime source, no dependencies.
+Execution tokens and actual active/CI time are unknown until receipts are recorded;
+no token-spend or production-cost claim is inferred from a zero-provider-spend cap.
+Refinement is capped at three cycles, with scope/resource refresh on new drift.
+
+### GTM
+
+Ranked value hypothesis: reduce setup friction for an existing learner/operator
+reviewing a programmed warehouse-aisle route, using the near-built lesson and
+shared spatial tools. First-dollar candidate is a scoped demonstration/setup
+service; demand, price, payment mechanism, collected revenue and repeat use remain
+unvalidated. Architectural certification, fleet management and physical scouting
+are explicitly outside the offer. Observe a user completing source → Run →
+inspection → export and record setup time/errors before adding infrastructure.
+No new channel, supplier, capital commitment or paid dependency is authorized.
+
+## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.7.0
+
+Disposition: **16/16 domains recorded; 11/16 covered applicable; 5 deferred;
+0 not applicable.** Coverage records decisions and gaps, not acceptance or revenue.
+The source joins below refer to the corresponding role in the warehouse section.
+
+| ID | Decision / source join | Accountable function / evidence or gap / next check |
+|---|---|---|
+| C01 | Covered; PRD | Product: user-supplied layout and duplicate-control report; WTP unvalidated; observe lesson completion |
+| C02 | Deferred; GTM | Product: no two-method market sizing; outside local enhancement; revisit before a commercial pitch |
+| C03 | Covered; GTM/ADR | Product: demonstration-service hypothesis versus manual explanation; no price evidence; interview an operator |
+| C04 | Covered; PRD/MVP | Learning maintainer: VCC-W1–W5 defined; published warehouse source passed rebuilt offline/surface assertions; see revision-bound evidence below |
+| C05 | Covered; TAD | Architecture: native owners, five flows and invocation routes named; inspect final source diff |
+| C06 | Covered; TAD/ADR | Runtime maintainer: bounded simulation, offline/local data, no external models or new AI loop; execute failure/recovery checks |
+| C07 | Covered; ADR | Architecture: reuse versus new editor/physics, rollback and revisit trigger recorded; verify removed duplicate controls |
+| C08 | Covered; MVP | Evaluator: 17 native checks pass on warehouse source; test/documentation successor awaits its own receipt |
+| C09 | Deferred; GTM | Product: acquisition/retention experiment requires a consenting trial user; revisit after a completed demonstration |
+| C10 | Covered; TAD/MVP | Maintainer: local delivery, native release/rollback and one active checkout; no new suppliers; verify lifecycle receipts |
+| C11 | Covered; PRD/ADR | Maintainer: no copied external assets, accommodation or legal approval claim; measured site/legal review remains external scope |
+| C12 | Deferred; GTM/MVP | Finance: zero new provider spend, but labor/token cost and three-statement scenarios unmeasured; revisit before quoting paid work |
+| C13 | Deferred; GTM | Product: no funding/capital action requested; local prototype only; revisit on validated paid-delivery need |
+| C14 | Covered; MVP/handoff | Release maintainer: admitted successor and prior exact evidence recorded; warehouse source published; portability and test-race corrections await final checks |
+| C15 | Deferred; GTM | Product: deck/business/financial projections not prepared for audience use; depend on validated offer and sourced economics |
+| C16 | Covered; MVP/GTM | Maintainer: next bounded proof below; stop expansion if route or source preservation fails |
+
+## Mobile warehouse inspection — 1.7.0 baseline
+
+PRD: the operator needs a repeatable view of modeled aisles and high rack faces,
+complementing fixed CCTV. This is a user-requested demonstration, not validated
+buyer demand. Preserve drone-001 and add the photo-informed drone-002 plus a
+black tracked mobile charging-station concept with twin roof leaves.
+User clarification: 220 × 160 × 90 mm specifies the shell; report the assembled
+extent separately. A 3 mm shell leaves a 214 × 154 × 84 mm cavity. Drone-002's
+140 × 140 × 52 mm envelope is assumed pending measurement. Printed fit, magnet/
+hinge tolerances, electrical charging and flightworthiness are not established.
+Closed assembly is 240 × 204 × 132 mm; open lids reach 170 mm. Units stay metres.
+
+| VCC | Measurable condition / check |
+|---|---|
+| M1 | Shared dimensions match shell/cavity specification; closed/open lids and separate drone IDs appear in 2D/3D/XR; inspect geometry and browser screenshots |
+| M2 | Existing BottomPanel Timeline alone owns play/pause/seek/rate; actor poses, lids, frame IDs and visit counts derive from its cursor; check seek/pause/replay |
+| M3 | Enumerate every rendered rack face/bay/tier and named aisle sample; validate paths against shared obstacles and retain unreachable targets in denominators |
+| M4 | Simulated Wi-Fi/cloud/YOLO feed complements CCTV; existing Motion Control Bounding Box setting owns overlay visibility; no network inference or camera permission |
+| M5 | Existing Python source, bounded flight/export and native surface selection remain functional; run affected unit/browser/offline/type checks |
+
+TAD: warehouseLayout owns rack/fixture/partition geometry; pure facility route
+sampling owns the scheduled choreography and coverage calculation. Native Timeline
+transport remains the only clock. Existing document-bound lesson view state enables
+the rehearsal; it is not another playback store. LearningSceneGeometry, the SVG
+plan and FloatingPanel asset inventory project the same positions in metres.
+The camera inspection action reuses registered Three camera pose restoration;
+small assets are framed closely, never enlarged in the warehouse. Timeline feed
+frames and detections are deterministic synthetic fixtures, labelled simulated.
+Motion Control's existing boundingBoxEnabled owner and `/motion.control @canvas
+#pose operation=open boundingBox=true` route control display; its real pose ROI
+is untouched. No new command registry, paid service, model weights or dependency.
+
+ADR: reuse native transport, catalog, camera and bounding-box setting instead of
+adding a parallel dashboard/player. Keep the facility rehearsal separate from
+LearningSimulation's ±8 m / 0–4 m portable receiver contract; facility tracks cannot
+be sent to aircraft or misrepresented as Python execution. Access to vault, climate
+and ancillary rooms is unverified: exclude these 720 m² explicitly, retain all
+modeled rack/aisle targets in visit counts, and distinguish geometric visits from
+photographic visibility, actual detection or optimal/full warehouse coverage.
+Timing assumes truck 1 m/s, drone 1.4 m/s horizontal / 0.7 m/s vertical; no battery model.
+The 0.25 m centerline obstacle padding is not a body-clearance safety certificate.
+The supplied schematic shows ESP-WROOM-32, MPU6500 and four brushed-motor channels;
+it does not establish camera hardware or a charge controller. No circuitry is added.
+MVP: 45 active-minute estimate plus validation; cap 24 touched runtime modules,
+220 kB touched runtime source, 80 kB new source, <600 lines/file, <500 kB/chunk,
+no new dependencies or provider spend. Observed 23 runtime modules, ~152 kB touched,
+~60 kB new; lazy Timeline, lightweight shared selection. Validate docking/door order,
+coverage denominators and native cursor/overlay behavior before source publication.
+Stop expansion on a collision, competing clock or source-preservation regression.
+Rollback restores the preceding source revision; no stored program migration.
+GTM: hypothesis is less manual explanation of repeatable warehouse inspection.
+Observe a user completing play → seek to rack → inspect frame/box → return to dock;
+record completion time, confusion and coverage gaps. WTP, model accuracy, Wi-Fi
+capacity, battery endurance and charging economics remain unvalidated. No cloud
+service or hardware procurement is authorized by this simulation increment.
+Development baseline: PR1330 source `6a85e8295be10ec3225b6f0691130901ee3c5dc7`
+passed all 17 required local checks (58 learning cases, flight/replay, rebuilt
+offline, types, Mission and XR browsers); exact receipts accompany that handoff.
+Its Integration Gate and docs-contract now pass. Prior failed receipts
+remain revision-bound; none substitutes for this increment's checks.
+Current admitted successor: `agent/device-0232231d4a19/warehouse-mobile-inspection`.
+Focused geometry, route, frame and ownership checks pass; Canvas TypeScript passes.
+Production Release remains closed pending protected integration and candidate-bound
+authorization; no deployment or physical aircraft operation is claimed.
+Next: native affected production-build/offline checks, source publication and receipts.
+Observed: 104 rack stations / 47 aisle stations; 751.04 s fixed rehearsal, 489 keyframes.
