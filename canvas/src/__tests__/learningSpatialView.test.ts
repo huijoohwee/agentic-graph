@@ -4,6 +4,7 @@ import test from 'node:test'
 import { LearningSpatialSelection, learningAssets, learningAssetFromObject } from '../features/python-learning/learningSpatialView'
 import { learningLesson } from '../features/python-learning/learningLessons'
 import { LearningSimulation } from '../features/python-learning/learningSimulation'
+import { resolveThreeSceneFrameLoop } from '../lib/three/threeRendererLifecycle'
 
 test('asset inventory projects fixed collision geometry and live drone pose without mutating the lesson', () => {
   const lesson = learningLesson('drone'), before = JSON.stringify(lesson)
@@ -62,4 +63,18 @@ test('warehouse concept partitions its footprint and keeps racks in the bounded 
   assert.ok(assets.filter(asset => asset.kind === 'dock').every(asset => Math.abs(asset.position[0]) > 30))
   assert.equal(learningAssetFromObject({ name: 'warehouse-zone-vault', parent: null }), 'zone:vault')
   assert.equal(learningAssetFromObject({ name: 'warehouse-dock-in-1', parent: null }), 'dock:in-1')
+})
+
+test('lesson snapshots own rendering without keeping an idle warehouse animation loop alive', () => {
+  const scene = { paused: false, immersiveMedia: false, gameplay: false, savedObjectView: false }
+  assert.equal(resolveThreeSceneFrameLoop({ ...scene, learningScene: true }), 'demand')
+  assert.equal(resolveThreeSceneFrameLoop({ ...scene, learningScene: true, paused: true }), 'demand')
+  // The lesson replaces the rendered stage even when another surface retains its settings.
+  assert.equal(resolveThreeSceneFrameLoop({ ...scene, learningScene: true, gameplay: true, immersiveMedia: true }), 'demand')
+  for (const ordinary of [scene, { ...scene, gameplay: true }, { ...scene, immersiveMedia: true }]) {
+    assert.equal(resolveThreeSceneFrameLoop(ordinary), 'always')
+    assert.equal(resolveThreeSceneFrameLoop({ ...ordinary, learningScene: false }), 'always')
+  }
+  assert.equal(resolveThreeSceneFrameLoop({ ...scene, savedObjectView: true }), 'demand')
+  assert.equal(resolveThreeSceneFrameLoop({ ...scene, savedObjectView: true, gameplay: true }), 'always')
 })

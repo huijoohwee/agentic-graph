@@ -448,7 +448,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         key={rendererLifecycleKey}
         data-kg-three-canvas-owner="1"
         frameloop={resolveThreeSceneFrameLoop({ paused, immersiveMedia: immersiveMediaStageActive,
-          gameplay: gameplayOverlayActive, savedObjectView: !!semanticObjectTarget })}
+          gameplay: gameplayOverlayActive, savedObjectView: !!semanticObjectTarget, learningScene: !!learningScene })}
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={rendererBackend.gl}

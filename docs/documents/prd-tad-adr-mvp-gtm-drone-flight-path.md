@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.6.5
+version: 1.6.6
 lang: en
 date: 2026-09-27
 owner: Learning runtime maintainer
@@ -19,7 +19,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.6.5 binds this user-authorized extension. The warehouse
+DRONE-FLIGHT-PATH-001@1.6.6 binds this user-authorized extension. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -503,7 +503,7 @@ Initial active ETA/cap: 45 minutes, at most 12 runtime modules and 150 kB added
 source; <600 lines/file and <500 kB/chunk; zero paid services or new dependencies.
 Reuse the active native successor checkout. Scene, plan, catalog and status stay
 lazy-loaded; the small warehouse layout model adds no always-load entry. Final
-increment: 12 runtime modules, under 110 kB total touched runtime source, no dependency additions.
+runtime refresh: at most 15 modules, 200 kB touched runtime source, no dependencies.
 Execution tokens and actual active/CI time are unknown until receipts are recorded;
 no token-spend or production-cost claim is inferred from a zero-provider-spend cap.
 Refinement is capped at three cycles, with scope/resource refresh on new drift.
@@ -519,7 +519,7 @@ are explicitly outside the offer. Observe a user completing source → Run →
 inspection → export and record setup time/errors before adding infrastructure.
 No new channel, supplier, capital commitment or paid dependency is authorized.
 
-## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.5
+## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.6
 
 Disposition: **16/16 domains recorded; 11/16 covered applicable; 5 deferred;
 0 not applicable.** Coverage records decisions and gaps, not acceptance or revenue.
@@ -559,7 +559,7 @@ built production assets and passed chunk checks, then rejected a machine-specifi
 path in this document. The raw job log, rather than the truncated combined log,
 identifies that failure. It is not a runtime build failure or a passing gate.
 
-ADR 1.6.5: retain published source and use native successors. PR1323 at
+ADR 1.6.6: retain published source and use native successors. PR1323 at
 `35c3da386649bd2d08d7f090b3fa23c98f479d6d` corrected the local path and recorded
 prior evidence. Its rerun exposed a test race: workspace and document lists share
 the Source Files navigation label. Publication also changed validation inputs;
@@ -579,11 +579,11 @@ Canvas unit assertion requiring the old selector (301/302 XR unit tests passed).
 PR1326 passed all 302 XR units; offline proof exposed a native-menu focus race.
 
 Current successor: `agent/device-0232231d4a19/drone-warehouse-menu-state`. Changes since
-PR1322 affect this record and five tests; runtime, product acceptance, allocations
-and GTM assumptions are unchanged.
+PR1322 corrections now include the shared render loop and controls: lesson-owned
+scenes render on demand; camera changes invalidate frames, while XR owns its loop.
 Its exact-head native validation and provider receipts remain pending until
-recorded in the task handoff. The test now awaits native auto-expansion and uses
-targeted pointer clicks, preserving selected-option, closed-menu and run assertions.
+recorded in the task handoff. Tests await native menu expansion, use pointer clicks,
+and verify orbit changes pixels without changing flight state; assertions remain.
 
 Production Release: closed without exact protected integration, clean preparation
 and candidate-bound authorization. Runtime: port 4201 is a local simulation;
@@ -591,9 +591,9 @@ canonical runtime, production, physical phones/headsets and aircraft are not
 upgraded by this source publication. No deployment is claimed.
 
 Next bounded action: verify native menu transitions, publish the successor, then
-run native checks with stable inputs. Correction allowance: 25 active minutes, six
-test/documentation files and at most 12 kB changed text; zero runtime/dependency
-changes. PR1325 provider browser proof hit its 300-second deadline without an
-assertion failure; current CI determines whether this repeats. External waits use
+run native checks with stable inputs. Refreshed correction cap: 35 active minutes,
+12 files, at most 20 kB changed text, no dependencies. Two provider browser runs
+hit the 300-second deadline; continuous idle warehouse rendering was avoidable.
+Demand rendering retains flight pacing; phase timings locate stalls. External waits use
 blocker/recheck, not ETA. Protected integration/deployment remain separate. Final
 task receipts supersede this pre-publication checkpoint and name diff/check/risk.
