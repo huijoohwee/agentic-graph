@@ -1,7 +1,8 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.4.7
+version: 1.5.0
+lang: en
 date: 2026-09-27
 owner: Graph learning and GameXR bench maintainers
 continuity_id: DRONE-FLIGHT-PATH-001
@@ -485,3 +486,111 @@ revision and verifies a zero-diff second check. GTM delivery remains pending new
 protected integration, canonical review, candidate preparation, human terminal
 authorization and joined live receipts. Three files, at most6KiB changed content,
 zero dependencies;15 active minutes for repair/proof, external CI waits separate.
+
+
+## Native drone scene fidelity — 1.4.8
+
+PRD: improve the three-dimensional space and assets shown by Source Files →
+`/docs/python-lessons/04-drone-flight-and-landing.py`. The native lesson and its
+phone/replay projection gain an architectural cutaway, tiled floor, directional
+shadows, marked launch/goal pads, a detailed shipping crate and a compact guarded
+quadcopter with camera, motor hubs, skids and navigation lights. The presentation
+must remain legible during the unchanged takeoff, hover, fly and landing sequence.
+The scenery is an educational training volume, not a surveyed farm or a physical
+vehicle model. No program or learner-authored file is replaced.
+
+TAD: `LearningSceneGeometry` remains the single composition owner. The new
+`LearningDroneRoom` owns the render-only architecture, materials and existing
+obstacle detail; `LearningDroneModel` owns render-only aircraft geometry. The
+native Canvas already enables shadows; the shared phone embed now enables the
+same bounded 1024-square directional shadow map. Standard geometry/materials use
+existing Three/R3F dependencies, with no font, texture, image, model or network
+asset added. The existing scene lazy-loading and demand-rendered embed remain.
+
+ADR: use local procedural detail and one key shadow light instead of loading a
+model pack or adding post-processing. Room edges retain the original ±8 m floor;
+the cutaway omits front walls for visibility. Crate detail stays inside the exact
+one-metre obstacle envelope. Launch and goal coordinates, vehicle pose, altitude
+offset, heading convention, collision engine, scene digest and flight transfer
+contracts do not change. Rotor phase is derived solely from received simulation
+ticks and altitude; Pause and replay therefore have no independent animation
+clock. The original three ground lessons retain their previous geometry.
+
+MVP: six-module/100 kB source ceiling, 30 active minutes, zero new dependencies or
+paid services. Validate native lesson/replay rendering, visible motion and paused
+pose, all existing learning/lifecycle/offline checks, Canvas typecheck and affected
+repository checks. Record any environment or protected-CI blocker explicitly;
+local screenshots do not establish headset, hardware or Production acceptance.
+GTM: improved visual demonstration of the same lesson; no new customer, price,
+revenue, crop-scouting or physical-flight claim. Rollback is a reviewed source
+revert of the scene components and embed flag; original lesson source, saved
+learner files and portable paths remain readable. Publication, protected merge,
+canonical localhost review and Production each retain their native receipts.
+
+Working-source evidence: the affected native validation passed all five owner
+partitions, including learning/lifecycle tests, WebMCP scope checks, the complete
+nine-second flight/export browser smoke, rebuilt offline recovery and Canvas
+checks. In-app inspection verified the requested file in XR, airborne motion,
+a fixed paused pose, working OrbitControls and visible shadows. Wider framing
+exposed shallow-face depth flicker; raised wall panels and material depth offsets
+correct it without changing the camera or collision model. Repeat the affected
+validation on those final rendering bytes before publication. Four runtime
+modules and this plan remain below the six-module/100 kB ceiling. No physical
+device or headset was tested; canonical port 5173 remains the protected main
+runtime until integration. The isolated review runtime uses port 4201.
+
+
+## 2026-09-27 — measured lesson workspace · DRONE-FLIGHT-PATH-001@1.5.0
+
+PRD: the existing drone lesson gains a measured 2D plan, 3D/XR asset picking,
+and a shared Media Assets inventory. Acceptance: surface switches preserve the
+run and selected asset; room/obstacle dimensions equal the lesson model; drone
+coordinates follow verified snapshots; stale results never appear current;
+keyboard selection, search and mobile offline viewing work. Room and flight
+framing, dimension visibility, Outliner and Inspector make the fixed training
+space easier to inspect. Physical room/wall authoring remains outside this increment.
+
+TAD/ADR: reuse CanvasViewport, Canvas View's MCP/WebMCP `/canvas.view.set
+#canvas-view @canvas-view` owner, FloatingPanel's Media wrapper and the shared
+learning runtime. Lazy SVG plan/catalog modules derive assets from LearningLesson;
+the presentation store scopes selection to workspace/document/lesson. Three
+picking resolves existing named geometry ancestors. Selection bounds have no
+colliders; geometry, source/scene digests, worker pacing and flight exports retain
+their original owners. Procedural SVG thumbnails are authored locally. No new
+package, paid service, remote asset or reference-project dependency is introduced.
+The three ground lessons retain their 3D presentation. Phone replay keeps the
+shared pure geometry without importing the editor's selection state.
+
+MVP: eleven runtime modules, four test files and this plan, under 100 kB of added
+source; initial 35 minutes extended by 20 for validation and the existing offline
+smoke's explicit surface selection. VCC-SP1: inventory/selection/picking unit
+checks. VCC-SP2: native browser selects crate across plan/3D/XR, searches catalog,
+inspects live drone and toggles dimensions. VCC-SP3: rebuilt offline browser
+proof switches 3D→2D→XR without changing the run, and all affected checks pass.
+Evidence and remaining gaps are recorded below before source publication.
+
+GTM: clearer self-serve demonstration and inspection of a programmed flight;
+no new farm deployment, revenue or physical-flight claim. Rollback: reviewed
+revert of this presentation increment; stored Python, debriefs and flight paths
+remain readable. Local rung: source candidate; delivered rung: local preview
+only, pending exact protected CI/merge receipts. Predecessor PR 1320's protected
+Integration Gate failed in its browser smoke stage; retained diagnostics report
+failure without a definitive root cause. Do not equate local green with that gate.
+
+The first affected pass confirmed lesson/unit and WebMCP checks, then correctly
+rejected the old browser fixture's implicit forced-3D assumption. The fixture now
+explicitly requests 3D; production offline coverage additionally selects and
+verifies the 2D plan and XR while preserving run identity. No check was removed.
+
+Browser review also exposed the existing selected-tab foreground without an
+accent background; the Media navigation now supplies both theme tokens. The
+plan/status reuse Canvas viewport occlusion for the editor and shared floating
+panel clearance. Offline proof closes an overlapping retained camera panel via
+the existing user close action before selecting plan assets; no force-click or
+pointer interception bypass is used. Source is frozen for final affected checks.
+
+All 15 standard checks passed, including rebuilt offline 2D/3D/XR switching;
+Mission's additional browser gate requires a clean commit. Visual XR inspection
+found the generic large-world camera reset overriding the metre-based lesson.
+The ThreeGraph controls adapter now retains the lesson camera profile in XR;
+the XR surface itself remains active. Mobile screenshot review then found header/footer overlap; plan insets now follow the measured controls and toolbar. Offline assertions cover both bounds; final committed checks follow.
