@@ -62,7 +62,7 @@ export default function LearningCanvasEmbed() {
     return () => window.removeEventListener('message', receive)
   }, [channel, shared])
   return <section aria-label="Graph drone Canvas" data-graph-canvas-pose={JSON.stringify(pose)} style={{ position: 'fixed', inset: 0, background: '#070d1b' }}>
-    <Canvas frameloop="demand" dpr={[1, 1.5]} camera={{ fov: 50 }} fallback={<p role="status">3D Canvas requires WebGL.</p>}>
+    <Canvas shadows frameloop="demand" dpr={[1, 1.5]} camera={{ fov: 50 }} fallback={<p role="status">3D Canvas requires WebGL.</p>}>
       <LearningSceneGeometry lesson={learningLesson('drone')} scene={learningCanvasScene(pose)} />
       <CameraControls />
     </Canvas>
