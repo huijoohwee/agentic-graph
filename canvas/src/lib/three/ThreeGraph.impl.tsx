@@ -536,7 +536,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             schema={effectiveSchema as GraphSchema}
             positions={positions}
             paused={paused && !immersiveMediaStageActive}
-            mode={mode}
+            mode={learningScene ? '3d' : mode}
             flightSimActive={flightStageActive && !learningScene}
             immersiveMediaActive={immersiveMediaStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
