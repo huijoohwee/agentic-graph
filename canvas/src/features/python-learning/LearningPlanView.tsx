@@ -12,6 +12,23 @@ export default function LearningPlanView({ lesson, scene, editorOpen = false }: 
   const panelRatio = useGraphStore(state => state.floatingPanelWidthRatio)
   const { view, update, runtime } = useLearningSpatialView()
   const [framing, setFraming] = React.useState<'room' | 'flight'>('room')
+  const [insets, setInsets] = React.useState({ top: 176, bottom: 0 })
+  React.useLayoutEffect(() => {
+    const root = ref.current
+    if (!root) return
+    const controls = root.parentElement?.querySelector('.learning-scene-controls')
+    const toolbar = root.closest('[aria-label="Canvas pane"]')?.querySelector('[aria-label="Main Toolbar"]')
+    const refresh = () => {
+      const frame = root.getBoundingClientRect(), control = controls?.getBoundingClientRect(), dock = toolbar?.getBoundingClientRect()
+      const top = control ? Math.max(0, control.bottom - frame.top) + 12 : 176
+      const bottom = dock && dock.top > frame.top + frame.height / 2 ? Math.max(0, frame.bottom - dock.top) + 8 : 0
+      setInsets(previous => previous.top === top && previous.bottom === bottom ? previous : { top, bottom })
+    }
+    const observer = new ResizeObserver(refresh)
+    ;[root, controls, toolbar].forEach(element => { if (element) observer.observe(element) })
+    refresh(); window.addEventListener('resize', refresh)
+    return () => { observer.disconnect(); window.removeEventListener('resize', refresh) }
+  }, [ref])
   const pattern = React.useId().replace(/:/g, '')
   const assets = learningAssets(lesson, scene)
   const trace = !runtime.stale ? runtime.result?.trace : undefined
@@ -19,8 +36,8 @@ export default function LearningPlanView({ lesson, scene, editorOpen = false }: 
   const select = (id: string) => update({ selectedId: id })
   const selectionProps = (id: string, name: string) => ({ role: 'button', tabIndex: 0, 'aria-label': `Select ${name}`, 'aria-pressed': view.selectedId === id,
     onClick: () => select(id), onKeyDown: (event: React.KeyboardEvent) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(id) } } })
-  return <section ref={ref} className="learning-spatial-ui learning-plan-frame absolute inset-0 flex flex-col bg-[var(--kg-canvas-bg)]" style={{ left, ...(panelOpen ? { '--learning-panel-clearance': resolveFloatingPanelRightClearanceCss(panelRatio) } : {}) } as React.CSSProperties} aria-label="Drone lesson floor plan">
-    <div className="mt-44 flex shrink-0 flex-wrap items-center justify-between gap-2 px-4 text-xs">
+  return <section ref={ref} className="learning-spatial-ui learning-plan-frame absolute inset-0 flex flex-col bg-[var(--kg-canvas-bg)]" style={{ left, paddingBottom: insets.bottom, ...(panelOpen ? { '--learning-panel-clearance': resolveFloatingPanelRightClearanceCss(panelRatio) } : {}) } as React.CSSProperties} aria-label="Drone lesson floor plan">
+    <div style={{ marginTop: insets.top }} className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-4 text-xs">
       <div><strong className="block text-base">Flight studio</strong><span>Top view · X / Z · metres</span></div>
       <div className="flex gap-1">{(['room', 'flight'] as const).map(value => <button key={value} type="button"
         className="min-h-11 rounded border px-3" aria-pressed={framing === value} onClick={() => setFraming(value)}>Fit {value}</button>)}</div>

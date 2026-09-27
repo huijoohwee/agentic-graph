@@ -593,4 +593,4 @@ All 15 standard checks passed, including rebuilt offline 2D/3D/XR switching;
 Mission's additional browser gate requires a clean commit. Visual XR inspection
 found the generic large-world camera reset overriding the metre-based lesson.
 The ThreeGraph controls adapter now retains the lesson camera profile in XR;
-the XR surface itself remains active. Final committed candidate checks follow.
+the XR surface itself remains active. Mobile screenshot review then found header/footer overlap; plan insets now follow the measured controls and toolbar. Offline assertions cover both bounds; final committed checks follow.
