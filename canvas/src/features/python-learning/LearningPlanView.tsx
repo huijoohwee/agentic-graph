@@ -41,17 +41,17 @@ export default function LearningPlanView({ lesson, scene, editorOpen = false }: 
       <div className="flex gap-1">{(['room', 'flight'] as const).map(value => <button key={value} type="button"
         className="min-h-11 rounded border px-3" aria-pressed={framing === value} onClick={() => setFraming(value)}>Fit {value === 'room' ? 'warehouse' : value}</button>)}</div>
     </div>
-    <svg className="min-h-0 w-full flex-1" viewBox={framing === 'room' ? '-62 -25 124 58' : '-5 -5 15 10'} aria-label="Measured warehouse floor" role="group">
+    <svg className="min-h-0 w-full flex-1" viewBox={framing === 'room' ? '-62 -25 124 58' : '-1.8 -3.6 7.6 7.2'} aria-label="Measured warehouse floor" role="group">
       <defs><pattern id={pattern} width="0.5" height="0.5" patternUnits="userSpaceOnUse"><path d="M .5 0 H 0 V .5" fill="none" stroke="currentColor" strokeOpacity=".12" strokeWidth=".012" /></pattern></defs>
-      <WarehousePlanDrawing selectedId={view.selectedId} onSelect={select} dimensions={view.dimensions} context={framing === 'room'} />
+      {framing === 'room' && <WarehousePlanDrawing selectedId={view.selectedId} onSelect={select} dimensions={view.dimensions} />}
       <rect x="-8" y="-8" width="16" height="16" fill="#eef8ff" fillOpacity=".55" stroke="#367cb7" strokeWidth=".08" strokeDasharray=".25 .15" {...selectionProps('room', 'Inspection cell')} />
       <rect x="-8" y="-8" width="16" height="16" fill={`url(#${pattern})`} pointerEvents="none" />
-      <text x="-7.6" y="-7.3" fontSize=".42" fill="#244c70">Inspection cell · 16 × 16 m · altitude 0–4 m</text>
+      {framing === 'room' && <text x="-7.6" y="-7.3" fontSize=".42" fill="#244c70">Inspection cell · 16 × 16 m · altitude 0–4 m</text>}
       {view.dimensions && <g fill="currentColor" stroke="currentColor" strokeWidth=".018" pointerEvents="none">
         <path d={`M 0 1.1 H ${lesson.goal[0]} M 0 .95 V 1.25 M ${lesson.goal[0]} .95 V 1.25`} />
         <text x={lesson.goal[0] / 2} y="1.45" fontSize=".22" stroke="none" textAnchor="middle">{lesson.goal[0].toFixed(2)} m inspection leg</text>
-        <path d="M -4.5 -1.8 V 1.8 M -4.7 -1.8 H -4.3 M -4.7 1.8 H -4.3" />
-        <text x="-4.6" y="0" fontSize=".22" stroke="none" textAnchor="end">3.60 m aisle</text>
+        <path d="M -1.1 -1.8 V 1.8 M -1.25 -1.8 H -.95 M -1.25 1.8 H -.95" />
+        <text transform="translate(-1.35 0) rotate(-90)" fontSize=".22" stroke="none" textAnchor="middle">3.60 m aisle</text>
       </g>}
       {trace && <polyline points={trace.map(row => `${row[1]},${row[2]}`).join(' ')} fill="none" stroke="#367cb7" strokeWidth=".045" pointerEvents="none"><title>Recorded flight projection</title></polyline>}
       {assets.filter(asset => ['pad', 'obstacle', 'drone'].includes(asset.kind)).map(asset => <g key={asset.id} {...selectionProps(asset.id, asset.name)} style={{ cursor: 'pointer' }} transform={`translate(${asset.position[0]} ${asset.position[2]})`}>

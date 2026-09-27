@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { WAREHOUSE_ZONES, warehouseAllocation } from '../features/python-learning/warehouseLayout'
+import { WAREHOUSE_ZONES, WAREHOUSE_CONTEXT_RACKS, warehouseAllocation } from '../features/python-learning/warehouseLayout'
 import test from 'node:test'
 import { LearningSpatialSelection, learningAssets, learningAssetFromObject } from '../features/python-learning/learningSpatialView'
 import { learningLesson } from '../features/python-learning/learningLessons'
@@ -45,6 +45,16 @@ test('warehouse concept partitions its footprint and keeps racks in the bounded 
       const [ox, oz, ow, od] = other.rect
       assert.ok(x + w <= ox || ox + ow <= x || z + d <= oz || oz + od <= z, `${zone.id} overlaps ${other.id}`)
     }
+  }
+  for (const rack of WAREHOUSE_CONTEXT_RACKS) {
+    const [x, z] = rack.position, [width, height, depth] = rack.size
+    assert.ok(width > 0 && height > 0 && depth > 0)
+    assert.ok(x + width / 2 <= -8 || x - width / 2 >= 8 || z + depth / 2 <= -8 || z - depth / 2 >= 8,
+      `${rack.id} crosses into the simulated inspection cell`)
+    const zone = WAREHOUSE_ZONES.find(value => value.id === rack.zoneId)!
+    assert.ok(zone, `${rack.id} has a known zone owner`)
+    assert.ok(x - width / 2 >= zone.rect[0] && x + width / 2 <= zone.rect[0] + zone.rect[2]
+      && z - depth / 2 >= zone.rect[1] && z + depth / 2 <= zone.rect[1] + zone.rect[3], `${rack.id} leaves its zone`)
   }
   const assets = learningAssets(learningLesson('drone'))
   assert.equal(assets.filter(asset => asset.kind === 'dock').length, 4)

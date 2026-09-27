@@ -3,7 +3,6 @@ import { CanvasViewContainer } from '@/components/CanvasViewContainer'
 import { useAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
 import { learningLesson, type LearningLesson, type LearningSceneSnapshot } from '@/features/python-learning/learningLessons'
-import { PythonLearningCanvasStatus } from '@/features/python-learning/LearningCanvasStatus'
 import { useShallow } from 'zustand/react/shallow'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config.render'
 import type { GraphData } from '@/lib/graph/types'
@@ -52,6 +51,7 @@ import {
 } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanticMediaSurface'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
+const PythonLearningCanvasStatus = React.lazy(() => import('@/features/python-learning/LearningCanvasStatus').then(module => ({ default: module.PythonLearningCanvasStatus })))
 const LearningPlanViewLazy = React.lazy(() => import('@/features/python-learning/LearningPlanView'))
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
 const LiveCanvasHeroPresetStageLazy = React.lazy(() => import('@/features/agentic-os/LiveCanvasHeroPresetStage').then(mod => ({ default: mod.LiveCanvasHeroPresetStage })))

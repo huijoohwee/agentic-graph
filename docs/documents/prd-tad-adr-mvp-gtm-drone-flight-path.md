@@ -502,7 +502,9 @@ owners; hardware deployment and complete architectural design are Won't this inc
 
 Initial active ETA/cap: 45 minutes, at most 12 runtime modules and 150 kB added
 source; <600 lines/file and <500 kB/chunk; zero paid services or new dependencies.
-Reuse the active native successor checkout; scene/plan/catalog stay lazy-loaded.
+Reuse the active native successor checkout. Scene, plan, catalog and status stay
+lazy-loaded; the small warehouse layout model adds no always-load entry. Final
+increment: 12 runtime modules, under 110 kB total touched runtime source, no dependency additions.
 Execution tokens and actual active/CI time are unknown until receipts are recorded;
 no token-spend or production-cost claim is inferred from a zero-provider-spend cap.
 Refinement is capped at three cycles, with scope/resource refresh on new drift.
@@ -547,7 +549,11 @@ Development: branch `agent/device-0232231d4a19/drone-warehouse` reuses the admit
 checkout at predecessor `58ccff7bdec25da644bebb3b50eac48c2b093ad8`. Warehouse code
 and these projections pass focused unit and TypeScript checks. The actual local
 preview completes the revision-2 route and exposes native surface switching;
-full affected/offline/browser candidate checks remain **pending**.
+the first native pass at `d167b32e3c63f2aecfdc7984de478e8221970c6f`
+passed 15 standard checks, Mission browser, rebuilt mobile/offline and XR seed.
+Comprehensive XR stopped at its published-upstream prerequisite. A final
+refinement shares context-rack footprints across surfaces, tightens mobile flight
+framing, and lazy-loads status. Exact final-head validation remains **pending**.
 The source hash, selected check results, native receipt and new PR must be recorded
 at publication. Source publication is not protected merge or deployment authority.
 
@@ -569,3 +575,9 @@ rejection. `npm run check` passes. The authored SVG is generated from the shared
 layout and lesson owners with `node --import tsx docs/warehouse/generate-floor-plan.tsx`.
 Final exact-head checks and source review receipts are recorded by native release
 and the task handoff; this development checkpoint does not claim protected delivery.
+
+Review disposition: fixed the context-rack plan/3D footprint mismatch through one
+shared layout list and extent assertions; inspection-cell collision data is unchanged.
+Rebuilt mobile evidence triggered a closer flight framing while full-site framing
+remains available. Final validation/publication receipts supersede the first-pass
+candidate for acceptance; protected merge/deployment remain separate.

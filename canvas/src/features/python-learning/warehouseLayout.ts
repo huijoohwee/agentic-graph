@@ -20,6 +20,13 @@ export const WAREHOUSE_DOCKS = [
   { id: 'out-1', name: 'Outbound bay 1', side: 'outbound', x: 30, z: -7, width: 18, depth: 4 },
   { id: 'out-2', name: 'Outbound bay 2', side: 'outbound', x: 30, z: 3, width: 18, depth: 4 },
 ] as const
+/** Architectural racks outside the simulated cell; shared footprints for plan and 3D/XR. */
+export const WAREHOUSE_CONTEXT_RACKS = [
+  { id: 'pallet-west-north', zoneId: 'pallet', position: [-15, -5], size: [8, 4.5, 1.5] },
+  { id: 'pallet-west-south', zoneId: 'pallet', position: [-15, 4], size: [8, 4.5, 1.5] },
+  { id: 'shelving-east-north', zoneId: 'shelving', position: [16, -5], size: [6, 2.4, 0.8] },
+  { id: 'shelving-east-south', zoneId: 'shelving', position: [16, 4], size: [6, 2.4, 0.8] },
+] as const
 export function warehouseAllocation() {
   const core = WAREHOUSE_ZONES.filter(zone => zone.use === 'core').reduce((sum, zone) => sum + zone.rect[2] * zone.rect[3], 0)
   const ancillary = WAREHOUSE_ZONES.filter(zone => zone.use === 'ancillary').reduce((sum, zone) => sum + zone.rect[2] * zone.rect[3], 0)

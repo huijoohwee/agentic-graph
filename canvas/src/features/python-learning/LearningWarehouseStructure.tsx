@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Color, InstancedMesh, Object3D } from 'three'
 import type { KgTheme } from '@/lib/ui/tokens-ssot'
-import { WAREHOUSE_DOCKS, WAREHOUSE_ZONES } from './warehouseLayout'
+import { WAREHOUSE_DOCKS, WAREHOUSE_ZONES, WAREHOUSE_CONTEXT_RACKS } from './warehouseLayout'
 
 type Vector = [number, number, number]
 type BoxPart = { position: Vector; size: Vector; rotation?: Vector; color?: string }
@@ -144,8 +144,9 @@ export function LearningWarehouseStructure({ palette }: { palette: KgTheme }) {
     <WarehouseBoxes parts={structure.windows} color={light ? '#e7efed' : '#9eafb7'} castShadow={false} />
     <WarehouseBoxes parts={structure.lines} color="#367cb7" castShadow={false} />
     {WAREHOUSE_DOCKS.map(dock => <LoadingBay key={dock.id} dock={dock} />)}
-    {[-5, 4].map(z => <group key={z} name="warehouse-zone-pallet" position={[-15, 0, z]}><WarehouseRack width={8} depth={1.5} height={4.5} /></group>)}
-    {[-5, 4].map(z => <group key={z} name="warehouse-zone-shelving" position={[16, 0, z]}><WarehouseRack width={6} depth={0.8} height={2.4} /></group>)}
+    {WAREHOUSE_CONTEXT_RACKS.map(rack => <group key={rack.id} name={`warehouse-zone-${rack.zoneId}`} position={[rack.position[0], 0, rack.position[1]]}>
+      <WarehouseRack width={rack.size[0]} depth={rack.size[2]} height={rack.size[1]} />
+    </group>)}
     <group name="warehouse-zone-bulk"><WarehouseBoxes color="#b79771" parts={[
       { position: [-25, 0.7, 3], size: [2.4, 1.4, 2.4] }, { position: [-25, 0.5, 7], size: [2.4, 1, 2.4] },
     ]} /></group>
