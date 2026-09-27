@@ -1,7 +1,7 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.6.0
+version: 1.6.1
 lang: en
 date: 2026-09-27
 owner: Learning runtime maintainer
@@ -19,7 +19,7 @@ frontmatter_contract: required
 
 ## PRD
 
-DRONE-FLIGHT-PATH-001@1.6.0 binds this user-authorized extension. The warehouse
+DRONE-FLIGHT-PATH-001@1.6.1 binds this user-authorized extension. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -404,8 +404,7 @@ protected failure was not reclassified as passing from local evidence.
 
 Reference implementation evidence: [PR1321](https://github.com/huijoohwee/agentic-graph/pull/1321),
 `outputs/drone-space-validation.json`, `outputs/drone-space-validation.zip` and
-`outputs/drone-space-receipt.json` under the task workspace
-`/Users/huijoohwee/Documents/Codex/2026-09-27/run-agentic-os-adhere-to-users`.
+`outputs/drone-space-receipt.json` relative to the retained task artifact root.
 GTM: this improves the same simulated demonstration; no demand, revenue, headset,
 physical aircraft or production claim follows. The eleven-module/100 kB runtime
 budget and zero new dependencies were retained. New scope uses the successor below.
@@ -520,7 +519,7 @@ are explicitly outside the offer. Observe a user completing source → Run →
 inspection → export and record setup time/errors before adding infrastructure.
 No new channel, supplier, capital commitment or paid dependency is authorized.
 
-## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.0
+## Coverage and current handoff — DRONE-FLIGHT-PATH-001@1.6.1
 
 Disposition: **16/16 domains recorded; 11/16 covered applicable; 5 deferred;
 0 not applicable.** Coverage records decisions and gaps, not acceptance or revenue.
@@ -531,53 +530,50 @@ The source joins below refer to the corresponding role in the warehouse section.
 | C01 | Covered; PRD | Product: user-supplied layout and duplicate-control report; WTP unvalidated; observe lesson completion |
 | C02 | Deferred; GTM | Product: no two-method market sizing; outside local enhancement; revisit before a commercial pitch |
 | C03 | Covered; GTM/ADR | Product: demonstration-service hypothesis versus manual explanation; no price evidence; interview an operator |
-| C04 | Covered; PRD/MVP | Learning maintainer: VCC-W1–W5 defined; local 2D/3D run observed; rebuilt offline/surface assertions pending |
+| C04 | Covered; PRD/MVP | Learning maintainer: VCC-W1–W5 defined; published warehouse source passed rebuilt offline/surface assertions; see revision-bound evidence below |
 | C05 | Covered; TAD | Architecture: native owners, five flows and invocation routes named; inspect final source diff |
 | C06 | Covered; TAD/ADR | Runtime maintainer: bounded simulation, offline/local data, no external models or new AI loop; execute failure/recovery checks |
 | C07 | Covered; ADR | Architecture: reuse versus new editor/physics, rollback and revisit trigger recorded; verify removed duplicate controls |
-| C08 | Covered; MVP | Evaluator: current unit/type checks pass; native affected proof pending; prior proof remains revision-bound |
+| C08 | Covered; MVP | Evaluator: 17 native checks pass on warehouse source; documentation successor awaits its own receipt |
 | C09 | Deferred; GTM | Product: acquisition/retention experiment requires a consenting trial user; revisit after a completed demonstration |
 | C10 | Covered; TAD/MVP | Maintainer: local delivery, native release/rollback and one active checkout; no new suppliers; verify lifecycle receipts |
 | C11 | Covered; PRD/ADR | Maintainer: no copied external assets, accommodation or legal approval claim; measured site/legal review remains external scope |
 | C12 | Deferred; GTM/MVP | Finance: zero new provider spend, but labor/token cost and three-statement scenarios unmeasured; revisit before quoting paid work |
 | C13 | Deferred; GTM | Product: no funding/capital action requested; local prototype only; revisit on validated paid-delivery need |
-| C14 | Covered; MVP/handoff | Release maintainer: admitted successor and prior exact evidence recorded; new candidate checks/publication remain pending |
+| C14 | Covered; MVP/handoff | Release maintainer: admitted successor and prior exact evidence recorded; warehouse source published; portability correction awaits checks/publication |
 | C15 | Deferred; GTM | Product: deck/business/financial projections not prepared for audience use; depend on validated offer and sourced economics |
 | C16 | Covered; MVP/GTM | Maintainer: next bounded proof below; stop expansion if route or source preservation fails |
 
-Development: branch `agent/device-0232231d4a19/drone-warehouse` reuses the admitted
-checkout at predecessor `58ccff7bdec25da644bebb3b50eac48c2b093ad8`. Warehouse code
-and these projections pass focused unit and TypeScript checks. The actual local
-preview completes the revision-2 route and exposes native surface switching;
-the first native pass at `d167b32e3c63f2aecfdc7984de478e8221970c6f`
-passed 15 standard checks, Mission browser, rebuilt mobile/offline and XR seed.
-Comprehensive XR stopped at its published-upstream prerequisite. A final
-refinement shares context-rack footprints across surfaces, tightens mobile flight
-framing, and lazy-loads status. Exact final-head validation remains **pending**.
-The source hash, selected check results, native receipt and new PR must be recorded
-at publication. Source publication is not protected merge or deployment authority.
+Development: [PR1322](https://github.com/huijoohwee/agentic-graph/pull/1322)
+published warehouse source `f2fe53924f47dc547db6cab2a0650c2d13a8a1e0`.
+All 17 required local checks passed across five owner partitions: 56 learning
+checks, completed flight/export/replay, rebuilt mobile/offline, native surface and
+source preservation, Canvas types, Mission browser and comprehensive XR. These
+receipts supersede first candidate `d167b32e3c63f2aecfdc7984de478e8221970c6f`,
+whose comprehensive XR check stopped at the published-upstream prerequisite.
+The generated SVG, plan and 3D share the context-rack layout and extent assertions.
+Full-site and close flight framing remain available; scene status is lazy-loaded.
 
-Production Release: closed for this candidate without exact protected integration,
-clean preparation and candidate-bound authorization. Runtime: the local port-4201
-review is a simulation; canonical runtime, production, physical phones/headsets and
-aircraft are not upgraded by this source change. No new deployment is claimed.
+Provider evidence: PR1322 docs-contract passed. Integration run `36290445116`
+built production assets and passed chunk checks, then rejected a machine-specific
+path in this document. The raw job log, rather than the truncated combined log,
+identifies that failure. It is not a runtime build failure or a passing gate.
 
-Next bounded action: the runtime maintainer completes VCC-W1–W5, commits the exact
-candidate, re-admits that revision, runs native affected checks and publishes the
-source review with receipts. Recheck on each native check completion or meaningful
-CI change; report external waits by blocker and unblock condition, not a finish ETA.
-Failed invariants block the dependent release; fix their existing owners within the
-remaining sprint or refresh its bounds. Handoff must name diff, checks and risks.
+ADR 1.6.1: retain the published source and correct the documentation through native
+successor `agent/device-0232231d4a19/drone-warehouse-portable`. References use the
+retained task artifact root; no machine username or home directory is required.
+PRD, runtime TAD, warehouse allocations and GTM assumptions remain unchanged.
+This successor changes only this document. Its exact-head native validation and
+provider review receipts remain pending until recorded in the task handoff.
 
-Current development evidence (2026-09-27): 14 focused Python/spatial checks pass,
-including non-overlapping 80:20 allocation, rack collision and prior-revision
-rejection. `npm run check` passes. The authored SVG is generated from the shared
-layout and lesson owners with `node --import tsx docs/warehouse/generate-floor-plan.tsx`.
-Final exact-head checks and source review receipts are recorded by native release
-and the task handoff; this development checkpoint does not claim protected delivery.
+Production Release: closed without exact protected integration, clean preparation
+and candidate-bound authorization. Runtime: port 4201 is a local simulation;
+canonical runtime, production, physical phones/headsets and aircraft are not
+upgraded by this source publication. No deployment is claimed.
 
-Review disposition: fixed the context-rack plan/3D footprint mismatch through one
-shared layout list and extent assertions; inspection-cell collision data is unchanged.
-Rebuilt mobile evidence triggered a closer flight framing while full-site framing
-remains available. Final validation/publication receipts supersede the first-pass
-candidate for acceptance; protected merge/deployment remain separate.
+Next bounded action: finish the one-document portability correction, verify the
+source-only conflict check and run native required checks before source publication.
+Additional allowance: 15 active minutes, one documentation module, at most 8 kB
+changed text, zero runtime or dependency changes. External CI waits are tracked by
+blocker and recheck condition, not an ETA. Protected integration and deployment
+remain separate from source publication. Handoff names diff, checks and risks.
