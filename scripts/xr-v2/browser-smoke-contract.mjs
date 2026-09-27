@@ -139,7 +139,7 @@ const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
 ])
 const REQUIRED_MARKERS = Object.freeze([
   'openEditorWorkspace=1',
-  "getByRole('navigation', { name: 'Source files', exact: true })",
+  "getByRole('region', { name: 'Source Files', exact: true })",
   'Folder docs',
   'Folder workspace-seeds',
   'File agentic-graph-ar-vr-xr-runtime-readiness-demo.md',
