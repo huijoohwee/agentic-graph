@@ -1,18 +1,21 @@
 import { useSyncExternalStore, useLayoutEffect, useRef, useState } from 'react'
 import { resolveWorkspaceVisibleViewport, WORKSPACE_VISIBLE_VIEWPORT_OCCLUDER_ATTR } from '@/lib/zoom/workspaceVisibleViewport'
+import { WAREHOUSE_ZONES, WAREHOUSE_DOCKS } from './warehouseLayout'
 import { pythonLearningRuntime } from './learningRuntime'
 import type { LearningLesson, LearningSceneSnapshot } from './learningLessons'
 
-export type LearningAsset = Readonly<{ id: string; name: string; kind: 'space' | 'pad' | 'obstacle' | 'drone';
+export type LearningAsset = Readonly<{ id: string; name: string; kind: 'space' | 'zone' | 'dock' | 'pad' | 'obstacle' | 'drone';
   position: readonly [number, number, number]; size: readonly [number, number, number]; color: string; detail: string }>
 /** Presentation inventory derived from the lesson, never a second simulation model. */
 export function learningAssets(lesson: LearningLesson, scene?: LearningSceneSnapshot): LearningAsset[] {
   return [
-    { id: 'room', name: 'Training volume', kind: 'space', position: [0, 0, 0], size: [16, 4, 16], color: '#91a6b7', detail: '256 m² floor · altitude 0–4 m · two-wall cutaway' },
+    { id: 'room', name: 'Inspection cell', kind: 'space', position: [0, 0, 0], size: [16, 4, 16], color: '#91a6b7', detail: '16 × 16 m bounded flight cell within the 60 × 40 m warehouse concept · altitude 0–4 m' },
     { id: 'launch', name: 'Launch pad', kind: 'pad', position: [0, 0, 0], size: [1.08, 0.02, 1.08], color: '#398ccc', detail: 'Program starts at (0, 0) · decorative pad' },
     { id: 'goal', name: 'Landing pad', kind: 'pad', position: [lesson.goal[0], 0, lesson.goal[1]], size: [1.08, 0.02, 1.08], color: '#399775', detail: 'Land at the lesson goal · decorative pad' },
-    ...lesson.obstacles.map(o => ({ id: `obstacle:${o.id}`, name: `Training ${o.id}`, kind: 'obstacle' as const,
-      position: [o.position[0], 0, o.position[1]] as const, size: [o.size[0], 1, o.size[1]] as const, color: '#b39163', detail: 'Fixed lesson collision box · fly above its top' })),
+    ...lesson.obstacles.map(o => ({ id: `obstacle:${o.id}`, name: o.name ?? `Training ${o.id}`, kind: 'obstacle' as const,
+      position: [o.position[0], 0, o.position[1]] as const, size: [o.size[0], o.height ?? 1, o.size[1]] as const, color: o.id.startsWith('rack-') ? '#cc773e' : '#b39163', detail: (o.height ?? 1) > 4 ? 'Tall rack collision volume · stay in the aisle; above the flight ceiling' : 'Low pallet collision volume · clear its top at 2 m altitude' })),
+    ...WAREHOUSE_ZONES.map(zone => ({ id: `zone:${zone.id}`, name: zone.name, kind: 'zone' as const, position: [zone.rect[0] + zone.rect[2] / 2, 0, zone.rect[1] + zone.rect[3] / 2] as const, size: [zone.rect[2], 0, zone.rect[3]] as const, color: zone.color, detail: `${zone.rect[2] * zone.rect[3]} m² · ${zone.use === 'core' ? 'core logistics' : 'ancillary support'} · conceptual allocation; flight only inside inspection cell` })),
+    ...WAREHOUSE_DOCKS.map(dock => ({ id: `dock:${dock.id}`, name: dock.name, kind: 'dock' as const, position: [dock.x + dock.width / 2, 0, dock.z + dock.depth / 2] as const, size: [dock.width, 0, dock.depth] as const, color: '#ab9a78', detail: '20/40-foot container bay · dock leveler at building edge · conceptual 4 × 18 m allowance; exterior to indoor allocation' })),
     { id: 'drone', name: 'Programmed drone', kind: 'drone', position: [scene?.x ?? 0, scene?.altitude ?? 0, scene?.z ?? 0], size: [0.4, 0.4, 0.4], color: '#568cb3', detail: 'Kinematic vehicle · 0.20 m collision radius · position follows Python' },
   ]
 }
@@ -41,6 +44,8 @@ export function useLearningSpatialView() {
 export function learningAssetFromObject(object: { name: string; parent: { name: string; parent: unknown } | null }): string | null {
   let node: { name: string; parent: unknown } | null = object
   while (node) {
+    if (node.name.startsWith('warehouse-zone-')) return `zone:${node.name.slice(15)}`
+    if (node.name.startsWith('warehouse-dock-')) return `dock:${node.name.slice(15)}`
     if (node.name === 'learning-drone') return 'drone'
     if (node.name.startsWith('learning-obstacle-')) return `obstacle:${node.name.slice(18)}`
     if (node.name === 'learning-goal-pad') return 'goal'
