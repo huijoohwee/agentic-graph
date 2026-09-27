@@ -11,6 +11,7 @@ const cameraSelector = 'svg[data-warehouse-camera]'
 export async function proveWarehouseRehearsal({
   page, pane, lessons, inspect, selectPython, selectSurface, editRichSource, awaitStoredSource, output,
 }) {
+  console.log('Warehouse rehearsal: checking assets and native timeline')
   const originalLesson = await pane.getByLabel('Python lesson', { exact: true }).inputValue()
   const restoreLesson = lessons.find(lesson => lesson.id === originalLesson)
   assert.ok(restoreLesson, 'offline proof must restore its existing lesson')
@@ -95,7 +96,11 @@ export async function proveWarehouseRehearsal({
   await expect(bounds).toBeChecked()
   await expect(camera).toHaveAttribute('data-warehouse-bounds', 'enabled')
   await dismissVisibleFloatingPanel(page)
+  // Motion Control opens XR; return through the native menu before inspecting the SVG plan.
+  await selectSurface('2D')
+  await expect(plan).toBeVisible()
 
+  console.log('Warehouse rehearsal: checking native playback and camera frame ownership')
   const assertMatchingDetections = async () => {
     const displayed = await camera.getAttribute('data-warehouse-camera-frame')
     assert.ok(displayed && displayed !== 'pending', 'paused camera has a delivered synthetic frame')
@@ -133,6 +138,8 @@ export async function proveWarehouseRehearsal({
   await expect(camera).toHaveAttribute('data-warehouse-bounds', 'disabled')
   await expect(camera.locator('[data-warehouse-detection]')).toHaveCount(0)
   await dismissVisibleFloatingPanel(page)
+  await selectSurface('2D')
+  await expect(plan).toBeVisible()
 
   // The native first cue is the rewind control for this generated fixed timeline.
   await timeline.getByRole('button', { name: 'Seek Programmed aisle survey / carry drone002', exact: true }).press('Enter')
@@ -162,6 +169,7 @@ export async function proveWarehouseRehearsal({
   assert.equal((await inspect()).binding.sourceDigest, originalBinding.sourceDigest, 'the surrounding offline source is restored exactly')
   await pane.getByRole('button', { name: 'Save source', exact: true }).click()
   await awaitStoredSource(restoreLesson.solution)
+  console.log('Warehouse rehearsal: source, result, bounds, cameras and rewind verified')
   return { nativeBottomPanel: true, nativeCueAndTransport: true, pauseFreezesFrames: true,
     motionControlBounds: true, cameraFrames, catalogAndSvgAssets: assetNames,
     pythonSourceAndResultPreserved: true, runId: pythonFlight.binding.expectedRunId }

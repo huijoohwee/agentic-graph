@@ -591,9 +591,9 @@ passed all 17 required local checks (58 learning cases, flight/replay, rebuilt
 offline, types, Mission and XR browsers); exact receipts accompany that handoff.
 Its Integration Gate and docs-contract now pass. Prior failed receipts
 remain revision-bound; none substitutes for this increment's checks.
-Current admitted successor: `agent/device-0232231d4a19/warehouse-mobile-inspection`.
+Current admitted successor: `agent/device-0232231d4a19/warehouse-mobile-proof`.
 Focused geometry, route, frame and ownership checks pass; Canvas TypeScript passes.
 Production Release remains closed pending protected integration and candidate-bound
 authorization; no deployment or physical aircraft operation is claimed.
-Next: native affected production-build/offline checks, source publication and receipts.
+PR1331 validation was blocked by configuration drift; rerun serial builds and native surface navigation.
 Observed: 104 rack stations / 47 aisle stations; 751.04 s fixed rehearsal, 489 keyframes.

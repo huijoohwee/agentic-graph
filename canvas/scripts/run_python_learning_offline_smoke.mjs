@@ -153,10 +153,12 @@ try {
   await dismissVisibleFloatingPanel(page)
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.getByText('Offline lessons', { exact: true }).click()
+  console.log('Offline lessons: starting verified installation')
   const installStart = performance.now()
   await pane.getByRole('button', { name: 'Install offline lessons', exact: true }).click()
   await pane.getByText(/^Verified \d+ files/).waitFor({ timeout: 190000 })
   const installMs = Math.round(performance.now() - installStart)
+  console.log('Offline lessons: verified installation in', installMs, 'ms')
   await Promise.all([
     page.waitForURL(url => url.searchParams.get('python-learning-offline') === revision, { waitUntil: 'load', timeout: 60000 }),
     pane.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click(),
