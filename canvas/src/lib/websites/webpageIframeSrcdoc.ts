@@ -106,7 +106,11 @@ const clearTimeoutFn: (id: number) => void = (id) => {
 
 const withAbort = async <T,>(p: Promise<T>, signal: AbortSignal): Promise<T> => {
   if (!signal) return await p
-  if (signal.aborted) throw createAbortError()
+  if (signal.aborted) {
+    // The request may have started before this subscriber was cancelled.
+    void p.catch(() => undefined)
+    throw createAbortError()
+  }
   return await new Promise<T>((resolve, reject) => {
     const onAbort = () => {
       cleanup()
@@ -143,6 +147,7 @@ const fetchCached = (
   signal: AbortSignal,
   opts?: { bypassCache?: boolean; timeoutMs?: number },
 ): Promise<string> => {
+  if (signal?.aborted) return Promise.reject(createAbortError())
   const timeoutMs = (() => {
     const raw = typeof opts?.timeoutMs === 'number' && Number.isFinite(opts.timeoutMs) ? Math.floor(opts.timeoutMs) : 30_000
     return Math.max(0, Math.min(180_000, raw))
