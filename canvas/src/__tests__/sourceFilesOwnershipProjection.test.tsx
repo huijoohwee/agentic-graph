@@ -60,6 +60,7 @@ export async function testSourceFilesTreeMarksAgenticGraphWorkspaceSeedAuthority
         toggleExpanded={() => undefined}
         activePath={null}
         onSelectFile={() => undefined}
+        onSelectFolder={() => undefined}
         sourcesByPath={null}
       />,
     )

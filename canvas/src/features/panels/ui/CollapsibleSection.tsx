@@ -10,7 +10,9 @@ import {
   UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { cn } from '@/lib/utils'
 import { KTV_SECTION_TITLE_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 
 interface CollapsibleSectionProps {
   title: React.ReactNode
@@ -42,6 +44,7 @@ export default function CollapsibleSection({
   stickyOffsetClassName = 'top-0',
   flushTop = false,
 }: CollapsibleSectionProps) {
+  const typography = usePanelTypography()
   const uiIconScale = useGraphStore(s => s.uiIconScale)
   const uiIconStrokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
   const uiSectionHeaderRowHeightClass = useGraphStore(
@@ -83,7 +86,8 @@ export default function CollapsibleSection({
     <ChevronDown
       className={clsx(`${iconSizeClass} ${UI_THEME_TOKENS.text.secondary} transition-transform`, !isCollapsed && 'rotate-180')}
       strokeWidth={uiIconStrokeWidth}
-      aria-hidden="true"
+      role="img"
+      aria-label={isCollapsed ? "Expand section" : "Collapse section"}
     />
   )
 
@@ -110,7 +114,7 @@ export default function CollapsibleSection({
         onClick={() => setCollapsed(!isCollapsed)}
         onKeyDown={handleKeyDown}
       >
-        <section className={`min-w-0 flex-1 overflow-hidden ${KTV_SECTION_TITLE_CLASS_NAME}`}>{title}</section>
+        <section className={cn('min-w-0 flex-1 overflow-hidden', KTV_SECTION_TITLE_CLASS_NAME, typography.keyLabelClass)}>{title}</section>
         <section className={clsx(UI_RESPONSIVE_PANEL_HEADER_ACTIONS_CLASSNAME, 'flex shrink-0 flex-wrap items-center justify-end gap-1')}>
           {actions}
           <IconButton

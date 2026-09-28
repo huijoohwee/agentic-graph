@@ -1,0 +1,217 @@
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { randomUUID } from 'node:crypto'
+import { extractXmlLocs, extractInternalUrlCandidatesFromHtml, fetchTextWithLimit, isCrawlableInternalUrl, looksLikeSitemapIndex, normalizeUrl, safeJsonParse, urlToTreePath } from './websiteImportCore'
+
+export const extractTitleFromHtml = (html: string): string => {
+  const raw = String(html || '')
+  const m = raw.match(/<title\b[^>]*>([\s\S]*?)<\/title\s*>/i)
+  const t = m ? String(m[1] || '') : ''
+  return t.replace(/\s+/g, ' ').trim()
+}
+
+export const isHttpUrl = (raw: string): boolean => /^https?:\/\//i.test(String(raw || '').trim())
+export const WEBSITE_IMPORT_PAGE_MAX_BYTES = 32 * 1024 * 1024, WEBSITE_IMPORT_DISCOVERY_MAX_BYTES = 4 * 1024 * 1024
+
+export const posixPathFromFsAbs = (absPath: string): string => String(absPath || '').replace(/\\/g, '/').replace(/^\/+/, '')
+
+export const resolveLocalInputPath = async (repoRoot: string, raw: string): Promise<{ ok: true; abs: string; rel: string } | { ok: false; error: string }> => {
+  const trimmed = String(raw || '').trim()
+  if (!trimmed) return { ok: false, error: 'Missing local path' }
+  const normalized = trimmed.replace(/\\/g, '/').replace(/^file:\/\//i, '').replace(/^\.+\//, '').replace(/^\/+/, '')
+  if (!normalized || normalized.includes('..')) return { ok: false, error: 'Invalid local path' }
+  const rootAbs = path.resolve(repoRoot)
+  const abs = path.resolve(rootAbs, normalized)
+  if (!abs.startsWith(rootAbs + path.sep) && abs !== rootAbs) return { ok: false, error: 'Local path escapes repo root' }
+  try {
+    const stat = await fs.stat(abs)
+    if (!stat.isFile() && !stat.isDirectory()) return { ok: false, error: 'Not found' }
+  } catch {
+    return { ok: false, error: 'Not found' }
+  }
+  return { ok: true, abs, rel: posixPathFromFsAbs(path.relative(rootAbs, abs)) }
+}
+
+export const toTreePath = (rootKind: 'http' | 'local', value: string, localRootRel?: string): string => {
+  if (rootKind === 'http') return urlToTreePath(value)
+  const localRoot = String(localRootRel || '').replace(/\\/g, '/').replace(/\/+$/, '').replace(/^\/+/, '')
+  const rel = String(value || '').replace(/\\/g, '/').replace(/^\/+/, '')
+  const withoutRoot = localRoot && rel.startsWith(localRoot + '/') ? rel.slice(localRoot.length + 1) : rel
+  return `/${withoutRoot || ''}`
+}
+
+export const readLocalTextWithLimit = async (fileAbs: string, maxBytes: number): Promise<{ ok: true; text: string } | { ok: false; error: string }> => {
+  try {
+    const stat = await fs.stat(fileAbs)
+    if (!stat.isFile()) return { ok: false, error: 'Not found' }
+    if (stat.size > maxBytes) return { ok: false, error: 'File too large' }
+    const text = await fs.readFile(fileAbs, 'utf8')
+    return { ok: true, text }
+  } catch {
+    return { ok: false, error: 'Not found' }
+  }
+}
+
+export const listLocalHtmlFiles = async (rootAbs: string, maxPages: number): Promise<string[]> => {
+  const out: string[] = []
+  const queue: string[] = [rootAbs]
+  const rootResolved = path.resolve(rootAbs)
+  const skipDirs = new Set(['node_modules', '.git', '.agentic-graph-workspace', 'agentic-graph-workspace', 'dist', 'build', 'out', '.next', '.cache'])
+  while (queue.length && out.length < maxPages) {
+    const dir = queue.shift() as string
+    let entries: Array<import('node:fs').Dirent> = []
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true })
+    } catch {
+      continue
+    }
+    for (const ent of entries) {
+      if (out.length >= maxPages) break
+      const name = ent.name
+      if (!name || name.startsWith('.')) continue
+      const abs = path.resolve(dir, name)
+      if (!abs.startsWith(rootResolved + path.sep) && abs !== rootResolved) continue
+      if (ent.isDirectory()) {
+        if (skipDirs.has(name)) continue
+        queue.push(abs)
+        continue
+      }
+      if (!ent.isFile()) continue
+      const lower = name.toLowerCase()
+      if (lower.endsWith('.html') || lower.endsWith('.htm')) out.push(abs)
+    }
+  }
+  return out
+}
+
+export const readJsonFile = async <T,>(filePath: string): Promise<T | null> => {
+  try {
+    const raw = await fs.readFile(filePath, 'utf8')
+    return safeJsonParse<T>(raw)
+  } catch {
+    return null
+  }
+}
+
+export const writeJsonFileAtomic = async (filePath: string, value: unknown): Promise<void> => {
+  const dir = path.dirname(filePath)
+  await fs.mkdir(dir, { recursive: true })
+  const tmp = `${filePath}.${randomUUID()}.tmp`
+  await fs.writeFile(tmp, JSON.stringify(value, null, 2), 'utf8')
+  await fs.rename(tmp, filePath)
+}
+
+export const discoverSitemapUrl = async (rootUrl: string): Promise<string | null> => {
+  const origin = (() => {
+    try {
+      return new URL(rootUrl).origin
+    } catch {
+      return ''
+    }
+  })()
+  if (!origin) return null
+
+  const candidates = [
+    `${origin}/sitemap.xml`,
+    `${origin}/sitemap_index.xml`,
+    `${origin}/sitemap.xml.gz`,
+    `${origin}/wp-sitemap.xml`,
+    `${origin}/sitemap`,
+  ]
+
+  for (const u of candidates) {
+    const res = await fetchTextWithLimit(u, { timeoutMs: 18_000, maxBytes: 2 * 1024 * 1024, accept: 'application/xml,text/xml;q=0.9,*/*;q=0.8' })
+    if (!res.ok) continue
+    const t = String(res.text || '')
+    if (/<urlset\b/i.test(t) || /<sitemapindex\b/i.test(t)) return u
+  }
+
+  return `${origin}/sitemap.xml`
+}
+
+export const crawlInternalUrls = async (args: {
+  rootUrl: string
+  seedUrls: string[]
+  maxPages: number
+  timeoutMs: number
+  maxBytes: number
+}): Promise<string[]> => {
+  const root = normalizeUrl(args.rootUrl)
+  if (!root) return []
+
+  const maxPages = Math.max(1, Math.min(500, Math.floor(args.maxPages)))
+  const visited = new Set<string>()
+  const queue: string[] = []
+  const enqueue = (candidate: string) => {
+    const normalized = normalizeUrl(candidate)
+    if (!normalized) return
+    if (!isCrawlableInternalUrl(normalized, root)) return
+    if (visited.has(normalized)) return
+    visited.add(normalized)
+    queue.push(normalized)
+  }
+
+  enqueue(root)
+  for (const u of args.seedUrls) enqueue(u)
+
+  const out: string[] = []
+  let fetched = 0
+  const fetchLimit = Math.max(6, Math.min(120, maxPages * 3))
+  let queueIdx = 0
+
+  while (queueIdx < queue.length && out.length < maxPages && fetched < fetchLimit) {
+    const u = queue[queueIdx] as string
+    queueIdx += 1
+    out.push(u)
+    fetched += 1
+
+    const htmlRes = await fetchTextWithLimit(u, { timeoutMs: args.timeoutMs, maxBytes: args.maxBytes, accept: 'text/html,*/*;q=0.9' })
+    if (!htmlRes.ok) continue
+    const html = String(htmlRes.text || '')
+    for (const href of extractInternalUrlCandidatesFromHtml(html, u, root)) {
+      enqueue(href)
+      if (visited.size >= maxPages) break
+    }
+  }
+
+  return out
+}
+
+export const collectSitemapUrls = async (rootUrl: string, sitemapUrl: string, opts: { timeoutMs: number; maxBytes: number; maxSitemaps: number }): Promise<{ ok: true; urls: string[] } | { ok: false; error: string }> => {
+  const first = await fetchTextWithLimit(sitemapUrl, { timeoutMs: opts.timeoutMs, maxBytes: opts.maxBytes, accept: 'application/xml,text/xml;q=0.9,*/*;q=0.8' })
+  if (first.ok !== true) return { ok: false, error: first.error }
+
+  const visited = new Set<string>()
+  const urls: string[] = []
+  const enqueue = (candidate: string) => {
+    const normalized = normalizeUrl(candidate)
+    if (!normalized) return
+    if (!isCrawlableInternalUrl(normalized, rootUrl)) return
+    if (visited.has(normalized)) return
+    visited.add(normalized)
+    urls.push(normalized)
+  }
+
+  const childSitemaps = looksLikeSitemapIndex(first.text) ? extractXmlLocs(first.text) : []
+  if (childSitemaps.length > 0) {
+    const queue = childSitemaps.slice(0, opts.maxSitemaps)
+    for (const child of queue) {
+      const res = await fetchTextWithLimit(child, { timeoutMs: opts.timeoutMs, maxBytes: opts.maxBytes, accept: 'application/xml,text/xml;q=0.9,*/*;q=0.8' })
+      if (!res.ok) continue
+      for (const loc of extractXmlLocs(res.text)) enqueue(loc)
+    }
+  } else {
+    for (const loc of extractXmlLocs(first.text)) enqueue(loc)
+  }
+
+  return { ok: true, urls }
+}
+
+export const sanitizeImportId = (raw: string): string | null => {
+  const s = String(raw || '').trim()
+  if (!s) return null
+  if (!/^[a-zA-Z0-9._-]+$/.test(s)) return null
+  if (s.length > 96) return null
+  return s
+}
+
