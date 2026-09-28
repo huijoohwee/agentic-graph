@@ -44,13 +44,14 @@ export function Controls({
   gameplayCoordinateScale?: number
   onControlsChange?: () => void; learningSceneId?: string
 }) {
-  const { camera, gl, size, invalidate } = useThree(); const perspectiveCamera = camera as PerspectiveCamera
+  const { camera, gl, size, invalidate, set, get } = useThree(); const perspectiveCamera = camera as PerspectiveCamera
   const controls = useMemo(() => {
     const c = new OrbitControls(camera, gl.domElement)
     c.enableDamping = true; c.minDistance = 0.05
     return c
   }, [camera, gl])
-  React.useLayoutEffect(() => { if (learningSceneId) applyLearningCameraPose(perspectiveCamera, controls, gl.domElement) }, [learningSceneId, perspectiveCamera, controls, gl, size.width, size.height])
+  React.useLayoutEffect(() => { const previous = get().controls; set({ controls }); return () => { if (get().controls === controls) set({ controls: previous }) } }, [controls, get, set])
+  React.useLayoutEffect(() => { if (learningSceneId && controls.enabled) applyLearningCameraPose(perspectiveCamera, controls, gl.domElement) }, [learningSceneId, perspectiveCamera, controls, gl, size.width, size.height])
   const threeCameraRequest = useGraphStore(s => s.threeCameraRequest)
   const data = useGraphStore(s => s.graphData)
   const fitToScreenMode = useGraphStore(s => s.fitToScreenMode)
@@ -174,7 +175,7 @@ export function Controls({
   }, [controls, onControlsChange, learningSceneId, invalidate])
   useFrame(() => {
     const objectDragActive = readThreeObjectInputOwnership().active
-    if (objectDragActive) return
+    if (objectDragActive || (learningSceneId && !controls.enabled)) return
     const voxelIdleAutoRotate = mode === 'voxel'
       && !paused
       && !modelAssetMode
@@ -590,10 +591,6 @@ export function Controls({
     useGraphStore.getState().clearThreeCameraRequest()
     selectionPerfEnd('three', t0)
   }, [choreographyOwnsCamera, objectInputOwnership.active, paused, viewPinned, threeCameraRequest, data, selectedNodeId, selectedEdgeId, selectedGroupId, selectedNodeIds, selectedEdgeIds, selectedGroupIds, positions, perspectiveCamera, controls, zoomOnSelectionEnabled, mode, modelAssetFit, modelAssetRenderKey, learningSceneId, gl])
-  React.useEffect(() => {
-    return () => {
-      try { controls.dispose() } catch { void 0 }
-    }
-  }, [controls])
+  React.useEffect(() => () => { try { controls.dispose() } catch { void 0 } }, [controls])
   return null
 }

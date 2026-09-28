@@ -1,3 +1,4 @@
+import './pythonLearningSpatialInteractions.test'
 import './learningSpatialView.test'
 import './learningDockAssets.test'
 import './warehouseCoverageRoutes.test'

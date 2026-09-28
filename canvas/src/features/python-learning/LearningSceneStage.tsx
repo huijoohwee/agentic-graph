@@ -3,6 +3,7 @@ import { LearningSpatialOverlay } from './LearningSpatialOverlay'
 import type { LearningLesson, LearningSceneSnapshot } from './learningLessons'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { KgTheme } from '@/lib/ui/tokens-ssot'
+import { LearningSpatialInteraction } from './LearningSpatialInteraction'
 import { LearningSceneGeometry } from './LearningSceneGeometry'
 
 export function LearningSceneStage({ lesson, scene }: { lesson: LearningLesson; scene?: LearningSceneSnapshot }) {
@@ -16,6 +17,6 @@ export function LearningSceneStage({ lesson, scene }: { lesson: LearningLesson; 
     const id = learningAssetFromObject(event.object)
     if (id) { event.stopPropagation(); update({ selectedId: id }) }
   }}><LearningSceneGeometry lesson={lesson} scene={scene} palette={palette} />
-    {lesson.vehicle === 'drone' && <LearningSpatialOverlay lesson={lesson} scene={scene} />}
+    {lesson.vehicle === 'drone' && <><LearningSpatialOverlay lesson={lesson} scene={scene} /><LearningSpatialInteraction lesson={lesson} /></>}
   </group>
 }

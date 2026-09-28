@@ -35,6 +35,7 @@ export const buildAgenticGraphRedirects = ({ existing, rootFiles }) => {
   const namespaceLines = [
     GENERATED_NAMESPACE_START,
     '/81rv10 /81rv10/ 308',
+    '/pitch/agentic-drone-as-a-service /pitch/agentic-drone-as-a-service/ 308',
     // Root-owner projection of GameXR/deployment/cloudflare/redirects.fragment.
     '/GameXR /gamexr/ 301', '/GameXR/* /gamexr/:splat 301',
     ...LEGACY_PRODUCT_NAMESPACES.flatMap(namespace => [

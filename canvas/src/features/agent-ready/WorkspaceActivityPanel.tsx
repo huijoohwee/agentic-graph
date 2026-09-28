@@ -9,8 +9,9 @@ export default function WorkspaceActivityPanel() {
   const inspection = useAgentRunInspection()
   const [filter, setFilter] = React.useState('')
   const [source, setSource] = React.useState<'workspace' | 'mission'>('workspace')
+  const [severity, setSeverity] = React.useState('all')
   const query = filter.trim().toLowerCase()
-  const rows = logs.filter(row => `${row.message} ${row.source || ''} ${row.kind}`.toLowerCase().includes(query))
+  const rows = logs.filter(row => severity === 'all' || (severity === 'checks' ? row.kind === 'error' || row.kind === 'warning' : row.source === 'Warehouse layout')).filter(row => `${row.message} ${row.source || ''} ${row.kind}`.toLowerCase().includes(query))
   const spans = inspection?.trace.spans.filter(span => `${span.operation} ${span.kind} ${span.status}`.toLowerCase().includes(query)) ?? []
   return <section className="grid min-w-0 gap-2 p-2 text-xs" aria-label="Activity">
     <header className="flex flex-wrap items-center gap-2">
@@ -21,10 +22,11 @@ export default function WorkspaceActivityPanel() {
       </select></label>
       <label className="flex min-w-0 flex-1 items-center gap-2">Find<input type="search" aria-label="Find activity" maxLength={160}
         className="min-h-11 min-w-0 flex-1 rounded border bg-transparent px-2" value={filter} onChange={event => setFilter(event.currentTarget.value)} /></label>
+      {source === 'workspace' && <label>Show <select aria-label="Activity filter" className="min-h-11 rounded border bg-transparent px-2" value={severity} onChange={event => setSeverity(event.currentTarget.value)}><option value="all">All events</option><option value="checks">Warnings / errors</option><option value="warehouse">Warehouse layout</option></select></label>}
     </header>
     {source === 'workspace' ? <>
       <p className="opacity-70">{logs.length} retained workspace events · newest first · current session</p>
-      <ul className="m-0 grid list-none gap-1 p-0" aria-label="Workspace events">{rows.map(row => <li key={row.id} className="rounded border p-2">
+      <ul className="m-0 grid list-none gap-1 p-0" aria-label="Workspace events">{rows.map(row => <li key={row.id} className="rounded border p-2" style={{ borderLeft: `3px solid ${row.kind === 'error' ? '#cf655a' : row.kind === 'warning' ? '#c69a4c' : row.kind === 'success' ? '#399a85' : 'var(--kg-border)'}` }}>
         <div className="flex flex-wrap gap-2 opacity-70"><time dateTime={new Date(row.tsMs).toISOString()}>{new Date(row.tsMs).toLocaleTimeString()}</time>
           <span>{row.source || 'Workspace'}</span><span>{row.kind}</span></div><p className="whitespace-pre-wrap break-words">{row.message}</p>
       </li>)}</ul>{!rows.length && <p role="status">No matching workspace events.</p>}
