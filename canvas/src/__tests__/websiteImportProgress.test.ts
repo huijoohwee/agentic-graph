@@ -16,6 +16,60 @@ const node = (id: string, url: string): WebsiteImportNode => ({
   artifacts: {},
 })
 
+test('a large progressive import initializes and inventories the workspace once', async () => {
+  const stored = createMemoryWorkspaceFs({ initialEntries: [{ path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 }] })
+  let seeds = 0
+  let inventories = 0
+  const fs = {
+    ...stored,
+    async ensureSeed() { seeds += 1; return stored.ensureSeed() },
+    async listEntries() { inventories += 1; return stored.listEntries() },
+  }
+  const published: string[] = []
+  const writer = await createWebsiteImportWorkspaceWriter({
+    fs, url: 'https://example.invalid/', importId: 'bounded',
+    settings: { outputDirRel: '', concurrency: 2, defaultView: 'markdown', generateArtifactDocs: false, browserEnhance: false },
+    importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} },
+    onFileCreated: async source => { published.push(source.path) },
+  })
+  const nodes = Array.from({ length: 100 }, (_, i) => node(`page-${i}`, `https://example.invalid/section-${i}/page`))
+  for (let i = 0; i < nodes.length; i += 10) await writer.writeNodes(nodes.slice(0, i + 10))
+  await writer.finalize({ version: 1, importId: 'bounded', rootUrl: 'https://example.invalid/', status: 'done', startedAtMs: 1, nodes, errors: [] })
+  assert.equal(published.length, 100)
+  assert.equal(seeds, 1, 'page writes must not repeat full seed reconciliation')
+  assert.equal(inventories, 1, 'nested folders must share one inventory across snapshots')
+  assert.equal(new Set(published).size, 100)
+  for (const path of published) assert.match(String(await stored.readFileText(path)), /kgWebsiteNodeId/)
+})
+
+test('missing server Markdown never reparses a large HTML capture on the client', async () => {
+  const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 }] })
+  const originalFetch = globalThis.fetch
+  const requests: string[] = []
+  try {
+    globalThis.fetch = async input => {
+      const kind = new URL(String(input), 'https://example.invalid').searchParams.get('kind') || ''
+      requests.push(kind)
+      return new Response('', { status: 404 })
+    }
+    const writer = await createWebsiteImportWorkspaceWriter({
+      fs, url: 'https://example.invalid/', importId: 'missing-markdown',
+      settings: { outputDirRel: '', concurrency: 2, defaultView: 'markdown', generateArtifactDocs: true, browserEnhance: false },
+      importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} },
+    })
+    const page = node('oversized', 'https://example.invalid/oversized')
+    page.artifacts = { rawHtmlRelPath: 'nodes/oversized/raw.html', rawHtmlBytes: 12_017_857 }
+    await writer.writeNodes([page])
+    assert.deepEqual(requests, ['markdown'])
+    const text = await fs.readFileText('/websites/example.invalid/missing-markdown/oversized.md')
+    assert.match(String(text), /Markdown conversion is unavailable/)
+    assert.match(String(text), /kgWebsiteNodeId: "oversized"/)
+    assert.ok(String(text).length < 1024, 'unconverted captures remain referenced, not copied into the workspace')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('completed crawl pages appear before the terminal sitemap and Canvas projection', async () => {
   const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 }] })
   await fs.ensureSeed()
@@ -66,6 +120,19 @@ test('completed crawl pages appear before the terminal sitemap and Canvas projec
 
 test('a running import refreshes and expands the first completed page before terminal status', async () => {
   const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 }] })
+  const root = '/websites/example.invalid/progress-live'
+  const guardedFs = {
+    ...fs,
+    async createFolder(args: Parameters<typeof fs.createFolder>[0]) {
+      if (`${args.parentPath}/${args.name}` === root) assert.equal(isWebsiteImportExplorerUpdate(root), true)
+      return fs.createFolder(args)
+    },
+    async createFile(args: Parameters<typeof fs.createFile>[0]) {
+      assert.equal(isWebsiteImportExplorerUpdate(`${args.parentPath}/${args.name}`), true,
+        'the first file mutation must already be guarded before its notification')
+      return fs.createFile(args)
+    },
+  }
   const first = node('first', 'https://example.invalid/')
   const second = node('second', 'https://example.invalid/docs')
   const snapshot = (status: 'running' | 'done', nodes: WebsiteImportNode[]): WebsiteImportManifestV1 => ({
@@ -105,7 +172,7 @@ test('a running import refreshes and expands the first completed page before ter
       importJobRef: { current: 1 },
       jobId: 1,
       status: { setStatusProgress: () => undefined },
-      getFs: async () => fs,
+      getFs: async () => guardedFs,
       setEntries: updater => {
         explorerEntries = typeof updater === 'function' ? updater(explorerEntries) : updater
         visibleEntries = projectWorkspaceEntriesToSourceFilesExplorer(explorerEntries, resolveWorkspaceSourceRootPaths()).map(entry => entry.path)
@@ -124,6 +191,7 @@ test('a running import refreshes and expands the first completed page before ter
     assert.equal(refreshes, 1, 'crawl pages should publish metadata directly and reconcile once at completion')
     assert.equal(result.createdPaths.length, 4)
     assert.ok(visibleEntries.some(path => path.endsWith('/docs.md')))
+    assert.equal(isWebsiteImportExplorerUpdate(root), false, 'completion must release the refresh guard')
   } finally {
     globalThis.fetch = originalFetch
   }
@@ -148,4 +216,30 @@ test('completed page projection remains metadata-only and deduplicated for a lar
     finish()
   }
   assert.equal(isWebsiteImportExplorerUpdate(`${root}/page.md`), false)
+})
+
+test('failed writer initialization releases its refresh guard and reconciles once', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const originalFetch = globalThis.fetch
+  let refreshed = 0
+  try {
+    globalThis.fetch = async input => {
+      const url = String(input)
+      const value = url.includes('/start') ? { ok: true, importId: 'failed-writer' }
+        : url.includes('/status') ? { status: 'done', progress: { processed: 1, total: 1 } }
+          : { ok: true, manifest: { version: 1, importId: 'failed-writer', rootUrl: 'https://example.invalid/',
+            status: 'done', startedAtMs: 1, nodes: [node('first', 'https://example.invalid/')], errors: [] } }
+      return new Response(JSON.stringify(value))
+    }
+    await assert.rejects(runWorkspaceWebsiteImport({
+      url: 'https://example.invalid/', opts: { generateArtifactDocs: false }, importJobRef: { current: 1 }, jobId: 1,
+      status: { setStatusProgress() {} }, setEntries() {},
+      getFs: async () => ({ ...fs, async ensureSeed() { throw new Error('seed unavailable') } }),
+      refresh: async () => { refreshed += 1; return { entries: [], sourcesByPath: {} } },
+    }), /seed unavailable/)
+    assert.equal(refreshed, 1)
+    assert.equal(isWebsiteImportExplorerUpdate('/websites/example.invalid/failed-writer'), false)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })

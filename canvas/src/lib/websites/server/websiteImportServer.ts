@@ -747,9 +747,8 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
               url: input.url,
               includeImages: options.includeImages !== false,
               fidelityLevel: 4,
-              includeHeadSection: true,
-              includeHtmlSnapshot: true,
-              mode: 'debug',
+              // raw.html owns capture diagnostics; page.md is the usable article.
+              mode: 'ssot',
             })
           }
 

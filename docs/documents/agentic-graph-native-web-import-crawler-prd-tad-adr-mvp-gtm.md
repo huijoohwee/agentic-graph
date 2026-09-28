@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.7"
+version: "0.2.10"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.6"
-prd_revision: "0.2.7"
-tad_revision: "0.2.7"
-adr_revision: "0.2.7"
-mvp_revision: "0.2.7"
-gtm_revision: "0.2.7"
+previous_document_version: "0.2.9"
+prd_revision: "0.2.10"
+tad_revision: "0.2.10"
+adr_revision: "0.2.10"
+mvp_revision: "0.2.10"
+gtm_revision: "0.2.10"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -69,6 +69,42 @@ The external crawler project is a capability reference only. The implementation 
 **MVP check.** A focused 500-page projection test checks metadata-only growth, folder projection, and deduplication. The progress integration test checks that the first file is visible before terminal status and that the full refresh runs once. A live rerun of the user's crashed in-app browser tab remains unverified because the browser tool rejects the crash page's `data:` URL under its URL policy; source checks cannot substitute for that live observation.
 
 **GTM.** Measure browser responsiveness and time to first visible file during a timed 100-page pilot before claiming this recovery for users. No buyer or revenue evidence is recorded.
+
+## 2026-09-28 bounded import writes and conversion ownership
+
+**PRD.** Completed crawl pages must become usable progressively without repeated whole-workspace reconciliation or large HTML conversion on the browser UI thread. When server Markdown is unavailable, the file must clearly report that condition and retain the existing captured-HTML viewer reference.
+
+**TAD.** Text upserts now reuse the shared filesystem initialization owner. One crawl writer shares a single folder inventory and serializes folder creation across page workers. Its Explorer refresh guard begins before the import folder is created. Completed Markdown still writes through the shared workspace filesystem and publishes metadata immediately; one final refresh reconciles the tree.
+
+**ADR.** The server owns crawl HTML-to-Markdown conversion. Remove the client raw-HTML conversion fallback, which can parse a multi-megabyte capture and copy its full snapshot into a workspace document. Keep the server artifact and existing HTML viewer reference; emit an explicit Markdown-unavailable notice when conversion did not produce text. Browser enhancement remains disabled for the Launch headless action. Reuse the shared initialization and folder owners instead of introducing an import-specific filesystem.
+
+**MVP check.** A 100-page regression reproduced 103 seed reconciliations before the fix and one afterward, with one folder inventory and progressive visibility preserved. The saved 100-node crawl replay included a 12,017,857-byte HTML-only capture: removing the duplicate conversion reduced the local replay from 15.2 seconds to 1.3 seconds and maximum observed event-loop delay from 9,160 ms to 78 ms. It retained all 99 successful page files and both terminal documents. These local measurements are bounded evidence, not a browser crash-recovery claim. Focused tests also cover missing Markdown without raw-HTML fetch, concurrent folder ancestors, failed initialization retry, explicit seed refresh, and the first file's refresh guard. The crashed in-app tab remains inaccessible to automation under the browser URL policy; live review is pending.
+
+**GTM.** The immediate outcome is shorter time to a usable imported page and a responsive Source Files tree. Validate the exact reported browser flow before closing the crash report; no buyer or revenue result is claimed.
+
+## 2026-09-28 D3 crawl default
+
+**PRD / MVP.** Launch → Import URL → Crawl website headlessly selects 2D D3 when the canvas import starts. Progressive Source Files remain usable during the crawl. The completed `website.crawl.canvas.md` also declares D3, so opening it uses the same renderer.
+
+**TAD / ADR.** `runWorkspaceWebsiteImport` uses the shared `applyCanvasFrontmatterPreset` owner for canvas imports after checking the current job. Storage-only imports leave the current view alone. `buildWebsiteCrawlCanvasMarkdown` owns the saved D3 preset; the previous Flowchart override is removed. Other import types and the user's ability to choose another renderer retain their existing owners.
+
+**Verification / delivery.** The two native crawler/Launch checks, nine progressive import/filesystem regressions, TypeScript, hygiene and collaboration checks passed. A direct runtime probe confirms D3 before the crawl request, saved crawl preset readback, preserved storage-only view and no view change from a stale job. The in-app preview remained on Storyboard after menu clicks; live crawl verification remains pending. Source publication, protected integration and Production evidence remain separate. No new dependency or service is introduced. GTM remains the existing crawl-to-exploration workflow; no new commercial claim.
+
+## 2026-09-28 automatic webpage fidelity
+
+**PRD / MVP.** Imported webpages use the existing automatic conversion policy. The workspace toolbar has no fidelity selector or replacement fidelity label; the HTML and Markdown pane controls remain available.
+
+**TAD / ADR.** Remove the manual fidelity selector, its toolbar/main/runtime props and the unused metadata-update callback. Keep the conversion owner and its size-aware limits unchanged. Previously saved fidelity metadata remains readable for compatibility and is not rewritten on open. No new conversion mode, dependency or always-loaded module is introduced.
+
+**Verification / delivery.** The three existing toolbar consolidation, automatic routing and HTML/Viewer coexistence checks passed. The live preview at `http://127.0.0.1:5174/` has no fidelity selector and retains the HTML, Markdown, Viewer and Canvas controls. The inherited D3 renderer is also visible. TypeScript, hygiene and collaboration checks passed. Publication, protected integration and Production remain separate. GTM remains the existing crawl workflow with fewer decisions; buyer and payment claims are unchanged.
+
+## 2026-09-28 complete webpage content
+
+**PRD / MVP.** A completed headless capture imports the article title, media, sibling sections and full body instead of stopping at an embedded summary. The same conversion applies across sites without domain, URL, publisher class or chapter-label branches. Visual rows remain separate readable paragraphs. The automatic toolbar policy and progressive file writes retain their current owners.
+
+**TAD / ADR.** The shared HTML converter consumes rendered content first and uses caller-supplied embedded Markdown only when the body conversion is empty. Head metadata cannot mask that fallback. One extracted content-root owner includes the nearest bounded title-bearing container around a prose fragment while respecting explicit article/main and existing strong root boundaries, multiple-title boundaries, and surrounding navigation. Existing embedded-data compatibility remains an input fallback, never an early return that discards rendered siblings. The crawler writes normal article Markdown; head diagnostics remain in the captured raw HTML artifact. Debug snapshot formatting moves into its own helper; the webpage artifact entry point drops below 600 lines. The pre-existing 1,420-line unified converter shrinks; splitting its remaining unrelated transforms is outside this increment. No new dependency or always-loaded renderer is added.
+
+**Verification / delivery.** Nineteen focused cases pass, including fixtures with no embedded data, independent URLs, explicit article markup, title/media/section preservation, separate visual rows, embedded-only pages with image exclusion, and existing multilingual/media conversions. A local server import verifies article output without diagnostic metadata. Replaying the saved 196,776-byte reported page changed the former 104-character result to complete article Markdown; title, video reference, all 27 chapter rows, description once and transcript ending are checked. TypeScript, hygiene and collaboration contract checks pass. This is captured-source replay evidence, not a claim of pixel-identical reproduction or recovery of an already-saved workspace file. The screenshot's `destroy` error has no reproduced stack and remains unresolved. Source publication, protected integration and Production receipts remain distinct. GTM remains reliable crawl-to-exploration; no new buyer or payment claim.
 
 ## User outcomes
 

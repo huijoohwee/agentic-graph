@@ -1,5 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
+  ["webpage.htmlToArtifact.embeddedFallback","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactAsyncUsesDataPageEmbeddedMarkdown"],
+  ["webpage.htmlToArtifact.completeRenderedArticle","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactPrefersCompleteRenderedArticle"],
+  ["webpage.htmlToArtifact.embeddedOptions","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactEmbeddedFallbackHonorsOptions"],
+  ["webpage.htmlToArtifact.visualRows","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactKeepsVisualRowsSeparate"],
+  ["webpage.htmlToArtifact.serverArticleOutput","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebsiteImportServerWritesArticleWithoutDiagnostics"],
   ["workspaceFs.initialization.concurrent","@/__tests__/workspaceFsInitialization.test","testWorkspaceFsConcurrentInitializationSharesInstance"],
   ["workspaceFs.initialization.resetRace","@/__tests__/workspaceFsInitialization.test","testWorkspaceFsResetDuringInitializationPreservesNewInstance"],
   ["cache.ttlLru.undefinedKeyCapacity","@/__tests__/stableOverlaySurfaceCache.test","testTtlLruCacheEnforcesCapacityForUndefinedKeys"],
