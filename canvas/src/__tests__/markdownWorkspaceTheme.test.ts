@@ -61,7 +61,7 @@ export const testMarkdownWorkspaceToolbarAutoRoutesImageModeWithoutManualSelecto
   if (toolbar.includes('Imgs: Auto') || toolbar.includes('Imgs: On') || toolbar.includes('Imgs: Off')) {
     throw new Error('Workspace toolbar should not expose manual image mode selector labels')
   }
-  if (!toolbar.includes('Fid: Auto')) {
-    throw new Error('Workspace toolbar should keep fidelity auto selector for webpage conversion routing')
+  if (toolbar.includes('Fid:') || toolbar.includes('Webpage fidelity level')) {
+    throw new Error('Workspace toolbar should use automatic fidelity without a manual selector')
   }
 }
