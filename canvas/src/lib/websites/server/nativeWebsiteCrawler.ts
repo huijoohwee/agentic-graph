@@ -407,7 +407,10 @@ export class NativeWebsiteCrawler {
       }
 
       const htmlRaw = await page.content()
-      const html = htmlRaw.length > this.maxHtmlChars ? htmlRaw.slice(0, this.maxHtmlChars) : htmlRaw
+      // Cutting HTML can end inside an attribute or script and silently discard
+      // the rendered body. An incomplete capture must never become an ok import.
+      if (htmlRaw.length > this.maxHtmlChars) throw new Error(`Captured HTML exceeds the ${this.maxHtmlChars}-character limit`)
+      const html = htmlRaw
       if (this.options.downloadAssets) {
         const candidates = await page.locator('a[href],img[src],source[src],video[src],audio[src]').evaluateAll(elements => elements.map(element => {
           const tag = element.tagName.toLowerCase()

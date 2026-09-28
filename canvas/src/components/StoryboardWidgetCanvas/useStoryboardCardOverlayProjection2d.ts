@@ -308,6 +308,7 @@ export function useStoryboardCardOverlayProjection2d(args: {
       }
       const projectionAnchorX = rawCenterCount > 0 ? rawCenterXSum / rawCenterCount : viewport.width / 2
       const projectionAnchorY = rawCenterCount > 0 ? rawCenterYSum / rawCenterCount : viewport.height / 2
+      let geometryChanged = false
       for (let index = 0; index < pending.length; index += 1) {
         const item = pending[index]!
         const box = readProjectedBox(item.card.id, item.rawBox, item.width, item.height, projectionAnchorX, projectionAnchorY)
@@ -321,8 +322,11 @@ export function useStoryboardCardOverlayProjection2d(args: {
         if (!boxChanged) continue
         applyVectorPaintedOverlayBox(item.el, { left: box.left, top: box.top, scale: box.scale, display })
         lastAppliedBoxByCardIdRef.current.set(item.card.id, { left: box.left, top: box.top, scale: box.scale, display })
-        emitStoryboardWidgetGeometryCommitted()
+        geometryChanged = true
       }
+      // Edge observers synchronously measure the whole surface. Notify once
+      // after the complete geometry commit, never once for every moved card.
+      if (geometryChanged) emitStoryboardWidgetGeometryCommitted()
       lastOverlayTransformRef.current = currentTransform ? { k: currentTransform.k, x: currentTransform.x, y: currentTransform.y } : null
     }
     const tick = () => {

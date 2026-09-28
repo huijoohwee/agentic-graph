@@ -496,7 +496,6 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
         let writing: Promise<void> | null = null
         let lastWriteAtMs = 0
         let pending: NodeJS.Timeout | null = null
-
         const mergeManifest = (next: Partial<WebsiteImportManifestV1>) => {
           manifestState = {
             ...manifestState,
@@ -509,9 +508,8 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
             errors: Array.isArray(next.errors) ? next.errors : manifestState.errors,
           }
           const job = jobs.get(importId)
-          if (job) job.manifest = manifestState
+          if (job && manifestState.status === 'running') job.manifest = manifestState
         }
-
         const flushManifestWrite = async () => {
           if (pending) {
             clearTimeout(pending)
@@ -530,7 +528,6 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
           await writing
           writing = null
         }
-
         const scheduleManifestWrite = () => {
           const now = Date.now()
           const waitMs = Math.max(0, 500 - (now - lastWriteAtMs))
@@ -546,6 +543,8 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
           mergeManifest(next)
           if (opts?.flush) {
             await flushManifestWrite()
+            const job = jobs.get(importId)
+            if (job) job.manifest = manifestState
             return
           }
           scheduleManifestWrite()
@@ -747,9 +746,8 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
               url: input.url,
               includeImages: options.includeImages !== false,
               fidelityLevel: 4,
-              includeHeadSection: true,
-              includeHtmlSnapshot: true,
-              mode: 'debug',
+              // raw.html owns capture diagnostics; page.md is the usable article.
+              mode: 'ssot',
             })
           }
 
