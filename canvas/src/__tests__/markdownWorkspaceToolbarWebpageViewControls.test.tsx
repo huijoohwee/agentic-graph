@@ -423,7 +423,6 @@ export async function testMarkdownWorkspaceToolbarWebpageViewControlsConsolidate
           onWebpageChangeView={(view) => {
             viewCalls = [...viewCalls, String(view)]
           }}
-          onWebpageUpdateMeta={() => {}}
           activeText={`---\nkgWebpageUrl: "${sourceUrl}"\nkgWebpageView: "html"\n---\n\n[](${sourceUrl})\n`}
           setActiveText={() => {}}
           activeDocumentKey="doc"
@@ -546,7 +545,6 @@ export async function testMarkdownWorkspaceToolbarViewerAndHtmlRenderTogetherAft
           onWebpageChangeView={next => {
             viewCalls = [...viewCalls, String(next)]
           }}
-          onWebpageUpdateMeta={() => {}}
           activeText={`---\nkgWebpageUrl: "${sourceUrl}"\nkgWebpageView: "markdown"\n---\n\n[](${sourceUrl})\n`}
           setActiveText={() => {}}
           activeDocumentKey="doc-click-path"

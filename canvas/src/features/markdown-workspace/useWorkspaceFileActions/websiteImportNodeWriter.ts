@@ -1,12 +1,11 @@
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
-import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
+import { createWorkspaceFolderTreeEnsurer } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { upsertWorkspaceTextDocument } from '@/features/workspace-fs/upsertWorkspaceTextDocument'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { mapLimit } from '@/lib/async/mapLimit'
 import { resolveWebsiteImportNodeRelativeDocumentPath, safeWebsitePathSegment } from '@/lib/websites/websitePathUtils'
 import { fetchWebsiteImportArtifact } from '@/lib/websites/webpageIframeSrcdoc'
-import { convertWebpageHtmlToMarkdownArtifactAsync } from '@/lib/websites/webpageHtmlToMarkdownArtifact'
 import { convertWebpageUrlToMarkdownViaBrowser, looksLowFidelityWebpageMarkdown } from '@/lib/websites/webpageClientConvert'
 import { buildWebsiteSitemapMarkdown } from '@/lib/websites/websiteSitemapMarkdown'
 import { buildWebsiteCrawlCanvasMarkdown } from '@/lib/websites/websiteCrawlCanvasMarkdown'
@@ -68,17 +67,12 @@ async function getBrowserEnhancedWebsiteMarkdown(url: string): Promise<{ markdow
   return { markdown: res.markdown.trim(), title: String(res.title || '').trim() }
 }
 
-async function ensureWebsiteFolderPath(fs: WorkspaceFs, absPath: string): Promise<WorkspacePath> {
-  const normalized = normalizeWorkspacePath(absPath)
-  await ensureWorkspaceFolderTreeIfMissing({ folderPath: normalized, fs })
-  return normalized
-}
-
 export async function createWebsiteImportWorkspaceWriter(args: {
   fs: WorkspaceFs
   url: string
   importId: string
   onFileCreated?: (source: WebsiteImportCreated['sources'][number]) => Promise<void>
+  onRootPath?: (path: WorkspacePath) => void
   settings: WebsiteImportSettings
   importJobRef: { current: number }
   jobId: number
@@ -91,7 +85,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
   const view = coerceWebsiteImportWebpageView(settings.defaultView)
   const generateArtifactDocs = settings.generateArtifactDocs
 
-  const stubForNode = (nodeUrl: string, nodeId: string) => {
+  const stubForNode = (nodeUrl: string, nodeId: string, unavailable = false) => {
     const lines = [
       '---',
       `kgWebpageUrl: "${nodeUrl}"`,
@@ -102,10 +96,16 @@ export async function createWebsiteImportWorkspaceWriter(args: {
     ]
     if (settings.outputDirRel) lines.push(`kgWebsiteOutputDirRel: "${settings.outputDirRel}"`)
     lines.push('---', '')
-    return lines.filter(Boolean).join('\n')
+    const frontmatter = lines.filter(Boolean).join('\n')
+    return unavailable
+      ? `${frontmatter}\n\nMarkdown conversion is unavailable for this page. Use the HTML view to inspect the captured source.\n`
+      : frontmatter
   }
 
-  const rootFolder = await ensureWebsiteFolderPath(fs, `/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(importId)}`)
+  const rootFolder = normalizeWorkspacePath(`/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(importId)}`)
+  args.onRootPath?.(rootFolder)
+  const ensureFolder = await createWorkspaceFolderTreeEnsurer(fs)
+  await ensureFolder(rootFolder)
   const createdPaths: WorkspacePath[] = []
   const sources: WebsiteImportCreated['sources'] = []
   const docLinkByNodeId: Record<string, string> = {}
@@ -116,7 +116,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
     const normalized = normalizeWorkspacePath(absPath)
     const cached = folderCache.get(normalized)
     if (cached) return await cached
-    const pending = ensureWebsiteFolderPath(fs, normalized).catch(error => {
+    const pending = ensureFolder(normalized).then(() => normalized).catch(error => {
       folderCache.delete(normalized)
       throw error
     })
@@ -219,34 +219,11 @@ export async function createWebsiteImportWorkspaceWriter(args: {
               })
             }
 
-            const rawHtml = await fetchWebsiteImportArtifact({
-              importId,
-              nodeId: row.nodeId,
-              outputDirRel: settings.outputDirRel || undefined,
-              kind: 'rawHtml',
-              signal: ctrl.signal,
-            })
-            const markdown = await convertWebpageHtmlToMarkdownArtifactAsync({
-              html: rawHtml,
-              url: row.nodeUrl,
-              includeImages: true,
-              fidelityLevel: 4,
-              includeHeadSection: true,
-              includeHtmlSnapshot: true,
-              mode: 'debug',
-            })
-            return buildWebpageWorkspaceEntryTextFromUpstreamMarkdown({
-              upstreamMarkdown: markdown,
-              url: row.nodeUrl,
-              view,
-              title: row.nodeTitle,
-              fidelityLevel: 4,
-              includeImages: true,
-              preserveBodyFidelity: true,
-              websiteImportMeta: row.websiteImportMeta,
-            })
+            // The server owns crawl conversion. Re-parsing a large HTML capture here
+            // blocks the UI and duplicates its bytes into the workspace document.
+            return stubForNode(row.nodeUrl, row.nodeId, true)
           } catch {
-            return stubForNode(row.nodeUrl, row.nodeId)
+            return stubForNode(row.nodeUrl, row.nodeId, true)
           }
         })()
 
