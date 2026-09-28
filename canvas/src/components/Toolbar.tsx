@@ -177,7 +177,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     return () => observer.disconnect()
   }, [])
   const navClassBase = 'Island App-toolbar App-toolbar--compact w-fit'
-  const clampedMainPanelPos = isMainPanelOpen ? clampMainPanelPos(mainPanelDragPos) : mainPanelDragPos
+  const clampedMainPanelPos = isMainPanelOpen && mainPanelDragPos ? clampMainPanelPos(mainPanelDragPos) : mainPanelDragPos
   const isNarrowViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const shouldUseToolbarRowScroll = isNarrowViewport || isWorkspaceOverlayMode
   const effectiveMainPanelPinned = isNarrowViewport ? true : mainPanelPinned
@@ -339,8 +339,8 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
               ].join(' ')}
               style={{
                 position: 'absolute',
-                top: clampedMainPanelPos.top,
-                left: clampedMainPanelPos.left,
+                top: clampedMainPanelPos?.top ?? '50%',
+                left: clampedMainPanelPos?.left ?? '50%',
                 transform: 'translate(-50%, -50%)',
               }}
             >

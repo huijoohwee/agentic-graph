@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.7"
+version: "0.2.17"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,21 +32,95 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.6"
-prd_revision: "0.2.7"
-tad_revision: "0.2.7"
-adr_revision: "0.2.7"
-mvp_revision: "0.2.7"
-gtm_revision: "0.2.7"
+previous_document_version: "0.2.16"
+prd_revision: "0.2.17"
+tad_revision: "0.2.17"
+adr_revision: "0.2.17"
+mvp_revision: "0.2.17"
+gtm_revision: "0.2.17"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
 
 ## Product decision
 
-Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action starts a server-owned headless crawl, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
+Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 Import URL Main Panel tab
+
+**Viewport placement follow-up.** Main Panel opens and restores at the viewport center, follows viewport resizing, and keeps that center across tab changes. Saved drag coordinates no longer control a new opening. Manual dragging reuses the shared full-viewport clamp; a resize observer keeps the header reachable when the card size changes. Live local verification measured zero horizontal and vertical center offset at 1280×720 and 1104×952 while switching Settings → Workflow Manager → Import URL. Scope: five source/test files, under 10 KB, no dependency or service added; rollback is a source revert. This is local UI evidence, with no new Production or demand claim.
+
+**PRD.** The website page picker lives in a new Import URL tab immediately to the right of Workflow Manager in Main Panel. Launch → Import URL → Crawl website headlessly opens that tab. It keeps the existing folder/page checkboxes, filter, link discovery and exact-selection import action.
+
+**TAD / ADR.** Reuse the shared Main Panel registry, icon library and open event. Resolve tabs from the registry instead of maintaining a conflicting event allowlist. The lazy picker view replaces the body-mounted modal. One bounded selection session owns discovery, cancellation and selection state across tab switches and closing/reopening Main Panel; starting another selection cancels and settles its predecessor. Nothing is imported until Import selected is chosen.
+
+**MVP / GTM / rollback.** This 20-minute follow-up removes the extra dialog surface and keeps the picker near workflow controls. Scope is 12 source/test/doc paths, under 30 KB added production code, with lazy panel loading and no new service or paid dependency. Verify adjacent tab order, Launch routing, retained selections, cancellation and exact selected imports. Revert this placement change to the predecessor if needed; existing workspace files are preserved. No Production authority is granted by the UI change.
+
+## 2026-09-28 discover and select website pages
+
+**PRD.** Users choose pages and folders before importing, converting or parsing a website. The Launch globe action opens a searchable path tree with no pages selected. Folder and visible-page checkboxes support partial selection; Find links expands the discovered inventory on demand. Cancel leaves imports unchanged. Confirmation sends the exact selected URLs to the existing progressive import owner and retains its D3 default.
+
+**TAD.** The lazy picker calls a bounded, same-origin discovery endpoint. The existing headless capture owner returns unique links and title before HTML serialization, conversion or artifact writes. This allows discovery even when the index page exceeds the full-capture HTML budget. Selection is limited to 500 HTTP(S) URLs in the source origin/path; credentials, asset paths, empty lists and oversized requests fail explicitly. The generation manifest records the selection and rejects replay with another selection. Selected jobs bypass sitemap/root discovery and do not enqueue links found in their chosen pages. Existing complete-content limits and failure receipts still apply to each chosen page.
+
+**ADR.** Reuse the native crawler, URL scope rules, workspace action bridge, progressive writer and renderer defaults. Extract the existing server job and filesystem/discovery helpers into single-responsibility modules below 600 lines. No site names or filenames influence discovery, selection or conversion. Discovery cancellation closes its browser; stale UI responses are ignored and the native modal restores focus on close. No new dependency or remote service is introduced.
+
+**MVP.** Focused regressions cover scope/credential/size rejection, nested folders and query variants, discovery on oversized HTML without persisted artifacts, explicit page/folder confirmation, cancellation, selected-only jobs, partial manifest visibility and generation replay mismatch. The actual library URL is checked in the local preview; bounded link discovery is not evidence of complete website inventory. Production remains outside this source increment.
+
+**GTM / bounds / rollback.** The immediate pain is spending resources converting unwanted pages before users can choose useful content. This extends the existing near-built importer; a pilot can measure time to the first chosen usable page and test willingness to pay $1. No demand or revenue claim. The initial 30-minute sprint budget is extended for browser and release checks; the implementation stays within 12 production modules and 60 KB of added production code, with the picker loaded only when requested. Discovery lists up to 500 pages per picker, serializes requests and keeps the crawler's existing navigation/security bounds. Roll back through a protected source revert to the predecessor; saved imports are preserved.
+
+## 2026-09-28 local reveal and saved-capture refresh
+
+**PRD.** Source Files → Reveal in Finder opens the saved local artifact or file/folder. Imported Markdown can be rebuilt from the complete captured HTML through the existing Explorer Refresh action. Both actions use shared source ownership and metadata rather than hostnames or filenames.
+
+**TAD / ADR.** Replace URL opening, `file://` navigation and silent Explorer-selection fallbacks with a lazy client call to a local host bridge. Crawl metadata resolves the existing import-store `page.md`; ordinary paths reuse the workspace mirror resolver and canonical seed authority. The bridge accepts same-origin loopback POST requests, limits bodies to 8 KB, checks real paths against permitted roots, rejects symlink escapes, serializes launches, and awaits a bounded native file-manager command without shell interpolation. Browser-only deployments and missing files report errors. macOS selects the file in Finder, Windows uses Explorer selection, and Linux opens the containing folder.
+
+**Content recovery.** The reported saved HTML contains approximately 35,800 characters of prose while its old Markdown artifact contains an 880-character introduction. The current universal converter already retains the full transcript. Refresh now rebuilds imported document bodies from their saved capture, preserves the exact frontmatter including source identity and renderer settings, and checks for a changed persisted document before writing. Missing captures and HTML beyond the 10-million-character conversion budget fail visibly before replacing workspace content. Original crawl artifacts remain provenance snapshots; refreshed workspace text is persisted through the existing mutation owner. No automatic replacement of user-edited documents or site-specific repair is introduced.
+
+**MVP verification.** Five focused regressions cover host file/folder and capture resolution, canonical seeds, path and origin rejection, symlink escape, literal command arguments, host failure reporting, mounted Explorer action coalescing, complete generic article/transcript conversion, metadata retention, and missing-capture failure. Twenty-one existing Explorer and converter cases pass. TypeScript, hygiene, the collaboration contract and 118 repository contract tests pass. In the actual saved browser session, Refresh restored a 35,660-character body and the Transcript heading; the persisted document remains 36,686 characters after reload. Native reveal returned the resolved capture path, and Finder selection independently matched that exact file. The live preview remains on port 5174.
+
+**GTM / bounds / rollback.** This removes a dead local navigation action and restores complete reading content from existing captures. No paid dependency, new service, revenue or Production claim. The combined user requests require seven production modules and four test modules, below 32 KB of source/test changes; new modules remain below 600 lines and the client bridge is loaded on demand. The initial 15-minute Finder slice expanded to include the later content-recovery request and actual-session verification. Rollback uses a protected source revert; saved captures remain available. Integration and Production effects require their own exact receipts.
+
+## 2026-09-28 library renderer stability and workspace persistence
+
+**PRD.** Crawl pages default to 2D D3 when opened, including older saved imports without renderer metadata. Explicit authored renderer choices remain valid. Large imported documents must permit Canvas View Mode switching and full Markdown scrolling. Autosave must persist every edit, including equal-length changes in the middle of a document; Storage Sync must honor its on/off setting through the existing storage owner.
+
+**TAD / ADR.** The actual saved query-variant `library.md` restored Storyboard with 436 cards. Profiling identified repeated Cartesian collision-candidate allocation and a full edge measurement notification per projected card. Replace the shared collision solver with a sweep over horizontal boundaries and merged vertical blocker intervals, retaining exact nearest-position tie order, pinned cards and media clearance. Commit geometry once after all changed card positions are written; unchanged projection emits no notification. The common frontmatter resolver supplies missing D3 fields for crawl metadata, preserving explicit presets. These changes use no hostname or filename branches and do not rewrite imported artifacts. Autosave now hashes the entire draft instead of only its length and two end samples, fixing skipped middle edits in the existing scheduler.
+
+**Import completion.** The predecessor Integration Gate exposed a race: status reported done while the persisted manifest still had no completed nodes. The existing server owner now publishes terminal status after the final manifest flush. Progress stays live; consumers can read the terminal manifest immediately after completion. The existing local article integration check covers this ordering.
+
+**Storage Sync.** The shared Explorer polling effect retains a scheduled retry while inline editing or a preceding effect’s read temporarily blocks reconciliation. One effect owns at most one timer; turning sync off cancels future polling, and turning it back on during an existing read resumes after that read settles. A mounted-hook regression fails before this fix and passes afterward.
+
+**MVP evidence.** The corrected actual-session replay reproduced the Canvas-menu hang and renderer crash before repair. The earlier isolated replay used a different library node and selected D3, so it did not exercise this Storyboard workload. After repair, the user's existing in-app session opened the query-variant library in D3, switched to Storyboard and back, reopened Canvas View Mode, and scrolled the Markdown preview through its midpoint, end and top without a crash. The full 232,051-character rendered preview remained present. Browser evidence: `/tmp/library-stability-inapp.png`. This establishes that reported sequence on the existing session; it is not an unrestricted performance guarantee.
+
+**Verification.** Six new regressions pass: exact comparison against exhaustive collision placement on randomized small layouts, 1,000-card non-overlap with pinned retention, one geometry commit per projection, crawl defaults with explicit choice preservation, equal-length middle-edit Autosave scheduling/cancellation, and Storage Sync resume across editing/toggles. Thirty-nine existing renderer, Autosave, settings, storage, Explorer suspension/inventory and conversion checks pass. TypeScript and 118 collaboration checks pass. The dense collision test has a three-second ceiling and completed locally in about half a second. An isolated Chromium session verifies same-size middle edits, persisted reload, Autosave Off withholding writes and On committing the pending draft. Storage Sync Off stops local source polling; On ingests an external source update. The fixture uses the normal local-source ownership index and intercepts host writes, preserving user files. Evidence: `/tmp/workspace-persistence-proof.json` and `/tmp/workspace-persistence-proof.png`. This proves local storage behavior; authenticated cross-device synchronization was not exercised.
+
+**GTM / bounds / recovery.** The immediate outcome is reliable crawl-to-reading and edit retention. No buyer, revenue or Production outcome is claimed. The slice changes six production modules and three regression modules, reuses the current preview, and targets a source/test diff below 32 KB with new modules below 600 lines. The inherited oversized website server receives a minimal completion-order repair and shrinks by one line; splitting its unrelated routes is deferred. The investigation extended beyond its initial 20-minute target to reproduce the actual restored renderer and verify both persistence controls; a further 15-minute slice covers polling recovery and its regression. Source rollback is a protected revert; saved imports remain intact. Exact protected integration and any subsequent Production authorization require their own receipts.
+
+## 2026-09-28 shared webpage resource lifecycle
+
+**PRD.** The user confirmed that `library.md` was open when Canvas View Mode crashed. Fix shared source owners for all imports. Preserve complete accepted content and progressive Source Files updates; do not match filenames or hosts, alter saved artifacts, or add another converter.
+
+**TAD / ADR.** The shared webpage text loader previously retained 24 response bodies regardless of size, and cancelled viewers left upstream requests running and eligible for caching. Replace that implementation with one request/cache owner: 24 MiB aggregate retained UTF-16 payload, 8 MiB maximum retained entry, and the existing 24-entry/TTL policy. Larger accepted pages are delivered in full without retention. A request belongs to its subscribers; cancelling the last subscriber aborts its controller, while cancelling one of several subscribers leaves their request intact. Replacement requests are fenced by identity so late settlement cannot evict or overwrite them. Cache bypass follows the same lifetime rule. The preview hook stops cancelled artifact work before fallback or transformation.
+
+**Capture / streaming contract.** Artifact bodies use the existing incremental reader with a 32 MiB byte ceiling, checked both against Content-Length and actual streamed bytes before decoding a chunk. Limit failures cancel the stream and never populate the cache. This bounds request buffering without truncating accepted content. The headless crawler retains its configured HTML character limit but now rejects an oversized capture instead of slicing it mid-attribute and marking the incomplete document successful. The existing import error path reports that failure. Previously truncated saved HTML is preserved and cannot recover its missing body through this change.
+
+**MVP evidence.** Generic regressions reproduced missing upstream cancellation and retained-body budget overflow before the change. Tests cover shared subscribers, cache bypass, late obsolete completion, byte eviction, oversized bodies delivered without retention, declared and streamed response ceilings, split Unicode, and a real local headless capture that must reject a large attribute while preserving a complete small page. The saved `library.md` contains a 12,017,857-byte HTML capture ending inside an attribute. Its isolated Canvas-menu replay passed before the fix; the original Codex renderer crash is not reproduced, so request/retention proof is not a crash-parity claim. A paint-containment experiment did not reduce the large composited surface and was discarded.
+
+**Verification / delivery.** The resource and cancellation suite passes nine tests, including a real headless capture. Sixteen existing progressive-import/filesystem/cancellation tests, four preview/refresh units, TypeScript plus three browser-runtime policy tests, 118 collaboration checks and ten integration-policy checks pass. An isolated Chromium replay first reads eight saved artifacts larger than 10 MB, then opens `library.md`, opens Canvas View Mode, selects D3 and scrolls the Markdown pane through its midpoint, end and top. All preview text remains present; Launch still opens afterward, with zero page exceptions or renderer crashes. Captured-site script/CORS failures remain visible in the console, so this does not claim external-asset fidelity. Local evidence is `/tmp/website-library-resources-after-proof.json` and `/tmp/website-resources-{green,typecheck,unit,progress,contract,policy}.log`. Protected integration and Production are not established by these local checks.
+
+**GTM / bounds.** Prioritize reliable reading and switching during and after a crawl. No buyer, revenue or Production outcome is claimed. This slice has a 20-minute initial target, at most six source modules and a 30 KB diff cap. The successor reuses the existing checkout and preview; exact affected checks and native publication are required before handoff.
+
+## 2026-09-28 dense imported document scrolling
+
+**PRD.** Existing imported documents must remain readable through the midpoint and end of both Markdown and captured-HTML panes. The reported saved `search.md` has 14 root blocks but over 4,400 nested tokens, and generates a 587-node document graph. File length and root-block count alone do not represent this workload.
+
+**TAD / ADR.** Extend the shared preview guard to walk list items, inline tokens and table cells iteratively, stopping at its existing 2,500-token or 120-heading budget. The existing large-document mode reduces optional block chrome and media work without truncating the document. For automatic Markdown document projections, reuse the existing summary graph when the generated structure exceeds 500 nodes or 1,000 edges. Both synchronous and asynchronous parser paths apply the same guard; explicit frontmatter/panel flows and Mermaid geometry retain their existing routing. Full Markdown and captured HTML stay available. No hostname-specific logic, dependency, selector or alternate converter is introduced.
+
+**Verification / delivery.** Generic dense-list, table and synchronous/asynchronous graph regressions failed before the change and pass afterward. An isolated browser replay of the saved `search.md` at 1108 × 952 completed forward and reverse scrolling through both panes, pausing at the midpoint on each pass: zero page errors, one Markdown read, one HTML read, and all 112,535 rendered text characters retained. The 19.3-second CPU profile spent 17.3 seconds idle; automatic document graph work was bounded. This is workload evidence, not a controlled before/after benchmark. The three existing large-document/flow regressions, TypeScript check, three local browser-runtime policy tests, 118 collaboration checks and ten integration-policy checks pass. The original Codex browser crash has not been reproduced in the isolated browser; this increment addresses observed resource gaps and does not establish crash-recovery parity.
+
+**GTM / bounds.** Prioritize reliable reading after progressive import. No new revenue claim. This slice changes three source modules, one regression file and this existing contract/documentation, with a 30 KB diff cap and a 20-minute investigation/repair target. Production promotion requires the current candidate's protected proof and release authority.
 
 ## 2026-09-28 usability increment
 
@@ -69,6 +143,54 @@ The external crawler project is a capability reference only. The implementation 
 **MVP check.** A focused 500-page projection test checks metadata-only growth, folder projection, and deduplication. The progress integration test checks that the first file is visible before terminal status and that the full refresh runs once. A live rerun of the user's crashed in-app browser tab remains unverified because the browser tool rejects the crash page's `data:` URL under its URL policy; source checks cannot substitute for that live observation.
 
 **GTM.** Measure browser responsiveness and time to first visible file during a timed 100-page pilot before claiming this recovery for users. No buyer or revenue evidence is recorded.
+
+## 2026-09-28 bounded import writes and conversion ownership
+
+**PRD.** Completed crawl pages must become usable progressively without repeated whole-workspace reconciliation or large HTML conversion on the browser UI thread. When server Markdown is unavailable, the file must clearly report that condition and retain the existing captured-HTML viewer reference.
+
+**TAD.** Text upserts now reuse the shared filesystem initialization owner. One crawl writer shares a single folder inventory and serializes folder creation across page workers. Its Explorer refresh guard begins before the import folder is created. Completed Markdown still writes through the shared workspace filesystem and publishes metadata immediately; one final refresh reconciles the tree.
+
+**ADR.** The server owns crawl HTML-to-Markdown conversion. Remove the client raw-HTML conversion fallback, which can parse a multi-megabyte capture and copy its full snapshot into a workspace document. Keep the server artifact and existing HTML viewer reference; emit an explicit Markdown-unavailable notice when conversion did not produce text. Browser enhancement remains disabled for the Launch headless action. Reuse the shared initialization and folder owners instead of introducing an import-specific filesystem.
+
+**MVP check.** A 100-page regression reproduced 103 seed reconciliations before the fix and one afterward, with one folder inventory and progressive visibility preserved. The saved 100-node crawl replay included a 12,017,857-byte HTML-only capture: removing the duplicate conversion reduced the local replay from 15.2 seconds to 1.3 seconds and maximum observed event-loop delay from 9,160 ms to 78 ms. It retained all 99 successful page files and both terminal documents. These local measurements are bounded evidence, not a browser crash-recovery claim. Focused tests also cover missing Markdown without raw-HTML fetch, concurrent folder ancestors, failed initialization retry, explicit seed refresh, and the first file's refresh guard. The crashed in-app tab remains inaccessible to automation under the browser URL policy; live review is pending.
+
+**GTM.** The immediate outcome is shorter time to a usable imported page and a responsive Source Files tree. Validate the exact reported browser flow before closing the crash report; no buyer or revenue result is claimed.
+
+## 2026-09-28 D3 crawl default
+
+**PRD / MVP.** Launch → Import URL → Crawl website headlessly selects 2D D3 when the canvas import starts. Progressive Source Files remain usable during the crawl. The completed `website.crawl.canvas.md` also declares D3, so opening it uses the same renderer.
+
+**TAD / ADR.** `runWorkspaceWebsiteImport` uses the shared `applyCanvasFrontmatterPreset` owner for canvas imports after checking the current job. Storage-only imports leave the current view alone. `buildWebsiteCrawlCanvasMarkdown` owns the saved D3 preset; the previous Flowchart override is removed. Other import types and the user's ability to choose another renderer retain their existing owners.
+
+**Verification / delivery.** The two native crawler/Launch checks, nine progressive import/filesystem regressions, TypeScript, hygiene and collaboration checks passed. A direct runtime probe confirms D3 before the crawl request, saved crawl preset readback, preserved storage-only view and no view change from a stale job. The in-app preview remained on Storyboard after menu clicks; live crawl verification remains pending. Source publication, protected integration and Production evidence remain separate. No new dependency or service is introduced. GTM remains the existing crawl-to-exploration workflow; no new commercial claim.
+
+## 2026-09-28 automatic webpage fidelity
+
+**PRD / MVP.** Imported webpages use the existing automatic conversion policy. The workspace toolbar has no fidelity selector or replacement fidelity label; the HTML and Markdown pane controls remain available.
+
+**TAD / ADR.** Remove the manual fidelity selector, its toolbar/main/runtime props and the unused metadata-update callback. Keep the conversion owner and its size-aware limits unchanged. Previously saved fidelity metadata remains readable for compatibility and is not rewritten on open. No new conversion mode, dependency or always-loaded module is introduced.
+
+**Verification / delivery.** The three existing toolbar consolidation, automatic routing and HTML/Viewer coexistence checks passed. The live preview at `http://127.0.0.1:5174/` has no fidelity selector and retains the HTML, Markdown, Viewer and Canvas controls. The inherited D3 renderer is also visible. TypeScript, hygiene and collaboration checks passed. Publication, protected integration and Production remain separate. GTM remains the existing crawl workflow with fewer decisions; buyer and payment claims are unchanged.
+
+## 2026-09-28 complete webpage content
+
+**PRD / MVP.** A completed headless capture imports the article title, media, sibling sections and full body instead of stopping at an embedded summary. The same conversion applies across sites without domain, URL, publisher class or chapter-label branches. Visual rows remain separate readable paragraphs. The automatic toolbar policy and progressive file writes retain their current owners.
+
+**TAD / ADR.** The shared HTML converter consumes rendered content first and uses caller-supplied embedded Markdown only when the body conversion is empty. Head metadata cannot mask that fallback. One extracted content-root owner includes the nearest bounded title-bearing container around a prose fragment while respecting explicit article/main and existing strong root boundaries, multiple-title boundaries, and surrounding navigation. Existing embedded-data compatibility remains an input fallback, never an early return that discards rendered siblings. The crawler writes normal article Markdown; head diagnostics remain in the captured raw HTML artifact. Debug snapshot formatting moves into its own helper; the webpage artifact entry point drops below 600 lines. The pre-existing 1,420-line unified converter shrinks; splitting its remaining unrelated transforms is outside this increment. No new dependency or always-loaded renderer is added.
+
+**Verification / delivery.** Nineteen focused cases pass, including fixtures with no embedded data, independent URLs, explicit article markup, title/media/section preservation, separate visual rows, embedded-only pages with image exclusion, and existing multilingual/media conversions. A local server import verifies article output without diagnostic metadata. Replaying the saved 196,776-byte reported page changed the former 104-character result to complete article Markdown; title, video reference, all 27 chapter rows, description once and transcript ending are checked. TypeScript, hygiene and collaboration contract checks pass. This is captured-source replay evidence, not a claim of pixel-identical reproduction or recovery of an already-saved workspace file. The screenshot's `destroy` error has no reproduced stack and remains unresolved. Source publication, protected integration and Production receipts remain distinct. GTM remains reliable crawl-to-exploration; no new buyer or payment claim.
+
+## 2026-09-28 progressive import lifecycle and page identity
+
+**PRD / MVP.** While completed pages appear, opening one must preserve its URL and content through the remaining crawl. Different query variants of a pathname are separate files. Imported page notifications must not restart workspace reconciliation or active-document materialization for every write.
+
+**TAD / ADR.** The existing import refresh owner now includes parent-folder creation. The Source Files open event expands the progressive tree without its former full refresh; the persistence bootstrap invalidates its cache but skips repeated materialization for crawler-owned paths. The shared URL-to-file resolver adds a bounded query identity suffix, also used by crawl-table links. The writer rejects any remaining path collision before a write, so sanitization collisions fail visibly instead of overwriting another page. The shared preview fetch owner rejects cancelled requests before starting network work and observes a request that fails after its subscriber cancels. Every generated page, including an unavailable-conversion stub, uses the existing webpage document builder and shared D3 preset so opening it cannot inherit a previous document's XR renderer. Normal paths, unrelated filesystem changes, completion reconciliation and failure cleanup retain their existing owners. No site-specific branch, dependency or renderer is added.
+
+**Verification / delivery.** A regression reproduced three query variants overwriting one file; it now preserves all three and leaves the already-opened page unchanged. The real Explorer open hook reproduced an extra full refresh and now opens/expands without it. Tests also check parent paths, sibling boundaries, concurrent import ownership, cancellation, D3 presets and collision failure. An isolated Chromium replay through Launch completed the saved 99-successful-node capture while its large `library.md` was open during import. Files appeared progressively; 99 Markdown artifacts and one raw-HTML preview were requested, with zero page errors. Reload and reopening Launch succeeded, with just one further raw-HTML request and zero page errors. The replay blocked external network traffic; missing artifacts and captured-page CSP messages are expected fixture limitations. Local evidence is recorded in `/tmp/website-import-active-proof.json`, `/tmp/website-import-replay-proof.json` and `/tmp/website-import-state-replay.log`; capture content is not committed. The user's existing in-app session and Production are not covered by that receipt. The earlier null `destroy` error was not reproduced or traced in this run.
+
+**Required local checks.** The candidate passes 16 focused import/filesystem/lifecycle/cancellation tests, four bootstrap/manual-refresh/two-tab-save cases, 13 Block editor tests, 118 collaboration contract tests, 10 integration-policy tests, Canvas TypeScript checking and three Vite runtime tests. The production build and required 375-pixel mobile browser check pass with offline reopen, edit/save/reload, pinch zoom and zero page errors. These are local working-tree checks before publication; protected CI must bind its result to the published commit. Collaboration contract, hygiene and whitespace checks pass.
+
+**GTM / bounds.** Restore reliable crawl-to-exploration before a user pilot. No buyer/payment claim. This increment is limited to six source modules plus focused tests and contracts, below 30 KB; existing overlong files must not grow. Full runtime crash recovery requires browser evidence, not source assertions alone.
 
 ## User outcomes
 

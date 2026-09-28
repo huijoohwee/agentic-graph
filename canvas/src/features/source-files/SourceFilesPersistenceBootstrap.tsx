@@ -56,6 +56,7 @@ import {
 } from '@/features/source-files/sourceFilesStorageSync'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
+import { isWebsiteImportExplorerUpdate } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import { resolveWorkspaceSourceIndexSnapshot } from '@/features/workspace-fs/sourceIndex'
 import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
 import { invalidateCachedWorkspaceActiveEntrySnapshot } from '@/features/source-files/workspaceActiveEntryCache'
@@ -660,7 +661,6 @@ export function SourceFilesPersistenceBootstrap() {
         : args.activePathRequest,
     }
   }, [hasWorkspaceRematerializeCandidates, readCallerOwnedSourceFilesSnapshot, resolveActivePathMaterializationRequest])
-
   const handleWorkspaceFsMutation = React.useCallback((request: WorkspaceFsMutationRequest) => {
     if (request.op === 'batch' || (request.op === 'ensureSeed' && !request.changedPath)) {
       invalidateCachedWorkspaceActiveEntrySnapshot()
@@ -668,6 +668,7 @@ export function SourceFilesPersistenceBootstrap() {
       invalidateCachedWorkspaceActiveEntrySnapshot(request.changedPath)
     }
     reusableWorkspaceSourcesByPathRef.current = null
+    if (isWebsiteImportExplorerUpdate(request.changedPath)) return
     const activePath = request.activePathRequest?.activePath || ''
     if ((request.op === 'writeFileText' || request.op === 'batch') && !!request.changedPath && !!activePath && request.changedPath === activePath) {
       return
@@ -677,7 +678,6 @@ export function SourceFilesPersistenceBootstrap() {
       const isSourceRootPath = hasPath && isWorkspaceSourceRootMutationPath(request.changedPath)
       if (hasPath && !isSourceRootPath) return
     }
-    const sourcesByPathSnapshot = readReusableWorkspaceSourceIndexSnapshot()
     if (request.op === 'ensureSeed') {
       const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot()
       const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
@@ -686,7 +686,7 @@ export function SourceFilesPersistenceBootstrap() {
           activePathOverride: request.activePathRequest?.activePath,
           fs: reusableWorkspaceFsRef.current || undefined,
           sourceFilesSnapshot,
-          sourcesByPath: sourcesByPathSnapshot,
+          sourcesByPath: readReusableWorkspaceSourceIndexSnapshot(),
           refreshActiveText: true,
         }).catch(() => {
           void 0
