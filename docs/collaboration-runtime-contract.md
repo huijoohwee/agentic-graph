@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 63
+contract_version: 64
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -69,6 +69,10 @@ ci_scopes:
     roots: ["canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportExplorerProgress.ts", "canvas/src/features/workspace-fs/websiteImportRefreshGuard.ts", "canvas/src/features/workspace-fs/upsertWorkspaceTextDocument.ts", "canvas/src/features/workspace-fs/ensureFolderTreeIfMissing.ts", "canvas/src/features/workspace-fs/workspaceFsInitialization.ts", "canvas/src/__tests__/websiteImportProgress.test.ts", "canvas/src/__tests__/workspaceFsMutationInitialization.test.ts"]
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/websiteImportProgress.test.ts", "canvas/src/__tests__/workspaceFsMutationInitialization.test.ts"]
+  website_import_canvas:
+    roots: ["canvas/src/lib/websites/websiteCrawlCanvasMarkdown.ts", "canvas/src/__tests__/nativeWebsiteCrawler.test.ts"]
+    commands:
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "websiteImport.native.canvasDownloads", "websiteImport.launch"]
   spatial_workspace:
     roots: ["canvas/src/features/three/spatialWorkspace", "canvas/src/features/three/SpatialWorkspaceReview.tsx", "canvas/src/features/three/XrSubjectTransformEditor.tsx", "canvas/src/features/workspace-table/workspaceSceneMetadataAuthoring.ts", "canvas/src/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync.ts", "canvas/src/hooks/store/graph-data-slice/graphDataNodeActions.ts", "canvas/src/features/agent-ready/xrSceneWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/__tests__/spatialWorkspace", "canvas/scripts/run_spatial_workspace_browser_smoke.mjs", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "canvas/src/features/strybldr/strybldrTimelineBottomPanelLayout.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/core.ts"]
     commands:

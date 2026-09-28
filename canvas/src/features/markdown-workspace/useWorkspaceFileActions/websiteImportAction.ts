@@ -222,6 +222,11 @@ export async function runWorkspaceWebsiteImport(args: {
   focusAfterImport?: (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; applyToGraph?: boolean; jobId?: number }) => Promise<void>
 }): Promise<{ createdPaths: WorkspacePath[]; host: string; websiteImportManifest: WebsiteImportManifestV1; websiteImportSummary: WorkspaceWebsiteImportSummary }> {
   const settings = resolveWebsiteImportSettings(args.opts)
+  if (settings.applyToCanvas) {
+    const { applyCanvasFrontmatterPreset } = await import('@/features/parsers/canvasFrontmatterPreset')
+    if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
+    applyCanvasFrontmatterPreset({ preset: { canvasRenderMode: '2d', canvas2dRenderer: 'd3' } })
+  }
   let fs: WorkspaceFs | null = null
   let writer: Awaited<ReturnType<typeof createWebsiteImportWorkspaceWriter>> | null = null
   let openedSourceFiles = false
