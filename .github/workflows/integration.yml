@@ -315,7 +315,6 @@ jobs:
         id: integration
         working-directory: agentic-graph
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
           AGENTIC_OS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR: ${{ runner.temp }}
