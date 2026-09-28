@@ -574,7 +574,6 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
         isMarkdown={effectiveContent.effectiveIsMarkdown}
         webpageWorkspaceMeta={derivedViews.webpageWorkspaceMeta}
         onWebpageChangeView={view => void derivedViews.switchActiveWebpageWorkspaceView(view)}
-        onWebpageUpdateMeta={patch => void derivedViews.updateActiveWebpageWorkspaceMeta(patch)}
         contentFormat={null}
         onContentFormatChange={undefined}
         activeText={effectiveContent.effectiveActiveText}
