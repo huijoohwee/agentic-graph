@@ -24,14 +24,14 @@ export function useWorkspaceWebsiteImportAction(args: {
   ctx: WorkspaceWebsiteImportCtx
 }) {
   const { importJobRef, status, focusAfterImport } = args.core
-  const { getFs, refresh, setExpandedPaths } = args.ctx
+  const { getFs, refresh, setEntries, setExpandedPaths } = args.ctx
   const handleImportWebsite = React.useCallback(async (urlRaw: string, opts?: WorkspaceImportWebsiteOpts) => {
     const url = String(urlRaw || '').trim()
     if (!url) return
     const jobId = (importJobRef.current += 1)
     status.setStatusProgress('Importing website')
     try {
-      const result = await runWorkspaceWebsiteImport({ url, opts, importJobRef, jobId, status, getFs, refresh, setExpandedPaths, focusAfterImport })
+      const result = await runWorkspaceWebsiteImport({ url, opts, importJobRef, jobId, status, getFs, refresh, setEntries, setExpandedPaths, focusAfterImport })
       status.setStatusInfo(`Imported website: ${result.host}`)
       return { createdPaths: result.createdPaths, websiteImportManifest: result.websiteImportManifest, websiteImportSummary: result.websiteImportSummary }
     } catch (error) {
@@ -41,6 +41,6 @@ export function useWorkspaceWebsiteImportAction(args: {
       status.setStatusError(`Import failed: ${message}`)
       if (opts?.source === 'invocation') throw error
     }
-  }, [focusAfterImport, getFs, importJobRef, refresh, setExpandedPaths, status])
+  }, [focusAfterImport, getFs, importJobRef, refresh, setEntries, setExpandedPaths, status])
   return { handleImportWebsite }
 }

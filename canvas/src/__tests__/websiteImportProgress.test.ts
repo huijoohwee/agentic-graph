@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { createWebsiteImportWorkspaceWriter } from '@/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter'
 import { runWorkspaceWebsiteImport } from '@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction'
+import { addCompletedWebsiteFileToExplorer } from '@/features/markdown-workspace/useWorkspaceFileActions/websiteImportExplorerProgress'
+import { beginWebsiteImportExplorerUpdates, isWebsiteImportExplorerUpdate } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import { projectWorkspaceEntriesToSourceFilesExplorer, resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import type { WebsiteImportManifestV1, WebsiteImportNode } from '@/lib/websites/server/websiteImportTypes'
 
@@ -79,7 +81,9 @@ test('a running import refreshes and expands the first completed page before ter
   const originalFetch = globalThis.fetch
   let statusReads = 0
   let visibleEntries: string[] = []
+  let explorerEntries: import('@/features/workspace-fs/types').WorkspaceEntry[] = []
   let expandedPaths = new Set<string>()
+  let refreshes = 0
   try {
     globalThis.fetch = async (input, init) => {
       const url = String(input)
@@ -102,7 +106,12 @@ test('a running import refreshes and expands the first completed page before ter
       jobId: 1,
       status: { setStatusProgress: () => undefined },
       getFs: async () => fs,
+      setEntries: updater => {
+        explorerEntries = typeof updater === 'function' ? updater(explorerEntries) : updater
+        visibleEntries = projectWorkspaceEntriesToSourceFilesExplorer(explorerEntries, resolveWorkspaceSourceRootPaths()).map(entry => entry.path)
+      },
       refresh: async () => {
+        refreshes += 1
         const entries = await fs.listEntries()
         visibleEntries = projectWorkspaceEntriesToSourceFilesExplorer(entries, resolveWorkspaceSourceRootPaths()).map(entry => entry.path)
         return { entries, sourcesByPath: {} }
@@ -112,9 +121,31 @@ test('a running import refreshes and expands the first completed page before ter
       },
     })
     assert.equal(statusReads, 2)
+    assert.equal(refreshes, 1, 'crawl pages should publish metadata directly and reconcile once at completion')
     assert.equal(result.createdPaths.length, 4)
     assert.ok(visibleEntries.some(path => path.endsWith('/docs.md')))
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+test('completed page projection remains metadata-only and deduplicated for a large crawl', () => {
+  let entries: import('@/features/workspace-fs/types').WorkspaceEntry[] = []
+  const root = '/websites/example.invalid/large-crawl'
+  const finish = beginWebsiteImportExplorerUpdates(root)
+  try {
+    assert.equal(isWebsiteImportExplorerUpdate(`${root}/page.md`), true)
+    assert.equal(isWebsiteImportExplorerUpdate('/docs/unrelated.md'), false)
+    for (let i = 0; i < 500; i += 1) {
+      entries = addCompletedWebsiteFileToExplorer(entries, `${root}/page-${i}.md`)
+    }
+    assert.equal(entries.filter(entry => entry.kind === 'file').length, 500)
+    assert.equal(entries.find(entry => entry.path === root)?.kind, 'folder')
+    assert.equal(entries.some(entry => typeof entry.text === 'string'), false)
+    assert.equal(addCompletedWebsiteFileToExplorer(entries, `${root}/page-499.md`), entries)
+    assert.equal(projectWorkspaceEntriesToSourceFilesExplorer(entries, resolveWorkspaceSourceRootPaths()).filter(entry => entry.kind === 'file').length, 500)
+  } finally {
+    finish()
+  }
+  assert.equal(isWebsiteImportExplorerUpdate(`${root}/page.md`), false)
 })

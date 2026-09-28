@@ -7,7 +7,9 @@ import { bulkSetWorkspaceEntrySources } from '@/features/workspace-fs/sourceInde
 import type { WorkspaceImportWebsiteOpts, WorkspaceWebsiteImportProgress, WorkspaceWebsiteImportSummary } from '@/features/markdown-explorer/workspaceActionBridge'
 import { createWebsiteImportWorkspaceWriter } from './websiteImportNodeWriter'
 import { ancestorPathsForWorkspacePath } from '@/features/workspace-fs/path'
+import { beginWebsiteImportExplorerUpdates } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import { MARKDOWN_EXPLORER_OPEN_SOURCE_FILES_EVENT } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
+import { addCompletedWebsiteFileToExplorer } from './websiteImportExplorerProgress'
 export { importWebsiteViaWorkspaceRuntime, useWorkspaceWebsiteImportAction } from './websiteImportRuntimeFacade'
 
 type WebsiteImportSettings = {
@@ -215,14 +217,16 @@ export async function runWorkspaceWebsiteImport(args: {
   status: WebsiteImportRuntimeStatus
   getFs: () => Promise<WorkspaceFs>
   refresh?: () => Promise<{ entries: import('@/features/workspace-fs/types').WorkspaceEntry[]; sourcesByPath: import('@/features/workspace-fs/sourceIndex').WorkspaceSourceIndex }>
+  setEntries?: React.Dispatch<React.SetStateAction<import('@/features/workspace-fs/types').WorkspaceEntry[]>>
   setExpandedPaths?: React.Dispatch<React.SetStateAction<Set<string>>>
   focusAfterImport?: (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; applyToGraph?: boolean; jobId?: number }) => Promise<void>
 }): Promise<{ createdPaths: WorkspacePath[]; host: string; websiteImportManifest: WebsiteImportManifestV1; websiteImportSummary: WorkspaceWebsiteImportSummary }> {
   const settings = resolveWebsiteImportSettings(args.opts)
   let fs: WorkspaceFs | null = null
   let writer: Awaited<ReturnType<typeof createWebsiteImportWorkspaceWriter>> | null = null
-  let refreshChain = Promise.resolve()
   let openedSourceFiles = false
+  let finishExplorerUpdates: (() => void) | null = null
+  let reconciliationAttempted = false
   const getWriter = async (importId: string) => {
     if (writer) return writer
     fs = await args.getFs()
@@ -237,7 +241,12 @@ export async function runWorkspaceWebsiteImport(args: {
       status: args.status,
       onFileCreated: async source => {
         if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
+        if (args.setEntries && !finishExplorerUpdates) {
+          const importRoot = ancestorPathsForWorkspacePath(source.path)[2]
+          if (importRoot) finishExplorerUpdates = beginWebsiteImportExplorerUpdates(importRoot)
+        }
         bulkSetWorkspaceEntrySources([source])
+        args.setEntries?.(previous => addCompletedWebsiteFileToExplorer(previous, source.path))
         args.setExpandedPaths?.(previous => {
           const ancestors = ancestorPathsForWorkspacePath(source.path)
           if (ancestors.every(path => previous.has(path))) return previous
@@ -247,8 +256,6 @@ export async function runWorkspaceWebsiteImport(args: {
         })
         const shouldOpenSourceFiles = !openedSourceFiles
         openedSourceFiles = true
-        refreshChain = refreshChain.then(async () => { await args.refresh?.() })
-        await refreshChain
         if (shouldOpenSourceFiles && typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent(MARKDOWN_EXPLORER_OPEN_SOURCE_FILES_EVENT, { detail: { path: source.path } }))
         }
@@ -256,43 +263,51 @@ export async function runWorkspaceWebsiteImport(args: {
     })
     return writer
   }
-  const { importId, manifest } = await runWebsiteImportServerJob({
-    url: args.url,
-    settings,
-    importJobRef: args.importJobRef,
-    jobId: args.jobId,
-    status: args.status as ReturnType<typeof import('./core').useWorkspaceStatusHelpers>,
-    onManifest: async (id, snapshot) => {
-      if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
-      await (await getWriter(id)).writeNodes(snapshot.nodes)
-    },
-  })
-  if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
-  const { created, host, canvasPath } = await (await getWriter(importId)).finalize(manifest)
-  if (!fs) throw new Error('Website workspace unavailable')
-
-  if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
-  bulkSetWorkspaceEntrySources(created.sources)
-  const refreshed = args.refresh ? await args.refresh() : null
-  if (settings.applyToCanvas && canvasPath) {
-    const { applyWorkspaceImportToCanvasBestEffort } = await import('./importRuntimeActions')
-    await applyWorkspaceImportToCanvasBestEffort({
-      fs,
-      createdPaths: [canvasPath],
-      opts: {
-        applyToGraph: true,
-        ...(refreshed ? { workspaceEntries: refreshed.entries, sourcesByPath: refreshed.sourcesByPath } : {}),
+  try {
+    const { importId, manifest } = await runWebsiteImportServerJob({
+      url: args.url,
+      settings,
+      importJobRef: args.importJobRef,
+      jobId: args.jobId,
+      status: args.status as ReturnType<typeof import('./core').useWorkspaceStatusHelpers>,
+      onManifest: async (id, snapshot) => {
+        if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
+        await (await getWriter(id)).writeNodes(snapshot.nodes)
       },
     })
-  }
-  const first = settings.preserveActiveDocument ? null : (canvasPath || created.createdPaths[0])
-  if (first) {
-    if (args.focusAfterImport) {
-      await args.focusAfterImport(first, { sourceUrl: null, applyToGraph: false, jobId: args.jobId })
-    } else {
-      const { activateFirstImportedWorkspaceFile } = await import('./importRuntimeActions')
-      await activateFirstImportedWorkspaceFile({ fs, createdPaths: [first], applyToGraph: false })
+    if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
+    const { created, host, canvasPath } = await (await getWriter(importId)).finalize(manifest)
+    if (!fs) throw new Error('Website workspace unavailable')
+
+    if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
+    bulkSetWorkspaceEntrySources(created.sources)
+    finishExplorerUpdates?.()
+    finishExplorerUpdates = null
+    reconciliationAttempted = true
+    const refreshed = args.refresh ? await args.refresh() : null
+    if (settings.applyToCanvas && canvasPath) {
+      const { applyWorkspaceImportToCanvasBestEffort } = await import('./importRuntimeActions')
+      await applyWorkspaceImportToCanvasBestEffort({
+        fs,
+        createdPaths: [canvasPath],
+        opts: {
+          applyToGraph: true,
+          ...(refreshed ? { workspaceEntries: refreshed.entries, sourcesByPath: refreshed.sourcesByPath } : {}),
+        },
+      })
     }
+    const first = settings.preserveActiveDocument ? null : (canvasPath || created.createdPaths[0])
+    if (first) {
+      if (args.focusAfterImport) {
+        await args.focusAfterImport(first, { sourceUrl: null, applyToGraph: false, jobId: args.jobId })
+      } else {
+        const { activateFirstImportedWorkspaceFile } = await import('./importRuntimeActions')
+        await activateFirstImportedWorkspaceFile({ fs, createdPaths: [first], applyToGraph: false })
+      }
+    }
+    return { createdPaths: created.createdPaths, host, websiteImportManifest: manifest, websiteImportSummary: buildWebsiteImportManifestSummary(manifest) }
+  } finally {
+    finishExplorerUpdates?.()
+    if (!reconciliationAttempted && writer && isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) await args.refresh?.()
   }
-  return { createdPaths: created.createdPaths, host, websiteImportManifest: manifest, websiteImportSummary: buildWebsiteImportManifestSummary(manifest) }
 }
