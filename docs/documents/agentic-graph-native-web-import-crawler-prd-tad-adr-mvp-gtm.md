@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.14"
+version: "0.2.15"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.13"
-prd_revision: "0.2.14"
-tad_revision: "0.2.14"
-adr_revision: "0.2.14"
-mvp_revision: "0.2.14"
-gtm_revision: "0.2.14"
+previous_document_version: "0.2.14"
+prd_revision: "0.2.15"
+tad_revision: "0.2.15"
+adr_revision: "0.2.15"
+mvp_revision: "0.2.15"
+gtm_revision: "0.2.15"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,18 @@ gtm_revision: "0.2.14"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action starts a server-owned headless crawl, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 local reveal and saved-capture refresh
+
+**PRD.** Source Files → Reveal in Finder opens the saved local artifact or file/folder. Imported Markdown can be rebuilt from the complete captured HTML through the existing Explorer Refresh action. Both actions use shared source ownership and metadata rather than hostnames or filenames.
+
+**TAD / ADR.** Replace URL opening, `file://` navigation and silent Explorer-selection fallbacks with a lazy client call to a local host bridge. Crawl metadata resolves the existing import-store `page.md`; ordinary paths reuse the workspace mirror resolver and canonical seed authority. The bridge accepts same-origin loopback POST requests, limits bodies to 8 KB, checks real paths against permitted roots, rejects symlink escapes, serializes launches, and awaits a bounded native file-manager command without shell interpolation. Browser-only deployments and missing files report errors. macOS selects the file in Finder, Windows uses Explorer selection, and Linux opens the containing folder.
+
+**Content recovery.** The reported saved HTML contains approximately 35,800 characters of prose while its old Markdown artifact contains an 880-character introduction. The current universal converter already retains the full transcript. Refresh now rebuilds imported document bodies from their saved capture, preserves the exact frontmatter including source identity and renderer settings, and checks for a changed persisted document before writing. Missing captures and HTML beyond the 10-million-character conversion budget fail visibly before replacing workspace content. Original crawl artifacts remain provenance snapshots; refreshed workspace text is persisted through the existing mutation owner. No automatic replacement of user-edited documents or site-specific repair is introduced.
+
+**MVP verification.** Five focused regressions cover host file/folder and capture resolution, canonical seeds, path and origin rejection, symlink escape, literal command arguments, host failure reporting, mounted Explorer action coalescing, complete generic article/transcript conversion, metadata retention, and missing-capture failure. Twenty-one existing Explorer and converter cases pass. TypeScript, hygiene, the collaboration contract and 118 repository contract tests pass. In the actual saved browser session, Refresh restored a 35,660-character body and the Transcript heading; the persisted document remains 36,686 characters after reload. Native reveal returned the resolved capture path, and Finder selection independently matched that exact file. The live preview remains on port 5174.
+
+**GTM / bounds / rollback.** This removes a dead local navigation action and restores complete reading content from existing captures. No paid dependency, new service, revenue or Production claim. The combined user requests require seven production modules and four test modules, below 32 KB of source/test changes; new modules remain below 600 lines and the client bridge is loaded on demand. The initial 15-minute Finder slice expanded to include the later content-recovery request and actual-session verification. Rollback uses a protected source revert; saved captures remain available. Integration and Production effects require their own exact receipts.
 
 ## 2026-09-28 library renderer stability and workspace persistence
 

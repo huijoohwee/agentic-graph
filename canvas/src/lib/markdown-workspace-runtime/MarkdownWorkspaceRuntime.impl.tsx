@@ -490,7 +490,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     resolveFolderContractDocPath: explorerState.resolveFolderContractDocPath,
     pickFolderContractTargetPath: explorerState.pickFolderContractTargetPath,
     revealLineInEditor: interactionState.revealLineInEditor,
-    setStatusWithAutoClear,
+    setStatusWithAutoClear, setStatusError,
     streamingWorkspacePath: chatWorkspaceStreamingPath,
   })
   const saveEnabled = effectiveContent.saveEnabled
