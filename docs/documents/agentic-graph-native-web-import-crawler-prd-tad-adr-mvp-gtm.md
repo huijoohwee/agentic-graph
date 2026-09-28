@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.16"
+version: "0.2.17"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.15"
-prd_revision: "0.2.16"
-tad_revision: "0.2.16"
-adr_revision: "0.2.16"
-mvp_revision: "0.2.16"
-gtm_revision: "0.2.16"
+previous_document_version: "0.2.16"
+prd_revision: "0.2.17"
+tad_revision: "0.2.17"
+adr_revision: "0.2.17"
+mvp_revision: "0.2.17"
+gtm_revision: "0.2.17"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,14 @@ gtm_revision: "0.2.16"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 Import URL Main Panel tab
+
+**PRD.** The website page picker lives in a new Import URL tab immediately to the right of Workflow Manager in Main Panel. Launch → Import URL → Crawl website headlessly opens that tab. It keeps the existing folder/page checkboxes, filter, link discovery and exact-selection import action.
+
+**TAD / ADR.** Reuse the shared Main Panel registry, icon library and open event. Resolve tabs from the registry instead of maintaining a conflicting event allowlist. The lazy picker view replaces the body-mounted modal. One bounded selection session owns discovery, cancellation and selection state across tab switches and closing/reopening Main Panel; starting another selection cancels and settles its predecessor. Nothing is imported until Import selected is chosen.
+
+**MVP / GTM / rollback.** This 20-minute follow-up removes the extra dialog surface and keeps the picker near workflow controls. Scope is 12 source/test/doc paths, under 30 KB added production code, with lazy panel loading and no new service or paid dependency. Verify adjacent tab order, Launch routing, retained selections, cancellation and exact selected imports. Revert this placement change to the predecessor if needed; existing workspace files are preserved. No Production authority is granted by the UI change.
 
 ## 2026-09-28 discover and select website pages
 

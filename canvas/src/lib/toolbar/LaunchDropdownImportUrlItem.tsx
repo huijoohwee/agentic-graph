@@ -278,7 +278,7 @@ export function LaunchDropdownImportUrlItem(props: {
       if (!nextUrl) return
       onClose()
       try {
-        const { chooseWebsiteImportPages } = await import('@/features/toolbar/WebsiteImportSelectionDialog')
+        const { chooseWebsiteImportPages } = await import('@/features/panels/websiteImportSelectionSession')
         const selectedUrls = await chooseWebsiteImportPages(nextUrl)
         if (!selectedUrls?.length) return
         await targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND)
