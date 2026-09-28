@@ -8,44 +8,47 @@ import { useWebsiteImportSelectionSession, discoverWebsiteSelection, toggleWebsi
 
 const actionClass = cn('rounded border px-3 py-2 text-sm disabled:opacity-50', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)
 
-function SelectionCheckbox(props: { label: string; urls: string[]; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void }) {
+function SelectionCheckbox(props: { id?: string; label: string; urls: string[]; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void }) {
   const ref = React.useRef<HTMLInputElement>(null)
   const count = props.urls.filter(url => props.selected.has(url)).length
   React.useEffect(() => { if (ref.current) ref.current.indeterminate = count > 0 && count < props.urls.length }, [count, props.urls.length])
-  return <input ref={ref} type="checkbox" aria-label={props.label} checked={props.urls.length > 0 && count === props.urls.length} onChange={event => props.toggle(props.urls, event.target.checked)} />
+  return <input ref={ref} id={props.id} className="size-4 shrink-0" type="checkbox" aria-label={props.label} checked={props.urls.length > 0 && count === props.urls.length} onChange={event => props.toggle(props.urls, event.target.checked)} />
 }
 
 type PageTreeProps = { folder: WebsiteSelectionFolder; depth: number; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void; discover: (url: string) => void; busy: boolean; visited: Set<string> }
 
 function PageFolder(props: PageTreeProps) {
+  const checkboxId = React.useId()
   const [expanded, setExpanded] = React.useState(true)
   const { folder, depth, selected, toggle } = props
   const urls = websiteFolderUrls(folder)
   const selectFolder = () => toggle(urls, !urls.every(url => selected.has(url)))
   return <DirectoryTreeBranch>
     <DirectoryTreeRow depth={depth} label={`Folder ${folder.path}`}>
+      <SelectionCheckbox id={checkboxId} label={`Select folder ${folder.path}`} urls={urls} selected={selected} toggle={toggle} />
       <DirectoryTreeDisclosure name={folder.path} path={folder.path} expanded={expanded} onToggle={() => setExpanded(value => !value)} />
-      <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-2 text-sm">
-        <SelectionCheckbox label={`Select folder ${folder.path}`} urls={urls} selected={selected} toggle={toggle} />
+      <label htmlFor={checkboxId} className="flex min-w-0 flex-1 cursor-pointer items-center py-2 text-sm">
         <span className="truncate" title={folder.path}>{folder.name}/</span>
       </label>
     </DirectoryTreeRow>
-    {expanded && <DirectoryTreeChildren name={folder.path} path={folder.path} depth={depth} onSelect={selectFolder}>
+    {expanded && <DirectoryTreeChildren name={folder.path} path={folder.path} depth={depth} guideCenter="0.5rem" onSelect={selectFolder}>
       <PageTree {...props} depth={depth + 1} />
     </DirectoryTreeChildren>}
   </DirectoryTreeBranch>
 }
 
 function PageTree(props: PageTreeProps) {
+  const checkboxPrefix = React.useId()
   return <ul className="m-0 list-none p-0">
     {props.folder.folders.map(folder => <PageFolder key={folder.path} {...props} folder={folder} />)}
-    {props.folder.pages.map(page => {
+    {props.folder.pages.map((page, index) => {
       const url = new URL(page.url), name = url.pathname.split('/').filter(Boolean).pop() || '/'
+      const checkboxId = `${checkboxPrefix}-${index}`
       return <DirectoryTreeBranch key={page.url}>
         <DirectoryTreeRow depth={props.depth} label={`Page ${page.url}`}>
+          <SelectionCheckbox id={checkboxId} label={`Select page ${page.url}`} urls={[page.url]} selected={props.selected} toggle={props.toggle} />
           <DirectoryTreeFileButton name={name} path={page.url} label={`Select page icon ${page.url}`} selected={props.selected.has(page.url)} onSelect={() => props.toggle([page.url], !props.selected.has(page.url))} />
-          <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-2 text-sm">
-            <SelectionCheckbox label={`Select page ${page.url}`} urls={[page.url]} selected={props.selected} toggle={props.toggle} />
+          <label htmlFor={checkboxId} className="flex min-w-0 flex-1 cursor-pointer items-center py-2 text-sm">
             <span className="min-w-0 flex-1 break-words" title={page.url}>
               {page.title || `${name}${url.search}`}
               {page.title ? <span className={cn('block text-xs', UI_THEME_TOKENS.text.secondary)}>{page.path}{url.search}</span> : null}

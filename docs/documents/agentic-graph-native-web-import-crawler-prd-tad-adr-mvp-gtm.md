@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.20"
+version: "0.2.21"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.19"
-prd_revision: "0.2.20"
-tad_revision: "0.2.20"
-adr_revision: "0.2.20"
-mvp_revision: "0.2.20"
-gtm_revision: "0.2.20"
+previous_document_version: "0.2.20"
+prd_revision: "0.2.21"
+tad_revision: "0.2.21"
+adr_revision: "0.2.21"
+mvp_revision: "0.2.21"
+gtm_revision: "0.2.21"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,16 @@ gtm_revision: "0.2.20"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 Import URL checkbox alignment
+
+**PRD.** Top-level folder and page checkboxes align directly beneath Select visible. Nested rows retain the shared 20-pixel hierarchy indent. Checkboxes lead the row, followed by the existing disclosure or file icon and the clickable label.
+
+**TAD / ADR.** Keep native input/label associations through React-generated IDs while separating selection from disclosure. A shared optional guide-center offset aligns the picker hierarchy guide with its fixed 16-pixel checkbox column; Source Files retains its existing icon-centered default. Guide and nested checkbox hit areas remain separate. No new module, dependency, storage or network change.
+
+**MVP / verification.** Existing picker regressions pass. Live readback confirms the root folder and page checkbox left edges equal Select visible, with nested rows offset by 20 pixels and both user-selected pages retained. Required affected validation binds the committed candidate separately.
+
+**GTM / bounds / rollback.** Small visual correction for existing import selection. Three files, under 5 KB changed, ten-minute edit and live-check budget followed by required release checks. Revert this successor increment to restore the previous ordering; selection data and imported files are unaffected. No Production claim.
 
 ## 2026-09-28 shared Import URL tree controls
 

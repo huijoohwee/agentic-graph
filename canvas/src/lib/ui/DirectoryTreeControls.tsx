@@ -45,12 +45,12 @@ export function DirectoryTreeFileButton(props: {
 }
 
 export function DirectoryTreeChildren(props: {
-  name: string; path: string; depth: number; onSelect: () => void; children: React.ReactNode
+  name: string; path: string; depth: number; guideCenter?: string; onSelect: () => void; children: React.ReactNode
 }) {
   return <section className="relative" aria-label={`Contents of folder ${props.name}`}>
     <button type="button" aria-label={`Select folder ${props.name} from hierarchy guide`} title={`Select ${props.path}`}
       className={`absolute inset-y-0 w-3 p-0 rounded opacity-0 group-hover/source-branch:opacity-60 group-focus-within/source-branch:opacity-60 hover:!opacity-100 focus-visible:!opacity-100 ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.focus.primaryRing}`}
-      style={{ left: `calc(${indentAt(props.depth)}px + 0.25rem + var(--kg-data-view-icon-action-sm-size, 1.75rem) / 2 - 0.375rem)` }}
+      style={{ left: `calc(${indentAt(props.depth)}px + ${props.guideCenter || '0.25rem + var(--kg-data-view-icon-action-sm-size, 1.75rem) / 2'} - 0.375rem)` }}
       onClick={props.onSelect}>
       <svg role="img" aria-label={`Hierarchy guide for ${props.name}`} className="block h-full w-full" viewBox="0 0 12 100" preserveAspectRatio="none">
         <line x1="6" y1="0" x2="6" y2="100" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
