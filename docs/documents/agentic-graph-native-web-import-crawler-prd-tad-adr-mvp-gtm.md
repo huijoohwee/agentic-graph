@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.1"
-date: "2026-09-12"
+version: "0.2.2"
+date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -12,7 +12,7 @@ delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-native-web-import-crawler-prd-tad-adr-mvp-gtm.md"
-scope: "Native enhancement of existing Import URL, local-file import, Canvas projection, and live invocation owners"
+scope: "Native Import URL crawler, progressive Source Files materialization, accessible menu help, Canvas projection, and local Markdown export destination"
 deploy_boundary: "Authoring-only; mirror and delivery lanes are not provisioned for this increment"
 reference_repository: "https://github.com/apify/crawlee"
 reference_boundary: "Concept-only review of queue, browser, proxy, retry, and storage capabilities; no source, tests, fixtures, schemas, prose, assets, or dependency copied or imported"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.0"
-prd_revision: "0.2.1"
-tad_revision: "0.2.1"
-adr_revision: "0.2.1"
-mvp_revision: "0.2.1"
-gtm_revision: "0.2.1"
+previous_document_version: "0.2.1"
+prd_revision: "0.2.2"
+tad_revision: "0.2.2"
+adr_revision: "0.2.2"
+mvp_revision: "0.2.2"
+gtm_revision: "0.2.2"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,18 @@ gtm_revision: "0.2.1"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action starts a server-owned headless crawl, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 usability increment
+
+**PRD.** The Launch → Import URL crawler action displays its help inside the menu on hover or keyboard focus. During a sitemap or website crawl, each completed page appears in Source Files as soon as its manifest node is available. The terminal sitemap and Canvas projection appear when the crawl completes. Launch → Export → Markdown defaults to the configured local sibling `docs_` directory (for the current Dev workspace, `/Users/huijoohwee/Documents/GitHub/huijoohwee/docs_`); the browser save picker remains the fallback when local host writing is unavailable.
+
+**TAD.** The existing server manifest remains the source of completed node records. The workspace action checks it when the processed count advances, and one workspace writer deduplicates node IDs across snapshots, writes each page through the existing workspace filesystem, and refreshes Source Files after each page. Finalization writes the sitemap and Canvas document once. The Markdown export derives the host output root from the configured docs mirror instead of hardcoding a device path.
+
+**ADR.** Keep the crawler server and artifact routes unchanged. Reuse the manifest and local filesystem write contracts, with the existing save picker as the cross-device fallback. This keeps the page writer under 600 lines and avoids adding a second export service or paid dependency.
+
+**MVP check.** Focused tests cover a page appearing before terminal files, deduplication when a later snapshot repeats it, and the Markdown destination path and bytes. The local browser preview confirms that keyboard focus exposes the crawler label inside the menu. Source checks and any protected CI result belong to the source lane receipt; no Production or buyer outcome is claimed by this increment.
+
+**GTM.** The immediate buyer pain is waiting through a multi-page import without usable files and then hunting for its export. A timed user pilot should compare time to first usable page and time to locate the exported Markdown file, then record willingness to pay $1. Demand and revenue remain unverified.
 
 ## User outcomes
 
