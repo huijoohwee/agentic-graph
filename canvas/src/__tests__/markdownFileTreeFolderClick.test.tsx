@@ -41,13 +41,9 @@ export async function testMarkdownFileTreeFolderClickDoesNotClearSelection() {
     root = createRoot(container as unknown as HTMLElement)
     await act(async () => { root!.render(<Harness />) })
     const folder = container.querySelector('button[aria-label="Folder folder"]')!
-    const iconButton = container.querySelector('button[aria-label="Select folder folder"]')!
-    const icon = iconButton.querySelector('svg[role="img"]')!
-    if (!iconButton.classList.contains('kg-data-view-icon-action--sm')) throw Error('Folder icon must reuse the shared square control')
-    if (!icon || icon.hasAttribute('aria-hidden')) throw Error('Folder icon must be a named, visible selection target')
-    if (!icon.classList.contains('lucide-folder')) throw Error('Collapsed folder must show the closed-folder glyph')
-    await act(async () => { icon.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) })
-    if (selectedFolders.join() !== '/folder' || folder.getAttribute('aria-current') !== 'page') throw Error('Folder icon must select its folder')
+    if (container.querySelector('button[aria-label="Select folder folder"], svg.lucide-folder, svg.lucide-folder-open')) throw Error('Folders must use their names and disclosure controls without a folder icon')
+    await act(async () => { (folder as HTMLButtonElement).click() })
+    if (selectedFolders.join() !== '/folder' || folder.getAttribute('aria-current') !== 'page') throw Error('Folder name must select its folder')
     if (expandedCalls.length) throw Error('Folder selection must not also toggle expansion')
     const disclosure = container.querySelector('button[aria-label="Expand folder folder"]') as HTMLButtonElement
     if (!disclosure.classList.contains('kg-data-view-icon-action--sm') || disclosure.classList.contains('self-stretch')) throw Error('Disclosure must be square, independent of row height')
@@ -56,7 +52,6 @@ export async function testMarkdownFileTreeFolderClickDoesNotClearSelection() {
     if (!container.querySelector('button[aria-label="File file.md"]')) throw Error('Expanded folder must reveal its file')
     if (folder.getAttribute('aria-current') !== 'page' || selectedFolders.length !== 1) throw Error('Disclosure must preserve selection')
     if (selectFileCalls.length) throw Error('Folder controls must not open a file')
-    if (!iconButton.querySelector('.lucide-folder-open')) throw Error('Expanded folder must show the open-folder glyph')
     const guide = container.querySelector('button[aria-label="Select folder folder from hierarchy guide"]') as HTMLButtonElement
     if (!guide?.querySelector('svg[role="img"]')) throw Error('Hierarchy guide must expose a named image inside a real control')
     await act(async () => { guide.click() })

@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronDown, ChevronRight, FileCode2, FileImage, FileJson2, FileText, Folder, FolderOpen, Hash, Link as LinkIcon, ShieldCheck } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileCode2, FileImage, FileJson2, FileText, Hash, Link as LinkIcon, ShieldCheck } from 'lucide-react'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH } from '@/features/workspace-fs/path'
 import { sortWorkspaceEntriesForExplorer } from '@/features/workspace-fs/workspaceFs'
@@ -208,8 +208,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const isFolder = entry.kind === 'folder'
     const isExpanded = expandedPaths.has(entry.path)
     const isActive = activePath === entry.path
-    const { Icon: EntryIcon, color: iconColor } = isFolder
-      ? { Icon: isExpanded ? FolderOpen : Folder, color: '' } : fileGlyph(entry.name)
+    const { Icon: FileIcon, color: iconColor } = fileGlyph(entry.name)
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
     const sourceUrl = source?.kind === 'url' ? normalizeImportUrlInput(source.url) : ''
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
@@ -240,14 +239,13 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
                 : <ChevronRight role="img" aria-label="Expand folder" className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
             </button>
           ) : null}
-          <button type="button" aria-label={`Select ${isFolder ? 'folder' : 'file'} ${entry.name}`}
+          {!isFolder && <button type="button" aria-label={`Select file ${entry.name}`}
             aria-pressed={isActive} title={entry.path}
-            className={iconActionClass}
-            style={isFolder ? undefined : { marginLeft: 'calc(0.25rem + var(--kg-data-view-icon-action-sm-size, 1.75rem))' }}
+            className={`ml-1 ${iconActionClass}`}
             onClick={selectEntry} onContextMenu={openContextMenu}>
-            <EntryIcon role="img" aria-label={`Select ${isFolder ? 'folder' : 'file'} ${entry.name}`}
+            <FileIcon role="img" aria-label={`Select file ${entry.name}`}
               className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} ${iconColor}`} />
-          </button>
+          </button>}
           <MarkdownFileTreeRowButton
             ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}

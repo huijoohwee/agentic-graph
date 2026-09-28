@@ -153,11 +153,11 @@ async function testSourceFileSelectionAndAffordances() {
     assert.equal(container.querySelectorAll('[aria-current]').length, 0, 'An inactive mission must not select its fallback inspection file')
     let mission = container.querySelector('button[aria-label="File agent-mission.inspection.json"]')!
     const missionPath = mission.getAttribute('title')!
-    const folderIcon = container.querySelector('button[aria-label="Select folder unobserved"]')!
+    const folderName = container.querySelector('button[aria-label="Folder unobserved"]')!
     const disclosure = container.querySelector('button[aria-label="Collapse folder unobserved"]')!
     const folderRow = container.querySelector('button[aria-label="Folder unobserved"]')!
-    await act(async () => { folderIcon.querySelector('svg')!.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) })
-    assert.equal(container.querySelector('[aria-current]'), folderRow, 'Read-only mission folder icon must select its folder')
+    await act(async () => { (folderName as HTMLButtonElement).click() })
+    assert.equal(container.querySelector('[aria-current]'), folderRow, 'Read-only mission folder name must select its folder')
     assert.equal(disclosure.getAttribute('aria-expanded'), 'true', 'Mission folder selection must preserve expansion')
     assert.equal(readAgentRunWorkspace(), null, 'Selecting a folder must not activate a mission Canvas or document')
     await act(async () => { (disclosure as HTMLButtonElement).click() })
@@ -168,7 +168,7 @@ async function testSourceFileSelectionAndAffordances() {
     mission = container.querySelector('button[aria-label="File agent-mission.inspection.json"]')!
     await act(async () => { (container.querySelector('button[aria-label="Select file agent-mission.inspection.json"]') as HTMLButtonElement).click() })
     assert.equal(readAgentRunWorkspace()?.source, missionPath, 'Mission file icon must open the selected document')
-    await act(async () => { (folderIcon as HTMLButtonElement).click() })
+    await act(async () => { (folderName as HTMLButtonElement).click() })
     assert.equal(readAgentRunWorkspace()?.source, missionPath, 'Folder selection must preserve the open mission document')
     assert.equal(container.querySelector('[aria-current]')?.getAttribute('aria-label'), 'Folder unobserved')
     await act(async () => { selectAgentRunSource(null) })
