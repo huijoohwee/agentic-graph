@@ -387,7 +387,7 @@ export function LaunchDropdownImportUrlItem(props: {
                     <Sparkles className={props.menuIconClass} strokeWidth={1.6} />
                   </button>
                 </section>
-                {crawlHintVisible ? <span id={`${importUrlControlsId}-crawl-hint`} role="tooltip" className={cn('kg-import-url-addon-hint text-xs', UI_THEME_TOKENS.text.secondary)}>Crawl website headlessly</span> : null}
+                {crawlHintVisible ? <span id={`${importUrlControlsId}-crawl-hint`} role="tooltip" className={cn('block max-w-full break-words whitespace-normal text-xs', UI_THEME_TOKENS.text.secondary)}>Crawl website headlessly</span> : null}
               </section>
             }
           />

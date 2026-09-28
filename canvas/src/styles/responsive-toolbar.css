@@ -2205,13 +2205,6 @@
     flex: 0 0 auto;
   }
 
-  .kg-import-url-addon-hint {
-    display: block;
-    max-width: 100%;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
   .kg-import-url-field {
     min-width: 0;
     height: var(--kg-import-url-field-height, var(--kg-control-height, 28px));
