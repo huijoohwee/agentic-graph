@@ -50,6 +50,8 @@ The external crawler project is a capability reference only. The implementation 
 
 ## 2026-09-28 Import URL Main Panel tab
 
+**Viewport placement follow-up.** Main Panel opens and restores at the viewport center, follows viewport resizing, and keeps that center across tab changes. Saved drag coordinates no longer control a new opening. Manual dragging reuses the shared full-viewport clamp; a resize observer keeps the header reachable when the card size changes. Live local verification measured zero horizontal and vertical center offset at 1280×720 and 1104×952 while switching Settings → Workflow Manager → Import URL. Scope: five source/test files, under 10 KB, no dependency or service added; rollback is a source revert. This is local UI evidence, with no new Production or demand claim.
+
 **PRD.** The website page picker lives in a new Import URL tab immediately to the right of Workflow Manager in Main Panel. Launch → Import URL → Crawl website headlessly opens that tab. It keeps the existing folder/page checkboxes, filter, link discovery and exact-selection import action.
 
 **TAD / ADR.** Reuse the shared Main Panel registry, icon library and open event. Resolve tabs from the registry instead of maintaining a conflicting event allowlist. The lazy picker view replaces the body-mounted modal. One bounded selection session owns discovery, cancellation and selection state across tab switches and closing/reopening Main Panel; starting another selection cancels and settles its predecessor. Nothing is imported until Import selected is chosen.

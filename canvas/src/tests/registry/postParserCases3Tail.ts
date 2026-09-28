@@ -117,6 +117,7 @@ export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
   ["storyboardWidget.overlay.budgetedPanelRelaxWiring","@/__tests__/labelCollisionPolicyWiring.test","testStoryboardWidgetOverlayUsesBudgetedPanelRelax"],
   ["ui.overlayClamp.keepsPanelInViewport","@/__tests__/overlayClamp.test","testOverlayClampKeepsPanelInViewport"],
   ["ui.overlayClamp.snapPxRoundsToGrid","@/__tests__/overlayClamp.test","testOverlayClampSnapPxRoundsToGrid"],
+  ["ui.overlayClamp.centerKeepsPanelAndHeaderReachable","@/__tests__/overlayClamp.test","testOverlayClampCenterKeepsPanelAndHeaderReachable"],
   ["ui.overlayClamp.localPositionKeepsMenuInViewport","@/__tests__/overlayClamp.test","testOverlayClampLocalPositionKeepsMenuInViewport"],
   ["ui.flowWidget.worldPos","@/__tests__/flowWidgetAnchorOffsets.test","testFlowWidgetWorldPosSet"],
   ["ui.overlayPanelCollision.lockedPanelFixed","@/__tests__/overlayPanelCollision.test","testOverlayPanelCollisionKeepsLockedPanelFixed"],
