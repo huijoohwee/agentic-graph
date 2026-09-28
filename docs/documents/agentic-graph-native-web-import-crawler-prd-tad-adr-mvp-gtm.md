@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.8"
+version: "0.2.9"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.7"
-prd_revision: "0.2.8"
-tad_revision: "0.2.8"
-adr_revision: "0.2.8"
-mvp_revision: "0.2.8"
-gtm_revision: "0.2.8"
+previous_document_version: "0.2.8"
+prd_revision: "0.2.9"
+tad_revision: "0.2.9"
+adr_revision: "0.2.9"
+mvp_revision: "0.2.9"
+gtm_revision: "0.2.9"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -89,6 +89,14 @@ The external crawler project is a capability reference only. The implementation 
 **TAD / ADR.** `runWorkspaceWebsiteImport` uses the shared `applyCanvasFrontmatterPreset` owner for canvas imports after checking the current job. Storage-only imports leave the current view alone. `buildWebsiteCrawlCanvasMarkdown` owns the saved D3 preset; the previous Flowchart override is removed. Other import types and the user's ability to choose another renderer retain their existing owners.
 
 **Verification / delivery.** The two native crawler/Launch checks, nine progressive import/filesystem regressions, TypeScript, hygiene and collaboration checks passed. A direct runtime probe confirms D3 before the crawl request, saved crawl preset readback, preserved storage-only view and no view change from a stale job. The in-app preview remained on Storyboard after menu clicks; live crawl verification remains pending. Source publication, protected integration and Production evidence remain separate. No new dependency or service is introduced. GTM remains the existing crawl-to-exploration workflow; no new commercial claim.
+
+## 2026-09-28 automatic webpage fidelity
+
+**PRD / MVP.** Imported webpages use the existing automatic conversion policy. The workspace toolbar has no fidelity selector or replacement fidelity label; the HTML and Markdown pane controls remain available.
+
+**TAD / ADR.** Remove the manual fidelity selector, its toolbar/main/runtime props and the unused metadata-update callback. Keep the conversion owner and its size-aware limits unchanged. Previously saved fidelity metadata remains readable for compatibility and is not rewritten on open. No new conversion mode, dependency or always-loaded module is introduced.
+
+**Verification / delivery.** The three existing toolbar consolidation, automatic routing and HTML/Viewer coexistence checks passed. The live preview at `http://127.0.0.1:5174/` has no fidelity selector and retains the HTML, Markdown, Viewer and Canvas controls. The inherited D3 renderer is also visible. TypeScript, hygiene and collaboration checks passed. Publication, protected integration and Production remain separate. GTM remains the existing crawl workflow with fewer decisions; buyer and payment claims are unchanged.
 
 ## User outcomes
 

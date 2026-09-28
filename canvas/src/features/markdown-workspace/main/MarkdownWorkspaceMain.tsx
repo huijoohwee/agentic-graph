@@ -75,7 +75,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
     onToggleFullscreen,
     presentationApiRef,
     isMarkdown,
-    webpageWorkspaceMeta, onWebpageChangeView, onWebpageUpdateMeta, contentFormat, onContentFormatChange,
+    webpageWorkspaceMeta, onWebpageChangeView, contentFormat, onContentFormatChange,
     activeText,
     setActiveText,
     jsonSourceText,
@@ -521,7 +521,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
         onToggleFullscreen,
         presentationApiRef,
         webpageSignalSummary,
-        webpageWorkspaceMeta, onWebpageChangeView, onWebpageUpdateMeta, contentFormat, onContentFormatChange,
+        webpageWorkspaceMeta, onWebpageChangeView, contentFormat, onContentFormatChange,
         forceMarkdownEditorInEditorMode,
       }}
       layoutMode={layoutMode}

@@ -138,7 +138,6 @@ export type MarkdownWorkspaceMainProps = {
 
   webpageWorkspaceMeta?: WebpageFrontmatterMeta | null
   onWebpageChangeView?: (view: WebpageViewMode) => void
-  onWebpageUpdateMeta?: (patch: { fidelityLevel?: 1 | 2 | 3 | 4 }) => void
   contentFormat?: 'markdown' | 'json' | null
   onContentFormatChange?: (format: 'markdown' | 'json') => void | Promise<void>
 
