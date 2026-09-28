@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.15"
+version: "0.2.16"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,21 +32,33 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.14"
-prd_revision: "0.2.15"
-tad_revision: "0.2.15"
-adr_revision: "0.2.15"
-mvp_revision: "0.2.15"
-gtm_revision: "0.2.15"
+previous_document_version: "0.2.15"
+prd_revision: "0.2.16"
+tad_revision: "0.2.16"
+adr_revision: "0.2.16"
+mvp_revision: "0.2.16"
+gtm_revision: "0.2.16"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
 
 ## Product decision
 
-Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action starts a server-owned headless crawl, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
+Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 discover and select website pages
+
+**PRD.** Users choose pages and folders before importing, converting or parsing a website. The Launch globe action opens a searchable path tree with no pages selected. Folder and visible-page checkboxes support partial selection; Find links expands the discovered inventory on demand. Cancel leaves imports unchanged. Confirmation sends the exact selected URLs to the existing progressive import owner and retains its D3 default.
+
+**TAD.** The lazy picker calls a bounded, same-origin discovery endpoint. The existing headless capture owner returns unique links and title before HTML serialization, conversion or artifact writes. This allows discovery even when the index page exceeds the full-capture HTML budget. Selection is limited to 500 HTTP(S) URLs in the source origin/path; credentials, asset paths, empty lists and oversized requests fail explicitly. The generation manifest records the selection and rejects replay with another selection. Selected jobs bypass sitemap/root discovery and do not enqueue links found in their chosen pages. Existing complete-content limits and failure receipts still apply to each chosen page.
+
+**ADR.** Reuse the native crawler, URL scope rules, workspace action bridge, progressive writer and renderer defaults. Extract the existing server job and filesystem/discovery helpers into single-responsibility modules below 600 lines. No site names or filenames influence discovery, selection or conversion. Discovery cancellation closes its browser; stale UI responses are ignored and the native modal restores focus on close. No new dependency or remote service is introduced.
+
+**MVP.** Focused regressions cover scope/credential/size rejection, nested folders and query variants, discovery on oversized HTML without persisted artifacts, explicit page/folder confirmation, cancellation, selected-only jobs, partial manifest visibility and generation replay mismatch. The actual library URL is checked in the local preview; bounded link discovery is not evidence of complete website inventory. Production remains outside this source increment.
+
+**GTM / bounds / rollback.** The immediate pain is spending resources converting unwanted pages before users can choose useful content. This extends the existing near-built importer; a pilot can measure time to the first chosen usable page and test willingness to pay $1. No demand or revenue claim. The initial 30-minute sprint budget is extended for browser and release checks; the implementation stays within 12 production modules and 60 KB of added production code, with the picker loaded only when requested. Discovery lists up to 500 pages per picker, serializes requests and keeps the crawler's existing navigation/security bounds. Roll back through a protected source revert to the predecessor; saved imports are preserved.
 
 ## 2026-09-28 local reveal and saved-capture refresh
 

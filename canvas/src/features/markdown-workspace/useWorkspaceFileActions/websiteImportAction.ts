@@ -13,6 +13,7 @@ import { addCompletedWebsiteFileToExplorer } from './websiteImportExplorerProgre
 export { importWebsiteViaWorkspaceRuntime, useWorkspaceWebsiteImportAction } from './websiteImportRuntimeFacade'
 
 type WebsiteImportSettings = {
+  selectedUrls?: string[]
   outputDirRel: string
   discoverSitemap: boolean
   maxPages: number
@@ -49,6 +50,7 @@ function resolveWebsiteImportSettings(opts?: WorkspaceImportWebsiteOpts): Websit
   const configuredMaxPages = Number.isFinite(store.websiteImportMaxPages) ? Number(store.websiteImportMaxPages) : 100
   const requestedMaxPages = Number.isFinite(opts?.maxPages) ? Number(opts?.maxPages) : configuredMaxPages
   return {
+    selectedUrls: opts?.selectedUrls,
     outputDirRel: String(store.websiteImportOutputDirRel || '').trim(),
     discoverSitemap: store.websiteImportDiscoverSitemap !== false,
     maxPages: clampWebsiteImportMaxPages(requestedMaxPages, opts?.minPages),
@@ -97,6 +99,7 @@ async function runWebsiteImportServerJob(args: {
       body: JSON.stringify({
         url,
         options: {
+          selectedUrls: settings.selectedUrls,
           discoverSitemap: settings.discoverSitemap,
           maxPages: settings.maxPages,
           concurrency: settings.concurrency,

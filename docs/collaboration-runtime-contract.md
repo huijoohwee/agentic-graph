@@ -65,6 +65,11 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  website_import_selection:
+    roots: ["canvas/src/lib/websites/websiteImportSelection.ts", "canvas/src/lib/websites/server/websiteImportDiscovery.ts", "canvas/src/lib/websites/server/websiteImportJob.ts", "canvas/src/lib/websites/server/websiteImportServerHelpers.ts", "canvas/src/lib/websites/server/websiteImportTypes.ts", "canvas/src/features/toolbar/WebsiteImportSelectionDialog.tsx", "canvas/src/lib/toolbar/LaunchDropdownImportUrlItem.tsx", "canvas/src/features/markdown-explorer/workspaceActionBridge.ts", "canvas/src/__tests__/websiteImportSelection.test.ts", "canvas/src/__tests__/websiteImportSelectionDialog.test.tsx"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/websiteImportSelection.test.ts", "canvas/src/__tests__/websiteImportSelectionDialog.test.tsx"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "websiteImport.launch", "webpage.htmlToArtifact", "html.unifiedToMarkdown"]
   workspace_local_reveal_and_refresh:
     roots: ["canvas/viteWorkspaceReveal.ts", "canvas/viteWorkspaceArtifactBridge.ts", "canvas/src/features/workspace-fs/workspaceRevealInFileManager.ts", "canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceViewShell.tsx", "canvas/src/lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx", "canvas/src/features/markdown-workspace/workspaceImport/refreshWebsiteImportMarkdown.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/mutationActions.ts", "canvas/src/__tests__/workspaceRevealInFileManager.test.ts", "canvas/src/__tests__/workspaceRevealMenu.test.tsx", "canvas/src/__tests__/websiteImportContentRefresh.test.ts", "canvas/src/__tests__/markdownWorkspaceViewShellSelectionSource.test.tsx"]
     commands:
