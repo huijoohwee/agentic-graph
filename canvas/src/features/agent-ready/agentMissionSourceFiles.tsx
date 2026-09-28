@@ -1,7 +1,7 @@
 import React from 'react'
 import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
 import { activateAgentRunWorkspace, useAgentRunInspection, useAgentRunWorkspace } from './agentRunInspectionStore'
-import { agentMissionWorkspace, resolveAgentMissionSource } from './agentMissionWorkspace'
+import { agentMissionWorkspace } from './agentMissionWorkspace'
 import { useAgentMissionCodebaseIndex, type MissionCodebaseIndex } from './useAgentMissionCodebaseIndex'
 import { record } from './missionControlProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -12,7 +12,10 @@ export const matchesAgentMissionSource = (search = '') =>
   '.workspace .worktrees agent-mission manifest.json inspection.json manifest.ref.json'.includes(search.trim().toLowerCase())
 
 /** A discoverable session source, never a persisted copy of private run evidence. */
-export function AgentMissionSourceFile({ search = '' }: { search?: string }) {
+export function AgentMissionSourceFile({ search = '', activePath }: {
+  search?: string
+  activePath: string | null
+}) {
   const inspection = useAgentRunInspection(), workspace = useAgentRunWorkspace()
   const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set())
@@ -22,7 +25,7 @@ export function AgentMissionSourceFile({ search = '' }: { search?: string }) {
     expandedPaths={new Set(['/', ...projection.folders.filter(path => search || !collapsed.has(path))])}
     toggleExpanded={path => setCollapsed(previous => {
       const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next
-    })} activePath={resolveAgentMissionSource(inspection?.trace, workspace?.source, codebase.data, projection)}
+    })} activePath={activePath}
     onSelectFile={path => activateAgentRunWorkspace(workspace?.view ?? 'tree', 'editor', path)} />
     {codebase.error ? <p role="status">{codebase.error}</p> : null}</>
 }

@@ -4,6 +4,7 @@ import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/type
 import { WORKSPACE_ROOT_PATH } from '@/features/workspace-fs/path'
 import { sortWorkspaceEntriesForExplorer } from '@/features/workspace-fs/workspaceFs'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { normalizeImportUrlInput } from '@/lib/url'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { subscribePointerDownDismiss, subscribeWindowEscapeDismiss } from '@/lib/browser/dismissEvents'
@@ -14,6 +15,7 @@ import { excludeLegacyWorkspaceSourceEntries } from '@/features/workspace-fs/wor
 import { isAgenticGraphWorkspaceSeedsRootPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
+  UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME,
   UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME,
   UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME,
   UI_RESPONSIVE_MENU_ROW_CLASSNAME,
@@ -198,22 +200,33 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const isExpanded = expandedPaths.has(entry.path)
     const isActive = activePath === entry.path
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
-    const isUrlSource = source && source.kind === 'url'
+    const sourceUrl = source?.kind === 'url' ? normalizeImportUrlInput(source.url) : ''
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
 
     return (
       <li key={entry.path} className="list-none">
-        <section className="group flex items-center" aria-label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
+        <section className="group flex items-center" style={isFolder ? { paddingLeft: indent } : undefined}
+          aria-label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
+          {isFolder ? (
+            <button type="button" aria-label={`${isExpanded ? 'Collapse' : 'Expand'} folder ${entry.name}`}
+              aria-expanded={isExpanded} title={`${isExpanded ? 'Collapse' : 'Expand'} ${entry.path}`}
+              className={`ml-1 w-5 self-stretch shrink-0 inline-flex items-center justify-center rounded ${UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}
+              onClick={() => toggleExpanded(entry.path)}>
+              {isExpanded
+                ? <ChevronDown role="img" aria-label="Collapse folder" className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
+                : <ChevronRight role="img" aria-label="Expand folder" className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
+            </button>
+          ) : null}
           <MarkdownFileTreeRowButton
             ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}
-            indent={indent}
+            indent={isFolder ? 0 : indent + 24}
             isActive={isActive}
             textClassName={panelTypography.panelTextClass}
             onClick={() => {
               if (isFolder) {
                 if (onSelectFolder) onSelectFolder(entry.path)
-                toggleExpanded(entry.path)
+                else toggleExpanded(entry.path)
                 return
               } else {
                 onSelectFile(entry.path)
@@ -234,24 +247,22 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
               setContextMenu({ x: pos.left, y: pos.top, entry })
             }}
           >
-            {isFolder ? (
-              isExpanded ? (
-                <ChevronDown className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
-              ) : (
-                <ChevronRight className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
-              )
-            ) : (
-              <span className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
-            )}
-            {isFolder ? <Folder className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} /> : <FileText className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
+            {isFolder
+              ? <Folder role="img" aria-label={`${onSelectFolder ? 'Select' : 'Browse'} folder ${entry.name}`} className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
+              : <FileText role="img" aria-label={`Open file ${entry.name}`} className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>
             {isWorkspaceSeedsAuthorityRoot ? (
-              <span title="Canonical source: GitHub/agentic-graph/docs/workspace-seeds" aria-label="agentic-graph workspace-seed authority">
-                <ShieldCheck className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} aria-hidden="true" />
-              </span>
+              <ShieldCheck role="img" aria-label="agentic-graph workspace-seed authority"
+                className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} />
             ) : null}
-            {isUrlSource ? <LinkIcon className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} aria-label="Imported from URL" /> : null}
           </MarkdownFileTreeRowButton>
+          {sourceUrl ? (
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
+              title={sourceUrl}
+              className={`shrink-0 inline-flex h-5 w-5 items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
+              <LinkIcon role="img" aria-label="Imported from URL" className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} />
+            </a>
+          ) : null}
           {renderFileRight ? (
             <span className="shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
               {renderFileRight({ entry, isActive })}
@@ -274,11 +285,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
         <h2 id="workspace-delete-title">Delete source file?</h2>
         <p className="break-words">{deleteTarget}</p>
         <p>This removes the workspace entry. The original imported file on your device is unchanged.</p>
-        <div className="flex justify-end gap-2">
+        <footer className="flex justify-end gap-2">
           <button type="button" autoFocus className="min-h-11 rounded border px-3" onClick={() => answerDelete(false)}>Cancel</button>
           <button type="button" disabled={props.readOnly} className={`min-h-11 rounded border px-3 ${UI_THEME_TOKENS.status.error}`}
             onClick={() => answerDelete(true)}>Delete from workspace</button>
-        </div>
+        </footer>
       </dialog>}
       {contextMenu ? (
         <section
