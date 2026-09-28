@@ -230,7 +230,6 @@ export async function runWorkspaceWebsiteImport(args: {
   const getWriter = async (importId: string) => {
     if (writer) return writer
     fs = await args.getFs()
-    await fs.ensureSeed()
     writer = await createWebsiteImportWorkspaceWriter({
       fs,
       url: args.url,
@@ -239,12 +238,11 @@ export async function runWorkspaceWebsiteImport(args: {
       importJobRef: args.importJobRef,
       jobId: args.jobId,
       status: args.status,
+      onRootPath: root => {
+        if (args.setEntries) finishExplorerUpdates = beginWebsiteImportExplorerUpdates(root)
+      },
       onFileCreated: async source => {
         if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
-        if (args.setEntries && !finishExplorerUpdates) {
-          const importRoot = ancestorPathsForWorkspacePath(source.path)[2]
-          if (importRoot) finishExplorerUpdates = beginWebsiteImportExplorerUpdates(importRoot)
-        }
         bulkSetWorkspaceEntrySources([source])
         args.setEntries?.(previous => addCompletedWebsiteFileToExplorer(previous, source.path))
         args.setExpandedPaths?.(previous => {
@@ -308,6 +306,6 @@ export async function runWorkspaceWebsiteImport(args: {
     return { createdPaths: created.createdPaths, host, websiteImportManifest: manifest, websiteImportSummary: buildWebsiteImportManifestSummary(manifest) }
   } finally {
     finishExplorerUpdates?.()
-    if (!reconciliationAttempted && writer && isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) await args.refresh?.()
+    if (!reconciliationAttempted && (writer || finishExplorerUpdates) && isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) await args.refresh?.()
   }
 }
