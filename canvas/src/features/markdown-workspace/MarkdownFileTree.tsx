@@ -15,7 +15,7 @@ import { excludeLegacyWorkspaceSourceEntries } from '@/features/workspace-fs/wor
 import { isAgenticGraphWorkspaceSeedsRootPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
-  UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME,
+  UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME,
   UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME,
   UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME,
   UI_RESPONSIVE_MENU_ROW_CLASSNAME,
@@ -55,7 +55,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   toggleExpanded: (path: WorkspacePath) => void
   activePath: WorkspacePath | null
   onSelectFile: (path: WorkspacePath) => void
-  onSelectFolder?: (path: WorkspacePath) => void
+  onSelectFolder: (path: WorkspacePath) => void
   sourcesByPath?: WorkspaceSourceIndex | null
   onCreateNewFile?: (parentPath: WorkspacePath) => void
   onRevealInFinder?: (path: WorkspacePath) => void
@@ -202,54 +202,51 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
     const sourceUrl = source?.kind === 'url' ? normalizeImportUrlInput(source.url) : ''
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
+    const selectEntry = () => isFolder ? onSelectFolder(entry.path) : onSelectFile(entry.path)
+    const iconActionClass = `${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} p-0 shrink-0 inline-flex items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`
+    const openContextMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const pos = clampOverlayTopLeftFullyInViewport({
+        pos: { left: event.clientX, top: event.clientY }, size: { width: 220, height: 260 },
+        viewport: { width: window.innerWidth || document.documentElement.clientWidth || 1,
+          height: window.innerHeight || document.documentElement.clientHeight || 1 }, snapPx: 1,
+      })
+      setContextMenu({ x: pos.left, y: pos.top, entry })
+    }
 
     return (
       <li key={entry.path} className="list-none">
-        <section className="group flex items-center" style={isFolder ? { paddingLeft: indent } : undefined}
+        <section className="group flex items-center" style={{ paddingLeft: indent }}
           aria-label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
           {isFolder ? (
             <button type="button" aria-label={`${isExpanded ? 'Collapse' : 'Expand'} folder ${entry.name}`}
               aria-expanded={isExpanded} title={`${isExpanded ? 'Collapse' : 'Expand'} ${entry.path}`}
-              className={`ml-1 w-5 self-stretch shrink-0 inline-flex items-center justify-center rounded ${UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}
+              className={`ml-1 ${iconActionClass}`}
               onClick={() => toggleExpanded(entry.path)}>
               {isExpanded
                 ? <ChevronDown role="img" aria-label="Collapse folder" className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
                 : <ChevronRight role="img" aria-label="Expand folder" className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
             </button>
           ) : null}
+          <button type="button" aria-label={`Select ${isFolder ? 'folder' : 'file'} ${entry.name}`}
+            aria-pressed={isActive} title={entry.path}
+            className={iconActionClass}
+            style={isFolder ? undefined : { marginLeft: 'calc(0.25rem + var(--kg-data-view-icon-action-sm-size, 1.75rem))' }}
+            onClick={selectEntry} onContextMenu={openContextMenu}>
+            {isFolder
+              ? <Folder role="img" aria-label={`Select folder ${entry.name}`} className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
+              : <FileText role="img" aria-label={`Select file ${entry.name}`} className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
+          </button>
           <MarkdownFileTreeRowButton
             ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}
-            indent={isFolder ? 0 : indent + 24}
+            indent={0}
             isActive={isActive}
             textClassName={panelTypography.panelTextClass}
-            onClick={() => {
-              if (isFolder) {
-                if (onSelectFolder) onSelectFolder(entry.path)
-                else toggleExpanded(entry.path)
-                return
-              } else {
-                onSelectFile(entry.path)
-              }
-            }}
-            onContextMenu={event => {
-              event.preventDefault()
-              event.stopPropagation()
-              const pos = clampOverlayTopLeftFullyInViewport({
-                pos: { left: event.clientX, top: event.clientY },
-                size: { width: 220, height: 260 },
-                viewport: {
-                  width: window.innerWidth || document.documentElement.clientWidth || 1,
-                  height: window.innerHeight || document.documentElement.clientHeight || 1,
-                },
-                snapPx: 1,
-              })
-              setContextMenu({ x: pos.left, y: pos.top, entry })
-            }}
+            onClick={selectEntry}
+            onContextMenu={openContextMenu}
           >
-            {isFolder
-              ? <Folder role="img" aria-label={`${onSelectFolder ? 'Select' : 'Browse'} folder ${entry.name}`} className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
-              : <FileText role="img" aria-label={`Open file ${entry.name}`} className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>
             {isWorkspaceSeedsAuthorityRoot ? (
               <ShieldCheck role="img" aria-label="agentic-graph workspace-seed authority"

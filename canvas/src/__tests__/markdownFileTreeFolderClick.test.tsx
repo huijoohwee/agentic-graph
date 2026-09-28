@@ -41,12 +41,15 @@ export async function testMarkdownFileTreeFolderClickDoesNotClearSelection() {
     root = createRoot(container as unknown as HTMLElement)
     await act(async () => { root!.render(<Harness />) })
     const folder = container.querySelector('button[aria-label="Folder folder"]')!
-    const icon = folder.querySelector('svg[role="img"]')!
+    const iconButton = container.querySelector('button[aria-label="Select folder folder"]')!
+    const icon = iconButton.querySelector('svg[role="img"]')!
+    if (!iconButton.classList.contains('kg-data-view-icon-action--sm')) throw Error('Folder icon must reuse the shared square control')
     if (!icon || icon.hasAttribute('aria-hidden')) throw Error('Folder icon must be a named, visible selection target')
     await act(async () => { icon.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) })
     if (selectedFolders.join() !== '/folder' || folder.getAttribute('aria-current') !== 'page') throw Error('Folder icon must select its folder')
     if (expandedCalls.length) throw Error('Folder selection must not also toggle expansion')
     const disclosure = container.querySelector('button[aria-label="Expand folder folder"]') as HTMLButtonElement
+    if (!disclosure.classList.contains('kg-data-view-icon-action--sm') || disclosure.classList.contains('self-stretch')) throw Error('Disclosure must be square, independent of row height')
     await act(async () => { disclosure.click() })
     if (expandedCalls.join() !== '/folder' || disclosure.getAttribute('aria-expanded') !== 'true') throw Error('Disclosure must expand children')
     if (!container.querySelector('button[aria-label="File file.md"]')) throw Error('Expanded folder must reveal its file')
@@ -88,6 +91,7 @@ export async function testMarkdownFileTreeExcludesLegacyRootsAndKeepsCanonicalAr
         toggleExpanded={() => undefined}
         activePath={null}
         onSelectFile={() => undefined}
+        onSelectFolder={() => undefined}
         sourcesByPath={null}
       />,
     )

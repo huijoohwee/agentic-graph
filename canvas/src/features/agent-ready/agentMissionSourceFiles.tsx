@@ -1,6 +1,6 @@
 import React from 'react'
 import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
-import { activateAgentRunWorkspace, useAgentRunInspection, useAgentRunWorkspace } from './agentRunInspectionStore'
+import { activateAgentRunWorkspace, selectAgentRunFolder, useAgentRunInspection, useAgentRunWorkspace } from './agentRunInspectionStore'
 import { agentMissionWorkspace } from './agentMissionWorkspace'
 import { useAgentMissionCodebaseIndex, type MissionCodebaseIndex } from './useAgentMissionCodebaseIndex'
 import { record } from './missionControlProjection'
@@ -26,6 +26,7 @@ export function AgentMissionSourceFile({ search = '', activePath }: {
     toggleExpanded={path => setCollapsed(previous => {
       const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next
     })} activePath={activePath}
+    onSelectFolder={selectAgentRunFolder}
     onSelectFile={path => activateAgentRunWorkspace(workspace?.view ?? 'tree', 'editor', path)} />
     {codebase.error ? <p role="status">{codebase.error}</p> : null}</>
 }

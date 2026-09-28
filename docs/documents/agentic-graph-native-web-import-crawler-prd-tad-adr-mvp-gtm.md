@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.18"
+version: "0.2.19"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.17"
-prd_revision: "0.2.18"
-tad_revision: "0.2.18"
-adr_revision: "0.2.18"
-mvp_revision: "0.2.18"
-gtm_revision: "0.2.18"
+previous_document_version: "0.2.18"
+prd_revision: "0.2.19"
+tad_revision: "0.2.19"
+adr_revision: "0.2.19"
+mvp_revision: "0.2.19"
+gtm_revision: "0.2.19"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,16 @@ gtm_revision: "0.2.18"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 square Source Files selection controls
+
+**PRD.** Folder and file icon buttons select their source in both authored and session-only mission trees. Disclosure buttons expand/collapse independently. Both affordances use the shared 28×28 square native controls and expose named SVG images to selection tooling.
+
+**TAD / ADR.** Require a folder-selection callback in MarkdownFileTree; remove its browse/expand fallback. Reuse the existing data-view square icon-action class and shared filename row. Mission folder selection belongs to the existing inspection selection store, remains separate from the open document, clears on explicit source selection/close, and never activates a Canvas view. Both source trees consume one effective highlight. No source bytes, permissions, import behavior, or dependency changes.
+
+**MVP / verification.** Five focused component cases cover icon click selection, independent disclosure, mission folder selection without activating a workspace, retention of an open mission file, selection clearing, source links/cloud actions, active-file reveal and seed ownership. TypeScript checking passed. Live keyboard selection of the actual workflow-member folder retained expansion and selected only that folder; both selection and disclosure controls measured 28×28. The in-app browser pointer driver landed on different rows, so live pointer behavior is not claimed from that driver; DOM-event pointer tests provide the bounded click proof. Required affected validation binds the committed candidate separately.
+
+**GTM / scope / rollback.** Existing source browsing usability correction, with no Production or demand claim. Scope: four source files, three existing test files and this plan, below 40 KB changed; no new module, dependency or paid service. Initial 15-minute implementation estimate was exceeded while checking the mission selection owner and browser pointer mismatch; revised local cap is 25 minutes plus required validation/provider handoff. Revert this successor commit to restore prior controls without changing imported files or browser storage.
 
 ## 2026-09-28 Source Files selection and affordances
 
