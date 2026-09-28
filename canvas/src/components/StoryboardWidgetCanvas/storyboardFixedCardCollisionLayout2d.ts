@@ -48,28 +48,67 @@ export function settleStoryboardFixedCardCollisionItems2d(args: {
       settled.push(item)
       continue
     }
-    const xCandidates = new Set<number>([item.left])
-    const yCandidates = new Set<number>([item.top])
-    for (let blockerIndex = 0; blockerIndex < blockers.length; blockerIndex += 1) {
-      const blocker = blockers[blockerIndex]!
-      xCandidates.add(blocker.left - item.width - args.gapPx)
-      xCandidates.add(blocker.left + blocker.width + args.gapPx)
-      yCandidates.add(blocker.top - item.height - args.gapPx)
-      yCandidates.add(blocker.top + blocker.height + args.gapPx)
+    // Sweep X boundaries while retaining only horizontally intersecting blockers.
+    // Their sorted Y intervals give the nearest free Y without a Cartesian grid.
+    const events = blockers.flatMap(blocker => [
+      { x: blocker.left - item.width - args.gapPx, start: true, blocker },
+      { x: blocker.left + blocker.width + args.gapPx, start: false, blocker },
+    ]).sort((a, b) => a.x - b.x)
+    const nearestTop = (active: typeof blockers): number => {
+      let low = Infinity
+      let high = -Infinity
+      for (const blocker of active) {
+        const start = blocker.top - item.height - args.gapPx
+        const end = blocker.top + blocker.height + args.gapPx
+        if (start >= high) {
+          if (low < item.top && item.top < high) break
+          if (start >= item.top) break
+          low = start
+          high = end
+        } else high = Math.max(high, end)
+      }
+      return low < item.top && item.top < high
+        ? (item.top - low <= high - item.top ? low : high)
+        : item.top
     }
-    const candidates = Array.from(xCandidates)
-      .flatMap(left => Array.from(yCandidates).map(top => ({ left, top })))
-      .sort((left, right) => {
-        const leftScore = Math.abs(left.left - item.left) + Math.abs(left.top - item.top)
-        const rightScore = Math.abs(right.left - item.left) + Math.abs(right.top - item.top)
-        if (leftScore !== rightScore) return leftScore - rightScore
-        if (left.top !== right.top) return left.top - right.top
-        return left.left - right.left
-      })
-    const open = candidates.find(candidate => !blockers.some(blocker => (
-      storyboardFixedCardCollisionRectsOverlap2d({ ...item, ...candidate }, blocker, args.gapPx)
-    )))
-    settled.push(open ? { ...item, ...open } : item)
+    const initialTop = nearestTop(blockers.filter(blocker => (
+      item.left < blocker.left + blocker.width + args.gapPx
+      && blocker.left < item.left + item.width + args.gapPx
+    )).sort((a, b) => a.top - b.top))
+    let best = { left: item.left, top: initialTop, score: Math.abs(initialTop - item.top) }
+    const active: typeof blockers = []
+    for (let i = 0; i < events.length;) {
+      const left = events[i]!.x
+      let end = i + 1
+      while (end < events.length && events[end]!.x === left) end++
+      // Boundaries may touch: ending intervals leave before the query and
+      // starting intervals join afterwards, exactly matching strict overlap.
+      for (let j = i; j < end; j++) {
+        const event = events[j]!
+        if (!event.start) active.splice(active.indexOf(event.blocker), 1)
+      }
+      const dx = Math.abs(left - item.left)
+      if (dx <= best.score) {
+        const top = nearestTop(active)
+        const score = dx + Math.abs(top - item.top)
+        if (score < best.score || (score === best.score
+          && (top < best.top || (top === best.top && left < best.left)))) best = { left, top, score }
+      }
+      for (let j = i; j < end; j++) {
+        const event = events[j]!
+        if (!event.start) continue
+        let lo = 0
+        let hi = active.length
+        while (lo < hi) {
+          const mid = (lo + hi) >>> 1
+          if (active[mid]!.top < event.blocker.top) lo = mid + 1
+          else hi = mid
+        }
+        active.splice(lo, 0, event.blocker)
+      }
+      i = end
+    }
+    settled.push({ ...item, left: best.left, top: best.top })
   }
   return settled
 }

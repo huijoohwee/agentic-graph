@@ -354,7 +354,7 @@ export class NativeWebsiteCrawler {
     }
   }
 
-  async capture(args: { url: string; nodeDirAbs: string; sequence: number }): Promise<NativeWebsiteCapture> {
+  async capture(args: { url: string; nodeDirAbs: string; sequence: number; discoveryOnly?: boolean }): Promise<NativeWebsiteCapture> {
     if (!await this.isUrlAllowed(args.url)) throw new Error('Crawler target is not a public HTTP(S) URL')
     const browser = await this.browserFor(args.sequence)
     const context = await browser.newContext({ acceptDownloads: true, serviceWorkers: 'block' })
@@ -368,6 +368,7 @@ export class NativeWebsiteCrawler {
       const isDirectDownload = Boolean(head?.response.ok() && ((headType && !headType.includes('text/html') && !headType.includes('application/xhtml')) || headDisposition.includes('attachment')))
       if (head) await head.response.dispose().catch(() => void 0)
       if (isDirectDownload) {
+        if (args.discoveryOnly) return { finalUrl: head?.finalUrl || args.url, title: '', html: '', links: [], downloads: [] }
         const artifact = await this.persistDownload({ context, url: head?.finalUrl || args.url, nodeDirAbs: args.nodeDirAbs })
         if (!artifact) throw new Error('Download was rejected by crawler size or safety limits')
         return { finalUrl: artifact.url, title: artifact.fileName, html: '', links: [], downloads: [artifact] }
@@ -375,7 +376,7 @@ export class NativeWebsiteCrawler {
       const navigation = await page.goto(args.url, { waitUntil: 'domcontentloaded', timeout: this.navigationTimeoutMs })
         .then(response => ({ kind: 'page' as const, response }))
         .catch(async error => {
-          if (!/download is starting/i.test(String(error))) throw error
+          if (args.discoveryOnly || !/download is starting/i.test(String(error))) throw error
           const artifact = await this.persistDownload({ context, url: args.url, nodeDirAbs: args.nodeDirAbs })
           if (!artifact) throw error
           return { kind: 'download' as const, artifact }
@@ -394,11 +395,13 @@ export class NativeWebsiteCrawler {
       if (!await this.isUrlAllowed(finalUrl)) throw new Error('Crawler redirect target is not allowed')
       const contentType = String(response.headers()['content-type'] || '').toLowerCase()
       const title = String(await page.title().catch(() => '')).trim()
-      const links = await page.locator('a[href]').evaluateAll(elements => elements
+      const links = await page.locator('a[href]').evaluateAll(elements => [...new Set(elements
         .map(element => (element as HTMLAnchorElement).href)
-        .filter(Boolean)
+        .filter(Boolean))]
         .slice(0, 500)).catch(() => [] as string[])
       const downloads: WebsiteImportDownloadArtifact[] = []
+
+      if (args.discoveryOnly) return { finalUrl, title, html: '', links, downloads: [] }
 
       if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
         const artifact = await this.persistDownload({ context, url: finalUrl, nodeDirAbs: args.nodeDirAbs })
@@ -407,7 +410,10 @@ export class NativeWebsiteCrawler {
       }
 
       const htmlRaw = await page.content()
-      const html = htmlRaw.length > this.maxHtmlChars ? htmlRaw.slice(0, this.maxHtmlChars) : htmlRaw
+      // Cutting HTML can end inside an attribute or script and silently discard
+      // the rendered body. An incomplete capture must never become an ok import.
+      if (htmlRaw.length > this.maxHtmlChars) throw new Error(`Captured HTML exceeds the ${this.maxHtmlChars}-character limit`)
+      const html = htmlRaw
       if (this.options.downloadAssets) {
         const candidates = await page.locator('a[href],img[src],source[src],video[src],audio[src]').evaluateAll(elements => elements.map(element => {
           const tag = element.tagName.toLowerCase()
