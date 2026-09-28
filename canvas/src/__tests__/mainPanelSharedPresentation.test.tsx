@@ -13,6 +13,14 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
   const { restore } = initJsdomHarness()
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), previous = useGraphStore.getState()
+  const originalBounds = HTMLElement.prototype.getBoundingClientRect
+  HTMLElement.prototype.getBoundingClientRect = function () {
+    if (this.hasAttribute('data-kg-tooltip-root')) {
+      return new window.DOMRect(Number.parseFloat(this.style.left) - 180, Number.parseFloat(this.style.top), 360, 40)
+    }
+    if (this.hasAttribute('data-kg-tooltip-anchor')) return new window.DOMRect(100, 200, 80, 20)
+    return originalBounds.call(this)
+  }
   let activations = 0
   const help: MainPanelFieldHelp = {
     role: 'Orchestrator', actions: ['cap maxDepth hops from the traversal start node'],
@@ -36,6 +44,7 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
     const key = host.querySelector<HTMLElement>('dt [tabindex="0"]')!
     await act(async () => key.focus())
     assert(document.querySelector('[role="tooltip"]')?.textContent?.includes('Orchestrator → cap maxDepth hops'))
+    assert((document.querySelector('[role="tooltip"]')?.getBoundingClientRect().left ?? -1) >= 8, 'opening help keeps long text inside the viewport after effects settle')
     const run = host.querySelector<HTMLButtonElement>('button[aria-label="Run traversal"]')!
     const glyph = run.querySelector('svg')!
     assert.equal(glyph.getAttribute('role'), 'img')
@@ -46,6 +55,7 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
     assert.equal(activations, 1, 'named icon action activates once; disabled action cannot activate')
   } finally {
     await act(async () => root.unmount())
+    HTMLElement.prototype.getBoundingClientRect = originalBounds
     useGraphStore.setState({ uiPanelTextFontClass: previous.uiPanelTextFontClass, uiPanelKeyValueTextSizeClass: previous.uiPanelKeyValueTextSizeClass, uiPanelRowDensityDefaultClass: previous.uiPanelRowDensityDefaultClass })
     host.remove(); restore()
   }

@@ -74,7 +74,9 @@ Desktop navigation covers all 13 tabs: 12 content tabs inherit 14 px panel text;
 Dashboard retains its existing canvas redirect. Collaboration and Research remain
 within a 390 × 844 viewport with no horizontal panel overflow. Numeric help shows
 the configured bounds, including an explicit absent upper limit for Research tokens.
-Help lists every registered icon. Full canvas TypeScript checking reports 33 errors
+Help lists every registered icon. Shared Tooltip positions before paint so its
+viewport clamp survives the open effect. The component test checks settled
+bounds; live browser measurement changed from −11 px to the 8 px viewport inset. Full canvas TypeScript checking reports 33 errors
 in unchanged storage/media/test and Python-learning files; this is not a full green
 typecheck claim.
 
