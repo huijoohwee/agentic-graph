@@ -84,7 +84,7 @@ export const testNativeCrawlerBuildsCanvasAndDownloadLinks = async () => {
       { nodeId: 'docs', url: 'https://example.invalid/docs', title: 'Docs', status: 'ok', artifacts: { rawHtmlRelPath: 'raw.html' } },
     ],
   })
-  for (const expected of ['kgCanvas2dRenderer: "flowchart"', 'page_home -->|links| page_docs', 'Download HTML', 'guide.pdf', 'hero.png', 'kind=download']) {
+  for (const expected of ['kgCanvas2dRenderer: "d3"', 'page_home -->|links| page_docs', 'Download HTML', 'guide.pdf', 'hero.png', 'kind=download']) {
     if (!text.includes(expected)) throw new Error(`missing Canvas crawl output: ${expected}`)
   }
   if (text.includes('secret@') || text.includes('proxy.example')) throw new Error('Canvas output must not expose proxy endpoints')
