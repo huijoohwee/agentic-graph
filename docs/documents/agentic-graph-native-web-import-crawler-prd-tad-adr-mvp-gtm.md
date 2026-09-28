@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.1"
-date: "2026-09-12"
+version: "0.2.7"
+date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -12,7 +12,7 @@ delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/agentic-graph-native-web-import-crawler-prd-tad-adr-mvp-gtm.md"
-scope: "Native enhancement of existing Import URL, local-file import, Canvas projection, and live invocation owners"
+scope: "Native Import URL crawler, progressive Source Files materialization, accessible icon controls, Canvas projection, and local Markdown export destination"
 deploy_boundary: "Authoring-only; mirror and delivery lanes are not provisioned for this increment"
 reference_repository: "https://github.com/apify/crawlee"
 reference_boundary: "Concept-only review of queue, browser, proxy, retry, and storage capabilities; no source, tests, fixtures, schemas, prose, assets, or dependency copied or imported"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.0"
-prd_revision: "0.2.1"
-tad_revision: "0.2.1"
-adr_revision: "0.2.1"
-mvp_revision: "0.2.1"
-gtm_revision: "0.2.1"
+previous_document_version: "0.2.6"
+prd_revision: "0.2.7"
+tad_revision: "0.2.7"
+adr_revision: "0.2.7"
+mvp_revision: "0.2.7"
+gtm_revision: "0.2.7"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,28 @@ gtm_revision: "0.2.1"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action starts a server-owned headless crawl, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 usability increment
+
+**PRD.** The Launch → Import URL icon row shows its labels in a shared hover or focus tooltip above the menu, with no extra text below the controls. During a sitemap or website crawl, the website import folder and each completed page appear in Source Files as the manifest advances. The terminal sitemap and Canvas projection appear when the crawl completes. Launch → Export → Markdown defaults to the configured local sibling `docs_` directory derived from the current workspace; the browser save picker remains the fallback when local host writing is unavailable.
+
+**TAD.** The existing server manifest remains the source of completed node records. The icon actions retain `aria-label` and `title`; the existing delegated tooltip renders their labels in a body portal above the anchored menu. Rich media hover previews also use that shared tooltip owner, and a source guard rejects another `role="tooltip"` renderer or legacy `z-[10000]` layer. The extra crawler hint below the icons is removed. The workspace action checks the manifest when the processed count advances, and one workspace writer deduplicates node IDs across snapshots and writes each page through the existing workspace filesystem. Each completed page publishes only file and folder metadata to the Explorer; the workspace performs one full reconciliation at completion. The `/websites` workspace root is projected into Source Files, and completed page folders expand during the run. Finalization writes the sitemap and Canvas document once. The Markdown export derives the host output root from the configured docs mirror instead of hardcoding a device path.
+
+**ADR.** Reuse the shared tooltip owner and its z-index constants for plain labels and rich media previews; remove standalone tooltip renderers. Keep the crawler server and artifact routes unchanged. Reuse the manifest and local filesystem write contracts, with the existing save picker as the cross-device fallback. This keeps the page writer under 600 lines and avoids adding a second export service or paid dependency.
+
+**MVP check.** Focused tests cover a page appearing in the projected Source Files tree and its folders expanding before the terminal status, deduplication when a later snapshot repeats it, and the Markdown destination path and bytes. A live local crawl showed page files in Source Files while its server manifest remained `running`. The local browser preview confirms that the crawler tooltip appears above the open menu on focus, with no extra text below the icon row. Source checks and any protected CI result belong to the source lane receipt; no Production or buyer outcome is claimed by this increment.
+
+**GTM.** The immediate buyer pain is waiting through a multi-page import without usable files and then hunting for its export. A timed user pilot should compare time to first usable page and time to locate the exported Markdown file, then record willingness to pay $1. Demand and revenue remain unverified.
+
+## 2026-09-28 browser freeze recovery
+
+**PRD.** A long website crawl must keep Source Files usable as pages arrive and must not freeze the browser tab from a full workspace rebuild for each page.
+
+**TAD and ADR.** The website importer publishes a metadata-only file entry when its workspace write succeeds. The Explorer's automatic refresh listener ignores filesystem events under the active import folder; unrelated workspace changes continue to refresh normally. The importer releases that folder guard and reconciles the full workspace once after finalization or on failure. This retains the existing filesystem as the durable source and avoids copying every page body into React state during progress updates.
+
+**MVP check.** A focused 500-page projection test checks metadata-only growth, folder projection, and deduplication. The progress integration test checks that the first file is visible before terminal status and that the full refresh runs once. A live rerun of the user's crashed in-app browser tab remains unverified because the browser tool rejects the crash page's `data:` URL under its URL policy; source checks cannot substitute for that live observation.
+
+**GTM.** Measure browser responsiveness and time to first visible file during a timed 100-page pilot before claiming this recovery for users. No buyer or revenue evidence is recorded.
 
 ## User outcomes
 

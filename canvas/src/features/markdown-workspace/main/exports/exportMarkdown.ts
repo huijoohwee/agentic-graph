@@ -1,5 +1,6 @@
 import { saveBlobWithPicker, downloadBlob } from '@/lib/graph/save'
-import { writeAgenticOsCompanionOutputText } from '@/features/chat/chatHistoryWorkspace.output'
+import { writeAgenticOsCompanionOutputText, writeWorkspaceBlobArtifactAtPath } from '@/features/chat/chatHistoryWorkspace.output'
+import { readWorkspaceInitializationOutputDocsAbsRoot } from '@/features/workspace-fs/workspaceSeedProviderPaths'
 
 export async function exportMarkdownFile(args: {
   exportBaseName: string
@@ -9,7 +10,16 @@ export async function exportMarkdownFile(args: {
   try {
     const text = String(args.text || '')
     const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' })
-    const name = `${String(args.exportBaseName || '').trim() || 'document'}.md`
+    const base = String(args.exportBaseName || '').trim().replace(/[\\/\u0000-\u001f]/g, '_')
+    const name = `${base && !/^\.+$/.test(base) ? base : 'document'}.md`
+    const outputRoot = readWorkspaceInitializationOutputDocsAbsRoot()
+    if (outputRoot) {
+      const savedPath = await writeWorkspaceBlobArtifactAtPath({ absolutePath: `${outputRoot}/${name}`, blob })
+      if (savedPath) {
+        await writeAgenticOsCompanionOutputText({ workspacePath: args.activeDocumentPath, extension: 'md', text })
+        return
+      }
+    }
     const saved = await saveBlobWithPicker(blob, name, { description: 'Markdown Files', accept: { 'text/markdown': ['.md'] } })
     if (saved === '') return
     if (!saved) downloadBlob(blob, name)

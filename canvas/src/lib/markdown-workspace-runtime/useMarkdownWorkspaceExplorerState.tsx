@@ -12,6 +12,7 @@ import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
 import { mergeWorkspaceEntriesIntoSourceFiles } from '@/features/workspace-fs/syncToSourceFiles'
 import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
+import { isWebsiteImportExplorerUpdate } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import {
   projectWorkspaceEntriesToSourceFilesExplorer,
   resolveWorkspaceSourceRootPaths,
@@ -302,6 +303,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       const changedPath = typeof detail?.path === 'string' && detail.path ? detail.path : null
       const operation = typeof detail?.op === 'string' ? detail.op : ''
       if (operation === 'ensureSeed') return
+      if (isWebsiteImportExplorerUpdate(changedPath)) return
       if (isDirty && (!changedPath || changedPath === activePath)) return
       if (operation === 'writeFileText' && activePath && changedPath && changedPath !== activePath) return
       scheduleMarkdownWorkspaceRefreshSync(() => {

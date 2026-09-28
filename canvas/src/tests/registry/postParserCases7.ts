@@ -6,6 +6,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["ui.card.viewer.mediaInsertParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaInsertParity"],
   ["ui.tooltip.nativeDelegation", "@/__tests__/nativeTitleTooltip.test.tsx", "testNativeTitleTooltipDelegation"],
   ["ui.tooltip.explicitOwner", "@/__tests__/nativeTitleTooltip.test.tsx", "testNativeTitleTooltipExplicitOwner"],
+  ["ui.tooltip.singleSharedOwner", "@/__tests__/nativeTitleTooltip.test.tsx", "testSharedTooltipIsTheOnlyTooltipOwner"],
   ["markdown.viewer.invocationCatalogParity", "@/__tests__/markdownViewerInvocationCatalogParity.test.tsx", "testMarkdownViewerInvocationCatalogParity"],
   ["markdown.viewer.referenceEditParity", "@/__tests__/markdownViewerReferenceEditParity.test.tsx", "testMarkdownViewerReferenceEditParity"],
   ["markdown.workspace.indexing.viewerStability", "@/__tests__/markdownWorkspaceIndexingStability.test.tsx", "testMarkdownWorkspaceIndexingSettlesAcrossViewerRenders"],

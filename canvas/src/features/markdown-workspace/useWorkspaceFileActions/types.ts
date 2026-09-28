@@ -57,7 +57,7 @@ export type WorkspaceImportActionsCtx = Pick<
   'getFs' | 'refresh' | 'openedPath' | 'activeDocumentKey' | 'setActiveText' | 'setEntries' | 'lastLoadedRef' | 'setActiveMarkdownDocument'
 >
 
-export type WorkspaceWebsiteImportCtx = Pick<UseWorkspaceFileActionsArgs, 'getFs' | 'refresh'>
+export type WorkspaceWebsiteImportCtx = Pick<UseWorkspaceFileActionsArgs, 'getFs' | 'refresh' | 'setEntries' | 'setExpandedPaths'>
 
 export type WorkspaceMutationActionsCtx = Pick<
   UseWorkspaceFileActionsArgs,

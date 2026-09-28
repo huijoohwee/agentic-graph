@@ -279,7 +279,7 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
   if (!nativeCrawlerBranchSource.includes('...clearRichMediaOutputProperties(nodeProps)') || !nativeCrawlerBranchSource.includes('args.publishOutput({')) {
     throw new Error('expected native crawler runs to clear legacy source output while retaining Rich Media Panel publication')
   }
-  if (!workflowSource.includes('await args.persistDraftGraphData(durableGraph, runOptions?.sourcePersistence)')) {
+  if (!workflowSource.includes('await args.persistDraftGraphData(durableGraph, runSourcePersistence)')) {
     throw new Error('expected terminal Widget Card workflow state to await the required durable Markdown persistence path')
   }
   if (!nativeCrawlerRunSource.includes("loadingLabel: progressLabel")) {
@@ -324,16 +324,17 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
     throw new Error('expected Widget Card crawler runs to retain the shared website-import fallback when the React bridge is unavailable')
   }
   const websiteImportActionSource = fs.readFileSync(path.resolve(process.cwd(), 'src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts'), 'utf8')
+  const websiteImportNodeWriterSource = fs.readFileSync(path.resolve(process.cwd(), 'src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts'), 'utf8')
   if (!websiteImportActionSource.includes('startedAtMs > 30 * 60_000')) {
     throw new Error('expected production-size native crawls to remain attached beyond the old ten-minute timeout')
   }
-  if (!websiteImportActionSource.includes('ensureWorkspaceFolderTreeIfMissing({ folderPath: normalized, fs })')) {
+  if (!websiteImportNodeWriterSource.includes('ensureWorkspaceFolderTreeIfMissing({ folderPath: normalized, fs })')) {
     throw new Error('expected repeat crawl materialization to reuse canonical persisted workspace folders')
   }
-  if (websiteImportActionSource.includes('await fs.createFolder({ parentPath: parent, name })')) {
+  if (websiteImportNodeWriterSource.includes('await fs.createFolder({ parentPath: parent, name })')) {
     throw new Error('website materialization must not blindly create numbered duplicate folders after restart')
   }
-  if (!websiteImportActionSource.includes('upsertWorkspaceTextDocument({ fs, parentPath: rootFolder')) {
+  if (!websiteImportNodeWriterSource.includes('upsertWorkspaceTextDocument({ fs, parentPath: rootFolder')) {
     throw new Error('expected same-token crawl documents to update canonical files instead of creating duplicate files')
   }
   const workflowActionsSource = fs.readFileSync(path.resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetWorkflowActions.ts'), 'utf8')

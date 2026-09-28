@@ -2,6 +2,7 @@ import React from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { Z_INDEX_MENU } from '@/lib/ui/zIndex'
 import { useIsomorphicLayoutEffect } from '@/lib/react/useIsomorphicLayoutEffect'
 import {
   computeTooltipMaxWidthPx,
@@ -193,7 +194,7 @@ export default function Tooltip({ id, anchorElement, content, className, childre
           id={id || generatedId}
           role="tooltip"
           data-kg-tooltip-root="1"
-          className={cn(`px-2 py-1 text-xs rounded ${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text} whitespace-normal break-words overflow-hidden ${interactive ? 'pointer-events-auto' : 'pointer-events-none'} z-[10000]`, contentClassName)}
+          className={cn(`px-2 py-1 text-xs rounded ${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text} whitespace-normal break-words overflow-hidden ${interactive ? 'pointer-events-auto' : 'pointer-events-none'}`, contentClassName)}
           style={{
             ...contentStyle,
             // All hover surfaces, including rich panels, share the inverse palette.
@@ -201,6 +202,7 @@ export default function Tooltip({ id, anchorElement, content, className, childre
             backgroundColor: 'var(--kg-tooltip-bg)',
             color: 'var(--kg-tooltip-text)',
             position: 'fixed',
+            zIndex: Z_INDEX_MENU,
             top: pos.top,
             left: pos.left,
             transform: contentOffset
@@ -208,7 +210,7 @@ export default function Tooltip({ id, anchorElement, content, className, childre
               : 'translateX(-50%)',
             width: contentSize?.width ? `${contentSize.width}px` : 'max-content',
             height: contentSize?.height ? `${contentSize.height}px` : undefined,
-            maxWidth: contentSize?.width ? `${contentSize.width}px` : `min(${maxW || 250}px, calc(100vw - 16px))`,
+            maxWidth: `min(${contentSize?.width || maxW || 250}px, calc(100vw - 16px))`,
           }}
           onMouseEnter={() => {
             if (!interactive) return
