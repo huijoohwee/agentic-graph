@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.21"
-date: "2026-09-28"
+version: "0.2.22"
+date: "2026-09-29"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.20"
-prd_revision: "0.2.21"
-tad_revision: "0.2.21"
-adr_revision: "0.2.21"
-mvp_revision: "0.2.21"
-gtm_revision: "0.2.21"
+previous_document_version: "0.2.21"
+prd_revision: "0.2.22"
+tad_revision: "0.2.22"
+adr_revision: "0.2.22"
+mvp_revision: "0.2.22"
+gtm_revision: "0.2.22"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,16 @@ gtm_revision: "0.2.21"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-29 shared Settings typography and layout
+
+**PRD.** Import URL uses the same configured panel typography and density as Main Panel Settings. Preserve aligned selection checkboxes, file-only icons, square disclosure controls and keyboard/focus hierarchy guides.
+
+**TAD / ADR.** Consume existing `usePanelTypography`, `useCanvasKeyTypeValueRuntime`, `MainPanelSettingsPanelShell`, `PanelTextInput` and Settings section-action styles. Remove picker-owned fixed text sizes and oversized padding. Keep selection and discovery in their existing owners; the shared directory controls are unchanged. No new module or dependency.
+
+**MVP / verification.** All three existing picker regressions pass. Local live discovery lists four pages; two remain selected after collapse/reopen and search filtering. Computed picker labels and actions match Settings at 14 px with the same system font; row padding is 4 px. Root checkboxes align exactly beneath Select visible, children indent 20 px, and no horizontal overflow is present. Required affected validation is bound separately to the committed candidate.
+
+**GTM / bounds / rollback.** Reuse familiar panel controls for existing import users. Two files, no new module or paid resource; 15-minute edit/live-check target followed by required release checks. Reverting this successor restores prior styling without changing imported data. Local preview evidence makes no Production claim.
 
 ## 2026-09-28 Import URL checkbox alignment
 

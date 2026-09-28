@@ -2,11 +2,16 @@ import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { DirectoryTreeBranch, DirectoryTreeRow, DirectoryTreeDisclosure, DirectoryTreeFileButton, DirectoryTreeChildren } from '@/lib/ui/DirectoryTreeControls'
 import { cn } from '@/lib/utils'
+import { usePanelTypography, type PanelTypography } from '@/lib/ui/panelTypography'
+import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { getUiSectionActionClassName } from '@/lib/ui/sectionChipChrome'
+import { MainPanelSettingsPanelShell } from '@/features/panels/ui/MainPanelSettingsPanelShell'
+import { useCanvasKeyTypeValueRuntime } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { buildWebsiteSelectionTree, websiteFolderUrls, type WebsiteSelectionFolder } from '@/lib/websites/websiteImportSelection'
 
 import { useWebsiteImportSelectionSession, discoverWebsiteSelection, toggleWebsiteSelection, setWebsiteSelectionQuery, finishWebsiteImportSelection } from '@/features/panels/websiteImportSelectionSession'
 
-const actionClass = cn('rounded border px-3 py-2 text-sm disabled:opacity-50', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)
+const actionClass = getUiSectionActionClassName('primary', 'disabled:opacity-50')
 
 function SelectionCheckbox(props: { id?: string; label: string; urls: string[]; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void }) {
   const ref = React.useRef<HTMLInputElement>(null)
@@ -15,7 +20,7 @@ function SelectionCheckbox(props: { id?: string; label: string; urls: string[]; 
   return <input ref={ref} id={props.id} className="size-4 shrink-0" type="checkbox" aria-label={props.label} checked={props.urls.length > 0 && count === props.urls.length} onChange={event => props.toggle(props.urls, event.target.checked)} />
 }
 
-type PageTreeProps = { folder: WebsiteSelectionFolder; depth: number; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void; discover: (url: string) => void; busy: boolean; visited: Set<string> }
+type PageTreeProps = { folder: WebsiteSelectionFolder; depth: number; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void; discover: (url: string) => void; busy: boolean; visited: Set<string>; typography: PanelTypography; rowDensity: string }
 
 function PageFolder(props: PageTreeProps) {
   const checkboxId = React.useId()
@@ -27,7 +32,7 @@ function PageFolder(props: PageTreeProps) {
     <DirectoryTreeRow depth={depth} label={`Folder ${folder.path}`}>
       <SelectionCheckbox id={checkboxId} label={`Select folder ${folder.path}`} urls={urls} selected={selected} toggle={toggle} />
       <DirectoryTreeDisclosure name={folder.path} path={folder.path} expanded={expanded} onToggle={() => setExpanded(value => !value)} />
-      <label htmlFor={checkboxId} className="flex min-w-0 flex-1 cursor-pointer items-center py-2 text-sm">
+      <label htmlFor={checkboxId} className={cn('flex min-w-0 flex-1 cursor-pointer items-center', props.rowDensity)}>
         <span className="truncate" title={folder.path}>{folder.name}/</span>
       </label>
     </DirectoryTreeRow>
@@ -48,13 +53,13 @@ function PageTree(props: PageTreeProps) {
         <DirectoryTreeRow depth={props.depth} label={`Page ${page.url}`}>
           <SelectionCheckbox id={checkboxId} label={`Select page ${page.url}`} urls={[page.url]} selected={props.selected} toggle={props.toggle} />
           <DirectoryTreeFileButton name={name} path={page.url} label={`Select page icon ${page.url}`} selected={props.selected.has(page.url)} onSelect={() => props.toggle([page.url], !props.selected.has(page.url))} />
-          <label htmlFor={checkboxId} className="flex min-w-0 flex-1 cursor-pointer items-center py-2 text-sm">
+          <label htmlFor={checkboxId} className={cn('flex min-w-0 flex-1 cursor-pointer items-center', props.rowDensity)}>
             <span className="min-w-0 flex-1 break-words" title={page.url}>
               {page.title || `${name}${url.search}`}
-              {page.title ? <span className={cn('block text-xs', UI_THEME_TOKENS.text.secondary)}>{page.path}{url.search}</span> : null}
+              {page.title ? <span className={cn('block', props.typography.microLabelClass, UI_THEME_TOKENS.text.secondary)}>{page.path}{url.search}</span> : null}
             </span>
           </label>
-          <button type="button" className={cn(actionClass, 'ml-2 shrink-0 px-2 py-1 text-xs')} disabled={props.busy || props.visited.has(page.url)} aria-label={`Find pages linked from ${page.url}`} onClick={() => props.discover(page.url)}>{props.visited.has(page.url) ? 'Listed' : 'Find links'}</button>
+          <button type="button" className={cn(actionClass, props.typography.panelTextClass, 'ml-2 shrink-0')} disabled={props.busy || props.visited.has(page.url)} aria-label={`Find pages linked from ${page.url}`} onClick={() => props.discover(page.url)}>{props.visited.has(page.url) ? 'Listed' : 'Find links'}</button>
         </DirectoryTreeRow>
       </DirectoryTreeBranch>
     })}
@@ -63,36 +68,46 @@ function PageTree(props: PageTreeProps) {
 
 export default function WebsiteImportSelectionView() {
   const session = useWebsiteImportSelectionSession(state => state.session)
-  return session ? <WebsiteSelectionContents session={session} /> : <section className="p-4 text-sm" aria-label="Import URL"><h2 className="mb-2 font-semibold">Choose pages to import</h2><p>Start from Launch → Import URL → Crawl website headlessly. Discovered pages and folders appear here for selection.</p></section>
+  const typography = usePanelTypography()
+  const { uiPanelRowDensityDefaultClass: rowDensity } = useCanvasKeyTypeValueRuntime()
+  return <MainPanelSettingsPanelShell
+    ariaLabel={session ? 'Choose pages to import' : 'Import URL'}
+    titleNode={<h2 id="website-selection-title" className="font-semibold">Choose pages to import</h2>}
+    uiPanelKeyValueTextSizeClass={typography.textSizeClass}
+    className={cn('h-full', typography.panelTextClass)}
+    bodyClassName="flex flex-col gap-2 px-2"
+  >
+    {session ? <WebsiteSelectionContents session={session} typography={typography} rowDensity={rowDensity} /> : <p>Start from Launch → Import URL → Crawl website headlessly. Discovered pages and folders appear here for selection.</p>}
+  </MainPanelSettingsPanelShell>
 }
 
-function WebsiteSelectionContents({ session }: { session: NonNullable<ReturnType<typeof useWebsiteImportSelectionSession.getState>['session']> }) {
+function WebsiteSelectionContents({ session, typography, rowDensity }: { session: NonNullable<ReturnType<typeof useWebsiteImportSelectionSession.getState>['session']>; typography: PanelTypography; rowDensity: string }) {
   const { url, pages, selected, visited, busy, error, limited, query } = session
   const toggle = toggleWebsiteSelection
   const discover = discoverWebsiteSelection
   const visible = React.useMemo(() => pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(query.toLowerCase())), [pages, query])
   const tree = React.useMemo(() => buildWebsiteSelectionTree(visible), [visible])
-  return <section aria-label="Choose pages to import" className="flex h-full min-h-0 min-w-0 flex-col gap-3 p-4">
+  const buttonClass = cn(actionClass, typography.panelTextClass)
+  return <>
       <header>
-        <h2 id="website-selection-title" className="text-lg font-semibold">Choose pages to import</h2>
-        <p className={cn('break-all text-sm', UI_THEME_TOKENS.text.secondary)}>{url}</p>
-        <p className="mt-2 text-sm">Select pages or folders. Only selected pages will be imported, converted and parsed.</p>
+        <p className={cn('break-all', UI_THEME_TOKENS.text.secondary)}>{url}</p>
+        <p className="mt-1">Select pages or folders. Only selected pages will be imported, converted and parsed.</p>
       </header>
-      <input autoFocus type="search" aria-label="Filter discovered pages" placeholder="Filter pages…" value={query} onChange={event => setWebsiteSelectionQuery(event.target.value)} className={cn('rounded border px-3 py-2', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg)} />
-      <section className="flex flex-wrap items-center gap-3 text-sm">
+      <PanelTextInput autoFocus type="search" aria-label="Filter discovered pages" placeholder="Filter pages…" value={query} onChange={event => setWebsiteSelectionQuery(event.target.value)} className={cn(typography.keyValueInputClass, typography.panelTextClass, 'shrink-0 text-left')} />
+      <section className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-2"><SelectionCheckbox label="Select all visible pages" urls={visible.map(page => page.url)} selected={selected} toggle={toggle} />Select visible</label>
-        <button type="button" className={actionClass} disabled={!selected.size} onClick={() => toggle(pages.map(page => page.url), false)}>Clear selection</button>
+        <button type="button" className={buttonClass} disabled={!selected.size} onClick={() => toggle(pages.map(page => page.url), false)}>Clear selection</button>
         <span role="status">{selected.size} selected · {pages.length} discovered</span>
       </section>
       {busy ? <p role="status">Discovering page links…</p> : null}
-      {error ? <section role="alert" className="text-sm"><p>{error}</p><button type="button" className={actionClass} onClick={() => void discover(url)}>Retry discovery</button></section> : null}
-      {limited || pages.length >= 500 ? <p className="text-sm">Showing up to 500 discovered pages. This is a bounded list, not a complete site inventory.</p> : <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>Lists links from visited pages. Use Find links to discover more before importing.</p>}
+      {error ? <section role="alert"><p>{error}</p><button type="button" className={buttonClass} onClick={() => void discover(url)}>Retry discovery</button></section> : null}
+      {limited || pages.length >= 500 ? <p>Showing up to 500 discovered pages. This is a bounded list, not a complete site inventory.</p> : <p className={cn(typography.microLabelClass, UI_THEME_TOKENS.text.secondary)}>Lists links from visited pages. Use Find links to discover more before importing.</p>}
       <section aria-label="Website page tree" className="min-h-20 flex-1 overflow-auto overscroll-contain">
-        <PageTree folder={tree} depth={0} selected={selected} toggle={toggle} discover={url => void discover(url)} busy={busy} visited={visited} />
+        <PageTree folder={tree} depth={0} selected={selected} toggle={toggle} discover={url => void discover(url)} busy={busy} visited={visited} typography={typography} rowDensity={rowDensity} />
       </section>
-      <footer className="flex justify-end gap-2 border-t pt-3">
-        <button type="button" className={actionClass} onClick={() => finishWebsiteImportSelection(null)}>Cancel</button>
-        <button type="button" className={cn(actionClass, UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText)} disabled={busy || !selected.size} onClick={() => finishWebsiteImportSelection(pages.filter(page => selected.has(page.url)).map(page => page.url))}>Import selected ({selected.size})</button>
+      <footer className={cn('flex shrink-0 flex-wrap justify-end gap-2 border-t pt-2', UI_THEME_TOKENS.panel.border)}>
+        <button type="button" className={buttonClass} onClick={() => finishWebsiteImportSelection(null)}>Cancel</button>
+        <button type="button" className={cn(buttonClass, UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText)} disabled={busy || !selected.size} onClick={() => finishWebsiteImportSelection(pages.filter(page => selected.has(page.url)).map(page => page.url))}>Import selected ({selected.size})</button>
       </footer>
-  </section>
+  </>
 }
