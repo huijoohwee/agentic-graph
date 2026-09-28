@@ -45,6 +45,7 @@ export async function testMarkdownFileTreeFolderClickDoesNotClearSelection() {
     const icon = iconButton.querySelector('svg[role="img"]')!
     if (!iconButton.classList.contains('kg-data-view-icon-action--sm')) throw Error('Folder icon must reuse the shared square control')
     if (!icon || icon.hasAttribute('aria-hidden')) throw Error('Folder icon must be a named, visible selection target')
+    if (!icon.classList.contains('lucide-folder')) throw Error('Collapsed folder must show the closed-folder glyph')
     await act(async () => { icon.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) })
     if (selectedFolders.join() !== '/folder' || folder.getAttribute('aria-current') !== 'page') throw Error('Folder icon must select its folder')
     if (expandedCalls.length) throw Error('Folder selection must not also toggle expansion')
@@ -55,6 +56,11 @@ export async function testMarkdownFileTreeFolderClickDoesNotClearSelection() {
     if (!container.querySelector('button[aria-label="File file.md"]')) throw Error('Expanded folder must reveal its file')
     if (folder.getAttribute('aria-current') !== 'page' || selectedFolders.length !== 1) throw Error('Disclosure must preserve selection')
     if (selectFileCalls.length) throw Error('Folder controls must not open a file')
+    if (!iconButton.querySelector('.lucide-folder-open')) throw Error('Expanded folder must show the open-folder glyph')
+    const guide = container.querySelector('button[aria-label="Select folder folder from hierarchy guide"]') as HTMLButtonElement
+    if (!guide?.querySelector('svg[role="img"]')) throw Error('Hierarchy guide must expose a named image inside a real control')
+    await act(async () => { guide.click() })
+    if (selectedFolders.join() !== '/folder,/folder' || expandedCalls.join() !== '/folder') throw Error('Hierarchy guide must select its parent without changing expansion')
     if (container.querySelector('div, [aria-hidden="true"], button button')) throw Error('Tree affordances must use semantic, visible controls without nested buttons')
   } finally {
     try {

@@ -131,6 +131,10 @@ export async function testMarkdownFileTreeReadOnlyContextMenuCopiesPaths() {
 
 async function testSourceFileSelectionAndAffordances() {
   const { dom, restore } = initJsdomHarness()
+  dom.window.matchMedia = (media: string) => ({ matches: false, media, onchange: null,
+    addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => true })
+  const browserErrors: string[] = []
+  dom.window.addEventListener('error', event => { browserErrors.push(event.message) })
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
@@ -196,6 +200,7 @@ async function testSourceFileSelectionAndAffordances() {
     assert.equal(opens, 1)
     await act(async () => { root.render(<Harness activePath={entry.path} url="javascript:alert(1)" />) })
     assert.equal(container.querySelector('a'), null, 'Untrusted source protocols must never become executable links')
+    assert.deepEqual(browserErrors, [], 'Source selection handlers must finish without browser errors')
   } finally {
     await act(async () => { root.unmount() })
     closeAgentRunInspection()
