@@ -13,6 +13,7 @@ Keep `Key` aligned to `MainPanelTabKey`. Keep `Type` aligned to the shared MainP
 | commerce | mainPanel.commerce | Commerce readiness | Review commerce readiness, checkout diagnostics, proofs, and payment traces. |
 | research | mainPanel.research | Thesis compiler | Compile selected Source Files into reviewable thesis candidates. |
 | workflowManager | mainPanel.workflowManager | Workflow registry | Manage workflow registry, graph fields, shared `/` and `@` command inventory, mappings, and pipeline controls. |
+| websiteImport | mainPanel.websiteImport | Page selection | Discover pages and select folders or files before importing, converting and parsing. |
 | dashboard | mainPanel.dashboard | Runtime summary | Review runtime status, graph stats, and quick operational summaries. |
 | preview | mainPanel.preview | Rendered preview | Preview rendered markdown, media, diagrams, and selected canvas output. |
 | settings | mainPanel.settings | Shared settings | Configure shared UI, workspace, storage, parser, renderer, and chat settings. |

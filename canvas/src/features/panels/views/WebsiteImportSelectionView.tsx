@@ -1,4 +1,5 @@
 import React from 'react'
+import { MainPanelIconButton } from '../ui/MainPanelIconButton'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { DirectoryTreeBranch, DirectoryTreeRow, DirectoryTreeDisclosure, DirectoryTreeFileButton, DirectoryTreeChildren } from '@/lib/ui/DirectoryTreeControls'
 import { cn } from '@/lib/utils'
@@ -59,7 +60,7 @@ function PageTree(props: PageTreeProps) {
               {page.title ? <span className={cn('block', props.typography.microLabelClass, UI_THEME_TOKENS.text.secondary)}>{page.path}{url.search}</span> : null}
             </span>
           </label>
-          <button type="button" className={cn(actionClass, props.typography.panelTextClass, 'ml-2 shrink-0')} disabled={props.busy || props.visited.has(page.url)} aria-label={`Find pages linked from ${page.url}`} onClick={() => props.discover(page.url)}>{props.visited.has(page.url) ? 'Listed' : 'Find links'}</button>
+          <MainPanelIconButton iconKey="action.discover" label={props.visited.has(page.url) ? 'Listed' : 'Find links'} className={cn(actionClass, props.typography.panelTextClass, 'ml-2 shrink-0')} disabled={props.busy || props.visited.has(page.url)} ariaLabel={`Find pages linked from ${page.url}`} onClick={() => props.discover(page.url)} />
         </DirectoryTreeRow>
       </DirectoryTreeBranch>
     })}
@@ -96,18 +97,18 @@ function WebsiteSelectionContents({ session, typography, rowDensity }: { session
       <PanelTextInput autoFocus type="search" aria-label="Filter discovered pages" placeholder="Filter pages…" value={query} onChange={event => setWebsiteSelectionQuery(event.target.value)} className={cn(typography.keyValueInputClass, typography.panelTextClass, 'shrink-0 text-left')} />
       <section className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-2"><SelectionCheckbox label="Select all visible pages" urls={visible.map(page => page.url)} selected={selected} toggle={toggle} />Select visible</label>
-        <button type="button" className={buttonClass} disabled={!selected.size} onClick={() => toggle(pages.map(page => page.url), false)}>Clear selection</button>
+        <MainPanelIconButton iconKey="action.clear" label="Clear selection" className={buttonClass} disabled={!selected.size} onClick={() => toggle(pages.map(page => page.url), false)} />
         <span role="status">{selected.size} selected · {pages.length} discovered</span>
       </section>
       {busy ? <p role="status">Discovering page links…</p> : null}
-      {error ? <section role="alert"><p>{error}</p><button type="button" className={buttonClass} onClick={() => void discover(url)}>Retry discovery</button></section> : null}
+      {error ? <section role="alert"><p>{error}</p><MainPanelIconButton iconKey="action.discover" label="Retry discovery" className={buttonClass} onClick={() => void discover(url)} /></section> : null}
       {limited || pages.length >= 500 ? <p>Showing up to 500 discovered pages. This is a bounded list, not a complete site inventory.</p> : <p className={cn(typography.microLabelClass, UI_THEME_TOKENS.text.secondary)}>Lists links from visited pages. Use Find links to discover more before importing.</p>}
       <section aria-label="Website page tree" className="min-h-20 flex-1 overflow-auto overscroll-contain">
         <PageTree folder={tree} depth={0} selected={selected} toggle={toggle} discover={url => void discover(url)} busy={busy} visited={visited} typography={typography} rowDensity={rowDensity} />
       </section>
       <footer className={cn('flex shrink-0 flex-wrap justify-end gap-2 border-t pt-2', UI_THEME_TOKENS.panel.border)}>
-        <button type="button" className={buttonClass} onClick={() => finishWebsiteImportSelection(null)}>Cancel</button>
-        <button type="button" className={cn(buttonClass, UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText)} disabled={busy || !selected.size} onClick={() => finishWebsiteImportSelection(pages.filter(page => selected.has(page.url)).map(page => page.url))}>Import selected ({selected.size})</button>
+        <MainPanelIconButton iconKey="action.cancel" label="Cancel" className={buttonClass} onClick={() => finishWebsiteImportSelection(null)} />
+        <MainPanelIconButton iconKey="action.import" label={`Import selected (${selected.size})`} className={cn(buttonClass, UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText)} disabled={busy || !selected.size} onClick={() => finishWebsiteImportSelection(pages.filter(page => selected.has(page.url)).map(page => page.url))} />
       </footer>
   </>
 }

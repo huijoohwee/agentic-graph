@@ -364,7 +364,7 @@ export default function MainPanel({
         </footer>
       )}
     >
-      <section className="h-full min-h-0 px-2 py-2 sm:px-3 overflow-hidden" aria-label="Main panel content">
+      <section className={`h-full min-h-0 px-2 py-2 sm:px-3 overflow-hidden ${panelTypography.panelTextClass}`} aria-label="Main panel content">
         <section className="h-full min-h-0" role="tabpanel" id="main-panel-help-panel" aria-labelledby="main-panel-help-tab" hidden={tab !== 'help'}>
           {tab === 'help' && (
             <React.Suspense fallback={null}>
