@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.11"
+version: "0.2.12"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.10"
-prd_revision: "0.2.11"
-tad_revision: "0.2.11"
-adr_revision: "0.2.11"
-mvp_revision: "0.2.11"
-gtm_revision: "0.2.11"
+previous_document_version: "0.2.11"
+prd_revision: "0.2.12"
+tad_revision: "0.2.12"
+adr_revision: "0.2.12"
+mvp_revision: "0.2.12"
+gtm_revision: "0.2.12"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,16 @@ gtm_revision: "0.2.11"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action starts a server-owned headless crawl, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 dense imported document scrolling
+
+**PRD.** Existing imported documents must remain readable through the midpoint and end of both Markdown and captured-HTML panes. The reported saved `search.md` has 14 root blocks but over 4,400 nested tokens, and generates a 587-node document graph. File length and root-block count alone do not represent this workload.
+
+**TAD / ADR.** Extend the shared preview guard to walk list items, inline tokens and table cells iteratively, stopping at its existing 2,500-token or 120-heading budget. The existing large-document mode reduces optional block chrome and media work without truncating the document. For automatic Markdown document projections, reuse the existing summary graph when the generated structure exceeds 500 nodes or 1,000 edges. Both synchronous and asynchronous parser paths apply the same guard; explicit frontmatter/panel flows and Mermaid geometry retain their existing routing. Full Markdown and captured HTML stay available. No hostname-specific logic, dependency, selector or alternate converter is introduced.
+
+**Verification / delivery.** Generic dense-list, table and synchronous/asynchronous graph regressions failed before the change and pass afterward. An isolated browser replay of the saved `search.md` at 1108 × 952 completed forward and reverse scrolling through both panes, pausing at the midpoint on each pass: zero page errors, one Markdown read, one HTML read, and all 112,535 rendered text characters retained. The 19.3-second CPU profile spent 17.3 seconds idle; automatic document graph work was bounded. This is workload evidence, not a controlled before/after benchmark. The three existing large-document/flow regressions, TypeScript check, three local browser-runtime policy tests, 118 collaboration checks and ten integration-policy checks pass. The original Codex browser crash has not been reproduced in the isolated browser; this increment addresses observed resource gaps and does not establish crash-recovery parity.
+
+**GTM / bounds.** Prioritize reliable reading after progressive import. No new revenue claim. This slice changes three source modules, one regression file and this existing contract/documentation, with a 30 KB diff cap and a 20-minute investigation/repair target. Production promotion requires the current candidate's protected proof and release authority.
 
 ## 2026-09-28 usability increment
 
