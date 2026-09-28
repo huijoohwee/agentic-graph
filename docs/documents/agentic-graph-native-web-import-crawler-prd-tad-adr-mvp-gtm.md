@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.12"
+version: "0.2.13"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.11"
-prd_revision: "0.2.12"
-tad_revision: "0.2.12"
-adr_revision: "0.2.12"
-mvp_revision: "0.2.12"
-gtm_revision: "0.2.12"
+previous_document_version: "0.2.12"
+prd_revision: "0.2.13"
+tad_revision: "0.2.13"
+adr_revision: "0.2.13"
+mvp_revision: "0.2.13"
+gtm_revision: "0.2.13"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,20 @@ gtm_revision: "0.2.12"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action starts a server-owned headless crawl, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 shared webpage resource lifecycle
+
+**PRD.** The user confirmed that `library.md` was open when Canvas View Mode crashed. Fix shared source owners for all imports. Preserve complete accepted content and progressive Source Files updates; do not match filenames or hosts, alter saved artifacts, or add another converter.
+
+**TAD / ADR.** The shared webpage text loader previously retained 24 response bodies regardless of size, and cancelled viewers left upstream requests running and eligible for caching. Replace that implementation with one request/cache owner: 24 MiB aggregate retained UTF-16 payload, 8 MiB maximum retained entry, and the existing 24-entry/TTL policy. Larger accepted pages are delivered in full without retention. A request belongs to its subscribers; cancelling the last subscriber aborts its controller, while cancelling one of several subscribers leaves their request intact. Replacement requests are fenced by identity so late settlement cannot evict or overwrite them. Cache bypass follows the same lifetime rule. The preview hook stops cancelled artifact work before fallback or transformation.
+
+**Capture / streaming contract.** Artifact bodies use the existing incremental reader with a 32 MiB byte ceiling, checked both against Content-Length and actual streamed bytes before decoding a chunk. Limit failures cancel the stream and never populate the cache. This bounds request buffering without truncating accepted content. The headless crawler retains its configured HTML character limit but now rejects an oversized capture instead of slicing it mid-attribute and marking the incomplete document successful. The existing import error path reports that failure. Previously truncated saved HTML is preserved and cannot recover its missing body through this change.
+
+**MVP evidence.** Generic regressions reproduced missing upstream cancellation and retained-body budget overflow before the change. Tests cover shared subscribers, cache bypass, late obsolete completion, byte eviction, oversized bodies delivered without retention, declared and streamed response ceilings, split Unicode, and a real local headless capture that must reject a large attribute while preserving a complete small page. The saved `library.md` contains a 12,017,857-byte HTML capture ending inside an attribute. Its isolated Canvas-menu replay passed before the fix; the original Codex renderer crash is not reproduced, so request/retention proof is not a crash-parity claim. A paint-containment experiment did not reduce the large composited surface and was discarded.
+
+**Verification / delivery.** The resource and cancellation suite passes nine tests, including a real headless capture. Sixteen existing progressive-import/filesystem/cancellation tests, four preview/refresh units, TypeScript plus three browser-runtime policy tests, 118 collaboration checks and ten integration-policy checks pass. An isolated Chromium replay first reads eight saved artifacts larger than 10 MB, then opens `library.md`, opens Canvas View Mode, selects D3 and scrolls the Markdown pane through its midpoint, end and top. All preview text remains present; Launch still opens afterward, with zero page exceptions or renderer crashes. Captured-site script/CORS failures remain visible in the console, so this does not claim external-asset fidelity. Local evidence is `/tmp/website-library-resources-after-proof.json` and `/tmp/website-resources-{green,typecheck,unit,progress,contract,policy}.log`. Protected integration and Production are not established by these local checks.
+
+**GTM / bounds.** Prioritize reliable reading and switching during and after a crawl. No buyer, revenue or Production outcome is claimed. This slice has a 20-minute initial target, at most six source modules and a 30 KB diff cap. The successor reuses the existing checkout and preview; exact affected checks and native publication are required before handoff.
 
 ## 2026-09-28 dense imported document scrolling
 
