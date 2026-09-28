@@ -1,10 +1,7 @@
 import React from 'react'
+import Tooltip from '@/features/panels/ui/Tooltip'
 import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'
-import { AnchorOverlay } from '@/lib/ui/overlay'
-import {
-  UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_BODY_CLASSNAME,
-  UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME,
-} from '@/lib/ui/responsiveElementClasses'
+import { UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 export type CardMediaHoverPreviewKind = 'image' | 'svg' | 'video' | 'audio'
@@ -57,39 +54,47 @@ export function CardMediaHoverPreview(props: {
   onClose: () => void
 }) {
   const url = String(props.url || '').trim()
+  React.useEffect(() => {
+    if (!props.open || !url) return
+    const openedAt = performance.now()
+    const handlePointerDown = (event: MouseEvent) => {
+      if (performance.now() - openedAt < 120) return
+      const target = event.target
+      if (target instanceof Node && props.anchorRef.current?.contains(target)) return
+      props.onClose()
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') props.onClose()
+    }
+    window.addEventListener('mousedown', handlePointerDown, true)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown, true)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [props.anchorRef, props.onClose, props.open, url])
   if (!props.open || !url) return null
   const isAudio = props.kind === 'audio'
   return (
-    <AnchorOverlay
-      anchorRef={props.anchorRef}
+    <Tooltip
+      anchorElement={props.anchorRef.current}
       open
-      onClose={props.onClose}
-      align="bottom-center"
-      autoFocus={false}
-      className={[
-        `${UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME} [--kg-anchor-preview-overlay-width:20rem] overflow-hidden rounded border shadow-xl`,
-        UI_THEME_TOKENS.tooltip.bg,
-        UI_THEME_TOKENS.tooltip.text,
+      interactive={false}
+      id={props.tooltipId}
+      contentSize={{ width: 320, height: isAudio ? 96 : 180 }}
+      contentClassName={[
+        UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME,
+        'p-0 overflow-hidden rounded border shadow-xl',
         UI_THEME_TOKENS.panel.border,
       ].join(' ')}
-    >
-      <section
-        id={props.tooltipId}
-        role="tooltip"
-        aria-label={`${props.title} media preview`}
-        data-kg-card-media-hover-preview="1"
-        data-kg-card-media-hover-preview-kind={props.kind}
-        data-kg-canvas-pointer-ignore="true"
-        data-kg-canvas-wheel-ignore="true"
-        className={`${UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_BODY_CLASSNAME} pointer-events-none`}
-        style={{
-          width: 320,
-          maxWidth: '100%',
-          height: isAudio ? 96 : 180,
-          overflow: 'hidden',
-          ['--kg-anchor-preview-max-height' as never]: isAudio ? '6rem' : '11.25rem',
-        }}
-      >
+      contentDataAttrs={{
+        'aria-label': `${props.title} media preview`,
+        'data-kg-card-media-hover-preview': '1',
+        'data-kg-card-media-hover-preview-kind': props.kind,
+        'data-kg-canvas-pointer-ignore': 'true',
+        'data-kg-canvas-wheel-ignore': 'true',
+      }}
+      content={
         <CardMediaPreview
           kind={props.kind}
           url={url}
@@ -103,7 +108,7 @@ export function CardMediaHoverPreview(props: {
           className="h-full w-full"
           mediaClassName="h-full w-full"
         />
-      </section>
-    </AnchorOverlay>
+      }
+    >{null}</Tooltip>
   )
 }

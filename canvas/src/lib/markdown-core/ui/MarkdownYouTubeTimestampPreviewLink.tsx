@@ -1,10 +1,9 @@
 import React from 'react'
-import { createPortal } from 'react-dom'
 import { buildYouTubeThumbnailPreviewDescriptor, buildYouTubeTimestampFramePreviewDescriptor, type RichMediaPreviewDescriptor } from 'grph-shared/rich-media/providers'
+import Tooltip from '@/features/panels/ui/Tooltip'
 import { MediaVideoSnapshot } from '@/lib/markdown-core/ui/MarkdownMediaUi.impl'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
-import { Z_INDEX_ANCHOR_OVERLAY } from '@/lib/ui/zIndex'
 import { buildAnchorAttrs } from './markdownPreviewLinks.impl'
 
 const isCoarsePointerViewport = (): boolean => {
@@ -30,7 +29,6 @@ export function YouTubeTimestampPreviewLink({
   children: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
-  const [previewPosition, setPreviewPosition] = React.useState<{ left: number; top: number } | null>(null)
   const tooltipId = React.useId()
   const linkRef = React.useRef<HTMLAnchorElement | null>(null)
   const touchTapArmedRef = React.useRef(false)
@@ -51,34 +49,7 @@ export function YouTubeTimestampPreviewLink({
     setOpen(false)
   }
 
-  const updatePreviewPosition = React.useCallback(() => {
-    const el = linkRef.current
-    if (!el || typeof window === 'undefined') return
-    const rect = el.getBoundingClientRect()
-    const previewWidth = Math.min(224, Math.max(160, window.innerWidth - 32))
-    const halfWidth = previewWidth / 2
-    setPreviewPosition({
-      left: Math.max(halfWidth + 8, Math.min(window.innerWidth - halfWidth - 8, rect.left + (rect.width / 2))),
-      top: rect.bottom + 8,
-    })
-  }, [])
-
-  const openPreview = () => {
-    updatePreviewPosition()
-    setOpen(true)
-  }
-
-  React.useEffect(() => {
-    if (!open) return
-    updatePreviewPosition()
-    const handleViewportChange = () => updatePreviewPosition()
-    window.addEventListener('scroll', handleViewportChange, true)
-    window.addEventListener('resize', handleViewportChange)
-    return () => {
-      window.removeEventListener('scroll', handleViewportChange, true)
-      window.removeEventListener('resize', handleViewportChange)
-    }
-  }, [open, updatePreviewPosition])
+  const openPreview = () => setOpen(true)
 
   if (!sourceUrl || !timestampLabel) {
     return (
@@ -131,23 +102,21 @@ export function YouTubeTimestampPreviewLink({
       >
         {children}
       </a>
-      {open && previewPosition && typeof document !== 'undefined' ? createPortal(
-        <span
-          id={tooltipId}
-          role="tooltip"
-          data-kg-youtube-timestamp-preview="1"
-          data-kg-rich-media-preview-key={preview.semanticKey}
-          data-src={sourceUrl}
-          data-kg-canvas-pointer-ignore="true"
-          data-kg-canvas-wheel-ignore="true"
-          className={['pointer-events-none fixed', UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME, 'overflow-hidden rounded border shadow-xl', UI_THEME_TOKENS.tooltip.bg, UI_THEME_TOKENS.tooltip.text, UI_THEME_TOKENS.panel.border].join(' ')}
-          style={{
-            left: previewPosition.left,
-            top: previewPosition.top,
-            transform: 'translateX(-50%)',
-            zIndex: Z_INDEX_ANCHOR_OVERLAY,
-          }}
-        >
+      {open && <Tooltip
+        anchorElement={linkRef.current}
+        open
+        interactive={false}
+        contentSize={{ width: 224 }}
+        contentClassName={[UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME, 'p-0 overflow-hidden rounded border shadow-xl', UI_THEME_TOKENS.panel.border].join(' ')}
+        contentDataAttrs={{
+          'data-kg-youtube-timestamp-preview': '1',
+          'data-kg-rich-media-preview-key': preview.semanticKey,
+          'data-src': sourceUrl,
+          'data-kg-canvas-pointer-ignore': 'true',
+          'data-kg-canvas-wheel-ignore': 'true',
+        }}
+        id={tooltipId}
+        content={<>
           <span className="block aspect-video w-full bg-black">
             <MediaVideoSnapshot
               url={sourceUrl}
@@ -163,9 +132,8 @@ export function YouTubeTimestampPreviewLink({
           <span className={`block px-2 py-1 text-[11px] leading-tight ${UI_THEME_TOKENS.tooltip.text}`}>
             {timestampLabel}
           </span>
-        </span>,
-        document.body,
-      ) : null}
+        </>}
+      >{null}</Tooltip>}
     </span>
   )
 }

@@ -1,4 +1,7 @@
 import React from 'react'
+import { readFileSync, readdirSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createRoot } from 'react-dom/client'
 import NativeTitleTooltip from '@/features/panels/ui/NativeTitleTooltip'
 import Tooltip from '@/features/panels/ui/Tooltip'
@@ -82,4 +85,27 @@ export async function testNativeTitleTooltipExplicitOwner() {
     await tick()
     assert(button.title === 'Native duplicate', 'Leaving an explicit tooltip must restore authored attributes')
   } finally { root.unmount(); restore() }
+}
+
+export function testSharedTooltipIsTheOnlyTooltipOwner() {
+  const srcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const canonicalOwner = path.join(srcRoot, 'features/panels/ui/Tooltip.tsx')
+  const stack = [srcRoot]
+  const tooltipOwners: string[] = []
+  while (stack.length) {
+    const dir = stack.pop()!
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        if (entry.name !== '__tests__' && entry.name !== 'tests') stack.push(path.join(dir, entry.name))
+        continue
+      }
+      if (!entry.isFile() || !/\.(tsx|jsx|css)$/.test(entry.name)) continue
+      const file = path.join(dir, entry.name)
+      const source = readFileSync(file, 'utf8')
+      assert(!source.includes('z-[10000]'), `Legacy tooltip layer is forbidden in ${path.relative(srcRoot, file)}`)
+      if (/role\s*=\s*["']tooltip["']/.test(source)) tooltipOwners.push(file)
+    }
+  }
+  assert(tooltipOwners.length === 1 && tooltipOwners[0] === canonicalOwner,
+    `Only the shared Tooltip may render role=tooltip; found ${tooltipOwners.map(file => path.relative(srcRoot, file)).join(', ')}`)
 }

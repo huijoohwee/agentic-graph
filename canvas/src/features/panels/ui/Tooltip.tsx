@@ -210,7 +210,7 @@ export default function Tooltip({ id, anchorElement, content, className, childre
               : 'translateX(-50%)',
             width: contentSize?.width ? `${contentSize.width}px` : 'max-content',
             height: contentSize?.height ? `${contentSize.height}px` : undefined,
-            maxWidth: contentSize?.width ? `${contentSize.width}px` : `min(${maxW || 250}px, calc(100vw - 16px))`,
+            maxWidth: `min(${contentSize?.width || maxW || 250}px, calc(100vw - 16px))`,
           }}
           onMouseEnter={() => {
             if (!interactive) return
