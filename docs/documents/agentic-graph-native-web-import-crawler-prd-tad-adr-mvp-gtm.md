@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.10"
+version: "0.2.11"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.9"
-prd_revision: "0.2.10"
-tad_revision: "0.2.10"
-adr_revision: "0.2.10"
-mvp_revision: "0.2.10"
-gtm_revision: "0.2.10"
+previous_document_version: "0.2.10"
+prd_revision: "0.2.11"
+tad_revision: "0.2.11"
+adr_revision: "0.2.11"
+mvp_revision: "0.2.11"
+gtm_revision: "0.2.11"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -105,6 +105,18 @@ The external crawler project is a capability reference only. The implementation 
 **TAD / ADR.** The shared HTML converter consumes rendered content first and uses caller-supplied embedded Markdown only when the body conversion is empty. Head metadata cannot mask that fallback. One extracted content-root owner includes the nearest bounded title-bearing container around a prose fragment while respecting explicit article/main and existing strong root boundaries, multiple-title boundaries, and surrounding navigation. Existing embedded-data compatibility remains an input fallback, never an early return that discards rendered siblings. The crawler writes normal article Markdown; head diagnostics remain in the captured raw HTML artifact. Debug snapshot formatting moves into its own helper; the webpage artifact entry point drops below 600 lines. The pre-existing 1,420-line unified converter shrinks; splitting its remaining unrelated transforms is outside this increment. No new dependency or always-loaded renderer is added.
 
 **Verification / delivery.** Nineteen focused cases pass, including fixtures with no embedded data, independent URLs, explicit article markup, title/media/section preservation, separate visual rows, embedded-only pages with image exclusion, and existing multilingual/media conversions. A local server import verifies article output without diagnostic metadata. Replaying the saved 196,776-byte reported page changed the former 104-character result to complete article Markdown; title, video reference, all 27 chapter rows, description once and transcript ending are checked. TypeScript, hygiene and collaboration contract checks pass. This is captured-source replay evidence, not a claim of pixel-identical reproduction or recovery of an already-saved workspace file. The screenshot's `destroy` error has no reproduced stack and remains unresolved. Source publication, protected integration and Production receipts remain distinct. GTM remains reliable crawl-to-exploration; no new buyer or payment claim.
+
+## 2026-09-28 progressive import lifecycle and page identity
+
+**PRD / MVP.** While completed pages appear, opening one must preserve its URL and content through the remaining crawl. Different query variants of a pathname are separate files. Imported page notifications must not restart workspace reconciliation or active-document materialization for every write.
+
+**TAD / ADR.** The existing import refresh owner now includes parent-folder creation. The Source Files open event expands the progressive tree without its former full refresh; the persistence bootstrap invalidates its cache but skips repeated materialization for crawler-owned paths. The shared URL-to-file resolver adds a bounded query identity suffix, also used by crawl-table links. The writer rejects any remaining path collision before a write, so sanitization collisions fail visibly instead of overwriting another page. The shared preview fetch owner rejects cancelled requests before starting network work and observes a request that fails after its subscriber cancels. Every generated page, including an unavailable-conversion stub, uses the existing webpage document builder and shared D3 preset so opening it cannot inherit a previous document's XR renderer. Normal paths, unrelated filesystem changes, completion reconciliation and failure cleanup retain their existing owners. No site-specific branch, dependency or renderer is added.
+
+**Verification / delivery.** A regression reproduced three query variants overwriting one file; it now preserves all three and leaves the already-opened page unchanged. The real Explorer open hook reproduced an extra full refresh and now opens/expands without it. Tests also check parent paths, sibling boundaries, concurrent import ownership, cancellation, D3 presets and collision failure. An isolated Chromium replay through Launch completed the saved 99-successful-node capture while its large `library.md` was open during import. Files appeared progressively; 99 Markdown artifacts and one raw-HTML preview were requested, with zero page errors. Reload and reopening Launch succeeded, with just one further raw-HTML request and zero page errors. The replay blocked external network traffic; missing artifacts and captured-page CSP messages are expected fixture limitations. Local evidence is recorded in `/tmp/website-import-active-proof.json`, `/tmp/website-import-replay-proof.json` and `/tmp/website-import-state-replay.log`; capture content is not committed. The user's existing in-app session and Production are not covered by that receipt. The earlier null `destroy` error was not reproduced or traced in this run.
+
+**Required local checks.** The candidate passes 16 focused import/filesystem/lifecycle/cancellation tests, four bootstrap/manual-refresh/two-tab-save cases, 13 Block editor tests, 118 collaboration contract tests, 10 integration-policy tests, Canvas TypeScript checking and three Vite runtime tests. The production build and required 375-pixel mobile browser check pass with offline reopen, edit/save/reload, pinch zoom and zero page errors. These are local working-tree checks before publication; protected CI must bind its result to the published commit. Collaboration contract, hygiene and whitespace checks pass.
+
+**GTM / bounds.** Restore reliable crawl-to-exploration before a user pilot. No buyer/payment claim. This increment is limited to six source modules plus focused tests and contracts, below 30 KB; existing overlong files must not grow. Full runtime crash recovery requires browser evidence, not source assertions alone.
 
 ## User outcomes
 

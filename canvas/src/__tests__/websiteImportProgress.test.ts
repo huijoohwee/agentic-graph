@@ -7,6 +7,7 @@ import { addCompletedWebsiteFileToExplorer } from '@/features/markdown-workspace
 import { beginWebsiteImportExplorerUpdates, isWebsiteImportExplorerUpdate } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import { projectWorkspaceEntriesToSourceFilesExplorer, resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import type { WebsiteImportManifestV1, WebsiteImportNode } from '@/lib/websites/server/websiteImportTypes'
+import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 
 const node = (id: string, url: string): WebsiteImportNode => ({
   nodeId: id,
@@ -42,6 +43,66 @@ test('a large progressive import initializes and inventories the workspace once'
   for (const path of published) assert.match(String(await stored.readFileText(path)), /kgWebsiteNodeId/)
 })
 
+test('query variants keep separate files without replacing a page already opened during the crawl', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const published: string[] = []
+  const writer = await createWebsiteImportWorkspaceWriter({
+    fs, url: 'https://example.invalid/library', importId: 'query-pages',
+    settings: { outputDirRel: '', concurrency: 2, defaultView: 'html', generateArtifactDocs: false, browserEnhance: false },
+    importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} },
+    onFileCreated: async source => { published.push(source.path) },
+  })
+  const home = node('home', 'https://example.invalid/library')
+  await writer.writeNodes([home])
+  const firstPath = published[0]!
+  const firstText = await fs.readFileText(firstPath)
+  assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(firstText))?.canvas2dRenderer, 'd3')
+  assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(firstText))?.canvasRenderMode, '2d')
+  await writer.writeNodes([home, node('a', 'https://example.invalid/library?category=a'), node('b', 'https://example.invalid/library?category=b')])
+  assert.equal(new Set(published).size, 3, 'query variants must not overwrite a shared pathname')
+  assert.equal(await fs.readFileText(firstPath), firstText, 'the displayed page must stay unchanged as later pages finish')
+  assert.match(String(await fs.readFileText(published[1]!)), /category=a/)
+  assert.match(String(await fs.readFileText(published[2]!)), /category=b/)
+})
+
+test('converted crawl pages carry the shared D3 preset when opened individually', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const originalFetch = globalThis.fetch
+  let path = ''
+  try {
+    globalThis.fetch = async () => new Response('# Complete article\n\nBody text.')
+    const writer = await createWebsiteImportWorkspaceWriter({
+      fs, url: 'https://example.invalid/', importId: 'page-preset',
+      settings: { outputDirRel: '', concurrency: 2, defaultView: 'html', generateArtifactDocs: true, browserEnhance: false },
+      importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} },
+      onFileCreated: async source => { path = source.path },
+    })
+    await writer.writeNodes([node('article', 'https://example.invalid/article')])
+    const text = String(await fs.readFileText(path))
+    const preset = parseCanvasWorkspaceFrontmatterPreset(text)
+    assert.equal(preset?.canvasSurfaceMode, '2d')
+    assert.equal(preset?.canvas2dRenderer, 'd3')
+    assert.match(text, /Complete article/)
+    assert.match(text, /Body text\./)
+  } finally { globalThis.fetch = originalFetch }
+})
+
+test('remaining sanitized path collisions cannot replace completed pages', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const published: string[] = []
+  const writer = await createWebsiteImportWorkspaceWriter({
+    fs, url: 'https://example.invalid/', importId: 'collision',
+    settings: { outputDirRel: '', concurrency: 2, defaultView: 'html', generateArtifactDocs: false, browserEnhance: false },
+    importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} },
+    onFileCreated: async source => { published.push(source.path) },
+  })
+  await writer.writeNodes([node('plus', 'https://example.invalid/a+b')])
+  const text = await fs.readFileText(published[0]!)
+  await assert.rejects(writer.writeNodes([node('at', 'https://example.invalid/a@b')]), /path collision/)
+  assert.equal(published.length, 1)
+  assert.equal(await fs.readFileText(published[0]!), text)
+})
+
 test('missing server Markdown never reparses a large HTML capture on the client', async () => {
   const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 }] })
   const originalFetch = globalThis.fetch
@@ -64,6 +125,7 @@ test('missing server Markdown never reparses a large HTML capture on the client'
     const text = await fs.readFileText('/websites/example.invalid/missing-markdown/oversized.md')
     assert.match(String(text), /Markdown conversion is unavailable/)
     assert.match(String(text), /kgWebsiteNodeId: "oversized"/)
+    assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(text))?.canvas2dRenderer, 'd3')
     assert.ok(String(text).length < 1024, 'unconverted captures remain referenced, not copied into the workspace')
   } finally {
     globalThis.fetch = originalFetch
@@ -216,6 +278,28 @@ test('completed page projection remains metadata-only and deduplicated for a lar
     finish()
   }
   assert.equal(isWebsiteImportExplorerUpdate(`${root}/page.md`), false)
+})
+
+test('crawl refresh ownership includes parent creation and ends only after all writers finish', () => {
+  const root = '/websites/example.invalid/live'
+  const finishFirst = beginWebsiteImportExplorerUpdates(root)
+  const finishSecond = beginWebsiteImportExplorerUpdates(root)
+  try {
+    for (const path of ['/websites', '/websites/example.invalid', root, `${root}/page.md`]) {
+      assert.equal(isWebsiteImportExplorerUpdate(path), true, path)
+    }
+    for (const path of ['/websites-other', '/websites/example.invalid-2', `${root}-other/page.md`, null]) {
+      assert.equal(isWebsiteImportExplorerUpdate(path), false, String(path))
+    }
+    finishFirst()
+    finishFirst()
+    assert.equal(isWebsiteImportExplorerUpdate(root), true)
+  } finally {
+    finishFirst()
+    finishSecond()
+  }
+  assert.equal(isWebsiteImportExplorerUpdate(root), false)
+  assert.equal(isWebsiteImportExplorerUpdate('/websites'), false)
 })
 
 test('failed writer initialization releases its refresh guard and reconciles once', async () => {

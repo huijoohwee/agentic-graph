@@ -11,6 +11,7 @@ import { buildWebsiteSitemapMarkdown } from '@/lib/websites/websiteSitemapMarkdo
 import { buildWebsiteCrawlCanvasMarkdown } from '@/lib/websites/websiteCrawlCanvasMarkdown'
 import type { WebsiteImportManifestV1, WebsiteImportNode } from '@/lib/websites/server/websiteImportTypes'
 import { buildWebpageWorkspaceEntryTextFromUpstreamMarkdown } from '../workspaceImport'
+import { D3_URL_IMPORT_CANVAS_PRESET } from '../workspaceImport/canvasPresets'
 
 export type WebsiteImportSettings = {
   outputDirRel: string
@@ -86,20 +87,14 @@ export async function createWebsiteImportWorkspaceWriter(args: {
   const generateArtifactDocs = settings.generateArtifactDocs
 
   const stubForNode = (nodeUrl: string, nodeId: string, unavailable = false) => {
-    const lines = [
-      '---',
-      `kgWebpageUrl: "${nodeUrl}"`,
-      `kgWebpageView: "${view}"`,
-      !/^https?:\/\//i.test(nodeUrl) && localSiteRootRel ? `kgWebpageSiteRootRel: "${localSiteRootRel}"` : null,
-      `kgWebsiteImportId: "${importId}"`,
-      `kgWebsiteNodeId: "${nodeId}"`,
-    ]
-    if (settings.outputDirRel) lines.push(`kgWebsiteOutputDirRel: "${settings.outputDirRel}"`)
-    lines.push('---', '')
-    const frontmatter = lines.filter(Boolean).join('\n')
-    return unavailable
-      ? `${frontmatter}\n\nMarkdown conversion is unavailable for this page. Use the HTML view to inspect the captured source.\n`
-      : frontmatter
+    const text = buildWebpageWorkspaceEntryTextFromUpstreamMarkdown({
+      upstreamMarkdown: unavailable ? 'Markdown conversion is unavailable for this page. Use the HTML view to inspect the captured source.' : '',
+      url: nodeUrl, view, canvasPreset: D3_URL_IMPORT_CANVAS_PRESET,
+      websiteImportMeta: { importId, nodeId, outputDirRel: settings.outputDirRel || undefined },
+    })
+    return !/^https?:\/\//i.test(nodeUrl) && localSiteRootRel
+      ? text.replace('\n---', `\nkgWebpageSiteRootRel: ${JSON.stringify(localSiteRootRel)}\n---`)
+      : text
   }
 
   const rootFolder = normalizeWorkspacePath(`/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(importId)}`)
@@ -111,6 +106,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
   const docLinkByNodeId: Record<string, string> = {}
   const ctrl = new AbortController()
   const seenNodeIds = new Set<string>()
+  const claimedDocumentPaths = new Set<string>()
   const folderCache = new Map<string, Promise<WorkspacePath>>([[rootFolder, Promise.resolve(rootFolder)]])
   const ensureFolderCached = async (absPath: string) => {
     const normalized = normalizeWorkspacePath(absPath)
@@ -175,6 +171,8 @@ export async function createWebsiteImportWorkspaceWriter(args: {
           nodeUrl: row.nodeUrl,
           nodePath: row.nodeTreePath,
         })
+        if (claimedDocumentPaths.has(relativeDocumentPath)) throw new Error(`Crawl page path collision: ${relativeDocumentPath}`)
+        claimedDocumentPaths.add(relativeDocumentPath)
         const documentParts = relativeDocumentPath.split('/').filter(Boolean)
         const primaryName = documentParts[documentParts.length - 1] || 'index.md'
         const folderParts = documentParts.slice(0, Math.max(0, documentParts.length - 1))
@@ -211,6 +209,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
                 upstreamMarkdown: selectedMarkdown,
                 url: row.nodeUrl,
                 view,
+                canvasPreset: D3_URL_IMPORT_CANVAS_PRESET,
                 title: selectedTitle,
                 fidelityLevel: 4,
                 includeImages: true,

@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 66
+contract_version: 67
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -66,9 +66,10 @@ deployment:
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
   website_import_progress:
-    roots: ["canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportExplorerProgress.ts", "canvas/src/features/workspace-fs/websiteImportRefreshGuard.ts", "canvas/src/features/workspace-fs/upsertWorkspaceTextDocument.ts", "canvas/src/features/workspace-fs/ensureFolderTreeIfMissing.ts", "canvas/src/features/workspace-fs/workspaceFsInitialization.ts", "canvas/src/__tests__/websiteImportProgress.test.ts", "canvas/src/__tests__/workspaceFsMutationInitialization.test.ts"]
+    roots: ["canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportExplorerProgress.ts", "canvas/src/features/workspace-fs/websiteImportRefreshGuard.ts", "canvas/src/features/workspace-fs/upsertWorkspaceTextDocument.ts", "canvas/src/features/workspace-fs/ensureFolderTreeIfMissing.ts", "canvas/src/features/workspace-fs/workspaceFsInitialization.ts", "canvas/src/__tests__/websiteImportProgress.test.ts", "canvas/src/__tests__/workspaceFsMutationInitialization.test.ts", "canvas/src/lib/websites/websitePathUtils.ts", "canvas/src/features/source-files/SourceFilesPersistenceBootstrap.tsx", "canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceOpenSourceFilesEvent.ts", "canvas/src/__tests__/websiteImportExplorerLifecycle.test.tsx", "canvas/src/__tests__/sourceFilesIngestStaleGuard.test.ts", "canvas/src/lib/websites/webpageIframeSrcdoc.ts", "canvas/src/__tests__/webpageArtifactCancellation.test.ts"]
     commands:
-      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/websiteImportProgress.test.ts", "canvas/src/__tests__/workspaceFsMutationInitialization.test.ts"]
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/websiteImportProgress.test.ts", "canvas/src/__tests__/workspaceFsMutationInitialization.test.ts", "canvas/src/__tests__/websiteImportExplorerLifecycle.test.tsx", "canvas/src/__tests__/webpageArtifactCancellation.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "sourceFiles.bootstrap.resyncsOnlyOnActivePathChanges", "sourceFiles.bootstrap.resyncsOnWorkspaceFsSeedChanges", "workspace.refresh.manualActions.suppressFollowUpFsEvent"]
   website_import_canvas:
     roots: ["canvas/src/lib/websites/websiteCrawlCanvasMarkdown.ts", "canvas/src/__tests__/nativeWebsiteCrawler.test.ts"]
     commands:
