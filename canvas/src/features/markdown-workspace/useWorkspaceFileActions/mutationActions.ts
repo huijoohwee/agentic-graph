@@ -97,6 +97,14 @@ export function useWorkspaceMutationActions(args: {
       try {
         const fs = await getFs()
         const prevText = await fs.readFileText(normalized).catch(() => '')
+        const { refreshWebsiteImportMarkdown } = await import('../workspaceImport/refreshWebsiteImportMarkdown')
+        const capturedText = await refreshWebsiteImportMarkdown(prevText || '', src.url)
+        if (capturedText !== null) {
+          if (await fs.readFileText(normalized) !== prevText) throw new Error('The file changed while refreshing; retry to keep the latest edits')
+          await writeMutationWorkspaceText(normalized, capturedText, { activeDocumentSourceUrl: src.url })
+          status.setStatusInfo('Refreshed from saved HTML')
+          return
+        }
         const prevFm = prevText ? extractYamlFrontmatterBlock(prevText) : null
         const prevMeta = prevText ? parseWebpageFrontmatterMeta(prevText) : null
         const prevViewRaw = prevFm ? readYamlFrontmatterValue(prevFm.rawBlock, 'kgWebpageView') : ''
