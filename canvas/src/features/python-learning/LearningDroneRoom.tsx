@@ -21,7 +21,7 @@ function LandingPad({ position, color, goal = false }: { position: [number, numb
   </group>
 }
 
-function PalletLoad({ width, depth, height }: { width: number; depth: number; height: number }) {
+export function PalletLoad({ width, depth, height }: { width: number; depth: number; height: number }) {
   const timber = Math.min(0.12, height * 0.15)
   return <>
     <mesh castShadow receiveShadow position={[0, timber + (height - timber) / 2, 0]}>

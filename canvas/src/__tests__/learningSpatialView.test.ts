@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { DEFAULT_SPATIAL_VIEW } from '../features/python-learning/learningSpatialSelection'
 import { WAREHOUSE_ZONES, WAREHOUSE_DOCKS, WAREHOUSE_CONTEXT_RACKS, warehouseAllocation } from '../features/python-learning/warehouseLayout'
 import test from 'node:test'
 import { LearningSpatialSelection, learningAssets, learningAssetFromObject } from '../features/python-learning/learningSpatialView'
@@ -23,8 +24,8 @@ test('selection survives surface changes, resets across documents, and unsubscri
   assert.equal(first, store.read('workspace-a/drone'))
   store.update('workspace-a/drone', { selectedId: 'obstacle:crate' })
   store.update('workspace-a/drone', { dimensions: false })
-  assert.deepEqual(store.read('workspace-a/drone'), { selectedId: 'obstacle:crate', dimensions: false, inspection: false })
-  assert.deepEqual(store.read('workspace-b/drone'), { selectedId: 'room', dimensions: true, inspection: false })
+  assert.deepEqual(store.read('workspace-a/drone'), { ...DEFAULT_SPATIAL_VIEW, selectedId: 'obstacle:crate', dimensions: false })
+  assert.deepEqual(store.read('workspace-b/drone'), DEFAULT_SPATIAL_VIEW)
   store.update('workspace-b/drone', { selectedId: 'drone' })
   assert.equal(store.read('workspace-a/drone'), first)
   stop(); store.update('workspace-b/drone', { dimensions: false }); assert.equal(updates, 3)

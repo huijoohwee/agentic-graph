@@ -1,4 +1,6 @@
 import React from 'react'
+import { WAREHOUSE_DOORS, snapLearningPosition, placementIssue, spatialBlocks } from './learningSpatialEditing'
+import { cancelLearningPlacement, placeLearningAsset, toggleWarehouseDoor } from './learningSpatialActions'
 import { useWarehouseInspection } from './useWarehouseInspection'
 import { WarehouseInspectionPlanRoutes } from './WarehouseInspectionPaths'
 import { WarehousePlanDrawing } from './WarehousePlanDrawing'
@@ -31,11 +33,21 @@ export default function LearningPlanView({ lesson, scene, editorOpen = false }: 
     refresh(); window.addEventListener('resize', refresh)
     return () => { observer.disconnect(); window.removeEventListener('resize', refresh) }
   }, [ref])
+  const [hover, setHover] = React.useState<readonly [number, number, number] | null>(null)
+  const template = lesson.obstacles.find(o => `obstacle:${o.id}` === view.placement)
+  const preview = template && hover ? { position: hover, size: [template.size[0], template.height ?? 1, template.size[1]] as const } : null
+  const issue = preview ? placementIssue(preview, spatialBlocks(lesson, view.placed)) : null
+  const point = (event: React.PointerEvent<SVGSVGElement> | React.MouseEvent<SVGSVGElement>) => {
+    const svg = event.currentTarget, matrix = svg.getScreenCTM()?.inverse()
+    if (!matrix) return null
+    const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix)
+    return snapLearningPosition(p.x, p.y)
+  }
   const pattern = React.useId().replace(/:/g, '')
-  const assets = learningAssets(lesson, scene, inspection.active ? inspection.sample : undefined)
+  const assets = [...learningAssets(lesson, scene, inspection.active ? inspection.sample : undefined), ...view.placed.map(o => ({ ...o, kind: 'obstacle' as const, detail: 'Layout preview only' }))]
   const trace = !inspection.active && !runtime.stale ? runtime.result?.trace : undefined
   const selected = assets.find(asset => asset.id === view.selectedId) ?? assets[0]
-  const select = (id: string) => update({ selectedId: id })
+  const select = (id: string) => { if (!view.placement) update({ selectedId: id }) }
   const selectionProps = (id: string, name: string) => ({ role: 'button', tabIndex: 0, 'aria-label': `Select ${name}`, 'aria-pressed': view.selectedId === id,
     onClick: () => select(id), onKeyDown: (event: React.KeyboardEvent) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(id) } } })
   return <section ref={ref} className="learning-spatial-ui learning-plan-frame absolute inset-0 flex flex-col bg-[var(--kg-canvas-bg)]" style={{ left, ...(panelOpen ? { '--learning-panel-clearance': resolveFloatingPanelRightClearanceCss(panelRatio) } : {}) } as React.CSSProperties} aria-label="Drone lesson floor plan">
@@ -44,7 +56,11 @@ export default function LearningPlanView({ lesson, scene, editorOpen = false }: 
       <div className="flex gap-1">{(['room', 'flight', 'asset'] as const).map(value => <button key={value} type="button"
         className="min-h-11 rounded border px-3" aria-pressed={framing === value} onClick={() => setFraming(value)}>Fit {value === 'room' ? 'warehouse' : value === 'asset' ? 'selected asset' : value}</button>)}</div>
     </div>
-    <svg className="min-h-0 w-full flex-1" viewBox={framing === 'room' ? '-62 -25 124 58' : framing === 'flight' ? '-1.8 -3.6 7.6 7.2' : `${selected.position[0] - Math.max(.4, selected.size[0])} ${selected.position[2] - Math.max(.4, selected.size[2])} ${Math.max(.4, selected.size[0]) * 2} ${Math.max(.4, selected.size[2]) * 2}`} aria-label="Measured warehouse floor" role="group">
+    <svg tabIndex={0} style={{ cursor: view.placement ? 'crosshair' : undefined }}
+      onKeyDown={event => { if (event.key === 'Escape' && view.placement) { event.preventDefault(); cancelLearningPlacement() } }}
+      onPointerMove={event => { if (view.placement) setHover(point(event)) }} onPointerLeave={() => setHover(null)}
+      onClick={event => { if (view.placement) { const p = point(event); if (p) placeLearningAsset(p[0], p[2]) } }}
+      className="min-h-0 w-full flex-1" viewBox={framing === 'room' ? '-62 -25 124 58' : framing === 'flight' ? '-1.8 -3.6 7.6 7.2' : `${selected.position[0] - Math.max(.4, selected.size[0])} ${selected.position[2] - Math.max(.4, selected.size[2])} ${Math.max(.4, selected.size[0]) * 2} ${Math.max(.4, selected.size[2]) * 2}`} aria-label="Measured warehouse floor" role="group">
       <defs><pattern id={pattern} width="0.5" height="0.5" patternUnits="userSpaceOnUse"><path d="M .5 0 H 0 V .5" fill="none" stroke="currentColor" strokeOpacity=".12" strokeWidth=".012" /></pattern></defs>
       {framing === 'room' && <WarehousePlanDrawing selectedId={view.selectedId} onSelect={select} dimensions={view.dimensions} />}
       <rect x="-8" y="-8" width="16" height="16" fill="#eef8ff" fillOpacity=".55" stroke="#367cb7" strokeWidth=".08" strokeDasharray=".25 .15" {...selectionProps('room', 'Inspection cell')} />
@@ -66,6 +82,16 @@ export default function LearningPlanView({ lesson, scene, editorOpen = false }: 
         <rect x={-Math.max(asset.size[0], .6) / 2 - .06} y={-Math.max(asset.size[2], .6) / 2 - .06} width={Math.max(asset.size[0], .6) + .12} height={Math.max(asset.size[2], .6) + .12} fill="transparent" stroke={view.selectedId === asset.id ? '#438dce' : 'transparent'} strokeWidth=".025" rx=".07" />
         <text y={asset.id === 'drone' ? -.65 : asset.size[2] / 2 + .3} textAnchor="middle" fontSize=".18" fill="currentColor" stroke="var(--kg-canvas-bg)" strokeWidth=".035" paintOrder="stroke">{asset.name}</text>
       </g>)}
+      {WAREHOUSE_DOORS.map(door => <g key={door.id} role="button" tabIndex={0} aria-label={`${view.doors.includes(door.id) ? 'Close' : 'Open'} ${door.name}`} aria-pressed={view.doors.includes(door.id)}
+        onClick={event => { if (!view.placement) { event.stopPropagation(); toggleWarehouseDoor(door.id) } }}
+        onKeyDown={event => { if (!view.placement && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); toggleWarehouseDoor(door.id) } }}
+        transform={`translate(${door.x - door.width / 2} ${door.z})`} style={{ cursor: 'pointer' }}>
+        <rect x="-.15" y="-.4" width={door.width + .3} height={door.width + .6} fill="transparent" />
+        <path d={`M ${door.width} 0 A ${door.width} ${door.width} 0 0 1 0 ${door.width}`} fill="none" stroke="#9b7854" strokeWidth=".06" strokeDasharray=".15 .1" />
+        <path d={view.doors.includes(door.id) ? `M 0 0 V ${door.width}` : `M 0 0 H ${door.width}`} stroke={view.doors.includes(door.id) ? '#329784' : '#52728d'} strokeWidth=".15" />
+        <title>{door.name} · click to {view.doors.includes(door.id) ? 'close' : 'open'}</title>
+      </g>)}
+      {preview && <g pointerEvents="none" aria-label={issue ?? 'Clear placement'}><rect x={preview.position[0] - preview.size[0] / 2} y={preview.position[2] - preview.size[2] / 2} width={preview.size[0]} height={preview.size[2]} fill={issue ? '#dc635a' : '#42bdab'} fillOpacity=".4" stroke={issue ? '#b93131' : '#168b7c'} strokeWidth=".07" strokeDasharray=".15 .08" /><text x={preview.position[0]} y={preview.position[2] - preview.size[2] / 2 - .3} fontSize=".35" fill="currentColor" textAnchor="middle">{issue ? 'Blocked' : 'Click to place'} · 0.25 m snap</text></g>}
       <g transform="translate(6.5 6.5)" fontSize=".22" pointerEvents="none"><path d="M 0 -.8 V 0 H .8" fill="none" stroke="#438dce" strokeWidth=".04" /><text x=".95" y=".05" fill="currentColor">X</text><text x="-.06" y="-.95" fill="currentColor">−Z</text></g>
     </svg>
     <footer className="flex shrink-0 flex-wrap justify-between gap-2 border-t px-4 py-3 text-xs"><span>{selected.name} · X {selected.position[0].toFixed(2)} · Z {selected.position[2].toFixed(2)} m</span><span>{inspection.active ? `${inspection.sample.coverage.rackVisited}/${inspection.sample.coverage.rackTotal} modeled rack stations · Timeline rehearsal` : trace ? 'Recorded flight projection' : 'Run Python to record a flight'} · Select to inspect</span></footer>

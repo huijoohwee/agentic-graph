@@ -162,6 +162,11 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   const nextRedirects = buildAgenticGraphRedirects({ existing: existingRedirects, rootFiles, redirectsPath })
   const redirectsNeedUpdate = nextRedirects !== existingRedirects
   const plainCopyEntries = [
+    ...['index.html', 'styles.css', 'app.js', 'assets/warehouse.webp', 'pilot-brief.md'].map(file => [
+      `drone pitch ${file}`,
+      path.resolve(agenticGraphRoot, 'cloudflare/pages/pitch/agentic-drone-as-a-service', file),
+      path.resolve(mirrorRoot, 'pitch/agentic-drone-as-a-service', file),
+    ]),
     ['81rv10 native workspace entry', path.resolve(distDir, 'index.html'), path.resolve(mirrorRoot, '81rv10', 'index.html')],
     ['agent-ready Pages Function', agentReadyFunctionSource, agentReadyFunctionTarget],
     ['YouTube transcript Pages Function', youtubeTranscriptFunctionSource, youtubeTranscriptFunctionTarget],

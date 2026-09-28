@@ -376,6 +376,8 @@ export function ToolbarToolMenu({
   React.useEffect(() => {
     if (!requestedFloatingPanelView || !requestedFloatingPanelViewSeq || handledRequestedViewSeqRef.current === requestedFloatingPanelViewSeq) return
     handledRequestedViewSeqRef.current = requestedFloatingPanelViewSeq
+    // A remounted panel must not replay a request superseded by a newer surface action.
+    if (useGraphStore.getState().floatingPanelView !== requestedFloatingPanelView) return
     setFloatingPanelMinimized(false)
     handleSelectView(requestedFloatingPanelView)
   }, [handleSelectView, requestedFloatingPanelView, requestedFloatingPanelViewSeq])

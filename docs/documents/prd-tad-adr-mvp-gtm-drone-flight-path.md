@@ -1,21 +1,21 @@
 ---
 title: Graph to GameXR simulated drone flight path
 doc_type: PRD-TAD-ADR-MVP-GTM
-version: 1.8.2
+version: 1.9.0
 lang: en
-date: 2026-09-27
+date: 2026-09-28
 owner: Learning runtime maintainer
 continuity_id: DRONE-FLIGHT-PATH-001
-prd_revision: "1.8.2"
-tad_revision: "1.8.2"
-adr_revision: "1.8.2"
-mvp_revision: "1.8.2"
-gtm_revision: "1.8.2"
+prd_revision: "1.9.0"
+tad_revision: "1.9.0"
+adr_revision: "1.9.0"
+mvp_revision: "1.9.0"
+gtm_revision: "1.9.0"
 local_rung: spec-complete
 delivered_rung: undocumented
 lane: authoring
 universal_scope: false
-worktree_id: device-0232231d4a19--drone-plan-metadata
+worktree_id: device-0232231d4a19--warehouse-spatial-interactions
 agent_id: codex-root
 frontmatter_contract: required
 ---
@@ -23,7 +23,7 @@ frontmatter_contract: required
 # Graph to GameXR simulated drone flight path
 
 ## PRD
-DRONE-FLIGHT-PATH-001@1.8.2 binds this user-authorized planning successor. The warehouse
+DRONE-FLIGHT-PATH-001@1.9.0 binds this user-authorized planning successor. The warehouse
 iteration below updates all five roles; historical evidence retains its own revision. The user confirmed
 the simulated bench, with Graph authoring, GameXR on iPhone/Safari, explicit Run and
 local Wi-Fi delivery. The learner programs the existing Python drone API, runs and
@@ -78,59 +78,8 @@ Observe a learner completing export/import/Run before expanding curriculum or ha
 Historical initial implementation and limitations remain at [predecessor 09e6250c](https://github.com/huijoohwee/agentic-graph/blob/09e6250c39657812b224b57eddb714d949f5753e/docs/documents/prd-tad-adr-mvp-gtm-drone-flight-path.md#implementation-evidence). Those working-source receipts do not establish current hardware or Production readiness.
 
 ## Canvas reuse and source navigation — 1.1.0
-
-PRD: the user requests one Graph Canvas scene in both applications and a clickable
-return to the original file. `LearningSceneGeometry` is the single owner of the drone,
-crate, goal and grid; the existing Graph `LearningSceneStage` preserves workspace theme
-selection. The embed uses the same geometry and `applyLearningCameraPose`, with demand
-rendering and touch OrbitControls. GameXR removes its alternate SVG renderer.
-
-TAD: `node canvas/scripts/build_learning_canvas_embed.mjs` creates
-`canvas/dist/learning-canvas` (override GRAPH_CANVAS_OUTPUT). This dedicated entry imports
-no workspace store, Python worker or execution API. Its manifest records the source
-revision and dirty state. GameXR mounts this explicit local artifact at
-`/gamexr/graph-canvas/`; same-origin iframe messages require parent identity, origin,
-32-hex channel nonce, exact protocol/keys and bounded pose tuples. Initial origin is a
-preview only; motion follows accepted receiver reports. No render message carries
-execution, navigation or control authority. A missing build is shown explicitly.
-
-ADR: isolate the render-only Graph entry instead of embedding the entire workspace.
-This retains a single scene implementation and avoids unrelated editor modules on the
-phone. No source vendoring, unprotected package pin update or new dependency is needed.
-Build-time chunk checks reject any asset at or above 500,000 bytes; module groups are
-acyclic. The generated artifact is local integration evidence until protected release.
-
-`agentic-drone-flight-path/v2` adds exactly `sourceUrl` to v1. Exports made by the Graph
-UI use the native `kgDoc` route for the bound file, clearing existing queries/fragments.
-Only HTTP(S), credential-free URLs with one kgDoc query are accepted. GameXR displays
-the link for an explicit click; import does not fetch it. v1 remains accepted but has
-no invented source link. A file route identifies the browser workspace's current file,
-not the exported immutable source snapshot; it may have changed or be absent on another
-device. The existing sourceDigest remains available for comparison.
-
-MVP budget refresh: 20 files, 80 KiB source changes, zero new dependencies, <600 lines
-per file and <500 kB per emitted chunk. Validate actual Graph rendering in mobile WebKit,
-source href, exact final pose, rejected message nonce, explicit missing-artifact state,
-file mount containment and unchanged independent bench expiry. Move the CI screenshot
-after completion so screenshot capture cannot itself stall an active WebKit control run.
-
-GTM: simpler transfer candidates, in priority order: explicit Send to GameXR for the
-same browser; a paired local share link/QR for iPhone; copy/paste for offline use.
-These are recommendations, not delivered transports. File import remains the current
-portable method; each future transfer must preserve review and explicit Run.
-Rollback restores the previous scene wrapper/export contract and GameXR candidate,
-then stops/restarts the local gateway. No deployment or hardware authority is inferred.
-
-1.1.0 working-source proof: 26/26 lifecycle tests and Canvas TypeScript pass; broader
-Python selection is 40/41 with the same pre-existing pane-availability assertion. GameXR
-passes all six mobile WebKit tests both with the real Graph artifact and with it absent.
-New source-link and local artifact containment checks pass. The Graph embed builds five
-acyclic JavaScript chunks, largest 495,333 bytes; zero new dependencies. Evidence is under
-`.audit-artifacts/drone-implementation-20260925/canvas-reuse-*`.
-Graph's component browser passes with the actual v2 541-sample export, paced flight,
-landing and shared scene mounted. The rebuilt full-app offline reload/cache-recovery
-proof also passes. WebMCP scope and Vite runtime checks pass. These remain working-source
-observations; no clean-candidate CI, protected integration or phone session is inferred.
+Historical architecture and validation: [immutable predecessor](https://github.com/huijoohwee/agentic-graph/blob/1f6a98c087b7d0ccf1eccf36b80b126858f1a7ca/docs/documents/prd-tad-adr-mvp-gtm-drone-flight-path.md#canvas-reuse-and-source-navigation--110).
+One local geometry owner and portable, non-executable flight contract remain authoritative.
 
 ## Direct transfer and phone links — 1.2.0
 
@@ -597,3 +546,47 @@ MVP / P1: fleet ownership must pass against both admitted candidates; each requi
 Development: H1/H2 PR #1334 merged as `09e6250c39657812b224b57eddb714d949f5753e`; main Integration 36321356929 attempt 2 and native Home warehouse/preset/idle-Demo review passed at OS `e0ef770860905830157e64c455f0a342084b6d25`. Production Release: authorized run 36322891459 completed at 2026-09-27T13:54:59Z, Pages `a06e1ca5-29c7-46a4-9c77-4fd3eebb2572`, mirror `be045fb0071ecdff93e86ededc10c36b82906987`. Runtime: native terminal, immutable/public readback, browser fidelity, cache convergence, D1 and public Home passed. These receipts bind predecessor 1.8.1 and supersede its pending H1/H2 handoff; no universal-device or physical-flight claim. Source cleanup retained recovery bytes.
 
 Private workspace PR #33 at `6707866e8adcc8b667e62af34cfa03c840fc7497` published the release Context and done row with passed CI/readback. Retained `drone-end-adlc-20260927` receipts: `home-background-END-ADLC-handover.json`, `planning-publication-completion.json` and `planning-fleet-ownership-finding.json`. P1 checks remain pending this successor. Next release-maintainer action: verify fleet ownership, integrate protected sources, classify deployed inputs, complete native closeout and append the exact outcome through the private Context/board owner. Rollback: reviewed documentation revert, preserving runtime and prior receipts.
+
+## Spatial interactions — DRONE-FLIGHT-PATH-001@1.9.0
+
+PRD: W1 walk with WASD/arrows, drag-look and touch steps; W2 clickable doors shared across
+2D/3D/XR; W3 Media pallet/rack selection arms a snapped cursor preview, click places a copy,
+Esc cancels and Inspector removes it; W4 native BottomPanel Activity retains action/error feedback.
+TAD: extend the lesson spatial selection owner, reuse native Canvas camera/OrbitControls,
+shared keyboard direction, original pallet/rack geometry and uiLogEntries (250-event cap).
+Placement and walk checks share measured architectural envelopes; 32 placed-object maximum.
+ADR: edits are session-scoped layout previews, reset on source replacement. Flight cell,
+fixed routes, portable receiver data and Timeline coverage remain untouched; these edits are
+not mission authoring. Enclosed-room access and physical flight remain unverified. No new
+registry, dependency, camera capture, cloud traffic, uploaded asset or autonomous flight.
+MVP: 60 active minutes, ≤16 modules, ≤60 kB added source; <600 lines/file, <500 kB/chunk,
+zero spend. Interactions load only with the drone lesson. Validate model boundaries/source
+reset, Canvas typecheck, affected checks, desktop and 375px UI; headset hardware is not available.
+GTM: improve operator review of an existing warehouse rehearsal; measure task completion and
+placement errors before inferring buyer demand, coverage improvement or willingness to pay.
+Development: base 1f6a98c; 85 Python tests, typecheck, Python browser/offline and XR recording checks passed.
+Live desktop/375px: pallet arm/reject/place, doors, Activity severity filter, touch/keyboard walk and orbit restoration passed.
+Mobile Scene assets now opens through the native panel bridge; no horizontal overflow.
+Direct 3D placement, door clicks, drag-look and removal pass. Offline verification caught a stale Media request
+overriding Motion Control on remount; the native owner ignores superseded requests. All five affected CI groups pass
+(runtime source digest126c88f4bd14; before this evidence-only handover update). XR Timeline/BBox live check passes.
+Production Release: no new authority/receipt. Runtime: local preview only; no deployed claim.
+Next: lane owner completes live checks and selected integration checks, updates this evidence,
+then invokes native source publication. Rollback: revert this successor, preserving Python source.
+
+## Public pitch continuation — DRONE-FLIGHT-PATH-001@1.9.0
+
+PRD / W5: replace the inaccessible hosted pitch with the requested public route
+`https://airvio.co/pitch/agentic-drone-as-a-service/`; retain ten chapters and honest simulation labels.
+TAD: source-owned static HTML/CSS/JS, local warehouse image and downloadable pilot worksheet.
+Reuse pages-mirror-sync, generated redirect/header owners and the existing sealed artifact pipeline.
+ADR: no account dependency, analytics, form backend or new package; source brief remains a dated
+snapshot, with unvalidated financial assumptions and roadmap claims. Contact destination awaits the user.
+MVP: extension budget 30 active minutes; total ≤28 changed files, ≤320 kB added source/assets,
+<600 lines/text file and <500 kB/asset; zero spend. Asset payload retained from the user's existing pitch.
+Validation: 19 focused route/artifact tests pass; five walkthrough states and five disclosures pass.
+Architecture/business anchors clear the header; phone menu closes on navigation, 375px has no overflow.
+GTM: Download pilot brief provides an immediate scoping action; no application or personal data is sent.
+Development: local nested-route preview at port4202. Production Release/Runtime: pending exact source
+integration, protected candidate authorization and public readback; local success is not public delivery.
+Rollback: revert the route/source successor through the existing release owner; preserve other pitch paths.

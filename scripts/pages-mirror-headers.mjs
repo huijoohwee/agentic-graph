@@ -80,6 +80,9 @@ export const buildAgentReadyHeaders = ({
   const appShellHeaderBlock = [
     GENERATED_APP_SHELL_HEADERS_START,
     ...productionRuntimeReadinessHeaderLines,
+    '/pitch/agentic-drone-as-a-service/*',
+    '  Cache-Control: public, max-age=0, must-revalidate',
+    '  X-Content-Type-Options: nosniff',
     ...['/81rv10', '/81rv10/', '/81rv10/index.html'].flatMap(route => [
       route,
       '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',

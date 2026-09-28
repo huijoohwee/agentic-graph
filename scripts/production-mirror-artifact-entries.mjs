@@ -10,7 +10,7 @@ export const productionMirrorArtifactManifestName = '.agentic-graph-production-a
 // including root aliases, without adopting unrelated files in .well-known.
 export const productionMirrorArtifactEntries = Object.freeze([
   '404.html', 'README.md', 'content/agentic-graph', 'content/gamexr', 'agentic-graph', '81rv10/index.html', CANONICAL_IMAGE_ROOT, 'functions', 'canvas',
-  'contracts', 'grph-shared', '_worker.js', '_routes.json', '_headers', '_redirects',
+  'pitch/agentic-drone-as-a-service', 'contracts', 'grph-shared', '_worker.js', '_routes.json', '_headers', '_redirects',
   '.well-known/runtime-readiness.json', ...Object.keys(await buildAgentReadyStaticFiles()),
 ])
 

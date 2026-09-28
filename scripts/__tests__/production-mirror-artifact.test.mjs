@@ -60,6 +60,7 @@ const createBaseMirror = async root => {
     writeFile(root, 'content/agentic-graph/assets/old/entry.js', 'old content asset\n'),
     writeFile(root, 'agentic-graph/assets/old/entry.js', 'old public asset\n'),
     writeFile(root, '81rv10/index.html', '<main id="root"></main>\n'),
+    writeFile(root, 'pitch/agentic-drone-as-a-service/index.html', '<h1>Drone pitch</h1>\n'),
     writeFile(root, 'image/agentic-graph/video-frame/old.png', 'old canonical image\n'),
     writeFile(root, 'functions/health.js', 'export const health = true\n'),
     writeFile(root, 'canvas/runtime.mjs', 'export const canvas = true\n'),
@@ -92,6 +93,7 @@ test('the uploaded and reconciled artifact carries generated discovery aliases a
   await stageProductionMirrorArtifact({ mirrorRoot: mirror, artifactRoot: artifact })
   assert.equal(await fs.readFile(path.join(artifact, 'content/gamexr/index.html'), 'utf8'), 'reviewed GameXR\n')
   assert.equal(await fs.readFile(path.join(artifact, '81rv10/index.html'), 'utf8'), productEntry)
+  assert.equal(await fs.readFile(path.join(artifact, 'pitch/agentic-drone-as-a-service/index.html'), 'utf8'), '<h1>Drone pitch</h1>\n')
   await assert.rejects(fs.stat(path.join(artifact, '81rv10/proposals/keep.md')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.join(artifact, '.well-known/unrelated.json')), { code: 'ENOENT' })
   await reconcileProductionMirrorArtifact({ artifactRoot: artifact, mirrorRoot: target })

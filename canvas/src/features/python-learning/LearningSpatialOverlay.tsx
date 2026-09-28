@@ -8,7 +8,7 @@ import { useWarehouseInspection } from './useWarehouseInspection'
 export function LearningSpatialOverlay({ lesson, scene }: { lesson: LearningLesson; scene?: LearningSceneSnapshot }) {
   const { view } = useLearningSpatialView()
   const inspection = useWarehouseInspection()
-  const asset = learningAssets(lesson, scene, inspection.active ? inspection.sample : undefined).find(value => value.id === view.selectedId)
+  const asset = [...learningAssets(lesson, scene, inspection.active ? inspection.sample : undefined), ...view.placed.map(o => ({ ...o, kind: 'obstacle' as const }))].find(value => value.id === view.selectedId)
   const width = asset?.size[0] ?? 1, height = asset?.size[1] ?? 1, depth = asset?.size[2] ?? 1
   const bounds = useMemo(() => new BoxGeometry(width + .08, height + .08, depth + .08), [width, height, depth])
   useEffect(() => () => bounds.dispose(), [bounds])

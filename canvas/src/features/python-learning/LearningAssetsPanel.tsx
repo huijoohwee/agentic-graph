@@ -1,4 +1,5 @@
 import React from 'react'
+import { armLearningPlacement, cancelLearningPlacement, removeLearningAsset } from './learningSpatialActions'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useWarehouseInspection } from './useWarehouseInspection'
 import { learningAssetCameraPose, resolveLearningAssetViewport } from './learningCameraPose'
@@ -28,17 +29,19 @@ export default function LearningAssetsPanel({ view: panelView }: { view: 'assets
   const [query, setQuery] = React.useState('')
   if (!runtime.document || runtime.document.lessonId !== 'drone') return null
   const lesson = learningLesson(runtime.document.lessonId)
-  const assets = learningAssets(lesson, runtime.stale ? undefined : runtime.result?.scene, inspection.active ? inspection.sample : undefined)
+  const assets = [...learningAssets(lesson, runtime.stale ? undefined : runtime.result?.scene, inspection.active ? inspection.sample : undefined), ...view.placed.map(o => ({ ...o, kind: 'obstacle' as const, detail: 'Layout preview only · session-scoped · does not alter programmed routes' }))]
   const selected = assets.find(asset => asset.id === view.selectedId) ?? assets[0]
   const filtered = assets.filter(asset => `${asset.name} ${asset.kind}`.toLowerCase().includes(query.trim().toLowerCase()))
   const scene = runtime.stale ? undefined : runtime.result?.scene
   return <section className="learning-spatial-ui space-y-3 p-3 text-sm" aria-label="Drone lesson assets">
     <header><strong className="block">Warehouse flight studio</strong><p className="text-xs opacity-70">{assets.length} assets · local procedural geometry</p></header>
+    <p className="text-xs opacity-70">Select a pallet or rack to place a layout copy. Click clear floor space to confirm; Esc cancels. Layout edits last for this source session.</p>
+    {view.placement && <button type="button" className="min-h-11 rounded border px-3" onClick={cancelLearningPlacement}>Cancel placement</button>}
     {panelView !== 'inspector' && <>
       <label className="grid gap-1 text-xs">Find a lesson asset<input type="search" value={query} maxLength={80}
         onChange={event => setQuery(event.currentTarget.value)} className="min-h-11 w-full rounded border bg-transparent px-3" /></label>
       <div className={panelView === 'assets' ? 'grid grid-cols-2 gap-2' : 'grid gap-2'}>
-        {filtered.map(asset => <button key={asset.id} type="button" onClick={() => update({ selectedId: asset.id })}
+        {filtered.map(asset => <button key={asset.id} type="button" onClick={() => { update({ selectedId: asset.id }); if (panelView === 'assets' && asset.id.startsWith('obstacle:')) armLearningPlacement(asset.id) }}
           aria-pressed={selected.id === asset.id} aria-label={`Inspect ${asset.name}`}
           className="min-h-11 min-w-0 rounded-lg border p-2 text-left transition-colors hover:bg-[var(--kg-surface-bg)]"
           style={{ borderColor: selected.id === asset.id ? '#438dce' : 'var(--kg-border)', boxShadow: selected.id === asset.id ? 'inset 0 0 0 1px #438dce' : undefined }}>
@@ -58,6 +61,8 @@ export default function LearningAssetsPanel({ view: panelView }: { view: 'assets
       </dl>
       {selected.kind === 'truck' && <p className="text-xs">Shell L × W × H: 220 × 160 × 90 mm. Closed assembly: {CHARGE_TRUCK_DIMENSIONS.closedAssembly[0] * 1000} × {CHARGE_TRUCK_DIMENSIONS.closedAssembly[2] * 1000} × {CHARGE_TRUCK_DIMENSIONS.closedAssembly[1] * 1000} mm including tracks, hinges and antenna. Print tolerances and charging circuitry remain unverified.</p>}
       <div className="flex flex-wrap gap-2">
+        {selected.id.startsWith('obstacle:') && <button type="button" className="min-h-11 rounded border px-3 text-xs" onClick={() => armLearningPlacement(selected.id)}>Place a layout copy</button>}
+        {selected.id.startsWith('placed:') && <button type="button" className="min-h-11 rounded border px-3 text-xs" onClick={removeLearningAsset}>Remove layout object</button>}
         <button type="button" disabled={!camera} className="min-h-11 rounded border px-3 text-xs disabled:opacity-40" onClick={event => {
           const current = camera?.capturePose(); if (current) camera?.restorePose(learningAssetCameraPose(selected.position, selected.size, current, resolveLearningAssetViewport(event.currentTarget.ownerDocument)))
         }}>Frame selected asset</button>
