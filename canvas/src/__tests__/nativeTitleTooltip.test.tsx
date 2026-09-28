@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import NativeTitleTooltip from '@/features/panels/ui/NativeTitleTooltip'
 import Tooltip from '@/features/panels/ui/Tooltip'
+import { Z_INDEX_ANCHOR_OVERLAY } from '@/lib/ui/zIndex'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 20))
@@ -31,6 +32,7 @@ export async function testNativeTitleTooltipDelegation() {
     assert(button.getAttribute('aria-describedby') === tooltip?.id, 'Describe the trigger accessibly')
     assert(tooltip?.style.backgroundColor === 'var(--kg-tooltip-bg)', 'Use the shared background token')
     assert(tooltip?.style.color === 'var(--kg-tooltip-text)', 'Use the shared text token')
+    assert(Number(tooltip?.style.zIndex) > Z_INDEX_ANCHOR_OVERLAY, 'Shared tooltip must appear above anchored menus')
     assert(tooltip?.className.includes('pointer-events-none'), 'Tooltip must not intercept a click')
     button.click()
     assert(clicks === 1, 'Native click behavior must survive')

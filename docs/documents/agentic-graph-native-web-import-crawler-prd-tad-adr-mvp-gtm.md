@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.3"
+version: "0.2.4"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.2"
-prd_revision: "0.2.3"
-tad_revision: "0.2.3"
-adr_revision: "0.2.3"
-mvp_revision: "0.2.3"
-gtm_revision: "0.2.3"
+previous_document_version: "0.2.3"
+prd_revision: "0.2.4"
+tad_revision: "0.2.4"
+adr_revision: "0.2.4"
+mvp_revision: "0.2.4"
+gtm_revision: "0.2.4"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -50,13 +50,13 @@ The external crawler project is a capability reference only. The implementation 
 
 ## 2026-09-28 usability increment
 
-**PRD.** The Launch → Import URL icon row has accessible names but no hover box or extra text below the controls. During a sitemap or website crawl, each completed page appears in Source Files as soon as its manifest node is available. The terminal sitemap and Canvas projection appear when the crawl completes. Launch → Export → Markdown defaults to the configured local sibling `docs_` directory (for the current Dev workspace, `/Users/huijoohwee/Documents/GitHub/huijoohwee/docs_`); the browser save picker remains the fallback when local host writing is unavailable.
+**PRD.** The Launch → Import URL icon row shows its labels in a shared hover or focus tooltip above the menu, with no extra text below the controls. During a sitemap or website crawl, each completed page appears in Source Files as soon as its manifest node is available. The terminal sitemap and Canvas projection appear when the crawl completes. Launch → Export → Markdown defaults to the configured local sibling `docs_` directory (for the current Dev workspace, `/Users/huijoohwee/Documents/GitHub/huijoohwee/docs_`); the browser save picker remains the fallback when local host writing is unavailable.
 
-**TAD.** The existing server manifest remains the source of completed node records. The icon actions retain `aria-label` while native `title` tooltips and the extra crawler hint are removed. The workspace action checks the manifest when the processed count advances, and one workspace writer deduplicates node IDs across snapshots, writes each page through the existing workspace filesystem, and refreshes Source Files after each page. Finalization writes the sitemap and Canvas document once. The Markdown export derives the host output root from the configured docs mirror instead of hardcoding a device path.
+**TAD.** The existing server manifest remains the source of completed node records. The icon actions retain `aria-label` and `title`; the existing delegated tooltip renders their labels in a body portal above the anchored menu. The extra crawler hint below the icons is removed. The workspace action checks the manifest when the processed count advances, and one workspace writer deduplicates node IDs across snapshots, writes each page through the existing workspace filesystem, and refreshes Source Files after each page. Finalization writes the sitemap and Canvas document once. The Markdown export derives the host output root from the configured docs mirror instead of hardcoding a device path.
 
-**ADR.** Keep the crawler server and artifact routes unchanged. Reuse the manifest and local filesystem write contracts, with the existing save picker as the cross-device fallback. This keeps the page writer under 600 lines and avoids adding a second export service or paid dependency.
+**ADR.** Reuse the shared tooltip owner and its z-index constants instead of adding another tooltip path. Keep the crawler server and artifact routes unchanged. Reuse the manifest and local filesystem write contracts, with the existing save picker as the cross-device fallback. This keeps the page writer under 600 lines and avoids adding a second export service or paid dependency.
 
-**MVP check.** Focused tests cover a page appearing before terminal files, deduplication when a later snapshot repeats it, and the Markdown destination path and bytes. The local browser preview confirms that focusing the crawler icon adds no tooltip or text below the icon row. Source checks and any protected CI result belong to the source lane receipt; no Production or buyer outcome is claimed by this increment.
+**MVP check.** Focused tests cover a page appearing before terminal files, deduplication when a later snapshot repeats it, and the Markdown destination path and bytes. The local browser preview confirms that the crawler tooltip appears above the open menu on focus, with no extra text below the icon row. Source checks and any protected CI result belong to the source lane receipt; no Production or buyer outcome is claimed by this increment.
 
 **GTM.** The immediate buyer pain is waiting through a multi-page import without usable files and then hunting for its export. A timed user pilot should compare time to first usable page and time to locate the exported Markdown file, then record willingness to pay $1. Demand and revenue remain unverified.
 
